@@ -113,7 +113,7 @@ class FiniteElement:
 
     def __repr__(self):
         "Print nicely formatted representation of FiniteElement."
-        return "%s finite element of degree %d on a %s (rank %d)" % \
+        return "%s of degree %d on a %s (rank %d)" % \
                (self.name, self.degree, self.shape, self.rank)
 
 if __name__ == "__main__":

@@ -7,6 +7,7 @@ __license__  = "GNU GPL Version 2"
 from Numeric import *
 
 # FFC common modules
+from ffc.common.progress import *
 from ffc.common.debug import *
 from ffc.common.util import *
 
@@ -109,6 +110,7 @@ class ReferenceTensor:
 
         # Iterate over all combinations of indices
         debug("Computing reference tensor", 2)
+        progress = Progress(n)
         for i in iindices:
             debug("i = " + str(i), 2)
             for a in aindices:
@@ -117,10 +119,10 @@ class ReferenceTensor:
                 for b in bindices:
                     debug("    b = " + str(b), 2)
                     integral += integrate(self.basisfunctions, i, a, b)
+                    progress += 1
                 integral *= self.numeric
-                debug("  integral = " + str(integral), 2)
                 A0[i + a] = integral
-
+                debug("  integral = " + str(integral), 2)
         return A0
 
     def  __call__(self, i, a = []):
