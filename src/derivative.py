@@ -14,7 +14,10 @@ class Derivative:
 
     def __init__(self, index = None):
         "Create Derivative."
-        self.index = Index(index)
+        if isinstance(index, Derivative):
+            self.index = Index(index.index)
+        else:
+            self.index = Index(index)
         return
 
     def __repr__(self):

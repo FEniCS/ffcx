@@ -136,23 +136,6 @@ class Factor(Element):
         w.transforms = [Transform(i, index)] + w.transforms
         return w
 
-    def max_indices(self):
-        """Compute the maximum indices [i0, i1] used by the Factor.
-        If an index is not used, -1 is returned for that index."""
-        
-        i0 = -1
-        i1 = -1
-        if self.basisfunction.index.type == "primary":
-            i0 = max(i0, self.basisfunction.index.index)
-        elif self.basisfunction.index.type == "secondary":
-            i1 = max(i1, self.basisfunction.index.index)
-        for d in self.derivatives:
-            if d.index.type == "primary":
-                i0 = max(i0, d.index.index)
-            elif d.index.type == "secondary":
-                i1 = max(i1, d.index.index)
-        return [i0, i1]
-        
     def __repr__(self):
         "Print nicely formatted representation of Factor."
         output = ""
@@ -254,69 +237,6 @@ class Product(Element):
             w = w + p
         return w
 
-    def rank(self):
-        "Return rank [r0, r1] of tensor represented by the Product."
-        i0 = -1
-        i1 = -1
-        for f in self.factors:
-            [tmp0, tmp1] = f.max_indices()
-            i0 = max(i0, tmp0)
-            i1 = max(i1, tmp1)
-        return [i0 + 1, i1 + 1]
-
-    def dims(self, r0, r1):
-        """Return dimensions for the tensor represented by the
-        Product. This method involves some searching, but it
-        shouldn't take too much time."""
-        dimlist = []
-        # First check dimensions for primary indices
-        for i in range(r0):
-            (dim, found) = self.primary_dim(i)
-            if found:
-                dimlist = dimlist + [dim]
-            else:
-                raise RuntimeError, "Unable to find primary index " + str(i)
-        # Then check dimensions for secondary indices
-        for i in range(r1):
-            (dim, found) = self.secondary_dim(i)
-            if found:
-                dimlist = dimlist + [dim]
-            else:
-                raise RuntimeError, "Unable to find secondary index " + str(i)
-        return dimlist
-
-    def primary_dim(self, i):
-        """Try to find primary dimension number i. If found, the
-        dimension is returned as (dim, True). Otherwise (0, False) is
-        returned."""
-        for f in self.factors:
-            # First check BasisFunction
-            if f.basisfunction.index.type == "primary":
-                if f.basisfunction.index.index == i:
-                    return (f.basisfunction.element.spacedim, True)
-            # Then check Derivatives
-            for d in f.derivatives:
-                if d.index.type == "primary":
-                    if d.index.index == i:
-                        return (f.basisfunction.element.shapedim, True)
-        return (0, False)
-
-    def secondary_dim(self, i):
-        """Try to find secondary dimension number i. If found, the
-        dimension is returned as (dim, True). Otherwise (0, False) is
-        returned."""
-        for f in self.factors:
-            # First check BasisFunction
-            if f.basisfunction.index.type == "secondary":
-                if f.basisfunction.index.index == i:
-                    return (f.basisfunction.element.spacedim, True)
-            # Then check Derivatives
-            for d in f.derivatives:
-                if d.index.type == "secondary":
-                    if d.index.index == i:
-                        return (f.basisfunction.element.shapedim, True)
-        return (0, False)
-    
     def __repr__(self):
         "Print nicely formatted representation of Product."
         output = ""

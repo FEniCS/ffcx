@@ -16,8 +16,12 @@ class Transform:
     
     def __init__(self, index0 = None, index1 = None):
         "Create Transform."
-        self.index0 = Index(index0)
-        self.index1 = Index(index1)
+        if isinstance(index0, Transform):
+            self.index0 = Index(index0.index0)
+            self.index1 = Index(index0.index1)
+        else:
+            self.index0 = Index(index0)
+            self.index1 = Index(index1)
         return
 
     def __repr__(self):

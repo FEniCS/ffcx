@@ -7,7 +7,10 @@ __license__  = "GNU GPL Version 2"
 from Numeric import *
 
 # FFC modules
+from rank import Rank
+from index import Index
 from algebra import *
+from reassign import *
 from integrator import Integrator
 from finiteelement import FiniteElement
 
@@ -26,17 +29,15 @@ class Form:
 
         # Make sure that we get a Sum
         if isinstance(form, Form):
-            self.sum = form.sum
-        elif isinstance(form, BasisFunction):
-            self.sum = Sum(form)
-        elif isinstance(form, Factor):
-            self.sum = Sum(form)
-        elif isinstance(form, Product):
-            self.sum = Sum(form)
-        elif isinstance(form, Sum):
-            self.sum = form
+            self.sum = reassign_indices(Sum(form.sum))
+            self.ranks = [Rank(p) for p in self.sum.products]
         else:
-            raise RuntimeError, "Cannot create Form from " + str(form)
+            self.sum = reassign_indices(Sum(form))
+            self.ranks = [Rank(p) for p in self.sum.products]
+
+        print self.sum
+
+        return
 
         # Compute the rank of the tensor for each Product. The
         # secondary rank may differ for each Product.
@@ -155,7 +156,8 @@ if __name__ == "__main__":
     u = BasisFunction(element)
     v = BasisFunction(element)
     i = Index()
-
+    
     a = Form(u.dx(i)*v.dx(i) + u*v)
-    print a
-    a.compile()
+
+    #print a
+    #a.compile()
