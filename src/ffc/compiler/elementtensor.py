@@ -18,6 +18,7 @@ class ElementTensor:
     An ElementTensor holds the following data:
 
         terms  - a list of Terms (products A0 * GK)
+        a0     - a list of precomputed reference tensor declarations
         gK     - a list of precomputed geometry tensor declarations
         aK     - a list of precomputed element tensor declarations"""
 
@@ -30,6 +31,9 @@ class ElementTensor:
         # Create list of Terms
         self.terms = [Term(p) for p in sum.products if p.integral.type == type]
 
+        # Compute reference tensor (already computed, just need to pick the values)
+        self.a0 = self.__compute_reference_tensor(format)
+
         # Compute geometry tensor
         self.gK = self.__compute_geometry_tensor(format)
 
@@ -38,8 +42,24 @@ class ElementTensor:
         
         return
 
+    def __compute_reference_tensor(self, format):
+        "Precomputed reference tensor according to given format."
+        if not self.terms: return []
+        declarations = []
+        for j in range(len(self.terms)):
+            term = self.terms[j]
+            iindices = term.A0.i.indices or [[]]
+            aindices = term.A0.a.indices or [[]]
+            for i in iindices:
+                for a in aindices:
+                    name = format.format["reference tensor"](j, i, a)
+                    value = str(term.A0(i, a))
+                    declarations += [Declaration(name, value)]
+        return declarations
+
     def __compute_geometry_tensor(self, format):
         "Precompute geometry tensor according to given format."
+        if not self.terms: return []
         declarations = []
         for j in range(len(self.terms)):
             GK = self.terms[j].GK
@@ -55,8 +75,8 @@ class ElementTensor:
         """Precompute element tensor, including optimizations. This is
         where any FErari optimization should be done."""
         if not self.terms: return []
-        iindices = self.terms[0].A0.i.indices # All primary ranks are equal
         declarations = []
+        iindices = self.terms[0].A0.i.indices # All primary ranks are equal
         for i in iindices:
             value = ""
             for j in range(len(self.terms)):

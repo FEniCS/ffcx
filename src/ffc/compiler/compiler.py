@@ -15,6 +15,7 @@ from Numeric import *
 sys.path.append("../../")
 from ffc.format import dolfin
 from ffc.format import latex
+from ffc.format import raw
 
 # FFC compiler modules
 from form import *
@@ -41,6 +42,8 @@ def compile(sums, name = "MyPDE", language = None):
         format = dolfin
     elif language == "LaTeX" or language == "latex":
         format = latex
+    elif language == "raw":
+        format = raw
     else:
         raise "RuntimeError", "Unknown language " + str(language)
 
@@ -88,3 +91,4 @@ if __name__ == "__main__":
     a = u.dx(i)*v.dx(i)*dx + u*v*ds
     compile(a, "form", "C++")
     compile(a, "form", "LaTeX")
+    compile(a, "form", "raw")

@@ -10,6 +10,7 @@ format = { "multiplication": "",
            "floating point": lambda a: "%.2f" % a,
            "coefficient": lambda j, k: "c_{%d%d}" % (j, k),
            "transform": lambda j, k: "\\frac{\\partial X_{%d}}{\\partial x_{%d}}" % (j, k),
+           "reference tensor" : lambda j, i, a: "not defined",
            "geometry tensor": lambda j, a: "G_{K,%d}^{%s}" % (j, "".join(["%d" % index for index in a])),
            "element tensor": lambda i: "A^K_{%s}" % "".join(["%d" % index for index in i]) }
 
