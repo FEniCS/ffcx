@@ -1,4 +1,3 @@
-o [logg] Allow multiple different elements
 o [logg] Use FIAT tabulate
 o [logg] Remove non-used variables in generated code
 o [logg] Add version number to output

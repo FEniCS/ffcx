@@ -68,7 +68,8 @@ def compile(sums, name = "MyPDE", language = None):
         # Find the test, trial and function finite elements
         form.test = find_test(form.sum)
         form.trial = find_trial(form.sum)
-        (form.elements, form.felement) = find_elements(form.sum, form.nfunctions)
+        #(form.elements, form.felement) = find_elements(form.sum, form.nfunctions)
+        form.elements = find_elements(form.sum, form.nfunctions)
 
         # Create element tensors
         form.AKi = ElementTensor(form.sum, "interior", format)

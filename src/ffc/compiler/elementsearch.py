@@ -25,7 +25,8 @@ def find_test(sum):
                     raise RuntimeError, "Test function defined by multiple elements."
                 element = v.element
 
-    debug("Finite element of test space:  " + str(element), 0)
+    if element:
+        debug("Finite element of test space:  " + str(element), 0)
 
     return element
 
@@ -43,41 +44,29 @@ def find_trial(sum):
                     raise RuntimeError, "Trial function defined by multiple elements."
                 element = v.element
 
-    debug("Finite element of trial space: " + str(element), 0)
+    if element:
+        debug("Finite element of trial space: " + str(element), 0)
 
     return element
 
 def find_elements(sum, nfunctions):
     "Return a list of FiniteElements associated with all Functions."
 
-    # Don't bother if there are no functions
-    if nfunctions < 1:
-        return ([], [])
-
-    # List of unique elements used for functions
-    elements = []
-
-    # Mapping from function number to element
-    felement = [None for j in range(nfunctions)]
+    # List of elements used for functions
+    elements = [None for j in range(nfunctions)]
 
     # Iterate over all Coefficients in all Products
     for p in sum.products:
         for c in p.coefficients:
-            element = c.element
+            elements[c.number.index] = c.element
 
-            # Check if element already exists
-            found = False
-            for j in range(len(elements)):
-                if element == elements[j]:
-                    felement[c.number.index] = j
-                    found = True
-                    break
+    # Check that we found an element for each function
+    for element in elements:
+        if not element:
+            raise RuntimeError, "Unable to find element for each function."
 
-            # Add element if new
-            if not found:
-                elements += [element]
-                felement[c.number.index] = len(elements) - 1
-
-    debug("Finite elements for functions: " + str(elements), 0)
+    if elements:
+        debug("Finite elements for functions: " + str(elements), 0)
           
-    return (elements, felement)
+    #return (elements, felement)
+    return elements

@@ -45,7 +45,6 @@ class Form:
         test       - FiniteElement defining the test space
         trial      - FiniteElement defining the trial space
         elements   - list of unique FiniteElements for Functions
-        felement   - mapping from function number to FiniteElement
 
     A multi-linear form is first expressed as an element of the
     algebra (a Sum) and is then post-processed to generate a sum
@@ -68,7 +67,6 @@ class Form:
         self.test       = None
         self.trial      = None
         self.elements   = None
-        self.felement   = None
 
         # Reassign indices
         debug("Before index reassignment: " + str(sum), 2)

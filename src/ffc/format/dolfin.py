@@ -26,11 +26,6 @@ def compile(forms):
     output = ""
     output += __file_header(name)
 
-    # Write element
-    # FIXME: Allow different elements, not just one element
-    element = (forms[0].AKi.terms + forms[0].AKb.terms)[0].A0.basisfunctions[0].element
-    output += __element(forms[0].name, element)
-
     # Write all forms
     for form in forms:
 
@@ -46,7 +41,7 @@ def compile(forms):
             type = "Multilinear"
 
         # Write form
-        output += __form(form, element, type)
+        output += __form(form, type)
 
     # Write file footer
     output += __file_footer()
@@ -83,22 +78,41 @@ def __file_footer():
 
 #endif\n"""
 
-def __element(name, element):
+def __elements(form):
+    "Generate finite elements for DOLFIN."
+
+    output = ""
+    
+    # Write test element (if any)
+    if form.test:
+        output += __element(form.test, "TestElement")
+
+    # Write trial element (if any)
+    if form.trial:
+        output += __element(form.trial, "TrialElement")
+
+    # Write function elements (if any)
+    for j in range(len(form.elements)):
+        output += __element(form.elements[j], "FunctionElement_%d" % j)
+    
+    return output
+
+def __element(element, name):
     "Generate finite element for DOLFIN."
 
     # Generate code for initialization of tensor dimensions
     if element.rank > 0:
-        diminit = "    tensordims = new unsigned int [%d];\n" % element.rank
+        diminit = "      tensordims = new unsigned int [%d];\n" % element.rank
         for j in range(element.rank):
-            diminit += "    tensordims[%d] = %d;\n" % (j, element.tensordims[j])
+            diminit += "      tensordims[%d] = %d;\n" % (j, element.tensordims[j])
     else:
-        diminit = "    // Do nothing\n"
+        diminit = "      // Do nothing\n"
 
     # Generate code for tensordim function
     if element.rank > 0:
-        tensordim = "dolfin_assert(i < %d);\n    return tensordims[i];" % element.rank
+        tensordim = "dolfin_assert(i < %d);\n      return tensordims[i];" % element.rank
     else:
-        tensordim = 'dolfin_error("Element is scalar.");\n    return 0;'
+        tensordim = 'dolfin_error("Element is scalar.");\n      return 0;'
 
     # Generate code for dof and coord mapping
     # FIXME: Move this somewhere else
@@ -113,61 +127,60 @@ def __element(name, element):
         
     # Generate output
     return """\
-/// This is the finite element for which the form is generated,
-/// providing the information neccessary to do assembly.
 
-class FiniteElement : public dolfin::NewFiniteElement
-{
-public:
-
-  FiniteElement() : dolfin::NewFiniteElement(), tensordims(0)
+  class %s : public dolfin::NewFiniteElement
   {
-%s  }
+  public:
 
-  ~FiniteElement()
-  {
-    if ( tensordims ) delete [] tensordims;
-  }
+    %s() : dolfin::NewFiniteElement(), tensordims(0)
+    {
+%s    }
 
-  inline unsigned int spacedim() const
-  {
-    return %d;
-  }
+    ~%s()
+    {
+      if ( tensordims ) delete [] tensordims;
+    }
 
-  inline unsigned int shapedim() const
-  {
-    return %d;
-  }
+    inline unsigned int spacedim() const
+    {
+      return %d;
+    }
 
-  inline unsigned int tensordim(unsigned int i) const
-  {
-    %s
-  }
+    inline unsigned int shapedim() const
+    {
+      return %d;
+    }
 
-  inline unsigned int rank() const
-  {
-    return %d;
-  }
+    inline unsigned int tensordim(unsigned int i) const
+    {
+      %s
+    }
 
-  // FIXME: Only works for nodal basis
-  inline unsigned int dof(unsigned int i, const Cell& cell, const Mesh& mesh) const
-  {
-    %s
-  }
+    inline unsigned int rank() const
+    {
+      return %d;
+    }
 
-  // FIXME: Only works for nodal basis
-  inline const Point coord(unsigned int i, const Cell& cell, const Mesh& mesh) const
-  {
-    %s
-  }
+    // FIXME: Only works for nodal basis
+    inline unsigned int dof(unsigned int i, const Cell& cell, const Mesh& mesh) const
+    {
+      %s
+    }
 
-private:
+    // FIXME: Only works for nodal basis
+    inline const Point coord(unsigned int i, const Cell& cell, const Mesh& mesh) const
+    {
+      %s
+    }
 
-  unsigned int* tensordims;
+  private:
 
-};
+    unsigned int* tensordims;
 
-""" % (diminit,
+  };
+""" % (name, name,
+       diminit,
+       name,
        element.spacedim,
        element.shapedim,
        tensordim,
@@ -175,7 +188,7 @@ private:
        dofmap,
        coordmap)
 
-def __form(form, element, type):
+def __form(form, type):
     "Generate form for DOLFIN."
     
     #ptr = "".join(['*' for i in range(form.rank)])
@@ -191,7 +204,7 @@ def __form(form, element, type):
     if constinit:
         constinit = ", " + constinit
     
-    # Class header
+    # Write class header
     output = """\
 /// This class contains the form to be evaluated, including
 /// contributions from the interior and boundary of the domain.
@@ -199,21 +212,40 @@ def __form(form, element, type):
 class %s : public dolfin::%s
 {
 public:
+""" % (subclass, baseclass)
 
-  %s(%s) : dolfin::%s()%s
-""" % (subclass, baseclass, subclass, arguments, baseclass, constinit)
+    # Write elements
+    output += __elements(form)
+    
+    # Write constructor
+    output += """\
+
+  %s(%s) : dolfin::%s(%d)%s
+  {
+""" % (subclass, arguments, baseclass, form.nfunctions, constinit)
+
+    # Initialize test and trial elements
+    if form.test:
+        output += """\
+    // Create finite element for test space
+    _test = new TestElement();
+"""
+    if form.trial:
+        output += """\
+
+    // Create finite element for trial space
+    _trial = new TrialElement();
+"""
 
     # Add functions (if any)
     if form.nfunctions > 0:
         output += """\
-  {
-    // Add functions
-    init(%d, %d);\n""" % (form.nfunctions, element.spacedim)
+        
+    // Add functions\n"""
         for j in range(form.nfunctions):
-            output += "    add(w%d);\n" % j
-        output += "  }\n"
-    else:
-        output += "  {\n  }\n"
+            output += "    add(w%d, new FunctionElement_%d());\n" % (j, j)
+
+    output += "  }\n"
 
     # Interior contribution (if any)
     if form.AKi.terms:

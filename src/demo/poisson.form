@@ -8,12 +8,10 @@
 
 name = "Poisson"
 element = FiniteElement("Lagrange", "triangle", 1)
-element1 = FiniteElement("Lagrange", "triangle", 2)
 
 v = BasisFunction(element)
 u = BasisFunction(element)
 f = Function(element)
-g = Function(element1)
 
-a = f*v.dx(i)*u.dx(i)*dx + f*g*v*u*dx
+a = v.dx(i)*u.dx(i)*dx
 L = v*f*dx
