@@ -51,7 +51,7 @@ class ElementTensor:
     def __compute_element_tensor(self, format):
         """Precompute element tensor, including optimizations. This is
         where any FErari optimization should be done."""
-        aformat = format["element tensor"]
+        if not self.terms: return []
         iindices = self.terms[0].A0.i.indices # All primary ranks are equal
         declarations = []
         for i in iindices:

@@ -112,7 +112,7 @@ if __name__ == "__main__":
     dx = Integral("interior")
     ds = Integral("boundary")
     
-    a = Form(u.dx(i)*v.dx(i)*dx + u*v*dx + u*v*ds, "FFCPoisson")
+    a = Form(u.dx(i)*v.dx(i)*dx, "FFCPoisson")
     a.compile()
     
     #element = FiniteElement("Vector Lagrange", 1, "triangle")
