@@ -82,6 +82,24 @@ def __file_footer():
 
 def __element(name, element):
     "Generate finite element for DOLFIN."
+
+    # Generate code for initialization of tensor dimensions
+    if element.rank > 0:
+        diminit = "    tensordims = new unsigned int [%d];\n" % element.rank
+        for j in range(element.rank):
+            diminit += "    tensordims[%d] = %d;\n" % (j, element.tensordims[j])
+    else:
+        diminit = "    // Do nothing"
+
+    # Generate code for dof mapping
+    # FIXME: Move this somewhere else
+    if element.rank > 0:
+        # Assuming rank = 1
+        n = element.spacedim / element.tensordims[0]
+        mapping = "return (i/%d) * mesh.noNodes() + cell.nodeID(i %% %d)" % (n, n)
+    else:
+        mapping = "return cell.nodeID(i);"
+        
     # Generate output
     return """\
 /// This is the finite element for which the form is generated,
@@ -91,48 +109,53 @@ class %sFiniteElement : public NewFiniteElement
 {
 public:
 
-  %sFiniteElement() : NewFiniteElement() {}
+  %sFiniteElement() : NewFiniteElement(), tensordims(0)
+  {
+%s  }
 
-  unsigned int spacedim() const
+  ~%sFiniteElement()
+  {
+    if ( tensordims ) delete [] tensordims;
+  }
+
+  inline unsigned int spacedim() const
   {
     return %d;
   }
 
-  unsigned int shapedim() const
+  inline unsigned int shapedim() const
   {
     return %d;
   }
 
-  unsigned int tensordim(unsigned int i) const
+  inline unsigned int tensordim(unsigned int i) const
   {
-    unsigned int tensordims[] = {%s}
+    dolfin_assert(i < %d);
     return tensordims[i];
   }
 
-  unsigned int rank() const
+  inline unsigned int rank() const
   {
     return %d;
   }
 
   // FIXME: Only works for nodal basis
-  unsigned int dof(unsigned int i, const Cell& cell) const
+  inline unsigned int dof(unsigned int i, const Cell& cell, const Mesh& mesh) const
   {
-    return cell.nodeID(i);
+    %s
   }
 
-  // FIXME: Only works for nodal basis
-  const Point& coord(unsigned int i, const Cell& cell) const
-  {
-    return cell.node(i).coord();
-  }
+private:
+
+  unsigned int* tensordims;
 
 };
 
-""" % (name, name,
+""" % (name, name, diminit, name,
        element.spacedim,
        element.shapedim,
-       ", ".join([str(dim) for dim in element.tensordims]),
-       element.rank)
+       element.rank, element.rank,
+       mapping)
 
 def __form(form, type):
     "Generate form for DOLFIN."
@@ -194,7 +217,3 @@ public:
 def __capall(s):
     "Return a string in which all characters are capitalized."
     return "".join([c.capitalize() for c in s])
-
-def __blockindex(i):
-    "Translate matrix indices i = [i0, i1] to a PETSc block index."
-    

@@ -1,3 +1,4 @@
+ - Temporary implementation of dof mapping for vector-valued elements 
  - Make DOLFIN output format put entries into PETSc block
  - Change name of coefficient data: c%d[%d] -> c[%d][%d]
  - Change ordering of basis functions (one component at a time)
