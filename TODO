@@ -1,10 +1,12 @@
+o [logg] Allow multiple different elements
+o [logg] Use FIAT tabulate
+o [logg] Remove non-used variables in generated code
 o [logg] Add version number to output
 o [logg] Add man page
 o [logg] Access data through map (map.det, map.g11 etc)
 o [logg] Collect terms of equal rank
 o [logg] Boundary integrals
 o [logg] Ask FIAT about local-to-global mapping
-o [logg] Allow multiple different elements
 o [logg] Connect Matt's parser
 o [logg] Call FErari to simplify
 o [logg] Fix all FIXMEs (grep FIXME *.py)
