@@ -9,9 +9,8 @@
 name = "NavierStokes"
 element = FiniteElement("Lagrange", "tetrahedron", 1, 3)
 
-u = BasisFunction(element)
 v = BasisFunction(element)
+u = BasisFunction(element)
 U = Function(element, "velocity")
 
-a = U[j]
-a = U[j]*u[i].dx(j)*v[i]*dx
+a = v[i]*U[j]*u[i].dx(j)*dx
