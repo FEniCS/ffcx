@@ -253,16 +253,18 @@ def dim_factor(factor, i, type):
     w1 = u.dx(i)*v.dx(i) + u*v
     w2 = u.dx(i)*v.dx(i) + u*v
 
-def marks_product(product, r0, r1):    
-    """Compute list of index marks. Indices that should be
-    pre-contracted are marked True. Each Index that does not appear in
-    inside the integral (within a Factor) should be pre-contracted."""
-    marks = []
+def imap_product(product, r0, r1):    
+    """Compute mapping from tensor indices to the list of indices
+    of rank r0 + r1. Each Index that appears inside the integral
+    (within a Factor) is mapped to one of the r0 + r1 indices."""
+    imap = []
     for i in range(r0):
-        marks += [not __have_index(product, i, "primary")]
+        if __have_index(product, i, "primary"):
+            imap += [i]
     for i in range(r1):
-        marks += [not __have_index(product, i, "secondary")]
-    return marks
+        if  __have_index(product, i, "secondary"):
+            imap += [r0 + i]
+    return imap
 
 def __have_index(product, i, type):
     "Check if the product contains the given Index within a Product."
@@ -273,11 +275,11 @@ def __have_index(product, i, type):
             return True
         # Check Derivatives
         for d in f.derivatives:
-            if d.index.type == type and d.index.index == index:
+            if d.index.type == type and d.index.index == i:
                 return True
         # Check that the list of Transforms is empty
         if f.transforms:
-            raise RuntimeError, "Non-empty list of Transforms for Factor."        
+            raise RuntimeError, "Non-empty list of Transforms for Factor."
     return False
 
 if __name__ == "__main__":
