@@ -1,3 +1,4 @@
+ - Make references to constants const in DOLFIN format
  - Don't generate code for unused entries of geometry tensor
  - Update formats to write numeric constants with full precision
 0.1.6 [2005-03-17]

@@ -286,7 +286,7 @@ private:
 """
         for j in range(form.nconstants):
             output += """\
-  real& c%d;""" % j
+  const real& c%d;""" % j
         output += "\n"
 
     # Class footer
