@@ -147,9 +147,7 @@ if __name__ == "__main__":
     
     u = BasisFunction(element)
     v = BasisFunction(element)
-    i = Index(element.shapedim)
-
-    print "Dimension of index: " + str(i.dim)
+    i = Index()
 
     a = Form(u.dx(i)*v.dx(i) + u*v)
     print a

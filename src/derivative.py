@@ -13,12 +13,8 @@ class Derivative:
     one of many possible coordinate directions (in which case it is a
     tensor of rank 1)."""
 
-    def __init__(self, index):
-        if isinstance(index, int):
-            self.index = Index(0, index)
-        else:
-            self.index = Index(index)
-        return
+    def __init__(self, index = None):
+        self.index = Index(index)
 
     def __repr__(self):
         "Print nicely formatted representation of Derivative."

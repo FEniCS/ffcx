@@ -23,10 +23,10 @@ class BasisFunction(Element):
     def __init__(self, element, index = None):
         if index == None:
             self.element = element
-            self.index = Index(element.spacedim, "primary")
+            self.index = Index("primary")
         else:
             self.element = element
-            self.index = Index(element.spacedim, index)
+            self.index = Index(index)
         return
 
     def __add__(self, other):
@@ -362,12 +362,12 @@ class Product(Element):
             # First check BasisFunction
             if f.basisfunction.index.type == "primary":
                 if f.basisfunction.index.index == i:
-                    return (f.basisfunction.index.dim, True)
+                    return (f.basisfunction.element.spacedim, True)
             # Then check Derivatives
             for d in f.derivatives:
                 if d.index.type == "primary":
                     if d.index.index == i:
-                        return (d.index.dim, True)
+                        return (f.basisfunction.element.shapedim, True)
         return (0, False)
 
     def secondary_dim(self, i):
@@ -378,12 +378,12 @@ class Product(Element):
             # First check BasisFunction
             if f.basisfunction.index.type == "secondary":
                 if f.basisfunction.index.index == i:
-                    return (f.basisfunction.index.dim, True)
+                    return (f.basisfunction.element.spacedim, True)
             # Then check Derivatives
             for d in f.derivatives:
                 if d.index.type == "secondary":
                     if d.index.index == i:
-                        return (d.index.dim, True)
+                        return (f.basisfunction.element.shapedim, True)
         return (0, False)
     
     def __repr__(self):
@@ -529,6 +529,6 @@ if __name__ == "__main__":
     print
     
     print "Testing Poisson:"
-    i = Index(element.shapedim)
+    i = Index()
     w = u.dx(i)*v.dx(i)
     print w

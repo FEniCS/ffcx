@@ -37,32 +37,27 @@ class Index:
     The type of index is determined by the arguments to the
     constructor:
 
-      i = Index(dim, 0)           creates a given fixed index (0 in this case)
-      i = Index(dim, "primary")   creates a primary index
-      i = Index(dim, "secondary") creates a primary index
-      i = Index(dim)              creates a secondary index"""
+      i = Index(0)           creates a given fixed index (0 in this case)
+      i = Index("primary")   creates a free primary index
+      i = Index("secondary") creates a free primary index
+      i = Index()            creates a free secondary index"""
 
-    def __init__(self, dim, index = "secondary"):
-        if isinstance(dim, Index):
-            self.index = dim.index
-            self.type = dim.type
-            self.dim = dim.dim
+    def __init__(self, index = "secondary"):
+        if isinstance(index, Index):
+            self.index = index.index
+            self.type = index.type
         elif isinstance(index, int):
             self.index = index
             self.type = "fixed"
-            self.dim = dim
         elif index == "primary":
             self.index = next_primary_index()
             self.type = "primary"
-            self.dim = dim
         elif index == "secondary":
             self.index = next_secondary_index()
             self.type = "secondary"
-            self.dim = dim
         elif index == None:
             self.index = next_secondary_index()
             self.type = "secondary"
-            self.dim = dim
         else:
             raise RuntimeError, "Unknown index type " + str(index)
         return
