@@ -50,15 +50,16 @@ class Form:
         "Generate code for evaluation of the variational form."
 
         # Compute the reference tensor for each product
+        A0s = []
         for i in range(len(self.sum.products)):
-            A0 = self.compute_reference_tensor(i)
-            print "A0 = " + str(A0)
+            A0s += [self.compute_reference_tensor(i)]
+            print "A0 = " + str(A0s[i])
 
         # Choose language
         if language == "C++":
-            dolfin.compile(A0)
+            dolfin.compile(self.sum.products, A0s, self.ranks)
         elif language == "LaTeX":
-            latex.compile(A0)
+            latex.compile(self.sum.products, A0s, self.ranks)
         else:
             print "Unknown language " + str(language)
         return
@@ -68,6 +69,12 @@ class Form:
 
         product = self.sum.products[i]
         rank = self.ranks[i]
+        indices0 = [] + rank.indices0
+        indices1 = [] + rank.indices1
+
+        # Make sure that the iteration is not empty
+        if not indices1:
+            indices1 = [[]]
 
         # Create reference tensor
         A0 = zeros(rank.dims0 + rank.dims1, Float)
@@ -76,8 +83,8 @@ class Form:
         integrate = Integrator(product)
 
         # Iterate over all combinations of indices
-        for i in rank.indices0:
-            for a in rank.indices1:
+        for i in indices0:
+            for a in indices1:
                 A0[i + a] = integrate(product, i, a)
             
         return A0

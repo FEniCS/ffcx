@@ -51,7 +51,7 @@ class Rank:
             self.indices0 = build_indices(self.dims0)
             self.indices1 = build_indices(self.dims1)
             self.indices2 = build_indices(self.dims2)
-            
+
         else:
             raise RuntimeError, "Rank can only be created for a Product."
 

@@ -45,7 +45,7 @@ def build_indices(dims):
         for pos in range(len(dims)):
             current[pos] = (i / posvalue[pos]) % dims[pos]
             sum -= current[pos] * posvalue[pos]
-            indices += [list(current)]
+        indices += [list(current)]
     return indices
 
 class Index:

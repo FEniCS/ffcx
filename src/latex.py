@@ -5,7 +5,7 @@ __date__ = "2004-10-14"
 __copyright__ = "Copyright (c) 2004 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
-def compile(A0):
+def compile(products, A0s, ranks):
     "Generate code for LaTeX."
     print "Compilling multi-linear form for LaTeX."
     print "Not yet implemented."
