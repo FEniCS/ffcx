@@ -50,7 +50,7 @@ class BasisFunction(Element):
 
     def __sub__(self, other):
         "Operator: BasisFunction - Element"
-        # FIXME: Remember to modify geometry tensor with a -
+        # FIXME: remember to modify geometry tensor with a -
         if isinstance(other, BasisFunction):
             w = Sum()
             w.products = [Product(self), Product(other)]
@@ -147,7 +147,7 @@ class Factor(Element):
         return
 
     def __sub__(self, other):
-        # FIXME: Remember to modify geometry tensor with a -
+        # FIXME: remember to modify geometry tensor with a -
         if isinstance(other, BasisFunction):
             w = Sum()
             w.products = [Product(self), Product(other)]
@@ -195,6 +195,21 @@ class Factor(Element):
         w = Factor(self)
         w.derivatives = [Derivative(index)] + w.derivatives
         return w
+
+    def max_indices(self):
+        "Compute the maximum indices [i0, i1] used by the Factor."
+        i0 = 0
+        i1 = 0
+        if self.basisfunction.index.type == "primary":
+            i0 = max(i0, self.basisfunction.index.index)
+        elif self.basisfunction.index.type == "secondary":
+            i1 = max(i1, self.basisfunction.index.index)
+        for d in self.derivatives:
+            if d.index.type == "primary":
+                i0 = max(i0, d.index.index)
+            elif d.index.type == "secondary":
+                i1 = max(i1, d.index.index)
+        return [i0, i1]
         
     def __repr__(self):
         "Print nicely formatted representation of Factor."
@@ -247,7 +262,7 @@ class Product(Element):
         return
 
     def __sub__(self, other):
-        # FIXME: Remember to modify geometry tensor with a -
+        # FIXME: remember to modify geometry tensor with a -
         if isinstance(other, BasisFunction):
             w = Sum()
             w.products = [self, Product(other)]
@@ -304,9 +319,14 @@ class Product(Element):
         return w
 
     def rank(self):
-        "Return rank [r0, r1, rtot] of tensor represented by the Product."
-        
-        
+        "Return rank [r0, r1] of tensor represented by the Product."
+        i0 = 0
+        i1 = 0
+        for f in self.factors:
+            [tmp0, tmp1] = f.max_indices()
+            i0 = max(i0, tmp0)
+            i1 = max(i1, tmp1)
+        return [i0 + 1, i1 + 1]
 
     def __repr__(self):
         "Print nicely formatted representation of Product."
@@ -358,7 +378,7 @@ class Sum(Element):
         return
 
     def __sub__(self, other):
-        # FIXME: Remember to modify geometry tensor with a -
+        # FIXME: remember to modify geometry tensor with a -
         if isinstance(other, BasisFunction):
             w = Sum()
             w.products = self.products + [Product(other)]
