@@ -5,11 +5,11 @@ __date__ = "2004-10-14"
 __copyright__ = "Copyright (c) 2004 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
-format = { "coefficient": "w%d[%d]",
-           "transform": "g%d%d",
+format = { "coefficient": lambda j, k: "w%d[%d]" % (j, k),
+           "transform": lambda j, k: "g%d%d" % (j, k),
            "determinant": "det",
-           "geometry tensor": "G%d_%s",
-           "geometry tensor simple": "G%d" }
+           "geometry tensor": lambda j, a: "G%d_%s" % (j, "".join(["%d" % index for index in a])),
+           "element tensor": lambda i: "A%s" % "".join(["[%d]" % index for index in i]) }
 
 def compile(form):
     "Generate code for DOLFIN."
@@ -145,8 +145,8 @@ public:
     return true;
   }
 """ % (ptr,
-       __geometry_tensor(form.AKi),
-       __element_tensor(form.AKi, form.indices))
+       "".join(["    real %s = %s;\n" % (gK.name, gK.value) for gK in form.AKi.gK]),
+       "".join(["    %s = %s;\n" % (aK.name, aK.value) for aK in form.AKi.aK]))
 
     # Boundary contribution (if any)
     if form.AKb.terms:
@@ -161,36 +161,14 @@ public:
     return true;
   }
 """ % (ptr,
-       __geometry_tensor(form.AKb),
-       __element_tensor(form.AKb, form.indices))
+       "".join(["    real %s = %s;\n" % (gK.name, gK.value) for gK in form.AKb.gK]),
+       "".join(["    %s = %s;\n" % (aK.name, aK.value) for aK in form.AKb.aK]))
 
     # Class footer
     output += """
 };
 """
 
-    return output
-
-def __geometry_tensor(AK):
-    "Generate expressions for computation of geometry tensors."
-    output = ""
-    for j in range(len(AK.terms)):
-        GK = AK.terms[j].GK
-        if GK.a.indices: aindices = GK.a.indices
-        else: aindices = [[]]
-        for a in aindices:
-            name = GK.name(j, a, format)
-            value = GK(a, format)
-            output += "    %s = %s;\n" % (name, value)
-    return output
-
-def __element_tensor(AK, indices):
-    "Generate expressions for computation of element tensor."
-    output = ""
-    for i in indices:
-        name = "A[" + "][".join([str(index) for index in i]) + "]"
-        value = AK(i)
-        output += "    %s = %s;\n" % (name, value)
     return output
 
 def __capall(s):

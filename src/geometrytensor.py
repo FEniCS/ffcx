@@ -66,19 +66,15 @@ class GeometryTensor:
 
     def __call__(self, a, format):
         "Return given element of geometry tensor."
-        # Get format
-        name_c = format["coefficient"]
-        name_t = format["transform"]
-        name_det = format["determinant"]
         # Compute product of factors outside sum
         factors = []
-        for i in range(len(self.coefficients)):
-            c = self.coefficients[i]
+        for j in range(len(self.coefficients)):
+            c = self.coefficients[j]
             if not c.index.type == "secondary": continue
-            factors += [name_c % (i, c.index([], a, [], []))]
+            factors += [format["coefficient"](j, c.index([], a, [], []))]
         for t in self.transforms:
             if not (t.index0.type == t.index1.type == "secondary"): continue
-            factors += [name_t % (t.index0([], a, [], []), t.index1([], a, [], []))]
+            factors += [format["transform"](t.index0([], a, [], []), t.index1([], a, [], []))]
         product = "*".join(factors)
         if product: f0 = [product]
         else: f0 = []
@@ -86,28 +82,20 @@ class GeometryTensor:
         terms = []
         for b in self.b.indices:
             factors = []
-            for i in range(len(self.coefficients)):
-                c = self.coefficients[i]
+            for j in range(len(self.coefficients)):
+                c = self.coefficients[j]
                 if c.index.type == "secondary": continue
-                factors += [name_c % (i, c.index([], a, [], b))]
+                factors += [format["coefficient"](j, c.index([], a, [], b))]
             for t in self.transforms:
                 if t.index0.type == t.index1.type == "secondary": continue
-                factors += [name_t % (t.index0([], a, [], b), t.index1([], a, [], b))]
+                factors += [format["transform"](t.index0([], a, [], b), t.index1([], a, [], b))]
             terms += ["*".join(factors)]
         sum = "+".join(terms)
         if len(sum) > 1: sum = "(%s)" % sum
         if sum: f1 = [sum]
         else: f1 = []
         # Compute product of all factors
-        return "*".join([name_det] + f0 + f1)
-
-    def name(self, j, a, format):
-        if a:
-            name = format["geometry tensor"]
-            return name % (j, "".join([str(index) for index in a]))
-        else:
-            name = format["geometry tensor simple"]
-            return name % j
+        return "*".join([f for f in [format["determinant"]] + f0 + f1])
 
     def __repr__(self):
         "Print nicely formatted representation of GeometryTensor."
