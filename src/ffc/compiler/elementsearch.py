@@ -8,9 +8,11 @@ __date__ = "2005-03-15"
 __copyright__ = "Copyright (c) 2005 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
+# FFC common modules
+from ffc.common.debug import *
+
 def find_test(sum):
     "Return the FiniteElement associated with the test function (if any)."
-    print "Looking for test finite element"
     element = None
     for p in sum.products:
         count = 0
@@ -22,7 +24,9 @@ def find_test(sum):
                 if element and (not element == v.element):
                     raise RuntimeError, "Test function defined by multiple elements."
                 element = v.element
-        
+
+    debug("Finite element of test space:  " + str(element), 0)
+
     return element
 
 def find_trial(sum):
@@ -38,7 +42,9 @@ def find_trial(sum):
                 if element and (not element == v.element):
                     raise RuntimeError, "Trial function defined by multiple elements."
                 element = v.element
-        
+
+    debug("Finite element of trial space: " + str(element), 0)
+
     return element
 
 def find_elements(sum, nfunctions):
@@ -46,7 +52,7 @@ def find_elements(sum, nfunctions):
 
     # Don't bother if there are no functions
     if nfunctions < 1:
-        return []
+        return ([], [])
 
     # List of unique elements used for functions
     elements = []
@@ -63,7 +69,6 @@ def find_elements(sum, nfunctions):
             found = False
             for j in range(len(elements)):
                 if element == elements[j]:
-                    print "Using old element"
                     felement[c.number.index] = j
                     found = True
                     break
@@ -72,5 +77,7 @@ def find_elements(sum, nfunctions):
             if not found:
                 elements += [element]
                 felement[c.number.index] = len(elements) - 1
-    
+
+    debug("Finite elements for functions: " + str(elements), 0)
+          
     return (elements, felement)

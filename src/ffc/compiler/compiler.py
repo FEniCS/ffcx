@@ -57,13 +57,6 @@ def compile(sums, name = "MyPDE", language = None):
         debug("\nCompiling form: " + str(form), 0)
         debug("Number of terms in form: %d" % len(form.sum.products), 1)
         
-        # Create element tensors
-        form.AKi = ElementTensor(form.sum, "interior", format)
-        form.AKb = ElementTensor(form.sum, "boundary", format)
-
-        # Check primary ranks
-        __check_primary_ranks(form)
-
         # Count the number of functions
         form.nfunctions = max_index(form.sum, "function") + 1
         debug("Number of functions (coefficients): " + str(form.nfunctions), 1)
@@ -77,11 +70,13 @@ def compile(sums, name = "MyPDE", language = None):
         form.trial = find_trial(form.sum)
         (form.elements, form.felement) = find_elements(form.sum, form.nfunctions)
 
-        print "Test element: " + str(form.test)
-        print "Trial element: " + str(form.trial)
-        print "Elements: " + str(form.elements)
-        print "Mapping: " + str(form.felement)
-        
+        # Create element tensors
+        form.AKi = ElementTensor(form.sum, "interior", format)
+        form.AKb = ElementTensor(form.sum, "boundary", format)
+
+        # Check primary ranks
+        __check_primary_ranks(form)
+
     # Generate output
     format.compile(forms)
 
