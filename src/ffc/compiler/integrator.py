@@ -4,8 +4,8 @@ __copyright__ = "Copyright (c) 2004 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # FIAT modules
-from FIAT import quadrature
-from FIAT import shapes
+from FIAT.quadrature import *
+from FIAT.shapes import *
 
 # FFC common modules
 from ffc.common.debug import *
@@ -23,7 +23,7 @@ def degree(basisfunctions):
         for d in v.derivatives:
             q -= 1
     return q
-    
+
 class Integrator:
     
     """This class is responsible for integrating products of basis
@@ -53,18 +53,26 @@ class Integrator:
         m = (q + 1 + 1) / 2 # integer division gives 2m - 1 >= q
         debug("Total degree is %d, using %d quadrature point(s) in each dimension" % (q, m), 1)
 
-        # Create quadrature rule
-        self.fiat_quadrature = quadrature.make_quadrature(self.fiat_shape, m)
+        # Create quadrature rule and get points and weights
+        # FIXME: Maybe we don't need to save the quadrature rule?
+        self.fiat_quadrature = make_quadrature(self.fiat_shape, m)
+        self.points = self.fiat_quadrature.get_points()
+        self.weights = self.fiat_quadrature.get_points()
+
+        # Tabulate basis functions and derivatives at quadrature points for each finite
+        # element used in the form (if not already tabulated)
+        #for v in basisfunctions:
+        #    v.element.tabulate(self.points, len(v.derivatives))
 
         # Compensate for different choice of reference cells in FIAT
         # FIXME: Convince Rob and Matt to change their reference cells :-)
-        if self.fiat_shape == shapes.TRIANGLE:
+        if self.fiat_shape == TRIANGLE:
             self.vscaling = 0.25  # Area 1/2 instead of 2
             self.dscaling = 2.0   # Scaling of derivative
-        elif self.fiat_shape == shapes.TETRAHEDRON:
+        elif self.fiat_shape == TETRAHEDRON:
             self.vscaling = 0.125 # Volume 1/6 instead of 4/3
             self.dscaling = 2.0   # Scaling of derivative
-        return
+        return    
 
     def __call__(self, basisfunctions, iindices, aindices, bindices):
         "Evaluate integral of product."
@@ -74,3 +82,4 @@ class Integrator:
             return 0.0 # Makes it a little faster
         else:
             return self.fiat_quadrature(v)
+        

@@ -46,6 +46,7 @@ class FiniteElement:
         self.fiat_shape = None
 
         self.basis = None
+        self.table = None
         
         self.spacedim = None
         self.shapedim = None
@@ -84,6 +85,31 @@ class FiniteElement:
         self.rank = len(dims)
 
         return
+
+    # FIXME: Not used, should be moved to FIAT
+    def tabulate(self, points, dmax):
+        """Tabulate the values of all basis functions and their
+        derivatives up to order dmax at all quadrature points."""
+
+        if self.table:
+            print "Already tabulated, skipping"
+
+        if dmax > 1:
+            debug("Warning: only tabulating first derivatives so this might be slow.")
+
+        # Tabulate basis functions
+        self.table = [self.basis.tabulate(points)]
+
+        # Tabulate first derivatives of basis functions
+        if self.fiat_shape == shapes.TRIANGLE:
+            self.table += [self.basis.deriv_all(0).tabulate(points), \
+                           self.basis.deriv_all(1).tabulate(points)]
+        elif self.fiat_shape == shapes.TETRAHEDRON:
+            self.table += [self.basis.deriv_all(0).tabulate(points), \
+                           self.basis.deriv_all(1).tabulate(points), \
+                           self.basis.deriv_all(2).tabulate(points)]
+        else:
+            raise RuntimeError, "Unsupported shape."
 
     def __repr__(self):
         "Print nicely formatted representation of FiniteElement."

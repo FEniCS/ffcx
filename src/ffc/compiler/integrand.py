@@ -52,7 +52,7 @@ class Integrand:
 
         # Evaluate basis function
         return w(x) * scaling
-    
+
     def __getcomponent(self, v):
         "Return current component of current basis function."
         

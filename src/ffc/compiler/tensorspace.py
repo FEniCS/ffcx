@@ -12,12 +12,10 @@ class ZeroFunction:
 
     def __call__(self, x):
         "Evaluate function."
-        print "Evaluating zero function"
         return 0.0
 
     def deriv(self, i):
         "Differentiate function."
-        print "Differentiating zero function"
         return self
 
 class TensorSpace:
