@@ -79,8 +79,7 @@ namespace dolfin { namespace %s {
 
 def __file_footer():
     "Generate file footer for DOLFIN."
-    return """
-} }
+    return """} }
 
 #endif\n"""
 
@@ -183,9 +182,14 @@ def __form(form, element, type):
     subclass = type + "Form"
     baseclass = type + "Form"
 
-    # Create argument list for form
+    # Create argument list for form (functions and constants)
     arguments = ", ".join([("const NewFunction& w%d" % j) for j in range(form.nfunctions)] + \
                           [("const real& c%d" % j) for j in range(form.nconstants)])
+
+    # Create initialization list for constants (if any)
+    constinit = ", ".join([("c%d(c%d)" % (j, j)) for j in range(form.nconstants)])
+    if constinit:
+        constinit = ", " + constinit
     
     # Class header
     output = """\
@@ -196,8 +200,8 @@ class %s : public dolfin::%s
 {
 public:
 
-  %s(%s) : dolfin::%s()
-""" % (subclass, baseclass, subclass, arguments, baseclass)    
+  %s(%s) : dolfin::%s()%s
+""" % (subclass, baseclass, subclass, arguments, baseclass, constinit)
 
     # Add functions (if any)
     if form.nfunctions > 0:
@@ -240,6 +244,18 @@ public:
   }
 """ % ("".join(["    real %s = %s;\n" % (gK.name, gK.value) for gK in form.AKb.gK]),
        "".join(["    %s = %s;\n" % (aK.name, aK.value) for aK in form.AKb.aK]))
+
+    # Create declaration list for for constants (if any)
+    if form.nconstants > 0:
+        output += """\
+        
+private:
+
+"""
+        for j in range(form.nconstants):
+            output += """\
+  real& c%d;""" % j
+        output += "\n"
 
     # Class footer
     output += """

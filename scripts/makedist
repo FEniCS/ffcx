@@ -19,6 +19,7 @@ echo Running benchmark problem
 cd src/bench
 echo "FFC version $VERSION" >> bench.log
 date >> bench.log
+echo "" >> bench.log
 ./bench >> bench.log
 cd ../../
 
