@@ -26,15 +26,20 @@ class Form:
         sum   - the representation of the form as a Sum
         ranks - a list of auxiliary data for each Product"""
 
-    def __init__(self, form):
+    def __init__(self, form, name = None):
         "Create Form."
 
         if isinstance(form, Form):
             self.sum = reassign_indices(Sum(form.sum))
             self.ranks = [Rank(p) for p in self.sum.products]
+            self.name = form.name
         else:
             self.sum = reassign_indices(Sum(form))
             self.ranks = [Rank(p) for p in self.sum.products]
+            if name == None:
+                self.name = "My"
+            else:
+                self.name = name            
 
         # Check that all Products have the same primary rank,
         # otherwise it's not a multi-linear form.
@@ -57,9 +62,9 @@ class Form:
 
         # Choose language
         if language == "C++":
-            dolfin.compile(self.sum.products, A0s, self.ranks)
+            dolfin.compile(self.sum.products, A0s, self.ranks, self.name)
         elif language == "LaTeX":
-            latex.compile(self.sum.products, A0s, self.ranks)
+            latex.compile(self.sum.products, A0s, self.ranks, self.name)
         else:
             print "Unknown language " + str(language)
         return
@@ -106,11 +111,11 @@ if __name__ == "__main__":
     print "Testing form compiler"
     print "---------------------"
 
-    element = FiniteElement("Lagrange", 1, "triangle")
+    element = FiniteElement("Lagrange", 1, "tetrahedron")
     
     u = BasisFunction(element)
     v = BasisFunction(element)
     i = Index()
     
-    a = Form(u.dx(i)*v.dx(i) + u.dx(0)*v + u*v)
+    a = Form(u.dx(i)*v.dx(i), "Poisson")
     a.compile()

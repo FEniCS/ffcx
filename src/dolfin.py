@@ -7,49 +7,82 @@ __license__  = "GNU GPL Version 2"
 
 EPSILON = 3e-16
 
-def compile(products, A0s, ranks):
+def compile(products, A0s, ranks, prefix):
     "Generate code for DOLFIN."
     print "Compiling multi-linear form for C++ (DOLFIN)."
-    __write_header()
-    __write_geometry_tensor(products, ranks)
-    __write_element_tensor(A0s, ranks)
-    __write_footer()
+    
+    # Choose name
+    if ranks[0].r0 == 1:
+        type = "Linear"
+    elif ranks[0].r0 == 2:
+        type = "Bilinear"
+    else:
+        print """DOLFIN can only handle linear or bilinear forms.
+        I will try to generate the multi-linear form but you will not
+        be able to use it with DOLFIN."""
+        type = "Multilinear"
+
+    # Open file
+    file = open(prefix + type + "Form.h", "w")
+
+    # Write file
+    __write_header(file, ranks, prefix, type)
+    __write_geometry_tensor(file, products, ranks)
+    __write_element_tensor(file, A0s, ranks)
+    __write_footer(file, )
+
+    # Close file
+    file.close()
+
+    # Write a nice message
+    print "Output written on " + prefix + type + "Form.h" + "."
+    
     return
 
-def __write_header():
+def __write_header(file, ranks, prefix, type):
     "Write header for DOLFIN."
-    print "class MyPDE : public PDE"
-    print "{"
-    print "public:"
-    print "    void interiorElementMatrix(real** A) const"
-    print "    {"
+    defname = "__" + __capall(prefix) + "_" + __capall(type) + "_FORM_H"
+    file.write("#ifndef " + defname + "\n")
+    file.write("#define " + defname + "\n")
+    file.write("\n")
+    file.write("#include <dolfin/" + type + "Form.h>\n")
+    file.write("\n")
+    file.write("class " + prefix + type + "Form : public " + type + "Form\n")
+    file.write("{\n")
+    file.write("public:\n")
+    file.write("\n")
+    ptr = "".join(['*' for i in range(ranks[0].r0)])
+    file.write("    void interior(real" + ptr + " A) const\n")
+    file.write("    {\n")
     return
 
-def __write_footer():
+def __write_footer(file):
     "Write footer for DOLFIN."
-    print "    }"
-    print "};"
+    file.write("    }\n")
+    file.write("};\n")
+    file.write("\n")
+    file.write("#endif\n")
     return
 
-def __write_geometry_tensor(products, ranks):
+def __write_geometry_tensor(file, products, ranks):
     "Write expressions for computation of geomety tensor."
-    print "        // Compute geometry tensors"
+    file.write("        // Compute geometry tensors\n")
     for j in range(len(ranks)):
         for a in ranks[j].indices1:
             name_g = __name_g(j, a)
             value_g = __value_g(products[j], a, ranks[j].indices2)
-            print "        real " + name_g + " = " + value_g + ";"
-    print
+            file.write("        real " + name_g + " = " + value_g + ";\n")
+    file.write("\n")
     return
 
-def __write_element_tensor(A0s, ranks):
+def __write_element_tensor(file, A0s, ranks):
     """Write expressions for computation of element tensor as
     the product of the geometry tensor and reference tensor."""
-    print "        // Compute element tensor"
+    file.write("        // Compute element tensor\n")
     for i in ranks[0].indices0: # All primary ranks are equal
         name_a = __name_a(i)
         value_a = __value_a(A0s, ranks, i)
-        print "        " + name_a + " = " + value_a + ";"
+        file.write("        " + name_a + " = " + value_a + ";\n")
     return
 
 def __name_g(j, a):
@@ -116,3 +149,7 @@ def __value_transform(transform, a, b):
     value += str(transform.index0([], a, b))
     value += str(transform.index1([], a, b))
     return value
+
+def __capall(s):
+    "Return a string in which all characters are capitalized."
+    return "".join([c.capitalize() for c in s])
