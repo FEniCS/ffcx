@@ -1,0 +1,10 @@
+FFC follows the standard procedure for installation of Python modules.
+As root, run
+
+        python setup.py install
+
+This will install FFC in the default Python path of your system,
+probably in /usr/lib/python2.3/site-packages/.
+
+The installation script requires the Python module distutils,
+which for Debian users is available with the python-dev package.
