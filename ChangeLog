@@ -1,3 +1,4 @@
+ - Fix bug for systems, seems to work now
  - Add common interface for debugging
  - Modify DOLFIN output to initialize functions
  - Create unique numbers for each function
