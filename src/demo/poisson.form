@@ -13,5 +13,5 @@ v = BasisFunction(element)
 u = BasisFunction(element)
 f = Function(element, "source")
     
-a = u.dx(i)*v.dx(i)*dx
-L = f*v*dx
+a = 6*v.dx(i)*u.dx(i)*dx
+L = v*f*dx

@@ -11,6 +11,6 @@ element = FiniteElement("Lagrange", "tetrahedron", 1, 3)
 
 v = BasisFunction(element)
 u = BasisFunction(element)
-U = Function(element, "velocity")
+w = Function(element, "velocity")
 
-a = v[i]*U[j]*u[i].dx(j)*dx
+a = v[i]*w[j]*u[i].dx(j)*dx

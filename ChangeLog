@@ -1,3 +1,5 @@
+ - Add component diagram
+ - Change order of declaration of basis functions
  - Add new output format raw
 0.1.2 [2004-11-17]
  - Add command-line interface ffc
