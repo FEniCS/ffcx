@@ -1,3 +1,5 @@
+ - Fix bug for derivative of sum
+ - Improve common interface for debugging: add indentation
  - Add support for constants
  - Fix bug for sums of more than one term (make copies of references in lists)
  - Add '_' in naming of geometry tensor (needed for large dimensions)

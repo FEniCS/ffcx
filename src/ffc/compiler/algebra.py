@@ -418,7 +418,7 @@ class Sum(Element):
             # Create default Sum (zero)
             self.products = []
         elif isinstance(other, int) or isinstance(other, float):
-            # Create Sum from scalar
+            # Create Sum from float
             self.products = [Product(other)]
         elif isinstance(other, BasisFunction):
             # Create Sum from BasisFunction
@@ -462,20 +462,21 @@ class Sum(Element):
 
     def __neg__(self):
         "Operator: -Sum"
-        w = Sum(self)
-        w.products = [-p for p in w.products]
+        w = Sum()
+        w.products = [-p for p in self.products]
         return w
 
     def  __getitem__(self, component):
         "Operator: indexing, pick given component."
-        w = Sum(self)
-        w.products = [p[component] for p in w.products]
+        w = Sum()
+        w.products = [p[component] for p in self.products]
         return w
 
     def dx(self, index = None):
         "Operator: (d/dx)Sum in given coordinate direction."
         w = Sum()
-        w.products = [p.dx(index) for p in self.products]
+        for p in self.products:
+            w = w + p.dx(index)
         return w
 
     def __repr__(self):

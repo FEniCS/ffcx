@@ -26,7 +26,7 @@ def reassign_indices(sum):
 
     # Modify secondary indices to auxiliary indices
     [__create_auxiliary(p) for p in sum.products]
-    
+
     # Reassign primary indices (global for the Sum)
     __reassign(sum, "primary")
 
@@ -82,6 +82,7 @@ def __have_index(object, index):
 def __create_auxiliary(product):
     """Modify secondary indices not appearing in both the reference
     tensor and geometry tensor to auxiliary indices."""
+
     # Build list of reference tensor secondary indices
     ir = []
     [v.indexcall(__index_add, [ir, "secondary"]) for v in product.basisfunctions]
