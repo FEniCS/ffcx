@@ -3,7 +3,7 @@ __date__ = "2004-11-06"
 __copyright__ = "Copyright (c) 2004 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
-EPSILON = 3e-16
+EPSILON = 1e-14
 
 # FFC modules
 from term import *
@@ -53,7 +53,7 @@ class ElementTensor:
             for i in iindices:
                 for a in aindices:
                     name = format.format["reference tensor"](j, i, a)
-                    value = str(term.A0(i, a))
+                    value = format.format["floating point"](term.A0(i, a))
                     declarations += [Declaration(name, value)]
         return declarations
 
@@ -98,6 +98,7 @@ class ElementTensor:
                         else:
                             value += "%s%s%s" % (format.format["floating point"](a0), \
                                                  format.format["multiplication"], gk)
+            value = value or format.format["floating point"](0.0)
             declarations += [Declaration(name, value)]
         return declarations    
 

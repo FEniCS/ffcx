@@ -18,9 +18,12 @@ def compile(forms):
     "Generate code for DOLFIN."
     print "Generating output for DOLFIN"
 
+    # Get name of form
+    name = forms[0].name
+
     # Write file header
     output = ""
-    output += __file_header(forms[0].name)
+    output += __file_header(name)
 
     # Write element
     # FIXME: Allow different elements, not just one element
@@ -48,7 +51,7 @@ def compile(forms):
     output += __file_footer()
 
     # Write file
-    filename = form.name + ".h"
+    filename = name + ".h"
     file = open(filename, "w")
     file.write(output)
     file.close()
