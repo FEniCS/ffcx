@@ -5,7 +5,10 @@ __license__  = "GNU GPL Version 2"
 
 EPSILON = 1e-14
 
-# FFC modules
+# FFC common modules
+from ffc.common.debug import *
+
+# FFC compiler modules
 from term import *
 from declaration import *
 
@@ -74,21 +77,27 @@ class ElementTensor:
     def __compute_element_tensor(self, format):
         """Precompute element tensor, including optimizations. This is
         where any FErari optimization should be done."""
+        debug("Computing element tensor", 2)
         if not self.terms: return []
         declarations = []
         iindices = self.terms[0].A0.i.indices # All primary ranks are equal
         k = 0 # Update counter for each entry of A0, which is needed for some formats
         for i in iindices:
+            debug("i = " + str(i), 2)
             value = ""
             for j in range(len(self.terms)):
+                debug("  j = " + str(j), 2)
                 A0 = self.terms[j].A0
                 GK = self.terms[j].GK
                 if A0.a.indices: aindices = A0.a.indices
                 else: aindices = [[]]
                 for a in aindices:
+                    debug("    a = " + str(a), 2)
                     name = format.format["element tensor"](i, k)
                     a0 = A0(i, a)
                     gk = format.format["geometry tensor"](j, a)
+                    debug("      a0 = " + str(a0), 2)
+                    debug("      gk = " + str(gk), 2)
                     if abs(a0) > EPSILON:
                         if value and a0 < 0.0:
                             value += " - %s%s%s" % (format.format["floating point"](-a0), \

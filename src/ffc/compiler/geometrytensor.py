@@ -3,7 +3,10 @@ __date__ = "2004-11-03"
 __copyright__ = "Copyright (c) 2004 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
-# FFC modules
+# FFC common modules
+from ffc.common.debug import *
+
+# FFC common modules
 from algebra import *
 from reassign import *
 from multiindex import *
@@ -33,8 +36,8 @@ class GeometryTensor:
         self.a = self.__create_index("secondary")
         self.b = self.__create_index("geometry tensor auxiliary")
 
-        print "Created geometry tensor: a%s, b%s" % \
-              (str(self.a.dims), str(self.b.dims))
+        debug("Created geometry tensor: a%s, b%s" % \
+              (str(self.a.dims), str(self.b.dims)), 1)
 
         return
 
@@ -86,7 +89,6 @@ class GeometryTensor:
             for j in range(len(self.coefficients)):
                 c = self.coefficients[j]
                 if c.index.type == "secondary": continue
-                print c.number
                 factors += [format.format["coefficient"](c.number.index, c.index([], a, [], b))]
             for t in self.transforms:
                 if t.index0.type == t.index1.type == "secondary": continue

@@ -6,7 +6,10 @@ __license__  = "GNU GPL Version 2"
 # Python modules
 from Numeric import *
 
-# FFC modules
+# FFC common modules
+from ffc.common.debug import *
+
+# FFC compiler modules
 from algebra import *
 from integral import *
 from reassign import *
@@ -52,8 +55,8 @@ class ReferenceTensor:
         # Compute ReferenceTensor
         self.A0 = self.__compute_reference_tensor()
 
-        print "Created reference tensor: i%s, a%s, b%s" % \
-              (str(self.i.dims), str(self.a.dims), str(self.b.dims))
+        debug("Created reference tensor: i%s, a%s, b%s" % \
+              (str(self.i.dims), str(self.a.dims), str(self.b.dims)), 1)
         
         return
 
@@ -101,9 +104,10 @@ class ReferenceTensor:
 
         # Count the number of integrals
         n = product(self.i.dims) * product(self.a.dims) * product(self.b.dims)
-        print "Computing %d integrals, this may take some time" % n
+        debug("Computing %d integrals, this may take some time" % n)
 
         # Iterate over all combinations of indices
+        debug("Computing reference tensor", 2)
         for i in iindices:
             for a in aindices:
                 integral = 0.0

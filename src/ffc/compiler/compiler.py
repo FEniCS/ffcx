@@ -61,7 +61,7 @@ def compile(sums, name = "MyPDE", language = None):
 
         # Count the number of functions
         form.nfunctions = max_index(form.sum, "function") + 1
-        print "Number of functions (coefficients): " + str(form.nfunctions)
+        debug("Number of functions (coefficients): " + str(form.nfunctions), 1)
 
     # Generate output
     format.compile(forms)
