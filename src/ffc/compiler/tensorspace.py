@@ -12,10 +12,12 @@ class ZeroFunction:
 
     def __call__(self, x):
         "Evaluate function."
+        print "Evaluating zero function"
         return 0.0
 
     def deriv(self, i):
         "Differentiate function."
+        print "Differentiating zero function"
         return self
 
 class TensorSpace:
@@ -32,15 +34,14 @@ class TensorSpace:
             raise RuntimeError, "General tensor-valued elements not implemented."
         dim = dims[0]
 
-        # Create vector-valued basis
-        self.basis = []
+        # Set all functions to zero
+        self.basis = [ [ZeroFunction() for j in range(dim)] for i in range(dim*len(scalarbasis))]
+
+        # Set non-zero basis functions
+        k = 0
         for i in range(dim):
-            w = [ZeroFunction() for j in range(dim)]
             for v in scalarbasis:
-                w[i] = v
-                self.basis += [w]
+                self.basis[k][i] = v
+                k += 1
 
         return
-
-    def getBasis(self):
-        return self.basis

@@ -64,12 +64,12 @@ class Integrand:
         
         # Get component of BasisFunction
         if len(component) > 0:
-            # FIXME: Should be able to do v.element.basis[index][component]
-            # FIXME: directly. Not possible with standard Python list?
+            # Tensor case
             w = v.element.basis[index]
             for i in component:
                 w = w[i]
         else:
+            # Scalar case
             w = v.element.basis[index]
 
         return w

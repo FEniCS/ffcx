@@ -2,27 +2,29 @@ FFC: The FEniCS Form Compiler
 -----------------------------
 
 License:
+--------
 
   FFC is licensed under the GNU GPL Version 2.
 
 Dependencies:
+-------------
 
   1. FIAT
 
   You need to have FIAT installed. FIAT is available from
-  the FEniCS web page: http://www.fenics.org.
+  the FEniCS web page: http://www.fenics.org/.
 
   2. The Python Numeric module
 
   If you're running Debian, you need to install the
-  package python-numeric
+  package python-numeric.
 
   This module is used both by FFC and FIAT.
 
   3. The Python LinearAlgebra module (extending the Numeric module)
 
   If you're running Debian, you need to install the
-  package python-numeric-ext
+  package python-numeric-ext.
 
   This module is only used by FIAT.
 

@@ -7,7 +7,10 @@ __license__  = "GNU GPL Version 2"
 from FIAT import quadrature
 from FIAT import shapes
 
-# FFC modules
+# FFC common modules
+from ffc.common.debug import *
+
+# FFC compiler modules
 from algebra import *
 from integrand import *
 
@@ -53,8 +56,9 @@ class Integrator:
 
     def __call__(self, basisfunctions, iindices, aindices, bindices):
         "Evaluate integral of product."
-        p = Integrand(basisfunctions, iindices, aindices, bindices, self.vscaling, self.dscaling)
-        if p.iszero():
+        v = Integrand(basisfunctions, iindices, aindices, bindices, self.vscaling, self.dscaling)
+        if v.iszero():
+            debug("      integral is zero, using shortcut", 2)
             return 0.0 # Makes it a little faster
         else:
-            return self.fiat_quadrature(p)
+            return self.fiat_quadrature(v)

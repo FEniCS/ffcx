@@ -1,3 +1,4 @@
+ - Add common interface for debugging
  - Modify DOLFIN output to initialize functions
  - Create unique numbers for each function
  - Use namespaces for DOLFIN output instead of class names

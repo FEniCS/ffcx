@@ -109,11 +109,16 @@ class ReferenceTensor:
         # Iterate over all combinations of indices
         debug("Computing reference tensor", 2)
         for i in iindices:
+            debug("i = " + str(i), 2)
             for a in aindices:
+                debug("  a = " + str(a), 2)
                 integral = 0.0
                 for b in bindices:
+                    debug("    b = " + str(b), 2)
                     integral += integrate(self.basisfunctions, i, a, b)
-                A0[i + a] = self.constant * integral
+                integral *= self.constant
+                debug("  integral = " + str(integral), 2)
+                A0[i + a] = integral
 
         return A0
 

@@ -7,12 +7,12 @@
 # Compile this form with FFC: ffc poisson.form.
 
 name = "Poisson"
-element = FiniteElement("Lagrange", "triangle", 2)
+element = FiniteElement("Lagrange", "triangle", 1)
 
 v = BasisFunction(element)
 u = BasisFunction(element)
 g = Function(element)
 f = Function(element)
 
-a = 6*v.dx(i)*u.dx(i)*dx
+a = v.dx(i)*u.dx(i)*dx
 L = v*f*dx

@@ -3,7 +3,7 @@ __date__ = "2005-02-04"
 __copyright__ = "Copyright (c) 2005 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
-level = 2
+level = 0
 
 """Diagnostic messages are passed through a common interface to make
 it possible to turn debugging on or off. Only messages with debug

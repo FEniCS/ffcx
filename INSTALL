@@ -1,4 +1,4 @@
-FFC follows the standard procedure for installation of Python modules.
+FFC follows the standard procedure for installation of Python packages.
 As root, run
 
         python setup.py install
