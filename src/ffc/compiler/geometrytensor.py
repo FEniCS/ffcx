@@ -75,7 +75,10 @@ class GeometryTensor:
         # Compute product of factors outside sum
         factors = []
         for c in self.constants:
-            factors += [format.format["constant"](c.number.index)]
+            if c.inverted:
+                factors += ["(1.0/" + format.format["constant"](c.number.index) + ")"]
+            else:
+                factors += [format.format["constant"](c.number.index)]
         for c in self.coefficients:
             if not c.index.type == "secondary": continue
             factors += [format.format["coefficient"](c.number.index, c.index([], a, [], []))]

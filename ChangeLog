@@ -1,3 +1,4 @@
+ - Add support for division with constants
  - Fix index bug (reverse order of multi-indices)
 0.1.5 [2005-03-14]
  - Automatically choose the correct quadrature rule for precomputation

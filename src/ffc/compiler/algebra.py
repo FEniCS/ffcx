@@ -66,7 +66,15 @@ class Element:
 
     def __div__(self, other):
         "Operator: Element / Element (only works if other is scalar)."
-        return Sum(self) * (1.0/other)
+        return Sum(self) * (~other)
+
+    def __rdiv__(self, other):
+        "Operator: Element / Element (only works if other is scalar)."
+        return Sum(other) * (~self)
+
+    def __invert__(self):
+        "Operator: ~Element"
+        raise RuntimeError, "Only Constants and numeric constants can be inverted."
 
     def __pos__(self):
         "Operator: +Element"
@@ -99,19 +107,30 @@ class Constant(Element):
 
     A Constant holds the following data:
 
-        number - a unique index identifying the Constant."""
+        number   - a unique index identifying the Constant.
+        inverted - a boolean, true if Constant is inverted"""
 
     def __init__(self, constant = None):
         "Create Constant."
         if isinstance(constant, Constant):
             # Create Constant from Constant (copy constructor)
             self.number = Index(constant.number)
+            self.inverted = bool(constant.inverted)
         elif constant == None:
             # Create a new number
             self.number = Index("constant")
+            self.inverted = False
         else:
             raise RuntimeError, "Unable to create Constant from " + str(constant)
         return
+
+    def __invert__(self):
+        c = Constant()
+        if self.inverted:
+            c.inverted = False
+        else:
+            c.inverted = True
+        return c
 
     def __repr__(self):
         "Print nicely formatted representation of Constant."
