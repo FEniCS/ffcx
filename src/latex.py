@@ -8,14 +8,14 @@ __license__  = "GNU GPL Version 2"
 format = { "multiplication": "",
            "determinant": "\\det F_K'",
            "floating point": lambda a: "%.2f" % a,
-           "coefficient": lambda j, k: "w_{%d%d}" % (j, k),
+           "coefficient": lambda j, k: "c_{%d%d}" % (j, k),
            "transform": lambda j, k: "\\frac{\\partial X_{%d}}{\\partial x_{%d}}" % (j, k),
            "geometry tensor": lambda j, a: "G_{K,%d}^{%s}" % (j, "".join(["%d" % index for index in a])),
            "element tensor": lambda i: "A^K_{%s}" % "".join(["%d" % index for index in i]) }
 
 def compile(form):
     "Generate code for LaTeX."
-    print "Compiling multi-linear form for LaTeX."
+    print "Compiling form %s for LaTeX" % str(form)
 
     # Generate output
     output = ""
@@ -28,7 +28,7 @@ def compile(form):
     file = open(filename, "w")
     file.write(output)
     file.close()
-    print "Output written on " + filename + "."
+    print "Output written on " + filename
 
     return
 

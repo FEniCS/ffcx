@@ -8,14 +8,14 @@ __license__  = "GNU GPL Version 2"
 format = { "multiplication": "*",
            "determinant": "det",
            "floating point": lambda a: str(a),
-           "coefficient": lambda j, k: "w%d[%d]" % (j, k),
+           "coefficient": lambda j, k: "c%d[%d]" % (j, k),
            "transform": lambda j, k: "g%d%d" % (j, k),
            "geometry tensor": lambda j, a: "G%d_%s" % (j, "".join(["%d" % index for index in a])),
            "element tensor": lambda i: "A%s" % "".join(["[%d]" % index for index in i]) }
 
 def compile(form):
     "Generate code for DOLFIN."
-    print "Compiling multi-linear form for C++ (DOLFIN)."
+    print "Compiling form %s for DOLFIN" % str(form)
     
     # Choose name
     if form.rank == 1:
@@ -43,7 +43,7 @@ def compile(form):
     file = open(filename, "w")
     file.write(output)
     file.close()
-    print "Output written on " + filename + "."
+    print "Output written on " + filename
     
     return
 

@@ -33,7 +33,7 @@ class GeometryTensor:
         self.a = self.__create_index("secondary")
         self.b = self.__create_index("geometry tensor auxiliary")
 
-        print "Geometry tensor:  a%s, b%s" % \
+        print "Created geometry tensor: a%s, b%s" % \
               (str(self.a.dims), str(self.b.dims))
 
         return

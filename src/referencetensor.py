@@ -52,7 +52,7 @@ class ReferenceTensor:
         # Compute ReferenceTensor
         self.A0 = self.__compute_reference_tensor()
 
-        print "Reference tensor: i%s, a%s, b%s" % \
+        print "Created reference tensor: i%s, a%s, b%s" % \
               (str(self.i.dims), str(self.a.dims), str(self.b.dims))
         
         return

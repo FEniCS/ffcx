@@ -6,16 +6,17 @@ are elements of the algebra:
     Product       - product of BasisFunctions
     Sum           - sum of Products
 
-The following operations are supported for all elements of the algebra:
+Each element of the algebra, BasisFunction, Function, Product, and
+Sum, can be either scalar or tensor-valued. The following operations
+are supported for all elements of the algebra:
 
-    Binary +
-    Binary -
-    Binary *
-    Unary  +
-    Unary  -
-    Unary  d/dx
-
-In addition, the class BasisFunction supports indexing []."""
+    Binary +      (tensor ranks of operands must match)
+    Binary -      (tensor ranks of operands must match)
+    Binary *      (both operands must be scalar)
+    Unary  +      (operand scalar or tensor-valued)
+    Unary  -      (operand scalar or tensor-valued)
+    Unary  d/dx   (operand scalar or tensor-valued)
+    Unary  []     (operand must be tensor-valued)"""
 
 __author__ = "Anders Logg (logg@tti-c.org)"
 __date__ = "2004-09-27"
@@ -24,12 +25,37 @@ __license__  = "GNU GPL Version 2"
 
 # FFC modules
 from finiteelement import FiniteElement
+from coefficient import Coefficient
 from derivative import Derivative
 from transform import Transform
 from integral import Integral
 from index import Index
 
-class BasisFunction:
+class Element:
+
+    "Base class for elements of the algebra."
+
+    def __add__(self, other):
+        "Operator: Element + Element"
+        return Sum(self) + other
+
+    def __sub__(self, other):
+        "Operator: Element - Element"
+        return Sum(self) + (-other)
+
+    def __mul__(self, other):
+        "Operator: Element * Element"
+        return Sum(self) * other
+
+    def __pos__(self):
+        "Operator: +Element"
+        return Sum(self)
+
+    def __neg__(self):
+        "Operator: -Element"
+        return -Sum(self)
+
+class BasisFunction(Element):
 
     """A BasisFunction represents a possibly differentiated component
     of a basis function on the reference cell.
@@ -62,31 +88,6 @@ class BasisFunction:
             self.component = []
             self.derivatives = []
         return
-
-    def __add__(self, other):
-        "Operator: BasisFunction + Element"
-        return Sum(self) + Sum(other)
-
-    def __sub__(self, other):
-        "Operator: BasisFunction - Element"
-        return Sum(self) - Sum(other)
-
-    def __mul__(self, other):
-        "Operator: BasisFunction * Element"
-        if isinstance(other, Integral):
-            return Product(self) * other
-        elif isinstance(other, Sum):
-            return Sum(self) * Sum(other)
-        else:
-            return Product(self) * Product(other)
-
-    def __pos__(self):
-        "Operator: +BasisFunction"
-        return BasisFunction(self)
-
-    def __neg__(self):
-        "Operator: -BasisFunction"
-        return -Product(self)
 
     def dx(self, index = None):
         "Operator: (d/dx)BasisFunction in given coordinate direction."
@@ -132,7 +133,7 @@ class BasisFunction:
         [d.indexcall(foo, args) for d in self.derivatives]
         return
 
-class Function:
+class Function(Element):
 
     """A Function represents a projection of a given function onto a
     finite element space, expressed as a linear combination of
@@ -155,35 +156,19 @@ class Function:
             self.name = element.name
         return
 
-    def __add__(self, other):
-        "Operator: Function + Element"
-        return Product(self) + Product(other)
-
-    def __sub__(self, other):
-        "Operator: Function - Element"
-        return Product(self) - Product(other)
-
-    def __mul__(self, other):
-        "Operator: Function * Element"
-        return Product(self) * Product(other)
-
-    def __pos__(self):
-        "Operator: +BasisFunction"
-        return Product(self)
-
-    def __neg__(self):
-        "Operator: -BasisFunction"
-        return -Product(self)
-
     def dx(self, index = None):
         "Operator: (d/dx)BasisFunction in given coordinate direction."
         return Product(self).dx(index)
+
+    def  __getitem__(self, component):
+        "Operator: indexing, pick given component."
+        return Product(self)[component]
 
     def __repr__(self):
         "Print nicely formatted representation of BasisFunction."
         return Product(self).__repr__()
 
-class Product:
+class Product(Element):
 
     """A Product represents a product of factors, including
     BasisFunctions and Functions.
@@ -216,6 +201,9 @@ class Product:
             # Create Product from Function
             self.constant = 1.0
             self.coefficients = [Coefficient(other)]
+            self.transforms = []
+            self.basisfunctions = [BasisFunction(other.element, Index())]
+            self.integral = None
         elif isinstance(other, Product):
             # Create Product from Product (copy constructor)
             self.constant = other.constant
@@ -227,14 +215,6 @@ class Product:
             raise RuntimeError, "Unable to create Product from " + str(other)
         return
     
-    def __add__(self, other):
-        "Operator: Product + Element"
-        return Sum(self) + Sum(other)
-
-    def __sub__(self, other):
-        "Operator: Product - Element"
-        return Sum(self) - Sum(other)
-
     def __mul__(self, other):
         "Operator: Product * Element"
         if isinstance(other, Integral):
@@ -243,9 +223,7 @@ class Product:
             w = Product(self)
             w.integral = other
             return w
-        elif isinstance(other, Sum):
-            return Sum(self) * Sum(other)
-        else:
+        elif isinstance(other, Product):
             w0 = Product(self)
             w1 = Product(other)
             w = Product()
@@ -254,10 +232,8 @@ class Product:
             w.transforms = w0.transforms + w1.transforms
             w.basisfunctions = w0.basisfunctions + w1.basisfunctions
             return w
-
-    def __pos__(self):
-        "Operator: +Product"
-        return Product(self)
+        else:
+            return Sum(self) * Sum(other)
 
     def __neg__(self):
         "Operator: -Product"
@@ -277,6 +253,15 @@ class Product:
                 else:
                     p = p * self.basisfunctions[j]
             w = w + p
+        return w
+
+    def  __getitem__(self, component):
+        "Operator: indexing, pick given component."
+        if not len(self.basisfunctions) == 1:
+            # Always scalar if product of more than one basis function
+            raise RuntimeError, "Cannot pick component of scalar Product."
+        w = Product(self)
+        w.basisfunctions[0] = w.basisfunctions[0][component]
         return w
 
     def __repr__(self):
@@ -303,7 +288,7 @@ class Product:
         [v.indexcall(foo, args) for v in self.basisfunctions]
         return
 
-class Sum:
+class Sum(Element):
 
     """A Sum represents a sum of Products. Each Product will be
     compiled separately, since different Products are probably of
@@ -338,22 +323,17 @@ class Sum:
         w = Sum()
         w.products = w0.products + w1.products
         return w
-
-    def __sub__(self, other):
-        "Operator: Sum - Element"
-        return Sum(self) + (-Sum(other))
     
     def __mul__(self, other):
         "Operator: Sum * Element"
-        w0 = Sum(self)
-        w1 = Sum(other)
-        w = Sum()
-        w.products = [p*q for p in w0.products for q in w1.products]
-        return w
-
-    def __pos__(self):
-        "Operator: +Sum"
-        return Sum(self)
+        if isinstance(other, Sum):
+            w = Sum()
+            w.products = [p*q for p in self.products for q in other.products]
+            return w
+        else:
+            w = Sum()
+            w.products = [p*other for p in self.products]
+            return w
 
     def __neg__(self):
         "Operator: -Sum"
@@ -365,6 +345,12 @@ class Sum:
         "Operator: (d/dx)Sum in given coordinate direction."
         w = Sum()
         w.products = [p.dx(index) for p in self.products]
+        return w
+
+    def  __getitem__(self, component):
+        "Operator: indexing, pick given component."
+        w = Sum(self)
+        w.products = [p[component] for p in w.products]
         return w
 
     def __repr__(self):
@@ -388,7 +374,7 @@ if __name__ == "__main__":
     ds = Integral("boundary")
     
     print "Testing long expression:"
-    w = (((u*(u*v + u)*u + u*v)*u.dx(0)).dx(2)).dx(1)
+    w = (u*(u + v)*u + u*v)*u.dx(0).dx(2).dx(1)
     print w
 
     print
@@ -417,8 +403,6 @@ if __name__ == "__main__":
     j = Index()
     w = u.dx(i).dx(i)*v.dx(j).dx(j)
     print w
-
-    print
 
     print "Testing Poisson system:"
     element = FiniteElement("Vector Lagrange", 1, "triangle")

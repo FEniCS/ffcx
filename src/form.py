@@ -70,7 +70,7 @@ class Form:
 
         # Check ranks
         self.__check_primary_ranks()
-            
+
         # Generate output
         if language == "C++":
             dolfin.compile(self)
@@ -78,8 +78,6 @@ class Form:
             latex.compile(self)
         else:
             print "Unknown language " + str(language)
-            
-        print "Compiled form: " + str(self)
             
         return
 
