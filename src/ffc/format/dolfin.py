@@ -72,13 +72,16 @@ def __file_header(name):
 #include <dolfin/LinearForm.h>
 #include <dolfin/BilinearForm.h>
 
-using namespace dolfin;
+namespace dolfin { namespace %s {
 
-""" % (__capall(name), __capall(name))
+""" % (__capall(name), __capall(name), name)
 
 def __file_footer():
     "Generate file footer for DOLFIN."
-    return "#endif\n"
+    return """
+} }
+
+#endif\n"""
 
 def __element(name, element):
     "Generate finite element for DOLFIN."
@@ -89,7 +92,13 @@ def __element(name, element):
         for j in range(element.rank):
             diminit += "    tensordims[%d] = %d;\n" % (j, element.tensordims[j])
     else:
-        diminit = "    // Do nothing"
+        diminit = "    // Do nothing\n"
+
+    # Generate code for tensordim function
+    if element.rank > 0:
+        tensordim = "dolfin_assert(i < %d);\n    return tensordims[i];" % element.rank
+    else:
+        tensordim = 'dolfin_error("Element is scalar.");\n    return 0;'
 
     # Generate code for dof mapping
     # FIXME: Move this somewhere else
@@ -105,15 +114,15 @@ def __element(name, element):
 /// This is the finite element for which the form is generated,
 /// providing the information neccessary to do assembly.
 
-class %sFiniteElement : public NewFiniteElement
+class FiniteElement : public dolfin::NewFiniteElement
 {
 public:
 
-  %sFiniteElement() : NewFiniteElement(), tensordims(0)
+  FiniteElement() : dolfin::NewFiniteElement(), tensordims(0)
   {
 %s  }
 
-  ~%sFiniteElement()
+  ~FiniteElement()
   {
     if ( tensordims ) delete [] tensordims;
   }
@@ -130,8 +139,7 @@ public:
 
   inline unsigned int tensordim(unsigned int i) const
   {
-    dolfin_assert(i < %d);
-    return tensordims[i];
+    %s
   }
 
   inline unsigned int rank() const
@@ -145,23 +153,31 @@ public:
     %s
   }
 
+  // FIXME: Only works for nodal basis
+  inline const Point coord(unsigned int i, const Cell& cell, const Mesh& mesh) const
+  {
+    Point p;
+    return p;
+  }
+
 private:
 
   unsigned int* tensordims;
 
 };
 
-""" % (name, name, diminit, name,
+""" % (diminit,
        element.spacedim,
        element.shapedim,
-       element.rank, element.rank,
+       tensordim,
+       element.rank,
        mapping)
 
 def __form(form, type):
     "Generate form for DOLFIN."
     
     #ptr = "".join(['*' for i in range(form.rank)])
-    subclass = form.name + type + "Form"
+    subclass = type + "Form"
     baseclass = type + "Form"
     
     # Class header
@@ -169,11 +185,11 @@ def __form(form, type):
 /// This class contains the form to be evaluated, including
 /// contributions from the interior and boundary of the domain.
 
-class %s : public %s
+class %s : public dolfin::%s
 {
 public:
 
-  %s(const NewFiniteElement& element) : %s(element) {}
+  %s(const NewFiniteElement& element) : dolfin::%s(element) {}
 """ % (subclass, baseclass, subclass, baseclass)
 
     # Interior contribution (if any)

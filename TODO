@@ -1,6 +1,5 @@
-o [logg] Add script setup.py
+o [logg] Add version number to output
 o [logg] Add man page
-o [logg] Put values into PETSc block directly
 o [logg] Access data through map (map.det, map.g11 etc)
 o [logg] Boundary integrals
 o [logg] Ask FIAT about local-to-global mapping
