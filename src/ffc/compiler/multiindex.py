@@ -19,10 +19,8 @@ def build_indices(dims):
     indices = []
     posvalue = [1] + list(Numeric.cumproduct(dims)[:-1])
     for i in range(Numeric.product(dims)):
-        sum = i
         for pos in range(len(dims)):
             current[len(dims) - 1 - pos] = (i / posvalue[pos]) % dims[pos]
-            sum -= current[pos] * posvalue[pos]
         indices += [list(current)]
     return indices
 
