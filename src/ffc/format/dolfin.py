@@ -96,7 +96,7 @@ def __element(name, element):
     if element.rank > 0:
         # Assuming rank = 1
         n = element.spacedim / element.tensordims[0]
-        mapping = "return (i/%d) * mesh.noNodes() + cell.nodeID(i %% %d)" % (n, n)
+        mapping = "return (i/%d) * mesh.noNodes() + cell.nodeID(i %% %d);" % (n, n)
     else:
         mapping = "return cell.nodeID(i);"
         
