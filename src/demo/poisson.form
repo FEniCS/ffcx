@@ -11,4 +11,4 @@ u = BasisFunction(element)
 v = BasisFunction(element)
 i = Index()
     
-a = u.dx(i)*v.dx(i)*dx + u*v*ds
+a = u.dx(i)*v.dx(i)*dx
