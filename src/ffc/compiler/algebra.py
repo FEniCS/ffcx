@@ -23,21 +23,17 @@ __date__ = "2004-09-27"
 __copyright__ = "Copyright (c) 2004 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
-# FFC modules
+# FFC common modules
+from ffc.common.debug import *
+from ffc.common.util import *
+
+# FFC compiler modules
 from finiteelement import FiniteElement
 from coefficient import Coefficient
 from derivative import Derivative
 from transform import Transform
 from integral import Integral
 from index import Index
-
-def copy(list, Type):
-    """Create a copy of the list, calling the copy constructor on each
-    object in the list."""
-    if not list:
-        return []
-    else:
-        return [Type(object) for object in list]
 
 class Element:
 
@@ -136,8 +132,8 @@ class BasisFunction(Element):
             # Create BasisFunction from BasisFunction (copy constructor)
             self.element = element.element
             self.index = Index(element.index)
-            self.component = copy(element.component, Index)
-            self.derivatives = copy(element.derivatives, Derivative)
+            self.component = listcopy(element.component)
+            self.derivatives = listcopy(element.derivatives)
         elif index == None:
             # Create BasisFunction with primary Index (default)
             self.element = element
@@ -161,7 +157,7 @@ class BasisFunction(Element):
         if isinstance(component, list):
             if not rank == len(component):
                 raise RuntimeError, "Illegal component index, does not match rank."
-            w.component = copy(component, Index)
+            w.component = listcopy(component)
         else:
             if not rank == 1:
                 raise RuntimeError, "Illegal component index, does not match rank."
@@ -250,9 +246,9 @@ class Product(Element):
         elif isinstance(other, Product):
             # Create Product from Product (copy constructor)
             self.constant = float(other.constant)
-            self.coefficients = copy(other.coefficients, Coefficient)
-            self.transforms = copy(other.transforms, Transform)
-            self.basisfunctions = copy(other.basisfunctions, BasisFunction)
+            self.coefficients = listcopy(other.coefficients)
+            self.transforms = listcopy(other.transforms)
+            self.basisfunctions = listcopy(other.basisfunctions)
             self.integral = other.integral
         else:
             raise RuntimeError, "Unable to create Product from " + str(other)
@@ -275,9 +271,9 @@ class Product(Element):
                 raise RuntimeError, "Illegal ranks for product, must be scalar."
             w = Product()
             w.constant = float(w0.constant * w1.constant)
-            w.coefficients = copy(w0.coefficients + w1.coefficients, Coefficient)
-            w.transforms = copy(w0.transforms + w1.transforms, Transform)
-            w.basisfunctions = copy(w0.basisfunctions + w1.basisfunctions, BasisFunction)
+            w.coefficients = listcopy(w0.coefficients + w1.coefficients)
+            w.transforms = listcopy(w0.transforms + w1.transforms)
+            w.basisfunctions = listcopy(w0.basisfunctions + w1.basisfunctions)
             if w0.integral and w1.integral:
                 raise RuntimeError, "Integrand can only be integrated once."
             elif w0.integral:
@@ -382,7 +378,7 @@ class Sum(Element):
             self.products = [Product(other)]
         elif isinstance(other, Sum):
             # Create Sum from Sum (copy constructor)
-            self.products = copy(other.products, Product)
+            self.products = listcopy(other.products)
         else:
             raise RuntimeError, "Unable to create Sum from " + str(other)
         return

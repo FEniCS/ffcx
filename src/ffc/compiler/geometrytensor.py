@@ -5,8 +5,9 @@ __license__  = "GNU GPL Version 2"
 
 # FFC common modules
 from ffc.common.debug import *
+from ffc.common.util import *
 
-# FFC common modules
+# FFC compiler modules
 from algebra import *
 from reassign import *
 from multiindex import *
@@ -29,8 +30,8 @@ class GeometryTensor:
             raise RuntimeError, "GeometryTensor must be created from Product."
 
         # Get data from Product
-        self.coefficients = [] + product.coefficients
-        self.transforms = [] + product.transforms
+        self.coefficients = listcopy(product.coefficients)
+        self.transforms = listcopy(product.transforms)
 
         # Create MultiIndices
         self.a = self.__create_index("secondary")

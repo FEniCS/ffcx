@@ -8,6 +8,7 @@ from Numeric import *
 
 # FFC common modules
 from ffc.common.debug import *
+from ffc.common.util import *
 
 # FFC compiler modules
 from algebra import *
@@ -44,7 +45,7 @@ class ReferenceTensor:
 
         # Get data from Product
         self.constant = product.constant
-        self.basisfunctions = [] + product.basisfunctions
+        self.basisfunctions = listcopy(product.basisfunctions)
         self.integral = product.integral
 
         # Create MultiIndices

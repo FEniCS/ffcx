@@ -6,6 +6,9 @@ __license__  = "GNU GPL Version 2"
 # Python modules
 import Numeric
 
+# FFC common modules
+from ffc.common.util import *
+
 def build_indices(dims):
     """Create a list of all index combinations matching the given list
     of index dimensions. Someone please tell me if there is a better
@@ -36,7 +39,7 @@ class MultiIndex:
     def __init__(self, dims):
         "Create MultiIndex from given list of dimensions."
         self.rank = len(dims)
-        self.dims = [] + dims
+        self.dims = listcopy(dims)
         self.indices = build_indices(dims)
         return
 
