@@ -41,52 +41,11 @@ class BasisFunction(Element):
 
     def __add__(self, other):
         "Operator: BasisFunction + Element"
-        if isinstance(other, BasisFunction):
-            w = Sum()
-            w.products = [Product(self), Product(other)]
-            return w
-        elif isinstance(other, Factor):
-            w = Sum()
-            w.products = [Product(self), Product(other)]
-            return w
-        elif isinstance(other, Product):
-            w = Sum()
-            w.products = [Product(self), Product(other)]
-            return w
-        elif isinstance(other, Sum):
-            w = Sum()
-            w.products = [Product(self)] + other.products
-            return w
-        else:
-            raise RuntimeError, "Can't add BasisFunction with " + str(other)
-        return
+        return Sum(self) + Sum(other)
 
     def __sub__(self, other):
         "Operator: BasisFunction - Element"
-        if isinstance(other, BasisFunction):
-            w = Sum()
-            w.products = [Product(self), Product(other)]
-            w.products[1].constant *= -1.0
-            return w
-        elif isinstance(other, Factor):
-            w = Sum()
-            w.products = [Product(self), Product(other)]
-            w.products[1].constant *= -1.0
-            return w
-        elif isinstance(other, Product):
-            w = Sum()
-            w.products = [Product(self), Product(other)]
-            w.products[1].constant *= -1.0
-            return w
-        elif isinstance(other, Sum):
-            w = Sum()
-            w.products = [Product(self)] + other.products
-            for i in range(len(other.products) - 1):
-                w.products[i + 1].constant *= -1.0                
-            return w
-        else:
-            raise RuntimeError, "Can't subtract BasisFunction with " + str(other)
-        return
+        return Sum(self) - Sum(other)
 
     def __mul__(self, other):
         "Operator: BasisFunction * Element"
@@ -110,6 +69,10 @@ class BasisFunction(Element):
         else:
             raise RuntimeError, "Can't multiply BasisFunction with " + str(other)
         return
+
+    def __neg__(self):
+        "Operator: -BasisFunction"
+        return -Product(self)
 
     def dx(self, index = None):
         "Operator: (d/dx)BasisFunction in given coordinate direction."
@@ -157,49 +120,12 @@ class Factor(Element):
 
     def __add__(self, other):
         "Operator: Factor + Element"
-        if isinstance(other, BasisFunction):
-            w = Sum()
-            w.products = [Product(self), Product(other)]
-            return w
-        elif isinstance(other, Factor):
-            w = Sum()
-            w.products = [Product(self), Product(other)]
-            return w
-        elif isinstance(other, Product):
-            w = Sum()
-            w.products = [Product(self), Product(other)]
-            return w
-        elif isinstance(other, Sum):
-            w = Sum()
-            w.products = [Product(self)] + other.products
-            return w
-        else:
-            raise RuntimeError, "Can't add Factor with " + str(other)
-        return
+        return Sum(self) + Sum(other)
 
     def __sub__(self, other):
         "Operator: Factor - Element"
-        # FIXME: remember to modify geometry tensor with a -
-        if isinstance(other, BasisFunction):
-            w = Sum()
-            w.products = [Product(self), Product(other)]
-            return w
-        elif isinstance(other, Factor):
-            w = Sum()
-            w.products = [Product(self), Product(other)]
-            return w
-        elif isinstance(other, Product):
-            w = Sum()
-            w.products = [Product(self), Product(other)]
-            return w
-        elif isinstance(other, Sum):
-            w = Sum()
-            w.products = [Product(self)] + other.products
-            return w
-        else:
-            raise RuntimeError, "Can't add Factor with " + str(other)
-        return
-    
+        return Sum(self) - Sum(other)
+
     def __mul__(self, other):
         "Operator: Factor * Element"
         if isinstance(other, BasisFunction):
@@ -222,6 +148,10 @@ class Factor(Element):
         else:
             raise RuntimeError, "Can't multiply Factor with " + str(other)
         return
+
+    def __neg__(self):
+        "Operator: -Factor"
+        return -Product(self)
 
     def dx(self, index = None):
         "Operator: (d/dx)Factor in given coordinate direction."
@@ -303,49 +233,12 @@ class Product(Element):
     
     def __add__(self, other):
         "Operator: Product + Element"
-        if isinstance(other, BasisFunction):
-            w = Sum()
-            w.products = [Product(self), Product(other)]
-            return w
-        elif isinstance(other, Factor):
-            w = Sum()
-            w.products = [Product(self), Product(other)]
-            return w
-        elif isinstance(other, Product):
-            w = Sum()
-            w.products = [Product(self), Product(other)]
-            return w
-        elif isinstance(other, Sum):
-            w = Sum()
-            w.products = [Product(self)] + other.products
-            return w
-        else:
-            raise RuntimeError, "Can't add Product with " + str(other)
-        return
+        return Sum(self) + Sum(other)
 
     def __sub__(self, other):
         "Operator: Product - Element"
-        # FIXME: remember to modify geometry tensor with a -
-        if isinstance(other, BasisFunction):
-            w = Sum()
-            w.products = [Product(self), Product(other)]
-            return w
-        elif isinstance(other, Factor):
-            w = Sum()
-            w.products = [Product(self), Product(other)]
-            return w
-        elif isinstance(other, Product):
-            w = Sum()
-            w.products = [Product(self), Product(other)]
-            return w
-        elif isinstance(other, Sum):
-            w = Sum()
-            w.products = [Product(self)] + other.products
-            return w
-        else:
-            raise RuntimeError, "Can't subtract Product with " + str(other)
-        return
-    
+        return Sum(self) - Sum(other)
+
     def __mul__(self, other):
         "Operator: Product * Element"
         if isinstance(other, BasisFunction):
@@ -368,6 +261,12 @@ class Product(Element):
         else:
             raise RuntimeError, "Can't multiply Product with " + str(other)
         return
+
+    def __neg__(self):
+        "Operator: -Product"
+        w = Product(self)
+        w.constant = -w.constant
+        return w
 
     def dx(self, index = None):
         "Operator: (d/dx)Product in given coordinate direction."
@@ -483,48 +382,15 @@ class Sum(Element):
 
     def __add__(self, other):
         "Operator: Sum + Element"
-        if isinstance(other, BasisFunction):
-            w = Sum()
-            w.products = self.products + [Product(other)]
-            return w
-        elif isinstance(other, Factor):
-            w = Sum()
-            w.products = self.products + [Product(other)]
-            return w
-        elif isinstance(other, Product):
-            w = Sum()
-            w.products = self.products + [Product(other)]
-            return w
-        elif isinstance(other, Sum):
-            w = Sum()
-            w.products = self.products + other.products
-            return w
-        else:
-            raise RuntimeError, "Can't add Sum with " + str(other)
-        return
+        w = Sum()
+        w.products = Sum(self).products + Sum(other).products
+        return w
 
     def __sub__(self, other):
         "Operator: Sum - Element"
-        # FIXME: remember to modify geometry tensor with a -
-        if isinstance(other, BasisFunction):
-            w = Sum()
-            w.products = self.products + [Product(other)]
-            return w
-        elif isinstance(other, Factor):
-            w = Sum()
-            w.products = self.products + [Product(other)]
-            return w
-        elif isinstance(other, Product):
-            w = Sum()
-            w.products = self.products + [Product(other)]
-            return w
-        elif isinstance(other, Sum):
-            w = Sum()
-            w.products = self.products + other.products
-            return w
-        else:
-            raise RuntimeError, "Can't add Sum with " + str(other)
-        return
+        w = Sum()
+        w.products = Sum(self) + (-Sum(other))
+        return w
     
     def __mul__(self, other):
         "Operator: Sum * Element"
@@ -552,6 +418,12 @@ class Sum(Element):
         else:
             raise RuntimeError, "Can't multiply Sum with " + str(other)
         return
+
+    def __neg__(self):
+        "Operator: -Sum"
+        w = Sum(self)
+        w.products = [-p for p in w.products]
+        return w
 
     def dx(self, index = None):
         "Operator: (d/dx)Sum in given coordinate direction."
