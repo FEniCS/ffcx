@@ -29,12 +29,14 @@ def reset():
     return
 
 def build_indices(dims):
-    """Create a list of all indices of the reference tensor.
-    Someone please tell me if there is a better way to iterate
-    over a multi-dimensional array. The list of indices is
-    constucted by iterating over all integer numbers that can be
-    represented with the base of each position determined by the
-    given dimension for that index."""
+    """Create a list of all index combinations matching the given list
+    of index dimensions.  Someone please tell me if there is a better
+    way to iterate over a multi-dimensional array. The list of indices
+    is constucted by iterating over all integer numbers that can be
+    represented with the base of each position determined by the given
+    dimension for that index."""
+    if not dims:
+        return []
     current = zeros(len(dims))
     indices = []
     posvalue = [1] + list(cumproduct(dims)[:-1])
@@ -44,7 +46,7 @@ def build_indices(dims):
             current[pos] = (i / posvalue[pos]) % dims[pos]
             sum -= current[pos] * posvalue[pos]
             indices += [list(current)]
-    return array(indices)
+    return indices
 
 class Index:
     
@@ -54,6 +56,7 @@ class Index:
       fixed:     tensor rank 0, index is a fixed integer
       primary:   tensor rank 1, index is part of first multiindex (i)
       secondary: tensor rank 1, index is part of second multiindex (alpha)
+      auxiliary: tensor rank 1, index does not appear inside the integral
       
     The type of index is determined by the arguments to the
     constructor:
@@ -61,7 +64,13 @@ class Index:
       i = Index(0)           creates a given fixed index (0 in this case)
       i = Index("primary")   creates a free primary index
       i = Index("secondary") creates a free secondary index
-      i = Index()            creates a free secondary index"""
+      i = Index("auxiliary") creates a free auxiliary index
+      i = Index()            creates a free secondary index
+
+    Note that only primary and secondary indices are used in the
+    creation of an element of the algebra. Auxiliary indices are
+    detected automatically in a preprocessing of an element of the
+    algebra when creating a Form (using the reassign module)."""
 
     def __init__(self, index = "secondary"):
         "Create Index."
@@ -77,6 +86,8 @@ class Index:
         elif index == "secondary":
             self.index = next_secondary_index()
             self.type = "secondary"
+        elif index == "auxiliary":
+            raise RuntimeError, "Auxiliary indices cannot be created (only modified)."
         elif index == None:
             self.index = next_secondary_index()
             self.type = "secondary"
@@ -84,18 +95,23 @@ class Index:
             raise RuntimeError, "Unknown index type " + str(index)
         return
 
-    def __call__(self, index, r0):    
-        """Evaluate index at current index list. The given list is
-        assumed to be sorted starting with the r0 primary indices and
-        then following the list of secondary indices."""
-        if self.type == "fixed":
-            return self.index
-        elif self.type == "primary":
-            return index[self.index]
+    def __call__(self, indices0, indices1, indices2):
+        "Evaluate Index at current index list."
+        if self.type == "primary":
+            if not indices0:
+                raise RuntimeError, "Missing index values for primary indices."
+            return indices0[self.index]
         elif self.type == "secondary":
-            return index[r0 + self.index]
+            if not indices1:
+                raise RuntimeError, "Missing index values for secondary indices."
+            return indices1[self.index]
+        elif self.type == "auxiliary":
+            if not indices2:
+                raise RuntimeError, "Missing index values for auxiliary indices."
+            return indices2[self.index]
         else:
-            raise RuntimeError, "Unknown index type " + str(index)
+            raise RuntimeError, "Uknown index type " + str(self.type)
+        return
         
     def __repr__(self):
         "Print nicely formatted representation of Index."
@@ -105,6 +121,8 @@ class Index:
             return "i" + str(self.index)
         elif self.type == "secondary":
             return "a" + str(self.index)
+        elif self.type == "auxiliary":
+            return "b" + str(self.index)
         else:
             raise RuntimeError, "Unknown index type " + str(index)
         return

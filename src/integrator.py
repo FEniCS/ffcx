@@ -41,9 +41,9 @@ class Integrator:
 
         return
 
-    def __call__(self, product, index, r0, r1):
+    def __call__(self, product, indices0, indices1):
         "Evaluate integral of Product."
-        p = ProductFunction(product, index, r0, r1)
+        p = ProductFunction(product, indices0, indices1)
         return self.fiat_quadrature(p)
 
 class ProductFunction:
@@ -53,14 +53,13 @@ class ProductFunction:
     class itself to avoid putting to many things into the algebra
     module."""
 
-    def __init__(self, product, index, r0, r1):
+    def __init__(self, product, indices0, indices1):
         "Create ProductFunction."
         if not isinstance(product, Product):
             raise RuntimeError, "Product expected."
         self.product = product
-        self.index = index
-        self.r0 = r0
-        self.r1 = r1
+        self.indices0 = indices0
+        self.indices1 = indices1
         return
 
     def __call__(self, x):
@@ -74,12 +73,12 @@ class ProductFunction:
         "Evaluate Factor at given point."
 
         # Get basis function
-        i = factor.basisfunction.index(self.index, self.r0)
+        i = factor.basisfunction.index(self.indices0, self.indices1, [])
         v = factor.basisfunction.element.basis[i]
 
         # Differentiate the basis function
         for d in factor.derivatives:
-            i = d.index(self.index, self.r0)
+            i = d.index(self.indices0, self.indices1, [])
             v = v.deriv(i)
 
         # Evaluate basis function

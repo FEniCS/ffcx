@@ -67,37 +67,18 @@ class Form:
         "Compute the integrals of the reference tensor."
 
         product = self.sum.products[i]
-        r0 = self.ranks[i].r0
-        r1 = self.ranks[i].r1
-        dims = self.ranks[i].dims
-        imap = self.ranks[i].imap
+        rank = self.ranks[i]
 
-        # Create dimensions for tensor indices (appearing in a Factor).
-        # Note that dims contains the dimensions for all indices, even
-        # indices that are not part of the tensor (but which are present
-        # in the geometry tensor and should be contracted away). We thus
-        # need to extract the dimensions only for the indices which are
-        # part of the tensor.
-        tensordims = [dims[i] for i in imap]
-
-        # Create reference tensor and a list of all indices
-        A0 = zeros(tensordims, Float)
-        tensorindices = build_indices(tensordims)
+        # Create reference tensor
+        A0 = zeros(rank.dims0 + rank.dims1, Float)
 
         # Create quadrature rule
         integrate = Integrator(product)
 
         # Iterate over all combinations of indices
-        index = zeros(len(dims))
-        for tensorindex in tensorindices:
-
-            # Update indices. Note that we need to supply values for
-            # all indices, not only the tensor indices.
-            for i in range(len(tensorindex)):
-                index[imap[i]] = tensorindex[i]
-
-            # Compute the integral
-            A0[tensorindex] = integrate(product, index, r0, r1)
+        for i in rank.indices0:
+            for a in rank.indices1:
+                A0[i + a] = integrate(product, i, a)
             
         return A0
 

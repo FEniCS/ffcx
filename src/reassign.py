@@ -17,12 +17,19 @@ from sys import maxint
 from algebra import *
 
 def reassign_indices(sum):
-    "Reassign indices of Sum with all indices starting at 0."
+    """Reassign indices of Sum with all indices starting at 0. Modify
+    secondary indices to auxiliary indices if they don't appear inside
+    the integral."""
 
     # Check that we got a Sum
     if not isinstance(sum, Sum):
         raise RuntimeError, "Can only reassign indices for Sum."
     s = Sum(sum)
+
+
+    # Modify secondary indices to auxiliary indices
+    for i in range(len(s.products)):
+        s.products[i] = __create_auxiliary(s.products[i])
 
     # Reassign primary indices (global for the Sum)
     i0min = min_sum(s, "primary")
@@ -43,8 +50,19 @@ def reassign_indices(sum):
             i1 += increment #Increases when the index is found
         s.products[j] = p
 
+    # Reassign secondary indices (global for each Product)
+    for j in range(len(s.products)):
+        p = s.products[j]
+        i1min = min_product(p, "auxiliary")
+        i1max = max_product(p, "auxiliary")
+        i1 = 0
+        for i in range(i1min, i1max + 1):
+            (p, increment) = __reassign_product(p, i, i1, "auxiliary")
+            i1 += increment #Increases when the index is found
+        s.products[j] = p
+
     # Check that indices start at 0 (can be -1 if missing)
-    if min_sum(s, "primary") > 0 or min_sum(s, "secondary"):
+    if min_sum(s, "primary") > 0 or min_sum(s, "secondary") or min_sum(s, "auxiliary"):
         raise RuntimeError, "Failed to reassign indices."
     else:
         print "Reassigned indices ok."
@@ -181,30 +199,18 @@ def __max_factor(factor, type):
         raise RuntimeError, "Non-empty list of Transforms for Factor."
     return imax
 
-def dims_product(product, r0, r1):
+def dims_product(product, r, type):
     """Compute dimensions for the tensor represented by the
     Product. This method involves some searching, but it
     shouldn't take too much time."""
-
-    dimlist = []
-
-    # First check dimensions for primary indices
-    for i in range(r0):
-        (dim, found) = dim_product(product, i, "primary")
+    dims = []
+    for i in range(r):
+        (dim, found) = dim_product(product, i, type)
         if found:
-            dimlist = dimlist + [dim]
+            dims = dims + [dim]
         else:
             raise RuntimeError, "Unable to find primary index " + str(i)
-
-    # Then check dimensions for secondary indices
-    for i in range(r1):
-        (dim, found) = dim_product(product, i, "secondary")
-        if found:
-            dimlist = dimlist + [dim]
-        else:
-            raise RuntimeError, "Unable to find secondary index " + str(i)
-
-    return dimlist
+    return dims
 
 def dim_product(product, i, type):
     """Try to find dimension number i of the given type. If found, the
@@ -253,29 +259,28 @@ def dim_factor(factor, i, type):
     w1 = u.dx(i)*v.dx(i) + u*v
     w2 = u.dx(i)*v.dx(i) + u*v
 
-def imap_product(product, r0, r1):    
-    """Compute mapping from tensor indices to the list of indices
-    of rank r0 + r1. Each Index that appears inside the integral
-    (within a Factor) is mapped to one of the r0 + r1 indices."""
-    imap = []
-    for i in range(r0):
-        if __have_index(product, i, "primary"):
-            imap += [i]
-    for i in range(r1):
-        if  __have_index(product, i, "secondary"):
-            imap += [r0 + i]
-    return imap
-
-def __have_index(product, i, type):
+def __create_auxiliary(product):
+    """Modify secondary indices to auxiliary indices if they don't
+    appear inside the integral."""
+    p = Product(product)
+    for t in p.transforms:
+        if not __have_index(product, t.index0):
+            t.index0.type = "auxiliary"
+        if not __have_index(product, t.index1):
+            t.index1.type = "auxiliary"
+    # FIXME: Check also coefficients
+    return p
+    
+def __have_index(product, index):
     "Check if the product contains the given Index within a Product."
     for f in product.factors:
         # Check BasisFunction
-        index = f.basisfunction.index
-        if index.type == type and index.index == i:
+        i = f.basisfunction.index
+        if index.type == i.type and index.index == i.index:
             return True
         # Check Derivatives
         for d in f.derivatives:
-            if d.index.type == type and d.index.index == i:
+            if d.index.type == index.type and d.index.index == index.index:
                 return True
         # Check that the list of Transforms is empty
         if f.transforms:
