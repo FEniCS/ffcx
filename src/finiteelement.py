@@ -27,6 +27,11 @@ class FiniteElement:
 
     def __init__(self, name, degree, shape):
 
+        # Save data
+        self.name = name
+        self.degree = degree
+        self.shape = shape
+
         # Choose shape
         if shape == "line":
             self.fiat_shape = shapes.LINE
@@ -47,9 +52,10 @@ class FiniteElement:
 
         # Get the basis
         self.basis = self.fiat_space.getBasis()
-        self.name = name
-        self.degree = degree
-        self.shape = shape
+
+        # Set dimensions
+        self.spacedim = len(self.basis)
+        self.shapedim = shapes.dims[self.fiat_shape]
 
         return
 

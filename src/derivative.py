@@ -14,7 +14,11 @@ class Derivative:
     tensor of rank 1)."""
 
     def __init__(self, index):
-        self.index = Index(index)
+        if isinstance(index, int):
+            self.index = Index(0, index)
+        else:
+            self.index = Index(index)
+        return
 
     def __repr__(self):
         "Print nicely formatted representation of Derivative."

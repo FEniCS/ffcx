@@ -68,19 +68,14 @@ class ProductFunction:
     def eval(self, factor, x):
         "Evaluate Factor at given point."
 
-        # Get current basis function and basis
-        v = factor.basisfunction
-        V = v.element.basis
+        # Get basis function
+        i = factor.basisfunction.index(self.index, self.r0)
+        v = factor.basisfunction.element.basis[i]
 
-        # Get current index
-        if v.index.type == "fixed":
-            i = v.index.index
-        elif v.index.type == "primary":
-            i = self.index[v.index.index]
-        elif v.index.type == "secondary":
-            i = self.index[v.index.index - self.r0]
-        else:
-            raise RuntimeError, "Unknown index type."
+        # Differentiate the basis function
+        for d in factor.derivatives:
+            i = d.index(self.index, self.r0)
+            v = v.deriv(i)
 
-        # Evaluate BasisFunction at given point
-        return V[i](x)
+        # Evaluate basis function
+        return v(x)

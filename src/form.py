@@ -50,7 +50,10 @@ class Form:
         self.dims = []
         for i in range(len(self.sum.products)):
             self.dims += [self.sum.products[i].dims(self.r0[i], self.r1[i])]
-        
+
+        for i in range(len(self.dims)):
+            print "dims = " + str(self.dims[i])
+
         return
 
     def compile(self, language = "C++"):
@@ -144,7 +147,9 @@ if __name__ == "__main__":
     
     u = BasisFunction(element)
     v = BasisFunction(element)
-    i = Index()
+    i = Index(element.shapedim)
+
+    print "Dimension of index: " + str(i.dim)
 
     a = Form(u.dx(i)*v.dx(i) + u*v)
     print a

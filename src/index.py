@@ -37,34 +37,46 @@ class Index:
     The type of index is determined by the arguments to the
     constructor:
 
-      i = Index(0)         creates a given fixed index (0 in this case)
-      i = Index("primary") creates a primary index
-      i = Index()          creates a secondary index"""
+      i = Index(dim, 0)           creates a given fixed index (0 in this case)
+      i = Index(dim, "primary")   creates a primary index
+      i = Index(dim, "secondary") creates a primary index
+      i = Index(dim)              creates a secondary index"""
 
-    def __init__(self, index = "secondary"):
-        if isinstance(index, Index):
-            self.index = index.index
-            self.type = index.type
-            self.dim = index.dim
+    def __init__(self, dim, index = "secondary"):
+        if isinstance(dim, Index):
+            self.index = dim.index
+            self.type = dim.type
+            self.dim = dim.dim
         elif isinstance(index, int):
             self.index = index
             self.type = "fixed"
-            self.dim = 3
+            self.dim = dim
         elif index == "primary":
             self.index = next_primary_index()
             self.type = "primary"
-            self.dim = 3
+            self.dim = dim
         elif index == "secondary":
             self.index = next_secondary_index()
             self.type = "secondary"
-            self.dim = 3
+            self.dim = dim
         elif index == None:
             self.index = next_secondary_index()
             self.type = "secondary"
-            self.dim = 3
+            self.dim = dim
         else:
             raise RuntimeError, "Unknown index type " + str(index)
         return
+
+    def __call__(self, index, r0):
+        "Return current index."
+        if self.type == "fixed":
+            return self.index
+        elif self.type == "primary":
+            return index[self.index]
+        elif self.type == "secondary":
+            return index[self.index + r0]
+        else:
+            raise RuntimeError, "Unknown index type " + str(index)
         
     def __repr__(self):
         if self.type == "fixed":

@@ -6,6 +6,7 @@ __date__ = "2004-09-27"
 __copyright__ = "Copyright (c) 2004 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
+from finiteelement import FiniteElement
 from derivative import Derivative
 from index import Index
 
@@ -22,10 +23,10 @@ class BasisFunction(Element):
     def __init__(self, element, index = None):
         if index == None:
             self.element = element
-            self.index = Index("primary")
+            self.index = Index(element.spacedim, "primary")
         else:
             self.element = element
-            self.index = Index(index)
+            self.index = Index(element.spacedim, index)
         return
 
     def __add__(self, other):
@@ -199,9 +200,11 @@ class Factor(Element):
         return w
 
     def max_indices(self):
-        "Compute the maximum indices [i0, i1] used by the Factor."
-        i0 = 0
-        i1 = 0
+        """Compute the maximum indices [i0, i1] used by the Factor.
+        If an index is not used, -1 is returned for that index."""
+        
+        i0 = -1
+        i1 = -1
         if self.basisfunction.index.type == "primary":
             i0 = max(i0, self.basisfunction.index.index)
         elif self.basisfunction.index.type == "secondary":
@@ -322,8 +325,8 @@ class Product(Element):
 
     def rank(self):
         "Return rank [r0, r1] of tensor represented by the Product."
-        i0 = 0
-        i1 = 0
+        i0 = -1
+        i1 = -1
         for f in self.factors:
             [tmp0, tmp1] = f.max_indices()
             i0 = max(i0, tmp0)
@@ -341,14 +344,14 @@ class Product(Element):
             if found:
                 dimlist = dimlist + [dim]
             else:
-                raise RuntimeError, "Unable to find primary index " + i
+                raise RuntimeError, "Unable to find primary index " + str(i)
         # Then check dimensions for secondary indices
         for i in range(r1):
-            (dim, found) = self.primary_dim(i)
+            (dim, found) = self.secondary_dim(i)
             if found:
                 dimlist = dimlist + [dim]
             else:
-                raise RuntimeError, "Unable to find secondary index " + i
+                raise RuntimeError, "Unable to find secondary index " + str(i)
         return dimlist
 
     def primary_dim(self, i):
@@ -502,8 +505,10 @@ if __name__ == "__main__":
     print "Testing algebra"
     print "---------------"
 
-    u = BasisFunction()
-    v = BasisFunction()
+    element = FiniteElement("Lagrange", 1, "triangle")
+
+    u = BasisFunction(element)
+    v = BasisFunction(element)
 
     print "Testing long expression:"
     w = (((u*(u*v + u)*u + u*v)*u.dx(0)).dx(2)).dx(1)
@@ -524,6 +529,6 @@ if __name__ == "__main__":
     print
     
     print "Testing Poisson:"
-    i = Index()
+    i = Index(element.shapedim)
     w = u.dx(i)*v.dx(i)
     print w
