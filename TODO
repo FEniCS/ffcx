@@ -1,4 +1,5 @@
-o [logg] Implement reassign_indices() in form.py
+o [logg] Contract along extra dimensions not present in Product
+o [logg] Add coefficients
 o [logg] Write parser/specify language, use Matthew's parser?
 o [logg] Generate output for DOLFIN
 o [logg] Generate LaTeX output
