@@ -39,13 +39,29 @@ class Element:
         "Operator: Element + Element"
         return Sum(self) + other
 
+    def __radd__(self, other):
+        "Operator: Element + Element (other + self)"
+        return Sum(self) + other
+
     def __sub__(self, other):
         "Operator: Element - Element"
         return Sum(self) + (-other)
 
+    def __rsub__(self, other):
+        "Operator: Element + Element (other - self)"
+        return Sum(-self) + other
+
     def __mul__(self, other):
         "Operator: Element * Element"
         return Sum(self) * other
+
+    def __rmul__(self, other):
+        "Operator: Element * Element (other * self)"
+        return Sum(self) * other
+
+    def __div__(self, other):
+        "Operator: Element / Element (only works if other is scalar)."
+        return Sum(self) * (1.0/other)
 
     def __pos__(self):
         "Operator: +Element"
@@ -70,6 +86,29 @@ class Element:
     def rank(self):
         "Return value rank of Element."
         return Sum(self).rank()
+
+class Function(Element):
+
+    """A Function represents a projection of a given function onto a
+    finite element space, expressed as a linear combination of
+    BasisFunctions.
+
+    A Function holds the following data:
+
+        element - a FiniteElement
+        name    - a string identifying the function."""
+
+    def __init__(self, element, name = None):
+        "Create Function."
+        if isinstance(element, Function):
+            # Create Function from Function (copy constructor)
+            self.element = element.element
+            self.name = element.name
+        else:
+            # Create Function for given FiniteElement with given name
+            self.element = element
+            self.name = element.name
+        return
 
 class BasisFunction(Element):
 
@@ -156,29 +195,6 @@ class BasisFunction(Element):
         [d.indexcall(foo, args) for d in self.derivatives]
         return
 
-class Function(Element):
-
-    """A Function represents a projection of a given function onto a
-    finite element space, expressed as a linear combination of
-    BasisFunctions.
-
-    A Function holds the following data:
-
-        element - a FiniteElement
-        name    - a string identifying the function."""
-
-    def __init__(self, element, name = None):
-        "Create Function."
-        if isinstance(element, Function):
-            # Create Function from Function (copy constructor)
-            self.element = element.element
-            self.name = element.name
-        else:
-            # Create Function for given FiniteElement with given name
-            self.element = element
-            self.name = element.name
-        return
-
 class Product(Element):
 
     """A Product represents a product of factors, including
@@ -201,12 +217,12 @@ class Product(Element):
             self.transforms = []
             self.basisfunctions = []
             self.integral = None
-        elif isinstance(other, BasisFunction):
-            # Create Product from BasisFunction
-            self.constant = 1.0
+        elif isinstance(other, int) or isinstance(other, float):
+            # Create Product from scalar
+            self.constant = float(other)
             self.coefficients = []
             self.transforms = []
-            self.basisfunctions = [BasisFunction(other)]
+            self.basisfunctions = []
             self.integral = None
         elif isinstance(other, Function):
             # Create Product from Function
@@ -214,6 +230,13 @@ class Product(Element):
             self.coefficients = [Coefficient(other)]
             self.transforms = []
             self.basisfunctions = [BasisFunction(other.element, Index())]
+            self.integral = None
+        elif isinstance(other, BasisFunction):
+            # Create Product from BasisFunction
+            self.constant = 1.0
+            self.coefficients = []
+            self.transforms = []
+            self.basisfunctions = [BasisFunction(other)]
             self.integral = None
         elif isinstance(other, Product):
             # Create Product from Product (copy constructor)
@@ -279,6 +302,8 @@ class Product(Element):
 
     def __repr__(self):
         "Print nicely formatted representation of Product."
+        if not (self.coefficients or self.transforms or self.basisfunctions):
+            return str(self.constant)
         if self.constant == -1.0:
             s = "-"
         elif not self.constant == 1.0:
@@ -326,6 +351,9 @@ class Sum(Element):
         if other == None:
             # Create default Sum (zero)
             self.products = []
+        elif isinstance(other, int) or isinstance(other, float):
+            # Create Sum from scalar
+            self.products = [Product(other)]
         elif isinstance(other, BasisFunction):
             # Create Sum from BasisFunction
             self.products = [Product(other)]
@@ -344,10 +372,10 @@ class Sum(Element):
 
     def __add__(self, other):
         "Operator: Sum + Element"
-        if not self.rank() == other.rank():
-            raise RuntimeError, "Non-matching ranks."
         w0 = Sum(self)
         w1 = Sum(other)
+        if not w0.rank() == w1.rank():
+            raise RuntimeError, "Non-matching ranks."
         w = Sum()
         w.products = w0.products + w1.products
         return w
@@ -411,13 +439,13 @@ if __name__ == "__main__":
     ds = Integral("boundary")
     
     print "Testing long expression:"
-    w = (u*(u + v)*u + u*v)*u.dx(0).dx(2).dx(1)
+    w = 2*(u*(u/2 + v)*u + u*v)*u.dx(0).dx(2).dx(1)
     print w
 
     print
 
     print "Testing derivative of product:"
-    w = (u*v*u).dx(0)
+    w = (u*v*u).dx(0)*3
     print w
 
     print
@@ -449,5 +477,5 @@ if __name__ == "__main__":
     v = BasisFunction(element)
     i = Index()
     j = Index()
-    w = u[i].dx(j)*v[i].dx(j)*dx
+    w = 0.1*u[i].dx(j)*v[i].dx(j)*dx
     print w

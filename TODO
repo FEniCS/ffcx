@@ -1,6 +1,7 @@
+o [logg] Contract reference tensor
+o [logg] Boundary integrals
 o [logg] Allow multiple different elements
-o [logg] Implement coefficients
-o [logg] Implement constants
-o [logg] Write parser/specify language, use Matthew's parser?
-o [logg] Generate LaTeX output
-o [logg] Use FErari to simplify?
+o [logg] Write simple parser script
+o [logg] Connect Matt's parse
+o [logg] Call FErari to simplify
+
