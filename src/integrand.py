@@ -8,11 +8,12 @@ class Integrand:
     """This class wraps around a list of BasisFunctions to create a
     callable object."""
 
-    def __init__(self, basisfunctions, indices0, indices1, vscaling, dscaling):
+    def __init__(self, basisfunctions, iindices, aindices, bindices, vscaling, dscaling):
         "Create Integrand."
         self.basisfunctions = basisfunctions
-        self.indices0 = indices0
-        self.indices1 = indices1
+        self.iindices = iindices
+        self.aindices = aindices
+        self.bindices = bindices
         self.vscaling = vscaling
         self.dscaling = dscaling
         return
@@ -31,10 +32,10 @@ class Integrand:
         scaling = 1.0
 
         # Get basis index of BasisFunction
-        index = v.index(self.indices0, self.indices1, [], [])
+        index = v.index(self.iindices, self.aindices, self.bindices, [])
 
         # Get component index of BasisFunction
-        component = [i(self.indices0, self.indices1, [], []) for i in v.component]
+        component = [i(self.iindices, self.aindices, self.bindices, []) for i in v.component]
 
         # Get basis function
         if len(component) > 0:
@@ -44,7 +45,7 @@ class Integrand:
 
         # Differentiate the basis function
         for d in v.derivatives:
-            i = d.index(self.indices0, self.indices1, [], [])
+            i = d.index(self.iindices, self.aindices, self.bindices, [])
             w = w.deriv(i)
             scaling *= self.dscaling
 

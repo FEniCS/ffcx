@@ -89,10 +89,9 @@ class ReferenceTensor:
         "Compute reference tensor."
 
         # Make sure that the iteration is not empty
-        indices0 = self.i.indices
-        indices1 = self.a.indices
-        if not indices1:
-            indices1 = [[]]
+        iindices = self.i.indices
+        aindices = self.a.indices or [[]]
+        bindices = self.b.indices or [[]]
         
         # Create tensor
         A0 = zeros(self.i.dims + self.a.dims, Float)
@@ -101,9 +100,12 @@ class ReferenceTensor:
         integrate = Integrator(self.basisfunctions)
 
         # Iterate over all combinations of indices
-        for i in indices0:
-            for a in indices1:
-                A0[i + a] = self.constant * integrate(self.basisfunctions, i, a)
+        for i in iindices:
+            for a in aindices:
+                integral = 0.0
+                for b in bindices:
+                    integral += integrate(self.basisfunctions, i, a, b)
+                A0[i + a] = self.constant * integral
 
         return A0
 

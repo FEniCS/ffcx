@@ -50,35 +50,32 @@ class Form:
 
         return
 
-    def compile(self, language = "C++"):
+    def compile(self, language = None):
         "Generate code for evaluation of the variational form."
 
-        # Choose format
-        if language == "C++":
-            format = dolfin.format
-        elif language == "LaTeX":
-            format = latex.format
+        # Choose language
+        if not language:
+            compiler = dolfin
+        elif language == "C++" or language == "c++":
+            compiler = dolfin
+        elif language == "LaTeX" or language == "latex":
+            compiler = latex
         else:
-            print "Unknown language " + str(language)
-
+            raise "RuntimeError", "Unknown language " + str(language)
+        
         # Reassign indices
         reassign_indices(self.sum)
 
         # Create element tensors
-        self.AKi = ElementTensor(self.sum, "interior", format)
-        self.AKb = ElementTensor(self.sum, "boundary", format)
+        self.AKi = ElementTensor(self.sum, "interior", compiler.format)
+        self.AKb = ElementTensor(self.sum, "boundary", compiler.format)
 
         # Check ranks
         self.__check_primary_ranks()
 
         # Generate output
-        if language == "C++":
-            dolfin.compile(self)
-        elif language == "LaTeX":
-            latex.compile(self)
-        else:
-            print "Unknown language " + str(language)
-            
+        compiler.compile(self)
+        
         return
 
     def __check_primary_ranks(self):

@@ -51,7 +51,7 @@ class Integrator:
             self.dscaling = 2.0   # Scaling of derivative
         return
 
-    def __call__(self, basisfunctions, indices0, indices1):
+    def __call__(self, basisfunctions, iindices, aindices, bindices):
         "Evaluate integral of product."
-        p = Integrand(basisfunctions, indices0, indices1, self.vscaling, self.dscaling)
+        p = Integrand(basisfunctions, iindices, aindices, bindices, self.vscaling, self.dscaling)
         return self.fiat_quadrature(p)
