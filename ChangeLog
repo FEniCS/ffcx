@@ -1,3 +1,4 @@
+ - Add example poissonsystem.form
  - Modifications for new version of FIAT (FIAT-L)
    New version of FIAT a factor 5 slower (no memoization)
  - Add setup.py script

@@ -32,11 +32,13 @@ class TensorSpace:
             raise RuntimeError, "General tensor-valued elements not implemented."
         dim = dims[0]
 
+        print "-------------------- Hej -------------"
+
         # Create vector-valued basis
         self.basis = []
-        for v in scalarbasis:
-            for i in range(dim):
-                w = [ZeroFunction() for i in range(dim)]
+        for i in range(dim):
+            w = [ZeroFunction() for j in range(dim)]
+            for v in scalarbasis:
                 w[i] = v
                 self.basis += [w]
 

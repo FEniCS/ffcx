@@ -41,6 +41,7 @@ compile([a, L], name, \"%s\")
 """ % (input, language or "")
 
     # Write output
+    # FIXME: Why does this remove the last 'm' in poissonsystem.form?
     outname = filename.rstrip(".form") + ".py"
     outfile = open(outname, "w")
     outfile.write(output)
