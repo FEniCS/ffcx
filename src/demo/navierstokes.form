@@ -1,0 +1,18 @@
+# Copyright (c) 2004 Anders Logg (logg@tti-c.org)
+# Licensed under the GNU GPL Version 2
+#
+# The bilinear form for the nonlinear term in the
+# Navier-Stokes equations with fixed convective velocity.
+# Compile this form with FFC: ffc navierstokes.form.
+
+name = "MassMatrix"
+element = FiniteElement("Lagrange", 1, "triangle")
+
+u = BasisFunction(element)
+v = BasisFunction(element)
+U = Function(element)
+
+i = Index()
+j = Index()
+    
+a = U[j]*u[i].dx(j)*v[i]*dx
