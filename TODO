@@ -12,8 +12,5 @@ Suggestions for FIAT:
 
   - Move class FiniteElement to FIAT from FFC?
   - Move class TensorSpace to FIAT from FFC?
-  - Add script setup.py
   - Add ChangeLog, AUTHORS, README, INSTALL, TODO
-  - Put FIAT on www.fenics.org (tar.gz is enough)
-  - Versioning, something like 0.1.1
   - Local-to-global mapping
