@@ -53,7 +53,7 @@ class Form:
         A0s = []
         for i in range(len(self.sum.products)):
             A0s += [self.compute_reference_tensor(i)]
-            print "A0 = " + str(A0s[i])
+            #print "A0 = " + str(A0s[i])
 
         # Choose language
         if language == "C++":
@@ -112,5 +112,5 @@ if __name__ == "__main__":
     v = BasisFunction(element)
     i = Index()
     
-    a = Form(u.dx(i)*v.dx(i) + u*v)
+    a = Form(u.dx(i)*v.dx(i) + u.dx(0)*v + u*v)
     a.compile()

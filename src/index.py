@@ -97,7 +97,9 @@ class Index:
 
     def __call__(self, indices0, indices1, indices2):
         "Evaluate Index at current index list."
-        if self.type == "primary":
+        if self.type == "fixed":
+            return self.index
+        elif self.type == "primary":
             if not indices0:
                 raise RuntimeError, "Missing index values for primary indices."
             return indices0[self.index]

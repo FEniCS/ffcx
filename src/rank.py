@@ -56,4 +56,4 @@ class Rank:
             raise RuntimeError, "Rank can only be created for a Product."
 
         print "Ranks: " + str(self.r0) + ", " + str(self.r1) + ", " + str(self.r2) + \
-              " dimensions: " + str(self.dims0) + ", " + str(self.dims1) + ", " + str(self.dims2)
+              " Dimensions: " + str(self.dims0) + ", " + str(self.dims1) + ", " + str(self.dims2)

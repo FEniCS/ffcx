@@ -62,11 +62,10 @@ def reassign_indices(sum):
         s.products[j] = p
 
     # Check that indices start at 0 (can be -1 if missing)
-    if min_sum(s, "primary") > 0 or min_sum(s, "secondary") or min_sum(s, "auxiliary"):
+    if 0 < min_sum(s, "primary") < maxint or \
+       0 < min_sum(s, "secondary") < maxint or \
+       0 < min_sum(s, "auxiliary") < maxint:
         raise RuntimeError, "Failed to reassign indices."
-    else:
-        print "Reassigned indices ok."
-
     return s
 
 def __reassign_sum(sum, iold, inew, type):
@@ -264,9 +263,9 @@ def __create_auxiliary(product):
     appear inside the integral."""
     p = Product(product)
     for t in p.transforms:
-        if not __have_index(product, t.index0):
+        if not __have_index(product, t.index0) and t.index0.type == "secondary":
             t.index0.type = "auxiliary"
-        if not __have_index(product, t.index1):
+        if not __have_index(product, t.index1) and t.index1.type == "secondary":
             t.index1.type = "auxiliary"
     # FIXME: Check also coefficients
     return p
