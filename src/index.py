@@ -3,6 +3,9 @@ __date__ = "2004-09-29"
 __copyright__ = "Copyright (c) 2004 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
+# Python modules
+from Numeric import *
+
 next_index_0 = 0
 next_index_1 = 0
 
@@ -24,6 +27,24 @@ def reset():
     next_index_0 = 0
     next_index_1 = 0
     return
+
+def build_indices(dims):
+    """Create a list of all indices of the reference tensor.
+    Someone please tell me if there is a better way to iterate
+    over a multi-dimensional array. The list of indices is
+    constucted by iterating over all integer numbers that can be
+    represented with the base of each position determined by the
+    given dimension for that index."""
+    current = zeros(len(dims))
+    indices = []
+    posvalue = [1] + list(cumproduct(dims)[:-1])
+    for i in range(product(dims)):
+        sum = i
+        for pos in range(len(dims)):
+            current[pos] = (i / posvalue[pos]) % dims[pos]
+            sum -= current[pos] * posvalue[pos]
+            indices += [list(current)]
+    return array(indices)
 
 class Index:
     
