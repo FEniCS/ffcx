@@ -51,7 +51,7 @@ class Integrator:
         # degree of the product of basis functions and derivatives of basis functions
         q = degree(basisfunctions)
         m = (q + 1 + 1) / 2 # integer division gives 2m - 1 >= q
-        debug("Total degree is %d, using %d quadrature point(s) in each dimension" % (q, m))
+        debug("Total degree is %d, using %d quadrature point(s) in each dimension" % (q, m), 1)
 
         # Create quadrature rule
         self.fiat_quadrature = quadrature.make_quadrature(self.fiat_shape, m)

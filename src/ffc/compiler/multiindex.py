@@ -18,12 +18,15 @@ def build_indices(dims):
     dimension for that index."""
     if not dims:
         return []
-    current = Numeric.zeros(len(dims))
+    rdims = [] + dims;
+    rdims.reverse()
+    current = Numeric.zeros(len(rdims))
     indices = []
-    posvalue = [1] + list(Numeric.cumproduct(dims)[:-1])
-    for i in range(Numeric.product(dims)):
-        for pos in range(len(dims)):
-            current[len(dims) - 1 - pos] = (i / posvalue[pos]) % dims[pos]
+    posvalue = [1] + list(Numeric.cumproduct(rdims)[:-1])
+    for i in range(Numeric.product(rdims)):
+        for pos in range(len(rdims)):
+            j = len(rdims) - 1
+            current[len(rdims) - 1 - pos] = (i / posvalue[pos]) % rdims[pos]
         indices += [list(current)]
     return indices
 
