@@ -104,7 +104,8 @@ if __name__ == "__main__":
     print "Testing form compiler"
     print "---------------------"
 
-    element = FiniteElement("Lagrange", 1, "tetrahedron")
+    #element = FiniteElement("Lagrange", 1, "tetrahedron")
+    element = FiniteElement("Lagrange", 1, "triangle")
     
     u = BasisFunction(element)
     v = BasisFunction(element)

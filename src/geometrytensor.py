@@ -90,7 +90,7 @@ class GeometryTensor:
                 if t.index0.type == t.index1.type == "secondary": continue
                 factors += [format["transform"](t.index0([], a, [], b), t.index1([], a, [], b))]
             terms += [format["multiplication"].join(factors)]
-        sum = "+".join(terms)
+        sum = " + ".join(terms)
         if len(sum) > 1: sum = "(%s)" % sum
         if sum: f1 = [sum]
         else: f1 = []

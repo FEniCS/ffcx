@@ -136,10 +136,52 @@ class Function:
 
     """A Function represents a projection of a given function onto a
     finite element space, expressed as a linear combination of
-    BasisFunctions."""
+    BasisFunctions.
 
-    def __init__(self, element, name):
+    A Function holds the following data:
+
+        element - a FiniteElement
+        name    - a string identifying the function."""
+
+    def __init__(self, element, name = None):
+        "Create Function."
+        if isinstance(element, Function):
+            # Create Function from Function (copy constructor)
+            self.element = element.element
+            self.name = element.name
+        else:
+            # Create Function for given FiniteElement with given name
+            self.element = element
+            self.name = element.name
         return
+
+    def __add__(self, other):
+        "Operator: Function + Element"
+        return Product(self) + Product(other)
+
+    def __sub__(self, other):
+        "Operator: Function - Element"
+        return Product(self) - Product(other)
+
+    def __mul__(self, other):
+        "Operator: Function * Element"
+        return Product(self) * Product(other)
+
+    def __pos__(self):
+        "Operator: +BasisFunction"
+        return Product(self)
+
+    def __neg__(self):
+        "Operator: -BasisFunction"
+        return -Product(self)
+
+    def dx(self, index = None):
+        "Operator: (d/dx)BasisFunction in given coordinate direction."
+        return Product(self).dx(index)
+
+    def __repr__(self):
+        "Print nicely formatted representation of BasisFunction."
+        return Product(self).__repr__()
 
 class Product:
 
@@ -170,6 +212,10 @@ class Product:
             self.transforms = []
             self.basisfunctions = [BasisFunction(other)]
             self.integral = None
+        elif isinstance(other, Function):
+            # Create Product from Function
+            self.constant = 1.0
+            self.coefficients = [Coefficient(other)]
         elif isinstance(other, Product):
             # Create Product from Product (copy constructor)
             self.constant = other.constant
