@@ -8,7 +8,7 @@
 name = "MassMatrix"
 element = FiniteElement("Lagrange", "triangle", 1)
 
-u = BasisFunction(element)
 v = BasisFunction(element)
+u = BasisFunction(element)
     
 a = u*v*dx
