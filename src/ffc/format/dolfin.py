@@ -100,14 +100,16 @@ def __element(name, element):
     else:
         tensordim = 'dolfin_error("Element is scalar.");\n    return 0;'
 
-    # Generate code for dof mapping
+    # Generate code for dof and coord mapping
     # FIXME: Move this somewhere else
     if element.rank > 0:
         # Assuming rank = 1
         n = element.spacedim / element.tensordims[0]
-        mapping = "return (i/%d) * mesh.noNodes() + cell.nodeID(i %% %d);" % (n, n)
+        dofmap = "return (i/%d) * mesh.noNodes() + cell.nodeID(i %% %d);" % (n, n)
+        coordmap = "return cell.node(i %% %d).coord();" % n
     else:
-        mapping = "return cell.nodeID(i);"
+        dofmap = "return cell.nodeID(i);"
+        coordmap = "return cell.node(i).coord();"
         
     # Generate output
     return """\
@@ -156,8 +158,7 @@ public:
   // FIXME: Only works for nodal basis
   inline const Point coord(unsigned int i, const Cell& cell, const Mesh& mesh) const
   {
-    Point p;
-    return p;
+    %s
   }
 
 private:
@@ -171,7 +172,8 @@ private:
        element.shapedim,
        tensordim,
        element.rank,
-       mapping)
+       dofmap,
+       coordmap)
 
 def __form(form, element, type):
     "Generate form for DOLFIN."
