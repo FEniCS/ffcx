@@ -33,6 +33,6 @@ echo 'Removing temporary directory'
 rm -rf $DISTDIR
 
 # Copy archive and files to web page
-scp $TARBALL fenics@fenics.org/pub/software/ffc/v0.1
-scp ChangeLog fenics@fenics.org/pub/software/ffc/
-scp TODO fenics@fenics.org/pub/software/ffc/
+scp $TARBALL fenics@fenics.org:www.fenics.org/pub/software/ffc/v0.1
+scp ChangeLog fenics@fenics.org:www.fenics.org/pub/software/ffc/
+scp TODO fenics@fenics.org:www.fenics.org/pub/software/ffc/
