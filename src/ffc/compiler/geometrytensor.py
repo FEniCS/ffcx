@@ -71,11 +71,12 @@ class GeometryTensor:
         for j in range(len(self.coefficients)):
             c = self.coefficients[j]
             if not c.index.type == "secondary": continue
-            factors += [format["coefficient"](j, c.index([], a, [], []))]
+            factors += [format.format["coefficient"](j, c.index([], a, [], []))]
         for t in self.transforms:
             if not (t.index0.type == t.index1.type == "secondary"): continue
-            factors += [format["transform"](t.index0([], a, [], []), t.index1([], a, [], []))]
-        product = format["multiplication"].join(factors)
+            factors += [format.format["transform"](t.index0([], a, [], []), \
+                                                   t.index1([], a, [], []))]
+        product = format.format["multiplication"].join(factors)
         if product: f0 = [product]
         else: f0 = []
         # Compute sum of products inside sum
@@ -85,17 +86,19 @@ class GeometryTensor:
             for j in range(len(self.coefficients)):
                 c = self.coefficients[j]
                 if c.index.type == "secondary": continue
-                factors += [format["coefficient"](j, c.index([], a, [], b))]
+                factors += [format.format["coefficient"](j, c.index([], a, [], b))]
             for t in self.transforms:
                 if t.index0.type == t.index1.type == "secondary": continue
-                factors += [format["transform"](t.index0([], a, [], b), t.index1([], a, [], b))]
-            terms += [format["multiplication"].join(factors)]
+                factors += [format.format["transform"](t.index0([], a, [], b), \
+                                                       t.index1([], a, [], b))]
+            terms += [format.format["multiplication"].join(factors)]
         sum = " + ".join(terms)
         if len(sum) > 1: sum = "(%s)" % sum
         if sum: f1 = [sum]
         else: f1 = []
         # Compute product of all factors
-        return format["multiplication"].join([f for f in [format["determinant"]] + f0 + f1])
+        return format.format["multiplication"].join(\
+            [f for f in [format.format["determinant"]] + f0 + f1])
 
     def __repr__(self):
         "Print nicely formatted representation of GeometryTensor."

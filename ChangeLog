@@ -1,6 +1,7 @@
  - Add command-line interface ffc
  - Add support for functions (coefficients)
  - Add support for constants
+ - Allow multiple forms (left- and right-hand side) in same file
  - Add test examples: poisson.form, mass.form, navierstokes.form
  - Wrap FIAT to create vector-valued finite element spaces
  - Check ranks of operands

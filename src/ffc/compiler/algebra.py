@@ -265,11 +265,14 @@ class Product(Element):
             w1 = Product(other)
             if not w0.rank() == w1.rank() == 0:
                 raise RuntimeError, "Illegal ranks for product, must be scalar."
+            if w0.integral and w1.integral:
+                raise RuntimeError, "Integrand can only be integrated once."
             w = Product()
             w.constant = w0.constant * w1.constant
             w.coefficients = w0.coefficients + w1.coefficients
             w.transforms = w0.transforms + w1.transforms
             w.basisfunctions = w0.basisfunctions + w1.basisfunctions
+            w.integral = w0.integral or w1.integral
             return w
 
     def __neg__(self):

@@ -46,7 +46,7 @@ class ElementTensor:
             if GK.a.indices: aindices = GK.a.indices
             else: aindices = [[]]
             for a in aindices:
-                name = format["geometry tensor"](j, a)
+                name = format.format["geometry tensor"](j, a)
                 value = GK(a, format)
                 declarations += [Declaration(name, value)]
         return declarations
@@ -65,19 +65,19 @@ class ElementTensor:
                 if A0.a.indices: aindices = A0.a.indices
                 else: aindices = [[]]
                 for a in aindices:
-                    name = format["element tensor"](i)
+                    name = format.format["element tensor"](i)
                     a0 = A0(i, a)
-                    gk = format["geometry tensor"](j, a)
+                    gk = format.format["geometry tensor"](j, a)
                     if abs(a0) > EPSILON:
                         if value and a0 < 0.0:
-                            value += " - %s%s%s" % (format["floating point"](-a0), \
-                                                    format["multiplication"], gk)
+                            value += " - %s%s%s" % (format.format["floating point"](-a0), \
+                                                    format.format["multiplication"], gk)
                         elif value:
-                            value += " + %s%s%s" % (format["floating point"](a0), \
-                                                    format["multiplication"], gk)
+                            value += " + %s%s%s" % (format.format["floating point"](a0), \
+                                                    format.format["multiplication"], gk)
                         else:
-                            value += "%s%s%s" % (format["floating point"](a0), \
-                                                 format["multiplication"], gk)
+                            value += "%s%s%s" % (format.format["floating point"](a0), \
+                                                 format.format["multiplication"], gk)
             declarations += [Declaration(name, value)]
         return declarations    
 

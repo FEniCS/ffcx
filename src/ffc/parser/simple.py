@@ -19,16 +19,25 @@ def parse(filename, language):
 import sys
 sys.path.append("../")
 sys.path.append("../../")
-from ffc.compiler.form import *
+from ffc.compiler.compiler import *
 
 name = "MyPDE"
+
+a = None
+L = None
     
 dx = Integral("interior")
 ds = Integral("boundary")
 
+i = Index()
+j = Index()
+k = Index()
+l = Index()
+m = Index()
+n = Index()
+
 %s
-form = Form(a, name)
-form.compile(\"%s\")
+compile([a, L], name, \"%s\")
 """ % (input, language or "")
 
     # Write output

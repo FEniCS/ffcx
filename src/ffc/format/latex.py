@@ -13,14 +13,19 @@ format = { "multiplication": "",
            "geometry tensor": lambda j, a: "G_{K,%d}^{%s}" % (j, "".join(["%d" % index for index in a])),
            "element tensor": lambda i: "A^K_{%s}" % "".join(["%d" % index for index in i]) }
 
-def compile(form):
+def compile(forms):
     "Generate code for LaTeX."
     print "Generating output for LaTeX"
 
-    # Generate output
+    # Write file header
     output = ""
     output += __file_header()
-    output += __form(form)
+
+    # Write all forms
+    for form in forms:
+        output += __form(form)
+
+    # Write file footer
     output += __file_footer()
 
     # Write file

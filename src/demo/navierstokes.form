@@ -3,6 +3,7 @@
 #
 # The bilinear form for the nonlinear term in the
 # Navier-Stokes equations with fixed convective velocity.
+#
 # Compile this form with FFC: ffc navierstokes.form.
 
 name = "NavierStokes"
@@ -10,10 +11,7 @@ element = FiniteElement("Lagrange", "tetrahedron", 1, 3)
 
 u = BasisFunction(element)
 v = BasisFunction(element)
-U = Function(element)
-
-i = Index()
-j = Index()
+U = Function(element, "velocity")
 
 a = U[j]
 a = U[j]*u[i].dx(j)*v[i]*dx

@@ -2,6 +2,7 @@
 # Licensed under the GNU GPL Version 2
 #
 # The bilinear form for a mass matrix.
+#
 # Compile this form with FFC: ffc massmatrix.form.
 
 name = "MassMatrix"
@@ -9,6 +10,5 @@ element = FiniteElement("Lagrange", "triangle", 1)
 
 u = BasisFunction(element)
 v = BasisFunction(element)
-i = Index()
     
 a = u*v*dx
