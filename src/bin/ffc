@@ -6,6 +6,8 @@
 # This script parses command-line arguments, calls
 # the parser, and then compiles the generated form.
 
+FFC_VERSION = "0.1.2"
+
 # Python modules
 import sys
 import getopt
@@ -13,8 +15,6 @@ import getopt
 # FFC modules
 sys.path.append("../")
 from ffc.parser import simple
-
-FFC_VERSION = "0.1.1-1"
 
 def main(argv):
     "Main function."

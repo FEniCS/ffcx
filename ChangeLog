@@ -1,3 +1,4 @@
+0.1.2
  - Add command-line interface ffc
  - Add support for functions (coefficients)
  - Add support for constants
