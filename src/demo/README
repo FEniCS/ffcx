@@ -1,4 +1,8 @@
-To compile a form in this directory without installing FFC
-system-wide, you must supply the full path to ffc:
+To compile a form in this directory, just type
+
+    ffc poisson.form
+
+If you have not installed FFC system-wide, you need
+to supply the full path to ffc:
 
     ../bin/ffc poisson.form

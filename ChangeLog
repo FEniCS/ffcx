@@ -1,3 +1,5 @@
+0.1.5 [2005-03-14]
+ - Automatically choose the correct quadrature rule for precomputation
  - Add test program for verification of FIAT quadrature rules
  - Fix bug for derivative of sum
  - Improve common interface for debugging: add indentation
