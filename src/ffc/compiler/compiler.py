@@ -30,7 +30,7 @@ def compile(sums, name = "MyPDE", language = None):
 
     # Create a Form from the given sum(s)
     if isinstance(sums, list):
-        forms = [Form(sum, name) for sum in sums]
+        forms = [Form(sum, name) for sum in sums if sum]
     else:
         forms = [Form(sums, name)]
 
