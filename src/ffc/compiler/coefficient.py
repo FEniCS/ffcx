@@ -14,7 +14,7 @@ class Coefficient:
     A Coefficient holds the following data:
 
         element - the FiniteElement defining the function space
-        number  - a unique index for the represented Function
+        number  - a unique Index for the represented Function
         index   - summation Index (matching Index of corresponding BasisFunction)"""
 
     def __init__(self, element, number = None, index = None):
@@ -22,7 +22,7 @@ class Coefficient:
         if isinstance(element, Coefficient):
             # Create Coefficient from Coefficient (copy constructor)
             self.element = element.element
-            self.number = element.number
+            self.number = Index(element.number)
             self.index = Index(element.index)
         else:
             # Create Coefficient with given data

@@ -26,6 +26,7 @@ from index import *
 from algebra import *
 from integral import *
 from reassign import *
+from elementsearch import *
 from finiteelement import *
 from elementtensor import *
 
@@ -71,6 +72,16 @@ def compile(sums, name = "MyPDE", language = None):
         form.nconstants = max_index(form.sum, "constant") + 1
         debug("Number of constants: " + str(form.nconstants), 1)
 
+        # Find the test, trial and function finite elements
+        form.test = find_test(form.sum)
+        form.trial = find_trial(form.sum)
+        (form.elements, form.felement) = find_elements(form.sum, form.nfunctions)
+
+        print "Test element: " + str(form.test)
+        print "Trial element: " + str(form.trial)
+        print "Elements: " + str(form.elements)
+        print "Mapping: " + str(form.felement)
+        
     # Generate output
     format.compile(forms)
 
