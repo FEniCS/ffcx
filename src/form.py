@@ -27,7 +27,8 @@ class Form:
         else:
             raise RuntimeError, "Cannot create Form from " + str(form)
 
-        # Compute the rank of the tensor for each Product
+        # Compute the rank of the tensor for each Product. The
+        # secondary rank may differ for each Product.
         self.r0 = []
         self.r1 = []
         for p in self.sum.products:
@@ -36,10 +37,20 @@ class Form:
             self.r1 += [tmp1]
         print "Primary rank is " + str(self.r0) + ", secondary rank is " + str(self.r1)
 
-        # Check that all products have the same primary rank
+        # Check that all Products have the same primary rank,
+        # otherwise it's not a multi-linear form.
         for i in range(len(self.r0) - 1):
             if not self.r0[i] == self.r0[i + 1]:
                 raise RuntimeError, "Form must be linear in each of its arguments."
+
+        # Compute dimensions of the tensor for each Product. Note that
+        # we have one list of dimensions for each Product in the Sum.
+        self.dims = []
+        for i in range(len(self.sum.products)):
+            self.dims += [self.sum.products[i].dims(self.r0[i], self.r1[i])]
+
+        print self.dims
+        
         
         return
 

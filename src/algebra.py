@@ -328,6 +328,15 @@ class Product(Element):
             i1 = max(i1, tmp1)
         return [i0 + 1, i1 + 1]
 
+    def dims(self, r0, r1):
+        """Return dimensions for the tensor represented by the
+        Product. This method involves some searching, but it
+        shouldn't take too much time."""
+        dimlist = []
+        # First check dimensions for primary indices
+        #for i in range(r0):
+            
+    
     def __repr__(self):
         "Print nicely formatted representation of Product."
         output = ""
