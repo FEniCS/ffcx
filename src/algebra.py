@@ -5,8 +5,10 @@ __date__ = "2004-09-27"
 __copyright__ = "Copyright (c) 2004 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
+# FFC modules
 from finiteelement import FiniteElement
 from derivative import Derivative
+from transform import Transform
 from index import Index
 
 class Element:
@@ -20,7 +22,12 @@ class BasisFunction(Element):
     """A BasisFunction represents a basis function on the reference
     cell and can be either an argument in the multi-linear form or an
     auxiliary basis function that will be removed in the
-    contraction."""
+    contraction.
+
+    A BasisFunction holds the following data:
+
+        element - the corresponding FiniteElement
+        index   - the Index of the BasisFunction"""
 
     def __init__(self, element, index = None):
         "Create BasisFunction."
@@ -44,7 +51,7 @@ class BasisFunction(Element):
             return w
         elif isinstance(other, Product):
             w = Sum()
-            w.products = [Product(self), other]
+            w.products = [Product(self), Product(other)]
             return w
         elif isinstance(other, Sum):
             w = Sum()
@@ -56,22 +63,26 @@ class BasisFunction(Element):
 
     def __sub__(self, other):
         "Operator: BasisFunction - Element"
-        # FIXME: remember to modify geometry tensor with a -
         if isinstance(other, BasisFunction):
             w = Sum()
             w.products = [Product(self), Product(other)]
+            w.products[1].constant *= -1.0
             return w
         elif isinstance(other, Factor):
             w = Sum()
             w.products = [Product(self), Product(other)]
+            w.products[1].constant *= -1.0
             return w
         elif isinstance(other, Product):
             w = Sum()
-            w.products = [Product(self), other]
+            w.products = [Product(self), Product(other)]
+            w.products[1].constant *= -1.0
             return w
         elif isinstance(other, Sum):
             w = Sum()
             w.products = [Product(self)] + other.products
+            for i in range(len(other.products) - 1):
+                w.products[i + 1].constant *= -1.0                
             return w
         else:
             raise RuntimeError, "Can't subtract BasisFunction with " + str(other)
@@ -85,7 +96,7 @@ class BasisFunction(Element):
             return w
         elif isinstance(other, Factor):
             w = Product()
-            w.factors = [Factor(self), other]
+            w.factors = [Factor(self), Factor(other)]
             return w
         elif isinstance(other, Product):
             w = Product()
@@ -102,8 +113,10 @@ class BasisFunction(Element):
 
     def dx(self, index = None):
         "Operator: (d/dx)BasisFunction in given coordinate direction."
+        i = Index() # Create new secondary index
         w = Factor(self)
-        w.derivatives = [Derivative(index)]
+        w.derivatives = [Derivative(i)]
+        w.transforms = [Transform(i, index)]
         return w
 
     def __repr__(self):
@@ -116,19 +129,28 @@ class BasisFunction(Element):
 class Factor(Element):
 
     """A Factor represents a (possibly) differentiated BasisFunction
-    on the reference cell."""
+    on the reference cell.
+
+    A Factor holds the following data:
+
+        basisfunction - the BasisFunction of the Factor
+        derivatives   - a list of Derivatives applied to the BasisFunction
+        transforms    - a list of corresponding Transforms"""
     
     def __init__(self, other = None):
         "Create Factor."
         if other == None:
             self.basisfunction = None
             self.derivatives = []
+            self.transforms = []
         elif isinstance(other, BasisFunction):
             self.basisfunction = other
             self.derivatives = []
+            self.transforms = []
         elif  isinstance(other, Factor):
             self.basisfunction = other.basisfunction
-            self.derivatives = other.derivatives
+            self.derivatives = [] + other.derivatives
+            self.transforms = [] + other.transforms
         else:
             raise RuntimeError, "Unable to create Factor from " + str(other)
         return
@@ -145,7 +167,7 @@ class Factor(Element):
             return w
         elif isinstance(other, Product):
             w = Sum()
-            w.products = [Product(self), other]
+            w.products = [Product(self), Product(other)]
             return w
         elif isinstance(other, Sum):
             w = Sum()
@@ -168,7 +190,7 @@ class Factor(Element):
             return w
         elif isinstance(other, Product):
             w = Sum()
-            w.products = [Product(self), other]
+            w.products = [Product(self), Product(other)]
             return w
         elif isinstance(other, Sum):
             w = Sum()
@@ -182,15 +204,15 @@ class Factor(Element):
         "Operator: Factor * Element"
         if isinstance(other, BasisFunction):
             w = Product()
-            w.factors = [self, Factor(other)]
+            w.factors = [Factor(self), Factor(other)]
             return w
         elif isinstance(other, Factor):
             w = Product()
-            w.factors = [self, other]
+            w.factors = [Factor(self), Factor(other)]
             return w
         elif isinstance(other, Product):
             w = Product()
-            w.factors = [self] + other.factors
+            w.factors = [Factor(self)] + other.factors
             return w
         elif isinstance(other, Sum):
             w = Sum()
@@ -203,8 +225,10 @@ class Factor(Element):
 
     def dx(self, index = None):
         "Operator: (d/dx)Factor in given coordinate direction."
+        i = Index() # Create new secondary index
         w = Factor(self)
-        w.derivatives = [Derivative(index)] + w.derivatives
+        w.derivatives = [Derivative(i)] + w.derivatives
+        w.transforms = [Transform(i, index)] + w.derivatives
         return w
 
     def max_indices(self):
@@ -239,18 +263,40 @@ class Factor(Element):
     
 class Product(Element):
 
-    "A Product represents a product of Factors."
+    """A Product represents a product of Factors. Note that the list of
+    Transforms of each Factor contained in a Product should be
+    empty. When multiplying Factors to obtain a Product, the
+    Transforms of all Factors will be collected in to a single list.
+
+    A Product holds the following data:
+
+        factors      - a list of Factors in the Product
+        transforms   - a list of Transforms for all Factors
+        coefficients - a list of Coefficients in the Product
+        constant     - a constant contained in the Product"""
 
     def __init__(self, other = None):
         "Create Product."
         if other == None:
             self.factors = []
+            self.transforms = []
+            self.coefficients = []
+            self.constant = 1.0
         elif isinstance(other, BasisFunction):
             self.factors = [Factor(other)]
+            self.transforms = []
+            self.coefficients = []
+            self.constant = 1.0
         elif isinstance(other, Factor):
             self.factors = [other]
+            self.transforms = []
+            self.coefficients = []
+            self.constant = 1.0
         elif isinstance(other, Product):
-            self.factors = other.factors
+            self.factors = [] + other.factors
+            self.transforms = [] + other.transforms
+            self.coefficients = [] + other.coefficients
+            self.constant = other.constant
         else:
             raise RuntimeError, "Unable to create Product from " + str(other)
         return
@@ -259,19 +305,19 @@ class Product(Element):
         "Operator: Product + Element"
         if isinstance(other, BasisFunction):
             w = Sum()
-            w.products = [self, Product(other)]
+            w.products = [Product(self), Product(other)]
             return w
         elif isinstance(other, Factor):
             w = Sum()
-            w.products = [self, Product(other)]
+            w.products = [Product(self), Product(other)]
             return w
         elif isinstance(other, Product):
             w = Sum()
-            w.products = [self, other]
+            w.products = [Product(self), Product(other)]
             return w
         elif isinstance(other, Sum):
             w = Sum()
-            w.products = [self] + other.products
+            w.products = [Product(self)] + other.products
             return w
         else:
             raise RuntimeError, "Can't add Product with " + str(other)
@@ -282,19 +328,19 @@ class Product(Element):
         # FIXME: remember to modify geometry tensor with a -
         if isinstance(other, BasisFunction):
             w = Sum()
-            w.products = [self, Product(other)]
+            w.products = [Product(self), Product(other)]
             return w
         elif isinstance(other, Factor):
             w = Sum()
-            w.products = [self, Product(other)]
+            w.products = [Product(self), Product(other)]
             return w
         elif isinstance(other, Product):
             w = Sum()
-            w.products = [self, other]
+            w.products = [Product(self), Product(other)]
             return w
         elif isinstance(other, Sum):
             w = Sum()
-            w.products = [self] + other.products
+            w.products = [Product(self)] + other.products
             return w
         else:
             raise RuntimeError, "Can't subtract Product with " + str(other)
@@ -308,7 +354,7 @@ class Product(Element):
             return w
         elif isinstance(other, Factor):
             w = Product()
-            w.factors = self.factors + [other]
+            w.factors = self.factors + [Factor(other)]
             return w
         elif isinstance(other, Product):
             w = Product()
@@ -411,7 +457,13 @@ class Product(Element):
 
 class Sum(Element):
 
-    "A Sum represents a sum of Products."
+    """A Sum represents a sum of Products. Each Product will be
+    compiled separately, since different Products are probably of
+    different rank.
+
+    A Sum holds the following data:
+
+        products - a list of Products (terms) in the Sum"""
     
     def __init__(self, other = None):
         "Create Sum."
@@ -422,9 +474,9 @@ class Sum(Element):
         elif isinstance(other, Factor):
             self.products = [Product(other)]
         elif isinstance(other, Product):
-            self.products = [other]
+            self.products = [Product(other)]
         elif isinstance(other, Sum):
-            self.products = other.products
+            self.products = [] + other.products
         else:
             raise RuntimeError, "Unable to create Sum from " + str(other)
         return
@@ -441,7 +493,7 @@ class Sum(Element):
             return w
         elif isinstance(other, Product):
             w = Sum()
-            w.products = self.products + [other]
+            w.products = self.products + [Product(other)]
             return w
         elif isinstance(other, Sum):
             w = Sum()
@@ -464,7 +516,7 @@ class Sum(Element):
             return w
         elif isinstance(other, Product):
             w = Sum()
-            w.products = self.products + [other]
+            w.products = self.products + [Product(other)]
             return w
         elif isinstance(other, Sum):
             w = Sum()
@@ -549,4 +601,12 @@ if __name__ == "__main__":
     print "Testing Poisson:"
     i = Index()
     w = u.dx(i)*v.dx(i)
+    print w
+
+    print
+
+    print "Testing Biharmonic:"
+    i = Index()
+    j = Index()
+    w = u.dx(i).dx(i)*v.dx(j).dx(j)
     print w

@@ -67,7 +67,7 @@ class ProductFunction:
         "Evaluate Product at given point."
         tmp = 1.0
         for f in self.product.factors:
-            tmp = tmp * self.eval(f, x)
+            tmp = tmp * self.__eval(f, x)
         return tmp
 
     def __eval(self, factor, x):

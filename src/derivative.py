@@ -15,6 +15,7 @@ class Derivative:
     def __init__(self, index = None):
         "Create Derivative."
         self.index = Index(index)
+        return
 
     def __repr__(self):
         "Print nicely formatted representation of Derivative."
