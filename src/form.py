@@ -6,6 +6,8 @@ __license__  = "GNU GPL Version 2"
 
 from Numeric import *
 from algebra import *
+from integrator import Integrator
+from finiteelement import FiniteElement
 
 class Form:
     """A Form represents a multi-linear form typically appearing in
@@ -92,15 +94,18 @@ class Form:
         return
 
     def compute_reference_tensor(self, product, r0, r1, dims):
-        "Compute the integrals of the reference tensor using FIAT."
+        "Compute the integrals of the reference tensor."
+
+        # Create reference tensor and a list of all indices
         A0 = zeros(dims, Float)
         indices = self.build_indices(dims)
-        for index in indices:
-            A0[index] = self.integrate(product, index, r0, r1)
-        return A0
 
-    def integrate(self, product, index, r0, r1):
-        return sum(index)
+        # Create quadrature rule
+        integrate = Integrator(product)
+        
+        for index in indices:
+            A0[index] = integrate(product, index, r0, r1)
+        return A0
 
     def build_indices(self, dims):
         """Create a list of all indices of the reference tensor.
@@ -135,8 +140,10 @@ if __name__ == "__main__":
     print "Testing form compiler"
     print "---------------------"
 
-    u = BasisFunction()
-    v = BasisFunction()
+    element = FiniteElement("Lagrange", 1, "triangle")
+    
+    u = BasisFunction(element)
+    v = BasisFunction(element)
     i = Index()
 
     a = Form(u.dx(i)*v.dx(i) + u*v)

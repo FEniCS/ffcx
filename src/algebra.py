@@ -19,10 +19,12 @@ class BasisFunction(Element):
     auxiliary basis function that will be removed in the
     contraction."""
 
-    def __init__(self, index = None):
+    def __init__(self, element, index = None):
         if index == None:
+            self.element = element
             self.index = Index("primary")
         else:
+            self.element = element
             self.index = Index(index)
         return
 
