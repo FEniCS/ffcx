@@ -4,7 +4,7 @@ __copyright__ = "Copyright (c) 2004 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # FIAT modules
-from FIAT.base import shapes
+from FIAT import shapes
 
 class ZeroFunction:
 
@@ -24,16 +24,13 @@ class TensorSpace:
     finite element space until general tensor-valued elements are
     added to FIAT."""
 
-    def __init__(self, space, dims):
+    def __init__(self, scalarbasis, dims):
         "Create TensorSpace."
 
         # Only vector-valued elements implemented so far
         if not len(dims) == 1:
             raise RuntimeError, "General tensor-valued elements not implemented."
         dim = dims[0]
-
-        # Get scalar basis
-        scalarbasis = space.getBasis()
 
         # Create vector-valued basis
         self.basis = []

@@ -8,6 +8,9 @@ pico -w ChangeLog
 # Update version number in ffc
 pico -w src/bin/ffc
 
+# Update version number in setup.py
+pico -w setup.py
+
 # Commit changes to cvs
 cvs commit
 

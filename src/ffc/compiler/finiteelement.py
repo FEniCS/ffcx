@@ -4,9 +4,9 @@ __copyright__ = "Copyright (c) 2004 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # FIAT modules
-from FIAT.base import shapes
-from FIAT.library.Lagrange import Lagrange
-from FIAT.library.Hermite import Hermite
+from FIAT import shapes
+from FIAT.Lagrange import Lagrange
+#from FIAT import Hermite
 
 # FFC modules
 from tensorspace import *
@@ -44,7 +44,6 @@ class FiniteElement:
         self.degree = degree
         self.fiat_shape = None
 
-        self.space = None
         self.basis = None
         
         self.spacedim = None
@@ -64,18 +63,19 @@ class FiniteElement:
 
         # Choose function space
         if name == "Lagrange":
-            self.space = Lagrange(self.fiat_shape, degree)
+            self.basis = Lagrange(self.fiat_shape, degree)
             if dims:
-                self.space = TensorSpace(self.space, dims)
+                tensorspace = TensorSpace(self.basis, dims)
+                self.basis = tensorspace.basis
         elif name == "Hermite":
-            self.space = Hermite(self.fiat_shape, degree)
+            raise RuntimeError, "Hermite elements not implemented by FIAT."
+            self.basis = Hermite(self.fiat_shape, degree)
             if dims:
-                self.space = TensorSpace(self.space, dims)
+                tensorspace = TensorSpace(self.basis, dims)
+                self.basis = tensorspace.basis
         else:
             raise RuntimeError, "Unknown space " + str(name)
 
-        # Get the basis
-        self.basis = self.space.getBasis()
 
         # Set dimensions
         self.spacedim = len(self.basis)
