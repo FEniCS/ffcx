@@ -1,3 +1,4 @@
+ - Check ranks of operands
  - Clean up algebra, add base class Element
  - Add some documentation (class diagram)
  - Add support for LaTeX output

@@ -15,8 +15,8 @@ are supported for all elements of the algebra:
     Binary *      (both operands must be scalar)
     Unary  +      (operand scalar or tensor-valued)
     Unary  -      (operand scalar or tensor-valued)
-    Unary  d/dx   (operand scalar or tensor-valued)
-    Unary  []     (operand must be tensor-valued)"""
+    Unary  []     (operand must be tensor-valued)
+    Unary  d/dx   (operand scalar or tensor-valued)"""
 
 __author__ = "Anders Logg (logg@tti-c.org)"
 __date__ = "2004-09-27"
@@ -55,6 +55,22 @@ class Element:
         "Operator: -Element"
         return -Sum(self)
 
+    def  __getitem__(self, component):
+        "Operator: Element[component], pick given component."
+        return Sum(self)[component]
+
+    def dx(self, index = None):
+        "Operator: (d/dx)Element in given coordinate direction."
+        return Sum(self).dx(index)
+
+    def __repr__(self):
+        "Print nicely formatted representation of Element."
+        return Sum(self).__repr__()
+
+    def rank(self):
+        "Return value rank of Element."
+        return Sum(self).rank()
+
 class BasisFunction(Element):
 
     """A BasisFunction represents a possibly differentiated component
@@ -89,16 +105,8 @@ class BasisFunction(Element):
             self.derivatives = []
         return
 
-    def dx(self, index = None):
-        "Operator: (d/dx)BasisFunction in given coordinate direction."
-        i = Index() # Create new secondary index
-        w = Product(self)
-        w.basisfunctions[0].derivatives.insert(0, Derivative(self.element, i))
-        w.transforms.insert(0, Transform(self.element, i, index))
-        return w
-
     def  __getitem__(self, component):
-        "Operator: indexing, pick given component."
+        "Operator: BasisFunction[component], pick given component."
         rank = self.element.rank
         if self.component or rank == 0:
             raise RuntimeError, "Cannot pick component of scalar BasisFunction."
@@ -113,6 +121,14 @@ class BasisFunction(Element):
             w.component = [Index(component)]
         return w
 
+    def dx(self, index = None):
+        "Operator: (d/dx)BasisFunction in given coordinate direction."
+        i = Index() # Create new secondary index
+        w = Product(self)
+        w.basisfunctions[0].derivatives.insert(0, Derivative(self.element, i))
+        w.transforms.insert(0, Transform(self.element, i, index))
+        return w
+
     def __repr__(self):
         "Print nicely formatted representation of BasisFunction."
         d = "".join([d.__repr__() for d in self.derivatives])
@@ -125,6 +141,13 @@ class BasisFunction(Element):
             return "(" + d + "v" + i + c + ")"
         else:
             return d + "v" + i + c
+
+    def rank(self):
+        "Return value rank of BasisFunction."
+        if self.component:
+            return 0
+        else:
+            return self.element.rank
 
     def indexcall(self, foo, args = None):
         "Call given function on all Indices."
@@ -155,18 +178,6 @@ class Function(Element):
             self.element = element
             self.name = element.name
         return
-
-    def dx(self, index = None):
-        "Operator: (d/dx)BasisFunction in given coordinate direction."
-        return Product(self).dx(index)
-
-    def  __getitem__(self, component):
-        "Operator: indexing, pick given component."
-        return Product(self)[component]
-
-    def __repr__(self):
-        "Print nicely formatted representation of BasisFunction."
-        return Product(self).__repr__()
 
 class Product(Element):
 
@@ -224,6 +235,8 @@ class Product(Element):
             w.integral = other
             return w
         elif isinstance(other, Product):
+            if not self.rank() == other.rank() == 0:
+                raise RuntimeError, "Illegal ranks for product, must be scalar."
             w0 = Product(self)
             w1 = Product(other)
             w = Product()
@@ -241,6 +254,15 @@ class Product(Element):
         w.constant = -w.constant
         return w
 
+    def  __getitem__(self, component):
+        "Operator: Product[component], pick given component."
+        if not len(self.basisfunctions) == 1:
+            # Always scalar if product of more than one basis function
+            raise RuntimeError, "Cannot pick component of scalar Product."
+        w = Product(self)
+        w.basisfunctions[0] = w.basisfunctions[0][component]
+        return w
+
     def dx(self, index = None):
         "Operator: (d/dx)Product in given coordinate direction."
         w = Sum()
@@ -253,15 +275,6 @@ class Product(Element):
                 else:
                     p = p * self.basisfunctions[j]
             w = w + p
-        return w
-
-    def  __getitem__(self, component):
-        "Operator: indexing, pick given component."
-        if not len(self.basisfunctions) == 1:
-            # Always scalar if product of more than one basis function
-            raise RuntimeError, "Cannot pick component of scalar Product."
-        w = Product(self)
-        w.basisfunctions[0] = w.basisfunctions[0][component]
         return w
 
     def __repr__(self):
@@ -281,6 +294,16 @@ class Product(Element):
             i = ""
         return s + c + t + v + i
 
+    def rank(self):
+        "Return value rank of Product."
+        if not self.basisfunctions:
+            return 0
+        if len(self.basisfunctions) > 1:
+            for v in self.basisfunctions:
+                if not v.rank() == 0:
+                    raise RuntimeError, "Illegal rank for BasisFunction of Product (non-scalar)."
+        return self.basisfunctions[0].rank()
+            
     def indexcall(self, foo, args = None):
         "Call given function on all Indices."
         [c.indexcall(foo, args) for c in self.coefficients]
@@ -306,6 +329,9 @@ class Sum(Element):
         elif isinstance(other, BasisFunction):
             # Create Sum from BasisFunction
             self.products = [Product(other)]
+        elif isinstance(other, Function):
+            # Create Sum from Function
+            self.products = [Product(other)]
         elif isinstance(other, Product):
             # Create Sum from Product
             self.products = [Product(other)]
@@ -318,6 +344,8 @@ class Sum(Element):
 
     def __add__(self, other):
         "Operator: Sum + Element"
+        if not self.rank() == other.rank():
+            raise RuntimeError, "Non-matching ranks."
         w0 = Sum(self)
         w1 = Sum(other)
         w = Sum()
@@ -341,22 +369,31 @@ class Sum(Element):
         w.products = [-p for p in w.products]
         return w
 
-    def dx(self, index = None):
-        "Operator: (d/dx)Sum in given coordinate direction."
-        w = Sum()
-        w.products = [p.dx(index) for p in self.products]
-        return w
-
     def  __getitem__(self, component):
         "Operator: indexing, pick given component."
         w = Sum(self)
         w.products = [p[component] for p in w.products]
         return w
 
+    def dx(self, index = None):
+        "Operator: (d/dx)Sum in given coordinate direction."
+        w = Sum()
+        w.products = [p.dx(index) for p in self.products]
+        return w
+
     def __repr__(self):
         "Print nicely formatted representation of Sum."
         return " + ".join([p.__repr__() for p in self.products])
 
+    def rank(self):
+        "Return value rank of Sum."
+        if not self.products:
+            return 0
+        for j in range(len(self.products) - 1):
+            if not self.products[j].rank() == self.products[j + 1].rank():
+                raise RuntimeError, "Non-matching ranks."
+        return self.products[0].rank()
+  
     def indexcall(self, foo, args = None):
         "Call given function on all Indices."
         [p.indexcall(foo, args) for p in self.products]
@@ -403,6 +440,8 @@ if __name__ == "__main__":
     j = Index()
     w = u.dx(i).dx(i)*v.dx(j).dx(j)
     print w
+
+    print
 
     print "Testing Poisson system:"
     element = FiniteElement("Vector Lagrange", 1, "triangle")
