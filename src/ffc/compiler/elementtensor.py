@@ -37,12 +37,13 @@ class ElementTensor:
         # Compute reference tensor (already computed, just need to pick the values)
         self.a0 = self.__compute_reference_tensor(format)
 
-        # Compute geometry tensor
-        self.gK = self.__compute_geometry_tensor(format)
-
         # Compute element tensor
-        self.aK = self.__compute_element_tensor(format)
-        
+        gK_used = set()
+        self.aK = self.__compute_element_tensor(format, gK_used)
+
+        # Compute geometry tensor
+        self.gK = self.__compute_geometry_tensor(format, gK_used)
+
         return
 
     def __compute_reference_tensor(self, format):
@@ -60,7 +61,7 @@ class ElementTensor:
                     declarations += [Declaration(name, value)]
         return declarations
 
-    def __compute_geometry_tensor(self, format):
+    def __compute_geometry_tensor(self, format, gK_used):
         "Precompute geometry tensor according to given format."
         if not self.terms: return []
         declarations = []
@@ -71,10 +72,12 @@ class ElementTensor:
             for a in aindices:
                 name = format.format["geometry tensor"](j, a)
                 value = GK(a, format)
-                declarations += [Declaration(name, value)]
+                # Only add entries that are used
+                if name in gK_used:
+                    declarations += [Declaration(name, value)]
         return declarations
 
-    def __compute_element_tensor(self, format):
+    def __compute_element_tensor(self, format, gK_used):
         """Precompute element tensor, including optimizations. This is
         where any FErari optimization should be done."""
         debug("Computing element tensor", 2)
@@ -108,10 +111,11 @@ class ElementTensor:
                         else:
                             value += "%s%s%s" % (format.format["floating point"](a0), \
                                                  format.format["multiplication"], gk)
+                        gK_used.add(gk)
             value = value or format.format["floating point"](0.0)
             declarations += [Declaration(name, value)]
             k += 1
-        return declarations    
+        return declarations
 
     def __check_integrals(self, sum):
         "Check that all terms have integrals."
