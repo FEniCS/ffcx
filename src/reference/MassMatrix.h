@@ -10,62 +10,6 @@
 
 namespace dolfin { namespace MassMatrix {
 
-/// This is the finite element for which the form is generated,
-/// providing the information neccessary to do assembly.
-
-class FiniteElement : public dolfin::NewFiniteElement
-{
-public:
-
-  FiniteElement() : dolfin::NewFiniteElement(), tensordims(0)
-  {
-    // Do nothing
-  }
-
-  ~FiniteElement()
-  {
-    if ( tensordims ) delete [] tensordims;
-  }
-
-  inline unsigned int spacedim() const
-  {
-    return 3;
-  }
-
-  inline unsigned int shapedim() const
-  {
-    return 2;
-  }
-
-  inline unsigned int tensordim(unsigned int i) const
-  {
-    dolfin_error("Element is scalar.");
-    return 0;
-  }
-
-  inline unsigned int rank() const
-  {
-    return 0;
-  }
-
-  // FIXME: Only works for nodal basis
-  inline unsigned int dof(unsigned int i, const Cell& cell, const Mesh& mesh) const
-  {
-    return cell.nodeID(i);
-  }
-
-  // FIXME: Only works for nodal basis
-  inline const Point coord(unsigned int i, const Cell& cell, const Mesh& mesh) const
-  {
-    return cell.node(i).coord();
-  }
-
-private:
-
-  unsigned int* tensordims;
-
-};
-
 /// This class contains the form to be evaluated, including
 /// contributions from the interior and boundary of the domain.
 
@@ -73,8 +17,119 @@ class BilinearForm : public dolfin::BilinearForm
 {
 public:
 
-  BilinearForm() : dolfin::BilinearForm()
+  class TestElement : public dolfin::NewFiniteElement
   {
+  public:
+
+    TestElement() : dolfin::NewFiniteElement(), tensordims(0)
+    {
+      // Do nothing
+    }
+
+    ~TestElement()
+    {
+      if ( tensordims ) delete [] tensordims;
+    }
+
+    inline unsigned int spacedim() const
+    {
+      return 3;
+    }
+
+    inline unsigned int shapedim() const
+    {
+      return 2;
+    }
+
+    inline unsigned int tensordim(unsigned int i) const
+    {
+      dolfin_error("Element is scalar.");
+      return 0;
+    }
+
+    inline unsigned int rank() const
+    {
+      return 0;
+    }
+
+    // FIXME: Only works for nodal basis
+    inline unsigned int dof(unsigned int i, const Cell& cell, const Mesh& mesh) const
+    {
+      return cell.nodeID(i);
+    }
+
+    // FIXME: Only works for nodal basis
+    inline const Point coord(unsigned int i, const Cell& cell, const Mesh& mesh) const
+    {
+      return cell.node(i).coord();
+    }
+
+  private:
+
+    unsigned int* tensordims;
+
+  };
+
+  class TrialElement : public dolfin::NewFiniteElement
+  {
+  public:
+
+    TrialElement() : dolfin::NewFiniteElement(), tensordims(0)
+    {
+      // Do nothing
+    }
+
+    ~TrialElement()
+    {
+      if ( tensordims ) delete [] tensordims;
+    }
+
+    inline unsigned int spacedim() const
+    {
+      return 3;
+    }
+
+    inline unsigned int shapedim() const
+    {
+      return 2;
+    }
+
+    inline unsigned int tensordim(unsigned int i) const
+    {
+      dolfin_error("Element is scalar.");
+      return 0;
+    }
+
+    inline unsigned int rank() const
+    {
+      return 0;
+    }
+
+    // FIXME: Only works for nodal basis
+    inline unsigned int dof(unsigned int i, const Cell& cell, const Mesh& mesh) const
+    {
+      return cell.nodeID(i);
+    }
+
+    // FIXME: Only works for nodal basis
+    inline const Point coord(unsigned int i, const Cell& cell, const Mesh& mesh) const
+    {
+      return cell.node(i).coord();
+    }
+
+  private:
+
+    unsigned int* tensordims;
+
+  };
+
+  BilinearForm() : dolfin::BilinearForm(0)
+  {
+    // Create finite element for test space
+    _test = new TestElement();
+
+    // Create finite element for trial space
+    _trial = new TrialElement();
   }
 
   bool interior(real* block) const
