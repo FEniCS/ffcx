@@ -1,7 +1,5 @@
-o [logg] Contract reference tensor
+o [logg] Create directory structure
 o [logg] Boundary integrals
 o [logg] Allow multiple different elements
-o [logg] Write simple parser script
 o [logg] Connect Matt's parse
 o [logg] Call FErari to simplify
-
