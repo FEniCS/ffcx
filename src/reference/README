@@ -1,0 +1,4 @@
+This directory contains reference output from the form
+compiler for a range of different forms. The output of
+each new release of FFC should be compared against
+these references.

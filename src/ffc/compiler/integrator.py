@@ -14,6 +14,16 @@ from ffc.common.debug import *
 from algebra import *
 from integrand import *
 
+def degree(basisfunctions):
+    """Compute total degree of the product of basis functions and
+    derivatives of basis functions."""
+    q = 0
+    for v in basisfunctions:
+        q += v.element.degree
+        for d in v.derivatives:
+            q -= 1
+    return q
+    
 class Integrator:
     
     """This class is responsible for integrating products of basis
@@ -37,9 +47,11 @@ class Integrator:
         # All shapes are the same, so pick the first one
         self.fiat_shape = basisfunctions[0].element.fiat_shape
 
-        # Determine the number of required quadrature points
-        # FIXME: This should be based on the total degree
-        m = 3
+        # Determine the number of required quadrature points based on the total
+        # degree of the product of basis functions and derivatives of basis functions
+        q = degree(basisfunctions)
+        m = (q + 1 + 1) / 2 # integer division gives 2m - 1 >= q
+        debug("Total degree is %d, using %d quadrature point(s) in each dimension" % (q, m))
 
         # Create quadrature rule
         self.fiat_quadrature = quadrature.make_quadrature(self.fiat_shape, m)

@@ -1,0 +1,14 @@
+#!/bin/sh
+
+# This script compiles and verifies all forms in the demo directory.
+
+cd src/demo
+
+for f in *.form; do
+	../bin/ffc $f
+done
+
+for f in *.h; do
+	diff ../reference/$f $f
+done
+

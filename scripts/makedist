@@ -2,6 +2,10 @@
 
 # This script prepares and creates a .tar.gz package of FFC.
 
+echo "Before making a new release of FFC, remember to verify the output"
+echo "(using scripts/verify) and then check out a clean version."
+sleep 2
+
 # Update version number in ChangeLog
 pico -w ChangeLog
 
