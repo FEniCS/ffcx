@@ -11,11 +11,19 @@ pico -w src/bin/ffc
 # Update version number in setup.py
 pico -w setup.py
 
-# Commit changes to cvs
-cvs commit
-
 # Get the version number
 VERSION=`grep 'FFC_VERSION =' src/bin/ffc | cut -d'"' -f2`
+
+# Run benchmark problem
+echo Running benchmark problem
+cd src/bench
+echo "FFC version $VERSION" >> bench.log
+date >> bench.log
+./bench >> bench.log
+cd ../../
+
+# Commit changes to cvs
+cvs commit
 
 # Write a message
 echo Creating release $VERSION of FFC
