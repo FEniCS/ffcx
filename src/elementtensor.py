@@ -67,10 +67,13 @@ class ElementTensor:
                     gk = format["geometry tensor"](j, a)
                     if abs(a0) > EPSILON:
                         if value and a0 < 0.0:
-                            value += " - %s*%s" % (str(-a0), gk)
+                            value += " - %s%s%s" % (format["floating point"](-a0), \
+                                                    format["multiplication"], gk)
                         elif value:
-                            value += " + %s*%s" % (str(a0), gk)
+                            value += " + %s%s%s" % (format["floating point"](a0), \
+                                                    format["multiplication"], gk)
                         else:
-                            value += "%s*%s" % (str(a0), gk)
+                            value += "%s%s%s" % (format["floating point"](a0), \
+                                                 format["multiplication"], gk)
             declarations += [Declaration(name, value)]
         return declarations    

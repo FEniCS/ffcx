@@ -5,9 +5,11 @@ __date__ = "2004-10-14"
 __copyright__ = "Copyright (c) 2004 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
-format = { "coefficient": lambda j, k: "w%d[%d]" % (j, k),
-           "transform": lambda j, k: "g%d%d" % (j, k),
+format = { "multiplication": "*",
            "determinant": "det",
+           "floating point": lambda a: str(a),
+           "coefficient": lambda j, k: "w%d[%d]" % (j, k),
+           "transform": lambda j, k: "g%d%d" % (j, k),
            "geometry tensor": lambda j, a: "G%d_%s" % (j, "".join(["%d" % index for index in a])),
            "element tensor": lambda i: "A%s" % "".join(["[%d]" % index for index in i]) }
 
@@ -41,8 +43,6 @@ def compile(form):
     file = open(filename, "w")
     file.write(output)
     file.close()
-
-    # Write a nice message
     print "Output written on " + filename + "."
     
     return
