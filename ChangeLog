@@ -1,3 +1,4 @@
+0.1.3 [2004-12-06]
  - Fix bug in DOLFIN format (missing value when zero)
  - Add output of reference tensor to LaTeX format
  - Make raw output format print data with full precision
