@@ -1,1 +1,5 @@
-o [logg] Make next_index_1, next_index_2 part of the form (not global)
+o [logg] Implement reassign_indices() in form.py
+o [logg] Write parser/specify language, use Matthew's parser?
+o [logg] Generate output for DOLFIN
+o [logg] Generate LaTeX output
+o [logg] Use FErari to simplify

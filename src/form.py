@@ -51,9 +51,6 @@ class Form:
         for i in range(len(self.sum.products)):
             self.dims += [self.sum.products[i].dims(self.r0[i], self.r1[i])]
 
-        for i in range(len(self.dims)):
-            print "dims = " + str(self.dims[i])
-
         return
 
     def compile(self, language = "C++"):
@@ -83,7 +80,7 @@ class Form:
             A0 = self.compute_reference_tensor(self.sum.products[i],
                                                self.r0[i], self.r1[i],
                                                self.dims[i])
-            print A0
+            print "A0 = " + str(A0)
 
         # Pass the reference tensor to FErari for simplification
         # Make call to FErari here
