@@ -1,2 +1,9 @@
+ - Make output variable names configurable
+ - Clean up DOLFIN code generation
+ - Post-process form to create reference and geometry tensors
+ - Add general tensor-valued elements
+ - Clean up and improve index reassignment
+ - Use string formatting for generation of output
+ - Change index ordering to access row-wise
 0.1.0 [2004-10-22]
  - First iteration of the FEniCS Form Compiler

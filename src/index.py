@@ -3,11 +3,8 @@ __date__ = "2004-09-29"
 __copyright__ = "Copyright (c) 2004 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
-# Python modules
-from Numeric import *
-
-next_index_0 = 0
-next_index_1 = 0
+next_index_0 = 0 # Next available primary index
+next_index_1 = 0 # Next available secondary index
 
 def next_primary_index():
     "Return next available primary index."
@@ -28,26 +25,6 @@ def reset():
     next_index_1 = 0
     return
 
-def build_indices(dims):
-    """Create a list of all index combinations matching the given list
-    of index dimensions.  Someone please tell me if there is a better
-    way to iterate over a multi-dimensional array. The list of indices
-    is constucted by iterating over all integer numbers that can be
-    represented with the base of each position determined by the given
-    dimension for that index."""
-    if not dims:
-        return []
-    current = zeros(len(dims))
-    indices = []
-    posvalue = [1] + list(cumproduct(dims)[:-1])
-    for i in range(product(dims)):
-        sum = i
-        for pos in range(len(dims)):
-            current[pos] = (i / posvalue[pos]) % dims[pos]
-            sum -= current[pos] * posvalue[pos]
-        indices += [list(current)]
-    return indices
-
 class Index:
     
     """An Index represents a tensor index. The type of index can be
@@ -56,7 +33,7 @@ class Index:
       fixed:     tensor rank 0, index is a fixed integer
       primary:   tensor rank 1, index is part of first multiindex (i)
       secondary: tensor rank 1, index is part of second multiindex (alpha)
-      auxiliary: tensor rank 1, index does not appear inside the integral
+      auxiliary: tensor rank 1, index is part of third multiindex (beta)
       
     The type of index is determined by the arguments to the
     constructor:
@@ -64,8 +41,7 @@ class Index:
       i = Index(0)           creates a given fixed index (0 in this case)
       i = Index("primary")   creates a free primary index
       i = Index("secondary") creates a free secondary index
-      i = Index("auxiliary") creates a free auxiliary index
-      i = Index()            creates a free secondary index
+      i = Index()            creates a free secondary index (default)
 
     Note that only primary and secondary indices are used in the
     creation of an element of the algebra. Auxiliary indices are
@@ -75,46 +51,62 @@ class Index:
     def __init__(self, index = "secondary"):
         "Create Index."
         if isinstance(index, Index):
+            # Create Index from Index (copy constructor)
             self.index = index.index
             self.type = index.type
         elif isinstance(index, int):
+            # Create fixed Index
             self.index = index
             self.type = "fixed"
         elif index == "primary":
+            # Create primary Index
             self.index = next_primary_index()
             self.type = "primary"
         elif index == "secondary":
+            # Create secondary Index
             self.index = next_secondary_index()
             self.type = "secondary"
         elif index == "auxiliary":
+            # Create auxiliary Index (not possible)
             raise RuntimeError, "Auxiliary indices cannot be created (only modified)."
         elif index == None:
+            # Create secondary Index (default)
             self.index = next_secondary_index()
             self.type = "secondary"
         else:
             raise RuntimeError, "Unknown index type " + str(index)
         return
 
-    def __call__(self, indices0, indices1, indices2):
+    def __call__(self, i = [], a = [], b0 = [], b1 = []):
         "Evaluate Index at current index list."
         if self.type == "fixed":
             return self.index
         elif self.type == "primary":
-            if not indices0:
+            if not i:
                 raise RuntimeError, "Missing index values for primary indices."
-            return indices0[self.index]
+            return i[self.index]
         elif self.type == "secondary":
-            if not indices1:
+            if not a:
                 raise RuntimeError, "Missing index values for secondary indices."
-            return indices1[self.index]
-        elif self.type == "auxiliary":
-            if not indices2:
+            return a[self.index]
+        elif self.type == "reference tensor auxiliary":
+            if not b0:
                 raise RuntimeError, "Missing index values for auxiliary indices."
-            return indices2[self.index]
+            return b0[self.index]
+        elif self.type == "geometry tensor auxiliary":
+            if not b1:
+                raise RuntimeError, "Missing index values for auxiliary indices."
+            return b1[self.index]
         else:
             raise RuntimeError, "Uknown index type " + str(self.type)
         return
-        
+
+    def __cmp__(self, other):
+        "Check if Indices are equal."
+        if self.index == other.index and self.type == other.type:
+            return 0
+        return -1 # Ignore self > other
+
     def __repr__(self):
         "Print nicely formatted representation of Index."
         if self.type == "fixed":
@@ -123,8 +115,11 @@ class Index:
             return "i" + str(self.index)
         elif self.type == "secondary":
             return "a" + str(self.index)
-        elif self.type == "auxiliary":
-            return "b" + str(self.index)
         else:
-            raise RuntimeError, "Unknown index type " + str(index)
+            return "b" + str(self.index)
+        return
+
+    def indexcall(self, foo, args = None):
+        "Call given function on Index."
+        foo(self, args)
         return

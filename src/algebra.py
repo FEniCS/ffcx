@@ -1,4 +1,21 @@
-"An algebra for multi-linear forms."
+"""An algebra for multi-linear forms. Objects of the following classes
+are elements of the algebra:
+
+    BasisFunction - basic building block
+    Function      - linear combination of BasisFunctions
+    Product       - product of BasisFunctions
+    Sum           - sum of Products
+
+The following operations are supported for all elements of the algebra:
+
+    Binary +
+    Binary -
+    Binary *
+    Unary  +
+    Unary  -
+    Unary  d/dx
+
+In addition, the class BasisFunction supports indexing []."""
 
 __author__ = "Anders Logg (logg@tti-c.org)"
 __date__ = "2004-09-27"
@@ -9,37 +26,41 @@ __license__  = "GNU GPL Version 2"
 from finiteelement import FiniteElement
 from derivative import Derivative
 from transform import Transform
+from integral import Integral
 from index import Index
 
-class Element:
+class BasisFunction:
 
-    "Base class for elements of the algebra."
-
-    pass
-
-class BasisFunction(Element):
-
-    """A BasisFunction represents a basis function on the reference
-    cell and can be either an argument in the multi-linear form or an
-    auxiliary basis function that will be removed in the
-    contraction.
+    """A BasisFunction represents a possibly differentiated component
+    of a basis function on the reference cell.
 
     A BasisFunction holds the following data:
 
-        index   - the Index of the BasisFunction
-        element - the FiniteElement of the BasisFunction"""
+        element     - a FiniteElement
+        index       - a basis Index
+        component   - a list of component Indices
+        derivatives - a list of Derivatives"""
 
     def __init__(self, element, index = None):
         "Create BasisFunction."
         if index == None and isinstance(element, BasisFunction):
-            self.index = Index(element.index)
+            # Create BasisFunction from BasisFunction (copy constructor)
             self.element = element.element
+            self.index = Index(element.index)
+            self.component = [] + element.component
+            self.derivatives = [] + element.derivatives
         elif index == None:
+            # Create BasisFunction with primary Index (default)
+            self.element = element
             self.index = Index("primary")
-            self.element = element
+            self.component = []
+            self.derivatives = []
         else:
-            self.index = Index(index)
+            # Create BasisFunction with specified Index
             self.element = element
+            self.index = Index(index)
+            self.component = []
+            self.derivatives = []
         return
 
     def __add__(self, other):
@@ -52,7 +73,9 @@ class BasisFunction(Element):
 
     def __mul__(self, other):
         "Operator: BasisFunction * Element"
-        if isinstance(other, Sum):
+        if isinstance(other, Integral):
+            return Product(self) * other
+        elif isinstance(other, Sum):
             return Sum(self) * Sum(other)
         else:
             return Product(self) * Product(other)
@@ -67,127 +90,93 @@ class BasisFunction(Element):
 
     def dx(self, index = None):
         "Operator: (d/dx)BasisFunction in given coordinate direction."
-        return Factor(self).dx(index)
-
-    def __repr__(self):
-        "Print nicely formatted representation of BasisFunction."
-        if self.index.type == "primary":
-            return "v" + str(self.index)
-        else:
-            return "w" + str(self.index)
-        
-class Factor(Element):
-
-    """A Factor represents a (possibly) differentiated BasisFunction
-    on the reference cell.
-
-    A Factor holds the following data:
-
-        basisfunction - the BasisFunction of the Factor
-        derivatives   - a list of Derivatives applied to the BasisFunction
-        transforms    - a list of corresponding Transforms"""
-    
-    def __init__(self, other = None):
-        "Create Factor."
-        if other == None:
-            self.basisfunction = None
-            self.derivatives = []
-            self.transforms = []
-        elif isinstance(other, BasisFunction):
-            self.basisfunction = BasisFunction(other)
-            self.derivatives = []
-            self.transforms = []
-        elif  isinstance(other, Factor):
-            self.basisfunction = BasisFunction(other.basisfunction)
-            self.derivatives = [] + other.derivatives
-            self.transforms = [] + other.transforms
-        else:
-            raise RuntimeError, "Unable to create Factor from " + str(other)
-        return
-
-    def __add__(self, other):
-        "Operator: Factor + Element"
-        return Sum(self) + Sum(other)
-
-    def __sub__(self, other):
-        "Operator: Factor - Element"
-        return Sum(self) - Sum(other)
-
-    def __mul__(self, other):
-        "Operator: Factor * Element"
-        if isinstance(other, Sum):
-            return Sum(self) * Sum(other)
-        else:
-            return Product(self) * Product(other)
-
-    def __pos__(self):
-        "Operator: +Factor"
-        return Factor(self)
-
-    def __neg__(self):
-        "Operator: -Factor"
-        return -Product(self)
-
-    def dx(self, index = None):
-        "Operator: (d/dx)Factor in given coordinate direction."
         i = Index() # Create new secondary index
-        w = Factor(self)
-        w.derivatives = [Derivative(i)] + w.derivatives
-        w.transforms = [Transform(i, index)] + w.transforms
+        w = Product(self)
+        w.basisfunctions[0].derivatives.insert(0, Derivative(self.element, i))
+        w.transforms.insert(0, Transform(self.element, i, index))
+        return w
+
+    def  __getitem__(self, component):
+        "Operator: indexing, pick given component."
+        rank = self.element.rank
+        if self.component or rank == 0:
+            raise RuntimeError, "Cannot pick component of scalar BasisFunction."
+        w = BasisFunction(self)
+        if isinstance(component, list):
+            if not rank == len(component):
+                raise RuntimeError, "Illegal component index, does not match rank."
+            w.component = [] + component
+        else:
+            if not rank == 1:
+                raise RuntimeError, "Illegal component index, does not match rank."
+            w.component = [Index(component)]
         return w
 
     def __repr__(self):
-        "Print nicely formatted representation of Factor."
-        output = ""
-        for t in self.transforms:
-            output += t.__repr__()
-        if len(self.derivatives) > 0:
-            output += "("
-            for d in self.derivatives:
-                output += d.__repr__()
-            output += self.basisfunction.__repr__()
-            output += ")"
+        "Print nicely formatted representation of BasisFunction."
+        d = "".join([d.__repr__() for d in self.derivatives])
+        i = self.index.__repr__()
+        if self.component:
+            c = "[" + ",".join([c.__repr__() for c in self.component]) + "]"
         else:
-            output += self.basisfunction.__repr__()
-        return output
-    
-class Product(Element):
+            c = ""
+        if len(self.derivatives) > 0:
+            return "(" + d + "v" + i + c + ")"
+        else:
+            return d + "v" + i + c
 
-    """A Product represents a product of Factors. Note that the list of
-    Transforms of each Factor contained in a Product should be
-    empty. When multiplying Factors to obtain a Product, the
-    Transforms of all Factors will be collected in to a single list.
+    def indexcall(self, foo, args = None):
+        "Call given function on all Indices."
+        self.index.indexcall(foo, args)
+        [i.indexcall(foo, args) for i in self.component]
+        [d.indexcall(foo, args) for d in self.derivatives]
+        return
+
+class Function:
+
+    """A Function represents a projection of a given function onto a
+    finite element space, expressed as a linear combination of
+    BasisFunctions."""
+
+    def __init__(self, element, name):
+        return
+
+class Product:
+
+    """A Product represents a product of factors, including
+    BasisFunctions and Functions.
 
     A Product holds the following data:
 
-        factors      - a list of Factors in the Product
-        transforms   - a list of Transforms for all Factors
-        coefficients - a list of Coefficients in the Product
-        constant     - a constant contained in the Product"""
+        constant       - a numeric constant (float)
+        coefficients   - a list of Coefficients
+        transforms     - a list of Transforms
+        basisfunctions - a list of BasisFunctions
+        integral       - an Integral"""
 
     def __init__(self, other = None):
         "Create Product."
         if other == None:
-            self.factors = []
-            self.transforms = []
-            self.coefficients = []
+            # Create default Product (unity)
             self.constant = 1.0
+            self.coefficients = []
+            self.transforms = []
+            self.basisfunctions = []
+            self.integral = None
         elif isinstance(other, BasisFunction):
-            self.factors = [Factor(other)]
+            # Create Product from BasisFunction
+            self.constant = 1.0
+            self.coefficients = []
             self.transforms = []
-            self.coefficients = []
-            self.constant = 1.0
-        elif isinstance(other, Factor):
-            self.factors = [Factor(other)]
-            self.transforms = [] + other.transforms
-            self.coefficients = []
-            self.constant = 1.0
-            self.factors[0].transforms = []
+            self.basisfunctions = [BasisFunction(other)]
+            self.integral = None
         elif isinstance(other, Product):
-            self.factors = [] + other.factors
-            self.transforms = [] + other.transforms
-            self.coefficients = [] + other.coefficients
+            # Create Product from Product (copy constructor)
             self.constant = other.constant
+            self.coefficients = [] + other.coefficients
+            self.transforms = [] + other.transforms
+            self.basisfunctions = [] + other.basisfunctions
+            self.integral = other.integral
         else:
             raise RuntimeError, "Unable to create Product from " + str(other)
         return
@@ -202,16 +191,22 @@ class Product(Element):
 
     def __mul__(self, other):
         "Operator: Product * Element"
-        if isinstance(other, Sum):
+        if isinstance(other, Integral):
+            if not self.integral == None:
+                raise RuntimeError, "Integrand can only be integrated once."
+            w = Product(self)
+            w.integral = other
+            return w
+        elif isinstance(other, Sum):
             return Sum(self) * Sum(other)
         else:
             w0 = Product(self)
             w1 = Product(other)
             w = Product()
-            w.factors = w0.factors + w1.factors
-            w.transforms = w0.transforms + w1.transforms
-            w.coefficients = w0.coefficients + w1.coefficients
             w.constant = w0.constant * w1.constant
+            w.coefficients = w0.coefficients + w1.coefficients
+            w.transforms = w0.transforms + w1.transforms
+            w.basisfunctions = w0.basisfunctions + w1.basisfunctions
             return w
 
     def __pos__(self):
@@ -227,35 +222,42 @@ class Product(Element):
     def dx(self, index = None):
         "Operator: (d/dx)Product in given coordinate direction."
         w = Sum()
-        for i in range(len(self.factors)):
-            p = Product()
-            for j in range(len(self.factors)):
+        for i in range(len(self.basisfunctions)):
+            p = Product(self)
+            p.basisfunctions = []
+            for j in range(len(self.basisfunctions)):
                 if i == j:
-                    p = p * self.factors[i].dx(index)
+                    p = p * self.basisfunctions[i].dx(index)
                 else:
-                    p = p * self.factors[j]
+                    p = p * self.basisfunctions[j]
             w = w + p
         return w
 
     def __repr__(self):
         "Print nicely formatted representation of Product."
-        output = ""
         if self.constant == -1.0:
-            output += "-"
+            s = "-"
         elif not self.constant == 1.0:
-            output += str(self.constant)
-        for c in self.coefficients:
-            output += c.__repr__()
-        for t in self.transforms:
-            output += t.__repr__()
-        for i in range(len(self.factors)):
-            if i < (len(self.factors) - 1):
-                output += (self.factors[i].__repr__() + "*")
-            else:
-                output += self.factors[i].__repr__()
-        return output
+            s = str(self.constant)
+        else:
+            s = ""
+        c = "".join([c.__repr__() for c in self.coefficients])
+        t = "".join([t.__repr__() for t in self.transforms])
+        v = "*".join([v.__repr__() for v in self.basisfunctions])
+        if not self.integral == None:
+            i = "*" + self.integral.__repr__()
+        else:
+            i = ""
+        return s + c + t + v + i
 
-class Sum(Element):
+    def indexcall(self, foo, args = None):
+        "Call given function on all Indices."
+        [c.indexcall(foo, args) for c in self.coefficients]
+        [t.indexcall(foo, args) for t in self.transforms]
+        [v.indexcall(foo, args) for v in self.basisfunctions]
+        return
+
+class Sum:
 
     """A Sum represents a sum of Products. Each Product will be
     compiled separately, since different Products are probably of
@@ -268,14 +270,16 @@ class Sum(Element):
     def __init__(self, other = None):
         "Create Sum."
         if other == None:
+            # Create default Sum (zero)
             self.products = []
         elif isinstance(other, BasisFunction):
-            self.products = [Product(other)]
-        elif isinstance(other, Factor):
+            # Create Sum from BasisFunction
             self.products = [Product(other)]
         elif isinstance(other, Product):
+            # Create Sum from Product
             self.products = [Product(other)]
         elif isinstance(other, Sum):
+            # Create Sum from Sum (copy constructor)
             self.products = [] + other.products
         else:
             raise RuntimeError, "Unable to create Sum from " + str(other)
@@ -319,13 +323,12 @@ class Sum(Element):
 
     def __repr__(self):
         "Print nicely formatted representation of Sum."
-        output = ""
-        for i in range(len(self.products)):
-            if i < (len(self.products) - 1):
-                output += (self.products[i].__repr__() + " + ")
-            else:
-                output += self.products[i].__repr__()
-        return output
+        return " + ".join([p.__repr__() for p in self.products])
+
+    def indexcall(self, foo, args = None):
+        "Call given function on all Indices."
+        [p.indexcall(foo, args) for p in self.products]
+        return
 
 if __name__ == "__main__":
 
@@ -333,10 +336,11 @@ if __name__ == "__main__":
     print "---------------"
 
     element = FiniteElement("Lagrange", 1, "triangle")
-
     u = BasisFunction(element)
     v = BasisFunction(element)
-
+    dx = Integral("interior")
+    ds = Integral("boundary")
+    
     print "Testing long expression:"
     w = (((u*(u*v + u)*u + u*v)*u.dx(0)).dx(2)).dx(1)
     print w
@@ -357,7 +361,7 @@ if __name__ == "__main__":
     
     print "Testing Poisson:"
     i = Index()
-    w = u.dx(i)*v.dx(i)
+    w = u.dx(i)*v.dx(i)*dx + u*v*ds
     print w
 
     print
@@ -366,4 +370,15 @@ if __name__ == "__main__":
     i = Index()
     j = Index()
     w = u.dx(i).dx(i)*v.dx(j).dx(j)
+    print w
+
+    print
+
+    print "Testing Poisson system:"
+    element = FiniteElement("Vector Lagrange", 1, "triangle")
+    u = BasisFunction(element)
+    v = BasisFunction(element)
+    i = Index()
+    j = Index()
+    w = u[i].dx(j)*v[i].dx(j)*dx
     print w

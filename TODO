@@ -1,5 +1,4 @@
-o [logg] Use triple-quoted strings in code generation
-o [logg] Change ordering of index loops (rows first)
+o [logg] Allow multiple different elements
 o [logg] Implement coefficients
 o [logg] Implement constants
 o [logg] Write parser/specify language, use Matthew's parser?

@@ -9,102 +9,95 @@ from Numeric import *
 # FFC modules
 import dolfin
 import latex
-from rank import Rank
 from index import *
 from algebra import *
+from integral import *
 from reassign import *
-from integrator import Integrator
-from finiteelement import FiniteElement
+from finiteelement import *
+from elementtensor import *
 
 class Form:
 
     """A Form represents a multi-linear form typically appearing in
     the variational formulation of partial differential equation.
-
+    
     A Form holds the following data:
 
-        sum   - the representation of the form as a Sum
-        ranks - a list of auxiliary data for each Product"""
+        sum     - a Sum representing the multi-linear form
+        name    - a string, the name of the multi-linear form
+        AKi     - interior ElementTensor
+        AKb     - boundary ElementTensor
+        rank    - primary rank of the multi-linear form
+        dims    - list of primary dimensions
+        indices - list of primary indices
 
-    def __init__(self, form, name = None):
+    A multi-linear form is first expressed as an element of the
+    algebra (a Sum) and is then post-processed to be expressed as a
+    sum of Terms, where each Term is the product of a ReferenceTensor
+    and a GeometryTensor."""
+
+    def __init__(self, sum, name = "MyPDE"):
         "Create Form."
 
-        if isinstance(form, Form):
-            self.sum = reassign_indices(Sum(form.sum))
-            self.ranks = [Rank(p) for p in self.sum.products]
-            self.name = form.name
-        else:
-            self.sum = reassign_indices(Sum(form))
-            self.ranks = [Rank(p) for p in self.sum.products]
-            if name == None:
-                self.name = "My"
-            else:
-                self.name = name            
+        # Initialize Form
+        self.sum     = Sum(sum)
+        self.name    = name
+        self.AKi     = None
+        self.AKb     = None
+        self.rank    = None
+        self.dims    = None
+        self.indices = None
 
-        # Check that all Products have the same primary rank,
-        # otherwise it's not a multi-linear form.
-        for i in range(len(self.ranks) - 1):
-            if not self.ranks[i].r0 == self.ranks[i + 1].r0:
-                raise RuntimeError, "Form must be linear in each of its arguments."
-
-        print "Created form: " + str(self)
-        
         return
 
     def compile(self, language = "C++"):
         "Generate code for evaluation of the variational form."
 
-        # Compute the reference tensor for each product
-        A0s = []
-        for i in range(len(self.sum.products)):
-            A0s += [self.compute_reference_tensor(i)]
-            print "A0 = " + str(A0s[i])
-
-        # Choose language
+        # Choose format
         if language == "C++":
-            dolfin.compile(self.sum.products, A0s, self.ranks, self.name)
+            format = dolfin.format
         elif language == "LaTeX":
-            latex.compile(self.sum.products, A0s, self.ranks, self.name)
+            format = latex.format
         else:
             print "Unknown language " + str(language)
+
+        # Reassign indices
+        reassign_indices(self.sum)
+
+        # Create element tensors
+        self.AKi = ElementTensor(self.sum, "interior", format)
+        self.AKb = ElementTensor(self.sum, "boundary", format)
+
+        # Check ranks
+        self.__check_primary_ranks()
+            
+        # Generate output
+        if language == "C++":
+            dolfin.compile(self)
+        elif language == "LaTeX":
+            latex.compile(self)
+        else:
+            print "Unknown language " + str(language)
+            
+        print "Compiled form: " + str(self)
+            
         return
 
-    def compute_reference_tensor(self, i):
-        "Compute the integrals of the reference tensor."
-
-        product = self.sum.products[i]
-        rank = self.ranks[i]
-        indices0 = [] + rank.indices0
-        indices1 = [] + rank.indices1
-
-        # Make sure that the iteration is not empty
-        if not indices1:
-            indices1 = [[]]
-
-        # Create reference tensor
-        A0 = zeros(rank.dims0 + rank.dims1, Float)
-
-        # Create quadrature rule
-        integrate = Integrator(product)
-
-        # Iterate over all combinations of indices
-        for i in indices0:
-            for a in indices1:
-                A0[i + a] = integrate(product, i, a)
-            
-        return A0
+    def __check_primary_ranks(self):
+        "Check that all primary ranks are equal."
+        terms = self.AKi.terms + self.AKb.terms
+        ranks = [term.A0.i.rank for term in terms]
+        if not ranks[1:] == ranks[:-1]:
+            "Form must be linear in each of its arguments."
+        self.rank = ranks[0]
+        self.dims = terms[0].A0.i.dims
+        self.indices = terms[0].A0.i.indices
+        return
 
     def __repr__(self):
         "Print nicely formatted representation of Form."
-        output = "a("
-        r0 = self.ranks[0].r0 # All primary ranks are equal
-        for i in range(r0):
-            if i < (r0 - 1):
-                output += "v" + str(i) + ", "
-            else:
-                output += "v" + str(i) + ") = "
-        output += self.sum.__repr__()
-        return output
+        v = ", ".join(["vi" + str(i) for i in range(self.rank)])
+        return "a(%s) = %s" % (v, self.sum.__repr__())
 
 if __name__ == "__main__":
 
@@ -116,6 +109,16 @@ if __name__ == "__main__":
     u = BasisFunction(element)
     v = BasisFunction(element)
     i = Index()
+    dx = Integral("interior")
+    ds = Integral("boundary")
     
-    a = Form(u.dx(i)*v.dx(i), "FFCPoisson")
+    a = Form(u.dx(i)*v.dx(i)*dx + u*v*dx + u*v*ds, "FFCPoisson")
     a.compile()
+    
+    #element = FiniteElement("Vector Lagrange", 1, "triangle")
+    #u = BasisFunction(element)
+    #v = BasisFunction(element)
+    #i = Index()
+    #j = Index()
+    #a = Form(u[i].dx(j)*v[i].dx(j), "FFCPoissonSystem")
+    #a.compile()

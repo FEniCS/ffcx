@@ -14,16 +14,26 @@ class Transform:
     an affine map x = F(X), a Transform represents the partial
     derivative dX/dx."""
     
-    def __init__(self, index0 = None, index1 = None):
+    def __init__(self, element, index0 = None, index1 = None):
         "Create Transform."
-        if isinstance(index0, Transform):
-            self.index0 = Index(index0.index0)
-            self.index1 = Index(index0.index1)
+        if isinstance(element, Transform):
+            # Create Transform from Transform (copy constructor)
+            self.element = element.element
+            self.index0 = Index(element.index0)
+            self.index1 = Index(element.index1)
         else:
+            # Create Transform from given Indices
+            self.element = element
             self.index0 = Index(index0)
             self.index1 = Index(index1)
         return
 
     def __repr__(self):
-        "Print nicely formatted representation of Factor."
+        "Print nicely formatted representation of Transform."
         return "(dX" + self.index0.__repr__() + "/" + "dx" + self.index1.__repr__() + ")"
+
+    def indexcall(self, foo, args = None):
+        "Call given function on all Indices."
+        self.index0.indexcall(foo, args)
+        self.index1.indexcall(foo, args)
+        return

@@ -28,6 +28,8 @@ class FiniteElement:
     def __init__(self, name, degree, shape):
         "Create FiniteElement."
 
+        # FIXME: Create copy constructor and use in algebra.py
+
         # Save data
         self.name = name
         self.degree = degree
@@ -48,6 +50,8 @@ class FiniteElement:
             self.fiat_space = Lagrange(self.fiat_shape, degree)
         elif name == "Hermite":
             self.fiat_space = Hermite(self.fiat_shape, degree)
+        elif name == "Vector Lagrange": # FIXME: Just for testing
+            self.fiat_space = Lagrange(self.fiat_shape, degree)
         else:
             raise RuntimeError, "Unknown space " + str(name)
 
@@ -58,6 +62,12 @@ class FiniteElement:
         self.spacedim = len(self.basis)
         self.shapedim = shapes.dims[self.fiat_shape]
         self.vectordim = 1 # FIXME: Should not always be 1
+
+        # FIXME: Just for testing
+        self.rank = 0
+        if name == "Vector Lagrange":
+            self.rank = 1
+            self.vectordim = 3
 
         return
 
