@@ -10,9 +10,14 @@ class Integral:
 
     def __init__(self, type = "interior"):
         "Create Integral of given type."
-        if not (type == "interior" or type == "boundary"):
+        if isinstance(type, Integral):
+            # Create Integral from Integral (copy constructor)
+            self.type = "" + type.type;
+        elif  type == "interior" or type == "boundary":
+            # Create Integral of given type
+            self.type = "" + type;
+        else:
             raise RuntimeError, "Unknown integral type " + str(type) + "."
-        self.type = type
         return
 
     def __repr__(self):

@@ -17,7 +17,7 @@ class Coefficient:
         number  - a unique index for the represented Function
         index   - summation Index (matching Index of corresponding BasisFunction)"""
 
-    def __init__(self, element, number, index = None):
+    def __init__(self, element, number = None, index = None):
         "Create Coefficient."
         if isinstance(element, Coefficient):
             # Create Coefficient from Coefficient (copy constructor)

@@ -11,7 +11,7 @@ format = { "multiplication": "*",
            "coefficient": lambda j, k: "c[%d][%d]" % (j, k),
            "transform": lambda j, k: "g%d%d" % (j, k),
            "reference tensor" : lambda j, i, a: "not defined",
-           "geometry tensor": lambda j, a: "G%d_%s" % (j, "".join(["%d" % index for index in a])),
+           "geometry tensor": lambda j, a: "G%d_%s" % (j, "_".join(["%d" % index for index in a])),
            "element tensor": lambda i, k: "block[%d]" % k }
 
 def compile(forms):

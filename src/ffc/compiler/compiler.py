@@ -11,6 +11,9 @@ __license__  = "GNU GPL Version 2"
 import sys
 from Numeric import *
 
+# FFC common modules
+from ffc.common.debug import *
+
 # FFC format modules
 sys.path.append("../../")
 from ffc.format import dolfin
@@ -50,7 +53,8 @@ def compile(sums, name = "MyPDE", language = None):
     # Generate the element tensor for all given forms
     for form in forms:
 
-        print "\nCompiling form: " + str(form)
+        debug("\nCompiling form: " + str(form), 0)
+        debug("Number of terms in form: %d" % len(form.sum.products), 1)
         
         # Create element tensors
         form.AKi = ElementTensor(form.sum, "interior", format)

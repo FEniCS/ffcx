@@ -31,6 +31,14 @@ from transform import Transform
 from integral import Integral
 from index import Index
 
+def copy(list, Type):
+    """Create a copy of the list, calling the copy constructor on each
+    object in the list."""
+    if not list:
+        return []
+    else:
+        return [Type(object) for object in list]
+
 class Element:
 
     "Base class for elements of the algebra."
@@ -128,8 +136,8 @@ class BasisFunction(Element):
             # Create BasisFunction from BasisFunction (copy constructor)
             self.element = element.element
             self.index = Index(element.index)
-            self.component = [] + element.component
-            self.derivatives = [] + element.derivatives
+            self.component = copy(element.component, Index)
+            self.derivatives = copy(element.derivatives, Derivative)
         elif index == None:
             # Create BasisFunction with primary Index (default)
             self.element = element
@@ -153,7 +161,7 @@ class BasisFunction(Element):
         if isinstance(component, list):
             if not rank == len(component):
                 raise RuntimeError, "Illegal component index, does not match rank."
-            w.component = [] + component
+            w.component = copy(component, Index)
         else:
             if not rank == 1:
                 raise RuntimeError, "Illegal component index, does not match rank."
@@ -241,10 +249,10 @@ class Product(Element):
             self.integral = None
         elif isinstance(other, Product):
             # Create Product from Product (copy constructor)
-            self.constant = other.constant
-            self.coefficients = [] + other.coefficients
-            self.transforms = [] + other.transforms
-            self.basisfunctions = [] + other.basisfunctions
+            self.constant = float(other.constant)
+            self.coefficients = copy(other.coefficients, Coefficient)
+            self.transforms = copy(other.transforms, Transform)
+            self.basisfunctions = copy(other.basisfunctions, BasisFunction)
             self.integral = other.integral
         else:
             raise RuntimeError, "Unable to create Product from " + str(other)
@@ -256,7 +264,7 @@ class Product(Element):
             if not self.integral == None:
                 raise RuntimeError, "Integrand can only be integrated once."
             w = Product(self)
-            w.integral = other
+            w.integral = Integral(other)
             return w
         elif isinstance(other, Sum):
             return Sum(self) * Sum(other)
@@ -265,14 +273,19 @@ class Product(Element):
             w1 = Product(other)
             if not w0.rank() == w1.rank() == 0:
                 raise RuntimeError, "Illegal ranks for product, must be scalar."
+            w = Product()
+            w.constant = float(w0.constant * w1.constant)
+            w.coefficients = copy(w0.coefficients + w1.coefficients, Coefficient)
+            w.transforms = copy(w0.transforms + w1.transforms, Transform)
+            w.basisfunctions = copy(w0.basisfunctions + w1.basisfunctions, BasisFunction)
             if w0.integral and w1.integral:
                 raise RuntimeError, "Integrand can only be integrated once."
-            w = Product()
-            w.constant = w0.constant * w1.constant
-            w.coefficients = w0.coefficients + w1.coefficients
-            w.transforms = w0.transforms + w1.transforms
-            w.basisfunctions = w0.basisfunctions + w1.basisfunctions
-            w.integral = w0.integral or w1.integral
+            elif w0.integral:
+                w.integral = Integral(w0.integral)
+            elif w1.integral:
+                w.integral = Integral(w1.integral)
+            else:
+                w.integral = None;
             return w
 
     def __neg__(self):
@@ -321,7 +334,7 @@ class Product(Element):
             i = "*" + self.integral.__repr__()
         else:
             i = ""
-        return s + c + t + v + i
+        return s + c + t + " | " + v + i
 
     def rank(self):
         "Return value rank of Product."
@@ -369,7 +382,7 @@ class Sum(Element):
             self.products = [Product(other)]
         elif isinstance(other, Sum):
             # Create Sum from Sum (copy constructor)
-            self.products = [] + other.products
+            self.products = copy(other.products, Product)
         else:
             raise RuntimeError, "Unable to create Sum from " + str(other)
         return

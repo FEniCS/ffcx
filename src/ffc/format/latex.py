@@ -13,7 +13,7 @@ format = { "multiplication": "",
            "coefficient": lambda j, k: "c_{%d%d}" % (j + 1, k + 1),
            "transform": lambda j, k: "\\frac{\\partial X_{%d}}{\\partial x_{%d}}" % (j + 1, k + 1),
            "reference tensor" : lambda j, i, a: "not defined",
-           "geometry tensor": lambda j, a: "G_{K,%d}^{%s}" % (j + 1, "".join(["%d" % (index + 1) for index in a])),
+           "geometry tensor": lambda j, a: "G_{K,%d}^{%s}" % (j + 1, ",".join(["%d" % (index + 1) for index in a])),
            "element tensor": lambda i, k: "A^K_{%s}" % "".join(["%d" % (index + 1) for index in i]) }
 
 def compile(forms):

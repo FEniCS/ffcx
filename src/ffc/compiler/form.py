@@ -7,6 +7,9 @@ __license__  = "GNU GPL Version 2"
 import sys
 from Numeric import *
 
+# FFC common modules
+from ffc.common.debug import *
+
 # FFC format modules
 sys.path.append("../../")
 from ffc.format import dolfin
@@ -58,6 +61,7 @@ class Form:
         self.nfunctions = 0
 
         # Reassign indices
+        debug("Before index reassignment: " + str(sum), 2)
         reassign_indices(self.sum)
 
         return
