@@ -1,0 +1,38 @@
+#!/bin/sh
+
+# This script prepares and creates a .tar.gz package of FFC.
+
+# Get the version number
+VERSION=$1
+
+# Write a message
+echo Creating release $VERSION of FFC
+
+# Create the directory
+DISTDIR=ffc-$VERSION
+echo "Creating directory $DISTDIR"
+mkdir $DISTDIR
+
+# Copy files
+FILES=`ls | grep -v $DISTDIR`
+cp -R $FILES $DISTDIR
+
+# Remove unecessary files
+REMOVE1=`find $DISTDIR | grep CVS`
+REMOVE2=`find $DISTDIR -name '*~'`
+REMOVE="$REMOVE1 $REMOVE2"
+rm -rf $REMOVE
+
+# Create the archive
+TARBALL="ffc-$VERSION.tar.gz"
+echo "Creating arhive: $TARBALL"
+tar zcf $TARBALL $DISTDIR
+
+# Remove the directory
+echo 'Removing temporary directory'
+rm -rf $DISTDIR
+
+# Copy archive and files to web page
+scp $TARBALL fenics@fenics.org/pub/software/ffc/v0.1
+scp ChangeLog fenics@fenics.org/pub/software/ffc/
+scp TODO fenics@fenics.org/pub/software/ffc/

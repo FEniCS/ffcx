@@ -1,6 +1,5 @@
-o [logg] Contract along extra dimensions not present in Product
-o [logg] Add coefficients
+o [logg] Implement coefficients
+o [logg] Implement constants
 o [logg] Write parser/specify language, use Matthew's parser?
-o [logg] Generate output for DOLFIN
 o [logg] Generate LaTeX output
-o [logg] Use FErari to simplify
+o [logg] Use FErari to simplify?
