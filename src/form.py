@@ -7,6 +7,8 @@ __license__  = "GNU GPL Version 2"
 from Numeric import *
 
 # FFC modules
+import dolfin
+import latex
 from rank import Rank
 from index import *
 from algebra import *
@@ -52,33 +54,13 @@ class Form:
             A0 = self.compute_reference_tensor(i)
             print "A0 = " + str(A0)
 
-        # Choos language
-        if language == "C":
-            self.compile_c()
-        elif language == "C++":
-            self.compile_cpp()
+        # Choose language
+        if language == "C++":
+            dolfin.compile(A0)
         elif language == "LaTeX":
-            self.compile_latex()
+            latex.compile(A0)
         else:
             print "Unknown language " + str(language)
-        return
-
-    def compile_c(self):
-        "Generate C code."
-        print "Compiling multi-linear form for C."
-        print "Not yet supported."
-        return
-
-    def compile_cpp(self):
-        "Generate C++ code."
-        print "Compiling multi-linear form for C++."
-        print "Not yet supported."
-        return
-
-    def compile_latex(self):
-        "Generate LaTeX code (paste into your report :-)."
-        print "Compiling multi-linear form for LaTeX."
-        print "Not yet supported."
         return
 
     def compute_reference_tensor(self, i):
@@ -118,11 +100,6 @@ class Form:
             A0[tensorindex] = integrate(product, index, r0, r1)
             
         return A0
-
-    def compute_geometry_tensor(self, i):
-        "Compute the expression for the geometry tensor."
-        
-    
 
     def __repr__(self):
         "Print nicely formatted representation of Form."
