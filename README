@@ -1,4 +1,11 @@
 FFC: The FEniCS Form Compiler
+-----------------------------
+
+Dependencies:
+
+- Python Numeric module (Debian package python-numeric)
+- FIAT?
+- FErari?
 
 Anders Logg
 logg@tti-c.org

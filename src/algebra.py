@@ -334,8 +334,52 @@ class Product(Element):
         shouldn't take too much time."""
         dimlist = []
         # First check dimensions for primary indices
-        #for i in range(r0):
-            
+        for i in range(r0):
+            (dim, found) = self.primary_dim(i)
+            if found:
+                dimlist = dimlist + [dim]
+            else:
+                raise RuntimeError, "Unable to find primary index " + i
+        # Then check dimensions for secondary indices
+        for i in range(r1):
+            (dim, found) = self.primary_dim(i)
+            if found:
+                dimlist = dimlist + [dim]
+            else:
+                raise RuntimeError, "Unable to find secondary index " + i
+        return dimlist
+
+    def primary_dim(self, i):
+        """Try to find primary dimension number i. If found, the
+        dimension is returned as (dim, True). Otherwise (0, False) is
+        returned."""
+        for f in self.factors:
+            # First check BasisFunction
+            if f.basisfunction.index.type == "primary":
+                if f.basisfunction.index.index == i:
+                    return (f.basisfunction.index.dim, True)
+            # Then check Derivatives
+            for d in f.derivatives:
+                if d.index.type == "primary":
+                    if d.index.index == i:
+                        return (d.index.dim, True)
+        return (0, False)
+
+    def secondary_dim(self, i):
+        """Try to find secondary dimension number i. If found, the
+        dimension is returned as (dim, True). Otherwise (0, False) is
+        returned."""
+        for f in self.factors:
+            # First check BasisFunction
+            if f.basisfunction.index.type == "secondary":
+                if f.basisfunction.index.index == i:
+                    return (f.basisfunction.index.dim, True)
+            # Then check Derivatives
+            for d in f.derivatives:
+                if d.index.type == "secondary":
+                    if d.index.index == i:
+                        return (d.index.dim, True)
+        return (0, False)
     
     def __repr__(self):
         "Print nicely formatted representation of Product."

@@ -4,7 +4,7 @@ __date__ = "2004-09-27"
 __copyright__ = "Copyright (c) 2004 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
-from Numeric import zeros
+from Numeric import *
 from algebra import *
 
 class Form:
@@ -48,9 +48,6 @@ class Form:
         self.dims = []
         for i in range(len(self.sum.products)):
             self.dims += [self.sum.products[i].dims(self.r0[i], self.r1[i])]
-
-        print self.dims
-        
         
         return
 
@@ -79,7 +76,9 @@ class Form:
         # Compute the reference tensors for each product
         for i in range(len(self.sum.products)):
             A0 = self.compute_reference_tensor(self.sum.products[i],
-                                               self.r0[i], self.r1[i])
+                                               self.r0[i], self.r1[i],
+                                               self.dims[i])
+            print A0
 
         # Pass the reference tensor to FErari for simplification
         # Make call to FErari here
@@ -92,13 +91,34 @@ class Form:
         print "Not yet supported."
         return
 
-    def compute_reference_tensor(self, product, r0, r1):
+    def compute_reference_tensor(self, product, r0, r1, dims):
         "Compute the integrals of the reference tensor using FIAT."
-        rtot = r0 + r1 # total rank
-        print rtot
-        index = zeros(rtot)
-        print index
-        return
+        A0 = zeros(dims, Float)
+        indices = self.build_indices(dims)
+        for index in indices:
+            A0[index] = self.integrate(product, index, r0, r1)
+        return A0
+
+    def integrate(self, product, index, r0, r1):
+        return sum(index)
+
+    def build_indices(self, dims):
+        """Create a list of all indices of the reference tensor.
+        Someone please tell me if there is a better way to iterate
+        over a multi-dimensional array. The list of indices is
+        constucted by iterating over all integer numbers that can be
+        represented with the base of each position determined by the
+        given dimension for that dimension."""
+        current = zeros(len(dims))
+        indices = []
+        posvalue = [1] + list(cumproduct(dims)[:-1])
+        for i in range(product(dims)):
+            sum = i
+            for pos in range(len(dims)):
+                current[pos] = (i / posvalue[pos]) % dims[pos]
+                sum -= current[pos] * posvalue[pos]
+            indices += [list(current)]
+        return array(indices)
 
     def __repr__(self):
         output = "a("
@@ -119,6 +139,6 @@ if __name__ == "__main__":
     v = BasisFunction()
     i = Index()
 
-    a = Form(u.dx(i)*v.dx(i))
+    a = Form(u.dx(i)*v.dx(i) + u*v)
     print a
     a.compile()

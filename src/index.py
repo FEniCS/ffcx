@@ -45,18 +45,23 @@ class Index:
         if isinstance(index, Index):
             self.index = index.index
             self.type = index.type
+            self.dim = index.dim
         elif isinstance(index, int):
             self.index = index
             self.type = "fixed"
+            self.dim = 3
         elif index == "primary":
             self.index = next_primary_index()
             self.type = "primary"
+            self.dim = 3
         elif index == "secondary":
             self.index = next_secondary_index()
             self.type = "secondary"
+            self.dim = 3
         elif index == None:
             self.index = next_secondary_index()
             self.type = "secondary"
+            self.dim = 3
         else:
             raise RuntimeError, "Unknown index type " + str(index)
         return
