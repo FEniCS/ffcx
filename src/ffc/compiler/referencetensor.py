@@ -68,8 +68,8 @@ class ReferenceTensor:
 
     def __find_dim(self, i, type):
         "Find dimension of given Index."
-        index = Index(type)
-        index.index = i
+        index = Index(i)
+        index.type = type
         for v in self.basisfunctions:
             # Check basis Index
             if v.index == index:
@@ -77,7 +77,7 @@ class ReferenceTensor:
             # Check component Indices
             for j in range(len(v.component)):
                 if v.component[j] == index:
-                    return v.element.vectordims[j]
+                    return v.element.tensordims[j]
             # Check Derivatives
             for d in v.derivatives:
                 if d.index == index:
@@ -92,12 +92,16 @@ class ReferenceTensor:
         iindices = self.i.indices
         aindices = self.a.indices or [[]]
         bindices = self.b.indices or [[]]
-        
+
         # Create tensor
         A0 = zeros(self.i.dims + self.a.dims, Float)
 
         # Create quadrature rule
         integrate = Integrator(self.basisfunctions)
+
+        # Count the number of integrals
+        n = product(self.i.dims) * product(self.a.dims) * product(self.b.dims)
+        print "Computing %d integrals, this may take some time" % n
 
         # Iterate over all combinations of indices
         for i in iindices:

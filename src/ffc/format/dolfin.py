@@ -15,7 +15,7 @@ format = { "multiplication": "*",
 
 def compile(form):
     "Generate code for DOLFIN."
-    print "Compiling form %s for DOLFIN" % str(form)
+    print "Generating output for DOLFIN"
     
     # Choose name
     if form.rank == 1:
@@ -43,7 +43,7 @@ def compile(form):
     file = open(filename, "w")
     file.write(output)
     file.close()
-    print "Output written on " + filename
+    print "Output written to " + filename
     
     return
 
@@ -91,7 +91,13 @@ public:
     return %d;
   }
 
-  unsigned int vectordim() const
+  unsigned int tensordim(unsigned int i) const
+  {
+    unsigned int tensordims[] = {%s}
+    return tensordims[i];
+  }
+
+  unsigned int rank() const
   {
     return %d;
   }
@@ -111,7 +117,10 @@ public:
 };
 
 """ % (form.name, form.name,
-       element.spacedim, element.shapedim, element.vectordim)
+       element.spacedim,
+       element.shapedim,
+       ", ".join([str(dim) for dim in element.tensordims]),
+       element.rank)
 
 def __form(form, type):
     "Generate form for DOLFIN."

@@ -128,7 +128,7 @@ if __name__ == "__main__":
     print "Testing reassignment"
     print "--------------------"
     
-    element = FiniteElement("Lagrange", 1, "triangle")
+    element = FiniteElement("Lagrange", "triangle", 1)
     
     u = BasisFunction(element)
     v = BasisFunction(element)

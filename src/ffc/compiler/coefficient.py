@@ -11,18 +11,18 @@ class Coefficient:
     """A Coefficient represents the coefficient for a function
     expressed as a linear combination of basis functions."""
 
-    def __init__(self, function):
+    def __init__(self, element, name = None, index = None):
         "Create Coefficient."
-        if isinstance(function, Coefficient):
+        if isinstance(element, Coefficient):
             # Create Coefficient from Coefficient (copy constructor)
-            self.element = function.element
-            self.name = function.name
-            self.index = Index(function.index)
+            self.element = element.element
+            self.name = element.name
+            self.index = Index(element.index)
         else:
-            # Create Coefficient from given Function
-            self.element = function.element
-            self.name = function.name
-            self.index = Index()
+            # Create Coefficient with given data
+            self.element = element
+            self.name = name
+            self.index = Index(index)
         return
 
     def __repr__(self):

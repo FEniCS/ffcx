@@ -8,12 +8,15 @@ from FIAT.base import shapes
 from FIAT.library.Lagrange import Lagrange
 from FIAT.library.Hermite import Hermite
 
+# FFC modules
+from tensorspace import *
+
 class FiniteElement:
 
     """A FiniteElement represents a finite element in the classical
     sense as defined by Ciarlet. The actual work is done by FIAT and
     this class serves as the interface to FIAT finite elements from
-    within FFC.
+    within FFC. Maybe this class should be moved to FIAT?
 
     A FiniteElement is specified by giving the name and degree of the
     finite element, together with the name of the reference cell:
@@ -21,20 +24,34 @@ class FiniteElement:
       name:   "Lagrange", "Hermite", ...
       degree: 0, 1, 2, ...
       shape:  "line", "triangle", "tetrahedron"
+      dims:   [int, int, ...] (optional)
 
-    The degree and shape must match the chosen type of finite
-    element."""
+    The degree and shape must match the chosen type of finite element.
 
-    def __init__(self, name, degree, shape):
+    The list dims should contain a list of integers specifying the
+    tensor-dimensions of the finite element. The default is an empty
+    list, corresponding to a scalar-valued element."""
+
+    def __init__(self, name, shape, degree, dims = []):
         "Create FiniteElement."
 
-        # FIXME: Create copy constructor and use in algebra.py
+        # Allow scalar input of dimension for a vector-valued element
+        if isinstance(dims, int): dims = [dims]
 
-        # Save data
+        # Initialize data
         self.name = name
-        self.degree = degree
         self.shape = shape
+        self.degree = degree
+        self.fiat_shape = None
 
+        self.space = None
+        self.basis = None
+        
+        self.spacedim = None
+        self.shapedim = None
+        self.tensordims = None
+        self.rank = None
+        
         # Choose shape
         if shape == "line":
             self.fiat_shape = shapes.LINE
@@ -47,42 +64,41 @@ class FiniteElement:
 
         # Choose function space
         if name == "Lagrange":
-            self.fiat_space = Lagrange(self.fiat_shape, degree)
+            self.space = Lagrange(self.fiat_shape, degree)
+            if dims:
+                self.space = TensorSpace(self.space, dims)
         elif name == "Hermite":
-            self.fiat_space = Hermite(self.fiat_shape, degree)
-        elif name == "Vector Lagrange": # FIXME: Just for testing
-            self.fiat_space = Lagrange(self.fiat_shape, degree)
+            self.space = Hermite(self.fiat_shape, degree)
+            if dims:
+                self.space = TensorSpace(self.space, dims)
         else:
             raise RuntimeError, "Unknown space " + str(name)
 
         # Get the basis
-        self.basis = self.fiat_space.getBasis()
+        self.basis = self.space.getBasis()
 
         # Set dimensions
         self.spacedim = len(self.basis)
         self.shapedim = shapes.dims[self.fiat_shape]
-        self.vectordim = 1 # FIXME: Should not always be 1
-
-        # FIXME: Just for testing
-        self.rank = 0
-        if name == "Vector Lagrange":
-            self.rank = 1
-            self.vectordim = 3
+        self.tensordims = dims
+        self.rank = len(dims)
 
         return
 
     def __repr__(self):
         "Print nicely formatted representation of FiniteElement."
-        return str(self.name) + " finite element of degree " + \
-               str(self.degree) + " on a " + str(self.shape)
+        return "%s finite element of degree %d on a %s (rank %d)" % \
+               (self.name, self.degree, self.shape, self.rank)
 
 if __name__ == "__main__":
 
     print "Testing finite element"
     print "----------------------"
 
-    P1 = FiniteElement("Lagrange", 1, "triangle")
-    P2 = FiniteElement("Lagrange", 2, "triangle")
+    P1 = FiniteElement("Lagrange", "triangle", 1)
+    P2 = FiniteElement("Lagrange", "triangle", 2)
+    Q5 = FiniteElement("Lagrange", "triangle", 5, 3)
 
     print P1
     print P2
+    print Q5

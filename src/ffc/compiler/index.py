@@ -103,6 +103,8 @@ class Index:
 
     def __cmp__(self, other):
         "Check if Indices are equal."
+        if not isinstance(other, Index):
+            return -1
         if self.index == other.index and self.type == other.type:
             return 0
         return -1 # Ignore self > other

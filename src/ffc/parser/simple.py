@@ -17,6 +17,7 @@ def parse(filename, language):
     # Generate output
     output = """\
 import sys
+sys.path.append("../")
 sys.path.append("../../")
 from ffc.compiler.form import *
 
@@ -35,7 +36,7 @@ form.compile(\"%s\")
     outfile = open(outname, "w")
     outfile.write(output)
     outfile.close()
-    print "Output generated to " + outname
+    print "Output written to " + outname
 
     # Return output file name
     return outname

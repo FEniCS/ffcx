@@ -54,4 +54,7 @@ class Integrator:
     def __call__(self, basisfunctions, iindices, aindices, bindices):
         "Evaluate integral of product."
         p = Integrand(basisfunctions, iindices, aindices, bindices, self.vscaling, self.dscaling)
-        return self.fiat_quadrature(p)
+        if p.iszero():
+            return 0.0 # Makes it a little faster
+        else:
+            return self.fiat_quadrature(p)

@@ -15,7 +15,7 @@ format = { "multiplication": "",
 
 def compile(form):
     "Generate code for LaTeX."
-    print "Compiling form %s for LaTeX" % str(form)
+    print "Generating output for LaTeX"
 
     # Generate output
     output = ""
@@ -28,7 +28,7 @@ def compile(form):
     file = open(filename, "w")
     file.write(output)
     file.close()
-    print "Output written on " + filename
+    print "Output written to " + filename
 
     return
 

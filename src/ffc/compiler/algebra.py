@@ -226,10 +226,11 @@ class Product(Element):
             self.integral = None
         elif isinstance(other, Function):
             # Create Product from Function
+            index = Index()
             self.constant = 1.0
-            self.coefficients = [Coefficient(other)]
+            self.coefficients = [Coefficient(other.element, other.name, index)]
             self.transforms = []
-            self.basisfunctions = [BasisFunction(other.element, Index())]
+            self.basisfunctions = [BasisFunction(other.element, index)]
             self.integral = None
         elif isinstance(other, BasisFunction):
             # Create Product from BasisFunction
@@ -432,19 +433,12 @@ if __name__ == "__main__":
     print "Testing algebra"
     print "---------------"
 
-    element = FiniteElement("Lagrange", 1, "triangle")
+    element = FiniteElement("Lagrange", "triangle", 1)
     u = BasisFunction(element)
     v = BasisFunction(element)
     dx = Integral("interior")
     ds = Integral("boundary")
 
-    print u*v
-
-
-
-    print
-
-    
     print "Testing long expression:"
     w = 2*(u*(u/2 + v)*u + u*v)*u.dx(0).dx(2).dx(1)
     print w
@@ -479,7 +473,7 @@ if __name__ == "__main__":
     print
 
     print "Testing Poisson system:"
-    element = FiniteElement("Vector Lagrange", 1, "triangle")
+    element = FiniteElement("Lagrange", "triangle", 1, 3)
     u = BasisFunction(element)
     v = BasisFunction(element)
     i = Index()

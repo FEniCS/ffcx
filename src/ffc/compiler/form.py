@@ -69,7 +69,8 @@ class Form:
 
         # Reassign indices
         reassign_indices(self.sum)
-
+        print "Compiling form: " + str(self.sum)
+        
         # Create element tensors
         self.AKi = ElementTensor(self.sum, "interior", compiler.format)
         self.AKb = ElementTensor(self.sum, "boundary", compiler.format)
@@ -79,7 +80,7 @@ class Form:
 
         # Generate output
         compiler.compile(self)
-        
+
         return
 
     def __check_primary_ranks(self):
@@ -103,8 +104,7 @@ if __name__ == "__main__":
     print "Testing form compiler"
     print "---------------------"
 
-    #element = FiniteElement("Lagrange", 1, "tetrahedron")
-    element = FiniteElement("Lagrange", 1, "triangle")
+    element = FiniteElement("Lagrange", "triangle", 1)
     
     u = BasisFunction(element)
     v = BasisFunction(element)
@@ -115,11 +115,3 @@ if __name__ == "__main__":
     a = Form(u.dx(i)*v.dx(i)*dx, "FFCPoisson")
     a.compile("C++")
     a.compile("LaTeX")
-    
-    #element = FiniteElement("Vector Lagrange", 1, "triangle")
-    #u = BasisFunction(element)
-    #v = BasisFunction(element)
-    #i = Index()
-    #j = Index()
-    #a = Form(u[i].dx(j)*v[i].dx(j), "FFCPoissonSystem")
-    #a.compile()
