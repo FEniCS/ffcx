@@ -45,7 +45,7 @@ def compile(forms):
             type = "Multilinear"
 
         # Write form
-        output += __form(form, type)
+        output += __form(form, element, type)
 
     # Write file footer
     output += __file_footer()
@@ -173,12 +173,18 @@ private:
        element.rank,
        mapping)
 
-def __form(form, type):
+def __form(form, element, type):
     "Generate form for DOLFIN."
     
     #ptr = "".join(['*' for i in range(form.rank)])
     subclass = type + "Form"
     baseclass = type + "Form"
+
+    # Create argument list for form (functions)
+    if form.nfunctions > 0:
+        functions = ", ".join([("const NewFunction& w%d" % j) for j in range(form.nfunctions)])
+    else:
+        functions = ""
     
     # Class header
     output = """\
@@ -189,8 +195,20 @@ class %s : public dolfin::%s
 {
 public:
 
-  %s(const NewFiniteElement& element) : dolfin::%s(element) {}
-""" % (subclass, baseclass, subclass, baseclass)
+  %s(%s) : dolfin::%s()
+""" % (subclass, baseclass, subclass, functions, baseclass)
+
+    # Add functions (if any)
+    if form.nfunctions > 0:
+        output += """\
+  {
+    // Add functions
+    init(%d, %d);\n""" % (form.nfunctions, element.spacedim)
+        for j in range(form.nfunctions):
+            output += "    add(w%d);\n" % j
+        output += "  }\n"
+    else:
+        output += "  {\n  }\n"
 
     # Interior contribution (if any)
     if form.AKi.terms:

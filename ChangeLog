@@ -1,3 +1,4 @@
+ - Modify DOLFIN output to initialize functions
  - Create unique numbers for each function
  - Use namespaces for DOLFIN output instead of class names
  - Temporary implementation of dof mapping for vector-valued elements 
