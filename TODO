@@ -1,8 +1,9 @@
 o [logg] Add script setup.py
 o [logg] Add man page
 o [logg] Boundary integrals
+o [logg] Ask FIAT about local-to-global mapping
 o [logg] Allow multiple different elements
-o [logg] Connect Matt's parse
+o [logg] Connect Matt's parser
 o [logg] Call FErari to simplify
 o [logg] Fix all FIXMEs (grep FIXME *.py)
 
