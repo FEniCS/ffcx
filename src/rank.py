@@ -13,10 +13,12 @@ class Rank:
 
     A Rank holds the following data:
 
-        r0   - primary tensor rank
-        r1   - secondary tensor rank
-        dims - a list of dimensions of length r0 + r1"""
-
+        r0    - primary tensor rank
+        r1    - secondary tensor rank
+        dims  - a list of dimensions of length r0 + r1
+        marks - a list of boolean index marks, auxiliary indices
+                that should be pre-contracted are marked True"""
+    
     def __init__(self, product):
 
         # Check that we get a Product
@@ -24,15 +26,18 @@ class Rank:
             self.r0 = product.r0
             self.r1 = product.r1
             self.dims = [] + product.dims
+            self.marks = [] + product.marks
         elif isinstance(product, Product):
             # Note that this works even if there is no index.
             # In that case, we get -1 + 1 = 0, which is correct.
             self.r0 = max_product(product, "primary") + 1
             self.r1 = max_product(product, "secondary") + 1
             self.dims = dims_product(product, self.r0, self.r1)
+            self.marks = marks_product(product, self.r0, self.r1)
         else:
             raise RuntimeError, "Rank can only be created for a Product."
 
         print "Primary rank: " + str(self.r0) + \
               ", secondary rank: " + str(self.r1) + \
-              ", dimensions: " + str(self.dims)
+              ", dimensions: " + str(self.dims) + \
+              ", marks: " + str(self.marks)

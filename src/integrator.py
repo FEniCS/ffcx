@@ -4,7 +4,7 @@ __copyright__ = "Copyright (c) 2004 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # FIAT modules
-import quadrature
+from FIAT.base import quadrature
 
 # FFC modules
 from algebra import *

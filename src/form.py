@@ -22,12 +22,11 @@ class Form:
     A Form holds the following data:
 
         sum   - the representation of the form as a Sum
-        terms - a list of auxiliary data for each Product"""
+        ranks - a list of auxiliary data for each Product"""
 
     def __init__(self, form):
         "Create Form."
 
-        # Make sure that we get a Sum
         if isinstance(form, Form):
             self.sum = reassign_indices(Sum(form.sum))
             self.ranks = [Rank(p) for p in self.sum.products]

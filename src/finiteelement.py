@@ -4,8 +4,9 @@ __copyright__ = "Copyright (c) 2004 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # FIAT modules
-import shapes
-import scalarelement
+from FIAT.base import shapes
+from FIAT.library.Lagrange import Lagrange
+from FIAT.library.Hermite import Hermite
 
 class FiniteElement:
 
@@ -44,9 +45,9 @@ class FiniteElement:
 
         # Choose function space
         if name == "Lagrange":
-            self.fiat_space = scalarelement.Lagrange(self.fiat_shape, degree)
+            self.fiat_space = Lagrange(self.fiat_shape, degree)
         elif name == "Hermite":
-            self.fiat_space = scalarelement.Hermite(self.fiat_shape, degree)
+            self.fiat_space = Hermite(self.fiat_shape, degree)
         else:
             raise RuntimeError, "Unknown space " + str(name)
 

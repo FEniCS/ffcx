@@ -1,3 +1,10 @@
+"""This module contains utilities for reassignment of indices and
+computation of ranks. Reassignment is necessary since when an Element
+of the algebra is created, new indices are created with unique numbers
+not necessarily starting at 0. This makes it simpler to implement the
+algebra, since the algebra doesn't need to keep track of ranks and
+reassign indices."""
+
 __author__ = "Anders Logg (logg@tti-c.org)"
 __date__ = "2004-10-13"
 __copyright__ = "Copyright (c) 2004 Anders Logg"
@@ -91,7 +98,7 @@ def __reassign_factor(factor, iold, inew, type):
     increment = max([increment] + [r[1] for r in result])
 
     # Check that the list of Transforms is empty
-    if len(f.transforms) > 0:
+    if f.transforms:
         raise RuntimeError, "Non-empty list of Transforms for Factor."
 
     return (f, increment)
@@ -159,7 +166,7 @@ def __min_factor(factor, type):
         imin = min(imin, factor.basisfunction.index.index)
     imin = min([imin] + [d.index.index for d in factor.derivatives if d.index.type == type])
     # Check that the list of Transforms is empty
-    if len(factor.transforms) > 0:
+    if factor.transforms:
         raise RuntimeError, "Non-empty list of Transforms for Factor."
     return imin
 
@@ -170,7 +177,7 @@ def __max_factor(factor, type):
         imax = max(imax, factor.basisfunction.index.index)
     imax = max([imax] + [d.index.index for d in factor.derivatives if d.index.type == type])
     # Check that the list of Transforms is empty
-    if len(factor.transforms) > 0:
+    if factor.transforms:
         raise RuntimeError, "Non-empty list of Transforms for Factor."
     return imax
 
@@ -238,13 +245,40 @@ def dim_factor(factor, i, type):
             return (factor.basisfunction.element.shapedim, True)
 
     # Check that the list of Transforms is empty
-    if len(factor.transforms) > 0:
+    if factor.transforms:
         raise RuntimeError, "Non-empty list of Transforms for Factor."
 
     return (0, False)
 
     w1 = u.dx(i)*v.dx(i) + u*v
     w2 = u.dx(i)*v.dx(i) + u*v
+
+def marks_product(product, r0, r1):    
+    """Compute list of index marks. Indices that should be
+    pre-contracted are marked True. Each Index that does not appear in
+    inside the integral (within a Factor) should be pre-contracted."""
+    marks = []
+    for i in range(r0):
+        marks += [not __have_index(product, i, "primary")]
+    for i in range(r1):
+        marks += [not __have_index(product, i, "secondary")]
+    return marks
+
+def __have_index(product, i, type):
+    "Check if the product contains the given Index within a Product."
+    for f in product.factors:
+        # Check BasisFunction
+        index = f.basisfunction.index
+        if index.type == type and index.index == i:
+            return True
+        # Check Derivatives
+        for d in f.derivatives:
+            if d.index.type == type and d.index.index == index:
+                return True
+        # Check that the list of Transforms is empty
+        if f.transforms:
+            raise RuntimeError, "Non-empty list of Transforms for Factor."        
+    return False
 
 if __name__ == "__main__":
 
