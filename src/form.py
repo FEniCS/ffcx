@@ -62,7 +62,7 @@ class Form:
             compiler = latex
         else:
             raise "RuntimeError", "Unknown language " + str(language)
-        
+
         # Reassign indices
         reassign_indices(self.sum)
 
@@ -70,7 +70,7 @@ class Form:
         self.AKi = ElementTensor(self.sum, "interior", compiler.format)
         self.AKb = ElementTensor(self.sum, "boundary", compiler.format)
 
-        # Check ranks
+        # Check primary ranks
         self.__check_primary_ranks()
 
         # Generate output

@@ -257,19 +257,19 @@ class Product(Element):
             w = Product(self)
             w.integral = other
             return w
-        elif isinstance(other, Product):
-            if not self.rank() == other.rank() == 0:
-                raise RuntimeError, "Illegal ranks for product, must be scalar."
+        elif isinstance(other, Sum):
+            return Sum(self) * Sum(other)
+        else:
             w0 = Product(self)
             w1 = Product(other)
+            if not w0.rank() == w1.rank() == 0:
+                raise RuntimeError, "Illegal ranks for product, must be scalar."
             w = Product()
             w.constant = w0.constant * w1.constant
             w.coefficients = w0.coefficients + w1.coefficients
             w.transforms = w0.transforms + w1.transforms
             w.basisfunctions = w0.basisfunctions + w1.basisfunctions
             return w
-        else:
-            return Sum(self) * Sum(other)
 
     def __neg__(self):
         "Operator: -Product"
@@ -437,6 +437,13 @@ if __name__ == "__main__":
     v = BasisFunction(element)
     dx = Integral("interior")
     ds = Integral("boundary")
+
+    print u*v
+
+
+
+    print
+
     
     print "Testing long expression:"
     w = 2*(u*(u/2 + v)*u + u*v)*u.dx(0).dx(2).dx(1)

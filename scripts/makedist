@@ -2,8 +2,14 @@
 
 # This script prepares and creates a .tar.gz package of FFC.
 
+# Update version number in ChangeLog
+pico -w ChangeLog
+
+# Update version number in ffc
+pico -w src/ffc
+
 # Get the version number
-VERSION=$1
+VERSION=`grep FFC_VERSION src/ffc | cut -d'"' -f2`
 
 # Write a message
 echo Creating release $VERSION of FFC

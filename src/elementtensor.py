@@ -24,6 +24,9 @@ class ElementTensor:
     def __init__(self, sum, type, format):
         "Create ElementTensor."
 
+        # Check that all Products have integrals
+        self.__check_integrals(sum)
+
         # Create list of Terms
         self.terms = [Term(p) for p in sum.products if p.integral.type == type]
 
@@ -77,3 +80,9 @@ class ElementTensor:
                                                  format["multiplication"], gk)
             declarations += [Declaration(name, value)]
         return declarations    
+
+    def __check_integrals(self, sum):
+        "Check that all terms have integrals."
+        for p in sum.products:
+            if not p.integral:
+                raise RuntimeError, "Missing integral in term " + str(p)
