@@ -77,6 +77,7 @@ class ElementTensor:
         if not self.terms: return []
         declarations = []
         iindices = self.terms[0].A0.i.indices # All primary ranks are equal
+        k = 0 # Update counter for each entry of A0, which is needed for some formats
         for i in iindices:
             value = ""
             for j in range(len(self.terms)):
@@ -85,7 +86,7 @@ class ElementTensor:
                 if A0.a.indices: aindices = A0.a.indices
                 else: aindices = [[]]
                 for a in aindices:
-                    name = format.format["element tensor"](i)
+                    name = format.format["element tensor"](i, k)
                     a0 = A0(i, a)
                     gk = format.format["geometry tensor"](j, a)
                     if abs(a0) > EPSILON:
@@ -100,6 +101,7 @@ class ElementTensor:
                                                  format.format["multiplication"], gk)
             value = value or format.format["floating point"](0.0)
             declarations += [Declaration(name, value)]
+            k += 1
         return declarations    
 
     def __check_integrals(self, sum):

@@ -12,7 +12,7 @@ format = { "multiplication": "not defined",
            "transform": lambda j, k: "not defined",
            "reference tensor" : lambda j, i, a: "(%d, %s, %s)" % (j, str(i), (str(a))),
            "geometry tensor": lambda j, a: "not defined",
-           "element tensor": lambda i: "not defined" }
+           "element tensor": lambda i, k: "not defined" }
 
 def compile(forms):
     "Generate code for raw format."

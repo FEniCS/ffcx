@@ -8,11 +8,11 @@ __license__  = "GNU GPL Version 2"
 format = { "multiplication": "*",
            "determinant": "det",
            "floating point": lambda a: str(a),
-           "coefficient": lambda j, k: "c%d[%d]" % (j, k),
+           "coefficient": lambda j, k: "c[%d][%d]" % (j, k),
            "transform": lambda j, k: "g%d%d" % (j, k),
            "reference tensor" : lambda j, i, a: "not defined",
            "geometry tensor": lambda j, a: "G%d_%s" % (j, "".join(["%d" % index for index in a])),
-           "element tensor": lambda i: "A%s" % "".join(["[%d]" % index for index in i]) }
+           "element tensor": lambda i, k: "block[%d]" % k }
 
 def compile(forms):
     "Generate code for DOLFIN."
@@ -137,7 +137,7 @@ public:
 def __form(form, type):
     "Generate form for DOLFIN."
     
-    ptr = "".join(['*' for i in range(form.rank)])
+    #ptr = "".join(['*' for i in range(form.rank)])
     subclass = form.name + type + "Form"
     baseclass = type + "Form"
     
@@ -157,7 +157,7 @@ public:
     if form.AKi.terms:
         output += """\
 
-  bool interior(real%s A) const
+  bool interior(real* block) const
   {
     // Compute geometry tensors
 %s
@@ -165,15 +165,14 @@ public:
 %s
     return true;
   }
-""" % (ptr,
-       "".join(["    real %s = %s;\n" % (gK.name, gK.value) for gK in form.AKi.gK]),
+""" % ("".join(["    real %s = %s;\n" % (gK.name, gK.value) for gK in form.AKi.gK]),
        "".join(["    %s = %s;\n" % (aK.name, aK.value) for aK in form.AKi.aK]))
 
     # Boundary contribution (if any)
     if form.AKb.terms:
         output += """\
 
-  bool boundary(real%s A) const
+  bool boundary(real* block) const
   {
     // Compute geometry tensors
 %s
@@ -181,8 +180,7 @@ public:
 %s
     return true;
   }
-""" % (ptr,
-       "".join(["    real %s = %s;\n" % (gK.name, gK.value) for gK in form.AKb.gK]),
+""" % ("".join(["    real %s = %s;\n" % (gK.name, gK.value) for gK in form.AKb.gK]),
        "".join(["    %s = %s;\n" % (aK.name, aK.value) for aK in form.AKb.aK]))
 
     # Class footer
@@ -196,3 +194,7 @@ public:
 def __capall(s):
     "Return a string in which all characters are capitalized."
     return "".join([c.capitalize() for c in s])
+
+def __blockindex(i):
+    "Translate matrix indices i = [i0, i1] to a PETSc block index."
+    
