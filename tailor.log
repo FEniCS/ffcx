@@ -1,0 +1,16 @@
+2006-01-28 21:43:29,058 [INFO] Bootstrapping '/home/logg/work/src/fenics/backup/ffc-hg'
+2006-01-28 21:43:29,095 [ERROR] Checkout of 'project' failed!
+Traceback (most recent call last):
+  File "/usr/lib/python2.4/site-packages/vcpx/tailor.py", line 73, in bootstrap
+    actual = dwd.checkoutUpstreamRevision(revision)
+  File "/usr/lib/python2.4/site-packages/vcpx/source.py", line 220, in checkoutUpstreamRevision
+    last = self._checkoutUpstreamRevision(revision)
+  File "/usr/lib/python2.4/site-packages/vcpx/cvs.py", line 378, in _checkoutUpstreamRevision
+    last = CvspsWorkingDir._checkoutUpstreamRevision(self, revision)
+  File "/usr/lib/python2.4/site-packages/vcpx/cvsps.py", line 287, in _checkoutUpstreamRevision
+    csets = list(self.getPendingChangesets(revision))
+  File "/usr/lib/python2.4/site-packages/vcpx/source.py", line 187, in getPendingChangesets
+    changesets = self._getUpstreamChangesets(revision)
+  File "/usr/lib/python2.4/site-packages/vcpx/cvs.py", line 309, in _getUpstreamChangesets
+    raise ConfigurationError('Encoding %r does not seem to be '
+ConfigurationError: Encoding '' does not seem to be allowed on this system (unknown encoding: ): you may override the default with something like "encoding = ascii" in the cvs:source config section

@@ -1,0 +1,18 @@
+[DEFAULT]
+debug = True
+verbose = True
+
+[project]
+target = hg:target
+start-revision = INITIAL
+root-directory = /home/logg/work/src/fenics/backup
+state-file = tailor.state
+source = cvs:source
+subdir = ffc-hg
+
+[hg:target]
+
+[cvs:source]
+module = ffc
+repository = /home/logg/work/src/fenics/backup/cvs
+encoding = 'ascii'
