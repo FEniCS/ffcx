@@ -19,6 +19,7 @@ class GeometryTensor:
 
         a            - secondary multiindex
         b            - auxiliary multiindex
+        constants    - a list of Constants
         coefficients - a list of Coefficients
         transforms   - a list of Transforms"""
 
@@ -30,6 +31,7 @@ class GeometryTensor:
             raise RuntimeError, "GeometryTensor must be created from Product."
 
         # Get data from Product
+        self.constants = listcopy(product.constants)
         self.coefficients = listcopy(product.coefficients)
         self.transforms = listcopy(product.transforms)
 
@@ -72,8 +74,9 @@ class GeometryTensor:
         "Return given element of geometry tensor."
         # Compute product of factors outside sum
         factors = []
-        for j in range(len(self.coefficients)):
-            c = self.coefficients[j]
+        for c in self.constants:
+            factors += [format.format["constant"](c.number.index)]
+        for c in self.coefficients:
             if not c.index.type == "secondary": continue
             factors += [format.format["coefficient"](c.number.index, c.index([], a, [], []))]
         for t in self.transforms:
@@ -87,8 +90,7 @@ class GeometryTensor:
         terms = []
         for b in self.b.indices:
             factors = []
-            for j in range(len(self.coefficients)):
-                c = self.coefficients[j]
+            for c in self.coefficients:
                 if c.index.type == "secondary": continue
                 factors += [format.format["coefficient"](c.number.index, c.index([], a, [], b))]
             for t in self.transforms:

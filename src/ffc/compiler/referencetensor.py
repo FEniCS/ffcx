@@ -28,7 +28,7 @@ class ReferenceTensor:
         a              - secondary multiindex
         b              - auxiliary multiindex
         A0             - the precomputed reference tensor
-        constant       - a numeric constant (float)
+        numeric        - a numeric constant (float)
         basisfunctions - a list of BasisFunctions
         integral       - an Integral"""
 
@@ -44,7 +44,7 @@ class ReferenceTensor:
             raise RuntimeError, "Missing integral."
 
         # Get data from Product
-        self.constant = product.constant
+        self.numeric = product.numeric
         self.basisfunctions = listcopy(product.basisfunctions)
         self.integral = product.integral
 
@@ -117,7 +117,7 @@ class ReferenceTensor:
                 for b in bindices:
                     debug("    b = " + str(b), 2)
                     integral += integrate(self.basisfunctions, i, a, b)
-                integral *= self.constant
+                integral *= self.numeric
                 debug("  integral = " + str(integral), 2)
                 A0[i + a] = integral
 

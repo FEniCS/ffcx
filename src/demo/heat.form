@@ -1,0 +1,19 @@
+# Copyright (c) 2005 Anders Logg (logg@tti-c.org)
+# Licensed under the GNU GPL Version 2
+#
+# The bilinear form a(u,v) and linear form L(v) for
+# one backward Euler step with the heat equation.
+#
+# Compile this form with FFC: ffc poisson.form.
+
+name = "Heat"
+element = FiniteElement("Lagrange", "triangle", 1)
+
+v  = BasisFunction(element) # Test function
+u1 = BasisFunction(element) # Value at t_n
+u0 = Function(element)      # Value at t_n-1
+f  = Function(element)      # Heat source
+k  = Constant()             # Time step (constant)
+
+a = v*u1*dx + k*v.dx(i)*u1.dx(i)*dx
+L = v*u0*dx + k*f*v*dx

@@ -41,6 +41,7 @@ class Form:
         dims       - list of primary dimensions
         indices    - list of primary indices
         nfunctions - number of functions (coefficients)
+        nconstants - number of constants
 
     A multi-linear form is first expressed as an element of the
     algebra (a Sum) and is then post-processed to generate a sum
@@ -59,6 +60,7 @@ class Form:
         self.dims       = None
         self.indices    = None
         self.nfunctions = 0
+        self.nconstants = 0
 
         # Reassign indices
         debug("Before index reassignment: " + str(sum), 2)

@@ -2,12 +2,13 @@
 are elements of the algebra:
 
     BasisFunction - basic building block
-    Function      - linear combination of BasisFunctions
     Product       - product of BasisFunctions
     Sum           - sum of Products
+    Function      - linear combination of BasisFunctions
+    Constant      - a constant function on the mesh
 
-Each element of the algebra, BasisFunction, Function, Product, and
-Sum, can be either scalar or tensor-valued. The following operations
+Each element of the algebra except Constant can be either
+scalar or tensor-valued. The following operations
 are supported for all elements of the algebra:
 
     Binary +      (tensor ranks of operands must match)
@@ -19,7 +20,7 @@ are supported for all elements of the algebra:
     Unary  d/dx   (operand scalar or tensor-valued)"""
 
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-09-27"
+__date__ = "2004-09-27 / 2005-03-01"
 __copyright__ = "Copyright (c) 2004 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -91,6 +92,36 @@ class Element:
         "Return value rank of Element."
         return Sum(self).rank()
 
+class Constant(Element):
+
+    """A Constant represents a numerical constant or a Function that
+    is constant over the mesh.
+
+    A Constant holds the following data:
+
+        number - a unique index identifying the Constant."""
+
+    def __init__(self, constant = None):
+        "Create Constant."
+        if isinstance(constant, Constant):
+            # Create Constant from Constant (copy constructor)
+            self.number = Index(constant.number)
+        elif constant == None:
+            # Create a new number
+            self.number = Index("constant")
+        else:
+            raise RuntimeError, "Unable to create Constant from " + str(constant)
+        return
+
+    def __repr__(self):
+        "Print nicely formatted representation of Constant."
+        return "c" + str(self.number)
+
+    def indexcall(self, foo, args = None):
+        "Call given function on all Indices."
+        self.number.indexcall(foo, args)
+        return
+        
 class Function(Element):
 
     """A Function represents a projection of a given function onto a
@@ -113,6 +144,10 @@ class Function(Element):
             self.element = element
             self.number = Index("function")
         return
+
+    def __repr__(self):
+        "Print nicely formatted representation of Function."
+        return "w" + str(self.number)
 
 class BasisFunction(Element):
 
@@ -206,7 +241,8 @@ class Product(Element):
 
     A Product holds the following data:
 
-        constant       - a numeric constant (float)
+        numeric        - a numeric constant (float)
+        constants      - a list of Constants
         coefficients   - a list of Coefficients
         transforms     - a list of Transforms
         basisfunctions - a list of BasisFunctions
@@ -216,14 +252,16 @@ class Product(Element):
         "Create Product."
         if other == None:
             # Create default Product (unity)
-            self.constant = 1.0
+            self.numeric = 1.0
+            self.constants = []
             self.coefficients = []
             self.transforms = []
             self.basisfunctions = []
             self.integral = None
         elif isinstance(other, int) or isinstance(other, float):
             # Create Product from scalar
-            self.constant = float(other)
+            self.numeric = float(other)
+            self.constants = []
             self.coefficients = []
             self.transforms = []
             self.basisfunctions = []
@@ -231,21 +269,33 @@ class Product(Element):
         elif isinstance(other, Function):
             # Create Product from Function
             index = Index()
-            self.constant = 1.0
+            self.numeric = 1.0
+            self.constants = []
             self.coefficients = [Coefficient(other.element, other.number, index)]
             self.transforms = []
             self.basisfunctions = [BasisFunction(other.element, index)]
             self.integral = None
+        elif isinstance(other, Constant):
+            # Create Product from Constant
+            index = Index()
+            self.numeric = 1.0
+            self.constants = [Constant(other)]
+            self.coefficients = []
+            self.transforms = []
+            self.basisfunctions = []
+            self.integral = None
         elif isinstance(other, BasisFunction):
             # Create Product from BasisFunction
-            self.constant = 1.0
+            self.numeric = 1.0
+            self.constants = []
             self.coefficients = []
             self.transforms = []
             self.basisfunctions = [BasisFunction(other)]
             self.integral = None
         elif isinstance(other, Product):
             # Create Product from Product (copy constructor)
-            self.constant = float(other.constant)
+            self.numeric = float(other.numeric)
+            self.constants = listcopy(other.constants)
             self.coefficients = listcopy(other.coefficients)
             self.transforms = listcopy(other.transforms)
             self.basisfunctions = listcopy(other.basisfunctions)
@@ -270,7 +320,8 @@ class Product(Element):
             if not w0.rank() == w1.rank() == 0:
                 raise RuntimeError, "Illegal ranks for product, must be scalar."
             w = Product()
-            w.constant = float(w0.constant * w1.constant)
+            w.numeric = float(w0.numeric * w1.numeric)
+            w.constants = listcopy(w0.constants + w1.constants)
             w.coefficients = listcopy(w0.coefficients + w1.coefficients)
             w.transforms = listcopy(w0.transforms + w1.transforms)
             w.basisfunctions = listcopy(w0.basisfunctions + w1.basisfunctions)
@@ -287,7 +338,7 @@ class Product(Element):
     def __neg__(self):
         "Operator: -Product"
         w = Product(self)
-        w.constant = -w.constant
+        w.numeric = -w.numeric
         return w
 
     def  __getitem__(self, component):
@@ -316,21 +367,22 @@ class Product(Element):
     def __repr__(self):
         "Print nicely formatted representation of Product."
         if not (self.coefficients or self.transforms or self.basisfunctions):
-            return str(self.constant)
-        if self.constant == -1.0:
+            return str(self.numeric)
+        if self.numeric == -1.0:
             s = "-"
-        elif not self.constant == 1.0:
-            s = str(self.constant)
+        elif not self.numeric == 1.0:
+            s = str(self.numeric)
         else:
             s = ""
-        c = "".join([c.__repr__() for c in self.coefficients])
+        c = "".join([w.__repr__() for w in self.constants])
+        w = "".join([w.__repr__() for w in self.coefficients])
         t = "".join([t.__repr__() for t in self.transforms])
         v = "*".join([v.__repr__() for v in self.basisfunctions])
         if not self.integral == None:
             i = "*" + self.integral.__repr__()
         else:
             i = ""
-        return s + c + t + " | " + v + i
+        return s + c + w + t + " | " + v + i
 
     def rank(self):
         "Return value rank of Product."
@@ -344,7 +396,8 @@ class Product(Element):
             
     def indexcall(self, foo, args = None):
         "Call given function on all Indices."
-        [c.indexcall(foo, args) for c in self.coefficients]
+        [c.indexcall(foo, args) for c in self.constants]
+        [w.indexcall(foo, args) for w in self.coefficients]
         [t.indexcall(foo, args) for t in self.transforms]
         [v.indexcall(foo, args) for v in self.basisfunctions]
         return
@@ -372,6 +425,9 @@ class Sum(Element):
             self.products = [Product(other)]
         elif isinstance(other, Function):
             # Create Sum from Function
+            self.products = [Product(other)]
+        elif isinstance(other, Constant):
+            # Create Sum from Constant
             self.products = [Product(other)]
         elif isinstance(other, Product):
             # Create Sum from Product

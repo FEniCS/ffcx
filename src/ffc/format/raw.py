@@ -8,6 +8,7 @@ __license__  = "GNU GPL Version 2"
 format = { "multiplication": "not defined",
            "determinant": "not defined",
            "floating point": lambda a: "%.16e" % a,
+           "constant": lambda j: "not defined",
            "coefficient": lambda j, k: "not defined",
            "transform": lambda j, k: "not defined",
            "reference tensor" : lambda j, i, a: "(%d, %s, %s)" % (j, str(i), (str(a))),

@@ -33,7 +33,7 @@ class Coefficient:
 
     def __repr__(self):
         "Print nicely formatted representation of Coefficient."
-        return "c" + str(self.number) + "_" + str(self.index)
+        return "w" + str(self.number) + "_" + str(self.index)
 
     def indexcall(self, foo, args = None):
         "Call given function on all Indices."

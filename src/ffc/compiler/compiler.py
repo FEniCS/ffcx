@@ -67,6 +67,10 @@ def compile(sums, name = "MyPDE", language = None):
         form.nfunctions = max_index(form.sum, "function") + 1
         debug("Number of functions (coefficients): " + str(form.nfunctions), 1)
 
+        # Count the number of constants
+        form.nconstants = max_index(form.sum, "constant") + 1
+        debug("Number of constants: " + str(form.nconstants), 1)
+
     # Generate output
     format.compile(forms)
 

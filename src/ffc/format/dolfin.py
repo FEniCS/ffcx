@@ -8,7 +8,8 @@ __license__  = "GNU GPL Version 2"
 format = { "multiplication": "*",
            "determinant": "det",
            "floating point": lambda a: str(a),
-           "coefficient": lambda j, k: "c[%d][%d]" % (j, k),
+           "constant": lambda j: "c%d" % j,
+           "coefficient": lambda j, k: "w[%d][%d]" % (j, k),
            "transform": lambda j, k: "g%d%d" % (j, k),
            "reference tensor" : lambda j, i, a: "not defined",
            "geometry tensor": lambda j, a: "G%d_%s" % (j, "_".join(["%d" % index for index in a])),
@@ -182,11 +183,9 @@ def __form(form, element, type):
     subclass = type + "Form"
     baseclass = type + "Form"
 
-    # Create argument list for form (functions)
-    if form.nfunctions > 0:
-        functions = ", ".join([("const NewFunction& w%d" % j) for j in range(form.nfunctions)])
-    else:
-        functions = ""
+    # Create argument list for form
+    arguments = ", ".join([("const NewFunction& w%d" % j) for j in range(form.nfunctions)] + \
+                          [("const real& c%d" % j) for j in range(form.nconstants)])
     
     # Class header
     output = """\
@@ -198,7 +197,7 @@ class %s : public dolfin::%s
 public:
 
   %s(%s) : dolfin::%s()
-""" % (subclass, baseclass, subclass, functions, baseclass)
+""" % (subclass, baseclass, subclass, arguments, baseclass)    
 
     # Add functions (if any)
     if form.nfunctions > 0:
