@@ -5,6 +5,7 @@ __license__  = "GNU GPL Version 2"
 
 next_index_0 = 0 # Next available primary index
 next_index_1 = 0 # Next available secondary index
+next_index_2 = 0 # Next available secondary index
 
 def next_primary_index():
     "Return next available primary index."
@@ -17,6 +18,12 @@ def next_secondary_index():
     global next_index_1
     next_index_1 += 1
     return next_index_1 - 1
+
+def next_function_index():
+    "Return next available function index."
+    global next_index_2
+    next_index_2 += 1
+    return next_index_2 - 1
 
 def reset():
     "Reset all indices."
@@ -34,6 +41,7 @@ class Index:
       primary:   tensor rank 1, index is part of first multiindex (i)
       secondary: tensor rank 1, index is part of second multiindex (alpha)
       auxiliary: tensor rank 1, index is part of third multiindex (beta)
+      function:  unique index for each function (coefficient)
       
     The type of index is determined by the arguments to the
     constructor:
@@ -41,6 +49,7 @@ class Index:
       i = Index(0)           creates a given fixed index (0 in this case)
       i = Index("primary")   creates a free primary index
       i = Index("secondary") creates a free secondary index
+      i = Index("function")  creates a function index
       i = Index()            creates a free secondary index (default)
 
     Note that only primary and secondary indices are used in the
@@ -66,6 +75,10 @@ class Index:
             # Create secondary Index
             self.index = next_secondary_index()
             self.type = "secondary"
+        elif index == "function":
+            # Create function Index
+            self.index = next_function_index()
+            self.type = "function"
         elif index == "auxiliary":
             # Create auxiliary Index (not possible)
             raise RuntimeError, "Auxiliary indices cannot be created (only modified)."
@@ -117,9 +130,10 @@ class Index:
             return "i" + str(self.index)
         elif self.type == "secondary":
             return "a" + str(self.index)
+        elif self.type == "function":
+            return str(self.index)        
         else:
             return "b" + str(self.index)
-        return
 
     def indexcall(self, foo, args = None):
         "Call given function on Index."

@@ -96,18 +96,18 @@ class Function(Element):
     A Function holds the following data:
 
         element - a FiniteElement
-        name    - a string identifying the function."""
+        number  - a unique Index identifying the Function."""
 
-    def __init__(self, element, name = None):
+    def __init__(self, element):
         "Create Function."
         if isinstance(element, Function):
             # Create Function from Function (copy constructor)
             self.element = element.element
-            self.name = element.name
+            self.number = element.number
         else:
-            # Create Function for given FiniteElement with given name
+            # Create Function for given FiniteElement
             self.element = element
-            self.name = element.name
+            self.number = Index("function")
         return
 
 class BasisFunction(Element):
@@ -228,7 +228,7 @@ class Product(Element):
             # Create Product from Function
             index = Index()
             self.constant = 1.0
-            self.coefficients = [Coefficient(other.element, other.name, index)]
+            self.coefficients = [Coefficient(other.element, other.number, index)]
             self.transforms = []
             self.basisfunctions = [BasisFunction(other.element, index)]
             self.integral = None

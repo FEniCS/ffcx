@@ -9,27 +9,34 @@ from index import Index
 class Coefficient:
     
     """A Coefficient represents the coefficient for a function
-    expressed as a linear combination of basis functions."""
+    expressed as a linear combination of basis functions.
 
-    def __init__(self, element, name = None, index = None):
+    A Coefficient holds the following data:
+
+        element - the FiniteElement defining the function space
+        number  - a unique index for the represented Function
+        index   - summation Index (matching Index of corresponding BasisFunction)"""
+
+    def __init__(self, element, number, index = None):
         "Create Coefficient."
         if isinstance(element, Coefficient):
             # Create Coefficient from Coefficient (copy constructor)
             self.element = element.element
-            self.name = element.name
+            self.number = element.number
             self.index = Index(element.index)
         else:
             # Create Coefficient with given data
             self.element = element
-            self.name = name
+            self.number = number
             self.index = Index(index)
         return
 
     def __repr__(self):
         "Print nicely formatted representation of Coefficient."
-        return "c" + str(self.index)
+        return "c" + str(self.number) + "_" + str(self.index)
 
     def indexcall(self, foo, args = None):
         "Call given function on all Indices."
+        self.number.indexcall(foo, args)
         self.index.indexcall(foo, args)
         return

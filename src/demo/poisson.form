@@ -11,7 +11,8 @@ element = FiniteElement("Lagrange", "triangle", 2)
 
 v = BasisFunction(element)
 u = BasisFunction(element)
-f = Function(element, "source")
+g = Function(element)
+f = Function(element)
 
 a = 6*v.dx(i)*u.dx(i)*dx
 L = v*f*dx

@@ -50,7 +50,7 @@ def compile(sums, name = "MyPDE", language = None):
     # Generate the element tensor for all given forms
     for form in forms:
 
-        print "Compiling form: " + str(form)
+        print "\nCompiling form: " + str(form)
         
         # Create element tensors
         form.AKi = ElementTensor(form.sum, "interior", format)
@@ -58,6 +58,10 @@ def compile(sums, name = "MyPDE", language = None):
 
         # Check primary ranks
         __check_primary_ranks(form)
+
+        # Count the number of functions
+        form.nfunctions = max_index(form.sum, "function") + 1
+        print "Number of functions (coefficients): " + str(form.nfunctions)
 
     # Generate output
     format.compile(forms)

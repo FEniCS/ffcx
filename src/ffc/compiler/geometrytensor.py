@@ -71,7 +71,7 @@ class GeometryTensor:
         for j in range(len(self.coefficients)):
             c = self.coefficients[j]
             if not c.index.type == "secondary": continue
-            factors += [format.format["coefficient"](j, c.index([], a, [], []))]
+            factors += [format.format["coefficient"](c.number.index, c.index([], a, [], []))]
         for t in self.transforms:
             if not (t.index0.type == t.index1.type == "secondary"): continue
             factors += [format.format["transform"](t.index0([], a, [], []), \
@@ -86,7 +86,8 @@ class GeometryTensor:
             for j in range(len(self.coefficients)):
                 c = self.coefficients[j]
                 if c.index.type == "secondary": continue
-                factors += [format.format["coefficient"](j, c.index([], a, [], b))]
+                print c.number
+                factors += [format.format["coefficient"](c.number.index, c.index([], a, [], b))]
             for t in self.transforms:
                 if t.index0.type == t.index1.type == "secondary": continue
                 factors += [format.format["transform"](t.index0([], a, [], b), \

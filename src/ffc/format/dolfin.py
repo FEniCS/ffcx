@@ -16,7 +16,7 @@ format = { "multiplication": "*",
 
 def compile(forms):
     "Generate code for DOLFIN."
-    print "Generating output for DOLFIN"
+    print "\nGenerating output for DOLFIN"
 
     # Get name of form
     name = forms[0].name

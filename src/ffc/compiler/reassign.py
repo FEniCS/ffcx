@@ -30,6 +30,9 @@ def reassign_indices(sum):
     # Reassign primary indices (global for the Sum)
     __reassign(sum, "primary")
 
+    # Reassign function indices (global for the Sum)
+    __reassign(sum, "function")
+
     # Reassign secondary indices (global for each Product)
     [__reassign(p, "secondary") for p in sum.products]
 
