@@ -16,8 +16,11 @@ def parse(filename, language):
     
     # Generate output
     output = """\
+import sys
+sys.path.append("../../")
+from ffc.compiler.form import *
+
 name = "MyPDE"
-from form import *
     
 dx = Integral("interior")
 ds = Integral("boundary")

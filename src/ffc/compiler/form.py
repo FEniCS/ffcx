@@ -4,11 +4,15 @@ __copyright__ = "Copyright (c) 2004 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # Python modules
+import sys
 from Numeric import *
 
-# FFC modules
-import dolfin
-import latex
+# FFC format modules
+sys.path.append("../../")
+from ffc.format import dolfin
+from ffc.format import latex
+
+# FFC compiler modules
 from index import *
 from algebra import *
 from integral import *

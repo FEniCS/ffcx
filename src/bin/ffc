@@ -1,0 +1,69 @@
+#!/usr/bin/python
+
+# Copyright (c) 2004 Anders Logg (logg@tti-c.org)
+# Licensed under the GNU GPL Version 2
+#
+# This script parses command-line arguments, calls
+# the parser, and then compiles the generated form.
+
+# Python modules
+import sys
+import getopt
+
+# FFC modules
+sys.path.append("../")
+from ffc.parser import simple
+
+FFC_VERSION = "0.1.1-1"
+
+def main(argv):
+    "Main function."
+
+    # Get command-line arguments
+    try:
+        opts, args = getopt.getopt(argv, "hl:", ["help", "language"])
+    except getopt.GetoptError:
+        usage()
+        sys.exit(2)
+
+    # Print a nice message
+    print "This is FFC, the FEniCS Form Compiler, version %s." % FFC_VERSION
+    print "For further information, go to http://www/fenics.org/."
+    print
+
+    # Set default arguments
+    language = None
+
+    # Get options
+    for opt, arg in opts:
+        if opt in ("-h", "--help"):
+            usage()
+            sys.exit()
+        elif opt in  ("-l", "--language"):
+            language = arg
+
+    # Call parser and compiler for each file
+    for filename in args:
+        # Parse current file
+        outname = simple.parse(filename, language)
+        # Compile generated file
+        execfile(outname)
+
+def usage():
+    "Display usage info."
+    print """\
+Usage: ffc [OPTION]... input.form
+
+  -h            display this help and exit
+  -l language   specify output language
+
+Alternatively, the following long options may be used:
+
+  --help
+  --language language
+
+Currently supported languages are C++ and LaTeX."""
+    return
+
+if __name__ == "__main__":
+    main(sys.argv[1:])

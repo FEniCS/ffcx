@@ -2,7 +2,7 @@
 # Licensed under the GNU GPL Version 2
 #
 # The bilinear form for Poisson's equation.
-# Compile this form with FFC.
+# Compile this form with FFC: ffc poisson.form.
 
 name = "Poisson"
 element = FiniteElement("Lagrange", 1, "triangle")
