@@ -7,7 +7,7 @@ __license__  = "GNU GPL Version 2"
 
 format = { "multiplication": "not defined",
            "determinant": "not defined",
-           "floating point": lambda a: "%.16e" % a,
+           "floating point": lambda a: "%.15e" % a,
            "constant": lambda j: "not defined",
            "coefficient": lambda j, k: "not defined",
            "transform": lambda j, k: "not defined",

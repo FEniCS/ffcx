@@ -1,4 +1,5 @@
 o [logg] Use FIAT tabulate
+o [logg] Make filename -form + h default name
 o [logg] Remove non-used variables in generated code
 o [logg] Add version number to output
 o [logg] Add man page
