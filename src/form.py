@@ -114,7 +114,7 @@ if __name__ == "__main__":
     
     a = Form(u.dx(i)*v.dx(i)*dx, "FFCPoisson")
     a.compile("C++")
-    a.compile("LaTeX")
+    #a.compile("LaTeX")
     
     #element = FiniteElement("Vector Lagrange", 1, "triangle")
     #u = BasisFunction(element)
