@@ -12,7 +12,7 @@ pico -w src/bin/ffc
 cvs commit
 
 # Get the version number
-VERSION=`grep FFC_VERSION src/bin/ffc | cut -d'"' -f2`
+VERSION=`grep 'FFC_VERSION =' src/bin/ffc | cut -d'"' -f2`
 
 # Write a message
 echo Creating release $VERSION of FFC
