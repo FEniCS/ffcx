@@ -1,7 +1,6 @@
 "An algebra for multi-linear forms."
 
 __author__ = "Anders Logg (logg@tti-c.org)"
-__version__ = "0.0.1"
 __date__ = "2004-09-27"
 __copyright__ = "Copyright (c) 2004 Anders Logg"
 __license__  = "GNU GPL Version 2"
@@ -11,16 +10,20 @@ from derivative import Derivative
 from index import Index
 
 class Element:
+
     "Base class for elements of the algebra."
+
     pass
 
 class BasisFunction(Element):
+
     """A BasisFunction represents a basis function on the reference
     cell and can be either an argument in the multi-linear form or an
     auxiliary basis function that will be removed in the
     contraction."""
 
     def __init__(self, element, index = None):
+        "Create BasisFunction."
         if index == None:
             self.element = element
             self.index = Index("primary")
@@ -111,10 +114,12 @@ class BasisFunction(Element):
             return "w" + str(self.index)
         
 class Factor(Element):
+
     """A Factor represents a (possibly) differentiated BasisFunction
     on the reference cell."""
     
     def __init__(self, other = None):
+        "Create Factor."
         if other == None:
             self.basisfunction = None
             self.derivatives = []
@@ -129,6 +134,7 @@ class Factor(Element):
         return
 
     def __add__(self, other):
+        "Operator: Factor + Element"
         if isinstance(other, BasisFunction):
             w = Sum()
             w.products = [Product(self), Product(other)]
@@ -150,6 +156,7 @@ class Factor(Element):
         return
 
     def __sub__(self, other):
+        "Operator: Factor - Element"
         # FIXME: remember to modify geometry tensor with a -
         if isinstance(other, BasisFunction):
             w = Sum()
@@ -172,6 +179,7 @@ class Factor(Element):
         return
     
     def __mul__(self, other):
+        "Operator: Factor * Element"
         if isinstance(other, BasisFunction):
             w = Product()
             w.factors = [self, Factor(other)]
@@ -230,9 +238,11 @@ class Factor(Element):
         return output
     
 class Product(Element):
+
     "A Product represents a product of Factors."
 
     def __init__(self, other = None):
+        "Create Product."
         if other == None:
             self.factors = []
         elif isinstance(other, BasisFunction):
@@ -246,6 +256,7 @@ class Product(Element):
         return
     
     def __add__(self, other):
+        "Operator: Product + Element"
         if isinstance(other, BasisFunction):
             w = Sum()
             w.products = [self, Product(other)]
@@ -267,6 +278,7 @@ class Product(Element):
         return
 
     def __sub__(self, other):
+        "Operator: Product - Element"
         # FIXME: remember to modify geometry tensor with a -
         if isinstance(other, BasisFunction):
             w = Sum()
@@ -289,6 +301,7 @@ class Product(Element):
         return
     
     def __mul__(self, other):
+        "Operator: Product * Element"
         if isinstance(other, BasisFunction):
             w = Product()
             w.factors = self.factors + [Factor(other)]
@@ -397,9 +410,11 @@ class Product(Element):
         return output
 
 class Sum(Element):
+
     "A Sum represents a sum of Products."
     
     def __init__(self, other = None):
+        "Create Sum."
         if other == None:
             self.products = []
         elif isinstance(other, BasisFunction):
@@ -415,6 +430,7 @@ class Sum(Element):
         return
 
     def __add__(self, other):
+        "Operator: Sum + Element"
         if isinstance(other, BasisFunction):
             w = Sum()
             w.products = self.products + [Product(other)]
@@ -436,6 +452,7 @@ class Sum(Element):
         return
 
     def __sub__(self, other):
+        "Operator: Sum - Element"
         # FIXME: remember to modify geometry tensor with a -
         if isinstance(other, BasisFunction):
             w = Sum()
@@ -458,6 +475,7 @@ class Sum(Element):
         return
     
     def __mul__(self, other):
+        "Operator: Sum * Element"
         if isinstance(other, BasisFunction):
             w = Sum()
             for p in self.products:

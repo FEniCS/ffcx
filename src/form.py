@@ -1,19 +1,23 @@
 __author__ = "Anders Logg (logg@tti-c.org)"
-__version__ = "0.0.1"
 __date__ = "2004-09-27"
 __copyright__ = "Copyright (c) 2004 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
+# The Numeric module
 from Numeric import *
+
+# FFC modules
 from algebra import *
 from integrator import Integrator
 from finiteelement import FiniteElement
 
 class Form:
+
     """A Form represents a multi-linear form typically appearing in
     the variational formulation of partial differential equation."""
 
     def __init__(self, form):
+        "Create Form."
 
         # Make sure that we get a Sum
         if isinstance(form, Form):
@@ -126,6 +130,7 @@ class Form:
         return array(indices)
 
     def __repr__(self):
+        "Print nicely formatted representation of Form."
         output = "a("
         for i in range(self.r0[0]):
             if i < (self.r0[0] - 1):

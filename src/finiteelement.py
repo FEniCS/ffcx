@@ -1,5 +1,4 @@
 __author__ = "Anders Logg (logg@tti-c.org)"
-__version__ = "0.0.1"
 __date__ = "2004-10-04"
 __copyright__ = "Copyright (c) 2004 Anders Logg"
 __license__  = "GNU GPL Version 2"
@@ -26,6 +25,7 @@ class FiniteElement:
     element."""
 
     def __init__(self, name, degree, shape):
+        "Create FiniteElement."
 
         # Save data
         self.name = name
@@ -60,6 +60,7 @@ class FiniteElement:
         return
 
     def __repr__(self):
+        "Print nicely formatted representation of FiniteElement."
         return str(self.name) + " finite element of degree " + \
                str(self.degree) + " on a " + str(self.shape)
 
