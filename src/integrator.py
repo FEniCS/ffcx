@@ -5,6 +5,7 @@ __license__  = "GNU GPL Version 2"
 
 # FIAT modules
 from FIAT.base import quadrature
+from FIAT.base import shapes
 
 # FFC modules
 from algebra import *
@@ -34,16 +35,24 @@ class Integrator:
 
         # Determine the number of required quadrature points
         # FIXME: This should be based on the total degree
-        m = 4
+        m = 3
 
         # Create quadrature rule
         self.fiat_quadrature = quadrature.make_quadrature(self.fiat_shape, m)
 
+        # Compensate for different choice of reference cells in FIAT
+        # FIXME: Convince Rob and Matt to change their reference cells :-)
+        if self.fiat_shape == shapes.TRIANGLE:
+            self.vscaling = 0.25  # Area 1/2 instead of 2
+            self.dscaling = 2.0   # Scaling of derivative
+        elif self.fiat_shape == shapes.TETRAHEDRON:
+            self.vscaling = 0.125 # Volume 1/6 instead of 4/3
+            self.dscaling = 2.0   # Scaling of derivative
         return
 
     def __call__(self, product, indices0, indices1):
         "Evaluate integral of Product."
-        p = ProductFunction(product, indices0, indices1)
+        p = ProductFunction(product, indices0, indices1, self.vscaling, self.dscaling)
         return self.fiat_quadrature(p)
 
 class ProductFunction:
@@ -53,13 +62,15 @@ class ProductFunction:
     class itself to avoid putting to many things into the algebra
     module."""
 
-    def __init__(self, product, indices0, indices1):
+    def __init__(self, product, indices0, indices1, vscaling, dscaling):
         "Create ProductFunction."
         if not isinstance(product, Product):
             raise RuntimeError, "Product expected."
         self.product = product
         self.indices0 = indices0
         self.indices1 = indices1
+        self.vscaling = vscaling
+        self.dscaling = dscaling
         return
 
     def __call__(self, x):
@@ -67,10 +78,12 @@ class ProductFunction:
         tmp = 1.0
         for f in self.product.factors:
             tmp = tmp * self.__eval(f, x)
-        return tmp
+        return tmp * self.vscaling
 
     def __eval(self, factor, x):
         "Evaluate Factor at given point."
+
+        scaling = 1.0
 
         # Get basis function
         i = factor.basisfunction.index(self.indices0, self.indices1, [])
@@ -80,6 +93,7 @@ class ProductFunction:
         for d in factor.derivatives:
             i = d.index(self.indices0, self.indices1, [])
             v = v.deriv(i)
+            scaling *= self.dscaling
 
         # Evaluate basis function
-        return v(x)
+        return v(x) * scaling

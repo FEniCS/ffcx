@@ -57,6 +57,7 @@ class FiniteElement:
         # Set dimensions
         self.spacedim = len(self.basis)
         self.shapedim = shapes.dims[self.fiat_shape]
+        self.vectordim = 1 # FIXME: Should not always be 1
 
         return
 
