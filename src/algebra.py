@@ -26,17 +26,20 @@ class BasisFunction(Element):
 
     A BasisFunction holds the following data:
 
-        element - the corresponding FiniteElement
-        index   - the Index of the BasisFunction"""
+        index   - the Index of the BasisFunction
+        element - the FiniteElement of the BasisFunction"""
 
     def __init__(self, element, index = None):
         "Create BasisFunction."
-        if index == None:
-            self.element = element
+        if index == None and isinstance(element, BasisFunction):
+            self.index = Index(element.index)
+            self.element = element.element
+        elif index == None:
             self.index = Index("primary")
-        else:
             self.element = element
+        else:
             self.index = Index(index)
+            self.element = element
         return
 
     def __add__(self, other):
@@ -49,26 +52,14 @@ class BasisFunction(Element):
 
     def __mul__(self, other):
         "Operator: BasisFunction * Element"
-        if isinstance(other, BasisFunction):
-            w = Product()
-            w.factors = [Factor(self), Factor(other)]
-            return w
-        elif isinstance(other, Factor):
-            w = Product()
-            w.factors = [Factor(self), Factor(other)]
-            return w
-        elif isinstance(other, Product):
-            w = Product()
-            w.factors = [Factor(self)] + other.factors
-            return w
-        elif isinstance(other, Sum):
-            w = Sum()
-            for p in other.products:
-                w.products += [self*p]
-            return w
+        if isinstance(other, Sum):
+            return Sum(self) * Sum(other)
         else:
-            raise RuntimeError, "Can't multiply BasisFunction with " + str(other)
-        return
+            return Product(self) * Product(other)
+
+    def __pos__(self):
+        "Operator: +BasisFunction"
+        return BasisFunction(self)
 
     def __neg__(self):
         "Operator: -BasisFunction"
@@ -76,11 +67,7 @@ class BasisFunction(Element):
 
     def dx(self, index = None):
         "Operator: (d/dx)BasisFunction in given coordinate direction."
-        i = Index() # Create new secondary index
-        w = Factor(self)
-        w.derivatives = [Derivative(i)]
-        w.transforms = [Transform(i, index)]
-        return w
+        return Factor(self).dx(index)
 
     def __repr__(self):
         "Print nicely formatted representation of BasisFunction."
@@ -107,11 +94,11 @@ class Factor(Element):
             self.derivatives = []
             self.transforms = []
         elif isinstance(other, BasisFunction):
-            self.basisfunction = other
+            self.basisfunction = BasisFunction(other)
             self.derivatives = []
             self.transforms = []
         elif  isinstance(other, Factor):
-            self.basisfunction = other.basisfunction
+            self.basisfunction = BasisFunction(other.basisfunction)
             self.derivatives = [] + other.derivatives
             self.transforms = [] + other.transforms
         else:
@@ -128,26 +115,14 @@ class Factor(Element):
 
     def __mul__(self, other):
         "Operator: Factor * Element"
-        if isinstance(other, BasisFunction):
-            w = Product()
-            w.factors = [Factor(self), Factor(other)]
-            return w
-        elif isinstance(other, Factor):
-            w = Product()
-            w.factors = [Factor(self), Factor(other)]
-            return w
-        elif isinstance(other, Product):
-            w = Product()
-            w.factors = [Factor(self)] + other.factors
-            return w
-        elif isinstance(other, Sum):
-            w = Sum()
-            for p in other.products:
-                w.products += [self*p]
-            return w
+        if isinstance(other, Sum):
+            return Sum(self) * Sum(other)
         else:
-            raise RuntimeError, "Can't multiply Factor with " + str(other)
-        return
+            return Product(self) * Product(other)
+
+    def __pos__(self):
+        "Operator: +Factor"
+        return Factor(self)
 
     def __neg__(self):
         "Operator: -Factor"
@@ -158,7 +133,7 @@ class Factor(Element):
         i = Index() # Create new secondary index
         w = Factor(self)
         w.derivatives = [Derivative(i)] + w.derivatives
-        w.transforms = [Transform(i, index)] + w.derivatives
+        w.transforms = [Transform(i, index)] + w.transforms
         return w
 
     def max_indices(self):
@@ -181,6 +156,8 @@ class Factor(Element):
     def __repr__(self):
         "Print nicely formatted representation of Factor."
         output = ""
+        for t in self.transforms:
+            output += t.__repr__()
         if len(self.derivatives) > 0:
             output += "("
             for d in self.derivatives:
@@ -218,10 +195,11 @@ class Product(Element):
             self.coefficients = []
             self.constant = 1.0
         elif isinstance(other, Factor):
-            self.factors = [other]
-            self.transforms = []
+            self.factors = [Factor(other)]
+            self.transforms = [] + other.transforms
             self.coefficients = []
             self.constant = 1.0
+            self.factors[0].transforms = []
         elif isinstance(other, Product):
             self.factors = [] + other.factors
             self.transforms = [] + other.transforms
@@ -241,26 +219,21 @@ class Product(Element):
 
     def __mul__(self, other):
         "Operator: Product * Element"
-        if isinstance(other, BasisFunction):
-            w = Product()
-            w.factors = self.factors + [Factor(other)]
-            return w
-        elif isinstance(other, Factor):
-            w = Product()
-            w.factors = self.factors + [Factor(other)]
-            return w
-        elif isinstance(other, Product):
-            w = Product()
-            w.factors = self.factors + other.factors
-            return w
-        elif isinstance(other, Sum):
-            w = Sum()
-            for p in other.products:
-                w.products += [self*p]
-            return w
+        if isinstance(other, Sum):
+            return Sum(self) * Sum(other)
         else:
-            raise RuntimeError, "Can't multiply Product with " + str(other)
-        return
+            w0 = Product(self)
+            w1 = Product(other)
+            w = Product()
+            w.factors = w0.factors + w1.factors
+            w.transforms = w0.transforms + w1.transforms
+            w.coefficients = w0.coefficients + w1.coefficients
+            w.constant = w0.constant * w1.constant
+            return w
+
+    def __pos__(self):
+        "Operator: +Product"
+        return Product(self)
 
     def __neg__(self):
         "Operator: -Product"
@@ -275,10 +248,10 @@ class Product(Element):
             p = Product()
             for j in range(len(self.factors)):
                 if i == j:
-                    p.factors += [self.factors[i].dx(index)]
+                    p = p * self.factors[i].dx(index)
                 else:
-                    p.factors += [self.factors[j]]
-            w.products += [p]
+                    p = p * self.factors[j]
+            w = w + p
         return w
 
     def rank(self):
@@ -347,6 +320,14 @@ class Product(Element):
     def __repr__(self):
         "Print nicely formatted representation of Product."
         output = ""
+        if self.constant == -1.0:
+            output += "-"
+        elif not self.constant == 1.0:
+            output += str(self.constant)
+        for c in self.coefficients:
+            output += c.__repr__()
+        for t in self.transforms:
+            output += t.__repr__()
         for i in range(len(self.factors)):
             if i < (len(self.factors) - 1):
                 output += (self.factors[i].__repr__() + "*")
@@ -382,42 +363,27 @@ class Sum(Element):
 
     def __add__(self, other):
         "Operator: Sum + Element"
+        w0 = Sum(self)
+        w1 = Sum(other)
         w = Sum()
-        w.products = Sum(self).products + Sum(other).products
+        w.products = w0.products + w1.products
         return w
 
     def __sub__(self, other):
         "Operator: Sum - Element"
-        w = Sum()
-        w.products = Sum(self) + (-Sum(other))
-        return w
+        return Sum(self) + (-Sum(other))
     
     def __mul__(self, other):
         "Operator: Sum * Element"
-        if isinstance(other, BasisFunction):
-            w = Sum()
-            for p in self.products:
-                w.products += [p*other]
-            return w
-        elif isinstance(other, Factor):
-            w = Sum()
-            for p in self.products:
-                w.products += [p*other]
-            return w
-        elif isinstance(other, Product):
-            w = Sum()
-            for p in self.products:
-                w.products += [p*other]
-            return w
-        elif isinstance(other, Sum):
-            w = Sum()
-            for p in self.products:
-                for q in other.products:
-                    w.products += [p*q]
-            return w
-        else:
-            raise RuntimeError, "Can't multiply Sum with " + str(other)
-        return
+        w0 = Sum(self)
+        w1 = Sum(other)
+        w = Sum()
+        w.products = [p*q for p in w0.products for q in w1.products]
+        return w
+
+    def __pos__(self):
+        "Operator: +Sum"
+        return Sum(self)
 
     def __neg__(self):
         "Operator: -Sum"
@@ -428,8 +394,7 @@ class Sum(Element):
     def dx(self, index = None):
         "Operator: (d/dx)Sum in given coordinate direction."
         w = Sum()
-        for p in self.products:
-            w += p.dx(index)
+        w.products = [p.dx(index) for p in self.products]
         return w
 
     def __repr__(self):

@@ -14,7 +14,12 @@ from finiteelement import FiniteElement
 class Form:
 
     """A Form represents a multi-linear form typically appearing in
-    the variational formulation of partial differential equation."""
+    the variational formulation of partial differential equation.
+
+    A Form holds the following data:
+
+        sum   - the representation of the form as a Sum
+        terms - a list of auxiliary data for each Product"""
 
     def __init__(self, form):
         "Create Form."

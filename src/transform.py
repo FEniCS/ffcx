@@ -19,3 +19,7 @@ class Transform:
         self.index0 = Index(index0)
         self.index1 = Index(index1)
         return
+
+    def __repr__(self):
+        "Print nicely formatted representation of Factor."
+        return "(dX" + self.index0.__repr__() + "/" + "dx" + self.index1.__repr__() + ")"

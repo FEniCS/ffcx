@@ -19,4 +19,4 @@ class Derivative:
 
     def __repr__(self):
         "Print nicely formatted representation of Derivative."
-        return "(d/dx" + str(self.index) + ")"
+        return "(d/dX" + str(self.index) + ")"
