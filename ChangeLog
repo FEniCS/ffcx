@@ -1,3 +1,4 @@
+ - Add test program for verification of FIAT quadrature rules
  - Fix bug for derivative of sum
  - Improve common interface for debugging: add indentation
  - Add support for constants
