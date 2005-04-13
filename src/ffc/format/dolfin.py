@@ -196,7 +196,7 @@ def __form(form, type):
     baseclass = type + "Form"
 
     # Create argument list for form (functions and constants)
-    arguments = ", ".join([("const NewFunction& w%d" % j) for j in range(form.nfunctions)] + \
+    arguments = ", ".join([("NewFunction& w%d" % j) for j in range(form.nfunctions)] + \
                           [("const real& c%d" % j) for j in range(form.nconstants)])
 
     # Create initialization list for constants (if any)
