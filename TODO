@@ -1,3 +1,5 @@
+o [logg] Put stuff in arrays and use BLAS
+o [logg] Use FIAT vector-valued elements
 o [logg] Use FIAT tabulate
 o [logg] Make filename -form + h default name
 o [logg] Remove non-used variables in generated code
