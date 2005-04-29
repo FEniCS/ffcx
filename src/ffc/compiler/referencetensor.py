@@ -78,15 +78,15 @@ class ReferenceTensor:
         for v in self.basisfunctions:
             # Check basis Index
             if v.index == index:
-                return v.element.spacedim
+                return v.element.spacedim()
             # Check component Indices
             for j in range(len(v.component)):
                 if v.component[j] == index:
-                    return v.element.tensordims[j]
+                    return v.element.tensordim(j)
             # Check Derivatives
             for d in v.derivatives:
                 if d.index == index:
-                    return d.element.shapedim
+                    return d.element.shapedim()
         # Didn't find dimension
         raise RuntimeError, "Unable to find dimension for Index " + str(index)
 

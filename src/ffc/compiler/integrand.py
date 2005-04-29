@@ -3,9 +3,6 @@ __date__ = "2004-11-04"
 __copyright__ = "Copyright (c) 2004 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
-# FFC modules
-from tensorspace import ZeroFunction
-
 class Integrand:
     
     """This class wraps around a list of BasisFunctions to create a
@@ -27,13 +24,6 @@ class Integrand:
         for v in self.basisfunctions:
             tmp = tmp * self.__eval(v, x)
         return tmp * self.vscaling
-
-    def iszero(self):
-        "Return true iff integrand is zero."
-        for v in self.basisfunctions:
-            if isinstance(self.__getcomponent(v), ZeroFunction):
-                return True
-        return False
 
     def __eval(self, v, x):
         "Evaluate BasisFunction at given point."
@@ -65,11 +55,11 @@ class Integrand:
         # Get component of BasisFunction
         if len(component) > 0:
             # Tensor case
-            w = v.element.basis[index]
+            w = v.element.basis()[index]
             for i in component:
                 w = w[i]
         else:
             # Scalar case
-            w = v.element.basis[index]
+            w = v.element.basis()[index]
 
         return w

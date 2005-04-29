@@ -20,7 +20,7 @@ are supported for all elements of the algebra:
     Unary  d/dx   (operand scalar or tensor-valued)"""
 
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-09-27 / 2005-03-01"
+__date__ = "2004-09-27 -- 2005-03-01"
 __copyright__ = "Copyright (c) 2004 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -204,7 +204,7 @@ class BasisFunction(Element):
 
     def  __getitem__(self, component):
         "Operator: BasisFunction[component], pick given component."
-        rank = self.element.rank
+        rank = self.element.rank()
         if self.component or rank == 0:
             raise RuntimeError, "Cannot pick component of scalar BasisFunction."
         w = BasisFunction(self)
@@ -244,7 +244,7 @@ class BasisFunction(Element):
         if self.component:
             return 0
         else:
-            return self.element.rank
+            return self.element.rank()
 
     def indexcall(self, foo, args = None):
         "Call given function on all Indices."

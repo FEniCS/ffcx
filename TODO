@@ -18,6 +18,9 @@ o [logg] Fix all FIXMEs (grep FIXME *.py)
 
 Suggestions for FIAT:
 
+  - Put in hook for repeated scalar vector-valued elements
+  - Check for function that is zero
+  - Make the following accesible in a finite element: rank, tensordims
   - Move class FiniteElement to FIAT from FFC?
   - Move class TensorSpace to FIAT from FFC?
   - Add ChangeLog, AUTHORS, README, INSTALL, TODO

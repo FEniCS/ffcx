@@ -1,23 +1,22 @@
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-10-04"
+__date__ = "2004-10-04 -- 2005-04-28"
 __copyright__ = "Copyright (c) 2004 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # FIAT modules
-from FIAT import shapes
 from FIAT import quadrature
-from FIAT.Lagrange import Lagrange
-#from FIAT import Hermite
+from FIAT.shapes import *
+from FIAT.Lagrange import Lagrange, VectorLagrange
 
-# FFC compiler  modules
-from tensorspace import *
+shape_to_string = { LINE: "Line", TRIANGLE: "Triangle", TETRAHEDRON: "Tetrahedron" }
+string_to_shape = { "Line": LINE, "Triangle": TRIANGLE, "Tetrahedron": TETRAHEDRON }
 
 class FiniteElement:
 
     """A FiniteElement represents a finite element in the classical
     sense as defined by Ciarlet. The actual work is done by FIAT and
     this class serves as the interface to FIAT finite elements from
-    within FFC. Maybe this class should be moved to FIAT?
+    within FFC.
 
     A FiniteElement is specified by giving the name and degree of the
     finite element, together with the name of the reference cell:
@@ -25,96 +24,88 @@ class FiniteElement:
       name:   "Lagrange", "Hermite", ...
       degree: 0, 1, 2, ...
       shape:  "line", "triangle", "tetrahedron"
-      dims:   [int, int, ...] (optional)
 
-    The degree and shape must match the chosen type of finite element.
+    The degree and shape must match the chosen type of finite element."""
 
-    The list dims should contain a list of integers specifying the
-    tensor-dimensions of the finite element. The default is an empty
-    list, corresponding to a scalar-valued element."""
-
-    def __init__(self, name, shape, degree, dims = []):
+    def __init__(self, name, shape, degree):
         "Create FiniteElement."
-
-        # Allow scalar input of dimension for a vector-valued element
-        if isinstance(dims, int): dims = [dims]
 
         # Initialize data
         self.name = name
-        self.shape = shape
-        self.degree = degree
-        self.fiat_shape = None
-
-        self.basis = None
+        self.element = None
         self.table = None
-        
-        self.spacedim = None
-        self.shapedim = None
-        self.tensordims = None
-        self.rank = None
-        
+
+        # FIXME: Should be able to ask FIAT about this
+        self.tmp_rank = None
+        self.tmp_tensordims = []
+
         # Choose shape
         if shape == "line":
-            self.fiat_shape = shapes.LINE
+            fiat_shape = LINE
         elif shape == "triangle":
-            self.fiat_shape = shapes.TRIANGLE
+            fiat_shape = TRIANGLE
         elif shape == "tetrahedron":
-            self.fiat_shape = shapes.TETRAHEDRON
+            fiat_shape = TETRAHEDRON
         else:
             raise RuntimeError, "Unknown shape " + str(shape)
 
         # Choose function space
         if name == "Lagrange":
-            self.basis = Lagrange(self.fiat_shape, degree)
-            if dims:
-                tensorspace = TensorSpace(self.basis, dims)
-                self.basis = tensorspace.basis
-        elif name == "Hermite":
-            raise RuntimeError, "Hermite elements not implemented by FIAT."
-            self.basis = Hermite(self.fiat_shape, degree)
-            if dims:
-                tensorspace = TensorSpace(self.basis, dims)
-                self.basis = tensorspace.basis
-        else:
-            raise RuntimeError, "Unknown space " + str(name)
 
-        # Set dimensions
-        self.spacedim = len(self.basis)
-        self.shapedim = shapes.dims[self.fiat_shape]
-        self.tensordims = dims
-        self.rank = len(dims)
+            self.element = Lagrange(fiat_shape, degree)
+
+            # FIXME: Should be able to ask FIAT about this
+            self.tmp_rank = 0
+            self.tmp_tensordims = []
+            
+        elif name == "Vector Lagrange":
+
+            self.element = VectorLagrange(fiat_shape, degree)
+
+            # FIXME: Should be able to ask FIAT about this
+            self.tmp_rank = 1
+            if fiat_shape == TRIANGLE:
+                self.tmp_tensordims = [2]
+            else:
+                self.tmp_tensordims = [3]
+                
+        else:
+            raise RuntimeError, "Unknown finite element: " + str(name)
 
         return
 
-    # FIXME: Not used, should be moved to FIAT
-    def tabulate(self, points, dmax):
-        """Tabulate the values of all basis functions and their
-        derivatives up to order dmax at all quadrature points."""
+    def basis(self):
+        "Return basis of finite element space."
+        return self.element.function_space()
 
-        if self.table:
-            print "Already tabulated, skipping"
+    def degree(self):
+        "Return degree of polynomial basis."
+        return self.basis().degree()
 
-        if dmax > 1:
-            debug("Warning: only tabulating first derivatives so this might be slow.")
+    def shape(self):
+        "Return shape used for element."
+        return self.element.domain_shape()
 
-        # Tabulate basis functions
-        self.table = [self.basis.tabulate(points)]
+    def spacedim(self):
+        "Return dimension of finite element space."
+        return len(self.basis())
 
-        # Tabulate first derivatives of basis functions
-        if self.fiat_shape == shapes.TRIANGLE:
-            self.table += [self.basis.deriv_all(0).tabulate(points), \
-                           self.basis.deriv_all(1).tabulate(points)]
-        elif self.fiat_shape == shapes.TETRAHEDRON:
-            self.table += [self.basis.deriv_all(0).tabulate(points), \
-                           self.basis.deriv_all(1).tabulate(points), \
-                           self.basis.deriv_all(2).tabulate(points)]
-        else:
-            raise RuntimeError, "Unsupported shape."
+    def shapedim(self):
+        "Return dimension of of shape."
+        return dims[self.shape()]
+
+    def rank(self):
+        "Return rank of basis functions."
+        return self.tmp_rank
+    
+    def tensordim(self, i):
+        "Return size of given dimension."
+        return self.tmp_tensordims[i]
 
     def __repr__(self):
         "Print nicely formatted representation of FiniteElement."
-        return "%s of degree %d on a %s (rank %d)" % \
-               (self.name, self.degree, self.shape, self.rank)
+        return "%s finite element of degree %d on a %s" % \
+               (self.name, self.degree(), shape_to_string[self.shape()])
 
 if __name__ == "__main__":
 
@@ -126,14 +117,10 @@ if __name__ == "__main__":
     
     P2 = FiniteElement("Lagrange", "triangle", 2)
 
-    print P1
-    print Q1
-    print P2
-
     quadrature = quadrature.make_quadrature(P1.fiat_shape, 5)
 
-    w1 = P1.basis[0];
-    w2 = Q1.basis[0][0];
+    w1 = P1.basis()[0];
+    w2 = Q1.basis()[0][0];
 
     I1 = quadrature(w1.deriv(0))
     I2 = quadrature(w2.deriv(0))

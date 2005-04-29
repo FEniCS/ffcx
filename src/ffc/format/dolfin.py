@@ -101,24 +101,24 @@ def __element(element, name):
     "Generate finite element for DOLFIN."
 
     # Generate code for initialization of tensor dimensions
-    if element.rank > 0:
-        diminit = "      tensordims = new unsigned int [%d];\n" % element.rank
-        for j in range(element.rank):
-            diminit += "      tensordims[%d] = %d;\n" % (j, element.tensordims[j])
+    if element.rank() > 0:
+        diminit = "      tensordims = new unsigned int [%d];\n" % element.rank()
+        for j in range(element.rank()):
+            diminit += "      tensordims[%d] = %d;\n" % (j, element.tensordim(j))
     else:
         diminit = "      // Do nothing\n"
 
     # Generate code for tensordim function
-    if element.rank > 0:
-        tensordim = "dolfin_assert(i < %d);\n      return tensordims[i];" % element.rank
+    if element.rank() > 0:
+        tensordim = "dolfin_assert(i < %d);\n      return tensordims[i];" % element.rank()
     else:
         tensordim = 'dolfin_error("Element is scalar.");\n      return 0;'
 
     # Generate code for dof and coord mapping
     # FIXME: Move this somewhere else
-    if element.rank > 0:
+    if element.rank() > 0:
         # Assuming rank = 1
-        n = element.spacedim / element.tensordims[0]
+        n = element.spacedim() / element.tensordim(0)
         dofmap = "return (i/%d) * mesh.noNodes() + cell.nodeID(i %% %d);" % (n, n)
         coordmap = "return cell.node(i %% %d).coord();" % n
     else:
@@ -181,10 +181,10 @@ def __element(element, name):
 """ % (name, name,
        diminit,
        name,
-       element.spacedim,
-       element.shapedim,
+       element.spacedim(),
+       element.shapedim(),
        tensordim,
-       element.rank,
+       element.rank(),
        dofmap,
        coordmap)
 

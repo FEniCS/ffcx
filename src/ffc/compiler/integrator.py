@@ -19,7 +19,7 @@ def degree(basisfunctions):
     derivatives of basis functions."""
     q = 0
     for v in basisfunctions:
-        q += v.element.degree
+        q += v.element.degree()
         for d in v.derivatives:
             q -= 1
     return q
@@ -39,13 +39,13 @@ class Integrator:
 
         # Check that all functions are defined on the same shape
         for i in range(len(basisfunctions) - 1):
-            s0 = basisfunctions[i].element.fiat_shape
-            s1 = basisfunctions[i + 1].element.fiat_shape
+            s0 = basisfunctions[i].element.shape()
+            s1 = basisfunctions[i + 1].element.shape()
             if not s0 == s1:
                 raise RuntimeError, "BasisFunctions defined on different shapes."
 
         # All shapes are the same, so pick the first one
-        self.fiat_shape = basisfunctions[0].element.fiat_shape
+        self.shape = basisfunctions[0].element.shape()
 
         # Determine the number of required quadrature points based on the total
         # degree of the product of basis functions and derivatives of basis functions
@@ -55,7 +55,7 @@ class Integrator:
 
         # Create quadrature rule and get points and weights
         # FIXME: Maybe we don't need to save the quadrature rule?
-        self.fiat_quadrature = make_quadrature(self.fiat_shape, m)
+        self.fiat_quadrature = make_quadrature(self.shape, m)
         self.points = self.fiat_quadrature.get_points()
         self.weights = self.fiat_quadrature.get_points()
 
@@ -66,10 +66,10 @@ class Integrator:
 
         # Compensate for different choice of reference cells in FIAT
         # FIXME: Convince Rob and Matt to change their reference cells :-)
-        if self.fiat_shape == TRIANGLE:
+        if self.shape == TRIANGLE:
             self.vscaling = 0.25  # Area 1/2 instead of 2
             self.dscaling = 2.0   # Scaling of derivative
-        elif self.fiat_shape == TETRAHEDRON:
+        elif self.shape == TETRAHEDRON:
             self.vscaling = 0.125 # Volume 1/6 instead of 4/3
             self.dscaling = 2.0   # Scaling of derivative
         return    
@@ -77,9 +77,5 @@ class Integrator:
     def __call__(self, basisfunctions, iindices, aindices, bindices):
         "Evaluate integral of product."
         v = Integrand(basisfunctions, iindices, aindices, bindices, self.vscaling, self.dscaling)
-        if v.iszero():
-            debug("      integral is zero, using shortcut", 2)
-            return 0.0 # Makes it a little faster
-        else:
-            return self.fiat_quadrature(v)
+        return self.fiat_quadrature(v)
         

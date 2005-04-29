@@ -62,11 +62,11 @@ class GeometryTensor:
         # Check coefficients
         for c in self.coefficients:
             if c.index == index:
-                return c.element.spacedim
+                return c.element.spacedim()
         # Check transforms
         for t in self.transforms:
             if t.index0 == index or t.index1 == index:
-                return t.element.shapedim
+                return t.element.shapedim()
         # Didn't find dimension
         raise RuntimeError, "Unable to find dimension for Index " + str(index)
 
