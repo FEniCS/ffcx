@@ -246,6 +246,13 @@ class BasisFunction(Element):
         else:
             return self.element.rank()
 
+    def __call__(self, iindices, aindices, bindices):
+        "Evaluate BasisFunction at given indices."
+        dindex = []
+        for d in self.derivatives:
+            dindex += [d.index(iindices, aindices, bindices, [])]
+        return dindex
+
     def indexcall(self, foo, args = None):
         "Call given function on all Indices."
         self.index.indexcall(foo, args)

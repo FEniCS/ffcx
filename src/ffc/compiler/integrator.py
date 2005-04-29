@@ -47,22 +47,33 @@ class Integrator:
         # All shapes are the same, so pick the first one
         self.shape = basisfunctions[0].element.shape()
 
+        # Initialize quadrature
+        self.__init_quadrature(basisfunctions)
+
+        # Tabulate basis functions at quadrature points
+        self.__init_table(basisfunctions)
+        
+        # Tabulate basis functions and derivatives at quadrature points for each finite
+        # element used in the form (if not already tabulated)
+        #for v in basisfunctions:
+        #    v.element.tabulate(self.points, len(v.derivatives))
+
+        return
+
+    def __init_quadrature(self, basisfunctions):
+        "Create quadrature rule."
+
         # Determine the number of required quadrature points based on the total
         # degree of the product of basis functions and derivatives of basis functions
         q = degree(basisfunctions)
         m = (q + 1 + 1) / 2 # integer division gives 2m - 1 >= q
         debug("Total degree is %d, using %d quadrature point(s) in each dimension" % (q, m), 1)
-
+        
         # Create quadrature rule and get points and weights
         # FIXME: Maybe we don't need to save the quadrature rule?
         self.fiat_quadrature = make_quadrature(self.shape, m)
         self.points = self.fiat_quadrature.get_points()
         self.weights = self.fiat_quadrature.get_points()
-
-        # Tabulate basis functions and derivatives at quadrature points for each finite
-        # element used in the form (if not already tabulated)
-        #for v in basisfunctions:
-        #    v.element.tabulate(self.points, len(v.derivatives))
 
         # Compensate for different choice of reference cells in FIAT
         # FIXME: Convince Rob and Matt to change their reference cells :-)
@@ -72,10 +83,37 @@ class Integrator:
         elif self.shape == TETRAHEDRON:
             self.vscaling = 0.125 # Volume 1/6 instead of 4/3
             self.dscaling = 2.0   # Scaling of derivative
-        return    
+
+        return
+        
+    def __init_table(self, basisfunctions):
+        "Create table of basisfunctions at quadrature points."
+
+        # Compute maximum number of derivatives for each element
+        num_derivatives = {}
+        for v in basisfunctions:
+            element = v.element
+            order = len(v.derivatives)
+            if element in num_derivatives:
+                if order > num_derivatives[element]:
+                    num_derivatives[element] = order
+            else:
+                num_derivatives[element] = order
+
+        # Call FIAT to tabulate the basis functions for each element
+        self.table = {}
+        for element in num_derivatives:
+            order = num_derivatives[element]
+            print "Tabulating derivatives up to n = " + str(order) + " for " + str(element)
+            self.table = element.basis().tabulate_jet(order, self.points)
+
+        print self.table
 
     def __call__(self, basisfunctions, iindices, aindices, bindices):
         "Evaluate integral of product."
+
+        for v in basisfunctions:
+            print v(iindices, aindices, bindices)
+        
         v = Integrand(basisfunctions, iindices, aindices, bindices, self.vscaling, self.dscaling)
         return self.fiat_quadrature(v)
-        
