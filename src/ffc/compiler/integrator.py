@@ -1,7 +1,10 @@
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-10-04"
+__date__ = "2004-10-04 -- 2005-04-29"
 __copyright__ = "Copyright (c) 2004 Anders Logg"
 __license__  = "GNU GPL Version 2"
+
+# Python modules
+from Numeric import ones, array
 
 # FIAT modules
 from FIAT.quadrature import *
@@ -53,11 +56,6 @@ class Integrator:
         # Tabulate basis functions at quadrature points
         self.__init_table(basisfunctions)
         
-        # Tabulate basis functions and derivatives at quadrature points for each finite
-        # element used in the form (if not already tabulated)
-        #for v in basisfunctions:
-        #    v.element.tabulate(self.points, len(v.derivatives))
-
         return
 
     def __init_quadrature(self, basisfunctions):
@@ -68,12 +66,12 @@ class Integrator:
         q = degree(basisfunctions)
         m = (q + 1 + 1) / 2 # integer division gives 2m - 1 >= q
         debug("Total degree is %d, using %d quadrature point(s) in each dimension" % (q, m), 1)
-        
+
         # Create quadrature rule and get points and weights
         # FIXME: Maybe we don't need to save the quadrature rule?
         self.fiat_quadrature = make_quadrature(self.shape, m)
         self.points = self.fiat_quadrature.get_points()
-        self.weights = self.fiat_quadrature.get_points()
+        self.weights = self.fiat_quadrature.get_weights()
 
         # Compensate for different choice of reference cells in FIAT
         # FIXME: Convince Rob and Matt to change their reference cells :-)
@@ -88,6 +86,11 @@ class Integrator:
         
     def __init_table(self, basisfunctions):
         "Create table of basisfunctions at quadrature points."
+
+        # FIXME: Use old evaluation until Rob fixed tabulate_jet for vectors
+        max_rank = max([v.element.rank() for v in basisfunctions])
+        if max_rank > 0:
+            return
 
         # Compute maximum number of derivatives for each element
         num_derivatives = {}
@@ -104,16 +107,24 @@ class Integrator:
         self.table = {}
         for element in num_derivatives:
             order = num_derivatives[element]
-            print "Tabulating derivatives up to n = " + str(order) + " for " + str(element)
-            self.table = element.basis().tabulate_jet(order, self.points)
-
-        print self.table
+            self.table[element] = element.basis().tabulate_jet(order, self.points)
 
     def __call__(self, basisfunctions, iindices, aindices, bindices):
         "Evaluate integral of product."
 
-        for v in basisfunctions:
-            print v(iindices, aindices, bindices)
+        # FIXME: Use old evaluation until Rob fixed tabulate_jet for vectors
+        max_rank = max([v.element.rank() for v in basisfunctions])
+        if max_rank > 0:
+            v = Integrand(basisfunctions, iindices, aindices, bindices, \
+                          self.vscaling, self.dscaling)
+            return self.fiat_quadrature(v)
+        else:
+
+            integrand = self.vscaling * self.weights
         
-        v = Integrand(basisfunctions, iindices, aindices, bindices, self.vscaling, self.dscaling)
-        return self.fiat_quadrature(v)
+            for v in basisfunctions:
+                (element, vindex, cindex, dorder, dindex) = v(iindices, aindices, bindices)
+                value = self.table[element][dorder][dindex][vindex]
+                integrand = integrand * value * pow(self.dscaling, dorder)
+
+            return sum(integrand)

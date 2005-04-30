@@ -247,11 +247,18 @@ class BasisFunction(Element):
             return self.element.rank()
 
     def __call__(self, iindices, aindices, bindices):
-        "Evaluate BasisFunction at given indices."
-        dindex = []
+        """Evaluate BasisFunction at given indices, returning a tuple consisting
+        of (element, number, component, derivative order, derivative indices).
+        This tuple uniquely identifies the (possibly differentiated) basis function."""
+        vindex = self.index(iindices, aindices, bindices, [])
+        cindex = [i(iindices, aindices, bindices, []) for i in self.component]
+        dorder = 0
+        dindex = [0 for i in range(self.element.shapedim())]
         for d in self.derivatives:
-            dindex += [d.index(iindices, aindices, bindices, [])]
-        return dindex
+            dindex[d.index(iindices, aindices, bindices, [])] += 1
+            dorder += 1
+        dindex = tuple(dindex)
+        return (self.element, vindex, cindex, dorder, dindex)
 
     def indexcall(self, foo, args = None):
         "Call given function on all Indices."
