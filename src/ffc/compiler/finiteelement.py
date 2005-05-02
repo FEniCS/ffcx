@@ -33,11 +33,6 @@ class FiniteElement:
         # Initialize data
         self.name = name
         self.element = None
-        self.table = None
-
-        # FIXME: Should be able to ask FIAT about this
-        self.tmp_rank = None
-        self.tmp_tensordims = []
 
         # Choose shape
         if shape == "line":
@@ -54,21 +49,10 @@ class FiniteElement:
 
             self.element = Lagrange(fiat_shape, degree)
 
-            # FIXME: Should be able to ask FIAT about this
-            self.tmp_rank = 0
-            self.tmp_tensordims = []
-            
         elif name == "Vector Lagrange":
 
             self.element = VectorLagrange(fiat_shape, degree)
 
-            # FIXME: Should be able to ask FIAT about this
-            self.tmp_rank = 1
-            if fiat_shape == TRIANGLE:
-                self.tmp_tensordims = [2]
-            else:
-                self.tmp_tensordims = [3]
-                
         else:
             raise RuntimeError, "Unknown finite element: " + str(name)
 
@@ -96,11 +80,12 @@ class FiniteElement:
 
     def rank(self):
         "Return rank of basis functions."
-        return self.tmp_rank
+        return self.basis().rank()
     
     def tensordim(self, i):
         "Return size of given dimension."
-        return self.tmp_tensordims[i]
+        tensordims = self.basis().tensor_dim()
+        return tensordims[i]
 
     def __repr__(self):
         "Print nicely formatted representation of FiniteElement."
