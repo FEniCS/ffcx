@@ -33,7 +33,7 @@ def main(argv):
 
     # Print a nice message
     print "This is FFC, the FEniCS Form Compiler, version %s." % FFC_VERSION
-    print "For further information, go to http://www/fenics.org/."
+    print "For further information, go to http://www/fenics.org/ffc/."
     print
 
     # Set default arguments
@@ -53,7 +53,7 @@ def main(argv):
     # Call parser and compiler for each file
     for filename in args:
         # Parse current file
-        outname = simple.parse(filename, language, license)
+        outname = simple.parse(filename, FFC_VERSION, language, license)
         # Compile generated file
         execfile(outname)
 

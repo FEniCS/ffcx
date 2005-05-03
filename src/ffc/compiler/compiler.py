@@ -30,7 +30,7 @@ from elementsearch import *
 from finiteelement import *
 from elementtensor import *
 
-def compile(sums, name, language, license):
+def compile(sums, name, version, language, license):
     "Generate code for evaluation of the variational form."
 
     # Create a Form from the given sum(s)
@@ -79,7 +79,7 @@ def compile(sums, name, language, license):
         __check_primary_ranks(form)
 
     # Generate output
-    format.compile(forms, license)
+    format.compile(forms, version, license)
 
     return
 
