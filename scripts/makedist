@@ -2,10 +2,6 @@
 
 # This script prepares and creates a .tar.gz package of FFC.
 
-echo "Before making a new release of FFC, remember to verify the output"
-echo "(using scripts/verify) and then check out a clean version."
-sleep 2
-
 # Update version number in ChangeLog
 pico -w ChangeLog
 
@@ -17,6 +13,13 @@ pico -w setup.py
 
 # Get the version number
 VERSION=`grep 'FFC_VERSION =' src/bin/ffc | cut -d'"' -f2`
+
+# Verify output\
+echo Verifying output
+scripts/verify
+echo Only version numbers should differ, press return to continue
+read
+cp src/demo/*.h src/reference
 
 # Run benchmark problem
 echo Running benchmark problem

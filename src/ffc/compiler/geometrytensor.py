@@ -49,6 +49,7 @@ class GeometryTensor:
         # Compute rank
         rank = max([max_index(c, type) for c in self.coefficients] + \
                    [max_index(t, type) for t in self.transforms] + [-1]) + 1
+        
         # Compute all dimensions
         dims = [self.__find_dim(i, type) for i in range(rank)]
         # Create MultiIndex
@@ -72,6 +73,7 @@ class GeometryTensor:
 
     def __call__(self, a, format):
         "Return given element of geometry tensor."
+        aux = "geometry tensor auxiliary"
         # Compute product of factors outside sum
         factors = []
         for c in self.constants:
@@ -80,12 +82,12 @@ class GeometryTensor:
             else:
                 factors += [format.format["constant"](c.number.index)]
         for c in self.coefficients:
-            if not c.index.type == "secondary": continue
-            factors += [format.format["coefficient"](c.number.index, c.index([], a, [], []))]
+            if not c.index.type == aux:
+                factors += [format.format["coefficient"](c.number.index, c.index([], a, [], []))]
         for t in self.transforms:
-            if not (t.index0.type == t.index1.type == "secondary"): continue
-            factors += [format.format["transform"](t.index0([], a, [], []), \
-                                                   t.index1([], a, [], []))]
+            if not (t.index0.type == aux or  t.index1.type == aux):
+                factors += [format.format["transform"](t.index0([], a, [], []), \
+                                                       t.index1([], a, [], []))]
         product = format.format["multiplication"].join(factors)
         if product: f0 = [product]
         else: f0 = []
@@ -94,12 +96,12 @@ class GeometryTensor:
         for b in self.b.indices:
             factors = []
             for c in self.coefficients:
-                if c.index.type == "secondary": continue
-                factors += [format.format["coefficient"](c.number.index, c.index([], a, [], b))]
+                if c.index.type == aux:
+                    factors += [format.format["coefficient"](c.number.index, c.index([], a, [], b))]
             for t in self.transforms:
-                if t.index0.type == t.index1.type == "secondary": continue
-                factors += [format.format["transform"](t.index0([], a, [], b), \
-                                                       t.index1([], a, [], b))]
+                if t.index0.type == aux or t.index1.type == aux:
+                    factors += [format.format["transform"](t.index0([], a, [], b), \
+                                                           t.index1([], a, [], b))]
             terms += [format.format["multiplication"].join(factors)]
         sum = " + ".join(terms)
         if len(sum) > 1: sum = "(%s)" % sum
