@@ -6,7 +6,7 @@
 # This script parses command-line arguments, calls
 # the parser, and then compiles the generated form.
 
-FFC_VERSION = "0.1.6"
+FFC_VERSION = "0.1.7"
 
 # Python modules
 import sys
