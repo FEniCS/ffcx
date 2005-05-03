@@ -13,6 +13,9 @@ def parse(filename, language):
     infile = open(filename, "r")
     input = infile.read()
     infile.close()
+
+    # Get prefix of file name
+    prefix = filename.replace(".form", "")
     
     # Generate output
     output = """\
@@ -21,7 +24,7 @@ sys.path.append("../")
 sys.path.append("../../")
 from ffc.compiler.compiler import *
 
-name = "MyPDE"
+name = "%s"
 
 a = None
 L = None
@@ -38,11 +41,10 @@ n = Index()
 
 %s
 compile([a, L], name, \"%s\")
-""" % (input, language or "")
+""" % (prefix, input, language or "")
 
     # Write output
-    # FIXME: Why does this remove the last 'm' in poissonsystem.form?
-    outname = filename.rstrip(".form") + ".py"
+    outname = prefix + ".py"
     outfile = open(outname, "w")
     outfile.write(output)
     outfile.close()

@@ -8,7 +8,7 @@ from commands import *
 
 # Run benchmark
 start()
-getoutput("../bin/ffc ../demo/navierstokes.form")
+getoutput("../bin/ffc ../demo/NavierStokes.form")
 finish()
 t = milli() / 1000.0;
 

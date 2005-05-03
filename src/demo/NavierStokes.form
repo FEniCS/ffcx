@@ -4,9 +4,8 @@
 # The bilinear form for the nonlinear term in the
 # Navier-Stokes equations with fixed convective velocity.
 #
-# Compile this form with FFC: ffc navierstokes.form.
+# Compile this form with FFC: ffc NavierStokes.form
 
-name = "NavierStokes"
 element = FiniteElement("Vector Lagrange", "tetrahedron", 1)
 
 v = BasisFunction(element)

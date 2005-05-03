@@ -4,14 +4,13 @@
 # The bilinear form a(u,v) and linear form L(v) for
 # Poisson's equation.
 #
-# Compile this form with FFC: ffc poisson.form.
+# Compile this form with FFC: ffc Poisson.form
 
-name = "Poisson"
 element = FiniteElement("Lagrange", "triangle", 1)
 
 v = BasisFunction(element)
 u = BasisFunction(element)
 f = Function(element)
 
-a = v.dx(i)*u.dx(i)*dx
-L = v*f*dx
+a = u.dx(i)*v.dx(i)*dx
+L = f*v*dx

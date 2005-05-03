@@ -3,12 +3,11 @@
 #
 # The bilinear form for a mass matrix.
 #
-# Compile this form with FFC: ffc massmatrix.form.
+# Compile this form with FFC: ffc Mass.form
 
-name = "MassMatrix"
 element = FiniteElement("Lagrange", "triangle", 1)
 
 v = BasisFunction(element)
 u = BasisFunction(element)
     
-a = v*u*dx
+a = u*v*dx

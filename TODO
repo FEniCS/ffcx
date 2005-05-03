@@ -1,8 +1,6 @@
+o [logg] Make license optional
 o [logg] Put stuff in arrays and use BLAS
-o [logg] Use FIAT vector-valued elements
-o [logg] Use FIAT tabulate
 o [logg] Make filename -form + h default name
-o [logg] Remove non-used variables in generated code
 o [logg] Add version number to output
 o [logg] Add man page
 o [logg] Access data through map (map.det, map.g11 etc)
@@ -20,8 +18,5 @@ Suggestions for FIAT:
 
   - Put in hook for repeated scalar vector-valued elements
   - Check for function that is zero
-  - Make the following accesible in a finite element: rank, tensordims
-  - Move class FiniteElement to FIAT from FFC?
-  - Move class TensorSpace to FIAT from FFC?
   - Add ChangeLog, AUTHORS, README, INSTALL, TODO
   - Local-to-global mapping

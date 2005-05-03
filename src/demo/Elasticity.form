@@ -3,8 +3,9 @@
 #
 # The bilinear form e(u) : e(u) for linear
 # elasticity with e(u) = grad(u) + grad(u)^T
+#
+# Compile this form with FFC: ffc Elasticity.form
 
-name = "Elasticity"
 element = FiniteElement("Vector Lagrange", "tetrahedron", 1)
 
 v = BasisFunction(element)

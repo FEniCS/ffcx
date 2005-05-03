@@ -5,10 +5,10 @@
 cd src/demo
 
 for f in *.form; do
-	../bin/ffc $f
+    ../bin/ffc $f
 done
 
 for f in *.h; do
-	diff ../reference/$f $f
+    echo "--- Verifying $f ---"
+    diff ../reference/$f $f
 done
-
