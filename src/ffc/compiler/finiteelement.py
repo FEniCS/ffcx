@@ -98,14 +98,12 @@ if __name__ == "__main__":
     print "----------------------"
 
     P1 = FiniteElement("Lagrange", "triangle", 1)
-    Q1 = FiniteElement("Lagrange", "triangle", 1, 3)
-    
     P2 = FiniteElement("Lagrange", "triangle", 2)
 
-    quadrature = quadrature.make_quadrature(P1.fiat_shape, 5)
+    quadrature = quadrature.make_quadrature(P1.shape(), 5)
 
     w1 = P1.basis()[0];
-    w2 = Q1.basis()[0][0];
+    w2 = P2.basis()[0];
 
     I1 = quadrature(w1.deriv(0))
     I2 = quadrature(w2.deriv(0))

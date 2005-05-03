@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-10-04 -- 2005-04-29"
+__date__ = "2004-10-04 -- 2005-05-02"
 __copyright__ = "Copyright (c) 2004 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -15,7 +15,6 @@ from ffc.common.debug import *
 
 # FFC compiler modules
 from algebra import *
-from integrand import *
 
 def degree(basisfunctions):
     """Compute total degree of the product of basis functions and
@@ -68,10 +67,9 @@ class Integrator:
         debug("Total degree is %d, using %d quadrature point(s) in each dimension" % (q, m), 1)
 
         # Create quadrature rule and get points and weights
-        # FIXME: Maybe we don't need to save the quadrature rule?
-        self.fiat_quadrature = make_quadrature(self.shape, m)
-        self.points = self.fiat_quadrature.get_points()
-        self.weights = self.fiat_quadrature.get_weights()
+        quadrature = make_quadrature(self.shape, m)
+        self.points = quadrature.get_points()
+        self.weights = quadrature.get_weights()
 
         # Compensate for different choice of reference cells in FIAT
         # FIXME: Convince Rob and Matt to change their reference cells :-)
@@ -86,11 +84,6 @@ class Integrator:
         
     def __init_table(self, basisfunctions):
         "Create table of basisfunctions at quadrature points."
-
-        # FIXME: Use old evaluation until Rob fixed tabulate_jet for vectors
-        max_rank = max([v.element.rank() for v in basisfunctions])
-        if max_rank > 0:
-            return
 
         # Compute maximum number of derivatives for each element
         num_derivatives = {}
@@ -112,19 +105,14 @@ class Integrator:
     def __call__(self, basisfunctions, iindices, aindices, bindices):
         "Evaluate integral of product."
 
-        # FIXME: Use old evaluation until Rob fixed tabulate_jet for vectors
-        max_rank = max([v.element.rank() for v in basisfunctions])
-        if max_rank > 0:
-            v = Integrand(basisfunctions, iindices, aindices, bindices, \
-                          self.vscaling, self.dscaling)
-            return self.fiat_quadrature(v)
-        else:
-
-            integrand = self.vscaling * self.weights
+        integrand = self.vscaling * self.weights
         
-            for v in basisfunctions:
-                (element, vindex, cindex, dorder, dindex) = v(iindices, aindices, bindices)
+        for v in basisfunctions:
+            (element, vindex, cindex, dorder, dindex) = v(iindices, aindices, bindices)
+            if element.rank() > 0:
+                value = self.table[element][cindex[0]][dorder][dindex][vindex]
+            else:
                 value = self.table[element][dorder][dindex][vindex]
-                integrand = integrand * value * pow(self.dscaling, dorder)
-
-            return sum(integrand)
+            integrand = integrand * value * pow(self.dscaling, dorder)
+                
+        return sum(integrand)

@@ -64,7 +64,7 @@ def __file_header(name):
 #ifndef __%s_H
 #define __%s_H
 
-#include <dolfin/NewFiniteElement.h>
+#include <dolfin/FiniteElement.h>
 #include <dolfin/LinearForm.h>
 #include <dolfin/BilinearForm.h>
 
@@ -128,11 +128,11 @@ def __element(element, name):
     # Generate output
     return """\
 
-  class %s : public dolfin::NewFiniteElement
+  class %s : public dolfin::FiniteElement
   {
   public:
 
-    %s() : dolfin::NewFiniteElement(), tensordims(0)
+    %s() : dolfin::FiniteElement(), tensordims(0)
     {
 %s    }
 
@@ -196,7 +196,7 @@ def __form(form, type):
     baseclass = type + "Form"
 
     # Create argument list for form (functions and constants)
-    arguments = ", ".join([("NewFunction& w%d" % j) for j in range(form.nfunctions)] + \
+    arguments = ", ".join([("Function& w%d" % j) for j in range(form.nfunctions)] + \
                           [("const real& c%d" % j) for j in range(form.nconstants)])
 
     # Create initialization list for constants (if any)

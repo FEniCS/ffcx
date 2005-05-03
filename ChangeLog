@@ -1,4 +1,5 @@
- - Use FIAT tabulation mode for scalar elements
+ - Use FIAT tabulation mode for vector-valued elements (speedup a factor 5)
+ - Use FIAT tabulation mode for scalar elements (speedup a factor 1000)
  - Fig bug in demo elasticity.form (change order of u and v)
  - Make references to constants const in DOLFIN format
  - Don't generate code for unused entries of geometry tensor

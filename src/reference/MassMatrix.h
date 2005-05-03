@@ -4,7 +4,7 @@
 #ifndef __MASSMATRIX_H
 #define __MASSMATRIX_H
 
-#include <dolfin/NewFiniteElement.h>
+#include <dolfin/FiniteElement.h>
 #include <dolfin/LinearForm.h>
 #include <dolfin/BilinearForm.h>
 
@@ -17,11 +17,11 @@ class BilinearForm : public dolfin::BilinearForm
 {
 public:
 
-  class TestElement : public dolfin::NewFiniteElement
+  class TestElement : public dolfin::FiniteElement
   {
   public:
 
-    TestElement() : dolfin::NewFiniteElement(), tensordims(0)
+    TestElement() : dolfin::FiniteElement(), tensordims(0)
     {
       // Do nothing
     }
@@ -70,11 +70,11 @@ public:
 
   };
 
-  class TrialElement : public dolfin::NewFiniteElement
+  class TrialElement : public dolfin::FiniteElement
   {
   public:
 
-    TrialElement() : dolfin::NewFiniteElement(), tensordims(0)
+    TrialElement() : dolfin::FiniteElement(), tensordims(0)
     {
       // Do nothing
     }
