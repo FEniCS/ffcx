@@ -9,7 +9,7 @@ License:
 Dependencies:
 -------------
 
-  1. FIAT, version 0.1.1 (L)
+  1. FIAT, version 0.2.1
 
   You need to have FIAT installed. FIAT is available from
   the FEniCS web page: http://www.fenics.org/.

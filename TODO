@@ -1,15 +1,15 @@
 o [logg] Put stuff in arrays and use BLAS
-o [logg] Add version number to output
+o [logg] Display flop count
 o [logg] Add man page
 o [logg] Access data through map (map.det, map.g11 etc)
 o [logg] Collect terms of equal rank
+o [logg] Change *(1.0/c) to /c
 o [logg] Boundary integrals
 o [logg] Ask FIAT about local-to-global mapping
 o [logg] Connect Matt's parser
 o [logg] Call FErari to simplify
 o [logg] Option for inexact integration?
 o [logg] Option for using quadrature?
-o [logg] Change *(1.0/c) to /c
 o [logg] Fix all FIXMEs (grep FIXME *.py)
 
 Suggestions for FIAT:

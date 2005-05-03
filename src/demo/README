@@ -1,8 +1,12 @@
 To compile a form in this directory, just type
 
-    ffc poisson.form
+    ffc <prefix>.form
+
+for example
+
+    ffc Poisson.form
 
 If you have not installed FFC system-wide, you need
 to supply the full path to ffc:
 
-    ../bin/ffc poisson.form
+    ../bin/ffc <prefix>.form
