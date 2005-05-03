@@ -1,3 +1,4 @@
+ - Display usage if no input is given
  - Bug fix for finding correct prefix of file name
  - Automatically choose name of output file (if not supplied)
  - Use FIAT tabulation mode for vector-valued elements (speedup a factor 5)

@@ -21,8 +21,13 @@ def main(argv):
 
     # Get command-line arguments
     try:
-        opts, args = getopt.getopt(argv, "hl:", ["help", "language"])
+        opts, args = getopt.getopt(argv, "hlc:", ["help", "language", "license"])
     except getopt.GetoptError:
+        usage()
+        sys.exit(2)
+
+    # Check that we got a filename
+    if not args:
         usage()
         sys.exit(2)
 
@@ -32,7 +37,8 @@ def main(argv):
     print
 
     # Set default arguments
-    language = None
+    language = "C++"
+    license = "GNU GPL Version 2"
 
     # Get options
     for opt, arg in opts:
@@ -41,11 +47,13 @@ def main(argv):
             sys.exit()
         elif opt in  ("-l", "--language"):
             language = arg
+        elif opt in  ("-c", "--license"):
+            license = arg
 
     # Call parser and compiler for each file
     for filename in args:
         # Parse current file
-        outname = simple.parse(filename, language)
+        outname = simple.parse(filename, language, license)
         # Compile generated file
         execfile(outname)
 
@@ -55,12 +63,15 @@ def usage():
 Usage: ffc [OPTION]... input.form
 
   -h            display this help and exit
-  -l language   specify output language
+  -l language   specify output language (default is C++)
+  -c license    specify license of generated code (default is GPL)
+  
 
 Alternatively, the following long options may be used:
 
   --help
   --language language
+  --license  license
 
 Currently supported languages are C++ and LaTeX."""
     return

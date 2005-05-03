@@ -5,7 +5,7 @@ __date__ = "2004-11-15"
 __copyright__ = "Copyright (c) 2004 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
-def parse(filename, language):
+def parse(filename, language, license):
     "Parse file with given filename, return name of output file."
     print "Parsing " + filename
 
@@ -40,8 +40,8 @@ m = Index()
 n = Index()
 
 %s
-compile([a, L], name, \"%s\")
-""" % (prefix, input, language or "")
+compile([a, L], name, \"%s\", \"%s\")
+""" % (prefix, input, language, license)
 
     # Write output
     outname = prefix + ".py"
