@@ -88,6 +88,7 @@ class ElementTensor:
         declarations = []
         iindices = self.terms[0].A0.i.indices # All primary ranks are equal
         k = 0 # Update counter for each entry of A0, which is needed for some formats
+        num_dropped = 0
         for i in iindices:
             debug("i = " + str(i), 2)
             value = ""
@@ -115,9 +116,12 @@ class ElementTensor:
                             value += "%s%s%s" % (format.format["floating point"](a0), \
                                                  format.format["multiplication"], gk)
                         gK_used.add(gk)
+                    else:
+                        num_dropped += 1
             value = value or format.format["floating point"](0.0)
             declarations += [Declaration(name, value)]
             k += 1
+        debug("Number of zeros dropped from reference tensor: " + str(num_dropped), 1)
         return declarations
 
     def __check_integrals(self, sum):

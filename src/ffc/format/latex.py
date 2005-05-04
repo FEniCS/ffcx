@@ -1,7 +1,7 @@
 "LaTeX output format."
 
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-10-14"
+__date__ = "2004-10-14 -- 2005-05-04"
 __copyright__ = "Copyright (c) 2004 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -17,7 +17,7 @@ format = { "multiplication": "",
            "geometry tensor": lambda j, a: "G_{K,%d}^{%s}" % (j + 1, ",".join(["%d" % (index + 1) for index in a])),
            "element tensor": lambda i, k: "A^K_{%s}" % "".join(["%d" % (index + 1) for index in i]) }
 
-def compile(forms):
+def compile(forms, version, license):
     "Generate code for LaTeX."
     print "Generating output for LaTeX"
 

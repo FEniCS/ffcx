@@ -1,3 +1,4 @@
+o [logg] Allow summation notation u[0:3]?
 o [logg] Remove multiplication from dictionary
 o [logg] Put stuff in arrays and use BLAS
 o [logg] Display flop count

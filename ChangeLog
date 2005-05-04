@@ -1,3 +1,6 @@
+ - Count the number of zeros dropped
+ - Fix bug in handling command-line arguments
+ - Use module sets instead of built-in set (fix for Python 2.3)
  - Handle constant indices correctly (bug reported by Garth N. Wells)
 0.1.7 [2005-05-02]
  - Write version number to output

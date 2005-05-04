@@ -5,6 +5,8 @@
 #
 # This script parses command-line arguments, calls
 # the parser, and then compiles the generated form.
+#
+# 2004-10-14 -- 2005-05-04
 
 FFC_VERSION = "0.1.7"
 
@@ -21,7 +23,7 @@ def main(argv):
 
     # Get command-line arguments
     try:
-        opts, args = getopt.getopt(argv, "hlc:", ["help", "language", "license"])
+        opts, args = getopt.getopt(argv, "hl:c:", ["help", "language=", "license="])
     except getopt.GetoptError:
         usage()
         sys.exit(2)
@@ -30,6 +32,8 @@ def main(argv):
     if not args:
         usage()
         sys.exit(2)
+
+    print opts, args
 
     # Print a nice message
     print "This is FFC, the FEniCS Form Compiler, version %s." % FFC_VERSION
@@ -40,8 +44,11 @@ def main(argv):
     language = "C++"
     license = "GNU GPL Version 2"
 
+    print "language = " + str(language)
+
     # Get options
     for opt, arg in opts:
+        print opt, arg
         if opt in ("-h", "--help"):
             usage()
             sys.exit()
@@ -55,6 +62,7 @@ def main(argv):
         # Parse current file
         outname = simple.parse(filename, FFC_VERSION, language, license)
         # Compile generated file
+        print "outname = " + outname
         execfile(outname)
 
 def usage():

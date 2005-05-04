@@ -1,7 +1,7 @@
 "Raw output format."
 
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-11-17"
+__date__ = "2004-11-17 -- 2005-05-04"
 __copyright__ = "Copyright (c) 2004 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -15,7 +15,7 @@ format = { "multiplication": "not defined",
            "geometry tensor": lambda j, a: "not defined",
            "element tensor": lambda i, k: "not defined" }
 
-def compile(forms):
+def compile(forms, version, license):
     "Generate code for raw format."
     print "Generating raw output"
 
