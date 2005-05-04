@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-10-04 -- 2005-04-28"
+__date__ = "2004-10-04 -- 2005-05-02"
 __copyright__ = "Copyright (c) 2004 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -7,6 +7,9 @@ __license__  = "GNU GPL Version 2"
 from FIAT import quadrature
 from FIAT.shapes import *
 from FIAT.Lagrange import Lagrange, VectorLagrange
+
+# FFC modules
+from dofmap import *
 
 shape_to_string = { LINE: "Line", TRIANGLE: "Triangle", TETRAHEDRON: "Tetrahedron" }
 string_to_shape = { "Line": LINE, "Triangle": TRIANGLE, "Tetrahedron": TETRAHEDRON }
@@ -55,6 +58,9 @@ class FiniteElement:
 
         else:
             raise RuntimeError, "Unknown finite element: " + str(name)
+
+        # Create dof map
+        self.dofmap = DofMap(fiat_shape, self.element.dual_basis())
 
         return
 
