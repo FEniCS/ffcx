@@ -1,9 +1,12 @@
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-11-06"
+__date__ = "2004-11-06 -- 2005-05-04"
 __copyright__ = "Copyright (c) 2004 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 EPSILON = 1e-14
+
+# Python modules
+from sets import Set # (Could use built-in set with Python 2.4)
 
 # FFC common modules
 from ffc.common.debug import *
@@ -38,7 +41,7 @@ class ElementTensor:
         self.a0 = self.__compute_reference_tensor(format)
 
         # Compute element tensor
-        gK_used = set()
+        gK_used = Set()
         self.aK = self.__compute_element_tensor(format, gK_used)
 
         # Compute geometry tensor
