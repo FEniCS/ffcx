@@ -1,15 +1,18 @@
-__author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2005-05-03"
-__copyright__ = "Copyright (c) 2005 Anders Logg"
+__author__ = "Robert C. Kirby (kirby@cs.uchicago.edu) and Anders Logg (logg@tti-c.org)"
+__date__ = "2005-05-03 -- 2005-05-05"
+__copyright__ = "Copyright (c) 2005 Kirby/Logg"
 __license__  = "GNU GPL Version 2"
 
 # FIAT modules
 from FIAT.dualbasis import *
 from FIAT.shapes import *
 
-format = { ("entity", 0) : lambda i : "cell.nodeID(%s)" % i,
-           ("entity", 1) : lambda i : "cell.edgeID(%s)" % i,
-           ("entity", 2) : lambda i : "cell.faceID(%s)" % i,
+# FFC modules
+from declaration import *
+
+format = { ("entity", 0) : lambda i : "cell.nodeID(%d)" % i,
+           ("entity", 1) : lambda i : "cell.edgeID(%d)" % i,
+           ("entity", 2) : lambda i : "cell.id()",
            ("entity", 3) : lambda i : "cell.id()",
            ("num", 0)    : "mesh.noNodes()",
            ("num", 1)    : "mesh.noEdges()",
@@ -24,7 +27,8 @@ class DofMap:
     def __init__(self, shape, dualbasis):
         "Create DofMap."
 
-        print "Creating dof map for " + str(dualbasis)
+        print "---------------------------------------------------"
+        print "Creating dof map (experimental)"
         print ""
 
         # Number of topological dimensions
@@ -32,51 +36,43 @@ class DofMap:
 
         # Count the entities associated with each topological dimension
         num_entities = [len(entity_range(shape, dim)) for dim in range(num_dims)]
-        print "num entities:   " + str(num_entities)
+        print "num entities: " + str(num_entities)
 
-        # Count the dofs associated with each topological dimension
-        num_dofs = [len(dualbasis.getNodeIDs(dim)[0]) for dim in range(num_dims)]
-        print "num dofs    :   " + str(num_dofs)
+        # Count the nodes associated with each entity
+        num_nodes = [len(dualbasis.getNodeIDs(dim)[0]) for dim in range(num_dims)]
+        print "num nodes:    " + str(num_nodes)
 
-        # Compute global offsets for each topological dimension
-        local_offsets = [0]
-        global_offsets = [None]
-        for dim in range(1, num_dims):
-            # Compute increment
-            local_offset = num_dofs[dim - 1] * num_entities[dim - 1]
-            global_offset = str(num_dofs[dim - 1]) + "*" + format[("num", dim - 1)]
-            # Add previous offset
-            local_offset += local_offsets[dim - 1]
-            if global_offsets[dim - 1]:
-                global_offset = global_offsets[dim - 1] + " + " + global_offset
-            # Add to list
-            local_offsets += [local_offset]
-            global_offsets += [global_offset]
-        print "local offsets:  " + str(local_offsets)
-        print "global offsets: " + str(global_offsets)
         print ""
-
-        # Generate code for mapping
-        self.output = ""
-        sum_dofs = 0
+        
+        declarations = []
+        current = 0
+        offset = []
+        
+        # Iterate over topological dimensions
         for dim in range(num_dims):
-            sum_dofs += num_dofs[dim] * num_entities[dim]
-            if dim == 0:
-                self.output += "if ( i < %d ) return %s;\n" % \
-                               (sum_dofs,
-                                format[("entity", dim)]("i - " + str(local_offsets[dim])))
-            else:
-                self.output += "else if ( i < %d ) return %s + %s;\n" % \
-                               (sum_dofs, global_offsets[dim],
-                                format[("entity", dim)]("i - " + str(local_offsets[dim])))
-        print self.output
-                   
-        dofs_0 = dualbasis.getNodeIDs(0)
-        dofs_1 = dualbasis.getNodeIDs(1)
-        dofs_2 = dualbasis.getNodeIDs(2)
-        #dofs_3 = dualbasis.getNodeIDs(3)
- 
-        print "Vertices: " + str(dofs_0)
-        print "Edges:    " + str(dofs_1)
-        print "Faces:    " + str(dofs_2)
-        #print "Cells:    " + str(dofs_3)
+            # Iterate over entities for current dimension
+            for entity in range(num_entities[dim]):
+                if num_nodes[dim] == 1:
+                    # Map the single node associated with the current entity
+                    name = "dof[%d]" % current
+                    value = " + ".join(offset + [format[("entity", dim)](entity)])
+                    declarations += [Declaration(name, value)]
+                    current += 1
+                elif num_nodes[dim] > 1:
+                    # Iterate over the nodes associated with the current entity
+                    start = "%d*%s" % (num_nodes[dim], format[("entity", dim)](entity))
+                    for node in range(num_nodes[dim]):
+                        name = "dof[%d]" % current
+                        value = " + ".join(offset + [start] + ["%d" % node])
+                        declarations += [Declaration(name, value)]
+                        current += 1
+            # Add to offset
+            if num_nodes[dim] == 1:
+                offset += [format[("num", dim)]]
+            elif num_nodes[dim] > 1:
+                offset += ["%d*%s" % (num_nodes[dim], format[("num", dim)])]
+
+        for declaration in declarations:
+            print declaration.name + " = " + declaration.value
+
+        print "---------------------------------------------------"

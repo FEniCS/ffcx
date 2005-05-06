@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-11-09"
+__date__ = "2004-11-09 -- 2005-05-05"
 __copyright__ = "Copyright (c) 2004 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -12,3 +12,6 @@ class Declaration:
         self.name = name
         self.value = value
         return
+
+    def __repr__(self):
+        return self.name + " = " + self.value

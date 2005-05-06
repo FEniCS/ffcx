@@ -66,7 +66,7 @@ class FiniteElement:
             raise RuntimeError, "Unknown finite element: " + str(name)
 
         # Create dof map
-        #self.dofmap = DofMap(fiat_shape, self.element.dual_basis())
+        self.dofmap = DofMap(fiat_shape, self.element.dual_basis())
 
         return
 
