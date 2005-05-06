@@ -31,6 +31,8 @@ class DofMap:
         print "Creating dof map (experimental)"
         print ""
 
+        print "entity ids:   " + str(dualbasis.entity_ids)
+
         # Number of topological dimensions
         num_dims = dimension(shape) + 1
 
@@ -44,7 +46,7 @@ class DofMap:
 
         print ""
         
-        declarations = []
+        self.declarations = []
         current = 0
         offset = []
         
@@ -54,17 +56,17 @@ class DofMap:
             for entity in range(num_entities[dim]):
                 if num_nodes[dim] == 1:
                     # Map the single node associated with the current entity
-                    name = "dof[%d]" % current
+                    name = "dofs[%d]" % current
                     value = " + ".join(offset + [format[("entity", dim)](entity)])
-                    declarations += [Declaration(name, value)]
+                    self.declarations += [Declaration(name, value)]
                     current += 1
                 elif num_nodes[dim] > 1:
                     # Iterate over the nodes associated with the current entity
                     start = "%d*%s" % (num_nodes[dim], format[("entity", dim)](entity))
                     for node in range(num_nodes[dim]):
-                        name = "dof[%d]" % current
+                        name = "dofs[%d]" % current
                         value = " + ".join(offset + [start] + ["%d" % node])
-                        declarations += [Declaration(name, value)]
+                        self.declarations += [Declaration(name, value)]
                         current += 1
             # Add to offset
             if num_nodes[dim] == 1:
@@ -72,7 +74,8 @@ class DofMap:
             elif num_nodes[dim] > 1:
                 offset += ["%d*%s" % (num_nodes[dim], format[("num", dim)])]
 
-        for declaration in declarations:
+        for declaration in self.declarations:
             print declaration.name + " = " + declaration.value
+
 
         print "---------------------------------------------------"

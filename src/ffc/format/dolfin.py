@@ -125,6 +125,12 @@ def __element(element, name):
     else:
         dofmap = "return cell.nodeID(i);"
         coordmap = "return cell.node(i).coord();"
+
+
+    # Generate code for dof map
+    newdofmap = ""
+    for declaration in element.dofmap.declarations:
+        newdofmap += "      %s = %s;\n" % (declaration.name, declaration.value)
         
     # Generate output
     return """\
@@ -174,6 +180,11 @@ def __element(element, name):
       %s
     }
 
+    // FIXME: New version replacing dof()
+    inline void dofmap(int dofs[], const Cell& cell, const Mesh& mesh) const
+    {
+%s    }
+
   private:
 
     unsigned int* tensordims;
@@ -187,7 +198,8 @@ def __element(element, name):
        tensordim,
        element.rank(),
        dofmap,
-       coordmap)
+       coordmap,
+       newdofmap)
 
 def __form(form, type):
     "Generate form for DOLFIN."
