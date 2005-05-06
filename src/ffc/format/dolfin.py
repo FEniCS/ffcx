@@ -181,7 +181,7 @@ def __element(element, name):
     }
 
     // FIXME: New version replacing dof()
-    inline void dofmap(int dofs[], const Cell& cell, const Mesh& mesh) const
+    void dofmap(int dofs[], const Cell& cell, const Mesh& mesh) const
     {
 %s    }
 
