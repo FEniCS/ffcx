@@ -6,7 +6,7 @@ __license__  = "GNU GPL Version 2"
 # FIAT modules
 from FIAT import quadrature
 from FIAT.shapes import *
-from FIAT.Lagrange import Lagrange, VectorLagrange
+from FIAT.Lagrange import Lagrange, VectorLagrange, NewVectorLagrange
 
 # FFC modules
 from dofmap import *
@@ -30,7 +30,7 @@ class FiniteElement:
 
     The degree and shape must match the chosen type of finite element."""
 
-    def __init__(self, name, shape, degree):
+    def __init__(self, name, shape, degree, num_components = None):
         "Create FiniteElement."
 
         # Initialize data
@@ -50,17 +50,23 @@ class FiniteElement:
         # Choose function space
         if name == "Lagrange":
 
+            # Sanity check
+            if num_components:
+                raise RuntimeError("Number of components cannot be specified for scalar element (use \"Vector Lagrange\")")
+
+        # Choose function space
+
             self.element = Lagrange(fiat_shape, degree)
 
         elif name == "Vector Lagrange":
 
-            self.element = VectorLagrange(fiat_shape, degree)
+            self.element = NewVectorLagrange(fiat_shape, degree, num_components)
 
         else:
             raise RuntimeError, "Unknown finite element: " + str(name)
 
         # Create dof map
-        self.dofmap = DofMap(fiat_shape, self.element.dual_basis())
+        #self.dofmap = DofMap(fiat_shape, self.element.dual_basis())
 
         return
 

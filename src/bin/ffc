@@ -33,8 +33,6 @@ def main(argv):
         usage()
         sys.exit(2)
 
-    print opts, args
-
     # Print a nice message
     print "This is FFC, the FEniCS Form Compiler, version %s." % FFC_VERSION
     print "For further information, go to http://www/fenics.org/ffc/."
@@ -43,8 +41,6 @@ def main(argv):
     # Set default arguments
     language = "C++"
     license = "GNU GPL Version 2"
-
-    print "language = " + str(language)
 
     # Get options
     for opt, arg in opts:
@@ -62,7 +58,6 @@ def main(argv):
         # Parse current file
         outname = simple.parse(filename, FFC_VERSION, language, license)
         # Compile generated file
-        print "outname = " + outname
         execfile(outname)
 
 def usage():

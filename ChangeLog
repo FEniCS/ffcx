@@ -1,3 +1,4 @@
+ - Allow specification of the number of components for vector Lagrange
  - Count the number of zeros dropped
  - Fix bug in handling command-line arguments
  - Use module sets instead of built-in set (fix for Python 2.3)
