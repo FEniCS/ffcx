@@ -1,3 +1,4 @@
+ - Experimental support for computation of dof maps
  - Allow specification of the number of components for vector Lagrange
  - Count the number of zeros dropped
  - Fix bug in handling command-line arguments

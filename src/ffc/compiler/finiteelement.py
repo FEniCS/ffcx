@@ -7,6 +7,11 @@ __license__  = "GNU GPL Version 2"
 from FIAT import quadrature
 from FIAT.shapes import *
 from FIAT.Lagrange import Lagrange, VectorLagrange, NewVectorLagrange
+from FIAT.DiscontinuousLagrange import DiscontinuousLagrange, DiscontinuousVectorLagrange
+from FIAT.P1NC import P1Nonconforming
+from FIAT.RaviartThomas import RaviartThomas
+from FIAT.BDM import BDM
+from FIAT.Nedelec import Nedelec
 
 # FFC modules
 from dofmap import *
@@ -25,12 +30,12 @@ class FiniteElement:
     finite element, together with the name of the reference cell:
 
       name:   "Lagrange", "Hermite", ...
-      degree: 0, 1, 2, ...
       shape:  "line", "triangle", "tetrahedron"
+      degree: 0, 1, 2, ...
 
-    The degree and shape must match the chosen type of finite element."""
+    The shape and degree must match the chosen type of finite element."""
 
-    def __init__(self, name, shape, degree, num_components = None):
+    def __init__(self, name, shape, degree = None, num_components = None):
         "Create FiniteElement."
 
         # Initialize data
@@ -49,19 +54,27 @@ class FiniteElement:
 
         # Choose function space
         if name == "Lagrange":
-
-            # Sanity check
-            if num_components:
-                raise RuntimeError("Number of components cannot be specified for scalar element (use \"Vector Lagrange\")")
-
-        # Choose function space
-
             self.element = Lagrange(fiat_shape, degree)
-
         elif name == "Vector Lagrange":
-
             self.element = NewVectorLagrange(fiat_shape, degree, num_components)
-
+        elif name == "Discontinuous Lagrange":
+            print "Warning: element untested"
+            self.element = DiscontinuousLagrange(fiat_shape, degree)
+        elif name == "Discontinuous vector Lagrange":
+            print "Warning: element untested"
+            self.element = DiscontinuousVectorLagrange(fiat_shape, degree)
+        elif name == "Crouzeix-Raviart":
+            print "Warning: element untested"
+            self.element = P1Nonconforming(fiat_shape)
+        elif name == "Raviart-Thomas":
+            print "Warning: element untested"
+            self.element = RaviartThomas(fiat_shape, degree)
+        elif name == "Brezzi-Douglas-Marini":
+            print "Warning: element untested"
+            self.element = BDM(fiat_shape, degree)
+        elif name == "Nedelec":
+            print "Warning: element untested"
+            self.element = Nedelec(degree)
         else:
             raise RuntimeError, "Unknown finite element: " + str(name)
 
