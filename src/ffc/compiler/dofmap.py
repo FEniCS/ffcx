@@ -17,7 +17,11 @@ format = { ("entity", 0) : lambda i : "cell.nodeID(%d)" % i,
            ("num", 0)    : "mesh.noNodes()",
            ("num", 1)    : "mesh.noEdges()",
            ("num", 2)    : "mesh.noFaces()",
-           ("num", 3)    : "mesh.noCells()" }
+           ("num", 3)    : "mesh.noCells()",
+           ("check", 0)  : lambda i : "",
+           ("check", 1)  : lambda i : "cell.edge(%d).aligned(cell)" % i,
+           ("check", 2)  : lambda i : "",
+           ("check", 3)  : lambda i : ""  }
 
 class DofMap:
 
@@ -64,8 +68,12 @@ class DofMap:
                     # Iterate over the nodes associated with the current entity
                     start = "%d*%s" % (num_nodes[dim], format[("entity", dim)](entity))
                     for node in range(num_nodes[dim]):
+                        if dim < (num_dims - 1):
+                            local = "( %s ? %d : %d )" % (format[("check", dim)](entity), node, num_nodes[dim] - 1 - node)
+                        else:
+                            local = "%d" % node
                         name = "dofs[%d]" % current
-                        value = " + ".join(offset + [start] + ["%d" % node])
+                        value = " + ".join(offset + [start] + [local])
                         self.declarations += [Declaration(name, value)]
                         current += 1
             # Add to offset
@@ -76,6 +84,5 @@ class DofMap:
 
         for declaration in self.declarations:
             print declaration.name + " = " + declaration.value
-
 
         print "---------------------------------------------------"
