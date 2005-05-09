@@ -6,7 +6,7 @@ __license__  = "GNU GPL Version 2"
 # FIAT modules
 from FIAT import quadrature
 from FIAT.shapes import *
-from FIAT.Lagrange import Lagrange, VectorLagrange, NewVectorLagrange
+from FIAT.Lagrange import Lagrange, VectorLagrange
 from FIAT.DiscontinuousLagrange import DiscontinuousLagrange, DiscontinuousVectorLagrange
 from FIAT.P1NC import P1Nonconforming
 from FIAT.RaviartThomas import RaviartThomas
@@ -56,7 +56,7 @@ class FiniteElement:
         if name == "Lagrange":
             self.element = Lagrange(fiat_shape, degree)
         elif name == "Vector Lagrange":
-            self.element = NewVectorLagrange(fiat_shape, degree, num_components)
+            self.element = VectorLagrange(fiat_shape, degree, num_components)
         elif name == "Discontinuous Lagrange":
             print "Warning: element untested"
             self.element = DiscontinuousLagrange(fiat_shape, degree)

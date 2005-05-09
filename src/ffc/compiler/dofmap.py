@@ -1,5 +1,5 @@
 __author__ = "Robert C. Kirby (kirby@cs.uchicago.edu) and Anders Logg (logg@tti-c.org)"
-__date__ = "2005-05-03 -- 2005-05-05"
+__date__ = "2005-05-03 -- 2005-05-09"
 __copyright__ = "Copyright (c) 2005 Kirby/Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -19,7 +19,7 @@ format = { ("entity", 0) : lambda i : "cell.nodeID(%d)" % i,
            ("num", 2)    : "mesh.noFaces()",
            ("num", 3)    : "mesh.noCells()",
            ("check", 0)  : lambda i : "",
-           ("check", 1)  : lambda i : "cell.edge(%d).aligned(cell)" % i,
+           ("check", 1)  : lambda i : "cell.edgeAligned(%d)" % i,
            ("check", 2)  : lambda i : "",
            ("check", 3)  : lambda i : ""  }
 
