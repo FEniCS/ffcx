@@ -36,7 +36,8 @@ class DofMap:
         print ""
 
         print "entity ids:   " + str(dualbasis.entity_ids)
-
+        print "num_reps:     " + str(dualbasis.num_reps)
+        
         # Number of topological dimensions
         num_dims = dimension(shape) + 1
 
@@ -68,7 +69,7 @@ class DofMap:
                     # Iterate over the nodes associated with the current entity
                     start = "%d*%s" % (num_nodes[dim], format[("entity", dim)](entity))
                     for node in range(num_nodes[dim]):
-                        if dim < (num_dims - 1):
+                        if 0 < dim < (num_dims - 1):
                             local = "( %s ? %d : %d )" % (format[("check", dim)](entity), node, num_nodes[dim] - 1 - node)
                         else:
                             local = "%d" % node

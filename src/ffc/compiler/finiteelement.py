@@ -8,7 +8,7 @@ from FIAT import quadrature
 from FIAT.shapes import *
 from FIAT.Lagrange import Lagrange, VectorLagrange
 from FIAT.DiscontinuousLagrange import DiscontinuousLagrange, DiscontinuousVectorLagrange
-from FIAT.P1NC import P1Nonconforming
+from FIAT.CrouzeixRaviart import CrouzeixRaviart
 from FIAT.RaviartThomas import RaviartThomas
 from FIAT.BDM import BDM
 from FIAT.Nedelec import Nedelec
@@ -65,7 +65,7 @@ class FiniteElement:
             self.element = DiscontinuousVectorLagrange(fiat_shape, degree)
         elif name == "Crouzeix-Raviart":
             print "Warning: element untested"
-            self.element = P1Nonconforming(fiat_shape)
+            self.element = CrouzeixRaviart(fiat_shape)
         elif name == "Raviart-Thomas":
             print "Warning: element untested"
             self.element = RaviartThomas(fiat_shape, degree)
