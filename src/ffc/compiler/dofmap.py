@@ -1,5 +1,5 @@
 __author__ = "Robert C. Kirby (kirby@cs.uchicago.edu) and Anders Logg (logg@tti-c.org)"
-__date__ = "2005-05-03 -- 2005-05-09"
+__date__ = "2005-05-03 -- 2005-05-11"
 __copyright__ = "Copyright (c) 2005 Kirby/Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -35,7 +35,6 @@ format = { ("entity", 2, 0) : lambda i : "cell.nodeID(%d)" % i,
            ("check",  3, 2) : lambda i : "cell.faceAlignment(%d)" % i,
            ("check",  3, 3) : lambda i : "not defined" }
 
-
 class DofMap:
 
     """A DofMap maps the dofs (degrees of freedom) on a local element
@@ -51,6 +50,7 @@ class DofMap:
         print "entity ids:   " + str(dualbasis.entity_ids)
         print "num_reps:     " + str(dualbasis.num_reps)
 
+        # Get entity IDs
         self.entity_ids = dualbasis.entity_ids
         
         # Number of topological dimensions
@@ -61,7 +61,12 @@ class DofMap:
         print "num entities: " + str(self.num_entities)
 
         # Count the nodes associated with each entity
-        self.nodes_per_entity = [len(dualbasis.getNodeIDs(dim)[0]) for dim in range(self.num_dims)]
+        self.nodes_per_entity = []
+        for dim in range(self.num_dims):
+            if self.entity_ids[dim]:
+                self.nodes_per_entity += [len(self.entity_ids[dim][0])]
+            else:
+                self.nodes_per_entity += [0]
         print "nodes per entity: " + str(self.nodes_per_entity)
 
         # Count the total number of nodes (for a scalar element)
@@ -75,9 +80,7 @@ class DofMap:
         print ""
 
         self.declarations = []
-
         count = { "offset" : 0, "alignment" : 0 }
-
         local_offset  = 0    # Total local offset
         global_offset = None # Current increment for global offset
 
@@ -117,48 +120,6 @@ class DofMap:
 
         print "---------------------------------------------------"
 
-#        self.declarations = []
-#        current = 0
-#        offset = []
-#        
-#        # Iterate over vector components
-#        for component in range(num_components):
-#            # Iterate over topological dimensions
-#            for dim in range(num_dims):
-#                # Iterate over entities for current topological dimension
-#                for entity in range(num_entities[dim]):                    
-#                    if num_nodes[dim] == 1:
-#                        # Map the single node associated with the current entity
-#                        name = "dofs[%d]" % current
-#                        value = " + ".join(offset + [format[("entity", dim)](entity)])
-#                        self.declarations += [Declaration(name, value)]
-#                        current += 1
-#                    elif num_nodes[dim] > 1:
-#                        # Iterate over the nodes associated with the current entity
-#                        start = "%d*%s" % (num_nodes[dim], format[("entity", dim)](entity))
-#                        for node in range(num_nodes[dim]):
-#                            if 0 < dim < (num_dims - 1):
-#                                local = "( %s ? %d : %d )" % (format[("check", dim)](entity), \
-#                                                              node, num_nodes[dim] - 1 - node)
-#                            else:
-#                                local = "%d" % node
-#                                name = "dofs[%d]" % current
-#                                value = " + ".join(offset + [start] + [local])
-#                                self.declarations += [Declaration(name, value)]
-#                                current += 1
-#                                # Add to offset
-#                                if num_nodes[dim] == 1:
-#                                    offset += [format[("num", dim)]]
-#                                elif num_nodes[dim] > 1:
-#                                    offset += ["%d*%s" % (num_nodes[dim], format[("num", dim)])]
-#            # Add to offset
-#            offset += ["hej"]
-#
-#        for declaration in self.declarations:
-#            print declaration.name + " = " + declaration.value
-#
-#        print "---------------------------------------------------"
-
     def __write_map(self, dim, entity, node, local_offset, count):
         "Write map from local to global dof."
         local_dof  = self.entity_ids[dim][entity][node]
@@ -197,7 +158,7 @@ class DofMap:
         elif dim == 1:
             return start + " + ( alignment == 0 ? %d : %d )" % (node, self.nodes_per_entity[dim] - 1 - node)
         elif dim == 2:
-            raise RuntimeError, "Don't know how to reorder dofs for topological dimension 2 (faces)."
+            raise RuntimeError, "Reordering of dofs on faces not yet implemented."
         else:
             raise RuntimeError, "Don't know how to reorder dofs for topological dimension 3."
 

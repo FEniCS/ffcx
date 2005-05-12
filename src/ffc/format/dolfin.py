@@ -120,17 +120,14 @@ def __element(element, name):
     if element.rank() > 0:
         # Assuming rank = 1
         n = element.spacedim() / element.tensordim(0)
-        dofmap = "return (i/%d) * mesh.noNodes() + cell.nodeID(i %% %d);" % (n, n)
         coordmap = "return cell.node(i %% %d).coord();" % n
     else:
-        dofmap = "return cell.nodeID(i);"
         coordmap = "return cell.node(i).coord();"
 
-
     # Generate code for dof map
-    newdofmap = ""
+    dofmap = ""
     for declaration in element.dofmap.declarations:
-        newdofmap += "      %s = %s;\n" % (declaration.name, declaration.value)
+        dofmap += "      %s = %s;\n" % (declaration.name, declaration.value)
         
     # Generate output
     return """\
@@ -168,22 +165,15 @@ def __element(element, name):
       return %d;
     }
 
-    // FIXME: Only works for nodal basis
-    inline unsigned int dof(unsigned int i, const Cell& cell, const Mesh& mesh) const
+    void dofmap(int dofs[], const Cell& cell, const Mesh& mesh) const
     {
-      %s
-    }
+%s    }
 
     // FIXME: Only works for nodal basis
     inline const Point coord(unsigned int i, const Cell& cell, const Mesh& mesh) const
     {
       %s
     }
-
-    // FIXME: New version replacing dof()
-    void dofmap(int dofs[], const Cell& cell, const Mesh& mesh) const
-    {
-%s    }
 
   private:
 
@@ -198,8 +188,7 @@ def __element(element, name):
        tensordim,
        element.rank(),
        dofmap,
-       coordmap,
-       newdofmap)
+       coordmap)
 
 def __form(form, type):
     "Generate form for DOLFIN."
