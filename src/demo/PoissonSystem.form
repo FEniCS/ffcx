@@ -6,7 +6,7 @@
 #
 # Compile this form with FFC: ffc PoissonSystem.form
 
-element = FiniteElement("Vector Lagrange", "triangle", 1)
+element = FiniteElement("Vector Lagrange", "triangle", 4)
 
 v = BasisFunction(element)
 u = BasisFunction(element)
