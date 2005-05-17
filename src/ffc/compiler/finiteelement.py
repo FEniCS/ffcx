@@ -62,7 +62,7 @@ class FiniteElement:
             self.element = DiscontinuousLagrange(fiat_shape, degree)
         elif name == "Discontinuous vector Lagrange":
             print "Warning: element untested"
-            self.element = DiscontinuousVectorLagrange(fiat_shape, degree)
+            self.element = DiscontinuousVectorLagrange(fiat_shape, degree, num_components)
         elif name == "Crouzeix-Raviart":
             print "Warning: element untested"
             self.element = CrouzeixRaviart(fiat_shape)

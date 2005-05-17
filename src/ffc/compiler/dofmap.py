@@ -56,6 +56,10 @@ class DofMap:
         # Number of topological dimensions
         self.num_dims = dimension(shape) + 1
 
+        # Get points (temporary until we can handle other types of nodes)
+        self.points = dualbasis.pts
+        print self.points
+
         # Count the entities associated with each topological dimension
         self.num_entities = [len(entity_range(shape, dim)) for dim in range(self.num_dims)]
         print "num entities: " + str(self.num_entities)
