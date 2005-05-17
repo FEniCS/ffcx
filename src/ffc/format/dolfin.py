@@ -1,16 +1,16 @@
 "DOLFIN output format."
 
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-10-14"
+__date__ = "2004-10-14 -- 2005-05-17"
 __copyright__ = "Copyright (c) 2004 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 format = { "multiplication": "*",
-           "determinant": "det",
+           "determinant": "map.det",
            "floating point": lambda a: "%.15e" % a,
            "constant": lambda j: "c%d" % j,
            "coefficient": lambda j, k: "w[%d][%d]" % (j, k),
-           "transform": lambda j, k: "g%d%d" % (j, k),
+           "transform": lambda j, k: "map.g%d%d" % (j, k),
            "reference tensor" : lambda j, i, a: "not defined",
            "geometry tensor": lambda j, a: "G%d_%s" % (j, "_".join(["%d" % index for index in a])),
            "element tensor": lambda i, k: "block[%d]" % k }
@@ -65,6 +65,7 @@ def __file_header(name, version, license):
 #ifndef __%s_H
 #define __%s_H
 
+#include <dolfin/AffineMap.h>
 #include <dolfin/FiniteElement.h>
 #include <dolfin/LinearForm.h>
 #include <dolfin/BilinearForm.h>
@@ -253,13 +254,12 @@ public:
     if form.AKi.terms:
         output += """\
 
-  bool interior(real* block) const
+  void eval(real block[], const AffineMap& map) const
   {
     // Compute geometry tensors
 %s
     // Compute element tensor
 %s
-    return true;
   }
 """ % ("".join(["    real %s = %s;\n" % (gK.name, gK.value) for gK in form.AKi.gK]),
        "".join(["    %s = %s;\n" % (aK.name, aK.value) for aK in form.AKi.aK]))
@@ -268,13 +268,12 @@ public:
     if form.AKb.terms:
         output += """\
 
-  bool boundary(real* block) const
+  void eval(real block[], const AffineMap& map, unsigned int boundary) const
   {
     // Compute geometry tensors
 %s
     // Compute element tensor
 %s
-    return true;
   }
 """ % ("".join(["    real %s = %s;\n" % (gK.name, gK.value) for gK in form.AKb.gK]),
        "".join(["    %s = %s;\n" % (aK.name, aK.value) for aK in form.AKb.aK]))

@@ -1,9 +1,7 @@
 o [logg] Allow summation notation u[0:3]?
-o [logg] Remove multiplication from dictionary
 o [logg] Put stuff in arrays and use BLAS
 o [logg] Display flop count
 o [logg] Add man page
-o [logg] Access data through map (map.det, map.g11 etc)
 o [logg] Collect terms of equal rank
 o [logg] Change *(1.0/c) to /c
 o [logg] Boundary integrals
