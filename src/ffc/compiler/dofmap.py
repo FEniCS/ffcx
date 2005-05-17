@@ -10,6 +10,7 @@ from FIAT.shapes import *
 # FFC modules
 from declaration import *
 
+# FIXME: Should not be DOLFIN-specific
 format = { ("entity", 2, 0) : lambda i : "cell.nodeID(%d)" % i,
            ("entity", 2, 1) : lambda i : "cell.edgeID(%d)" % i,
            ("entity", 2, 2) : lambda i : "cell.id()",
@@ -43,12 +44,12 @@ class DofMap:
     def __init__(self, shape, dualbasis):
         "Create DofMap."
 
-        print "---------------------------------------------------"
+        print "-------------------------------------------------------------"
         print "Creating dof map (experimental)"
         print ""
 
-        print "entity ids:   " + str(dualbasis.entity_ids)
-        print "num_reps:     " + str(dualbasis.num_reps)
+        #print "entity ids:   " + str(dualbasis.entity_ids)
+        #print "num_reps:     " + str(dualbasis.num_reps)
 
         # Get entity IDs
         self.entity_ids = dualbasis.entity_ids
@@ -56,13 +57,9 @@ class DofMap:
         # Number of topological dimensions
         self.num_dims = dimension(shape) + 1
 
-        # Get points (temporary until we can handle other types of nodes)
-        self.points = dualbasis.pts
-        print self.points
-
         # Count the entities associated with each topological dimension
         self.num_entities = [len(entity_range(shape, dim)) for dim in range(self.num_dims)]
-        print "num entities: " + str(self.num_entities)
+        #print "num entities: " + str(self.num_entities)
 
         # Count the nodes associated with each entity
         self.nodes_per_entity = []
@@ -71,7 +68,7 @@ class DofMap:
                 self.nodes_per_entity += [len(self.entity_ids[dim][0])]
             else:
                 self.nodes_per_entity += [0]
-        print "nodes per entity: " + str(self.nodes_per_entity)
+        #print "nodes per entity: " + str(self.nodes_per_entity)
 
         # Count the total number of nodes (for a scalar element)
         self.num_nodes = 0
@@ -81,7 +78,7 @@ class DofMap:
         # Get the number of vector components
         self.num_components = dualbasis.num_reps
 
-        print ""
+        #print ""
 
         self.declarations = []
         count = { "offset" : 0, "alignment" : 0 }
@@ -98,19 +95,19 @@ class DofMap:
 
                     # Write alignment (if any)
                     if self.nodes_per_entity[dim] > 1 and dim < (self.num_dims - 1):
-                        self.declarations += self.__write_alignment(dim, entity, count)
+                        self.declarations += [self.__write_alignment(dim, entity, count)]
 
                     # Iterate over the nodes associated with the current entity
                     for node in range(self.nodes_per_entity[dim]):
 
                         # Write offset (if any)
                         if global_offset:
-                            self.declarations += self.__write_offset(global_offset, count)
+                            self.declarations += [self.__write_offset(global_offset, count)]
                             global_offset = None
 
                         # Write map from local to global dof
-                        self.declarations += self.__write_map(dim, entity, node, \
-                                                              local_offset, count)
+                        self.declarations += [self.__write_map(dim, entity, node, \
+                                                               local_offset, count)]
 
                 # Add to global offset
                 if self.nodes_per_entity[dim] > 0:
@@ -122,7 +119,7 @@ class DofMap:
         for declaration in self.declarations:
             print declaration.name + " = " + declaration.value
 
-        print "---------------------------------------------------"
+        print "-------------------------------------------------------------"
 
     def __write_map(self, dim, entity, node, local_offset, count):
         "Write map from local to global dof."
@@ -138,7 +135,7 @@ class DofMap:
             value = global_dof 
         else:
             value = "offset + " + global_dof
-        return [Declaration(name, value)]
+        return Declaration(name, value)
 
     def __write_alignment(self, dim, entity, count):
         "Write alignment for given entity."
@@ -148,7 +145,7 @@ class DofMap:
             name = "alignment"
         value = format[("check", self.num_dims - 1, dim)](entity)
         count["alignment"] += 1
-        return [Declaration(name, value)]
+        return Declaration(name, value)
 
     def __reorder(self, dim, entity, node):
         "Compute reordering of map from local to global dof."
@@ -176,7 +173,7 @@ class DofMap:
             name = "offset"
             value = "offset + " + increment
         count["offset"] += 1
-        return [Declaration(name, value)]
+        return Declaration(name, value)
 
     def __compute_offset(self, dim):
         "Compute increment for global offset."

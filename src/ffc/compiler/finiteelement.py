@@ -15,6 +15,7 @@ from FIAT.Nedelec import Nedelec
 
 # FFC modules
 from dofmap import *
+from interpolation import *
 
 shape_to_string = { LINE: "Line", TRIANGLE: "Triangle", TETRAHEDRON: "Tetrahedron" }
 string_to_shape = { "Line": LINE, "Triangle": TRIANGLE, "Tetrahedron": TETRAHEDRON }
@@ -80,6 +81,9 @@ class FiniteElement:
 
         # Create dof map
         self.dofmap = DofMap(fiat_shape, self.element.dual_basis())
+
+        # Create interpolation
+        self.interpolation = Interpolation(self.element.dual_basis())
 
         return
 
