@@ -120,10 +120,10 @@ def __element(element, name):
     for declaration in element.dofmap.declarations:
         dofmap += "      %s = %s;\n" % (declaration.name, declaration.value)
     
-    # Generate code for interpolate()
-    interpolate = ""
-    for declaration in element.interpolation.declarations:
-        interpolate += "      %s = %s;\n" % (declaration.name, declaration.value)
+    # Generate code for pointmap()
+    pointmap = ""
+    for declaration in element.pointmap.declarations:
+        pointmap += "      %s = %s;\n" % (declaration.name, declaration.value)
     
     # Generate output
     return """\
@@ -165,7 +165,7 @@ def __element(element, name):
     {
 %s    }
 
-    void interpolate(const Function& function, real coefficients[], const AffineMap& map) const
+    void pointmap(Point points[], unsigned int components[], const AffineMap& map) const
     {
 %s    }
 
@@ -182,7 +182,7 @@ def __element(element, name):
        tensordim,
        element.rank(),
        dofmap,
-       interpolate)
+       pointmap)
 
 def __form(form, type):
     "Generate form for DOLFIN."

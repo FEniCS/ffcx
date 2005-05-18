@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2005-05-16"
+__date__ = "2005-05-16 -- 2005-05-17"
 __copyright__ = "Copyright (c) 2005 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -11,20 +11,20 @@ from FIAT.shapes import *
 from declaration import *
 
 # FIXME: Should not be DOLFIN-specific
-format = { "coefficient" : lambda i    : "coefficients[%d]" % i,
-           "eval scalar" : lambda x    : "function(map(%s))" % x,
-           "eval vector" : lambda x, i : "function(map(%s), %d)" % (x, i) }
+format = { "point"     : lambda x : "points[%s]" % x,
+           "affinemap" : lambda x : "map(%s)" % x,
+           "component" : lambda i : "components[%s]" % i }
 
-class Interpolation:
+class PointMap:
 
-    """Interpolation generates a function that can compute the
-    interpolation of a given onto the a finite element basis."""
+    """A PointMap maps the coordinates of the degrees of freedom on
+    the reference element to physical coordinates."""
 
     def __init__(self, dualbasis):
-        "Create Interpolation."
+        "Create PointMap."
 
         print "-------------------------------------------------------------"
-        print "Creating interpolation (experimental)"
+        print "Creating point map (experimental)"
         print ""
 
         # Get points (temporary until we can handle other types of nodes)
@@ -39,18 +39,31 @@ class Interpolation:
         # Get the number of vector components
         num_components = dualbasis.num_reps
 
-        # Iterate over the dofs
         self.declarations = []
+
+        # Iterate over the dofs
         dof = 0
         for component in range(num_components):
             for point in points:
+
+                # Coordinate
                 x = (", ".join(["%.15e" % x for x in point]))
-                name = format["coefficient"](dof)
-                if num_components > 1:
-                    value = format["eval vector"](x, component)
-                else:
-                    value = format["eval scalar"](x)
+                name = format["point"](dof)
+                value = format["affinemap"](x)
                 self.declarations += [Declaration(name, value)]
+
+                dof += 1
+
+        # Iterate over the dofs
+        dof = 0
+        for component in range(num_components):
+            for point in points:
+
+                # Component
+                name = format["component"](dof)
+                value = "%d" % component
+                self.declarations += [Declaration(name, value)]
+
                 dof += 1
 
         for declaration in self.declarations:

@@ -1,5 +1,5 @@
  - Access data through map in DOLFIN format
- - Experimental support for computation of interpolations
+ - Experimental support for computation of coordinate maps
  - Add first draft of manual
  - Experimental support for computation of dof maps
  - Allow specification of the number of components for vector Lagrange
