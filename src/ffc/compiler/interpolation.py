@@ -10,6 +10,11 @@ from FIAT.shapes import *
 # FFC modules
 from declaration import *
 
+# FIXME: Should not be DOLFIN-specific
+format = { "coefficient" : lambda i    : "coefficients[%d]" % i,
+           "eval scalar" : lambda x    : "function(map(%s))" % x,
+           "eval vector" : lambda x, i : "function(map(%s), %d)" % (x, i) }
+
 class Interpolation:
 
     """Interpolation generates a function that can compute the
@@ -40,17 +45,15 @@ class Interpolation:
         for component in range(num_components):
             for point in points:
                 x = (", ".join(["%.15e" % x for x in point]))
+                name = format["coefficient"](dof)
                 if num_components > 1:
-                    i = ", %d" % component
+                    value = format["eval vector"](x, component)
                 else:
-                    i = ""
-                name = "c[%d]" % dof
-                value = "f(map(%s)%s)" % (x, i)
+                    value = format["eval scalar"](x)
                 self.declarations += [Declaration(name, value)]
                 dof += 1
 
         for declaration in self.declarations:
             print declaration.name + " = " + declaration.value
-        
 
         print "-------------------------------------------------------------"

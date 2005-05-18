@@ -1,3 +1,4 @@
+o [logg] Make dofmap.py and interpolation.py less DOLFIN specific
 o [logg] Allow summation notation u[0:3]?
 o [logg] Put stuff in arrays and use BLAS
 o [logg] Display flop count
@@ -5,7 +6,6 @@ o [logg] Add man page
 o [logg] Collect terms of equal rank
 o [logg] Change *(1.0/c) to /c
 o [logg] Boundary integrals
-o [logg] Ask FIAT about local-to-global mapping
 o [logg] Connect Matt's parser
 o [logg] Call FErari to simplify
 o [logg] Option for inexact integration?
@@ -14,7 +14,5 @@ o [logg] Fix all FIXMEs (grep FIXME *.py)
 
 Suggestions for FIAT:
 
-  - Put in hook for repeated scalar vector-valued elements
   - Check for function that is zero
   - Add ChangeLog, AUTHORS, README, INSTALL, TODO
-  - Local-to-global mapping

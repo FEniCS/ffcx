@@ -9,7 +9,7 @@ format = { "multiplication": "*",
            "determinant": "map.det",
            "floating point": lambda a: "%.15e" % a,
            "constant": lambda j: "c%d" % j,
-           "coefficient": lambda j, k: "w[%d][%d]" % (j, k),
+           "coefficients": lambda j, k: "c[%d][%d]" % (j, k),
            "transform": lambda j, k: "map.g%d%d" % (j, k),
            "reference tensor" : lambda j, i, a: "not defined",
            "geometry tensor": lambda j, a: "G%d_%s" % (j, "_".join(["%d" % index for index in a])),
@@ -65,7 +65,6 @@ def __file_header(name, version, license):
 #ifndef __%s_H
 #define __%s_H
 
-#include <dolfin/AffineMap.h>
 #include <dolfin/FiniteElement.h>
 #include <dolfin/LinearForm.h>
 #include <dolfin/BilinearForm.h>
@@ -116,23 +115,19 @@ def __element(element, name):
     else:
         tensordim = 'dolfin_error("Element is scalar.");\n      return 0;'
 
-    # Generate code for dof and coord mapping
-    # FIXME: Move this somewhere else
-    if element.rank() > 0:
-        # Assuming rank = 1
-        n = element.spacedim() / element.tensordim(0)
-        coordmap = "return cell.node(i %% %d).coord();" % n
-    else:
-        coordmap = "return cell.node(i).coord();"
-
-    # Generate code for dof map
+    # Generate code for dofmap()
     dofmap = ""
     for declaration in element.dofmap.declarations:
         dofmap += "      %s = %s;\n" % (declaration.name, declaration.value)
-        
+    
+    # Generate code for interpolate()
+    interpolate = ""
+    for declaration in element.interpolation.declarations:
+        interpolate += "      %s = %s;\n" % (declaration.name, declaration.value)
+    
     # Generate output
     return """\
-
+    
   class %s : public dolfin::FiniteElement
   {
   public:
@@ -170,11 +165,9 @@ def __element(element, name):
     {
 %s    }
 
-    // FIXME: Only works for nodal basis
-    inline const Point coord(unsigned int i, const Cell& cell, const Mesh& mesh) const
+    void interpolate(const Function& function, real coefficients[], const AffineMap& map) const
     {
-      %s
-    }
+%s    }
 
   private:
 
@@ -189,7 +182,7 @@ def __element(element, name):
        tensordim,
        element.rank(),
        dofmap,
-       coordmap)
+       interpolate)
 
 def __form(form, type):
     "Generate form for DOLFIN."
