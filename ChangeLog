@@ -1,3 +1,4 @@
+0.1.8 [2005-05-17]
  - Access data through map in DOLFIN format
  - Experimental support for computation of coordinate maps
  - Add first draft of manual

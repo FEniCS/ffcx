@@ -8,7 +8,7 @@
 #
 # 2004-10-14 -- 2005-05-04
 
-FFC_VERSION = "0.1.7"
+FFC_VERSION = "0.1.8"
 
 # Python modules
 import sys

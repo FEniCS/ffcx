@@ -6,7 +6,7 @@ from os import chdir
 chdir("src")
 
 setup(name="FFC",
-      version="0.1.7",
+      version="0.1.8",
       description="The FEniCS Form Compiler",
       author="Anders Logg",
       author_email="logg@tti-c.org",
