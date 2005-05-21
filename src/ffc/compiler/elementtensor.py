@@ -1,15 +1,14 @@
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-11-06 -- 2005-05-04"
+__date__ = "2004-11-06 -- 2005-05-20"
 __copyright__ = "Copyright (c) 2004 Anders Logg"
 __license__  = "GNU GPL Version 2"
-
-EPSILON = 1e-14
 
 # Python modules
 from sets import Set # (Could use built-in set with Python 2.4)
 
 # FFC common modules
 from ffc.common.debug import *
+from ffc.common.constants import *
 
 # FFC compiler modules
 from term import *
@@ -105,7 +104,7 @@ class ElementTensor:
                     gk = format.format["geometry tensor"](j, a)
                     debug("      a0 = " + str(a0), 2)
                     debug("      gk = " + str(gk), 2)
-                    if abs(a0) > EPSILON:
+                    if abs(a0) > FFC_EPSILON:
                         if value and a0 < 0.0:
                             value += " - %s%s%s" % (format.format["floating point"](-a0), \
                                                     format.format["multiplication"], gk)

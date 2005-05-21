@@ -15,7 +15,7 @@ format = { "multiplication": "not defined",
            "geometry tensor": lambda j, a: "not defined",
            "element tensor": lambda i, k: "not defined" }
 
-def compile(forms, version, license):
+def compile(forms, license):
     "Generate code for raw format."
     print "Generating raw output"
 

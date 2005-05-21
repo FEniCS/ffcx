@@ -1,3 +1,4 @@
+ - Improve python interface to FFC
  - Remove excessive logging at compilation
  - Fix bug in raw output format
 0.1.8 [2005-05-17]

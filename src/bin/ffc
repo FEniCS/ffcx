@@ -8,8 +8,6 @@
 #
 # 2004-10-14 -- 2005-05-04
 
-FFC_VERSION = "0.1.8"
-
 # Python modules
 import sys
 import getopt
@@ -17,6 +15,7 @@ import getopt
 # FFC modules
 sys.path.append("../")
 from ffc.parser import simple
+from ffc.common.constants import *
 
 def main(argv):
     "Main function."
@@ -40,11 +39,10 @@ def main(argv):
 
     # Set default arguments
     language = "C++"
-    license = "GNU GPL Version 2"
+    license = FFC_LICENSE
 
     # Get options
     for opt, arg in opts:
-        print opt, arg
         if opt in ("-h", "--help"):
             usage()
             sys.exit()
@@ -56,7 +54,7 @@ def main(argv):
     # Call parser and compiler for each file
     for filename in args:
         # Parse current file
-        outname = simple.parse(filename, language, FFC_VERSION, license)
+        outname = simple.parse(filename, language, license)
         # Compile generated file
         execfile(outname)
 

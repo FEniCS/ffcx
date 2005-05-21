@@ -3,7 +3,7 @@ and building the data structures (geometry and reference tensors) for
 the evaluation of the multi-linear form."""
 
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-11-17"
+__date__ = "2004-11-17 -- 2005-05-20"
 __copyright__ = "Copyright (c) 2004 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -13,6 +13,7 @@ from Numeric import *
 
 # FFC common modules
 from ffc.common.debug import *
+from ffc.common.constants import *
 
 # FFC format modules
 sys.path.append("../../")
@@ -30,14 +31,17 @@ from elementsearch import *
 from finiteelement import *
 from elementtensor import *
 
-def compile(sums, name, language, version = "unknown", license = "unknown"):
-    "Generate code for evaluation of the variational form."
+def compile(sums, name = "Form", language = "C++", license = FFC_LICENSE):
+    """Generate code for evaluation of the variational form.
+    This function takes as argument a Sum or a list of Sums
+    representing the multilinear form(s). The return value is a Form
+    or a list of Forms."""
 
     # Create a Form from the given sum(s)
     if isinstance(sums, list):
-        forms = [Form(sum, name) for sum in sums if sum]
+        forms = [Form(Sum(sum), name) for sum in sums if sum]
     else:
-        forms = [Form(sums, name)]
+        forms = [Form(Sum(sums), name)]
 
     # Choose language
     if not language:
@@ -79,7 +83,7 @@ def compile(sums, name, language, version = "unknown", license = "unknown"):
         __check_primary_ranks(form)
 
     # Generate output
-    format.compile(forms, version, license)
+    format.compile(forms, license)
 
     # Return form
     if len(forms) > 1:
