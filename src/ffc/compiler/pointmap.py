@@ -23,10 +23,6 @@ class PointMap:
     def __init__(self, dualbasis):
         "Create PointMap."
 
-        print "-------------------------------------------------------------"
-        print "Creating point map (experimental)"
-        print ""
-
         # Get points (temporary until we can handle other types of nodes)
         points = dualbasis.pts
 
@@ -66,7 +62,5 @@ class PointMap:
 
                 dof += 1
 
-        for declaration in self.declarations:
-            print declaration.name + " = " + declaration.value
-
-        print "-------------------------------------------------------------"
+        #for declaration in self.declarations:
+        #    print declaration.name + " = " + declaration.value

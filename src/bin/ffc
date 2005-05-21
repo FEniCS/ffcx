@@ -56,7 +56,7 @@ def main(argv):
     # Call parser and compiler for each file
     for filename in args:
         # Parse current file
-        outname = simple.parse(filename, FFC_VERSION, language, license)
+        outname = simple.parse(filename, language, FFC_VERSION, license)
         # Compile generated file
         execfile(outname)
 

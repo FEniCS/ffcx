@@ -44,13 +44,6 @@ class DofMap:
     def __init__(self, shape, dualbasis):
         "Create DofMap."
 
-        print "-------------------------------------------------------------"
-        print "Creating dof map (experimental)"
-        print ""
-
-        #print "entity ids:   " + str(dualbasis.entity_ids)
-        #print "num_reps:     " + str(dualbasis.num_reps)
-
         # Get entity IDs
         self.entity_ids = dualbasis.entity_ids
         
@@ -77,8 +70,6 @@ class DofMap:
 
         # Get the number of vector components
         self.num_components = dualbasis.num_reps
-
-        #print ""
 
         self.declarations = []
         count = { "offset" : 0, "alignment" : 0 }
@@ -116,10 +107,8 @@ class DofMap:
             # Add to local offset (only for vector elements)
             local_offset += self.num_nodes
 
-        for declaration in self.declarations:
-            print declaration.name + " = " + declaration.value
-
-        print "-------------------------------------------------------------"
+        #for declaration in self.declarations:
+        #    print declaration.name + " = " + declaration.value
 
     def __write_map(self, dim, entity, node, local_offset, count):
         "Write map from local to global dof."
