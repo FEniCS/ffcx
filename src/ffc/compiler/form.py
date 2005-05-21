@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-09-27"
+__date__ = "2004-09-27 -- 2005-05-20"
 __copyright__ = "Copyright (c) 2004 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -73,6 +73,36 @@ class Form:
         reassign_indices(self.sum)
 
         return
+
+    def reference_tensor(self, term = None):
+        "Return interior reference tensor for given term."
+        if term == None:
+            if len(self.AKi.terms) > 1:
+                raise RuntimeError, "Form has more than one term and term not specified."
+            else:
+                return self.AKi.terms[0].A0.A0
+        else:
+            return self.AKi.terms[term].A0.A0
+
+    def primary_indices(self, term = None):
+        "Return primary indices for interior reference tensor."
+        if term == None:
+            if len(self.AKi.terms) > 1:
+                raise RuntimeError, "Form has more than one term and term not specified."
+            else:
+                return self.AKi.terms[0].A0.i.indices
+        else:
+            return self.AKi.terms[term].A0.i.indices
+
+    def secondary_indices(self, term = None):
+        "Return primary indices for interior reference tensor."
+        if term == None:
+            if len(self.AKi.terms) > 1:
+                raise RuntimeError, "Form has more than one term and term not specified."
+            else:
+                return self.AKi.terms[0].A0.a.indices
+        else:
+            return self.AKi.terms[term].A0.a.indices
 
     def __repr__(self):
         "Print nicely formatted representation of Form."
