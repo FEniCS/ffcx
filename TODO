@@ -1,5 +1,7 @@
+o [logg] Add projections: pi = Projection(finiteelement)
 o [logg] Make dofmap.py and interpolation.py less DOLFIN specific
 o [logg] Allow summation notation u[0:3]?
+o [logg] Change notation for derivatives? u.Dx(i) suggested by Ridg
 o [logg] Put stuff in arrays and use BLAS
 o [logg] Display flop count
 o [logg] Add man page
