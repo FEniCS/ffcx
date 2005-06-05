@@ -5,7 +5,7 @@ __license__  = "GNU GPL Version 2"
 
 # FIAT modules
 from FIAT.dualbasis import *
-from FIAT.shapes import *
+from FIAT.shapes_new import *
 
 # FFC modules
 from declaration import *
@@ -46,6 +46,7 @@ class DofMap:
 
         # Get entity IDs
         self.entity_ids = dualbasis.entity_ids
+        #print self.entity_ids
         
         # Number of topological dimensions
         self.num_dims = dimension(shape) + 1

@@ -5,7 +5,7 @@ __license__  = "GNU GPL Version 2"
 
 # FIAT modules
 from FIAT.dualbasis import *
-from FIAT.shapes import *
+from FIAT.shapes_new import *
 
 # FFC modules
 from declaration import *

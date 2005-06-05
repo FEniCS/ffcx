@@ -1,3 +1,6 @@
+o [logg] Bug in dofmap for q = 0 with Discontinuous vector Lagrange
+o [logg] dx --> Dx
+o [logg] Add grad, rot, div
 o [logg] Add projections: pi = Projection(finiteelement)
 o [logg] Make dofmap.py and interpolation.py less DOLFIN specific
 o [logg] Allow summation notation u[0:3]?

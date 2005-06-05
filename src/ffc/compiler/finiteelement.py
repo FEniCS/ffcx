@@ -4,8 +4,7 @@ __copyright__ = "Copyright (c) 2004 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # FIAT modules
-from FIAT import quadrature
-from FIAT.shapes import *
+from FIAT.shapes_new import *
 from FIAT.Lagrange import Lagrange, VectorLagrange
 from FIAT.DiscontinuousLagrange import DiscontinuousLagrange, DiscontinuousVectorLagrange
 from FIAT.CrouzeixRaviart import CrouzeixRaviart
@@ -105,7 +104,7 @@ class FiniteElement:
 
     def shapedim(self):
         "Return dimension of of shape."
-        return dims[self.shape()]
+        return dim[self.shape()]
 
     def rank(self):
         "Return rank of basis functions."
@@ -129,13 +128,8 @@ if __name__ == "__main__":
     P1 = FiniteElement("Lagrange", "triangle", 1)
     P2 = FiniteElement("Lagrange", "triangle", 2)
 
-    quadrature = quadrature.make_quadrature(P1.shape(), 5)
-
     w1 = P1.basis()[0];
     w2 = P2.basis()[0];
 
-    I1 = quadrature(w1.deriv(0))
-    I2 = quadrature(w2.deriv(0))
-
-    print "I1 = " + str(I1)
-    print "I2 = " + str(I2)
+    print w1
+    print w2
