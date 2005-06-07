@@ -1,3 +1,4 @@
+ - Add new output format ASE (Matt Knepley)
  - Improve python interface to FFC
  - Remove excessive logging at compilation
  - Fix bug in raw output format
