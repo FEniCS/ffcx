@@ -8,8 +8,10 @@ __license__  = "GNU GPL Version 2"
 try:
     import ASE.Compiler.Python.Cxx
     Cxx = ASE.Compiler.Python.Cxx.Cxx()
+    det = Cxx.getVar('jacobianDeterminant')
 except ImportError:
     Cxx = None
+    det = None
 
 dim = 2
 
@@ -44,7 +46,7 @@ format = { "sum": sum,
            "subtract": subtract,
            "multiplication": multiplication,
            "grouping": lambda s: Cxx.getGroup(s),
-           "determinant": Cxx.getVar('jacobianDeterminant'),
+           "determinant": det,
            "floating point": lambda a: Cxx.getDouble(a),
            "constant": lambda j: "not defined",
            "coefficient": lambda j, k: "not defined",
