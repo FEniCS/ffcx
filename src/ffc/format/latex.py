@@ -8,7 +8,10 @@ __license__  = "GNU GPL Version 2"
 # FFC common modules
 from ffc.common.constants import *
 
-format = { "multiplication": "",
+format = { "sum": lambda l: " + ".join(l),
+           "subtract": lambda l: " - ".join(l),
+           "multiplication": lambda l: "".join(l),
+           "grouping": lambda s: "(%s)" % s,
            "determinant": "\\det F_K'",
            "floating point": lambda a: __floating_point(a),
            "constant": lambda j: "c%d" % j,

@@ -35,48 +35,52 @@ class FiniteElement:
 
     The shape and degree must match the chosen type of finite element."""
 
-    def __init__(self, name, shape, degree = None, num_components = None):
+    def __init__(self, name, shape, degree = None, num_components = None, element = None):
         "Create FiniteElement."
 
         # Initialize data
         self.name = name
         self.element = None
 
-        # Choose shape
-        if shape == "line":
-            fiat_shape = LINE
-        elif shape == "triangle":
-            fiat_shape = TRIANGLE
-        elif shape == "tetrahedron":
-            fiat_shape = TETRAHEDRON
+        if not element is None:
+            self.element = element
+            fiat_shape = element.domain_shape()
         else:
-            raise RuntimeError, "Unknown shape " + str(shape)
+            # Choose shape
+            if shape == "line":
+                fiat_shape = LINE
+            elif shape == "triangle":
+                fiat_shape = TRIANGLE
+            elif shape == "tetrahedron":
+                fiat_shape = TETRAHEDRON
+            else:
+                raise RuntimeError, "Unknown shape " + str(shape)
 
-        # Choose function space
-        if name == "Lagrange":
-            self.element = Lagrange(fiat_shape, degree)
-        elif name == "Vector Lagrange":
-            self.element = VectorLagrange(fiat_shape, degree, num_components)
-        elif name == "Discontinuous Lagrange":
-            print "Warning: element untested"
-            self.element = DiscontinuousLagrange(fiat_shape, degree)
-        elif name == "Discontinuous vector Lagrange":
-            print "Warning: element untested"
-            self.element = DiscontinuousVectorLagrange(fiat_shape, degree, num_components)
-        elif name == "Crouzeix-Raviart":
-            print "Warning: element untested"
-            self.element = CrouzeixRaviart(fiat_shape)
-        elif name == "Raviart-Thomas":
-            print "Warning: element untested"
-            self.element = RaviartThomas(fiat_shape, degree)
-        elif name == "Brezzi-Douglas-Marini":
-            print "Warning: element untested"
-            self.element = BDM(fiat_shape, degree)
-        elif name == "Nedelec":
-            print "Warning: element untested"
-            self.element = Nedelec(degree)
-        else:
-            raise RuntimeError, "Unknown finite element: " + str(name)
+            # Choose function space
+            if name == "Lagrange":
+                self.element = Lagrange(fiat_shape, degree)
+            elif name == "Vector Lagrange":
+                self.element = VectorLagrange(fiat_shape, degree, num_components)
+            elif name == "Discontinuous Lagrange":
+                print "Warning: element untested"
+                self.element = DiscontinuousLagrange(fiat_shape, degree)
+            elif name == "Discontinuous vector Lagrange":
+                print "Warning: element untested"
+                self.element = DiscontinuousVectorLagrange(fiat_shape, degree, num_components)
+            elif name == "Crouzeix-Raviart":
+                print "Warning: element untested"
+                self.element = CrouzeixRaviart(fiat_shape)
+            elif name == "Raviart-Thomas":
+                print "Warning: element untested"
+                self.element = RaviartThomas(fiat_shape, degree)
+            elif name == "Brezzi-Douglas-Marini":
+                print "Warning: element untested"
+                self.element = BDM(fiat_shape, degree)
+            elif name == "Nedelec":
+                print "Warning: element untested"
+                self.element = Nedelec(degree)
+            else:
+                raise RuntimeError, "Unknown finite element: " + str(name)
 
         # Create dof map
         self.dofmap = DofMap(fiat_shape, self.element.dual_basis())

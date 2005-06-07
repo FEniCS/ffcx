@@ -5,7 +5,10 @@ __date__ = "2004-11-17 -- 2005-05-04"
 __copyright__ = "Copyright (c) 2004 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
-format = { "multiplication": "not defined",
+format = { "sum": lambda l: " + ".join(l),
+           "subtract": lambda l: " - ".join(l),
+           "multiplication": lambda l: "*".join(l),
+           "grouping": lambda s: "(%s)" % s,
            "determinant": "not defined",
            "floating point": lambda a: "%.15e" % a,
            "constant": lambda j: "not defined",

@@ -20,6 +20,7 @@ sys.path.append("../../")
 from ffc.format import dolfin
 from ffc.format import latex
 from ffc.format import raw
+from ffc.format import ase
 
 # FFC compiler modules
 from form import *
@@ -52,6 +53,8 @@ def compile(sums, name = "Form", language = "C++", license = FFC_LICENSE):
         format = latex
     elif language == "raw":
         format = raw
+    elif language == "ase":
+        format = ase
     else:
         raise "RuntimeError", "Unknown language " + str(language)
 

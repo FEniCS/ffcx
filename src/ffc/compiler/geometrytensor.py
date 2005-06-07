@@ -88,7 +88,7 @@ class GeometryTensor:
             if not (t.index0.type == aux or  t.index1.type == aux):
                 factors += [format.format["transform"](t.index0([], a, [], []), \
                                                        t.index1([], a, [], []))]
-        product = format.format["multiplication"].join(factors)
+        product = format.format["multiplication"](factors)
         if product: f0 = [product]
         else: f0 = []
         # Compute sum of products inside sum
@@ -102,14 +102,13 @@ class GeometryTensor:
                 if t.index0.type == aux or t.index1.type == aux:
                     factors += [format.format["transform"](t.index0([], a, [], b), \
                                                            t.index1([], a, [], b))]
-            terms += [format.format["multiplication"].join(factors)]
-        sum = " + ".join(terms)
-        if len(sum) > 1: sum = "(%s)" % sum
+            terms += [format.format["multiplication"](factors)]
+        sum = format.format["sum"](terms)
+        if sum: sum = format.format["grouping"](sum)
         if sum: f1 = [sum]
         else: f1 = []
         # Compute product of all factors
-        return format.format["multiplication"].join(\
-            [f for f in [format.format["determinant"]] + f0 + f1])
+        return format.format["multiplication"]([f for f in [format.format["determinant"]] + f0 + f1])
 
     def __repr__(self):
         "Print nicely formatted representation of GeometryTensor."

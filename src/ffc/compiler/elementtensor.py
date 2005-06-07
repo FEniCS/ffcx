@@ -90,7 +90,7 @@ class ElementTensor:
         num_dropped = 0
         for i in iindices:
             debug("i = " + str(i), 2)
-            value = ""
+            value = None
             for j in range(len(self.terms)):
                 debug("  j = " + str(j), 2)
                 A0 = self.terms[j].A0
@@ -106,14 +106,11 @@ class ElementTensor:
                     debug("      gk = " + str(gk), 2)
                     if abs(a0) > FFC_EPSILON:
                         if value and a0 < 0.0:
-                            value += " - %s%s%s" % (format.format["floating point"](-a0), \
-                                                    format.format["multiplication"], gk)
+                            value = format.format["subtract"]([value, format.format["multiplication"]([format.format["floating point"](-a0), gk])])
                         elif value:
-                            value += " + %s%s%s" % (format.format["floating point"](a0), \
-                                                    format.format["multiplication"], gk)
+                            value = format.format["sum"]([value, format.format["multiplication"]([format.format["floating point"](a0), gk])])
                         else:
-                            value += "%s%s%s" % (format.format["floating point"](a0), \
-                                                 format.format["multiplication"], gk)
+                            value = format.format["multiplication"]([format.format["floating point"](a0), gk])
                         gK_used.add(gk)
                     else:
                         num_dropped += 1
