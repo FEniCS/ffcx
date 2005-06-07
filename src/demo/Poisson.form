@@ -12,5 +12,5 @@ v = BasisFunction(element)
 u = BasisFunction(element)
 f = Function(element)
 
-a = u.dx(i)*v.dx(i)*dx
-L = f*v*dx
+a = v.dx(i)*u.dx(i)*dx
+L = v*f*dx

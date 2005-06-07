@@ -12,4 +12,4 @@ v = BasisFunction(element)
 u = BasisFunction(element)
 w = Function(element)
 
-a = w[j]*u[i].dx(j)*v[i]*dx
+a = v[i]*w[j]*u[i].dx(j)*dx
