@@ -5,8 +5,11 @@ __date__ = "2005-06-03"
 __copyright__ = "Copyright (c) 2005 Matthew G. Knepley"
 __license__  = "GNU GPL Version 2"
 
-import ASE.Compiler.Python.Cxx
-Cxx = ASE.Compiler.Python.Cxx.Cxx()
+try:
+    import ASE.Compiler.Python.Cxx
+    Cxx = ASE.Compiler.Python.Cxx.Cxx()
+except ImportError:
+    Cxx = None
 
 dim = 2
 
@@ -35,7 +38,7 @@ def multiplication(l):
     return mult
 
 def transform(j, k):
-    return Cxx.getArrayRef('J', int(j)*dim + int(k))
+    return Cxx.getArrayRef('JInv', int(j)*dim + int(k))
 
 format = { "sum": sum,
            "subtract": subtract,
