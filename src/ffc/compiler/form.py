@@ -1,6 +1,6 @@
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-09-27 -- 2005-05-20"
-__copyright__ = "Copyright (c) 2004 Anders Logg"
+__date__ = "2004-09-27 -- 2005-06-10"
+__copyright__ = "Copyright (c) 2004, 2005 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # Python modules
@@ -45,6 +45,7 @@ class Form:
         test       - FiniteElement defining the test space
         trial      - FiniteElement defining the trial space
         elements   - list of unique FiniteElements for Functions
+        format     - the format used to build the Form (a dictionary)
 
     A multi-linear form is first expressed as an element of the
     algebra (a Sum) and is then post-processed to generate a sum
@@ -67,6 +68,7 @@ class Form:
         self.test       = None
         self.trial      = None
         self.elements   = None
+        self.format     = None
 
         # Reassign indices
         debug("Before index reassignment: " + str(sum), 2)

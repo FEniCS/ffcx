@@ -1,8 +1,8 @@
 "DOLFIN output format."
 
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-10-14 -- 2005-05-17"
-__copyright__ = "Copyright (c) 2004 Anders Logg"
+__date__ = "2004-10-14 -- 2005-06-10"
+__copyright__ = "Copyright (c) 2004, 2005 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # FFC common modules
@@ -21,7 +21,7 @@ format = { "sum": lambda l: " + ".join(l),
            "geometry tensor": lambda j, a: "G%d_%s" % (j, "_".join(["%d" % index for index in a])),
            "element tensor": lambda i, k: "block[%d]" % k }
 
-def compile(forms, license):
+def write(forms, license):
     "Generate code for DOLFIN."
     print "\nGenerating output for DOLFIN"
 

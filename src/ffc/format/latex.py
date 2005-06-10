@@ -21,7 +21,7 @@ format = { "sum": lambda l: " + ".join(l),
            "geometry tensor": lambda j, a: "G_{K,%d}^{%s}" % (j + 1, ",".join(["%d" % (index + 1) for index in a])),
            "element tensor": lambda i, k: "A^K_{%s}" % "".join(["%d" % (index + 1) for index in i]) }
 
-def compile(forms, license):
+def write(forms, license):
     "Generate code for LaTeX."
     print "Generating output for LaTeX"
 

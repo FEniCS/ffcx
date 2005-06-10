@@ -1,4 +1,5 @@
-o [logg] Bug in dofmap for q = 0 with Discontinuous vector Lagrange
+o [logg] Add new format ast
+o [logg] Add vector constants
 o [logg] dx --> Dx
 o [logg] Add grad, rot, div
 o [logg] Add projections: pi = Projection(finiteelement)

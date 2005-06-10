@@ -55,6 +55,6 @@ format = { "sum": sum,
            "geometry tensor": lambda j, a: 'G%d_%s' % (j, '_'.join([str(index) for index in a])),
            "element tensor": lambda i, k: Cxx.getArrayRef('elementMatrix', k)}
 
-def compile(forms, license):
-    "Generate code for raw format."
+def write(forms, license):
+    "Generate code for ase format."
     return

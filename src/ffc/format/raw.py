@@ -18,7 +18,7 @@ format = { "sum": lambda l: " + ".join(l),
            "geometry tensor": lambda j, a: "not defined",
            "element tensor": lambda i, k: "not defined" }
 
-def compile(forms, license):
+def write(forms, license):
     "Generate code for raw format."
     print "Generating raw output"
 

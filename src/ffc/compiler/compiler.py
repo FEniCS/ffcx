@@ -3,8 +3,8 @@ and building the data structures (geometry and reference tensors) for
 the evaluation of the multi-linear form."""
 
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-11-17 -- 2005-05-20"
-__copyright__ = "Copyright (c) 2004 Anders Logg"
+__date__ = "2004-11-17 -- 2005-06-10"
+__copyright__ = "Copyright (c) 2004, 2005 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # Python modules
@@ -33,10 +33,21 @@ from finiteelement import *
 from elementtensor import *
 
 def compile(sums, name = "Form", language = "C++", license = FFC_LICENSE):
-    """Generate code for evaluation of the variational form.
-    This function takes as argument a Sum or a list of Sums
-    representing the multilinear form(s). The return value is a Form
-    or a list of Forms."""
+    """Compile variational form(s). This function takes as argument a
+    Sum or a list of Sums representing the multilinear form(s). The
+    return value is a Form or a list of Forms. Calling this function
+    is equivalent to first calling build() followed by write()."""
+
+    # Build data structures
+    forms = build(sums, name, language)
+
+    # Generate code
+    write(forms, license)
+
+    return forms
+
+def build(sums, name = "Form", language = "C++"):
+    "Build data structures for evaluation of the variational form(s)."
 
     # Create a Form from the given sum(s)
     if isinstance(sums, list):
@@ -85,14 +96,26 @@ def compile(sums, name = "Form", language = "C++", license = FFC_LICENSE):
         # Check primary ranks
         __check_primary_ranks(form)
 
-    # Generate output
-    format.compile(forms, license)
+        # Save format
+        form.format = format
 
     # Return form
     if len(forms) > 1:
-        forms
+        return forms
     else:
         return forms[0]
+
+def write(forms, license = FFC_LICENSE):
+    "Generate code from previously built data structures."
+
+    # Make sure we have a list of forms
+    if not isinstance(forms, list):
+        forms = [forms]
+
+    # Generate output (all forms have the same format)
+    forms[0].format.write(forms, license)
+
+    return
 
 def __check_primary_ranks(form):
     "Check that all primary ranks are equal."

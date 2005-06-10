@@ -46,7 +46,7 @@ class DofMap:
 
         # Get entity IDs
         self.entity_ids = dualbasis.entity_ids
-        print self.entity_ids
+        #print self.entity_ids
         
         # Number of topological dimensions
         self.num_dims = dimension(shape) + 1

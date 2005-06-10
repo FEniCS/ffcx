@@ -87,7 +87,7 @@ class FiniteElement:
 
         # Create point map
         self.pointmap = PointMap(self.element.dual_basis())
-        
+
         return
 
     def basis(self):
