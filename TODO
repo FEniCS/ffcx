@@ -19,5 +19,8 @@ o [logg] Fix all FIXMEs (grep FIXME *.py)
 
 Suggestions for FIAT:
 
+  - Move shapes_new to shapes
+  - Change reference element
+
   - Check for function that is zero
   - Add ChangeLog, AUTHORS, README, INSTALL, TODO
