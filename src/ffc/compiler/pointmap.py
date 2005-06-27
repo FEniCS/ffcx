@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2005-05-16 -- 2005-05-17"
+__date__ = "2005-05-16 -- 2005-06-25"
 __copyright__ = "Copyright (c) 2005 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -37,7 +37,7 @@ class PointMap:
 
         self.declarations = []
 
-        # Iterate over the dofs
+        # Iterate over the dofs and write coordinates
         dof = 0
         for component in range(num_components):
             for point in points:
@@ -50,7 +50,7 @@ class PointMap:
 
                 dof += 1
 
-        # Iterate over the dofs
+        # Iterate over the dofs and write components
         dof = 0
         for component in range(num_components):
             for point in points:

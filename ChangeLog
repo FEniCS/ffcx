@@ -1,3 +1,4 @@
+ - Update manual with ordering of dofs
  - Break compilation into two phases: build() and write()
  - Add new output format ASE (Matt Knepley)
  - Improve python interface to FFC
