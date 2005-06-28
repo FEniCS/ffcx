@@ -77,6 +77,11 @@ class DofMap:
         local_offset  = 0    # Total local offset
         global_offset = None # Current increment for global offset
 
+        # Write table for reordering of dofs on faces
+        if self.num_dims > 3:
+            if self.nodes_per_entity[2] > 0:
+                self.declarations += [self.__write_face_ordering()]
+
         # Iterate over vector components
         for component in range(self.num_components):
             # Iterate over topological dimensions
@@ -111,6 +116,68 @@ class DofMap:
         #for declaration in self.declarations:
         #    print declaration.name + " = " + declaration.value
 
+    def __write_face_ordering(self):
+        "Write table for ordering of dofs on faces."
+        num_nodes = self.nodes_per_entity[2]
+        name = "static unsigned int face_dofs[]"
+        value = "{}"
+
+        # Compute number of nodes in each direction
+        n = int((sqrt(8*num_nodes+1)-3)/2 + 1)
+        if not n*(n+1)/2 == num_nodes:
+            raise RuntimeError, "Inconsistent number of nodes on face."
+
+        # Offsets for rows
+        offsets = [0]
+        for i in range(1, n):
+            offsets += [offsets[-1] + n + 1 - i]
+        print offsets
+
+        # Now do a nested loop over rows (i) and columns (j) in different
+        # directions depending on the alignment
+        nodes0 = []
+        nodes1 = []
+        nodes2 = []
+        nodes3 = []
+        nodes4 = []
+        nodes5 = []
+
+        # alignment == 0
+        for i in range(n):
+            for j in range(n-i):
+                nodes0 += [offsets[i] + j]
+        # alignment == 1
+        for j in range(n):
+            for i in range(n-j):
+                nodes1 += [offsets[i] + j]
+        # alignment == 2
+        for j in range(n):
+            for i in range(n-j):
+                nodes2 += [offsets[i] + j]
+        # alignment == 3
+        for j in range(n):
+            for i in range(n-j):
+                nodes3 += [offsets[i] + j]
+        # alignment == 4
+        for j in range(n):
+            for i in range(n-j):
+                nodes4 += [offsets[i] + j]
+        # alignment == 5
+        for j in range(n):
+            for i in range(n-j):
+                nodes5 += [offsets[i] + j]
+
+        print nodes0
+        print nodes1
+        print nodes2
+        print nodes3
+        print nodes4
+        print nodes5
+        
+        #for alignment in range(6):
+        #    print alignment
+        return Declaration(name, value)
+
     def __write_map(self, dim, entity, node, local_offset, count):
         "Write map from local to global dof."
         local_dof  = self.entity_ids[dim][entity][node]
@@ -140,6 +207,7 @@ class DofMap:
     def __reorder(self, dim, entity, node):
         "Compute reordering of map from local to global dof."
         start = "%d*%s" % (self.nodes_per_entity[dim], format[("entity", self.num_dims - 1, dim)](entity))
+        num_nodes = self.nodes_per_entity[dim]
         # Don't worry about internal dofs
         if dim == (self.num_dims - 1):
             return start + " + %d" % node
@@ -147,8 +215,9 @@ class DofMap:
         if dim == 0:
             raise RuntimeError, "Don't know how to reorder dofs for topological dimension 0 (vertices)."
         elif dim == 1:
-            return start + " + ( alignment == 0 ? %d : %d )" % (node, self.nodes_per_entity[dim] - 1 - node)
+            return start + " + ( alignment == 0 ? %d : %d )" % (node, num_nodes - 1 - node)
         elif dim == 2:
+            return start + " + face_dofs[alignment*%d + %d]" % (num_nodes, node)
             raise RuntimeError, "Reordering of dofs on faces not yet implemented."
         else:
             raise RuntimeError, "Don't know how to reorder dofs for topological dimension 3."
