@@ -6,7 +6,7 @@
 #
 # Compile this form with FFC: ffc Poisson.form
 
-element = FiniteElement("Lagrange", "tetrahedron", 6)
+element = FiniteElement("Lagrange", "tetrahedron", 4)
 
 v = BasisFunction(element)
 u = BasisFunction(element)

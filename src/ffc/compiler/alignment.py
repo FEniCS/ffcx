@@ -6,6 +6,17 @@ __license__  = "GNU GPL Version 2"
 # Python modules
 from math import sqrt
 
+def edge_reordering(num_nodes):
+    """Compute and return map for reordering of degrees of freedom on
+    edges. The return value is a two-dimensional list, indexed by
+    (alignment, node number), which maps degrees of freedom from the
+    numbering local to the edge of a cell (triangle or tetrahedron) to
+    a common local numbering for two cells sharing a common edge. The
+    reordering is determined by the alignment of the common edge with
+    the cell."""
+
+    return [range(num_nodes), range(num_nodes-1,-1,-1)]
+
 def face_reordering(num_nodes):
     """Compute and return map for reordering of degrees of freedom on
     faces of tetrahedra. The return value is a two-dimensional list,

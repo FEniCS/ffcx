@@ -1,5 +1,5 @@
 __author__ = "Robert C. Kirby (kirby@cs.uchicago.edu) and Anders Logg (logg@tti-c.org)"
-__date__ = "2005-05-03 -- 2005-05-11"
+__date__ = "2005-05-03 -- 2005-06-27"
 __copyright__ = "Copyright (c) 2005 Kirby/Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -78,6 +78,10 @@ class DofMap:
         local_offset  = 0    # Total local offset
         global_offset = None # Current increment for global offset
 
+        # Write table for reordering of dofs on edges
+        if self.nodes_per_entity[1] > 1:
+            self.declarations += [self.__write_edge_reordering()]
+
         # Write table for reordering of dofs on faces
         if self.num_dims > 3:
             if self.nodes_per_entity[2] > 1:
@@ -117,12 +121,22 @@ class DofMap:
         #for declaration in self.declarations:
         #    print declaration.name + " = " + declaration.value
 
+    def __write_edge_reordering(self):
+        "Write table for ordering of dofs on edges."
+        num_nodes = self.nodes_per_entity[1]
+        map = edge_reordering(num_nodes)
+        name = "static unsigned int edge_reordering[2][%d]" % num_nodes
+        rows = ["{" + ", ".join(["%d" % dof for dof in map[i]]) + "}" for i in range(2)]
+        value = "{" + ", ".join(rows) + "}"
+        return Declaration(name, value)
+
     def __write_face_reordering(self):
         "Write table for ordering of dofs on faces."
         num_nodes = self.nodes_per_entity[2]
         map = face_reordering(num_nodes)
-        name = "static unsigned int face_reordering[]"
-        value = "{" + ", ".join([", ".join(["%d" % dof for dof in map[i]]) for i in range(6)]) + "}"
+        name = "static unsigned int face_reordering[6][%d]" % num_nodes
+        rows = ["{" + ", ".join(["%d" % dof for dof in map[i]]) + "}" for i in range(6)]
+        value = "{" + ", ".join(rows) + "}"
         return Declaration(name, value)
 
     def __write_map(self, dim, entity, node, local_offset, count):
@@ -162,10 +176,9 @@ class DofMap:
         if dim == 0:
             raise RuntimeError, "Don't know how to reorder dofs for topological dimension 0 (vertices)."
         elif dim == 1:
-            return start + " + ( alignment == 0 ? %d : %d )" % (node, num_nodes - 1 - node)
+            return start + " + edge_reordering[alignment][%d]" % node
         elif dim == 2:
-            return start + " + face_reordering[alignment*%d + %d]" % (num_nodes, node)
-            raise RuntimeError, "Reordering of dofs on faces not yet implemented."
+            return start + " + face_reordering[alignment][%d]" % node
         else:
             raise RuntimeError, "Don't know how to reorder dofs for topological dimension 3."
 
