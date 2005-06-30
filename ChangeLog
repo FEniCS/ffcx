@@ -1,4 +1,4 @@
- - Compute reordering of dofs on tets
+ - Compute reordering of dofs on tets correctly
  - Update manual with ordering of dofs
  - Break compilation into two phases: build() and write()
  - Add new output format ASE (Matt Knepley)
