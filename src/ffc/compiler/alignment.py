@@ -39,58 +39,43 @@ def face_reordering(num_nodes):
 
     # Now do a nested loop over rows (i) and columns (j) in different
     # directions depending on the alignment
-    nodes0 = [0 for i in range(num_nodes)]
-    nodes1 = [0 for i in range(num_nodes)]
-    nodes2 = [0 for i in range(num_nodes)]
-    nodes3 = [0 for i in range(num_nodes)]
-    nodes4 = [0 for i in range(num_nodes)]
-    nodes5 = [0 for i in range(num_nodes)]
+    nodes0 = []
+    nodes1 = []
+    nodes2 = []
+    nodes3 = []
+    nodes4 = []
+    nodes5 = []
 
     # alignment == 0
-    node = 0
     for i in range(n):
         for j in range(n-i):
-            nodes0[offsets[i] + j] = node
-            node += 1
+            nodes0 += [offsets[i] + j]
     # alignment == 1
-    node = 0
     for j in range(n):
         for i in range(n-j):
-            nodes1[offsets[i] + j] = node
-            node += 1
+            nodes1 += [offsets[i] + j]
     # alignment == 2
-    node = 0
     for j in range(n):
         for i in range(n-1-j,-1,-1):
-            nodes2[offsets[i] + j] = node
-            node += 1
+            nodes2 += [offsets[i] + j]
     # alignment == 3
-    node = 0
     for i in range(n):
         for j in range(n-1-i,-1,-1):
-            nodes3[offsets[i] + j] = node
-            node += 1
+            nodes3 += [offsets[i] + j]
     # alignment == 4
-    node = 0
     for j in range(n-1,-1,-1):
         for i in range(j + 1):
-            nodes4[offsets[i] + j-i] = node
-            node += 1
+            nodes4 += [offsets[i] + j-i]
     # alignment == 5
-    node = 0
     for j in range(n-1,-1,-1):
         for i in range(j,-1,-1):
-            nodes5[offsets[i] + j-i] = node
-            node += 1
+            nodes5 += [offsets[i] + j-i]
             
-    print nodes0
-    print nodes1
-    print nodes2
-    print nodes3
-    print nodes4
-    print nodes5
+    #print nodes0
+    #print nodes1
+    #print nodes2
+    #print nodes3
+    #print nodes4
+    #print nodes5
         
-    #for alignment in range(6):
-    #    print alignment
-
     return [nodes0, nodes1, nodes2, nodes3, nodes4, nodes5]
