@@ -8,7 +8,7 @@ from Numeric import ones, array
 
 # FIAT modules
 from FIAT.quadrature import *
-from FIAT.shapes_new import *
+from FIAT.shapes import *
 
 # FFC common modules
 from ffc.common.debug import *

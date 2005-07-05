@@ -4,7 +4,7 @@ __copyright__ = "Copyright (c) 2004 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # FIAT modules
-from FIAT.shapes_new import *
+from FIAT.shapes import *
 from FIAT.Lagrange import Lagrange, VectorLagrange
 from FIAT.DiscontinuousLagrange import DiscontinuousLagrange, DiscontinuousVectorLagrange
 from FIAT.CrouzeixRaviart import CrouzeixRaviart

@@ -1,11 +1,11 @@
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2005-05-16 -- 2005-06-25"
+__date__ = "2005-05-16 -- 2005-07-05"
 __copyright__ = "Copyright (c) 2005 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # FIAT modules
 from FIAT.dualbasis import *
-from FIAT.shapes_new import *
+from FIAT.shapes import *
 
 # FFC modules
 from declaration import *
