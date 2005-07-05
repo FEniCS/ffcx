@@ -1,3 +1,4 @@
+ - Complete support for general order Lagrange elements on triangles and tetrahedra
  - Compute reordering of dofs on tets correctly
  - Update manual with ordering of dofs
  - Break compilation into two phases: build() and write()
