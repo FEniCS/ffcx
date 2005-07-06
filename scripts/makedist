@@ -65,6 +65,10 @@ scp $TARBALL fenics@fenics.org:www.fenics.org/pub/software/ffc/v0.1
 scp ChangeLog fenics@fenics.org:www.fenics.org/pub/software/ffc/
 scp TODO fenics@fenics.org:www.fenics.org/pub/software/ffc/
 
+# Update on web server
+ssh fenics@fenics.org 'xterm -e emacs -nw www.fenics.org/ffc/index.cpp'
+ssh fenics@fenics.org 'xterm -e /home/fenics/local/bin/news'
+
 # Notify ffc-dev of the new version
 SUBJECT="Version "$VERSION" of FFC released"
 cat ChangeLog | mail -s "$SUBJECT" ffc-dev@fenics.org
