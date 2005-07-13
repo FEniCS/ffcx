@@ -1,3 +1,5 @@
+o [logg] Add new operations for Function (sqrt(), /)
+o [logg] Add predefined function h
 o [logg] Add vector constants
 o [logg] dx --> Dx
 o [logg] Add grad, rot, div
