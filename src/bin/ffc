@@ -55,8 +55,9 @@ def main(argv):
     for filename in args:
         # Parse current file
         outname = simple.parse(filename, language, license)
-        # Compile generated file
-        execfile(outname)
+        # Compile generated file (also provide a namespace)
+        ns = {}
+        execfile(outname, ns)
 
 def usage():
     "Display usage info."
