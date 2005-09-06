@@ -3,7 +3,7 @@ and building the data structures (geometry and reference tensors) for
 the evaluation of the multi-linear form."""
 
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-11-17 -- 2005-06-10"
+__date__ = "2004-11-17 -- 2005-09-05"
 __copyright__ = "Copyright (c) 2004, 2005 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -26,7 +26,6 @@ from ffc.format import ase
 from form import *
 from index import *
 from algebra import *
-from integral import *
 from reassign import *
 from elementsearch import *
 from finiteelement import *

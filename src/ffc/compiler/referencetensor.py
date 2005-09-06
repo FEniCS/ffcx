@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-11-03"
+__date__ = "2004-11-03 -- 2005-09-05"
 __copyright__ = "Copyright (c) 2004 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -13,7 +13,6 @@ from ffc.common.util import *
 
 # FFC compiler modules
 from algebra import *
-from integral import *
 from reassign import *
 from multiindex import *
 from integrator import *

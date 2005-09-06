@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-09-27 -- 2005-06-10"
+__date__ = "2004-09-27 -- 2005-09-05"
 __copyright__ = "Copyright (c) 2004, 2005 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -18,7 +18,6 @@ from ffc.format import latex
 # FFC compiler modules
 from index import *
 from algebra import *
-from integral import *
 from reassign import *
 from finiteelement import *
 from elementtensor import *

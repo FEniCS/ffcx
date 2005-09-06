@@ -20,8 +20,8 @@ are supported for all elements of the algebra:
     Unary  d/dx   (operand scalar or tensor-valued)"""
 
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-09-27 -- 2005-03-01"
-__copyright__ = "Copyright (c) 2004 Anders Logg"
+__date__ = "2004-09-27 -- 2005-09-05"
+__copyright__ = "Copyright (c) 2004, 2005 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # FFC common modules
@@ -30,10 +30,7 @@ from ffc.common.util import *
 
 # FFC compiler modules
 from finiteelement import FiniteElement
-from coefficient import Coefficient
-from derivative import Derivative
-from transform import Transform
-from integral import Integral
+from tokens import *
 from index import Index
 
 class Element:
