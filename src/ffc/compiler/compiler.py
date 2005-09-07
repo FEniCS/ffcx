@@ -26,7 +26,6 @@ from ffc.format import ase
 from form import *
 from index import *
 from algebra import *
-from reassign import *
 from elementsearch import *
 from finiteelement import *
 from elementtensor import *

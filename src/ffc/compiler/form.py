@@ -19,6 +19,7 @@ from ffc.format import latex
 from index import *
 from algebra import *
 from reassign import *
+from reorder import *
 from finiteelement import *
 from elementtensor import *
 
@@ -72,6 +73,9 @@ class Form:
         # Reassign indices
         debug("Before index reassignment: " + str(sum), 2)
         reassign_indices(self.sum)
+
+        # Reorder indices
+        reorder_indices(self.sum)
 
         return
 

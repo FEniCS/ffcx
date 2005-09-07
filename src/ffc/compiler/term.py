@@ -6,6 +6,7 @@ __license__  = "GNU GPL Version 2"
 # FFC modules
 from referencetensor import *
 from geometrytensor import *
+from signature import *
 
 class Term:
 
