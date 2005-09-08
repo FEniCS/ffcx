@@ -47,6 +47,13 @@ def reassign_indices(sum):
 
     return
 
+def reassign_index(object, iold, inew, type):
+    """Change value of index from iold to inew for given object,
+    and return the number of indices changed."""
+    increment = [0]
+    object.indexcall(__index_reassign, (iold, inew, type, increment))
+    return increment[0]
+    
 def min_index(object, type):
     "Compute minimum index of given type for given object."
     indices = []

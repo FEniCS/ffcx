@@ -12,6 +12,7 @@ from ffc.common.constants import *
 
 # FFC compiler modules
 from term import *
+from reorder import *
 from declaration import *
 
 class ElementTensor:
@@ -33,17 +34,36 @@ class ElementTensor:
         # Check that all Products have integrals
         self.__check_integrals(sum)
 
-        # Create list of Terms
-        self.terms = [Term(p) for p in sum.products if p.integral.type == type]
+        # Reorder indices and compute factorization
+        factorization = reorder_indices(sum)
 
-        # Compute reference tensor (already computed, just need to pick the values)
+        # Compute terms
+        self.terms = [None for i in range(len(sum.products))]
+        for i in range(len(sum.products)):
+            p = sum.products[i]
+            if p.integral.type == type:
+                # Compute geometry tensor
+                GK = GeometryTensor(p)
+                # Check if reference tensor should be computed
+                if factorization[i] == None:
+                    # Compute reference tensor and add term
+                    A0 = ReferenceTensor(p)
+                    self.terms[i] = Term(A0, [GK])
+                else:
+                    # Add geometry tensor to previous term
+                    self.terms[factorization[i]].GKs += [GK]
+
+        # Remove terms not computed (factorized)
+        [self.terms.remove(None) for i in range(len(self.terms)) if None in self.terms]
+    
+        # Compute reference tensor declarations (just need to pick the values)
         self.a0 = self.__compute_reference_tensor(format)
 
-        # Compute element tensor
+        # Compute element tensor declarations
         gK_used = Set()
         self.aK = self.__compute_element_tensor(format, gK_used)
 
-        # Compute geometry tensor
+        # Compute geometry tensor declarations
         self.gK = self.__compute_geometry_tensor(format, gK_used)
 
         return
@@ -68,12 +88,14 @@ class ElementTensor:
         if not self.terms: return []
         declarations = []
         for j in range(len(self.terms)):
-            GK = self.terms[j].GK
-            if GK.a.indices: aindices = GK.a.indices
-            else: aindices = [[]]
+            # Should be the same, so pick first
+            aindices = self.terms[j].GKs[0].a.indices
+            if not aindices:
+                aindices = [[]]
             for a in aindices:
                 name = format.format["geometry tensor"](j, a)
-                value = GK(a, format)
+                # Sum factorized values
+                value = format.format["sum"]([GK(a, format) for GK in self.terms[j].GKs])
                 # Only add entries that are used
                 if name in gK_used:
                     declarations += [Declaration(name, value)]
@@ -94,7 +116,6 @@ class ElementTensor:
             for j in range(len(self.terms)):
                 debug("  j = " + str(j), 2)
                 A0 = self.terms[j].A0
-                GK = self.terms[j].GK
                 if A0.a.indices: aindices = A0.a.indices
                 else: aindices = [[]]
                 for a in aindices:
