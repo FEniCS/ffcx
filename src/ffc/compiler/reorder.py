@@ -4,7 +4,7 @@ reference tensors from terms that have the same tensor structure but
 with different names of indices."""
 
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2005-09-06"
+__date__ = "2005-09-06 -- 2005-09-07"
 __copyright__ = "Copyright (c) 2004 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
