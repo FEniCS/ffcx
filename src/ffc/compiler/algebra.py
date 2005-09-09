@@ -20,11 +20,15 @@ are supported for all elements of the algebra:
     Unary  d/dx   (operand scalar or tensor-valued)"""
 
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-09-27 -- 2005-09-05"
+__date__ = "2004-09-27 -- 2005-09-08"
 __copyright__ = "Copyright (c) 2004, 2005 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
+# Python modules
+import sys
+
 # FFC common modules
+sys.path.append("../../")
 from ffc.common.debug import *
 from ffc.common.util import *
 
