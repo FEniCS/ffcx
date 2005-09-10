@@ -1,4 +1,4 @@
- - Add new operators grad, div, rot (curl)
+ - Add new operators grad, div, rot (curl), D, rank, trace, dot, cross
  - Factorize common reference tensors from terms with equal signatures
  - Collect small building blocks for form algebra in common module tokens.py
 0.1.9 [2005-07-05]

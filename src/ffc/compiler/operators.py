@@ -2,7 +2,7 @@
 based on the basic form algebra operations."""
 
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2005-09-07 -- 2005-09-08"
+__date__ = "2005-09-07 -- 2005-09-09"
 __copyright__ = "Copyright (c) 2005 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -15,13 +15,32 @@ sys.path.append("../../")
 from index import *
 from algebra import *
 
+def rank(v):
+    "Return rank for given object."
+    if isinstance(v, BasisFunction):
+        return v.element.rank() - len(v.component)
+    elif isinstance(v, Product):
+        return rank(v.basisfunctions[0])
+    elif isinstance(v, Sum):
+        return rank(v.products[0])
+    elif isinstance(v, Function):
+        return rank(Sum(v))
+    else:
+        return Numeric.rank(v)
+    return 0
+
+def I(n):
+    "Return identity matrix of given size."
+    # Let Numeric handle the identity
+    return Numeric.identity(n)
+
 def vec(v):
     "Create vector of scalar functions from given vector-valued function."
     # Check if we already have a vector
     if isinstance(v, list):
         return v
     # Check that function is vector-valued
-    if not __rank(v) == 1:
+    if not rank(v) == 1:
         raise RuntimeError, "Object is not vector-valued."
     # Get vector dimension
     n = __tensordim(v, 0)
@@ -29,7 +48,7 @@ def vec(v):
     return [v[i] for i in range(n)]
 
 def dot(v, w):
-    "Return scalar product of v and w."
+    "Return scalar product of given functions."
     # Check dimensions
     if not len(v) == len(w):
         raise RuntimeError, "Dimensions don't match for scalar product."
@@ -41,8 +60,27 @@ def dot(v, w):
     return Numeric.vdot(vec(v), vec(w))
 
 def cross(v, w):
-    "Return cross product of v and w."
-    return 1
+    "Return cross product of given functions."
+    # Check dimensions
+    if not len(v) == len(w):
+        raise RuntimeError, "Cross product only defined for vectors in R^3."
+    # Compute cross product
+    return [v[1]*w[2] - v[2]*w[1], v[2]*w[0] - v[0]*w[2], v[0]*w[1] - v[1]*w[0]]
+
+def trace(v):
+    "Return trace of given matrix"
+    # Let Numeric handle the trace
+    return Numeric.trace(v)
+
+def transp(v):
+    "Return transpose of given matrix."
+    # Let Numeric handle the transpose."
+    return Numeric.transpose(v)
+
+def mult(v, w):
+    "Compute matrix-matrix product of given matrices."
+    # Let Numeric handle the product."
+    return Numeric.multiply(v, w)
 
 def D(v, i):
     "Return derivative of v in given coordinate direction."
@@ -56,7 +94,10 @@ def grad(v):
     "Return gradient of given function."
     # Get shape dimension
     d = __shapedim(v)
-    # Compute gradient
+    # Check if we have a vector
+    if rank(v) == 1:
+        return [ [D(v[i], j) for j in range(d)] for i in range(len(v)) ]
+    # Otherwise assume we have a scalar
     return [D(v, i) for i in range(d)]
 
 def div(v):
@@ -104,23 +145,9 @@ def __shapedim(v):
         raise RuntimeError, "Shape dimension is not defined for object: " + str(v)
     return 0
 
-def __rank(v):
-    "Return rank for given object."
-    if isinstance(v, BasisFunction):
-        return v.element.rank() - len(v.component)
-    elif isinstance(v, Product):
-        return __rank(v.basisfunctions[0])
-    elif isinstance(v, Sum):
-        return __rank(v.products[0])
-    elif isinstance(v, Function):
-        return __rank(Sum(v))
-    else:
-        raise RuntimeError, "Rank is not defined for object: " + str(v)
-    return 0
-
 def __tensordim(v, i):
     "Return size of given dimension for given object."
-    if i < 0 or i >= __rank(v):
+    if i < 0 or i >= rank(v):
         raise RuntimeError, "Tensor dimension out of range."
     if isinstance(v, BasisFunction):
         return v.element.tensordim(i + len(v.component))
@@ -162,3 +189,5 @@ if __name__ == "__main__":
     print div(U)
     print dot(rot(V), rot(U))
     print div(grad(dot(rot(V), U)))*dx
+    print cross(V, U)
+    print trace(mult(I(len(V)), grad(V)))
