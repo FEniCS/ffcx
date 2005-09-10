@@ -85,9 +85,13 @@ class Element:
         "Operator: -Element"
         return -Sum(self)
 
-    def  __getitem__(self, component):
+    def __getitem__(self, component):
         "Operator: Element[component], pick given component."
         return Sum(self)[component]
+
+    def __len__(self):
+        "Operator: len(Element)"
+        return len(Sum(self))
 
     def dx(self, index = None):
         "Operator: (d/dx)Element in given coordinate direction."
@@ -218,6 +222,12 @@ class BasisFunction(Element):
                 raise RuntimeError, "Illegal component index, does not match rank."
             w.component = [Index(component)]
         return w
+
+    def __len__(self):
+        "Operator: len(BasisFunction)"
+        if len(self.component) >= self.element.rank():
+            raise RuntimeError, "BasisFunction is scalar."
+        return self.element.tensordim(len(self.component))
 
     def dx(self, index = None):
         "Operator: (d/dx)BasisFunction in given coordinate direction."
@@ -352,7 +362,7 @@ class Product(Element):
             w0 = Product(self)
             w1 = Product(other)
             if not w0.rank() == w1.rank() == 0:
-                raise RuntimeError, "Illegal ranks for product, must be scalar."
+                raise RuntimeError, "Operands for product must be scalar."
             w = Product()
             w.numeric = float(w0.numeric * w1.numeric)
             w.constants = listcopy(w0.constants + w1.constants)
@@ -377,12 +387,21 @@ class Product(Element):
 
     def  __getitem__(self, component):
         "Operator: Product[component], pick given component."
+        # Always scalar if product of more than one basis function
         if not len(self.basisfunctions) == 1:
-            # Always scalar if product of more than one basis function
             raise RuntimeError, "Cannot pick component of scalar Product."
+        # Otherwise, return component of first and only BasisFunction
         w = Product(self)
         w.basisfunctions[0] = w.basisfunctions[0][component]
         return w
+
+    def __len__(self):
+        "Operator: len(Product)"
+        # Always scalar if product of more than one basis function
+        if not len(self.basisfunctions) == 1:
+            raise RuntimeError, "Product is scalar."
+        # Otherwise, return length of first and only BasisFunction
+        return len(self.basisfunctions[0])
 
     def dx(self, index = None):
         "Operator: (d/dx)Product in given coordinate direction."
@@ -506,6 +525,15 @@ class Sum(Element):
         w.products = [p[component] for p in self.products]
         return w
 
+    def __len__(self):
+        "Operator: len(Sum)"
+        # Check that all terms have the same length
+        for i in range(len(self.products) - 1):
+            if not len(self.products[i]) == len(self.products[i + 1]):
+                raise RuntimeError, "Dimensions of terms don't match."
+        # Return length of first term
+        return len(self.products[0])
+
     def dx(self, index = None):
         "Operator: (d/dx)Sum in given coordinate direction."
         w = Sum()
@@ -576,7 +604,7 @@ if __name__ == "__main__":
     print
 
     print "Testing Poisson system:"
-    element = FiniteElement("Lagrange", "triangle", 1, 3)
+    element = FiniteElement("Vector Lagrange", "triangle", 1)
     u = BasisFunction(element)
     v = BasisFunction(element)
     i = Index()

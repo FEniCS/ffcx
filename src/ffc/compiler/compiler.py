@@ -3,7 +3,7 @@ and building the data structures (geometry and reference tensors) for
 the evaluation of the multi-linear form."""
 
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-11-17 -- 2005-09-05"
+__date__ = "2004-11-17 -- 2005-09-09"
 __copyright__ = "Copyright (c) 2004, 2005 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -50,7 +50,7 @@ def build(sums, name = "Form", language = "C++"):
 
     # Create a Form from the given sum(s)
     if isinstance(sums, list):
-        forms = [Form(Sum(sum), name) for sum in sums if sum]
+        forms = [Form(Sum(sum), name) for sum in sums if not sum == None]
     else:
         forms = [Form(Sum(sums), name)]
 
@@ -89,7 +89,9 @@ def build(sums, name = "Form", language = "C++"):
         form.elements = find_elements(form.sum, form.nfunctions)
 
         # Create element tensors
+        print "Compiling tensor representation for interior"
         form.AKi = ElementTensor(form.sum, "interior", format)
+        print "Compiling tensor representation for boundary"
         form.AKb = ElementTensor(form.sum, "boundary", format)
 
         # Check primary ranks

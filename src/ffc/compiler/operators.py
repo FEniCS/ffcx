@@ -7,9 +7,11 @@ __copyright__ = "Copyright (c) 2005 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # Python modules
+import sys
 import Numeric
 
 # FFC compiler modules
+sys.path.append("../../")
 from index import *
 from algebra import *
 
@@ -28,55 +30,54 @@ def vec(v):
 
 def dot(v, w):
     "Return scalar product of v and w."
-    # Treat differently, depending on the type of arguments
-    if isinstance(v, list) and isinstance(w, list):
-        return Numeric.vdot(v, w)
-    elif isinstance(v, list):
-        return Numeric.vdot(v, vec(w))
-    elif isinstance(w, list):
-        return Numeric.vdot(vec(v), w)
-    # Otherwise, use index-notation
-    i = Index()
-    return v[i]*w[i]
+    # Check dimensions
+    if not len(v) == len(w):
+        raise RuntimeError, "Dimensions don't match for scalar product."
+    # Use index notation if possible
+    if isinstance(v, Element) and isinstance(w, Element):
+        i = Index()
+        return v[i]*w[i]
+    # Otherwise, use Numeric.vdot
+    return Numeric.vdot(vec(v), vec(w))
 
+def cross(v, w):
+    "Return cross product of v and w."
+    return 1
+
+def D(v, i):
+    "Return derivative of v in given coordinate direction."
+    # Use member function dx() if possible
+    if isinstance(v, Element):
+        return v.dx(i)
+    # Otherwise, apply to each component
+    return [D(v[j], i) for j in range(len(v))]
+    
 def grad(v):
     "Return gradient of given function."
     # Get shape dimension
     d = __shapedim(v)
     # Compute gradient
-    return [v.dx(i) for i in range(d)]
+    return [D(v, i) for i in range(d)]
 
 def div(v):
     "Return divergence of given function."
-    # Treat differently, depending on the type of arguments
-    if isinstance(v, list):
-        # Get shape dimension
-        d = __shapedim(v[0])
-        # Get vector dimension
-        n = len(v)
-        # Divergence only defined for n = d
-        if not n == d:
-            raise RuntimeError, "Divergence only defined for v : R^d --> R^d"
-        # Compute divergence
-        return Numeric.sum([v[i].dx(i) for i in range(d)])
-    # Otherwise, use index-notation
-    i = Index()
-    return v[i].dx(i)
+    # Check dimensions
+    if not len(v) == __shapedim(v):
+        raise RuntimeError, "Dimensions don't match for divergence."
+    # Use index notation if possible
+    if isinstance(v, Element):
+        i = Index()
+        return v[i].dx(i)
+    # Otherwise, use Numeric.sum
+    return Numeric.sum([D(v[i], i) for i in range(len(v))])
 
 def rot(v):
     "Return rotation of given function."
-    # Make sure that we get a vector
-    if not isinstance(v, list):
-        return rot(vec(v))
-    # Get shape dimension
-    d = __shapedim(v[0])
-    # Get vector dimension
-    n = len(v)
-    # Rotation only defined for n = d = 3
-    if not (n == 3 and d == 3):
+    # Check dimensions
+    if not len(v) == __shapedim(v) == 3:
         raise RuntimeError, "Rotation only defined for v : R^3 --> R^3"
     # Compute rotation
-    return [v[2].dx(1) - v[1].dx(2), v[0].dx(2) - v[2].dx(0), v[1].dx(0) - v[0].dx(1)]
+    return [D(v[2], 1) - D(v[1], 2), D(v[0], 2) - D(v[2], 0), D(v[1], 0) - D(v[0], 1)]
 
 def curl(v):
     "Alternative name for rot."
@@ -84,7 +85,14 @@ def curl(v):
      
 def __shapedim(v):
     "Return shape dimension for given object."
-    if isinstance(v, BasisFunction):
+    if isinstance(v, list):
+        # Check that all components have the same shape dimension
+        for i in range(len(v) - 1):
+            if not __shapedim(v[i]) == __shapedim(v[i + 1]):
+                raise RuntimeError, "Components have different shape dimensions."
+        # Return length of first term
+        return __shapedim(v[0])
+    elif isinstance(v, BasisFunction):
         return v.element.shapedim()
     elif isinstance(v, Product):
         return __shapedim(v.basisfunctions[0])
@@ -130,6 +138,8 @@ if __name__ == "__main__":
 
     scalar = FiniteElement("Lagrange", "tetrahedron", 2)
     vector = FiniteElement("Vector Lagrange", "tetrahedron", 2)
+
+    i = Index()
 
     v = BasisFunction(scalar)
     u = BasisFunction(scalar)

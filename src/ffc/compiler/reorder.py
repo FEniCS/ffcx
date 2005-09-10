@@ -19,7 +19,7 @@ def reorder_indices(sum):
     """Reorder indices to find terms with common reference tensors and
     compute factorization, mapping terms with already computed
     reference tensors to the already computed matching term."""
-    
+
     if not isinstance(sum, Sum):
         raise RuntimeError, "Indices can only be reordered for Sums."
 
@@ -36,6 +36,11 @@ def reorder_indices(sum):
         # Compare term i against term j for j > i
         for j in range(i + 1, len(sum.products)):
 
+            # Don't factorize against another term if already factorized
+            if not factorization[j] == None:
+                continue
+
+            # Compute signatures
             q = sum.products[j]
             q_soft = compute_soft_signature(q)
             q_hard = compute_hard_signature(q)
