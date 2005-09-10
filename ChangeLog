@@ -1,3 +1,4 @@
+ - Use new template fenicsmanual.cls for manual
  - Add new operators grad, div, rot (curl), D, rank, trace, dot, cross
  - Factorize common reference tensors from terms with equal signatures
  - Collect small building blocks for form algebra in common module tokens.py
