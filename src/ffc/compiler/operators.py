@@ -15,6 +15,11 @@ sys.path.append("../../")
 from index import *
 from algebra import *
 
+def Identity(n):
+    "Return identity matrix of given size."
+    # Let Numeric handle the identity
+    return Numeric.identity(n)
+
 def rank(v):
     "Return rank for given object."
     if isinstance(v, BasisFunction):
@@ -28,11 +33,6 @@ def rank(v):
     else:
         return Numeric.rank(v)
     return 0
-
-def I(n):
-    "Return identity matrix of given size."
-    # Let Numeric handle the identity
-    return Numeric.identity(n)
 
 def vec(v):
     "Create vector of scalar functions from given vector-valued function."
@@ -49,15 +49,23 @@ def vec(v):
 
 def dot(v, w):
     "Return scalar product of given functions."
-    # Check dimensions
-    if not len(v) == len(w):
-        raise RuntimeError, "Dimensions don't match for scalar product."
-    # Use index notation if possible
-    if isinstance(v, Element) and isinstance(w, Element):
-        i = Index()
-        return v[i]*w[i]
-    # Otherwise, use Numeric.vdot
-    return Numeric.vdot(vec(v), vec(w))
+    # Check ranks
+    if rank(v) == rank(w) == 1:
+        # Check dimensions
+        if not len(v) == len(w):
+            raise RuntimeError, "Dimensions don't match for scalar product."
+        # Use index notation if possible
+        if isinstance(v, Element) and isinstance(w, Element):
+            i = Index()
+            return v[i]*w[i]
+        # Otherwise, use Numeric.vdot
+        return Numeric.vdot(vec(v), vec(w))
+    elif rank(v) == rank(w) == 2:
+        # Check dimensions
+        if not len(v) == len(w):
+            raise RuntimeError, "Dimensions don't match for scalar product."
+        # Compute dot product (:) of matrices
+        return Numeric.sum([v[i][j]*w[i][j] for i in range(len(v)) for j in range(len(v[i]))])
 
 def cross(v, w):
     "Return cross product of given functions."

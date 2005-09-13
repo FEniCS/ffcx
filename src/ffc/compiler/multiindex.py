@@ -1,6 +1,6 @@
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-11-03"
-__copyright__ = "Copyright (c) 2004 Anders Logg"
+__date__ = "2004-11-03 -- 2005-09-13"
+__copyright__ = "Copyright (c) 2004, 2005 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # Python modules

@@ -3,9 +3,6 @@ __date__ = "2004-10-04 -- 2005-05-02"
 __copyright__ = "Copyright (c) 2004 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
-# Python modules
-from Numeric import ones, array
-
 # FIAT modules
 from FIAT.quadrature import *
 from FIAT.shapes import *

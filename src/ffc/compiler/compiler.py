@@ -9,7 +9,6 @@ __license__  = "GNU GPL Version 2"
 
 # Python modules
 import sys
-from Numeric import *
 
 # FFC common modules
 from ffc.common.debug import *
@@ -41,7 +40,8 @@ def compile(sums, name = "Form", language = "C++", license = FFC_LICENSE):
     forms = build(sums, name, language)
 
     # Generate code
-    write(forms, license)
+    if not forms == None:
+        write(forms, license)
 
     return forms
 
@@ -53,6 +53,11 @@ def build(sums, name = "Form", language = "C++"):
         forms = [Form(Sum(sum), name) for sum in sums if not sum == None]
     else:
         forms = [Form(Sum(sums), name)]
+
+    # Check that the list is not empty
+    if not len(forms) > 0:
+        print "No forms specified, nothing to do."
+        return None
 
     # Choose language
     if not language:
@@ -110,8 +115,17 @@ def write(forms, license = FFC_LICENSE):
     "Generate code from previously built data structures."
 
     # Make sure we have a list of forms
-    if not isinstance(forms, list):
+    if isinstance(forms, list):
+        forms = [form for form in forms if not form == None]
+    elif not forms == None:
         forms = [forms]
+    else:
+        forms = []
+
+    # Check that the list is not empty
+    if not len(forms) > 0:
+        print "No forms specified, nothing to do."
+        return None
 
     # Generate output (all forms have the same format)
     forms[0].format.write(forms, license)

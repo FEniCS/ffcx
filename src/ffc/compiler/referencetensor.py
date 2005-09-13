@@ -4,7 +4,7 @@ __copyright__ = "Copyright (c) 2004 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # Python modules
-from Numeric import *
+import Numeric
 
 # FFC common modules
 from ffc.common.progress import *
@@ -98,13 +98,15 @@ class ReferenceTensor:
         bindices = self.b.indices or [[]]
 
         # Create tensor
-        A0 = zeros(self.i.dims + self.a.dims, Float)
+        A0 = Numeric.zeros(self.i.dims + self.a.dims, Numeric.Float)
 
         # Create quadrature rule
         integrate = Integrator(self.basisfunctions)
 
         # Count the number of integrals
-        n = product(self.i.dims) * product(self.a.dims) * product(self.b.dims)
+        n = Numeric.product(self.i.dims) * \
+            Numeric.product(self.a.dims) * \
+            Numeric.product(self.b.dims)
         debug("Computing %d integrals, this may take some time" % n)
 
         # Iterate over all combinations of indices

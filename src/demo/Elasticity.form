@@ -1,5 +1,6 @@
 # Copyright (c) 2005 Johan Jansson.
 # Licensed under the GNU GPL Version 2
+# Modified by Anders Logg 2005.
 #
 # The bilinear form e(u) : e(u) for linear
 # elasticity with e(u) = grad(u) + grad(u)^T
@@ -11,4 +12,4 @@ element = FiniteElement("Vector Lagrange", "tetrahedron", 1)
 v = BasisFunction(element)
 u = BasisFunction(element)
 
-a = (v[i].dx(j) + v[j].dx(i)) * (u[i].dx(j) + u[j].dx(i)) * dx
+a = 0.25*(D(v[i], j) + D(v[j], i))*(D(u[i], j) + D(u[j], i))*dx

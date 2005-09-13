@@ -1,4 +1,4 @@
-# Copyright (c) 2004 Anders Logg (logg@tti-c.org)
+# Copyright (c) 2004, 2005 Anders Logg (logg@tti-c.org)
 # Licensed under the GNU GPL Version 2
 #
 # The bilinear form for the nonlinear term in the
@@ -12,4 +12,4 @@ v = BasisFunction(element)
 u = BasisFunction(element)
 w = Function(element)
 
-a = v[i]*w[j]*u[i].dx(j)*dx
+a = v[i]*w[j]*D(u[i], j)*dx

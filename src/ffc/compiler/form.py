@@ -5,7 +5,6 @@ __license__  = "GNU GPL Version 2"
 
 # Python modules
 import sys
-from Numeric import *
 
 # FFC common modules
 from ffc.common.debug import *
