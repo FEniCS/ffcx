@@ -40,7 +40,8 @@ m = Index()
 n = Index()
 
 %s
-compile([a, L], name, \"%s\", \"%s\")
+
+compile([a, L], name, \"%s\", \"%s\")    
 """ % (prefix, input, language, license)
 
     # Write output

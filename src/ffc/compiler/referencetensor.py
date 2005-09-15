@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-11-03 -- 2005-09-05"
+__date__ = "2004-11-03 -- 2005-09-14"
 __copyright__ = "Copyright (c) 2004 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -7,6 +7,7 @@ __license__  = "GNU GPL Version 2"
 import Numeric
 
 # FFC common modules
+from ffc.common.exceptions import *
 from ffc.common.progress import *
 from ffc.common.debug import *
 from ffc.common.util import *
@@ -37,11 +38,11 @@ class ReferenceTensor:
 
         # Check that we get a Product
         if not isinstance(product, Product):
-            raise RuntimeError, "ReferenceTensor must be created from Product."
+            raise RuntimError, "ReferenceTensor must be created from Product."
 
         # Check that the Product contains an Integral
         if product.integral == None:
-            raise RuntimeError, "Missing integral."
+            raise FormError, (product, "Missing integral in term.")
 
         # Get data from Product
         self.numeric = product.numeric

@@ -4,12 +4,17 @@ given Sum. All functions assume that all Indices of the given Sum have
 already been reassigned."""
 
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2005-03-15"
+__date__ = "2005-03-15 -- 2005-09-14"
 __copyright__ = "Copyright (c) 2005 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
+# Python modules
+import sys
+
 # FFC common modules
+sys.path.append("../../")
 from ffc.common.debug import *
+from ffc.common.exceptions import *
 
 def find_test(sum):
     "Return the FiniteElement associated with the test function (if any)."
@@ -20,9 +25,9 @@ def find_test(sum):
             if v.index.type == "primary" and v.index.index == 0:
                 count += 1
                 if count > 1:
-                    raise RuntimeError, "There can only be one test function."
+                    raise FormError, (sum , "There can only be one test function.")
                 if element and (not element == v.element):
-                    raise RuntimeError, "Test function defined by multiple elements."
+                    raise FormError, (sum, "Test function defined by multiple elements.")
                 element = v.element
 
     if element:
@@ -39,9 +44,9 @@ def find_trial(sum):
             if v.index.type == "primary" and v.index.index == 1:
                 count += 1
                 if count > 1:
-                    raise RuntimeError, "There can only be one trial function."
+                    raise FormError, (sum, "There can only be one trial function.")
                 if element and (not element == v.element):
-                    raise RuntimeError, "Trial function defined by multiple elements."
+                    raise FormError, (sum, "Trial function defined by multiple elements.")
                 element = v.element
 
     if element:
@@ -63,7 +68,7 @@ def find_elements(sum, nfunctions):
     # Check that we found an element for each function
     for element in elements:
         if not element:
-            raise RuntimeError, "Unable to find element for each function."
+            raise FormError, (sum, "Unable to find element for each function.")
 
     if elements:
         debug("Finite elements for functions: " + str(elements), 0)

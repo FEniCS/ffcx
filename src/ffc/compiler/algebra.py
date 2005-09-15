@@ -20,7 +20,7 @@ are supported for all elements of the algebra:
     Unary  d/dx   (operand scalar or tensor-valued)"""
 
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-09-27 -- 2005-09-08"
+__date__ = "2004-09-27 -- 2005-09-14"
 __copyright__ = "Copyright (c) 2004, 2005 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -29,6 +29,7 @@ import sys
 
 # FFC common modules
 sys.path.append("../../")
+from ffc.common.exceptions import *
 from ffc.common.debug import *
 from ffc.common.util import *
 
@@ -75,7 +76,7 @@ class Element:
 
     def __invert__(self):
         "Operator: ~Element"
-        raise RuntimeError, "Only Constants and numeric constants can be inverted."
+        raise FormError, (self, "Only Constants and numeric constants can be inverted.")
 
     def __pos__(self):
         "Operator: +Element"
@@ -126,7 +127,7 @@ class Constant(Element):
             self.number = Index("constant")
             self.inverted = False
         else:
-            raise RuntimeError, "Unable to create Constant from " + str(constant)
+            raise FormError, (constant, "Unable to create Constant from given expression.")
         return
 
     def __invert__(self):
@@ -211,22 +212,22 @@ class BasisFunction(Element):
         "Operator: BasisFunction[component], pick given component."
         rank = self.element.rank()
         if self.component or rank == 0:
-            raise RuntimeError, "Cannot pick component of scalar BasisFunction."
+            raise FormError, (self, "Cannot pick component of scalar BasisFunction.")
         w = BasisFunction(self)
         if isinstance(component, list):
             if not rank == len(component):
-                raise RuntimeError, "Illegal component index, does not match rank."
+                raise FormError, (component, "Illegal component index, does not match rank.")
             w.component = listcopy(component)
         else:
             if not rank == 1:
-                raise RuntimeError, "Illegal component index, does not match rank."
+                raise FormError, (component, "Illegal component index, does not match rank.")
             w.component = [Index(component)]
         return w
 
     def __len__(self):
         "Operator: len(BasisFunction)"
         if len(self.component) >= self.element.rank():
-            raise RuntimeError, "BasisFunction is scalar."
+            raise FormError, (self, "Vector length of scalar expression is undefined.")
         return self.element.tensordim(len(self.component))
 
     def dx(self, index = None):
@@ -345,14 +346,14 @@ class Product(Element):
             self.basisfunctions = listcopy(other.basisfunctions)
             self.integral = other.integral
         else:
-            raise RuntimeError, "Unable to create Product from " + str(other)
+            raise FormError, (other, "Unable to create Product from given expression.")
         return
     
     def __mul__(self, other):
         "Operator: Product * Element"
         if isinstance(other, Integral):
             if not self.integral == None:
-                raise RuntimeError, "Integrand can only be integrated once."
+                raise FormError, (self, "Integrand can only be integrated once.")
             w = Product(self)
             w.integral = Integral(other)
             return w
@@ -362,7 +363,7 @@ class Product(Element):
             w0 = Product(self)
             w1 = Product(other)
             if not w0.rank() == w1.rank() == 0:
-                raise RuntimeError, "Operands for product must be scalar."
+                raise FormError, (self, "Operands for product must be scalar.")
             w = Product()
             w.numeric = float(w0.numeric * w1.numeric)
             w.constants = listcopy(w0.constants + w1.constants)
@@ -370,7 +371,7 @@ class Product(Element):
             w.transforms = listcopy(w0.transforms + w1.transforms)
             w.basisfunctions = listcopy(w0.basisfunctions + w1.basisfunctions)
             if w0.integral and w1.integral:
-                raise RuntimeError, "Integrand can only be integrated once."
+                raise FormError, (self, "Integrand can only be integrated once.")
             elif w0.integral:
                 w.integral = Integral(w0.integral)
             elif w1.integral:
@@ -389,7 +390,7 @@ class Product(Element):
         "Operator: Product[component], pick given component."
         # Always scalar if product of more than one basis function
         if not len(self.basisfunctions) == 1:
-            raise RuntimeError, "Cannot pick component of scalar Product."
+            raise FormError, (self, "Cannot pick component of scalar expression.")
         # Otherwise, return component of first and only BasisFunction
         w = Product(self)
         w.basisfunctions[0] = w.basisfunctions[0][component]
@@ -399,7 +400,7 @@ class Product(Element):
         "Operator: len(Product)"
         # Always scalar if product of more than one basis function
         if not len(self.basisfunctions) == 1:
-            raise RuntimeError, "Product is scalar."
+            raise FormError, (self, "Vector length of scalar expression is undefined.")
         # Otherwise, return length of first and only BasisFunction
         return len(self.basisfunctions[0])
 
@@ -444,7 +445,7 @@ class Product(Element):
         if len(self.basisfunctions) > 1:
             for v in self.basisfunctions:
                 if not v.rank() == 0:
-                    raise RuntimeError, "Illegal rank for BasisFunction of Product (non-scalar)."
+                    raise FormError, (self, "Illegal rank for BasisFunction of Product (non-scalar).")
         return self.basisfunctions[0].rank()
             
     def indexcall(self, foo, args = None):
@@ -489,7 +490,7 @@ class Sum(Element):
             # Create Sum from Sum (copy constructor)
             self.products = listcopy(other.products)
         else:
-            raise RuntimeError, "Unable to create Sum from " + str(other)
+            raise FormError, (other, "Unable to create Sum from given expression.")
         return
 
     def __add__(self, other):
@@ -497,7 +498,7 @@ class Sum(Element):
         w0 = Sum(self)
         w1 = Sum(other)
         if not w0.rank() == w1.rank():
-            raise RuntimeError, "Non-matching ranks."
+            raise FormError, (self, "Operands for addition have non-matching ranks.")
         w = Sum()
         w.products = w0.products + w1.products
         return w
@@ -530,7 +531,7 @@ class Sum(Element):
         # Check that all terms have the same length
         for i in range(len(self.products) - 1):
             if not len(self.products[i]) == len(self.products[i + 1]):
-                raise RuntimeError, "Dimensions of terms don't match."
+                raise FormError, (self, "Terms have different vector length.")
         # Return length of first term
         return len(self.products[0])
 
@@ -551,7 +552,7 @@ class Sum(Element):
             return 0
         for j in range(len(self.products) - 1):
             if not self.products[j].rank() == self.products[j + 1].rank():
-                raise RuntimeError, "Non-matching ranks."
+                raise FormError, (self, "Terms have different rank.")
         return self.products[0].rank()
   
     def indexcall(self, foo, args = None):

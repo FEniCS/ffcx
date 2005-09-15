@@ -9,6 +9,7 @@ from sets import Set # (Could use built-in set with Python 2.4)
 # FFC common modules
 from ffc.common.debug import *
 from ffc.common.constants import *
+from ffc.common.exceptions import *
 
 # FFC compiler modules
 from term import *
@@ -145,4 +146,4 @@ class ElementTensor:
         "Check that all terms have integrals."
         for p in sum.products:
             if not p.integral:
-                raise RuntimeError, "Missing integral in term " + str(p)
+                raise FormError, (p, "Missing integral in term.")

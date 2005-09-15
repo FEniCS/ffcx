@@ -1,3 +1,4 @@
+ - Handle exceptions gracefully in command-line interface
  - Add chapter on the form language to the manual
  - Use new template fenicsmanual.cls for manual
  - Add new operators grad, div, rot (curl), D, rank, trace, dot, cross

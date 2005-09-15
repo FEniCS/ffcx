@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-09-27 -- 2005-09-05"
+__date__ = "2004-09-27 -- 2005-09-14"
 __copyright__ = "Copyright (c) 2004, 2005 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -7,10 +7,11 @@ __license__  = "GNU GPL Version 2"
 import sys
 
 # FFC common modules
+sys.path.append("../../")
 from ffc.common.debug import *
+from ffc.common.exceptions import *
 
 # FFC format modules
-sys.path.append("../../")
 from ffc.format import dolfin
 from ffc.format import latex
 
@@ -78,7 +79,7 @@ class Form:
         "Return interior reference tensor for given term."
         if term == None:
             if len(self.AKi.terms) > 1:
-                raise RuntimeError, "Form has more than one term and term not specified."
+                raise FormError, (self, "Form has more than one term and term not specified.")
             else:
                 return self.AKi.terms[0].A0.A0
         else:
@@ -88,7 +89,7 @@ class Form:
         "Return primary indices for interior reference tensor."
         if term == None:
             if len(self.AKi.terms) > 1:
-                raise RuntimeError, "Form has more than one term and term not specified."
+                raise FormError, (self, "Form has more than one term and term not specified.")
             else:
                 return self.AKi.terms[0].A0.i.indices
         else:
@@ -98,7 +99,7 @@ class Form:
         "Return primary indices for interior reference tensor."
         if term == None:
             if len(self.AKi.terms) > 1:
-                raise RuntimeError, "Form has more than one term and term not specified."
+                raise FormError, (self, "Form has more than one term and term not specified.")
             else:
                 return self.AKi.terms[0].A0.a.indices
         else:

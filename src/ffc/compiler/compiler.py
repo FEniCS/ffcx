@@ -13,6 +13,7 @@ import sys
 # FFC common modules
 from ffc.common.debug import *
 from ffc.common.constants import *
+from ffc.common.exceptions import *
 
 # FFC format modules
 sys.path.append("../../")

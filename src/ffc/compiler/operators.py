@@ -2,7 +2,7 @@
 based on the basic form algebra operations."""
 
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2005-09-07 -- 2005-09-09"
+__date__ = "2005-09-07 -- 2005-09-14"
 __copyright__ = "Copyright (c) 2005 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -10,8 +10,11 @@ __license__  = "GNU GPL Version 2"
 import sys
 import Numeric
 
-# FFC compiler modules
+# FFC common modules
 sys.path.append("../../")
+from ffc.common.exceptions import *
+
+# FFC compiler modules
 from index import *
 from algebra import *
 
@@ -41,7 +44,7 @@ def vec(v):
         return v
     # Check that function is vector-valued
     if not rank(v) == 1:
-        raise RuntimeError, "Object is not vector-valued."
+        raise FormError, (v, "Cannot create vector from scalar expression.")
     # Get vector dimension
     n = __tensordim(v, 0)
     # Create list of scalar components
@@ -53,7 +56,7 @@ def dot(v, w):
     if rank(v) == rank(w) == 1:
         # Check dimensions
         if not len(v) == len(w):
-            raise RuntimeError, "Dimensions don't match for scalar product."
+            raise FormError, ((v, w), "Dimensions don't match for scalar product.")
         # Use index notation if possible
         if isinstance(v, Element) and isinstance(w, Element):
             i = Index()
@@ -63,7 +66,7 @@ def dot(v, w):
     elif rank(v) == rank(w) == 2:
         # Check dimensions
         if not len(v) == len(w):
-            raise RuntimeError, "Dimensions don't match for scalar product."
+            raise FormError, ((v, w), "Dimensions don't match for scalar product.")
         # Compute dot product (:) of matrices
         return Numeric.sum([v[i][j]*w[i][j] for i in range(len(v)) for j in range(len(v[i]))])
 
@@ -71,7 +74,7 @@ def cross(v, w):
     "Return cross product of given functions."
     # Check dimensions
     if not len(v) == len(w):
-        raise RuntimeError, "Cross product only defined for vectors in R^3."
+        raise FormError, ((v, w), "Cross product only defined for vectors in R^3.")
     # Compute cross product
     return [v[1]*w[2] - v[2]*w[1], v[2]*w[0] - v[0]*w[2], v[0]*w[1] - v[1]*w[0]]
 
@@ -112,7 +115,7 @@ def div(v):
     "Return divergence of given function."
     # Check dimensions
     if not len(v) == __shapedim(v):
-        raise RuntimeError, "Dimensions don't match for divergence."
+        raise FormError, (v, "Dimensions don't match for divergence.")
     # Use index notation if possible
     if isinstance(v, Element):
         i = Index()
@@ -124,7 +127,7 @@ def rot(v):
     "Return rotation of given function."
     # Check dimensions
     if not len(v) == __shapedim(v) == 3:
-        raise RuntimeError, "Rotation only defined for v : R^3 --> R^3"
+        raise FormError, (v, "Rotation only defined for v : R^3 --> R^3")
     # Compute rotation
     return [D(v[2], 1) - D(v[1], 2), D(v[0], 2) - D(v[2], 0), D(v[1], 0) - D(v[0], 1)]
 
@@ -138,7 +141,7 @@ def __shapedim(v):
         # Check that all components have the same shape dimension
         for i in range(len(v) - 1):
             if not __shapedim(v[i]) == __shapedim(v[i + 1]):
-                raise RuntimeError, "Components have different shape dimensions."
+                raise FormError, (v, "Components have different shape dimensions.")
         # Return length of first term
         return __shapedim(v[0])
     elif isinstance(v, BasisFunction):
@@ -150,13 +153,13 @@ def __shapedim(v):
     elif isinstance(v, Function):
         return __shapedim(Sum(v))
     else:
-        raise RuntimeError, "Shape dimension is not defined for object: " + str(v)
+        raise FormError, (v, "Shape dimension is not defined for given expression.")
     return 0
 
 def __tensordim(v, i):
     "Return size of given dimension for given object."
     if i < 0 or i >= rank(v):
-        raise RuntimeError, "Tensor dimension out of range."
+        raise FormError, ((v, i), "Tensor dimension out of range.")
     if isinstance(v, BasisFunction):
         return v.element.tensordim(i + len(v.component))
     elif isinstance(v, Product):
@@ -166,7 +169,7 @@ def __tensordim(v, i):
     elif isinstance(v, Function):
         return __tensordim(Sum(v), i)
     else:
-        raise RuntimeError, "Tensor dimension is not defined for object: " + str(v)
+        raise FormError, ((v, i), "Tensor dimension is not defined for given expression.")
     return 0
 
 if __name__ == "__main__":

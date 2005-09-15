@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-10-04 -- 2005-05-02"
+__date__ = "2004-10-04 -- 2005-09-14"
 __copyright__ = "Copyright (c) 2004 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -9,6 +9,7 @@ from FIAT.shapes import *
 
 # FFC common modules
 from ffc.common.debug import *
+from ffc.common.exceptions import *
 
 # FFC compiler modules
 from algebra import *
@@ -41,7 +42,7 @@ class Integrator:
             s0 = basisfunctions[i].element.shape()
             s1 = basisfunctions[i + 1].element.shape()
             if not s0 == s1:
-                raise RuntimeError, "BasisFunctions defined on different shapes."
+                raise RuntimeError, (basisfunctions, "BasisFunctions defined on different shapes.")
 
         # All shapes are the same, so pick the first one
         self.shape = basisfunctions[0].element.shape()

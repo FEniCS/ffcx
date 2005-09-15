@@ -4,11 +4,16 @@ reference tensors from terms that have the same tensor structure but
 with different names of indices."""
 
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2005-09-06 -- 2005-09-07"
+__date__ = "2005-09-06 -- 2005-09-14"
 __copyright__ = "Copyright (c) 2004 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
+# Python modules
+import sys
+
 # FFC common modules
+sys.path.append("../../")
+from ffc.common.exceptions import *
 from ffc.common.util import permutations
 
 # FFC compiler modules
@@ -21,7 +26,7 @@ def reorder_indices(sum):
     reference tensors to the already computed matching term."""
 
     if not isinstance(sum, Sum):
-        raise RuntimeError, "Indices can only be reordered for Sums."
+        raise FormError, (sum, "Indices can only be reordered for Sums.")
 
     # Create empty factorization
     factorization = [None for i in range(len(sum.products))]
@@ -57,7 +62,7 @@ def reorder_indices(sum):
                 # Check that the hard signatures now match
                 q_hard = compute_hard_signature(q)
                 if not p_hard == q_hard:
-                    raise RuntimeError, "Hard signatures don't match after reordering."
+                    raise FormError, (sum, "Hard signatures don't match after reordering.")
                 # Group terms if hard signature matches
                 factorization[j] = i
 
@@ -72,8 +77,7 @@ def __reorder_indices(p, q, p_hard):
     p_max = max_index(p, "secondary")
     q_max = max_index(q, "secondary")
     if not p_max == q_max:
-        raise RuntimeError, \
-              "Terms have different index ranges but common soft signature"
+        raise FormError, ((p, q), "Terms have different index ranges but common soft signature.")
     n = p_max + 1
 
     # Generate all permutations of indices in the range 0,...,n-1
@@ -84,7 +88,7 @@ def __reorder_indices(p, q, p_hard):
         for i in range(n):
             num_changed = reassign_index(q_new, i, i + n, "secondary")
             if not num_changed == 1:
-                raise RuntimeError, "Not exactly one index modified."
+                raise FormError, ((p, q), "Not exactly one index modified.")
         # Reorder according to the current reordering
         for i in range(n):
             num_changed = reassign_index(q_new, i + n, reordering[i], "secondary")
@@ -93,4 +97,4 @@ def __reorder_indices(p, q, p_hard):
         if q_new_hard == p_hard:
             return q_new
 
-    raise RuntimeError, "Unable to find a proper reordering of indices."
+    raise Form, ((p, q), "Unable to find a proper reordering of indices.")

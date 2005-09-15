@@ -5,7 +5,7 @@
 #
 # Modified by Johan Jansson, 2005
 #
-# 2004-10-14 -- 2005-09-04
+# 2004-10-14 -- 2005-09-20
 #
 # This script parses command-line arguments, calls
 # the parser, and then compiles the generated form.
@@ -18,6 +18,7 @@ import getopt
 sys.path.append("../")
 from ffc.parser import simple
 from ffc.common.constants import *
+from ffc.common.exceptions import *
 
 def main(argv):
     "Main function."
@@ -59,7 +60,16 @@ def main(argv):
         outname = simple.parse(filename, language, license)
         # Compile generated file (also provide a namespace)
         ns = {}
-        execfile(outname, ns)
+        try:
+            execfile(outname, ns)
+        except FormError, exception:
+            print ""
+            print "*** Error at " + str(exception.expression)
+            print "*** " + exception.message
+        except RuntimeError, exception:
+            print "*** " + str(exception)
+        except Exception, exception:
+            print "*** " + str(exception)
 
 def usage():
     "Display usage info."

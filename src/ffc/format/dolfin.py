@@ -42,8 +42,8 @@ def write(forms, license):
             type = "Bilinear"
         else:
             print """DOLFIN can only handle linear or bilinear forms.
-            I will try to generate the multi-linear form but you will not
-            be able to use it with DOLFIN."""
+I will try to generate the multi-linear form but you will not
+be able to use it with DOLFIN."""
             type = "Multilinear"
 
         # Write form
