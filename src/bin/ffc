@@ -76,9 +76,9 @@ def usage():
     print """\
 Usage: ffc [OPTION]... input.form
 
-  -h            display this help and exit
-  -l language   specify output language (default is C++)
-  -c license    specify license of generated code (default is GPL)
+  -h            display this help text and exit
+  -l language   specify output language, one of 'c++' (default), 'latex', 'raw' or 'ase'
+  -c license    specify license for generated code (default is GPL)
   
 
 Alternatively, the following long options may be used:

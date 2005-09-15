@@ -1,16 +1,11 @@
 o [logg] Add new operations for Function (sqrt(), /)
 o [logg] Add predefined function h
 o [logg] Add vector constants
-o [logg] dx --> Dx
-o [logg] Add grad, rot, div
 o [logg] Add projections: pi = Projection(finiteelement)
 o [logg] Make dofmap.py and interpolation.py less DOLFIN specific
-o [logg] Allow summation notation u[0:3]?
-o [logg] Change notation for derivatives? u.Dx(i) suggested by Ridg
 o [logg] Put stuff in arrays and use BLAS
 o [logg] Display flop count
 o [logg] Add man page
-o [logg] Collect terms of equal rank
 o [logg] Change *(1.0/c) to /c
 o [logg] Boundary integrals
 o [logg] Connect Matt's parser
@@ -22,6 +17,5 @@ o [logg] Fix all FIXMEs (grep FIXME *.py)
 Suggestions for FIAT:
 
   - Change reference element
-
   - Check for function that is zero
   - Add ChangeLog, AUTHORS, README, INSTALL, TODO
