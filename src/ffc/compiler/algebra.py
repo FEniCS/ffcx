@@ -20,7 +20,7 @@ are supported for all elements of the algebra:
     Unary  d/dx   (operand scalar or tensor-valued)"""
 
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-09-27 -- 2005-09-14"
+__date__ = "2004-09-27 -- 2005-09-15"
 __copyright__ = "Copyright (c) 2004, 2005 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -60,6 +60,10 @@ class Element:
 
     def __mul__(self, other):
         "Operator: Element * Element"
+        # Special case: allow product of scalar with vector
+        if isinstance(other, list) and self.rank() == 0:
+            return [self*v for v in other]
+        # Otherwise assume we have an element of the algebra
         return Sum(self) * other
 
     def __rmul__(self, other):
