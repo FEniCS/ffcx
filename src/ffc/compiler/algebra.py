@@ -26,6 +26,7 @@ __license__  = "GNU GPL Version 2"
 
 # Python modules
 import sys
+import Numeric
 
 # FFC common modules
 sys.path.append("../../")
@@ -60,11 +61,12 @@ class Element:
 
     def __mul__(self, other):
         "Operator: Element * Element"
-        # Special case: allow product of scalar with vector
-        if isinstance(other, list) and self.rank() == 0:
+        if isinstance(other, Element):
+            return Sum(self) * other
+        elif Numeric.rank(other) > 0:
             return [self*v for v in other]
-        # Otherwise assume we have an element of the algebra
-        return Sum(self) * other
+        else:
+            raise FormError, ((self, other), "Product not defined for given operands.")
 
     def __rmul__(self, other):
         "Operator: Element * Element (other * self)"

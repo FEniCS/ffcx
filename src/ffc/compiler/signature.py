@@ -36,7 +36,6 @@ def compute_hard_signature(product):
     # Create signature for product
     return "*".join([numeric] + factors)
 
-
 def compute_soft_signature(product):
     "Compute soft (modulo secondary index numbers) signature."
 
