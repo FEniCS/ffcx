@@ -1,12 +1,86 @@
 \chapter{Quickstart}
+\index{quickstart}
+
+This chapter demonstrates how to get started with \ffc{}, including
+downloading and installing the latest version of \ffc{}, and compiling
+Poisson's equation. These topics are discussed in more detail
+elsewhere in this manual. In particular, see
+Appendix~\ref{app:installation} for detailed installation instructions
+and Chapter~\ref{sec:formlanguage} for a detailed discussion of the
+form language.
 
 %------------------------------------------------------------------------------
-\section{Downloading \ffc{}}
-
-%------------------------------------------------------------------------------
-\section{Installing \ffc{}}
+\section{Downloading and installing \ffc{}}
+\index{downloading}
 \index{installation}
+
+The latest version of \ffc{} can be found on the \fenics{} web page:
+\begin{code}
+  http://www.fenics.org/
+\end{code}
+The following commands illustrate the installation process, assuming
+that you have downloaded release 0.1.0 of \ffc{}:
+\begin{code}
+  # tar zxfv ffc-0.1.0.tar.gz
+  # cd ffc-0.1.0
+  # python setup.py install
+\end{code}
+
+Note that you may need to be root on your system to do the last
+step. You may also need to install the Python packages \fiat{} and
+Numeric. (See Appendix~\ref{app:installation} for detailed instructions.)
+\index{FIAT}
+\index{Numeric}
 
 %------------------------------------------------------------------------------
 \section{Compiling Poisson's equation with \ffc{}}
 \index{Poisson's equation}
+
+The variational formulation of Poisson's equation, $-\Delta u = f$, reads:
+Find $u \in V$ such that
+\begin{equation} \label{eq:varform}
+  a(v, u) = L(v) \quad \forall v\in \hat{V}, 
+\end{equation}
+with $(\hat{V}, V)$ a pair of suitable function spaces (the test and
+trial spaces). The bilinear form $a : \hat{V} \times V \rightarrow
+\R$ is given by
+\begin{equation}
+  a(v, u) = \int_{\Omega} \nabla u \cdot \nabla v \dx
+\end{equation}
+and the linear form $L : \hat{V} \rightarrow \R$ is given by
+\begin{equation}
+  L(v) = \int_{\Omega} f v \dx.
+\end{equation}
+
+To compile the pair of forms $(a, L)$ into code that can called to
+assemble the linear system $A x = b$ corresponding to the variational
+problem (\ref{eq:varform}) for a pair of discrete function spaces,
+specify the forms in a text file with extension \texttt{.form},
+e.g. \texttt{Poisson.form}, as follows:
+\begin{code}
+  element = FiniteElement(``Lagrange'', ``triangle'', 1)
+
+  v = BasisFunction(element)
+  u = BasisFunction(element)
+  f = Function(element)
+  
+  a = dot(grad(u), grad(v))*dx
+  L = f*v*dx
+\end{code}
+
+The example is given for piecewise linear finite elements in two
+dimensions, but other choices are available, including arbitrary order
+Lagrange elements in two and three dimensions.
+
+To compile the pair of forms implemented in the file
+\texttt{Poisson.form}, call the compiler on the command-line as
+follows:
+\begin{code}
+  # ffc Poisson.form
+\end{code}
+This generates the file \texttt{Poisson.h} which implements the forms
+in C++ for inclusion in \dolfin{}. For help on the \texttt{ffc}
+command, including compilation for other systems than \dolfin{}, type
+\texttt{ffc -h} or \texttt{man ffc}.
+\index{ffc}
+\index{man page}
