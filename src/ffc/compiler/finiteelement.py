@@ -1,6 +1,6 @@
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-10-04 -- 2005-05-05"
-__copyright__ = "Copyright (c) 2004 Anders Logg"
+__date__ = "2004-10-04 -- 2005-09-19"
+__copyright__ = "Copyright (c) 2004, 2005 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # FIAT modules
@@ -12,9 +12,13 @@ from FIAT.RaviartThomas import RaviartThomas
 from FIAT.BDM import BDM
 from FIAT.Nedelec import Nedelec
 
-# FFC modules
+# FFC common modules
+from ffc.common.debug import *
+
+# FFC compiler modules
 from dofmap import *
 from pointmap import *
+from mixedelement import *
 
 shape_to_string = { LINE: "Line", TRIANGLE: "Triangle", TETRAHEDRON: "Tetrahedron" }
 string_to_shape = { "Line": LINE, "Triangle": TRIANGLE, "Tetrahedron": TETRAHEDRON }
@@ -44,49 +48,52 @@ class FiniteElement:
 
         if not element is None:
             self.element = element
-            fiat_shape = element.domain_shape()
+            self.fiat_shape = element.domain_shape()
         else:
             # Choose shape
             if shape == "line":
-                fiat_shape = LINE
+                self.fiat_shape = LINE
             elif shape == "triangle":
-                fiat_shape = TRIANGLE
+                self.fiat_shape = TRIANGLE
             elif shape == "tetrahedron":
-                fiat_shape = TETRAHEDRON
+                self.fiat_shape = TETRAHEDRON
             else:
                 raise RuntimeError, "Unknown shape " + str(shape)
 
             # Choose function space
             if name == "Lagrange":
-                self.element = Lagrange(fiat_shape, degree)
+                self.element = Lagrange(self.fiat_shape, degree)
             elif name == "Vector Lagrange":
-                self.element = VectorLagrange(fiat_shape, degree, num_components)
+                self.element = VectorLagrange(self.fiat_shape, degree, num_components)
             elif name == "Discontinuous Lagrange":
                 print "Warning: element untested"
-                self.element = DiscontinuousLagrange(fiat_shape, degree)
+                self.element = DiscontinuousLagrange(self.fiat_shape, degree)
             elif name == "Discontinuous vector Lagrange":
                 print "Warning: element untested"
-                self.element = DiscontinuousVectorLagrange(fiat_shape, degree, num_components)
+                self.element = DiscontinuousVectorLagrange(self.fiat_shape, degree, num_components)
             elif name == "Crouzeix-Raviart":
                 print "Warning: element untested"
-                self.element = CrouzeixRaviart(fiat_shape)
+                self.element = CrouzeixRaviart(self.fiat_shape)
             elif name == "Raviart-Thomas":
                 print "Warning: element untested"
-                self.element = RaviartThomas(fiat_shape, degree)
+                self.element = RaviartThomas(self.fiat_shape, degree)
             elif name == "Brezzi-Douglas-Marini":
                 print "Warning: element untested"
-                self.element = BDM(fiat_shape, degree)
+                self.element = BDM(self.fiat_shape, degree)
             elif name == "Nedelec":
                 print "Warning: element untested"
                 self.element = Nedelec(degree)
             else:
                 raise RuntimeError, "Unknown finite element: " + str(name)
 
+        # Save dual basis
+        self.fiat_dual = self.element.dual_basis()
+
         # Create dof map
-        self.dofmap = DofMap(fiat_shape, self.element.dual_basis())
+        self.dofmap = DofMap(self)
 
         # Create point map
-        self.pointmap = PointMap(self.element.dual_basis())
+        self.pointmap = PointMap(self)
 
         return
 
@@ -118,6 +125,20 @@ class FiniteElement:
         "Return size of given dimension."
         tensordims = self.basis().tensor_dim()
         return tensordims[i]
+
+    def tabulate(self, order, points):
+        """Return tabulated values of derivatives up to given order of
+        basis functions at given points."""
+        return self.element.function_space().tabulate_jet(order, points)
+
+    def __add__(self, other):
+        "Create mixed element."
+        if isinstance(other, FiniteElement):
+            return MixedElement([self, other])
+        elif isinstance(other, MixedElement):
+            return MixedElement([self] + other.elements)
+        else:
+            raise RuntimeError, "Unable to create mixed element from given object: " + str(other)
 
     def __repr__(self):
         "Print nicely formatted representation of FiniteElement."

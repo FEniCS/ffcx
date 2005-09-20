@@ -98,7 +98,7 @@ class Integrator:
         self.table = {}
         for element in num_derivatives:
             order = num_derivatives[element]
-            self.table[element] = element.basis().tabulate_jet(order, self.points)
+            self.table[element] = element.tabulate(order, self.points)
 
     def __call__(self, basisfunctions, iindices, aindices, bindices):
         "Evaluate integral of product."
