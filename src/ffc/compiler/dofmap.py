@@ -151,10 +151,13 @@ def compute_dofmap(element, local_offset, global_offset):
     # Get the number of vector components
     num_components = dual_basis.num_reps
 
-    declarations = []
+    # Need special treatment the first time
     count = { "offset" : 0, "alignment" : 0 }
+    if not global_offset == None:
+        count["offset"] = 1
 
     # Write table for reordering of dofs on edges
+    declarations = []
     if nodes_per_entity[1] > 1:
         declarations += [write_edge_reordering(nodes_per_entity)]
 
