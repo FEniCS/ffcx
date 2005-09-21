@@ -130,6 +130,11 @@ def __element(element, name):
     pointmap = ""
     for declaration in element.pointmap.declarations:
         pointmap += "      %s = %s;\n" % (declaration.name, declaration.value)
+
+    # Generate code for vertexeval()
+    vertexeval = ""
+    for declaration in element.vertexeval.declarations:
+        vertexeval += "      %s = %s;\n" % (declaration.name, declaration.value)
     
     # Generate output
     return """\
@@ -175,6 +180,11 @@ def __element(element, name):
     {
 %s    }
 
+    void vertexeval(real values[], unsigned int vertex, const Vector& x, const Mesh& mesh) const
+    {
+      // FIXME: Temporary fix for Lagrange elements
+%s    }
+
   private:
 
     unsigned int* tensordims;
@@ -188,7 +198,8 @@ def __element(element, name):
        tensordim,
        element.rank(),
        dofmap,
-       pointmap)
+       pointmap,
+       vertexeval)
 
 def __form(form, type):
     "Generate form for DOLFIN."

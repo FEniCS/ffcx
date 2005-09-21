@@ -18,6 +18,7 @@ from ffc.common.debug import *
 # FFC compiler modules
 from dofmap import *
 from pointmap import *
+from vertexeval import *
 from mixedelement import *
 
 shape_to_string = { LINE: "Line", TRIANGLE: "Triangle", TETRAHEDRON: "Tetrahedron" }
@@ -94,6 +95,9 @@ class FiniteElement:
 
         # Create point map
         self.pointmap = PointMap(self)
+
+        # Create vertex evaluation
+        self.vertexeval = VertexEval(self)
 
         return
 

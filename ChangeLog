@@ -1,3 +1,4 @@
+ - Generate function vertexeval() for evaluation at vertices
  - Add support for arbitrary mixed elements
  - Add man page
  - Work on manual, chapters on form language, quickstart and installation
