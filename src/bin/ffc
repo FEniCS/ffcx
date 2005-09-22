@@ -66,10 +66,10 @@ def main(argv):
             print ""
             print "*** Error at " + str(exception.expression)
             print "*** " + exception.message
-#        except RuntimeError, exception:
-#            print "*** " + str(exception)
-#        except Exception, exception:
-#            print "*** " + str(exception)
+        except RuntimeError, exception:
+            print "*** " + str(exception)
+        except Exception, exception:
+            print "*** " + str(exception)
 
 def usage():
     "Display usage info."
