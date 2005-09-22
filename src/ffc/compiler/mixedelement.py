@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2005-09-16 -- 2005-09-20"
+__date__ = "2005-09-16 -- 2005-09-22"
 __copyright__ = "Copyright (c) 2005 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -17,11 +17,32 @@ from pointmap import *
 from vertexeval import *
 
 def BasisFunctions(element):
-    "Create tuple of BasisFunction from given MixedElement."
+    "Create tuple of BasisFunctions from given MixedElement."
     if not isinstance(element, MixedElement):
         raise RuntimeError, "Basis function tuple must be created from mixed element."
-    # Create basis function fox mixed element
+    # Create basis function for mixed element
     vector = algebra.BasisFunction(element)
+    # Pick components/subvectors of the mixed basis function
+    subvectors = []
+    offset = 0
+    for e in element.elements:
+        if e.rank() == 0:
+            subvector = vector[offset]
+            offset += 1
+        elif e.rank() == 1:
+            subvector = [vector[i] for i in range(offset, offset + e.tensordim(0))]
+            offset += e.tensordim(0)
+        else:
+            raise RuntimeError, "Mixed elements can only be created from scalar or vector-valued elements."
+        subvectors += [subvector]
+    return tuple(subvectors)
+
+def Functions(element):
+    "Create tuple of Functions from given MixedElement."
+    if not isinstance(element, MixedElement):
+        raise RuntimeError, "Function tuple must be created from mixed element."
+    # Create function fox mixed element
+    vector = algebra.Function(element)
     # Pick components/subvectors of the mixed basis function
     subvectors = []
     offset = 0
