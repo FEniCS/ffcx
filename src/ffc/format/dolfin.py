@@ -71,6 +71,11 @@ def __file_header(name, license):
 #ifndef __%s_H
 #define __%s_H
 
+#include <dolfin/Mesh.h>
+#include <dolfin/Cell.h>
+#include <dolfin/Point.h>
+#include <dolfin/Vector.h>
+#include <dolfin/AffineMap.h>
 #include <dolfin/FiniteElement.h>
 #include <dolfin/LinearForm.h>
 #include <dolfin/BilinearForm.h>

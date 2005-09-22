@@ -78,9 +78,6 @@ def compute_vertexeval(element, component_offset):
     # Number of topological dimensions
     num_dims = element.shapedim() + 1
 
-    # Count the entities associated with each topological dimension
-    num_entities = [len(entity_range(shape, dim)) for dim in range(num_dims)]
-
     # Count the nodes associated with each entity
     nodes_per_entity = []
     for dim in range(num_dims):
@@ -89,25 +86,11 @@ def compute_vertexeval(element, component_offset):
         else:
             nodes_per_entity += [0]
 
-    # Count the total number of nodes (for a scalar element)
-    num_nodes = 0
-    for dim in range(num_dims):
-        num_nodes += num_entities[dim] * nodes_per_entity[dim]
-
     # Get the number of vector components
     num_components = dual_basis.num_reps
 
-    # Write table for reordering of dofs on edges
-    declarations = []
-    if nodes_per_entity[1] > 1:
-        declarations += [write_edge_reordering(nodes_per_entity)]
-
-    # Write table for reordering of dofs on faces
-    if num_dims > 3:
-        if nodes_per_entity[2] > 1:
-            declarations += [write_face_reordering(nodes_per_entity)]
-
     # Iterate over vector components
+    declarations = []
     for component in range(num_components):
 
         # Compute global component (handles mixed elements)
