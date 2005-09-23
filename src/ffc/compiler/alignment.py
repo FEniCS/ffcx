@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2005-06-27"
+__date__ = "2005-06-27 -- 2005-09-22"
 __copyright__ = "Copyright (c) 2005 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -35,7 +35,6 @@ def face_reordering(num_nodes):
     offsets = [0]
     for i in range(1, n):
         offsets += [offsets[-1] + n + 1 - i]
-    print "offsets = " + str(offsets)
 
     # Now do a nested loop over rows (i) and columns (j) in different
     # directions depending on the alignment
