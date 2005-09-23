@@ -10,4 +10,4 @@ element = FiniteElement("Lagrange", "triangle", 1)
 v = BasisFunction(element)
 u = BasisFunction(element)
     
-a = v*u*dx
+a = u*v*dx

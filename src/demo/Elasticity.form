@@ -2,8 +2,8 @@
 # Licensed under the GNU GPL Version 2
 # Modified by Anders Logg 2005.
 #
-# The bilinear form e(u) : e(u) for linear
-# elasticity with e(u) = grad(u) + grad(u)^T
+# The bilinear form e(u) : e(v) for linear
+# elasticity with e(v) = 1/2 (grad(v) + grad(v)^T)
 #
 # Compile this form with FFC: ffc Elasticity.form
 
@@ -12,4 +12,4 @@ element = FiniteElement("Vector Lagrange", "tetrahedron", 1)
 v = BasisFunction(element)
 u = BasisFunction(element)
 
-a = 0.25*(D(v[i], j) + D(v[j], i))*(D(u[i], j) + D(u[j], i))*dx
+a = 0.25*(D(u[i], j) + D(u[j], i))*(D(v[i], j) + D(v[j], i))*dx
