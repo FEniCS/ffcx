@@ -1,3 +1,5 @@
+ - Fix bug in dofmap() for equal order mixed elements
+ - Add compiler option -d debuglevel
  - Fix Python Numeric bug: vdot --> dot
 0.2.0 [2005-09-23]
  - Generate function vertexeval() for evaluation at vertices

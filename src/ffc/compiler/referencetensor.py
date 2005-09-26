@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-11-03 -- 2005-09-14"
+__date__ = "2004-11-03 -- 2005-09-26"
 __copyright__ = "Copyright (c) 2004 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -114,17 +114,17 @@ class ReferenceTensor:
         debug("Computing reference tensor", 2)
         progress = Progress(n)
         for i in iindices:
-            debug("i = " + str(i), 2)
+            debug("i = " + str(i), 3)
             for a in aindices:
-                debug("  a = " + str(a), 2)
+                debug("  a = " + str(a), 3)
                 integral = 0.0
                 for b in bindices:
-                    debug("    b = " + str(b), 2)
+                    debug("    b = " + str(b), 3)
                     integral += integrate(self.basisfunctions, i, a, b)
                     progress += 1
                 integral *= self.numeric
                 A0[i + a] = integral
-                debug("  integral = " + str(integral), 2)
+                debug("  integral = " + str(integral), 3)
         return A0
 
     def  __call__(self, i, a = []):

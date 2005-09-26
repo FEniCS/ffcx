@@ -5,7 +5,7 @@
 #
 # Modified by Johan Jansson, 2005
 #
-# 2004-10-14 -- 2005-09-20
+# 2004-10-14 -- 2005-09-26
 #
 # This script parses command-line arguments, calls
 # the parser, and then compiles the generated form.
@@ -17,6 +17,7 @@ import getopt
 # FFC modules
 sys.path.append("../")
 from ffc.parser import simple
+from ffc.common.debug import *
 from ffc.common.constants import *
 from ffc.common.exceptions import *
 
@@ -25,7 +26,7 @@ def main(argv):
 
     # Get command-line arguments
     try:
-        opts, args = getopt.getopt(argv, "hl:c:", ["help", "language=", "license="])
+        opts, args = getopt.getopt(argv, "hl:c:d:", ["help", "language=", "license=", "debug="])
     except getopt.GetoptError:
         usage()
         sys.exit(2)
@@ -43,7 +44,8 @@ def main(argv):
     # Set default arguments
     language = "C++"
     license = FFC_LICENSE
-
+    debuglevel = 0
+    
     # Get options
     for opt, arg in opts:
         if opt in ("-h", "--help"):
@@ -53,6 +55,12 @@ def main(argv):
             language = arg
         elif opt in  ("-c", "--license"):
             license = arg
+        elif opt in  ("-d", "--debug"):
+            debuglevel = int(arg)
+
+    # Set debug level
+    print "Setting debug level to " + str(debuglevel)
+    level(debuglevel)
 
     # Call parser and compiler for each file
     for filename in args:
@@ -60,16 +68,20 @@ def main(argv):
         outname = simple.parse(filename, language, license)
         # Compile generated file (also provide a namespace)
         ns = {}
-        try:
+        # Catch exceptions only if debug level is zero
+        if debuglevel > 0:
             execfile(outname, ns)
-        except FormError, exception:
-            print ""
-            print "*** Error at " + str(exception.expression)
-            print "*** " + exception.message
-        except RuntimeError, exception:
-            print "*** " + str(exception)
-        except Exception, exception:
-            print "*** " + str(exception)
+        else:
+            try:
+                execfile(outname, ns)
+            except FormError, exception:
+                print ""
+                print "*** Error at " + str(exception.expression)
+                print "*** " + exception.message
+            except RuntimeError, exception:
+                print "*** " + str(exception)
+            except Exception, exception:
+                print "*** " + str(exception)
 
 def usage():
     "Display usage info."
@@ -79,15 +91,16 @@ Usage: ffc [OPTION]... input.form
   -h            display this help text and exit
   -l language   specify output language, one of 'c++' (default), 'latex', 'raw' or 'ase'
   -c license    specify license for generated code (default is GPL)
+  -d debuglevel specify debug level (default is 0)
   
 
 Alternatively, the following long options may be used:
 
   --help
   --language language
-  --license  license
-
-Currently supported languages are C++ and LaTeX."""
+  --license license
+  --debuglevel debuglevel
+"""
     return
 
 if __name__ == "__main__":
