@@ -1,3 +1,4 @@
+ - Fix Python Numeric bug: vdot --> dot
 0.2.0 [2005-09-23]
  - Generate function vertexeval() for evaluation at vertices
  - Add support for arbitrary mixed elements
