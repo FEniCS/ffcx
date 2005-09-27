@@ -1,3 +1,4 @@
+ - Modify demo Mass.form to use 3:rd order Lagrange on tets
  - Fix bug in dofmap() for equal order mixed elements
  - Add compiler option -d debuglevel
  - Fix Python Numeric bug: vdot --> dot

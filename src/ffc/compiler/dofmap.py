@@ -78,7 +78,7 @@ def write_alignment(num_dims, dim, entity, data):
     else:
         name = "alignment"
     value = format[("check", num_dims - 1, dim)](entity)
-    data["alignment"] += 1
+    data["num alignment"] += 1
     return Declaration(name, value)
 
 def reorder(nodes_per_entity, num_dims, dim, entity, node):

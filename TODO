@@ -1,3 +1,4 @@
+o [logg] Add flag -d to man page
 o [logg] Add new operations for Function (sqrt(), /)
 o [logg] Add predefined function h
 o [logg] Add vector constants
@@ -5,7 +6,6 @@ o [logg] Add projections: pi = Projection(finiteelement)
 o [logg] Make dofmap.py and interpolation.py less DOLFIN specific
 o [logg] Put stuff in arrays and use BLAS
 o [logg] Display flop count
-o [logg] Add man page
 o [logg] Change *(1.0/c) to /c
 o [logg] Boundary integrals
 o [logg] Connect Matt's parser
