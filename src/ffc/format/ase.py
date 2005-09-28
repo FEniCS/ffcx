@@ -1,9 +1,11 @@
 "ASE output format."
 
 __author__ = "Matthew G. Knepley (knepley@mcs.anl.gov)"
-__date__ = "2005-06-03"
+__date__ = "2005-06-03 -- 2005-09-28"
 __copyright__ = "Copyright (c) 2005 Matthew G. Knepley"
 __license__  = "GNU GPL Version 2"
+
+# Modified by Anders Logg 2005.
 
 try:
     import ASE.Compiler.Python.Cxx
@@ -55,6 +57,6 @@ format = { "sum": sum,
            "geometry tensor": lambda j, a: 'G%d_%s' % (j, '_'.join([str(index) for index in a])),
            "element tensor": lambda i, k: Cxx.getArrayRef('elementMatrix', k)}
 
-def write(forms, license):
+def write(forms, options):
     "Generate code for ase format."
     return

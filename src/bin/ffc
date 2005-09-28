@@ -26,7 +26,7 @@ def main(argv):
 
     # Get command-line arguments
     try:
-        opts, args = getopt.getopt(argv, "hl:c:d:f:", ["help", "language=", "license=", "debug="])
+        opts, args = getopt.getopt(argv, "hl:d:f:", ["help", "language=", "debug="])
     except getopt.GetoptError:
         usage()
         sys.exit(2)
@@ -43,9 +43,9 @@ def main(argv):
 
     # Set default arguments
     language = "dolfin"
-    license = FFC_LICENSE
     debuglevel = 0
-    
+    options = { "blas" : False, "no-gpl" : False }
+
     # Get options
     for opt, arg in opts:
         if opt in ("-h", "--help"):
@@ -53,12 +53,14 @@ def main(argv):
             sys.exit()
         elif opt in  ("-l", "--language"):
             language = arg
-        elif opt in  ("-c", "--license"):
-            license = arg
         elif opt in  ("-d", "--debug"):
             debuglevel = int(arg)
         elif opt in  ("-f"):
-            optimize = arg
+            if arg in options:
+                options[arg] = True
+            else:
+                usage()
+                sys.exit(2)
 
     # Set debug level
     print "Setting debug level to " + str(debuglevel)
@@ -67,7 +69,7 @@ def main(argv):
     # Call parser and compiler for each file
     for filename in args:
         # Parse current file
-        outname = simple.parse(filename, language, license)
+        outname = simple.parse(filename, language, options)
         # Compile generated file (also provide a namespace)
         ns = {}
         # Catch exceptions only if debug level is zero
@@ -92,15 +94,13 @@ Usage: ffc [OPTION]... input.form
 
   -h            display this help text and exit
   -l language   specify output language, one of 'dolfin' (default), 'latex', 'raw' or 'ase'
-  -c license    specify license for generated code (default is GPL)
   -d debuglevel specify debug level (default is 0)
-  -f option     specify code generation options
+  -f option     specify code generation options, one of 'blas' or 'no-gpl'
 
 Alternatively, the following long options may be used:
 
   --help
   --language language
-  --license license
   --debuglevel debuglevel
 """
     return

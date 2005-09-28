@@ -1,11 +1,11 @@
 "A simple parser for FFC."
 
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-11-15 -- 2005-05-20"
-__copyright__ = "Copyright (c) 2004 Anders Logg"
+__date__ = "2004-11-15 -- 2005-09-28"
+__copyright__ = "Copyright (c) 2004, 2005 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
-def parse(filename, language, license):
+def parse(filename, language, options):
     "Parse file with given filename, return name of output file."
     print "Parsing " + filename
 
@@ -41,8 +41,8 @@ n = Index()
 
 %s
 
-compile([a, L], name, \"%s\", \"%s\")    
-""" % (prefix, input, language, license)
+compile([a, L], name, \"%s\", %s)
+""" % (prefix, input, language, options)
 
     # Write output
     outname = prefix + ".py"

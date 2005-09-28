@@ -1,7 +1,7 @@
 "Raw output format."
 
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-11-17 -- 2005-05-04"
+__date__ = "2004-11-17 -- 2005-09-28"
 __copyright__ = "Copyright (c) 2004 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -18,7 +18,7 @@ format = { "sum": lambda l: " + ".join(l),
            "geometry tensor": lambda j, a: "not defined",
            "element tensor": lambda i, k: "not defined" }
 
-def write(forms, license):
+def write(forms, options):
     "Generate code for raw format."
     print "Generating raw output"
 

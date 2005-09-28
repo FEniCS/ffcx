@@ -3,7 +3,7 @@ and building the data structures (geometry and reference tensors) for
 the evaluation of the multi-linear form."""
 
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-11-17 -- 2005-09-09"
+__date__ = "2004-11-17 -- 2005-09-28"
 __copyright__ = "Copyright (c) 2004, 2005 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -31,7 +31,7 @@ from elementsearch import *
 from finiteelement import *
 from elementtensor import *
 
-def compile(sums, name = "Form", language = "dolfin", license = FFC_LICENSE):
+def compile(sums, name = "Form", language = "dolfin", options = None):
     """Compile variational form(s). This function takes as argument a
     Sum or a list of Sums representing the multilinear form(s). The
     return value is a Form or a list of Forms. Calling this function
@@ -42,7 +42,7 @@ def compile(sums, name = "Form", language = "dolfin", license = FFC_LICENSE):
 
     # Generate code
     if not forms == None:
-        write(forms, license)
+        write(forms, options)
 
     return forms
 
@@ -112,7 +112,7 @@ def build(sums, name = "Form", language = "dolfin"):
     else:
         return forms[0]
 
-def write(forms, license = FFC_LICENSE):
+def write(forms, options = None):
     "Generate code from previously built data structures."
 
     # Make sure we have a list of forms
@@ -129,7 +129,7 @@ def write(forms, license = FFC_LICENSE):
         return None
 
     # Generate output (all forms have the same format)
-    forms[0].format.write(forms, license)
+    forms[0].format.write(forms, options)
 
     return
 
