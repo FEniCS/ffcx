@@ -5,7 +5,7 @@
 #
 # Modified by Johan Jansson, 2005
 #
-# 2004-10-14 -- 2005-09-26
+# 2004-10-14 -- 2005-09-28
 #
 # This script parses command-line arguments, calls
 # the parser, and then compiles the generated form.
@@ -26,7 +26,7 @@ def main(argv):
 
     # Get command-line arguments
     try:
-        opts, args = getopt.getopt(argv, "hl:c:d:", ["help", "language=", "license=", "debug="])
+        opts, args = getopt.getopt(argv, "hl:c:d:f:", ["help", "language=", "license=", "debug="])
     except getopt.GetoptError:
         usage()
         sys.exit(2)
@@ -42,7 +42,7 @@ def main(argv):
     print
 
     # Set default arguments
-    language = "C++"
+    language = "dolfin"
     license = FFC_LICENSE
     debuglevel = 0
     
@@ -57,6 +57,8 @@ def main(argv):
             license = arg
         elif opt in  ("-d", "--debug"):
             debuglevel = int(arg)
+        elif opt in  ("-f"):
+            optimize = arg
 
     # Set debug level
     print "Setting debug level to " + str(debuglevel)
@@ -89,10 +91,10 @@ def usage():
 Usage: ffc [OPTION]... input.form
 
   -h            display this help text and exit
-  -l language   specify output language, one of 'c++' (default), 'latex', 'raw' or 'ase'
+  -l language   specify output language, one of 'dolfin' (default), 'latex', 'raw' or 'ase'
   -c license    specify license for generated code (default is GPL)
   -d debuglevel specify debug level (default is 0)
-  
+  -f option     specify code generation options
 
 Alternatively, the following long options may be used:
 

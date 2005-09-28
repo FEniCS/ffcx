@@ -31,7 +31,7 @@ from elementsearch import *
 from finiteelement import *
 from elementtensor import *
 
-def compile(sums, name = "Form", language = "C++", license = FFC_LICENSE):
+def compile(sums, name = "Form", language = "dolfin", license = FFC_LICENSE):
     """Compile variational form(s). This function takes as argument a
     Sum or a list of Sums representing the multilinear form(s). The
     return value is a Form or a list of Forms. Calling this function
@@ -46,7 +46,7 @@ def compile(sums, name = "Form", language = "C++", license = FFC_LICENSE):
 
     return forms
 
-def build(sums, name = "Form", language = "C++"):
+def build(sums, name = "Form", language = "dolfin"):
     "Build data structures for evaluation of the variational form(s)."
 
     # Create a Form from the given sum(s)
@@ -63,9 +63,9 @@ def build(sums, name = "Form", language = "C++"):
     # Choose language
     if not language:
         format = dolfin
-    elif language == "C++" or language == "c++":
+    elif language == "dolfin" or language == "DOLFIN":
         format = dolfin
-    elif language == "LaTeX" or language == "latex":
+    elif language == "latex" or language == "LaTeX":
         format = latex
     elif language == "raw":
         format = raw
