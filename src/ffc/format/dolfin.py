@@ -267,29 +267,23 @@ public:
 
     # Interior contribution (if any)
     if form.AKi.terms:
+        eval = __eval_interior(form)
         output += """\
 
   void eval(real block[], const AffineMap& map) const
   {
-    // Compute geometry tensors
-%s
-    // Compute element tensor
 %s  }
-""" % ("".join(["    real %s = %s;\n" % (gK.name, gK.value) for gK in form.AKi.gK]),
-       "".join(["    %s = %s;\n" % (aK.name, aK.value) for aK in form.AKi.aK]))
+""" % eval
 
     # Boundary contribution (if any)
     if form.AKb.terms:
+        eval = __eval_boundary(form)
         output += """\
 
   void eval(real block[], const AffineMap& map, unsigned int boundary) const
   {
-    // Compute geometry tensors
-%s
-    // Compute element tensor
 %s  }
-""" % ("".join(["    real %s = %s;\n" % (gK.name, gK.value) for gK in form.AKb.gK]),
-       "".join(["    %s = %s;\n" % (aK.name, aK.value) for aK in form.AKb.aK]))
+""" % eval
 
     # Create declaration list for for constants (if any)
     if form.nconstants > 0:
@@ -310,6 +304,24 @@ private:
 """
 
     return output
+
+def __eval_interior(form):
+    "Generate function eval() for DOLFIN, interior part."
+    return """\
+    // Compute geometry tensors
+%s
+    // Compute element tensor
+%s""" % ("".join(["    real %s = %s;\n" % (gK.name, gK.value) for gK in form.AKi.gK]),
+         "".join(["    %s = %s;\n" % (aK.name, aK.value) for aK in form.AKi.aK]))
+
+def __eval_boundary(form):
+    "Generate function eval() for DOLFIN, boundary part."
+    return """\
+    // Compute geometry tensors
+%s
+    // Compute element tensor
+%s""" % ("".join(["    real %s = %s;\n" % (gK.name, gK.value) for gK in form.AKb.gK]),
+         "".join(["    %s = %s;\n" % (aK.name, aK.value) for aK in form.AKb.aK]))
 
 def __capall(s):
     "Return a string in which all characters are capitalized."
