@@ -44,6 +44,7 @@ def multiplication(l):
 def transform(j, k):
     return Cxx.getArrayRef('JInv', int(j)*dim + int(k))
 
+# Specify formatting for code generation
 format = { "sum": sum,
            "subtract": subtract,
            "multiplication": multiplication,

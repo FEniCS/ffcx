@@ -1,5 +1,5 @@
+o [logg] gzip XML files by default and add option -a no-gzip
 o [logg] Don't nest classes in output (for SWIG use)
-o [logg] Add flag -d to man page
 o [logg] Add new operations for Function (sqrt(), /)
 o [logg] Add predefined function h
 o [logg] Add vector constants

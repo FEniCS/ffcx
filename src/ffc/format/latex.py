@@ -8,6 +8,7 @@ __license__  = "GNU GPL Version 2"
 # FFC common modules
 from ffc.common.constants import *
 
+# Specify formatting for code generation
 format = { "sum": lambda l: " + ".join(l),
            "subtract": lambda l: " - ".join(l),
            "multiplication": lambda l: "".join(l),

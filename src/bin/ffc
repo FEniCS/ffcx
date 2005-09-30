@@ -44,7 +44,7 @@ def main(argv):
     # Set default arguments
     language = "dolfin"
     debuglevel = 0
-    options = { "blas" : False, "no-gpl" : False }
+    options = FFC_OPTIONS
 
     # Get options
     for opt, arg in opts:

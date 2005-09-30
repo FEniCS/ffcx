@@ -137,7 +137,7 @@ class Constant(Element):
         return
 
     def __invert__(self):
-        c = Constant()
+        c = Constant(self)
         if self.inverted:
             c.inverted = False
         else:

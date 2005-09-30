@@ -5,6 +5,7 @@ __date__ = "2004-11-17 -- 2005-09-28"
 __copyright__ = "Copyright (c) 2004 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
+# Specify formatting for code generation
 format = { "sum": lambda l: " + ".join(l),
            "subtract": lambda l: " - ".join(l),
            "multiplication": lambda l: "*".join(l),

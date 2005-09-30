@@ -1,3 +1,5 @@
+ - Fix bug in division with constants
+ - Generate output for BLAS (with option -a blas)
  - Add new XML output format
  - Remove command-line option --license (collect in compiler options -a)
  - Modify demo Mass.form to use 3:rd order Lagrange on tets

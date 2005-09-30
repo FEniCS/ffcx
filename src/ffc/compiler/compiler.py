@@ -33,7 +33,7 @@ from elementsearch import *
 from finiteelement import *
 from elementtensor import *
 
-def compile(sums, name = "Form", language = "dolfin", options = None):
+def compile(sums, name = "Form", language = FFC_LANGUAGE, options = FFC_OPTIONS):
     """Compile variational form(s). This function takes as argument a
     Sum or a list of Sums representing the multilinear form(s). The
     return value is a Form or a list of Forms. Calling this function
@@ -48,7 +48,7 @@ def compile(sums, name = "Form", language = "dolfin", options = None):
 
     return forms
 
-def build(sums, name = "Form", language = "dolfin", options = None):
+def build(sums, name = "Form", language = FFC_LANGUAGE, options = FFC_OPTIONS):
     "Build data structures for evaluation of the variational form(s)."
 
     # Create a Form from the given sum(s)
@@ -119,7 +119,7 @@ def build(sums, name = "Form", language = "dolfin", options = None):
     else:
         return forms[0]
 
-def write(forms, options = None):
+def write(forms, options = FFC_OPTIONS):
     "Generate code from previously built data structures."
 
     # Make sure we have a list of forms
