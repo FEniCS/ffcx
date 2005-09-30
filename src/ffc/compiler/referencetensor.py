@@ -28,6 +28,7 @@ class ReferenceTensor:
         i              - primary multiindex
         a              - secondary multiindex
         b              - auxiliary multiindex
+        rank           - rank of the tensor
         A0             - the precomputed reference tensor
         numeric        - a numeric constant (float)
         basisfunctions - a list of BasisFunctions
@@ -56,6 +57,9 @@ class ReferenceTensor:
 
         # Compute ReferenceTensor
         self.A0 = self.__compute_reference_tensor()
+
+        # Get rank
+        self.rank = self.i.rank + self.a.rank
 
         debug("Created reference tensor: i%s, a%s, b%s" % \
               (str(self.i.dims), str(self.a.dims), str(self.b.dims)), 1)

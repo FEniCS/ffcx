@@ -21,8 +21,12 @@ format = { "sum": lambda l: " + ".join(l),
            "geometry tensor": lambda j, a: "G_{K,%d}^{%s}" % (j + 1, ",".join(["%d" % (index + 1) for index in a])),
            "element tensor": lambda i, k: "A^K_{%s}" % "".join(["%d" % (index + 1) for index in i]) }
 
+def init(options):
+    "Initialize code generation for LaTeX format."
+    return
+
 def write(forms, options):
-    "Generate code for LaTeX."
+    "Generate code for LaTeX format."
     print "Generating output for LaTeX"
 
     # Get name of form

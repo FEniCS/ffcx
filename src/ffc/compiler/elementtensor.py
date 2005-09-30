@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-11-06 -- 2005-09-07"
+__date__ = "2004-11-06 -- 2005-09-29"
 __copyright__ = "Copyright (c) 2004 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -49,7 +49,7 @@ class ElementTensor:
                 if factorization[i] == None:
                     # Compute reference tensor and add term
                     A0 = ReferenceTensor(p)
-                    self.terms[i] = Term(A0, [GK])
+                    self.terms[i] = Term(p, A0, [GK])
                 else:
                     # Add geometry tensor to previous term
                     self.terms[factorization[i]].GKs += [GK]

@@ -3,7 +3,7 @@ and building the data structures (geometry and reference tensors) for
 the evaluation of the multi-linear form."""
 
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-11-17 -- 2005-09-28"
+__date__ = "2004-11-17 -- 2005-09-29"
 __copyright__ = "Copyright (c) 2004, 2005 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -21,12 +21,14 @@ from ffc.format import dolfin
 from ffc.format import latex
 from ffc.format import raw
 from ffc.format import ase
+from ffc.format import xml
 
 # FFC compiler modules
 from form import *
 from index import *
 from algebra import *
 from operators import *
+from signature import *
 from elementsearch import *
 from finiteelement import *
 from elementtensor import *
@@ -38,7 +40,7 @@ def compile(sums, name = "Form", language = "dolfin", options = None):
     is equivalent to first calling build() followed by write()."""
 
     # Build data structures
-    forms = build(sums, name, language)
+    forms = build(sums, name, language, options)
 
     # Generate code
     if not forms == None:
@@ -46,7 +48,7 @@ def compile(sums, name = "Form", language = "dolfin", options = None):
 
     return forms
 
-def build(sums, name = "Form", language = "dolfin"):
+def build(sums, name = "Form", language = "dolfin", options = None):
     "Build data structures for evaluation of the variational form(s)."
 
     # Create a Form from the given sum(s)
@@ -71,8 +73,13 @@ def build(sums, name = "Form", language = "dolfin"):
         format = raw
     elif language == "ase":
         format = ase
+    elif language == "xml":
+        format = xml
     else:
         raise "RuntimeError", "Unknown language " + str(language)
+
+    # Initialize format
+    format.init(options)
 
     # Generate the element tensor for all given forms
     for form in forms:

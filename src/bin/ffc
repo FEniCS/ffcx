@@ -5,7 +5,7 @@
 #
 # Modified by Johan Jansson, 2005
 #
-# 2004-10-14 -- 2005-09-28
+# 2004-10-14 -- 2005-09-29
 #
 # This script parses command-line arguments, calls
 # the parser, and then compiles the generated form.
@@ -93,7 +93,7 @@ def usage():
 Usage: ffc [OPTION]... input.form
 
   -h            display this help text and exit
-  -l language   specify output language, one of 'dolfin' (default), 'latex', 'raw' or 'ase'
+  -l language   specify output language, one of 'dolfin' (default), 'latex', 'raw', 'ase' or 'xml'
   -d debuglevel specify debug level (default is 0)
   -f option     specify code generation options, one of 'blas' or 'no-gpl'
 

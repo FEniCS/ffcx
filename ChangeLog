@@ -1,3 +1,5 @@
+ - Add new XML output format
+ - Remove command-line option --license (collect in compiler options -a)
  - Modify demo Mass.form to use 3:rd order Lagrange on tets
  - Fix bug in dofmap() for equal order mixed elements
  - Add compiler option -d debuglevel

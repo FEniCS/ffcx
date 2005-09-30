@@ -18,6 +18,10 @@ format = { "sum": lambda l: " + ".join(l),
            "geometry tensor": lambda j, a: "not defined",
            "element tensor": lambda i, k: "not defined" }
 
+def init(options):
+    "Initialize code generation for raw format."
+    return
+
 def write(forms, options):
     "Generate code for raw format."
     print "Generating raw output"

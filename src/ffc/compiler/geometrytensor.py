@@ -19,6 +19,7 @@ class GeometryTensor:
 
         a            - secondary multiindex
         b            - auxiliary multiindex
+        rank         - rank of the tensor
         constants    - a list of Constants
         coefficients - a list of Coefficients
         transforms   - a list of Transforms"""
@@ -38,6 +39,9 @@ class GeometryTensor:
         # Create MultiIndices
         self.a = self.__create_index("secondary")
         self.b = self.__create_index("geometry tensor auxiliary")
+
+        # Get rank
+        self.rank = self.a.rank
 
         debug("Created geometry tensor: a%s, b%s" % \
               (str(self.a.dims), str(self.b.dims)), 1)

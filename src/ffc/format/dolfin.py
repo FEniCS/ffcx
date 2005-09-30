@@ -1,7 +1,7 @@
 "DOLFIN output format."
 
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-10-14 -- 2005-06-10"
+__date__ = "2004-10-14 -- 2005-09-29"
 __copyright__ = "Copyright (c) 2004, 2005 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -21,8 +21,19 @@ format = { "sum": lambda l: " + ".join(l),
            "geometry tensor": lambda j, a: "G%d_%s" % (j, "_".join(["%d" % index for index in a])),
            "element tensor": lambda i, k: "block[%d]" % k }
 
+def init(options):
+    "Initialize code generation for DOLFIN format."
+
+    # Check if we need to modify the format for BLAS
+    if not options == None:
+        if options["blas"]:
+            format["reference tensor"] = lambda j, i, a: "(%d, %s, %s)" % (j, str(i), str(a))
+            format["geometry tensor"]  = lambda j, a: "G[%d]" % j
+
+    return
+
 def write(forms, options):
-    "Generate code for DOLFIN."
+    "Generate code for DOLFIN format."
     print "\nGenerating output for DOLFIN"
 
     # Get name of form
@@ -47,7 +58,7 @@ be able to use it with DOLFIN."""
             type = "Multilinear"
 
         # Write form
-        output += __form(form, type)
+        output += __form(form, type, options)
 
     # Write file footer
     output += __file_footer()
@@ -212,7 +223,7 @@ def __element(element, name):
        pointmap,
        vertexeval)
 
-def __form(form, type):
+def __form(form, type, options):
     "Generate form for DOLFIN."
     
     #ptr = "".join(['*' for i in range(form.rank)])
@@ -260,7 +271,7 @@ public:
     // Create finite element for trial space
     _trial = new TrialElement();
 """
-
+        
     # Add functions (if any)
     if form.nfunctions > 0:
         output += """\
@@ -273,7 +284,7 @@ public:
 
     # Interior contribution (if any)
     if form.AKi.terms:
-        eval = __eval_interior(form)
+        eval = __eval_interior(form, options)
         output += """\
 
   void eval(real block[], const AffineMap& map) const
@@ -283,7 +294,7 @@ public:
 
     # Boundary contribution (if any)
     if form.AKb.terms:
-        eval = __eval_boundary(form)
+        eval = __eval_boundary(form, options)
         output += """\
 
   void eval(real block[], const AffineMap& map, unsigned int boundary) const
@@ -311,8 +322,17 @@ private:
 
     return output
 
-def __eval_interior(form):
+def __eval_interior(form, options):
     "Generate function eval() for DOLFIN, interior part."
+    if options == None:
+        return __eval_interior_default(form)
+    elif not options["blas"]:
+        return __eval_interior_default(form)
+    else:
+        return __eval_interior_blas(form)
+
+def __eval_interior_default(form):
+    "Generate function eval() for DOLFIN, interior part (default version)."
     return """\
     // Compute geometry tensors
 %s
@@ -320,12 +340,46 @@ def __eval_interior(form):
 %s""" % ("".join(["    real %s = %s;\n" % (gK.name, gK.value) for gK in form.AKi.gK]),
          "".join(["    %s = %s;\n" % (aK.name, aK.value) for aK in form.AKi.aK]))
 
-def __eval_boundary(form):
+def __eval_interior_blas(form):
+    "Generate function eval() for DOLFIN, interior part (BLAS version)."
+
+    M = 10;
+    N = 10;
+    
+    return """\
+    // Compute geometry tensors
+%s
+    // Compute element tensor using level 2 BLAS
+    cblas_dgemv(CblasRowMajor, CblasNoTrans, %d, %d, 
+    1.0, A0, const int lda,
+    G, const int incX, const double beta,
+                 block, const int incY);
+"""
+
+def __eval_boundary(form, options):
     "Generate function eval() for DOLFIN, boundary part."
+    if options == None:
+        return __eval_boundary_default(form)
+    elif not options["blas"]:
+        return __eval_boundary_default(form)
+    else:
+        return __eval_boundary_blas(form)
+
+def __eval_boundary_default(form):
+    "Generate function eval() for DOLFIN, boundary part (default version)."
     return """\
     // Compute geometry tensors
 %s
     // Compute element tensor
+%s""" % ("".join(["    real %s = %s;\n" % (gK.name, gK.value) for gK in form.AKb.gK]),
+         "".join(["    %s = %s;\n" % (aK.name, aK.value) for aK in form.AKb.aK]))
+
+def __eval_boundary_blas(form):
+    "Generate function eval() for DOLFIN, boundary part (default version)."
+    return """\
+    // Compute geometry tensors
+%s
+    // Compute element tensor using level 2 BLAS
 %s""" % ("".join(["    real %s = %s;\n" % (gK.name, gK.value) for gK in form.AKb.gK]),
          "".join(["    %s = %s;\n" % (aK.name, aK.value) for aK in form.AKb.aK]))
 
