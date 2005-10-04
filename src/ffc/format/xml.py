@@ -77,10 +77,12 @@ def __form(form, name):
             A0 = term.A0
             rank_a = A0.rank
             rank_g = term.GKs[0].rank
+            size_a = len(form.AKi.aK)
+            size_g = len(form.AKi.gK)
 
             # Write data for term
-            output += "      <term signature=\"%s\">\n" % sig
-            output += "        <geometrytensor rank=\"%d\"></geometrytensor>\n" % rank_g
+            output += "      <term signature=\"%s\" size=\"%s\">\n" % (sig, size_a)
+            output += "        <geometrytensor rank=\"%d\" size=\"%d\"></geometrytensor>\n" % (rank_g, size_g)
             output += "        <referencetensor rank=\"%d\">\n" % rank_a
             iindices = A0.i.indices
             aindices = A0.a.indices or [[]]

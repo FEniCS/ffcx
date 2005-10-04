@@ -302,7 +302,7 @@ public:
         output += """\
 
     // Initialize form data for BLAS
-    initBLAS(\"%s\");\n""" % xmlfile
+    blas.init(\"%s\");\n""" % xmlfile
 
     output += "  }\n"
 
@@ -376,12 +376,12 @@ def __eval_interior_blas(form):
     output = """\
     // Compute geometry tensors
 %s
-""" % ("".join(["    blas_G[%d] = %s;\n" % (j, form.AKi.gK[j].value) for j in range(len(form.AKi.gK))]))
+""" % ("".join(["    blas.Gi[%d] = %s;\n" % (j, form.AKi.gK[j].value) for j in range(len(form.AKi.gK))]))
 
     # Compute element tensor
     output += """\
     // Compute element tensor using level 2 BLAS
-    cblas_dgemv(CblasRowMajor, CblasNoTrans, %d, %d, 1.0, blas_A, %d, blas_G, 1, 0.0, block, 1);
+    cblas_dgemv(CblasRowMajor, CblasNoTrans, %d, %d, 1.0, blas.Ai, %d, blas.Gi, 1, 0.0, block, 1);
 """ % (M, N, M)
 
     return output
@@ -404,12 +404,24 @@ def __eval_boundary_default(form):
 
 def __eval_boundary_blas(form):
     "Generate function eval() for DOLFIN, boundary part (default version)."
-    return """\
+
+    # Compute total size of matrix
+    M = len(form.AKb.aK)
+    N = len(form.AKb.gK)
+
+    # Compute geometry tensors
+    output = """\
     // Compute geometry tensors
 %s
+""" % ("".join(["    blas.Gb[%d] = %s;\n" % (j, form.AKb.gK[j].value) for j in range(len(form.AKb.gK))]))
+
+    # Compute element tensor
+    output += """\
     // Compute element tensor using level 2 BLAS
-%s""" % ("".join(["    real %s = %s;\n" % (gK.name, gK.value) for gK in form.AKb.gK]),
-         "".join(["    %s = %s;\n" % (aK.name, aK.value) for aK in form.AKb.aK]))
+    cblas_dgemv(CblasRowMajor, CblasNoTrans, %d, %d, 1.0, blas.Ab, %d, blas.Gb, 1, 0.0, block, 1);
+""" % (M, N, M)
+
+    return output
 
 def __capall(s):
     "Return a string in which all characters are capitalized."

@@ -1,3 +1,4 @@
+o [logg] Update manual with new fenics class file
 o [logg] Write about division with Constant in manual
 o [logg] gzip XML files by default and add option -a no-gzip
 o [logg] Don't nest classes in output (for SWIG use)
