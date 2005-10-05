@@ -368,10 +368,6 @@ def __eval_interior_default(form):
 def __eval_interior_blas(form):
     "Generate function eval() for DOLFIN, interior part (BLAS version)."
 
-    # Compute total size of matrix
-    M = len(form.AKi.aK)
-    N = len(form.AKi.gK)
-
     # Compute geometry tensors
     output = """\
     // Compute geometry tensors
@@ -381,8 +377,8 @@ def __eval_interior_blas(form):
     # Compute element tensor
     output += """\
     // Compute element tensor using level 2 BLAS
-    cblas_dgemv(CblasRowMajor, CblasNoTrans, %d, %d, 1.0, blas.Ai, %d, blas.Gi, 1, 0.0, block, 1);
-""" % (M, N, M)
+    cblas_dgemv(CblasRowMajor, CblasNoTrans, blas.mi, blas.ni, 1.0, blas.Ai, blas.ni, blas.Gi, 1, 0.0, block, 1);
+"""
 
     return output
 
@@ -405,10 +401,6 @@ def __eval_boundary_default(form):
 def __eval_boundary_blas(form):
     "Generate function eval() for DOLFIN, boundary part (default version)."
 
-    # Compute total size of matrix
-    M = len(form.AKb.aK)
-    N = len(form.AKb.gK)
-
     # Compute geometry tensors
     output = """\
     // Compute geometry tensors
@@ -418,8 +410,8 @@ def __eval_boundary_blas(form):
     # Compute element tensor
     output += """\
     // Compute element tensor using level 2 BLAS
-    cblas_dgemv(CblasRowMajor, CblasNoTrans, %d, %d, 1.0, blas.Ab, %d, blas.Gb, 1, 0.0, block, 1);
-""" % (M, N, M)
+    cblas_dgemv(CblasRowMajor, CblasNoTrans, blas.mb, blas.nb, 1.0, blas.Ab, blas.nb, blas.Gb, 1, 0.0, block, 1);
+"""
 
     return output
 
