@@ -1,7 +1,7 @@
 "DOLFIN output format."
 
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-10-14 -- 2005-09-29"
+__date__ = "2004-10-14 -- 2005-10-03"
 __copyright__ = "Copyright (c) 2004, 2005 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -24,7 +24,6 @@ format = { "sum": lambda l: " + ".join(l),
            "reference tensor" : lambda j, i, a: "not defined",
            "geometry tensor": lambda j, a: "G%d_%s" % (j, "_".join(["%d" % index for index in a])),
            "element tensor": lambda i, k: "block[%d]" % k }
-
 def init(options):
     "Initialize code generation for DOLFIN format."
     return
@@ -362,7 +361,7 @@ def __eval_interior_default(form):
     // Compute geometry tensors
 %s
     // Compute element tensor
-%s""" % ("".join(["    real %s = %s;\n" % (gK.name, gK.value) for gK in form.AKi.gK]),
+%s""" % ("".join(["    real %s = %s;\n" % (gK.name, gK.value) for gK in form.AKi.gK if gK.used]),
          "".join(["    %s = %s;\n" % (aK.name, aK.value) for aK in form.AKi.aK]))
 
 def __eval_interior_blas(form):
@@ -370,9 +369,14 @@ def __eval_interior_blas(form):
 
     # Compute geometry tensors
     output = """\
-    // Compute geometry tensors
+    // Reset geometry tensors
+    for (unsigned int i = 0; i < blas.nb; i++)
+      blas.Gb[i] = 0.0;
+
+    // Compute entries of G multiplied by nonzero entries of A
 %s
-""" % ("".join(["    blas.Gi[%d] = %s;\n" % (j, form.AKi.gK[j].value) for j in range(len(form.AKi.gK))]))
+""" % ("".join(["    blas.Gi[%d] = %s;\n" % (j, form.AKi.gK[j].value)
+                for j in range(len(form.AKi.gK)) if form.AKi.gK[j].used]))
 
     # Compute element tensor
     output += """\
@@ -395,7 +399,7 @@ def __eval_boundary_default(form):
     // Compute geometry tensors
 %s
     // Compute element tensor
-%s""" % ("".join(["    real %s = %s;\n" % (gK.name, gK.value) for gK in form.AKb.gK]),
+%s""" % ("".join(["    real %s = %s;\n" % (gK.name, gK.value) for gK in form.AKb.gK if gK.used]),
          "".join(["    %s = %s;\n" % (aK.name, aK.value) for aK in form.AKb.aK]))
 
 def __eval_boundary_blas(form):
@@ -403,9 +407,14 @@ def __eval_boundary_blas(form):
 
     # Compute geometry tensors
     output = """\
-    // Compute geometry tensors
+    // Reset geometry tensors
+    for (unsigned int i = 0; i < blas.nb; i++)
+      blas.Gb[i] = 0.0;
+
+    // Compute entries of G multiplied by nonzero entries of A
 %s
-""" % ("".join(["    blas.Gb[%d] = %s;\n" % (j, form.AKb.gK[j].value) for j in range(len(form.AKb.gK))]))
+""" % ("".join(["    blas.Gb[%d] = %s;\n" % (j, form.AKb.gK[j].value)
+                for j in range(len(form.AKb.gK)) if form.AKb.gK[j].used]))
 
     # Compute element tensor
     output += """\

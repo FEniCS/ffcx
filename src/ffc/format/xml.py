@@ -1,7 +1,7 @@
 "Raw output format."
 
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2005-09-29"
+__date__ = "2005-09-29 -- 2005-10-03"
 __copyright__ = "Copyright (c) 2005 Anders Logg"
 __license__  = "GNU GPL Version 2"
 

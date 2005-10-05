@@ -94,12 +94,16 @@ class ElementTensor:
             if not aindices:
                 aindices = [[]]
             for a in aindices:
-                name = format.format["geometry tensor"](j, a)
                 # Sum factorized values
+                name = format.format["geometry tensor"](j, a)
                 value = format.format["sum"]([GK(a, format) for GK in self.terms[j].GKs])
-                # Only add entries that are used
+                declaration = Declaration(name, value)
+                # Mark entries that are used
                 if name in gK_used:
-                    declarations += [Declaration(name, value)]
+                    declaration.used = True
+                # Add declaration
+                declarations += [declaration]
+
         return declarations
 
     def __compute_element_tensor(self, format, gK_used):
