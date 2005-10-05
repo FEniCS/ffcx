@@ -1,3 +1,5 @@
+ - Check for missing options and add missing default options
+ - Simplify usage of FFC as Python module: from ffc import *
  - Fix bug in division with constants
  - Generate output for BLAS (with option -a blas)
  - Add new XML output format

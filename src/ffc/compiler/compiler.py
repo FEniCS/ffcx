@@ -39,6 +39,11 @@ def compile(sums, name = "Form", language = FFC_LANGUAGE, options = FFC_OPTIONS)
     return value is a Form or a list of Forms. Calling this function
     is equivalent to first calling build() followed by write()."""
 
+    # Add default values for any missing options
+    for key in FFC_OPTIONS:
+        if not key in options:
+            options[key] = FFC_OPTIONS[key]
+
     # Build data structures
     forms = build(sums, name, language, options)
 
@@ -50,6 +55,11 @@ def compile(sums, name = "Form", language = FFC_LANGUAGE, options = FFC_OPTIONS)
 
 def build(sums, name = "Form", language = FFC_LANGUAGE, options = FFC_OPTIONS):
     "Build data structures for evaluation of the variational form(s)."
+
+    # Add default values for any missing options
+    for key in FFC_OPTIONS:
+        if not key in options:
+            options[key] = FFC_OPTIONS[key]
 
     # Create a Form from the given sum(s)
     if isinstance(sums, list):
@@ -121,6 +131,11 @@ def build(sums, name = "Form", language = FFC_LANGUAGE, options = FFC_OPTIONS):
 
 def write(forms, options = FFC_OPTIONS):
     "Generate code from previously built data structures."
+
+    # Add default values for any missing options
+    for key in FFC_OPTIONS:
+        if not key in options:
+            options[key] = FFC_OPTIONS[key]
 
     # Make sure we have a list of forms
     if isinstance(forms, list):
