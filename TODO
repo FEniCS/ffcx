@@ -3,13 +3,14 @@ o [logg] gzip XML files by default and add option -a no-gzip
 o [logg] Don't nest classes in output (for SWIG use)
 o [logg] Add new operations for Function (sqrt(), /)
 o [logg] Add predefined function h
+o [logg] Make d available to user
 o [logg] Add vector constants
 o [logg] Add projections: pi = Projection(finiteelement)
 o [logg] Make dofmap.py and interpolation.py less DOLFIN specific
 o [logg] Put stuff in arrays and use BLAS
 o [logg] Display flop count
 o [logg] Change *(1.0/c) to /c
-o [logg] Boundary integrals
+o [logg] Boundary integrals: *ds
 o [logg] Connect Matt's parser
 o [logg] Call FErari to simplify
 o [logg] Option for inexact integration?

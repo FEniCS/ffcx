@@ -1,9 +1,9 @@
  - Check for missing options and add missing default options
  - Simplify usage of FFC as Python module: from ffc import *
  - Fix bug in division with constants
- - Generate output for BLAS (with option -a blas)
+ - Generate output for BLAS (with option -f blas)
  - Add new XML output format
- - Remove command-line option --license (collect in compiler options -a)
+ - Remove command-line option --license (collect in compiler options -f)
  - Modify demo Mass.form to use 3:rd order Lagrange on tets
  - Fix bug in dofmap() for equal order mixed elements
  - Add compiler option -d debuglevel
