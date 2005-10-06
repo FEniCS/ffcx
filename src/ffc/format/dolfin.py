@@ -364,6 +364,10 @@ def __eval_interior_default(form, options):
         output += """\
     // Compute geometry tensors
 %s""" % "".join(["    real %s = %s;\n" % (gK.name, gK.value) for gK in form.AKi.gK if gK.used])
+    else:
+        output += """\
+    // Compute geometry tensors
+%s""" % "".join(["    real %s = 0.0;\n" % gK.name for gK in form.AKi.gK if gK.used])
 
     if not options["debug-no-element-tensor"]:
         output += """\
@@ -413,6 +417,10 @@ def __eval_boundary_default(form, options):
         output += """\
     // Compute geometry tensors
 %s""" % "".join(["    real %s = %s;\n" % (gK.name, gK.value) for gK in form.AKb.gK if gK.used])
+    else:
+        output += """\
+    // Compute geometry tensors
+%s""" % "".join(["    real %s = 0.0;\n" % gK.name for gK in form.AKi.gK if gK.used])
 
     if not options["debug-no-element-tensor"]:
         output += """\
