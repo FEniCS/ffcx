@@ -1,7 +1,7 @@
 "Raw output format."
 
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-11-17 -- 2005-09-28"
+__date__ = "2004-11-17 -- 2005-10-07"
 __copyright__ = "Copyright (c) 2004 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -10,14 +10,14 @@ format = { "sum": lambda l: " + ".join(l),
            "subtract": lambda l: " - ".join(l),
            "multiplication": lambda l: "*".join(l),
            "grouping": lambda s: "(%s)" % s,
-           "determinant": "not defined",
+           "determinant": None,
            "floating point": lambda a: "%.15e" % a,
-           "constant": lambda j: "not defined",
-           "coefficient": lambda j, k: "not defined",
-           "transform": lambda j, k: "not defined",
+           "constant": lambda j: None,
+           "coefficient": lambda j, k: None,
+           "transform": lambda j, k: None,
            "reference tensor" : lambda j, i, a: "(%d, %s, %s)" % (j, str(i), (str(a))),
-           "geometry tensor": lambda j, a: "not defined",
-           "element tensor": lambda i, k: "not defined" }
+           "geometry tensor": lambda j, a: None,
+           "element tensor": lambda i, k: None }
 
 def init(options):
     "Initialize code generation for raw format."

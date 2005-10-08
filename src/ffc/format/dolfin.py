@@ -1,7 +1,7 @@
 "DOLFIN output format."
 
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-10-14 -- 2005-10-06"
+__date__ = "2004-10-14 -- 2005-10-07"
 __copyright__ = "Copyright (c) 2004, 2005 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -21,12 +21,17 @@ format = { "sum": lambda l: " + ".join(l),
            "constant": lambda j: "c%d" % j,
            "coefficient": lambda j, k: "c[%d][%d]" % (j, k),
            "transform": lambda j, k: "map.g%d%d" % (j, k),
-           "reference tensor" : lambda j, i, a: "not defined",
+           "reference tensor" : lambda j, i, a: None,
            "geometry tensor": lambda j, a: "G%d_%s" % (j, "_".join(["%d" % index for index in a])),
            "element tensor": lambda i, k: "block[%d]" % k }
 
 def init(options):
     "Initialize code generation for DOLFIN format."
+
+    # Don't generate code for element tensor in BLAS mode
+    if options["blas"]:
+        format["element tensor"] = lambda i, k: None
+
     return
 
 def write(forms, options):
@@ -60,7 +65,6 @@ be able to use it with DOLFIN."""
             xmlfile = "%s-%d.xml" % (forms[j].name, j)
         else:
             xmlfile = "%s.xml" % forms[j].name
-
 
         # Write form
         output += __form(form, type, options, xmlfile)

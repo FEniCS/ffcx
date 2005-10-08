@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-11-06 -- 2005-09-29"
+__date__ = "2004-11-06 -- 2005-10-07"
 __copyright__ = "Copyright (c) 2004 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -41,6 +41,7 @@ class ElementTensor:
         # Compute terms
         self.terms = [None for i in range(len(sum.products))]
         for i in range(len(sum.products)):
+            debug("Compiling term %d" % i, 1)
             p = sum.products[i]
             if p.integral.type == type:
                 # Compute geometry tensor
@@ -53,6 +54,7 @@ class ElementTensor:
                 else:
                     # Add geometry tensor to previous term
                     self.terms[factorization[i]].GKs += [GK]
+        debug("All terms compiled", 1)
 
         # Remove terms not computed (factorized)
         [self.terms.remove(None) for i in range(len(self.terms)) if None in self.terms]
@@ -71,7 +73,8 @@ class ElementTensor:
 
     def __compute_reference_tensor(self, format):
         "Precomputed reference tensor according to given format."
-        if not self.terms: return []
+        debug("Generating code for reference tensor", 1)
+        if not self.terms or format.format["reference tensor"](0, 0, []) == None: return []
         declarations = []
         for j in range(len(self.terms)):
             term = self.terms[j]
@@ -86,7 +89,8 @@ class ElementTensor:
 
     def __compute_geometry_tensor(self, format, gK_used):
         "Precompute geometry tensor according to given format."
-        if not self.terms: return []
+        debug("Generating code for geometry tensor", 1)
+        if not self.terms or format.format["geometry tensor"](0, []) == None: return []
         declarations = []
         for j in range(len(self.terms)):
             # Should be the same, so pick first
@@ -109,8 +113,8 @@ class ElementTensor:
     def __compute_element_tensor(self, format, gK_used):
         """Precompute element tensor, including optimizations. This is
         where any FErari optimization should be done."""
-        debug("Computing element tensor", 2)
-        if not self.terms: return []
+        debug("Generating code for element tensor", 1)
+        if not self.terms or format.format["element tensor"](0, 0) == None: return []
         declarations = []
         iindices = self.terms[0].A0.i.indices # All primary ranks are equal
         k = 0 # Update counter for each entry of A0, which is needed for some formats

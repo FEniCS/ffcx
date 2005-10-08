@@ -63,7 +63,6 @@ def main(argv):
                 sys.exit(2)
 
     # Set debug level
-    print "Setting debug level to " + str(debuglevel)
     level(debuglevel)
 
     # Call parser and compiler for each file

@@ -1,7 +1,7 @@
 "Raw output format."
 
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2005-09-29 -- 2005-10-03"
+__date__ = "2005-09-29 -- 2005-10-07"
 __copyright__ = "Copyright (c) 2005 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -10,14 +10,14 @@ format = { "sum": lambda l: " + ".join(l),
            "subtract": lambda l: " - ".join(l),
            "multiplication": lambda l: "*".join(l),
            "grouping": lambda s: "(%s)" % s,
-           "determinant": "not defined",
+           "determinant": None,
            "floating point": lambda a: "%.15e" % a,
-           "constant": lambda j: "not defined",
-           "coefficient": lambda j, k: "not defined",
-           "transform": lambda j, k: "not defined",
-           "reference tensor" : lambda j, i, a: "not defined",
-           "geometry tensor": lambda j, a: "not defined",
-           "element tensor": lambda i, k: "not defined" }
+           "constant": lambda j: None,
+           "coefficient": lambda j, k: None,
+           "transform": lambda j, k: None,
+           "reference tensor" : lambda j, i, a: None,
+           "geometry tensor": lambda j, a: None,
+           "element tensor": lambda i, k: None }
 
 def init(options):
     "Initialize code generation for XML format."
@@ -35,41 +35,42 @@ def write(forms, options):
         else:
             name = forms[j].name
 
-        # Write form
-        output  = __header(forms[j])
-        output += __form(forms[j], name)
-        output += __footer(forms[j])
-
-        # Write file
+        # Open file
         filename = "%s.xml" % name
-        file = open(filename, "w")
-        file.write(output)
+        file = open(filename, "w")        
+
+        # Write form
+        __header(file, forms[j])
+        __form(file, forms[j], name)
+        __footer(file, forms[j])
+
+        # Close file
         file.close()
         print "Output written to " + filename
 
     return
 
-def __header(form):
+def __header(file, form):
     "Generate header in XML format."
-    return """\
+    file.write("""\
 <?xml version="1.0" encoding="UTF-8"?>
 
 <ffc xmlns:ffc="http://www.fenics.org/ffc/">
-"""
+""")
 
-def __footer(form):
+def __footer(file, form):
     "Generate footer in XML format."
-    return """\
+    file.write("""\
 </ffc>
-"""
+""")
 
-def __form(form, name):
+def __form(file, form, name):
     "Generate form in XML format."
-    output = "  <form name=\"%s\">\n" % name
+    file.write("  <form name=\"%s\">\n" % name)
     
     # Interior contribution
     if len(form.AKi.terms) > 0:
-        output += "    <interior>\n"
+        file.write("    <interior>\n")
         for term in form.AKi.terms:
 
             # Extract data for term
@@ -81,25 +82,22 @@ def __form(form, name):
             size_g = len(form.AKi.gK)
 
             # Write data for term
-            output += "      <term signature=\"%s\" size=\"%s\">\n" % (sig, size_a)
-            output += "        <geometrytensor rank=\"%d\" size=\"%d\"></geometrytensor>\n" % (rank_g, size_g)
-            output += "        <referencetensor rank=\"%d\">\n" % rank_a
+            file.write("""\
+      <term signature=\"%s\" size=\"%s\">
+        <geometrytensor rank=\"%d\" size=\"%d\"></geometrytensor>
+        <referencetensor rank=\"%d\">
+""" % (sig, size_a, rank_g, size_g, rank_a))
             iindices = A0.i.indices
             aindices = A0.a.indices or [[]]
             for i in iindices:
                 for a in aindices:
                     index = " ".join([str(j) for j in (i + a)])
                     value = A0.A0[i + a]
-                    output += "          <entry index=\"%s\" value=\"%s\"/>\n" % (index, value)
-            output += "        </referencetensor>\n"
-            output += "      </term>\n"
-        output += "    </interior>\n"
+                    file.write("          <entry index=\"%s\" value=\"%s\"/>\n" % (index, value))
+            file.write("""\
+        </referencetensor>
+      </term>
+""")
+        file.write("    </interior>\n")
 
-    # Boundary contribution
-    if form.AKb.terms:
-        for g0 in form.AKi.a0:
-            output += "    boundary %s %s\n" % (a0.name, a0.value)
-
-    output += "  </form>\n"
-
-    return output
+    file.write("  </form>\n")

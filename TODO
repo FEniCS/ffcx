@@ -1,3 +1,4 @@
+o [logg] Generate code for sub elements of mixed elements
 o [logg] Write about division with Constant in manual
 o [logg] gzip XML files by default and add option -a no-gzip
 o [logg] Don't nest classes in output (for SWIG use)
@@ -7,7 +8,6 @@ o [logg] Make d available to user
 o [logg] Add vector constants
 o [logg] Add projections: pi = Projection(finiteelement)
 o [logg] Make dofmap.py and interpolation.py less DOLFIN specific
-o [logg] Put stuff in arrays and use BLAS
 o [logg] Display flop count
 o [logg] Change *(1.0/c) to /c
 o [logg] Boundary integrals: *ds

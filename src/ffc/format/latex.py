@@ -1,7 +1,7 @@
 "LaTeX output format."
 
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-10-14 -- 2005-10-03"
+__date__ = "2004-10-14 -- 2005-10-07"
 __copyright__ = "Copyright (c) 2004, 2005 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -18,7 +18,7 @@ format = { "sum": lambda l: " + ".join(l),
            "constant": lambda j: "c%d" % j,
            "coefficient": lambda j, k: "w_{%d%d}" % (j + 1, k + 1),
            "transform": lambda j, k: "\\frac{\\partial X_{%d}}{\\partial x_{%d}}" % (j + 1, k + 1),
-           "reference tensor" : lambda j, i, a: "not defined",
+           "reference tensor" : lambda j, i, a: None,
            "geometry tensor": lambda j, a: "G_{K,%d}^{%s}" % (j + 1, ",".join(["%d" % (index + 1) for index in a])),
            "element tensor": lambda i, k: "A^K_{%s}" % "".join(["%d" % (index + 1) for index in i]) }
 
