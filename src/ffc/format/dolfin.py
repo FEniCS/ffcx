@@ -38,6 +38,8 @@ def write(forms, options):
     "Generate code for DOLFIN format."
     print "\nGenerating output for DOLFIN"
 
+    print options
+
     # Get name of form
     name = forms[0].name
 
@@ -363,6 +365,8 @@ def __eval_interior(form, options):
 def __eval_interior_default(form, options):
     "Generate function eval() for DOLFIN, interior part (default version)."
     output = ""
+
+    print "number of aK: " + str(len(form.AKi.aK))
     
     if not options["debug-no-geometry-tensor"]:
         output += """\

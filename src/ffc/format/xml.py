@@ -76,10 +76,11 @@ def __form(file, form, name):
             # Extract data for term
             sig = term.signature()
             A0 = term.A0
+            GK = term.GKs[0] # pick first, all should be the same
             rank_a = A0.rank
-            rank_g = term.GKs[0].rank
-            size_a = len(form.AKi.aK)
-            size_g = len(form.AKi.gK)
+            rank_g = GK.rank
+            size_a = len(A0.i.indices)
+            size_g = len(GK.a.indices)
 
             # Write data for term
             file.write("""\
