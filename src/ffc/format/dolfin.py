@@ -38,8 +38,6 @@ def write(forms, options):
     "Generate code for DOLFIN format."
     print "\nGenerating output for DOLFIN"
 
-    print options
-
     # Get name of form
     name = forms[0].name
 
@@ -366,8 +364,6 @@ def __eval_interior_default(form, options):
     "Generate function eval() for DOLFIN, interior part (default version)."
     output = ""
 
-    print "number of aK: " + str(len(form.AKi.aK))
-    
     if not options["debug-no-geometry-tensor"]:
         output += """\
     // Compute geometry tensors
@@ -399,7 +395,7 @@ def __eval_interior_blas(form, options):
     // Compute entries of G multiplied by nonzero entries of A
 %s
 """ % ("".join(["    blas.Gi[%d] = %s;\n" % (j, form.AKi.gK[j].value)
-                for j in range(len(form.AKi.gK)) if form.AKi.gK[j].used]))
+                for j in range(len(form.AKi.gK))]))
 
     # Compute element tensor
     if not options["debug-no-element-tensor"]:
@@ -452,7 +448,7 @@ def __eval_boundary_blas(form, options):
     // Compute entries of G multiplied by nonzero entries of A
 %s
 """ % ("".join(["    blas.Gb[%d] = %s;\n" % (j, form.AKb.gK[j].value)
-                for j in range(len(form.AKb.gK)) if form.AKb.gK[j].used]))
+                for j in range(len(form.AKb.gK))]))
 
     # Compute element tensor
     if not options["debug-no-element-tensor"]:

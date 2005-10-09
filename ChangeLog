@@ -1,3 +1,4 @@
+ - Only generate declarations that are needed according to format
  - Check for missing options and add missing default options
  - Simplify usage of FFC as Python module: from ffc import *
  - Fix bug in division with constants
