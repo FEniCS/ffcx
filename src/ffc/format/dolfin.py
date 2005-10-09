@@ -31,6 +31,8 @@ def init(options):
     # Don't generate code for element tensor in BLAS mode
     if options["blas"]:
         format["element tensor"] = lambda i, k: None
+    else:
+        format["element tensor"] = lambda i, k: "block[%d]" % k
 
     return
 
