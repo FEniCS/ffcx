@@ -11,5 +11,5 @@ which for Debian users is available with the python-dev package.
 Other dependencies are listed in the file README.
 
 For detailed installation instructions, see the FFC user manual which is 
-available on http://www.fenics.org/doc/ and also in the subdirectory
+available on http://www.fenics.org/docs/ and also in the subdirectory
 doc/manual/ of this source tree.
