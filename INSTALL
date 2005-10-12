@@ -8,3 +8,8 @@ probably in /usr/lib/python2.4/site-packages/.
 
 The installation script requires the Python module distutils,
 which for Debian users is available with the python-dev package.
+Other dependencies are listed in the file README.
+
+For detailed installation instructions, see the FFC user manual which is 
+available on http://www.fenics.org/doc/ and also in the subdirectory
+doc/manual/ of this source tree.
