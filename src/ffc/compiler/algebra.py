@@ -63,6 +63,10 @@ class Element:
         "Operator: Element * Element"
         if isinstance(other, Element):
             return Sum(self) * other
+        elif isinstance(other, float):
+            return Sum(self) * other
+        elif isinstance(other, int):
+            return Sum(self) * float(other)
         elif Numeric.rank(other) > 0:
             return [self*v for v in other]
         else:
