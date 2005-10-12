@@ -48,7 +48,9 @@ cp -R $FILES $DISTDIR
 # Remove unecessary files
 REMOVE1=`find $DISTDIR | grep CVS`
 REMOVE2=`find $DISTDIR -name '*~'`
-REMOVE="$REMOVE1 $REMOVE2"
+REMOVE3=`find $DISTDIR/src/demo -name '*.h'`
+REMOVE4=`find $DISTDIR/src/demo -name '*.py'`
+REMOVE="$REMOVE1 $REMOVE2 $REMOVE3 $REMOVE4"
 rm -rf $REMOVE
 
 # Create the archive
@@ -61,7 +63,7 @@ echo 'Removing temporary directory'
 rm -rf $DISTDIR
 
 # Copy archive and files to web page
-scp $TARBALL fenics@fenics.org:www.fenics.org/pub/software/ffc/v0.1
+scp $TARBALL fenics@fenics.org:www.fenics.org/pub/software/ffc/v0.2
 scp ChangeLog fenics@fenics.org:www.fenics.org/pub/software/ffc/
 scp TODO fenics@fenics.org:www.fenics.org/pub/software/ffc/
 
