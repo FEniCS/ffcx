@@ -28,15 +28,11 @@ format = { "sum": lambda l: " + ".join(l),
 def init(options):
     "Initialize code generation for DOLFIN format."
 
-    # This is disabled for now (which means it will take longer to
-    # compile in BLAS mode). Need to generate code for element tensor
-    # in BLAS mode so that we can check which entries of the geometry
-    # tensor we need to compute.
-    #
-    # Don't generate code for element
-    # tensor in BLAS mode #if options["blas"]: format["element
-    # tensor"] = lambda i, k: None #else: format["element tensor"] =
-    # lambda i, k: "block[%d]" % k
+    # Don't generate code for element tensor in BLAS mode
+    if options["blas"]:
+        format["element tensor"] = lambda i, k: None
+    else:
+        format["element tensor"] = lambda i, k: "block[%d]" % k
 
     return
 
