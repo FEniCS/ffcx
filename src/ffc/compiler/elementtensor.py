@@ -1,6 +1,6 @@
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-11-06 -- 2005-10-07"
-__copyright__ = "Copyright (c) 2004 Anders Logg"
+__date__ = "2004-11-06 -- 2005-10-13"
+__copyright__ = "Copyright (c) 2004, 2005 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # Python modules
@@ -63,10 +63,10 @@ class ElementTensor:
         self.a0 = self.__compute_reference_tensor(format)
 
         # Compute element tensor declarations
-        gK_used = Set()
-        self.aK = self.__compute_element_tensor(format, gK_used)
+        self.aK = self.__compute_element_tensor(format)
 
         # Compute geometry tensor declarations
+        gK_used = self.__check_used(format)
         self.gK = self.__compute_geometry_tensor(format, gK_used)
 
         return
@@ -110,7 +110,7 @@ class ElementTensor:
 
         return declarations
 
-    def __compute_element_tensor(self, format, gK_used):
+    def __compute_element_tensor(self, format):
         """Precompute element tensor, including optimizations. This is
         where any FErari optimization should be done."""
         debug("Generating code for element tensor", 1)
@@ -141,7 +141,6 @@ class ElementTensor:
                             value = format.format["sum"]([value, format.format["multiplication"]([format.format["floating point"](a0), gk])])
                         else:
                             value = format.format["multiplication"]([format.format["floating point"](a0), gk])
-                        gK_used.add(gk)
                     else:
                         num_dropped += 1
             value = value or format.format["floating point"](0.0)
@@ -149,6 +148,25 @@ class ElementTensor:
             k += 1
         debug("Number of zeros dropped from reference tensor: " + str(num_dropped), 1)
         return declarations
+
+    def __check_used(self, format):
+        """Check which declarations of gK are actually used, i.e,
+        which entries of the geometry tensor that get multiplied with
+        nonzero entries of the reference tensor."""
+        gK_used = Set()
+        if not self.terms or format.format["geometry tensor"](0, []) == None: return []
+        iindices = self.terms[0].A0.i.indices # All primary ranks are equal
+        for i in iindices:
+            for j in range(len(self.terms)):
+                A0 = self.terms[j].A0
+                if A0.a.indices: aindices = A0.a.indices
+                else: aindices = [[]]
+                for a in aindices:
+                    a0 = A0(i, a)
+                    gk = format.format["geometry tensor"](j, a)
+                    if abs(a0) > FFC_EPSILON:
+                        gK_used.add(gk)
+        return gK_used
 
     def __check_integrals(self, sum):
         "Check that all terms have integrals."

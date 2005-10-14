@@ -1,7 +1,7 @@
 "DOLFIN output format."
 
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-10-14 -- 2005-10-07"
+__date__ = "2004-10-14 -- 2005-10-13"
 __copyright__ = "Copyright (c) 2004, 2005 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -28,11 +28,15 @@ format = { "sum": lambda l: " + ".join(l),
 def init(options):
     "Initialize code generation for DOLFIN format."
 
-    # Don't generate code for element tensor in BLAS mode
-    if options["blas"]:
-        format["element tensor"] = lambda i, k: None
-    else:
-        format["element tensor"] = lambda i, k: "block[%d]" % k
+    # This is disabled for now (which means it will take longer to
+    # compile in BLAS mode). Need to generate code for element tensor
+    # in BLAS mode so that we can check which entries of the geometry
+    # tensor we need to compute.
+    #
+    # Don't generate code for element
+    # tensor in BLAS mode #if options["blas"]: format["element
+    # tensor"] = lambda i, k: None #else: format["element tensor"] =
+    # lambda i, k: "block[%d]" % k
 
     return
 
@@ -397,7 +401,7 @@ def __eval_interior_blas(form, options):
     // Compute entries of G multiplied by nonzero entries of A
 %s
 """ % ("".join(["    blas.Gi[%d] = %s;\n" % (j, form.AKi.gK[j].value)
-                for j in range(len(form.AKi.gK))]))
+                for j in range(len(form.AKi.gK)) if form.AKi.gK[j].used]))
 
     # Compute element tensor
     if not options["debug-no-element-tensor"]:
@@ -450,7 +454,7 @@ def __eval_boundary_blas(form, options):
     // Compute entries of G multiplied by nonzero entries of A
 %s
 """ % ("".join(["    blas.Gb[%d] = %s;\n" % (j, form.AKb.gK[j].value)
-                for j in range(len(form.AKb.gK))]))
+                for j in range(len(form.AKb.gK)) if form.AKb.gK[j].used]))
 
     # Compute element tensor
     if not options["debug-no-element-tensor"]:
