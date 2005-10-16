@@ -1,7 +1,7 @@
 "DOLFIN output format."
 
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-10-14 -- 2005-10-13"
+__date__ = "2004-10-14 -- 2005-10-16"
 __copyright__ = "Copyright (c) 2004, 2005 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -391,8 +391,8 @@ def __eval_interior_blas(form, options):
     if not options["debug-no-geometry-tensor"]:
         output += """\
     // Reset geometry tensors
-    for (unsigned int i = 0; i < blas.nb; i++)
-      blas.Gb[i] = 0.0;
+    for (unsigned int i = 0; i < blas.ni; i++)
+      blas.Gi[i] = 0.0;
 
     // Compute entries of G multiplied by nonzero entries of A
 %s

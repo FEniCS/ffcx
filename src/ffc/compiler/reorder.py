@@ -13,6 +13,7 @@ import sys
 
 # FFC common modules
 sys.path.append("../../")
+from ffc.common.debug import *
 from ffc.common.exceptions import *
 from ffc.common.util import permutations
 
@@ -37,6 +38,8 @@ def reorder_indices(sum):
         p = sum.products[i]
         p_soft = compute_soft_signature(p)
         p_hard = compute_hard_signature(p)
+        debug("Soft signature: " + p_soft, 1)
+        debug("Hard signature: " + p_hard, 1)
 
         # Compare term i against term j for j > i
         for j in range(i + 1, len(sum.products)):
