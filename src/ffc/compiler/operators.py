@@ -2,9 +2,11 @@
 based on the basic form algebra operations."""
 
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2005-09-07 -- 2005-09-25"
+__date__ = "2005-09-07 -- 2005-10-24"
 __copyright__ = "Copyright (c) 2005 Anders Logg"
 __license__  = "GNU GPL Version 2"
+
+# Modified by Ola Skavhaug, 2005
 
 # Python modules
 import sys
@@ -42,13 +44,20 @@ def vec(v):
     # Check if we already have a vector
     if isinstance(v, list):
         return v
-    # Check that function is vector-valued
-    if not rank(v) == 1:
-        raise FormError, (v, "Cannot create vector from scalar expression.")
-    # Get vector dimension
-    n = __tensordim(v, 0)
-    # Create list of scalar components
-    return [v[i] for i in range(n)]
+    # Check if we have an element of the algebra
+    if isinstance(v, Element):
+        # Check that we have a vector
+        if not rank(v) == 1:
+            raise FormError, (v, "Cannot create vector from scalar expression.")
+        # Get vector dimension
+        n = __tensordim(v, 0)
+        # Create list of scalar components
+        return [v[i] for i in range(n)]        
+    # Let Numeric handle the conversion
+    if isinstance(v, Numeric.ArrayType) and len(v.shape) == 1:
+        return v.tolist()
+    # Unable to find a proper conversion
+    raise FormError, (v, "Unable to convert given expression to a vector,")
 
 def dot(v, w):
     "Return scalar product of given functions."
@@ -90,8 +99,17 @@ def transp(v):
 
 def mult(v, w):
     "Compute matrix-matrix product of given matrices."
-    # Let Numeric handle the product."
-    return Numeric.multiply(v, w)
+    # First, convert to Numeric.array (safe for both array and list arguments)
+    vv = Numeric.array(v);
+    ww = Numeric.array(w)
+    if len(vv.shape) == len(ww.shape) == 1:
+        # Vector times vector
+        return Numeric.multiply(vv, ww) 
+    elif len(vv.shape) == 2 and (len(ww.shape) == 1 or len(ww.shape) == 2):
+        # Matvec or matmat product, use matrixmultiply instead
+        return Numeric.matrixmultiply(vv, ww)
+    else:
+        raise FormError, ((v, w), "Dimensions don't match for multiplication.")
 
 def D(v, i):
     "Return derivative of v in given coordinate direction."
@@ -201,4 +219,4 @@ if __name__ == "__main__":
     print dot(rot(V), rot(U))
     print div(grad(dot(rot(V), U)))*dx
     print cross(V, U)
-    print trace(mult(I(len(V)), grad(V)))
+    print trace(mult(Identity(len(V)), grad(V)))
