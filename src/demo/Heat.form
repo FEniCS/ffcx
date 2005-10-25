@@ -15,5 +15,5 @@ c  = Function(element)      # Heat conductivity
 f  = Function(element)      # Heat source
 k  = Constant()             # Time step
 
-a = u1*v*dx + k*c*dot(grad(u1), grad(v))*dx
-L = u0*v*dx + k*f*v*dx
+a = v*u1*dx + k*c*dot(grad(v), grad(u1)*dx
+L = v*u0*dx + k*v*f*dx

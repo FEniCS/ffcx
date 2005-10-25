@@ -12,5 +12,5 @@ v = BasisFunction(element)
 u = BasisFunction(element)
 f = Function(element)
 
-a = dot(grad(u), grad(v))*dx
-L = dot(f, v)*dx
+a = dot(grad(v), grad(u))*dx
+L = dot(v, f)*dx
