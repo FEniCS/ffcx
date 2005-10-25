@@ -1,7 +1,7 @@
 "A simple parser for FFC."
 
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-11-15 -- 2005-09-28"
+__date__ = "2004-11-15 -- 2005-10-24"
 __copyright__ = "Copyright (c) 2004, 2005 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -28,6 +28,7 @@ name = "%s"
 
 a = None
 L = None
+M = None
     
 dx = Integral("interior")
 ds = Integral("boundary")
@@ -41,7 +42,7 @@ n = Index()
 
 %s
 
-compile([a, L], name, \"%s\", %s)
+compile([a, L, M], name, \"%s\", %s)
 """ % (prefix, input, language, options)
 
     # Write output
