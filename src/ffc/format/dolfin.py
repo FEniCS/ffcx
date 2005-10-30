@@ -1,12 +1,13 @@
 "DOLFIN output format."
 
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-10-14 -- 2005-10-16"
+__date__ = "2004-10-14 -- 2005-10-30"
 __copyright__ = "Copyright (c) 2004, 2005 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # FFC common modules
 from ffc.common.constants import *
+from ffc.common.util import *
 
 # FFC format modules
 import xml
@@ -122,7 +123,7 @@ def __file_header(name, options):
 
 namespace dolfin { namespace %s {
 
-""" % (FFC_VERSION, license, __capall(name), __capall(name), blasinclude, name)
+""" % (FFC_VERSION, license, capall(name), capall(name), blasinclude, name)
 
 def __file_footer():
     "Generate file footer for DOLFIN."
@@ -460,7 +461,3 @@ def __eval_boundary_blas(form, options):
 """
 
     return output
-
-def __capall(s):
-    "Return a string in which all characters are capitalized."
-    return "".join([c.capitalize() for c in s])

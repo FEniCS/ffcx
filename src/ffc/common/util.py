@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2005-02-04 -- 2005-09-07"
+__date__ = "2005-02-04 -- 2005-10-30"
 __copyright__ = "Copyright (c) 2005 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -21,6 +21,10 @@ def permutations(l):
         for p in permutations(other):
             yield [pivot] + p
     return
+
+def capall(s):
+    "Return a string in which all characters are capitalized."
+    return "".join([c.capitalize() for c in s])
 
 if __name__ == "__main__":
 
