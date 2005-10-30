@@ -26,7 +26,20 @@ def capall(s):
     "Return a string in which all characters are capitalized."
     return "".join([c.capitalize() for c in s])
 
+def indent(s, n):
+    "Indent each row of the given string s with n spaces."
+    indentation = "".join([" " for i in range(n)])
+    return indentation + ("\n" + indentation).join(s.split("\n"))
+
 if __name__ == "__main__":
 
     for p in permutations([0, 1, 2, 3]):
         print p
+
+    text = """\
+logg@galerkin:~/work/src/fenics/ffc/ffc/src/ffc/common# ls
+constants.py   debug.py       exceptions.pyc  progress.py   util.py
+constants.pyc  debug.pyc      __init__.py     progress.pyc  util.py.~1.2.~
+CVS            exceptions.py  __init__.pyc    #util.py#     util.pyc"""
+    print text
+    print indent(text, 2)
