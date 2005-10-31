@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2005-02-04 -- 2005-09-26"
+__date__ = "2005-02-04 -- 2005-10-30"
 __copyright__ = "Copyright (c) 2005 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -21,6 +21,6 @@ def level(newlevel):
     global __level
     __level = newlevel
 
-def indent(increment = 1):
-    global __indent
-    __indent += increment
+#def indent(increment = 1):
+#    global __indent
+#    __indent += increment

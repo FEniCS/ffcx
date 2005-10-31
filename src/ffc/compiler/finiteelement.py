@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-10-04 -- 2005-09-19"
+__date__ = "2004-10-04 -- 2005-10-30"
 __copyright__ = "Copyright (c) 2004, 2005 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -19,7 +19,7 @@ from ffc.common.debug import *
 from dofmap import *
 from pointmap import *
 from vertexeval import *
-from mixedelement import *
+import mixedelement
 
 shape_to_string = { LINE: "Line", TRIANGLE: "Triangle", TETRAHEDRON: "Tetrahedron" }
 string_to_shape = { "Line": LINE, "Triangle": TRIANGLE, "Tetrahedron": TETRAHEDRON }
@@ -138,9 +138,9 @@ class FiniteElement:
     def __add__(self, other):
         "Create mixed element."
         if isinstance(other, FiniteElement):
-            return MixedElement([self, other])
-        elif isinstance(other, MixedElement):
-            return MixedElement([self] + other.elements)
+            return mixedelement.MixedElement([self, other])
+        elif isinstance(other, mixedelement.MixedElement):
+            return mixedelement.MixedElement([self] + other.elements)
         else:
             raise RuntimeError, "Unable to create mixed element from given object: " + str(other)
 

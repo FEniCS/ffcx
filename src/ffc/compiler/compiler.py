@@ -3,7 +3,7 @@ and building the data structures (geometry and reference tensors) for
 the evaluation of the multi-linear form."""
 
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-11-17 -- 2005-09-29"
+__date__ = "2004-11-17 -- 2005-10-30"
 __copyright__ = "Copyright (c) 2004, 2005 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -31,6 +31,7 @@ from operators import *
 from signature import *
 from elementsearch import *
 from finiteelement import *
+from mixedelement import *
 from elementtensor import *
 
 def compile(sums, name = "Form", language = FFC_LANGUAGE, options = FFC_OPTIONS):

@@ -9,6 +9,11 @@ __license__  = "GNU GPL Version 2"
 from ffc.common.constants import *
 from ffc.common.util import *
 
+# FFC compiler modules
+from ffc.compiler.mixedelement import *
+
+#from ffc.compiler.finiteelement import *
+
 # FFC format modules
 import xml
 
@@ -155,87 +160,93 @@ def __element(element, name):
 
     # Generate code for initialization of tensor dimensions
     if element.rank() > 0:
-        diminit = "      tensordims = new unsigned int [%d];\n" % element.rank()
+        diminit = "    tensordims = new unsigned int [%d];\n" % element.rank()
         for j in range(element.rank()):
-            diminit += "      tensordims[%d] = %d;\n" % (j, element.tensordim(j))
+            diminit += "    tensordims[%d] = %d;\n" % (j, element.tensordim(j))
     else:
-        diminit = "      // Do nothing\n"
+        diminit = "    // Do nothing\n"
 
     # Generate code for tensordim function
     if element.rank() > 0:
-        tensordim = "dolfin_assert(i < %d);\n      return tensordims[i];" % element.rank()
+        tensordim = "dolfin_assert(i < %d);\n    return tensordims[i];" % element.rank()
     else:
-        tensordim = 'dolfin_error("Element is scalar.");\n      return 0;'
+        tensordim = 'dolfin_error("Element is scalar.");\n    return 0;'
 
     # Generate code for dofmap()
     dofmap = ""
     for declaration in element.dofmap.declarations:
-        dofmap += "      %s = %s;\n" % (declaration.name, declaration.value)
+        dofmap += "    %s = %s;\n" % (declaration.name, declaration.value)
     
     # Generate code for pointmap()
     pointmap = ""
     for declaration in element.pointmap.declarations:
-        pointmap += "      %s = %s;\n" % (declaration.name, declaration.value)
+        pointmap += "    %s = %s;\n" % (declaration.name, declaration.value)
 
     # Generate code for vertexeval()
     vertexeval = ""
     for declaration in element.vertexeval.declarations:
-        vertexeval += "      %s = %s;\n" % (declaration.name, declaration.value)
+        vertexeval += "    %s = %s;\n" % (declaration.name, declaration.value)
+
+    # Generate code for sub elements of mixed elements
+    subelements = ""
+    if isinstance(element, MixedElement):
+        for i in range(len(element.elements)):
+            subelements += __element(element.elements[i], "SubElement_%d" % i)
     
     # Generate output
-    return """\
-    
-  class %s : public dolfin::FiniteElement
+    output = """\
+
+class %s : public dolfin::FiniteElement
+{
+public:
+
+  %s() : dolfin::FiniteElement(), tensordims(0)
   {
-  public:
+%s  }
 
-    %s() : dolfin::FiniteElement(), tensordims(0)
-    {
-%s    }
+  ~%s()
+  {
+    if ( tensordims ) delete [] tensordims;
+  }
 
-    ~%s()
-    {
-      if ( tensordims ) delete [] tensordims;
-    }
+  inline unsigned int spacedim() const
+  {
+    return %d;
+  }
 
-    inline unsigned int spacedim() const
-    {
-      return %d;
-    }
+  inline unsigned int shapedim() const
+  {
+    return %d;
+  }
 
-    inline unsigned int shapedim() const
-    {
-      return %d;
-    }
+  inline unsigned int tensordim(unsigned int i) const
+  {
+    %s
+  }
 
-    inline unsigned int tensordim(unsigned int i) const
-    {
-      %s
-    }
+  inline unsigned int rank() const
+  {
+    return %d;
+  }
 
-    inline unsigned int rank() const
-    {
-      return %d;
-    }
+  void dofmap(int dofs[], const Cell& cell, const Mesh& mesh) const
+  {
+%s  }
 
-    void dofmap(int dofs[], const Cell& cell, const Mesh& mesh) const
-    {
-%s    }
+  void pointmap(Point points[], unsigned int components[], const AffineMap& map) const
+  {
+%s  }
 
-    void pointmap(Point points[], unsigned int components[], const AffineMap& map) const
-    {
-%s    }
+  void vertexeval(real values[], unsigned int vertex, const Vector& x, const Mesh& mesh) const
+  {
+    // FIXME: Temporary fix for Lagrange elements
+%s  }
 
-    void vertexeval(real values[], unsigned int vertex, const Vector& x, const Mesh& mesh) const
-    {
-      // FIXME: Temporary fix for Lagrange elements
-%s    }
+private:
+%s
+  unsigned int* tensordims;
 
-  private:
-
-    unsigned int* tensordims;
-
-  };
+};
 """ % (name, name,
        diminit,
        name,
@@ -245,7 +256,10 @@ def __element(element, name):
        element.rank(),
        dofmap,
        pointmap,
-       vertexeval)
+       vertexeval,
+       subelements)
+
+    return indent(output, 2)
 
 def __form(form, type, options, xmlfile):
     "Generate form for DOLFIN."
