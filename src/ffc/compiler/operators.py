@@ -2,7 +2,7 @@
 based on the basic form algebra operations."""
 
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2005-09-07 -- 2005-10-24"
+__date__ = "2005-09-07 -- 2005-10-30
 __copyright__ = "Copyright (c) 2005 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -100,8 +100,11 @@ def transp(v):
 def mult(v, w):
     "Compute matrix-matrix product of given matrices."
     # First, convert to Numeric.array (safe for both array and list arguments)
-    vv = Numeric.array(v);
+    vv = Numeric.array(v)
     ww = Numeric.array(w)
+    if len(vv.shape) == 0 or len(ww.shape) == 0:
+        # One argument is a scalar
+        return vv*ww
     if len(vv.shape) == len(ww.shape) == 1:
         # Vector times vector
         return Numeric.multiply(vv, ww) 
