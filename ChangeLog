@@ -1,3 +1,4 @@
+ - Generate code for sub elements of mixed elements
  - Add new test form: TensorWeighteLaplacian
  - Add new test form: EnergyNorm
  - Fix bugs in mult() and vec() (skavhaug)

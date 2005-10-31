@@ -1,7 +1,7 @@
 "DOLFIN output format."
 
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-10-14 -- 2005-10-30"
+__date__ = "2004-10-14 -- 2005-10-31"
 __copyright__ = "Copyright (c) 2004, 2005 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -164,8 +164,16 @@ def __element(element, name):
         for j in range(element.rank()):
             diminit += "    tensordims[%d] = %d;\n" % (j, element.tensordim(j))
     else:
-        diminit = "    // Do nothing\n"
+        diminit = "    // Element is scalar, don't need to initialize tensordims\n"
 
+    # Generate code for initializaton of sub elements
+    if isinstance(element, MixedElement):
+        elementinit = "    subelements = new FiniteElement* [%d];\n" % len(element.elements)
+        for j in range(len(element.elements)):
+            elementinit += "    subelements[%d] = new SubElement_%d();\n" % (j, j)
+    else:
+        elementinit = "    // Element is simple, don't need to initialize subelements\n"
+        
     # Generate code for tensordim function
     if element.rank() > 0:
         tensordim = "dolfin_assert(i < %d);\n    return tensordims[i];" % element.rank()
@@ -187,6 +195,14 @@ def __element(element, name):
     for declaration in element.vertexeval.declarations:
         vertexeval += "    %s = %s;\n" % (declaration.name, declaration.value)
 
+    # Generate code for operator[] and compute elementdim
+    if isinstance(element, MixedElement):
+        indexoperator = "    return subelements[i];\n"
+        elementdim = len(element.elements)
+    else:
+        indexoperator = "    return *this;\n"
+        elementdim = 1
+
     # Generate code for sub elements of mixed elements
     subelements = ""
     if isinstance(element, MixedElement):
@@ -200,13 +216,20 @@ class %s : public dolfin::FiniteElement
 {
 public:
 
-  %s() : dolfin::FiniteElement(), tensordims(0)
+  %s() : dolfin::FiniteElement(), tensordims(0), subelements(0)
   {
+%s
 %s  }
 
   ~%s()
   {
     if ( tensordims ) delete [] tensordims;
+    if ( subelements )
+    {
+      for (unsigned int i = 0; i < elementdim(); i++)
+        delete subelements[i];
+      delete [] subelements;
+    }
   }
 
   inline unsigned int spacedim() const
@@ -222,6 +245,11 @@ public:
   inline unsigned int tensordim(unsigned int i) const
   {
     %s
+  }
+
+  inline unsigned int elementdim() const
+  {
+    return %d;
   }
 
   inline unsigned int rank() const
@@ -242,21 +270,29 @@ public:
     // FIXME: Temporary fix for Lagrange elements
 %s  }
 
+  const FiniteElement& operator[] (unsigned int i) const
+  {
+%s  }
+  
 private:
 %s
   unsigned int* tensordims;
+  FiniteElement** subelements;
 
 };
 """ % (name, name,
        diminit,
+       elementinit,
        name,
        element.spacedim(),
        element.shapedim(),
        tensordim,
+       elementdim,
        element.rank(),
        dofmap,
        pointmap,
        vertexeval,
+       indexoperator,
        subelements)
 
     return indent(output, 2)

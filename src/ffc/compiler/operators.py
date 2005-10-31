@@ -2,7 +2,7 @@
 based on the basic form algebra operations."""
 
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2005-09-07 -- 2005-10-30
+__date__ = "2005-09-07 -- 2005-10-30"
 __copyright__ = "Copyright (c) 2005 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
