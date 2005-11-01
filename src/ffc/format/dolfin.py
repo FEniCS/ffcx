@@ -1,7 +1,7 @@
 "DOLFIN output format."
 
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-10-14 -- 2005-10-31"
+__date__ = "2004-10-14 -- 2005-11-01"
 __copyright__ = "Copyright (c) 2004, 2005 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -197,7 +197,7 @@ def __element(element, name):
 
     # Generate code for operator[] and compute elementdim
     if isinstance(element, MixedElement):
-        indexoperator = "    return subelements[i];\n"
+        indexoperator = "    return *subelements[i];\n"
         elementdim = len(element.elements)
     else:
         indexoperator = "    return *this;\n"

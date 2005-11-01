@@ -1,5 +1,5 @@
 __author__ = "Robert C. Kirby (kirby@cs.uchicago.edu) and Anders Logg (logg@tti-c.org)"
-__date__ = "2005-05-03 -- 2005-09-26"
+__date__ = "2005-05-03 -- 2005-11-01"
 __copyright__ = "Copyright (c) 2005 Kirby/Logg"
 __license__  = "GNU GPL Version 2"
 
