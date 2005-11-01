@@ -1,3 +1,4 @@
+ - Bug fix for higher order mixed elements: declaration of edge/face_ordering
  - Generate code for sub elements of mixed elements
  - Add new test form: TensorWeighteLaplacian
  - Add new test form: EnergyNorm

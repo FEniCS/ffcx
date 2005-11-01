@@ -1,6 +1,5 @@
 o [logg] Optionally generate pair of .h and .cpp files?
 o [logg] Generate loops for geometry tensor in BLAS mode?
-o [logg] Generate code for sub elements of mixed elements
 o [logg] Write about division with Constant in manual
 o [logg] gzip XML files by default and add option -a no-gzip
 o [logg] Don't nest classes in output (for SWIG use)
