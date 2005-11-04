@@ -116,7 +116,7 @@ class ElementTensor:
         debug("Generating code for element tensor", 1)
         if not self.terms or format.format["element tensor"](0, 0) == None: return []
         declarations = []
-        iindices = self.terms[0].A0.i.indices # All primary ranks are equal
+        iindices = self.terms[0].A0.i.indices or [[]] # All primary ranks are equal
         k = 0 # Update counter for each entry of A0, which is needed for some formats
         num_dropped = 0
         for i in iindices:
@@ -155,7 +155,7 @@ class ElementTensor:
         nonzero entries of the reference tensor."""
         gK_used = Set()
         if not self.terms or format.format["geometry tensor"](0, []) == None: return []
-        iindices = self.terms[0].A0.i.indices # All primary ranks are equal
+        iindices = self.terms[0].A0.i.indices or [[]] # All primary ranks are equal
         for i in iindices:
             for j in range(len(self.terms)):
                 A0 = self.terms[j].A0

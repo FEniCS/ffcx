@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-11-03 -- 2005-09-26"
+__date__ = "2004-11-03 -- 2005-11-03"
 __copyright__ = "Copyright (c) 2004 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -98,7 +98,7 @@ class ReferenceTensor:
         "Compute reference tensor."
 
         # Make sure that the iteration is not empty
-        iindices = self.i.indices
+        iindices = self.i.indices or [[]]
         aindices = self.a.indices or [[]]
         bindices = self.b.indices or [[]]
 
