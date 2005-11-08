@@ -10,8 +10,9 @@ import Numeric
 from ffc.common.debug import *
 
 # FFC compiler modules
-import algebra
+#import algebra
 import finiteelement
+from algebra import *
 from dofmap import *
 from pointmap import *
 from vertexeval import *
@@ -21,7 +22,7 @@ def BasisFunctions(element):
     if not isinstance(element, MixedElement):
         raise RuntimeError, "Basis function tuple must be created from mixed element."
     # Create basis function for mixed element
-    vector = algebra.BasisFunction(element)
+    vector = BasisFunction(element)
     # Pick components/subvectors of the mixed basis function
     subvectors = []
     offset = 0
