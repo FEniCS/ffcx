@@ -35,7 +35,7 @@ from ffc.common.debug import *
 from ffc.common.util import *
 
 # FFC compiler modules
-from finiteelement import FiniteElement
+#from finiteelement import FiniteElement
 from tokens import *
 from index import Index
 

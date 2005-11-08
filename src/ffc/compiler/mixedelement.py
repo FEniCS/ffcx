@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2005-09-16 -- 2005-09-22"
+__date__ = "2005-09-16 -- 2005-11-07"
 __copyright__ = "Copyright (c) 2005 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -11,7 +11,8 @@ from ffc.common.debug import *
 
 # FFC compiler modules
 #import algebra
-import finiteelement
+#import finiteelement
+#import algebra
 from algebra import *
 from dofmap import *
 from pointmap import *
