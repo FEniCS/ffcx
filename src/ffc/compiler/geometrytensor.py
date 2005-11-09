@@ -82,9 +82,9 @@ class GeometryTensor:
         factors = []
         for c in self.constants:
             if c.inverted:
-                factors += ["(1.0/" + format.format["constant"](c.n1.index) + ")"]
+                factors += ["(1.0/" + format.format["constant"](c.number.index) + ")"]
             else:
-                factors += [format.format["constant"](c.n1.index)]
+                factors += [format.format["constant"](c.number.index)]
         for c in self.coefficients:
             if not c.index.type == aux:
                 factors += [format.format["coefficient"](c.n1.index, c.index([], a, [], []))]

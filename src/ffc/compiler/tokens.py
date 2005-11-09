@@ -33,7 +33,7 @@ class Coefficient:
             self.e0 = function.e0
             self.e1 = function.e1
             self.P  = function.P
-            self.index = function.index
+            self.index = Index(function.index)
         else:
             self.n0 = function.n0
             self.n1 = function.n1
@@ -45,7 +45,7 @@ class Coefficient:
 
     def __repr__(self):
         "Print nicely formatted representation of Coefficient."
-        return "w" + str(self.n0) + "_" + str(self.index)
+        return "w" + str(self.n1) + "_" + str(self.index)
 
     def indexcall(self, foo, args = None):
         "Call given function on all Indices."

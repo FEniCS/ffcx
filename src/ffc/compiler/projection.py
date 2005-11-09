@@ -110,6 +110,16 @@ class Projection:
                     for k in range(len(points)):
                         sum += weights[k] * vi[k] * vj[k]
                     Q[i][j] = sum
+        else:
+            for l in range(vectordim):
+                for i in range(m):
+                    vi = t1[l][0][dindex][i]
+                    for j in range(m):
+                        vj = t1[l][0][dindex][j]
+                        sum = 0.0
+                        for k in range(len(points)):
+                            sum += weights[k] * vi[k] * vj[k]
+                        Q[i][j] += sum
 
         # Compute matrix P = (v_i, w_j) for v_i in V_1 and w_j in V_0
         P = Numeric.zeros((m, n), Numeric.Float)
@@ -122,6 +132,16 @@ class Projection:
                     for k in range(len(points)):
                         sum += weights[k] * vi[k] * wj[k]
                     P[i][j] = sum
+        else:
+            for l in range(vectordim):
+                for i in range(m):
+                    vi = t1[l][0][dindex][i]
+                    for j in range(n):
+                        wj = t0[l][0][dindex][j]
+                        sum = 0.0
+                        for k in range(len(points)):
+                            sum += weights[k] * vi[k] * wj[k]
+                        P[i][j] += sum
 
         # Compute projection matrix Q^-1 P
         P = Numeric.matrixmultiply(LinearAlgebra.inverse(Q), P)
