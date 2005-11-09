@@ -5,8 +5,8 @@ starting at 0. This makes it simpler to implement the algebra, since
 the algebra doesn't need to keep track of indices."""
 
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-10-13"
-__copyright__ = "Copyright (c) 2004 Anders Logg"
+__date__ = "2004-10-13 -- 2005-11-08"
+__copyright__ = "Copyright (c) 2004, 2005 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # Python modules
@@ -32,6 +32,9 @@ def reassign_indices(sum):
 
     # Reassign Function indices (global for the Sum)
     __reassign(sum, "function")
+
+    # Reassign Projection indices (global for the Sum)
+    __reassign(sum, "projection")
 
     # Reassign Constant indices (global for the Sum)
     __reassign(sum, "constant")

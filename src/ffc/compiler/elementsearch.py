@@ -60,23 +60,16 @@ def find_trial(sum):
     return element
 
 def find_elements(sum, nfunctions):
-    """Return a tuple (elements, projections) consisting of a list of
-    FiniteElements associated with all Functions and a list of
-    corresponding projections, where projections[i] is the projection
-    matrix P from elements[i] to the space used in the representation
-    of the form."""
+    """Return a list of FiniteElements associated with the (original)
+    function spaces of the Functions appearing in the form."""
 
     # List of elements used for functions
     elements = [None for j in range(nfunctions)]
 
-    # List of corresponding projections
-    projections = [None for j in range(nfunctions)]
-
     # Iterate over all Coefficients in all Products
     for p in sum.products:
         for c in p.coefficients:
-            elements[c.number.index] = c.e0 or c.element
-            projections[c.number.index] = c.projection
+            elements[c.n0.index] = c.e0
 
     # Check that we found an element for each function
     for element in elements:
@@ -86,40 +79,26 @@ def find_elements(sum, nfunctions):
     if elements:
         debug("Finite elements for functions: " + str(elements), 0)
           
-    return (elements, projections)
+    return elements
 
-def compute_coefficients(elements, projections, format):
-    "Precompute declarations of coefficients according to given format."
+def find_projections(sum, nprojections):
+    """Return a list of tuples (n0, n1, e0, e1, P) defining the
+    projections of all Functions appearing in the form."""
 
-    declarations = []
+    # List of projections used for functions
+    projections = [None for j in range(nprojections)]
 
-    for j in range(len(elements)):
+    # Iterate over all Coefficients in all Products
+    for p in sum.products:
+        for c in p.coefficients:
+            projections[c.n1.index] = (c.n0.index, c.n1.index, c.e0, c.e1, c.P)
 
-        element = elements[j]
-        P = projections[j]
+    # Check that we found an element for each projection
+    for projection in projections:
+        if not projection:
+            raise FormError, (sum, "Unable to find a projection for each function.")
 
-        if P == None:
-            # No projection, just copy the values
-            for k in range(element.spacedim()):
-                name = format.format["coefficient"](j, k)
-                value = format.format["coefficient table"](j, k)
-                declarations += [Declaration(name, value)]
-        else:
-            # Compute projection
-            (m, n) = Numeric.shape(P)
-            for k in range(m):
-                terms = []
-                for l in range(n):
-                    if abs(P[k][l] < FFC_EPSILON):
-                        continue
-                    cl = format.format["coefficient table"](j, l)
-                    if abs(P[k][l] - 1.0) < FFC_EPSILON:
-                        terms += [cl]
-                    else:
-                        Pkl = format.format["floating point"](P[k][l])
-                        terms += [format.format["multiplication"]([Pkl, cl])]
-                name = format.format["coefficient"](j, k)
-                value = format.format["sum"](terms)
-                declarations += [Declaration(name, value)]
-
-    return declarations
+    #if projections:
+    #    debug("Projections for functions: " + str(projections), 0)
+          
+    return projections

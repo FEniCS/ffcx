@@ -71,7 +71,6 @@ class FiniteElement:
             elif name == "Vector Lagrange":
                 self.element = VectorLagrange(self.fiat_shape, degree, num_components)
             elif name == "Discontinuous Lagrange":
-                print "Warning: element untested"
                 self.element = DiscontinuousLagrange(self.fiat_shape, degree)
             elif name == "Discontinuous vector Lagrange":
                 print "Warning: element untested"

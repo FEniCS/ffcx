@@ -67,7 +67,7 @@ class GeometryTensor:
         # Check coefficients
         for c in self.coefficients:
             if c.index == index:
-                return c.element.spacedim()
+                return c.e1.spacedim()
         # Check transforms
         for t in self.transforms:
             if t.index0 == index or t.index1 == index:
@@ -82,12 +82,12 @@ class GeometryTensor:
         factors = []
         for c in self.constants:
             if c.inverted:
-                factors += ["(1.0/" + format.format["constant"](c.number.index) + ")"]
+                factors += ["(1.0/" + format.format["constant"](c.n1.index) + ")"]
             else:
-                factors += [format.format["constant"](c.number.index)]
+                factors += [format.format["constant"](c.n1.index)]
         for c in self.coefficients:
             if not c.index.type == aux:
-                factors += [format.format["coefficient"](c.number.index, c.index([], a, [], []))]
+                factors += [format.format["coefficient"](c.n1.index, c.index([], a, [], []))]
         for t in self.transforms:
             if not (t.index0.type == aux or  t.index1.type == aux):
                 factors += [format.format["transform"](t.index0([], a, [], []), \
@@ -101,7 +101,7 @@ class GeometryTensor:
             factors = []
             for c in self.coefficients:
                 if c.index.type == aux:
-                    factors += [format.format["coefficient"](c.number.index, c.index([], a, [], b))]
+                    factors += [format.format["coefficient"](c.n1.index, c.index([], a, [], b))]
             for t in self.transforms:
                 if t.index0.type == aux or t.index1.type == aux:
                     factors += [format.format["transform"](t.index0([], a, [], b), \

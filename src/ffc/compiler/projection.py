@@ -44,17 +44,17 @@ class Projection:
             raise FormError, (function, "Cannot compute projection of given expression.")
 
         # Check that we have not already computed the projection
-        if not function.projection == None:
+        if not function.P == None:
             raise FormError, (function, "Only one projection can be applied to each function.")
 
         # Compute the projection matrix
-        P = self.__compute_projection(function.element)
+        P = self.__compute_projection(function.e0)
 
         # Create new function and set projection
         f = Function(function)
-        f.element = self.element
-        f.projection = P
-        f.e0 = function.element
+        f.n1 = Index("projection")
+        f.e1 = self.element
+        f.P  = P
 
         return f
 

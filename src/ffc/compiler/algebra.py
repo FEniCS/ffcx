@@ -163,10 +163,11 @@ class Function(Element):
 
     Attributes:
 
-        element     - a FiniteElement
-        number      - a unique Index identifying the Function.
-        projection  - a projection matrix
-        e0          - a finite element (original space)
+        n0 - a unique Index identifying the original function
+        n1 - a unique Index identifying the projected function
+        e0 - a Finite Element defining the original space
+        e1 - a Finite Element defining the projection space
+        P  - the projection matrix from e0 to e1
 
     If projection is not None, then the coefficients of the expansion
     of the function in the current basis should be obtained by applying
@@ -178,21 +179,24 @@ class Function(Element):
         "Create Function."
         if isinstance(element, Function):
             # Create Function from Function (copy constructor)
-            self.element = element.element
-            self.number = element.number
-            self.projection = element.projection
+            self.n0 = element.n0
+            self.n1 = element.n1
             self.e0 = element.e0
+            self.e1 = element.e1
+            self.P  = element.P
+
         else:
             # Create Function for given FiniteElement
-            self.element = element
-            self.number = Index("function")
-            self.projection = None
-            self.e0 = None
+            self.n0 = Index("function")
+            self.n1 = Index("projection")
+            self.e0 = element
+            self.e1 = element
+            self.P  = None
         return
 
     def __repr__(self):
         "Print nicely formatted representation of Function."
-        return "w" + str(self.number)
+        return "w" + str(self.n0)
 
 class BasisFunction(Element):
     """A BasisFunction represents a possibly differentiated component
@@ -335,9 +339,9 @@ class Product(Element):
             index = Index()
             self.numeric = 1.0
             self.constants = []
-            self.coefficients = [Coefficient(other.element, other.number, index, other.projection, other.e0)]
+            self.coefficients = [Coefficient(other, index)]
             self.transforms = []
-            self.basisfunctions = [BasisFunction(other.element, index)]
+            self.basisfunctions = [BasisFunction(other.e1, index)]
             self.integral = None
         elif isinstance(other, Constant):
             # Create Product from Constant

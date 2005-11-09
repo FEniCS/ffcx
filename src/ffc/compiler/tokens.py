@@ -16,38 +16,41 @@ class Coefficient:
 
     Attributes:
 
-        element    - the FiniteElement defining the function space
-        number     - a unique Index for the represented Function
-        index      - summation Index (matching Index of corresponding BasisFunction)
-        projection - a projection matrix
-        e0         - a finite element (original space)
+        n0    - a unique Index identifying the original function
+        n1    - a unique Index identifying the projected function
+        e0    - a Finite Element defining the original space
+        e1    - a Finite Element defining the projection space
+        P     - the projection matrix from e0 to e1
+        index - an index for summation against corresponding basis function
     """
 
-    def __init__(self, element, number = None, index = None, projection = None, e0 = None):
+    def __init__(self, function, index = None):
         "Create Coefficient."
-        if isinstance(element, Coefficient):
+        if isinstance(function, Coefficient):
             # Create Coefficient from Coefficient (copy constructor)
-            self.element = element.element
-            self.number = Index(element.number)
-            self.index = Index(element.index)
-            self.projection = element.projection
-            self.e0 = element.e0
+            self.n0 = function.n0
+            self.n1 = function.n1
+            self.e0 = function.e0
+            self.e1 = function.e1
+            self.P  = function.P
+            self.index = function.index
         else:
-            # Create Coefficient with given data
-            self.element = element
-            self.number = number
+            self.n0 = function.n0
+            self.n1 = function.n1
+            self.e0 = function.e0
+            self.e1 = function.e1
+            self.P  = function.P
             self.index = Index(index)
-            self.projection = projection
-            self.e0 = e0
         return
 
     def __repr__(self):
         "Print nicely formatted representation of Coefficient."
-        return "w" + str(self.number) + "_" + str(self.index)
+        return "w" + str(self.n0) + "_" + str(self.index)
 
     def indexcall(self, foo, args = None):
         "Call given function on all Indices."
-        self.number.indexcall(foo, args)
+        self.n0.indexcall(foo, args)
+        self.n1.indexcall(foo, args)
         self.index.indexcall(foo, args)
         return
 

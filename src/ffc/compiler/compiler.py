@@ -103,6 +103,10 @@ def build(sums, name = "Form", language = FFC_LANGUAGE, options = FFC_OPTIONS):
         form.nfunctions = max_index(form.sum, "function") + 1
         debug("Number of functions (coefficients): " + str(form.nfunctions), 1)
 
+        # Count the number of projections
+        form.nprojections = max_index(form.sum, "projection") + 1
+        debug("Number of projections (coefficients): " + str(form.nprojections), 1)
+
         # Count the number of constants
         form.nconstants = max_index(form.sum, "constant") + 1
         debug("Number of constants: " + str(form.nconstants), 1)
@@ -111,11 +115,14 @@ def build(sums, name = "Form", language = FFC_LANGUAGE, options = FFC_OPTIONS):
         form.test = find_test(form.sum)
         form.trial = find_trial(form.sum)
 
-        # Find the original elements for all functions and corresponding projections
-        (form.elements, form.projections) = find_elements(form.sum, form.nfunctions)
+        # Find the original elements for all functions
+        form.elements = find_elements(form.sum, form.nfunctions)
+
+        # Find the projections for all functions
+        form.projections = find_projections(form.sum, form.nprojections)
 
         # Compute coefficient declarations
-        form.cK = compute_coefficients(form.elements, form.projections, format)
+        form.cK = __compute_coefficients(form.projections, format)
 
         # Create element tensors
         print "Compiling tensor representation for interior"
@@ -171,6 +178,39 @@ def __check_primary_ranks(form):
     form.dims = terms[0].A0.i.dims
     form.indices = terms[0].A0.i.indices
     return
+
+def __compute_coefficients(projections, format):
+    "Precompute declarations of coefficients according to given format."
+
+    declarations = []
+
+    for (n0, n1, e0, e1, P) in projections:
+
+        if P == None:
+            # No projection, just copy the values
+            for k in range(e0.spacedim()):
+                name = format.format["coefficient"](n1, k)
+                value = format.format["coefficient table"](n0, k)
+                declarations += [Declaration(name, value)]
+        else:
+            # Compute projection
+            (m, n) = Numeric.shape(P)
+            for k in range(m):
+                terms = []
+                for l in range(n):
+                    if abs(P[k][l] < FFC_EPSILON):
+                        continue
+                    cl = format.format["coefficient table"](n0, l)
+                    if abs(P[k][l] - 1.0) < FFC_EPSILON:
+                        terms += [cl]
+                    else:
+                        Pkl = format.format["floating point"](P[k][l])
+                        terms += [format.format["multiplication"]([Pkl, cl])]
+                name = format.format["coefficient"](n1, k)
+                value = format.format["sum"](terms)
+                declarations += [Declaration(name, value)]
+
+    return declarations
 
 if __name__ == "__main__":
 

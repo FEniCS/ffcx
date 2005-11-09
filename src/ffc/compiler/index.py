@@ -1,12 +1,13 @@
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-09-29 / 2005-03-01"
-__copyright__ = "Copyright (c) 2004 Anders Logg"
+__date__ = "2004-09-29 -- 2005-11-08"
+__copyright__ = "Copyright (c) 2004, 2005 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 next_index_0 = 0 # Next available primary index
 next_index_1 = 0 # Next available secondary index
 next_index_2 = 0 # Next available Function index
-next_index_3 = 0 # Next available Constant index
+next_index_3 = 0 # Next available Projection index
+next_index_4 = 0 # Next available Constant index
 
 def next_primary_index():
     "Return next available primary index."
@@ -26,42 +27,50 @@ def next_function_index():
     next_index_2 += 1
     return next_index_2 - 1
 
-def next_constant_index():
-    "Return next available Constant index."
+def next_projection_index():
+    "Return next available Projection index."
     global next_index_3
     next_index_3 += 1
     return next_index_3 - 1
 
+def next_constant_index():
+    "Return next available Constant index."
+    global next_index_4
+    next_index_4 += 1
+    return next_index_4 - 1
+
 def reset():
     "Reset all indices."
-    global next_index_0, next_index_1, next_index_2, next_index_3
+    global next_index_0, next_index_1, next_index_2, next_index_3, next_index_4
     next_index_0 = 0
     next_index_1 = 0
     next_index_2 = 0
     next_index_3 = 0
+    next_index_4 = 0
     return
 
 class Index:
-    
     """An Index represents a tensor index. The type of index can be
     either fixed, primary, or secondary as listed below:
 
-      fixed:     tensor rank 0, index is a fixed integer
-      primary:   tensor rank 1, index is part of first multiindex (i)
-      secondary: tensor rank 1, index is part of second multiindex (alpha)
-      auxiliary: tensor rank 1, index is part of third multiindex (beta)
-      function:  unique index for each Function (coefficient)
-      constant:  unique index for each Constant
+      fixed:      tensor rank 0, index is a fixed integer
+      primary:    tensor rank 1, index is part of first multiindex (i)
+      secondary:  tensor rank 1, index is part of second multiindex (alpha)
+      auxiliary:  tensor rank 1, index is part of third multiindex (beta)
+      function:   unique index for each Function (coefficient)
+      projection: unique index for each projection of a Function (coefficient)
+      constant:   unique index for each Constant
       
     The type of index is determined by the arguments to the
     constructor:
 
-      i = Index(0)           creates a given fixed index (0 in this case)
-      i = Index("primary")   creates a free primary index
-      i = Index("secondary") creates a free secondary index
-      i = Index("function")  creates a Function index
-      i = Index("constant")  creates a Constant index
-      i = Index()            creates a free secondary index (default)
+      i = Index(0)            creates a given fixed index (0 in this case)
+      i = Index("primary")    creates a free primary index
+      i = Index("secondary")  creates a free secondary index
+      i = Index("function")   creates a Function index
+      i = Index("projection") creates a Projection index
+      i = Index("constant")   creates a Constant index
+      i = Index()             creates a free secondary index (default)
 
     Note that only primary and secondary indices are used in the
     creation of an element of the algebra. Auxiliary indices are
@@ -90,6 +99,10 @@ class Index:
             # Create Function Index
             self.index = next_function_index()
             self.type = "function"
+        elif index == "projection":
+            # Create Projection Index
+            self.index = next_projection_index()
+            self.type = "projection"
         elif index == "constant":
             # Create Constant Index
             self.index = next_constant_index()
@@ -146,6 +159,8 @@ class Index:
         elif self.type == "secondary":
             return "a" + str(self.index)
         elif self.type == "function":
+            return str(self.index)
+        elif self.type == "projection":
             return str(self.index)
         elif self.type == "constant":
             return str(self.index)        
