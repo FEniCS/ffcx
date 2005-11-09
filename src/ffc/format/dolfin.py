@@ -25,7 +25,8 @@ format = { "sum": lambda l: " + ".join(l),
            "determinant": "map.det",
            "floating point": lambda a: "%.15e" % a,
            "constant": lambda j: "c%d" % j,
-           "coefficient": lambda j, k: "c[%d][%d]" % (j, k),
+           "coefficient table": lambda j, k: "c[%d][%d]" % (j, k),
+           "coefficient": lambda j, k: "c%d_%d" % (j, k),
            "transform": lambda j, k: "map.g%d%d" % (j, k),
            "reference tensor" : lambda j, i, a: None,
            "geometry tensor": lambda j, a: "G%d_%s" % (j, "_".join(["%d" % index for index in a])),
@@ -419,12 +420,15 @@ def __eval_interior_default(form, options):
 
     if not options["debug-no-geometry-tensor"]:
         output += """\
+    // Compute coefficients
+%s
     // Compute geometry tensors
-%s""" % "".join(["    real %s = %s;\n" % (gK.name, gK.value) for gK in form.AKi.gK if gK.used])
+%s"""  % ("".join(["    const real %s = %s;\n" % (cK.name, cK.value) for cK in form.cK]),
+          "".join(["    const real %s = %s;\n" % (gK.name, gK.value) for gK in form.AKi.gK if gK.used]))
     else:
         output += """\
     // Compute geometry tensors
-%s""" % "".join(["    real %s = 0.0;\n" % gK.name for gK in form.AKi.gK if gK.used])
+%s""" % "".join(["    const real %s = 0.0;\n" % gK.name for gK in form.AKi.gK if gK.used])
 
     if not options["debug-no-element-tensor"]:
         output += """\
@@ -445,9 +449,12 @@ def __eval_interior_blas(form, options):
     for (unsigned int i = 0; i < blas.ni; i++)
       blas.Gi[i] = 0.0;
 
+    // Compute coefficients
+%s
     // Compute entries of G multiplied by nonzero entries of A
 %s
-""" % ("".join(["    blas.Gi[%d] = %s;\n" % (j, form.AKi.gK[j].value)
+""" % ("".join(["    const real %s = %s;\n" % (cK.name, cK.value) for cK in form.cK]),
+       "".join(["    blas.Gi[%d] = %s;\n" % (j, form.AKi.gK[j].value)
                 for j in range(len(form.AKi.gK)) if form.AKi.gK[j].used]))
 
     # Compute element tensor
@@ -472,12 +479,15 @@ def __eval_boundary_default(form, options):
     
     if not options["debug-no-geometry-tensor"]:
         output += """\
+    // Compute coefficients
+%s        
     // Compute geometry tensors
-%s""" % "".join(["    real %s = %s;\n" % (gK.name, gK.value) for gK in form.AKb.gK if gK.used])
+%s""" % ("".join(["    const real %s = %s;\n" % (cK.name, cK.value) for cK in form.cK]),
+         "".join(["    const real %s = %s;\n" % (gK.name, gK.value) for gK in form.AKb.gK if gK.used]))
     else:
         output += """\
     // Compute geometry tensors
-%s""" % "".join(["    real %s = 0.0;\n" % gK.name for gK in form.AKi.gK if gK.used])
+%s""" % "".join(["    const real %s = 0.0;\n" % gK.name for gK in form.AKi.gK if gK.used])
 
     if not options["debug-no-element-tensor"]:
         output += """\
@@ -498,9 +508,12 @@ def __eval_boundary_blas(form, options):
     for (unsigned int i = 0; i < blas.nb; i++)
       blas.Gb[i] = 0.0;
 
+    // Compute coefficients
+%s
     // Compute entries of G multiplied by nonzero entries of A
 %s
-""" % ("".join(["    blas.Gb[%d] = %s;\n" % (j, form.AKb.gK[j].value)
+""" % ("".join(["    const real %s = %s;\n" % (cK.name, cK.value) for cK in form.cK]),
+       "".join(["    blas.Gb[%d] = %s;\n" % (j, form.AKb.gK[j].value)
                 for j in range(len(form.AKb.gK)) if form.AKb.gK[j].used]))
 
     # Compute element tensor

@@ -3,36 +3,42 @@ represent multilinear forms, that is, small basic data types used to
 build the data structure representing an element of the form algebra."""
 
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-09-29 -- 2005-09-05"
+__date__ = "2004-09-29 -- 2005-11-08"
 __copyright__ = "Copyright (c) 2004 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # FFC modules
 from index import Index
 
-class Coefficient:
-    
+class Coefficient:    
     """A Coefficient represents the coefficient for a function
     expressed as a linear combination of basis functions.
 
-    A Coefficient holds the following data:
+    Attributes:
 
-        element - the FiniteElement defining the function space
-        number  - a unique Index for the represented Function
-        index   - summation Index (matching Index of corresponding BasisFunction)"""
+        element    - the FiniteElement defining the function space
+        number     - a unique Index for the represented Function
+        index      - summation Index (matching Index of corresponding BasisFunction)
+        projection - a projection matrix
+        e0         - a finite element (original space)
+    """
 
-    def __init__(self, element, number = None, index = None):
+    def __init__(self, element, number = None, index = None, projection = None, e0 = None):
         "Create Coefficient."
         if isinstance(element, Coefficient):
             # Create Coefficient from Coefficient (copy constructor)
             self.element = element.element
             self.number = Index(element.number)
             self.index = Index(element.index)
+            self.projection = element.projection
+            self.e0 = element.e0
         else:
             # Create Coefficient with given data
             self.element = element
             self.number = number
             self.index = Index(index)
+            self.projection = projection
+            self.e0 = e0
         return
 
     def __repr__(self):
@@ -46,7 +52,6 @@ class Coefficient:
         return
 
 class Derivative:
-    
     """A Derivative represents a derivative on the reference cell in
     either a given fixed coordinate direction (in which case it is a
     tensor of rank 0) or one of many possible coordinate directions
@@ -74,7 +79,6 @@ class Derivative:
         return
 
 class Transform:
-
     """A Transform represents an element of the inverse Jacobian
     matrix of the affine map from the reference cell. With X the
     coordinates on the reference cell mapped to real coordinates x by
@@ -106,7 +110,6 @@ class Transform:
         return
 
 class Integral:
-
     """An Integral represents an integral over the interior or the
     boundary of the reference cell."""
 

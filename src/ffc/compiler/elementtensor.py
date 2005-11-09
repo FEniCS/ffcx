@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-11-06 -- 2005-10-13"
+__date__ = "2004-11-06 -- 2005-11-08"
 __copyright__ = "Copyright (c) 2004, 2005 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -17,17 +17,17 @@ from reorder import *
 from declaration import *
 
 class ElementTensor:
-
     """An ElementTensor represents the element tensor of a
     multi-linear form and consist of a list of Terms, each containing
     a pair of a ReferenceTensor and a GeometryTensor.
 
-    An ElementTensor holds the following data:
+    Attributes:
 
-        terms  - a list of Terms (products A0 * GK)
-        a0     - a list of precomputed reference tensor declarations
-        gK     - a list of precomputed geometry tensor declarations
-        aK     - a list of precomputed element tensor declarations"""
+        terms - a list of Terms (products A0 * GK)
+        a0    - a list of precomputed reference tensor declarations
+        gK    - a list of precomputed geometry tensor declarations
+        aK    - a list of precomputed element tensor declarations
+    """
 
     def __init__(self, sum, type, format):
         "Create ElementTensor."
@@ -72,7 +72,7 @@ class ElementTensor:
         return
 
     def __compute_reference_tensor(self, format):
-        "Precomputed reference tensor according to given format."
+        "Precompute reference tensor according to given format."
         debug("Generating code for reference tensor", 1)
         if not self.terms or format.format["reference tensor"](0, 0, []) == None: return []
         declarations = []

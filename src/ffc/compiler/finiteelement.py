@@ -1,7 +1,10 @@
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-10-04 -- 2005-10-30"
+__date__ = "2004-10-04 -- 2005-11-08"
 __copyright__ = "Copyright (c) 2004, 2005 Anders Logg"
 __license__  = "GNU GPL Version 2"
+
+# Python modules
+import sys
 
 # FIAT modules
 from FIAT.shapes import *
@@ -13,6 +16,7 @@ from FIAT.BDM import BDM
 from FIAT.Nedelec import Nedelec
 
 # FFC common modules
+sys.path.append("../../")
 from ffc.common.debug import *
 
 # FFC compiler modules
@@ -160,5 +164,14 @@ if __name__ == "__main__":
     w1 = P1.basis()[0];
     w2 = P2.basis()[0];
 
-    print w1
-    print w2
+    x0 = (-1.0, -1.0)
+    x1 = (1.0, -1.0)
+    x2 = (-1.0, 1.0)
+
+    x3 = (-0.79456469038074751, -0.82282408097459203)
+
+    print w1(x0), w1(x1), w1(x2)
+    print w2(x0), w2(x1), w2(x2)
+
+    print w1(x3)
+    print w2(x3)

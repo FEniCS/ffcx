@@ -3,7 +3,7 @@ and building the data structures (geometry and reference tensors) for
 the evaluation of the multi-linear form."""
 
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-11-17 -- 2005-10-30"
+__date__ = "2004-11-17 -- 2005-11-08"
 __copyright__ = "Copyright (c) 2004, 2005 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -33,6 +33,7 @@ from elementsearch import *
 from finiteelement import *
 from mixedelement import *
 from elementtensor import *
+from projection import *
 
 def compile(sums, name = "Form", language = FFC_LANGUAGE, options = FFC_OPTIONS):
     """Compile variational form(s). This function takes as argument a
@@ -106,11 +107,15 @@ def build(sums, name = "Form", language = FFC_LANGUAGE, options = FFC_OPTIONS):
         form.nconstants = max_index(form.sum, "constant") + 1
         debug("Number of constants: " + str(form.nconstants), 1)
 
-        # Find the test, trial and function finite elements
+        # Find the test and trial finite elements
         form.test = find_test(form.sum)
         form.trial = find_trial(form.sum)
-        #(form.elements, form.felement) = find_elements(form.sum, form.nfunctions)
-        form.elements = find_elements(form.sum, form.nfunctions)
+
+        # Find the original elements for all functions and corresponding projections
+        (form.elements, form.projections) = find_elements(form.sum, form.nfunctions)
+
+        # Compute coefficient declarations
+        form.cK = compute_coefficients(form.elements, form.projections, format)
 
         # Create element tensors
         print "Compiling tensor representation for interior"

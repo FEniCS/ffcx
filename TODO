@@ -1,3 +1,5 @@
+o [logg] Write about Projection in manual
+o [logg] Generate code for LogStream <<
 o [logg] Generate nested classes outside of top level class
 o [logg] Add time derivative .dt() and Dt()
 o [logg] Optionally generate pair of .h and .cpp files?

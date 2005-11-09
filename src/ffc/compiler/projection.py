@@ -17,7 +17,7 @@ from ffc.common.exceptions import *
 
 # FFC compiler modules
 #from finiteelement import *
-#from algebra import *
+from algebra import *
 
 class Projection:
     """A Projection represents the local L2 projection onto a given
@@ -41,10 +41,22 @@ class Projection:
 
         # Check that we got a Function
         if not isinstance(function, Function):
-            raise FormError, (function), "Cannot compute projection of given expression."
+            raise FormError, (function, "Cannot compute projection of given expression.")
+
+        # Check that we have not already computed the projection
+        if not function.projection == None:
+            raise FormError, (function, "Only one projection can be applied to each function.")
 
         # Compute the projection matrix
         P = self.__compute_projection(function.element)
+
+        # Create new function and set projection
+        f = Function(function)
+        f.element = self.element
+        f.projection = P
+        f.e0 = function.element
+
+        return f
 
     def __compute_projection(self, e0):
         "Compute projection matrix from e0 to e1."
@@ -52,19 +64,22 @@ class Projection:
         # Check if we already know the projection
         name = e0.__repr__()
         if name in self.projections:
+            print "Projection cached, reusing projection"
             return self.projections[name]
 
         # Check that the two elements are defined on the same shape
         e1 = self.element
         if not e0.fiat_shape == e1.fiat_shape:
-            raise FormError, ((e0, e1)), "Incompatible finite elements for projection."
+            raise FormError, (((e0, e1)), "Incompatible finite elements for projection.")
 
         # Check that the two elements have the same rank (and rank must be 0 or 1)
         if e0.rank() > 0 or e1.rank() > 0:
             if not (e0.rank() == 1 and e1.rank() == 1):
-                raise FormError, ((e0, e1)), "Incompatible element ranks for projection."
+                raise FormError, (((e0, e1)), "Incompatible element ranks for projection.")
             if not (e0.tensordim(0) == e1.tensordim(0)):
-                raise FormError, ((e0, e1)), "Incompatible element ranks for projection."
+                raise FormError, (((e0, e1)), "Incompatible element ranks for projection.")
+            vectordim = e0.tensordim(0) # Both dimensions are equal
+        rank = e0.rank() # Both ranks are equal
 
         # Get quadrature points and weights for integrals
         q = e1.degree() + max(e0.degree(), e1.degree()) # same points for both integrals
@@ -86,26 +101,34 @@ class Projection:
 
         # Compute matrix Q = (vi, vj) for vi in V1
         Q = Numeric.zeros((m, m), Numeric.Float)
-        if e0.rank() == 0:
+        if rank == 0:
             for i in range(m):
                 vi = t1[0][dindex][i]
                 for j in range(m):
                     vj = t1[0][dindex][j]
-                    sum = 1.0
+                    sum = 0.0
                     for k in range(len(points)):
-                        sum = weights[k] * vi[k] * vj[k]
+                        sum += weights[k] * vi[k] * vj[k]
                     Q[i][j] = sum
 
         # Compute matrix P = (v_i, w_j) for v_i in V_1 and w_j in V_0
         P = Numeric.zeros((m, n), Numeric.Float)
-        for i in range(m):
-            for j in range(n):
-                P[i][j] = 0.0
+        if rank == 0:
+            for i in range(m):
+                vi = t1[0][dindex][i]
+                for j in range(n):
+                    wj = t0[0][dindex][j]
+                    sum = 0.0
+                    for k in range(len(points)):
+                        sum += weights[k] * vi[k] * wj[k]
+                    P[i][j] = sum
 
         # Compute projection matrix Q^-1 P
-        print LinearAlgebra.inverse(Q)
-        P = []
+        P = Numeric.matrixmultiply(LinearAlgebra.inverse(Q), P)
 
+        # Save projection matrix for later so it can be reused
+        self.projections[name] = P
+        
         return P
 
 if __name__ == "__main__":
@@ -122,13 +145,12 @@ if __name__ == "__main__":
     pi0 = Projection(P0)
     pi1 = Projection(P1)
 
-#    print f0
-#    print f1
+    print f0
+    print f1
     
-#    print pi0(f0)
-#    print pi0(f1)
+    print pi0(f0)
+    print pi0(f1)
 
-#    print pi1(f0)
-#    print pi1(f1)
-
-    pi1(f1)
+    print pi1(f0)
+    print pi1(f1)
+    print pi1(f1)

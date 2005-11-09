@@ -20,7 +20,7 @@ are supported for all elements of the algebra:
     Unary  d/dx   (operand scalar or tensor-valued)"""
 
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-09-27 -- 2005-09-15"
+__date__ = "2004-09-27 -- 2005-11-08"
 __copyright__ = "Copyright (c) 2004, 2005 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -40,7 +40,6 @@ from tokens import *
 from index import Index
 
 class Element:
-
     "Base class for elements of the algebra."
 
     def __add__(self, other):
@@ -117,14 +116,14 @@ class Element:
         return Sum(self).rank()
 
 class Constant(Element):
-
     """A Constant represents a numerical constant or a Function that
     is constant over the mesh.
 
-    A Constant holds the following data:
+    Attributes:
 
         number   - a unique index identifying the Constant.
-        inverted - a boolean, true if Constant is inverted"""
+        inverted - a boolean, true if Constant is inverted
+    """
 
     def __init__(self, constant = None):
         "Create Constant."
@@ -158,15 +157,22 @@ class Constant(Element):
         return
         
 class Function(Element):
-
     """A Function represents a projection of a given function onto a
     finite element space, expressed as a linear combination of
     BasisFunctions.
 
-    A Function holds the following data:
+    Attributes:
 
-        element - a FiniteElement
-        number  - a unique Index identifying the Function."""
+        element     - a FiniteElement
+        number      - a unique Index identifying the Function.
+        projection  - a projection matrix
+        e0          - a finite element (original space)
+
+    If projection is not None, then the coefficients of the expansion
+    of the function in the current basis should be obtained by applying
+    the projection matrix onto the coefficients of the expansion in
+    the basis given by the FiniteElement e0.
+    """
 
     def __init__(self, element):
         "Create Function."
@@ -174,10 +180,14 @@ class Function(Element):
             # Create Function from Function (copy constructor)
             self.element = element.element
             self.number = element.number
+            self.projection = element.projection
+            self.e0 = element.e0
         else:
             # Create Function for given FiniteElement
             self.element = element
             self.number = Index("function")
+            self.projection = None
+            self.e0 = None
         return
 
     def __repr__(self):
@@ -185,16 +195,16 @@ class Function(Element):
         return "w" + str(self.number)
 
 class BasisFunction(Element):
-
     """A BasisFunction represents a possibly differentiated component
     of a basis function on the reference cell.
 
-    A BasisFunction holds the following data:
+    Attributes:
 
         element     - a FiniteElement
         index       - a basis Index
         component   - a list of component Indices
-        derivatives - a list of Derivatives"""
+        derivatives - a list of Derivatives
+    """
 
     def __init__(self, element, index = None):
         "Create BasisFunction."
@@ -290,11 +300,10 @@ class BasisFunction(Element):
         return
 
 class Product(Element):
-
     """A Product represents a product of factors, including
     BasisFunctions and Functions.
 
-    A Product holds the following data:
+    Attributes:
 
         numeric        - a numeric constant (float)
         constants      - a list of Constants
@@ -326,7 +335,7 @@ class Product(Element):
             index = Index()
             self.numeric = 1.0
             self.constants = []
-            self.coefficients = [Coefficient(other.element, other.number, index)]
+            self.coefficients = [Coefficient(other.element, other.number, index, other.projection, other.e0)]
             self.transforms = []
             self.basisfunctions = [BasisFunction(other.element, index)]
             self.integral = None
@@ -467,14 +476,14 @@ class Product(Element):
         return
 
 class Sum(Element):
-
     """A Sum represents a sum of Products. Each Product will be
     compiled separately, since different Products are probably of
     different rank.
 
-    A Sum holds the following data:
+    Attributes:
 
-        products - a list of Products (terms) in the Sum"""
+        products - a list of Products (terms) in the Sum
+    """
     
     def __init__(self, other = None):
         "Create Sum."
