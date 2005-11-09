@@ -41,11 +41,11 @@ class Projection:
 
         # Check that we got a Function
         if not isinstance(function, Function):
-            raise FormError, (function, "Cannot compute projection of given expression.")
+            raise FormError, (function, "Projections are only supported for Functions.")
 
         # Check that we have not already computed the projection
         if not function.P == None:
-            raise FormError, (function, "Only one projection can be applied to each function.")
+            raise FormError, (function, "Only one projection can be applied to each Function.")
 
         # Compute the projection matrix
         P = self.__compute_projection(function.e0)

@@ -50,6 +50,7 @@ class FiniteElement:
         # Initialize data
         self.name = name
         self.element = None
+        self._shape = shape
 
         if not element is None:
             self.element = element

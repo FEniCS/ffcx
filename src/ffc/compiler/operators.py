@@ -2,7 +2,7 @@
 based on the basic form algebra operations."""
 
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2005-09-07 -- 2005-10-30"
+__date__ = "2005-09-07 -- 2005-11-08"
 __copyright__ = "Copyright (c) 2005 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -19,6 +19,8 @@ from ffc.common.exceptions import *
 # FFC compiler modules
 from index import *
 from algebra import *
+from projection import *
+from finiteelement import *
 
 def Identity(n):
     "Return identity matrix of given size."
@@ -155,6 +157,22 @@ def rot(v):
 def curl(v):
     "Alternative name for rot."
     return rot(v)
+
+def mean(v):
+    "Return mean value of given Function (projection onto piecewise constants)."
+    # Check that we got a Function
+    if not isinstance(v, Function):
+        raise FormError, (v, "Mean values are only supported for Functions.")
+    # Different projections needed for scalar and vector-valued elements
+    element = v.e0
+    if element.rank() == 0:
+        P0 = FiniteElement("Discontinuous Lagrange", element._shape, 0)
+        pi = Projection(P0)
+        return pi(v)
+    else:
+        P0 = FiniteElement("Discontinuous vector Lagrange", element._shape, 0, element.tensordim(0))
+        pi = Projection(P0)
+        return pi(v)
      
 def __shapedim(v):
     "Return shape dimension for given object."

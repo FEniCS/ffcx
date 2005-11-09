@@ -11,11 +11,9 @@ P2 = FiniteElement("Lagrange", "triangle", 2)
 
 v = BasisFunction(P1)
 f = Function(P1)
-g = Function(P2)
 
 pi0 = Projection(P0)
 pi1 = Projection(P1)
 pi2 = Projection(P2)
 
 L = v*(pi0(f) + pi1(f) + pi2(f))*dx
-#L = v*(f + g)*dx

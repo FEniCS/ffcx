@@ -1,3 +1,5 @@
+ - Add new operator mean() for projection onto piecewise constants
+ - Add support for projections
  - Bug fix for higher order mixed elements: declaration of edge/face_ordering
  - Generate code for sub elements of mixed elements
  - Add new test form: TensorWeighteLaplacian
