@@ -1,3 +1,4 @@
+ - Add command-line argument -v / --version 
  - Add new operator mean() for projection onto piecewise constants
  - Add support for projections
  - Bug fix for higher order mixed elements: declaration of edge/face_ordering

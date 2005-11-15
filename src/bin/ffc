@@ -5,7 +5,7 @@
 #
 # Modified by Johan Jansson, 2005
 #
-# 2004-10-14 -- 2005-09-29
+# 2004-10-14 -- 2005-11-14
 #
 # This script parses command-line arguments, calls
 # the parser, and then compiles the generated form.
@@ -26,20 +26,21 @@ def main(argv):
 
     # Get command-line arguments
     try:
-        opts, args = getopt.getopt(argv, "hl:d:f:", ["help", "language=", "debug="])
+        opts, args = getopt.getopt(argv, "hvl:d:f:", ["help", "version", "language=", "debug="])
     except getopt.GetoptError:
         usage()
         sys.exit(2)
 
     # Check that we got a filename
-    if not args:
+    if opts == [("-v", "")] or opts == [("--version", "")]:
+        version()
+        sys.exit(0)
+    elif not args:
         usage()
         sys.exit(2)
 
     # Print a nice message
-    print "This is FFC, the FEniCS Form Compiler, version %s." % FFC_VERSION
-    print "For further information, go to http://www/fenics.org/ffc/."
-    print
+    version()
 
     # Set default arguments
     language = "dolfin"
@@ -48,8 +49,12 @@ def main(argv):
 
     # Get options
     for opt, arg in opts:
+        print opt, arg
         if opt in ("-h", "--help"):
             usage()
+            sys.exit()
+        elif opt in ("-v", "--version"):
+            version()
             sys.exit()
         elif opt in  ("-l", "--language"):
             language = arg
@@ -92,6 +97,7 @@ def usage():
 Usage: ffc [OPTION]... input.form
 
   -h            display this help text and exit
+  -v            display version number and exit
   -l language   specify output language, one of 'dolfin' (default), 'latex', 'raw', 'ase' or 'xml'
   -d debuglevel specify debug level (default is 0)
   -f option     specify code generation options, one of 'blas' or 'no-gpl'
@@ -99,9 +105,16 @@ Usage: ffc [OPTION]... input.form
 Alternatively, the following long options may be used:
 
   --help
+  --version
   --language language
   --debuglevel debuglevel
 """
+    return
+
+def version():
+    "Display version number."
+    print "This is FFC, the FEniCS Form Compiler, version %s." % FFC_VERSION
+    print "For further information, go to http://www/fenics.org/ffc/."
     return
 
 if __name__ == "__main__":
