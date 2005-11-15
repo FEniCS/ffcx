@@ -1,3 +1,4 @@
+0.2.2 [2005-11-14]
  - Add command-line argument -v / --version 
  - Add new operator mean() for projection onto piecewise constants
  - Add support for projections
