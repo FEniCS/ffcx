@@ -3,7 +3,7 @@ represent multilinear forms, that is, small basic data types used to
 build the data structure representing an element of the form algebra."""
 
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-09-29 -- 2005-11-08"
+__date__ = "2004-09-29 -- 2005-11-14"
 __copyright__ = "Copyright (c) 2004 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -28,15 +28,15 @@ class Coefficient:
         "Create Coefficient."
         if isinstance(function, Coefficient):
             # Create Coefficient from Coefficient (copy constructor)
-            self.n0 = function.n0
-            self.n1 = function.n1
+            self.n0 = Index(function.n0)
+            self.n1 = Index(function.n1)
             self.e0 = function.e0
             self.e1 = function.e1
             self.P  = function.P
             self.index = Index(function.index)
         else:
-            self.n0 = function.n0
-            self.n1 = function.n1
+            self.n0 = Index(function.n0)
+            self.n1 = Index(function.n1)
             self.e0 = function.e0
             self.e1 = function.e1
             self.P  = function.P
