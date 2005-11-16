@@ -3,12 +3,13 @@ and building the data structures (geometry and reference tensors) for
 the evaluation of the multi-linear form."""
 
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-11-17 -- 2005-11-08"
+__date__ = "2004-11-17 -- 2005-11-15"
 __copyright__ = "Copyright (c) 2004, 2005 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # Python modules
 import sys
+from sets import Set # (Could use built-in set with Python 2.4)
 
 # FFC common modules
 from ffc.common.debug import *
@@ -121,14 +122,17 @@ def build(sums, name = "Form", language = FFC_LANGUAGE, options = FFC_OPTIONS):
         # Find the projections for all functions
         form.projections = find_projections(form.sum, form.nprojections)
 
-        # Compute coefficient declarations
-        form.cK = __compute_coefficients(form.projections, format)
+        # Create empty set of used coefficient declarations
+        cK_used = Set()
 
         # Create element tensors
         print "Compiling tensor representation for interior"
-        form.AKi = ElementTensor(form.sum, "interior", format)
+        form.AKi = ElementTensor(form.sum, "interior", format, cK_used)
         print "Compiling tensor representation for boundary"
-        form.AKb = ElementTensor(form.sum, "boundary", format)
+        form.AKb = ElementTensor(form.sum, "boundary", format, cK_used)
+
+        # Compute coefficient declarations
+        form.cK = __compute_coefficients(form.projections, format, cK_used)
 
         # Check primary ranks
         __check_primary_ranks(form)
@@ -179,11 +183,12 @@ def __check_primary_ranks(form):
     form.indices = terms[0].A0.i.indices
     return
 
-def __compute_coefficients(projections, format):
+def __compute_coefficients(projections, format, cK_used):
     "Precompute declarations of coefficients according to given format."
 
     declarations = []
 
+    # Iterate over projections
     for (n0, n1, e0, e1, P) in projections:
 
         if P == None:
@@ -191,7 +196,11 @@ def __compute_coefficients(projections, format):
             for k in range(e0.spacedim()):
                 name = format.format["coefficient"](n1, k)
                 value = format.format["coefficient table"](n0, k)
-                declarations += [Declaration(name, value)]
+                declaration = Declaration(name, value)
+                # Mark entries that are used
+                if name in cK_used:
+                    declaration.used = True
+                declarations += [declaration]
         else:
             # Compute projection
             (m, n) = Numeric.shape(P)
@@ -208,7 +217,12 @@ def __compute_coefficients(projections, format):
                         terms += [format.format["multiplication"]([Pkl, cl])]
                 name = format.format["coefficient"](n1, k)
                 value = format.format["sum"](terms)
-                declarations += [Declaration(name, value)]
+                declaration = Declaration(name, value)
+                # Mark entries that are used
+                if name in cK_used:
+                    declaration.used = True
+                # Add to list of declarations
+                declarations += [declaration]
 
     return declarations
 

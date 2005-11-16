@@ -1,6 +1,6 @@
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-11-03"
-__copyright__ = "Copyright (c) 2004 Anders Logg"
+__date__ = "2004-11-03 -- 2005-11-15"
+__copyright__ = "Copyright (c) 2004, 2005 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # FFC common modules
@@ -75,7 +75,7 @@ class GeometryTensor:
         # Didn't find dimension
         raise RuntimeError, "Unable to find dimension for Index " + str(index)
 
-    def __call__(self, a, format):
+    def __call__(self, a, format, cK_used, used):
         "Return given element of geometry tensor."
         aux = "geometry tensor auxiliary"
         # Compute product of factors outside sum
@@ -87,7 +87,10 @@ class GeometryTensor:
                 factors += [format.format["constant"](c.number.index)]
         for c in self.coefficients:
             if not c.index.type == aux:
-                factors += [format.format["coefficient"](c.n1.index, c.index([], a, [], []))]
+                coefficient = format.format["coefficient"](c.n1.index, c.index([], a, [], []))
+                factors += [coefficient]
+                # Only add coefficients appearing in an entry of G that is used
+                if used: cK_used.add(coefficient)
         for t in self.transforms:
             if not (t.index0.type == aux or  t.index1.type == aux):
                 factors += [format.format["transform"](t.index0([], a, [], []), \
@@ -101,7 +104,10 @@ class GeometryTensor:
             factors = []
             for c in self.coefficients:
                 if c.index.type == aux:
-                    factors += [format.format["coefficient"](c.n1.index, c.index([], a, [], b))]
+                    coefficient = format.format["coefficient"](c.n1.index, c.index([], a, [], b))
+                    factors += [coefficient]
+                    # Only add coefficients appearing in an entry of G that is used
+                    if used: cK_used.add(coefficient)
             for t in self.transforms:
                 if t.index0.type == aux or t.index1.type == aux:
                     factors += [format.format["transform"](t.index0([], a, [], b), \

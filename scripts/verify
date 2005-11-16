@@ -16,6 +16,11 @@ for f in *.form; do
     fi
 done
 
+echo ""
+echo "All forms compiled, verifying output..."
+echo "---------------------------------------"
+echo ""
+
 for f in *.h; do
     echo "--- Verifying $f ---"
     diff ../reference/$f $f

@@ -29,7 +29,7 @@ class ElementTensor:
         aK    - a list of precomputed element tensor declarations
     """
 
-    def __init__(self, sum, type, format):
+    def __init__(self, sum, type, format, cK_used):
         "Create ElementTensor."
 
         # Check that all Products have integrals
@@ -67,7 +67,7 @@ class ElementTensor:
 
         # Compute geometry tensor declarations
         gK_used = self.__check_used(format)
-        self.gK = self.__compute_geometry_tensor(format, gK_used)
+        self.gK = self.__compute_geometry_tensor(format, gK_used, cK_used)
 
         return
 
@@ -87,7 +87,7 @@ class ElementTensor:
                     declarations += [Declaration(name, value)]
         return declarations
 
-    def __compute_geometry_tensor(self, format, gK_used):
+    def __compute_geometry_tensor(self, format, gK_used, cK_used):
         "Precompute geometry tensor according to given format."
         debug("Generating code for geometry tensor", 1)
         if not self.terms or format.format["geometry tensor"](0, []) == None: return []
@@ -100,11 +100,10 @@ class ElementTensor:
             for a in aindices:
                 # Sum factorized values
                 name = format.format["geometry tensor"](j, a)
-                value = format.format["sum"]([GK(a, format) for GK in self.terms[j].GKs])
+                used = name in gK_used
+                value = format.format["sum"]([GK(a, format, cK_used, used) for GK in self.terms[j].GKs])
                 declaration = Declaration(name, value)
-                # Mark entries that are used
-                if name in gK_used:
-                    declaration.used = True
+                declaration.used = used
                 # Add declaration
                 declarations += [declaration]
 

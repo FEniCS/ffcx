@@ -1,7 +1,7 @@
 "DOLFIN output format."
 
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-10-14 -- 2005-11-01"
+__date__ = "2004-10-14 -- 2005-11-15"
 __copyright__ = "Copyright (c) 2004, 2005 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -423,7 +423,7 @@ def __eval_interior_default(form, options):
             output += """\
     // Compute coefficients
 %s
-""" % "".join(["    const real %s = %s;\n" % (cK.name, cK.value) for cK in form.cK])
+""" % "".join(["    const real %s = %s;\n" % (cK.name, cK.value) for cK in form.cK if cK.used])
         output += """\
     // Compute geometry tensors
 %s"""  % "".join(["    const real %s = %s;\n" % (gK.name, gK.value) for gK in form.AKi.gK if gK.used])
@@ -450,7 +450,7 @@ def __eval_interior_blas(form, options):
             output += """\
     // Compute coefficients
 %s
-""" % "".join(["    const real %s = %s;\n" % (cK.name, cK.value) for cK in form.cK])
+""" % "".join(["    const real %s = %s;\n" % (cK.name, cK.value) for cK in form.cK if cK.used])
         output += """\
     // Reset geometry tensors
     for (unsigned int i = 0; i < blas.ni; i++)
@@ -486,7 +486,7 @@ def __eval_boundary_default(form, options):
             output += """\
     // Compute coefficients
 %s
-""" % "".join(["    const real %s = %s;\n" % (cK.name, cK.value) for cK in form.cK])
+""" % "".join(["    const real %s = %s;\n" % (cK.name, cK.value) for cK in form.cK if cK.used])
         output += """\
     // Compute geometry tensors
 %s""" % "".join(["    const real %s = %s;\n" % (gK.name, gK.value) for gK in form.AKb.gK if gK.used])
@@ -513,7 +513,7 @@ def __eval_boundary_blas(form, options):
             output += """\
     // Compute coefficients
 %s
-""" % "".join(["    const real %s = %s;\n" % (cK.name, cK.value) for cK in form.cK])        
+""" % "".join(["    const real %s = %s;\n" % (cK.name, cK.value) for cK in form.cK if cK.used])        
         output += """\
     // Reset geometry tensors
     for (unsigned int i = 0; i < blas.nb; i++)

@@ -44,7 +44,7 @@ def Functions(element):
     if not isinstance(element, MixedElement):
         raise RuntimeError, "Function tuple must be created from mixed element."
     # Create function fox mixed element
-    vector = algebra.Function(element)
+    vector = Function(element)
     # Pick components/subvectors of the mixed basis function
     subvectors = []
     offset = 0
