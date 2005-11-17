@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2005-09-16 -- 2005-11-07"
+__date__ = "2005-09-16 -- 2005-11-17"
 __copyright__ = "Copyright (c) 2005 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -13,6 +13,7 @@ from ffc.common.debug import *
 #import algebra
 #import finiteelement
 #import algebra
+from finiteelement import *
 from algebra import *
 from dofmap import *
 from pointmap import *
@@ -221,7 +222,7 @@ class MixedElement:
 
     def __add__(self, other):
         "Create mixed element."
-        if isinstance(other, finiteelement.FiniteElement):
+        if isinstance(other, FiniteElement):
             return MixedElement(self.elements + [other])
         elif isinstance(other, MixedElement):
             return MixedElement(self.elements + other.elements)
