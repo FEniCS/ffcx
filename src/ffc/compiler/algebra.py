@@ -36,6 +36,7 @@ from ffc.common.util import *
 
 # FFC compiler modules
 #from finiteelement import FiniteElement
+#from reassign import *
 from tokens import *
 from index import Index
 
@@ -388,6 +389,11 @@ class Product(Element):
         else:
             w0 = Product(self)
             w1 = Product(other)
+
+            #print "w0 complete: " + str(iscomplete(w0))
+            #print "w1 complete: " + str(iscomplete(w1))
+
+            
             if not w0.rank() == w1.rank() == 0:
                 raise FormError, (self, "Operands for product must be scalar.")
             w = Product()

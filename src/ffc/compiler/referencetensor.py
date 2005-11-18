@@ -17,7 +17,7 @@ from algebra import *
 from reassign import *
 from multiindex import *
 from integrator import *
-from monomialintegration import *
+#from monomialintegration import *
 
 class ReferenceTensor:
 
