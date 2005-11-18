@@ -5,7 +5,7 @@ starting at 0. This makes it simpler to implement the algebra, since
 the algebra doesn't need to keep track of indices."""
 
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-10-13 -- 2005-11-08"
+__date__ = "2004-10-13 -- 2005-11-17"
 __copyright__ = "Copyright (c) 2004, 2005 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -23,6 +23,10 @@ def reassign_indices(sum):
     # Check that we got a Sum
     if not isinstance(sum, Sum):
         raise RuntimeError, "Can only reassign indices for Sum."
+
+    # Check for completeness
+    if not iscomplete(sum):
+        raise FormError, (sum, "Given form is not complete.")
 
     # Modify secondary indices to auxiliary indices
     [__create_auxiliary(p) for p in sum.products]
@@ -48,7 +52,31 @@ def reassign_indices(sum):
     # Reassign geometry tensor auxiliary indices (global for each Product)
     [__reassign(p, "geometry tensor auxiliary") for p in sum.products]
 
+    # Check for completeness again
+    if not iscomplete(sum):
+        raise FormError, (sum, "Given form is not complete.")
+    
     return
+
+def iscomplete(object):
+    """Check if given Product or Sum is complete with respect to
+    secondary and auxiliary Indices, that is, each such Index appear
+    exactly twice in each Product."""
+    if isinstance(object, Sum):
+        # Check that each Product is complete
+        for p in object.products:
+            if not iscomplete(p):
+                return False
+        return True
+    elif isinstance (object, Product):
+        # Get secondary and auxiliary Indices
+        aindices = []
+        bindices = []
+        object.indexcall(__index_add, [aindices, "secondary"])
+        object.indexcall(__index_add, [bindices, "auxiliary"])
+        return __check_completeness(aindices) and __check_completeness(bindices)
+    else:
+        raise RuntimeError, "Unsupported type."
 
 def reassign_index(object, iold, inew, type):
     """Change value of index from iold to inew for given object,
@@ -60,13 +88,13 @@ def reassign_index(object, iold, inew, type):
 def min_index(object, type):
     "Compute minimum index of given type for given object."
     indices = []
-    object.indexcall(__index_add, [indices, type])
+    object.indexcall(__index_add_value, [indices, type])
     return min([maxint] + indices)
 
 def max_index(object, type):
     "Compute maximum index of given type for given object."
     indices = []
-    object.indexcall(__index_add, [indices, type])
+    object.indexcall(__index_add_value, [indices, type])
     return max([-1] + indices)
 
 def __reassign(object, type):
@@ -86,7 +114,7 @@ def __reassign(object, type):
 def __have_index(object, index):
     "Check if object contains given index."
     indices = []
-    object.indexcall(__index_add, [indices, index.type])
+    object.indexcall(__index_add_value, [indices, index.type])
     return index.index in indices
 
 def __create_auxiliary(product):
@@ -95,11 +123,11 @@ def __create_auxiliary(product):
 
     # Build list of reference tensor secondary indices
     ir = []
-    [v.indexcall(__index_add, [ir, "secondary"]) for v in product.basisfunctions]
+    [v.indexcall(__index_add_value, [ir, "secondary"]) for v in product.basisfunctions]
     # Build list of geometry tensor secondary indices
     ig = []
-    [c.indexcall(__index_add, [ig, "secondary"]) for c in product.coefficients]
-    [t.indexcall(__index_add, [ig, "secondary"]) for t in product.transforms]
+    [c.indexcall(__index_add_value, [ig, "secondary"]) for c in product.coefficients]
+    [t.indexcall(__index_add_value, [ig, "secondary"]) for t in product.transforms]
     # Build lists of indices that should be modified
     irm = [i for i in ir if i not in ig]
     igm = [i for i in ig if i not in ir]
@@ -114,7 +142,15 @@ def __create_auxiliary(product):
     return
 
 def __index_add(index, args):
-    "Add index number to list if index is of given type."
+    "Add Index to list if Index is of given type."
+    indices = args[0]
+    type = args[1]
+    if index.type == type:
+        indices += [index]
+    return
+
+def __index_add_value(index, args):
+    "Add Index number to list if index is of given type."
     indices = args[0]
     type = args[1]
     if index.type == type:
@@ -139,6 +175,19 @@ def __index_reassign(index, args):
         index.index = inew
         increment[0] = 1
     return
+
+def __check_completeness(indices):
+    "Check that each Index in the list appear exactly twice."
+    for i in range(len(indices)):
+        count = 0
+        for j in range(len(indices)):
+            if indices[i] == indices[j]:
+                count += 1
+        if not count == 2:
+            print "Index %s found in %d positions, but must appear in exactly two positions." % \
+                  (str(indices[i]), count)
+            return False
+    return True
 
 if __name__ == "__main__":
 

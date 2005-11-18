@@ -1,3 +1,5 @@
+ - Check tensor notation for completeness
+ - Bug fix for mixed elements with more than two function spaces
  - Don't declare unused coefficients (or gcc will complain)
 0.2.2 [2005-11-14]
  - Add command-line argument -v / --version 

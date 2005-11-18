@@ -3,7 +3,7 @@ represent multilinear forms, that is, small basic data types used to
 build the data structure representing an element of the form algebra."""
 
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-09-29 -- 2005-11-14"
+__date__ = "2004-09-29 -- 2005-11-17"
 __copyright__ = "Copyright (c) 2004 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -58,7 +58,13 @@ class Derivative:
     """A Derivative represents a derivative on the reference cell in
     either a given fixed coordinate direction (in which case it is a
     tensor of rank 0) or one of many possible coordinate directions
-    (in which case it is a tensor of rank 1)."""
+    (in which case it is a tensor of rank 1).
+
+    Attributes:
+
+        element - a FiniteElement
+        index   - an Index
+    """
 
     def __init__(self, element, index = None):
         "Create Derivative."

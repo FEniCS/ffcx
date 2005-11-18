@@ -176,11 +176,14 @@ class Function(Element):
     """
 
     def __init__(self, element):
+
+        print "Copy constructor for Function"
+        
         "Create Function."
         if isinstance(element, Function):
             # Create Function from Function (copy constructor)
-            self.n0 = element.n0
-            self.n1 = element.n1
+            self.n0 = Index(element.n0)
+            self.n1 = Index(element.n1)
             self.e0 = element.e0
             self.e1 = element.e1
             self.P  = element.P
