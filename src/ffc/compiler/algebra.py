@@ -36,7 +36,7 @@ from ffc.common.util import *
 
 # FFC compiler modules
 #from finiteelement import FiniteElement
-#from reassign import *
+from reassign import *
 from tokens import *
 from index import Index
 
@@ -62,6 +62,8 @@ class Element:
     def __mul__(self, other):
         "Operator: Element * Element"
         if isinstance(other, Element):
+            return Sum(self) * other
+        elif isinstance(other, Integral):
             return Sum(self) * other
         elif isinstance(other, float):
             return Sum(self) * other
@@ -177,9 +179,6 @@ class Function(Element):
     """
 
     def __init__(self, element):
-
-        print "Copy constructor for Function"
-        
         "Create Function."
         if isinstance(element, Function):
             # Create Function from Function (copy constructor)
@@ -260,7 +259,7 @@ class BasisFunction(Element):
 
     def dx(self, index = None):
         "Operator: (d/dx)BasisFunction in given coordinate direction."
-        i = Index() # Create new secondary index
+        i = Index() # Create new secondary indexF
         w = Product(self)
         w.basisfunctions[0].derivatives.insert(0, Derivative(self.element, i))
         w.transforms.insert(0, Transform(self.element, i, index))
@@ -374,6 +373,7 @@ class Product(Element):
             self.integral = other.integral
         else:
             raise FormError, (other, "Unable to create Product from given expression.")
+
         return
     
     def __mul__(self, other):
@@ -387,15 +387,18 @@ class Product(Element):
         elif isinstance(other, Sum):
             return Sum(self) * Sum(other)
         else:
+            # Create two copies
             w0 = Product(self)
             w1 = Product(other)
-
-            #print "w0 complete: " + str(iscomplete(w0))
-            #print "w1 complete: " + str(iscomplete(w1))
-
-            
+            # Check ranks
             if not w0.rank() == w1.rank() == 0:
                 raise FormError, (self, "Operands for product must be scalar.")
+            # Reassign all complete Indices to avoid collisions
+            reassign_complete(w0, "secondary")
+            reassign_complete(w0, "auxiliary")
+            reassign_complete(w1, "secondary")
+            reassign_complete(w1, "auxiliary")
+            # Compute product
             w = Product()
             w.numeric = float(w0.numeric * w1.numeric)
             w.constants = listcopy(w0.constants + w1.constants)
@@ -410,6 +413,7 @@ class Product(Element):
                 w.integral = Integral(w1.integral)
             else:
                 w.integral = None;
+
             return w
 
     def __neg__(self):

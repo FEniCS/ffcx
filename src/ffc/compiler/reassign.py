@@ -10,10 +10,15 @@ __copyright__ = "Copyright (c) 2004, 2005 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # Python modules
-from sys import maxint
+import sys
 
-# FFC modules
-from algebra import *
+# FFC common modules
+sys.path.append("../../")
+from ffc.common.exceptions import *
+
+# FFC compiler modules
+import algebra
+from index import *
 
 def reassign_indices(sum):
     """Reassign indices of Sum with all indices starting at 0. Modify
@@ -21,7 +26,7 @@ def reassign_indices(sum):
     tensors to auxiliary indices."""
 
     # Check that we got a Sum
-    if not isinstance(sum, Sum):
+    if not isinstance(sum, algebra.Sum):
         raise RuntimeError, "Can only reassign indices for Sum."
 
     # Check for completeness
@@ -62,13 +67,13 @@ def iscomplete(object):
     """Check if given Product or Sum is complete with respect to
     secondary and auxiliary Indices, that is, each such Index appear
     exactly twice in each Product."""
-    if isinstance(object, Sum):
+    if isinstance(object, algebra.Sum):
         # Check that each Product is complete
         for p in object.products:
             if not iscomplete(p):
                 return False
         return True
-    elif isinstance (object, Product):
+    elif isinstance (object, algebra.Product):
         # Get secondary and auxiliary Indices
         aindices = []
         bindices = []
@@ -77,6 +82,38 @@ def iscomplete(object):
         return __check_completeness(aindices) and __check_completeness(bindices)
     else:
         raise RuntimeError, "Unsupported type."
+
+def reassign_complete(product, type):
+    """Reassign complete secondary and auxiliary Index pairs of given
+    type for the given Product, so that they don't collide with
+    Indices in other Products (that may get multiplied with current
+    Product)."""
+    # Get indices
+    indices = []
+    product.indexcall(__index_add, [indices, type])
+    # Find complete pairs
+    pairs = []
+    for i in range(len(indices)):
+        count = 0
+        matching = None
+        for j in range(i + 1, len(indices)):
+            if indices[i] == indices[j]:
+                count += 1
+                matching = indices[j]
+        if count == 1:
+            pairs += [(indices[i], matching)]
+    # Reassign complete pairs
+    for pair in pairs:
+        # Get next available index
+        if type == "secondary":
+            new_index = next_secondary_index()
+        elif type == "auxiliary":
+            new_index = new_auxiliary_index()
+        else:
+            raise RuntimeError, "Reassigning for wrong Index type."
+        # Reassign for current pair
+        pair[0].index = new_index
+        pair[1].index = new_index
 
 def reassign_index(object, iold, inew, type):
     """Change value of index from iold to inew for given object,
@@ -89,7 +126,7 @@ def min_index(object, type):
     "Compute minimum index of given type for given object."
     indices = []
     object.indexcall(__index_add_value, [indices, type])
-    return min([maxint] + indices)
+    return min([sys.maxint] + indices)
 
 def max_index(object, type):
     "Compute maximum index of given type for given object."
@@ -108,7 +145,7 @@ def __reassign(object, type):
         inew += increment[0]
     imin = min_index(object, type)
     imax = max_index(object, type)
-    if 0 < imin < maxint:
+    if 0 < imin < sys.maxint:
         raise RuntimeError, "Failed to reassign indices."
 
 def __have_index(object, index):
@@ -184,7 +221,7 @@ def __check_completeness(indices):
             if indices[i] == indices[j]:
                 count += 1
         if not count == 2:
-            print "Index %s found in %d positions, but must appear in exactly two positions." % \
+            print "Index %s found in %d position(s), but must appear in exactly two positions." % \
                   (str(indices[i]), count)
             return False
     return True
