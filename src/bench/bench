@@ -13,5 +13,5 @@ finish()
 t = milli() / 1000.0;
 
 # Write report
-print "Navier-Stokes: %.1f seconds" % t
+print "Navier-Stokes: %.3f seconds" % t
 print "-----------------------------------"

@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-11-03 -- 2005-11-17"
+__date__ = "2004-11-03 -- 2005-11-21"
 __copyright__ = "Copyright (c) 2004 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -17,7 +17,7 @@ from algebra import *
 from reassign import *
 from multiindex import *
 from integrator import *
-#from monomialintegration import *
+from monomialintegration import *
 
 class ReferenceTensor:
 
@@ -56,12 +56,12 @@ class ReferenceTensor:
         self.a = self.__create_index("secondary")
         self.b = self.__create_index("reference tensor auxiliary")
 
-        # Compute reference tensor (old version)
-        self.A0 = self.__compute_reference_tensor()
-
         # Compute reference tensor (new version)
-        #integrate(product)
-        
+        self.A0 = integrate(product)
+
+        # Compute reference tensor (old version)
+        #self.A0 = self.__compute_reference_tensor()
+
         # Get rank
         self.rank = self.i.rank + self.a.rank
 
