@@ -1,7 +1,7 @@
 "This module provides efficient integration of monomial forms."
 
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-11-03 -- 2005-11-21"
+__date__ = "2004-11-03 -- 2005-11-28"
 __copyright__ = "Copyright (c) 2004 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -205,7 +205,8 @@ def __compute_product(psis, weights, vscaling):
     num_auxiliary = num_indices[3]
     assert num_auxiliary % 2 == 0
     for i in range(num_auxiliary / 2):
-        A0 = Numeric.add.reduce(Numeric.diagonal(A0), -1)
+        #A0 = Numeric.add.reduce(Numeric.diagonal(A0), -1) # does not work?
+        A0 = __trace(A0)
     
     return A0
 
@@ -246,3 +247,18 @@ def __multiindex_to_tuple(dindex, shapedim):
     for d in dindex:
         dtuple[d] += 1
     return tuple(dtuple)
+
+def __trace(A):
+    """Compute trace of given array, defined as the sum over the last
+    two dimensions, which should be equal. There is a Numeric.trace()
+    that should do this, but it doesn't seem to work correctly."""
+    shape = Numeric.shape(A)
+    # Check dimensions
+    if not shape[-1] == shape[-2]:
+        raise RuntimeError, "Illegal shape for trace."
+    # Create new tensor
+    B = Numeric.zeros(shape[:-2])
+    # Compute the sum
+    for i in range(shape[-1]):
+        B = B + A[..., i, i]
+    return B
