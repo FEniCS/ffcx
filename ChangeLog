@@ -1,3 +1,4 @@
+0.2.3 [2005-11-28]
  - New fast Numeric/BLAS based algorithm for computing reference tensor
  - Bug fix: reassign indices for complete subexpressions
  - Bug fix: operator Function * Integral
