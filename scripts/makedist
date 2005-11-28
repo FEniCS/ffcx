@@ -3,13 +3,13 @@
 # This script prepares and creates a .tar.gz package of FFC.
 
 # Update version number in ChangeLog
-pico -w ChangeLog
+emacs -nw ChangeLog
 
 # Update version number in constants.py
-pico -w src/ffc/common/constants.py
+emacs -nw src/ffc/common/constants.py
 
 # Update version number in setup.py
-pico -w setup.py
+emacs -nw setup.py
 
 # Get the version number
 VERSION=`grep 'FFC_VERSION' src/ffc/common/constants.py | cut -d'"' -f2`
