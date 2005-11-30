@@ -76,7 +76,7 @@ class FiniteElement:
             elif name == "Discontinuous vector Lagrange":
                 self.element = DiscontinuousVectorLagrange(self.fiat_shape, degree, num_components)
                 # Check for known FIAT bug
-                if not num_components == self.element.function_space().tensor_dim()[0]:
+                if (not num_components == None) and (not num_components == self.element.function_space().tensor_dim()[0]):
                     raise RuntimeError, \
 """Discontinous vector Lagrange element has wrong number of components.
 You need to patch your installation of FIAT. For more information, see
