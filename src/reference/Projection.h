@@ -98,6 +98,11 @@ public:
     {
       return *this;
     }
+  
+    FiniteElement& operator[] (unsigned int i)
+    {
+      return *this;
+    }
     
   private:
   
@@ -178,6 +183,11 @@ public:
     }
   
     const FiniteElement& operator[] (unsigned int i) const
+    {
+      return *this;
+    }
+  
+    FiniteElement& operator[] (unsigned int i)
     {
       return *this;
     }
