@@ -1,7 +1,7 @@
 "DOLFIN output format."
 
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-10-14 -- 2005-11-15"
+__date__ = "2004-10-14 -- 2005-11-30"
 __copyright__ = "Copyright (c) 2004, 2005 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -266,12 +266,16 @@ public:
   {
 %s  }
 
-  void vertexeval(real values[], unsigned int vertex, const Vector& x, const Mesh& mesh) const
+  void vertexeval(real values[], unsigned int vertex, const real x[], const Mesh& mesh) const
   {
     // FIXME: Temporary fix for Lagrange elements
 %s  }
 
   const FiniteElement& operator[] (unsigned int i) const
+  {
+%s  }
+
+  FiniteElement& operator[] (unsigned int i)
   {
 %s  }
   
@@ -293,6 +297,7 @@ private:
        dofmap,
        pointmap,
        vertexeval,
+       indexoperator,
        indexoperator,
        subelements)
 

@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2005-09-20"
+__date__ = "2005-09-20 -- 2005-11-30"
 __copyright__ = "Copyright (c) 2005 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -59,10 +59,10 @@ def write_component(component):
     "Write component value."
     if component == 0:
         name = "values[%d]" % component
-        value = "x(vertex)"
+        value = "x[vertex]"
     else:
         name = "values[%d]" % component
-        value = "x(offset + vertex)"
+        value = "x[offset + vertex]"
     return Declaration(name, value)
 
 def compute_vertexeval(element, component_offset):

@@ -1,3 +1,4 @@
+ - Update finite element interface for DOLFIN
  - Check for FIAT bug in discontinuous vector Lagrange elements 
  - Fix signatures for vector-valued elements
 0.2.3 [2005-11-28]
