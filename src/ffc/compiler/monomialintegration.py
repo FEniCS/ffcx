@@ -1,7 +1,7 @@
 "This module provides efficient integration of monomial forms."
 
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-11-03 -- 2005-11-28"
+__date__ = "2004-11-03 -- 2005-12-01"
 __copyright__ = "Copyright (c) 2004 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -45,6 +45,8 @@ def integrate(product):
 def __init_quadrature(basisfunctions):
     "Initialize quadrature for given monomial term."
 
+    debug("Initializing quadrature.", 1)
+
     # Get shape (check first one, all should be the same)
     shape = basisfunctions[0].element.shape()
 
@@ -72,6 +74,8 @@ def __init_quadrature(basisfunctions):
 def __init_table(basisfunctions, points):
     """Initialize table of basis functions and their derivatives at
     the given quadrature points for each element."""
+
+    debug("Precomputing table of basis functions at quadrature points.", 1)
     
     # Compute maximum number of derivatives for each element
     num_derivatives = {}
@@ -93,6 +97,8 @@ def __init_table(basisfunctions, points):
 
 def __compute_psi(v, table, num_points, dscaling):
     "Compute the table Psi for the given BasisFunction v."
+
+    debug("Computing table for factor v = " + str(v), 1)
 
     # We just need to pick the values for Psi from the table, which is
     # somewhat tricky since the table created by tabulate_jet() is a
@@ -165,6 +171,8 @@ def __compute_psi(v, table, num_points, dscaling):
 def __compute_product(psis, weights, vscaling):
     "Compute special product of list of Psis."
 
+    debug("Computing product of tables", 1)
+
     # We want to compute the outer product with respect to all
     # dimensions but the last of all the Psi tensors, and the
     # elementwise product with respect the last dimension
@@ -184,6 +192,8 @@ def __compute_product(psis, weights, vscaling):
         # Initialize new tensor
         newshape = Numeric.shape(A0)[:-1] + Numeric.shape(Psi)[:-1] + (num_points,)
         B = Numeric.zeros(newshape, Numeric.Float)
+
+        debug("Building reference tensor: shape = %s, size = %d" % (str(newshape), Numeric.size(B)), 2)
 
         # Iterate over quadrature points
         for q in range(num_points):

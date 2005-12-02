@@ -108,6 +108,7 @@ class ReferenceTensor:
 
         # Create tensor
         A0 = Numeric.zeros(self.i.dims + self.a.dims, Numeric.Float)
+        debug("Number of entries in reference tensor: %d" % Numeric.size(A0), 1)
 
         # Create quadrature rule
         integrate = Integrator(self.basisfunctions)

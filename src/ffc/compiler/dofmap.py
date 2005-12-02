@@ -1,5 +1,5 @@
 __author__ = "Robert C. Kirby (kirby@cs.uchicago.edu) and Anders Logg (logg@tti-c.org)"
-__date__ = "2005-05-03 -- 2005-11-01"
+__date__ = "2005-05-03 -- 2005-12-01"
 __copyright__ = "Copyright (c) 2005 Kirby/Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -12,19 +12,19 @@ from declaration import *
 from alignment import *
 
 # FIXME: Should not be DOLFIN-specific
-format = { ("entity", 2, 0) : lambda i : "cell.nodeID(%d)" % i,
+format = { ("entity", 2, 0) : lambda i : "cell.vertexID(%d)" % i,
            ("entity", 2, 1) : lambda i : "cell.edgeID(%d)" % i,
            ("entity", 2, 2) : lambda i : "cell.id()",
            ("entity", 2, 3) : lambda i : "not defined",
-           ("entity", 3, 0) : lambda i : "cell.nodeID(%d)" % i,
+           ("entity", 3, 0) : lambda i : "cell.vertexID(%d)" % i,
            ("entity", 3, 1) : lambda i : "cell.edgeID(%d)" % i,
            ("entity", 3, 2) : lambda i : "cell.faceID(%d)" % i,
            ("entity", 3, 3) : lambda i : "cell.id()",
-           ("num",    2, 0) : "mesh.noNodes()",
+           ("num",    2, 0) : "mesh.noVertices()",
            ("num",    2, 1) : "mesh.noEdges()",
            ("num",    2, 2) : "mesh.noCells()",
            ("num",    2, 3) : "not defined",
-           ("num",    3, 0) : "mesh.noNodes()",
+           ("num",    3, 0) : "mesh.noVertices()",
            ("num",    3, 1) : "mesh.noEdges()",
            ("num",    3, 2) : "mesh.noFaces()",
            ("num",    3, 3) : "mesh.noCells()",
