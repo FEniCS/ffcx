@@ -1,3 +1,5 @@
+ - Restructure computation of reference tensor to use less memory.
+   As a side effect, the speed has also been improved.	
  - Update for DOLFIN name change node --> vertex
  - Update finite element interface for DOLFIN
  - Check for FIAT bug in discontinuous vector Lagrange elements 

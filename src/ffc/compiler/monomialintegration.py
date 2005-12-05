@@ -1,7 +1,7 @@
 "This module provides efficient integration of monomial forms."
 
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-11-03 -- 2005-12-01"
+__date__ = "2004-11-03 -- 2005-12-05"
 __copyright__ = "Copyright (c) 2004 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -38,7 +38,7 @@ def integrate(product):
     psis = [__compute_psi(v, table, len(points), dscaling) for v in product.basisfunctions]
 
     # Compute product of all Psis
-    A0 = __compute_product(psis, weights, vscaling * product.numeric)
+    A0 = __compute_product(psis, vscaling * product.numeric * weights)
 
     return A0
 
@@ -103,6 +103,17 @@ def __compute_psi(v, table, num_points, dscaling):
     # We just need to pick the values for Psi from the table, which is
     # somewhat tricky since the table created by tabulate_jet() is a
     # mix of list, dictionary and Numeric.array.
+    #
+    # The dimensions of the resulting table are ordered as follows:
+    #
+    #     one dimension  corresponding to quadrature points
+    #     all dimensions corresponding to auxiliary Indices
+    #     all dimensions corresponding to primary   Indices
+    #     all dimensions corresponding to secondary Indices
+    #
+    # All fixed Indices are removed here. The first set of dimensions
+    # corresponding to quadrature points and auxiliary Indices are removed
+    # later when we sum over these dimensions.
 
     # Get FiniteElement for v
     element = v.element
@@ -153,7 +164,7 @@ def __compute_psi(v, table, num_points, dscaling):
             # Get values from table
             Psi[dlist] = etable[dtuple]
 
-    # Rearrange Indices as (fixed, primary, secondary, auxiliary)
+    # Rearrange Indices as (fixed, auxiliary, primary, secondary)
     (rearrangement, num_indices) = __compute_rearrangement(indices)
     indices = [indices[i] for i in rearrangement]
     Psi = Numeric.transpose(Psi, rearrangement + (len(indices),))
@@ -163,61 +174,53 @@ def __compute_psi(v, table, num_points, dscaling):
         Psi = Psi[indices[i].index,...]
     indices = [index for index in indices if not index.type == "fixed"]
 
+    # Put quadrature points first
+    rank = Numeric.rank(Psi)
+    Psi = Numeric.transpose(Psi, (rank - 1,) + tuple(range(0, rank - 1)))
+
     # Scale derivatives (FIAT uses different reference element)
     Psi = pow(dscaling, dorder) * Psi
 
-    return (Psi, indices)
+    # Compute auxiliary index positions for current Psi
+    bpart = [i.index for i in indices if i.type == "reference tensor auxiliary"]
 
-def __compute_product(psis, weights, vscaling):
+    return (Psi, indices, bpart)
+
+def __compute_product(psis, weights):
     "Compute special product of list of Psis."
 
     debug("Computing product of tables", 1)
 
-    # We want to compute the outer product with respect to all
-    # dimensions but the last of all the Psi tensors, and the
-    # elementwise product with respect the last dimension
-    # which corresponds to quadrature points.
-    
-    # Start with the quadrature weights
-    A0 = vscaling * Numeric.array(weights)
+    # The reference tensor is obtained by summing over quadrature
+    # points and auxiliary Indices the outer product of all the Psis
+    # with the first dimension (corresponding to quadrature points)
+    # and all auxiliary dimensions removed.
 
-    # Iterate over all Psis
-    indices = []
+    # Initialize zero reference tensor (will be rearranged later)
+    (shape, indices) = __compute_shape(psis)
+    A0 = Numeric.zeros(shape, Numeric.Float)
+
+    # Initialize list of auxiliary multiindices
+    bshape = __compute_auxiliary_shape(psis)
+    bindices = build_indices(bshape) or [[]]
+
+    # Sum over quadrature points and auxiliary indices
     num_points = len(weights)
-    for (Psi, index) in psis:
+    for q in range(num_points):
+        for b in bindices:
+            
+            # Compute outer products of subtables for current (q, b)
+            B = 1.0
+            for (Psi, index, bpart) in psis:
+                B = Numeric.multiply.outer(B, Psi[[q] + [b[i] for i in bpart]])
 
-        # Build Index list so we can rearrange later
-        indices += index
+            # Add product to reference tensor
+            A0 = A0 + weights[q] * B
 
-        # Initialize new tensor
-        newshape = Numeric.shape(A0)[:-1] + Numeric.shape(Psi)[:-1] + (num_points,)
-        B = Numeric.zeros(newshape, Numeric.Float)
-
-        debug("Building reference tensor: shape = %s, size = %d" % (str(newshape), Numeric.size(B)), 2)
-
-        # Iterate over quadrature points
-        for q in range(num_points):
-
-            # Compute outer product with current Psi
-            B[..., q] = Numeric.multiply.outer(A0[..., q], Psi[..., q])
-
-        # Update reference tensor
-        A0 = B
-
-    # Sum over quadrature points (tensor contraction on last dimension)
-    A0 = Numeric.add.reduce(A0, -1)
-
-    # Rearrange Indices as (primary, secondary, auxiliary)
+    # Rearrange Indices as (primary, secondary)
     (rearrangement, num_indices) = __compute_rearrangement(indices)
     A0 = Numeric.transpose(A0, rearrangement)
 
-    # Sum over auxiliary indices (tensor contraction over dimension pairs)
-    num_auxiliary = num_indices[3]
-    assert num_auxiliary % 2 == 0
-    for i in range(num_auxiliary / 2):
-        #A0 = Numeric.add.reduce(Numeric.diagonal(A0), -1) # does not work?
-        A0 = __trace(A0)
-    
     return A0
 
 def __compute_degree(basisfunctions):
@@ -234,12 +237,39 @@ def __compute_rearrangement(indices):
     the tuple reorders the given list of Indices with fixed, primary,
     secondary and auxiliary Indices in rising order."""
     fixed     = __find_indices(indices, "fixed")
+    auxiliary = __find_indices(indices, "reference tensor auxiliary")
     primary   = __find_indices(indices, "primary")
     secondary = __find_indices(indices, "secondary")
-    auxiliary = __find_indices(indices, "reference tensor auxiliary")
-    assert len(fixed + primary + secondary + auxiliary) == len(indices)
-    return (tuple(fixed + primary + secondary + auxiliary ), \
-            (len(fixed), len(primary), len(secondary), len(auxiliary)))
+    assert len(fixed + auxiliary + primary + secondary) == len(indices)
+    return (tuple(fixed + auxiliary + primary + secondary), \
+            (len(fixed), len(auxiliary), len(primary), len(secondary)))
+
+def __compute_shape(psis):
+    "Compute shape of reference tensor from given list of tables."
+    shape, indices = [], []
+    for (Psi, index, bpart) in psis:
+        num_auxiliary = len([0 for i in index if i.type == "reference tensor auxiliary"])
+        shape += Numeric.shape(Psi)[1 + num_auxiliary:]
+        indices += index[num_auxiliary:]
+    return (shape, indices)
+    
+def __compute_auxiliary_shape(psis):
+    """Compute shape for auxiliary indices from given list of tables.
+    Also compute a list of  mappings from each table to the auxiliary
+    dimensions associated with that table."""
+    # First find the number of different auxiliary indices (check maximum)
+    bs = [b for (Psi, index, bpart) in psis for b in bpart]
+    if len(bs) == 0: return []
+    bmax = max(bs)
+    # Find the dimension for each auxiliary index
+    bshape = [0 for i in range(bmax + 1)]
+    for (Psi, index, bpart) in psis:
+        for i in range(len(bpart)):
+            bshape[bpart[i]] = Numeric.shape(Psi)[i + 1]
+    # Check that we found the shape for each auxiliary index
+    if 0 in bshape:
+        raise RuntimeError, "Unable to compute the shape for each auxiliary index."
+    return bshape
 
 def __find_indices(indices, type):
     "Return sorted list of positions for given Index type."
@@ -257,18 +287,3 @@ def __multiindex_to_tuple(dindex, shapedim):
     for d in dindex:
         dtuple[d] += 1
     return tuple(dtuple)
-
-def __trace(A):
-    """Compute trace of given array, defined as the sum over the last
-    two dimensions, which should be equal. There is a Numeric.trace()
-    that should do this, but it doesn't seem to work correctly."""
-    shape = Numeric.shape(A)
-    # Check dimensions
-    if not shape[-1] == shape[-2]:
-        raise RuntimeError, "Illegal shape for trace."
-    # Create new tensor
-    B = Numeric.zeros(shape[:-2])
-    # Compute the sum
-    for i in range(shape[-1]):
-        B = B + A[..., i, i]
-    return B

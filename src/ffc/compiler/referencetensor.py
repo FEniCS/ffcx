@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-11-03 -- 2005-11-21"
+__date__ = "2004-11-03 -- 2005-12-05"
 __copyright__ = "Copyright (c) 2004 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -58,6 +58,9 @@ class ReferenceTensor:
 
         # Compute reference tensor (new version)
         self.A0 = integrate(product)
+
+        #B = self.__compute_reference_tensor()
+        #print "Maximum error: %.3e" % max(abs(Numeric.ravel(self.A0 - B)))
 
         # Compute reference tensor (old version)
         #self.A0 = self.__compute_reference_tensor()
