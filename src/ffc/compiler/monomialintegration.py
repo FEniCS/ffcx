@@ -17,6 +17,7 @@ from FIAT.shapes import *
 
 # FFC common modules
 from ffc.common.debug import *
+from ffc.common.progress import *
 
 # FFC compiler modules
 from algebra import *
@@ -206,6 +207,7 @@ def __compute_product(psis, weights):
 
     # Sum over quadrature points and auxiliary indices
     num_points = len(weights)
+    progress = Progress(num_points * len(bindices))
     for q in range(num_points):
         for b in bindices:
             
@@ -216,6 +218,9 @@ def __compute_product(psis, weights):
 
             # Add product to reference tensor
             A0 = A0 + weights[q] * B
+
+            # Update progress
+            progress += 1
 
     # Rearrange Indices as (primary, secondary)
     (rearrangement, num_indices) = __compute_rearrangement(indices)
