@@ -1,3 +1,4 @@
+ - Report time taken to compute reference tensor
  - Restructure computation of reference tensor to use less memory.
    As a side effect, the speed has also been improved.	
  - Update for DOLFIN name change node --> vertex

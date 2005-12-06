@@ -5,6 +5,7 @@ __license__  = "GNU GPL Version 2"
 
 # Python modules
 import Numeric
+import time
 
 # FFC common modules
 from ffc.common.exceptions import *
@@ -33,7 +34,8 @@ class ReferenceTensor:
         A0             - the precomputed reference tensor
         numeric        - a numeric constant (float)
         basisfunctions - a list of BasisFunctions
-        integral       - an Integral"""
+        integral       - an Integral
+        cputime        - time to compute the reference tensor"""
 
     def __init__(self, product):
         "Create ReferenceTensor."
@@ -57,7 +59,12 @@ class ReferenceTensor:
         self.b = self.__create_index("reference tensor auxiliary")
 
         # Compute reference tensor (new version)
+        t = time.time()
         self.A0 = integrate(product)
+
+        # Report time to compute the reference tensor
+        self.cputime = time.time() - t
+        debug("Reference tensor computed in %.3g seconds." % self.cputime)
 
         #B = self.__compute_reference_tensor()
         #print "Maximum error: %.3e" % max(abs(Numeric.ravel(self.A0 - B)))
