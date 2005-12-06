@@ -1,3 +1,4 @@
+0.2.4 [2005-12-05]	
  - Report time taken to compute reference tensor
  - Restructure computation of reference tensor to use less memory.
    As a side effect, the speed has also been improved.	
