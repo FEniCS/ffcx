@@ -66,6 +66,7 @@ class ReferenceTensor:
         self.cputime = time.time() - t
         debug("Reference tensor computed in %.3g seconds." % self.cputime)
 
+        # For testing
         #B = self.__compute_reference_tensor()
         #print "Maximum error: %.3e" % max(abs(Numeric.ravel(self.A0 - B)))
 

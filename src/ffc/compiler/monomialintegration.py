@@ -1,7 +1,7 @@
 "This module provides efficient integration of monomial forms."
 
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-11-03 -- 2005-12-05"
+__date__ = "2004-11-03 -- 2005-12-09"
 __copyright__ = "Copyright (c) 2004 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -212,12 +212,12 @@ def __compute_product(psis, weights):
         for b in bindices:
             
             # Compute outer products of subtables for current (q, b)
-            B = 1.0
+            B = weights[q]
             for (Psi, index, bpart) in psis:
                 B = Numeric.multiply.outer(B, Psi[[q] + [b[i] for i in bpart]])
 
             # Add product to reference tensor
-            A0 = A0 + weights[q] * B
+            Numeric.add(A0, B, A0)
 
             # Update progress
             progress += 1
