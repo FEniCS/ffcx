@@ -1,3 +1,4 @@
+o [logg] Switch Numeric --> SciPy
 o [logg] Compilation of individual elements
 o [logg] (u, p) = Functions(element) dos not work?
 o [logg] Write about mean() in manual
@@ -14,7 +15,6 @@ o [logg] Add new operations for Function (sqrt(), /)
 o [logg] Add predefined function h
 o [logg] Make d available to user
 o [logg] Add vector constants
-o [logg] Add projections: pi = Projection(finiteelement)
 o [logg] Make dofmap.py and interpolation.py less DOLFIN specific
 o [logg] Display flop count
 o [logg] Change *(1.0/c) to /c
