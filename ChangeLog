@@ -1,3 +1,4 @@
+ - Add demo Stabilization.form
  - Further speedup computation of reference tensor (use ufunc Numeric.add)
 0.2.4 [2005-12-05]	
  - Report time taken to compute reference tensor
