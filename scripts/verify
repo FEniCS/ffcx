@@ -7,12 +7,14 @@ cd src/demo
 for f in *.form; do
     PREFIX=`echo $f | cut -d'.' -f1`
     rm -f $PREFIX.h
-    ../bin/ffc $f
-    if [ -f $PREFIX.h ]; then
-	echo "Form $f compiled"
-    else
-	echo "*** Unable to compile $f"
-	exit 1
+    if [ $f != 'Stabilization.form' ]; then
+      ../bin/ffc $f
+      if [ -f $PREFIX.h ]; then
+	  echo "Form $f compiled"
+      else
+	  echo "*** Unable to compile $f"
+	  exit 1
+      fi
     fi
 done
 
