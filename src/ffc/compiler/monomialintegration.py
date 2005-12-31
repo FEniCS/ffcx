@@ -200,6 +200,8 @@ def __compute_product(psis, weights):
     # Initialize zero reference tensor (will be rearranged later)
     (shape, indices) = __compute_shape(psis)
     A0 = Numeric.zeros(shape, Numeric.Float)
+    print "Computing the reference tensor (%d entries), this may take some time..." % \
+          Numeric.size(A0)
 
     # Initialize list of auxiliary multiindices
     bshape = __compute_auxiliary_shape(psis)
