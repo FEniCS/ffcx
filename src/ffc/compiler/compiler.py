@@ -27,6 +27,7 @@ from ffc.format import xml
 # FFC compiler modules
 from form import *
 from index import *
+from tokens import *
 from algebra import *
 from operators import *
 from signature import *

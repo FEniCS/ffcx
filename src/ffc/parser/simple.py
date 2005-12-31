@@ -20,8 +20,8 @@ def parse(filename, language, options):
     # Generate output
     output = """\
 import sys
-sys.path.append("../")
 sys.path.append("../../")
+sys.path.append("./")
 from ffc.compiler.compiler import *
 
 name = "%s"
@@ -30,16 +30,6 @@ a = None
 L = None
 M = None
     
-dx = Integral("interior")
-ds = Integral("boundary")
-
-i = Index()
-j = Index()
-k = Index()
-l = Index()
-m = Index()
-n = Index()
-
 %s
 
 compile([a, L, M], name, \"%s\", %s)

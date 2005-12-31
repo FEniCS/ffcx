@@ -140,3 +140,14 @@ class Integral:
             return "dX"
         else:
             return "dS"
+
+# Predefined tokens
+dx = Integral("interior")
+ds = Integral("boundary")
+
+i = Index()
+j = Index()
+k = Index()
+l = Index()
+m = Index()
+n = Index()
