@@ -1,3 +1,4 @@
+ - Fix bug in LaTeX format
  - Fix path and predefine tokens to enable import in .form file
  - Report number of entries in reference tensor during compilation
 0.2.5 [2005-12-28]

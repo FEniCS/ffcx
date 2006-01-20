@@ -113,7 +113,7 @@ class ElementTensor:
         """Precompute element tensor, including optimizations. This is
         where any FErari optimization should be done."""
         debug("Generating code for element tensor", 1)
-        if not self.terms or format.format["element tensor"](0, 0) == None: return []
+        if not self.terms or format.format["element tensor"]((0,), 0) == None: return []
         declarations = []
         iindices = self.terms[0].A0.i.indices or [[]] # All primary ranks are equal
         k = 0 # Update counter for each entry of A0, which is needed for some formats
