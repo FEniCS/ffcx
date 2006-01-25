@@ -312,7 +312,7 @@ def __form(form, type, options, xmlfile):
 
     # Create argument list for form (functions and constants)
     arguments = ", ".join([("Function& w%d" % j) for j in range(form.nfunctions)] + \
-                          [("const real& c%d" % j) for j in range(form.nconstants)])
+                          [("const real c%d" % j) for j in range(form.nconstants)])
 
     # Create initialization list for constants (if any)
     constinit = ", ".join([("c%d(c%d)" % (j, j)) for j in range(form.nconstants)])
@@ -401,7 +401,7 @@ private:
     if form.nconstants > 0:
         for j in range(form.nconstants):
             output += """\
-  const real& c%d;""" % j
+  const real c%d;""" % j
         output += "\n"
 
     # Class footer
