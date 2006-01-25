@@ -19,6 +19,7 @@ from ffc.common.exceptions import *
 # FFC format modules
 sys.path.append("../../")
 from ffc.format import dolfin
+from ffc.format import dolfinswig
 from ffc.format import latex
 from ffc.format import raw
 from ffc.format import ase
@@ -81,6 +82,8 @@ def build(sums, name = "Form", language = FFC_LANGUAGE, options = FFC_OPTIONS):
         format = dolfin
     elif language == "dolfin" or language == "DOLFIN":
         format = dolfin
+    elif language == "dolfin-swig" or language == "DOLFIN-SWIG":
+        format = dolfinswig
     elif language == "latex" or language == "LaTeX":
         format = latex
     elif language == "raw":
