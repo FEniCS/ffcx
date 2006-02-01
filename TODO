@@ -1,3 +1,7 @@
+o [logg] Use Constant instead of real in DOLFIN interface
+o [logg] gzip XML files by default and add option -a no-gzip
+o [logg] Add new operations for Function (sqrt(), /)
+o [logg] Add predefined function h
 o [logg] Switch Numeric --> SciPy
 o [logg] Compilation of individual elements
 o [logg] (u, p) = Functions(element) dos not work?
