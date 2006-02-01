@@ -10,7 +10,6 @@ o [logg] Optionally generate pair of .h and .cpp files?
 o [logg] Generate loops for geometry tensor in BLAS mode?
 o [logg] Write about division with Constant in manual
 o [logg] gzip XML files by default and add option -a no-gzip
-o [logg] Don't nest classes in output (for SWIG use)
 o [logg] Add new operations for Function (sqrt(), /)
 o [logg] Add predefined function h
 o [logg] Make d available to user
@@ -24,12 +23,3 @@ o [logg] Call FErari to simplify
 o [logg] Option for inexact integration?
 o [logg] Option for using quadrature?
 o [logg] Fix all FIXMEs (grep FIXME *.py)
-
-----
-
-Suggestions for FIAT:
-
-  - Change reference element
-  - Check for function that is zero
-  - Add ChangeLog, AUTHORS, README, INSTALL, TODO
-
