@@ -1,3 +1,4 @@
+ - Fix bugs in raw and XML formats
  - Fix bug in LaTeX format
  - Fix path and predefine tokens to enable import in .form file
  - Report number of entries in reference tensor during compilation
