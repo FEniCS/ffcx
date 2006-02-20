@@ -2,8 +2,8 @@
 based on the basic form algebra operations."""
 
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2005-09-07 -- 2005-11-08"
-__copyright__ = "Copyright (c) 2005 Anders Logg"
+__date__ = "2005-09-07 -- 2005-12-20"
+__copyright__ = "Copyright (c) 2005-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # Modified by Ola Skavhaug, 2005
@@ -166,11 +166,11 @@ def mean(v):
     # Different projections needed for scalar and vector-valued elements
     element = v.e0
     if element.rank() == 0:
-        P0 = FiniteElement("Discontinuous Lagrange", element._shape, 0)
+        P0 = FiniteElement("Discontinuous Lagrange", element.shape_str, 0)
         pi = Projection(P0)
         return pi(v)
     else:
-        P0 = FiniteElement("Discontinuous vector Lagrange", element._shape, 0, element.tensordim(0))
+        P0 = FiniteElement("Discontinuous vector Lagrange", element.shape_str, 0, element.tensordim(0))
         pi = Projection(P0)
         return pi(v)
      
