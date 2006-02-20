@@ -1,7 +1,7 @@
 "DOLFIN output format."
 
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-10-14 -- 2005-11-30"
+__date__ = "2004-10-14 -- 2006-02-20"
 __copyright__ = "Copyright (c) 2004, 2005 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -209,7 +209,17 @@ def __element(element, name):
     if isinstance(element, MixedElement):
         for i in range(len(element.elements)):
             subelements += __element(element.elements[i], "SubElement_%d" % i)
-    
+
+    # Generate code for FiniteElementSpec
+    if element.type_str == "mixed":
+        spec = "    FiniteElementSpec s(\"mixed\");"
+    elif element.rank() > 0:
+        spec = "    FiniteElementSpec s(\"%s\", \"%s\", %d, %d);" % \
+               (element.type_str, element.shape_str, element.degree(), element.vectordim())
+    else:
+        spec = "    FiniteElementSpec s(\"%s\", \"%s\", %d);" % \
+               (element.type_str, element.shape_str, element.degree())
+
     # Generate output
     output = """\
 
@@ -278,6 +288,12 @@ public:
   FiniteElement& operator[] (unsigned int i)
   {
 %s  }
+
+  FiniteElementSpec spec() const
+  {
+%s
+    return s;
+  }
   
 private:
 %s
@@ -299,6 +315,7 @@ private:
        vertexeval,
        indexoperator,
        indexoperator,
+       spec,
        subelements)
 
     return indent(output, 2)

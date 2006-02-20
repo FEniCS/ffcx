@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2005-09-16 -- 2005-11-17"
+__date__ = "2005-09-16 -- 2006-02-20"
 __copyright__ = "Copyright (c) 2005 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -66,6 +66,8 @@ class MixedElement:
     created by the tensor product of a list of FiniteElements.
 
     Attributes:
+        type_str        - string name of element type
+        shape_str       - string name of element shape
         elements        - a list of finite elements
         mixed_basis     - a list of mixed basis functions
         mixed_degree    - maximum degree of basis functions
@@ -86,6 +88,10 @@ class MixedElement:
         # Check that we have at least one element
         if not len(self.elements) > 0:
             raise FormError, "Mixed finite element must contain at least one element."
+
+        # Initialize data
+        self.type_str = "mixed"
+        self.shape_str = elements[0].shape_str
 
         # Compute degree
         self.mixed_degree = self.__compute_degree()

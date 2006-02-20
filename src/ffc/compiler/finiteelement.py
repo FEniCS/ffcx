@@ -1,6 +1,6 @@
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-10-04 -- 2005-11-29"
-__copyright__ = "Copyright (c) 2004, 2005 Anders Logg"
+__date__ = "2004-10-04 -- 2006-02-20"
+__copyright__ = "Copyright (C) 2004-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # Python modules
@@ -35,22 +35,22 @@ class FiniteElement:
     this class serves as the interface to FIAT finite elements from
     within FFC.
 
-    A FiniteElement is specified by giving the name and degree of the
+    A FiniteElement is specified by giving the type and degree of the
     finite element, together with the name of the reference cell:
 
-      name:   "Lagrange", "Hermite", ...
+      type:   "Lagrange", "Hermite", ...
       shape:  "line", "triangle", "tetrahedron"
       degree: 0, 1, 2, ...
 
     The shape and degree must match the chosen type of finite element."""
 
-    def __init__(self, name, shape, degree = None, num_components = None, element = None):
+    def __init__(self, type, shape, degree = None, num_components = None, element = None):
         "Create FiniteElement."
 
         # Initialize data
-        self.name = name
+        self.type_str = type
+        self.shape_str = shape
         self.element = None
-        self._shape = shape
 
         if not element is None:
             self.element = element
@@ -67,13 +67,13 @@ class FiniteElement:
                 raise RuntimeError, "Unknown shape " + str(shape)
 
             # Choose function space
-            if name == "Lagrange":
+            if type == "Lagrange":
                 self.element = Lagrange(self.fiat_shape, degree)
-            elif name == "Vector Lagrange":
+            elif type == "Vector Lagrange":
                 self.element = VectorLagrange(self.fiat_shape, degree, num_components)
-            elif name == "Discontinuous Lagrange":
+            elif type == "Discontinuous Lagrange":
                 self.element = DiscontinuousLagrange(self.fiat_shape, degree)
-            elif name == "Discontinuous vector Lagrange":
+            elif type == "Discontinuous vector Lagrange":
                 self.element = DiscontinuousVectorLagrange(self.fiat_shape, degree, num_components)
                 # Check for known FIAT bug
                 if (not num_components == None) and (not num_components == self.element.function_space().tensor_dim()[0]):
@@ -81,20 +81,20 @@ class FiniteElement:
 """Discontinous vector Lagrange element has wrong number of components.
 You need to patch your installation of FIAT. For more information, see
 http://www.fenics.org/pipermail/fiat-dev/2005-August/000060.html"""
-            elif name == "Crouzeix-Raviart":
+            elif type == "Crouzeix-Raviart":
                 print "Warning: element untested"
                 self.element = CrouzeixRaviart(self.fiat_shape)
-            elif name == "Raviart-Thomas":
+            elif type == "Raviart-Thomas":
                 print "Warning: element untested"
                 self.element = RaviartThomas(self.fiat_shape, degree)
-            elif name == "Brezzi-Douglas-Marini":
+            elif type == "Brezzi-Douglas-Marini":
                 print "Warning: element untested"
                 self.element = BDM(self.fiat_shape, degree)
-            elif name == "Nedelec":
+            elif type == "Nedelec":
                 print "Warning: element untested"
                 self.element = Nedelec(degree)
             else:
-                raise RuntimeError, "Unknown finite element: " + str(name)
+                raise RuntimeError, "Unknown finite element: " + str(type)
 
         # Save dual basis
         self.fiat_dual = self.element.dual_basis()
@@ -164,12 +164,12 @@ http://www.fenics.org/pipermail/fiat-dev/2005-August/000060.html"""
 
     def __repr__(self):
         "Print nicely formatted representation of FiniteElement."
-        if self.vectordim() > 0:
+        if self.vectordim() > 1:
             return "%s finite element of degree %d on a %s with %d components" % \
-                   (self.name, self.degree(), shape_to_string[self.shape()], self.vectordim())
+                   (self.type_str, self.degree(), self.shape_str, self.vectordim())
         else:
             return "%s finite element of degree %d on a %s" % \
-                   (self.name, self.degree(), shape_to_string[self.shape()])
+                   (self.type_str, self.degree(), self.shape_str)
 
 if __name__ == "__main__":
 
