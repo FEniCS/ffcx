@@ -124,6 +124,7 @@ def __file_header(name, options):
 #include <dolfin/Vector.h>
 #include <dolfin/AffineMap.h>
 #include <dolfin/FiniteElement.h>
+#include <dolfin/FiniteElementSpec.h>
 #include <dolfin/LinearForm.h>
 #include <dolfin/BilinearForm.h>
 
