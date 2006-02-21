@@ -14,10 +14,3 @@ f = Function(element)
 
 a = dot(grad(v), grad(u))*dx
 L = v*f*dx
-
-
-P5_2D
-P1_2D
-P2quad
-
-BDM2
