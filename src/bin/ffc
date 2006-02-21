@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 
-# Copyright (c) 2004-2005 Anders Logg (logg@tti-c.org)
+# Copyright (c) 2004-2006 Anders Logg (logg@tti-c.org)
 # Licensed under the GNU GPL Version 2
 #
 # Modified by Johan Jansson, 2005
 #
-# 2004-10-14 -- 2005-11-14
+# 2004-10-14 -- 2006-02-20
 #
 # This script parses command-line arguments, calls
 # the parser, and then compiles the generated form.

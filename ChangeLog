@@ -1,3 +1,4 @@
+ - Add compilation of elements without form
  - Add generation of FiniteElementSpec in DOLFIN formats
  - Fix bugs in raw and XML formats
  - Fix bug in LaTeX format

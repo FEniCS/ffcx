@@ -3,8 +3,8 @@ and building the data structures (geometry and reference tensors) for
 the evaluation of the multi-linear form."""
 
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-11-17 -- 2005-11-15"
-__copyright__ = "Copyright (c) 2004, 2005 Anders Logg"
+__date__ = "2004-11-17 -- 2006-02-20"
+__copyright__ = "Copyright (c) 2004-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # Python modules
@@ -49,6 +49,8 @@ def compile(sums, name = "Form", language = FFC_LANGUAGE, options = FFC_OPTIONS)
         if not key in options:
             options[key] = FFC_OPTIONS[key]
 
+    # 
+
     # Build data structures
     forms = build(sums, name, language, options)
 
@@ -77,25 +79,8 @@ def build(sums, name = "Form", language = FFC_LANGUAGE, options = FFC_OPTIONS):
         print "No forms specified, nothing to do."
         return None
 
-    # Choose language
-    if not language:
-        format = dolfin
-    elif language == "dolfin" or language == "DOLFIN":
-        format = dolfin
-    elif language == "dolfin-swig" or language == "DOLFIN-SWIG":
-        format = dolfinswig
-    elif language == "latex" or language == "LaTeX":
-        format = latex
-    elif language == "raw":
-        format = raw
-    elif language == "ase":
-        format = ase
-    elif language == "xml":
-        format = xml
-    else:
-        raise "RuntimeError", "Unknown language " + str(language)
-
     # Initialize format
+    format = __choose_format(language)
     format.init(options)
 
     # Generate the element tensor for all given forms
@@ -176,6 +161,24 @@ def write(forms, options = FFC_OPTIONS):
 
     return
 
+def writeFiniteElement(element, name = "MyElement", language = FFC_LANGUAGE, options = FFC_OPTIONS):
+    "Generate code for the given finite element."
+
+    # Add default values for any missing options
+    for key in FFC_OPTIONS:
+        if not key in options:
+            options[key] = FFC_OPTIONS[key]
+
+    # Initialize format
+    format = __choose_format(language)
+    format.init(options)
+
+    # Write a nice message
+    print "Compiling finite element: " + str(element)
+
+    # Generate code
+    format.writeFiniteElement(element, name, options)
+
 def __check_primary_ranks(form):
     "Check that all primary ranks are equal."
     terms = form.AKi.terms + form.AKb.terms
@@ -229,6 +232,26 @@ def __compute_coefficients(projections, format, cK_used):
                 declarations += [declaration]
 
     return declarations
+
+def __choose_format(language):
+    "Choose format from specified language."
+    if not language:
+        format = dolfin
+    elif language == "dolfin" or language == "DOLFIN":
+        format = dolfin
+    elif language == "dolfin-swig" or language == "DOLFIN-SWIG":
+        format = dolfinswig
+    elif language == "latex" or language == "LaTeX":
+        format = latex
+    elif language == "raw":
+        format = raw
+    elif language == "ase":
+        format = ase
+    elif language == "xml":
+        format = xml
+    else:
+        raise "RuntimeError", "Unknown language " + str(language)
+    return format
 
 if __name__ == "__main__":
 

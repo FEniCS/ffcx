@@ -1,8 +1,8 @@
 "A simple parser for FFC."
 
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-11-15 -- 2005-10-24"
-__copyright__ = "Copyright (c) 2004, 2005 Anders Logg"
+__date__ = "2004-11-15 -- 2006-02-20"
+__copyright__ = "Copyright (c) 2004-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 def parse(filename, language, options):
@@ -29,11 +29,18 @@ name = "%s"
 a = None
 L = None
 M = None
-    
+element = None
+
 %s
 
-compile([a, L, M], name, \"%s\", %s)
-""" % (prefix, input, language, options)
+if not (a == L == M == None):
+  compile([a, L, M], name, \"%s\", %s)
+elif not element == None:
+  writeFiniteElement(element, name, \"%s\", %s)
+else:
+ print \"No forms specified, nothing to do.\"
+
+""" % (prefix, input, language, options, language, options)
 
     # Write output
     outname = prefix + ".py"
