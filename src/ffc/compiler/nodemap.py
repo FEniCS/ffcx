@@ -3,6 +3,8 @@ __date__ = "2005-05-03 -- 2006-02-20"
 __copyright__ = "Copyright (c) 2005-2006 Kirby/Logg"
 __license__  = "GNU GPL Version 2"
 
+# This file was previously named dofmap.py
+
 # FIAT modules
 from FIAT.dualbasis import *
 from FIAT.shapes import *
@@ -38,37 +40,37 @@ format = { ("entity", 2, 0) : lambda i : "cell.vertexID(%d)" % i,
            ("check",  3, 3) : lambda i : "not defined" }
 
 def write_edge_reordering(nodes_per_entity, subelement):
-    "Write table for ordering of dofs on edges."
+    "Write table for ordering of nodes on edges."
     num_nodes = nodes_per_entity[1]
     map = edge_reordering(num_nodes)
     name = "static unsigned int edge_reordering_%d[2][%d]" % (subelement, num_nodes)
-    rows = ["{" + ", ".join(["%d" % dof for dof in map[i]]) + "}" for i in range(2)]
+    rows = ["{" + ", ".join(["%d" % node for node in map[i]]) + "}" for i in range(2)]
     value = "{" + ", ".join(rows) + "}"
     return Declaration(name, value)
 
 def write_face_reordering(nodes_per_entity, subelement):
-    "Write table for ordering of dofs on faces."
+    "Write table for ordering of nodes on faces."
     num_nodes = nodes_per_entity[2]
     map = face_reordering(num_nodes)
     name = "static unsigned int face_reordering_%d[6][%d]" % (subelement, num_nodes)
-    rows = ["{" + ", ".join(["%d" % dof for dof in map[i]]) + "}" for i in range(6)]
+    rows = ["{" + ", ".join(["%d" % node for node in map[i]]) + "}" for i in range(6)]
     value = "{" + ", ".join(rows) + "}"
     return Declaration(name, value)
 
 def write_map(nodes_per_entity, entity_ids, num_dims, dim, entity, node, data, subelement):
-    "Write map from local to global dof."
-    local_dof  = entity_ids[dim][entity][node]
+    "Write map from local to global node."
+    local_node = entity_ids[dim][entity][node]
     if nodes_per_entity[dim] == 1:
-        global_dof = format[("entity", num_dims - 1, dim)](entity)
+        global_node = format[("entity", num_dims - 1, dim)](entity)
     elif nodes_per_entity[dim] > 1:
-        global_dof = reorder(nodes_per_entity, num_dims, dim, entity, node, subelement)
+        global_node = reorder(nodes_per_entity, num_dims, dim, entity, node, subelement)
     else:
         raise RuntimeError, "Should be at least one node per entity."
-    name = "dofs[%d]" % (data["local offset"] + local_dof)
+    name = "nodes[%d]" % (data["local offset"] + local_node)
     if data["num offset"] == 0:
-        value = global_dof 
+        value = global_node 
     else:
-        value = "offset + " + global_dof
+        value = "offset + " + global_node
     return Declaration(name, value)
 
 def write_alignment(num_dims, dim, entity, data):
@@ -82,24 +84,24 @@ def write_alignment(num_dims, dim, entity, data):
     return Declaration(name, value)
 
 def reorder(nodes_per_entity, num_dims, dim, entity, node, subelement):
-    "Compute reordering of map from local to global dof."
+    "Compute reordering of map from local to global node."
     start = "%d*%s" % (nodes_per_entity[dim], format[("entity", num_dims - 1, dim)](entity))
     num_nodes = nodes_per_entity[dim]
-    # Don't worry about internal dofs
+    # Don't worry about internal nodes
     if dim == (num_dims - 1):
         return start + " + %d" % node
-    # Reorder dofs according to orientation of entity
+    # Reorder nodes according to orientation of entity
     if dim == 0:
-        raise RuntimeError, "Don't know how to reorder dofs for topological dimension 0 (vertices)."
+        raise RuntimeError, "Don't know how to reorder nodes for topological dimension 0 (vertices)."
     elif dim == 1:
         return start + " + edge_reordering_%d[alignment][%d]" % (subelement, node)
     elif dim == 2:
         return start + " + face_reordering_%d[alignment][%d]" % (subelement, node)
     else:
-        raise RuntimeError, "Don't know how to reorder dofs for topological dimension 3."
+        raise RuntimeError, "Don't know how to reorder nodes for topological dimension 3."
 
 def write_offset(data):
-    "Write new offset for global dofs."
+    "Write new offset for global nodes."
     increment = data["global offset"]
     if data["num offset"] == 0:
         name = "int offset"
@@ -119,8 +121,8 @@ def compute_offset(nodes_per_entity, num_dims, dim):
         increment = "%d*%s" % (nodes_per_entity[dim], format[("num", num_dims - 1, dim)])
     return increment
 
-def compute_dofmap(element, data, subelement):
-    "Compute dofmap for given element."
+def compute_nodemap(element, data, subelement):
+    "Compute nodemap for given element."
 
     # Get shape and dual basis from FIAT
     shape = element.fiat_shape
@@ -151,12 +153,12 @@ def compute_dofmap(element, data, subelement):
     # Get the number of vector components
     num_components = dual_basis.num_reps
 
-    # Write table for reordering of dofs on edges
+    # Write table for reordering of nodes on edges
     declarations = []
     if nodes_per_entity[1] > 1:
         declarations += [write_edge_reordering(nodes_per_entity, subelement)]
 
-    # Write table for reordering of dofs on faces
+    # Write table for reordering of nodes on faces
     if num_dims > 3:
         if nodes_per_entity[2] > 1:
             declarations += [write_face_reordering(nodes_per_entity, subelement)]
@@ -181,7 +183,7 @@ def compute_dofmap(element, data, subelement):
                         declarations += [write_offset(data)]
                         data["global offset"] = None
 
-                    # Write map from local to global dof
+                    # Write map from local to global node
                     declarations += [write_map(nodes_per_entity, entity_ids, num_dims, dim, entity, node, data, subelement)]
 
             # Add to global offset
@@ -196,13 +198,13 @@ def compute_dofmap(element, data, subelement):
 
     return (declarations, data)
 
-class DofMap:
+class NodeMap:
 
-    """A DofMap maps the dofs (degrees of freedom) on a local element
+    """A NodeMap maps the nodes (degrees of freedom) on a local element
     to global degrees of freedom."""
 
     def __init__(self, elements):
-        "Create DofMap."
+        "Create NodeMap."
 
         # Make sure we have a list of elements
         if not isinstance(elements, list):
@@ -212,5 +214,5 @@ class DofMap:
         self.declarations = []
         data = { "local offset" : 0, "global offset" : None, "num offset" : 0, "num alignment" : 0 }
         for i in range(len(elements)):
-            (declarations, data) = compute_dofmap(elements[i], data, i)
+            (declarations, data) = compute_nodemap(elements[i], data, i)
             self.declarations += declarations

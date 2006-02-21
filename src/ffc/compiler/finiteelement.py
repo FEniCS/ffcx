@@ -20,7 +20,7 @@ sys.path.append("../../")
 from ffc.common.debug import *
 
 # FFC compiler modules
-from dofmap import *
+from nodemap import *
 from pointmap import *
 from vertexeval import *
 import mixedelement
@@ -99,8 +99,8 @@ http://www.fenics.org/pipermail/fiat-dev/2005-August/000060.html"""
         # Save dual basis
         self.fiat_dual = self.element.dual_basis()
 
-        # Create dof map
-        self.dofmap = DofMap(self)
+        # Create node map
+        self.nodemap = NodeMap(self)
 
         # Create point map
         self.pointmap = PointMap(self)

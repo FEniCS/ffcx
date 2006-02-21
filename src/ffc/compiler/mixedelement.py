@@ -15,7 +15,7 @@ from ffc.common.debug import *
 #import algebra
 from finiteelement import *
 from algebra import *
-from dofmap import *
+from nodemap import *
 from pointmap import *
 from vertexeval import *
 
@@ -102,8 +102,8 @@ class MixedElement:
         # Compute number of components
         self.mixed_tensordim = self.__compute_tensordim()
 
-        # Create dof map
-        self.dofmap = DofMap(self.elements)
+        # Create node map
+        self.nodemap = NodeMap(self.elements)
 
         # Create point map
         self.pointmap = PointMap(self.elements)

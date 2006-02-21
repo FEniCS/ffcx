@@ -182,10 +182,10 @@ def __element(element, name):
     else:
         tensordim = 'dolfin_error("Element is scalar.");\n    return 0;'
 
-    # Generate code for dofmap()
-    dofmap = ""
-    for declaration in element.dofmap.declarations:
-        dofmap += "    %s = %s;\n" % (declaration.name, declaration.value)
+    # Generate code for nodemap()
+    nodemap = ""
+    for declaration in element.nodemap.declarations:
+        nodemap += "    %s = %s;\n" % (declaration.name, declaration.value)
     
     # Generate code for pointmap()
     pointmap = ""
@@ -269,7 +269,7 @@ public:
     return %d;
   }
 
-  void dofmap(int dofs[], const Cell& cell, const Mesh& mesh) const
+  void nodemap(int nodes[], const Cell& cell, const Mesh& mesh) const
   {
 %s  }
 
@@ -311,7 +311,7 @@ private:
        tensordim,
        elementdim,
        element.rank(),
-       dofmap,
+       nodemap,
        pointmap,
        vertexeval,
        indexoperator,

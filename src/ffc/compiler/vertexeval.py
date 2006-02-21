@@ -46,7 +46,7 @@ def compute_offset(nodes_per_entity, num_dims, dim):
     return increment
 
 def write_offset(increment, component):
-    "Write new offset for global dofs."
+    "Write new offset for global nodes."
     if component == 0:
         name = "int offset"
         value = increment
@@ -66,7 +66,7 @@ def write_component(component):
     return Declaration(name, value)
 
 def compute_vertexeval(element, component_offset):
-    "Compute dofmap for given element."
+    "Compute node map for given element."
 
     # Get shape and dual basis from FIAT
     shape = element.fiat_shape
