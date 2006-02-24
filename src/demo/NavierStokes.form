@@ -1,4 +1,4 @@
-# Copyright (c) 2004, 2005 Anders Logg (logg@tti-c.org)
+# Copyright (c) 2004-2006 Anders Logg (logg@tti-c.org)
 # Licensed under the GNU GPL Version 2
 #
 # The bilinear form for the nonlinear term in the
@@ -9,7 +9,7 @@
 element = FiniteElement("Vector Lagrange", "tetrahedron", 1)
 
 v = BasisFunction(element)
-u = BasisFunction(element)
+U = BasisFunction(element)
 w = Function(element)
 
-a = v[i]*w[j]*D(u[i], j)*dx
+a = v[i]*w[j]*D(U[i], j)*dx
