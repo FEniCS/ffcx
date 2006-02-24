@@ -1,3 +1,73 @@
 \chapter{Python interface}
 
-In preparation.
+\ffc{} provides a Python interface in the form of a standard
+Python module. The following example demonstrates how to define and
+compile the variational problem for Poisson's equation in a Python
+script:
+
+\begin{code}
+ from ffc import *
+
+ element = FiniteElement(``Lagrange'', ``triangle'', 1)
+
+ v = BasisFunction(element)
+ U = BasisFunction(element)
+ f = Function(element)
+  
+ a = dot(grad(v), grad(U))*dx
+ L = f*v*dx
+
+ compile([a, L])
+\end{code}
+
+At the basic level, the only difference between the command-line
+interface and the Python interface, is that the function
+\texttt{compile} must be called when using the Python interface.
+
+In addition to the function \texttt{compile}, the Python interface
+provides the functions \texttt{build}, \texttt{write} and
+\texttt{writeFiniteElement}. These functions are documented below.
+
+Documentation can also be accessed from within Python. To read the
+documentation for the function \texttt{compile}, run the following
+commands in a Python shell:
+
+\begin{code}
+ from ffc import *
+ help(compile)
+\end{code}
+
+\section{\texttt{compile(forms, ...)}}
+
+This function takes as argument a form or list of forms
+and compiles into low-level code for assembly. Calling this function
+is equivalent to first calling \texttt{build} followed by
+\texttt{write}.
+
+\section{\texttt{build(forms, ...)}}
+
+This function takes as argument a form or list of forms
+and does preprocessing of the forms (including computation of the
+reference tensor), but does not generate any code.
+
+\section{\texttt{write(forms, ...)}}
+
+This function takes a preprocessed form or list of forms and
+generates code. Note that \texttt{build} must be called before
+\texttt{write}:
+
+\begin{code}
+  forms = build([a, L])
+  write(forms)
+\end{code}
+
+\section{\texttt{writeFiniteElement(element, ...)}}
+
+This function generates code for a given \texttt{FiniteElement}.
+Use this function if you just want to generate code for a finite
+element (including mapping of nodes and nodal points):
+
+\begin{code}
+  element = FiniteElement(``Lagrange'', ``triangle'', 1)
+  writeFiniteElement(element)
+\end{code}
