@@ -1,0 +1,60 @@
+\section{Synopsis}
+
+\begin{code}
+ ffc [-h] [-l language] [-d debuglevel] [-f option] input.form
+\end{code}
+
+\section{Description}
+
+The FEniCS Form Compiler FFC accepts as input one or more files each
+specifying one or more multilinear forms and compiles the given forms
+into efficent low-level code for automatic assembly of the tensors
+representing the multilinear forms. In particular, FFC compiles a pair
+of bilinear and linear forms defining a variational problem into code
+that can be used to efficiently assemble the corresponding linear
+system.
+
+By default, FFC generates C++ code for DOLFIN, but this can be
+changed by specifying a different output language (option -l).
+It is also possible to add new output languages to FFC.
+
+\section{Options}
+
+\subsection{\texttt{-h, --help}}
+
+Display help text and exit.
+
+\subsection{\texttt{-v, --version}}
+
+Display version number and exit.
+
+\subsection{\texttt{-l language, --language language}}
+
+Specify output language, one of 
+\texttt{dolfin} (default),
+\texttt{latex},
+\texttt{raw},
+\texttt{ase} or
+\texttt{xml}.
+
+\subsection{\texttt{-d debuglevel, --debug debuglevel}}
+
+Specify debug level (default is \texttt{0}).
+
+\subsection{\texttt{-f option}}
+
+Specify code generation options. The list of options available depends
+on the specified language (format). Current options include
+\texttt{-f no-gpl} and
+\texttt{-f blas}
+described in detail below.
+
+\subsection{\texttt{-f no-gpl}}
+
+Don't add GPL license to generated code. This option has only effect
+when compiling with \texttt{-ldolfin}.
+
+\subsection{\texttt{-f blas}}
+
+Generate code that uses BLAS to compute tensor products. This option
+has only effect when compiling with \texttt{-ldolfin}.
