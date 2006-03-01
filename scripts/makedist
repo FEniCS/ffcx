@@ -3,12 +3,12 @@
 # This script creates a new release of FFC
 
 # Make sure we have the current version
-echo '--- Synchronizing repository, press return to continue'
+echo '--- Synchronizing repository'
 hg pull
 hg update
 hg commit
 hg push default
-read
+echo '--- Repository synchronized, press return to continue'
 
 # Update version number in ChangeLog
 echo '--- Update version number in ChangeLog'
