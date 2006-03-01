@@ -1,28 +1,46 @@
 #!/bin/sh
 
-# This script prepares and creates a .tar.gz package of FFC.
+# This script creates a new release of FFC
+
+# Make sure we have the current version
+echo '--- Synchronizing repository, press return to continue'
+hg pull
+hg update
+hg commit
+hg push default
+read
 
 # Update version number in ChangeLog
+echo '--- Update version number in ChangeLog'
+sleep 1
 emacs -nw ChangeLog
 
 # Update version number in constants.py
+echo '--- Update version number in constants.py'
+sleep 1
 emacs -nw src/ffc/common/constants.py
 
 # Update version number in setup.py
+echo '--- Update version number in setup.py'
+sleep 1
 emacs -nw setup.py
 
 # Get the version number
 VERSION=`grep 'FFC_VERSION' src/ffc/common/constants.py | cut -d'"' -f2`
+echo "--- Version number is $VERSION"
+sleep 1
+
+exit 0
 
 # Verify output\
-echo Verifying output
+echo '--- Verifying output'
 scripts/verify
-echo Only version numbers should differ, press return to continue
+echo '--- Only version numbers should differ, press return to continue'
 read
 cp src/demo/*.h src/reference
 
 # Run benchmark problem
-echo Running benchmark problem
+echo '--- Running benchmark problem'
 cd src/bench
 echo "FFC version $VERSION" >> bench.log
 date >> bench.log
@@ -30,8 +48,8 @@ echo "" >> bench.log
 ./bench >> bench.log
 cd ../../
 
-# Commit changes to cvs
-cvs commit
+# Commit changes to hg
+hg commit
 
 # Write a message
 echo Creating release $VERSION of FFC
