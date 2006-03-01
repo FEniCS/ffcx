@@ -68,6 +68,7 @@ mkdir -p release
 cd release
 hg clone .. $DISTDIR
 rm -r $DISTDIR/.hg
+rm $DISTDIR/.hgignore
 
 # Create the archive
 TARBALL="ffc-$VERSION.tar.gz"
