@@ -1,9 +1,13 @@
 #!/bin/sh
-
+#
+# Copyright (c) Anders Logg 2004-2006
+# Licensed under the GNU GPL Version 2
+#
 # This script creates a new release of FFC
 
 # Make sure we have the current version
 echo '--- Synchronizing repository'
+sleep 1
 hg pull
 hg update
 hg commit
@@ -36,16 +40,16 @@ echo '--- Verifying output'
 scripts/verify
 echo '--- Only version numbers should differ, press return to continue'
 read
-#--cp src/demo/*.h src/reference
+cp src/demo/*.h src/reference
 
 # Run benchmark problem
 echo '--- Running benchmark problem'
-#--cd src/bench
-#--echo "FFC version $VERSION" >> bench.log
-#--date >> bench.log
-#--echo "" >> bench.log
-#--./bench >> bench.log
-#--cd ../../
+cd src/bench
+echo "FFC version $VERSION" >> bench.log
+date >> bench.log
+echo "" >> bench.log
+./bench >> bench.log
+cd ../../
 
 # Commit changes to hg
 echo '--- Pushing changes to parent repository'
@@ -63,28 +67,26 @@ echo "--- Creating directory release/$DISTDIR"
 mkdir -p release
 cd release
 hg clone .. $DISTDIR
-#rm -r $DISTDIR/.hg
-
-exit 0
+rm -r $DISTDIR/.hg
 
 # Create the archive
 TARBALL="ffc-$VERSION.tar.gz"
-echo "Creating arhive: $TARBALL"
+echo "--- Creating arhive $TARBALL"
 tar zcf $TARBALL $DISTDIR
-
-# Remove the directory
-echo 'Removing temporary directory'
-rm -rf $DISTDIR
+cd ..
 
 # Copy archive and files to web page
-scp $TARBALL fenics@fenics.org:www.fenics.org/pub/software/ffc/v0.2
+echo '--- Copying files to web server'
+scp $TARBALL fenics@fenics.org:www.fenics.org/pub/software/ffc/v0.3
 scp ChangeLog fenics@fenics.org:www.fenics.org/pub/software/ffc/
 scp TODO fenics@fenics.org:www.fenics.org/pub/software/ffc/
 
 # Update on web server
+echo '--- Update web pages'
 ssh fenics@fenics.org 'xterm -e emacs -nw www.fenics.org/ffc/index.cpp'
 ssh fenics@fenics.org 'xterm -e /home/fenics/local/bin/news'
 
 # Notify ffc-dev of the new version
+echo '--- Notifying mailing list'
 SUBJECT="Version "$VERSION" of FFC released"
 cat ChangeLog | mail -s "$SUBJECT" ffc-dev@fenics.org
