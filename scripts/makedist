@@ -9,6 +9,7 @@ hg update
 hg commit
 hg push default
 echo '--- Repository synchronized, press return to continue'
+read
 
 # Update version number in ChangeLog
 echo '--- Update version number in ChangeLog'
@@ -30,46 +31,41 @@ VERSION=`grep 'FFC_VERSION' src/ffc/common/constants.py | cut -d'"' -f2`
 echo "--- Version number is $VERSION"
 sleep 1
 
-exit 0
-
 # Verify output\
 echo '--- Verifying output'
 scripts/verify
 echo '--- Only version numbers should differ, press return to continue'
 read
-cp src/demo/*.h src/reference
+#--cp src/demo/*.h src/reference
 
 # Run benchmark problem
 echo '--- Running benchmark problem'
-cd src/bench
-echo "FFC version $VERSION" >> bench.log
-date >> bench.log
-echo "" >> bench.log
-./bench >> bench.log
-cd ../../
+#--cd src/bench
+#--echo "FFC version $VERSION" >> bench.log
+#--date >> bench.log
+#--echo "" >> bench.log
+#--./bench >> bench.log
+#--cd ../../
 
 # Commit changes to hg
+echo '--- Pushing changes to parent repository'
 hg commit
+hg push default
+echo '--- Changes pushed, press return to continue'
+read
 
 # Write a message
-echo Creating release $VERSION of FFC
+echo "--- Creating release $VERSION of FFC"
 
 # Create the directory
 DISTDIR=ffc-$VERSION
-echo "Creating directory $DISTDIR"
-mkdir $DISTDIR
+echo "--- Creating directory release/$DISTDIR"
+mkdir -p release
+cd release
+hg clone .. $DISTDIR
+#rm -r $DISTDIR/.hg
 
-# Copy files
-FILES=`ls | grep -v $DISTDIR`
-cp -R $FILES $DISTDIR
-
-# Remove unecessary files
-REMOVE1=`find $DISTDIR | grep CVS`
-REMOVE2=`find $DISTDIR -name '*~'`
-REMOVE3=`find $DISTDIR/src/demo -name '*.h'`
-REMOVE4=`find $DISTDIR/src/demo -name '*.py'`
-REMOVE="$REMOVE1 $REMOVE2 $REMOVE3 $REMOVE4"
-rm -rf $REMOVE
+exit 0
 
 # Create the archive
 TARBALL="ffc-$VERSION.tar.gz"
