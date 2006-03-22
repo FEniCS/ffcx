@@ -20,8 +20,8 @@ are supported for all elements of the algebra:
     Unary  d/dx   (operand scalar or tensor-valued)"""
 
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-09-27 -- 2005-11-08"
-__copyright__ = "Copyright (c) 2004, 2005 Anders Logg"
+__date__ = "2004-09-27 -- 2006-03-22"
+__copyright__ = "Copyright (c) 2004-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # Python modules
@@ -594,6 +594,26 @@ class Sum(Element):
     def indexcall(self, foo, args = None):
         "Call given function on all Indices."
         [p.indexcall(foo, args) for p in self.products]
+        return
+
+class TestFunction(BasisFunction):
+    """A TestFunction is the BasisFunction with the lowest primary
+    index. We simply pick an index lower than all others (-2)."""
+
+    def __init__(self, element):
+        index = Index("primary")
+        index.index = -2
+        BasisFunction.__init__(self, element, index)
+        return
+
+class TrialFunction(BasisFunction):
+    """A TrialFunction is the BasisFunction with the next lowest primary
+    index. We simply pick an index lower than almost all others (-1)."""
+
+    def __init__(self, element):
+        index = Index("primary")
+        index.index = -1
+        BasisFunction.__init__(self, element, index)
         return
 
 if __name__ == "__main__":

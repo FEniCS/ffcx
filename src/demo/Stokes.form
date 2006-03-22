@@ -10,8 +10,8 @@ P2 = FiniteElement("Vector Lagrange", "triangle", 2)
 P1 = FiniteElement("Lagrange", "triangle", 1)
 TH = P2 + P1
 
-(v, q) = BasisFunctions(TH)
-(U, P) = BasisFunctions(TH)
+(v, q) = TestFunctions(TH)
+(U, P) = TrialFunctions(TH)
 
 f = Function(P2)
 

@@ -9,8 +9,8 @@
 P1 = FiniteElement("Lagrange", "triangle", 1)
 P0 = FiniteElement("Discontinuous Lagrange", "triangle", 0)
 
-v = BasisFunction(P1)
-U = BasisFunction(P1)
+v = TestFunction(P1)
+U = TrialFunction(P1)
 f = Function(P1)
 
 c00 = Function(P0)

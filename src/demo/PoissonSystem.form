@@ -8,8 +8,8 @@
 
 element = FiniteElement("Vector Lagrange", "triangle", 1)
 
-v = BasisFunction(element)
-U = BasisFunction(element)
+v = TestFunction(element)
+U = TrialFunction(element)
 f = Function(element)
 
 a = dot(grad(v), grad(U))*dx

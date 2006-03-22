@@ -8,8 +8,9 @@
 
 element = FiniteElement("Vector Lagrange", "tetrahedron", 1)
 
-v = BasisFunction(element)
-U = BasisFunction(element)
+v = TestFunction(element)
+U = TrialFunction(element)
+
 w = Function(element)
 
 a = v[i]*w[j]*D(U[i], j)*dx

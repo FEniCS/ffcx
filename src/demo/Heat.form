@@ -8,8 +8,8 @@
 
 element = FiniteElement("Lagrange", "triangle", 1)
 
-v  = BasisFunction(element) # Test function
-U1 = BasisFunction(element) # Value at t_n
+v  = TestFunction(element)  # Test function
+U1 = TrialFunction(element) # Value at t_n
 U0 = Function(element)      # Value at t_n-1
 c  = Function(element)      # Heat conductivity
 f  = Function(element)      # Heat source

@@ -7,7 +7,7 @@
 
 element = FiniteElement("Lagrange", "tetrahedron", 3)
 
-v = BasisFunction(element)
-U = BasisFunction(element)
+v = TestFunction(element)
+U = TrialFunction(element)
     
 a = v*U*dx

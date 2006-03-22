@@ -9,7 +9,7 @@ P0 = FiniteElement("Discontinuous Lagrange", "triangle", 0)
 P1 = FiniteElement("Lagrange", "triangle", 1)
 P2 = FiniteElement("Lagrange", "triangle", 2)
 
-v = BasisFunction(P1)
+v = TestFunction(P1)
 f = Function(P1)
 
 pi0 = Projection(P0)
