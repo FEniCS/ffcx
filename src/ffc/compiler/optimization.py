@@ -12,9 +12,20 @@ def optimize(A0):
 
     debug("Computing optimization, this may take some time...")
 
-    print A0
-
+    # Check if FErari is available
     try:
         from ferari import binary
     except:
         raise RuntimeError, "Cannot find FErari on your system, unable to optimize."
+
+    print ""
+    print "--- Reference tensor ---"
+    print A0
+    print ""
+
+    # Compute optimized code
+    code = binary.optimize(A0)
+
+    print "--- Optimized code ---"
+    print code
+    print ""
