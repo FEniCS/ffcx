@@ -1,6 +1,6 @@
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-11-06 -- 2005-11-08"
-__copyright__ = "Copyright (c) 2004, 2005 Anders Logg"
+__date__ = "2004-11-06 -- 2006-03-22"
+__copyright__ = "Copyright (C) 2004-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # Python modules
@@ -15,6 +15,7 @@ from ffc.common.exceptions import *
 from term import *
 from reorder import *
 from declaration import *
+from optimization import *
 
 class ElementTensor:
     """An ElementTensor represents the element tensor of a
@@ -29,7 +30,7 @@ class ElementTensor:
         aK    - a list of precomputed element tensor declarations
     """
 
-    def __init__(self, sum, type, format, cK_used):
+    def __init__(self, sum, type, format, cK_used, options):
         "Create ElementTensor."
 
         # Check that all Products have integrals
@@ -63,7 +64,7 @@ class ElementTensor:
         self.a0 = self.__compute_reference_tensor(format)
 
         # Compute element tensor declarations
-        self.aK = self.__compute_element_tensor(format)
+        self.aK = self.__compute_element_tensor(format, options)
 
         # Compute geometry tensor declarations
         gK_used = self.__check_used(format)
@@ -109,10 +110,17 @@ class ElementTensor:
 
         return declarations
 
-    def __compute_element_tensor(self, format):
-        """Precompute element tensor, including optimizations. This is
-        where any FErari optimization should be done."""
-        debug("Generating code for element tensor", 1)
+    def __compute_element_tensor(self, format, options):
+        "Precompute element tensor, including possible optimizations."
+        if options["optimize"]:
+            return self.__compute_element_tensor_optimized(format)
+        else:
+            return self.__compute_element_tensor_default(format)
+
+    def __compute_element_tensor_default(self, format):
+        """Precompute element tensor without optimizations except for
+        dropping multiplication with zero."""
+        debug("Generating code for element tensor", 1)         
         if not self.terms or format.format["element tensor"]((0,), 0) == None: return []
         declarations = []
         iindices = self.terms[0].A0.i.indices or [[]] # All primary ranks are equal
@@ -146,6 +154,16 @@ class ElementTensor:
             declarations += [Declaration(name, value)]
             k += 1
         debug("Number of zeros dropped from reference tensor: " + str(num_dropped), 1)
+        return declarations
+
+    def __compute_element_tensor_optimized(self, format):
+        "Precompute element tensor with FErari optimizations."
+        debug("Generating optimized code for element tensor", 1)         
+        if not self.terms or format.format["element tensor"]((0,), 0) == None: return []
+        declarations = []
+        # Call FErari to do optimizations
+        for term in self.terms:
+            code = optimize(term.A0.A0)
         return declarations
 
     def __check_used(self, format):

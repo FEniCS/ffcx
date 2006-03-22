@@ -116,9 +116,9 @@ def build(sums, name = "Form", language = FFC_LANGUAGE, options = FFC_OPTIONS):
 
         # Create element tensors
         print "Compiling tensor representation for interior"
-        form.AKi = ElementTensor(form.sum, "interior", format, cK_used)
+        form.AKi = ElementTensor(form.sum, "interior", format, cK_used, options)
         print "Compiling tensor representation for boundary"
-        form.AKb = ElementTensor(form.sum, "boundary", format, cK_used)
+        form.AKb = ElementTensor(form.sum, "boundary", format, cK_used, options)
 
         # Compute coefficient declarations
         form.cK = __compute_coefficients(form.projections, format, cK_used)

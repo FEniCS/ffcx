@@ -26,7 +26,7 @@ def main(argv):
 
     # Get command-line arguments
     try:
-        opts, args = getopt.getopt(argv, "hvl:d:f:", ["help", "version", "language=", "debug="])
+        opts, args = getopt.getopt(argv, "hvOl:d:f:", ["help", "version", "optimize", "language=", "debug="])
     except getopt.GetoptError:
         usage()
         sys.exit(2)
@@ -49,13 +49,14 @@ def main(argv):
 
     # Get options
     for opt, arg in opts:
-        print opt, arg
         if opt in ("-h", "--help"):
             usage()
             sys.exit()
         elif opt in ("-v", "--version"):
             version()
             sys.exit()
+        elif opt in ("-O", "--optimize"):
+            options["optimize"] = True
         elif opt in  ("-l", "--language"):
             language = arg
         elif opt in  ("-d", "--debug"):
@@ -98,6 +99,7 @@ Usage: ffc [OPTION]... input.form
 
   -h            display this help text and exit
   -v            display version number and exit
+  -O            generate optimized code
   -l language   specify output language, one of 'dolfin' (default), 'latex', 'raw', 'ase' or 'xml'
   -d debuglevel specify debug level (default is 0)
   -f option     specify code generation options, one of 'blas' or 'no-gpl'
@@ -106,6 +108,7 @@ Alternatively, the following long options may be used:
 
   --help
   --version
+  --optimize
   --language language
   --debuglevel debuglevel
 """

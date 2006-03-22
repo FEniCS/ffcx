@@ -1,6 +1,6 @@
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-11-03 -- 2005-12-05"
-__copyright__ = "Copyright (c) 2004 Anders Logg"
+__date__ = "2004-11-03 -- 2006-03-22"
+__copyright__ = "Copyright (C) 2004-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # Python modules
@@ -64,7 +64,7 @@ class ReferenceTensor:
 
         # Report time to compute the reference tensor
         self.cputime = time.time() - t
-        debug("Reference tensor computed in %.3g seconds." % self.cputime)
+        debug("Reference tensor computed in %.3g seconds" % self.cputime)
 
         # For testing
         #B = self.__compute_reference_tensor()
