@@ -1,8 +1,8 @@
 "DOLFIN output format."
 
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-10-14 -- 2006-02-20"
-__copyright__ = "Copyright (c) 2004, 2005 Anders Logg"
+__date__ = "2004-10-14 -- 2006-03-27"
+__copyright__ = "Copyright (c) 2004-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # FFC common modules
@@ -452,6 +452,12 @@ public:
   {
 %s  }
 """ % eval
+    else:
+        output += """\
+
+  // No contribution from the interior
+  void eval(real block[], const AffineMap& map) const {}
+"""
 
     # Boundary contribution (if any)
     if form.AKb.terms:
@@ -462,6 +468,12 @@ public:
   {
 %s  }
 """ % eval
+    else:
+        output += """\
+
+  // No contribution from the boundary
+  void eval(real block[], const AffineMap& map, unsigned int boundary) const {}   
+"""
 
     # Declare class members (if any)
     if form.nconstants > 0:
