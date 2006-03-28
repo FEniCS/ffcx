@@ -1,9 +1,13 @@
 #!/bin/sh
 #
-# Copyright (c) Anders Logg 2004-2006
+# Copyright (C) Anders Logg 2004-2006
 # Licensed under the GNU GPL Version 2
 #
 # This script creates a new release of FFC
+
+# Make sure FFC is not installed
+echo '--- Uninstalling FFC'
+ffc-uninstall
 
 # Make sure we have the current version
 echo '--- Synchronizing repository'
