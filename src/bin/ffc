@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 
-# Copyright (c) 2004-2006 Anders Logg (logg@tti-c.org)
+# Copyright (C) 2004-2006 Anders Logg (logg@tti-c.org)
 # Licensed under the GNU GPL Version 2
 #
-# Modified by Johan Jansson, 2005
+# Modified by Johan Jansson 2005
 #
-# 2004-10-14 -- 2006-02-20
+# 2004-10-14 -- 2006-03-28
 #
 # This script parses command-line arguments, calls
 # the parser, and then compiles the generated form.
@@ -39,12 +39,9 @@ def main(argv):
         usage()
         sys.exit(2)
 
-    # Print a nice message
-    version()
-
     # Set default arguments
     language = "dolfin"
-    debuglevel = 0
+    debuglevel = -1
     options = FFC_OPTIONS
 
     # Get options
@@ -69,7 +66,10 @@ def main(argv):
                 sys.exit(2)
 
     # Set debug level
-    level(debuglevel)
+    setlevel(debuglevel)
+
+    # Print a nice message
+    version()
 
     # Call parser and compiler for each file
     for filename in args:
@@ -116,8 +116,8 @@ Alternatively, the following long options may be used:
 
 def version():
     "Display version number."
-    print "This is FFC, the FEniCS Form Compiler, version %s." % FFC_VERSION
-    print "For further information, go to http://www/fenics.org/ffc/."
+    debug("This is FFC, the FEniCS Form Compiler, version %s." % FFC_VERSION)
+    debug("For further information, go to http://www/fenics.org/ffc/.")
     return
 
 if __name__ == "__main__":

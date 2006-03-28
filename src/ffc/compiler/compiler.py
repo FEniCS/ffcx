@@ -115,9 +115,9 @@ def build(sums, name = "Form", language = FFC_LANGUAGE, options = FFC_OPTIONS):
         cK_used = Set()
 
         # Create element tensors
-        print "Compiling tensor representation for interior"
+        debug("Compiling tensor representation for interior")
         form.AKi = ElementTensor(form.sum, "interior", format, cK_used, options)
-        print "Compiling tensor representation for boundary"
+        debug("Compiling tensor representation for boundary")
         form.AKb = ElementTensor(form.sum, "boundary", format, cK_used, options)
 
         # Compute coefficient declarations
@@ -174,7 +174,7 @@ def writeFiniteElement(element, name = "MyElement", language = FFC_LANGUAGE, opt
     format.init(options)
 
     # Write a nice message
-    print "Compiling finite element: " + str(element)
+    debug("Compiling finite element: " + str(element))
 
     # Generate code
     format.writeFiniteElement(element, name, options)

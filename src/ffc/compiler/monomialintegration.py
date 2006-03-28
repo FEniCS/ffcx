@@ -27,7 +27,7 @@ def integrate(product):
     """Compute the reference tensor for a given monomial term of a
     multilinear form, given as a Product."""
 
-    debug("Computing reference tensor, this may take some time...")
+    debug("Pretabulating basis functions at quadrature points")
 
     # Initialize quadrature points and weights
     (points, weights, vscaling, dscaling) = __init_quadrature(product.basisfunctions)
@@ -200,8 +200,7 @@ def __compute_product(psis, weights):
     # Initialize zero reference tensor (will be rearranged later)
     (shape, indices) = __compute_shape(psis)
     A0 = Numeric.zeros(shape, Numeric.Float)
-    print "Computing the reference tensor (%d entries), this may take some time..." % \
-          Numeric.size(A0)
+    debug("Computing the reference tensor (%d entries), this may take some time..." % Numeric.size(A0))
 
     # Initialize list of auxiliary multiindices
     bshape = __compute_auxiliary_shape(psis)

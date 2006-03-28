@@ -54,11 +54,11 @@ def reorder_indices(sum):
             q_hard = compute_hard_signature(q)
 
             if p_hard == q_hard:
-                print "Hard signatures match for terms %d and %d, factorizing" % (i, j)
+                debug("Hard signatures match for terms %d and %d, factorizing" % (i, j))
                 # Group terms if hard signature matches
                 factorization[j] = i
             elif p_soft == q_soft:
-                print "Soft signatures match for terms %d and %d, reordering and factorizing" % (i, j)
+                debug("Soft signatures match for terms %d and %d, reordering and factorizing" % (i, j))
                 # Reorder terms if soft signature matches
                 sum.products[j] = __reorder_indices(p, q, p_hard)
                 q = sum.products[j]

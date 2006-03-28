@@ -1,11 +1,12 @@
 "DOLFIN output format."
 
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-10-14 -- 2006-03-27"
-__copyright__ = "Copyright (c) 2004-2006 Anders Logg"
+__date__ = "2004-10-14 -- 2006-03-28"
+__copyright__ = "Copyright (C) 2004-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # FFC common modules
+from ffc.common.debug import *
 from ffc.common.constants import *
 from ffc.common.util import *
 
@@ -45,7 +46,7 @@ def init(options):
 
 def write(forms, options):
     "Generate code for DOLFIN format."
-    print "\nGenerating output for DOLFIN"
+    debug("\nGenerating output for DOLFIN")
 
     # Get name of form
     name = forms[0].name
@@ -64,9 +65,9 @@ def write(forms, options):
         elif form.rank == 2:
             type = "Bilinear"
         else:
-            print """DOLFIN can only handle linear or bilinear forms.
+            debug("""DOLFIN can only handle linear or bilinear forms.
 I will try to generate the multi-linear form but you will not
-be able to use it with DOLFIN."""
+be able to use it with DOLFIN.""", -1)
             type = "Multilinear"
 
         # Compute name of XML data file (if any)
@@ -86,19 +87,18 @@ be able to use it with DOLFIN."""
     file = open(filename, "w")
     file.write(output)
     file.close()
-    print "Output written to " + filename
+    debug("Output written to " + filename)
 
     # Write XML files if compiling for BLAS
     if options["blas"]:
-        print ""
-        print "Generating data files for DOLFIN BLAS format"
+        debug("\nGenerating data files for DOLFIN BLAS format")
         xml.write(forms, options)
     
     return
 
 def writeFiniteElement(element, name, options):
     "Generate code for DOLFIN format."
-    print "\nGenerating output for DOLFIN"
+    debug("\nGenerating output for DOLFIN")
 
     # Write file header
     output = ""
@@ -115,7 +115,7 @@ def writeFiniteElement(element, name, options):
     file = open(filename, "w")
     file.write(output)
     file.close()
-    print "Output written to " + filename
+    debug("Output written to " + filename)
 
 def __file_header(name, options):
     "Generate file header for DOLFIN."

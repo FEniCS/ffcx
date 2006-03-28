@@ -1,13 +1,16 @@
 "A simple parser for FFC."
 
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-11-15 -- 2006-02-20"
-__copyright__ = "Copyright (c) 2004-2006 Anders Logg"
+__date__ = "2004-11-15 -- 2006-03-28"
+__copyright__ = "Copyright (C) 2004-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
+
+# FFC common modules
+from ffc.common.debug import *
 
 def parse(filename, language, options):
     "Parse file with given filename, return name of output file."
-    print "Parsing " + filename
+    debug("Parsing " + filename)
 
     # Read input
     infile = open(filename, "r")
@@ -38,7 +41,7 @@ if not (a == L == M == None):
 elif not element == None:
   writeFiniteElement(element, name, \"%s\", %s)
 else:
- print \"No forms specified, nothing to do.\"
+  print \"No forms specified, nothing to do.\"
 
 """ % (prefix, input, language, options, language, options)
 
@@ -47,7 +50,7 @@ else:
     outfile = open(outname, "w")
     outfile.write(output)
     outfile.close()
-    print "Output written to " + outname
+    debug("Output written to " + outname)
 
     # Return output file name
     return outname
