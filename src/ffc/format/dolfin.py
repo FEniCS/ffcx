@@ -31,7 +31,9 @@ format = { "sum": lambda l: " + ".join(l),
            "transform": lambda j, k: "map.g%d%d" % (j, k),
            "reference tensor" : lambda j, i, a: None,
            "geometry tensor": lambda j, a: "G%d_%s" % (j, "_".join(["%d" % index for index in a])),
-           "element tensor": lambda i, k: "block[%d]" % k }
+           "element tensor": lambda i, k: "block[%d]" % k,
+           "tmp declaration": lambda j, k: "const real tmp%d_%d" % (j, k),
+           "tmp access": lambda j, k: "tmp%d_%d" % (j, k) }
 
 def init(options):
     "Initialize code generation for DOLFIN format."

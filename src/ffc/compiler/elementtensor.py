@@ -112,8 +112,13 @@ class ElementTensor:
 
     def __compute_element_tensor(self, format, options):
         "Precompute element tensor, including possible optimizations."
+        if not self.terms or format.format["element tensor"]((0,), 0) == None: return []
         if options["optimize"]:
-            return self.__compute_element_tensor_optimized(format)
+            if self.terms[0].A0.i.rank == 2:
+                return self.__compute_element_tensor_optimized(format)
+            else:
+                debug("Only rank 2 tensors can currently be optimized with FErari, generating default code")
+                return self.__compute_element_tensor_default(format)
         else:
             return self.__compute_element_tensor_default(format)
 
@@ -121,7 +126,6 @@ class ElementTensor:
         """Precompute element tensor without optimizations except for
         dropping multiplication with zero."""
         debug("Generating code for element tensor", 1)         
-        if not self.terms or format.format["element tensor"]((0,), 0) == None: return []
         declarations = []
         iindices = self.terms[0].A0.i.indices or [[]] # All primary ranks are equal
         k = 0 # Update counter for each entry of A0, which is needed for some formats
@@ -158,13 +162,9 @@ class ElementTensor:
 
     def __compute_element_tensor_optimized(self, format):
         "Precompute element tensor with FErari optimizations."
-        debug("Generating optimized code for element tensor", 1)         
-        if not self.terms or format.format["element tensor"]((0,), 0) == None: return []
-        declarations = []
+        debug("Generating optimized code for element tensor", 1)
         # Call FErari to do optimizations
-        for term in self.terms:
-            code = optimize(term.A0.A0)
-        return declarations
+        return optimize(self.terms, format)
 
     def __check_used(self, format):
         """Check which declarations of gK are actually used, i.e,
