@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2006-03-22 -- 2006-03-30"
+__date__ = "2006-03-22 -- 2006-03-31"
 __copyright__ = "Copyright (C) 2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -18,28 +18,9 @@ def optimize(terms, format):
 
     # Check if FErari is available
     try:
-        from ferari import binary
+        from FErari import binary
     except:
         raise RuntimeError, "Cannot find FErari on your system, unable to optimize."
-
-    
-    from ferari import build_tensors
-    import Numeric
-    AF = build_tensors.laplacianform("triangle", 1)
-    A0 = terms[0].A0.A0
-
-    print "Difference between tensors:" + str(max(max(max(max(abs(AF - A0))))))
-
-    print AF
-    print A0
-    #return []
-
-    lines = binary.optimize(AF)
-    print "FErari code with FErari tensor:"
-    print "-------------------------------"
-    for line in lines:
-        print line
-    print ""
 
     # Create empty list of declarations
     declarations = []
@@ -60,32 +41,27 @@ def optimize(terms, format):
         iindices = term.A0.i.indices or [[]]
         aindices = term.A0.a.indices or [[]]
 
-        print "FErari code with FFC tensor"
-        print "---------------------------"
-        for line in code:
-            print line
-        print ""
+        #print "FErari code with FFC tensor"
+        #print "---------------------------"
+        #for line in code:
+        #    print line
+        #print ""
 
         # Generate code according to format from abstract FErari code
         for (lhs, rhs) in code:
-            #(variable, entry) = lhs
-            #i = iindices[entry]
-            #print variable, entry
-
             name  = build_lhs(lhs, j, iindices, aindices, num_terms, format)
             value = build_rhs(rhs, j, iindices, aindices, num_terms, format)
-
             declarations += [Declaration(name, value)]
 
     # Add all terms if more than one term
     if num_terms > 1:
         declarations += build_sum(iindices, num_terms, format)
 
-    print "Formatted code"
-    print "--------------"
-    for declaration in declarations:
-        print declaration
-    print ""
+    #print "Formatted code"
+    #print "--------------"
+    #for declaration in declarations:
+    #    print declaration
+    #print ""
 
     return declarations
             

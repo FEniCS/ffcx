@@ -1,3 +1,4 @@
+ - Add support for FErari optimizations, new flag -O
 0.3.1 [2006-03-28]
  - Remove verbose output: silence means success
  - Generate empty boundary integral eval() to please Intel C++ compiler
