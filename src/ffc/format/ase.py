@@ -1,7 +1,7 @@
 "ASE output format."
 
 __author__ = "Matthew G. Knepley (knepley@mcs.anl.gov)"
-__date__ = "2005-06-03 -- 2005-10-03"
+__date__ = "2005-06-03 -- 2006-04-01"
 __copyright__ = "Copyright (c) 2005 Matthew G. Knepley"
 __license__  = "GNU GPL Version 2"
 
@@ -56,7 +56,9 @@ format = { "sum": sum,
            "transform": transform,
            "reference tensor" : lambda j, i, a: "(%d, %s, %s)" % (j, str(i), (str(a))),
            "geometry tensor": lambda j, a: 'G%d_%s' % (j, '_'.join([str(index) for index in a])),
-           "element tensor": lambda i, k: Cxx.getArrayRef('elementMatrix', k) }
+           "element tensor": lambda i, k: Cxx.getArrayRef('elementMatrix', k),
+           "tmp declaration": lambda j, k: "not defined",
+           "tmp access": lambda j, k: "not defined" }
 
 def init(options):
     "Initialize code generation for ase format."

@@ -1,8 +1,8 @@
 "Raw output format."
 
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2005-09-29 -- 2006-02-15"
-__copyright__ = "Copyright (c) 2005 Anders Logg"
+__date__ = "2005-09-29 -- 2006-04-01"
+__copyright__ = "Copyright (C) 2005-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # Specify formatting for code generation
@@ -18,7 +18,9 @@ format = { "sum": lambda l: " + ".join(l),
            "transform": lambda j, k: None,
            "reference tensor" : lambda j, i, a: None,
            "geometry tensor": lambda j, a: None,
-           "element tensor": lambda i, k: None }
+           "element tensor": lambda i, k: None,
+           "tmp declaration": lambda j, k: None,
+           "tmp access": lambda j, k: None }
 
 def init(options):
     "Initialize code generation for XML format."

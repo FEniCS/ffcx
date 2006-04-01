@@ -100,7 +100,8 @@ Usage: ffc [OPTION]... input.form
   -h            display this help text and exit
   -v            display version number and exit
   -O            generate optimized code using FErari optimizations
-  -l language   specify output language, one of 'dolfin' (default), 'latex', 'raw', 'ase' or 'xml'
+  -l language   specify output language, one of 'dolfin' (default),
+                'dolfin-swig', 'latex', 'raw', 'ase' or 'xml'
   -d debuglevel specify debug level (default is 0)
   -f option     specify code generation options, one of 'blas' or 'no-gpl'
 
