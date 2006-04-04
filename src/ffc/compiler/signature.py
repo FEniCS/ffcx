@@ -3,8 +3,8 @@ products. Signatures are used to uniquely identify reference
 tensors that may be common to a group of terms."""
 
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2005-09-06"
-__copyright__ = "Copyright (c) 2004 Anders Logg"
+__date__ = "2005-09-06 -- 2006-04-04"
+__copyright__ = "Copyright (C) 2005-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # Python modules
@@ -33,8 +33,11 @@ def compute_hard_signature(product):
     # Sort signatures for basis functions
     factors.sort()
 
+    # Create signature for integral
+    integral = str(product.integral)
+
     # Create signature for product
-    return "*".join([numeric] + factors)
+    return "*".join([numeric] + factors + [integral])
 
 def compute_soft_signature(product):
     "Compute soft (modulo secondary index numbers) signature."
