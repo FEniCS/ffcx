@@ -18,6 +18,15 @@ for f in *.form; do
     fi
 done
 
+# Compile one of the forms with optimization
+../bin/ffc -O Optimization.form
+if [ -f Optimization.h ]; then
+    echo "Form Optimization.form compiled"
+else
+    echo "*** Unable to compile Optimization.form"
+    exit 1
+fi
+
 echo ""
 echo "All forms compiled, verifying output..."
 echo "---------------------------------------"
