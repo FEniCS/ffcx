@@ -462,11 +462,11 @@ public:
 """
 
     # Boundary contribution (if any)
-    if form.AKb.terms:
+    if form.AKb[0].terms:
         eval = __eval_boundary(form, options)
         output += """\
 
-  void eval(real block[], const AffineMap& map, unsigned int boundary) const
+  void eval(real block[], const AffineMap& map, unsigned int facet) const
   {
 %s  }
 """ % eval
@@ -474,7 +474,7 @@ public:
         output += """\
 
   // No contribution from the boundary
-  void eval(real block[], const AffineMap& map, unsigned int boundary) const {}   
+  void eval(real block[], const AffineMap& map, unsigned int facet) const {}   
 """
 
     # Declare class members (if any)
@@ -582,18 +582,26 @@ def __eval_boundary_default(form, options):
 """ % "".join(["    const real %s = %s;\n" % (cK.name, cK.value) for cK in form.cK if cK.used])
         output += """\
     // Compute geometry tensors
-%s""" % "".join(["    const real %s = %s;\n" % (gK.name, gK.value) for gK in form.AKb.gK if gK.used])
+%s""" % "".join(["    const real %s = %s;\n" % (gK.name, gK.value) for gK in form.AKb[0].gK if gK.used])
     else:
         output += """\
     // Compute geometry tensors
-%s""" % "".join(["    const real %s = 0.0;\n" % gK.name for gK in form.AKi.gK if gK.used])
+%s""" % "".join(["    const real %s = 0.0;\n" % gK.name for gK in form.AKb[0].gK if gK.used])
 
     if not options["debug-no-element-tensor"]:
         output += """\
 
     // Compute element tensor
-%s""" % "".join(["    %s = %s;\n" % (aK.name, aK.value) for aK in form.AKb.aK])
+    switch ( facet )
+    { """
+        for akb in form.AKb:
+          output += """ 
+    case %s:"""  % akb.facet   
+          output += """ 
+%s""" % "".join(["      %s = %s;\n" % (aK.name, aK.value) for aK in akb.aK])
 
+        output += """\
+    } \n"""
     return output
 
 def __eval_boundary_blas(form, options):

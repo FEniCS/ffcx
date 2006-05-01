@@ -61,6 +61,7 @@ class Form:
         self.name        = name
         self.AKi         = None
         self.AKb         = None
+        self.facet       = None
         self.cK          = None
         self.rank        = None
         self.dims        = None

@@ -116,11 +116,31 @@ def build(sums, name = "Form", language = FFC_LANGUAGE, options = FFC_OPTIONS):
 
         # Create element tensors
         debug("Compiling tensor representation for interior")
-        form.AKi = ElementTensor(form.sum, "interior", format, cK_used, options)
+        form.AKi = ElementTensor(form.sum, "interior", format, cK_used, options, None)
+
         debug("Compiling tensor representation for boundary")
-        form.AKb = ElementTensor(form.sum, "boundary", format, cK_used, options)
+        # Determine number of facets (FIXME: this could be provided by finiteelement)
+        if len(form.elements) != 0:
+            shape = form.elements[0].shape()
+        elif form.test != None:
+            shape = form.test.shape() 
+        else:
+            print "Unable to determine element shape."
+
+        if shape == TRIANGLE:
+            facets = 3
+        elif shape == TETRAHEDRON:
+            facets = 4
+
+         # Compute reference tensor for each facet
+        form.AKb = []
+        debug("Compiling tensor representation for boundaries")
+        for i in range(facets):
+            form.AKb.append(ElementTensor(form.sum, "boundary", format, cK_used, options, i))
+            form.AKb[i].facet = i
 
         # Compute coefficient declarations
+        # FIXME: projections not programmed for boundaries (are changes is anything needed?)
         form.cK = __compute_coefficients(form.projections, format, cK_used)
 
         # Check primary ranks
@@ -181,7 +201,10 @@ def writeFiniteElement(element, name = "MyElement", language = FFC_LANGUAGE, opt
 
 def __check_primary_ranks(form):
     "Check that all primary ranks are equal."
-    terms = form.AKi.terms + form.AKb.terms
+    terms = form.AKi.terms
+    for AKb in form.AKb:
+        terms += AKb.terms
+
     ranks = [term.A0.i.rank for term in terms]
     if not ranks[1:] == ranks[:-1]:
         "Form must be linear in each of its arguments."

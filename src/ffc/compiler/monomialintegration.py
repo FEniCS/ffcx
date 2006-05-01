@@ -23,17 +23,20 @@ from ffc.common.progress import *
 from algebra import *
 from multiindex import *
 
-def integrate(product):
+def integrate(product, facet):
     """Compute the reference tensor for a given monomial term of a
     multilinear form, given as a Product."""
 
     debug("Pretabulating basis functions at quadrature points")
 
+    # Check for integration type (interior or boundary)
+    type = product.integral.type
+
     # Initialize quadrature points and weights
-    (points, weights, vscaling, dscaling) = __init_quadrature(product.basisfunctions)
+    (points, weights, vscaling, dscaling) = __init_quadrature(product.basisfunctions, type)
 
     # Initialize quadrature table for basis functions
-    table = __init_table(product.basisfunctions, points)
+    table = __init_table(product.basisfunctions, points, facet)
 
     # Compute table Psi for each factor
     psis = [__compute_psi(v, table, len(points), dscaling) for v in product.basisfunctions]
@@ -43,7 +46,7 @@ def integrate(product):
 
     return A0
 
-def __init_quadrature(basisfunctions):
+def __init_quadrature(basisfunctions, type):
     "Initialize quadrature for given monomial term."
 
     debug("Initializing quadrature.", 1)
@@ -57,22 +60,34 @@ def __init_quadrature(basisfunctions):
     debug("Total degree is %d, using %d quadrature point(s) in each dimension" % (q, m), 1)
 
     # Create quadrature rule and get points and weights
-    quadrature = make_quadrature(shape, m)
+    # FIXME: FIAT ot finiteelement should return shape of facet
+    if type == 'interior':
+        quadrature = make_quadrature(shape, m)
+    elif type == 'boundary':
+        quadrature = make_quadrature(shape-1, m)
     points = quadrature.get_points()
     weights = quadrature.get_weights()
 
     # Compensate for different choice of reference cells in FIAT
     # FIXME: Convince Rob to change his reference elements
     if shape == TRIANGLE:
-        vscaling = 0.25  # Area 1/2 instead of 2
-        dscaling = 2.0   # Scaling of derivative
+        if type == 'interior':
+            vscaling = 0.25  # Area 1/2 instead of 2
+            dscaling = 2.0   # Scaling of derivative
+        elif type == 'boundary':
+            vscaling = 0.5   # Length 1 instead of 2
+            dscaling = 2.0   # Scaling of derivative        
     elif shape == TETRAHEDRON:
-        vscaling = 0.125 # Volume 1/6 instead of 4/3
-        dscaling = 2.0   # Scaling of derivative
-        
+        if type == 'interior':
+            vscaling = 0.125 # Volume 1/6 instead of 4/3
+            dscaling = 2.0   # Scaling of derivative
+        elif type == 'boundary':
+            vscaling = 0.25  # Area 1/2 instead of 2
+            dscaling = 2.0   # Scaling of derivative
+
     return (points, weights, vscaling, dscaling)
 
-def __init_table(basisfunctions, points):
+def __init_table(basisfunctions, points, facet):
     """Initialize table of basis functions and their derivatives at
     the given quadrature points for each element."""
 
@@ -92,7 +107,7 @@ def __init_table(basisfunctions, points):
     table = {}
     for element in num_derivatives:
         order = num_derivatives[element]
-        table[element] = element.tabulate(order, points)
+        table[element] = element.tabulate(order, points, facet)
 
     return table
 

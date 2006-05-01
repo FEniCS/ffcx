@@ -6,7 +6,7 @@
 #
 # Compile this form with FFC: ffc NeumannProblem.form
 
-element = FiniteElement("Lagrange", "triangle", 1)
+element = FiniteElement("Vector Lagrange", "triangle", 1)
 
 v = TestFunction(element)
 U = TrialFunction(element)
@@ -14,4 +14,5 @@ f = Function(element)
 g = Function(element)
 
 a = dot(grad(v), grad(U))*dx
-L = v*f*dx + v*g*ds
+#L = v*f*dx + v*g*ds
+L = dot(v, f)*dx + dot(v,g)*ds

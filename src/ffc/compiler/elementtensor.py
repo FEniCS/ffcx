@@ -30,7 +30,7 @@ class ElementTensor:
         aK    - a list of precomputed element tensor declarations
     """
 
-    def __init__(self, sum, type, format, cK_used, options):
+    def __init__(self, sum, type, format, cK_used, options, facet):
         "Create ElementTensor."
 
         # Check that all Products have integrals
@@ -50,7 +50,7 @@ class ElementTensor:
                 # Check if reference tensor should be computed
                 if factorization[i] == None:
                     # Compute reference tensor and add term
-                    A0 = ReferenceTensor(p)
+                    A0 = ReferenceTensor(p, facet)
                     self.terms[i] = Term(p, A0, [GK])
                 else:
                     # Add geometry tensor to previous term

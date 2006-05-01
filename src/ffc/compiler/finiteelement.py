@@ -148,10 +148,15 @@ http://www.fenics.org/pipermail/fiat-dev/2005-August/000060.html"""
         else:
             raise RuntimeError, "Can only handle scalar or vector-valued elements."
 
-    def tabulate(self, order, points):
+    def tabulate(self, order, points, facet):
         """Return tabulated values of derivatives up to given order of
         basis functions at given points."""
-        return self.element.function_space().tabulate_jet(order, points)
+        if facet == None:
+            return self.element.function_space().tabulate_jet(order, points)
+        else:
+            # FIXME: compute facet shape elsewhere
+            shape = self.shape() - 1
+            return self.element.function_space().trace_tabulate_jet(shape, facet, order, points)
 
     def __add__(self, other):
         "Create mixed element."
