@@ -582,11 +582,11 @@ def __eval_boundary_default(form, options):
 """ % "".join(["    const real %s = %s;\n" % (cKb.name, cKb.value) for cKb in form.cKb if cKb.used])
         output += """\
     // Compute geometry tensors
-%s""" % "".join(["    const real %s = %s;\n" % (gK.name, gK.value) for gK in form.AKb[0].gK if gK.used])
+%s""" % "".join(["    const real %s = %s;\n" % (gK.name, gK.value) for gK in form.AKb[-1].gK if gK.used])
     else:
         output += """\
     // Compute geometry tensors
-%s""" % "".join(["    const real %s = 0.0;\n" % gK.name for gK in form.AKb[0].gK if gK.used])
+%s""" % "".join(["    const real %s = 0.0;\n" % gK.name for gK in form.AKb[-1].gK if gK.used])
 
     if not options["debug-no-element-tensor"]:
         output += """\

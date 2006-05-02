@@ -30,7 +30,7 @@ class ElementTensor:
         aK    - a list of precomputed element tensor declarations
     """
 
-    def __init__(self, sum, type, format, cK_used, options, facet):
+    def __init__(self, sum, type, format, cK_used, gK_used, options, facet):
         "Create ElementTensor."
 
         # Check that all Products have integrals
@@ -67,7 +67,7 @@ class ElementTensor:
         self.aK = self.__compute_element_tensor(format, options)
 
         # Compute geometry tensor declarations
-        gK_used = self.__check_used(format)
+        self.__check_used(format, gK_used)
         self.gK = self.__compute_geometry_tensor(format, gK_used, cK_used)
 
         return
@@ -166,11 +166,10 @@ class ElementTensor:
         # Call FErari to do optimizations
         return optimize(self.terms, format)
 
-    def __check_used(self, format):
+    def __check_used(self, format, gK_used):
         """Check which declarations of gK are actually used, i.e,
         which entries of the geometry tensor that get multiplied with
         nonzero entries of the reference tensor."""
-        gK_used = Set()
         if not self.terms or format.format["geometry tensor"](0, []) == None: return []
         iindices = self.terms[0].A0.i.indices or [[]] # All primary ranks are equal
         for i in iindices:
@@ -183,7 +182,7 @@ class ElementTensor:
                     gk = format.format["geometry tensor"](j, a)
                     if abs(a0) > FFC_EPSILON:
                         gK_used.add(gk)
-        return gK_used
+        return
 
     def __check_integrals(self, sum):
         "Check that all terms have integrals."

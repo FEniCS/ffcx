@@ -115,9 +115,12 @@ def build(sums, name = "Form", language = FFC_LANGUAGE, options = FFC_OPTIONS):
         cKi_used = Set()
         cKb_used = Set()
 
+        gKi_used = Set()
+        gKb_used = Set()
+
         # Create element tensors
         debug("Compiling tensor representation for interior")
-        form.AKi = ElementTensor(form.sum, "interior", format, cKi_used, options, None)
+        form.AKi = ElementTensor(form.sum, "interior", format, cKi_used, gKi_used, options, None)
 
         debug("Compiling tensor representation for boundary")
         # Determine number of facets (FIXME: this could be provided by finiteelement)
@@ -137,7 +140,7 @@ def build(sums, name = "Form", language = FFC_LANGUAGE, options = FFC_OPTIONS):
         form.AKb = []
         debug("Compiling tensor representation for boundaries")
         for i in range(facets):
-            form.AKb.append(ElementTensor(form.sum, "boundary", format, cKb_used, options, i))
+            form.AKb.append(ElementTensor(form.sum, "boundary", format, cKb_used, gKb_used, options, i))
             form.AKb[i].facet = i
 
         # Compute coefficient declarations
