@@ -112,11 +112,12 @@ def build(sums, name = "Form", language = FFC_LANGUAGE, options = FFC_OPTIONS):
         form.projections = find_projections(form.sum, form.nprojections)
 
         # Create empty set of used coefficient declarations
-        cK_used = Set()
+        cKi_used = Set()
+        cKb_used = Set()
 
         # Create element tensors
         debug("Compiling tensor representation for interior")
-        form.AKi = ElementTensor(form.sum, "interior", format, cK_used, options, None)
+        form.AKi = ElementTensor(form.sum, "interior", format, cKi_used, options, None)
 
         debug("Compiling tensor representation for boundary")
         # Determine number of facets (FIXME: this could be provided by finiteelement)
@@ -136,12 +137,13 @@ def build(sums, name = "Form", language = FFC_LANGUAGE, options = FFC_OPTIONS):
         form.AKb = []
         debug("Compiling tensor representation for boundaries")
         for i in range(facets):
-            form.AKb.append(ElementTensor(form.sum, "boundary", format, cK_used, options, i))
+            form.AKb.append(ElementTensor(form.sum, "boundary", format, cKb_used, options, i))
             form.AKb[i].facet = i
 
         # Compute coefficient declarations
-        # FIXME: projections not programmed for boundaries (are changes is anything needed?)
-        form.cK = __compute_coefficients(form.projections, format, cK_used)
+        # FIXME: projections not programmed for boundaries (is anything needed?)
+        form.cKi = __compute_coefficients(form.projections, format, cKi_used)
+        form.cKb = __compute_coefficients(form.projections, format, cKb_used)
 
         # Check primary ranks
         __check_primary_ranks(form)

@@ -512,11 +512,11 @@ def __eval_interior_default(form, options):
     output = ""
 
     if not options["debug-no-geometry-tensor"]:
-        if len(form.cK) > 0:
+        if len(form.cKi) > 0:
             output += """\
     // Compute coefficients
 %s
-""" % "".join(["    const real %s = %s;\n" % (cK.name, cK.value) for cK in form.cK if cK.used])
+""" % "".join(["    const real %s = %s;\n" % (cKi.name, cKi.value) for cKi in form.cKi if cKi.used])
         output += """\
     // Compute geometry tensors
 %s"""  % "".join(["    const real %s = %s;\n" % (gK.name, gK.value) for gK in form.AKi.gK if gK.used])
@@ -539,11 +539,11 @@ def __eval_interior_blas(form, options):
 
     # Compute geometry tensors
     if not options["debug-no-geometry-tensor"]:
-        if len(form.cK) > 0:
+        if len(form.cKi) > 0:
             output += """\
     // Compute coefficients
 %s
-""" % "".join(["    const real %s = %s;\n" % (cK.name, cK.value) for cK in form.cK if cK.used])
+""" % "".join(["    const real %s = %s;\n" % (cKi.name, cKi.value) for cKi in form.cKi if cKi.used])
         output += """\
     // Reset geometry tensors
     for (unsigned int i = 0; i < blas.ni; i++)
@@ -575,11 +575,11 @@ def __eval_boundary_default(form, options):
     output = ""
     
     if not options["debug-no-geometry-tensor"]:
-        if len(form.cK) > 0:
+        if len(form.cKb) > 0:
             output += """\
     // Compute coefficients
 %s
-""" % "".join(["    const real %s = %s;\n" % (cK.name, cK.value) for cK in form.cK if cK.used])
+""" % "".join(["    const real %s = %s;\n" % (cKb.name, cKb.value) for cKb in form.cKb if cKb.used])
         output += """\
     // Compute geometry tensors
 %s""" % "".join(["    const real %s = %s;\n" % (gK.name, gK.value) for gK in form.AKb[0].gK if gK.used])
@@ -610,11 +610,11 @@ def __eval_boundary_blas(form, options):
 
     # Compute geometry tensors
     if not options["debug-no-geometry-tensor"]:
-        if len(form.cK) > 0:
+        if len(form.cKb) > 0:
             output += """\
     // Compute coefficients
 %s
-""" % "".join(["    const real %s = %s;\n" % (cK.name, cK.value) for cK in form.cK if cK.used])        
+""" % "".join(["    const real %s = %s;\n" % (cKb.name, cKb.value) for cKb in form.cKb if cKb.used])        
         output += """\
     // Reset geometry tensors
     for (unsigned int i = 0; i < blas.nb; i++)

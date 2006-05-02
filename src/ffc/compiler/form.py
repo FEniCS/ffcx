@@ -62,7 +62,8 @@ class Form:
         self.AKi         = None
         self.AKb         = None
         self.facet       = None
-        self.cK          = None
+        self.cKi         = None
+        self.cKb         = None
         self.rank        = None
         self.dims        = None
         self.indices     = None
