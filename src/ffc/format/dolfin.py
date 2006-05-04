@@ -598,7 +598,7 @@ def __eval_boundary_default(form, options):
           output += """ 
     case %s:"""  % akb.facet   
           output += """ 
-%s""" % "".join(["      %s = %s;\n" % (aK.name, aK.value) for aK in akb.aK])
+%s      break; \n""" % "".join(["      %s = %s;\n" % (aK.name, aK.value) for aK in akb.aK])
 
         output += """\
     } \n"""
