@@ -1,6 +1,6 @@
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2005-11-07 -- 2005-11-07"
-__copyright__ = "Copyright (c) 2005 Anders Logg"
+__date__ = "2005-11-07 -- 2006-05-07"
+__copyright__ = "Copyright (C) 2005-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # Python modules
@@ -89,8 +89,8 @@ class Projection:
         weights = quadrature.get_weights()
 
         # Tabulate basis functions at quadrature points
-        t0 = e0.tabulate(0, points)
-        t1 = e1.tabulate(0, points)
+        t0 = e0.tabulate(0, points, None)
+        t1 = e1.tabulate(0, points, None)
 
         # Get space dimensions of V0 and V1
         m = e1.spacedim()

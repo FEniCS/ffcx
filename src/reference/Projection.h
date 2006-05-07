@@ -254,7 +254,7 @@ public:
   }
 
   // No contribution from the boundary
-  void eval(real block[], const AffineMap& map, unsigned int boundary) const {}   
+  void eval(real block[], const AffineMap& map, unsigned int facet) const {}   
 
 };
 

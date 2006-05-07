@@ -1,6 +1,6 @@
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2005-09-16 -- 2006-03-22"
-__copyright__ = "Copyright (c) 2005 Anders Logg"
+__date__ = "2005-09-16 -- 2006-05-07"
+__copyright__ = "Copyright (C) 2005-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # Python modules
@@ -165,6 +165,10 @@ class MixedElement:
         "Return shape used for element."
         return self.elements[0].shape()
 
+    def facet_shape(self):
+        "Return shape of facet."
+        return self.elements[0].facet_shape()
+
     def spacedim(self):
         "Return dimension of finite element space."
         return self.mixed_spacedim
@@ -188,12 +192,16 @@ class MixedElement:
             raise RuntimeError, "Illegal tensor dimension for vector-valued mixed element."
         return self.mixed_tensordim
 
-    def tabulate(self, order, points):
+    def num_facets(self):
+        "Return number of facets for shape of element."
+        return self.elements[0].num_facets()
+
+    def tabulate(self, order, points, facet):
         """Return tabulated values of derivatives up to given order of
         basis functions at given points."""
         # Special case: only one element
         if len(self.elements) == 1:
-            return elements[0].tabulate(order, points)
+            return elements[0].tabulate(order, points, facet)
         # Iterate over elements and build mixed table from element tables.
         # This is a bit nasty, so it needs some thought...
         mixed_table = []
@@ -201,7 +209,7 @@ class MixedElement:
         for i in range(len(self.elements)):
             # Get current element and table
             element = self.elements[i]
-            table = element.tabulate(order, points)
+            table = element.tabulate(order, points, facet)
             # Iterate over the components corresponding to the current element
             if element.rank() == 0:
                 component_table = self.__compute_component_table(table, offset)

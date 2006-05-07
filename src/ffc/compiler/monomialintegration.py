@@ -1,12 +1,14 @@
 "This module provides efficient integration of monomial forms."
 
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-11-03 -- 2005-12-09"
-__copyright__ = "Copyright (c) 2004 Anders Logg"
+__date__ = "2004-11-03 -- 2006-05-07"
+__copyright__ = "Copyright (c) 2004-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # Thanks to Robert C. Kirby for suggesting the initial algorithm that
 # this implementation is based on.
+#
+# Modified by Garth N. Wells 2006
 
 # Python modules
 import Numeric
@@ -53,6 +55,7 @@ def __init_quadrature(basisfunctions, type):
 
     # Get shape (check first one, all should be the same)
     shape = basisfunctions[0].element.shape()
+    facet_shape = basisfunctions[0].element.facet_shape()
 
     # Compute number of points to match the degree
     q = __compute_degree(basisfunctions)
@@ -64,7 +67,7 @@ def __init_quadrature(basisfunctions, type):
     if type == 'interior':
         quadrature = make_quadrature(shape, m)
     elif type == 'boundary':
-        quadrature = make_quadrature(shape-1, m)
+        quadrature = make_quadrature(facet_shape, m)
     points = quadrature.get_points()
     weights = quadrature.get_weights()
 

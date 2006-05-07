@@ -1,7 +1,9 @@
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-11-03 -- 2006-03-22"
+__date__ = "2004-11-03 -- 2006-05-07"
 __copyright__ = "Copyright (C) 2004-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
+
+# Modified by Garth N. Wells 2006
 
 # Python modules
 import Numeric
@@ -58,7 +60,7 @@ class ReferenceTensor:
         self.a = self.__create_index("secondary")
         self.b = self.__create_index("reference tensor auxiliary")
 
-        # Compute reference tensor (new version)
+        # Compute reference tensor
         t = time.time()
         self.A0 = integrate(product, facet)
 
@@ -111,6 +113,8 @@ class ReferenceTensor:
 
     def __compute_reference_tensor(self):
         "Compute reference tensor."
+
+        # This is the old (slow) version, not used but still here for testing
 
         # Make sure that the iteration is not empty
         iindices = self.i.indices or [[]]

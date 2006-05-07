@@ -47,6 +47,7 @@ class Form:
         elements     - list of FiniteElements for Functions
         projections  - list of corresponding projections
         format       - the format used to build the Form (a dictionary)
+        shape        - shape on which the form is defined
 
     A multi-linear form is first expressed as an element of the
     algebra (a Sum) and is then post-processed to generate a sum
@@ -61,7 +62,6 @@ class Form:
         self.name        = name
         self.AKi         = None
         self.AKb         = None
-        self.facet       = None
         self.cKi         = None
         self.cKb         = None
         self.rank        = None

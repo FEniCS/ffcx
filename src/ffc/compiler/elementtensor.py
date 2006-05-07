@@ -1,7 +1,9 @@
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-11-06 -- 2006-03-22"
+__date__ = "2004-11-06 -- 2006-05-07"
 __copyright__ = "Copyright (C) 2004-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
+
+# Modified by Garth N. Wells 2006
 
 # Python modules
 from sets import Set # (Could use built-in set with Python 2.4)
@@ -28,6 +30,7 @@ class ElementTensor:
         a0    - a list of precomputed reference tensor declarations
         gK    - a list of precomputed geometry tensor declarations
         aK    - a list of precomputed element tensor declarations
+        facet - number of the associated facet (None for interior)
     """
 
     def __init__(self, sum, type, format, cK_used, gK_used, options, facet):
@@ -69,6 +72,9 @@ class ElementTensor:
         # Compute geometry tensor declarations
         self.__check_used(format, gK_used)
         self.gK = self.__compute_geometry_tensor(format, gK_used, cK_used)
+
+        # Save facet
+        self.facet = facet
 
         return
 

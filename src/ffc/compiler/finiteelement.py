@@ -1,7 +1,9 @@
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-10-04 -- 2006-02-20"
+__date__ = "2004-10-04 -- 2006-05-07"
 __copyright__ = "Copyright (C) 2004-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
+
+# Modified by Garth N. Wells 2006
 
 # Python modules
 import sys
@@ -122,6 +124,10 @@ http://www.fenics.org/pipermail/fiat-dev/2005-August/000060.html"""
         "Return shape used for element."
         return self.element.domain_shape()
 
+    def facet_shape(self):
+        "Return shape of facet."
+        return self.shape() - 1
+
     def spacedim(self):
         "Return dimension of finite element space."
         return len(self.basis())
@@ -148,15 +154,23 @@ http://www.fenics.org/pipermail/fiat-dev/2005-August/000060.html"""
         else:
             raise RuntimeError, "Can only handle scalar or vector-valued elements."
 
+    def num_facets(self):
+        "Return number of facets for shape of element."
+        if self.element.domain_shape() == TRIANGLE:
+            return 3
+        elif self.element.domain_shape() == TETRAHEDRON:
+            return 4
+        else:
+            raise RuntimeError, "Unknown shape."
+
     def tabulate(self, order, points, facet):
         """Return tabulated values of derivatives up to given order of
         basis functions at given points."""
         if facet == None:
             return self.element.function_space().tabulate_jet(order, points)
         else:
-            # FIXME: compute facet shape elsewhere
-            shape = self.shape() - 1
-            return self.element.function_space().trace_tabulate_jet(shape, facet, order, points)
+            facet_shape = self.facet_shape()
+            return self.element.function_space().trace_tabulate_jet(facet_shape, facet, order, points)
 
     def __add__(self, other):
         "Create mixed element."

@@ -3,9 +3,11 @@ and building the data structures (geometry and reference tensors) for
 the evaluation of the multi-linear form."""
 
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-11-17 -- 2006-02-20"
+__date__ = "2004-11-17 -- 2006-05-07"
 __copyright__ = "Copyright (c) 2004-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
+
+# Modified by Garth N. Wells 2060
 
 # Python modules
 import sys
@@ -48,8 +50,6 @@ def compile(sums, name = "Form", language = FFC_LANGUAGE, options = FFC_OPTIONS)
     for key in FFC_OPTIONS:
         if not key in options:
             options[key] = FFC_OPTIONS[key]
-
-    # 
 
     # Build data structures
     forms = build(sums, name, language, options)
@@ -111,40 +111,26 @@ def build(sums, name = "Form", language = FFC_LANGUAGE, options = FFC_OPTIONS):
         # Find the projections for all functions
         form.projections = find_projections(form.sum, form.nprojections)
 
-        # Create empty set of used coefficient declarations
+        # Create empty sets of used coefficient declarations
         cKi_used = Set()
         cKb_used = Set()
 
+        # Create empty sets of used geometry tensor declarations
         gKi_used = Set()
         gKb_used = Set()
 
-        # Create element tensors
+        # Compute element tensor for interior
         debug("Compiling tensor representation for interior")
         form.AKi = ElementTensor(form.sum, "interior", format, cKi_used, gKi_used, options, None)
 
-        debug("Compiling tensor representation for boundary")
-        # Determine number of facets (FIXME: this could be provided by finiteelement)
-        if len(form.elements) != 0:
-            shape = form.elements[0].shape()
-        elif form.test != None:
-            shape = form.test.shape() 
-        else:
-            print "Unable to determine element shape."
-
-        if shape == TRIANGLE:
-            facets = 3
-        elif shape == TETRAHEDRON:
-            facets = 4
-
-         # Compute reference tensor for each facet
+        # Compute element tensor for each facet on the boundary
         form.AKb = []
         debug("Compiling tensor representation for boundaries")
-        for i in range(facets):
+        num_facets = form.sum.products[0].basisfunctions[0].element.num_facets()
+        for i in range(num_facets):
             form.AKb.append(ElementTensor(form.sum, "boundary", format, cKb_used, gKb_used, options, i))
-            form.AKb[i].facet = i
 
-        # Compute coefficient declarations
-        # FIXME: projections not programmed for boundaries (is anything needed?)
+        # Compute coefficient declarations, same for interior and boundary
         form.cKi = __compute_coefficients(form.projections, format, cKi_used)
         form.cKb = __compute_coefficients(form.projections, format, cKb_used)
 
@@ -209,10 +195,9 @@ def __check_primary_ranks(form):
     terms = form.AKi.terms
     for AKb in form.AKb:
         terms += AKb.terms
-
     ranks = [term.A0.i.rank for term in terms]
     if not ranks[1:] == ranks[:-1]:
-        "Form must be linear in each of its arguments."
+        raise FormError, "Form must be linear in each of its arguments."
     form.rank = ranks[0]
     form.dims = terms[0].A0.i.dims
     form.indices = terms[0].A0.i.indices
