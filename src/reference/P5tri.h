@@ -8,7 +8,6 @@
 #include <dolfin/Mesh.h>
 #include <dolfin/Cell.h>
 #include <dolfin/Point.h>
-#include <dolfin/Vector.h>
 #include <dolfin/AffineMap.h>
 #include <dolfin/FiniteElement.h>
 #include <dolfin/FiniteElementSpec.h>

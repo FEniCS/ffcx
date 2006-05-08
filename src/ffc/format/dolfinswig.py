@@ -1,7 +1,7 @@
 "DOLFIN-SWIG output format."
 
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-10-14 -- 2006-04-01"
+__date__ = "2004-10-14 -- 2006-05-08"
 __copyright__ = "Copyright (C) 2004-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -144,7 +144,6 @@ def __file_header(name, options):
 #include <dolfin/Mesh.h>
 #include <dolfin/Cell.h>
 #include <dolfin/Point.h>
-#include <dolfin/Vector.h>
 #include <dolfin/AffineMap.h>
 #include <dolfin/FiniteElement.h>
 #include <dolfin/FiniteElementSpec.h>
@@ -174,7 +173,6 @@ def __file_header_element(name, options):
 #include <dolfin/Mesh.h>
 #include <dolfin/Cell.h>
 #include <dolfin/Point.h>
-#include <dolfin/Vector.h>
 #include <dolfin/AffineMap.h>
 #include <dolfin/FiniteElement.h>
 #include <dolfin/FiniteElementSpec.h>
