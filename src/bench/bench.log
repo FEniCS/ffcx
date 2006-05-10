@@ -73,3 +73,15 @@ lör apr  1 08:54:07 CST 2006
 
 Navier-Stokes: 1.042 seconds
 -----------------------------------
+Changes to benchmark 2006-05-10:
+
+ - System change, benchmarks now
+   running on laptop (slower)
+ - New benchmark Stabilization.form    
+-----------------------------------
+FFC version 0.3.2 (rev 388)
+ons maj 10 23:15:50 CEST 2006
+
+Navier-Stokes: 1.289 seconds
+Stabilization: 68.606 seconds
+-----------------------------------
