@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-11-06 -- 2006-05-07"
+__date__ = "2004-11-06 -- 2006-05-11"
 __copyright__ = "Copyright (C) 2004-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -135,34 +135,40 @@ class ElementTensor:
         declarations = []
         iindices = self.terms[0].A0.i.indices or [[]] # All primary ranks are equal
 
-        # Compute geometry tensor 
-        gk_tensor = [ ( [(format.format["geometry tensor"](j, a), a) for a in self.__aindices(j) ], j) \
-              for j in range(len(self.terms)) ]
+        # Prefetch formats to speed up code generation
+        format_element_tensor  = format.format["element tensor"]
+        format_geometry_tensor = format.format["geometry tensor"]
+        format_sum             = format.format["sum"]
+        format_subtract        = format.format["subtract"]
+        format_multiply        = format.format["multiplication"]
+        format_floating_point  = format.format["floating point"]
 
-        k = 0 # Update counter for each entry of A0, which is needed for some formats
+        # Generate code for geometry tensor elements
+        gk_tensor = [ ( [(format_geometry_tensor(j, a), a) \
+                         for a in self.__aindices(j) ], j) \
+                         for j in range(len(self.terms)) ]
+
+        # Generate code for computing the element tensor
+        k = 0
         num_dropped = 0
+        zero = format_floating_point(0.0)
         for i in iindices:
-            debug("i = " + str(i), 2)
             value = None
-            name = format.format["element tensor"](i, k)
+            name = format_element_tensor(i, k)
             for (gka, j) in gk_tensor:
-                debug("  j = " + str(j), 2)
                 A0 = self.terms[j].A0
                 for (gk, a) in gka:
-                    debug("    a = " + str(a), 2)
-                    a0 = A0(i, a)
-                    debug("      a0 = " + str(a0), 2)
-                    debug("      gk = " + str(gk), 2)
+                    a0 = A0.A0[i + a]
                     if abs(a0) > FFC_EPSILON:
                         if value and a0 < 0.0:
-                            value = format.format["subtract"]([value, format.format["multiplication"]([format.format["floating point"](-a0), gk])])
+                            value = format_subtract([value, format_multiply([format_floating_point(-a0), gk])])
                         elif value:
-                            value = format.format["sum"]([value, format.format["multiplication"]([format.format["floating point"](a0), gk])])
+                            value = format_sum([value, format_multiply([format_floating_point(a0), gk])])
                         else:
-                            value = format.format["multiplication"]([format.format["floating point"](a0), gk])
+                            value = format_multiply([format_floating_point(a0), gk])
                     else:
                         num_dropped += 1
-            value = value or format.format["floating point"](0.0)
+            value = value or zero
             declarations += [Declaration(name, value)]
             k += 1
         debug("Number of zeros dropped from reference tensor: " + str(num_dropped), 1)
