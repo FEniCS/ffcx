@@ -134,21 +134,23 @@ class ElementTensor:
         debug("Generating code for element tensor", 1)         
         declarations = []
         iindices = self.terms[0].A0.i.indices or [[]] # All primary ranks are equal
+
+        # Compute geometry tensor 
+        gk_tensor = [ ( [(format.format["geometry tensor"](j, a), a) for a in self.__aindices(j) ], j) \
+              for j in range(len(self.terms)) ]
+
         k = 0 # Update counter for each entry of A0, which is needed for some formats
         num_dropped = 0
         for i in iindices:
             debug("i = " + str(i), 2)
             value = None
-            for j in range(len(self.terms)):
+            name = format.format["element tensor"](i, k)
+            for (gka, j) in gk_tensor:
                 debug("  j = " + str(j), 2)
                 A0 = self.terms[j].A0
-                if A0.a.indices: aindices = A0.a.indices
-                else: aindices = [[]]
-                for a in aindices:
+                for (gk, a) in gka:
                     debug("    a = " + str(a), 2)
-                    name = format.format["element tensor"](i, k)
                     a0 = A0(i, a)
-                    gk = format.format["geometry tensor"](j, a)
                     debug("      a0 = " + str(a0), 2)
                     debug("      gk = " + str(gk), 2)
                     if abs(a0) > FFC_EPSILON:
@@ -195,3 +197,10 @@ class ElementTensor:
         for p in sum.products:
             if not p.integral:
                 raise FormError, (p, "Missing integral in term.")
+
+    def __aindices(self, j):
+        A0 = self.terms[j].A0
+        if A0.a.indices: aindices = A0.a.indices
+        else: aindices = [[]]
+        return aindices
+

@@ -80,8 +80,14 @@ Changes to benchmark 2006-05-10:
  - New benchmark Stabilization.form    
 -----------------------------------
 FFC version 0.3.2 (rev 388)
-ons maj 10 23:15:50 CEST 2006
+Thu May 11 10:29:51 CEST 2006
 
 Navier-Stokes: 1.289 seconds
 Stabilization: 68.606 seconds
+-----------------------------------
+FFC version 0.3.2 (rev 389)
+Thu May 11 10:33:21 CEST 2006
+
+Navier-Stokes: 0.956 seconds
+Stabilization: 46.744 seconds
 -----------------------------------
