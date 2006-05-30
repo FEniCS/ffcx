@@ -1,3 +1,4 @@
+ - Modify implementation of vertexeval()
  - Add support for boundary integrals (Garth N. Wells)
 0.3.2 [2006-04-01]
  - Add support for FErari optimizations, new flag -O
