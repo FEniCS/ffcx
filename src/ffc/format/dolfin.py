@@ -1,7 +1,7 @@
 "DOLFIN output format."
 
-__author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-10-14 -- 2006-05-08"
+__author__ = "Anders Logg (logg@simula.no)"
+__date__ = "2004-10-14 -- 2006-06-30"
 __copyright__ = "Copyright (C) 2004-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -335,7 +335,7 @@ public:
   {
 %s  }
 
-  void vertexeval(real values[], unsigned int vertex, const real x[], const Mesh& mesh) const
+  void vertexeval(uint vertex_nodes[], unsigned int vertex, const Mesh& mesh) const
   {
     // FIXME: Temporary fix for Lagrange elements
 %s  }

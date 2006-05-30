@@ -1,6 +1,6 @@
-__author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2005-09-20 -- 2006-02-20"
-__copyright__ = "Copyright (c) 2005-2006 Anders Logg"
+__author__ = "Anders Logg (logg@simula.no)"
+__date__ = "2005-09-20 -- 2006-05-30"
+__copyright__ = "Copyright (C) 2005-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # FIAT modules
@@ -58,11 +58,11 @@ def write_offset(increment, component):
 def write_component(component):
     "Write component value."
     if component == 0:
-        name = "values[%d]" % component
-        value = "x[vertex]"
+        name = "vertex_nodes[%d]" % component
+        value = "vertex"
     else:
-        name = "values[%d]" % component
-        value = "x[offset + vertex]"
+        name = "vertex_nodes[%d]" % component
+        value = "offset + vertex"
     return Declaration(name, value)
 
 def compute_vertexeval(element, component_offset):
