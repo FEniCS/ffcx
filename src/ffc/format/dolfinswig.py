@@ -276,8 +276,8 @@ def __element(element, name):
     else:
         spec = "    FiniteElementSpec s(\"%s\", \"%s\", %d);" % \
                (element.type_str, element.shape_str, element.degree())
-    
-    # Generate output
+   
+ # Generate output
     output = """\
 
 class %s : public dolfin::FiniteElement
@@ -386,7 +386,7 @@ def __form(form, type, options, xmlfile):
 
     # Create argument list for form (functions and constants)
     arguments = ", ".join([("Function& w%d" % j) for j in range(form.nfunctions)] + \
-                          [("const real c%d" % j) for j in range(form.nconstants)])
+                          [("const real& c%d" % j) for j in range(form.nconstants)])
 
     # Create initialization list for constants (if any)
     constinit = ", ".join([("c%d(c%d)" % (j, j)) for j in range(form.nconstants)])
@@ -460,11 +460,11 @@ public:
 """
 
     # Boundary contribution (if any)
-    if form.AKb.terms:
+    if form.AKb[0].terms:
         eval = __eval_boundary(form, options)
         output += """\
 
-  void eval(real block[], const AffineMap& map, unsigned int boundary) const
+  void eval(real block[], const AffineMap& map, unsigned int facet) const
   {
 %s  }
 """ % eval
@@ -472,7 +472,7 @@ public:
         output += """\
 
   // No contribution from the boundary
-  void eval(real block[], const AffineMap& map, unsigned int boundary) const {}
+  void eval(real block[], const AffineMap& map, unsigned int facet) const {}   
 """
 
     # Declare class members (if any)
@@ -487,7 +487,7 @@ private:
     if form.nconstants > 0:
         for j in range(form.nconstants):
             output += """\
-  const real c%d;""" % j
+  const real& c%d;""" % j
         output += "\n"
 
     # Class footer
@@ -510,11 +510,11 @@ def __eval_interior_default(form, options):
     output = ""
 
     if not options["debug-no-geometry-tensor"]:
-        if len(form.cK) > 0:
+        if len(form.cKi) > 0:
             output += """\
     // Compute coefficients
 %s
-""" % "".join(["    const real %s = %s;\n" % (cK.name, cK.value) for cK in form.cK if cK.used])
+""" % "".join(["    const real %s = %s;\n" % (cKi.name, cKi.value) for cKi in form.cKi if cKi.used])
         output += """\
     // Compute geometry tensors
 %s"""  % "".join(["    const real %s = %s;\n" % (gK.name, gK.value) for gK in form.AKi.gK if gK.used])
@@ -537,11 +537,11 @@ def __eval_interior_blas(form, options):
 
     # Compute geometry tensors
     if not options["debug-no-geometry-tensor"]:
-        if len(form.cK) > 0:
+        if len(form.cKi) > 0:
             output += """\
     // Compute coefficients
 %s
-""" % "".join(["    const real %s = %s;\n" % (cK.name, cK.value) for cK in form.cK if cK.used])
+""" % "".join(["    const real %s = %s;\n" % (cKi.name, cKi.value) for cKi in form.cKi if cKi.used])
         output += """\
     // Reset geometry tensors
     for (unsigned int i = 0; i < blas.ni; i++)
@@ -573,25 +573,33 @@ def __eval_boundary_default(form, options):
     output = ""
     
     if not options["debug-no-geometry-tensor"]:
-        if len(form.cK) > 0:
+        if len(form.cKb) > 0:
             output += """\
     // Compute coefficients
 %s
-""" % "".join(["    const real %s = %s;\n" % (cK.name, cK.value) for cK in form.cK if cK.used])
+""" % "".join(["    const real %s = %s;\n" % (cKb.name, cKb.value) for cKb in form.cKb if cKb.used])
         output += """\
     // Compute geometry tensors
-%s""" % "".join(["    const real %s = %s;\n" % (gK.name, gK.value) for gK in form.AKb.gK if gK.used])
+%s""" % "".join(["    const real %s = %s;\n" % (gK.name, gK.value) for gK in form.AKb[-1].gK if gK.used])
     else:
         output += """\
     // Compute geometry tensors
-%s""" % "".join(["    const real %s = 0.0;\n" % gK.name for gK in form.AKi.gK if gK.used])
+%s""" % "".join(["    const real %s = 0.0;\n" % gK.name for gK in form.AKb[-1].gK if gK.used])
 
     if not options["debug-no-element-tensor"]:
         output += """\
 
     // Compute element tensor
-%s""" % "".join(["    %s = %s;\n" % (aK.name, aK.value) for aK in form.AKb.aK])
+    switch ( facet )
+    { """
+        for akb in form.AKb:
+          output += """ 
+    case %s:"""  % akb.facet   
+          output += """ 
+%s      break; \n""" % "".join(["      %s = %s;\n" % (aK.name, aK.value) for aK in akb.aK])
 
+        output += """\
+    } \n"""
     return output
 
 def __eval_boundary_blas(form, options):
@@ -600,11 +608,11 @@ def __eval_boundary_blas(form, options):
 
     # Compute geometry tensors
     if not options["debug-no-geometry-tensor"]:
-        if len(form.cK) > 0:
+        if len(form.cKb) > 0:
             output += """\
     // Compute coefficients
 %s
-""" % "".join(["    const real %s = %s;\n" % (cK.name, cK.value) for cK in form.cK if cK.used])        
+""" % "".join(["    const real %s = %s;\n" % (cKb.name, cKb.value) for cKb in form.cKb if cKb.used])        
         output += """\
     // Reset geometry tensors
     for (unsigned int i = 0; i < blas.nb; i++)
