@@ -87,10 +87,13 @@ def main(argv):
                 print ""
                 print "*** Error at " + str(exception.expression)
                 print "*** " + exception.message
+                print "*** To get more information about this error, rerun ffc with the option -d1."
             except RuntimeError, exception:
                 print "*** " + str(exception)
+                print "*** To get more information about this error, rerun ffc with the option -d1."
             except Exception, exception:
                 print "*** " + str(exception)
+                print "*** To get more information about this error, rerun ffc with the option -d1."
 
 def usage():
     "Display usage info."

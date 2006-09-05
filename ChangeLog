@@ -1,3 +1,4 @@
+ - Add hint for printing more informative error messages (flag -d1)
  - Modify implementation of vertexeval()
  - Add support for boundary integrals (Garth N. Wells)
 0.3.2 [2006-04-01]
