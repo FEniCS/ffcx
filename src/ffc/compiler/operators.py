@@ -136,9 +136,6 @@ def grad(v):
 
 def div(v):
     "Return divergence of given function."
-    # Check dimensions
-    if not len(v) == __shapedim(v):
-        raise FormError, (v, "Dimensions don't match for divergence.")
     # Use index notation if possible
     if isinstance(v, Element):
         i = Index()

@@ -1,3 +1,4 @@
+ - Fix bug in operator div()
  - Add operation count (number of multiplications) with -d0
  - Add hint for printing more informative error messages (flag -d1)
  - Modify implementation of vertexeval()
