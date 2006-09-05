@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-11-06 -- 2006-05-11"
+__date__ = "2004-11-06 -- 2006-09-05"
 __copyright__ = "Copyright (C) 2004-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -151,6 +151,7 @@ class ElementTensor:
         # Generate code for computing the element tensor
         k = 0
         num_dropped = 0
+        num_mult = 0
         zero = format_floating_point(0.0)
         for i in iindices:
             value = None
@@ -166,12 +167,14 @@ class ElementTensor:
                             value = format_sum([value, format_multiply([format_floating_point(a0), gk])])
                         else:
                             value = format_multiply([format_floating_point(a0), gk])
+                        num_mult += 1
                     else:
                         num_dropped += 1
             value = value or zero
             declarations += [Declaration(name, value)]
             k += 1
         debug("Number of zeros dropped from reference tensor: " + str(num_dropped), 1)
+        debug("Number of multiplications in computation of reference tensor: " + str(num_mult), 1)
         return declarations
 
     def __compute_element_tensor_optimized(self, format):

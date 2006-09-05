@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2006-03-22 -- 2006-03-31"
+__date__ = "2006-03-22 -- 2006-09-05"
 __copyright__ = "Copyright (C) 2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -29,6 +29,7 @@ def optimize(terms, format):
     num_terms = len(terms)
 
     # Iterate over terms
+    num_mult = 0
     for j in range(num_terms):
 
         # Get current term
@@ -50,12 +51,14 @@ def optimize(terms, format):
         # Generate code according to format from abstract FErari code
         for (lhs, rhs) in code:
             name  = build_lhs(lhs, j, iindices, aindices, num_terms, format)
-            value = build_rhs(rhs, j, iindices, aindices, num_terms, format)
+            (value, num_mult) = build_rhs(rhs, j, iindices, aindices, num_terms, format, num_mult)
             declarations += [Declaration(name, value)]
 
     # Add all terms if more than one term
     if num_terms > 1:
         declarations += build_sum(iindices, num_terms, format)
+
+    debug("Number of multiplications in computation of reference tensor: " + str(num_mult), 1)
 
     #print "Formatted code"
     #print "--------------"
@@ -83,7 +86,7 @@ def build_lhs(lhs, j, iindices, aindices, num_terms, format):
     
     return variable
     
-def build_rhs(rhs, j, iindices, aindices, num_terms, format):
+def build_rhs(rhs, j, iindices, aindices, num_terms, format, num_mult):
     "Build code for right-hand side from abstract FErari code."
     terms = []
     # Iterate over terms in linear combination
@@ -108,6 +111,7 @@ def build_rhs(rhs, j, iindices, aindices, num_terms, format):
         elif abs(coefficient + 1.0) < FFC_EPSILON:
             term = "-" + variable
         else:
+            num_mult += 1
             term = format.format["multiplication"]([format.format["floating point"](coefficient), variable])
 
         # Add term to list
@@ -118,7 +122,7 @@ def build_rhs(rhs, j, iindices, aindices, num_terms, format):
         return "0.0"
 
     # Add terms
-    return format.format["sum"](terms)
+    return (format.format["sum"](terms), num_mult)
 
 def build_sum(iindices, num_terms, format):
     "Build sum of terms if more than one term."
