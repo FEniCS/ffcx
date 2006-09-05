@@ -140,10 +140,10 @@ namespace dolfin
       components[20] = 0;
     }
   
-    void vertexeval(real values[], unsigned int vertex, const real x[], const Mesh& mesh) const
+    void vertexeval(uint vertex_nodes[], unsigned int vertex, const Mesh& mesh) const
     {
       // FIXME: Temporary fix for Lagrange elements
-      values[0] = x[vertex];
+      vertex_nodes[0] = vertex;
     }
   
     const FiniteElement& operator[] (unsigned int i) const
