@@ -1,4 +1,4 @@
-__author__ = "Anders Logg (logg@tti-c.org)"
+__author__ = "Anders Logg (logg@simula.no)"
 __date__ = "2005-03-24 -- 2006-03-28"
 __copyright__ = "Copyright (C) 2005-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"

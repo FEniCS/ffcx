@@ -14,7 +14,7 @@ Dependencies:
      If you're running Debian, you need to install the
      package python2.4.
 
-  2. FIAT, version 0.2.3
+  2. FIAT, version 0.2.4
 
      You need to have FIAT installed. FIAT is available from
      the FEniCS web page: http://www.fenics.org/.
@@ -33,5 +33,9 @@ Dependencies:
 
      This module is only used by FIAT.
 
+  5. FErari version, version 0.1.0 (optional)
+
+     This is only required to compile with optimization (flag -O).
+
 Anders Logg
-logg@tti-c.org
+logg@simula.no

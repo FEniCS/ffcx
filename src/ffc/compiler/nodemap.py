@@ -1,6 +1,6 @@
-__author__ = "Robert C. Kirby (kirby@cs.uchicago.edu) and Anders Logg (logg@tti-c.org)"
+__author__ = "Robert C. Kirby (kirby@cs.uchicago.edu) and Anders Logg (logg@simula.no)"
 __date__ = "2005-05-03 -- 2006-02-20"
-__copyright__ = "Copyright (c) 2005-2006 Kirby/Logg"
+__copyright__ = "Copyright (C) 2005-2006 Kirby/Logg"
 __license__  = "GNU GPL Version 2"
 
 # This file was previously named dofmap.py

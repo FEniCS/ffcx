@@ -1,9 +1,9 @@
 """This module extends the form algebra with a collection of operators
 based on the basic form algebra operations."""
 
-__author__ = "Anders Logg (logg@tti-c.org)"
+__author__ = "Anders Logg (logg@simula.no)"
 __date__ = "2005-09-07 -- 2005-12-20"
-__copyright__ = "Copyright (c) 2005-2006 Anders Logg"
+__copyright__ = "Copyright (C) 2005-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # Modified by Ola Skavhaug, 2005

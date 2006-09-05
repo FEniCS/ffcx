@@ -3,9 +3,9 @@ defining the test, trial, and function finite element spaces of a
 given Sum. All functions assume that all Indices of the given Sum have
 already been reassigned."""
 
-__author__ = "Anders Logg (logg@tti-c.org)"
+__author__ = "Anders Logg (logg@simula.no)"
 __date__ = "2005-03-15 -- 2005-11-08"
-__copyright__ = "Copyright (c) 2005 Anders Logg"
+__copyright__ = "Copyright (C) 2005 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # Python modules

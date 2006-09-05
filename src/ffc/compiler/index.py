@@ -1,6 +1,6 @@
-__author__ = "Anders Logg (logg@tti-c.org)"
+__author__ = "Anders Logg (logg@simula.no)"
 __date__ = "2004-09-29 -- 2005-11-08"
-__copyright__ = "Copyright (c) 2004, 2005 Anders Logg"
+__copyright__ = "Copyright (C) 2004, 2005 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 next_index_0 = 0 # Next available primary index

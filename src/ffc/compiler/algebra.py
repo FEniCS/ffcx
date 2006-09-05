@@ -19,9 +19,9 @@ are supported for all elements of the algebra:
     Unary  []     (operand must be tensor-valued)
     Unary  d/dx   (operand scalar or tensor-valued)"""
 
-__author__ = "Anders Logg (logg@tti-c.org)"
+__author__ = "Anders Logg (logg@simula.no)"
 __date__ = "2004-09-27 -- 2006-03-22"
-__copyright__ = "Copyright (c) 2004-2006 Anders Logg"
+__copyright__ = "Copyright (C) 2004-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # Python modules

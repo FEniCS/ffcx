@@ -2,9 +2,9 @@
 and building the data structures (geometry and reference tensors) for
 the evaluation of the multi-linear form."""
 
-__author__ = "Anders Logg (logg@tti-c.org)"
+__author__ = "Anders Logg (logg@simula.no)"
 __date__ = "2004-11-17 -- 2006-05-07"
-__copyright__ = "Copyright (c) 2004-2006 Anders Logg"
+__copyright__ = "Copyright (C) 2004-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # Modified by Garth N. Wells 2060

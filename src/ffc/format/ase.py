@@ -2,7 +2,7 @@
 
 __author__ = "Matthew G. Knepley (knepley@mcs.anl.gov)"
 __date__ = "2005-06-03 -- 2006-04-01"
-__copyright__ = "Copyright (c) 2005 Matthew G. Knepley"
+__copyright__ = "Copyright (C) 2005 Matthew G. Knepley"
 __license__  = "GNU GPL Version 2"
 
 # Modified by Anders Logg 2005.

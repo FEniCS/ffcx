@@ -2,7 +2,7 @@
 products. Signatures are used to uniquely identify reference
 tensors that may be common to a group of terms."""
 
-__author__ = "Anders Logg (logg@tti-c.org)"
+__author__ = "Anders Logg (logg@simula.no)"
 __date__ = "2005-09-06 -- 2006-04-04"
 __copyright__ = "Copyright (C) 2005-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"

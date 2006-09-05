@@ -1,8 +1,8 @@
 "This module defines exceptions for FFC."
 
-__author__ = "Anders Logg (logg@tti-c.org)"
+__author__ = "Anders Logg (logg@simula.no)"
 __date__ = "2005-09-14"
-__copyright__ = "Copyright (c) 2005 Anders Logg"
+__copyright__ = "Copyright (C) 2005 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 class FFCError(Exception):

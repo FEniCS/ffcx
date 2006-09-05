@@ -3,9 +3,9 @@ Reordering of indices may be necessary in order to factor out common
 reference tensors from terms that have the same tensor structure but
 with different names of indices."""
 
-__author__ = "Anders Logg (logg@tti-c.org)"
+__author__ = "Anders Logg (logg@simula.no)"
 __date__ = "2005-09-06 -- 2005-09-14"
-__copyright__ = "Copyright (c) 2004 Anders Logg"
+__copyright__ = "Copyright (C) 2004 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # Python modules
