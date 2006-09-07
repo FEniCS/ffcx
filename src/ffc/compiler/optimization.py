@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2006-03-22 -- 2006-09-05"
+__date__ = "2006-03-22 -- 2006-09-07"
 __copyright__ = "Copyright (C) 2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -119,7 +119,7 @@ def build_rhs(rhs, j, iindices, aindices, num_terms, format, num_mult):
 
     # Special case, no terms
     if len(terms) == 0:
-        return "0.0"
+        return ("0.0", 0)
 
     # Add terms
     return (format.format["sum"](terms), num_mult)
