@@ -108,7 +108,7 @@ be able to use it with DOLFIN.""", -1)
     file.close()
     debug("Output written to " + filename)
 
-    print swigmap
+    debug(str(swigmap))
 
     # Write SWIG file
     swigfilename = name + ".i"
