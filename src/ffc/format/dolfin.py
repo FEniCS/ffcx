@@ -37,6 +37,15 @@ format = { "sum": lambda l: " + ".join(l),
            "tmp declaration": lambda j, k: "const real tmp%d_%d" % (j, k),
            "tmp access": lambda j, k: "tmp%d_%d" % (j, k) }
 
+def swig(swigmap):
+    output = ""
+
+    for p in swigmap.items():
+        output += "%%rename(%s) %s;\n" % (p[1], p[0])
+
+    return output
+
+
 def init(options):
     "Initialize code generation for DOLFIN format."
 
@@ -54,6 +63,9 @@ def write(forms, options):
 
     # Get name of form
     name = forms[0].name
+
+    # Initialize SWIG map
+    swigmap = {}
 
     # Write file header
     output = ""
@@ -80,8 +92,11 @@ be able to use it with DOLFIN.""", -1)
         else:
             xmlfile = "%s.xml" % forms[j].name
 
-        # Write form
-        output += __form(form, type, options, xmlfile)
+        # Write form prototype
+        output += __form(form, type, options, xmlfile, swigmap, True)
+
+        # Write form implementation
+        output += __form(form, type, options, xmlfile, swigmap, False)
 
     # Write file footer
     output += __file_footer()
@@ -92,6 +107,15 @@ be able to use it with DOLFIN.""", -1)
     file.write(output)
     file.close()
     debug("Output written to " + filename)
+
+    print swigmap
+
+    # Write SWIG file
+    swigfilename = name + ".i"
+    swigfile = open(swigfilename, "w")
+    swigfile.write(swig(swigmap))
+    swigfile.close()
+    debug("Swig output written to " + filename)
 
     # Write XML files if compiling for BLAS
     if options["blas"]:
@@ -104,12 +128,14 @@ def writeFiniteElement(element, name, options):
     "Generate code for DOLFIN format."
     debug("\nGenerating output for DOLFIN")
 
+    subclass = ""
+
     # Write file header
     output = ""
     output += __file_header_element(name, options)
 
     # Write finite element
-    output += __element(element, name)
+    output += __element(element, subclass, name, False)
 
     # Write file footer
     output += __file_footer_element()
@@ -120,6 +146,13 @@ def writeFiniteElement(element, name, options):
     file.write(output)
     file.close()
     debug("Output written to " + filename)
+
+    # Write dummy SWIG file
+    swigfilename = name + ".i"
+    swigfile = open(swigfilename, "w")
+    swigfile.write("")
+    swigfile.close()
+    debug("Swig output written to " + filename)
 
 def __file_header(name, options):
     "Generate file header for DOLFIN."
@@ -196,26 +229,36 @@ def __file_footer_element():
 
 #endif\n"""
 
-def __elements(form):
+def __elements(form, subclass, swigmap, prototype = False):
     "Generate finite elements for DOLFIN."
 
     output = ""
     
     # Write test element (if any)
     if form.test:
-        output += __element(form.test, "TestElement")
+        output += __element(form.test, subclass,
+                            "TestElement", prototype)
+        swigmap["dolfin::" + form.name + "::" + subclass + "::" + "TestElement"] = \
+            form.name + subclass + "TestElement"
 
     # Write trial element (if any)
     if form.trial:
-        output += __element(form.trial, "TrialElement")
+        output += __element(form.trial, subclass,
+                            "TrialElement", prototype)
+        swigmap["dolfin::" + form.name + "::" + subclass + "::" + "TrialElement"] = \
+            form.name + subclass + "TrialElement"
 
     # Write function elements (if any)
     for j in range(len(form.elements)):
-        output += __element(form.elements[j], "FunctionElement_%d" % j)
+        output += __element(form.elements[j], subclass,
+                            "FunctionElement_%d" % j, prototype)
+        swigmap["dolfin::" + form.name + "::" + subclass + "::" + \
+                "FunctionElement_%d" % j] = \
+                form.name + subclass + "FunctionElement_%d" % j
     
     return output
 
-def __element(element, name):
+def __element(element, subclass, name, prototype = False):
     "Generate finite element for DOLFIN."
 
     # Generate code for initialization of tensor dimensions
@@ -267,7 +310,8 @@ def __element(element, name):
     subelements = ""
     if isinstance(element, MixedElement):
         for i in range(len(element.elements)):
-            subelements += __element(element.elements[i], "SubElement_%d" % i)
+            subelements += __element(element.elements[i], "",
+                                     "SubElement_%d" % i)
 
     # Generate code for FiniteElementSpec
     if element.type_str == "mixed":
@@ -280,9 +324,23 @@ def __element(element, name):
                (element.type_str, element.shape_str, element.degree())
 
     # Generate output
-    output = """\
+    if subclass != "":
+        subclass += "::"
 
-class %s : public dolfin::FiniteElement
+    if prototype == True:
+        # Write element prototype
+
+        output = """\
+  class %s;
+
+""" % (name)
+        return output
+    else:
+        # Write element implementation
+
+        output = """\
+
+class %s%s : public dolfin::FiniteElement
 {
 public:
 
@@ -360,7 +418,7 @@ private:
   FiniteElement** subelements;
 
 };
-""" % (name, name,
+""" % (subclass, name, name,
        diminit,
        elementinit,
        name,
@@ -377,9 +435,9 @@ private:
        spec,
        subelements)
 
-    return indent(output, 2)
+        return output
 
-def __form(form, type, options, xmlfile):
+def __form(form, type, options, xmlfile, swigmap, prototype = False):
     "Generate form for DOLFIN."
     
     #ptr = "".join(['*' for i in range(form.rank)])
@@ -395,8 +453,10 @@ def __form(form, type, options, xmlfile):
     if constinit:
         constinit = ", " + constinit
     
-    # Write class header
-    output = """\
+    if prototype == True:
+        # Write form prototype
+
+        output = """\
 /// This class contains the form to be evaluated, including
 /// contributions from the interior and boundary of the domain.
 
@@ -405,98 +465,125 @@ class %s : public dolfin::%s
 public:
 """ % (subclass, baseclass)
 
-    # Write elements
-    output += __elements(form)
-    
-    # Write constructor
-    output += """\
+        # Write element prototypes
+        output += __elements(form, subclass, swigmap, True)
 
-  %s(%s) : dolfin::%s(%d)%s
-  {
-""" % (subclass, arguments, baseclass, form.nfunctions, constinit)
-
-    # Initialize test and trial elements
-    if form.test:
-        output += """\
-    // Create finite element for test space
-    _test = new TestElement();
-"""
-    if form.trial:
+        # Write constructor
         output += """\
 
-    // Create finite element for trial space
-    _trial = new TrialElement();
-"""
-        
-    # Add functions (if any)
-    if form.nfunctions > 0:
+  %s(%s);
+""" % (subclass, arguments)
+
+        # Interior contribution
         output += """\
 
-    // Add functions\n"""
-        for j in range(form.nfunctions):
-            output += "    add(w%d, new FunctionElement_%d());\n" % (j, j)
-
-    # Initialize BLAS array (if any)
-    if options["blas"]:
-        output += """\
-
-    // Initialize form data for BLAS
-    blas.init(\"%s\");\n""" % xmlfile
-
-    output += "  }\n"
-
-    # Interior contribution (if any)
-    if form.AKi.terms:
-        eval = __eval_interior(form, options)
-        output += """\
-
-  void eval(real block[], const AffineMap& map) const
-  {
-%s  }
-""" % eval
-    else:
-        output += """\
-
-  // No contribution from the interior
-  void eval(real block[], const AffineMap& map) const {}
+  void eval(real block[], const AffineMap& map) const;
 """
 
-    # Boundary contribution (if any)
-    if form.AKb[0].terms:
-        eval = __eval_boundary(form, options)
+        # Boundary contribution (if any)
         output += """\
 
-  void eval(real block[], const AffineMap& map, unsigned int facet) const
-  {
-%s  }
-""" % eval
-    else:
-        output += """\
-
-  // No contribution from the boundary
-  void eval(real block[], const AffineMap& map, unsigned int facet) const {}   
+  void eval(real block[], const AffineMap& map, unsigned int facet) const;
 """
 
-    # Declare class members (if any)
-    if form.nconstants > 0:
-        output += """\
+        # Declare class members (if any)
+        if form.nconstants > 0:
+            output += """\
 
 private:
 
 """
 
-    # Create declaration list for for constants (if any)
-    if form.nconstants > 0:
-        for j in range(form.nconstants):
-            output += """\
+        # Create declaration list for for constants (if any)
+        if form.nconstants > 0:
+            for j in range(form.nconstants):
+                output += """\
   const real& c%d;""" % j
-        output += "\n"
+            output += "\n"
 
-    # Class footer
-    output += """
+        # Class footer
+        output += """
 };
 
 """
+
+        # Write elements
+        output += __elements(form, subclass, swigmap, False)
+
+    else:
+        # Write form implementation
+        
+        # Write constructor
+        output = """\
+
+%s::%s(%s) : dolfin::%s(%d)%s
+{
+""" % (subclass, subclass, arguments, baseclass, form.nfunctions, constinit)
+
+        # Initialize test and trial elements
+        if form.test:
+            output += """\
+  // Create finite element for test space
+  _test = new TestElement();
+"""
+        if form.trial:
+            output += """\
+
+  // Create finite element for trial space
+  _trial = new TrialElement();
+"""
+        
+        # Add functions (if any)
+        if form.nfunctions > 0:
+            output += """\
+
+  // Add functions\n"""
+            for j in range(form.nfunctions):
+                output += "  add(w%d, new FunctionElement_%d());\n" % (j, j)
+
+        # Initialize BLAS array (if any)
+        if options["blas"]:
+            output += """\
+
+  // Initialize form data for BLAS
+  blas.init(\"%s\");\n""" % xmlfile
+
+        output += "}\n"
+
+        # Interior contribution (if any)
+        if form.AKi.terms:
+            eval = __eval_interior(form, options)
+            output += """\
+
+void %s::eval(real block[], const AffineMap& map) const
+{
+%s}
+""" % (subclass, eval)
+        else:
+            output += """\
+
+// No contribution from the interior
+void %s::eval(real block[], const AffineMap& map) const {}
+""" % subclass
+
+        # Boundary contribution (if any)
+        if form.AKb[0].terms:
+            eval = __eval_boundary(form, options)
+            output += """\
+
+void %s::eval(real block[], const AffineMap& map, unsigned int facet) const
+{
+%s}
+""" % (subclass, eval)
+        else:
+            output += """\
+
+// No contribution from the boundary
+void %s::eval(real block[], const AffineMap& map, unsigned int facet) const {}   
+""" % subclass
+
+    swigmap["dolfin::" + form.name + "::" + subclass] = \
+        form.name + subclass
 
     return output
 
@@ -514,22 +601,22 @@ def __eval_interior_default(form, options):
     if not options["debug-no-geometry-tensor"]:
         if len(form.cKi) > 0:
             output += """\
-    // Compute coefficients
+  // Compute coefficients
 %s
-""" % "".join(["    const real %s = %s;\n" % (cKi.name, cKi.value) for cKi in form.cKi if cKi.used])
+""" % "".join(["  const real %s = %s;\n" % (cKi.name, cKi.value) for cKi in form.cKi if cKi.used])
         output += """\
-    // Compute geometry tensors
-%s"""  % "".join(["    const real %s = %s;\n" % (gK.name, gK.value) for gK in form.AKi.gK if gK.used])
+  // Compute geometry tensors
+%s"""  % "".join(["  const real %s = %s;\n" % (gK.name, gK.value) for gK in form.AKi.gK if gK.used])
     else:
         output += """\
-    // Compute geometry tensors
-%s""" % "".join(["    const real %s = 0.0;\n" % gK.name for gK in form.AKi.gK if gK.used])
+  // Compute geometry tensors
+%s""" % "".join(["  const real %s = 0.0;\n" % gK.name for gK in form.AKi.gK if gK.used])
 
     if not options["debug-no-element-tensor"]:
         output += """\
 
-    // Compute element tensor
-%s""" % "".join(["    %s = %s;\n" % (aK.name, aK.value) for aK in form.AKi.aK])
+  // Compute element tensor
+%s""" % "".join(["  %s = %s;\n" % (aK.name, aK.value) for aK in form.AKi.aK])
 
     return output
 
@@ -541,24 +628,24 @@ def __eval_interior_blas(form, options):
     if not options["debug-no-geometry-tensor"]:
         if len(form.cKi) > 0:
             output += """\
-    // Compute coefficients
+  // Compute coefficients
 %s
-""" % "".join(["    const real %s = %s;\n" % (cKi.name, cKi.value) for cKi in form.cKi if cKi.used])
+""" % "".join(["  const real %s = %s;\n" % (cKi.name, cKi.value) for cKi in form.cKi if cKi.used])
         output += """\
-    // Reset geometry tensors
-    for (unsigned int i = 0; i < blas.ni; i++)
-      blas.Gi[i] = 0.0;
+  // Reset geometry tensors
+  for (unsigned int i = 0; i < blas.ni; i++)
+    blas.Gi[i] = 0.0;
 
-    // Compute entries of G multiplied by nonzero entries of A
+  // Compute entries of G multiplied by nonzero entries of A
 %s
-""" % "".join(["    blas.Gi[%d] = %s;\n" % (j, form.AKi.gK[j].value)
+""" % "".join(["  blas.Gi[%d] = %s;\n" % (j, form.AKi.gK[j].value)
                for j in range(len(form.AKi.gK)) if form.AKi.gK[j].used])
 
     # Compute element tensor
     if not options["debug-no-element-tensor"]:
         output += """\
-    // Compute element tensor using level 2 BLAS
-    cblas_dgemv(CblasRowMajor, CblasNoTrans, blas.mi, blas.ni, 1.0, blas.Ai, blas.ni, blas.Gi, 1, 0.0, block, 1);
+  // Compute element tensor using level 2 BLAS
+  cblas_dgemv(CblasRowMajor, CblasNoTrans, blas.mi, blas.ni, 1.0, blas.Ai, blas.ni, blas.Gi, 1, 0.0, block, 1);
 """
 
     return output
@@ -577,31 +664,31 @@ def __eval_boundary_default(form, options):
     if not options["debug-no-geometry-tensor"]:
         if len(form.cKb) > 0:
             output += """\
-    // Compute coefficients
+  // Compute coefficients
 %s
-""" % "".join(["    const real %s = %s;\n" % (cKb.name, cKb.value) for cKb in form.cKb if cKb.used])
+""" % "".join(["  const real %s = %s;\n" % (cKb.name, cKb.value) for cKb in form.cKb if cKb.used])
         output += """\
-    // Compute geometry tensors
-%s""" % "".join(["    const real %s = %s;\n" % (gK.name, gK.value) for gK in form.AKb[-1].gK if gK.used])
+  // Compute geometry tensors
+%s""" % "".join(["  const real %s = %s;\n" % (gK.name, gK.value) for gK in form.AKb[-1].gK if gK.used])
     else:
         output += """\
-    // Compute geometry tensors
-%s""" % "".join(["    const real %s = 0.0;\n" % gK.name for gK in form.AKb[-1].gK if gK.used])
+  // Compute geometry tensors
+%s""" % "".join(["  const real %s = 0.0;\n" % gK.name for gK in form.AKb[-1].gK if gK.used])
 
     if not options["debug-no-element-tensor"]:
         output += """\
 
-    // Compute element tensor
-    switch ( facet )
-    { """
+  // Compute element tensor
+  switch ( facet )
+  { """
         for akb in form.AKb:
           output += """ 
-    case %s:"""  % akb.facet   
+  case %s:"""  % akb.facet   
           output += """ 
-%s      break; \n""" % "".join(["      %s = %s;\n" % (aK.name, aK.value) for aK in akb.aK])
+%s      break; \n""" % "".join(["    %s = %s;\n" % (aK.name, aK.value) for aK in akb.aK])
 
         output += """\
-    } \n"""
+  } \n"""
     return output
 
 def __eval_boundary_blas(form, options):
@@ -612,24 +699,24 @@ def __eval_boundary_blas(form, options):
     if not options["debug-no-geometry-tensor"]:
         if len(form.cKb) > 0:
             output += """\
-    // Compute coefficients
+  // Compute coefficients
 %s
-""" % "".join(["    const real %s = %s;\n" % (cKb.name, cKb.value) for cKb in form.cKb if cKb.used])        
+""" % "".join(["  const real %s = %s;\n" % (cKb.name, cKb.value) for cKb in form.cKb if cKb.used])        
         output += """\
-    // Reset geometry tensors
-    for (unsigned int i = 0; i < blas.nb; i++)
-      blas.Gb[i] = 0.0;
+  // Reset geometry tensors
+  for (unsigned int i = 0; i < blas.nb; i++)
+    blas.Gb[i] = 0.0;
 
-    // Compute entries of G multiplied by nonzero entries of A
+  // Compute entries of G multiplied by nonzero entries of A
 %s
-""" % "".join(["    blas.Gb[%d] = %s;\n" % (j, form.AKb.gK[j].value)
+""" % "".join(["  blas.Gb[%d] = %s;\n" % (j, form.AKb.gK[j].value)
                 for j in range(len(form.AKb.gK)) if form.AKb.gK[j].used])
 
     # Compute element tensor
     if not options["debug-no-element-tensor"]:
         output += """\
-    // Compute element tensor using level 2 BLAS
-    cblas_dgemv(CblasRowMajor, CblasNoTrans, blas.mb, blas.nb, 1.0, blas.Ab, blas.nb, blas.Gb, 1, 0.0, block, 1);
+  // Compute element tensor using level 2 BLAS
+  cblas_dgemv(CblasRowMajor, CblasNoTrans, blas.mb, blas.nb, 1.0, blas.Ab, blas.nb, blas.Gb, 1, 0.0, block, 1);
 """
 
     return output
