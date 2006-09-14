@@ -1,11 +1,12 @@
 "DOLFIN output format."
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-10-14 -- 2006-06-30"
+__date__ = "2004-10-14 -- 2006-09-14"
 __copyright__ = "Copyright (C) 2004-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # Modified by Garth N. Wells 2005
+# Modified by Johan Jansson 2006
 
 # FFC common modules
 from ffc.common.debug import *
@@ -44,7 +45,6 @@ def swig(swigmap):
         output += "%%rename(%s) %s;\n" % (p[1], p[0])
 
     return output
-
 
 def init(options):
     "Initialize code generation for DOLFIN format."
