@@ -1,3 +1,4 @@
+ - Fix bug in ffc -v/--version (thanks to Ola Skavhaug)
  - Consolidate DOLFIN and DOLFIN SWIG formats (patch from Johan Jansson)
  - Fix bug in optimized compilation (-O) for some forms ("too many values to unpack")
 0.3.3 [2006-09-05]
