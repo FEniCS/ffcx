@@ -70,7 +70,8 @@ def main(argv):
     setlevel(debuglevel)
 
     # Print a nice message
-    version()
+    if debuglevel > -1:
+        version()
 
     # Call parser and compiler for each file
     for filename in args:

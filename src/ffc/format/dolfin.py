@@ -1,7 +1,7 @@
 "DOLFIN output format."
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-10-14 -- 2006-09-14"
+__date__ = "2004-10-14 -- 2006-09-18"
 __copyright__ = "Copyright (C) 2004-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -74,17 +74,18 @@ def write(forms, options):
     # Write all forms
     for j in range(len(forms)):
         form = forms[j]
-
         # Choose class names
-        if form.rank == 1:
-            type = "Linear"
+        if form.rank == 0:
+            form_type = "Functional"
+        elif form.rank == 1:
+            form_type = "LinearForm"
         elif form.rank == 2:
-            type = "Bilinear"
+            form_type = "BilinearForm"
         else:
             debug("""DOLFIN can only handle linear or bilinear forms.
 I will try to generate the multi-linear form but you will not
 be able to use it with DOLFIN.""", -1)
-            type = "Multilinear"
+            form_type = "Multilinear"
 
         # Compute name of XML data file (if any)
         if len(forms) > 1:
@@ -93,10 +94,10 @@ be able to use it with DOLFIN.""", -1)
             xmlfile = "%s.xml" % forms[j].name
 
         # Write form prototype
-        output += __form(form, type, options, xmlfile, swigmap, True)
+        output += __form(form, form_type, options, xmlfile, swigmap, True)
 
         # Write form implementation
-        output += __form(form, type, options, xmlfile, swigmap, False)
+        output += __form(form, form_type, options, xmlfile, swigmap, False)
 
     # Write file footer
     output += __file_footer()
@@ -437,12 +438,12 @@ private:
 
         return output
 
-def __form(form, type, options, xmlfile, swigmap, prototype = False):
+def __form(form, form_type, options, xmlfile, swigmap, prototype = False):
     "Generate form for DOLFIN."
     
     #ptr = "".join(['*' for i in range(form.rank)])
-    subclass = type + "Form"
-    baseclass = type + "Form"
+    subclass = form_type
+    baseclass = form_type
 
     # Create argument list for form (functions and constants)
     arguments = ", ".join([("Function& w%d" % j) for j in range(form.nfunctions)] + \
