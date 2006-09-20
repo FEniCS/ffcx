@@ -29,7 +29,7 @@ def optimize(terms, format):
     num_terms = len(terms)
 
     # Iterate over terms
-    num_mult = 0
+    num_ops = 0
     for j in range(num_terms):
 
         # Get current term
@@ -51,14 +51,14 @@ def optimize(terms, format):
         # Generate code according to format from abstract FErari code
         for (lhs, rhs) in code:
             name  = build_lhs(lhs, j, iindices, aindices, num_terms, format)
-            (value, num_mult) = build_rhs(rhs, j, iindices, aindices, num_terms, format, num_mult)
+            (value, num_ops) = build_rhs(rhs, j, iindices, aindices, num_terms, format, num_ops)
             declarations += [Declaration(name, value)]
 
     # Add all terms if more than one term
     if num_terms > 1:
         declarations += build_sum(iindices, num_terms, format)
 
-    debug("Number of multiplications in computation of reference tensor: " + str(num_mult), 1)
+    debug("Number of multiplications in computation of reference tensor: " + str(num_ops), 1)
 
     #print "Formatted code"
     #print "--------------"
@@ -66,7 +66,7 @@ def optimize(terms, format):
     #    print declaration
     #print ""
 
-    return declarations
+    return (declarations, num_ops)
             
 def build_lhs(lhs, j, iindices, aindices, num_terms, format):
     "Build code for left-hand side from abstract FErari code."
@@ -86,7 +86,7 @@ def build_lhs(lhs, j, iindices, aindices, num_terms, format):
     
     return variable
     
-def build_rhs(rhs, j, iindices, aindices, num_terms, format, num_mult):
+def build_rhs(rhs, j, iindices, aindices, num_terms, format, num_ops):
     "Build code for right-hand side from abstract FErari code."
     terms = []
     # Iterate over terms in linear combination
@@ -111,7 +111,7 @@ def build_rhs(rhs, j, iindices, aindices, num_terms, format, num_mult):
         elif abs(coefficient + 1.0) < FFC_EPSILON:
             term = "-" + variable
         else:
-            num_mult += 1
+            num_ops += 1
             term = format.format["multiplication"]([format.format["floating point"](coefficient), variable])
 
         # Add term to list
@@ -122,7 +122,7 @@ def build_rhs(rhs, j, iindices, aindices, num_terms, format, num_mult):
         return ("0.0", 0)
 
     # Add terms
-    return (format.format["sum"](terms), num_mult)
+    return (format.format["sum"](terms), num_ops)
 
 def build_sum(iindices, num_terms, format):
     "Build sum of terms if more than one term."

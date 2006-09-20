@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-11-06 -- 2006-09-05"
+__date__ = "2004-11-06 -- 2006-09-20"
 __copyright__ = "Copyright (C) 2004-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -26,11 +26,12 @@ class ElementTensor:
 
     Attributes:
 
-        terms - a list of Terms (products A0 * GK)
-        a0    - a list of precomputed reference tensor declarations
-        gK    - a list of precomputed geometry tensor declarations
-        aK    - a list of precomputed element tensor declarations
-        facet - number of the associated facet (None for interior)
+        terms   - a list of Terms (products A0 * GK)
+        a0      - a list of precomputed reference tensor declarations
+        gK      - a list of precomputed geometry tensor declarations
+        aK      - a list of precomputed element tensor declarations
+        facet   - number of the associated facet (None for interior)
+        num_ops - number of operations in computation of element tensor
     """
 
     def __init__(self, sum, type, format, cK_used, gK_used, options, facet):
@@ -151,7 +152,7 @@ class ElementTensor:
         # Generate code for computing the element tensor
         k = 0
         num_dropped = 0
-        num_mult = 0
+        num_ops = 0
         zero = format_floating_point(0.0)
         for i in iindices:
             value = None
@@ -167,21 +168,22 @@ class ElementTensor:
                             value = format_sum([value, format_multiply([format_floating_point(a0), gk])])
                         else:
                             value = format_multiply([format_floating_point(a0), gk])
-                        num_mult += 1
+                        num_ops += 1
                     else:
                         num_dropped += 1
             value = value or zero
             declarations += [Declaration(name, value)]
             k += 1
         debug("Number of zeros dropped from reference tensor: " + str(num_dropped), 1)
-        debug("Number of multiplications in computation of reference tensor: " + str(num_mult), 1)
+        self.num_ops = num_ops
         return declarations
 
     def __compute_element_tensor_optimized(self, format):
         "Precompute element tensor with FErari optimizations."
         debug("Generating optimized code for element tensor", 1)
         # Call FErari to do optimizations
-        return optimize(self.terms, format)
+        (declarations, self.num_ops) = optimize(self.terms, format)
+        return declarations
 
     def __check_used(self, format, gK_used):
         """Check which declarations of gK are actually used, i.e,

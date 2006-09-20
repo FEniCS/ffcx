@@ -1,6 +1,6 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-09-27 -- 2005-11-15"
-__copyright__ = "Copyright (C) 2004, 2005 Anders Logg"
+__date__ = "2004-09-27 -- 2006-09-20"
+__copyright__ = "Copyright (C) 2004-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # Python modules
@@ -48,6 +48,7 @@ class Form:
         projections  - list of corresponding projections
         format       - the format used to build the Form (a dictionary)
         shape        - shape on which the form is defined
+        num_ops      - number of operations in computation of element tensor
 
     A multi-linear form is first expressed as an element of the
     algebra (a Sum) and is then post-processed to generate a sum

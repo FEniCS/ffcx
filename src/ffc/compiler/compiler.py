@@ -122,6 +122,9 @@ def build(sums, name = "Form", language = FFC_LANGUAGE, options = FFC_OPTIONS):
         # Compute element tensor for interior
         debug("Compiling tensor representation for interior")
         form.AKi = ElementTensor(form.sum, "interior", format, cKi_used, gKi_used, options, None)
+        form.num_ops = form.AKi.num_ops
+
+        # FIXME: Number of operations not counted for boundary terms
 
         # Compute element tensor for each facet on the boundary
         form.AKb = []
@@ -129,6 +132,9 @@ def build(sums, name = "Form", language = FFC_LANGUAGE, options = FFC_OPTIONS):
         num_facets = form.sum.products[0].basisfunctions[0].element.num_facets()
         for i in range(num_facets):
             form.AKb.append(ElementTensor(form.sum, "boundary", format, cKb_used, gKb_used, options, i))
+
+        # Report number of operations
+        debug("Number of operations (multiplications) in computation of element tensor: " + str(form.num_ops), 1)
 
         # Compute coefficient declarations, same for interior and boundary
         form.cKi = __compute_coefficients(form.projections, format, cKi_used)
