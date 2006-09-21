@@ -11,8 +11,10 @@
 #include <dolfin/AffineMap.h>
 #include <dolfin/FiniteElement.h>
 #include <dolfin/FiniteElementSpec.h>
-#include <dolfin/LinearForm.h>
 #include <dolfin/BilinearForm.h>
+#include <dolfin/LinearForm.h>
+#include <dolfin/Functional.h>
+#include <dolfin/FEM.h>
 
 namespace dolfin { namespace Projection {
 
@@ -22,19 +24,19 @@ namespace dolfin { namespace Projection {
 class LinearForm : public dolfin::LinearForm
 {
 public:
+
   class TestElement;
 
   class FunctionElement_0;
 
-
   LinearForm(Function& w0);
+  
 
   void eval(real block[], const AffineMap& map) const;
 
   void eval(real block[], const AffineMap& map, unsigned int facet) const;
 
 };
-
 
 class LinearForm::TestElement : public dolfin::FiniteElement
 {
@@ -230,7 +232,7 @@ LinearForm::LinearForm(Function& w0) : dolfin::LinearForm(1)
   _test = new TestElement();
 
   // Add functions
-  add(w0, new FunctionElement_0());
+  initFunction(0, w0, new FunctionElement_0());
 }
 
 void LinearForm::eval(real block[], const AffineMap& map) const

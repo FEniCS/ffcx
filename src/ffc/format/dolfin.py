@@ -1,7 +1,7 @@
 "DOLFIN output format."
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-10-14 -- 2006-09-18"
+__date__ = "2004-10-14 -- 2006-09-21"
 __copyright__ = "Copyright (C) 2004-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -183,8 +183,10 @@ def __file_header(name, options):
 #include <dolfin/AffineMap.h>
 #include <dolfin/FiniteElement.h>
 #include <dolfin/FiniteElementSpec.h>
-#include <dolfin/LinearForm.h>
 #include <dolfin/BilinearForm.h>
+#include <dolfin/LinearForm.h>
+#include <dolfin/Functional.h>
+#include <dolfin/FEM.h>
 
 namespace dolfin { namespace %s {
 
@@ -446,8 +448,12 @@ def __form(form, form_type, options, xmlfile, swigmap, prototype = False):
     baseclass = form_type
 
     # Create argument list for form (functions and constants)
-    arguments = ", ".join([("Function& w%d" % j) for j in range(form.nfunctions)] + \
-                          [("const real& c%d" % j) for j in range(form.nconstants)])
+    functions = [("Function& w%d" % j) for j in range(form.nfunctions)]
+    constants = [("const real& c%d" % j) for j in range(form.nconstants)]
+    if form_type == "Functional":
+        arguments = ", ".join(constants)
+    else:
+        arguments = ", ".join(functions + constants)
 
     # Create initialization list for constants (if any)
     constinit = ", ".join([("c%d(c%d)" % (j, j)) for j in range(form.nconstants)])
@@ -464,6 +470,7 @@ def __form(form, form_type, options, xmlfile, swigmap, prototype = False):
 class %s : public dolfin::%s
 {
 public:
+
 """ % (subclass, baseclass)
 
         # Write element prototypes
@@ -471,9 +478,15 @@ public:
 
         # Write constructor
         output += """\
-
   %s(%s);
+  
 """ % (subclass, arguments)
+
+        # Write eval operator prototype in case of a functional
+        if form_type == "Functional":
+            output += """\
+  real operator() (%s, Mesh& mesh);
+""" % ", ".join(functions)
 
         # Interior contribution
         output += """\
@@ -505,7 +518,6 @@ private:
         # Class footer
         output += """
 };
-
 """
 
         # Write elements
@@ -533,14 +545,14 @@ private:
   // Create finite element for trial space
   _trial = new TrialElement();
 """
-        
+
         # Add functions (if any)
-        if form.nfunctions > 0:
+        if form.nfunctions > 0 and not form_type == "Functional":
             output += """\
 
   // Add functions\n"""
             for j in range(form.nfunctions):
-                output += "  add(w%d, new FunctionElement_%d());\n" % (j, j)
+                output += "  initFunction(%d, w%d, new FunctionElement_%d());\n" % (j, j, j)
 
         # Initialize BLAS array (if any)
         if options["blas"]:
@@ -550,6 +562,25 @@ private:
   blas.init(\"%s\");\n""" % xmlfile
 
         output += "}\n"
+
+        # Write eval operator implementation in case of a functional
+        if form_type == "Functional":
+
+          # Initialize functions (if any)
+          function_init = ""
+          for j in range(form.nfunctions):
+              function_init += "  initFunction(%d, w%d, new FunctionElement_%d());\n" % (j, j, j)
+
+          output += """\
+
+real %s::operator() (%s, Mesh& mesh)
+{
+  // Initialize functions
+%s
+  // Assemble value of functional
+  return FEM::assemble(*this, mesh);
+}
+""" % (subclass, ", ".join(functions), function_init)
 
         # Interior contribution (if any)
         if form.AKi.terms:
