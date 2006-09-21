@@ -6,7 +6,7 @@
 # Modified by Johan Jansson 2005
 # Modified by Ola Skavhaug 2006
 #
-# 2004-10-14 -- 2006-09-18
+# 2004-10-14 -- 2006-09-21
 #
 # This script parses command-line arguments, calls
 # the parser, and then compiles the generated form.
@@ -106,7 +106,7 @@ Usage: ffc [OPTION]... input.form
   -v            display version number and exit
   -O            generate optimized code using FErari optimizations
   -l language   specify output language, one of 'dolfin' (default),
-                'dolfin-swig', 'latex', 'raw', 'ase' or 'xml'
+                'latex', 'raw', 'ase' or 'xml'
   -d debuglevel specify debug level (default is -1)
   -f option     specify code generation options, one of 'blas' or 'no-gpl'
 

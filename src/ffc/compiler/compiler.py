@@ -3,7 +3,7 @@ and building the data structures (geometry and reference tensors) for
 the evaluation of the multi-linear form."""
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-11-17 -- 2006-05-07"
+__date__ = "2004-11-17 -- 2006-09-21"
 __copyright__ = "Copyright (C) 2004-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -21,7 +21,6 @@ from ffc.common.exceptions import *
 # FFC format modules
 sys.path.append("../../")
 from ffc.format import dolfin
-from ffc.format import dolfinswig
 from ffc.format import latex
 from ffc.format import raw
 from ffc.format import ase
@@ -258,8 +257,6 @@ def __choose_format(language):
         format = dolfin
     elif language == "dolfin" or language == "DOLFIN":
         format = dolfin
-    elif language == "dolfin-swig" or language == "DOLFIN-SWIG":
-        format = dolfinswig
     elif language == "latex" or language == "LaTeX":
         format = latex
     elif language == "raw":
