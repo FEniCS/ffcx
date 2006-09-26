@@ -14,5 +14,4 @@ f = Function(element)
 g = Function(element)
 
 a = dot(grad(v), grad(U))*dx
-#L = v*f*dx + v*g*ds
 L = dot(v, f)*dx + dot(v,g)*ds

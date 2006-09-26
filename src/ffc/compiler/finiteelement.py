@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-10-04 -- 2006-05-07"
+__date__ = "2004-10-04 -- 2006-09-26"
 __copyright__ = "Copyright (C) 2004-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -77,19 +77,13 @@ class FiniteElement:
                 self.element = DiscontinuousLagrange(self.fiat_shape, degree)
             elif type == "Discontinuous vector Lagrange":
                 self.element = DiscontinuousVectorLagrange(self.fiat_shape, degree, num_components)
-                # Check for known FIAT bug
-                if (not num_components == None) and (not num_components == self.element.function_space().tensor_dim()[0]):
-                    raise RuntimeError, \
-"""Discontinous vector Lagrange element has wrong number of components.
-You need to patch your installation of FIAT. For more information, see
-http://www.fenics.org/pipermail/fiat-dev/2005-August/000060.html"""
             elif type == "Crouzeix-Raviart":
                 print "Warning: element untested"
                 self.element = CrouzeixRaviart(self.fiat_shape)
-            elif type == "Raviart-Thomas":
+            elif type == "Raviart-Thomas" or type == "RT":
                 print "Warning: element untested"
                 self.element = RaviartThomas(self.fiat_shape, degree)
-            elif type == "Brezzi-Douglas-Marini":
+            elif type == "Brezzi-Douglas-Marini" or type == "BDM":
                 print "Warning: element untested"
                 self.element = BDM(self.fiat_shape, degree)
             elif type == "Nedelec":
