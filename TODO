@@ -5,7 +5,6 @@ o [logg] Switch Numeric --> SciPy
 o [logg] (u, p) = Functions(element) does not work?
 o [logg] Write about mean() in manual
 o [logg] Write about Projection in manual
-o [logg] Generate nested classes outside of top level class
 o [logg] Add time derivative .dt() and Dt()
 o [logg] Optionally generate pair of .h and .cpp files?
 o [logg] Generate loops for geometry tensor in BLAS mode?
@@ -18,8 +17,6 @@ o [logg] Add vector constants
 o [logg] Make dofmap.py and interpolation.py less DOLFIN specific
 o [logg] Display flop count
 o [logg] Change *(1.0/c) to /c
-o [logg] Boundary integrals: *ds
-o [logg] Connect Matt's parser
 o [logg] Option for inexact integration?
 o [logg] Option for using quadrature?
 o [logg] Fix all FIXMEs (grep FIXME *.py)
