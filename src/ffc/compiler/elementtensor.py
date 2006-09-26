@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-11-06 -- 2006-09-20"
+__date__ = "2004-11-06 -- 2006-09-26"
 __copyright__ = "Copyright (C) 2004-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -77,6 +77,9 @@ class ElementTensor:
         # Save facet
         self.facet = facet
 
+        # Reset number of operations
+        self.num_ops = 0
+
         return
 
     def __compute_reference_tensor(self, format):
@@ -121,7 +124,9 @@ class ElementTensor:
         "Precompute element tensor, including possible optimizations."
         if not self.terms or format.format["element tensor"]((0,), 0) == None: return []
         if options["optimize"]:
-            if self.terms[0].A0.i.rank == 2:
+            rank = self.terms[0].A0.i.rank
+            if rank == 2 or rank == 1:
+            #if rank == 2:
                 return self.__compute_element_tensor_optimized(format)
             else:
                 debug("Only rank 2 tensors can currently be optimized with FErari, generating default code")

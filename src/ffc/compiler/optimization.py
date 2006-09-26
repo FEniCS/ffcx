@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2006-03-22 -- 2006-09-07"
+__date__ = "2006-03-22 -- 2006-09-26"
 __copyright__ = "Copyright (C) 2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -36,7 +36,16 @@ def optimize(terms, format):
         term = terms[j]
 
         # Compute optimized code
-        code = binary.optimize(term.A0.A0)
+        rank = term.A0.i.rank
+        if rank == 2:
+            code = binary.optimize(term.A0.A0)
+        elif rank == 1:
+            code = binary.optimize_action(term.A0.A0)
+        else:
+            raise RuntimeError, "Optimization only available for rank 1 or 2 tensors."        
+
+        print "rank = " + str(rank)
+        print code
 
         # Get primary and secondary indices
         iindices = term.A0.i.indices or [[]]
@@ -50,6 +59,7 @@ def optimize(terms, format):
 
         # Generate code according to format from abstract FErari code
         for (lhs, rhs) in code:
+            print lhs, rhs
             name  = build_lhs(lhs, j, iindices, aindices, num_terms, format)
             (value, num_ops) = build_rhs(rhs, j, iindices, aindices, num_terms, format, num_ops)
             declarations += [Declaration(name, value)]
