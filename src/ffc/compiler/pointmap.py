@@ -88,5 +88,7 @@ class PointMap:
         local_offset = 0
         component_offset = 0
         for element in elements:
-            (declarations, local_offset, component_offset) = compute_pointmap(element, local_offset, component_offset)
-            self.declarations += declarations
+            # Only works for Lagrange
+            if "Lagrange" in element.type_str:
+                (declarations, local_offset, component_offset) = compute_pointmap(element, local_offset, component_offset)
+                self.declarations += declarations
