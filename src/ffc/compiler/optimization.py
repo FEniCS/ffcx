@@ -44,9 +44,6 @@ def optimize(terms, format):
         else:
             raise RuntimeError, "Optimization only available for rank 1 or 2 tensors."        
 
-        print "rank = " + str(rank)
-        print code
-
         # Get primary and secondary indices
         iindices = term.A0.i.indices or [[]]
         aindices = term.A0.a.indices or [[]]
@@ -59,7 +56,6 @@ def optimize(terms, format):
 
         # Generate code according to format from abstract FErari code
         for (lhs, rhs) in code:
-            print lhs, rhs
             name  = build_lhs(lhs, j, iindices, aindices, num_terms, format)
             (value, num_ops) = build_rhs(rhs, j, iindices, aindices, num_terms, format, num_ops)
             declarations += [Declaration(name, value)]
