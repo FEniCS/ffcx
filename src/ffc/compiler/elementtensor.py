@@ -43,6 +43,9 @@ class ElementTensor:
         # Reorder indices and compute factorization
         factorization = reorder_indices(sum)
 
+        # Reset number of operations
+        self.num_ops = 0
+
         # Compute terms
         self.terms = [None for i in range(len(sum.products))]
         for i in range(len(sum.products)):
@@ -76,9 +79,6 @@ class ElementTensor:
 
         # Save facet
         self.facet = facet
-
-        # Reset number of operations
-        self.num_ops = 0
 
         return
 
