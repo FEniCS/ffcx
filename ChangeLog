@@ -1,3 +1,5 @@
+ - Add operator outer() for outer product of vector-valued functions
+ - Enable optimization of linear forms (in addition to bilinear forms)
  - Remove DOLFIN SWIG format
  - Fix bug in ffc -v/--version (thanks to Ola Skavhaug)
  - Consolidate DOLFIN and DOLFIN SWIG formats (patch from Johan Jansson)

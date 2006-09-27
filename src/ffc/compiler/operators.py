@@ -2,11 +2,12 @@
 based on the basic form algebra operations."""
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2005-09-07 -- 2005-12-20"
+__date__ = "2005-09-07 -- 2006-09-27"
 __copyright__ = "Copyright (C) 2005-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # Modified by Ola Skavhaug, 2005
+# Modified by Dag Lindbo, 2006
 
 # Python modules
 import sys
@@ -116,6 +117,21 @@ def mult(v, w):
     else:
         raise FormError, ((v, w), "Dimensions don't match for multiplication.")
 
+def outer(v,w):
+    "Return outer product of vector valued functions, p = v'*w"
+    # Check that we got a Function
+    if not isinstance(v, Function):
+        raise FormError, (v, "Outer products are only defined for Functions.")
+    if not isinstance(w, Function):
+        raise FormError, (w, "Outer products are only defined for Functions.")
+    if not len(v) == len(w):
+        raise FormError, ((v, w),"Invalid operand dims in outer product")
+    
+    vv = vec(v)
+    ww = vec(w)
+    
+    return mult(transp([vv]),[ww])
+    
 def D(v, i):
     "Return derivative of v in given coordinate direction."
     # Use member function dx() if possible
@@ -170,7 +186,7 @@ def mean(v):
         P0 = FiniteElement("Discontinuous vector Lagrange", element.shape_str, 0, element.tensordim(0))
         pi = Projection(P0)
         return pi(v)
-     
+
 def __shapedim(v):
     "Return shape dimension for given object."
     if isinstance(v, list):
