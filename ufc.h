@@ -57,6 +57,12 @@ namespace ufc
     /// Return number of coefficients
     virtual unsigned int num_coefficients() const = 0;
 
+    /// Return whether there is a contribution from the interior
+    virtual bool interior_contribution() const = 0;
+
+    /// Return whether there is a contribution from the boundary
+    virtual bool boundary_contribution() const = 0;
+
     /// Compute interior contribution to element tensor
     virtual void compute_element_tensor_interior(double* A) const = 0;
     

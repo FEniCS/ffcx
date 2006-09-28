@@ -48,6 +48,10 @@ namespace poisson
     inline unsigned int num_arguments() const { return 2; }
 
     inline unsigned int num_coefficients() const { return 0; }
+
+    inline bool interior_contribution() const { return true; }
+
+    inline bool boundary_contribution() const { return true; }
     
     void compute_element_tensor_interior(double* A) const
     {
