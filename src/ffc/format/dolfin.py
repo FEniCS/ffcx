@@ -1,7 +1,7 @@
 "DOLFIN output format."
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-10-14 -- 2006-09-21"
+__date__ = "2004-10-14 -- 2006-09-28"
 __copyright__ = "Copyright (C) 2004-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -489,11 +489,15 @@ public:
         # Interior contribution
         output += """\
 
+  bool interior_contribution() const;
+
   void eval(real block[], const AffineMap& map) const;
 """
 
         # Boundary contribution (if any)
         output += """\
+
+  bool boundary_contribution() const;
 
   void eval(real block[], const AffineMap& map, unsigned int facet) const;
 """
@@ -585,32 +589,44 @@ real %s::operator() (%s, Mesh& mesh)
             eval = __eval_interior(form, options)
             output += """\
 
+// Contribution from the interior
+bool %s::interior_contribution() const { return true; }
+
 void %s::eval(real block[], const AffineMap& map) const
 {
 %s}
-""" % (subclass, eval)
+""" % (subclass, subclass, eval)
         else:
             output += """\
 
 // No contribution from the interior
+bool %s::interior_contribution() const { return false; }
+
 void %s::eval(real block[], const AffineMap& map) const {}
-""" % subclass
+""" % (subclass, subclass)
 
         # Boundary contribution (if any)
         if form.AKb[0].terms:
             eval = __eval_boundary(form, options)
             output += """\
 
+// Contribution from the boundary
+bool %s::boundary_contribution() const { return true; }
+
 void %s::eval(real block[], const AffineMap& map, unsigned int facet) const
 {
 %s}
-""" % (subclass, eval)
+
+""" % (subclass, subclass, eval)
         else:
             output += """\
 
 // No contribution from the boundary
-void %s::eval(real block[], const AffineMap& map, unsigned int facet) const {}   
-""" % subclass
+bool %s::boundary_contribution() const { return false; }
+
+void %s::eval(real block[], const AffineMap& map, unsigned int facet) const {}
+
+""" % (subclass, subclass)
 
     swigmap["dolfin::" + form.name + "::" + subclass] = \
         form.name + subclass
