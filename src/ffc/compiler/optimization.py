@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2006-03-22 -- 2006-09-26"
+__date__ = "2006-03-22 -- 2006-10-17"
 __copyright__ = "Copyright (C) 2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -56,15 +56,13 @@ def optimize(terms, format):
 
         # Generate code according to format from abstract FErari code
         for (lhs, rhs) in code:
-            name  = build_lhs(lhs, j, iindices, aindices, num_terms, format)
+            name = build_lhs(lhs, j, iindices, aindices, num_terms, format)
             (value, num_ops) = build_rhs(rhs, j, iindices, aindices, num_terms, format, num_ops)
             declarations += [Declaration(name, value)]
 
     # Add all terms if more than one term
     if num_terms > 1:
         declarations += build_sum(iindices, num_terms, format)
-
-    debug("Number of multiplications in computation of reference tensor: " + str(num_ops), 1)
 
     #print "Formatted code"
     #print "--------------"
@@ -94,8 +92,9 @@ def build_lhs(lhs, j, iindices, aindices, num_terms, format):
     
 def build_rhs(rhs, j, iindices, aindices, num_terms, format, num_ops):
     "Build code for right-hand side from abstract FErari code."
-    terms = []
+
     # Iterate over terms in linear combination
+    terms = []
     for (coefficient, id, entry) in rhs:
 
         # Ignore multiplication with zero
@@ -125,7 +124,7 @@ def build_rhs(rhs, j, iindices, aindices, num_terms, format, num_ops):
 
     # Special case, no terms
     if len(terms) == 0:
-        return ("0.0", 0)
+        return ("0.0", num_ops)
 
     # Add terms
     return (format.format["sum"](terms), num_ops)
