@@ -3,70 +3,59 @@
 namespace poisson
 {
 
-  class finite_element_0 : public ufc::finite_element
+  class node_map_0 : public ufc::node_map
   {
   public:
     
     inline unsigned int space_dimension() const { return 3; }
     
-    inline unsigned int shape_dimension() const { return 2; }
-
-    void compute_node_map() const {}
+    void tabulate(unsigned int* nodes, const ufc::mesh& m, const ufc::cell& c) const
+    {
+      nodes[0] = c.entities[0][0];
+      nodes[1] = c.entities[0][1];
+      nodes[2] = c.entities[0][2];
+    }
     
   };
 
-  class finite_element_1 : public ufc::finite_element
+  class node_map_1 : public ufc::node_map
   {
   public:
     
     inline unsigned int space_dimension() const { return 3; }
     
-    inline unsigned int shape_dimension() const { return 2; }
-    
-    void compute_node_map() const {}
+    void tabulate(unsigned int* nodes, const ufc::mesh& m, const ufc::cell& c) const
+    {
+      nodes[0] = c.entities[0][0];
+      nodes[1] = c.entities[0][1];
+      nodes[2] = c.entities[0][2];
+    }
 
   };
   
-  class multilinear_form : public ufc::multilinear_form
+  class form : public ufc::form
   {
   public:
     
-    multilinear_form() : ufc::multilinear_form()
+    form() : ufc::form()
     {
-      finite_elements = new ufc::finite_element * [2];
-      finite_elements[0] = new finite_element_0();
-      finite_elements[1] = new finite_element_1();
+      node_maps = new ufc::node_map * [2];
+      node_maps[0] = new node_map_0();
+      node_maps[1] = new node_map_1();
     }
 
-    ~multilinear_form()
+    ~form()
     {
-      delete finite_elements[0];
-      delete finite_elements[1];
-      delete [] finite_elements;
+      delete node_maps[0];
+      delete node_maps[1];
+      delete [] node_maps;
     }
 
-    inline unsigned int num_arguments() const { return 2; }
+    inline unsigned int rank() const { return 2; }
 
     inline unsigned int num_coefficients() const { return 0; }
 
-    inline bool interior_contribution() const { return true; }
-
-    inline bool boundary_contribution() const { return true; }
-    
-    void compute_element_tensor_interior(double* A) const
-    {
-      A[0] = 0.0;
-      A[1] = 0.0;
-      A[2] = 0.0;
-      A[3] = 0.0;
-      A[4] = 0.0;
-      A[5] = 0.0;
-      A[6] = 0.0;
-      A[7] = 0.0;
-      A[8] = 0.0;
-    }
-    
-    void compute_element_tensor_boundary(double* A) const
+    void tabulate(double* A, const double** w, const ufc::cell& c) const
     {
       A[0] = 0.0;
       A[1] = 0.0;
