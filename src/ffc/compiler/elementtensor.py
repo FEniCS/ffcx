@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-11-06 -- 2006-09-26"
+__date__ = "2004-11-06 -- 2006-10-17"
 __copyright__ = "Copyright (C) 2004-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -37,8 +37,15 @@ class ElementTensor:
     def __init__(self, sum, type, format, cK_used, gK_used, options, facet):
         "Create ElementTensor."
 
-        # Check that all Products have integrals
+        # Check that all terms have integrals
         self.__check_integrals(sum)
+
+        # Check if there are any terms to compute
+        num_terms = self.__terms_to_compile(sum, type)
+        debug("Number of terms to compile: %d" % num_terms)
+        if num_terms == 0:
+            self.terms = []
+            return
 
         # Reorder indices and compute factorization
         factorization = reorder_indices(sum)
@@ -214,9 +221,16 @@ class ElementTensor:
             if not p.integral:
                 raise FormError, (p, "Missing integral in term.")
 
+    def __terms_to_compile(self, sum, type):
+        "Count the number of terms to be computed."
+        count = 0
+        for p in sum.products:
+            if p.integral.type == type:
+                count += 1
+        return count
+
     def __aindices(self, j):
         A0 = self.terms[j].A0
         if A0.a.indices: aindices = A0.a.indices
         else: aindices = [[]]
         return aindices
-
