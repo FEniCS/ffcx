@@ -31,12 +31,12 @@ format = { ("entity", 2, 0) : lambda i : "cell.entities(0)[%d]" % i,
            ("num",    3, 2) : "mesh.topology().size(2)",
            ("num",    3, 3) : "mesh.topology().size(3)",
            ("check",  2, 0) : lambda i : "not defined",
-           ("check",  2, 1) : lambda i : "cell.edgeAlignment(%d)" % i,
+           ("check",  2, 1) : lambda i : "cell.alignment(1, %d)" % i,
            ("check",  2, 2) : lambda i : "not defined",
            ("check",  2, 3) : lambda i : "not defined",
            ("check",  3, 0) : lambda i : "not defined",
-           ("check",  3, 1) : lambda i : "cell.edgeAlignment(%d)" % i,
-           ("check",  3, 2) : lambda i : "cell.faceAlignment(%d)" % i,
+           ("check",  3, 1) : lambda i : "cell.alignment(1, %d)" % i,
+           ("check",  3, 2) : lambda i : "cell.alignment(2, %d)" % i,
            ("check",  3, 3) : lambda i : "not defined" }
 
 def write_edge_reordering(nodes_per_entity, subelement):
