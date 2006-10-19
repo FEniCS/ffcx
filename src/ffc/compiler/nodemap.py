@@ -1,5 +1,5 @@
 __author__ = "Robert C. Kirby (kirby@cs.uchicago.edu) and Anders Logg (logg@simula.no)"
-__date__ = "2005-05-03 -- 2006-02-20"
+__date__ = "2005-05-03 -- 2006-10-19"
 __copyright__ = "Copyright (C) 2005-2006 Kirby/Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -14,22 +14,22 @@ from declaration import *
 from alignment import *
 
 # FIXME: Should not be DOLFIN-specific
-format = { ("entity", 2, 0) : lambda i : "cell.connections(0)[%d]" % i,
-           ("entity", 2, 1) : lambda i : "cell.connections(1)[%d]" % i,
+format = { ("entity", 2, 0) : lambda i : "cell.entities(0)[%d]" % i,
+           ("entity", 2, 1) : lambda i : "cell.entities(1)[%d]" % i,
            ("entity", 2, 2) : lambda i : "cell.index()",
            ("entity", 2, 3) : lambda i : "not defined",
-           ("entity", 3, 0) : lambda i : "cell.connections(0)[%d]" % i,
-           ("entity", 3, 1) : lambda i : "cell.connections(1)[%d]" % i,
-           ("entity", 3, 2) : lambda i : "cell.connections(2)[%d]" % i,
+           ("entity", 3, 0) : lambda i : "cell.entities(0)[%d]" % i,
+           ("entity", 3, 1) : lambda i : "cell.entities(1)[%d]" % i,
+           ("entity", 3, 2) : lambda i : "cell.entities(2)[%d]" % i,
            ("entity", 3, 3) : lambda i : "cell.index()",
-           ("num",    2, 0) : "mesh.numVertices()",
+           ("num",    2, 0) : "mesh.topology().size(0)",
            ("num",    2, 1) : "mesh.topology().size(1)",
-           ("num",    2, 2) : "mesh.numCells()",
+           ("num",    2, 2) : "mesh.topology().size(2)",
            ("num",    2, 3) : "not defined",
-           ("num",    3, 0) : "mesh.numVertices()",
+           ("num",    3, 0) : "mesh.topology().size(0)",
            ("num",    3, 1) : "mesh.topology().size(1)",
            ("num",    3, 2) : "mesh.topology().size(2)",
-           ("num",    3, 3) : "mesh.numCells()",
+           ("num",    3, 3) : "mesh.topology().size(3)",
            ("check",  2, 0) : lambda i : "not defined",
            ("check",  2, 1) : lambda i : "cell.edgeAlignment(%d)" % i,
            ("check",  2, 2) : lambda i : "not defined",

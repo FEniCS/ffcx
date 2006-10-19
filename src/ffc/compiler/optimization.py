@@ -35,6 +35,8 @@ def optimize(terms, format):
         # Get current term
         term = terms[j]
 
+        #print term.A0.A0
+
         # Compute optimized code
         rank = term.A0.i.rank
         if rank == 2:
@@ -47,6 +49,8 @@ def optimize(terms, format):
         # Get primary and secondary indices
         iindices = term.A0.i.indices or [[]]
         aindices = term.A0.a.indices or [[]]
+
+        #print code
 
         #print "FErari code with FFC tensor"
         #print "---------------------------"

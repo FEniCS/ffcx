@@ -1,6 +1,6 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2005-05-16 -- 2005-09-20"
-__copyright__ = "Copyright (C) 2005 Anders Logg"
+__date__ = "2005-05-16 -- 2006-10-19"
+__copyright__ = "Copyright (C) 2005-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # FIAT modules
