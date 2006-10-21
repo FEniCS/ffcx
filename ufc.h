@@ -17,10 +17,14 @@ namespace ufc
   class mesh
   {
   public:
+    mesh(): num_entities(0) {}
+
+    /// Space dimension and length of num_entities
+    unsigned int space_dimension;
     
     /// Array of the number of entities for each topological dimension
     unsigned int* num_entities;
-    
+
   };
   
   /// This class defines the data structure for a cell in a
@@ -29,6 +33,7 @@ namespace ufc
   class cell
   {
   public:
+    cell(): entities(0), coordinates(0) {}
 
     /// Array of global indices for mesh entities contained in the cell
     unsigned int** entities;
@@ -44,14 +49,48 @@ namespace ufc
   class node_map
   {
   public:
+    /// Destructor
+    virtual ~node_map() {}
 
     /// Return dimension of the local finite element space
     virtual unsigned int space_dimension() const = 0;
 
     /// Tabulate local-to-global mapping of nodes (degrees of freedom)
-    virtual void tabulate(unsigned int* nodes, const mesh& m, const cell& c) const = 0;
-    
+    virtual void tabulate(unsigned int *nodes, const mesh& m, const cell& c) const = 0;
+ 
   };
+
+
+  /// This class defines a generic function f: Input -> Output
+  // TODO: Define Input and Output statically? Which type?
+
+  template<class Input, class Output>
+  class function
+  {
+  public:
+    /// Destructor
+    virtual ~function() {}
+
+    /// Evaluating
+    virtual Output eval(Input) = 0;
+  };
+
+
+  /// This class defines a mapping of a generic function<Input, Output>
+  /// onto a local finite element space.
+
+  template<class Input, class Output>
+  class projection
+  {
+  public:
+    /// Destructor
+    virtual ~projection() {}
+
+    /// For a particular finite element, computes the nodal functional of f:
+    /// dofs[i] = nu_i(f)  for each local dof i
+    virtual void project(function<Input,Output> & f, const cell & c, double *dofs) = 0;
+  };
+
 
   /// This class defines the interface for the computation of the
   /// element tensor corresponding to a form with r + n arguments,
@@ -69,16 +108,16 @@ namespace ufc
   /// of nodal basis functions of Vj and w1, w2, ..., wn are given fixed
   /// functions (coefficients).
   
-  class form
+  class element_tensor
   {
   public:
 
     /// Constructor
-    form() : node_maps(0) {}
+    element_tensor() : node_maps(0) {}
 
     /// Destructor
-    virtual ~form() {}
-    
+    virtual ~element_tensor() {}
+
     /// Return the rank of the tensor (r)
     virtual unsigned int rank() const = 0;
 
@@ -87,7 +126,7 @@ namespace ufc
 
     /// Tabulate element tensor
     virtual void tabulate(double* A, const double** w, const cell& c) const = 0;
-    
+ 
     /// Array of r + n node maps for argument functions and coefficients
     node_map** node_maps;
   

@@ -33,18 +33,18 @@ namespace poisson
 
   };
   
-  class form : public ufc::form
+  class element_tensor : public ufc::element_tensor
   {
   public:
     
-    form() : ufc::form()
+    element_tensor() : ufc::element_tensor()
     {
       node_maps = new ufc::node_map * [2];
       node_maps[0] = new node_map_0();
       node_maps[1] = new node_map_1();
     }
 
-    ~form()
+    ~element_tensor()
     {
       delete node_maps[0];
       delete node_maps[1];
