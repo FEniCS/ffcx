@@ -7,7 +7,17 @@ namespace poisson
   {
   public:
 
+    inline const char* description() const { return "Lagrange finite element of degree 1 on a triangle"; }
+
     inline unsigned int space_dimension() const { return 3; }
+
+    inline unsigned int value_rank() const { return 0; }
+
+    inline unsigned int value_dimension(unsigned int i) const { return 0; }
+
+    inline unsigned int num_sub_elements(unsigned int i) const { return 1; }
+
+    inline const finite_element& sub_element(unsigned int i) const { return *this; }
 
     double evaluate_basis(unsigned int n, double* x, const ufc::cell& c) const { return 0.0; }
     
@@ -20,13 +30,30 @@ namespace poisson
       nodes[2] = c.entities[0][2];
     }
 
+    void tabulate_vertex_values(double* vertex_values, const double* nodal_values) const
+    {
+      vertex_values[0] = nodal_values[0];
+      vertex_values[1] = nodal_values[1];
+      vertex_values[2] = nodal_values[2];
+    }
+
   };
 
   class finite_element_1 : public ufc::finite_element
   {
   public:
 
+    inline const char* description() const { return "Lagrange finite element of degree 1 on a triangle"; }
+
     inline unsigned int space_dimension() const { return 3; }
+
+    inline unsigned int value_rank() const { return 0; }
+
+    inline unsigned int value_dimension(unsigned int i) const { return 0; }
+
+    inline unsigned int num_sub_elements(unsigned int i) const { return 1; }
+
+    inline const finite_element& sub_element(unsigned int i) const { return *this; }
 
     double evaluate_basis(unsigned int n, double* x, const ufc::cell& c) const { return 0.0; }
     
@@ -37,6 +64,13 @@ namespace poisson
       nodes[0] = c.entities[0][0];
       nodes[1] = c.entities[0][1];
       nodes[2] = c.entities[0][2];
+    }
+
+    void tabulate_vertex_values(double* vertex_values, const double* nodal_values) const
+    {
+      vertex_values[0] = nodal_values[0];
+      vertex_values[1] = nodal_values[1];
+      vertex_values[2] = nodal_values[2];
     }
 
   };
@@ -58,6 +92,8 @@ namespace poisson
       delete finite_elements[1];
       delete [] finite_elements;
     }
+
+    inline const char* description() const { return "The bilinear form of Poisson's equation"; }
 
     inline unsigned int rank() const { return 2; }
 

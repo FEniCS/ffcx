@@ -6,12 +6,10 @@
 #ifndef __UFC_H
 #define __UFC_H
 
-// FIXME: Should we have constructors and destructors for each class?
-
 namespace ufc
 {
 
-  /// This class defines the data structure for a finite element mesh. 
+  /// This class defines the data structure for a finite element mesh.
 
   class mesh
   {
@@ -20,18 +18,16 @@ namespace ufc
     /// Constructor
     mesh(): num_entities(0) {}
 
-    // FIXME: Do we need this? Length of num_entities is the topological
-    // FIXME: dimension + 1.
-    /// Space dimension and length of num_entities
-    unsigned int space_dimension;
-    
-    /// Array of the number of entities for each topological dimension
+    /// Destructor
+    ~mesh() {}
+
+    /// Array of the number of entities of each topological dimension
     unsigned int* num_entities;
 
   };
   
-  /// This class defines the data structure for a cell in a
-  /// finite element mesh.
+  /// This class defines the data structure for a cell in a finite
+  /// element mesh.
 
   class cell
   {
@@ -40,7 +36,10 @@ namespace ufc
     /// Constructor
     cell(): entities(0), coordinates(0) {}
 
-    /// Array of global indices for mesh entities contained in the cell
+    /// Destructor
+    ~cell() {}
+
+    /// Array of global indices for the mesh entities of the cell
     unsigned int** entities;
 
     /// Array of coordinates for the vertices of the cell
@@ -48,17 +47,20 @@ namespace ufc
     
   };
 
-  /// This class defines the interface for a tensor-valued function.
+  /// This class defines the interface for a general tensor-valued function.
 
   class function
   {
   public:
 
+    /// Constructor
+    function() {}
+
     /// Destructor
     virtual ~function() {}
 
     /// Evaluate component i = (i[0], i[1], ...) at the point x = (x[0], x[1], ...)
-    virtual double eval(const int* i, const double* x) const;
+    virtual double eval(const unsigned int* i, const double* x) const = 0;
 
   };
 
@@ -68,21 +70,42 @@ namespace ufc
   {
   public:
 
+    /// Constructor
+    finite_element() {}
+
     /// Destructor
     virtual ~finite_element() {}
+
+    /// Return a string identifying the finite element
+    virtual const char* description() const = 0;
 
     /// Return dimension of the finite element function space
     virtual unsigned int space_dimension() const = 0;
 
-    /// Evaluate basis function n at given point in cell
+    /// Return rank of value space
+    virtual unsigned int value_rank() const = 0;
+
+    /// Return dimension of value space for axis i
+    virtual unsigned int value_dimension(unsigned int i) const = 0;
+
+    /// Return number of sub elements (for a mixed finite element)
+    virtual unsigned int num_sub_elements(unsigned int i) const = 0;
+
+    /// Return sub element i (for a mixed finite element)
+    virtual const finite_element& sub_element(unsigned int i) const = 0;
+    
+    /// Evaluate basis function n at a given point in the cell
     virtual double evaluate_basis(unsigned int n, double* x, const cell& c) const = 0;
     
     /// Evaluate node n at given function
     virtual double evaluate_node(unsigned int n, const function& f, const cell& c) const = 0;
 
-    /// Compute local-to-global mapping of nodes (degrees of freedom)
+    /// Tabulate local-to-global mapping of nodes (degrees of freedom)
     virtual void tabulate_nodes(unsigned int *nodes, const mesh& m, const cell& c) const = 0;
 
+    /// Tabulate values at the vertices of the cell
+    virtual void tabulate_vertex_values(double* vertex_values, const double* nodal_values) const = 0;
+    
   };
 
   /// This class defines the interface for the computation of the
@@ -110,6 +133,9 @@ namespace ufc
 
     /// Destructor
     virtual ~element_tensor() {}
+
+    /// Return a string identifying the form
+    virtual const char* description() const = 0;
 
     /// Return the rank of the element tensor (r)
     virtual unsigned int rank() const = 0;
