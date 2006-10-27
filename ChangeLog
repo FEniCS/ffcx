@@ -1,3 +1,5 @@
+0.3.4 [2006-10-27]
+ - Updates for new DOLFIN mesh library
  - Add operator outer() for outer product of vector-valued functions
  - Enable optimization of linear forms (in addition to bilinear forms)
  - Remove DOLFIN SWIG format
