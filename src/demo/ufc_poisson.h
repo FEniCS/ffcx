@@ -1,4 +1,4 @@
-#include "ufc.h"
+#include "../ufc/ufc.h"
 
 namespace poisson
 {
