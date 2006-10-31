@@ -19,7 +19,7 @@ namespace poisson
 
     inline const finite_element& sub_element(unsigned int i) const { return *this; }
 
-    double evaluate_basis(unsigned int n, double* x, const ufc::cell& c) const { return 0.0; }
+    void evaluate_basis(double* values, const double* x, unsigned int i, const ufc::cell& c) const {}
     
     double evaluate_node(unsigned int n, const ufc::function& f, const ufc::cell& c) const { return 0.0; }
 
@@ -55,7 +55,7 @@ namespace poisson
 
     inline const finite_element& sub_element(unsigned int i) const { return *this; }
 
-    double evaluate_basis(unsigned int n, double* x, const ufc::cell& c) const { return 0.0; }
+    void evaluate_basis(double* values, const double* x, unsigned int i, const ufc::cell& c) const {}
     
     double evaluate_node(unsigned int n, const ufc::function& f, const ufc::cell& c) const { return 0.0; }
 
@@ -103,7 +103,7 @@ namespace poisson
 
     inline bool boundary_contribution() const { return false; }
 
-    void tabulate_interior(double* A, const double** w, const ufc::cell& c) const
+    void tabulate_interior(double* A, const double * const * w, const ufc::cell& c) const
     {
       A[0] = 0.0;
       A[1] = 0.0;
@@ -116,7 +116,7 @@ namespace poisson
       A[8] = 0.0;
     }
 
-    void tabulate_boundary(double* A, const double** w, const ufc::cell& c, unsigned int facet) const {}
+    void tabulate_boundary(double* A, const double * const * w, const ufc::cell& c, unsigned int facet) const {}
     
   };
 

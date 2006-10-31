@@ -21,22 +21,19 @@ namespace ufc
     /// Destructor
     virtual ~mesh() {}
 
-
-    // FIXME
-    
+    /// Topological dimension of the mesh
     unsigned int topological_dimension;
     
+    /// Geometric dimension of the mesh
     unsigned int geometric_dimension;
-    
 
     /// Array of the number of entities of each topological dimension
     unsigned int* num_entities;
 
   };
   
-  /// This class defines the data structure for a cell in a finite
-  /// element mesh.
-
+  /// This class defines the data structure for a cell in a mesh.
+  
   class cell
   {
   public:
@@ -46,6 +43,9 @@ namespace ufc
 
     /// Destructor
     virtual ~cell() {}
+
+    /// Global index for the cell
+    unsigned int index;
 
     /// Array of global indices for the mesh entities of the cell
     unsigned int** entities;
@@ -67,9 +67,8 @@ namespace ufc
     /// Destructor
     virtual ~function() {}
 
-    // FIXME
-    /// Evaluate component i = (i[0], i[1], ...) at the point x = (x[0], x[1], ...)
-    virtual void evaluate(double* values, const double* x) const = 0;
+    /// Evaluate the function at the point x = (x[0], x[1], ...) in the cell
+    virtual void evaluate(double* values, const double* x, const cell& c) const = 0;
 
   };
 
@@ -88,32 +87,31 @@ namespace ufc
     /// Return a string identifying the finite element
     virtual const char* description() const = 0;
 
-    /// Return dimension of the finite element function space
+    /// Return the dimension of the finite element function space
     virtual unsigned int space_dimension() const = 0;
 
-    /// Return rank of value space
+    /// Return the rank of the value space
     virtual unsigned int value_rank() const = 0;
 
-    /// Return dimension of value space for axis i
+    /// Return the dimension of value space for axis i
     virtual unsigned int value_dimension(unsigned int i) const = 0;
 
-    /// Return number of sub elements (for a mixed finite element)
+    /// Return the number of sub elements (for a mixed finite element)
     virtual unsigned int num_sub_elements(unsigned int i) const = 0;
 
     /// Return sub element i (for a mixed finite element)
     virtual const finite_element& sub_element(unsigned int i) const = 0;
     
-    // FIXME
-    /// Evaluate basis function i at a given point in the cell
-    virtual void evaluate_basis(double* values, unsigned int i, double* x, const cell& c) const = 0;
+    /// Evaluate basis function i at the point x = (x[0], x[1], ...) in the cell
+    virtual void evaluate_basis(double* values, const double* x, unsigned int i, const cell& c) const = 0;
     
-    /// Evaluate node n at given function
+    /// Evaluate node i on the function f
     virtual double evaluate_node(unsigned int n, const function& f, const cell& c) const = 0;
 
-    /// Tabulate local-to-global mapping of nodes (degrees of freedom)
+    /// Tabulate the local-to-global mapping of nodes (degrees of freedom)
     virtual void tabulate_nodes(unsigned int *nodes, const mesh& m, const cell& c) const = 0;
 
-    /// Tabulate values at the vertices of the cell
+    /// Tabulate vertex values from nodal values
     virtual void tabulate_vertex_values(double* vertex_values, const double* nodal_values) const = 0;
     
   };
@@ -159,14 +157,11 @@ namespace ufc
     /// Return true iff there is a contribution from the boundary
     virtual bool boundary_contribution() const = 0;
 
-    /// Tabulate interior contribution to element tensor
-    virtual void tabulate_interior(double* A, const double** w, const cell& c) const = 0;
+    /// Tabulate the interior contribution to the element tensor
+    virtual void tabulate_interior(double* A, const double * const * w, const cell& c) const = 0;
     
-    // FIXME:
-    //double const * const *
-    
-    /// Tabulate boundary contribution to element tensor
-    virtual void tabulate_boundary(double* A, const double** w, const cell& c, unsigned int facet) const = 0;
+    /// Tabulate the boundary contribution to the element tensor
+    virtual void tabulate_boundary(double* A, const double * const * w, const cell& c, unsigned int facet) const = 0;
  
     /// Array of r + n finite elements for argument function spaces and coefficients
     finite_element** finite_elements;
