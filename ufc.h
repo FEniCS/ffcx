@@ -19,7 +19,15 @@ namespace ufc
     mesh(): num_entities(0) {}
 
     /// Destructor
-    ~mesh() {}
+    virtual ~mesh() {}
+
+
+    // FIXME
+    
+    unsigned int topological_dimension;
+    
+    unsigned int geometric_dimension;
+    
 
     /// Array of the number of entities of each topological dimension
     unsigned int* num_entities;
@@ -37,7 +45,7 @@ namespace ufc
     cell(): entities(0), coordinates(0) {}
 
     /// Destructor
-    ~cell() {}
+    virtual ~cell() {}
 
     /// Array of global indices for the mesh entities of the cell
     unsigned int** entities;
@@ -59,8 +67,9 @@ namespace ufc
     /// Destructor
     virtual ~function() {}
 
+    // FIXME
     /// Evaluate component i = (i[0], i[1], ...) at the point x = (x[0], x[1], ...)
-    virtual double eval(const unsigned int* i, const double* x) const = 0;
+    virtual void evaluate(double* values, const double* x) const = 0;
 
   };
 
@@ -94,8 +103,9 @@ namespace ufc
     /// Return sub element i (for a mixed finite element)
     virtual const finite_element& sub_element(unsigned int i) const = 0;
     
-    /// Evaluate basis function n at a given point in the cell
-    virtual double evaluate_basis(unsigned int n, double* x, const cell& c) const = 0;
+    // FIXME
+    /// Evaluate basis function i at a given point in the cell
+    virtual void evaluate_basis(double* values, unsigned int i, double* x, const cell& c) const = 0;
     
     /// Evaluate node n at given function
     virtual double evaluate_node(unsigned int n, const function& f, const cell& c) const = 0;
@@ -151,7 +161,10 @@ namespace ufc
 
     /// Tabulate interior contribution to element tensor
     virtual void tabulate_interior(double* A, const double** w, const cell& c) const = 0;
-
+    
+    // FIXME:
+    //double const * const *
+    
     /// Tabulate boundary contribution to element tensor
     virtual void tabulate_boundary(double* A, const double** w, const cell& c, unsigned int facet) const = 0;
  
