@@ -87,8 +87,17 @@ namespace ufc
     /// Return a string identifying the finite element
     virtual const char* description() const = 0;
 
-    /// Return the dimension of the finite element function space
-    virtual unsigned int space_dimension() const = 0;
+    /// Return true iff the finite element should be initialized
+    virtual bool needs_init() const = 0;
+
+    /// Initialize finite element on given cell
+    virtual bool init(const mesh& mesh, const cell& cell) = 0;
+
+    /// Return the dimension of the local finite element function space
+    virtual unsigned int local_dimension() const = 0;
+
+    /// Return the dimension of the global finite element function space
+    virtual unsigned int global_dimension() const = 0;
 
     /// Return the rank of the value space
     virtual unsigned int value_rank() const = 0;
@@ -151,11 +160,11 @@ namespace ufc
     /// Return the number of coefficients (n)
     virtual unsigned int num_coefficients() const = 0;
 
-    /// Return true iff there is a contribution from the interior
-    virtual bool interior_contribution() const = 0;
+    /// Return true iff form has a contribution from the interior
+    virtual bool has_interior_contribution() const = 0;
 
-    /// Return true iff there is a contribution from the boundary
-    virtual bool boundary_contribution() const = 0;
+    /// Return true iff form has a contribution from the boundary
+    virtual bool has_boundary_contribution() const = 0;
 
     /// Tabulate the interior contribution to the element tensor
     virtual void tabulate_interior(double* A, const double * const * w, const cell& c) const = 0;
