@@ -16,7 +16,7 @@ namespace ufc
   public:
 
     /// Constructor
-    mesh(): num_entities(0) {}
+    mesh(): topological_dimension(0), geometric_dimension(0), num_entities(0) {}
 
     /// Destructor
     virtual ~mesh() {}
@@ -27,7 +27,7 @@ namespace ufc
     /// Geometric dimension of the mesh
     unsigned int geometric_dimension;
 
-    /// Array of the number of entities of each topological dimension
+    /// Array of the global number of entities of each topological dimension
     unsigned int* num_entities;
 
   };
@@ -39,7 +39,7 @@ namespace ufc
   public:
 
     /// Constructor
-    cell(): entities(0), coordinates(0) {}
+    cell(): index(0), entity_indices(0), coordinates(0) {}
 
     /// Destructor
     virtual ~cell() {}
@@ -48,7 +48,7 @@ namespace ufc
     unsigned int index;
 
     /// Array of global indices for the mesh entities of the cell
-    unsigned int** entities;
+    unsigned int** entity_indices;
 
     /// Array of coordinates for the vertices of the cell
     double** coordinates;
@@ -87,17 +87,19 @@ namespace ufc
     /// Return a string identifying the finite element
     virtual const char* description() const = 0;
 
-    /// Return true iff the finite element should be initialized
-    virtual bool needs_init() const = 0;
+    /// Initialize finite element for a new mesh and return true iff
+    /// the finite element should be initialized on each cell
+    virtual bool init(const mesh& mesh) = 0;
 
     /// Initialize finite element on given cell
-    virtual bool init(const mesh& mesh, const cell& cell) = 0;
+    virtual void init(const mesh& mesh, const cell& cell) = 0;
+
+    /// Return the dimension of the global finite element function space.
+    /// This is only valid after calling init(mesh) for the relevant mesh.
+    virtual unsigned int global_dimension() const = 0;
 
     /// Return the dimension of the local finite element function space
     virtual unsigned int local_dimension() const = 0;
-
-    /// Return the dimension of the global finite element function space
-    virtual unsigned int global_dimension() const = 0;
 
     /// Return the rank of the value space
     virtual unsigned int value_rank() const = 0;
@@ -116,12 +118,12 @@ namespace ufc
     
     /// Evaluate node i on the function f
     virtual double evaluate_node(unsigned int n, const function& f, const cell& c) const = 0;
+    
+    /// Evaluate vertex values from nodal values
+    virtual void evaluate_vertex_values(double* vertex_values, const double* nodal_values) const = 0;
 
     /// Tabulate the local-to-global mapping of nodes (degrees of freedom)
     virtual void tabulate_nodes(unsigned int *nodes, const mesh& m, const cell& c) const = 0;
-
-    /// Tabulate vertex values from nodal values
-    virtual void tabulate_vertex_values(double* vertex_values, const double* nodal_values) const = 0;
     
   };
 
