@@ -44,9 +44,6 @@ namespace ufc
     /// Destructor
     virtual ~cell() {}
 
-    /// Global index for the cell
-    unsigned int index;
-
     /// Array of global indices for the mesh entities of the cell
     unsigned int** entity_indices;
 
@@ -87,6 +84,9 @@ namespace ufc
     /// Return a string identifying the finite element
     virtual const char* description() const = 0;
 
+    /// Return true iff indices of mesh entities with topological dimension n is needed
+    virtual bool needs_mesh_entities(unsigned int n) const = 0;
+
     /// Initialize finite element for a new mesh and return true iff
     /// the finite element should be initialized on each cell
     virtual bool init(const mesh& mesh) = 0;
@@ -119,8 +119,8 @@ namespace ufc
     /// Evaluate node i on the function f
     virtual double evaluate_node(unsigned int n, const function& f, const cell& c) const = 0;
     
-    /// Evaluate vertex values from nodal values
-    virtual void evaluate_vertex_values(double* vertex_values, const double* nodal_values) const = 0;
+    /// Tabulate vertex values from nodal values, interpolating if necessary
+    virtual void tabulate_vertex_values(double* vertex_values, const double* nodal_values) const = 0;
 
     /// Tabulate the local-to-global mapping of nodes (degrees of freedom)
     virtual void tabulate_nodes(unsigned int *nodes, const mesh& m, const cell& c) const = 0;
