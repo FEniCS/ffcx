@@ -39,7 +39,7 @@ namespace ufc
   public:
 
     /// Constructor
-    cell(): index(0), entity_indices(0), coordinates(0) {}
+    cell(): entity_indices(0), coordinates(0) {}
 
     /// Destructor
     virtual ~cell() {}
