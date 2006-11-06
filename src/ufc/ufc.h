@@ -82,6 +82,9 @@ namespace ufc
     /// Destructor
     virtual ~node_map() {}
     
+    /// Return a string identifying the node map
+    virtual const char* description() const = 0;
+    
     /// Return true iff indices of mesh entities with topological dimension d are needed
     virtual bool needs_mesh_entities(unsigned int d) const = 0;
 
