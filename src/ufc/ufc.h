@@ -68,6 +68,41 @@ namespace ufc
     virtual void evaluate(double* values, const double* x, const cell& c) const = 0;
 
   };
+  
+  
+  /// This class defines the interface for a local to global mapping of nodes.
+
+  class node_map
+  {
+  public:
+
+    /// Constructor
+    node_map() {}
+
+    /// Destructor
+    virtual ~node_map() {}
+    
+    /// Return true iff indices of mesh entities with topological dimension d are needed
+    virtual bool needs_mesh_entities(unsigned int d) const = 0;
+
+    /// Initialize finite element for a new mesh and return true iff
+    /// the finite element should be initialized on each cell
+    virtual bool init(const mesh& mesh) = 0;
+
+    /// Initialize finite element on given cell
+    virtual void init(const mesh& mesh, const cell& cell) = 0;
+
+    /// Return the dimension of the global finite element function space.
+    /// This is only valid after calling init(mesh) for the relevant mesh.
+    virtual unsigned int global_dimension() const = 0;
+    
+    /// Return the dimension of the local finite element function space
+    virtual unsigned int local_dimension() const = 0;
+    
+    /// Tabulate the local-to-global mapping of nodes (degrees of freedom)
+    virtual void tabulate_nodes(unsigned int *nodes, const mesh& m, const cell& c) const = 0;
+  };
+
 
   /// This class defines the interface for a finite element.
 
@@ -84,20 +119,6 @@ namespace ufc
     /// Return a string identifying the finite element
     virtual const char* description() const = 0;
 
-    /// Return true iff indices of mesh entities with topological dimension d are needed
-    virtual bool needs_mesh_entities(unsigned int d) const = 0;
-
-    /// Initialize finite element for a new mesh and return true iff
-    /// the finite element should be initialized on each cell
-    virtual bool init(const mesh& mesh) = 0;
-
-    /// Initialize finite element on given cell
-    virtual void init(const mesh& mesh, const cell& cell) = 0;
-
-    /// Return the dimension of the global finite element function space.
-    /// This is only valid after calling init(mesh) for the relevant mesh.
-    virtual unsigned int global_dimension() const = 0;
-
     /// Return the dimension of the local finite element function space
     virtual unsigned int local_dimension() const = 0;
 
@@ -107,12 +128,6 @@ namespace ufc
     /// Return the dimension of value space for axis i
     virtual unsigned int value_dimension(unsigned int i) const = 0;
 
-    /// Return the number of sub elements (for a mixed finite element)
-    virtual unsigned int num_sub_elements(unsigned int i) const = 0;
-
-    /// Return sub element i (for a mixed finite element)
-    virtual const finite_element& sub_element(unsigned int i) const = 0;
-    
     /// Evaluate basis function i at the point x = (x[0], x[1], ...) in the cell
     virtual void evaluate_basis(double* values, const double* x, unsigned int i, const cell& c) const = 0;
     
@@ -121,9 +136,12 @@ namespace ufc
     
     /// Interpolate vertex values from nodal values
     virtual void interpolate_vertex_values(double* vertex_values, const double* nodal_values) const = 0;
+  
+    /// Return the number of sub elements (for a mixed finite element)
+    virtual unsigned int num_sub_elements(unsigned int i) const = 0;
 
-    /// Tabulate the local-to-global mapping of nodes (degrees of freedom)
-    virtual void tabulate_nodes(unsigned int *nodes, const mesh& m, const cell& c) const = 0;
+    /// Return sub element i (for a mixed finite element)
+    virtual const finite_element& sub_element(unsigned int i) const = 0;
     
   };
 
@@ -174,9 +192,11 @@ namespace ufc
     /// Tabulate the boundary contribution to the element tensor
     virtual void tabulate_boundary(double* A, const double * const * w, const cell& c, unsigned int facet) const = 0;
  
-    /// Array of r + n finite elements for argument function spaces and coefficients
-    finite_element** finite_elements;
+    /// Allocate a node_map for for argument i in [0,r+n), the caller is responsible for deleting it
+    virtual node_map * create_node_map(unsigned int i) const = 0;   
   
+    /// Allocate a finite_element for argument i in [0,r+n), the caller is responsible for deleting it
+    virtual finite_element* create_finite_element(unsigned int i) const = 0;   
   };
 
 }
