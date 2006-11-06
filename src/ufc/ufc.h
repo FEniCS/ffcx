@@ -68,9 +68,8 @@ namespace ufc
     virtual void evaluate(double* values, const double* x, const cell& c) const = 0;
 
   };
-  
-  
-  /// This class defines the interface for a local to global mapping of nodes.
+    
+  /// This class defines the interface for a local-to-global mapping of nodes.
 
   class node_map
   {
@@ -85,18 +84,18 @@ namespace ufc
     /// Return a string identifying the node map
     virtual const char* description() const = 0;
     
-    /// Return true iff indices of mesh entities with topological dimension d are needed
+    /// Return true iff mesh entities of topological dimension d are needed
     virtual bool needs_mesh_entities(unsigned int d) const = 0;
 
-    /// Initialize finite element for a new mesh and return true iff
-    /// the finite element should be initialized on each cell
-    virtual bool init(const mesh& mesh) = 0;
+    /// Initialize node map for a new mesh and return true iff
+    /// the finite element should be initialized for each cell
+    virtual bool init_mesh(const mesh& mesh) = 0;
 
-    /// Initialize finite element on given cell
-    virtual void init(const mesh& mesh, const cell& cell) = 0;
+    /// Initialize node map for given cell
+    virtual void init_cell(const mesh& mesh, const cell& cell) = 0;
 
     /// Return the dimension of the global finite element function space.
-    /// This is only valid after calling init(mesh) for the relevant mesh.
+    /// This is only valid after calling initialization.
     virtual unsigned int global_dimension() const = 0;
     
     /// Return the dimension of the local finite element function space
@@ -105,7 +104,6 @@ namespace ufc
     /// Tabulate the local-to-global mapping of nodes (degrees of freedom)
     virtual void tabulate_nodes(unsigned int *nodes, const mesh& m, const cell& c) const = 0;
   };
-
 
   /// This class defines the interface for a finite element.
 
@@ -128,7 +126,7 @@ namespace ufc
     /// Return the rank of the value space
     virtual unsigned int value_rank() const = 0;
 
-    /// Return the dimension of value space for axis i
+    /// Return the dimension of the value space for axis i
     virtual unsigned int value_dimension(unsigned int i) const = 0;
 
     /// Evaluate basis function i at the point x = (x[0], x[1], ...) in the cell
@@ -183,10 +181,10 @@ namespace ufc
     /// Return the number of coefficients (n)
     virtual unsigned int num_coefficients() const = 0;
 
-    /// Return true iff form has a contribution from the interior
+    /// Return true iff the form has a contribution from the interior
     virtual bool has_interior_contribution() const = 0;
 
-    /// Return true iff form has a contribution from the boundary
+    /// Return true iff the form has a contribution from the boundary
     virtual bool has_boundary_contribution() const = 0;
 
     /// Tabulate the interior contribution to the element tensor
@@ -195,11 +193,12 @@ namespace ufc
     /// Tabulate the boundary contribution to the element tensor
     virtual void tabulate_boundary(double* A, const double * const * w, const cell& c, unsigned int facet) const = 0;
  
-    /// Allocate a node_map for for argument i in [0,r+n), the caller is responsible for deleting it
-    virtual node_map * create_node_map(unsigned int i) const = 0;   
+    /// Create a node map for argument function i (caller responsible for deletion)
+    virtual node_map* create_node_map(unsigned int i) const = 0;
   
-    /// Allocate a finite_element for argument i in [0,r+n), the caller is responsible for deleting it
-    virtual finite_element* create_finite_element(unsigned int i) const = 0;   
+    /// Create a finite element for argument function i (caller responsible for deletion)
+    virtual finite_element* create_finite_element(unsigned int i) const = 0;
+
   };
 
 }
