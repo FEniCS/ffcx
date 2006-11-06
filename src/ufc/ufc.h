@@ -166,7 +166,7 @@ namespace ufc
   public:
 
     /// Constructor
-    element_tensor() : finite_elements(0) {}
+    element_tensor() {}
 
     /// Destructor
     virtual ~element_tensor() {}
