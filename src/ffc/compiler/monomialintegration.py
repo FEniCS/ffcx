@@ -11,7 +11,7 @@ __license__  = "GNU GPL Version 2"
 # Modified by Garth N. Wells 2006
 
 # Python modules
-import Numeric
+import numpy
 
 # FIAT modules
 from FIAT.quadrature import *
@@ -121,7 +121,7 @@ def __compute_psi(v, table, num_points, dscaling):
 
     # We just need to pick the values for Psi from the table, which is
     # somewhat tricky since the table created by tabulate_jet() is a
-    # mix of list, dictionary and Numeric.array.
+    # mix of list, dictionary and numpy.array.
     #
     # The dimensions of the resulting table are ordered as follows:
     #
@@ -163,7 +163,7 @@ def __compute_psi(v, table, num_points, dscaling):
     shapes = cshape + dshape + vshape + [num_points]
 
     # Initialize tensor Psi: component, derivatives, basis function, points
-    Psi = Numeric.zeros(shapes, Numeric.Float)
+    Psi = numpy.zeros(shapes, dtype = numpy.float)
 
     # Iterate over derivative Indices
     dlists = build_indices(dshape) or [[]]
@@ -181,12 +181,16 @@ def __compute_psi(v, table, num_points, dscaling):
             # Translate derivative multiindex to lookup tuple
             dtuple = __multiindex_to_tuple(dlist, shapedim)
             # Get values from table
+            print "Shapes in monomialintegration" 
+            print etable[dtuple].shape
+            print Psi[dlist].shape
+            print dlist
             Psi[dlist] = etable[dtuple]
 
     # Rearrange Indices as (fixed, auxiliary, primary, secondary)
     (rearrangement, num_indices) = __compute_rearrangement(indices)
     indices = [indices[i] for i in rearrangement]
-    Psi = Numeric.transpose(Psi, rearrangement + (len(indices),))
+    Psi = numpy.transpose(Psi, rearrangement + (len(indices),))
 
     # Remove fixed indices
     for i in range(num_indices[0]):
@@ -194,8 +198,8 @@ def __compute_psi(v, table, num_points, dscaling):
     indices = [index for index in indices if not index.type == "fixed"]
 
     # Put quadrature points first
-    rank = Numeric.rank(Psi)
-    Psi = Numeric.transpose(Psi, (rank - 1,) + tuple(range(0, rank - 1)))
+    rank = numpy.rank(Psi)
+    Psi = numpy.transpose(Psi, (rank - 1,) + tuple(range(0, rank - 1)))
 
     # Scale derivatives (FIAT uses different reference element)
     Psi = pow(dscaling, dorder) * Psi
@@ -217,8 +221,8 @@ def __compute_product(psis, weights):
 
     # Initialize zero reference tensor (will be rearranged later)
     (shape, indices) = __compute_shape(psis)
-    A0 = Numeric.zeros(shape, Numeric.Float)
-    debug("Computing the reference tensor (%d entries), this may take some time..." % Numeric.size(A0))
+    A0 = numpy.zeros(shape, dtype= numpy.float)
+    debug("Computing the reference tensor (%d entries), this may take some time..." % numpy.size(A0))
 
     # Initialize list of auxiliary multiindices
     bshape = __compute_auxiliary_shape(psis)
@@ -233,17 +237,17 @@ def __compute_product(psis, weights):
             # Compute outer products of subtables for current (q, b)
             B = weights[q]
             for (Psi, index, bpart) in psis:
-                B = Numeric.multiply.outer(B, Psi[[q] + [b[i] for i in bpart]])
+                B = numpy.multiply.outer(B, Psi[[q] + [b[i] for i in bpart]])
 
             # Add product to reference tensor
-            Numeric.add(A0, B, A0)
+            numpy.add(A0, B, A0)
 
             # Update progress
             progress += 1
 
     # Rearrange Indices as (primary, secondary)
     (rearrangement, num_indices) = __compute_rearrangement(indices)
-    A0 = Numeric.transpose(A0, rearrangement)
+    A0 = numpy.transpose(A0, rearrangement)
 
     return A0
 
@@ -273,7 +277,7 @@ def __compute_shape(psis):
     shape, indices = [], []
     for (Psi, index, bpart) in psis:
         num_auxiliary = len([0 for i in index if i.type == "reference tensor auxiliary"])
-        shape += Numeric.shape(Psi)[1 + num_auxiliary:]
+        shape += numpy.shape(Psi)[1 + num_auxiliary:]
         indices += index[num_auxiliary:]
     return (shape, indices)
     
@@ -289,7 +293,7 @@ def __compute_auxiliary_shape(psis):
     bshape = [0 for i in range(bmax + 1)]
     for (Psi, index, bpart) in psis:
         for i in range(len(bpart)):
-            bshape[bpart[i]] = Numeric.shape(Psi)[i + 1]
+            bshape[bpart[i]] = numpy.shape(Psi)[i + 1]
     # Check that we found the shape for each auxiliary index
     if 0 in bshape:
         raise RuntimeError, "Unable to compute the shape for each auxiliary index."
@@ -299,7 +303,7 @@ def __find_indices(indices, type):
     "Return sorted list of positions for given Index type."
     pos = [i for i in range(len(indices)) if indices[i].type == type]
     val = [indices[i].index for i in range(len(indices)) if indices[i].type == type]
-    return [pos[i] for i in Numeric.argsort(val)]
+    return [pos[i] for i in numpy.argsort(val)]
 
 def __multiindex_to_tuple(dindex, shapedim):
     """Compute lookup tuple from given derivative

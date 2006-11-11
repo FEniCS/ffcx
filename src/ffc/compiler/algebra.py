@@ -24,9 +24,11 @@ __date__ = "2004-09-27 -- 2006-03-22"
 __copyright__ = "Copyright (C) 2004-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
+# Modified by Garth N. Wells 2006
+
 # Python modules
 import sys
-import Numeric
+import numpy
 
 # FFC common modules
 sys.path.append("../../")
@@ -69,7 +71,7 @@ class Element:
             return Sum(self) * other
         elif isinstance(other, int):
             return Sum(self) * float(other)
-        elif Numeric.rank(other) > 0:
+        elif numpy.rank(other) > 0:
             return [self*v for v in other]
         else:
             raise FormError, ((self, other), "Product not defined for given operands.")

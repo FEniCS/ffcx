@@ -173,8 +173,8 @@ class ElementTensor:
                 A0 = self.terms[j].A0
                 for (gk, a) in gka:
                     a0 = A0.A0[i + a]
-                    if abs(a0) > FFC_EPSILON:
-                        if value and a0 < 0.0:
+                    if abs(numpy.all(a0)) > FFC_EPSILON:
+                        if value and numpy.all(a0) < 0.0:
                             value = format_subtract([value, format_multiply([format_floating_point(-a0), gk])])
                         elif value:
                             value = format_sum([value, format_multiply([format_floating_point(a0), gk])])
@@ -211,7 +211,7 @@ class ElementTensor:
                 for a in aindices:
                     a0 = A0(i, a)
                     gk = format.format["geometry tensor"](j, a)
-                    if abs(a0) > FFC_EPSILON:
+                    if abs(numpy.all(a0)) > FFC_EPSILON:
                         gK_used.add(gk)
         return
 

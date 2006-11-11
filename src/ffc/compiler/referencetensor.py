@@ -6,7 +6,7 @@ __license__  = "GNU GPL Version 2"
 # Modified by Garth N. Wells 2006
 
 # Python modules
-import Numeric
+import numpy
 import time
 
 # FFC common modules
@@ -70,7 +70,7 @@ class ReferenceTensor:
 
         # For testing
         #B = self.__compute_reference_tensor()
-        #print "Maximum error: %.3e" % max(abs(Numeric.ravel(self.A0 - B)))
+        #print "Maximum error: %.3e" % max(abs(numpy.ravel(self.A0 - B)))
 
         # Compute reference tensor (old version)
         #self.A0 = self.__compute_reference_tensor()
@@ -122,16 +122,16 @@ class ReferenceTensor:
         bindices = self.b.indices or [[]]
 
         # Create tensor
-        A0 = Numeric.zeros(self.i.dims + self.a.dims, Numeric.Float)
-        debug("Number of entries in reference tensor: %d" % Numeric.size(A0), 1)
+        A0 = numpy.zeros(self.i.dims + self.a.dims, dtype = numpy.float)
+        debug("Number of entries in reference tensor: %d" % numpy.size(A0), 1)
 
         # Create quadrature rule
         integrate = Integrator(self.basisfunctions)
 
         # Count the number of integrals
-        n = Numeric.product(self.i.dims) * \
-            Numeric.product(self.a.dims) * \
-            Numeric.product(self.b.dims)
+        n = numpy.product(self.i.dims) * \
+            numpy.product(self.a.dims) * \
+            numpy.product(self.b.dims)
         debug("Computing %d integrals, this may take some time" % n)
 
         # Iterate over all combinations of indices

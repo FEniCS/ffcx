@@ -3,8 +3,10 @@ __date__ = "2005-09-16 -- 2006-05-07"
 __copyright__ = "Copyright (C) 2005-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
+# Modified by Garth N. Wells 2006
+
 # Python modules
-import Numeric
+import numpy
 
 # FFC common modules
 from ffc.common.debug import *
@@ -267,8 +269,8 @@ class MixedElement:
             derivative_dictionary = {}
             for dtuple in table[dorder]:
                 element_subtable = table[dorder][dtuple]
-                num_points = Numeric.shape(element_subtable)[1]
-                mixed_subtable = Numeric.zeros((self.mixed_spacedim, num_points), Numeric.Float)
+                num_points = numpy.shape(element_subtable)[1]
+                mixed_subtable = numpy.zeros((self.mixed_spacedim, num_points), dtype = numpy.float)
                 # Iterate over element basis functions and fill in non-zero values
                 for i in range(len(element_subtable)):
                     mixed_subtable[offset + i] = element_subtable[i]

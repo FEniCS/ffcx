@@ -8,10 +8,11 @@ __license__  = "GNU GPL Version 2"
 
 # Modified by Ola Skavhaug, 2005
 # Modified by Dag Lindbo, 2006
+# Modified by Garth N. Wells 2006
 
 # Python modules
 import sys
-import Numeric
+import numpy
 
 # FFC common modules
 sys.path.append("../../")
@@ -25,8 +26,8 @@ from finiteelement import *
 
 def Identity(n):
     "Return identity matrix of given size."
-    # Let Numeric handle the identity
-    return Numeric.identity(n)
+    # Let numpy handle the identity
+    return numpy.identity(n)
 
 def rank(v):
     "Return rank for given object."
@@ -39,7 +40,7 @@ def rank(v):
     elif isinstance(v, Function):
         return rank(Sum(v))
     else:
-        return Numeric.rank(v)
+        return numpy.rank(v)
     return 0
 
 def vec(v):
@@ -56,8 +57,8 @@ def vec(v):
         n = __tensordim(v, 0)
         # Create list of scalar components
         return [v[i] for i in range(n)]        
-    # Let Numeric handle the conversion
-    if isinstance(v, Numeric.ArrayType) and len(v.shape) == 1:
+    # Let numpy handle the conversion
+    if isinstance(v, numpy.ArrayType) and len(v.shape) == 1:
         return v.tolist()
     # Unable to find a proper conversion
     raise FormError, (v, "Unable to convert given expression to a vector,")
@@ -73,14 +74,14 @@ def dot(v, w):
         if isinstance(v, Element) and isinstance(w, Element):
             i = Index()
             return v[i]*w[i]
-        # Otherwise, use Numeric.dot
-        return Numeric.dot(vec(v), vec(w))
+        # Otherwise, use numpy.dot
+        return numpy.dot(vec(v), vec(w))
     elif rank(v) == rank(w) == 2:
         # Check dimensions
         if not len(v) == len(w):
             raise FormError, ((v, w), "Dimensions don't match for scalar product.")
         # Compute dot product (:) of matrices
-        return Numeric.sum([v[i][j]*w[i][j] for i in range(len(v)) for j in range(len(v[i]))])
+        return numpy.sum([v[i][j]*w[i][j] for i in range(len(v)) for j in range(len(v[i]))])
 
 def cross(v, w):
     "Return cross product of given functions."
@@ -92,28 +93,28 @@ def cross(v, w):
 
 def trace(v):
     "Return trace of given matrix"
-    # Let Numeric handle the trace
-    return Numeric.trace(v)
+    # Let numpy handle the trace
+    return numpy.trace(v)
 
 def transp(v):
     "Return transpose of given matrix."
-    # Let Numeric handle the transpose."
-    return Numeric.transpose(v)
+    # Let numpy handle the transpose."
+    return numpy.transpose(v)
 
 def mult(v, w):
     "Compute matrix-matrix product of given matrices."
-    # First, convert to Numeric.array (safe for both array and list arguments)
-    vv = Numeric.array(v)
-    ww = Numeric.array(w)
+    # First, convert to numpy.array (safe for both array and list arguments)
+    vv = numpy.array(v)
+    ww = numpy.array(w)
     if len(vv.shape) == 0 or len(ww.shape) == 0:
         # One argument is a scalar
         return vv*ww
     if len(vv.shape) == len(ww.shape) == 1:
         # Vector times vector
-        return Numeric.multiply(vv, ww) 
+        return numpy.multiply(vv, ww) 
     elif len(vv.shape) == 2 and (len(ww.shape) == 1 or len(ww.shape) == 2):
         # Matvec or matmat product, use matrixmultiply instead
-        return Numeric.matrixmultiply(vv, ww)
+        return numpy.matrixmultiply(vv, ww)
     else:
         raise FormError, ((v, w), "Dimensions don't match for multiplication.")
 
@@ -156,8 +157,8 @@ def div(v):
     if isinstance(v, Element):
         i = Index()
         return v[i].dx(i)
-    # Otherwise, use Numeric.sum
-    return Numeric.sum([D(v[i], i) for i in range(len(v))])
+    # Otherwise, use numpy.sum
+    return numpy.sum([D(v[i], i) for i in range(len(v))])
 
 def rot(v):
     "Return rotation of given function."

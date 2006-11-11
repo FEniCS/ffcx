@@ -3,8 +3,10 @@ __date__ = "2004-11-03 -- 2005-09-13"
 __copyright__ = "Copyright (C) 2004, 2005 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
+# Modified by Garth N. Wells 2006
+
 # Python modules
-import Numeric
+import numpy
 
 # FFC common modules
 from ffc.common.util import *
@@ -20,10 +22,10 @@ def build_indices(dims):
         return []
     rdims = [] + dims;
     rdims.reverse()
-    current = Numeric.zeros(len(rdims))
+    current = numpy.zeros(len(rdims), dtype = numpy.int)
     indices = []
-    posvalue = [1] + list(Numeric.cumproduct(rdims)[:-1])
-    for i in range(Numeric.product(rdims)):
+    posvalue = [1] + list(numpy.cumproduct(rdims)[:-1])
+    for i in range(numpy.product(rdims)):
         for pos in range(len(rdims)):
             j = len(rdims) - 1
             current[len(rdims) - 1 - pos] = (i / posvalue[pos]) % rdims[pos]

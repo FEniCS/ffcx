@@ -3,10 +3,12 @@ __date__ = "2005-11-07 -- 2006-05-07"
 __copyright__ = "Copyright (C) 2005-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
+# Modified by Garth N. Wells 2006
+
 # Python modules
 import sys
-import Numeric
-import LinearAlgebra
+import numpy
+import numpy.linalg
 
 # FIAT modules
 from FIAT.quadrature import *
@@ -97,10 +99,10 @@ class Projection:
         n = e0.spacedim()
 
         # Create zero order tuple for tables
-        dindex = tuple(Numeric.zeros(e0.shapedim()))
+        dindex = tuple(numpy.zeros(e0.shapedim()), dtype = numpy.int)
 
         # Compute matrix Q = (vi, vj) for vi in V1
-        Q = Numeric.zeros((m, m), Numeric.Float)
+        Q = numpy.zeros((m, m), dtype = numpy.float)
         if rank == 0:
             for i in range(m):
                 vi = t1[0][dindex][i]
@@ -122,7 +124,7 @@ class Projection:
                         Q[i][j] += sum
 
         # Compute matrix P = (v_i, w_j) for v_i in V_1 and w_j in V_0
-        P = Numeric.zeros((m, n), Numeric.Float)
+        P = numpy.zeros((m, n), dtype = numpy.float)
         if rank == 0:
             for i in range(m):
                 vi = t1[0][dindex][i]
@@ -144,7 +146,7 @@ class Projection:
                         P[i][j] += sum
 
         # Compute projection matrix Q^-1 P
-        P = Numeric.matrixmultiply(LinearAlgebra.inverse(Q), P)
+        P = numpy.matrixmultiply(numpy.linalg.inv(Q), P)
 
         # Save projection matrix for later so it can be reused
         self.projections[name] = P

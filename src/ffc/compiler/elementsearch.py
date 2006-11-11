@@ -8,9 +8,11 @@ __date__ = "2005-03-15 -- 2005-11-08"
 __copyright__ = "Copyright (C) 2005 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
+# Modified by Garth N. Wells 2006
+
 # Python modules
 import sys
-import Numeric
+import numpy
 
 # FFC common modules
 sys.path.append("../../")
