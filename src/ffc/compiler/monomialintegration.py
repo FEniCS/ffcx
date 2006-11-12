@@ -174,18 +174,14 @@ def __compute_psi(v, table, num_points, dscaling):
                 # Translate derivative multiindex to lookup tuple
                 dtuple = __multiindex_to_tuple(dlist, shapedim)
                 # Get values from table
-                Psi[component][dlist] = etable[component][dorder][dtuple]
+                Psi[component][tuple(dlist)] = etable[component][dorder][dtuple]
     else:
         etable = table[element][dorder]
         for dlist in dlists:
             # Translate derivative multiindex to lookup tuple
             dtuple = __multiindex_to_tuple(dlist, shapedim)
             # Get values from table
-            print "Shapes in monomialintegration" 
-            print etable[dtuple].shape
-            print Psi[dlist].shape
-            print dlist
-            Psi[dlist] = etable[dtuple]
+            Psi[tuple(dlist)] = etable[dtuple]
 
     # Rearrange Indices as (fixed, auxiliary, primary, secondary)
     (rearrangement, num_indices) = __compute_rearrangement(indices)
@@ -232,12 +228,11 @@ def __compute_product(psis, weights):
     num_points = len(weights)
     progress = Progress(num_points * len(bindices))
     for q in range(num_points):
-        for b in bindices:
-            
+        for b in bindices:            
             # Compute outer products of subtables for current (q, b)
             B = weights[q]
             for (Psi, index, bpart) in psis:
-                B = numpy.multiply.outer(B, Psi[[q] + [b[i] for i in bpart]])
+                B = numpy.multiply.outer(B, Psi[ tuple([q] + [b[i] for i in bpart])])
 
             # Add product to reference tensor
             numpy.add(A0, B, A0)
