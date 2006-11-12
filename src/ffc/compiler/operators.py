@@ -58,7 +58,7 @@ def vec(v):
         # Create list of scalar components
         return [v[i] for i in range(n)]        
     # Let numpy handle the conversion
-    if isinstance(v, numpy.ArrayType) and len(v.shape) == 1:
+    if isinstance(v, numpy.ndarray) and len(v.shape) == 1:
         return v.tolist()
     # Unable to find a proper conversion
     raise FormError, (v, "Unable to convert given expression to a vector,")
@@ -114,7 +114,8 @@ def mult(v, w):
         return numpy.multiply(vv, ww) 
     elif len(vv.shape) == 2 and (len(ww.shape) == 1 or len(ww.shape) == 2):
         # Matvec or matmat product, use matrixmultiply instead
-        return numpy.matrixmultiply(vv, ww)
+#        return numpy.matrixmultiply(vv, ww)
+        return numpy.dot(vv, ww)
     else:
         raise FormError, ((v, w), "Dimensions don't match for multiplication.")
 
