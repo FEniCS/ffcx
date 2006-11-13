@@ -228,7 +228,7 @@ def __compute_coefficients(projections, format, cK_used):
                 declarations += [declaration]
         else:
             # Compute projection
-            (m, n) = Numeric.shape(P)
+            (m, n) = numpy.shape(P)
             for k in range(m):
                 terms = []
                 for l in range(n):

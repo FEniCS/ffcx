@@ -87,7 +87,7 @@ def dot(v, w):
             for j in range(len(v)):
                 sum = sum + v[i][j]*w[i][j]
         return sum
-        #numpy.sum seems to sum in a differen order than Numeric.sum
+        #numpy.sum seems to sum in a different order than Numeric.sum
         #return numpy.sum([v[i][j]*w[i][j] for i in range(len(v)) for j in range(len(v[i]))])
 
 def cross(v, w):
