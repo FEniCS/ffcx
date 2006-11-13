@@ -1,3 +1,4 @@
+o [logg] Bug fix: LaTeX format not working
 o [logg] Use Numeric.array instead of Python list for vectors
 o [logg] Write about TestFunction and TrialFunction in manual
 o [logg] Use Constant instead of real in DOLFIN interface

@@ -109,3 +109,24 @@ fre okt 27 21:54:41 CEST 2006
 Navier-Stokes: 0.645 seconds
 Stabilization: 28.050 seconds
 -----------------------------------
+FFC version 0.3.4-dev
+mån nov 13 20:37:49 CET 2006
+
+Before switch from Numeric to NumPy.
+Compilation time increased before
+this change, probably as a result
+of a switch from Ubuntu Dapper to
+Ubuntu Edgy.
+
+Navier-Stokes: 0.641 seconds
+Stabilization: 58.449 seconds
+-----------------------------------
+FFC version 0.3.4-dev
+mån nov 13 20:43:19 CET 2006
+
+After switch from Numeric to Numpy.
+Compilation time increased by 10%.
+
+Navier-Stokes: 0.749 seconds
+Stabilization: 68.160 seconds
+-----------------------------------
