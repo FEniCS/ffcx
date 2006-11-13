@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2005-11-07 -- 2006-05-07"
+__date__ = "2005-11-07 -- 2006-11-13"
 __copyright__ = "Copyright (C) 2005-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -99,7 +99,7 @@ class Projection:
         n = e0.spacedim()
 
         # Create zero order tuple for tables
-        dindex = tuple(numpy.zeros(e0.shapedim()), dtype = numpy.int)
+        dindex = tuple(numpy.zeros(e0.shapedim(), dtype = numpy.int))
 
         # Compute matrix Q = (vi, vj) for vi in V1
         Q = numpy.zeros((m, m), dtype = numpy.float)
@@ -146,7 +146,7 @@ class Projection:
                         P[i][j] += sum
 
         # Compute projection matrix Q^-1 P
-        P = numpy.matrixmultiply(numpy.linalg.inv(Q), P)
+        P = numpy.dot(numpy.linalg.inv(Q), P)
 
         # Save projection matrix for later so it can be reused
         self.projections[name] = P

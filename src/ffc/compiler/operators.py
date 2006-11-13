@@ -2,7 +2,7 @@
 based on the basic form algebra operations."""
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2005-09-07 -- 2006-09-27"
+__date__ = "2005-09-07 -- 2006-11-13"
 __copyright__ = "Copyright (C) 2005-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -77,11 +77,18 @@ def dot(v, w):
         # Otherwise, use numpy.dot
         return numpy.dot(vec(v), vec(w))
     elif rank(v) == rank(w) == 2:
+        
         # Check dimensions
         if not len(v) == len(w):
             raise FormError, ((v, w), "Dimensions don't match for scalar product.")
         # Compute dot product (:) of matrices
-        return numpy.sum([v[i][j]*w[i][j] for i in range(len(v)) for j in range(len(v[i]))])
+        sum = Sum()
+        for i in range(len(v)):
+            for j in range(len(v)):
+                sum = sum + v[i][j]*w[i][j]
+        return sum
+        #numpy.sum seems to sum in a differen order than Numeric.sum
+        #return numpy.sum([v[i][j]*w[i][j] for i in range(len(v)) for j in range(len(v[i]))])
 
 def cross(v, w):
     "Return cross product of given functions."
@@ -114,7 +121,6 @@ def mult(v, w):
         return numpy.multiply(vv, ww) 
     elif len(vv.shape) == 2 and (len(ww.shape) == 1 or len(ww.shape) == 2):
         # Matvec or matmat product, use matrixmultiply instead
-#        return numpy.matrixmultiply(vv, ww)
         return numpy.dot(vv, ww)
     else:
         raise FormError, ((v, w), "Dimensions don't match for multiplication.")
