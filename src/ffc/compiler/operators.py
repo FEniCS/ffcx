@@ -2,7 +2,7 @@
 based on the basic form algebra operations."""
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2005-09-07 -- 2006-11-13"
+__date__ = "2005-09-07 -- 2006-11-14"
 __copyright__ = "Copyright (C) 2005-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -87,8 +87,6 @@ def dot(v, w):
             for j in range(len(v)):
                 sum = sum + v[i][j]*w[i][j]
         return sum
-        #numpy.sum seems to sum in a different order than Numeric.sum
-        #return numpy.sum([v[i][j]*w[i][j] for i in range(len(v)) for j in range(len(v[i]))])
 
 def cross(v, w):
     "Return cross product of given functions."
@@ -164,8 +162,11 @@ def div(v):
     if isinstance(v, Element):
         i = Index()
         return v[i].dx(i)
-    # Otherwise, use numpy.sum
-    return numpy.sum([D(v[i], i) for i in range(len(v))])
+    # Otherwise, compute the sum explicitly
+    sum = Sum()
+    for i in range(len(v)):
+        sum = sum + D(v[i], i)
+    return sum
 
 def rot(v):
     "Return rotation of given function."
