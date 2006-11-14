@@ -1,3 +1,4 @@
+ - Move from Numeric to numpy
 0.3.4 [2006-10-27]
  - Updates for new DOLFIN mesh library
  - Add support for evaluation of functionals

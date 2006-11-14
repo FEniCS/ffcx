@@ -19,21 +19,12 @@ Dependencies:
      You need to have FIAT installed. FIAT is available from
      the FEniCS web page: http://www.fenics.org/.
 
-  3. The Python Numeric module
+  3. The Python Numpy module
 
      If you're running Debian, you need to install the
-     package python-numeric.
+     package python-numpy.
 
-     This module is used both by FFC and FIAT.
-
-  4. The Python LinearAlgebra module (extending the Numeric module)
-
-     If you're running Debian, you need to install the
-     package python-numeric-ext.
-
-     This module is only used by FIAT.
-
-  5. FErari version, version 0.1.0 (optional)
+  4. FErari version, version 0.1.0 (optional)
 
      This is only required to compile with optimization (flag -O).
 
