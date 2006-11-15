@@ -6,18 +6,18 @@ compile the variational problem for Poisson's equation in a Python
 script:
 
 \begin{code}
- from ffc import *
+from ffc import *
 
- element = FiniteElement(``Lagrange'', ``triangle'', 1)
+element = FiniteElement(``Lagrange'', ``triangle'', 1)
 
- v = BasisFunction(element)
- U = BasisFunction(element)
- f = Function(element)
-  
- a = dot(grad(v), grad(U))*dx
- L = f*v*dx
+v = BasisFunction(element)
+U = BasisFunction(element)
+f = Function(element)
+ 
+a = dot(grad(v), grad(U))*dx
+L = f*v*dx
 
- compile([a, L])
+compile([a, L])
 \end{code}
 
 At the basic level, the only difference between the command-line
@@ -33,8 +33,8 @@ documentation for the function \texttt{compile}, run the following
 commands in a Python shell:
 
 \begin{code}
- from ffc import *
- help(compile)
+from ffc import *
+help(compile)
 \end{code}
 
 \section{\texttt{compile(forms, ...)}}
@@ -56,8 +56,8 @@ generates code. Note that \texttt{build} must be called before
 \texttt{write}:
 
 \begin{code}
- forms = build([a, L])
- write(forms)
+forms = build([a, L])
+write(forms)
 \end{code}
 
 \section{\texttt{writeFiniteElement(element, ...)}}
@@ -67,6 +67,6 @@ Use this function if you just want to generate code for a finite
 element (including mapping of nodes and nodal points):
 
 \begin{code}
- element = FiniteElement(``Lagrange'', ``triangle'', 1)
- writeFiniteElement(element)
+element = FiniteElement(``Lagrange'', ``triangle'', 1)
+writeFiniteElement(element)
 \end{code}
