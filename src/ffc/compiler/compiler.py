@@ -122,7 +122,7 @@ def build(sums, name = "Form", language = FFC_LANGUAGE, options = FFC_OPTIONS):
         debug("Compiling tensor representation for interior")
         form.AKi = ElementTensor(form.sum, "interior", format, cKi_used, gKi_used, options, None)
         form.num_ops = form.AKi.num_ops
-
+        
         # FIXME: Number of operations not counted for boundary terms
 
         # Compute element tensor for each facet on the boundary
@@ -169,7 +169,7 @@ def write(forms, options = FFC_OPTIONS):
 
     # Check that the list is not empty
     if not len(forms) > 0:
-        print "No forms specified, nothing to do."
+        debug("No forms specified, nothing to do.", 1)
         return None
 
     # Generate output (all forms have the same format)
@@ -197,16 +197,29 @@ def writeFiniteElement(element, name = "MyElement", language = FFC_LANGUAGE, opt
 
 def __check_primary_ranks(form):
     "Check that all primary ranks are equal."
-    terms = form.AKi.terms
+
+    form.rank = None
+    form.dims = None
+    form.indices = None
+
+    # Extract ranks for interior terms
+    for term in form.AKi.terms:
+        if form.rank == None:
+            form.rank = term.A0.i.rank
+            form.dims = term.A0.i.dims
+            form.indices = term.A0.i.indices
+        elif not form.rank == term.A0.i.rank:
+            raise FormError(form.sum, "Form must be linear in each of its arguments.")
+
+    # Extract ranks for boundary terms
     for AKb in form.AKb:
-        terms += AKb.terms
-    ranks = [term.A0.i.rank for term in terms]
-    if not ranks[1:] == ranks[:-1]:
-        raise FormError, "Form must be linear in each of its arguments."
-    form.rank = ranks[0]
-    form.dims = terms[0].A0.i.dims
-    form.indices = terms[0].A0.i.indices
-    return
+        for term in AKb.terms:
+            if form.rank == None:
+                form.rank = term.A0.i.rank
+                form.dims = term.A0.i.dims
+                form.indices = term.A0.i.indices
+            elif not form.rank == term.A0.i.rank:
+                raise FormError(form.sum, "Form must be linear in each of its arguments.")
 
 def __compute_coefficients(projections, format, cK_used):
     "Precompute declarations of coefficients according to given format."

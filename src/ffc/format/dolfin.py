@@ -1,7 +1,7 @@
 "DOLFIN output format."
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-10-14 -- 2006-09-28"
+__date__ = "2004-10-14 -- 2006-11-27"
 __copyright__ = "Copyright (C) 2004-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 

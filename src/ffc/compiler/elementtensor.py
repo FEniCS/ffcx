@@ -40,6 +40,9 @@ class ElementTensor:
         # Check that all terms have integrals
         self.__check_integrals(sum)
 
+        # Reset number of operations
+        self.num_ops = 0
+
         # Check if there are any terms to compute
         num_terms = self.__terms_to_compile(sum, type)
         debug("Number of terms to compile: %d" % num_terms)
@@ -49,9 +52,6 @@ class ElementTensor:
 
         # Reorder indices and compute factorization
         factorization = reorder_indices(sum)
-
-        # Reset number of operations
-        self.num_ops = 0
 
         # Compute terms
         self.terms = [None for i in range(len(sum.products))]
