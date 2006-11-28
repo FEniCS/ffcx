@@ -127,7 +127,7 @@ class Integral:
         if isinstance(type, Integral):
             # Create Integral from Integral (copy constructor)
             self.type = "" + type.type;
-        elif  type == "interior" or type == "boundary":
+        elif  type == "interior" or type == "boundary" or type == "interior boundary":
             # Create Integral of given type
             self.type = "" + type;
         else:
@@ -138,12 +138,15 @@ class Integral:
         "Print nicely formatted representation of Integral."
         if self.type == "interior":
             return "dX"
-        else:
+        elif self.type == "boundary":
+            return "ds"
+        elif self.type == "interior boundary":
             return "dS"
 
 # Predefined tokens
 dx = Integral("interior")
 ds = Integral("boundary")
+dS = Integral("interior boundary")
 
 i = Index()
 j = Index()
