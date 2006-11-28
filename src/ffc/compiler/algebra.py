@@ -232,14 +232,14 @@ class BasisFunction(Element):
             self.element = element
             self.index = Index("primary")
             self.component = []
-            self.restriction = restriction
+            self.restriction = restrictions.NONE
             self.derivatives = []
         else:
             # Create BasisFunction with specified Index
             self.element = element
             self.index = Index(index)
             self.component = []
-            self.restriction = restriction
+            self.restriction = restrictions.NONE
             self.derivatives = []
         return
 
@@ -283,9 +283,9 @@ class BasisFunction(Element):
         else:
             c = ""
 
-        if self.restriction == 1:
+        if self.restriction == restrictions.PLUS:
             r = "(+)"
-        elif self.restriction == 2:
+        elif self.restriction == restrictions.MINUS:
             r = "(-)"
         else:
             r = ""
@@ -317,16 +317,16 @@ class BasisFunction(Element):
         return (self.element, vindex, cindex, dorder, dindex)
 
     def __call__(self, restriction = None):
-        """ some text """
-#        v = BasisFunction(self)
-#        if not v.restriction == None:
-        if restriction == None:
-            self.restriction = restrictions.NONE
-        if restriction == '+':
-            self.restriction = restrictions.PLUS
-        if restriction == '-':
-            self.restriction = restrictions.MINUS
-        return self #v.restriction
+        """ Get BasisFunction which is restricted to a given side (+/-) of a face/facet """
+        if not self.restriction == restrictions.NONE and not restriction == None:
+            raise FormError, ("(" + str(restriction) + ")", "BasisFunction is already restricted.")
+        else:
+            v = BasisFunction(self)
+            if restriction == '+':
+                v.restriction = restrictions.PLUS
+            elif restriction == '-':
+                v.restriction = restrictions.MINUS
+            return v
 
     def indexcall(self, foo, args = None):
         "Call given function on all Indices."
