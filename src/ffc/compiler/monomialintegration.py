@@ -68,6 +68,8 @@ def __init_quadrature(basisfunctions, type):
         quadrature = make_quadrature(shape, m)
     elif type == 'boundary':
         quadrature = make_quadrature(facet_shape, m)
+    elif type == 'interior boundary':
+        quadrature = make_quadrature(facet_shape, m)
     points = quadrature.get_points()
     weights = quadrature.get_weights()
 
@@ -80,11 +82,17 @@ def __init_quadrature(basisfunctions, type):
         elif type == 'boundary':
             vscaling = 0.5   # Length 1 instead of 2
             dscaling = 2.0   # Scaling of derivative        
+        elif type == 'interior boundary':
+            vscaling = 0.5   # Length 1 instead of 2
+            dscaling = 2.0   # Scaling of derivative        
     elif shape == TETRAHEDRON:
         if type == 'interior':
             vscaling = 0.125 # Volume 1/6 instead of 4/3
             dscaling = 2.0   # Scaling of derivative
         elif type == 'boundary':
+            vscaling = 0.25  # Area 1/2 instead of 2
+            dscaling = 2.0   # Scaling of derivative
+        elif type == 'interior boundary':
             vscaling = 0.25  # Area 1/2 instead of 2
             dscaling = 2.0   # Scaling of derivative
 
