@@ -41,6 +41,8 @@ from ffc.common.util import *
 from reassign import *
 from tokens import *
 from index import Index
+#from restrictions import *
+import restrictions
 
 class Element:
     "Base class for elements of the algebra."
@@ -212,28 +214,32 @@ class BasisFunction(Element):
         element     - a FiniteElement
         index       - a basis Index
         component   - a list of component Indices
+        restriction - restricts a basis function to one side of an interior facet
         derivatives - a list of Derivatives
     """
 
-    def __init__(self, element, index = None):
+    def __init__(self, element, index = None, restriction = None):
         "Create BasisFunction."
         if index == None and isinstance(element, BasisFunction):
             # Create BasisFunction from BasisFunction (copy constructor)
             self.element = element.element
             self.index = Index(element.index)
             self.component = listcopy(element.component)
+            self.restriction = element.restriction
             self.derivatives = listcopy(element.derivatives)
         elif index == None:
             # Create BasisFunction with primary Index (default)
             self.element = element
             self.index = Index("primary")
             self.component = []
+            self.restriction = restriction
             self.derivatives = []
         else:
             # Create BasisFunction with specified Index
             self.element = element
             self.index = Index(index)
             self.component = []
+            self.restriction = restriction
             self.derivatives = []
         return
 
@@ -271,14 +277,23 @@ class BasisFunction(Element):
         "Print nicely formatted representation of BasisFunction."
         d = "".join([d.__repr__() for d in self.derivatives])
         i = self.index.__repr__()
+
         if self.component:
             c = "[" + ",".join([c.__repr__() for c in self.component]) + "]"
         else:
             c = ""
-        if len(self.derivatives) > 0:
-            return "(" + d + "v" + i + c + ")"
+
+        if self.restriction == 1:
+            r = "(+)"
+        elif self.restriction == 2:
+            r = "(-)"
         else:
-            return d + "v" + i + c
+            r = ""
+
+        if len(self.derivatives) > 0:
+            return "(" + d + "v" + i + c + r + ")"
+        else:
+            return d + "v" + i + c + r
 
     def rank(self):
         "Return value rank of BasisFunction."
@@ -287,7 +302,7 @@ class BasisFunction(Element):
         else:
             return self.element.rank()
 
-    def __call__(self, iindices, aindices, bindices):
+    def eval(self, iindices, aindices, bindices):
         """Evaluate BasisFunction at given indices, returning a tuple consisting
         of (element, number, component, derivative order, derivative indices).
         This tuple uniquely identifies the (possibly differentiated) basis function."""
@@ -300,6 +315,18 @@ class BasisFunction(Element):
             dorder += 1
         dindex = tuple(dindex)
         return (self.element, vindex, cindex, dorder, dindex)
+
+    def __call__(self, restriction = None):
+        """ some text """
+#        v = BasisFunction(self)
+#        if not v.restriction == None:
+        if restriction == None:
+            self.restriction = restrictions.NONE
+        if restriction == '+':
+            self.restriction = restrictions.PLUS
+        if restriction == '-':
+            self.restriction = restrictions.MINUS
+        return self #v.restriction
 
     def indexcall(self, foo, args = None):
         "Call given function on all Indices."
