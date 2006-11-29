@@ -297,7 +297,7 @@ class BasisFunction(Element):
             return d + "v" + i + c + r
 
     def __call__(self, restriction = None):
-        """ Get BasisFunction which is restricted to a given side (+/-) of a face/facet """
+        "Get BasisFunction which is restricted to a given side (+/-) of a face/facet"
         if not self.restriction == restrictions.NONE and not restriction == None:
             raise FormError, ("(" + str(restriction) + ")", "BasisFunction is already restricted.")
         else:

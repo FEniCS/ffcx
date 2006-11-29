@@ -196,6 +196,10 @@ def mean(v):
         pi = Projection(P0)
         return pi(v)
 
+def avg(v):
+    "Return the average of a BasisFunction across an interior face/facet"
+    return 0.5*(v('+') + v('-'))
+
 def __shapedim(v):
     "Return shape dimension for given object."
     if isinstance(v, list):
