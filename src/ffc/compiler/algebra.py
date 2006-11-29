@@ -295,6 +295,18 @@ class BasisFunction(Element):
         else:
             return d + "v" + i + c + r
 
+    def __call__(self, restriction = None):
+        """ Get BasisFunction which is restricted to a given side (+/-) of a face/facet """
+        if not self.restriction == restrictions.NONE and not restriction == None:
+            raise FormError, ("(" + str(restriction) + ")", "BasisFunction is already restricted.")
+        else:
+            v = BasisFunction(self)
+            if restriction == '+':
+                v.restriction = restrictions.PLUS
+            elif restriction == '-':
+                v.restriction = restrictions.MINUS
+            return v
+
     def rank(self):
         "Return value rank of BasisFunction."
         if self.component:
@@ -315,18 +327,6 @@ class BasisFunction(Element):
             dorder += 1
         dindex = tuple(dindex)
         return (self.element, vindex, cindex, dorder, dindex)
-
-    def __call__(self, restriction = None):
-        """ Get BasisFunction which is restricted to a given side (+/-) of a face/facet """
-        if not self.restriction == restrictions.NONE and not restriction == None:
-            raise FormError, ("(" + str(restriction) + ")", "BasisFunction is already restricted.")
-        else:
-            v = BasisFunction(self)
-            if restriction == '+':
-                v.restriction = restrictions.PLUS
-            elif restriction == '-':
-                v.restriction = restrictions.MINUS
-            return v
 
     def indexcall(self, foo, args = None):
         "Call given function on all Indices."
@@ -503,6 +503,16 @@ class Product(Element):
             i = ""
         return s + c + w + t + " | " + v + i
 
+#    def __call__(self, restriction = None):
+#        v = self
+#        v.basisfunctions = ([v(restriction) for v in self.basisfunctions])
+#        print "call product"
+#        if restriction == '+':
+#            v.restriction = restrictions.PLUS
+#        elif restriction == '-':
+#            v.restriction = restrictions.MINUS
+#        return v
+
     def rank(self):
         "Return value rank of Product."
         if not self.basisfunctions:
@@ -610,6 +620,17 @@ class Sum(Element):
     def __repr__(self):
         "Print nicely formatted representation of Sum."
         return " + ".join([p.__repr__() for p in self.products])
+
+#    def __call__(self, restriction = None):
+#        v = Sum(self)
+#        print "call Sum"
+#        v.products = ([w(restriction) for w in v.products])
+#
+#        if restriction == '+':
+#            v.restriction = restrictions.PLUS
+#        elif restriction == '-':
+#            v.restriction = restrictions.MINUS
+#        return v
 
     def rank(self):
         "Return value rank of Sum."

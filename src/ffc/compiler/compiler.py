@@ -120,24 +120,24 @@ def build(sums, name = "Form", language = FFC_LANGUAGE, options = FFC_OPTIONS):
 
         # Compute element tensor for interior
         debug("Compiling tensor representation for interior")
-        form.AKi = ElementTensor(form.sum, "interior", format, cKi_used, gKi_used, options, None)
-        form.num_ops = form.AKi.num_ops
+        form.AK = ElementTensor(form.sum, "interior", format, cKi_used, gKi_used, options, None)
+        form.num_ops = form.AK.num_ops
         
         # FIXME: Number of operations not counted for boundary terms
 
         # Compute element tensor for each facet on the boundary
-        form.AKb = []
+        form.ASe = []
         debug("Compiling tensor representation for boundaries")
         num_facets = form.sum.products[0].basisfunctions[0].element.num_facets()
         for i in range(num_facets):
-            form.AKb.append(ElementTensor(form.sum, "boundary", format, cKb_used, gKb_used, options, i))
+            form.ASe.append(ElementTensor(form.sum, "boundary", format, cKb_used, gKb_used, options, i))
 
         # Compute element tensor for each facet on the interior boundary
-        form.AS = []
+        form.ASi = []
         debug("Compiling tensor representation for interior boundaries")
         num_facets = form.sum.products[0].basisfunctions[0].element.num_facets()
         for i in range(num_facets):
-            form.AS.append(ElementTensor(form.sum, "interior boundary", format, cKb_used, gKb_used, options, i))
+            form.ASi.append(ElementTensor(form.sum, "interior boundary", format, cKb_used, gKb_used, options, i))
 
         # Report number of operations
         debug("Number of operations (multiplications) in computation of element tensor: " + str(form.num_ops), 1)
@@ -210,7 +210,7 @@ def __check_primary_ranks(form):
     form.indices = None
 
     # Extract ranks for interior terms
-    for term in form.AKi.terms:
+    for term in form.AK.terms:
         if form.rank == None:
             form.rank = term.A0.i.rank
             form.dims = term.A0.i.dims
@@ -219,8 +219,8 @@ def __check_primary_ranks(form):
             raise FormError(form.sum, "Form must be linear in each of its arguments.")
 
     # Extract ranks for boundary terms
-    for AKb in form.AKb:
-        for term in AKb.terms:
+    for ASe in form.ASe:
+        for term in ASe.terms:
             if form.rank == None:
                 form.rank = term.A0.i.rank
                 form.dims = term.A0.i.dims
