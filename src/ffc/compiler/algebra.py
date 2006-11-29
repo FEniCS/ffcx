@@ -25,6 +25,7 @@ __copyright__ = "Copyright (C) 2004-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # Modified by Garth N. Wells 2006
+# Modified by Kristian Oelgaard 2006
 
 # Python modules
 import sys
@@ -503,15 +504,10 @@ class Product(Element):
             i = ""
         return s + c + w + t + " | " + v + i
 
-#    def __call__(self, restriction = None):
-#        v = self
-#        v.basisfunctions = ([v(restriction) for v in self.basisfunctions])
-#        print "call product"
-#        if restriction == '+':
-#            v.restriction = restrictions.PLUS
-#        elif restriction == '-':
-#            v.restriction = restrictions.MINUS
-#        return v
+    def __call__(self, restriction = None):
+        v = self
+        v.basisfunctions = ([w(restriction) for w in v.basisfunctions])
+        return v
 
     def rank(self):
         "Return value rank of Product."
@@ -621,16 +617,10 @@ class Sum(Element):
         "Print nicely formatted representation of Sum."
         return " + ".join([p.__repr__() for p in self.products])
 
-#    def __call__(self, restriction = None):
-#        v = Sum(self)
-#        print "call Sum"
-#        v.products = ([w(restriction) for w in v.products])
-#
-#        if restriction == '+':
-#            v.restriction = restrictions.PLUS
-#        elif restriction == '-':
-#            v.restriction = restrictions.MINUS
-#        return v
+    def __call__(self, restriction = None):
+        v = Sum(self)
+        v.products = ([w(restriction) for w in v.products])
+        return v
 
     def rank(self):
         "Return value rank of Sum."

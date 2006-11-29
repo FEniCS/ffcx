@@ -8,6 +8,7 @@ __copyright__ = "Copyright (C) 2004-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # Modified by Garth N. Wells 2060
+# Modified by Kristian Oelgaard 2006
 
 # Python modules
 import sys
@@ -111,16 +112,16 @@ def build(sums, name = "Form", language = FFC_LANGUAGE, options = FFC_OPTIONS):
         form.projections = find_projections(form.sum, form.nprojections)
 
         # Create empty sets of used coefficient declarations
-        cKi_used = Set()
-        cKb_used = Set()
+        cK_used = Set()
+        cSe_used = Set()
 
         # Create empty sets of used geometry tensor declarations
-        gKi_used = Set()
-        gKb_used = Set()
+        gK_used = Set()
+        gSe_used = Set()
 
         # Compute element tensor for interior
         debug("Compiling tensor representation for interior")
-        form.AK = ElementTensor(form.sum, "interior", format, cKi_used, gKi_used, options, None)
+        form.AK = ElementTensor(form.sum, "interior", format, cK_used, gK_used, options, None, None)
         form.num_ops = form.AK.num_ops
         
         # FIXME: Number of operations not counted for boundary terms
@@ -130,21 +131,23 @@ def build(sums, name = "Form", language = FFC_LANGUAGE, options = FFC_OPTIONS):
         debug("Compiling tensor representation for boundaries")
         num_facets = form.sum.products[0].basisfunctions[0].element.num_facets()
         for i in range(num_facets):
-            form.ASe.append(ElementTensor(form.sum, "boundary", format, cKb_used, gKb_used, options, i))
+            form.ASe.append(ElementTensor(form.sum, "boundary", format, cSe_used, gSe_used, options, i, None))
 
         # Compute element tensor for each facet on the interior boundary
         form.ASi = []
         debug("Compiling tensor representation for interior boundaries")
         num_facets = form.sum.products[0].basisfunctions[0].element.num_facets()
         for i in range(num_facets):
-            form.ASi.append(ElementTensor(form.sum, "interior boundary", format, cKb_used, gKb_used, options, i))
+            form.ASi.append([])
+            for j in range (num_facets):
+                form.ASi[i].append(ElementTensor(form.sum, "interior boundary", format, cSe_used, gSe_used, options, i, j))
 
         # Report number of operations
         debug("Number of operations (multiplications) in computation of element tensor: " + str(form.num_ops), 1)
 
         # Compute coefficient declarations, same for interior and boundary
-        form.cKi = __compute_coefficients(form.projections, format, cKi_used)
-        form.cKb = __compute_coefficients(form.projections, format, cKb_used)
+        form.cK = __compute_coefficients(form.projections, format, cK_used)
+        form.cSe = __compute_coefficients(form.projections, format, cSe_used)
 
         # Check primary ranks
         __check_primary_ranks(form)

@@ -30,11 +30,12 @@ class ElementTensor:
         a0      - a list of precomputed reference tensor declarations
         gK      - a list of precomputed geometry tensor declarations
         aK      - a list of precomputed element tensor declarations
-        facet   - number of the associated facet (None for interior)
+        facet0   - number of the associated with the + facet (None for interior)
+        facet1     FIXME
         num_ops - number of operations in computation of element tensor
     """
 
-    def __init__(self, sum, type, format, cK_used, gK_used, options, facet):
+    def __init__(self, sum, type, format, cK_used, gK_used, options, facet0, facet1):
         "Create ElementTensor."
 
         # Check that all terms have integrals
@@ -64,7 +65,7 @@ class ElementTensor:
                 # Check if reference tensor should be computed
                 if factorization[i] == None:
                     # Compute reference tensor and add term
-                    A0 = ReferenceTensor(p, facet)
+                    A0 = ReferenceTensor(p, facet0, facet1)
                     self.terms[i] = Term(p, A0, [GK])
                 else:
                     # Add geometry tensor to previous term
@@ -84,8 +85,9 @@ class ElementTensor:
         self.__check_used(format, gK_used)
         self.gK = self.__compute_geometry_tensor(format, gK_used, cK_used)
 
-        # Save facet
-        self.facet = facet
+        # Save facets
+        self.facet0 = facet0
+        self.facet1 = facet1
 
         return
 

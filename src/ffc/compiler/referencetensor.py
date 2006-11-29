@@ -39,7 +39,7 @@ class ReferenceTensor:
         integral       - an Integral
         cputime        - time to compute the reference tensor"""
 
-    def __init__(self, product, facet):
+    def __init__(self, product, facet0, facet1):
         "Create ReferenceTensor."
 
         # Check that we get a Product
@@ -62,7 +62,7 @@ class ReferenceTensor:
 
         # Compute reference tensor
         t = time.time()
-        self.A0 = integrate(product, facet)
+        self.A0 = integrate(product, facet0)
 
         # Report time to compute the reference tensor
         self.cputime = time.time() - t
@@ -82,6 +82,8 @@ class ReferenceTensor:
               (str(self.i.dims), str(self.a.dims), str(self.b.dims)), 1)
         
         return
+
+  # FIXME: dubbla dims for primary
 
     def __create_index(self, type):
         "Find dimensions and create MultiIndex."

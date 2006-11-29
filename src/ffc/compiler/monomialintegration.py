@@ -25,6 +25,8 @@ from ffc.common.progress import *
 from algebra import *
 from multiindex import *
 
+# FIXME: facet0, facet1
+
 def integrate(product, facet):
     """Compute the reference tensor for a given monomial term of a
     multilinear form, given as a Product."""

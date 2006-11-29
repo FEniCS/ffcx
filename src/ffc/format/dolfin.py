@@ -7,6 +7,7 @@ __license__  = "GNU GPL Version 2"
 
 # Modified by Garth N. Wells 2005
 # Modified by Johan Jansson 2006
+# Modified by Kristian Oelgaard 2006
 
 # FFC common modules
 from ffc.common.debug import *
@@ -645,11 +646,11 @@ def __eval_interior_default(form, options):
     output = ""
 
     if not options["debug-no-geometry-tensor"]:
-        if len(form.cKi) > 0:
+        if len(form.cK) > 0:
             output += """\
   // Compute coefficients
 %s
-""" % "".join(["  const real %s = %s;\n" % (cKi.name, cKi.value) for cKi in form.cKi if cKi.used])
+""" % "".join(["  const real %s = %s;\n" % (cK.name, cK.value) for cK in form.cK if cK.used])
         output += """\
   // Compute geometry tensors
 %s"""  % "".join(["  const real %s = %s;\n" % (gK.name, gK.value) for gK in form.AK.gK if gK.used])
@@ -708,11 +709,11 @@ def __eval_boundary_default(form, options):
     output = ""
     
     if not options["debug-no-geometry-tensor"]:
-        if len(form.cKb) > 0:
+        if len(form.cSe) > 0:
             output += """\
   // Compute coefficients
 %s
-""" % "".join(["  const real %s = %s;\n" % (cKb.name, cKb.value) for cKb in form.cKb if cKb.used])
+""" % "".join(["  const real %s = %s;\n" % (cSe.name, cSe.value) for cSe in form.cSe if cSe.used])
         output += """\
   // Compute geometry tensors
 %s""" % "".join(["  const real %s = %s;\n" % (gK.name, gK.value) for gK in form.ASe[-1].gK if gK.used])
@@ -729,7 +730,7 @@ def __eval_boundary_default(form, options):
   { """
         for akb in form.ASe:
           output += """ 
-  case %s:"""  % akb.facet   
+  case %s:"""  % akb.facet0   
           output += """ 
 %s      break; \n""" % "".join(["    %s = %s;\n" % (aK.name, aK.value) for aK in akb.aK])
 
