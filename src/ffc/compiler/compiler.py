@@ -119,6 +119,8 @@ def build(sums, name = "Form", language = FFC_LANGUAGE, options = FFC_OPTIONS):
         gK_used = Set()
         gSe_used = Set()
 
+        print "form: ", form
+
         # Compute element tensor for interior
         debug("Compiling tensor representation for interior")
         form.AK = ElementTensor(form.sum, "interior", format, cK_used, gK_used, options, None, None)
@@ -230,6 +232,17 @@ def __check_primary_ranks(form):
                 form.indices = term.A0.i.indices
             elif not form.rank == term.A0.i.rank:
                 raise FormError(form.sum, "Form must be linear in each of its arguments.")
+
+    # Extract ranks for interior boundary terms
+    for ASi in form.ASi:
+        for asi in ASi:
+            for term in asi.terms:
+                if form.rank == None:
+                    form.rank = term.A0.i.rank
+                    form.dims = term.A0.i.dims
+                    form.indices = term.A0.i.indices
+                elif not form.rank == term.A0.i.rank:
+                    raise FormError(form.sum, "Form must be linear in each of its arguments.")
 
 def __compute_coefficients(projections, format, cK_used):
     "Precompute declarations of coefficients according to given format."

@@ -9,6 +9,7 @@ __license__  = "GNU GPL Version 2"
 # Modified by Ola Skavhaug, 2005
 # Modified by Dag Lindbo, 2006
 # Modified by Garth N. Wells 2006
+# Modified by Kristian Oelgaard 2006
 
 # Python modules
 import sys
@@ -197,8 +198,19 @@ def mean(v):
         return pi(v)
 
 def avg(v):
-    "Return the average of a BasisFunction across an interior face/facet"
-    return 0.5*(v('+') + v('-'))
+    "Return the average of a BasisFunction across an interior facet"
+    if rank(v) == 0:
+        print rank(v)
+        return 0.5*(v('+') + v('-'))
+    elif rank(v) ==1:
+        print "vector"
+        print len(v)
+        print v
+        def w():
+            return [v[0]('+'), z[0]('-')]
+        print w()
+    else:
+        raise FormError, (v, "avg() is only supported for vectors and scalars")
 
 def __shapedim(v):
     "Return shape dimension for given object."
