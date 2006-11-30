@@ -66,7 +66,10 @@ def vec(v):
 def dot(v, w):
     "Return scalar product of given functions."
     # Check ranks
-    if rank(v) == rank(w) == 1:
+    if rank(v) == rank(w) == 0:
+        # Equivalent to standard inner product
+        return v*w
+    elif rank(v) == rank(w) == 1:
         # Check dimensions
         if not len(v) == len(w):
             raise FormError, ((v, w), "Dimensions don't match for scalar product.")
