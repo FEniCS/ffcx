@@ -8,8 +8,12 @@ are elements of the algebra:
     Constant      - a constant function on the mesh
 
 Each element of the algebra except Constant can be either
-scalar or tensor-valued. The following operations
-are supported for all elements of the algebra:
+scalar or tensor-valued. Elements of the algebra may also
+be multi-valued, taking either a ('+') or ('-') value on
+interior facets.
+
+The following operations are supported for all elements of the
+algebra:
 
     Binary +      (tensor ranks of operands must match)
     Binary -      (tensor ranks of operands must match)
@@ -105,21 +109,26 @@ class Element:
         "Operator: Element[component], pick given component."
         return Sum(self)[component]
 
+
     def __len__(self):
         "Operator: len(Element)"
         return len(Sum(self))
+
+    def __call__(self, restriction = None):
+        "Operator: Element(restriction), restrict multi-valued function."
+        return Sum(self)(restriction)
 
     def dx(self, index = None):
         "Operator: (d/dx)Element in given coordinate direction."
         return Sum(self).dx(index)
 
-    def __repr__(self):
-        "Print nicely formatted representation of Element."
-        return Sum(self).__repr__()
-
     def rank(self):
         "Return value rank of Element."
         return Sum(self).rank()
+
+    def __repr__(self):
+        "Print nicely formatted representation of Element."
+        return Sum(self).__repr__()
 
 class Constant(Element):
     """A Constant represents a numerical constant or a Function that
@@ -213,11 +222,11 @@ class BasisFunction(Element):
         element     - a FiniteElement
         index       - a basis Index
         component   - a list of component Indices
-        restriction - restricts a basis function to one side of an interior facet
+        restriction - a flag indicating restriction of a multi-valued function
         derivatives - a list of Derivatives
     """
 
-    def __init__(self, element, index = None, restriction = None):
+    def __init__(self, element, index = None):
         "Create BasisFunction."
         if index == None and isinstance(element, BasisFunction):
             # Create BasisFunction from BasisFunction (copy constructor)
@@ -231,14 +240,14 @@ class BasisFunction(Element):
             self.element = element
             self.index = Index("primary")
             self.component = []
-            self.restriction = restrictions.NONE
+            self.restriction = None
             self.derivatives = []
         else:
             # Create BasisFunction with specified Index
             self.element = element
             self.index = Index(index)
             self.component = []
-            self.restriction = restrictions.NONE
+            self.restriction = None
             self.derivatives = []
         return
 
@@ -264,13 +273,17 @@ class BasisFunction(Element):
             raise FormError, (self, "Vector length of scalar expression is undefined.")
         return self.element.tensordim(len(self.component))
 
-    def dx(self, index = None):
-        "Operator: (d/dx)BasisFunction in given coordinate direction."
-        i = Index() # Create new secondary indexF
-        w = Product(self)
-        w.basisfunctions[0].derivatives.insert(0, Derivative(self.element, i))
-        w.transforms.insert(0, Transform(self.element, i, index))
-        return w
+    def __call__(self, restriction = None):
+        "Get BasisFunction which is restricted to a given side (+/-) of an interior facet"
+        if not self.restriction == None and not restriction == None:
+            raise FormError, ("(" + str(restriction) + ")", "BasisFunction is already restricted.")
+        else:
+            v = BasisFunction(self)
+            if restriction == '+':
+                v.restriction = restrictions.PLUS
+            elif restriction == '-':
+                v.restriction = restrictions.MINUS
+            return v
 
     def __repr__(self):
         "Print nicely formatted representation of BasisFunction."
@@ -294,17 +307,13 @@ class BasisFunction(Element):
         else:
             return d + "v" + i + c + r
 
-    def __call__(self, restriction = None):
-        "Get BasisFunction which is restricted to a given side (+/-) of an interior facet"
-        if not self.restriction == restrictions.NONE and not restriction == None:
-            raise FormError, ("(" + str(restriction) + ")", "BasisFunction is already restricted.")
-        else:
-            v = BasisFunction(self)
-            if restriction == '+':
-                v.restriction = restrictions.PLUS
-            elif restriction == '-':
-                v.restriction = restrictions.MINUS
-            return v
+    def dx(self, index = None):
+        "Operator: (d/dx)BasisFunction in given coordinate direction."
+        i = Index() # Create new secondary indexF
+        w = Product(self)
+        w.basisfunctions[0].derivatives.insert(0, Derivative(self.element, i))
+        w.transforms.insert(0, Transform(self.element, i, index))
+        return w
 
     def rank(self):
         "Return value rank of BasisFunction."
@@ -468,19 +477,10 @@ class Product(Element):
         # Otherwise, return length of first and only BasisFunction
         return len(self.basisfunctions[0])
 
-    def dx(self, index = None):
-        "Operator: (d/dx)Product in given coordinate direction."
-        w = Sum()
-        for i in range(len(self.basisfunctions)):
-            p = Product(self)
-            p.basisfunctions = []
-            for j in range(len(self.basisfunctions)):
-                if i == j:
-                    p = p * self.basisfunctions[i].dx(index)
-                else:
-                    p = p * self.basisfunctions[j]
-            w = w + p
-        return w
+    def __call__(self, restriction = None):
+        v = self
+        v.basisfunctions = ([w(restriction) for w in v.basisfunctions])
+        return v
 
     def __repr__(self):
         "Print nicely formatted representation of Product."
@@ -502,10 +502,19 @@ class Product(Element):
             i = ""
         return s + c + w + t + " | " + v + i
 
-    def __call__(self, restriction = None):
-        v = self
-        v.basisfunctions = ([w(restriction) for w in v.basisfunctions])
-        return v
+    def dx(self, index = None):
+        "Operator: (d/dx)Product in given coordinate direction."
+        w = Sum()
+        for i in range(len(self.basisfunctions)):
+            p = Product(self)
+            p.basisfunctions = []
+            for j in range(len(self.basisfunctions)):
+                if i == j:
+                    p = p * self.basisfunctions[i].dx(index)
+                else:
+                    p = p * self.basisfunctions[j]
+            w = w + p
+        return w
 
     def rank(self):
         "Return value rank of Product."
@@ -604,21 +613,21 @@ class Sum(Element):
         # Return length of first term
         return len(self.products[0])
 
+    def __call__(self, restriction = None):
+        v = Sum(self)
+        v.products = ([w(restriction) for w in v.products])
+        return v
+
+    def __repr__(self):
+        "Print nicely formatted representation of Sum."
+        return " + ".join([p.__repr__() for p in self.products])
+
     def dx(self, index = None):
         "Operator: (d/dx)Sum in given coordinate direction."
         w = Sum()
         for p in self.products:
             w = w + p.dx(index)
         return w
-
-    def __repr__(self):
-        "Print nicely formatted representation of Sum."
-        return " + ".join([p.__repr__() for p in self.products])
-
-    def __call__(self, restriction = None):
-        v = Sum(self)
-        v.products = ([w(restriction) for w in v.products])
-        return v
 
     def rank(self):
         "Return value rank of Sum."
