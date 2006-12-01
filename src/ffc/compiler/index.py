@@ -35,15 +35,15 @@ class Index:
     algebra when creating a Form (using the reassign module)."""
 
     # Avaiable index types
-    FIXED        = 0
-    PRIMARY      = 1
-    SECONDARY    = 2
-    AUXILIARY    = 3
-    FUNCTION     = 4
-    PROJECTION   = 5
-    CONSTANT     = 6
-    AUXILIARY_A0 = 7
-    AUXILIARY_GK = 8
+    FIXED       = 0
+    PRIMARY     = 1
+    SECONDARY   = 2
+    AUXILIARY   = 3
+    FUNCTION    = 4
+    PROJECTION  = 5
+    CONSTANT    = 6
+    AUXILIARY_0 = 7
+    AUXILIARY_G = 8
 
     def __init__(self, index = "secondary"):
         "Create Index."
@@ -98,11 +98,11 @@ class Index:
             if not a:
                 raise RuntimeError, "Missing index values for secondary indices."
             return a[self.index]
-        elif self.type == self.AUXILIARY_A0:
+        elif self.type == self.AUXILIARY_0:
             if not b0:
                 raise RuntimeError, "Missing index values for auxiliary indices."
             return b0[self.index]
-        elif self.type == self.AUXILIARY_GK:
+        elif self.type == self.AUXILIARY_G:
             if not b1:
                 raise RuntimeError, "Missing index values for auxiliary indices."
             return b1[self.index]

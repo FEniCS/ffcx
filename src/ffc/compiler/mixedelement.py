@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2005-09-16 -- 2006-05-07"
+__date__ = "2005-09-16 -- 2006-12-01"
 __copyright__ = "Copyright (C) 2005-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -198,12 +198,12 @@ class MixedElement:
         "Return number of facets for shape of element."
         return self.elements[0].num_facets()
 
-    def tabulate(self, order, points, facet):
+    def tabulate(self, order, points, facet0, facet1):
         """Return tabulated values of derivatives up to given order of
         basis functions at given points."""
         # Special case: only one element
         if len(self.elements) == 1:
-            return elements[0].tabulate(order, points, facet)
+            return elements[0].tabulate(order, points, facet0, facet1)
         # Iterate over elements and build mixed table from element tables.
         # This is a bit nasty, so it needs some thought...
         mixed_table = []
@@ -211,7 +211,7 @@ class MixedElement:
         for i in range(len(self.elements)):
             # Get current element and table
             element = self.elements[i]
-            table = element.tabulate(order, points, facet)
+            table = element.tabulate(order, points, facet0, facet1)
             # Iterate over the components corresponding to the current element
             if element.rank() == 0:
                 component_table = self.__compute_component_table(table, offset)

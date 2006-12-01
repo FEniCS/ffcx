@@ -59,11 +59,11 @@ class ReferenceTensor:
         # Create MultiIndices
         self.i = self.__create_index(Index.PRIMARY)
         self.a = self.__create_index(Index.SECONDARY)
-        self.b = self.__create_index(Index.AUXILIARY_A0)
+        self.b = self.__create_index(Index.AUXILIARY_0)
 
         # Compute reference tensor
         t = time.time()
-        self.A0 = integrate(product, facet0)
+        self.A0 = integrate(product, facet0, facet1)
 
         # Report time to compute the reference tensor
         self.cputime = time.time() - t

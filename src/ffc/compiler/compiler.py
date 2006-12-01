@@ -39,6 +39,7 @@ from finiteelement import *
 from mixedelement import *
 from elementtensor import *
 from projection import *
+from predicates import *
 
 def compile(sums, name = "Form", language = FFC_LANGUAGE, options = FFC_OPTIONS):
     """Compile variational form(s). This function takes as argument a
@@ -85,6 +86,7 @@ def build(sums, name = "Form", language = FFC_LANGUAGE, options = FFC_OPTIONS):
 
     # Generate the element tensor for all given forms
     for form in forms:
+        print form.sum
         __check_form(form)
         __build_form(form, format, options)
 
@@ -143,6 +145,11 @@ def writeFiniteElement(element, name = "MyElement", language = FFC_LANGUAGE, opt
 
 def __check_form(form):
     "Check that form is correct."
+    print form.sum
+
+    if not has_integrals(form.sum):
+        raise FormError, (form.sum, "Missing integral in term.")
+    
     # Not implemented
 
 def __build_form(form, format, options):

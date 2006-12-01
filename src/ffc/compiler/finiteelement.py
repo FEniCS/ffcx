@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-10-04 -- 2006-09-26"
+__date__ = "2004-10-04 -- 2006-12-01"
 __copyright__ = "Copyright (C) 2004-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -157,14 +157,14 @@ class FiniteElement:
         else:
             raise RuntimeError, "Unknown shape."
 
-    def tabulate(self, order, points, facet):
+    def tabulate(self, order, points, facet0, facet1):
         """Return tabulated values of derivatives up to given order of
         basis functions at given points."""
-        if facet == None:
+        if facet0 == None:
             return self.element.function_space().tabulate_jet(order, points)
         else:
             facet_shape = self.facet_shape()
-            return self.element.function_space().trace_tabulate_jet(facet_shape, facet, order, points)
+            return self.element.function_space().trace_tabulate_jet(facet_shape, facet0, order, points)
 
     def __add__(self, other):
         "Create mixed element."

@@ -38,7 +38,7 @@ class GeometryTensor:
 
         # Create MultiIndices
         self.a = self.__create_index(Index.SECONDARY)
-        self.b = self.__create_index(Index.AUXILIARY_GK)
+        self.b = self.__create_index(Index.AUXILIARY_G)
 
         # Get rank
         self.rank = self.a.rank
@@ -85,13 +85,13 @@ class GeometryTensor:
             else:
                 factors += [format.format["constant"](c.number.index)]
         for c in self.coefficients:
-            if not c.index.type == Index.AUXILIARY_GK:
+            if not c.index.type == Index.AUXILIARY_G:
                 coefficient = format.format["coefficient"](c.n1.index, c.index([], a, [], []))
                 factors += [coefficient]
                 # Only add coefficients appearing in an entry of G that is used
                 if used: cK_used.add(coefficient)
         for t in self.transforms:
-            if not (t.index0.type == Index.AUXILIARY_GK or  t.index1.type == Index.AUXILIARY_GK):
+            if not (t.index0.type == Index.AUXILIARY_G or  t.index1.type == Index.AUXILIARY_G):
                 factors += [format.format["transform"](t.index0([], a, [], []), \
                                                        t.index1([], a, [], []))]
         product = format.format["multiplication"](factors)
@@ -102,13 +102,13 @@ class GeometryTensor:
         for b in self.b.indices:
             factors = []
             for c in self.coefficients:
-                if c.index.type == Index.AUXILIARY_GK:
+                if c.index.type == Index.AUXILIARY_G:
                     coefficient = format.format["coefficient"](c.n1.index, c.index([], a, [], b))
                     factors += [coefficient]
                     # Only add coefficients appearing in an entry of G that is used
                     if used: cK_used.add(coefficient)
             for t in self.transforms:
-                if t.index0.type == Index.AUXILIARY_GK or t.index1.type == Index.AUXILIARY_GK:
+                if t.index0.type == Index.AUXILIARY_G or t.index1.type == Index.AUXILIARY_G:
                     factors += [format.format["transform"](t.index0([], a, [], b), \
                                                            t.index1([], a, [], b))]
             terms += [format.format["multiplication"](factors)]

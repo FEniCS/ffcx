@@ -91,8 +91,8 @@ class Projection:
         weights = quadrature.get_weights()
 
         # Tabulate basis functions at quadrature points
-        t0 = e0.tabulate(0, points, None)
-        t1 = e1.tabulate(0, points, None)
+        t0 = e0.tabulate(0, points, None, None)
+        t1 = e1.tabulate(0, points, None, None)
 
         # Get space dimensions of V0 and V1
         m = e1.spacedim()

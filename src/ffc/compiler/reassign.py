@@ -52,10 +52,10 @@ def reassign_indices(sum):
     [__reassign(p, Index.SECONDARY) for p in sum.products]
 
     # Reassign reference tensor auxiliary indices (global for each Product)
-    [__reassign(p, Index.AUXILIARY_A0) for p in sum.products]
+    [__reassign(p, Index.AUXILIARY_0) for p in sum.products]
 
     # Reassign geometry tensor auxiliary indices (global for each Product)
-    [__reassign(p, Index.AUXILIARY_GK) for p in sum.products]
+    [__reassign(p, Index.AUXILIARY_G) for p in sum.products]
 
     # Check for completeness again
     if not iscomplete(sum):
@@ -170,12 +170,12 @@ def __create_auxiliary(product):
     igm = [i for i in ig if i not in ir]
     # Modify indices of reference tensor
     for v in product.basisfunctions:
-        v.indexcall(__index_modify, (irm, Index.AUXILIARY_A0))
+        v.indexcall(__index_modify, (irm, Index.AUXILIARY_0))
     # Modify indices of geometry tensor
     for c in product.coefficients:
-        c.indexcall(__index_modify, (igm, Index.AUXILIARY_GK))
+        c.indexcall(__index_modify, (igm, Index.AUXILIARY_G))
     for t in product.transforms:
-        t.indexcall(__index_modify, (igm, Index.AUXILIARY_GK))
+        t.indexcall(__index_modify, (igm, Index.AUXILIARY_G))
     return
 
 def __index_add(index, args):

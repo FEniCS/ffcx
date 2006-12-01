@@ -20,5 +20,7 @@ print a1
 a2 = (v*U+v*U.dx(0))('+')*dS
 print a2
 
+a = a1
+
 #a = dot(grad(v), grad(U))*dx
 #L = dot(v, f)*dx + dot(v, g)*ds
