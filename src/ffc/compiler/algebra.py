@@ -46,8 +46,7 @@ from ffc.common.util import *
 from reassign import *
 from tokens import *
 from index import Index
-#from restrictions import *
-import restrictions
+import restriction
 
 class Element:
     "Base class for elements of the algebra."
@@ -109,14 +108,13 @@ class Element:
         "Operator: Element[component], pick given component."
         return Sum(self)[component]
 
-
     def __len__(self):
         "Operator: len(Element)"
         return len(Sum(self))
 
     def __call__(self, restriction = None):
-        "Operator: Element(restriction), restrict multi-valued function."
-        return Sum(self)(restriction)
+        "Operator: Element(r), restrict multi-valued function."
+        return Sum(self)(r)
 
     def dx(self, index = None):
         "Operator: (d/dx)Element in given coordinate direction."
@@ -273,17 +271,17 @@ class BasisFunction(Element):
             raise FormError, (self, "Vector length of scalar expression is undefined.")
         return self.element.tensordim(len(self.component))
 
-    def __call__(self, restriction = None):
-        "Get BasisFunction which is restricted to a given side (+/-) of an interior facet"
-        if not self.restriction == None and not restriction == None:
-            raise FormError, ("(" + str(restriction) + ")", "BasisFunction is already restricted.")
+    def __call__(self, r):
+        "Operator: BasisFunction(r), restrict multi-valued function."
+        if not self.restriction == None:
+            raise FormError, ("(" + str(r) + ")", "BasisFunction is already restricted.")
         else:
             v = BasisFunction(self)
-            if restriction == '+':
-                v.restriction = restrictions.PLUS
-            elif restriction == '-':
-                v.restriction = restrictions.MINUS
-            return v
+            if r == '+':
+                v.restriction = restriction.PLUS
+            elif r == '-':
+                v.restriction = restriction.MINUS
+        return v
 
     def __repr__(self):
         "Print nicely formatted representation of BasisFunction."
@@ -295,9 +293,9 @@ class BasisFunction(Element):
         else:
             c = ""
 
-        if self.restriction == restrictions.PLUS:
+        if self.restriction == restriction.PLUS:
             r = "(+)"
-        elif self.restriction == restrictions.MINUS:
+        elif self.restriction == restriction.MINUS:
             r = "(-)"
         else:
             r = ""
@@ -477,9 +475,9 @@ class Product(Element):
         # Otherwise, return length of first and only BasisFunction
         return len(self.basisfunctions[0])
 
-    def __call__(self, restriction = None):
-        v = self
-        v.basisfunctions = ([w(restriction) for w in v.basisfunctions])
+    def __call__(self, r):
+        v = Product(self)
+        v.basisfunctions = ([w(r) for w in v.basisfunctions])
         return v
 
     def __repr__(self):
@@ -613,9 +611,9 @@ class Sum(Element):
         # Return length of first term
         return len(self.products[0])
 
-    def __call__(self, restriction = None):
+    def __call__(self, r):
         v = Sum(self)
-        v.products = ([w(restriction) for w in v.products])
+        v.products = ([w(r) for w in v.products])
         return v
 
     def __repr__(self):
