@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-11-03 -- 2006-05-07"
+__date__ = "2004-11-03 -- 2006-12-01"
 __copyright__ = "Copyright (C) 2004-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -16,6 +16,7 @@ from ffc.common.debug import *
 from ffc.common.util import *
 
 # FFC compiler modules
+from index import *
 from algebra import *
 from reassign import *
 from multiindex import *
@@ -56,9 +57,9 @@ class ReferenceTensor:
         self.integral = product.integral
 
         # Create MultiIndices
-        self.i = self.__create_index("primary")
-        self.a = self.__create_index("secondary")
-        self.b = self.__create_index("reference tensor auxiliary")
+        self.i = self.__create_index(Index.PRIMARY)
+        self.a = self.__create_index(Index.SECONDARY)
+        self.b = self.__create_index(Index.AUXILIARY_A0)
 
         # Compute reference tensor
         t = time.time()

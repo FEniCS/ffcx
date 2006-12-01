@@ -4,7 +4,7 @@ reference tensors from terms that have the same tensor structure but
 with different names of indices."""
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2005-09-06 -- 2005-09-14"
+__date__ = "2005-09-06 -- 2006-12-01"
 __copyright__ = "Copyright (C) 2004 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -77,8 +77,8 @@ def __reorder_indices(p, q, p_hard):
 
     # Get the number of secondary indices (assuming indices have been
     # previously reassigned to be in the range 0,...,n-1)
-    p_max = max_index(p, "secondary")
-    q_max = max_index(q, "secondary")
+    p_max = max_index(p, Index.SECONDARY)
+    q_max = max_index(q, Index.SECONDARY)
     if not p_max == q_max:
         raise FormError, ((p, q), "Terms have different index ranges but common soft signature.")
     n = p_max + 1
@@ -89,12 +89,12 @@ def __reorder_indices(p, q, p_hard):
         # Copy q and add n to indices (so we can reorder properly)
         q_new = Product(q)
         for i in range(n):
-            num_changed = reassign_index(q_new, i, i + n, "secondary")
+            num_changed = reassign_index(q_new, i, i + n, Index.SECONDARY)
             if not num_changed == 1:
                 raise FormError, ((p, q), "Not exactly one index modified.")
         # Reorder according to the current reordering
         for i in range(n):
-            num_changed = reassign_index(q_new, i + n, reordering[i], "secondary")
+            num_changed = reassign_index(q_new, i + n, reordering[i], Index.SECONDARY)
         # Compare hard signatures for p and q_new
         q_new_hard = compute_hard_signature(q_new)
         if q_new_hard == p_hard:

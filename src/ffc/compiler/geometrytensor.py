@@ -1,6 +1,6 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-11-03 -- 2005-11-15"
-__copyright__ = "Copyright (C) 2004, 2005 Anders Logg"
+__date__ = "2004-11-03 -- 2006-12-01"
+__copyright__ = "Copyright (C) 2004-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # FFC common modules
@@ -37,8 +37,8 @@ class GeometryTensor:
         self.transforms = listcopy(product.transforms)
 
         # Create MultiIndices
-        self.a = self.__create_index("secondary")
-        self.b = self.__create_index("geometry tensor auxiliary")
+        self.a = self.__create_index(Index.SECONDARY)
+        self.b = self.__create_index(Index.AUXILIARY_GK)
 
         # Get rank
         self.rank = self.a.rank
@@ -77,7 +77,6 @@ class GeometryTensor:
 
     def __call__(self, a, format, cK_used, used):
         "Return given element of geometry tensor."
-        aux = "geometry tensor auxiliary"
         # Compute product of factors outside sum
         factors = []
         for c in self.constants:
@@ -86,13 +85,13 @@ class GeometryTensor:
             else:
                 factors += [format.format["constant"](c.number.index)]
         for c in self.coefficients:
-            if not c.index.type == aux:
+            if not c.index.type == Index.AUXILIARY_GK:
                 coefficient = format.format["coefficient"](c.n1.index, c.index([], a, [], []))
                 factors += [coefficient]
                 # Only add coefficients appearing in an entry of G that is used
                 if used: cK_used.add(coefficient)
         for t in self.transforms:
-            if not (t.index0.type == aux or  t.index1.type == aux):
+            if not (t.index0.type == Index.AUXILIARY_GK or  t.index1.type == Index.AUXILIARY_GK):
                 factors += [format.format["transform"](t.index0([], a, [], []), \
                                                        t.index1([], a, [], []))]
         product = format.format["multiplication"](factors)
@@ -103,13 +102,13 @@ class GeometryTensor:
         for b in self.b.indices:
             factors = []
             for c in self.coefficients:
-                if c.index.type == aux:
+                if c.index.type == Index.AUXILIARY_GK:
                     coefficient = format.format["coefficient"](c.n1.index, c.index([], a, [], b))
                     factors += [coefficient]
                     # Only add coefficients appearing in an entry of G that is used
                     if used: cK_used.add(coefficient)
             for t in self.transforms:
-                if t.index0.type == aux or t.index1.type == aux:
+                if t.index0.type == Index.AUXILIARY_GK or t.index1.type == Index.AUXILIARY_GK:
                     factors += [format.format["transform"](t.index0([], a, [], b), \
                                                            t.index1([], a, [], b))]
             terms += [format.format["multiplication"](factors)]

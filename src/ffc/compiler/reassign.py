@@ -5,8 +5,8 @@ starting at 0. This makes it simpler to implement the algebra, since
 the algebra doesn't need to keep track of indices."""
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-10-13 -- 2005-11-17"
-__copyright__ = "Copyright (C) 2004, 2005 Anders Logg"
+__date__ = "2004-10-13 -- 2006-12-01"
+__copyright__ = "Copyright (C) 2004-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # Python modules
@@ -37,25 +37,25 @@ def reassign_indices(sum):
     [__create_auxiliary(p) for p in sum.products]
 
     # Reassign primary indices (global for the Sum)
-    __reassign(sum, "primary")
+    __reassign(sum, Index.PRIMARY)
 
     # Reassign Function indices (global for the Sum)
-    __reassign(sum, "function")
+    __reassign(sum, Index.FUNCTION)
 
     # Reassign Projection indices (global for the Sum)
-    __reassign(sum, "projection")
+    __reassign(sum, Index.PROJECTION)
 
     # Reassign Constant indices (global for the Sum)
-    __reassign(sum, "constant")
+    __reassign(sum, Index.CONSTANT)
 
     # Reassign secondary indices (global for each Product)
-    [__reassign(p, "secondary") for p in sum.products]
+    [__reassign(p, Index.SECONDARY) for p in sum.products]
 
     # Reassign reference tensor auxiliary indices (global for each Product)
-    [__reassign(p, "reference tensor auxiliary") for p in sum.products]
+    [__reassign(p, Index.AUXILIARY_A0) for p in sum.products]
 
     # Reassign geometry tensor auxiliary indices (global for each Product)
-    [__reassign(p, "geometry tensor auxiliary") for p in sum.products]
+    [__reassign(p, Index.AUXILIARY_GK) for p in sum.products]
 
     # Check for completeness again
     if not iscomplete(sum):
@@ -77,8 +77,8 @@ def iscomplete(object):
         # Get secondary and auxiliary Indices
         aindices = []
         bindices = []
-        object.indexcall(__index_add, [aindices, "secondary"])
-        object.indexcall(__index_add, [bindices, "auxiliary"])
+        object.indexcall(__index_add, [aindices, Index.SECONDARY])
+        object.indexcall(__index_add, [bindices, Index.AUXILIARY])
         return __check_completeness(aindices) and __check_completeness(bindices)
     else:
         raise RuntimeError, "Unsupported type."
@@ -105,9 +105,9 @@ def reassign_complete(product, type):
     # Reassign complete pairs
     for pair in pairs:
         # Get next available index
-        if type == "secondary":
+        if type == Index.SECONDARY:
             new_index = next_secondary_index()
-        elif type == "auxiliary":
+        elif type == Index.AUXILIARY:
             new_index = new_auxiliary_index()
         else:
             raise RuntimeError, "Reassigning for wrong Index type."
@@ -160,22 +160,22 @@ def __create_auxiliary(product):
 
     # Build list of reference tensor secondary indices
     ir = []
-    [v.indexcall(__index_add_value, [ir, "secondary"]) for v in product.basisfunctions]
+    [v.indexcall(__index_add_value, [ir, Index.SECONDARY]) for v in product.basisfunctions]
     # Build list of geometry tensor secondary indices
     ig = []
-    [c.indexcall(__index_add_value, [ig, "secondary"]) for c in product.coefficients]
-    [t.indexcall(__index_add_value, [ig, "secondary"]) for t in product.transforms]
+    [c.indexcall(__index_add_value, [ig, Index.SECONDARY]) for c in product.coefficients]
+    [t.indexcall(__index_add_value, [ig, Index.SECONDARY]) for t in product.transforms]
     # Build lists of indices that should be modified
     irm = [i for i in ir if i not in ig]
     igm = [i for i in ig if i not in ir]
     # Modify indices of reference tensor
     for v in product.basisfunctions:
-        v.indexcall(__index_modify, (irm, "reference tensor auxiliary"))
+        v.indexcall(__index_modify, (irm, Index.AUXILIARY_A0))
     # Modify indices of geometry tensor
     for c in product.coefficients:
-        c.indexcall(__index_modify, (igm, "geometry tensor auxiliary"))
+        c.indexcall(__index_modify, (igm, Index.AUXILIARY_GK))
     for t in product.transforms:
-        t.indexcall(__index_modify, (igm, "geometry tensor auxiliary"))
+        t.indexcall(__index_modify, (igm, Index.AUXILIARY_GK))
     return
 
 def __index_add(index, args):
@@ -198,7 +198,7 @@ def __index_modify(index, args):
     "Modify secondary index to index of given type if it appears in the list."
     indices = args[0]
     type = args[1]
-    if index.index in indices and index.type == "secondary":
+    if index.index in indices and index.type == Index.SECONDARY:
         index.type = type
     return
 

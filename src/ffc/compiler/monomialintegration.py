@@ -22,7 +22,9 @@ from ffc.common.debug import *
 from ffc.common.progress import *
 
 # FFC compiler modules
+from index import *
 from algebra import *
+from integral import *
 from multiindex import *
 
 # FIXME: facet0, facet1
@@ -66,11 +68,11 @@ def __init_quadrature(basisfunctions, type):
 
     # Create quadrature rule and get points and weights
     # FIXME: FIAT ot finiteelement should return shape of facet
-    if type == integral.CELL:
+    if type == Integral.CELL:
         quadrature = make_quadrature(shape, m)
-    elif type == integral.EXTERIOR_FACET:
+    elif type == Integral.EXTERIOR_FACET:
         quadrature = make_quadrature(facet_shape, m)
-    elif type == integral.INTERIOR_FACET:
+    elif type == Integral.INTERIOR_FACET:
         quadrature = make_quadrature(facet_shape, m)
     points = quadrature.get_points()
     weights = quadrature.get_weights()
@@ -78,23 +80,23 @@ def __init_quadrature(basisfunctions, type):
     # Compensate for different choice of reference cells in FIAT
     # FIXME: Convince Rob to change his reference elements
     if shape == TRIANGLE:
-        if type == integral.CELL:
+        if type == Integral.CELL:
             vscaling = 0.25  # Area 1/2 instead of 2
             dscaling = 2.0   # Scaling of derivative
-        elif type == integral.EXTERIOR_FACET:
+        elif type == Integral.EXTERIOR_FACET:
             vscaling = 0.5   # Length 1 instead of 2
             dscaling = 2.0   # Scaling of derivative        
-        elif type == integral.INTERIOR_FACET:
+        elif type == Integral.INTERIOR_FACET:
             vscaling = 0.5   # Length 1 instead of 2
             dscaling = 2.0   # Scaling of derivative        
     elif shape == TETRAHEDRON:
-        if type == integral.CELL:
+        if type == Integral.CELL:
             vscaling = 0.125 # Volume 1/6 instead of 4/3
             dscaling = 2.0   # Scaling of derivative
-        elif type == integral.EXTERIOR_FACET:
+        elif type == Integral.EXTERIOR_FACET:
             vscaling = 0.25  # Area 1/2 instead of 2
             dscaling = 2.0   # Scaling of derivative
-        elif type == integral.INTERIOR_FACET:
+        elif type == Integral.INTERIOR_FACET:
             vscaling = 0.25  # Area 1/2 instead of 2
             dscaling = 2.0   # Scaling of derivative
 
@@ -201,7 +203,7 @@ def __compute_psi(v, table, num_points, dscaling):
     # Remove fixed indices
     for i in range(num_indices[0]):
         Psi = Psi[indices[i].index,...]
-    indices = [index for index in indices if not index.type == "fixed"]
+    indices = [index for index in indices if not index.type == Index.FIXED]
 
     # Put quadrature points first
     rank = numpy.rank(Psi)
@@ -211,7 +213,7 @@ def __compute_psi(v, table, num_points, dscaling):
     Psi = pow(dscaling, dorder) * Psi
 
     # Compute auxiliary index positions for current Psi
-    bpart = [i.index for i in indices if i.type == "reference tensor auxiliary"]
+    bpart = [i.index for i in indices if i.type == Index.AUXILIARY_A0]
 
     return (Psi, indices, bpart)
 
@@ -269,10 +271,10 @@ def __compute_rearrangement(indices):
     """Compute rearrangement tuple for given list of Indices, so that
     the tuple reorders the given list of Indices with fixed, primary,
     secondary and auxiliary Indices in rising order."""
-    fixed     = __find_indices(indices, "fixed")
-    auxiliary = __find_indices(indices, "reference tensor auxiliary")
-    primary   = __find_indices(indices, "primary")
-    secondary = __find_indices(indices, "secondary")
+    fixed     = __find_indices(indices, Index.FIXED)
+    auxiliary = __find_indices(indices, Index.AUXILIARY_A0)
+    primary   = __find_indices(indices, Index.PRIMARY)
+    secondary = __find_indices(indices, Index.SECONDARY)
     assert len(fixed + auxiliary + primary + secondary) == len(indices)
     return (tuple(fixed + auxiliary + primary + secondary), \
             (len(fixed), len(auxiliary), len(primary), len(secondary)))
@@ -281,7 +283,7 @@ def __compute_shape(psis):
     "Compute shape of reference tensor from given list of tables."
     shape, indices = [], []
     for (Psi, index, bpart) in psis:
-        num_auxiliary = len([0 for i in index if i.type == "reference tensor auxiliary"])
+        num_auxiliary = len([0 for i in index if i.type == Index.AUXILIARY_A0])
         shape += numpy.shape(Psi)[1 + num_auxiliary:]
         indices += index[num_auxiliary:]
     return (shape, indices)

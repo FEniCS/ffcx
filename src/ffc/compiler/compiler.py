@@ -31,6 +31,7 @@ from form import *
 from index import *
 from tokens import *
 from algebra import *
+from integral import *
 from operators import *
 from signature import *
 from elementsearch import *
@@ -151,15 +152,15 @@ def __build_form(form, format, options):
     debug("Number of terms in form: %d" % len(form.sum.products), 1)
         
     # Count the number of functions
-    form.nfunctions = max_index(form.sum, "function") + 1
+    form.nfunctions = max_index(form.sum, Index.FUNCTION) + 1
     debug("Number of functions (coefficients): " + str(form.nfunctions), 1)
 
     # Count the number of projections
-    form.nprojections = max_index(form.sum, "projection") + 1
+    form.nprojections = max_index(form.sum, Index.PROJECTION) + 1
     debug("Number of projections (coefficients): " + str(form.nprojections), 1)
 
     # Count the number of constants
-    form.nconstants = max_index(form.sum, "constant") + 1
+    form.nconstants = max_index(form.sum, Index.CONSTANT) + 1
     debug("Number of constants: " + str(form.nconstants), 1)
 
     # Find the test and trial finite elements
@@ -186,7 +187,7 @@ def __build_form(form, format, options):
         
     # Compute element tensor for cell
     debug("Compiling tensor representation over cells")
-    form.AK = ElementTensor(form.sum, integral.CELL, format, cK_used, gK_used, options, None, None)
+    form.AK = ElementTensor(form.sum, Integral.CELL, format, cK_used, gK_used, options, None, None)
     form.num_ops = form.AK.num_ops
         
     # FIXME: Number of operations not counted for facet terms
@@ -196,7 +197,7 @@ def __build_form(form, format, options):
     debug("Compiling tensor representation over exterior facets")
     num_facets = form.sum.products[0].basisfunctions[0].element.num_facets()
     for i in range(num_facets):
-        form.ASe.append(ElementTensor(form.sum, integral.EXTERIOR_FACET, format, cSe_used, gSe_used, options, i, None))
+        form.ASe.append(ElementTensor(form.sum, Integral.EXTERIOR_FACET, format, cSe_used, gSe_used, options, i, None))
 
     # Compute element tensors for combinations of interior facets
     form.ASi = []
@@ -205,7 +206,7 @@ def __build_form(form, format, options):
     for i in range(num_facets):
         form.ASi.append([])
         for j in range (num_facets):
-            form.ASi[i].append(ElementTensor(form.sum, integral.INTERIOR_FACET, format, cSi_used, gSi_used, options, i, j))
+            form.ASi[i].append(ElementTensor(form.sum, Integral.INTERIOR_FACET, format, cSi_used, gSi_used, options, i, j))
 
     # Report number of operations
     debug("Number of operations (multiplications) in computation of element tensor: " + str(form.num_ops), 1)

@@ -47,8 +47,8 @@ from reassign import *
 from tokens import *
 from variables import *
 from index import Index
-import integral
-import restriction
+from integral import *
+from restriction import *
 
 class Element:
     "Base class for elements of the algebra."
@@ -73,7 +73,7 @@ class Element:
         "Operator: Element * Element"
         if isinstance(other, Element):
             return Sum(self) * other
-        elif isinstance(other, integral.Integral):
+        elif isinstance(other, Integral):
             return Sum(self) * other
         elif isinstance(other, float):
             return Sum(self) * other
@@ -115,8 +115,8 @@ class Element:
         return len(Sum(self))
 
     def __call__(self, restriction = None):
-        "Operator: Element(r), restrict multi-valued function."
-        return Sum(self)(r)
+        "Operator: Element(restriction), restrict multi-valued function."
+        return Sum(self)(restriction)
 
     def dx(self, index = None):
         "Operator: (d/dx)Element in given coordinate direction."
@@ -273,16 +273,16 @@ class BasisFunction(Element):
             raise FormError, (self, "Vector length of scalar expression is undefined.")
         return self.element.tensordim(len(self.component))
 
-    def __call__(self, r):
-        "Operator: BasisFunction(r), restrict multi-valued function."
+    def __call__(self, restriction):
+        "Operator: BasisFunction(restriction), restrict multi-valued function."
         if not self.restriction == None:
-            raise FormError, ("(" + str(r) + ")", "BasisFunction is already restricted.")
+            raise FormError, ("(" + str(restriction) + ")", "BasisFunction is already restricted.")
         else:
             v = BasisFunction(self)
-            if r == '+':
-                v.restriction = restriction.PLUS
-            elif r == '-':
-                v.restriction = restriction.MINUS
+            if restriction == '+':
+                v.restriction = Restriction.PLUS
+            elif restriction == '-':
+                v.restriction = Restriction.MINUS
         return v
 
     def __repr__(self):
@@ -295,9 +295,9 @@ class BasisFunction(Element):
         else:
             c = ""
 
-        if self.restriction == restriction.PLUS:
+        if self.restriction == Restriction.PLUS:
             r = "(+)"
-        elif self.restriction == restriction.MINUS:
+        elif self.restriction == Restriction.MINUS:
             r = "(-)"
         else:
             r = ""
@@ -415,11 +415,11 @@ class Product(Element):
     
     def __mul__(self, other):
         "Operator: Product * Element"
-        if isinstance(other, integral.Integral):
+        if isinstance(other, Integral):
             if not self.integral == None:
                 raise FormError, (self, "Integrand can only be integrated once.")
             w = Product(self)
-            w.integral = integral.Integral(other)
+            w.integral = Integral(other)
             return w
         elif isinstance(other, Sum):
             return Sum(self) * Sum(other)
@@ -431,10 +431,10 @@ class Product(Element):
             if not w0.rank() == w1.rank() == 0:
                 raise FormError, (self, "Operands for product must be scalar.")
             # Reassign all complete Indices to avoid collisions
-            reassign_complete(w0, "secondary")
-            reassign_complete(w0, "auxiliary")
-            reassign_complete(w1, "secondary")
-            reassign_complete(w1, "auxiliary")
+            reassign_complete(w0, Index.SECONDARY)
+            reassign_complete(w0, Index.AUXILIARY)
+            reassign_complete(w1, Index.SECONDARY)
+            reassign_complete(w1, Index.AUXILIARY)
             # Compute product
             w = Product()
             w.numeric = float(w0.numeric * w1.numeric)
@@ -445,9 +445,9 @@ class Product(Element):
             if w0.integral and w1.integral:
                 raise FormError, (self, "Integrand can only be integrated once.")
             elif w0.integral:
-                w.integral = integral.Integral(w0.integral)
+                w.integral = Integral(w0.integral)
             elif w1.integral:
-                w.integral = integral.Integral(w1.integral)
+                w.integral = Integral(w1.integral)
             else:
                 w.integral = None;
 

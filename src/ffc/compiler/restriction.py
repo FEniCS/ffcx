@@ -5,5 +5,8 @@ __license__  = "GNU GPL Version 2"
 
 # Modified by Anders Logg 2006
 
-PLUS = 0
-MINUS = 1
+class Restriction:
+
+    # Avaiable restriction types
+    PLUS = 0
+    MINUS = 1
