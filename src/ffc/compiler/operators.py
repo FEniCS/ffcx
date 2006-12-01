@@ -2,7 +2,7 @@
 based on the basic form algebra operations."""
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2005-09-07 -- 2006-11-14"
+__date__ = "2005-09-07 -- 2006-12-01"
 __copyright__ = "Copyright (C) 2005-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -202,7 +202,7 @@ def avg(v):
     if rank(v) == 0:
         return 0.5*(v('+') + v('-'))
     else:
-        raise FormError, (v, "avg() only supports scalar BasisFunctions")
+        return [0.5*(v[i]('+') + v[i]('-')) for i in range(len(v))]
 
 def __shapedim(v):
     "Return shape dimension for given object."

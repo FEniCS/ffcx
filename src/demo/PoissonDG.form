@@ -20,6 +20,9 @@ print a1
 a2 = (v*U+v*U.dx(0))('+')*dS
 print a2
 
+a3 = dot(avg(grad(v)), avg(grad(v)))*dS
+print a3
+
 a = a1
 
 #a = dot(grad(v), grad(U))*dx
