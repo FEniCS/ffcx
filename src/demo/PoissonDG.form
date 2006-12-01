@@ -1,0 +1,22 @@
+# Copyright (C) 2006 Anders Logg (logg@simula.no)
+# Licensed under the GNU GPL Version 2
+#
+# The bilinear form a(v, U) and linear form L(v) for
+# Poisson's equation in a discontinuous Galerkin (DG)
+# formulation.
+#
+# Compile this form with FFC: ffc PoissonDG.form
+
+element = FiniteElement("Discontinuous Lagrange", "triangle", 0)
+
+v = TestFunction(element)
+U = TrialFunction(element)
+f = Function(element)
+g = Function(element)
+
+a = v('+')*U('-')*dS
+
+print a
+
+#a = dot(grad(v), grad(U))*dx
+#L = dot(v, f)*dx + dot(v, g)*ds
