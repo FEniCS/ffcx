@@ -45,7 +45,9 @@ from ffc.common.util import *
 #from finiteelement import FiniteElement
 from reassign import *
 from tokens import *
+from variables import *
 from index import Index
+import integral
 import restriction
 
 class Element:
@@ -71,7 +73,7 @@ class Element:
         "Operator: Element * Element"
         if isinstance(other, Element):
             return Sum(self) * other
-        elif isinstance(other, Integral):
+        elif isinstance(other, integral.Integral):
             return Sum(self) * other
         elif isinstance(other, float):
             return Sum(self) * other
@@ -413,11 +415,11 @@ class Product(Element):
     
     def __mul__(self, other):
         "Operator: Product * Element"
-        if isinstance(other, Integral):
+        if isinstance(other, integral.Integral):
             if not self.integral == None:
                 raise FormError, (self, "Integrand can only be integrated once.")
             w = Product(self)
-            w.integral = Integral(other)
+            w.integral = integral.Integral(other)
             return w
         elif isinstance(other, Sum):
             return Sum(self) * Sum(other)
@@ -443,9 +445,9 @@ class Product(Element):
             if w0.integral and w1.integral:
                 raise FormError, (self, "Integrand can only be integrated once.")
             elif w0.integral:
-                w.integral = Integral(w0.integral)
+                w.integral = integral.Integral(w0.integral)
             elif w1.integral:
-                w.integral = Integral(w1.integral)
+                w.integral = integral.Integral(w1.integral)
             else:
                 w.integral = None;
 
@@ -660,56 +662,3 @@ class TrialFunction(BasisFunction):
         index.index = -1
         BasisFunction.__init__(self, element, index)
         return
-
-if __name__ == "__main__":
-
-    print "Testing algebra"
-    print "---------------"
-
-    element = FiniteElement("Lagrange", "triangle", 1)
-    u = BasisFunction(element)
-    v = BasisFunction(element)
-    dx = Integral("interior")
-    ds = Integral("boundary")
-
-    print "Testing long expression:"
-    w = 2*(u*(u/2 + v)*u + u*v)*u.dx(0).dx(2).dx(1)
-    print w
-
-    print
-
-    print "Testing derivative of product:"
-    w = (u*v*u).dx(0)*3
-    print w
-
-    print
-
-    print "Testing derivative of sum:"
-    w = (u + v).dx(0)
-    print w
-
-    print
-    
-    print "Testing Poisson:"
-    i = Index()
-    w = u.dx(i)*v.dx(i)*dx + u*v*ds
-    print w
-
-    print
-
-    print "Testing Biharmonic:"
-    i = Index()
-    j = Index()
-    w = u.dx(i).dx(i)*v.dx(j).dx(j)
-    print w
-
-    print
-
-    print "Testing Poisson system:"
-    element = FiniteElement("Vector Lagrange", "triangle", 1)
-    u = BasisFunction(element)
-    v = BasisFunction(element)
-    i = Index()
-    j = Index()
-    w = 0.1*u[i].dx(j)*v[i].dx(j)*dx
-    print w

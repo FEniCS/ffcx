@@ -1,7 +1,7 @@
 "This module provides efficient integration of monomial forms."
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-11-03 -- 2006-05-07"
+__date__ = "2004-11-03 -- 2006-12-01"
 __copyright__ = "Copyright (C) 2004-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -33,7 +33,7 @@ def integrate(product, facet):
 
     debug("Pretabulating basis functions at quadrature points")
 
-    # Check for integration type (interior or boundary)
+    # Check for integral type
     type = product.integral.type
 
     # Initialize quadrature points and weights
@@ -66,11 +66,11 @@ def __init_quadrature(basisfunctions, type):
 
     # Create quadrature rule and get points and weights
     # FIXME: FIAT ot finiteelement should return shape of facet
-    if type == 'interior':
+    if type == integral.CELL:
         quadrature = make_quadrature(shape, m)
-    elif type == 'boundary':
+    elif type == integral.EXTERIOR_FACET:
         quadrature = make_quadrature(facet_shape, m)
-    elif type == 'interior boundary':
+    elif type == integral.INTERIOR_FACET:
         quadrature = make_quadrature(facet_shape, m)
     points = quadrature.get_points()
     weights = quadrature.get_weights()
@@ -78,23 +78,23 @@ def __init_quadrature(basisfunctions, type):
     # Compensate for different choice of reference cells in FIAT
     # FIXME: Convince Rob to change his reference elements
     if shape == TRIANGLE:
-        if type == 'interior':
+        if type == integral.CELL:
             vscaling = 0.25  # Area 1/2 instead of 2
             dscaling = 2.0   # Scaling of derivative
-        elif type == 'boundary':
+        elif type == integral.EXTERIOR_FACET:
             vscaling = 0.5   # Length 1 instead of 2
             dscaling = 2.0   # Scaling of derivative        
-        elif type == 'interior boundary':
+        elif type == integral.INTERIOR_FACET:
             vscaling = 0.5   # Length 1 instead of 2
             dscaling = 2.0   # Scaling of derivative        
     elif shape == TETRAHEDRON:
-        if type == 'interior':
+        if type == integral.CELL:
             vscaling = 0.125 # Volume 1/6 instead of 4/3
             dscaling = 2.0   # Scaling of derivative
-        elif type == 'boundary':
+        elif type == integral.EXTERIOR_FACET:
             vscaling = 0.25  # Area 1/2 instead of 2
             dscaling = 2.0   # Scaling of derivative
-        elif type == 'interior boundary':
+        elif type == integral.INTERIOR_FACET:
             vscaling = 0.25  # Area 1/2 instead of 2
             dscaling = 2.0   # Scaling of derivative
 

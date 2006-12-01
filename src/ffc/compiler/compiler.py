@@ -3,7 +3,7 @@ and building the data structures (geometry and reference tensors) for
 the evaluation of the multi-linear form."""
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-11-17 -- 2006-09-21"
+__date__ = "2004-11-17 -- 2006-12-01"
 __copyright__ = "Copyright (C) 2004-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -85,82 +85,9 @@ def build(sums, name = "Form", language = FFC_LANGUAGE, options = FFC_OPTIONS):
 
     # Generate the element tensor for all given forms
     for form in forms:
+        __build_form(form, format, options)
 
-        debug("\nCompiling form: " + str(form), 0)
-        debug("Number of terms in form: %d" % len(form.sum.products), 1)
-        
-        # Count the number of functions
-        form.nfunctions = max_index(form.sum, "function") + 1
-        debug("Number of functions (coefficients): " + str(form.nfunctions), 1)
-
-        # Count the number of projections
-        form.nprojections = max_index(form.sum, "projection") + 1
-        debug("Number of projections (coefficients): " + str(form.nprojections), 1)
-
-        # Count the number of constants
-        form.nconstants = max_index(form.sum, "constant") + 1
-        debug("Number of constants: " + str(form.nconstants), 1)
-
-        # Find the test and trial finite elements
-        form.test = find_test(form.sum)
-        form.trial = find_trial(form.sum)
-
-        # Find the original elements for all functions
-        form.elements = find_elements(form.sum, form.nfunctions)
-
-        # Find the projections for all functions
-        form.projections = find_projections(form.sum, form.nprojections)
-
-        # Create empty sets of used coefficient declarations
-        cK_used = Set()
-        cSe_used = Set()
-        cSi_used = Set()
-
-        # Create empty sets of used geometry tensor declarations
-        gK_used = Set()
-        gSe_used = Set()
-        gSi_used = Set()
-
-        print "form: ", form
-
-        # Compute element tensor for interior
-        debug("Compiling tensor representation for interior")
-        form.AK = ElementTensor(form.sum, "interior", format, cK_used, gK_used, options, None, None)
-        form.num_ops = form.AK.num_ops
-        
-        # FIXME: Number of operations not counted for boundary terms
-
-        # Compute element tensor for each facet on the boundary
-        form.ASe = []
-        debug("Compiling tensor representation for boundaries")
-        num_facets = form.sum.products[0].basisfunctions[0].element.num_facets()
-        for i in range(num_facets):
-            form.ASe.append(ElementTensor(form.sum, "boundary", format, cSe_used, gSe_used, options, i, None))
-
-        # Compute element tensor for each facet on the interior boundary
-        form.ASi = []
-        debug("Compiling tensor representation for interior boundaries")
-        num_facets = form.sum.products[0].basisfunctions[0].element.num_facets()
-        for i in range(num_facets):
-            form.ASi.append([])
-            for j in range (num_facets):
-                form.ASi[i].append(ElementTensor(form.sum, "interior boundary", format, cSi_used, gSi_used, options, i, j))
-
-        # Report number of operations
-        debug("Number of operations (multiplications) in computation of element tensor: " + str(form.num_ops), 1)
-
-        # Compute coefficient declarations, same for interior and boundary
-        form.cK = __compute_coefficients(form.projections, format, cK_used)
-        form.cSe = __compute_coefficients(form.projections, format, cSe_used)
-        form.cSi = __compute_coefficients(form.projections, format, cSi_used)
-
-        # Check primary ranks
-        __check_primary_ranks(form)
-
-        # Save format
-        form.format = format
-
-    # Return form
+    # Return form(s)
     if len(forms) > 1:
         return forms
     else:
@@ -210,6 +137,83 @@ def writeFiniteElement(element, name = "MyElement", language = FFC_LANGUAGE, opt
     # Generate code
     format.writeFiniteElement(element, name, options)
 
+def __build_form(form, format, options):
+    "Build data structures for evaluation of the variational form."
+    
+    debug("\nCompiling form: " + str(form), 0)
+    debug("Number of terms in form: %d" % len(form.sum.products), 1)
+        
+    # Count the number of functions
+    form.nfunctions = max_index(form.sum, "function") + 1
+    debug("Number of functions (coefficients): " + str(form.nfunctions), 1)
+
+    # Count the number of projections
+    form.nprojections = max_index(form.sum, "projection") + 1
+    debug("Number of projections (coefficients): " + str(form.nprojections), 1)
+
+    # Count the number of constants
+    form.nconstants = max_index(form.sum, "constant") + 1
+    debug("Number of constants: " + str(form.nconstants), 1)
+
+    # Find the test and trial finite elements
+    form.test = find_test(form.sum)
+    form.trial = find_trial(form.sum)
+
+    # Find the original elements for all functions
+    form.elements = find_elements(form.sum, form.nfunctions)
+
+    # Find the projections for all functions
+    form.projections = find_projections(form.sum, form.nprojections)
+
+    # Create empty sets of used coefficient declarations
+    cK_used = Set()
+    cSe_used = Set()
+    cSi_used = Set()
+
+    # Create empty sets of used geometry tensor declarations
+    gK_used = Set()
+    gSe_used = Set()
+    gSi_used = Set()
+
+    #print "form: ", form
+        
+    # Compute element tensor for cell
+    debug("Compiling tensor representation over cells")
+    form.AK = ElementTensor(form.sum, integral.CELL, format, cK_used, gK_used, options, None, None)
+    form.num_ops = form.AK.num_ops
+        
+    # FIXME: Number of operations not counted for facet terms
+
+    # Compute element tensors for exterior facets
+    form.ASe = []
+    debug("Compiling tensor representation over exterior facets")
+    num_facets = form.sum.products[0].basisfunctions[0].element.num_facets()
+    for i in range(num_facets):
+        form.ASe.append(ElementTensor(form.sum, integral.EXTERIOR_FACET, format, cSe_used, gSe_used, options, i, None))
+
+    # Compute element tensors for combinations of interior facets
+    form.ASi = []
+    debug("Compiling tensor representation over exterior facets")
+    num_facets = form.sum.products[0].basisfunctions[0].element.num_facets()
+    for i in range(num_facets):
+        form.ASi.append([])
+        for j in range (num_facets):
+            form.ASi[i].append(ElementTensor(form.sum, integral.INTERIOR_FACET, format, cSi_used, gSi_used, options, i, j))
+
+    # Report number of operations
+    debug("Number of operations (multiplications) in computation of element tensor: " + str(form.num_ops), 1)
+
+    # Compute coefficient declarations, common to all terms
+    form.cK  = __compute_coefficients(form.projections, format, cK_used)
+    form.cSe = __compute_coefficients(form.projections, format, cSe_used)
+    form.cSi = __compute_coefficients(form.projections, format, cSi_used)
+    
+    # Check primary ranks
+    __check_primary_ranks(form)
+    
+    # Save format
+    form.format = format
+
 def __check_primary_ranks(form):
     "Check that all primary ranks are equal."
 
@@ -217,7 +221,7 @@ def __check_primary_ranks(form):
     form.dims = None
     form.indices = None
 
-    # Extract ranks for interior terms
+    # Check ranks for cell terms
     for term in form.AK.terms:
         if form.rank == None:
             form.rank = term.A0.i.rank
@@ -226,7 +230,7 @@ def __check_primary_ranks(form):
         elif not form.rank == term.A0.i.rank:
             raise FormError(form.sum, "Form must be linear in each of its arguments.")
 
-    # Extract ranks for boundary terms
+    # Check ranks for exterior facet terms
     for ASe in form.ASe:
         for term in ASe.terms:
             if form.rank == None:
@@ -236,7 +240,7 @@ def __check_primary_ranks(form):
             elif not form.rank == term.A0.i.rank:
                 raise FormError(form.sum, "Form must be linear in each of its arguments.")
 
-    # Extract ranks for interior boundary terms
+    # Check ranks for interior facet terms
     for ASi in form.ASi:
         for asi in ASi:
             for term in asi.terms:
@@ -307,21 +311,3 @@ def __choose_format(language):
     else:
         raise "RuntimeError", "Unknown language " + str(language)
     return format
-
-if __name__ == "__main__":
-
-    print "Testing form compiler"
-    print "---------------------"
-
-    element = FiniteElement("Lagrange", "triangle", 1)
-    
-    u = BasisFunction(element)
-    v = BasisFunction(element)
-    i = Index()
-    dx = Integral("interior")
-    ds = Integral("boundary")
-    
-    a = u.dx(i)*v.dx(i)*dx + u*v*ds
-    compile(a, "form", "C++")
-    compile(a, "form", "LaTeX")
-    compile(a, "form", "raw")

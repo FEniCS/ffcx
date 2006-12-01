@@ -14,9 +14,11 @@ U = TrialFunction(element)
 f = Function(element)
 g = Function(element)
 
-a = v('+')*U('-')*dS
+a1 = v('+')*U('-')*dS
+print a1
 
-print a
+a2 = (v*U+v*U.dx(0))('+')*dS
+print a2
 
 #a = dot(grad(v), grad(U))*dx
 #L = dot(v, f)*dx + dot(v, g)*ds
