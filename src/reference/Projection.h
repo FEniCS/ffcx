@@ -40,6 +40,10 @@ public:
 
   void eval(real block[], const AffineMap& map, unsigned int facet) const;
 
+  bool interior_boundary_contribution() const;
+
+  void eval(real block[], const AffineMap& map, unsigned int facet0, unsigned int facet1) const;
+
 };
 
 class LinearForm::TestElement : public dolfin::FiniteElement
@@ -278,6 +282,11 @@ void LinearForm::eval(real block[], const AffineMap& map) const
 bool LinearForm::boundary_contribution() const { return false; }
 
 void LinearForm::eval(real block[], const AffineMap& map, unsigned int facet) const {}
+
+// No contribution from interior boundaries
+bool LinearForm::interior_boundary_contribution() const { return false; }
+
+void LinearForm::eval(real block[], const AffineMap& map, unsigned int facet0, unsigned int facet1) const {}
 
 } }
 
