@@ -746,7 +746,7 @@ def __eval_boundary_default(form, options):
 """ % "".join(["  const real %s = %s;\n" % (cSe.name, cSe.value) for cSe in form.cSe if cSe.used])
         output += """\
   // Compute geometry tensors
-%s""" % "".join(["  const real %s = %s;\n" % (gK.name, gK.value) for gK in form.ASe[-1].gK if gK.used])
+%s""" % "".join(["  const real %s = %s;\n" % (gS.name, gS.value) for gS in form.ASe[-1].gS if gS.used])
     else:
         output += """\
   // Compute geometry tensors
@@ -760,9 +760,9 @@ def __eval_boundary_default(form, options):
   { """
         for ase in form.ASe:
           output += """ 
-  case %s:"""  % ase.facet0   
+  case %s:"""  % ase.facet   
           output += """ 
-%s      break; \n""" % "".join(["    %s = %s;\n" % (aK.name, aK.value) for aK in ase.aK])
+%s      break; \n""" % "".join(["    %s = %s;\n" % (aS.name, aS.value) for aS in ase.aS])
 
         output += """\
   } \n"""
@@ -786,8 +786,8 @@ def __eval_boundary_blas(form, options):
 
   // Compute entries of G multiplied by nonzero entries of A
 %s
-""" % "".join(["  blas.Gb[%d] = %s;\n" % (j, form.ASe.gK[j].value)
-                for j in range(len(form.ASe.gK)) if form.ASe.gK[j].used])
+""" % "".join(["  blas.Gb[%d] = %s;\n" % (j, form.ASe.gS[j].value)
+                for j in range(len(form.ASe.gK)) if form.ASe.gS[j].used])
 
     # Compute element tensor
     if not options["debug-no-element-tensor"]:
@@ -817,11 +817,11 @@ def __eval_interior_boundary_default(form, options):
 """ % "".join(["  const real %s = %s;\n" % (cSi.name, cSi.value) for cSi in form.cSi if cSi.used])
         output += """\
   // Compute geometry tensors
-%s""" % "".join(["  const real %s = %s;\n" % (gK.name, gK.value) for gK in form.ASi[0][-1].gK if gK.used])
+%s""" % "".join(["  const real %s = %s;\n" % (gS.name, gS.value) for gS in form.ASi[0][-1].gS if gS.used])
     else:
         output += """\
   // Compute geometry tensors
-%s""" % "".join(["  const real %s = 0.0;\n" % gK.name for gK in form.ASi[0][-1].gK if gK.used])
+%s""" % "".join(["  const real %s = 0.0;\n" % gS.name for gS in form.ASi[0][-1].gS if gS.used])
 
     if not options["debug-no-element-tensor"]:
         num_facets = form.sum.products[0].basisfunctions[0].element.num_facets()
@@ -829,14 +829,14 @@ def __eval_interior_boundary_default(form, options):
 
   // Compute element tensor
   unsigned int num_facets = %d;
-  switch ( facet0 * num_facets + facet1 )
+  switch ( facet0*num_facets + facet1 )
   { """ % num_facets
         for asi_row in form.ASi:
             for asi in asi_row:
                 output += """ 
   case %s:"""  % (asi.facet0*num_facets + asi.facet1)   
                 output += """ 
-%s      break; \n""" % "".join(["    %s = %s;\n" % (aK.name, aK.value) for aK in asi.aK])
+%s      break; \n""" % "".join(["    %s = %s;\n" % (aS.name, aS.value) for aS in asi.aS])
 
         output += """\
   } \n"""

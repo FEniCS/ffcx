@@ -21,22 +21,20 @@ class ElementTensor:
     Attributes:
 
         terms   - a list of Terms (products A0 * GK)
+        aK      - a list of precomputed element tensor declarations
         a0      - a list of precomputed reference tensor declarations
         gK      - a list of precomputed geometry tensor declarations
-        aK      - a list of precomputed element tensor declarations
-        facet0  - local number of facet 0 ('+' facet for interior facet tensor)
-        facet1  - local number of facet 1 ('-' facet for interior facet tensor)
         num_ops - number of operations in computation of element tensor
     """
 
-    def __init__(self, sum, type, format, cK_used, gK_used, options, facet0, facet1):
+    def __init__(self, sum, type, format, cK_used, gK_used, options):
         "Create ElementTensor."
 
         # Reset number of operations
         self.num_ops = 0
 
         # Compute terms
-        self.terms = compute_terms(sum, type, facet0, facet1)
+        self.terms = compute_terms(sum, type, None, None)
         if len(self.terms) == 0:
             return
 
@@ -49,7 +47,3 @@ class ElementTensor:
         # Compute geometry tensor declarations
         check_used(self.terms, format, gK_used)
         self.gK = compute_geometry_tensor(self.terms, format, gK_used, cK_used)
-
-        # Save facets
-        self.facet0 = facet0
-        self.facet1 = facet1
