@@ -114,10 +114,12 @@ def build(sums, name = "Form", language = FFC_LANGUAGE, options = FFC_OPTIONS):
         # Create empty sets of used coefficient declarations
         cK_used = Set()
         cSe_used = Set()
+        cSi_used = Set()
 
         # Create empty sets of used geometry tensor declarations
         gK_used = Set()
         gSe_used = Set()
+        gSi_used = Set()
 
         print "form: ", form
 
@@ -142,7 +144,7 @@ def build(sums, name = "Form", language = FFC_LANGUAGE, options = FFC_OPTIONS):
         for i in range(num_facets):
             form.ASi.append([])
             for j in range (num_facets):
-                form.ASi[i].append(ElementTensor(form.sum, "interior boundary", format, cSe_used, gSe_used, options, i, j))
+                form.ASi[i].append(ElementTensor(form.sum, "interior boundary", format, cSi_used, gSi_used, options, i, j))
 
         # Report number of operations
         debug("Number of operations (multiplications) in computation of element tensor: " + str(form.num_ops), 1)
@@ -150,6 +152,7 @@ def build(sums, name = "Form", language = FFC_LANGUAGE, options = FFC_OPTIONS):
         # Compute coefficient declarations, same for interior and boundary
         form.cK = __compute_coefficients(form.projections, format, cK_used)
         form.cSe = __compute_coefficients(form.projections, format, cSe_used)
+        form.cSi = __compute_coefficients(form.projections, format, cSi_used)
 
         # Check primary ranks
         __check_primary_ranks(form)

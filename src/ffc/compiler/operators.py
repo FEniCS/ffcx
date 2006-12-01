@@ -200,17 +200,9 @@ def mean(v):
 def avg(v):
     "Return the average of a BasisFunction across an interior facet"
     if rank(v) == 0:
-        print rank(v)
         return 0.5*(v('+') + v('-'))
-    elif rank(v) ==1:
-        print "vector"
-        print len(v)
-        print v
-        def w():
-            return [v[0]('+'), z[0]('-')]
-        print w()
     else:
-        raise FormError, (v, "avg() is only supported for vectors and scalars")
+        raise FormError, (v, "avg() only supports scalar BasisFunctions")
 
 def __shapedim(v):
     "Return shape dimension for given object."
