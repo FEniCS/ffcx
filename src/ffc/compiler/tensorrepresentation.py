@@ -15,8 +15,44 @@ from ffc.common.constants import *
 from ffc.common.exceptions import *
 
 # FFC compiler modules
+from term import *
+from reorder import *
 from declaration import *
 from optimization import *
+
+def compute_terms(sum, type, facet0, facet1):
+
+    # Check if there are any terms to compute
+    num_terms = __terms_to_compile(sum, type)
+    debug("Number of terms to compile: %d" % num_terms)
+    if num_terms == 0:
+        return []
+
+    # Reorder indices and compute factorization
+    factorization = reorder_indices(sum)
+
+    # Compute terms
+    terms = [None for i in range(len(sum.products))]
+    for i in range(len(sum.products)):
+        debug("Compiling term %d" % i, 1)
+        p = sum.products[i]
+        if p.integral.type == type:
+            # Compute geometry tensor
+            G = GeometryTensor(p)
+            # Check if reference tensor should be computed
+            if factorization[i] == None:
+                # Compute reference tensor and add term
+                A0 = ReferenceTensor(p, facet0, facet1)
+                terms[i] = Term(p, A0, [G])
+            else:
+                # Add geometry tensor to previous term
+                terms[factorization[i]].G += [G]
+    debug("All terms compiled", 1)
+
+    # Remove terms not computed (factorized)
+    [terms.remove(None) for i in range(len(terms)) if None in terms]
+
+    return terms
 
 def compute_reference_tensor(terms, format):
     "Precompute reference tensor according to given format."
@@ -70,6 +106,23 @@ def compute_element_tensor(terms, format, options):
     else:
         return __compute_element_tensor_default(terms, format)
 
+def check_used(terms, format, g_used):
+    """Check which declarations of g are actually used, i.e,
+    which entries of the geometry tensor that get multiplied with
+    nonzero entries of the reference tensor."""
+    if not terms or format.format["geometry tensor"](0, []) == None: return []
+    iindices = terms[0].A0.i.indices or [[]] # All primary ranks are equal
+    for i in iindices:
+        for j in range(len(terms)):
+            A0 = terms[j].A0
+            if A0.a.indices: aindices = A0.a.indices
+            else: aindices = [[]]
+            for a in aindices:
+                a0 = A0(tuple(i), tuple(a))
+                gk = format.format["geometry tensor"](j, a)
+                if abs(a0) > FFC_EPSILON:
+                    g_used.add(gk)
+
 def __compute_element_tensor_default(terms, format):
     """Precompute element tensor without optimizations except for
     dropping multiplication with zero."""
@@ -116,34 +169,15 @@ def __compute_element_tensor_default(terms, format):
         declarations += [Declaration(name, value)]
         k += 1
     debug("Number of zeros dropped from reference tensor: " + str(num_dropped), 1)
-    num_ops = num_ops
-    return declarations
+    return (declarations, num_ops)
 
 def __compute_element_tensor_optimized(terms, format):
     "Precompute element tensor with FErari optimizations."
     debug("Generating optimized code for element tensor", 1)
     # Call FErari to do optimizations
-    (declarations, num_ops) = optimize(terms, format)
-    return declarations
+    return optimize(terms, format)
 
-def check_used(terms, format, gK_used):
-    """Check which declarations of gK are actually used, i.e,
-    which entries of the geometry tensor that get multiplied with
-    nonzero entries of the reference tensor."""
-    if not terms or format.format["geometry tensor"](0, []) == None: return []
-    iindices = terms[0].A0.i.indices or [[]] # All primary ranks are equal
-    for i in iindices:
-        for j in range(len(terms)):
-            A0 = terms[j].A0
-            if A0.a.indices: aindices = A0.a.indices
-            else: aindices = [[]]
-            for a in aindices:
-                a0 = A0(tuple(i), tuple(a))
-                gk = format.format["geometry tensor"](j, a)
-                if abs(a0) > FFC_EPSILON:
-                    gK_used.add(gk)
-
-def terms_to_compile(sum, type):
+def __terms_to_compile(sum, type):
     "Count the number of terms to be computed."
     count = 0
     for p in sum.products:
