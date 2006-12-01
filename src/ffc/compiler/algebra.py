@@ -17,10 +17,11 @@ are supported for all elements of the algebra:
     Unary  +      (operand scalar or tensor-valued)
     Unary  -      (operand scalar or tensor-valued)
     Unary  []     (operand must be tensor-valued)
-    Unary  d/dx   (operand scalar or tensor-valued)"""
+    Unary  d/dx   (operand scalar or tensor-valued)
+    Unary  ()     (operand must be multi-valued, +/-)"""
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-09-27 -- 2006-03-22"
+__date__ = "2004-09-27 -- 2006-12-01"
 __copyright__ = "Copyright (C) 2004-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -29,7 +30,6 @@ __license__  = "GNU GPL Version 2"
 
 # Python modules
 import sys
-import numpy
 
 # FFC common modules
 sys.path.append("../../")
@@ -74,8 +74,6 @@ class Element:
             return Sum(self) * other
         elif isinstance(other, int):
             return Sum(self) * float(other)
-        elif numpy.rank(other) > 0:
-            return [self*v for v in other]
         else:
             raise FormError, ((self, other), "Product not defined for given operands.")
 
