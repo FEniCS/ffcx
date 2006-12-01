@@ -130,3 +130,9 @@ Compilation time increased by 10%.
 Navier-Stokes: 0.749 seconds
 Stabilization: 68.160 seconds
 -----------------------------------
+FFC version 0.3.5
+fre dec  1 11:26:51 CET 2006
+
+Navier-Stokes: 0.722 seconds
+Stabilization: 51.061 seconds
+-----------------------------------
