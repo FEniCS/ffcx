@@ -12,7 +12,6 @@ __license__  = "GNU GPL Version 2"
 
 # Python modules
 import sys
-from sets import Set # (Could use built-in set with Python 2.4)
 
 # FFC common modules
 from ffc.common.debug import *
@@ -85,6 +84,7 @@ def build(sums, name = "Form", language = FFC_LANGUAGE, options = FFC_OPTIONS):
 
     # Generate the element tensor for all given forms
     for form in forms:
+        __check_form(form)
         __build_form(form, format, options)
 
     # Return form(s)
@@ -114,8 +114,11 @@ def write(forms, options = FFC_OPTIONS):
         debug("No forms specified, nothing to do.", 1)
         return None
 
-    # Generate output (all forms have the same format)
-    forms[0].format.write(forms, options)
+    # Get output format (all forms have the same format, so pick the first)
+    format = forms[0].format
+
+    # Generate output for all forms
+    format.write(forms, options)
 
     return
 
@@ -136,6 +139,10 @@ def writeFiniteElement(element, name = "MyElement", language = FFC_LANGUAGE, opt
 
     # Generate code
     format.writeFiniteElement(element, name, options)
+
+def __check_form(form):
+    "Check that form is correct."
+    # Not implemented
 
 def __build_form(form, format, options):
     "Build data structures for evaluation of the variational form."
@@ -166,14 +173,14 @@ def __build_form(form, format, options):
     form.projections = find_projections(form.sum, form.nprojections)
 
     # Create empty sets of used coefficient declarations
-    cK_used = Set()
-    cSe_used = Set()
-    cSi_used = Set()
+    cK_used  = set()
+    cSe_used = set()
+    cSi_used = set()
 
     # Create empty sets of used geometry tensor declarations
-    gK_used = Set()
-    gSe_used = Set()
-    gSi_used = Set()
+    gK_used  = set()
+    gSe_used = set()
+    gSi_used = set()
 
     #print "form: ", form
         
