@@ -10,6 +10,7 @@ from ffc.common.exceptions import *
 
 # FFC compiler modules
 from tensorrepresentation import *
+from integral import *
 
 class InteriorFacetTensor:
     """An InteriorElementTensor represents the interior facet tensor for
@@ -27,14 +28,14 @@ class InteriorFacetTensor:
         num_ops - number of operations in computation of element tensor
     """
 
-    def __init__(self, sum, type, format, cS_used, gS_used, options, facet0, facet1):
+    def __init__(self, sum, format, cS_used, gS_used, options, facet0, facet1):
         "Create ElementTensor."
 
         # Reset number of operations
         self.num_ops = 0
 
         # Compute terms
-        self.terms = compute_terms(sum, type, facet0, facet1)
+        self.terms = compute_terms(sum, Integral.INTERIOR_FACET, facet0, facet1)
         if len(self.terms) == 0:
             return
 

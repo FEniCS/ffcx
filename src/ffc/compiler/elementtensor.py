@@ -12,6 +12,7 @@ from ffc.common.exceptions import *
 
 # FFC compiler modules
 from tensorrepresentation import *
+from integral import *
 
 class ElementTensor:
     """An ElementTensor represents the element tensor of a
@@ -27,14 +28,14 @@ class ElementTensor:
         num_ops - number of operations in computation of element tensor
     """
 
-    def __init__(self, sum, type, format, cK_used, gK_used, options):
+    def __init__(self, sum, format, cK_used, gK_used, options):
         "Create ElementTensor."
 
         # Reset number of operations
         self.num_ops = 0
 
         # Compute terms
-        self.terms = compute_terms(sum, type, None, None)
+        self.terms = compute_terms(sum, Integral.CELL, None, None)
         if len(self.terms) == 0:
             return
 
