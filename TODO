@@ -1,3 +1,13 @@
+- Restructure code:
+
+  - Add preprocessing stage:
+
+    - Extract terms for different integral types
+    - Check form for consistency
+    - Dispatch to processing: tensor representation, SyFi or quadrature
+
+  - Generate UFC code
+
 o [logg] Bug fix: LaTeX format not working
 o [logg] Use Numeric.array instead of Python list for vectors
 o [logg] Write about TestFunction and TrialFunction in manual

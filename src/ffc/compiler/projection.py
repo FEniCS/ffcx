@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2005-11-07 -- 2006-11-13"
+__date__ = "2005-11-07 -- 2006-12-04"
 __copyright__ = "Copyright (C) 2005-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -91,8 +91,8 @@ class Projection:
         weights = quadrature.get_weights()
 
         # Tabulate basis functions at quadrature points
-        t0 = e0.tabulate(0, points, None, None)
-        t1 = e1.tabulate(0, points, None, None)
+        t0 = e0.tabulate(0, points)
+        t1 = e1.tabulate(0, points)
 
         # Get space dimensions of V0 and V1
         m = e1.spacedim()

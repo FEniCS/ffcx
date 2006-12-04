@@ -40,7 +40,7 @@ def integrate(product, facet0, facet1):
     (points, weights, vscaling, dscaling) = __init_quadrature(product.basisfunctions, type)
 
     # Initialize quadrature table for basis functions
-    table = __init_table(product.basisfunctions, points, facet0, facet1)
+    table = __init_table(product.basisfunctions, type, points, facet0, facet1)
 
     # Compute table Psi for each factor
     psis = [__compute_psi(v, table, len(points), dscaling) for v in product.basisfunctions]
@@ -100,7 +100,7 @@ def __init_quadrature(basisfunctions, type):
 
     return (points, weights, vscaling, dscaling)
 
-def __init_table(basisfunctions, points, facet0, facet1):
+def __init_table(basisfunctions, type, points, facet0, facet1):
     """Initialize table of basis functions and their derivatives at
     the given quadrature points for each element."""
 
@@ -120,7 +120,14 @@ def __init_table(basisfunctions, points, facet0, facet1):
     table = {}
     for element in num_derivatives:
         order = num_derivatives[element]
-        table[element] = element.tabulate(order, points, facet0, facet1)
+        # Tabulate for different integral types
+        if type == Integral.CELL:
+            table[(element, None)] = element.tabulate(order, points)
+        elif type == Integral.EXTERIOR_FACET:
+            table[(element, None)] = element.tabulate(order, points, facet0)
+        elif type == Integral.INTERIOR_FACET:
+            table[(element, Restriction.PLUS)]  = element.tabulate(order, points, facet0)
+            table[(element, Restriction.MINUS)] = element.tabulate(order, points, facet1)
 
     return table
 
@@ -148,6 +155,9 @@ def __compute_psi(v, table, num_points, dscaling):
     element = v.element
     shapedim = element.shapedim()
     spacedim = element.spacedim()
+
+    # Get restriction for v
+    restriction = v.restriction
 
     # Get Indices and shapes for Derivatives
     dindex = [d.index for d in v.derivatives]
@@ -178,7 +188,7 @@ def __compute_psi(v, table, num_points, dscaling):
     # Iterate over derivative Indices
     dlists = build_indices(dshape) or [[]]
     if len(cindex) > 0:
-        etable = table[element]
+        etable = table[(element, restriction)]
         for component in range(cshape[0]):
             for dlist in dlists:
                 # Translate derivative multiindex to lookup tuple
@@ -186,7 +196,7 @@ def __compute_psi(v, table, num_points, dscaling):
                 # Get values from table
                 Psi[component][tuple(dlist)] = etable[component][dorder][dtuple]
     else:
-        etable = table[element][dorder]
+        etable = table[(element, restriction)][dorder]
         for dlist in dlists:
             # Translate derivative multiindex to lookup tuple
             dtuple = __multiindex_to_tuple(dlist, shapedim)
