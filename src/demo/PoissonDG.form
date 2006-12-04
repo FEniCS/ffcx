@@ -13,6 +13,7 @@ v = TestFunction(element)
 U = TrialFunction(element)
 
 a = v('+')*U('-')*dS
+#a = v('+')*U('+')*dS
 
 #f = Function(element)
 #g = Function(element)
