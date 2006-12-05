@@ -198,20 +198,21 @@ def __build_form(form, format, options):
     # FIXME: Number of operations not counted for facet terms
 
     # Compute element tensors for exterior facets
-    form.ASe = []
     debug("Compiling tensor representation over exterior facets")
     num_facets = form.sum.products[0].basisfunctions[0].element.num_facets()
+    form.ASe = [None for i in range(num_facets)]
     for i in range(num_facets):
-        form.ASe.append(ExteriorFacetTensor(form.sum, format, cSe_used, gSe_used, options, i))
+        form.ASe[i] = ExteriorFacetTensor(form.sum, format, cSe_used, gSe_used, options, i)
 
     # Compute element tensors for combinations of interior facets
-    form.ASi = []
     debug("Compiling tensor representation over exterior facets")
     num_facets = form.sum.products[0].basisfunctions[0].element.num_facets()
+    num_alignments = form.sum.products[0].basisfunctions[0].element.num_alignments()
+    form.ASi = [[[None for k in range(num_alignments)] for j in range(num_facets)] for i in range(num_facets)]
     for i in range(num_facets):
-        form.ASi.append([])
         for j in range (num_facets):
-            form.ASi[i].append(InteriorFacetTensor(form.sum, format, cSi_used, gSi_used, options, i, j))
+            for k in range(num_alignments):
+                form.ASi[i][j][k] = InteriorFacetTensor(form.sum, format, cSi_used, gSi_used, options, i, j, k)
 
     # Report number of operations
     debug("Number of operations (multiplications) in computation of element tensor: " + str(form.num_ops), 1)
@@ -222,12 +223,12 @@ def __build_form(form, format, options):
     form.cSi = __compute_coefficients(form.projections, format, cSi_used)
     
     # Check primary ranks
-    __check_primary_ranks(form)
+    __check_primary_ranks(form, num_facets, num_alignments)
     
     # Save format
     form.format = format
 
-def __check_primary_ranks(form):
+def __check_primary_ranks(form, num_facets, num_alignments):
     "Check that all primary ranks are equal."
 
     form.rank = None
@@ -244,8 +245,8 @@ def __check_primary_ranks(form):
             raise FormError(form.sum, "Form must be linear in each of its arguments.")
 
     # Check ranks for exterior facet terms
-    for ASe in form.ASe:
-        for term in ASe.terms:
+    for i in range(num_facets):
+        for term in form.ASe[i].terms:
             if form.rank == None:
                 form.rank = term.A0.i.rank
                 form.dims = term.A0.i.dims
@@ -254,15 +255,16 @@ def __check_primary_ranks(form):
                 raise FormError(form.sum, "Form must be linear in each of its arguments.")
 
     # Check ranks for interior facet terms
-    for ASi in form.ASi:
-        for asi in ASi:
-            for term in asi.terms:
-                if form.rank == None:
-                    form.rank = term.A0.i.rank
-                    form.dims = term.A0.i.dims
-                    form.indices = term.A0.i.indices
-                elif not form.rank == term.A0.i.rank:
-                    raise FormError(form.sum, "Form must be linear in each of its arguments.")
+    for i in range(num_facets):
+        for j in range(num_facets):
+            for k in range(num_alignments):
+                for term in form.ASi[i][j][k].terms:
+                    if form.rank == None:
+                        form.rank = term.A0.i.rank
+                        form.dims = term.A0.i.dims
+                        form.indices = term.A0.i.indices
+                    elif not form.rank == term.A0.i.rank:
+                        raise FormError(form.sum, "Form must be linear in each of its arguments.")
 
 def __compute_coefficients(projections, format, cK_used):
     "Precompute declarations of coefficients according to given format."

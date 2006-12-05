@@ -1,7 +1,7 @@
 "DOLFIN output format."
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-10-14 -- 2006-11-27"
+__date__ = "2004-10-14 -- 2006-12-05"
 __copyright__ = "Copyright (C) 2004-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -638,7 +638,7 @@ void %s::eval(real block[], const AffineMap& map, unsigned int facet) const {}
 """ % (subclass, subclass)
 
         # Interior boundary contribution (if any)
-        if form.ASi[0][0].terms:
+        if form.ASi[0][0][0].terms:
             eval = __eval_interior_boundary(form, options)
             output += """\
 
@@ -817,27 +817,52 @@ def __eval_interior_boundary_default(form, options):
 """ % "".join(["  const real %s = %s;\n" % (cSi.name, cSi.value) for cSi in form.cSi if cSi.used])
         output += """\
   // Compute geometry tensors
-%s""" % "".join(["  const real %s = %s;\n" % (gS.name, gS.value) for gS in form.ASi[0][-1].gS if gS.used])
+%s""" % "".join(["  const real %s = %s;\n" % (gS.name, gS.value) for gS in form.ASi[0][-1][-1].gS if gS.used])
     else:
         output += """\
   // Compute geometry tensors
-%s""" % "".join(["  const real %s = 0.0;\n" % gS.name for gS in form.ASi[0][-1].gS if gS.used])
+%s""" % "".join(["  const real %s = 0.0;\n" % gS.name for gS in form.ASi[0][-1][-1].gS if gS.used])
 
     if not options["debug-no-element-tensor"]:
         num_facets = form.sum.products[0].basisfunctions[0].element.num_facets()
+        num_alignments = form.sum.products[0].basisfunctions[0].element.num_alignments()
         output += """\
 
-  // Compute element tensor
-  unsigned int num_facets = %d;
-  switch ( facet0*num_facets + facet1 )
-  { """ % num_facets
-        for asi_row in form.ASi:
-            for asi in asi_row:
-                output += """ 
-  case %s:"""  % (asi.facet0*num_facets + asi.facet1)   
-                output += """ 
-%s      break; \n""" % "".join(["    %s = %s;\n" % (aS.name, aS.value) for aS in asi.aS])
-
+  // Compute interior facet tensor
+  switch ( facet0 )
+  {
+"""
+        for i in range(num_facets):
+            output += """\
+  case %d:
+    switch ( facet1 )
+    {
+""" % i
+            for j in range(num_facets):
+                output += """\
+    case %d:
+      switch ( alignment )
+      {
+""" % j
+                for k in range(num_alignments):
+                    output += """\
+      case %d:
+""" % k
+                    output += """\
+%s""" % "".join(["        %s = %s;\n" % (aS.name, aS.value) for aS in form.ASi[i][j][k].aS])
+                    output += """\
+        break;
+"""
+                output += """\
+      }
+      break;
+"""
+            output += """\
+    }
+    break;
+"""
         output += """\
-  } \n"""
+  }
+"""
+      
     return output

@@ -32,10 +32,10 @@ class InteriorFacetTensor:
         num_ops - number of operations in computation of element tensor
     """
 
-    def __init__(self, sum, format, cS_used, gS_used, options, facet0, facet1):
+    def __init__(self, sum, format, cS_used, gS_used, options, facet0, facet1, alignment):
         "Create ElementTensor."
 
-        print "Compiling element tensor: " + str(sum) + " " + str((facet0, facet1))
+        print "Compiling element tensor: " + str(sum) + " " + str((facet0, facet1, alignment))
 
         # Reset number of operations
         self.num_ops = 0

@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-10-04 -- 2006-12-04"
+__date__ = "2004-10-04 -- 2006-12-05"
 __copyright__ = "Copyright (C) 2004-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -154,6 +154,15 @@ class FiniteElement:
             return 3
         elif self.element.domain_shape() == TETRAHEDRON:
             return 4
+        else:
+            raise RuntimeError, "Unknown shape."
+
+    def num_alignments(self):
+        "Return number of possible alignments of two cells at a common facet."
+        if self.element.domain_shape() == TRIANGLE:
+            return 2
+        elif self.element.domain_shape() == TETRAHEDRON:
+            return 6
         else:
             raise RuntimeError, "Unknown shape."
 

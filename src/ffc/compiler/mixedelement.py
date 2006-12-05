@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2005-09-16 -- 2006-12-04"
+__date__ = "2005-09-16 -- 2006-12-05"
 __copyright__ = "Copyright (C) 2005-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -197,6 +197,10 @@ class MixedElement:
     def num_facets(self):
         "Return number of facets for shape of element."
         return self.elements[0].num_facets()
+
+    def num_alignments(self):
+        "Return number of possible alignments of two cells at a common facet."
+        return self.elements[0].num_alignments()
 
     def tabulate(self, order, points, facet = None):
         """Return tabulated values of derivatives up to given order of
