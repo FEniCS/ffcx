@@ -508,7 +508,7 @@ public:
 
   bool interior_boundary_contribution() const;
 
-  void eval(real block[], const AffineMap& map, unsigned int facet0, unsigned int facet1) const;
+  void eval(real block[], const AffineMap& map0, const AffineMap& map1, unsigned int facet0, unsigned int facet1, unsigned int alignment) const;
 """
 
         # Declare class members (if any)
@@ -645,7 +645,7 @@ void %s::eval(real block[], const AffineMap& map, unsigned int facet) const {}
 // Contribution from interior boundaries
 bool %s::interior_boundary_contribution() const { return true; }
 
-void %s::eval(real block[], const AffineMap& map, unsigned int facet0, unsigned int facet1) const
+void %s::eval(real block[], const AffineMap& map0, const AffineMap& map1, unsigned int facet0, unsigned int facet1, unsigned int alignment) const
 {
 %s}
 
@@ -655,7 +655,7 @@ void %s::eval(real block[], const AffineMap& map, unsigned int facet0, unsigned 
 // No contribution from interior boundaries
 bool %s::interior_boundary_contribution() const { return false; }
 
-void %s::eval(real block[], const AffineMap& map, unsigned int facet0, unsigned int facet1) const {}
+void %s::eval(real block[], const AffineMap& map0, const AffineMap& map1, unsigned int facet0, unsigned int facet1, unsigned int alignment) const {}
 
 """ % (subclass, subclass)
 

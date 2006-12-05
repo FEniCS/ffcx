@@ -42,7 +42,7 @@ public:
 
   bool interior_boundary_contribution() const;
 
-  void eval(real block[], const AffineMap& map, unsigned int facet0, unsigned int facet1) const;
+  void eval(real block[], const AffineMap& map0, const AffineMap& map1, unsigned int facet0, unsigned int facet1, unsigned int alignment) const;
 
 };
 
@@ -286,7 +286,7 @@ void LinearForm::eval(real block[], const AffineMap& map, unsigned int facet) co
 // No contribution from interior boundaries
 bool LinearForm::interior_boundary_contribution() const { return false; }
 
-void LinearForm::eval(real block[], const AffineMap& map, unsigned int facet0, unsigned int facet1) const {}
+void LinearForm::eval(real block[], const AffineMap& map0, const AffineMap& map1, unsigned int facet0, unsigned int facet1, unsigned int alignment) const {}
 
 } }
 
