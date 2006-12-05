@@ -69,29 +69,30 @@ namespace ufc
 
   };
     
-  /// This class defines the interface for a local-to-global mapping of nodes.
+  /// This class defines the interface for a local-to-global mapping of
+  /// degrees of freedom (dofs).
 
-  class node_map
+  class dof_map
   {
   public:
 
     /// Constructor
-    node_map() {}
+    dof_map() {}
 
     /// Destructor
-    virtual ~node_map() {}
+    virtual ~dof_map() {}
     
-    /// Return a string identifying the node map
+    /// Return a string identifying the dof map
     virtual const char* description() const = 0;
     
     /// Return true iff mesh entities of topological dimension d are needed
     virtual bool needs_mesh_entities(unsigned int d) const = 0;
 
-    /// Initialize node map for a new mesh and return true iff
+    /// Initialize dof map for a new mesh and return true iff
     /// the finite element should be initialized for each cell
     virtual bool init_mesh(const mesh& mesh) = 0;
 
-    /// Initialize node map for given cell
+    /// Initialize dof map for given cell
     virtual void init_cell(const mesh& mesh, const cell& cell) = 0;
 
     /// Return the dimension of the global finite element function space.
@@ -101,8 +102,8 @@ namespace ufc
     /// Return the dimension of the local finite element function space
     virtual unsigned int local_dimension() const = 0;
     
-    /// Tabulate the local-to-global mapping of nodes (degrees of freedom)
-    virtual void tabulate_nodes(unsigned int *nodes, const mesh& m, const cell& c) const = 0;
+    /// Tabulate the local-to-global mapping of dofs
+    virtual void tabulate_dofs(unsigned int *dofs, const mesh& m, const cell& c) const = 0;
   };
 
   /// This class defines the interface for a finite element.
@@ -132,11 +133,11 @@ namespace ufc
     /// Evaluate basis function i at the point x = (x[0], x[1], ...) in the cell
     virtual void evaluate_basis(double* values, const double* x, unsigned int i, const cell& c) const = 0;
     
-    /// Evaluate node i on the function f
-    virtual double evaluate_node(unsigned int n, const function& f, const cell& c) const = 0;
+    /// Evaluate linear functional for dof i on the function f
+    virtual double evaluate_dof(unsigned int i, const function& f, const cell& c) const = 0;
     
-    /// Interpolate vertex values from nodal values
-    virtual void interpolate_vertex_values(double* vertex_values, const double* nodal_values) const = 0;
+    /// Interpolate vertex values from dof values
+    virtual void interpolate_vertex_values(double* vertex_values, const double* dof_values) const = 0;
   
     /// Return the number of sub elements (for a mixed finite element)
     virtual unsigned int num_sub_elements(unsigned int i) const = 0;
@@ -159,7 +160,7 @@ namespace ufc
   ///     Ai = a(V1, V2, ..., Vr, w1, w2, ..., wn),
   ///
   /// where each argument Vj represents the application to the sequence
-  /// of nodal basis functions of Vj and w1, w2, ..., wn are given fixed
+  /// of basis functions of Vj and w1, w2, ..., wn are given fixed
   /// functions (coefficients).
   
   class element_tensor
@@ -193,8 +194,8 @@ namespace ufc
     /// Tabulate the boundary contribution to the element tensor
     virtual void tabulate_boundary(double* A, const double * const * w, const cell& c, unsigned int facet) const = 0;
  
-    /// Create a node map for argument function i (caller responsible for deletion)
-    virtual node_map* create_node_map(unsigned int i) const = 0;
+    /// Create a dof map for argument function i (caller responsible for deletion)
+    virtual dof_map* create_dof_map(unsigned int i) const = 0;
   
     /// Create a finite element for argument function i (caller responsible for deletion)
     virtual finite_element* create_finite_element(unsigned int i) const = 0;
