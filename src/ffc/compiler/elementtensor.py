@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-11-06 -- 2006-12-01"
+__date__ = "2004-11-06 -- 2006-12-06"
 __copyright__ = "Copyright (C) 2004-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -35,7 +35,7 @@ class ElementTensor:
         self.num_ops = 0
 
         # Compute terms
-        self.terms = compute_terms(sum, Integral.CELL, None, None)
+        self.terms = compute_terms(sum, Integral.CELL, None, None, None)
         if len(self.terms) == 0:
             return
 

@@ -41,7 +41,7 @@ class InteriorFacetTensor:
         self.num_ops = 0
 
         # Compute terms
-        self.terms = compute_terms(sum, Integral.INTERIOR_FACET, facet0, facet1)
+        self.terms = compute_terms(sum, Integral.INTERIOR_FACET, facet0, facet1, alignment)
         if len(self.terms) == 0:
             return
 

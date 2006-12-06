@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-11-03 -- 2006-12-01"
+__date__ = "2004-11-03 -- 2006-12-06"
 __copyright__ = "Copyright (C) 2004-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -40,7 +40,7 @@ class ReferenceTensor:
         integral       - an Integral
         cputime        - time to compute the reference tensor"""
 
-    def __init__(self, product, facet0, facet1):
+    def __init__(self, product, facet0, facet1, alignment):
         "Create ReferenceTensor."
 
         # Check that we get a Product
@@ -63,7 +63,7 @@ class ReferenceTensor:
 
         # Compute reference tensor
         t = time.time()
-        self.A0 = integrate(product, facet0, facet1)
+        self.A0 = integrate(product, facet0, facet1, alignment)
 
         # Report time to compute the reference tensor
         self.cputime = time.time() - t

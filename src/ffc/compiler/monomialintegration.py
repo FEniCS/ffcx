@@ -1,7 +1,7 @@
 "This module provides efficient integration of monomial forms."
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-11-03 -- 2006-12-01"
+__date__ = "2004-11-03 -- 2006-12-06"
 __copyright__ = "Copyright (C) 2004-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -26,8 +26,9 @@ from index import *
 from algebra import *
 from integral import *
 from multiindex import *
+from pointreordering import *
 
-def integrate(product, facet0, facet1):
+def integrate(product, facet0, facet1, alignment):
     """Compute the reference tensor for a given monomial term of a
     multilinear form, given as a Product."""
 
@@ -37,7 +38,7 @@ def integrate(product, facet0, facet1):
     type = product.integral.type
 
     # Initialize quadrature points and weights
-    (points, weights, vscaling, dscaling) = __init_quadrature(product.basisfunctions, type)
+    (points, weights, vscaling, dscaling) = __init_quadrature(product.basisfunctions, type, alignment)
 
     # Initialize quadrature table for basis functions
     table = __init_table(product.basisfunctions, type, points, facet0, facet1)
@@ -50,7 +51,7 @@ def integrate(product, facet0, facet1):
 
     return A0
 
-def __init_quadrature(basisfunctions, type):
+def __init_quadrature(basisfunctions, type, alignment):
     "Initialize quadrature for given monomial term."
 
     debug("Initializing quadrature.", 1)
@@ -68,12 +69,17 @@ def __init_quadrature(basisfunctions, type):
     # FIXME: FIAT ot finiteelement should return shape of facet
     if type == Integral.CELL:
         quadrature = make_quadrature(shape, m)
+        points = quadrature.get_points()
+        weights = quadrature.get_weights()
     elif type == Integral.EXTERIOR_FACET:
         quadrature = make_quadrature(facet_shape, m)
+        points = quadrature.get_points()
+        weights = quadrature.get_weights()
     elif type == Integral.INTERIOR_FACET:
         quadrature = make_quadrature(facet_shape, m)
-    points = quadrature.get_points()
-    weights = quadrature.get_weights()
+        points = quadrature.get_points()
+        weights = quadrature.get_weights()
+        points = reorder_points(points, facet_shape, alignment)
 
     # Compensate for different choice of reference cells in FIAT
     # FIXME: Convince Rob to change his reference elements

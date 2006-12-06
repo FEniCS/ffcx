@@ -3,7 +3,7 @@ for a given subset of terms in a sum, specified as the terms matching
 a given integral type."""
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-11-06 -- 2006-12-01"
+__date__ = "2004-11-06 -- 2006-12-06"
 __copyright__ = "Copyright (C) 2004-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -16,11 +16,11 @@ from ffc.common.exceptions import *
 
 # FFC compiler modules
 from term import *
-from reorder import *
 from declaration import *
 from optimization import *
+from indexreordering import *
 
-def compute_terms(sum, type, facet0, facet1):
+def compute_terms(sum, type, facet0, facet1, alignment):
 
     # Check if there are any terms to compute
     num_terms = __terms_to_compile(sum, type)
@@ -42,7 +42,7 @@ def compute_terms(sum, type, facet0, facet1):
             # Check if reference tensor should be computed
             if factorization[i] == None:
                 # Compute reference tensor and add term
-                A0 = ReferenceTensor(p, facet0, facet1)
+                A0 = ReferenceTensor(p, facet0, facet1, alignment)
                 terms[i] = Term(p, A0, [G])
             else:
                 # Add geometry tensor to previous term
