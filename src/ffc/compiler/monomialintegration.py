@@ -38,10 +38,10 @@ def integrate(product, facet0, facet1, alignment):
     type = product.integral.type
 
     # Initialize quadrature points and weights
-    (points, weights, vscaling, dscaling) = __init_quadrature(product.basisfunctions, type, alignment)
+    (points, weights, vscaling, dscaling) = __init_quadrature(product.basisfunctions, type)
 
     # Initialize quadrature table for basis functions
-    table = __init_table(product.basisfunctions, type, points, facet0, facet1)
+    table = __init_table(product.basisfunctions, type, points, facet0, facet1, alignment)
 
     # Compute table Psi for each factor
     psis = [__compute_psi(v, table, len(points), dscaling) for v in product.basisfunctions]
@@ -51,7 +51,7 @@ def integrate(product, facet0, facet1, alignment):
 
     return A0
 
-def __init_quadrature(basisfunctions, type, alignment):
+def __init_quadrature(basisfunctions, type):
     "Initialize quadrature for given monomial term."
 
     debug("Initializing quadrature.", 1)
@@ -69,17 +69,12 @@ def __init_quadrature(basisfunctions, type, alignment):
     # FIXME: FIAT ot finiteelement should return shape of facet
     if type == Integral.CELL:
         quadrature = make_quadrature(shape, m)
-        points = quadrature.get_points()
-        weights = quadrature.get_weights()
     elif type == Integral.EXTERIOR_FACET:
         quadrature = make_quadrature(facet_shape, m)
-        points = quadrature.get_points()
-        weights = quadrature.get_weights()
     elif type == Integral.INTERIOR_FACET:
         quadrature = make_quadrature(facet_shape, m)
-        points = quadrature.get_points()
-        weights = quadrature.get_weights()
-        points = reorder_points(points, facet_shape, alignment)
+    points = quadrature.get_points()
+    weights = quadrature.get_weights()
 
     # Compensate for different choice of reference cells in FIAT
     # FIXME: Convince Rob to change his reference elements
@@ -106,7 +101,7 @@ def __init_quadrature(basisfunctions, type, alignment):
 
     return (points, weights, vscaling, dscaling)
 
-def __init_table(basisfunctions, type, points, facet0, facet1):
+def __init_table(basisfunctions, type, points, facet0, facet1, alignment):
     """Initialize table of basis functions and their derivatives at
     the given quadrature points for each element."""
 
@@ -132,8 +127,9 @@ def __init_table(basisfunctions, type, points, facet0, facet1):
         elif type == Integral.EXTERIOR_FACET:
             table[(element, None)] = element.tabulate(order, points, facet0)
         elif type == Integral.INTERIOR_FACET:
+            reordered_points = reorder_points(points, element.facet_shape(), alignment)
             table[(element, Restriction.PLUS)]  = element.tabulate(order, points, facet0)
-            table[(element, Restriction.MINUS)] = element.tabulate(order, points, facet1)
+            table[(element, Restriction.MINUS)] = element.tabulate(order, reordered_points, facet1)
 
     return table
 
