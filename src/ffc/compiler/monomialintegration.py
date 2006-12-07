@@ -76,6 +76,9 @@ def __init_quadrature(basisfunctions, type):
     points = quadrature.get_points()
     weights = quadrature.get_weights()
 
+#    print "points ", points
+#    print "weights ", weights
+
     # Compensate for different choice of reference cells in FIAT
     # FIXME: Convince Rob to change his reference elements
     if shape == TRIANGLE:

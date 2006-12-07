@@ -11,22 +11,40 @@ __license__  = "GNU GPL Version 2"
 # FIAT modules
 from FIAT.shapes import *
 
-def reorder_points(x, shape, alignment):
+def reorder_points(points, shape, alignment):
     """Reorder points on given reference shape for given alignment."""
 
     if shape == LINE:
-        return __reorder_triangle(x, alignment)
+        return __reorder_line(points, alignment)
+#        return __reorder_triangle(x, alignment)
     elif shape == TRIANGLE:
-        return __reorder_tetrahedron(x, alignmnent)
+        return __reorder_triangle(points, alignment)
+#        return __reorder_tetrahedron(x, alignment)
     else:
         raise RuntimeError, "Unable to reorder quadrature points, unknown shape: " + str(shape)
 
-def __reorder_line(x, alignment):
+def __reorder_line(points, alignment):
     """Reorder points on the (FIAT) reference triangle."""
-    # FIXME: Write code here
-    return x
 
+    def Phi0(x):
+        return 0.5 - 0.5*x[0]
+
+    def Phi1(x):
+        return 0.5 + 0.5*x[0]
+
+    if alignment == 0:
+        p0 = -1.0
+        p1 =  1.0
+    elif alignment == 1:
+        p0 =  1.0
+        p1 = -1.0
+
+    new_points = [(Phi0(x)*p0 + Phi1(x)*p1,) for x in points]
+
+    return new_points
+    
 def __reorder_triangle(x, alignment):
     """Reorder points on the (FIAT) reference triangle."""
     # FIXME: Write code here
+    print "triangle ", x, "align ", alignment
     return x
