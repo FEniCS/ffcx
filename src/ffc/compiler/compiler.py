@@ -258,10 +258,12 @@ def __check_primary_ranks(form, num_facets, num_alignments):
                     elif not form.rank == term.A0.i.rank:
                         raise FormError(form.sum, "Form must be linear in each of its arguments.")
 
-def __compute_coefficients(projections, format, cK_used):
+def __compute_coefficients(projections, format, c_used):
     "Precompute declarations of coefficients according to given format."
 
     declarations = []
+
+    print "computing coefficients: " + str(c_used)
 
     # Iterate over projections
     for (n0, n1, e0, e1, P) in projections:
@@ -273,7 +275,7 @@ def __compute_coefficients(projections, format, cK_used):
                 value = format.format["coefficient table"](n0, k)
                 declaration = Declaration(name, value)
                 # Mark entries that are used
-                if name in cK_used:
+                if name in c_used:
                     declaration.used = True
                 declarations += [declaration]
         else:
@@ -294,10 +296,12 @@ def __compute_coefficients(projections, format, cK_used):
                 value = format.format["sum"](terms)
                 declaration = Declaration(name, value)
                 # Mark entries that are used
-                if name in cK_used:
+                if name in c_used:
                     declaration.used = True
                 # Add to list of declarations
                 declarations += [declaration]
+
+    print declarations
 
     return declarations
 

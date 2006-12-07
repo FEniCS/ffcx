@@ -85,6 +85,9 @@ def compute_geometry_tensor(terms, format, g_used, c_used):
             # Sum factorized values
             name = format.format["geometry tensor"](j, a)
             used = name in g_used
+
+            print a
+            
             value = format.format["sum"]([G(a, format, c_used, used) for G in terms[j].G])
             declaration = Declaration(name, value)
             declaration.used = used

@@ -35,8 +35,6 @@ class InteriorFacetTensor:
     def __init__(self, sum, format, cS_used, gS_used, options, facet0, facet1, alignment):
         "Create ElementTensor."
 
-        print "Compiling element tensor: " + str(sum) + " " + str((facet0, facet1, alignment))
-
         # Reset number of operations
         self.num_ops = 0
 
@@ -57,6 +55,9 @@ class InteriorFacetTensor:
         # Compute geometry tensor declarations
         check_used(self.terms, format, gS_used)
         self.gS = compute_geometry_tensor(self.terms, format, gS_used, cS_used)
+
+        print "g: " + str(gS_used)
+        print "c: " + str(cS_used)
 
         # Save facets
         self.facet0 = facet0
@@ -95,11 +96,13 @@ class InteriorFacetTensor:
             A0[position] = term.A0.A0
             term.A0.A0 = A0
 
-            print A0
-
             # Reinitialize indices to new size
-            term.A0.i = MultiIndex(new_idims)
-            term.A0.a = MultiIndex(new_adims)
+            iindices = MultiIndex(new_idims)
+            aindices = MultiIndex(new_adims)
+            term.A0.i = iindices
+            term.A0.a = aindices
+            for G in term.G:
+                G.a = aindices
 
     def __compute_restrictions(self, term):
         """Compute restrictions corresponding to indices for given term."""

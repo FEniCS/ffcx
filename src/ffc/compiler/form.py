@@ -62,6 +62,8 @@ class Form:
     def __init__(self, sum, name):
         "Create Form."
 
+        # FIXME: Move computation from compiler to here
+
         # Initialize Form
         self.sum  = Sum(sum)
         self.name = name

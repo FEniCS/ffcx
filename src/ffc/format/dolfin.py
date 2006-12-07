@@ -737,7 +737,7 @@ def __eval_boundary(form, options):
 def __eval_boundary_default(form, options):
     "Generate function eval() for DOLFIN, boundary part (default version)."
     output = ""
-    
+
     if not options["debug-no-geometry-tensor"]:
         if len(form.cSe) > 0:
             output += """\
@@ -808,20 +808,27 @@ def __eval_interior_boundary(form, options):
 def __eval_interior_boundary_default(form, options):
     "Generate function eval() for DOLFIN, interior boundary part (default version)."
     output = ""
-    
     if not options["debug-no-geometry-tensor"]:
+        print "hej"
+        print form.ASi[0][0][0].gS
         if len(form.cSi) > 0:
+
+            for gS in form.ASi[-1][-1][-1].gS:
+                print gS, gS.used
+            for cS in form.cSi:
+                print cS, cS.used
+            
             output += """\
   // Compute coefficients
 %s
-""" % "".join(["  const real %s = %s;\n" % (cSi.name, cSi.value) for cSi in form.cSi if cSi.used])
+""" % "".join(["  const real %s = %s;\n" % (cS.name, cS.value) for cS in form.cSi if cS.used])
         output += """\
   // Compute geometry tensors
-%s""" % "".join(["  const real %s = %s;\n" % (gS.name, gS.value) for gS in form.ASi[0][-1][-1].gS if gS.used])
+%s""" % "".join(["  const real %s = %s;\n" % (gS.name, gS.value) for gS in form.ASi[-1][-1][-1].gS if gS.used])
     else:
         output += """\
   // Compute geometry tensors
-%s""" % "".join(["  const real %s = 0.0;\n" % gS.name for gS in form.ASi[0][-1][-1].gS if gS.used])
+%s""" % "".join(["  const real %s = 0.0;\n" % gS.name for gS in form.ASi[-1][-1][-1].gS if gS.used])
 
     if not options["debug-no-element-tensor"]:
         num_facets = form.sum.products[0].basisfunctions[0].element.num_facets()
