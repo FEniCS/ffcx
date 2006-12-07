@@ -45,6 +45,7 @@ class InteriorFacetTensor:
         if len(self.terms) == 0:
             return
 
+        # Reorder entries to compute reference tensor from reduced reference tensor
         self.__reorder_entries()
 
         # Compute element tensor declarations

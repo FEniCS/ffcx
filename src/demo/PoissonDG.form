@@ -11,12 +11,13 @@
 e = FiniteElement("Discontinuous Lagrange", "triangle", 1)
 v = TestFunction(e)
 U = TrialFunction(e)
+w = Function(e)
 
 # Facet normal
 e = FiniteElement("Discontinuous vector Lagrange", "triangle", 0)
 n = Function(e)
 
-a = v('+')*U('-')*dS
+a = w('+')*v('+')*U('-')*dS
 
 print avg(v)
 print jump(v, n)
