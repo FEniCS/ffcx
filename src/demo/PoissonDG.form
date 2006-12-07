@@ -7,12 +7,20 @@
 #
 # Compile this form with FFC: ffc PoissonDG.form
 
-element = FiniteElement("Discontinuous Lagrange", "triangle", 1)
+# Test and trial functions
+e = FiniteElement("Discontinuous Lagrange", "triangle", 1)
+v = TestFunction(e)
+U = TrialFunction(e)
 
-v = TestFunction(element)
-U = TrialFunction(element)
+# Facet normal
+e = FiniteElement("Discontinuous vector Lagrange", "triangle", 0)
+n = Function(e)
 
 a = v('+')*U('-')*dS
+
+print avg(v)
+print jump(v, n)
+
 #a = v('+')*U('+')*dS
 
 #f = Function(element)

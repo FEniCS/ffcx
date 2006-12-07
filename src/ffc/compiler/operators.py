@@ -201,11 +201,23 @@ def mean(v):
         return pi(v)
 
 def avg(v):
-    "Return the average of a BasisFunction across an interior facet"
+    "Return the average of v across an interior facet."
     if rank(v) == 0:
         return 0.5*(v('+') + v('-'))
     else:
         return [0.5*(v[i]('+') + v[i]('-')) for i in range(len(v))]
+
+def jump(v, n):
+    "Return the jump of v with respect to the given normal n across an interior facet."
+    if rank(v) == 0:
+        # v is a scalar and n is a vector
+        return [v('+')*n[i]('+') + v('-')*n[i]('-') for i in range(len(n))]
+    else:
+        # v and n are vectors
+        sum = Sum();
+        for i in range(len(v)):
+            sum = sum + v[i]('+')*n[i]('+') + v[i]('-')*n[i]('-')
+        return sum
 
 def __shapedim(v):
     "Return shape dimension for given object."
