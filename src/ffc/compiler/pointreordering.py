@@ -16,15 +16,13 @@ def reorder_points(points, shape, alignment):
 
     if shape == LINE:
         return __reorder_line(points, alignment)
-#        return __reorder_triangle(x, alignment)
     elif shape == TRIANGLE:
         return __reorder_triangle(points, alignment)
-#        return __reorder_tetrahedron(x, alignment)
     else:
-        raise RuntimeError, "Unable to reorder quadrature points, unknown shape: " + str(shape)
+        raise RuntimeError, "Unable to reorder quadrature points. Unknown shape: " + str(shape)
 
 def __reorder_line(points, alignment):
-    """Reorder points on the (FIAT) reference triangle."""
+    """Reorder points on the (FIAT) reference line."""
 
     def Phi0(x):
         return 0.5 - 0.5*x[0]
