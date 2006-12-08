@@ -1,4 +1,4 @@
-// This is UFC (Unified Form-assembly Code) v. 0.0.
+// This is UFC (Unified Form-assembly Code) v. 1.0-rc1
 // This code is released into the public domain.
 //
 // The FEniCS Project (http://www.fenics.org/) 2006.
@@ -147,6 +147,9 @@ namespace ufc
     
   };
 
+  /// This class defines the interface for the tabulation of the cell
+  /// tensor corresponding to the local contribution to a form from
+  /// the integral over a cell.
 
   class cell_integral
   {
@@ -158,11 +161,14 @@ namespace ufc
     /// Destructor
     virtual ~cell_integral() {}
 
-    /// Tabulate the interior contribution to the element tensor
+    /// Tabulate the tensor for the contribution from a local cell
     virtual void tabulate_tensor(double* A, const double * const * w, const cell& c) const = 0;
 
   };
 
+  /// This class defines the interface for the tabulation of the
+  /// exterior facet tensor corresponding to the local contribution
+  /// to a form from the integral over an exterior facet.
 
   class exterior_facet_integral
   {
@@ -174,11 +180,14 @@ namespace ufc
     /// Destructor
     virtual ~exterior_facet_integral() {}
 
-    /// Tabulate the exterior boundary contribution to the element tensor
+    /// Tabulate the tensor for the contribution from a local exterior facet
     virtual void tabulate_tensor(double* A, const double * const * w, const cell& c, unsigned int facet) const = 0;
 
   };
 
+  /// This class defines the interface for the tabulation of the
+  /// interior facet tensor corresponding to the local contribution
+  /// to a form from the integral over an interior facet.
 
   class interior_facet_integral
   {
@@ -190,25 +199,21 @@ namespace ufc
     /// Destructor
     virtual ~interior_facet_integral() {}
 
-    /// Tabulate the interior facet contribution to the tensor FIXME: update this signature
-    virtual void tabulate_tensor(double* A, const double * const * w, const cell& c, unsigned int facet) const = 0;
+    /// Tabulate the tensor for the contribution from a local interior facet
+    virtual void tabulate_tensor(double* A, const double * const * w, const cell& c0, const cell& c1, unsigned int facet0, unsigned int facet1) const = 0;
 
   };
 
-
-
-  /// FIXME: update this comment, and add comments to the *integral classes
-  /// This class defines the interface for the computation of the
-  /// element tensor corresponding to a form with r + n arguments,
-  /// that is, a mapping
+  /// This class defines the interface for the assembly of the global
+  /// tensor corresponding to a form with r + n arguments, that is, a
+  /// mapping
   ///
   ///     a : V1 x V2 x ... Vr x W1 x W2 x ... x Wn -> R
   ///
   /// with arguments v1, v2, ..., vr, w1, w2, ..., wn. The rank r
-  /// element tensor AK is the local contribution from an element K
-  /// to the rank r global tensor A defined by
+  /// global tensor A is defined by
   ///
-  ///     Ai = a(V1, V2, ..., Vr, w1, w2, ..., wn),
+  ///     A = a(V1, V2, ..., Vr, w1, w2, ..., wn),
   ///
   /// where each argument Vj represents the application to the sequence
   /// of basis functions of Vj and w1, w2, ..., wn are given fixed
@@ -233,13 +238,13 @@ namespace ufc
     /// Return the number of coefficients (n)
     virtual unsigned int num_coefficients() const = 0;
 
-    /// Create a cell integral, may return 0 if no such integral exists (caller responsible for deletion)
+    /// Create cell integral, returning 0 if the contribution is zero (caller responsible for deletion)
     virtual cell_integral* create_cell_integral() const = 0;
     
-    /// Create an integral over interior facets, may return 0 if no such integral exists (caller responsible for deletion)
+    /// Create interior facet integral, returning 0 if the contribution is zero (caller responsible for deletion)
     virtual interior_facet_integral* create_interior_facet_integral() const = 0;
 
-    /// Create an integral over exterior facets, may return 0 if no such integral exists (caller responsible for deletion)
+    /// Create exterior facet integral, returning 0 if the contribution is zero (caller responsible for deletion)
     virtual exterior_facet_integral* create_exterior_facet_integral() const = 0;
     
     /// Create a dof map for argument function i (caller responsible for deletion)
