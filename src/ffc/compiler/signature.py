@@ -24,11 +24,13 @@ def compute_hard_signature(product):
     # Create signatures for basis functions
     factors = []
     for v in product.basisfunctions:
-        factors += ["{%s;%s;%s;%s}" %    \
+        factors += ["{%s;%s;%s;%s,%s}" % \
                     (str(v.element),     \
                      str(v.index),       \
                      str(v.component),   \
-                     str(v.derivatives))]
+                     str(v.derivatives),
+                     str(v.restriction))]
+
 
     # Sort signatures for basis functions
     factors.sort()

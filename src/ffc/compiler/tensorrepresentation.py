@@ -30,23 +30,29 @@ def compute_terms(sum, type, facet0, facet1, alignment):
 
     # Reorder indices and compute factorization
     factorization = reorder_indices(sum)
+#    print "factorization ",factorization
 
     # Compute terms
     terms = [None for i in range(len(sum.products))]
     for i in range(len(sum.products)):
         debug("Compiling term %d" % i, 1)
         p = sum.products[i]
+#        print "p ", p
+#        print "i ",i
         if p.integral.type == type:
             # Compute geometry tensor
+#            print "ok type"
             G = GeometryTensor(p)
             # Check if reference tensor should be computed
             if factorization[i] == None:
+#                print "factor "
                 # Compute reference tensor and add term
                 A0 = ReferenceTensor(p, facet0, facet1, alignment)
                 terms[i] = Term(p, A0, [G])
             else:
                 # Add geometry tensor to previous term
                 terms[factorization[i]].G += [G]
+#                print "add "
     debug("All terms compiled", 1)
 
     # Remove terms not computed (factorized)
@@ -131,6 +137,7 @@ def __compute_element_tensor_default(terms, format):
     dropping multiplication with zero."""
     debug("Generating code for element tensor", 1)         
     declarations = []
+    print "element tensor default"
     iindices = terms[0].A0.i.indices or [[]] # All primary ranks are equal
 
     # Prefetch formats to speed up code generation

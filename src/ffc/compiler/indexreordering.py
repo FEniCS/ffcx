@@ -31,19 +31,18 @@ def reorder_indices(sum):
 
     # Create empty factorization
     factorization = [None for i in range(len(sum.products))]
-
+    print "factorization reorder", factorization
     # Compare signatures for pairs of terms
     for i in range(len(sum.products) - 1):
-
         p = sum.products[i]
         p_soft = compute_soft_signature(p)
         p_hard = compute_hard_signature(p)
+
         debug("Soft signature: " + p_soft, 1)
         debug("Hard signature: " + p_hard, 1)
 
         # Compare term i against term j for j > i
         for j in range(i + 1, len(sum.products)):
-
             # Don't factorize against another term if already factorized
             if not factorization[j] == None:
                 continue
