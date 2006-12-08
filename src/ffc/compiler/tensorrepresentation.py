@@ -91,9 +91,6 @@ def compute_geometry_tensor(terms, format, g_used, c_used):
             # Sum factorized values
             name = format.format["geometry tensor"](j, a)
             used = name in g_used
-
-            print a
-            
             value = format.format["sum"]([G(a, format, c_used, used) for G in terms[j].G])
             declaration = Declaration(name, value)
             declaration.used = used
@@ -137,7 +134,6 @@ def __compute_element_tensor_default(terms, format):
     dropping multiplication with zero."""
     debug("Generating code for element tensor", 1)         
     declarations = []
-    print "element tensor default"
     iindices = terms[0].A0.i.indices or [[]] # All primary ranks are equal
 
     # Prefetch formats to speed up code generation

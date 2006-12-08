@@ -56,9 +56,6 @@ class InteriorFacetTensor:
         check_used(self.terms, format, gS_used)
         self.gS = compute_geometry_tensor(self.terms, format, gS_used, cS_used)
 
-        print "g: " + str(gS_used)
-        print "c: " + str(cS_used)
-
         # Save facets
         self.facet0 = facet0
         self.facet1 = facet1

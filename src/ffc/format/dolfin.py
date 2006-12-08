@@ -809,15 +809,7 @@ def __eval_interior_boundary_default(form, options):
     "Generate function eval() for DOLFIN, interior boundary part (default version)."
     output = ""
     if not options["debug-no-geometry-tensor"]:
-        print "hej"
-        print form.ASi[0][0][0].gS
         if len(form.cSi) > 0:
-
-            for gS in form.ASi[-1][-1][-1].gS:
-                print gS, gS.used
-            for cS in form.cSi:
-                print cS, cS.used
-            
             output += """\
   // Compute coefficients
 %s

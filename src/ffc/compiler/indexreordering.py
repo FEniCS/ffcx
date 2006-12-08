@@ -31,7 +31,6 @@ def reorder_indices(sum):
 
     # Create empty factorization
     factorization = [None for i in range(len(sum.products))]
-    print "factorization reorder", factorization
     # Compare signatures for pairs of terms
     for i in range(len(sum.products) - 1):
         p = sum.products[i]
@@ -84,7 +83,6 @@ def __reorder_indices(p, q, p_hard):
 
     # Generate all permutations of indices in the range 0,...,n-1
     for reordering in permutations(range(n)):
-        #print "Reordering indices according to " + str(reordering)
         # Copy q and add n to indices (so we can reorder properly)
         q_new = Product(q)
         for i in range(n):

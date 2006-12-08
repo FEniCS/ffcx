@@ -87,16 +87,9 @@ class GeometryTensor:
         for c in self.coefficients:
             if not c.index.type == Index.AUXILIARY_G:
                 coefficient = format.format["coefficient"](c.n1.index, c.index([], a, [], []))
-
-
-                print str(coefficient), used
-                
                 factors += [coefficient]
                 # Only add coefficients appearing in an entry of G that is used
                 if used: cK_used.add(coefficient)
-
-                print cK_used
-                
         for t in self.transforms:
             if not (t.index0.type == Index.AUXILIARY_G or  t.index1.type == Index.AUXILIARY_G):
                 factors += [format.format["transform"](t.index0([], a, [], []), \

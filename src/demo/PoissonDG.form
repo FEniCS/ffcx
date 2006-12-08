@@ -17,9 +17,11 @@ f = Function(e)
 e = FiniteElement("Discontinuous vector Lagrange", "triangle", 0)
 n = Function(e)
 
-a = v('+')*U('-')*dS
-#L = v('+')*f('+')*dS
-L = v('-')*f('-')*dS
+#g = mean(f)
+#a = v('+')*U('-')*dS
+#L = (v('+')*g('+') + v('-')*g('-'))*dS
+
+L = v('+')*f('+')*dS
 
 #print avg(v)
 #print jump(v, n)

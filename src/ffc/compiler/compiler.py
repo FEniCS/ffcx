@@ -3,7 +3,7 @@ and building the data structures (geometry and reference tensors) for
 the evaluation of the multi-linear form."""
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-11-17 -- 2006-12-01"
+__date__ = "2004-11-17 -- 2006-12-07"
 __copyright__ = "Copyright (C) 2004-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -78,7 +78,7 @@ def build(sums, name = "Form", language = FFC_LANGUAGE, options = FFC_OPTIONS):
 
     # Check that the list is not empty
     if not len(forms) > 0:
-        print "No forms specified, nothing to do."
+        debug("No forms specified, nothing to do.")
         return None
 
     # Initialize format
@@ -180,8 +180,6 @@ def __build_form(form, format, options):
     gSe_used = set()
     gSi_used = set()
 
-    #print "form: ", form
-        
     # Compute element tensor for cell
     debug("Compiling tensor representation over cells")
     form.AK = ElementTensor(form.sum, format, cK_used, gK_used, options)
@@ -210,9 +208,9 @@ def __build_form(form, format, options):
     debug("Number of operations (multiplications) in computation of element tensor: " + str(form.num_ops), 1)
 
     # Compute coefficient declarations, common to all terms
-    form.cK  = __compute_coefficients(form.projections, format, cK_used)
-    form.cSe = __compute_coefficients(form.projections, format, cSe_used)
-    form.cSi = __compute_coefficients(form.projections, format, cSi_used)
+    form.cK  = __compute_coefficients(form.projections, format, cK_used,  1)
+    form.cSe = __compute_coefficients(form.projections, format, cSe_used, 1)
+    form.cSi = __compute_coefficients(form.projections, format, cSi_used, 2)
       
     # Check primary ranks
     __check_primary_ranks(form, num_facets, num_alignments)
@@ -258,19 +256,18 @@ def __check_primary_ranks(form, num_facets, num_alignments):
                     elif not form.rank == term.A0.i.rank:
                         raise FormError(form.sum, "Form must be linear in each of its arguments.")
 
-def __compute_coefficients(projections, format, c_used):
+def __compute_coefficients(projections, format, c_used, num_spaces):
     "Precompute declarations of coefficients according to given format."
 
     declarations = []
-
-    print "computing coefficients: " + str(c_used)
 
     # Iterate over projections
     for (n0, n1, e0, e1, P) in projections:
 
         if P == None:
+            n = num_spaces*e0.spacedim()
             # No projection, just copy the values
-            for k in range(e0.spacedim()):
+            for k in range(n):
                 name = format.format["coefficient"](n1, k)
                 value = format.format["coefficient table"](n0, k)
                 declaration = Declaration(name, value)
@@ -279,29 +276,28 @@ def __compute_coefficients(projections, format, c_used):
                     declaration.used = True
                 declarations += [declaration]
         else:
-            # Compute projection
-            (m, n) = numpy.shape(P)
-            for k in range(m):
-                terms = []
-                for l in range(n):
-                    if abs(P[k][l] < FFC_EPSILON):
-                        continue
-                    cl = format.format["coefficient table"](n0, l)
-                    if abs(P[k][l] - 1.0) < FFC_EPSILON:
-                        terms += [cl]
-                    else:
-                        Pkl = format.format["floating point"](P[k][l])
-                        terms += [format.format["multiplication"]([Pkl, cl])]
-                name = format.format["coefficient"](n1, k)
-                value = format.format["sum"](terms)
-                declaration = Declaration(name, value)
-                # Mark entries that are used
-                if name in c_used:
-                    declaration.used = True
-                # Add to list of declarations
-                declarations += [declaration]
-
-    print declarations
+            for i in range(num_spaces):
+                # Compute projection
+                (m, n) = numpy.shape(P)
+                for k in range(m):
+                    terms = []
+                    for l in range(n):
+                        if abs(P[k][l] < FFC_EPSILON):
+                            continue
+                        cl = format.format["coefficient table"](n0, l + i*n)
+                        if abs(P[k][l] - 1.0) < FFC_EPSILON:
+                            terms += [cl]
+                        else:
+                            Pkl = format.format["floating point"](P[k][l])
+                            terms += [format.format["multiplication"]([Pkl, cl])]
+                    name = format.format["coefficient"](n1, k + i*m)
+                    value = format.format["sum"](terms)
+                    declaration = Declaration(name, value)
+                    # Mark entries that are used
+                    if name in c_used:
+                        declaration.used = True
+                    # Add to list of declarations
+                    declarations += [declaration]
 
     return declarations
 
