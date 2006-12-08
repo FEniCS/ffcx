@@ -147,6 +147,57 @@ namespace ufc
     
   };
 
+
+  class cell_integral
+  {
+  public:
+
+    /// Constructor
+    cell_integral() {}
+
+    /// Destructor
+    virtual ~cell_integral() {}
+
+    /// Tabulate the interior contribution to the element tensor
+    virtual void tabulate_tensor(double* A, const double * const * w, const cell& c) const = 0;
+
+  };
+
+
+  class exterior_facet_integral
+  {
+  public:
+
+    /// Constructor
+    exterior_facet_integral() {}
+
+    /// Destructor
+    virtual ~exterior_facet_integral() {}
+
+    /// Tabulate the exterior boundary contribution to the element tensor
+    virtual void tabulate_tensor(double* A, const double * const * w, const cell& c, unsigned int facet) const = 0;
+
+  };
+
+
+  class interior_facet_integral
+  {
+  public:
+
+    /// Constructor
+    interior_facet_integral() {}
+
+    /// Destructor
+    virtual ~interior_facet_integral() {}
+
+    /// Tabulate the interior facet contribution to the tensor FIXME: update this signature
+    virtual void tabulate_tensor(double* A, const double * const * w, const cell& c, unsigned int facet) const = 0;
+
+  };
+
+
+
+  /// FIXME: update this comment, and add comments to the *integral classes
   /// This class defines the interface for the computation of the
   /// element tensor corresponding to a form with r + n arguments,
   /// that is, a mapping
@@ -163,15 +214,15 @@ namespace ufc
   /// of basis functions of Vj and w1, w2, ..., wn are given fixed
   /// functions (coefficients).
   
-  class element_tensor
+  class form
   {
   public:
 
     /// Constructor
-    element_tensor() {}
+    form() {}
 
     /// Destructor
-    virtual ~element_tensor() {}
+    virtual ~form() {}
 
     /// Return a string identifying the form
     virtual const char* description() const = 0;
@@ -182,21 +233,18 @@ namespace ufc
     /// Return the number of coefficients (n)
     virtual unsigned int num_coefficients() const = 0;
 
-    /// Return true iff the form has a contribution from the interior
-    virtual bool has_interior_contribution() const = 0;
-
-    /// Return true iff the form has a contribution from the boundary
-    virtual bool has_boundary_contribution() const = 0;
-
-    /// Tabulate the interior contribution to the element tensor
-    virtual void tabulate_interior(double* A, const double * const * w, const cell& c) const = 0;
+    /// Create a cell integral, may return 0 if no such integral exists (caller responsible for deletion)
+    virtual cell_integral* create_cell_integral() const = 0;
     
-    /// Tabulate the boundary contribution to the element tensor
-    virtual void tabulate_boundary(double* A, const double * const * w, const cell& c, unsigned int facet) const = 0;
- 
+    /// Create an integral over interior facets, may return 0 if no such integral exists (caller responsible for deletion)
+    virtual interior_facet_integral* create_interior_facet_integral() const = 0;
+
+    /// Create an integral over exterior facets, may return 0 if no such integral exists (caller responsible for deletion)
+    virtual exterior_facet_integral* create_exterior_facet_integral() const = 0;
+    
     /// Create a dof map for argument function i (caller responsible for deletion)
     virtual dof_map* create_dof_map(unsigned int i) const = 0;
-  
+
     /// Create a finite element for argument function i (caller responsible for deletion)
     virtual finite_element* create_finite_element(unsigned int i) const = 0;
 
