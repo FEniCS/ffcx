@@ -3,12 +3,13 @@ represent multilinear forms, that is, small basic data types used to
 build the data structure representing an element of the form algebra."""
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-09-29 -- 2005-11-17"
-__copyright__ = "Copyright (C) 2004 Anders Logg"
+__date__ = "2004-09-29 -- 2006-12-11"
+__copyright__ = "Copyright (C) 2004-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # FFC modules
 from index import Index
+from restriction import *
 
 class Coefficient:    
     """A Coefficient represents the coefficient for a function
@@ -92,25 +93,40 @@ class Transform:
     matrix of the affine map from the reference cell. With X the
     coordinates on the reference cell mapped to real coordinates x by
     an affine map x = F(X), a Transform represents the partial
-    derivative dX/dx."""
+    derivative dX/dx.
+
+    Attributes:
+
+        element     - a FiniteElement
+        index0      - an Index for variable X
+        index1      - an Index for variable x
+        restriction - a Restriction for facet evaluation
+    """
     
-    def __init__(self, element, index0 = None, index1 = None):
+    def __init__(self, element, index0 = None, index1 = None, restriction = None):
         "Create Transform."
         if isinstance(element, Transform):
             # Create Transform from Transform (copy constructor)
             self.element = element.element
             self.index0 = Index(element.index0)
             self.index1 = Index(element.index1)
+            self.restriction = element.restriction
         else:
             # Create Transform from given Indices
             self.element = element
             self.index0 = Index(index0)
             self.index1 = Index(index1)
+            self.restriction = restriction
         return
 
     def __repr__(self):
         "Print nicely formatted representation of Transform."
-        return "(dX" + self.index0.__repr__() + "/" + "dx" + self.index1.__repr__() + ")"
+        if self.restriction == None:
+            return "(dX" + self.index0.__repr__() + "/" + "dx" + self.index1.__repr__() + ")"
+        elif self.restriction == Restriction.PLUS:
+            return "(dX" + self.index0.__repr__() + "/" + "dx" + self.index1.__repr__() + ")(+)"
+        elif self.restriction == Restriction.MINUS:
+            return "(dX" + self.index0.__repr__() + "/" + "dx" + self.index1.__repr__() + ")(-)"
 
     def indexcall(self, foo, args = None):
         "Call given function on all Indices."

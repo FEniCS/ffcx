@@ -22,6 +22,14 @@ from ffc.compiler.mixedelement import *
 # FFC format modules
 import xml
 
+def choose_map(restriction):
+    if restriction == Restriction.PLUS:
+        return "map0"
+    elif restriction == Restriction.MINUS:
+        return "map1"
+    else:
+        return "map"
+
 # Specify formatting for code generation
 format = { "sum": lambda l: " + ".join(l),
            "subtract": lambda l: " - ".join(l),
@@ -32,7 +40,7 @@ format = { "sum": lambda l: " + ".join(l),
            "constant": lambda j: "c%d" % j,
            "coefficient table": lambda j, k: "c[%d][%d]" % (j, k),
            "coefficient": lambda j, k: "c%d_%d" % (j, k),
-           "transform": lambda j, k: "map.g%d%d" % (j, k),
+           "transform": lambda j, k, r: "%s.g%d%d" % (choose_map(r), j, k),
            "reference tensor" : lambda j, i, a: None,
            "geometry tensor": lambda j, a: "G%d_%s" % (j, "_".join(["%d" % index for index in a])),
            "element tensor": lambda i, k: "block[%d]" % k,

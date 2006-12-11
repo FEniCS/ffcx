@@ -312,7 +312,7 @@ class BasisFunction(Element):
         i = Index() # Create new secondary indexF
         w = Product(self)
         w.basisfunctions[0].derivatives.insert(0, Derivative(self.element, i))
-        w.transforms.insert(0, Transform(self.element, i, index))
+        w.transforms.insert(0, Transform(self.element, i, index, self.restriction))
         return w
 
     def rank(self):
@@ -480,6 +480,10 @@ class Product(Element):
     def __call__(self, r):
         v = Product(self)
         v.basisfunctions = ([w(r) for w in v.basisfunctions])
+        # Same restriction for all basis functions so pick first
+        restriction = v.basisfunctions[0].restriction
+        for i in range(len(v.transforms)):
+            v.transforms[i].restriction = restriction
         return v
 
     def __repr__(self):

@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-11-03 -- 2006-12-01"
+__date__ = "2004-11-03 -- 2006-12-11"
 __copyright__ = "Copyright (C) 2004-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -93,7 +93,8 @@ class GeometryTensor:
         for t in self.transforms:
             if not (t.index0.type == Index.AUXILIARY_G or  t.index1.type == Index.AUXILIARY_G):
                 factors += [format.format["transform"](t.index0([], a, [], []), \
-                                                       t.index1([], a, [], []))]
+                                                       t.index1([], a, [], []), \
+                                                       t.restriction),]
         product = format.format["multiplication"](factors)
         if product: f0 = [product]
         else: f0 = []
@@ -110,7 +111,8 @@ class GeometryTensor:
             for t in self.transforms:
                 if t.index0.type == Index.AUXILIARY_G or t.index1.type == Index.AUXILIARY_G:
                     factors += [format.format["transform"](t.index0([], a, [], b), \
-                                                           t.index1([], a, [], b))]
+                                                           t.index1([], a, [], b), \
+                                                           t.restriction)]
             terms += [format.format["multiplication"](factors)]
         sum = format.format["sum"](terms)
         if sum: sum = format.format["grouping"](sum)

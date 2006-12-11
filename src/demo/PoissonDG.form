@@ -21,7 +21,13 @@ n = Function(e)
 #a = v('+')*U('-')*dS
 #L = (v('+')*g('+') + v('-')*g('-'))*dS
 
-L = v('+')*f('+')*dS
+#L = v('-')*f('-')*dS
+#L = v('+').dx(0)*f('+')*dS
+
+#L = v('+').dx(0)*dS
+L = v.dx(0)('+')*dS + v.dx(0)('-')*dS
+
+print L
 
 #print avg(v)
 #print jump(v, n)
