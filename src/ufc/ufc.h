@@ -83,7 +83,7 @@ namespace ufc
     virtual ~dof_map() {}
     
     /// Return a string identifying the dof map
-    virtual const char* description() const = 0;
+    virtual const char* signature() const = 0;
     
     /// Return true iff mesh entities of topological dimension d are needed
     virtual bool needs_mesh_entities(unsigned int d) const = 0;
@@ -96,7 +96,7 @@ namespace ufc
     virtual void init_cell(const mesh& mesh, const cell& cell) = 0;
 
     /// Return the dimension of the global finite element function space.
-    /// This is only valid after calling initialization.
+    /// This is only valid after initialization.
     virtual unsigned int global_dimension() const = 0;
     
     /// Return the dimension of the local finite element function space
@@ -119,10 +119,10 @@ namespace ufc
     virtual ~finite_element() {}
 
     /// Return a string identifying the finite element
-    virtual const char* description() const = 0;
+    virtual const char* signature() const = 0;
 
-    /// Return the dimension of the local finite element function space
-    virtual unsigned int local_dimension() const = 0;
+    /// Return the dimension of the finite element function space
+    virtual unsigned int space_dimension() const = 0;
 
     /// Return the rank of the value space
     virtual unsigned int value_rank() const = 0;
@@ -230,7 +230,7 @@ namespace ufc
     virtual ~form() {}
 
     /// Return a string identifying the form
-    virtual const char* description() const = 0;
+    virtual const char* signature() const = 0;
 
     /// Return the rank of the element tensor (r)
     virtual unsigned int rank() const = 0;
