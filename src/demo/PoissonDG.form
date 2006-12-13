@@ -24,10 +24,21 @@ n = Function(e)
 #L = v('-')*f('-')*dS
 #L = v('+').dx(0)*f('+')*dS
 
+a = dot(jump(v, n), jump(U, n))*dS
+
 #L = v('+').dx(0)*dS
 L = v.dx(0)('+')*dS + v.dx(0)('-')*dS
 
-print L
+e = FiniteElement("Discontinuous vector Lagrange", "triangle", 1)
+
+v = TestFunction(e)
+u = TrialFunction(e)
+
+a = v[i]('+')*u[i]('+')*dS
+a = v('+')[i]*u('+')[i]*dS
+print a
+
+#print L
 
 #print avg(v)
 #print jump(v, n)
