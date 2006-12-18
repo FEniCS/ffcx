@@ -31,6 +31,8 @@ __license__  = "GNU GPL Version 2"
 
 # Modified by Garth N. Wells 2006
 # Modified by Kristian Oelgaard 2006
+# Modified by Marie Rognes (meg@math.uio.no), 2006
+
 
 # Python modules
 import sys
@@ -256,15 +258,22 @@ class BasisFunction(Element):
         rank = self.element.rank()
         if self.component or rank == 0:
             raise FormError, (self, "Cannot pick component of scalar BasisFunction.")
-        w = BasisFunction(self)
+        w = Product(self)
+
         if isinstance(component, list):
             if not rank == len(component):
                 raise FormError, (component, "Illegal component index, does not match rank.")
-            w.component = listcopy(component)
+            if self.element.transform == "Piola":
+                w = piola(self, component) # For tensors the Piola transform is taken row-wise. 
+            else:
+                w.basisfunctions[0].component = listcopy(component) 
         else:
             if not rank == 1:
                 raise FormError, (component, "Illegal component index, does not match rank.")
-            w.component = [Index(component)]
+            if self.element.transform == "Piola":
+                w = piola(self, component)
+            else:
+                w.basisfunctions[0].component = [Index(component)]        
         return w
 
     def __len__(self):
@@ -354,7 +363,10 @@ class Product(Element):
         coefficients   - a list of Coefficients
         transforms     - a list of Transforms
         basisfunctions - a list of BasisFunctions
-        integral       - an Integral"""
+        integral       - an Integral
+        determinant    - the power of the absolute value of 
+                         the determinant of the geometry mapping
+    """
 
     def __init__(self, other = None):
         "Create Product."
@@ -365,6 +377,7 @@ class Product(Element):
             self.coefficients = []
             self.transforms = []
             self.basisfunctions = []
+            self.determinant = 0
             self.integral = None
         elif isinstance(other, int) or isinstance(other, float):
             # Create Product from scalar
@@ -373,6 +386,7 @@ class Product(Element):
             self.coefficients = []
             self.transforms = []
             self.basisfunctions = []
+            self.determinant = 0
             self.integral = None
         elif isinstance(other, Function):
             # Create Product from Function
@@ -382,6 +396,7 @@ class Product(Element):
             self.coefficients = [Coefficient(other, index)]
             self.transforms = []
             self.basisfunctions = [BasisFunction(other.e1, index)]
+            self.determinant = 0
             self.integral = None
         elif isinstance(other, Constant):
             # Create Product from Constant
@@ -391,6 +406,7 @@ class Product(Element):
             self.coefficients = []
             self.transforms = []
             self.basisfunctions = []
+            self.determinant = 0
             self.integral = None
         elif isinstance(other, BasisFunction):
             # Create Product from BasisFunction
@@ -399,6 +415,7 @@ class Product(Element):
             self.coefficients = []
             self.transforms = []
             self.basisfunctions = [BasisFunction(other)]
+            self.determinant = 0
             self.integral = None
         elif isinstance(other, Product):
             # Create Product from Product (copy constructor)
@@ -407,6 +424,7 @@ class Product(Element):
             self.coefficients = listcopy(other.coefficients)
             self.transforms = listcopy(other.transforms)
             self.basisfunctions = listcopy(other.basisfunctions)
+            self.determinant = other.determinant
             self.integral = other.integral
         else:
             raise FormError, (other, "Unable to create Product from given expression.")
@@ -420,6 +438,7 @@ class Product(Element):
                 raise FormError, (self, "Integrand can only be integrated once.")
             w = Product(self)
             w.integral = Integral(other)
+            w.determinant += 1 
             return w
         elif isinstance(other, Sum):
             return Sum(self) * Sum(other)
@@ -442,6 +461,7 @@ class Product(Element):
             w.coefficients = listcopy(w0.coefficients + w1.coefficients)
             w.transforms = listcopy(w0.transforms + w1.transforms)
             w.basisfunctions = listcopy(w0.basisfunctions + w1.basisfunctions)
+            w.determinant = w0.determinant + w1.determinant
             if w0.integral and w1.integral:
                 raise FormError, (self, "Integrand can only be integrated once.")
             elif w0.integral:
@@ -465,9 +485,10 @@ class Product(Element):
         if not len(self.basisfunctions) == 1:
             raise FormError, (self, "Cannot pick component of scalar expression.")
         # Otherwise, return component of first and only BasisFunction
-        w = Product(self)
-        w.basisfunctions[0] = w.basisfunctions[0][component]
-        return w
+        p = Product(self)
+        p.basisfunctions = [] 
+        w = Product(self.basisfunctions[0][component]) 
+        return w*p
 
     def __len__(self):
         "Operator: len(Product)"
@@ -496,6 +517,10 @@ class Product(Element):
             s = str(self.numeric)
         else:
             s = ""
+        if self.determinant == 0:
+            d = ""
+        else:
+            d = "|det(F)|^" + "(" + str(self.determinant) + ")"
         c = "".join([w.__repr__() for w in self.constants])
         w = "".join([w.__repr__() for w in self.coefficients])
         t = "".join([t.__repr__() for t in self.transforms])
@@ -504,7 +529,7 @@ class Product(Element):
             i = "*" + self.integral.__repr__()
         else:
             i = ""
-        return s + c + w + t + " | " + v + i
+        return s + c + d + w + t + " | " + v + i
 
     def dx(self, index = None):
         "Operator: (d/dx)Product in given coordinate direction."
@@ -666,3 +691,30 @@ class TrialFunction(BasisFunction):
         index.index = -1
         BasisFunction.__init__(self, element, index)
         return
+
+
+
+
+# FIXME: Maybe insert the piola-function somewhere else?.
+def piola(v, component):
+    "Returns the 'component' of the Piola transform of the BasisFunction v. " 
+    rank = v.element.rank()
+    if v.component or rank == 0:
+        raise FormError, (self, "Cannot pick component of scalar BasisFunction.")    
+    w = Product(v)
+    j = Index()
+    if isinstance(component, list):
+        if not rank == len(component):
+            raise FormError, (component, "Illegal component index, does not match rank.")
+        end = len(component)
+        last = component(end)
+        w.transforms = [Transform(v.element, j, last, None, -1)] 
+        w.basisfunctions[0].component = [component[1:end-1], Index(j)]
+        print "The Piola transform is untested in the tensor-valued case."
+    else:  
+        if not rank == 1:
+            raise FormError, (component, "Illegal component index, does not match rank.") 
+        w.transforms = [Transform(v.element, j, component, None, -1)] 
+        w.basisfunctions[0].component = [Index(j)]    
+    w.determinant = -1
+    return w

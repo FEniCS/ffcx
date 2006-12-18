@@ -7,6 +7,9 @@ __date__ = "2004-09-29 -- 2006-12-11"
 __copyright__ = "Copyright (C) 2004-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
+# Modified by Marie Rognes (meg@math.uio.no), 2006
+
+
 # FFC modules
 from index import Index
 from restriction import *
@@ -100,33 +103,44 @@ class Transform:
         element     - a FiniteElement
         index0      - an Index for variable X
         index1      - an Index for variable x
+        power       - the power of (dX/dx)
         restriction - a Restriction for facet evaluation
     """
     
-    def __init__(self, element, index0 = None, index1 = None, restriction = None):
+    def __init__(self, element, index0 = None, index1 = None, restriction = None, power = 1):
         "Create Transform."
         if isinstance(element, Transform):
             # Create Transform from Transform (copy constructor)
             self.element = element.element
             self.index0 = Index(element.index0)
             self.index1 = Index(element.index1)
+            self.power = element.power
             self.restriction = element.restriction
         else:
             # Create Transform from given Indices
             self.element = element
             self.index0 = Index(index0)
             self.index1 = Index(index1)
+            self.power = power
             self.restriction = restriction
         return
 
     def __repr__(self):
         "Print nicely formatted representation of Transform."
+        if self.power == 1:
+            p = ""
+        elif not self.power:
+            return "" 
+        else:
+            p = "^("+ str(self.power) + ")"
         if self.restriction == None:
-            return "(dX" + self.index0.__repr__() + "/" + "dx" + self.index1.__repr__() + ")"
+            return "(dX" + self.index0.__repr__() + "/" + "dx" + self.index1.__repr__() + ")" + p
         elif self.restriction == Restriction.PLUS:
-            return "(dX" + self.index0.__repr__() + "/" + "dx" + self.index1.__repr__() + ")(+)"
+            return "(dX" + self.index0.__repr__() + "/" + "dx" + self.index1.__repr__() + ")" + p + "(+)"
         elif self.restriction == Restriction.MINUS:
-            return "(dX" + self.index0.__repr__() + "/" + "dx" + self.index1.__repr__() + ")(-)"
+            return "(dX" + self.index0.__repr__() + "/" + "dx" + self.index1.__repr__() + ")" + p + "(-)"
+        else: 
+            raise FormError("Wrong value for restriction of transform")
 
     def indexcall(self, foo, args = None):
         "Call given function on all Indices."

@@ -4,6 +4,7 @@ __copyright__ = "Copyright (C) 2004-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # Modified by Garth N. Wells 2006
+# Modified by Marie E. Rognes 2006 (meg@math.uio.no)
 
 # Python modules
 import sys
@@ -44,7 +45,17 @@ class FiniteElement:
       shape:  "line", "triangle", "tetrahedron"
       degree: 0, 1, 2, ...
 
-    The shape and degree must match the chosen type of finite element."""
+
+    The shape and degree must match the chosen type of finite element.
+
+    The attribute transform described the transform used to map the
+    reference basis function onto the global basis functions:
+
+    transform: "Standard", "Piola"
+
+    The transform defaults to "Standard" for H1 and L2 elements,
+    "Piola" for H(div) elements.
+    """
 
     def __init__(self, type, shape, degree = None, num_components = None, element = None):
         "Create FiniteElement."
@@ -53,6 +64,7 @@ class FiniteElement:
         self.type_str = type
         self.shape_str = shape
         self.element = None
+        self.transform = "Standard" # Default
 
         if not element is None:
             self.element = element
@@ -83,14 +95,17 @@ class FiniteElement:
             elif type == "Raviart-Thomas" or type == "RT":
                 print "Warning: element untested"
                 self.element = RaviartThomas(self.fiat_shape, degree)
+                self.transform = "Piola"
             elif type == "Brezzi-Douglas-Marini" or type == "BDM":
                 print "Warning: element untested"
                 self.element = BDM(self.fiat_shape, degree)
+                self.transform = "Piola"
             elif type == "Nedelec":
                 print "Warning: element untested"
                 self.element = Nedelec(degree)
             else:
                 raise RuntimeError, "Unknown finite element: " + str(type)
+
 
         # Save dual basis
         self.fiat_dual = self.element.dual_basis()
