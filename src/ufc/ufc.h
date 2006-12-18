@@ -9,6 +9,9 @@
 namespace ufc
 {
 
+  /// Valid cell shapes
+  enum shape {interval, triangle, tetrahedron, quadrilateral, hexahedron};
+
   /// This class defines the data structure for a finite element mesh.
 
   class mesh
@@ -123,6 +126,9 @@ namespace ufc
 
     /// Return a string identifying the finite element
     virtual const char* signature() const = 0;
+
+    /// Return the cell shape
+    virtual shape cell_shape() const = 0;
 
     /// Return the dimension of the finite element function space
     virtual unsigned int space_dimension() const = 0;
