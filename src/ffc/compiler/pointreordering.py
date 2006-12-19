@@ -41,8 +41,55 @@ def __reorder_line(points, alignment):
 
     return new_points
     
-def __reorder_triangle(x, alignment):
+def __reorder_triangle(points, alignment):
     """Reorder points on the (FIAT) reference triangle."""
-    # FIXME: Write code here
-    print "triangle ", x, "align ", alignment
-    return x
+    def Phi0(x):
+      return -0.5 * x[0] - 0.5*x[1]
+
+    def Phi1(x):
+      return 0.5 * x[0] + 0.5
+
+    def Phi2(x):
+      return 0.5 * x[1] + 0.5
+
+    if alignment == 0:
+      p0 = [-1.0, -1.0]
+      p1 = (1.0, -1.0)
+      p2 = [-1.0, 1.0]
+    elif alignment == 1:
+      p0 = [-1.0, -1.0]
+      p1 = (-1.0, 1.0)
+      p2 = [1.0, -1.0]
+    if alignment == 2:
+      p0 = [1.0, -1.0]
+      p1 = (-1.0, 1.0)
+      p2 = [-1.0, -1.0]
+    elif alignment == 3:
+      p0 = [1.0, -1.0]
+      p1 = (-1.0, -1.0)
+      p2 = [-1.0, 1.0]
+    if alignment == 4:
+      p0 = [-1.0, 1.0]
+      p1 = (-1.0, -1.0)
+      p2 = [1.0, -1.0]
+    elif alignment == 5:
+      p0 = [-1.0, 1.0]
+      p1 = (1.0, -1.0)
+      p2 = [-1.0, -1.0]
+
+#    print "align ", alignment
+#    print "p0 ",p0
+#    print "p1 ",p1
+#    print "p2 ",p2
+
+    def x_coord(x):
+      return Phi0(x)*p0[0] + Phi1(x)*p1[0] + Phi2(x)*p2[0]
+
+    def y_coord(x):
+      return Phi0(x)*p0[1] + Phi1(x)*p1[1] + Phi2(x)*p2[1]
+
+    new_points = [(x_coord(x), y_coord(x)) for x in points]
+
+#    print "points ", points
+#    print "new_points ",new_points    
+    return new_points
