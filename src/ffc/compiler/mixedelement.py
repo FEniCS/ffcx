@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2005-09-16 -- 2006-12-05"
+__date__ = "2005-09-16 -- 2006-12-19"
 __copyright__ = "Copyright (C) 2005-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -21,12 +21,12 @@ from nodemap import *
 from pointmap import *
 from vertexeval import *
 
-def BasisFunctions(element):
+def BasisFunctions(element, functiontype = BasisFunction):
     "Create tuple of BasisFunctions from given MixedElement."
     if not isinstance(element, MixedElement):
         raise RuntimeError, "Basis function tuple must be created from mixed element."
     # Create basis function for mixed element
-    vector = BasisFunction(element)
+    vector = functiontype(element)
     # Pick components/subvectors of the mixed basis function
     subvectors = []
     offset = 0
@@ -44,45 +44,11 @@ def BasisFunctions(element):
 
 def TestFunctions(element):
     "Create tuple of TestFunctions from given MixedElement."
-    if not isinstance(element, MixedElement):
-        raise RuntimeError, "Basis function tuple must be created from mixed element."
-    # Create basis function for mixed element
-    vector = TestFunction(element)
-    # Pick components/subvectors of the mixed basis function
-    subvectors = []
-    offset = 0
-    for e in element.elements:
-        if e.rank() == 0:
-            subvector = vector[offset]
-            offset += 1
-        elif e.rank() == 1:
-            subvector = [vector[i] for i in range(offset, offset + e.tensordim(0))]
-            offset += e.tensordim(0)
-        else:
-            raise RuntimeError, "Mixed elements can only be created from scalar or vector-valued elements."
-        subvectors += [subvector]
-    return tuple(subvectors)
+    return BasisFunctions(element, TestFunction)
 
 def TrialFunctions(element):
     "Create tuple of TrialFunctions from given MixedElement."
-    if not isinstance(element, MixedElement):
-        raise RuntimeError, "Basis function tuple must be created from mixed element."
-    # Create basis function for mixed element
-    vector = TrialFunction(element)
-    # Pick components/subvectors of the mixed basis function
-    subvectors = []
-    offset = 0
-    for e in element.elements:
-        if e.rank() == 0:
-            subvector = vector[offset]
-            offset += 1
-        elif e.rank() == 1:
-            subvector = [vector[i] for i in range(offset, offset + e.tensordim(0))]
-            offset += e.tensordim(0)
-        else:
-            raise RuntimeError, "Mixed elements can only be created from scalar or vector-valued elements."
-        subvectors += [subvector]
-    return tuple(subvectors)
+    return BasisFunctions(element, TrialFunction)
 
 def Functions(element):
     "Create tuple of Functions from given MixedElement."
@@ -122,6 +88,9 @@ class MixedElement:
 
     def __init__(self, elements):
         "Create MixedElement from a list of elements."
+
+        # FIXME: Temporary fix, need to figure this out
+        self.mapping = "Standard"
 
         # Create list of elements
         if not isinstance(elements, list):

@@ -1,10 +1,10 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-10-04 -- 2006-12-05"
+__date__ = "2004-10-04 -- 2006-12-19"
 __copyright__ = "Copyright (C) 2004-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # Modified by Garth N. Wells 2006
-# Modified by Marie E. Rognes 2006 (meg@math.uio.no)
+# Modified by Marie E. Rognes 2006
 
 # Python modules
 import sys
@@ -48,10 +48,10 @@ class FiniteElement:
 
     The shape and degree must match the chosen type of finite element.
 
-    The attribute transform described the transform used to map the
-    reference basis function onto the global basis functions:
+    The attribute mapping specifies the type of mapping of the
+    reference basis to the global basis functions:
 
-    transform: "Standard", "Piola"
+      mapping: "Standard", "Piola"
 
     The transform defaults to "Standard" for H1 and L2 elements,
     "Piola" for H(div) elements.
@@ -64,7 +64,7 @@ class FiniteElement:
         self.type_str = type
         self.shape_str = shape
         self.element = None
-        self.transform = "Standard" # Default
+        self.mapping = "Standard" # Default
 
         if not element is None:
             self.element = element
@@ -95,11 +95,11 @@ class FiniteElement:
             elif type == "Raviart-Thomas" or type == "RT":
                 print "Warning: element untested"
                 self.element = RaviartThomas(self.fiat_shape, degree)
-                self.transform = "Piola"
+                self.mapping = "Piola"
             elif type == "Brezzi-Douglas-Marini" or type == "BDM":
                 print "Warning: element untested"
                 self.element = BDM(self.fiat_shape, degree)
-                self.transform = "Piola"
+                self.mapping = "Piola"
             elif type == "Nedelec":
                 print "Warning: element untested"
                 self.element = Nedelec(degree)

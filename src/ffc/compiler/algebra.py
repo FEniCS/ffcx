@@ -25,14 +25,13 @@ algebra:
     Unary  ()     (operand must be multi-valued, +/-)"""
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-09-27 -- 2006-12-01"
+__date__ = "2004-09-27 -- 2006-12-19"
 __copyright__ = "Copyright (C) 2004-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # Modified by Garth N. Wells 2006
 # Modified by Kristian Oelgaard 2006
-# Modified by Marie Rognes (meg@math.uio.no), 2006
-
+# Modified by Marie Rognes 2006
 
 # Python modules
 import sys
@@ -51,6 +50,7 @@ from variables import *
 from index import Index
 from integral import *
 from restriction import *
+from piola import *
 
 class Element:
     "Base class for elements of the algebra."
@@ -255,26 +255,10 @@ class BasisFunction(Element):
 
     def  __getitem__(self, component):
         "Operator: BasisFunction[component], pick given component."
-        rank = self.element.rank()
-        if self.component or rank == 0:
-            raise FormError, (self, "Cannot pick component of scalar BasisFunction.")
-        w = Product(self)
-
-        if isinstance(component, list):
-            if not rank == len(component):
-                raise FormError, (component, "Illegal component index, does not match rank.")
-            if self.element.transform == "Piola":
-                w = piola(self, component) # For tensors the Piola transform is taken row-wise. 
-            else:
-                w.basisfunctions[0].component = listcopy(component) 
+        if self.element.mapping == "Piola":
+            return self.pick_component_piola(component)
         else:
-            if not rank == 1:
-                raise FormError, (component, "Illegal component index, does not match rank.")
-            if self.element.transform == "Piola":
-                w = piola(self, component)
-            else:
-                w.basisfunctions[0].component = [Index(component)]        
-        return w
+            return self.pick_component_default(component)
 
     def __len__(self):
         "Operator: len(BasisFunction)"
@@ -351,6 +335,45 @@ class BasisFunction(Element):
         [i.indexcall(foo, args) for i in self.component]
         [d.indexcall(foo, args) for d in self.derivatives]
         return
+
+    def pick_component_default(self, component):
+        "Pick given component of BasisFunction."
+        rank = self.element.rank()
+        if self.component or rank == 0:
+            raise FormError, (self, "Cannot pick component of scalar BasisFunction.")
+        w = Product(self)
+        if isinstance(component, list):
+            if not rank == len(component):
+                raise FormError, (component, "Illegal component index, does not match rank.")
+            w.basisfunctions[0].component = listcopy(component) 
+        else:
+            if not rank == 1:
+                raise FormError, (component, "Illegal component index, does not match rank.")
+            w.basisfunctions[0].component = [Index(component)]        
+        return w
+
+    def pick_component_piola(v, component):
+        "Pick given component of BasisFunction mapped with the Piola transform."
+        rank = v.element.rank()
+        if v.component or rank == 0:
+            raise FormError, (self, "Cannot pick component of scalar BasisFunction.")    
+        w = Product(v)
+        j = Index()
+        if isinstance(component, list):
+            if not rank == len(component):
+                raise FormError, (component, "Illegal component index, does not match rank.")
+            end = len(component)
+            last = component(end)
+            w.transforms = [Transform(v.element, j, last, None, -1)] 
+            w.basisfunctions[0].component = [component[1:end-1], Index(j)]
+            print "The Piola transform is untested in the tensor-valued case."
+        else:  
+            if not rank == 1:
+                raise FormError, (component, "Illegal component index, does not match rank.") 
+            w.transforms = [Transform(v.element, j, component, None, -1)] 
+            w.basisfunctions[0].component = [Index(j)]    
+            w.determinant = -1
+        return w
 
 class Product(Element):
     """A Product represents a product of factors, including
@@ -691,30 +714,3 @@ class TrialFunction(BasisFunction):
         index.index = -1
         BasisFunction.__init__(self, element, index)
         return
-
-
-
-
-# FIXME: Maybe insert the piola-function somewhere else?.
-def piola(v, component):
-    "Returns the 'component' of the Piola transform of the BasisFunction v. " 
-    rank = v.element.rank()
-    if v.component or rank == 0:
-        raise FormError, (self, "Cannot pick component of scalar BasisFunction.")    
-    w = Product(v)
-    j = Index()
-    if isinstance(component, list):
-        if not rank == len(component):
-            raise FormError, (component, "Illegal component index, does not match rank.")
-        end = len(component)
-        last = component(end)
-        w.transforms = [Transform(v.element, j, last, None, -1)] 
-        w.basisfunctions[0].component = [component[1:end-1], Index(j)]
-        print "The Piola transform is untested in the tensor-valued case."
-    else:  
-        if not rank == 1:
-            raise FormError, (component, "Illegal component index, does not match rank.") 
-        w.transforms = [Transform(v.element, j, component, None, -1)] 
-        w.basisfunctions[0].component = [Index(j)]    
-    w.determinant = -1
-    return w
