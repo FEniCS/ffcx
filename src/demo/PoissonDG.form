@@ -1,63 +1,30 @@
-# Copyright (C) 2006 Anders Logg (logg@simula.no)
-# Licensed under the GNU GPL Version 2
+# Copyright (C) 2006 Kristiand Oelgaard and Anders Logg.
+# Licensed under the GNU GPL Version 2.
+#
+# First added:  2006-12-05
+# Last changed: 2006-12-18
 #
 # The bilinear form a(v, U) and linear form L(v) for
 # Poisson's equation in a discontinuous Galerkin (DG)
 # formulation.
 #
-# Compile this form with FFC: ffc PoissonDG.form
+# Compile this form with FFC: ffc Poisson.form
 
-# Test and trial functions
-e = FiniteElement("Discontinuous Lagrange", "triangle", 1)
-v = TestFunction(e)
-U = TrialFunction(e)
-f = Function(e)
+DG1 = FiniteElement("Discontinuous Lagrange", "triangle", 1)
+DG0 = FiniteElement("Discontinuous vector Lagrange", "triangle", 0)
+DGh = FiniteElement("Discontinuous Lagrange", "triangle", 0)
 
-# Facet normal
-e = FiniteElement("Discontinuous vector Lagrange", "triangle", 0)
-n = Function(e)
+v = TestFunction(DG1)
+u = TrialFunction(DG1)
+f = Function(DG1)
+g = Function(DG1)
+n = Function(DG0)
+h = Function(DGh)
+alpha = Constant()
 
-#g = mean(f)
-#a = v('+')*U('-')*dS
-#L = (v('+')*g('+') + v('-')*g('-'))*dS
+a =  dot(grad(v), grad(u))*dx \
+   - dot(avg(grad(v)), jump(u, n))*dS \
+   - dot(jump(v, n), avg(grad(u)))*dS \
+   + alpha*avg(h)*dot(jump(v, n), jump(u, n))*dS
 
-#L = v('-')*f('-')*dS
-#L = v('+').dx(0)*f('+')*dS
-
-a = dot(jump(v, n), jump(U, n))*dS
-
-#L = v('+').dx(0)*dS
-L = v.dx(0)('+')*dS + v.dx(0)('-')*dS
-
-e = FiniteElement("Discontinuous vector Lagrange", "triangle", 1)
-
-v = TestFunction(e)
-u = TrialFunction(e)
-
-a = v[i]('+')*u[i]('+')*dS
-a = v('+')[i]*u('+')[i]*dS
-print a
-
-#print L
-
-#print avg(v)
-#print jump(v, n)
-
-#a = v('+')*U('+')*dS
-
-#f = Function(element)
-#g = Function(element)
-
-#a1 = v('+')*U('-')*dS
-#print a1
-
-#a2 = (v*U+v*U.dx(0))('+')*dS
-#print a2
-
-#a3 = dot(avg(grad(v)), avg(grad(v)))*dS
-#print a3
-
-#a = a1
-
-#a = dot(grad(v), grad(U))*dx
-#L = dot(v, f)*dx + dot(v, g)*ds
+L = v*f*dx + v*g*ds
