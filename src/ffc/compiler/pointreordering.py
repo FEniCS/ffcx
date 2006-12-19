@@ -4,7 +4,7 @@ a facet depending on the alignment of the facet with respect
 to a neighboring cell."""
 
 __author__ = "Kristian Oelgaard (k.b.oelgaard@tudelft.nl) and Anders Logg (logg@simula.no)"
-__date__ = "2005-09-06 -- 2006-12-06"
+__date__ = "2005-09-06 -- 2006-12-19"
 __copyright__ = "Copyright (C) 2006 Kristian Oelgaard and Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -43,44 +43,40 @@ def __reorder_line(points, alignment):
     
 def __reorder_triangle(points, alignment):
     """Reorder points on the (FIAT) reference triangle."""
+    
     def Phi0(x):
-      return -0.5 * x[0] - 0.5*x[1]
+      return -0.5*x[0] - 0.5*x[1]
 
     def Phi1(x):
-      return 0.5 * x[0] + 0.5
+      return 0.5*x[0] + 0.5
 
     def Phi2(x):
-      return 0.5 * x[1] + 0.5
+      return 0.5*x[1] + 0.5
 
     if alignment == 0:
-      p0 = [-1.0, -1.0]
+      p0 = (-1.0, -1.0)
       p1 = (1.0, -1.0)
-      p2 = [-1.0, 1.0]
+      p2 = (-1.0, 1.0)
     elif alignment == 1:
-      p0 = [-1.0, -1.0]
+      p0 = (-1.0, -1.0)
       p1 = (-1.0, 1.0)
-      p2 = [1.0, -1.0]
+      p2 = (1.0, -1.0)
     if alignment == 2:
-      p0 = [1.0, -1.0]
+      p0 = (1.0, -1.0)
       p1 = (-1.0, 1.0)
-      p2 = [-1.0, -1.0]
+      p2 = (-1.0, -1.0)
     elif alignment == 3:
-      p0 = [1.0, -1.0]
+      p0 = (1.0, -1.0)
       p1 = (-1.0, -1.0)
-      p2 = [-1.0, 1.0]
+      p2 = (-1.0, 1.0)
     if alignment == 4:
-      p0 = [-1.0, 1.0]
+      p0 = (-1.0, 1.0)
       p1 = (-1.0, -1.0)
-      p2 = [1.0, -1.0]
+      p2 = (1.0, -1.0)
     elif alignment == 5:
-      p0 = [-1.0, 1.0]
+      p0 = (-1.0, 1.0)
       p1 = (1.0, -1.0)
-      p2 = [-1.0, -1.0]
-
-#    print "align ", alignment
-#    print "p0 ",p0
-#    print "p1 ",p1
-#    print "p2 ",p2
+      p2 = (-1.0, -1.0)
 
     def x_coord(x):
       return Phi0(x)*p0[0] + Phi1(x)*p1[0] + Phi2(x)*p2[0]
@@ -90,6 +86,4 @@ def __reorder_triangle(points, alignment):
 
     new_points = [(x_coord(x), y_coord(x)) for x in points]
 
-#    print "points ", points
-#    print "new_points ",new_points    
     return new_points
