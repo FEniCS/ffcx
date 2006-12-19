@@ -50,7 +50,6 @@ from variables import *
 from index import Index
 from integral import *
 from restriction import *
-from piola import *
 
 class Element:
     "Base class for elements of the algebra."
@@ -352,25 +351,25 @@ class BasisFunction(Element):
             w.basisfunctions[0].component = [Index(component)]        
         return w
 
-    def pick_component_piola(v, component):
+    def pick_component_piola(self, component):
         "Pick given component of BasisFunction mapped with the Piola transform."
-        rank = v.element.rank()
-        if v.component or rank == 0:
+        rank = self.element.rank()
+        if self.component or rank == 0:
             raise FormError, (self, "Cannot pick component of scalar BasisFunction.")    
-        w = Product(v)
+        w = Product(self)
         j = Index()
         if isinstance(component, list):
             if not rank == len(component):
                 raise FormError, (component, "Illegal component index, does not match rank.")
             end = len(component)
             last = component(end)
-            w.transforms = [Transform(v.element, j, last, None, -1)] 
+            w.transforms = [Transform(self.element, j, last, None, -1)] 
             w.basisfunctions[0].component = [component[1:end-1], Index(j)]
             print "The Piola transform is untested in the tensor-valued case."
         else:  
             if not rank == 1:
                 raise FormError, (component, "Illegal component index, does not match rank.") 
-            w.transforms = [Transform(v.element, j, component, None, -1)] 
+            w.transforms = [Transform(self.element, j, component, None, -1)] 
             w.basisfunctions[0].component = [Index(j)]    
             w.determinant = -1
         return w
