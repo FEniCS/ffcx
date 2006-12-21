@@ -1,8 +1,8 @@
 "Raw output format."
 
-__author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-11-17 -- 2005-10-07"
-__copyright__ = "Copyright (c) 2004 Anders Logg"
+__author__ = "Anders Logg (logg@simula.no)"
+__date__ = "2004-11-17 -- 2006-04-01"
+__copyright__ = "Copyright (C) 2004-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # Specify formatting for code generation
@@ -14,10 +14,13 @@ format = { "sum": lambda l: " + ".join(l),
            "floating point": lambda a: "%.15e" % a,
            "constant": lambda j: None,
            "coefficient": lambda j, k: None,
+           "coefficient table": lambda j, k: None,
            "transform": lambda j, k: None,
            "reference tensor" : lambda j, i, a: "(%d, %s, %s)" % (j, str(i), (str(a))),
            "geometry tensor": lambda j, a: None,
-           "element tensor": lambda i, k: None }
+           "element tensor": lambda i, k: None,
+           "tmp declaration": lambda j, k: None,
+           "tmp access": lambda j, k: None }
 
 def init(options):
     "Initialize code generation for raw format."

@@ -1,8 +1,8 @@
 "LaTeX output format."
 
-__author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-10-14 -- 2005-10-07"
-__copyright__ = "Copyright (c) 2004, 2005 Anders Logg"
+__author__ = "Anders Logg (logg@simula.no)"
+__date__ = "2004-10-14 -- 2006-04-01"
+__copyright__ = "Copyright (C) 2004-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # FFC common modules
@@ -21,7 +21,9 @@ format = { "sum": lambda l: " + ".join(l),
            "transform": lambda j, k: "\\frac{\\partial X_{%d}}{\\partial x_{%d}}" % (j + 1, k + 1),
            "reference tensor" : lambda j, i, a: None,
            "geometry tensor": lambda j, a: "G_{K,%d}^{%s}" % (j + 1, ",".join(["%d" % (index + 1) for index in a])),
-           "element tensor": lambda i, k: "A^K_{%s}" % "".join(["%d" % (index + 1) for index in i]) }
+           "element tensor": lambda i, k: "A^K_{%s}" % "".join(["%d" % (index + 1) for index in i]),
+           "tmp declaration": lambda j, k: "x_{%d,%d}" % (j, k),
+           "tmp access": lambda j, k: "x_{%d,%d}" % (j, k) }
 
 def init(options):
     "Initialize code generation for LaTeX format."

@@ -1,16 +1,26 @@
+- Restructure code:
+
+  - Add preprocessing stage:
+
+    - Extract terms for different integral types
+    - Check form for consistency
+    - Dispatch to processing: tensor representation, SyFi or quadrature
+
+  - Generate UFC code
+
+o [logg] Bug fix: LaTeX format not working
+o [logg] Use Numeric.array instead of Python list for vectors
+o [logg] Write about TestFunction and TrialFunction in manual
+o [logg] Use Constant instead of real in DOLFIN interface
 o [logg] Switch Numeric --> SciPy
-o [logg] Compilation of individual elements
-o [logg] (u, p) = Functions(element) dos not work?
+o [logg] (u, p) = Functions(element) does not work?
 o [logg] Write about mean() in manual
 o [logg] Write about Projection in manual
-o [logg] Generate code for LogStream <<
-o [logg] Generate nested classes outside of top level class
 o [logg] Add time derivative .dt() and Dt()
 o [logg] Optionally generate pair of .h and .cpp files?
 o [logg] Generate loops for geometry tensor in BLAS mode?
 o [logg] Write about division with Constant in manual
 o [logg] gzip XML files by default and add option -a no-gzip
-o [logg] Don't nest classes in output (for SWIG use)
 o [logg] Add new operations for Function (sqrt(), /)
 o [logg] Add predefined function h
 o [logg] Make d available to user
@@ -18,18 +28,6 @@ o [logg] Add vector constants
 o [logg] Make dofmap.py and interpolation.py less DOLFIN specific
 o [logg] Display flop count
 o [logg] Change *(1.0/c) to /c
-o [logg] Boundary integrals: *ds
-o [logg] Connect Matt's parser
-o [logg] Call FErari to simplify
 o [logg] Option for inexact integration?
 o [logg] Option for using quadrature?
 o [logg] Fix all FIXMEs (grep FIXME *.py)
-
---
-
-Suggestions for FIAT:
-
-  - Change reference element
-  - Check for function that is zero
-  - Add ChangeLog, AUTHORS, README, INSTALL, TODO
-

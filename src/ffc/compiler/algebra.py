@@ -8,8 +8,12 @@ are elements of the algebra:
     Constant      - a constant function on the mesh
 
 Each element of the algebra except Constant can be either
-scalar or tensor-valued. The following operations
-are supported for all elements of the algebra:
+scalar or tensor-valued. Elements of the algebra may also
+be multi-valued, taking either a ('+') or ('-') value on
+interior facets.
+
+The following operations are supported for all elements of the
+algebra:
 
     Binary +      (tensor ranks of operands must match)
     Binary -      (tensor ranks of operands must match)
@@ -17,16 +21,20 @@ are supported for all elements of the algebra:
     Unary  +      (operand scalar or tensor-valued)
     Unary  -      (operand scalar or tensor-valued)
     Unary  []     (operand must be tensor-valued)
-    Unary  d/dx   (operand scalar or tensor-valued)"""
+    Unary  d/dx   (operand scalar or tensor-valued)
+    Unary  ()     (operand must be multi-valued, +/-)"""
 
-__author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-09-27 -- 2005-11-08"
-__copyright__ = "Copyright (c) 2004, 2005 Anders Logg"
+__author__ = "Anders Logg (logg@simula.no)"
+__date__ = "2004-09-27 -- 2006-12-20"
+__copyright__ = "Copyright (C) 2004-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
+
+# Modified by Garth N. Wells 2006
+# Modified by Kristian Oelgaard 2006
+# Modified by Marie Rognes 2006
 
 # Python modules
 import sys
-import Numeric
 
 # FFC common modules
 sys.path.append("../../")
@@ -38,7 +46,10 @@ from ffc.common.util import *
 #from finiteelement import FiniteElement
 from reassign import *
 from tokens import *
+from variables import *
 from index import Index
+from integral import *
+from restriction import *
 
 class Element:
     "Base class for elements of the algebra."
@@ -69,8 +80,6 @@ class Element:
             return Sum(self) * other
         elif isinstance(other, int):
             return Sum(self) * float(other)
-        elif Numeric.rank(other) > 0:
-            return [self*v for v in other]
         else:
             raise FormError, ((self, other), "Product not defined for given operands.")
 
@@ -106,17 +115,21 @@ class Element:
         "Operator: len(Element)"
         return len(Sum(self))
 
+    def __call__(self, restriction = None):
+        "Operator: Element(restriction), restrict multi-valued function."
+        return Sum(self)(restriction)
+
     def dx(self, index = None):
         "Operator: (d/dx)Element in given coordinate direction."
         return Sum(self).dx(index)
 
-    def __repr__(self):
-        "Print nicely formatted representation of Element."
-        return Sum(self).__repr__()
-
     def rank(self):
         "Return value rank of Element."
         return Sum(self).rank()
+
+    def __repr__(self):
+        "Print nicely formatted representation of Element."
+        return Sum(self).__repr__()
 
 class Constant(Element):
     """A Constant represents a numerical constant or a Function that
@@ -210,6 +223,7 @@ class BasisFunction(Element):
         element     - a FiniteElement
         index       - a basis Index
         component   - a list of component Indices
+        restriction - a flag indicating restriction of a multi-valued function
         derivatives - a list of Derivatives
     """
 
@@ -220,36 +234,30 @@ class BasisFunction(Element):
             self.element = element.element
             self.index = Index(element.index)
             self.component = listcopy(element.component)
+            self.restriction = element.restriction
             self.derivatives = listcopy(element.derivatives)
         elif index == None:
             # Create BasisFunction with primary Index (default)
             self.element = element
             self.index = Index("primary")
             self.component = []
+            self.restriction = None
             self.derivatives = []
         else:
             # Create BasisFunction with specified Index
             self.element = element
             self.index = Index(index)
             self.component = []
+            self.restriction = None
             self.derivatives = []
         return
 
     def  __getitem__(self, component):
         "Operator: BasisFunction[component], pick given component."
-        rank = self.element.rank()
-        if self.component or rank == 0:
-            raise FormError, (self, "Cannot pick component of scalar BasisFunction.")
-        w = BasisFunction(self)
-        if isinstance(component, list):
-            if not rank == len(component):
-                raise FormError, (component, "Illegal component index, does not match rank.")
-            w.component = listcopy(component)
+        if self.element.mapping == "Piola":
+            return self.pick_component_piola(component)
         else:
-            if not rank == 1:
-                raise FormError, (component, "Illegal component index, does not match rank.")
-            w.component = [Index(component)]
-        return w
+            return self.pick_component_default(component)
 
     def __len__(self):
         "Operator: len(BasisFunction)"
@@ -257,26 +265,47 @@ class BasisFunction(Element):
             raise FormError, (self, "Vector length of scalar expression is undefined.")
         return self.element.tensordim(len(self.component))
 
-    def dx(self, index = None):
-        "Operator: (d/dx)BasisFunction in given coordinate direction."
-        i = Index() # Create new secondary indexF
-        w = Product(self)
-        w.basisfunctions[0].derivatives.insert(0, Derivative(self.element, i))
-        w.transforms.insert(0, Transform(self.element, i, index))
-        return w
+    def __call__(self, restriction):
+        "Operator: BasisFunction(restriction), restrict multi-valued function."
+        if not self.restriction == None:
+            raise FormError, ("(" + str(restriction) + ")", "BasisFunction is already restricted.")
+        else:
+            v = BasisFunction(self)
+            if restriction == '+':
+                v.restriction = Restriction.PLUS
+            elif restriction == '-':
+                v.restriction = Restriction.MINUS
+        return v
 
     def __repr__(self):
         "Print nicely formatted representation of BasisFunction."
         d = "".join([d.__repr__() for d in self.derivatives])
         i = self.index.__repr__()
+
         if self.component:
             c = "[" + ",".join([c.__repr__() for c in self.component]) + "]"
         else:
             c = ""
-        if len(self.derivatives) > 0:
-            return "(" + d + "v" + i + c + ")"
+
+        if self.restriction == Restriction.PLUS:
+            r = "(+)"
+        elif self.restriction == Restriction.MINUS:
+            r = "(-)"
         else:
-            return d + "v" + i + c
+            r = ""
+
+        if len(self.derivatives) > 0:
+            return "(" + d + "v" + i + c + r + ")"
+        else:
+            return d + "v" + i + c + r
+
+    def dx(self, index = None):
+        "Operator: (d/dx)BasisFunction in given coordinate direction."
+        i = Index() # Create new secondary indexF
+        w = Product(self)
+        w.basisfunctions[0].derivatives.insert(0, Derivative(self.element, i))
+        w.transforms.insert(0, Transform(self.element, i, index, self.restriction))
+        return w
 
     def rank(self):
         "Return value rank of BasisFunction."
@@ -285,7 +314,7 @@ class BasisFunction(Element):
         else:
             return self.element.rank()
 
-    def __call__(self, iindices, aindices, bindices):
+    def eval(self, iindices, aindices, bindices):
         """Evaluate BasisFunction at given indices, returning a tuple consisting
         of (element, number, component, derivative order, derivative indices).
         This tuple uniquely identifies the (possibly differentiated) basis function."""
@@ -306,6 +335,45 @@ class BasisFunction(Element):
         [d.indexcall(foo, args) for d in self.derivatives]
         return
 
+    def pick_component_default(self, component):
+        "Pick given component of BasisFunction."
+        rank = self.element.rank()
+        if self.component or rank == 0:
+            raise FormError, (self, "Cannot pick component of scalar BasisFunction.")
+        w = Product(self)
+        if isinstance(component, list):
+            if not rank == len(component):
+                raise FormError, (component, "Illegal component index, does not match rank.")
+            w.basisfunctions[0].component = listcopy(component) 
+        else:
+            if not rank == 1:
+                raise FormError, (component, "Illegal component index, does not match rank.")
+            w.basisfunctions[0].component = [Index(component)]        
+        return w
+
+    def pick_component_piola(v, component):
+        "Pick given component of BasisFunction mapped with the Piola transform."
+        rank = v.element.rank()
+        if v.component or rank == 0:
+            raise FormError, (self, "Cannot pick component of scalar BasisFunction.")    
+        w = Product(v)
+        j = Index()
+        if isinstance(component, list):
+            if not rank == len(component):
+                raise FormError, (component, "Illegal component index, does not match rank.")
+            end = len(component)
+            last = component(end)
+            w.transforms = [Transform(v.element, j, last, None, -1)] 
+            w.basisfunctions[0].component = [component[1:end-1], Index(j)]
+            print "The Piola transform is untested in the tensor-valued case."
+        else:  
+            if not rank == 1:
+                raise FormError, (component, "Illegal component index, does not match rank.") 
+            w.transforms = [Transform(v.element, j, component, None, -1)] 
+            w.basisfunctions[0].component = [Index(j)]    
+            w.determinant = -1
+        return w
+
 class Product(Element):
     """A Product represents a product of factors, including
     BasisFunctions and Functions.
@@ -317,7 +385,10 @@ class Product(Element):
         coefficients   - a list of Coefficients
         transforms     - a list of Transforms
         basisfunctions - a list of BasisFunctions
-        integral       - an Integral"""
+        integral       - an Integral
+        determinant    - the power of the absolute value of 
+                         the determinant of the geometry mapping
+    """
 
     def __init__(self, other = None):
         "Create Product."
@@ -328,6 +399,7 @@ class Product(Element):
             self.coefficients = []
             self.transforms = []
             self.basisfunctions = []
+            self.determinant = 0
             self.integral = None
         elif isinstance(other, int) or isinstance(other, float):
             # Create Product from scalar
@@ -336,6 +408,7 @@ class Product(Element):
             self.coefficients = []
             self.transforms = []
             self.basisfunctions = []
+            self.determinant = 0
             self.integral = None
         elif isinstance(other, Function):
             # Create Product from Function
@@ -345,6 +418,7 @@ class Product(Element):
             self.coefficients = [Coefficient(other, index)]
             self.transforms = []
             self.basisfunctions = [BasisFunction(other.e1, index)]
+            self.determinant = 0
             self.integral = None
         elif isinstance(other, Constant):
             # Create Product from Constant
@@ -354,6 +428,7 @@ class Product(Element):
             self.coefficients = []
             self.transforms = []
             self.basisfunctions = []
+            self.determinant = 0
             self.integral = None
         elif isinstance(other, BasisFunction):
             # Create Product from BasisFunction
@@ -362,6 +437,7 @@ class Product(Element):
             self.coefficients = []
             self.transforms = []
             self.basisfunctions = [BasisFunction(other)]
+            self.determinant = 0
             self.integral = None
         elif isinstance(other, Product):
             # Create Product from Product (copy constructor)
@@ -370,6 +446,7 @@ class Product(Element):
             self.coefficients = listcopy(other.coefficients)
             self.transforms = listcopy(other.transforms)
             self.basisfunctions = listcopy(other.basisfunctions)
+            self.determinant = other.determinant
             self.integral = other.integral
         else:
             raise FormError, (other, "Unable to create Product from given expression.")
@@ -383,6 +460,7 @@ class Product(Element):
                 raise FormError, (self, "Integrand can only be integrated once.")
             w = Product(self)
             w.integral = Integral(other)
+            w.determinant += 1 
             return w
         elif isinstance(other, Sum):
             return Sum(self) * Sum(other)
@@ -394,10 +472,10 @@ class Product(Element):
             if not w0.rank() == w1.rank() == 0:
                 raise FormError, (self, "Operands for product must be scalar.")
             # Reassign all complete Indices to avoid collisions
-            reassign_complete(w0, "secondary")
-            reassign_complete(w0, "auxiliary")
-            reassign_complete(w1, "secondary")
-            reassign_complete(w1, "auxiliary")
+            reassign_complete(w0, Index.SECONDARY)
+            reassign_complete(w0, Index.AUXILIARY)
+            reassign_complete(w1, Index.SECONDARY)
+            reassign_complete(w1, Index.AUXILIARY)
             # Compute product
             w = Product()
             w.numeric = float(w0.numeric * w1.numeric)
@@ -405,6 +483,7 @@ class Product(Element):
             w.coefficients = listcopy(w0.coefficients + w1.coefficients)
             w.transforms = listcopy(w0.transforms + w1.transforms)
             w.basisfunctions = listcopy(w0.basisfunctions + w1.basisfunctions)
+            w.determinant = w0.determinant + w1.determinant
             if w0.integral and w1.integral:
                 raise FormError, (self, "Integrand can only be integrated once.")
             elif w0.integral:
@@ -428,9 +507,10 @@ class Product(Element):
         if not len(self.basisfunctions) == 1:
             raise FormError, (self, "Cannot pick component of scalar expression.")
         # Otherwise, return component of first and only BasisFunction
-        w = Product(self)
-        w.basisfunctions[0] = w.basisfunctions[0][component]
-        return w
+        p = Product(self)
+        p.basisfunctions = [] 
+        w = Product(self.basisfunctions[0][component]) 
+        return w*p
 
     def __len__(self):
         "Operator: len(Product)"
@@ -439,6 +519,39 @@ class Product(Element):
             raise FormError, (self, "Vector length of scalar expression is undefined.")
         # Otherwise, return length of first and only BasisFunction
         return len(self.basisfunctions[0])
+
+    def __call__(self, r):
+        v = Product(self)
+        v.basisfunctions = ([w(r) for w in v.basisfunctions])
+        # Same restriction for all basis functions so pick first
+        restriction = v.basisfunctions[0].restriction
+        for i in range(len(v.transforms)):
+            v.transforms[i].restriction = restriction
+        return v
+
+    def __repr__(self):
+        "Print nicely formatted representation of Product."
+        if not (self.coefficients or self.transforms or self.basisfunctions):
+            return str(self.numeric)
+        if self.numeric == -1.0:
+            s = "-"
+        elif not self.numeric == 1.0:
+            s = str(self.numeric)
+        else:
+            s = ""
+        if self.determinant == 0:
+            d = ""
+        else:
+            d = "|det(F)|^" + "(" + str(self.determinant) + ")"
+        c = "".join([w.__repr__() for w in self.constants])
+        w = "".join([w.__repr__() for w in self.coefficients])
+        t = "".join([t.__repr__() for t in self.transforms])
+        v = "*".join([v.__repr__() for v in self.basisfunctions])
+        if not self.integral == None:
+            i = "*" + self.integral.__repr__()
+        else:
+            i = ""
+        return s + c + d + w + t + " | " + v + i
 
     def dx(self, index = None):
         "Operator: (d/dx)Product in given coordinate direction."
@@ -453,26 +566,6 @@ class Product(Element):
                     p = p * self.basisfunctions[j]
             w = w + p
         return w
-
-    def __repr__(self):
-        "Print nicely formatted representation of Product."
-        if not (self.coefficients or self.transforms or self.basisfunctions):
-            return str(self.numeric)
-        if self.numeric == -1.0:
-            s = "-"
-        elif not self.numeric == 1.0:
-            s = str(self.numeric)
-        else:
-            s = ""
-        c = "".join([w.__repr__() for w in self.constants])
-        w = "".join([w.__repr__() for w in self.coefficients])
-        t = "".join([t.__repr__() for t in self.transforms])
-        v = "*".join([v.__repr__() for v in self.basisfunctions])
-        if not self.integral == None:
-            i = "*" + self.integral.__repr__()
-        else:
-            i = ""
-        return s + c + w + t + " | " + v + i
 
     def rank(self):
         "Return value rank of Product."
@@ -571,16 +664,21 @@ class Sum(Element):
         # Return length of first term
         return len(self.products[0])
 
+    def __call__(self, r):
+        v = Sum(self)
+        v.products = ([w(r) for w in v.products])
+        return v
+
+    def __repr__(self):
+        "Print nicely formatted representation of Sum."
+        return " + ".join([p.__repr__() for p in self.products])
+
     def dx(self, index = None):
         "Operator: (d/dx)Sum in given coordinate direction."
         w = Sum()
         for p in self.products:
             w = w + p.dx(index)
         return w
-
-    def __repr__(self):
-        "Print nicely formatted representation of Sum."
-        return " + ".join([p.__repr__() for p in self.products])
 
     def rank(self):
         "Return value rank of Sum."
@@ -596,55 +694,22 @@ class Sum(Element):
         [p.indexcall(foo, args) for p in self.products]
         return
 
-if __name__ == "__main__":
+class TestFunction(BasisFunction):
+    """A TestFunction is the BasisFunction with the lowest primary
+    index. We simply pick an index lower than all others (-2)."""
 
-    print "Testing algebra"
-    print "---------------"
+    def __init__(self, element):
+        index = Index("primary")
+        index.index = -2
+        BasisFunction.__init__(self, element, index)
+        return
 
-    element = FiniteElement("Lagrange", "triangle", 1)
-    u = BasisFunction(element)
-    v = BasisFunction(element)
-    dx = Integral("interior")
-    ds = Integral("boundary")
+class TrialFunction(BasisFunction):
+    """A TrialFunction is the BasisFunction with the next lowest primary
+    index. We simply pick an index lower than almost all others (-1)."""
 
-    print "Testing long expression:"
-    w = 2*(u*(u/2 + v)*u + u*v)*u.dx(0).dx(2).dx(1)
-    print w
-
-    print
-
-    print "Testing derivative of product:"
-    w = (u*v*u).dx(0)*3
-    print w
-
-    print
-
-    print "Testing derivative of sum:"
-    w = (u + v).dx(0)
-    print w
-
-    print
-    
-    print "Testing Poisson:"
-    i = Index()
-    w = u.dx(i)*v.dx(i)*dx + u*v*ds
-    print w
-
-    print
-
-    print "Testing Biharmonic:"
-    i = Index()
-    j = Index()
-    w = u.dx(i).dx(i)*v.dx(j).dx(j)
-    print w
-
-    print
-
-    print "Testing Poisson system:"
-    element = FiniteElement("Vector Lagrange", "triangle", 1)
-    u = BasisFunction(element)
-    v = BasisFunction(element)
-    i = Index()
-    j = Index()
-    w = 0.1*u[i].dx(j)*v[i].dx(j)*dx
-    print w
+    def __init__(self, element):
+        index = Index("primary")
+        index.index = -1
+        BasisFunction.__init__(self, element, index)
+        return

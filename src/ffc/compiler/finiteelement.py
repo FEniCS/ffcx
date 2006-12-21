@@ -1,7 +1,10 @@
-__author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-10-04 -- 2005-11-29"
-__copyright__ = "Copyright (c) 2004, 2005 Anders Logg"
+__author__ = "Anders Logg (logg@simula.no)"
+__date__ = "2004-10-04 -- 2006-12-19"
+__copyright__ = "Copyright (C) 2004-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
+
+# Modified by Garth N. Wells 2006
+# Modified by Marie E. Rognes 2006
 
 # Python modules
 import sys
@@ -20,7 +23,7 @@ sys.path.append("../../")
 from ffc.common.debug import *
 
 # FFC compiler modules
-from dofmap import *
+from nodemap import *
 from pointmap import *
 from vertexeval import *
 import mixedelement
@@ -35,22 +38,33 @@ class FiniteElement:
     this class serves as the interface to FIAT finite elements from
     within FFC.
 
-    A FiniteElement is specified by giving the name and degree of the
+    A FiniteElement is specified by giving the type and degree of the
     finite element, together with the name of the reference cell:
 
-      name:   "Lagrange", "Hermite", ...
+      type:   "Lagrange", "Hermite", ...
       shape:  "line", "triangle", "tetrahedron"
       degree: 0, 1, 2, ...
 
-    The shape and degree must match the chosen type of finite element."""
 
-    def __init__(self, name, shape, degree = None, num_components = None, element = None):
+    The shape and degree must match the chosen type of finite element.
+
+    The attribute mapping specifies the type of mapping of the
+    reference basis to the global basis functions:
+
+      mapping: "Standard", "Piola"
+
+    The transform defaults to "Standard" for H1 and L2 elements,
+    "Piola" for H(div) elements.
+    """
+
+    def __init__(self, type, shape, degree = None, num_components = None, element = None):
         "Create FiniteElement."
 
         # Initialize data
-        self.name = name
+        self.type_str = type
+        self.shape_str = shape
         self.element = None
-        self._shape = shape
+        self.mapping = "Standard" # Default
 
         if not element is None:
             self.element = element
@@ -67,40 +81,37 @@ class FiniteElement:
                 raise RuntimeError, "Unknown shape " + str(shape)
 
             # Choose function space
-            if name == "Lagrange":
+            if type == "Lagrange":
                 self.element = Lagrange(self.fiat_shape, degree)
-            elif name == "Vector Lagrange":
+            elif type == "Vector Lagrange":
                 self.element = VectorLagrange(self.fiat_shape, degree, num_components)
-            elif name == "Discontinuous Lagrange":
+            elif type == "Discontinuous Lagrange":
                 self.element = DiscontinuousLagrange(self.fiat_shape, degree)
-            elif name == "Discontinuous vector Lagrange":
+            elif type == "Discontinuous vector Lagrange":
                 self.element = DiscontinuousVectorLagrange(self.fiat_shape, degree, num_components)
-                # Check for known FIAT bug
-                if (not num_components == None) and (not num_components == self.element.function_space().tensor_dim()[0]):
-                    raise RuntimeError, \
-"""Discontinous vector Lagrange element has wrong number of components.
-You need to patch your installation of FIAT. For more information, see
-http://www.fenics.org/pipermail/fiat-dev/2005-August/000060.html"""
-            elif name == "Crouzeix-Raviart":
+            elif type == "Crouzeix-Raviart":
                 print "Warning: element untested"
                 self.element = CrouzeixRaviart(self.fiat_shape)
-            elif name == "Raviart-Thomas":
+            elif type == "Raviart-Thomas" or type == "RT":
                 print "Warning: element untested"
                 self.element = RaviartThomas(self.fiat_shape, degree)
-            elif name == "Brezzi-Douglas-Marini":
+                self.mapping = "Piola"
+            elif type == "Brezzi-Douglas-Marini" or type == "BDM":
                 print "Warning: element untested"
                 self.element = BDM(self.fiat_shape, degree)
-            elif name == "Nedelec":
+                self.mapping = "Piola"
+            elif type == "Nedelec":
                 print "Warning: element untested"
                 self.element = Nedelec(degree)
             else:
-                raise RuntimeError, "Unknown finite element: " + str(name)
+                raise RuntimeError, "Unknown finite element: " + str(type)
+
 
         # Save dual basis
         self.fiat_dual = self.element.dual_basis()
 
-        # Create dof map
-        self.dofmap = DofMap(self)
+        # Create node map
+        self.nodemap = NodeMap(self)
 
         # Create point map
         self.pointmap = PointMap(self)
@@ -121,6 +132,10 @@ http://www.fenics.org/pipermail/fiat-dev/2005-August/000060.html"""
     def shape(self):
         "Return shape used for element."
         return self.element.domain_shape()
+
+    def facet_shape(self):
+        "Return shape of facet."
+        return self.shape() - 1
 
     def spacedim(self):
         "Return dimension of finite element space."
@@ -148,10 +163,34 @@ http://www.fenics.org/pipermail/fiat-dev/2005-August/000060.html"""
         else:
             raise RuntimeError, "Can only handle scalar or vector-valued elements."
 
-    def tabulate(self, order, points):
+    def num_facets(self):
+        "Return number of facets for shape of element."
+        if self.element.domain_shape() == TRIANGLE:
+            return 3
+        elif self.element.domain_shape() == TETRAHEDRON:
+            return 4
+        else:
+            raise RuntimeError, "Unknown shape."
+
+    def num_alignments(self):
+        "Return number of possible alignments of two cells at a common facet."
+        if self.element.domain_shape() == TRIANGLE:
+            return 2
+        elif self.element.domain_shape() == TETRAHEDRON:
+            return 6
+        else:
+            raise RuntimeError, "Unknown shape."
+
+    def tabulate(self, order, points, facet = None):
         """Return tabulated values of derivatives up to given order of
-        basis functions at given points."""
-        return self.element.function_space().tabulate_jet(order, points)
+        basis functions at given points. If facet is not None, then the
+        values are tabulated on the given facet, with the points given
+        on the corresponding reference facet."""
+        if facet == None:
+            return self.element.function_space().tabulate_jet(order, points)
+        else:
+            facet_shape = self.facet_shape()
+            return self.element.function_space().trace_tabulate_jet(facet_shape, facet, order, points)
 
     def __add__(self, other):
         "Create mixed element."
@@ -164,12 +203,12 @@ http://www.fenics.org/pipermail/fiat-dev/2005-August/000060.html"""
 
     def __repr__(self):
         "Print nicely formatted representation of FiniteElement."
-        if self.vectordim() > 0:
+        if self.vectordim() > 1:
             return "%s finite element of degree %d on a %s with %d components" % \
-                   (self.name, self.degree(), shape_to_string[self.shape()], self.vectordim())
+                   (self.type_str, self.degree(), self.shape_str, self.vectordim())
         else:
             return "%s finite element of degree %d on a %s" % \
-                   (self.name, self.degree(), shape_to_string[self.shape()])
+                   (self.type_str, self.degree(), self.shape_str)
 
 if __name__ == "__main__":
 

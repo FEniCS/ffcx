@@ -1,4 +1,4 @@
-# Copyright (c) 2004, 2005 Anders Logg (logg@tti-c.org)
+# Copyright (C) 2004-2006 Anders Logg (logg@simula.no)
 # Licensed under the GNU GPL Version 2
 #
 # The bilinear form for a mass matrix.
@@ -7,7 +7,7 @@
 
 element = FiniteElement("Lagrange", "tetrahedron", 3)
 
-v = BasisFunction(element)
-u = BasisFunction(element)
+v = TestFunction(element)
+U = TrialFunction(element)
     
-a = v*u*dx
+a = v*U*dx

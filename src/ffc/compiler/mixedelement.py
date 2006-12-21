@@ -1,10 +1,12 @@
-__author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2005-09-16 -- 2005-11-17"
-__copyright__ = "Copyright (c) 2005 Anders Logg"
+__author__ = "Anders Logg (logg@simula.no)"
+__date__ = "2005-09-16 -- 2006-12-19"
+__copyright__ = "Copyright (C) 2005-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
+# Modified by Garth N. Wells 2006
+
 # Python modules
-import Numeric
+import numpy
 
 # FFC common modules
 from ffc.common.debug import *
@@ -15,16 +17,16 @@ from ffc.common.debug import *
 #import algebra
 from finiteelement import *
 from algebra import *
-from dofmap import *
+from nodemap import *
 from pointmap import *
 from vertexeval import *
 
-def BasisFunctions(element):
+def BasisFunctions(element, functiontype = BasisFunction):
     "Create tuple of BasisFunctions from given MixedElement."
     if not isinstance(element, MixedElement):
         raise RuntimeError, "Basis function tuple must be created from mixed element."
     # Create basis function for mixed element
-    vector = BasisFunction(element)
+    vector = functiontype(element)
     # Pick components/subvectors of the mixed basis function
     subvectors = []
     offset = 0
@@ -39,6 +41,14 @@ def BasisFunctions(element):
             raise RuntimeError, "Mixed elements can only be created from scalar or vector-valued elements."
         subvectors += [subvector]
     return tuple(subvectors)
+
+def TestFunctions(element):
+    "Create tuple of TestFunctions from given MixedElement."
+    return BasisFunctions(element, TestFunction)
+
+def TrialFunctions(element):
+    "Create tuple of TrialFunctions from given MixedElement."
+    return BasisFunctions(element, TrialFunction)
 
 def Functions(element):
     "Create tuple of Functions from given MixedElement."
@@ -66,6 +76,8 @@ class MixedElement:
     created by the tensor product of a list of FiniteElements.
 
     Attributes:
+        type_str        - string name of element type
+        shape_str       - string name of element shape
         elements        - a list of finite elements
         mixed_basis     - a list of mixed basis functions
         mixed_degree    - maximum degree of basis functions
@@ -77,6 +89,9 @@ class MixedElement:
     def __init__(self, elements):
         "Create MixedElement from a list of elements."
 
+        # FIXME: Temporary fix, need to figure this out
+        self.mapping = "Standard"
+
         # Create list of elements
         if not isinstance(elements, list):
             self.elements = [elements]
@@ -87,6 +102,10 @@ class MixedElement:
         if not len(self.elements) > 0:
             raise FormError, "Mixed finite element must contain at least one element."
 
+        # Initialize data
+        self.type_str = "mixed"
+        self.shape_str = elements[0].shape_str
+
         # Compute degree
         self.mixed_degree = self.__compute_degree()
         # Compute number of basis functions
@@ -96,8 +115,8 @@ class MixedElement:
         # Compute number of components
         self.mixed_tensordim = self.__compute_tensordim()
 
-        # Create dof map
-        self.dofmap = DofMap(self.elements)
+        # Create node map
+        self.nodemap = NodeMap(self.elements)
 
         # Create point map
         self.pointmap = PointMap(self.elements)
@@ -116,6 +135,10 @@ class MixedElement:
     def shape(self):
         "Return shape used for element."
         return self.elements[0].shape()
+
+    def facet_shape(self):
+        "Return shape of facet."
+        return self.elements[0].facet_shape()
 
     def spacedim(self):
         "Return dimension of finite element space."
@@ -140,12 +163,22 @@ class MixedElement:
             raise RuntimeError, "Illegal tensor dimension for vector-valued mixed element."
         return self.mixed_tensordim
 
-    def tabulate(self, order, points):
+    def num_facets(self):
+        "Return number of facets for shape of element."
+        return self.elements[0].num_facets()
+
+    def num_alignments(self):
+        "Return number of possible alignments of two cells at a common facet."
+        return self.elements[0].num_alignments()
+
+    def tabulate(self, order, points, facet = None):
         """Return tabulated values of derivatives up to given order of
-        basis functions at given points."""
+        basis functions at given points. If facet is not None, then the
+        values are tabulated on the given facet, with the points given
+        on the corresponding reference facet."""
         # Special case: only one element
         if len(self.elements) == 1:
-            return elements[0].tabulate(order, points)
+            return elements[0].tabulate(order, points, facet)
         # Iterate over elements and build mixed table from element tables.
         # This is a bit nasty, so it needs some thought...
         mixed_table = []
@@ -153,7 +186,7 @@ class MixedElement:
         for i in range(len(self.elements)):
             # Get current element and table
             element = self.elements[i]
-            table = element.tabulate(order, points)
+            table = element.tabulate(order, points, facet)
             # Iterate over the components corresponding to the current element
             if element.rank() == 0:
                 component_table = self.__compute_component_table(table, offset)
@@ -211,8 +244,8 @@ class MixedElement:
             derivative_dictionary = {}
             for dtuple in table[dorder]:
                 element_subtable = table[dorder][dtuple]
-                num_points = Numeric.shape(element_subtable)[1]
-                mixed_subtable = Numeric.zeros((self.mixed_spacedim, num_points), Numeric.Float)
+                num_points = numpy.shape(element_subtable)[1]
+                mixed_subtable = numpy.zeros((self.mixed_spacedim, num_points), dtype = numpy.float)
                 # Iterate over element basis functions and fill in non-zero values
                 for i in range(len(element_subtable)):
                     mixed_subtable[offset + i] = element_subtable[i]

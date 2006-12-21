@@ -1,28 +1,53 @@
 #!/bin/sh
+#
+# Copyright (C) Anders Logg 2004-2006
+# Licensed under the GNU GPL Version 2
+#
+# This script creates a new release of FFC
 
-# This script prepares and creates a .tar.gz package of FFC.
+# Make sure FFC is not installed
+echo '--- Uninstalling FFC'
+ffc-uninstall
+
+# Make sure we have the current version
+echo '--- Synchronizing repository'
+sleep 1
+hg pull
+hg update
+hg commit
+hg push default
+echo '--- Repository synchronized, press return to continue'
+read
 
 # Update version number in ChangeLog
+echo '--- Update version number in ChangeLog'
+sleep 1
 emacs -nw ChangeLog
 
 # Update version number in constants.py
+echo '--- Update version number in constants.py'
+sleep 1
 emacs -nw src/ffc/common/constants.py
 
 # Update version number in setup.py
+echo '--- Update version number in setup.py'
+sleep 1
 emacs -nw setup.py
 
 # Get the version number
 VERSION=`grep 'FFC_VERSION' src/ffc/common/constants.py | cut -d'"' -f2`
+echo "--- Version number is $VERSION"
+sleep 1
 
 # Verify output\
-echo Verifying output
+echo '--- Verifying output'
 scripts/verify
-echo Only version numbers should differ, press return to continue
+echo '--- Only version numbers should differ, press return to continue'
 read
 cp src/demo/*.h src/reference
 
 # Run benchmark problem
-echo Running benchmark problem
+echo '--- Running benchmark problem'
 cd src/bench
 echo "FFC version $VERSION" >> bench.log
 date >> bench.log
@@ -30,47 +55,45 @@ echo "" >> bench.log
 ./bench >> bench.log
 cd ../../
 
-# Commit changes to cvs
-cvs commit
+# Commit changes to hg
+echo '--- Pushing changes to parent repository'
+hg commit
+hg push default
+echo '--- Changes pushed, press return to continue'
+read
 
 # Write a message
-echo Creating release $VERSION of FFC
+echo "--- Creating release $VERSION of FFC"
 
 # Create the directory
 DISTDIR=ffc-$VERSION
-echo "Creating directory $DISTDIR"
-mkdir $DISTDIR
-
-# Copy files
-FILES=`ls | grep -v $DISTDIR`
-cp -R $FILES $DISTDIR
-
-# Remove unecessary files
-REMOVE1=`find $DISTDIR | grep CVS`
-REMOVE2=`find $DISTDIR -name '*~'`
-REMOVE3=`find $DISTDIR/src/demo -name '*.h'`
-REMOVE4=`find $DISTDIR/src/demo -name '*.py'`
-REMOVE="$REMOVE1 $REMOVE2 $REMOVE3 $REMOVE4"
-rm -rf $REMOVE
+echo "--- Creating directory release/$DISTDIR"
+mkdir -p release
+cd release
+rm -rf $DISTDIR
+hg clone .. $DISTDIR
+rm -rf $DISTDIR/.hg
+rm -f $DISTDIR/.hgignore
 
 # Create the archive
 TARBALL="ffc-$VERSION.tar.gz"
-echo "Creating arhive: $TARBALL"
+echo "--- Creating arhive $TARBALL"
 tar zcf $TARBALL $DISTDIR
-
-# Remove the directory
-echo 'Removing temporary directory'
-rm -rf $DISTDIR
+cd ..
 
 # Copy archive and files to web page
-scp $TARBALL fenics@fenics.org:www.fenics.org/pub/software/ffc/v0.2
+echo '--- Copying files to web server'
+scp release/$TARBALL fenics@fenics.org:www.fenics.org/pub/software/ffc/v0.3
 scp ChangeLog fenics@fenics.org:www.fenics.org/pub/software/ffc/
 scp TODO fenics@fenics.org:www.fenics.org/pub/software/ffc/
 
 # Update on web server
-ssh fenics@fenics.org 'xterm -e emacs -nw www.fenics.org/ffc/index.cpp'
-ssh fenics@fenics.org 'xterm -e /home/fenics/local/bin/news'
+echo '--- Update web pages'
+ssh -t fenics@fenics.org 'emacs -nw www.fenics.org/ffc/index.cpp'
+ssh -t fenics@fenics.org 'emacs -nw www.fenics.org/download/index.cpp'
+ssh -t fenics@fenics.org '/home/fenics/local/bin/news'
 
 # Notify ffc-dev of the new version
+echo '--- Notifying mailing list'
 SUBJECT="Version "$VERSION" of FFC released"
 cat ChangeLog | mail -s "$SUBJECT" ffc-dev@fenics.org

@@ -1,6 +1,6 @@
-__author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2005-05-16 -- 2005-09-20"
-__copyright__ = "Copyright (c) 2005 Anders Logg"
+__author__ = "Anders Logg (logg@simula.no)"
+__date__ = "2005-05-16 -- 2006-10-19"
+__copyright__ = "Copyright (C) 2005-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # FIAT modules
@@ -35,36 +35,36 @@ def compute_pointmap(element, local_offset, component_offset):
 
     declarations = []
 
-    # Iterate over the dofs and write coordinates
-    dof = local_offset
+    # Iterate over the nodes and write coordinates
+    node = local_offset
     for component in range(num_components):
         for point in points:
 
             # Coordinate
             x = (", ".join(["%.15e" % x for x in point]))
-            name = format["point"](dof)
+            name = format["point"](node)
             value = format["affinemap"](x)
             declarations += [Declaration(name, value)]
             
-            dof += 1
+            node += 1
 
-    # Iterate over the dofs and write components
-    dof = local_offset
+    # Iterate over the nodes and write components
+    node = local_offset
     for component in range(num_components):
         for point in points:
 
             # Component
-            name = format["component"](dof)
+            name = format["component"](node)
             value = "%d" % (component_offset + component)
             declarations += [Declaration(name, value)]
             
-            dof += 1
+            node += 1
 
     #for declaration in declarations:
     #    print declaration.name + " = " + declaration.value
 
     # Update local offset for next element (handles mixed elements)
-    local_offset = dof
+    local_offset = node
 
     # Update component offset for next element (handles mixed elements)
     component_offset += num_components
@@ -88,5 +88,7 @@ class PointMap:
         local_offset = 0
         component_offset = 0
         for element in elements:
-            (declarations, local_offset, component_offset) = compute_pointmap(element, local_offset, component_offset)
-            self.declarations += declarations
+            # Only works for Lagrange
+            if "Lagrange" in element.type_str:
+                (declarations, local_offset, component_offset) = compute_pointmap(element, local_offset, component_offset)
+                self.declarations += declarations

@@ -1,10 +1,13 @@
-__author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2005-03-24"
-__copyright__ = "Copyright (c) 2005 Anders Logg"
+__author__ = "Anders Logg (logg@simula.no)"
+__date__ = "2005-03-24 -- 2006-03-28"
+__copyright__ = "Copyright (C) 2005-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # Python modules
 import sys
+
+# FFC common modules
+from debug import *
 
 # FIXME: Get from width of terminal window
 width = 80
@@ -25,7 +28,9 @@ class Progress:
         self.i += other      
         newpos = int(float(self.i) / float(self.n) * float(width))
         if newpos > width:
-            return
+            return self
+        if getlevel() < 0:
+            return self
         if newpos > self.pos:
             sys.stdout.write("".join(["." for j in range(newpos - self.pos)]))
             sys.stdout.flush()

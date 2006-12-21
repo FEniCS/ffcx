@@ -1,6 +1,6 @@
-__author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2005-09-20 -- 2005-12-01"
-__copyright__ = "Copyright (c) 2005 Anders Logg"
+__author__ = "Anders Logg (logg@simula.no)"
+__date__ = "2005-09-20 -- 2006-10-19"
+__copyright__ = "Copyright (C) 2005-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # FIAT modules
@@ -11,22 +11,22 @@ from FIAT.shapes import *
 from declaration import *
 
 # FIXME: Should not be DOLFIN-specific
-format = { ("entity", 2, 0) : lambda i : "cell.vertexID(%d)" % i,
-           ("entity", 2, 1) : lambda i : "cell.edgeID(%d)" % i,
-           ("entity", 2, 2) : lambda i : "cell.id()",
+format = { ("entity", 2, 0) : lambda i : "cell.entities(0)[%d]" % i,
+           ("entity", 2, 1) : lambda i : "cell.entities(1)[%d]" % i,
+           ("entity", 2, 2) : lambda i : "cell.index()",
            ("entity", 2, 3) : lambda i : "not defined",
-           ("entity", 3, 0) : lambda i : "cell.vertexID(%d)" % i,
-           ("entity", 3, 1) : lambda i : "cell.edgeID(%d)" % i,
-           ("entity", 3, 2) : lambda i : "cell.faceID(%d)" % i,
-           ("entity", 3, 3) : lambda i : "cell.id()",
-           ("num",    2, 0) : "mesh.noVertices()",
-           ("num",    2, 1) : "mesh.noEdges()",
-           ("num",    2, 2) : "mesh.noCells()",
+           ("entity", 3, 0) : lambda i : "cell.entities(0)[%d]" % i,
+           ("entity", 3, 1) : lambda i : "cell.entities(1)[%d]" % i,
+           ("entity", 3, 2) : lambda i : "cell.entities(2)[%d]" % i,
+           ("entity", 3, 3) : lambda i : "cell.index()",
+           ("num",    2, 0) : "mesh.topology().size(0)",
+           ("num",    2, 1) : "mesh.topology().size(1)",
+           ("num",    2, 2) : "mesh.numCells()",
            ("num",    2, 3) : "not defined",
-           ("num",    3, 0) : "mesh.noVertices()",
-           ("num",    3, 1) : "mesh.noEdges()",
-           ("num",    3, 2) : "mesh.noFaces()",
-           ("num",    3, 3) : "mesh.noCells()",
+           ("num",    3, 0) : "mesh.topology().size(0)",
+           ("num",    3, 1) : "mesh.topology().size(1)",
+           ("num",    3, 2) : "mesh.topology().size(2)",
+           ("num",    3, 3) : "mesh.topology().size(3)",
            ("check",  2, 0) : lambda i : "not defined",
            ("check",  2, 1) : lambda i : "cell.edgeAlignment(%d)" % i,
            ("check",  2, 2) : lambda i : "not defined",
@@ -46,7 +46,7 @@ def compute_offset(nodes_per_entity, num_dims, dim):
     return increment
 
 def write_offset(increment, component):
-    "Write new offset for global dofs."
+    "Write new offset for global nodes."
     if component == 0:
         name = "int offset"
         value = increment
@@ -58,15 +58,15 @@ def write_offset(increment, component):
 def write_component(component):
     "Write component value."
     if component == 0:
-        name = "values[%d]" % component
-        value = "x[vertex]"
+        name = "vertex_nodes[%d]" % component
+        value = "vertex"
     else:
-        name = "values[%d]" % component
-        value = "x[offset + vertex]"
+        name = "vertex_nodes[%d]" % component
+        value = "offset + vertex"
     return Declaration(name, value)
 
 def compute_vertexeval(element, component_offset):
-    "Compute dofmap for given element."
+    "Compute node map for given element."
 
     # Get shape and dual basis from FIAT
     shape = element.fiat_shape

@@ -16,15 +16,16 @@ form language.
 
 The latest version of \ffc{} can be found on the \fenics{} web page:
 \begin{code}
-  http://www.fenics.org/
+http://www.fenics.org/
 \end{code}
 The following commands illustrate the installation process, assuming
 that you have downloaded release 0.1.0 of \ffc{}:
 \begin{code}
-  # tar zxfv ffc-0.1.0.tar.gz
-  # cd ffc-0.1.0
-  # python setup.py install
+# tar zxfv ffc-0.1.0.tar.gz
+# cd ffc-0.1.0
+# python setup.py install
 \end{code}
+Make sure that you download the latest release (which is not 0.1.0).
 
 Note that you may need to be root on your system to do the last
 step. You may also need to install the Python packages \fiat{} and
@@ -36,20 +37,20 @@ Numeric. (See Appendix~\ref{app:installation} for detailed instructions.)
 \section{Compiling Poisson's equation with \ffc{}}
 \index{Poisson's equation}
 
-The variational formulation of Poisson's equation, $-\Delta u = f$, reads:
-Find $u \in V$ such that
+The discrete variational (finite element) formulation of Poisson's
+equation, $-\Delta u = f$, reads: Find $U \in V_h$ such that
 \begin{equation} \label{eq:varform}
-  a(v, u) = L(v) \quad \forall v\in \hat{V}, 
+  a(v, U) = L(v) \quad \forall v\in \hat{V}_h, 
 \end{equation}
-with $(\hat{V}, V)$ a pair of suitable function spaces (the test and
-trial spaces). The bilinear form $a : \hat{V} \times V \rightarrow
+with $(\hat{V}_h, V_h)$ a pair of suitable function spaces (the test and
+trial spaces). The bilinear form $a : \hat{V}_h \times V_h \rightarrow
 \R$ is given by
 \begin{equation}
-  a(v, u) = \int_{\Omega} \nabla u \cdot \nabla v \dx
+  a(v, U) = \int_{\Omega} \nabla v \cdot \nabla U \dx
 \end{equation}
-and the linear form $L : \hat{V} \rightarrow \R$ is given by
+and the linear form $L : \hat{V}_h \rightarrow \R$ is given by
 \begin{equation}
-  L(v) = \int_{\Omega} f v \dx.
+  L(v) = \int_{\Omega} v \, f \dx.
 \end{equation}
 
 To compile the pair of forms $(a, L)$ into code that can called to
@@ -58,14 +59,14 @@ problem (\ref{eq:varform}) for a pair of discrete function spaces,
 specify the forms in a text file with extension \texttt{.form},
 e.g. \texttt{Poisson.form}, as follows:
 \begin{code}
-  element = FiniteElement(``Lagrange'', ``triangle'', 1)
+element = FiniteElement(``Lagrange'', ``triangle'', 1)
 
-  v = BasisFunction(element)
-  u = BasisFunction(element)
-  f = Function(element)
+v = BasisFunction(element)
+U = BasisFunction(element)
+f = Function(element)
   
-  a = dot(grad(u), grad(v))*dx
-  L = f*v*dx
+a = dot(grad(v), grad(U))*dx
+L = f*v*dx
 \end{code}
 
 The example is given for piecewise linear finite elements in two
@@ -76,7 +77,7 @@ To compile the pair of forms implemented in the file
 \texttt{Poisson.form}, call the compiler on the command-line as
 follows:
 \begin{code}
-  # ffc Poisson.form
+# ffc Poisson.form
 \end{code}
 This generates the file \texttt{Poisson.h} which implements the forms
 in C++ for inclusion in \dolfin{}. For help on the \texttt{ffc}

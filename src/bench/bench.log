@@ -58,3 +58,81 @@ ons dec 28 15:41:09 CST 2005
 
 Navier-Stokes: 0.996 seconds
 -----------------------------------
+FFC version 0.3.0
+ons mar  1 10:36:16 CST 2006
+
+Navier-Stokes: 1.066 seconds
+-----------------------------------
+FFC version 0.3.1
+tis mar 28 16:21:56 CST 2006
+
+Navier-Stokes: 1.036 seconds
+-----------------------------------
+FFC version 0.3.2
+lÃ¶r apr  1 08:54:07 CST 2006
+
+Navier-Stokes: 1.042 seconds
+-----------------------------------
+Changes to benchmark 2006-05-10:
+
+ - System change, benchmarks now
+   running on laptop (slower)
+ - New benchmark Stabilization.form    
+-----------------------------------
+FFC version 0.3.2 (rev 388+)
+Thu May 11 10:29:51 CEST 2006
+
+Navier-Stokes: 1.289 seconds
+Stabilization: 68.606 seconds
+-----------------------------------
+FFC version 0.3.2 (rev 389+)
+Thu May 11 10:33:21 CEST 2006
+
+Navier-Stokes: 0.956 seconds
+Stabilization: 46.744 seconds
+-----------------------------------
+FFC version 0.3.2 (rev 390+)
+Thu May 11 12:55:44 CEST 2006
+
+Navier-Stokes: 0.640 seconds
+Stabilization: 28.467 seconds
+-----------------------------------
+FFC version 0.3.3
+tis sep  5 18:44:24 CEST 2006
+
+Navier-Stokes: 0.656 seconds
+Stabilization: 28.586 seconds
+-----------------------------------
+FFC version 0.3.4
+fre okt 27 21:54:41 CEST 2006
+
+Navier-Stokes: 0.645 seconds
+Stabilization: 28.050 seconds
+-----------------------------------
+FFC version 0.3.4-dev
+mån nov 13 20:37:49 CET 2006
+
+Before switch from Numeric to NumPy.
+Compilation time increased before
+this change, probably as a result
+of a switch from Ubuntu Dapper to
+Ubuntu Edgy.
+
+Navier-Stokes: 0.641 seconds
+Stabilization: 58.449 seconds
+-----------------------------------
+FFC version 0.3.4-dev
+mån nov 13 20:43:19 CET 2006
+
+After switch from Numeric to Numpy.
+Compilation time increased by 10%.
+
+Navier-Stokes: 0.749 seconds
+Stabilization: 68.160 seconds
+-----------------------------------
+FFC version 0.3.5
+fre dec  1 11:26:51 CET 2006
+
+Navier-Stokes: 0.722 seconds
+Stabilization: 51.061 seconds
+-----------------------------------

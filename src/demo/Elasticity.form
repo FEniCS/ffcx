@@ -1,20 +1,21 @@
-# Copyright (c) 2005 Johan Jansson.
+# Copyright (C) 2005 Johan Jansson
 # Licensed under the GNU GPL Version 2
-# Modified by Anders Logg 2005.
 #
-# The bilinear form e(u) : e(v) for linear
+# Modified by Anders Logg 2005-2006
+#
+# The bilinear form e(v) : e(U) for linear
 # elasticity with e(v) = 1/2 (grad(v) + grad(v)^T)
 #
 # Compile this form with FFC: ffc Elasticity.form
 
 element = FiniteElement("Vector Lagrange", "tetrahedron", 1)
 
-v = BasisFunction(element)
-u = BasisFunction(element)
+v = TestFunction(element)
+U = TrialFunction(element)
 
-#a = 0.25*(D(v[i], j) + D(v[j], i))*(D(u[i], j) + D(u[j], i))*dx
+#a = 0.25*(D(v[i], j) + D(v[j], i))*(D(U[i], j) + D(U[j], i))*dx
 
 def eps(v):
     return grad(v) + transp(grad(v))
 
-a = 0.25*dot(eps(v), eps(u))*dx
+a = 0.25*dot(eps(v), eps(U))*dx

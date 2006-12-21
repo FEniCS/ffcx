@@ -1,15 +1,17 @@
 "This module provides efficient integration of monomial forms."
 
-__author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-11-03 -- 2005-12-09"
-__copyright__ = "Copyright (c) 2004 Anders Logg"
+__author__ = "Anders Logg (logg@simula.no)"
+__date__ = "2004-11-03 -- 2006-12-06"
+__copyright__ = "Copyright (C) 2004-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # Thanks to Robert C. Kirby for suggesting the initial algorithm that
 # this implementation is based on.
+#
+# Modified by Garth N. Wells 2006
 
 # Python modules
-import Numeric
+import numpy
 
 # FIAT modules
 from FIAT.quadrature import *
@@ -20,20 +22,26 @@ from ffc.common.debug import *
 from ffc.common.progress import *
 
 # FFC compiler modules
+from index import *
 from algebra import *
+from integral import *
 from multiindex import *
+from pointreordering import *
 
-def integrate(product):
+def integrate(product, facet0, facet1, alignment):
     """Compute the reference tensor for a given monomial term of a
     multilinear form, given as a Product."""
 
-    debug("Computing reference tensor, this may take some time...")
+    debug("Pretabulating basis functions at quadrature points")
+
+    # Check for integral type
+    type = product.integral.type
 
     # Initialize quadrature points and weights
-    (points, weights, vscaling, dscaling) = __init_quadrature(product.basisfunctions)
+    (points, weights, vscaling, dscaling) = __init_quadrature(product.basisfunctions, type)
 
     # Initialize quadrature table for basis functions
-    table = __init_table(product.basisfunctions, points)
+    table = __init_table(product.basisfunctions, type, points, facet0, facet1, alignment)
 
     # Compute table Psi for each factor
     psis = [__compute_psi(v, table, len(points), dscaling) for v in product.basisfunctions]
@@ -43,13 +51,14 @@ def integrate(product):
 
     return A0
 
-def __init_quadrature(basisfunctions):
+def __init_quadrature(basisfunctions, type):
     "Initialize quadrature for given monomial term."
 
     debug("Initializing quadrature.", 1)
 
     # Get shape (check first one, all should be the same)
     shape = basisfunctions[0].element.shape()
+    facet_shape = basisfunctions[0].element.facet_shape()
 
     # Compute number of points to match the degree
     q = __compute_degree(basisfunctions)
@@ -57,22 +66,42 @@ def __init_quadrature(basisfunctions):
     debug("Total degree is %d, using %d quadrature point(s) in each dimension" % (q, m), 1)
 
     # Create quadrature rule and get points and weights
-    quadrature = make_quadrature(shape, m)
+    # FIXME: FIAT ot finiteelement should return shape of facet
+    if type == Integral.CELL:
+        quadrature = make_quadrature(shape, m)
+    elif type == Integral.EXTERIOR_FACET:
+        quadrature = make_quadrature(facet_shape, m)
+    elif type == Integral.INTERIOR_FACET:
+        quadrature = make_quadrature(facet_shape, m)
     points = quadrature.get_points()
     weights = quadrature.get_weights()
 
     # Compensate for different choice of reference cells in FIAT
     # FIXME: Convince Rob to change his reference elements
     if shape == TRIANGLE:
-        vscaling = 0.25  # Area 1/2 instead of 2
-        dscaling = 2.0   # Scaling of derivative
+        if type == Integral.CELL:
+            vscaling = 0.25  # Area 1/2 instead of 2
+            dscaling = 2.0   # Scaling of derivative
+        elif type == Integral.EXTERIOR_FACET:
+            vscaling = 0.5   # Length 1 instead of 2
+            dscaling = 2.0   # Scaling of derivative        
+        elif type == Integral.INTERIOR_FACET:
+            vscaling = 0.5   # Length 1 instead of 2
+            dscaling = 2.0   # Scaling of derivative        
     elif shape == TETRAHEDRON:
-        vscaling = 0.125 # Volume 1/6 instead of 4/3
-        dscaling = 2.0   # Scaling of derivative
-        
+        if type == Integral.CELL:
+            vscaling = 0.125 # Volume 1/6 instead of 4/3
+            dscaling = 2.0   # Scaling of derivative
+        elif type == Integral.EXTERIOR_FACET:
+            vscaling = 0.25  # Area 1/2 instead of 2
+            dscaling = 2.0   # Scaling of derivative
+        elif type == Integral.INTERIOR_FACET:
+            vscaling = 0.25  # Area 1/2 instead of 2
+            dscaling = 2.0   # Scaling of derivative
+
     return (points, weights, vscaling, dscaling)
 
-def __init_table(basisfunctions, points):
+def __init_table(basisfunctions, type, points, facet0, facet1, alignment):
     """Initialize table of basis functions and their derivatives at
     the given quadrature points for each element."""
 
@@ -92,7 +121,15 @@ def __init_table(basisfunctions, points):
     table = {}
     for element in num_derivatives:
         order = num_derivatives[element]
-        table[element] = element.tabulate(order, points)
+        # Tabulate for different integral types
+        if type == Integral.CELL:
+            table[(element, None)] = element.tabulate(order, points)
+        elif type == Integral.EXTERIOR_FACET:
+            table[(element, None)] = element.tabulate(order, points, facet0)
+        elif type == Integral.INTERIOR_FACET:
+            reordered_points = reorder_points(points, element.facet_shape(), alignment)
+            table[(element, Restriction.PLUS)]  = element.tabulate(order, points, facet0)
+            table[(element, Restriction.MINUS)] = element.tabulate(order, reordered_points, facet1)
 
     return table
 
@@ -103,7 +140,7 @@ def __compute_psi(v, table, num_points, dscaling):
 
     # We just need to pick the values for Psi from the table, which is
     # somewhat tricky since the table created by tabulate_jet() is a
-    # mix of list, dictionary and Numeric.array.
+    # mix of list, dictionary and numpy.array.
     #
     # The dimensions of the resulting table are ordered as follows:
     #
@@ -120,6 +157,9 @@ def __compute_psi(v, table, num_points, dscaling):
     element = v.element
     shapedim = element.shapedim()
     spacedim = element.spacedim()
+
+    # Get restriction for v
+    restriction = v.restriction
 
     # Get Indices and shapes for Derivatives
     dindex = [d.index for d in v.derivatives]
@@ -145,45 +185,45 @@ def __compute_psi(v, table, num_points, dscaling):
     shapes = cshape + dshape + vshape + [num_points]
 
     # Initialize tensor Psi: component, derivatives, basis function, points
-    Psi = Numeric.zeros(shapes, Numeric.Float)
+    Psi = numpy.zeros(shapes, dtype = numpy.float)
 
     # Iterate over derivative Indices
     dlists = build_indices(dshape) or [[]]
     if len(cindex) > 0:
-        etable = table[element]
+        etable = table[(element, restriction)]
         for component in range(cshape[0]):
             for dlist in dlists:
                 # Translate derivative multiindex to lookup tuple
                 dtuple = __multiindex_to_tuple(dlist, shapedim)
                 # Get values from table
-                Psi[component][dlist] = etable[component][dorder][dtuple]
+                Psi[component][tuple(dlist)] = etable[component][dorder][dtuple]
     else:
-        etable = table[element][dorder]
+        etable = table[(element, restriction)][dorder]
         for dlist in dlists:
             # Translate derivative multiindex to lookup tuple
             dtuple = __multiindex_to_tuple(dlist, shapedim)
             # Get values from table
-            Psi[dlist] = etable[dtuple]
+            Psi[tuple(dlist)] = etable[dtuple]
 
     # Rearrange Indices as (fixed, auxiliary, primary, secondary)
     (rearrangement, num_indices) = __compute_rearrangement(indices)
     indices = [indices[i] for i in rearrangement]
-    Psi = Numeric.transpose(Psi, rearrangement + (len(indices),))
+    Psi = numpy.transpose(Psi, rearrangement + (len(indices),))
 
     # Remove fixed indices
     for i in range(num_indices[0]):
         Psi = Psi[indices[i].index,...]
-    indices = [index for index in indices if not index.type == "fixed"]
+    indices = [index for index in indices if not index.type == Index.FIXED]
 
     # Put quadrature points first
-    rank = Numeric.rank(Psi)
-    Psi = Numeric.transpose(Psi, (rank - 1,) + tuple(range(0, rank - 1)))
+    rank = numpy.rank(Psi)
+    Psi = numpy.transpose(Psi, (rank - 1,) + tuple(range(0, rank - 1)))
 
     # Scale derivatives (FIAT uses different reference element)
     Psi = pow(dscaling, dorder) * Psi
 
     # Compute auxiliary index positions for current Psi
-    bpart = [i.index for i in indices if i.type == "reference tensor auxiliary"]
+    bpart = [i.index for i in indices if i.type == Index.AUXILIARY_0]
 
     return (Psi, indices, bpart)
 
@@ -199,9 +239,8 @@ def __compute_product(psis, weights):
 
     # Initialize zero reference tensor (will be rearranged later)
     (shape, indices) = __compute_shape(psis)
-    A0 = Numeric.zeros(shape, Numeric.Float)
-    print "Computing the reference tensor (%d entries), this may take some time..." % \
-          Numeric.size(A0)
+    A0 = numpy.zeros(shape, dtype= numpy.float)
+    debug("Computing the reference tensor (%d entries), this may take some time..." % numpy.size(A0))
 
     # Initialize list of auxiliary multiindices
     bshape = __compute_auxiliary_shape(psis)
@@ -211,22 +250,21 @@ def __compute_product(psis, weights):
     num_points = len(weights)
     progress = Progress(num_points * len(bindices))
     for q in range(num_points):
-        for b in bindices:
-            
+        for b in bindices:            
             # Compute outer products of subtables for current (q, b)
             B = weights[q]
             for (Psi, index, bpart) in psis:
-                B = Numeric.multiply.outer(B, Psi[[q] + [b[i] for i in bpart]])
+                B = numpy.multiply.outer(B, Psi[ tuple([q] + [b[i] for i in bpart])])
 
             # Add product to reference tensor
-            Numeric.add(A0, B, A0)
+            numpy.add(A0, B, A0)
 
             # Update progress
             progress += 1
 
     # Rearrange Indices as (primary, secondary)
     (rearrangement, num_indices) = __compute_rearrangement(indices)
-    A0 = Numeric.transpose(A0, rearrangement)
+    A0 = numpy.transpose(A0, rearrangement)
 
     return A0
 
@@ -243,10 +281,10 @@ def __compute_rearrangement(indices):
     """Compute rearrangement tuple for given list of Indices, so that
     the tuple reorders the given list of Indices with fixed, primary,
     secondary and auxiliary Indices in rising order."""
-    fixed     = __find_indices(indices, "fixed")
-    auxiliary = __find_indices(indices, "reference tensor auxiliary")
-    primary   = __find_indices(indices, "primary")
-    secondary = __find_indices(indices, "secondary")
+    fixed     = __find_indices(indices, Index.FIXED)
+    auxiliary = __find_indices(indices, Index.AUXILIARY_0)
+    primary   = __find_indices(indices, Index.PRIMARY)
+    secondary = __find_indices(indices, Index.SECONDARY)
     assert len(fixed + auxiliary + primary + secondary) == len(indices)
     return (tuple(fixed + auxiliary + primary + secondary), \
             (len(fixed), len(auxiliary), len(primary), len(secondary)))
@@ -255,8 +293,8 @@ def __compute_shape(psis):
     "Compute shape of reference tensor from given list of tables."
     shape, indices = [], []
     for (Psi, index, bpart) in psis:
-        num_auxiliary = len([0 for i in index if i.type == "reference tensor auxiliary"])
-        shape += Numeric.shape(Psi)[1 + num_auxiliary:]
+        num_auxiliary = len([0 for i in index if i.type == Index.AUXILIARY_0])
+        shape += numpy.shape(Psi)[1 + num_auxiliary:]
         indices += index[num_auxiliary:]
     return (shape, indices)
     
@@ -272,7 +310,7 @@ def __compute_auxiliary_shape(psis):
     bshape = [0 for i in range(bmax + 1)]
     for (Psi, index, bpart) in psis:
         for i in range(len(bpart)):
-            bshape[bpart[i]] = Numeric.shape(Psi)[i + 1]
+            bshape[bpart[i]] = numpy.shape(Psi)[i + 1]
     # Check that we found the shape for each auxiliary index
     if 0 in bshape:
         raise RuntimeError, "Unable to compute the shape for each auxiliary index."
@@ -282,7 +320,7 @@ def __find_indices(indices, type):
     "Return sorted list of positions for given Index type."
     pos = [i for i in range(len(indices)) if indices[i].type == type]
     val = [indices[i].index for i in range(len(indices)) if indices[i].type == type]
-    return [pos[i] for i in Numeric.argsort(val)]
+    return [pos[i] for i in numpy.argsort(val)]
 
 def __multiindex_to_tuple(dindex, shapedim):
     """Compute lookup tuple from given derivative

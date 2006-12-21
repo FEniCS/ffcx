@@ -3,14 +3,16 @@ defining the test, trial, and function finite element spaces of a
 given Sum. All functions assume that all Indices of the given Sum have
 already been reassigned."""
 
-__author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2005-03-15 -- 2005-11-08"
-__copyright__ = "Copyright (c) 2005 Anders Logg"
+__author__ = "Anders Logg (logg@simula.no)"
+__date__ = "2005-03-15 -- 2006-12-01"
+__copyright__ = "Copyright (C) 2005-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
+
+# Modified by Garth N. Wells 2006
 
 # Python modules
 import sys
-import Numeric
+import numpy
 
 # FFC common modules
 sys.path.append("../../")
@@ -19,6 +21,7 @@ from ffc.common.exceptions import *
 from ffc.common.constants import *
 
 # FFC compiler modules
+from index import *
 from declaration import *
 
 def find_test(sum):
@@ -27,7 +30,7 @@ def find_test(sum):
     for p in sum.products:
         count = 0
         for v in p.basisfunctions:
-            if v.index.type == "primary" and v.index.index == 0:
+            if v.index.type == Index.PRIMARY and v.index.index == 0:
                 count += 1
                 if count > 1:
                     raise FormError, (sum , "There can only be one test function.")
@@ -46,7 +49,7 @@ def find_trial(sum):
     for p in sum.products:
         count = 0
         for v in p.basisfunctions:
-            if v.index.type == "primary" and v.index.index == 1:
+            if v.index.type == Index.PRIMARY and v.index.index == 1:
                 count += 1
                 if count > 1:
                     raise FormError, (sum, "There can only be one trial function.")

@@ -1,0 +1,8 @@
+# Copyright (C) 2006 Anders Logg (logg@simula.no)
+# Licensed under the GNU GPL Version 2
+#
+# A fifth degree Lagrange finite element on a triangle
+#
+# Compile this form with FFC: ffc P5tri.form
+
+element = FiniteElement("Lagrange", "triangle", 5)

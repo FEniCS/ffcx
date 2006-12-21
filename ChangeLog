@@ -1,3 +1,34 @@
+ - Add support for Discontinuous Galerkin (DG) methods
+0.3.5 [2006-12-01]
+ - Bug fixes
+ - Move from Numeric to numpy
+0.3.4 [2006-10-27]
+ - Updates for new DOLFIN mesh library
+ - Add support for evaluation of functionals
+ - Add operator outer() for outer product of vector-valued functions
+ - Enable optimization of linear forms (in addition to bilinear forms)
+ - Remove DOLFIN SWIG format
+ - Fix bug in ffc -v/--version (thanks to Ola Skavhaug)
+ - Consolidate DOLFIN and DOLFIN SWIG formats (patch from Johan Jansson)
+ - Fix bug in optimized compilation (-O) for some forms ("too many values to unpack")
+0.3.3 [2006-09-05]
+ - Fix bug in operator div()
+ - Add operation count (number of multiplications) with -d0
+ - Add hint for printing more informative error messages (flag -d1)
+ - Modify implementation of vertexeval()
+ - Add support for boundary integrals (Garth N. Wells)
+0.3.2 [2006-04-01]
+ - Add support for FErari optimizations, new flag -O
+0.3.1 [2006-03-28]
+ - Remove verbose output: silence means success
+ - Generate empty boundary integral eval() to please Intel C++ compiler
+ - New classes TestFunction and TrialFunction
+0.3.0 [2006-03-01]
+ - Work on manual, document command-line and user-interfaces
+ - Name change: u --> U
+ - Add compilation of elements without form
+ - Add generation of FiniteElementSpec in DOLFIN formats
+ - Fix bugs in raw and XML formats
  - Fix bug in LaTeX format
  - Fix path and predefine tokens to enable import in .form file
  - Report number of entries in reference tensor during compilation

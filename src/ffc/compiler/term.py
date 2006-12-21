@@ -1,6 +1,6 @@
-__author__ = "Anders Logg (logg@tti-c.org)"
-__date__ = "2004-10-05 -- 2005-09-20"
-__copyright__ = "Copyright (c) 2004 Anders Logg"
+__author__ = "Anders Logg (logg@simula.no)"
+__date__ = "2004-10-05 -- 2006-12-01"
+__copyright__ = "Copyright (C) 2004-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # FFC compiler modules
@@ -11,21 +11,21 @@ import signature
 class Term:
     """A Term represents a term of a multi-linear form and is
     expressed as the product of a ReferenceTensor A0 and a
-    GeometryTensor GK.
+    GeometryTensor G.
 
     Attributes:
 
         product - the Product generating the Term
         A0      - reference tensor
-        GKs     - list of geometry tensors (factorized)
+        G       - list of geometry tensors (factorized)
     """
 
-    def __init__(self, product, A0, GKs):
+    def __init__(self, product, A0, G):
         "Create Term."
 
         self.product = product
         self.A0 = A0
-        self.GKs = GKs
+        self.G  = G
 
         return
 

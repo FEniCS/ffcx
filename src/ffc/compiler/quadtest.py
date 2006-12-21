@@ -1,6 +1,6 @@
-__author__ = "Anders Logg (logg@tti-c.org)"
+__author__ = "Anders Logg (logg@simula.no)"
 __date__ = "2005-03-14 -- 2005-07-05"
-__copyright__ = "Copyright (c) 2005 Anders Logg"
+__copyright__ = "Copyright (C) 2005 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 """This is a simple test program to verify the precision of quadrature
