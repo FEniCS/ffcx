@@ -11,10 +11,6 @@ sys.path.append("../")
 from ffc.common.debug import *
 from ffc.common.exceptions import *
 
-# FFC format modules
-from ffc.format import dolfin
-from ffc.format import latex
-
 # FFC compiler modules
 from ffc.compiler.index import *
 from ffc.compiler.algebra import *
