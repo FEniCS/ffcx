@@ -1,4 +1,4 @@
-__author__ = "Marie Rognes (meg@math.uio.no"
+__author__ = "Marie Rognes (meg@math.uio.no)"
 __date__ = "2006-10-23 -- 2006-10-23"
 __copyright__ = "Copyright (C) 2006"
 __license__  = "GNU GPL Version 2"
