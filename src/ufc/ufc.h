@@ -6,7 +6,7 @@
 #ifndef __UFC_H
 #define __UFC_H
 
-#define UFC_VERSION 1.0-rc1
+#define UFC_VERSION "1.0-rc1"
 
 namespace ufc
 {
