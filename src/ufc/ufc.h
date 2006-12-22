@@ -12,7 +12,7 @@ namespace ufc
 {
 
   /// Valid cell shapes
-  enum shape {interval, triangle, tetrahedron, quadrilateral, hexahedron};
+  enum shape {interval, triangle, quadrilateral, tetrahedron, hexahedron};
 
   /// This class defines the data structure for a finite element mesh.
 
