@@ -6,13 +6,13 @@
 #ifndef __UFC_H
 #define __UFC_H
 
-#define UFC_VERSION 1.0-rc1
+#define UFC_VERSION "1.0-rc1"
 
 namespace ufc
 {
 
   /// Valid cell shapes
-  enum shape {interval, triangle, tetrahedron, quadrilateral, hexahedron};
+  enum shape {interval, triangle, quadrilateral, tetrahedron, hexahedron};
 
   /// This class defines the data structure for a finite element mesh.
 
