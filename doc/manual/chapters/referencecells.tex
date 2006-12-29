@@ -24,15 +24,15 @@ in the mesh.
       Name & Description \\
       \hline
       \hline
-      \emph{interval}      & the 1D unit interval \\
+      \emph{interval}      & the 1D reference interval \\
       \hline
-      \emph{triangle}      & the 2D ``unit'' triangle \\
+      \emph{triangle}      & the 2D reference triangle \\
       \hline
-      \emph{quadrilateral} & the 2D unit square \\
+      \emph{quadrilateral} & the 2D reference square \\
       \hline
-      \emph{tetrahedron}   & the 3D ``unit''tetrahedron \\
+      \emph{tetrahedron}   & the 3D reference tetrahedron \\
       \hline
-      \emph{hexahedron}    & the 3D unit cube \\
+      \emph{hexahedron}    & the 3D reference cube \\
       \hline
     \end{tabular}
     \caption{Reference cells covered by the UFC specification.}
@@ -106,35 +106,100 @@ $v^3$ opposite to vertices $v^0$ and $v^1$.
 
 \begin{figure}[H]
   \begin{center}
-    \includegraphics[width=6cm]{eps/ordering_example_triangle.eps}
-    \includegraphics[width=6cm]{eps/ordering_example_tetrahedron.eps}
+    \psfrag{v0}{$v^0$}
+    \psfrag{v1}{$v^1$}
+    \psfrag{v2}{$v^2$}
+    \psfrag{e0}{$e^0$}
+    \includegraphics[width=10cm]{eps/ordering_example_triangle.eps}
     \caption{Entities are ordered based on a lexicographical ordering
-      of non-incident vertices.}
+      of non-incident vertices. The first edge $e^0$ is non-incident
+      with vertex $v^0$.}
+    \label{fig:orderingexample}
+  \end{center}
+\end{figure}
+
+\begin{figure}[H]
+  \begin{center}
+    \psfrag{v0}{$v^0$}
+    \psfrag{v1}{$v^1$}
+    \psfrag{v2}{$v^2$}
+    \psfrag{v3}{$v^3$}
+    \psfrag{e0}{$e^0$}
+    \includegraphics[width=10cm]{eps/ordering_example_tetrahedron.eps}
+    \caption{Entities are ordered based on a lexicographical ordering
+      of non-incident vertices. The first edge $e^0$ is non-incident
+      with vertices $v^0$ and $v^1$.}
     \label{fig:orderingexample}
   \end{center}
 \end{figure}
 
 \newpage
-\section{Interval}
+\section{The reference interval}
 
-\includegraphics[width=10cm]{eps/interval.eps}
-
-\newpage
-\section{Triangle}
-
-\includegraphics[width=10cm]{eps/triangle.eps}
-
-\newpage
-\section{Quadrilateral}
-
-\includegraphics[width=10cm]{eps/quadrilateral.eps}
+\begin{figure}[H]
+  \begin{center}
+    \psfrag{0}{$0$}
+    \psfrag{1}{$1$}
+    \includegraphics[width=10cm]{eps/interval.eps}
+    \caption{The reference interval.}
+  \end{center}
+\end{figure}
 
 \newpage
-\section{Tetrahedron}
+\section{The reference triangle}
 
-\includegraphics[width=10cm]{eps/tetrahedron.eps}
+\begin{figure}[H]
+  \begin{center}
+    \psfrag{v0}{$(0, 0)$}
+    \psfrag{v1}{$(1, 0)$}
+    \psfrag{v2}{$(0, 1)$}
+    \includegraphics[width=10cm]{eps/triangle.eps}
+    \caption{The reference triangle.}
+  \end{center}
+\end{figure}
 
 \newpage
-\section{Hexahedron}
+\section{The reference quadrilateral}
 
-\includegraphics[width=10cm]{eps/hexahedron.eps}
+\begin{figure}[H]
+  \begin{center}
+    \psfrag{v0}{$(0, 0)$}
+    \psfrag{v1}{$(1, 0)$}
+    \psfrag{v2}{$(1, 1)$}
+    \psfrag{v3}{$(0, 1)$}
+    \includegraphics[width=10cm]{eps/quadrilateral.eps}
+    \caption{The reference quadrilateral.}
+  \end{center}
+\end{figure}
+
+\newpage
+\section{The reference tetrahedron}
+
+\begin{figure}[H]
+  \begin{center}
+    \psfrag{v0}{$(0, 0, 0)$}
+    \psfrag{v1}{$(1, 0, 0)$}
+    \psfrag{v2}{$(0, 1, 0)$}
+    \psfrag{v3}{$(0, 0, 1)$}
+    \includegraphics[width=10cm]{eps/tetrahedron.eps}
+    \caption{The reference tetrahedron.}
+  \end{center}
+\end{figure}
+
+\newpage
+\section{The reference hexahedron}
+
+\begin{figure}[H]
+  \begin{center}
+    \psfrag{v0}{$(0, 0, 0)$}
+    \psfrag{v1}{$(1, 0, 0)$}
+    \psfrag{v2}{$(1, 1, 0)$}
+    \psfrag{v3}{$(0, 1, 0)$}
+    \psfrag{v4}{$(0, 0, 1)$}
+    \psfrag{v5}{$(1, 0, 1)$}
+    \psfrag{v6}{$(1, 1, 1)$}
+    \psfrag{v7}{$(0, 1, 1)$}
+    \includegraphics[width=10cm]{eps/hexahedron.eps}
+    \caption{The reference hexahedron.}
+  \end{center}
+\end{figure}

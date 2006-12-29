@@ -96,7 +96,7 @@
      pagecolor="#ffffff"
      bordercolor="#666666"
      borderopacity="1.0"
-     gridtolerance="50"
+     gridtolerance="10000"
      guidetolerance="50"
      objecttolerance="50"
      inkscape:pageopacity="0.0"
@@ -106,16 +106,16 @@
      inkscape:cy="386.84357"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
-     showgrid="false"
+     showgrid="true"
      inkscape:window-width="976"
      inkscape:window-height="802"
-     inkscape:window-x="526"
-     inkscape:window-y="261"
-     gridspacingx="10px"
-     gridspacingy="10px"
+     inkscape:window-x="873"
+     inkscape:window-y="185"
+     gridspacingx="1px"
+     gridspacingy="1px"
      inkscape:object-bbox="false"
      inkscape:object-points="false"
-     inkscape:grid-points="false"
+     inkscape:grid-points="true"
      inkscape:object-nodes="false"
      inkscape:object-paths="false"
      inkscape:grid-bbox="false"
@@ -151,42 +151,43 @@
     <text
        xml:space="preserve"
        style="font-size:24px;font-style:normal;font-weight:normal;fill:black;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Bitstream Vera Sans"
-       x="47.9375"
-       y="940.62671"
+       x="60"
+       y="952.36218"
        id="text3929"><tspan
          sodipodi:role="line"
          id="tspan3931"
-         x="47.9375"
-         y="940.62671">(0, 0)</tspan></text>
+         x="60"
+         y="952.36218">v0</tspan></text>
     <text
        xml:space="preserve"
        style="font-size:24px;font-style:normal;font-weight:normal;fill:black;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Bitstream Vera Sans"
-       x="543.65179"
-       y="943.4303"
-       id="text3933"><tspan
+       x="540"
+       y="952.36218"
+       id="text2785"
+       inkscape:transform-center-x="97.765625"><tspan
          sodipodi:role="line"
-         id="tspan3935"
-         x="543.65179"
-         y="943.4303">(1, 0)</tspan></text>
+         id="tspan2787"
+         x="540"
+         y="952.36218">v1</tspan></text>
     <text
        xml:space="preserve"
        style="font-size:24px;font-style:normal;font-weight:normal;fill:black;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Bitstream Vera Sans"
-       x="43.651787"
-       y="443.48383"
-       id="text3937"><tspan
+       x="540"
+       y="432.36218"
+       id="text2789"><tspan
          sodipodi:role="line"
-         id="tspan3939"
-         x="43.651787"
-         y="443.48383">(0, 1)</tspan></text>
+         id="tspan2791"
+         x="540"
+         y="432.36218">v2</tspan></text>
     <text
        xml:space="preserve"
        style="font-size:24px;font-style:normal;font-weight:normal;fill:black;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Bitstream Vera Sans"
-       x="543.19476"
-       y="436.28741"
-       id="text4195"><tspan
+       x="60"
+       y="432.36218"
+       id="text2793"><tspan
          sodipodi:role="line"
-         id="tspan4197"
-         x="543.19476"
-         y="436.28741">(1, 1)</tspan></text>
+         id="tspan2795"
+         x="60"
+         y="432.36218">v3</tspan></text>
   </g>
 </svg>
