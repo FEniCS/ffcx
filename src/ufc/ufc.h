@@ -109,9 +109,15 @@ namespace ufc
     virtual unsigned int local_dimension() const = 0;
     
     /// Tabulate the local-to-global mapping of dofs
-    virtual void tabulate_dofs(unsigned int *dofs,
+    virtual void tabulate_dofs(unsigned int* dofs,
                                const mesh& m,
                                const cell& c) const = 0;
+    
+    /// Tabulate the local-to-global mapping of dofs an a facet
+    virtual void tabulate_facet_dofs(unsigned int* dofs,
+                                     const unsigned int facet,
+                                     const cell& c,
+                                     const mesh& m) const = 0;
   };
 
   /// This class defines the interface for a finite element.
