@@ -85,9 +85,6 @@ namespace ufc
                           const double* x,
                           const cell& c) const = 0;
 
-    /// Return the dimension of the value space
-    virtual unsigned int value_dimension() const = 0;
-
   };
 
   /// This class defines the interface for a local-to-global mapping of
