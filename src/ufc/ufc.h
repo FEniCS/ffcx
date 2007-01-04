@@ -28,7 +28,7 @@ namespace ufc
 
     /// Topological dimension of the mesh
     unsigned int topological_dimension;
-    
+
     /// Geometric dimension of the mesh
     unsigned int geometric_dimension;
 
@@ -36,9 +36,9 @@ namespace ufc
     unsigned int* num_entities;
 
   };
-  
+
   /// This class defines the data structure for a cell in a mesh.
-  
+
   class cell
   {
   public:
@@ -54,7 +54,7 @@ namespace ufc
 
     /// Array of coordinates for the vertices of the cell
     double** coordinates;
-    
+
   };
 
   /// This class defines the interface for a general tensor-valued function.
@@ -74,8 +74,20 @@ namespace ufc
                           const double* x,
                           const cell& c) const = 0;
 
+    /// Return the rank of the domain space
+    virtual unsigned int domain_rank() const = 0;
+
+    /// Return the dimension of the domain space for axis i
+    virtual unsigned int domain_dimension(unsigned int i) const = 0;
+
+    /// Return the rank of the range space
+    virtual unsigned int range_rank() const = 0;
+
+    /// Return the dimension of the range space for axis i
+    virtual unsigned int range_dimension(unsigned int i) const = 0;
+
   };
-    
+
   /// This class defines the interface for a local-to-global mapping of
   /// degrees of freedom (dofs).
 
@@ -88,10 +100,10 @@ namespace ufc
 
     /// Destructor
     virtual ~dof_map() {}
-    
+
     /// Return a string identifying the dof map
     virtual const char* signature() const = 0;
-    
+
     /// Return true iff mesh entities of topological dimension d are needed
     virtual bool needs_mesh_entities(unsigned int d) const = 0;
 
@@ -104,15 +116,15 @@ namespace ufc
 
     /// Return the dimension of the global finite element function space
     virtual unsigned int global_dimension() const = 0;
-    
+
     /// Return the dimension of the local finite element function space
     virtual unsigned int local_dimension() const = 0;
-    
+
     /// Tabulate the local-to-global mapping of dofs on a cell
     virtual void tabulate_dofs(unsigned int* dofs,
                                const mesh& m,
                                const cell& c) const = 0;
-    
+
     /// Tabulate the local-to-global mapping of dofs on a facet of a cell
     virtual void tabulate_facet_dofs(unsigned int* dofs,
                                      const cell& c,
@@ -153,22 +165,22 @@ namespace ufc
                                 const double* x,
                                 unsigned int i,
                                 const cell& c) const = 0;
-    
+
     /// Evaluate linear functional for dof i on the function f
     virtual double evaluate_dof(unsigned int i,
                                 const function& f,
                                 const cell& c) const = 0;
-    
+
     /// Interpolate vertex values from dof values
     virtual void interpolate_vertex_values(double* vertex_values,
                                            const double* dof_values) const = 0;
-  
+
     /// Return the number of sub elements (for a mixed finite element)
     virtual unsigned int num_sub_elements(unsigned int i) const = 0;
 
     /// Return sub element i (for a mixed finite element)
     virtual const finite_element& sub_element(unsigned int i) const = 0;
-    
+
   };
 
   /// This class defines the interface for the tabulation of the cell
@@ -252,7 +264,7 @@ namespace ufc
   /// where each argument Vj represents the application to the
   /// sequence of basis functions of Vj and w1, w2, ..., wn are given
   /// fixed functions (coefficients).
-  
+
   class form
   {
   public:
@@ -274,13 +286,13 @@ namespace ufc
 
     /// Create a new cell integral (return 0 if contribution is zero)
     virtual cell_integral* create_cell_integral() const = 0;
-    
+
     /// Create a new interior facet integral (return 0 if contribution is zero)
     virtual interior_facet_integral* create_interior_facet_integral() const = 0;
 
     /// Create a new exterior facet integral (return 0 if contribution is zero)
     virtual exterior_facet_integral* create_exterior_facet_integral() const = 0;
-    
+
     /// Create a new dof map for argument function i
     virtual dof_map* create_dof_map(unsigned int i) const = 0;
 
