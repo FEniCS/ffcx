@@ -117,7 +117,7 @@ namespace ufc
     virtual void tabulate_facet_dofs(unsigned int* dofs,
                                      const cell& c,
                                      const mesh& m,
-                                     const unsigned int facet) const = 0;
+                                     unsigned int facet) const = 0;
 
   };
 
