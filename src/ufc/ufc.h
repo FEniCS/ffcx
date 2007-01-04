@@ -74,17 +74,11 @@ namespace ufc
                           const double* x,
                           const cell& c) const = 0;
 
-    /// Return the rank of the domain space
-    virtual unsigned int domain_rank() const = 0;
+    /// Return the rank of the value space
+    virtual unsigned int value_rank() const = 0;
 
-    /// Return the dimension of the domain space for axis i
-    virtual unsigned int domain_dimension(unsigned int i) const = 0;
-
-    /// Return the rank of the range space
-    virtual unsigned int range_rank() const = 0;
-
-    /// Return the dimension of the range space for axis i
-    virtual unsigned int range_dimension(unsigned int i) const = 0;
+    /// Return the dimension of the value space for axis i
+    virtual unsigned int value_dimension(unsigned int i) const = 0;
 
   };
 
