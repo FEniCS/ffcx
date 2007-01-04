@@ -44,10 +44,21 @@ namespace ufc
   public:
 
     /// Constructor
-    cell(): entity_indices(0), coordinates(0) {}
+    cell(): cell_shape(interval),
+            topological_dimension(0), geometric_dimension(0),
+            entity_indices(0), coordinates(0) {}
 
     /// Destructor
     virtual ~cell() {}
+
+    /// Shape of the cell
+    shape cell_shape;
+
+    /// Topological dimension of the mesh
+    unsigned int topological_dimension;
+
+    /// Geometric dimension of the mesh
+    unsigned int geometric_dimension;
 
     /// Array of global indices for the mesh entities of the cell
     unsigned int** entity_indices;
@@ -74,11 +85,8 @@ namespace ufc
                           const double* x,
                           const cell& c) const = 0;
 
-    /// Return the rank of the value space
-    virtual unsigned int value_rank() const = 0;
-
-    /// Return the dimension of the value space for axis i
-    virtual unsigned int value_dimension(unsigned int i) const = 0;
+    /// Return the dimension of the value space
+    virtual unsigned int value_dimension() const = 0;
 
   };
 
