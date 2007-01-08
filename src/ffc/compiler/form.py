@@ -55,6 +55,12 @@ class Form:
         shape        - shape on which the form is defined
         num_ops      - number of operations in computation of element tensor
 
+    FIXME: Sketch for rewrite (follow UFC specification)
+
+        signature
+        rank
+        num_coefficients
+
     A multi-linear form is first expressed as an element of the
     algebra (a Sum) and is then post-processed to generate a sum
     of ElementTensors, where each ElementTensor is expressed as

@@ -5,141 +5,318 @@ __date__ = "2007-01-08 -- 2007-01-08"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
-class dof_map:
+dof_map = """\
+class %s : public ufc::dof_map()
+{
+public:
 
-    constructor = """\
-dof_map()"""
+  /// Constructor
+  %s() : dof_map()
+  {
+%s
+  }
 
-    signature = """\
-const char* signature()"""
+  /// Destructor
+  ~%s()
+  {
+%s
+  }
 
-    needs_mesh_entities = """\
-bool needs_mesh_entities(unsigned int d)"""
-    
-    init_mesh = """\
-bool init_mesh(const mesh& mesh)"""
+  /// Return a string identifying the dof map
+  const char* signature() const
+  {
+%s
+  }
 
-    init_cell = """\
-void init_cell(const mesh& mesh,
-               const cell& cell)"""
+  /// Return true iff mesh entities of topological dimension d are needed
+  bool needs_mesh_entities(unsigned int d) const
+  {
+%s
+  }
 
-    global_dimension = """\
-unsigned int global_dimension()"""
+  /// Initialize dof map for mesh (return true iff init_cell() is needed)
+  bool init_mesh(const mesh& mesh)
+  {
+%s
+  }
 
-    local_dimension = """\
-unsigned int local_dimension()"""
+  /// Initialize dof map for given cell
+  void init_cell(const mesh& mesh,
+                 const cell& cell)
+  {
+%s
+  }
 
-    tabulate_dofs = """\
-void tabulate_dofs(unsigned int* dofs,
-                   const mesh& m,
-                   const cell& c)"""
+  /// Return the dimension of the global finite element function space
+  unsigned int global_dimension() const
+  {
+%s
+  }
 
-    tabulate_facet_dofs = """\
-void tabulate_facet_dofs(unsigned int* dofs,
-                         const mesh& m,
-                         const cell& c,
-                         unsigned int facet)"""
-    
-class finite_element:
+  /// Return the dimension of the local finite element function space
+  unsigned int local_dimension() const
+  {
+%s
+  }
 
-    constructor = """\
-finite_element()"""
+  /// Tabulate the local-to-global mapping of dofs on a cell
+  void tabulate_dofs(unsigned int* dofs,
+                     const mesh& m,
+                     const cell& c) const
+  {
+%s
+  }
 
-    signature = """\
-const char* signature()"""
+  /// Tabulate the local-to-global mapping of dofs on a facet of a cell
+  void tabulate_facet_dofs(unsigned int* dofs,
+                           const mesh& m,
+                           const cell& c,
+                           unsigned int facet) const
+  {
+%s
+  }
 
-    cell_shape = """\
-shape cell_shape()"""
+};
+"""
 
-    space_dimension = """\
-unsigned int space_dimension()"""
+finite_element = """\
+class %s : public ufc::finite_element
+{
+public:
 
-    value_rank = """\
-unsigned int value_rank()"""
+  /// Constructor
+  %s : finite_element()
+  {
+%s
+  }
 
-    value_dimension = """\
-unsigned int value_dimension(unsigned int i)"""
+  /// Destructor
+  ~%s()
+  {
+%s
+  }
 
-    evaluate_basis = """\
-void evaluate_basis(double* values,
-                    const double* x,
-                    unsigned int i,
-                    const cell& c)"""
+  /// Return a string identifying the finite element
+  const char* signature() const
+  {
+%s
+  }
 
-    evaluate_dof = """\
-double evaluate_dof(unsigned int i,
-                    const function& f,
-                    const cell& c)"""
+  /// Return the cell shape
+  ufc::shape cell_shape() const
+  {
+%s
+  }
 
-    interpolate_vertex = """\
-void interpolate_vertex_values(double* vertex_values,
-                               const double* dof_values)"""
+  /// Return the dimension of the finite element function space
+  unsigned int space_dimension() const
+  {
+%s
+  }
 
-    num_sub_elements = """\
-unsigned int num_sub_elements(unsigned int i)"""
+  /// Return the rank of the value space
+  unsigned int value_rank() const
+  {
+%s
+  }
 
-    sub_element = """\
-const finite_element& sub_element(unsigned int i)"""
+  /// Return the dimension of the value space for axis i
+  unsigned int value_dimension(unsigned int i) const
+  {
+%s
+  }
 
-class cell_integral:
+  /// Evaluate basis function i at the point x = (x[0], x[1], ...) in cell
+  void evaluate_basis(double* values,
+                      const double* x,
+                      unsigned int i,
+                      const ufc::cell& c) const
+  {
+%s
+  }
 
-  constructor = """\
-cell_integral()"""
+  /// Evaluate linear functional for dof i on the function f
+  double evaluate_dof(unsigned int i,
+                      const ufc::function& f,
+                      const ufc::cell& c) const
+  {
+%s
+  }
 
-  tabulate_tensor = """\
-void tabulate_tensor(double* A,
-                     const double * const * w,
-                     const cell& c)"""
+  /// Interpolate vertex values from dof values
+  void interpolate_vertex_values(double* vertex_values,
+                                 const double* dof_values) const
+  {
+%s
+  }
 
-class exterior_facet_integral:
+  /// Return the number of sub elements (for a mixed finite element)
+  unsigned int num_sub_elements(unsigned int i) const
+  {
+%s
+  }
 
-    constructor = """\
-exterior_facet_integral()"""
+  /// Return sub element i (for a mixed finite element)
+  const ufc::finite_element& sub_element(unsigned int i) const
+  {
+%s
+  }
 
-    tabulate_tensor = """\
-void tabulate_tensor(double* A,
-                     const double * const * w,
-                     const cell& c,
-                     unsigned int facet)"""
+};
+"""
 
-class interior_facet_integral:
+cell_integral = """\
+class %s : public ufc::cell_integral
+{
+public:
 
-    constructor = """\
-interior_facet_integral()"""
+  /// Constructor
+  %s : cell_integral()
+  {
+%s
+  }
 
-    tabulate_tensor = """\
-void tabulate_tensor(double* A,
-                     const double * const * w,
-                     const cell& c0,
-                     const cell& c1,
-                     unsigned int facet0,
-                     unsigned int facet1)"""
+  /// Destructor
+  ~%s()
+  {
+%s
+  }
 
-class form:
+  /// Tabulate the tensor for the contribution from a local cell
+  void tabulate_tensor(double* A,
+                       const double * const * w,
+                       const cell& c) const
+  {
+%s
+  }
 
-    constructor = """\
-form()"""
+};
+"""
 
-    signature = """\
-const char* signature()"""
+exterior_facet_integral = """\
+class %s : public ufc::exterior_facet_integral
+{
+public:
 
-    rank = """\
-unsigned int rank()"""
+  /// Constructor
+  %s : exterior_facet_integral()
+  {
+%s
+  }
 
-    num_coefficients = """\
-unsigned int num_coefficients()"""
+  /// Destructor
+  ~%s()
+  {
+%s
+  }
 
-    create_cell_integral = """\
-cell_integral* create_cell_integral()"""
+  /// Tabulate the tensor for the contribution from a local exterior facet
+  void tabulate_tensor(double* A,
+                       const double * const * w,
+                       const cell& c,
+                       unsigned int facet) const
+  {
+%s
+  }
 
-    create_interior_facet_integral = """\
-interior_facet_integral* create_interior_facet_integral()"""
+};
+"""
 
-    create_exterior_facet_integral = """\
-exterior_facet_integral* create_exterior_facet_integral()"""
+interior_facet_integral = """\
+class %s : public ufc::interior_facet_integral
+{
+public:
 
-    create_dof_map = """\
-dof_map* create_dof_map(unsigned int i)"""
+  /// Constructor
+  %s : interior_facet_integral()
+  {
+%s
+  }
 
-    create_finite_element = """\
-finite_element* create_finite_element(unsigned int i)"""
+  /// Destructor
+  ~%s()
+  {
+%s
+  }
+
+  /// Tabulate the tensor for the contribution from a local interior facet
+  void tabulate_tensor(double* A,
+                       const double * const * w,
+                       const cell& c0,
+                       const cell& c1,
+                       unsigned int facet0,
+                       unsigned int facet1) const
+  {
+%s
+  }
+
+};
+"""
+
+form = """\
+class %s : public ufc::form
+{
+public:
+
+  /// Constructor
+  %s : form()
+  {
+%s
+  }
+
+  /// Destructor
+  ~%s()
+  {
+%s
+  }
+
+  /// Return a string identifying the form
+  const char* signature() const
+  {
+%s
+  }
+
+  /// Return the rank of the element tensor (r)
+  unsigned int rank() const
+  {
+%s
+  }
+
+  /// Return the number of coefficients (n)
+  unsigned int num_coefficients() const
+  {
+%s
+  }
+
+  /// Create a new dof map for argument function i
+  dof_map* create_dof_map(unsigned int i) const
+  {
+%s
+  }
+
+  /// Create a new finite element for argument function i
+  finite_element* create_finite_element(unsigned int i) const
+  {
+%s
+  }
+
+  /// Create a new cell integral (return 0 if contribution is zero)
+  cell_integral* create_cell_integral() const
+  {
+%s
+  }
+
+  /// Create a new interior facet integral (return 0 if contribution is zero)
+  interior_facet_integral* create_interior_facet_integral() const
+  {
+%s
+  }
+
+  /// Create a new exterior facet integral (return 0 if contribution is zero)
+  exterior_facet_integral* create_exterior_facet_integral() const
+  {
+%s
+  }
+  
+};
+"""
