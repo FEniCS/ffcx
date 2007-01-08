@@ -3,7 +3,7 @@ and building the data structures (geometry and reference tensors) for
 the evaluation of the multi-linear form."""
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-11-17 -- 2006-12-07"
+__date__ = "2004-11-17 -- 2007-01-08"
 __copyright__ = "Copyright (C) 2004-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -20,6 +20,7 @@ from ffc.common.exceptions import *
 
 # FFC format modules
 sys.path.append("../../")
+from ffc.format import ufc
 from ffc.format import dolfin
 from ffc.format import latex
 from ffc.format import raw
@@ -305,15 +306,17 @@ def __choose_format(language):
     "Choose format from specified language."
     if not language:
         format = dolfin
-    elif language == "dolfin" or language == "DOLFIN":
+    elif language.lower() == "ufc":
+        format = ufc
+    elif language.lower() == "dolfin":
         format = dolfin
-    elif language == "latex" or language == "LaTeX":
+    elif language.lower() == "latex":
         format = latex
-    elif language == "raw":
+    elif language.lower() == "raw":
         format = raw
-    elif language == "ase":
+    elif language.lower() == "ase":
         format = ase
-    elif language == "xml":
+    elif language.lower() == "xml":
         format = xml
     else:
         raise "RuntimeError", "Unknown language " + str(language)
