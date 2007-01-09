@@ -13,7 +13,7 @@ public:
   /// Constructor
   %s() : dof_map()
   {
-%s
+%(hej)s
   }
 
   /// Destructor
