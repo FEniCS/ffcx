@@ -119,6 +119,9 @@ namespace ufc
     /// Return the dimension of the local finite element function space
     virtual unsigned int local_dimension() const = 0;
 
+    /// Return the number of dofs on a facets of a cell
+    virtual unsigned int num_facet_dofs() const = 0;
+
     /// Tabulate the local-to-global mapping of dofs on a cell
     virtual void tabulate_dofs(unsigned int* dofs,
                                const mesh& m,
