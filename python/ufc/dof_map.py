@@ -40,8 +40,8 @@ public:
   }
 
   /// Initialize dof map for given cell
-  void init_cell(const ufc::mesh& mesh,
-                 const ufc::cell& cell)
+  void init_cell(const ufc::mesh& m,
+                 const ufc::cell& c)
   {
 %(init_cell)s
   }
@@ -110,8 +110,8 @@ public:
   bool init_mesh(const ufc::mesh& mesh);
 
   /// Initialize dof map for given cell
-  void init_cell(const ufc::mesh& mesh,
-                 const ufc::cell& cell);
+  void init_cell(const ufc::mesh& m,
+                 const ufc::cell& c);
 
   /// Return the dimension of the global finite element function space
   unsigned int global_dimension() const;
@@ -170,8 +170,8 @@ bool %(classname)s::init_mesh(const ufc::mesh& mesh)
 }
 
 /// Initialize dof map for given cell
-void %(classname)s::init_cell(const ufc::mesh& mesh,
-                              const ufc::cell& cell)
+void %(classname)s::init_cell(const ufc::mesh& m,
+                              const ufc::cell& c)
 {
 %(init_cell)s
 }
