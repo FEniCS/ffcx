@@ -80,9 +80,10 @@ namespace ufc
     /// Destructor
     virtual ~function() {}
 
-    /// Evaluate the function at the point x = (x[0], x[1], ...) in the cell
+    /// Evaluate function in the cell at the point
+    /// x = (coordinates[0], coordinates[1], ...)
     virtual void evaluate(double* values,
-                          const double* x,
+                          const double* coordinates,
                           const cell& c) const = 0;
 
   };
@@ -162,9 +163,10 @@ namespace ufc
     /// Return the dimension of the value space for axis i
     virtual unsigned int value_dimension(unsigned int i) const = 0;
 
-    /// Evaluate basis function i at the point x = (x[0], x[1], ...) in cell
+    /// Evaluate basis function i in cell at the point
+    /// x = (coordinates[0], coordinates1], ...)
     virtual void evaluate_basis(double* values,
-                                const double* x,
+                                const double* coordinates,
                                 unsigned int i,
                                 const cell& c) const = 0;
 
