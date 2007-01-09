@@ -13,9 +13,11 @@ plus one for each interface function with name equal to the function name.
 
 In addition, a utility function generate_code(format_string, format_dict, num_indent_spaces=6) allows
 the user to specify a format dictionary without the constructor, destructor or extra members.
+
+See http://www.fenics.org/ufc/ for more information about the UFC project.
 """
 # -*- coding: utf-8 -*-
-__author__  = "Martin Sandve Alnæs"
+__author__  = "Martin Sandve Alnaes, Hans Petter Langtangen, Anders Logg, Kent-Andre Mardal, and Ola Skavhaug"
 __date__    = "9th January 2007"
 __version__ = "1.0-rc1"
 
