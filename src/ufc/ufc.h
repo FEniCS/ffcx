@@ -286,20 +286,20 @@ namespace ufc
     /// Return the number of coefficients (n)
     virtual unsigned int num_coefficients() const = 0;
 
-    /// Create a new cell integral (return 0 if contribution is zero)
-    virtual cell_integral* create_cell_integral() const = 0;
-
-    /// Create a new interior facet integral (return 0 if contribution is zero)
-    virtual interior_facet_integral* create_interior_facet_integral() const = 0;
-
-    /// Create a new exterior facet integral (return 0 if contribution is zero)
-    virtual exterior_facet_integral* create_exterior_facet_integral() const = 0;
-
     /// Create a new dof map for argument function i
     virtual dof_map* create_dof_map(unsigned int i) const = 0;
 
     /// Create a new finite element for argument function i
     virtual finite_element* create_finite_element(unsigned int i) const = 0;
+
+    /// Create a new cell integral (return 0 if contribution is zero)
+    virtual cell_integral* create_cell_integral() const = 0;
+
+    /// Create a new exterior facet integral (return 0 if contribution is zero)
+    virtual exterior_facet_integral* create_exterior_facet_integral() const = 0;
+
+    /// Create a new interior facet integral (return 0 if contribution is zero)
+    virtual interior_facet_integral* create_interior_facet_integral() const = 0;
 
   };
 
