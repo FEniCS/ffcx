@@ -1,4 +1,4 @@
-"""Code generation utilities for UFC (Unified Form-assembly Code) v. 1.0.
+"""Code generation format strings for UFC (Unified Form-assembly Code) v. 1.0.
 
 Three format strings are defined for each of the following UFC classes:
 
@@ -19,13 +19,6 @@ Each string has the following format variables: 'classname',
 'members', 'constructor', 'destructor', plus one for each interface
 function with name equal to the function name.
 
-In addition, a utility function
-
-    generate_code(format_string, format_dict, num_indent_spaces=6)
-
-allows the user to specify a format dictionary without the
-constructor, destructor or extra members.
-
 For more information about UFC and the FEniCS project, visit
 
     http://www.fenics.org/ufc/
@@ -40,11 +33,7 @@ __license__ = "This code is released into the public domain"
 
 UFC_VERSION = __version__
 
-shapes = ["interval", "triangle", "quadrilateral", "tetrahedron", "hexahedron"]
-
 from dof_map import *
 from finite_element import *
 from integrals import *
 from form import *
-
-import utils

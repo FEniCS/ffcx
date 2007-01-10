@@ -1,4 +1,4 @@
-# Code generation utilities for UFC (Unified Form-assembly Code) v. 1.0.
+# Code generation format strings for UFC (Unified Form-assembly Code) v. 1.0.
 # This code is released into the public domain.
 #
 # The FEniCS Project (http://www.fenics.org/) 2006.
