@@ -1,3 +1,7 @@
+# Code generation utilities for UFC (Unified Form-assembly Code) v. 1.0.
+# This code is released into the public domain.
+#
+# The FEniCS Project (http://www.fenics.org/) 2006.
 
 cell_integral_combined = """\
 /// This class defines the interface for the tabulation of the cell
@@ -33,7 +37,6 @@ public:
 };
 """
 
-
 cell_integral_header = """\
 /// This class defines the interface for the tabulation of the cell
 /// tensor corresponding to the local contribution to a form from
@@ -59,7 +62,6 @@ public:
 };
 """
 
-
 cell_integral_implementation = """\
 /// Constructor
 %(classname)s::%(classname)s()
@@ -81,7 +83,6 @@ void %(classname)s::tabulate_tensor(double* A,
 %(tabulate_tensor)s
 }
 """
-
 
 exterior_facet_integral_combined = """\
 /// This class defines the interface for the tabulation of the
@@ -118,7 +119,6 @@ public:
 };
 """
 
-
 exterior_facet_integral_header = """\
 /// This class defines the interface for the tabulation of the
 /// exterior facet tensor corresponding to the local contribution to
@@ -145,7 +145,6 @@ public:
 };
 """
 
-
 exterior_facet_integral_implementation = """\
 /// Constructor
 %(classname)s::%(classname)s()
@@ -168,7 +167,6 @@ void %(classname)s::tabulate_tensor(double* A,
 %(tabulate_tensor)s
 }
 """
-
 
 interior_facet_integral_combined = """\
 /// This class defines the interface for the tabulation of the
@@ -207,7 +205,6 @@ public:
 };
 """
 
-
 interior_facet_integral_header = """\
 /// This class defines the interface for the tabulation of the
 /// interior facet tensor corresponding to the local contribution to
@@ -235,7 +232,6 @@ public:
 
 };
 """
-
 
 interior_facet_integral_implementation = """\
 /// Constructor

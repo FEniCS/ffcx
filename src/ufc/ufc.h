@@ -1,4 +1,4 @@
-// This is UFC (Unified Form-assembly Code) v. 1.0-rc1
+// This is UFC (Unified Form-assembly Code) v. 1.0.
 // This code is released into the public domain.
 //
 // The FEniCS Project (http://www.fenics.org/) 2006.
@@ -85,7 +85,7 @@ namespace ufc
     virtual void evaluate(double* values,
                           const double* coordinates,
                           const cell& c) const = 0;
-
+    
   };
 
   /// This class defines the interface for a local-to-global mapping of

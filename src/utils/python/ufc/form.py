@@ -1,3 +1,7 @@
+# Code generation utilities for UFC (Unified Form-assembly Code) v. 1.0.
+# This code is released into the public domain.
+#
+# The FEniCS Project (http://www.fenics.org/) 2006.
 
 form_combined = """\
 /// This class defines the interface for the assembly of the global
@@ -84,7 +88,6 @@ public:
 };
 """
 
-
 form_header = """\
 /// This class defines the interface for the assembly of the global
 /// tensor corresponding to a form with r + n arguments, that is, a
@@ -139,7 +142,6 @@ public:
 
 };
 """
-
 
 form_implementation = """\
 /// Constructor
@@ -202,4 +204,3 @@ ufc::interior_facet_integral* %(classname)s::create_interior_facet_integral() co
 %(create_interior_facet_integral)s
 }
 """
-

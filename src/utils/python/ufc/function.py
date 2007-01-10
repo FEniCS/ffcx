@@ -1,3 +1,7 @@
+# Code generation utilities for UFC (Unified Form-assembly Code) v. 1.0.
+# This code is released into the public domain.
+#
+# The FEniCS Project (http://www.fenics.org/) 2006.
 
 function_combined = """\
 /// This class defines the interface for a general tensor-valued function.
@@ -31,7 +35,6 @@ public:
 };
 """
 
-
 function_header = """\
 /// This class defines the interface for a general tensor-valued function.
 
@@ -55,7 +58,6 @@ public:
 };
 """
 
-
 function_implementation = """\
 /// Constructor
 %(classname)s::%(classname)s()
@@ -78,4 +80,3 @@ void %(classname)s::evaluate(double* values,
 %(evaluate)s
 }
 """
-

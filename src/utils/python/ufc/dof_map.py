@@ -1,3 +1,7 @@
+# Code generation utilities for UFC (Unified Form-assembly Code) v. 1.0.
+# This code is released into the public domain.
+#
+# The FEniCS Project (http://www.fenics.org/) 2006.
 
 dof_map_combined = """\
 /// This class defines the interface for a local-to-global mapping of
@@ -84,7 +88,6 @@ public:
 };
 """
 
-
 dof_map_header = """\
 /// This class defines the interface for a local-to-global mapping of
 /// degrees of freedom (dofs).
@@ -135,8 +138,6 @@ public:
 
 };
 """
-
-
 
 dof_map_implementation = """\
 /// Constructor

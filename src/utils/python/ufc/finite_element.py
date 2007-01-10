@@ -1,3 +1,7 @@
+# Code generation utilities for UFC (Unified Form-assembly Code) v. 1.0.
+# This code is released into the public domain.
+#
+# The FEniCS Project (http://www.fenics.org/) 2006.
 
 finite_element_combined = """\
 /// This class defines the interface for a finite element.
@@ -90,7 +94,6 @@ public:
 };
 """
 
-
 finite_element_header = """\
 /// This class defines the interface for a finite element.
 
@@ -145,7 +148,6 @@ public:
 
 };
 """
-
 
 finite_element_implementation= """\
 
