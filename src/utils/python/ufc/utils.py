@@ -17,7 +17,7 @@ def generate_code(format_string, format_dictionary, num_indent_spaces=6):
         default_dictionary[v] = indent(default_dictionary[v], num_indent_spaces)
     return format_string % default_dictionary
 
-def __get_format_variables(string)
+def __get_format_variables(string):
     vars = []
     pos = string.find("%(")
     while pos >= 0:
