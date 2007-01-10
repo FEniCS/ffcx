@@ -20,9 +20,7 @@ form_combined = """\
 /// fixed functions (coefficients).
 
 class %(classname)s: public ufc::form
-{
-%(members)s
-
+{%(members)s
 public:
 
   /// Constructor
@@ -105,9 +103,7 @@ form_header = """\
 /// fixed functions (coefficients).
 
 class %(classname)s: public ufc::form
-{
-%(members)s
-
+{%(members)s
 public:
 
   /// Constructor

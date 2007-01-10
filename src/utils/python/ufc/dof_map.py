@@ -8,9 +8,7 @@ dof_map_combined = """\
 /// degrees of freedom (dofs).
 
 class %(classname)s: public ufc::dof_map
-{
-%(members)s
-
+{%(members)s
 public:
 
   /// Constructor
@@ -93,8 +91,7 @@ dof_map_header = """\
 /// degrees of freedom (dofs).
 
 class %(classname)s: public ufc::dof_map
-{
-%(members)s
+{%(members)s
 public:
 
   /// Constructor

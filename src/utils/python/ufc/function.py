@@ -7,8 +7,7 @@ function_combined = """\
 /// This class defines the interface for a general tensor-valued function.
 
 class %(classname)s: public ufc::function
-{
-%(members)s
+{%(members)s
 public:
 
   /// Constructor
@@ -39,8 +38,7 @@ function_header = """\
 /// This class defines the interface for a general tensor-valued function.
 
 class %(classname)s: public ufc::function
-{
-%(members)s
+{%(members)s
 public:
 
   /// Constructor

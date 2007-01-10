@@ -7,9 +7,7 @@ finite_element_combined = """\
 /// This class defines the interface for a finite element.
 
 class %(classname)s: public ufc::finite_element
-{
-%(members)s
-
+{%(members)s
 public:
 
   /// Constructor
@@ -98,9 +96,7 @@ finite_element_header = """\
 /// This class defines the interface for a finite element.
 
 class %(classname)s: public ufc::finite_element
-{
-%(members)s
-
+{%(members)s
 public:
 
   /// Constructor

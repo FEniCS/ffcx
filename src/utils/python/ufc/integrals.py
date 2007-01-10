@@ -9,9 +9,7 @@ cell_integral_combined = """\
 /// the integral over a cell.
 
 class %(classname)s: public ufc::cell_integral
-{
-%(members)s
-
+{%(members)s
 public:
 
   /// Constructor
@@ -43,9 +41,7 @@ cell_integral_header = """\
 /// the integral over a cell.
 
 class %(classname)s: public ufc::cell_integral
-{
-%(members)s
-
+{%(members)s
 public:
 
   /// Constructor
@@ -90,9 +86,7 @@ exterior_facet_integral_combined = """\
 /// a form from the integral over an exterior facet.
 
 class %(classname)s: public ufc::exterior_facet_integral
-{
-%(members)s
-
+{%(members)s
 public:
 
   /// Constructor
@@ -125,9 +119,7 @@ exterior_facet_integral_header = """\
 /// a form from the integral over an exterior facet.
 
 class %(classname)s: public ufc::exterior_facet_integral
-{
-%(members)s
-
+{%(members)s
 public:
 
   /// Constructor
@@ -174,9 +166,7 @@ interior_facet_integral_combined = """\
 /// a form from the integral over an interior facet.
 
 class %(classname)s: public ufc::interior_facet_integral
-{
-%(members)s
-
+{%(members)s
 public:
 
   /// Constructor
@@ -211,9 +201,7 @@ interior_facet_integral_header = """\
 /// a form from the integral over an interior facet.
 
 class %(classname)s: public ufc::interior_facet_integral
-{
-%(members)s
-
+{%(members)s
 public:
 
   /// Constructor
