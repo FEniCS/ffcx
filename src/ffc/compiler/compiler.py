@@ -20,12 +20,6 @@ from ffc.common.exceptions import *
 
 # FFC format modules
 sys.path.append("../../")
-from ffc.format import ufc
-from ffc.format import dolfin
-from ffc.format import latex
-from ffc.format import raw
-from ffc.format import ase
-from ffc.format import xml
 
 # FFC compiler modules
 from form import *
@@ -304,19 +298,29 @@ def __compute_coefficients(projections, format, c_used, num_spaces):
 
 def __choose_format(language):
     "Choose format from specified language."
+
+    # Default format
     if not language:
-        format = dolfin
-    elif language.lower() == "ufc":
-        format = ufc
+        language = "dolfin"
+
+    # Choose format
+    if language.lower() == "ufc":
+        from ffc.format import ufcformat
+        format = ufcformat
     elif language.lower() == "dolfin":
+        from ffc.format import dolfin
         format = dolfin
     elif language.lower() == "latex":
+        from ffc.format import latex
         format = latex
     elif language.lower() == "raw":
+        from ffc.format import raw
         format = raw
     elif language.lower() == "ase":
+        from ffc.format import ase
         format = ase
     elif language.lower() == "xml":
+        from ffc.format import xml
         format = xml
     else:
         raise "RuntimeError", "Unknown language " + str(language)
