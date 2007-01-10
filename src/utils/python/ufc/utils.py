@@ -12,11 +12,9 @@ def generate_code(format_string, format_dictionary, num_indent_spaces=6):
     indent contents of format_dictionary"""
     default_dictionary = {'members':'', 'constructor':'', 'destructor':''}
     default_dictionary.update(format_dictionary)
-    undefined = []
     variables = get_format_variables(format_string)
     for v in variables:
         default_dictionary[v] = indent(default_dictionary[v], num_indent_spaces)
-    undefined = make_unique(undefined)
     return format_string % default_dictionary
 
 def __get_format_variables(string)
