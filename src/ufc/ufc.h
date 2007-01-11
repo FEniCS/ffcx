@@ -178,7 +178,7 @@ namespace ufc
                                            const double* dof_values) const = 0;
 
     /// Return the number of sub elements (for a mixed finite element)
-    virtual unsigned int num_sub_elements(unsigned int i) const = 0;
+    virtual unsigned int num_sub_elements() const = 0;
 
     /// Return sub element i (for a mixed finite element)
     virtual const finite_element& sub_element(unsigned int i) const = 0;

@@ -77,7 +77,7 @@ public:
   }
 
   /// Return the number of sub elements (for a mixed finite element)
-  unsigned int num_sub_elements(unsigned int i) const
+  unsigned int num_sub_elements() const
   {
 %(num_sub_elements)s
   }
@@ -135,7 +135,7 @@ public:
                                  const double* dof_values) const;
 
   /// Return the number of sub elements (for a mixed finite element)
-  unsigned int num_sub_elements(unsigned int i) const;
+  unsigned int num_sub_elements() const;
 
   /// Return sub element i (for a mixed finite element)
   const ufc::finite_element& sub_element(unsigned int i) const;
@@ -212,7 +212,7 @@ void %(classname)s::interpolate_vertex_values(double* vertex_values,
 }
 
 /// Return the number of sub elements (for a mixed finite element)
-unsigned int %(classname)s::num_sub_elements(unsigned int i) const
+unsigned int %(classname)s::num_sub_elements() const
 {
 %(num_sub_elements)s
 }
