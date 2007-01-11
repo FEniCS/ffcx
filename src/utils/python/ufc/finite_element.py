@@ -85,7 +85,7 @@ public:
   /// Create a new finite element for sub element i (for a mixed element)
   ufc::finite_element* create_sub_element(unsigned int i) const = 0;
   {
-%(sub_element)s
+%(create_sub_element)s
   }
 
 };
@@ -220,6 +220,6 @@ unsigned int %(classname)s::num_sub_elements() const
 /// Create a new finite element for sub element i (for a mixed element)
 ufc::finite_element* create_sub_element(unsigned int i) const
 {
-%(sub_element)s
+%(create_sub_element)s
 }
 """
