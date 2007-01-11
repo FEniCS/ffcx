@@ -282,7 +282,7 @@ namespace ufc
     /// Return a string identifying the form
     virtual const char* signature() const = 0;
 
-    /// Return the rank of the element tensor (r)
+    /// Return the rank of the global tensor (r)
     virtual unsigned int rank() const = 0;
 
     /// Return the number of coefficients (n)

@@ -41,7 +41,7 @@ public:
 %(signature)s
   }
 
-  /// Return the rank of the element tensor (r)
+  /// Return the rank of the global tensor (r)
   unsigned int rank() const
   {
 %(rank)s
@@ -115,7 +115,7 @@ public:
   /// Return a string identifying the form
   const char* signature() const;
 
-  /// Return the rank of the element tensor (r)
+  /// Return the rank of the global tensor (r)
   unsigned int rank() const;
 
   /// Return the number of coefficients (n)
@@ -158,7 +158,7 @@ const char* %(classname)s::signature() const
 %(signature)s
 }
 
-/// Return the rank of the element tensor (r)
+/// Return the rank of the global tensor (r)
 unsigned int %(classname)s::rank() const
 {
 %(rank)s
