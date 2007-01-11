@@ -87,54 +87,6 @@ namespace ufc
     
   };
 
-  /// This class defines the interface for a local-to-global mapping of
-  /// degrees of freedom (dofs).
-
-  class dof_map
-  {
-  public:
-
-    /// Constructor
-    dof_map() {}
-
-    /// Destructor
-    virtual ~dof_map() {}
-
-    /// Return a string identifying the dof map
-    virtual const char* signature() const = 0;
-
-    /// Return true iff mesh entities of topological dimension d are needed
-    virtual bool needs_mesh_entities(unsigned int d) const = 0;
-
-    /// Initialize dof map for mesh (return true iff init_cell() is needed)
-    virtual bool init_mesh(const mesh& mesh) = 0;
-
-    /// Initialize dof map for given cell
-    virtual void init_cell(const mesh& m,
-                           const cell& c) = 0;
-
-    /// Return the dimension of the global finite element function space
-    virtual unsigned int global_dimension() const = 0;
-
-    /// Return the dimension of the local finite element function space
-    virtual unsigned int local_dimension() const = 0;
-
-    /// Return the number of dofs on a facets of a cell
-    virtual unsigned int num_facet_dofs() const = 0;
-
-    /// Tabulate the local-to-global mapping of dofs on a cell
-    virtual void tabulate_dofs(unsigned int* dofs,
-                               const mesh& m,
-                               const cell& c) const = 0;
-
-    /// Tabulate the local-to-global mapping of dofs on a facet of a cell
-    virtual void tabulate_facet_dofs(unsigned int* dofs,
-                                     const mesh& m,
-                                     const cell& c,
-                                     unsigned int facet) const = 0;
-
-  };
-
   /// This class defines the interface for a finite element.
 
   class finite_element
@@ -182,6 +134,54 @@ namespace ufc
 
     /// Create a new finite element for sub element i (for a mixed element)
     virtual finite_element* create_sub_element(unsigned int i) const = 0;
+
+  };
+
+  /// This class defines the interface for a local-to-global mapping of
+  /// degrees of freedom (dofs).
+
+  class dof_map
+  {
+  public:
+
+    /// Constructor
+    dof_map() {}
+
+    /// Destructor
+    virtual ~dof_map() {}
+
+    /// Return a string identifying the dof map
+    virtual const char* signature() const = 0;
+
+    /// Return true iff mesh entities of topological dimension d are needed
+    virtual bool needs_mesh_entities(unsigned int d) const = 0;
+
+    /// Initialize dof map for mesh (return true iff init_cell() is needed)
+    virtual bool init_mesh(const mesh& mesh) = 0;
+
+    /// Initialize dof map for given cell
+    virtual void init_cell(const mesh& m,
+                           const cell& c) = 0;
+
+    /// Return the dimension of the global finite element function space
+    virtual unsigned int global_dimension() const = 0;
+
+    /// Return the dimension of the local finite element function space
+    virtual unsigned int local_dimension() const = 0;
+
+    /// Return the number of dofs on a facets of a cell
+    virtual unsigned int num_facet_dofs() const = 0;
+
+    /// Tabulate the local-to-global mapping of dofs on a cell
+    virtual void tabulate_dofs(unsigned int* dofs,
+                               const mesh& m,
+                               const cell& c) const = 0;
+
+    /// Tabulate the local-to-global mapping of dofs on a facet of a cell
+    virtual void tabulate_facet_dofs(unsigned int* dofs,
+                                     const mesh& m,
+                                     const cell& c,
+                                     unsigned int facet) const = 0;
 
   };
 
@@ -286,11 +286,11 @@ namespace ufc
     /// Return the number of coefficients (n)
     virtual unsigned int num_coefficients() const = 0;
 
-    /// Create a new dof map for argument function i
-    virtual dof_map* create_dof_map(unsigned int i) const = 0;
-
     /// Create a new finite element for argument function i
     virtual finite_element* create_finite_element(unsigned int i) const = 0;
+
+    /// Create a new dof map for argument function i
+    virtual dof_map* create_dof_map(unsigned int i) const = 0;
 
     /// Create a new cell integral (return 0 if contribution is zero)
     virtual cell_integral* create_cell_integral() const = 0;

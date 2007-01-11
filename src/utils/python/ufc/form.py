@@ -53,16 +53,16 @@ public:
 %(num_coefficients)s
   }
 
-  /// Create a new dof map for argument function i
-  ufc::dof_map* create_dof_map(unsigned int i) const
-  {
-%(create_dof_map)s
-  }
-
   /// Create a new finite element for argument function i
   ufc::finite_element* create_finite_element(unsigned int i) const
   {
 %(create_finite_element)s
+  }
+  
+  /// Create a new dof map for argument function i
+  ufc::dof_map* create_dof_map(unsigned int i) const
+  {
+%(create_dof_map)s
   }
 
   /// Create a new cell integral (return 0 if contribution is zero)
@@ -121,11 +121,11 @@ public:
   /// Return the number of coefficients (n)
   unsigned int num_coefficients() const;
 
-  /// Create a new dof map for argument function i
-  ufc::dof_map* create_dof_map(unsigned int i) const;
-
   /// Create a new finite element for argument function i
   ufc::finite_element* create_finite_element(unsigned int i) const;
+
+  /// Create a new dof map for argument function i
+  ufc::dof_map* create_dof_map(unsigned int i) const;
 
   /// Create a new cell integral (return 0 if contribution is zero)
   ufc::cell_integral* create_cell_integral() const;
@@ -170,16 +170,16 @@ unsigned int %(classname)s::num_coefficients() const
 %(num_coefficients)s
 }
 
-/// Create a new dof map for argument function i
-ufc::dof_map* %(classname)s::create_dof_map(unsigned int i) const
-{
-%(create_dof_map)s
-}
-
 /// Create a new finite element for argument function i
 ufc::finite_element* %(classname)s::create_finite_element(unsigned int i) const
 {
 %(create_finite_element)s
+}
+
+/// Create a new dof map for argument function i
+ufc::dof_map* %(classname)s::create_dof_map(unsigned int i) const
+{
+%(create_dof_map)s
 }
 
 /// Create a new cell integral (return 0 if contribution is zero)
