@@ -75,13 +75,13 @@ class Projection:
             raise FormError, (((e0, e1)), "Incompatible finite elements for projection.")
 
         # Check that the two elements have the same rank (and rank must be 0 or 1)
-        if e0.rank() > 0 or e1.rank() > 0:
-            if not (e0.rank() == 1 and e1.rank() == 1):
+        if e0.value_rank() > 0 or e1.value_rank() > 0:
+            if not (e0.value_rank() == 1 and e1.value_rank() == 1):
                 raise FormError, (((e0, e1)), "Incompatible element ranks for projection.")
-            if not (e0.tensordim(0) == e1.tensordim(0)):
+            if not (e0.value_dimension(0) == e1.value_dimension(0)):
                 raise FormError, (((e0, e1)), "Incompatible element ranks for projection.")
-            vectordim = e0.tensordim(0) # Both dimensions are equal
-        rank = e0.rank() # Both ranks are equal
+            vectordim = e0.value_dimension(0) # Both dimensions are equal
+        rank = e0.value_rank() # Both ranks are equal
 
         # Get quadrature points and weights for integrals
         q = e1.degree() + max(e0.degree(), e1.degree()) # same points for both integrals

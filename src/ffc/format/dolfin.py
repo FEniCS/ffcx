@@ -272,10 +272,10 @@ def __element(element, subclass, name, prototype = False):
     "Generate finite element for DOLFIN."
 
     # Generate code for initialization of tensor dimensions
-    if element.rank() > 0:
-        diminit = "    tensordims = new unsigned int [%d];\n" % element.rank()
-        for j in range(element.rank()):
-            diminit += "    tensordims[%d] = %d;\n" % (j, element.tensordim(j))
+    if element.value_rank() > 0:
+        diminit = "    tensordims = new unsigned int [%d];\n" % element.value_rank()
+        for j in range(element.value_rank()):
+            diminit += "    tensordims[%d] = %d;\n" % (j, element.value_dimension(j))
     else:
         diminit = "    // Element is scalar, don't need to initialize tensordims\n"
 
@@ -288,8 +288,8 @@ def __element(element, subclass, name, prototype = False):
         elementinit = "    // Element is simple, don't need to initialize subelements\n"
         
     # Generate code for tensordim function
-    if element.rank() > 0:
-        tensordim = "dolfin_assert(i < %d);\n    return tensordims[i];" % element.rank()
+    if element.value_rank() > 0:
+        tensordim = "dolfin_assert(i < %d);\n    return tensordims[i];" % element.value_rank()
     else:
         tensordim = 'dolfin_error("Element is scalar.");\n    return 0;'
 
@@ -326,7 +326,7 @@ def __element(element, subclass, name, prototype = False):
     # Generate code for FiniteElementSpec
     if element.type_str == "mixed":
         spec = "    FiniteElementSpec s(\"mixed\");"
-    elif element.rank() > 0:
+    elif element.value_rank() > 0:
         spec = "    FiniteElementSpec s(\"%s\", \"%s\", %d, %d);" % \
                (element.type_str, element.shape_str, element.degree(), element.vectordim())
     else:
@@ -436,7 +436,7 @@ private:
        element.shapedim(),
        tensordim,
        elementdim,
-       element.rank(),
+       element.value_rank(),
        nodemap,
        pointmap,
        vertexeval,

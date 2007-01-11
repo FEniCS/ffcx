@@ -175,7 +175,7 @@ def __compute_psi(v, table, num_points, dscaling):
         raise RuntimeError, "Can only handle rank 0 or rank 1 tensors."
     if len(v.component) > 0:
         cindex = [v.component[0]]
-        cshape = [element.tensordim(0)]
+        cshape = [element.value_dimension(0)]
     else:
         cindex = []
         cshape = []

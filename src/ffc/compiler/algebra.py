@@ -123,9 +123,9 @@ class Element:
         "Operator: (d/dx)Element in given coordinate direction."
         return Sum(self).dx(index)
 
-    def rank(self):
+    def value_rank(self):
         "Return value rank of Element."
-        return Sum(self).rank()
+        return Sum(self).value_rank()
 
     def __str__(self):
         "Print nicely formatted representation of Element."
@@ -261,9 +261,9 @@ class BasisFunction(Element):
 
     def __len__(self):
         "Operator: len(BasisFunction)"
-        if len(self.component) >= self.element.rank():
+        if len(self.component) >= self.element.value_rank():
             raise FormError, (self, "Vector length of scalar expression is undefined.")
-        return self.element.tensordim(len(self.component))
+        return self.element.value_dimension(len(self.component))
 
     def __call__(self, restriction):
         "Operator: BasisFunction(restriction), restrict multi-valued function."
@@ -307,12 +307,12 @@ class BasisFunction(Element):
         w.transforms.insert(0, Transform(self.element, i, index, self.restriction))
         return w
 
-    def rank(self):
+    def value_rank(self):
         "Return value rank of BasisFunction."
         if self.component:
             return 0
         else:
-            return self.element.rank()
+            return self.element.value_rank()
 
     def eval(self, iindices, aindices, bindices):
         """Evaluate BasisFunction at given indices, returning a tuple consisting
@@ -337,7 +337,7 @@ class BasisFunction(Element):
 
     def pick_component_default(self, component):
         "Pick given component of BasisFunction."
-        rank = self.element.rank()
+        rank = self.element.value_rank()
         if self.component or rank == 0:
             raise FormError, (self, "Cannot pick component of scalar BasisFunction.")
         w = Product(self)
@@ -353,7 +353,7 @@ class BasisFunction(Element):
 
     def pick_component_piola(v, component):
         "Pick given component of BasisFunction mapped with the Piola transform."
-        rank = v.element.rank()
+        rank = v.element.value_rank()
         if v.component or rank == 0:
             raise FormError, (self, "Cannot pick component of scalar BasisFunction.")    
         w = Product(v)
@@ -469,7 +469,7 @@ class Product(Element):
             w0 = Product(self)
             w1 = Product(other)
             # Check ranks
-            if not w0.rank() == w1.rank() == 0:
+            if not w0.value_rank() == w1.value_rank() == 0:
                 raise FormError, (self, "Operands for product must be scalar.")
             # Reassign all complete Indices to avoid collisions
             reassign_complete(w0, Index.SECONDARY)
@@ -567,15 +567,15 @@ class Product(Element):
             w = w + p
         return w
 
-    def rank(self):
+    def value_rank(self):
         "Return value rank of Product."
         if not self.basisfunctions:
             return 0
         if len(self.basisfunctions) > 1:
             for v in self.basisfunctions:
-                if not v.rank() == 0:
+                if not v.value_rank() == 0:
                     raise FormError, (self, "Illegal rank for BasisFunction of Product (non-scalar).")
-        return self.basisfunctions[0].rank()
+        return self.basisfunctions[0].value_rank()
             
     def indexcall(self, foo, args = None):
         "Call given function on all Indices."
@@ -626,7 +626,7 @@ class Sum(Element):
         "Operator: Sum + Element"
         w0 = Sum(self)
         w1 = Sum(other)
-        if not w0.rank() == w1.rank():
+        if not w0.value_rank() == w1.value_rank():
             raise FormError, (self, "Operands for addition have non-matching ranks.")
         w = Sum()
         w.products = w0.products + w1.products
@@ -680,14 +680,14 @@ class Sum(Element):
             w = w + p.dx(index)
         return w
 
-    def rank(self):
+    def value_rank(self):
         "Return value rank of Sum."
         if not self.products:
             return 0
         for j in range(len(self.products) - 1):
-            if not self.products[j].rank() == self.products[j + 1].rank():
+            if not self.products[j].value_rank() == self.products[j + 1].value_rank():
                 raise FormError, (self, "Terms have different rank.")
-        return self.products[0].rank()
+        return self.products[0].value_rank()
   
     def indexcall(self, foo, args = None):
         "Call given function on all Indices."

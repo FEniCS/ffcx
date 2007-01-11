@@ -31,12 +31,12 @@ def BasisFunctions(element, functiontype = BasisFunction):
     subvectors = []
     offset = 0
     for e in element.elements:
-        if e.rank() == 0:
+        if e.value_rank() == 0:
             subvector = vector[offset]
             offset += 1
-        elif e.rank() == 1:
-            subvector = [vector[i] for i in range(offset, offset + e.tensordim(0))]
-            offset += e.tensordim(0)
+        elif e.value_rank() == 1:
+            subvector = [vector[i] for i in range(offset, offset + e.value_dimension(0))]
+            offset += e.value_dimension(0)
         else:
             raise RuntimeError, "Mixed elements can only be created from scalar or vector-valued elements."
         subvectors += [subvector]
@@ -60,12 +60,12 @@ def Functions(element):
     subvectors = []
     offset = 0
     for e in element.elements:
-        if e.rank() == 0:
+        if e.value_rank() == 0:
             subvector = vector[offset]
             offset += 1
-        elif e.rank() == 1:
-            subvector = [vector[i] for i in range(offset, offset + e.tensordim(0))]
-            offset += e.tensordim(0)
+        elif e.value_rank() == 1:
+            subvector = [vector[i] for i in range(offset, offset + e.value_dimension(0))]
+            offset += e.value_dimensio(0)
         else:
             raise RuntimeError, "Mixed elements can only be created from scalar or vector-valued elements."
         subvectors += [subvector]
@@ -148,16 +148,16 @@ class MixedElement:
         "Return dimension of of shape."
         return self.mixed_shapedim
 
-    def rank(self):
-        "Return rank of basis functions."
-        if len(self.elements) == 1 and self.elements[0].rank() == 0:
+    def value_rank(self):
+        "Return the rank of the value space"
+        if len(self.elements) == 1 and self.elements[0].value_rank() == 0:
             return 0
         else:
             return 1
 
-    def tensordim(self, i):
-        "Return size of given dimension."
-        if self.rank() == 0:
+    def value_dimension(self, i):
+        "Return the dimension of the value space for axis i"
+        if self.value_rank() == 0:
             raise RuntimeError, "Cannot compute tensor dimension of scalar mixed element."
         elif not i == 0:
             raise RuntimeError, "Illegal tensor dimension for vector-valued mixed element."
@@ -188,11 +188,11 @@ class MixedElement:
             element = self.elements[i]
             table = element.tabulate(order, points, facet)
             # Iterate over the components corresponding to the current element
-            if element.rank() == 0:
+            if element.value_rank() == 0:
                 component_table = self.__compute_component_table(table, offset)
                 mixed_table.append(component_table)
             else:
-                for i in range(element.tensordim(0)):
+                for i in range(element.value_dimension(0)):
                     component_table = self.__compute_component_table(table[i], offset)
                     mixed_table.append(component_table)
             # Add to offset, the number of the first basis function for the current element
@@ -226,10 +226,10 @@ class MixedElement:
         "Compute number of components."
         sum = 0
         for element in self.elements:
-            if element.rank() == 0:
+            if element.value_rank() == 0:
                 sum += 1
-            elif element.rank() == 1:
-                sum += element.tensordim(0)
+            elif element.value_rank() == 1:
+                sum += element.value_dimension(0)
             else:
                 raise RuntimeError, "Mixed elements can only be created from scalar or vector-valued elements."
         return sum

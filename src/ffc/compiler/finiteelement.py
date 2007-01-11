@@ -138,21 +138,20 @@ class FiniteElement:
         "Return dimension of of shape."
         return dim[self.cell_shape()]
 
-    def rank(self):
-        "Return rank of basis functions."
+    def value_rank(self):
+        "Return the rank of the value space"
         return self.basis().rank()
     
-    def tensordim(self, i):
-        "Return size of given dimension."
-        tensordims = self.basis().tensor_dim()
-        return tensordims[i]
+    def value_dimension(self, i):
+        "Return the dimension of the value space for axis i"
+        return self.basis().tensor_dim()[i]
 
     def vectordim(self):
         "Return vector dimension (number of components)"
-        if self.rank() == 0:
+        if self.value_rank() == 0:
             return 1
-        elif self.rank() == 1:
-            return self.tensordim(0)
+        elif self.value_rank() == 1:
+            return self.value_dimension(0)
         else:
             raise RuntimeError, "Can only handle scalar or vector-valued elements."
 

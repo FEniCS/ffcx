@@ -2,8 +2,8 @@
 based on the basic form algebra operations."""
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2005-09-07 -- 2006-12-01"
-__copyright__ = "Copyright (C) 2005-2006 Anders Logg"
+__date__ = "2005-09-07 -- 2007-01-11"
+__copyright__ = "Copyright (C) 2005-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # Modified by Ola Skavhaug, 2005
@@ -30,16 +30,16 @@ def Identity(n):
     # Let numpy handle the identity
     return numpy.identity(n)
 
-def rank(v):
-    "Return rank for given object."
+def value_rank(v):
+    "Return value rank for given object."
     if isinstance(v, BasisFunction):
-        return v.element.rank() - len(v.component)
+        return v.element.value_rank() - len(v.component)
     elif isinstance(v, Product):
-        return rank(v.basisfunctions[0])
+        return value_rank(v.basisfunctions[0])
     elif isinstance(v, Sum):
-        return rank(v.products[0])
+        return value_rank(v.products[0])
     elif isinstance(v, Function):
-        return rank(Sum(v))
+        return value_rank(Sum(v))
     else:
         return numpy.rank(v)
     return 0
@@ -52,10 +52,10 @@ def vec(v):
     # Check if we have an element of the algebra
     if isinstance(v, Element):
         # Check that we have a vector
-        if not rank(v) == 1:
+        if not value_rank(v) == 1:
             raise FormError, (v, "Cannot create vector from scalar expression.")
         # Get vector dimension
-        n = __tensordim(v, 0)
+        n = __value_dimension(v, 0)
         # Create list of scalar components
         return [v[i] for i in range(n)]        
     # Let numpy handle the conversion
@@ -67,10 +67,10 @@ def vec(v):
 def dot(v, w):
     "Return scalar product of given functions."
     # Check ranks
-    if rank(v) == rank(w) == 0:
+    if value_rank(v) == value_rank(w) == 0:
         # Equivalent to standard inner product
         return v*w
-    elif rank(v) == rank(w) == 1:
+    elif value_rank(v) == value_rank(w) == 1:
         # Check dimensions
         if not len(v) == len(w):
             raise FormError, ((v, w), "Dimensions don't match for scalar product.")
@@ -80,7 +80,7 @@ def dot(v, w):
             return v[i]*w[i]
         # Otherwise, use numpy.dot
         return numpy.dot(vec(v), vec(w))
-    elif rank(v) == rank(w) == 2:
+    elif value_rank(v) == value_rank(w) == 2:
         
         # Check dimensions
         if not len(v) == len(w):
@@ -155,7 +155,7 @@ def grad(v):
     # Get shape dimension
     d = __shapedim(v)
     # Check if we have a vector
-    if rank(v) == 1:
+    if value_rank(v) == 1:
         return [ [D(v[i], j) for j in range(d)] for i in range(len(v)) ]
     # Otherwise assume we have a scalar
     return [D(v, i) for i in range(d)]
@@ -191,25 +191,25 @@ def mean(v):
         raise FormError, (v, "Mean values are only supported for Functions.")
     # Different projections needed for scalar and vector-valued elements
     element = v.e0
-    if element.rank() == 0:
+    if element.value_rank() == 0:
         P0 = FiniteElement("Discontinuous Lagrange", element.shape_str, 0)
         pi = Projection(P0)
         return pi(v)
     else:
-        P0 = FiniteElement("Discontinuous vector Lagrange", element.shape_str, 0, element.tensordim(0))
+        P0 = FiniteElement("Discontinuous vector Lagrange", element.shape_str, 0, element.value_dimension(0))
         pi = Projection(P0)
         return pi(v)
 
 def avg(v):
     "Return the average of v across an interior facet."
-    if rank(v) == 0:
+    if value_rank(v) == 0:
         return 0.5*(v('+') + v('-'))
     else:
         return [0.5*(v[i]('+') + v[i]('-')) for i in range(len(v))]
 
 def jump(v, n):
     "Return the jump of v with respect to the given normal n across an interior facet."
-    if rank(v) == 0:
+    if value_rank(v) == 0:
         # v is a scalar and n is a vector
         return [v('+')*n[i]('+') + v('-')*n[i]('-') for i in range(len(n))]
     else:
@@ -240,18 +240,18 @@ def __shapedim(v):
         raise FormError, (v, "Shape dimension is not defined for given expression.")
     return 0
 
-def __tensordim(v, i):
+def __value_dimension(v, i):
     "Return size of given dimension for given object."
-    if i < 0 or i >= rank(v):
+    if i < 0 or i >= value_rank(v):
         raise FormError, ((v, i), "Tensor dimension out of range.")
     if isinstance(v, BasisFunction):
-        return v.element.tensordim(i + len(v.component))
+        return v.element.value_dimension(i + len(v.component))
     elif isinstance(v, Product):
-        return __tensordim(v.basisfunctions[0], i)
+        return __value_dimension(v.basisfunctions[0], i)
     elif isinstance(v, Sum):
-        return __tensordim(v.products[0], i)
+        return __value_dimension(v.products[0], i)
     elif isinstance(v, Function):
-        return __tensordim(Sum(v), i)
+        return __value_dimension(Sum(v), i)
     else:
         raise FormError, ((v, i), "Tensor dimension is not defined for given expression.")
     return 0

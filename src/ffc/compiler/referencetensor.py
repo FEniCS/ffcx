@@ -99,7 +99,7 @@ class ReferenceTensor:
             # Check component Indices
             for j in range(len(v.component)):
                 if v.component[j] == index:
-                    return v.element.tensordim(j)
+                    return v.element.value_dimension(j)
             # Check Derivatives
             for d in v.derivatives:
                 if d.index == index:
