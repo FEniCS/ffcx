@@ -1,8 +1,8 @@
 "This module provides efficient integration of monomial forms."
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-11-03 -- 2006-12-06"
-__copyright__ = "Copyright (C) 2004-2006 Anders Logg"
+__date__ = "2004-11-03 -- 2007-01-11"
+__copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # Thanks to Robert C. Kirby for suggesting the initial algorithm that
@@ -156,7 +156,7 @@ def __compute_psi(v, table, num_points, dscaling):
     # Get FiniteElement for v
     element = v.element
     shapedim = element.shapedim()
-    spacedim = element.spacedim()
+    space_dimension = element.space_dimension()
 
     # Get restriction for v
     restriction = v.restriction
@@ -168,7 +168,7 @@ def __compute_psi(v, table, num_points, dscaling):
 
     # Get Indices and shapes for BasisFunction
     vindex = [v.index]
-    vshape = [spacedim]
+    vshape = [space_dimension]
 
     # Get Indices and shapes for components
     if len(v.component) > 1:

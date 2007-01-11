@@ -3,7 +3,7 @@ and building the data structures (geometry and reference tensors) for
 the evaluation of the multi-linear form."""
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-11-17 -- 2007-01-08"
+__date__ = "2004-11-17 -- 2007-01-11"
 __copyright__ = "Copyright (C) 2004-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -272,7 +272,7 @@ def __compute_coefficients(projections, format, c_used, num_spaces):
     for (n0, n1, e0, e1, P) in projections:
 
         if P == None:
-            n = num_spaces*e0.spacedim()
+            n = num_spaces*e0.space_dimension()
             # No projection, just copy the values
             for k in range(n):
                 name = format.format["coefficient"](n1, k)

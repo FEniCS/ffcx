@@ -67,7 +67,7 @@ class GeometryTensor:
         # Check coefficients
         for c in self.coefficients:
             if c.index == index:
-                return c.e1.spacedim()
+                return c.e1.space_dimension()
         # Check transforms
         for t in self.transforms:
             if t.index0 == index or t.index1 == index:

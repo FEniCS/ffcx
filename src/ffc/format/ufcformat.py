@@ -10,6 +10,9 @@ from ffc.common.util import *
 from ffc.common.debug import *
 from ffc.common.constants import *
 
+# FFC compiler modules
+from ffc.compiler.finiteelement import *
+
 # FFC format modules
 from ufc import *
 
@@ -48,17 +51,18 @@ def write(forms, options):
         # Generate file header
         output = ""
         output += __generate_header(name, options)
+        output += "\n"
 
         # Generate code for ufc::finite_element(s)
         for i in range(len(form.finite_elements)):
             output += __generate_finite_element(form.finite_elements[i], prefix, i, options)
+            output += "\n"
 
         # Generate code for ufc::form
-        output += "\n"
-        output += __generate_form(form, options)
+        #output += "\n"
+        #output += __generate_form(form, options)
     
         # Generate code for footer
-        output += "\n"
         output += __generate_footer(name, options)
 
         # Write file
@@ -133,9 +137,14 @@ def __generate_finite_element(element, prefix, i, options):
     # Generate code for destructor
     code["destructor"] = "// Do nothing"
 
+    # Generate code for signature
+    code["signature"] = "return \"%s\";" % element.signature()
+
+    # Generate code for cell_shape
+    code["cell_shape"] = "return %s;" % shape_to_string[element.shape()]
     
-    code["signature"] = "// Not implemented"
-    code["cell_shape"] = "// Not implemented"
+
+    
     code["space_dimension"] = "// Not implemented"
     code["value_rank"] = "// Not implemented"
     code["value_dimension"] = "// Not implemented"

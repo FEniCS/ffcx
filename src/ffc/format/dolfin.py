@@ -1,8 +1,8 @@
 "DOLFIN output format."
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-10-14 -- 2006-12-05"
-__copyright__ = "Copyright (C) 2004-2006 Anders Logg"
+__date__ = "2004-10-14 -- 2007-01-11"
+__copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # Modified by Garth N. Wells 2005
@@ -432,7 +432,7 @@ private:
        diminit,
        elementinit,
        name,
-       element.spacedim(),
+       element.space_dimension(),
        element.shapedim(),
        tensordim,
        elementdim,

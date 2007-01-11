@@ -102,7 +102,7 @@ class ReferenceTensor:
         for v in self.basisfunctions:
             # Check basis Index
             if v.index == index:
-                return v.element.spacedim()
+                return v.element.space_dimension()
             # Check component Indices
             for j in range(len(v.component)):
                 if v.component[j] == index:

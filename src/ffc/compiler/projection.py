@@ -95,8 +95,8 @@ class Projection:
         t1 = e1.tabulate(0, points)
 
         # Get space dimensions of V0 and V1
-        m = e1.spacedim()
-        n = e0.spacedim()
+        m = e1.space_dimension()
+        n = e0.space_dimension()
 
         # Create zero order tuple for tables
         dindex = tuple(numpy.zeros(e0.shapedim(), dtype = numpy.int))

@@ -76,14 +76,14 @@ class MixedElement:
     created by the tensor product of a list of FiniteElements.
 
     Attributes:
-        type_str        - string name of element type
-        shape_str       - string name of element shape
-        elements        - a list of finite elements
-        mixed_basis     - a list of mixed basis functions
-        mixed_degree    - maximum degree of basis functions
-        mixed_spacedim  - number of basis functions
-        mixed shapedim  - number of shape dimensions
-        mixed_tensordim - number of components
+        type_str               - string name of element type
+        shape_str              - string name of element shape
+        elements               - a list of finite elements
+        mixed_basis            - a list of mixed basis functions
+        mixed_degree           - maximum degree of basis functions
+        mixed_space_dimension  - number of basis functions
+        mixed shapedim         - number of shape dimensions
+        mixed_tensordim        - number of components
     """
 
     def __init__(self, elements):
@@ -109,7 +109,7 @@ class MixedElement:
         # Compute degree
         self.mixed_degree = self.__compute_degree()
         # Compute number of basis functions
-        self.mixed_spacedim = self.__compute_spacedim()
+        self.mixed_space_dimension = self.__compute_space_dimension()
         # Compute number of shape dimensions
         self.mixed_shapedim = self.__compute_shapedim()
         # Compute number of components
@@ -140,9 +140,9 @@ class MixedElement:
         "Return shape of facet."
         return self.elements[0].facet_shape()
 
-    def spacedim(self):
+    def space_dimension(self):
         "Return dimension of finite element space."
-        return self.mixed_spacedim
+        return self.mixed_space_dimension
 
     def shapedim(self):
         "Return dimension of of shape."
@@ -196,7 +196,7 @@ class MixedElement:
                     component_table = self.__compute_component_table(table[i], offset)
                     mixed_table.append(component_table)
             # Add to offset, the number of the first basis function for the current element
-            offset += element.spacedim()
+            offset += element.space_dimension()
 
         return mixed_table
 
@@ -208,9 +208,9 @@ class MixedElement:
         "Compute maximum degree."
         return max([element.degree() for element in self.elements])
 
-    def __compute_spacedim(self):
+    def __compute_space_dimension(self):
         "Compute number of basis functions."
-        return sum([element.spacedim() for element in self.elements])
+        return sum([element.space_dimension() for element in self.elements])
 
     def __compute_shapedim(self):
         "Compute number of shape dimensions."
@@ -245,7 +245,7 @@ class MixedElement:
             for dtuple in table[dorder]:
                 element_subtable = table[dorder][dtuple]
                 num_points = numpy.shape(element_subtable)[1]
-                mixed_subtable = numpy.zeros((self.mixed_spacedim, num_points), dtype = numpy.float)
+                mixed_subtable = numpy.zeros((self.mixed_space_dimension, num_points), dtype = numpy.float)
                 # Iterate over element basis functions and fill in non-zero values
                 for i in range(len(element_subtable)):
                     mixed_subtable[offset + i] = element_subtable[i]

@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-10-04 -- 2006-12-19"
+__date__ = "2004-10-04 -- 2007-01-11"
 __copyright__ = "Copyright (C) 2004-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -28,8 +28,8 @@ from pointmap import *
 from vertexeval import *
 import mixedelement
 
-shape_to_string = { LINE: "Line", TRIANGLE: "Triangle", TETRAHEDRON: "Tetrahedron" }
-string_to_shape = { "Line": LINE, "Triangle": TRIANGLE, "Tetrahedron": TETRAHEDRON }
+shape_to_string = { LINE: "line", TRIANGLE: "triangle", TETRAHEDRON: "tetrahedron" }
+string_to_shape = { "line": LINE, "triangle": TRIANGLE, "tetrahedron": TETRAHEDRON }
 
 class FiniteElement:
 
@@ -71,14 +71,7 @@ class FiniteElement:
             self.fiat_shape = element.domain_shape()
         else:
             # Choose shape
-            if shape == "line":
-                self.fiat_shape = LINE
-            elif shape == "triangle":
-                self.fiat_shape = TRIANGLE
-            elif shape == "tetrahedron":
-                self.fiat_shape = TETRAHEDRON
-            else:
-                raise RuntimeError, "Unknown shape " + str(shape)
+            self.fiat_shape = string_to_shape[shape]
 
             # Choose function space
             if type == "Lagrange":
@@ -137,8 +130,8 @@ class FiniteElement:
         "Return shape of facet."
         return self.shape() - 1
 
-    def spacedim(self):
-        "Return dimension of finite element space."
+    def space_dimension(self):
+        "Return the dimension of the finite element function space"
         return len(self.basis())
 
     def shapedim(self):
