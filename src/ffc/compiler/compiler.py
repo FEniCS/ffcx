@@ -213,6 +213,18 @@ def __build_form(form, format, options):
     # Save format
     form.format = format
 
+    # Copy variables to new names
+    # FIXME: Move to new names and put this code into the Form class
+    form.signature = str(form.sum) # FIXME: Use signature.py
+    form.rank = form.rank
+    form.num_coefficients = form.nfunctions
+    form.finite_elements = []
+    if not form.test == None:
+        form.finite_elements += [form.test]
+    if not form.trial == None:
+        form.finite_elements += [form.trial]
+    form.finite_elements += form.elements
+
 def __check_primary_ranks(form, num_facets, num_alignments):
     "Check that all primary ranks are equal."
 

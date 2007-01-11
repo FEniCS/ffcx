@@ -1,6 +1,6 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2005-11-07 -- 2006-12-04"
-__copyright__ = "Copyright (C) 2005-2006 Anders Logg"
+__date__ = "2005-11-07 -- 2007-01-11"
+__copyright__ = "Copyright (C) 2005-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # Modified by Garth N. Wells 2006
@@ -64,7 +64,7 @@ class Projection:
         "Compute projection matrix from e0 to e1."
 
         # Check if we already know the projection
-        name = e0.__repr__()
+        name = e0.signature()
         if name in self.projections:
             print "Projection cached, reusing projection"
             return self.projections[name]

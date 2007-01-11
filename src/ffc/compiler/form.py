@@ -57,9 +57,10 @@ class Form:
 
     FIXME: Sketch for rewrite (follow UFC specification)
 
-        signature
-        rank
-        num_coefficients
+        signature        - a string identifying the form
+        rank             - rank of the global tensor
+        num_coefficients - the number of coefficients
+        finite_elements  - list of finite elements for argument functions
 
     A multi-linear form is first expressed as an element of the
     algebra (a Sum) and is then post-processed to generate a sum

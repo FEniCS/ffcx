@@ -43,17 +43,23 @@ def write(forms, options):
         # Get name of form
         name = form.name
 
-        # Write file header
-        output = ""
-        output += __write_header(name, options)
+        prefix = form.name.lower()
 
-        # Write form
+        # Generate file header
+        output = ""
+        output += __generate_header(name, options)
+
+        # Generate code for ufc::finite_element(s)
+        for i in range(len(form.finite_elements)):
+            output += __generate_finite_element(form.finite_elements[i], prefix, i, options)
+
+        # Generate code for ufc::form
         output += "\n"
-        output += __write_form(form, options)
+        output += __generate_form(form, options)
     
-        # Write file footer
+        # Generate code for footer
         output += "\n"
-        output += __write_footer(name, options)
+        output += __generate_footer(name, options)
 
         # Write file
         filename = name + ".h"
@@ -62,8 +68,8 @@ def write(forms, options):
         file.close()
         debug("Output written to " + filename)
 
-def __write_header(name, options):
-    "Write file header"
+def __generate_header(name, options):
+    "Generate file header"
 
     # Check if BLAS is required
     if options["blas"]:
@@ -84,14 +90,14 @@ def __write_header(name, options):
 #include <ufc.h>%s
 """ % (FFC_VERSION, blas_warning, name.upper(), name.upper(), blas_include)
 
-def __write_footer(name, options):
-    "Write file footer"
+def __generate_footer(name, options):
+    "Generate file footer"
     return """\
 #endif
 """
 
-def __write_dof_map(form, options):
-    "Write ufc::dof_map"
+def __generate_dof_map(form, options):
+    "Generate code for ufc::dof_map"
     
     code = {}
     code["classname"] = form.name
@@ -107,17 +113,27 @@ def __write_dof_map(form, options):
     code["num_facet_dofs"] = "// Not implemented"
     code["tabulate_dofs"] = "// Not implemented"
     code["tabulate_facet_dofs"] = "// Not implemented"
-        
-    return dof_map_combined % code
 
-def __write_finite_element(form, options):
-    "Write ufc::finite_element"
+    return __generate_code(dof_map_combined, code)
+
+def __generate_finite_element(element, prefix, i, options):
+    "Generate code for ufc::finite_element"
 
     code = {}
-    code["classname"] = form.name
+
+    # Set class name
+    code["classname"] = "%s_finite_element_%d" % (prefix, i)
+
+    # Generate code for members
     code["members"] = ""
-    code["constructor"] = "// Not implemented"
-    code["destructor"] = "// Not implemented"
+
+    # Generate code for constructor
+    code["constructor"] = "// Do nothing"
+
+    # Generate code for destructor
+    code["destructor"] = "// Do nothing"
+
+    
     code["signature"] = "// Not implemented"
     code["cell_shape"] = "// Not implemented"
     code["space_dimension"] = "// Not implemented"
@@ -129,22 +145,10 @@ def __write_finite_element(form, options):
     code["num_sub_elements"] = "// Not implemented"
     code["sub_element"] = "// Not implemented"
 
-    return finite_element_combined % code
+    return __generate_code(finite_element_combined, code)
 
-def __write_cell_integral(form, options):
-    "Write ufc::cell_integral"
-
-    code = {}
-    code["classname"] = form.name
-    code["members"] = ""
-    code["constructor"] = "// Not implemented"
-    code["destructor"] = "// Not implemented"
-    code["tabulate_tensor"] = "// Not implemented"
-    
-    return cell_integral_combined % code
-
-def __write_exterior_facet_integral(form, options):
-    "Write ufc::exterior_facet_integral"
+def __generate_cell_integral(form, options):
+    "Generate code for ufc::cell_integral"
 
     code = {}
     code["classname"] = form.name
@@ -153,10 +157,10 @@ def __write_exterior_facet_integral(form, options):
     code["destructor"] = "// Not implemented"
     code["tabulate_tensor"] = "// Not implemented"
     
-    return exterior_facet_integral_combined % code
+    return __generate_code(cell_integral_combined, code)
 
-def __write_interior_facet_integral(form, options):
-    "Write ufc::interior_facet_integral"
+def __generate_exterior_facet_integral(form, options):
+    "Generate code for ufc::exterior_facet_integral"
 
     code = {}
     code["classname"] = form.name
@@ -165,32 +169,88 @@ def __write_interior_facet_integral(form, options):
     code["destructor"] = "// Not implemented"
     code["tabulate_tensor"] = "// Not implemented"
     
-    return interior_facet_integral_combined % code
+    return __generate_code(exterior_facet_integral_combined, code)
 
-def __write_form(form, options):
-    "Write ufc::form"
+def __generate_interior_facet_integral(form, options):
+    "Generate code for ufc::interior_facet_integral"
+
+    code = {}
+    code["classname"] = form.name
+    code["members"] = ""
+    code["constructor"] = "// Not implemented"
+    code["destructor"] = "// Not implemented"
+    code["tabulate_tensor"] = "// Not implemented"
+    
+    return __generate_code(interior_facet_integral_combined, code)
+
+def __generate_form(form, options):
+    "Generate code for ufc::form"
+
     output = ""
+    output += __generate_dof_map(form, options)
 
-    output += __write_dof_map(form, options)
-    output += __write_finite_element(form, options)
-    output += __write_cell_integral(form, options)
-    output += __write_exterior_facet_integral(form, options)
-    output += __write_interior_facet_integral(form, options)
+    output += __generate_cell_integral(form, options)
+    output += __generate_exterior_facet_integral(form, options)
+    output += __generate_interior_facet_integral(form, options)
 
+    prefix = form.name.lower()
     code = {}
-    code["classname"] = form.name
+
+    # Set class name
+    code["classname"] = prefix
+
+    # Generate code for members
     code["members"] = ""
-    code["constructor"] = "// Not implemented"
-    code["destructor"] = "// Not implemented"
-    code["signature"] = "// Not implemented"
-    code["rank"] = "// Not implemented"
-    code["num_coefficients"] = "// Not implemented"
-    code["create_dof_map"] = "// Not implemented"
-    code["create_finite_element"] = "// Not implemented"
+
+    # Generate code for constructor
+    code["constructor"] = "// Do nothing"
+
+    # Generate code for destructor
+    code["destructor"] = "// Do nothing"
+
+    # Generate code for signature
+    code["signature"] = "return \"%s\";" % form.signature
+
+    # Generate code for rank
+    code["rank"] = "return %d;" % form.rank
+
+    # Generate code for num_coefficients
+    code["num_coefficients"] = "return %d;" % form.num_coefficients
+
+    # Generate code for create_dof_map
+    num_arguments = form.rank + form.num_coefficients
+    body = "switch ( i )\n{\n"
+    for i in range(num_arguments):
+        body += "case %d:\n  return new %s_dof_map_%d();\n  break;\n" % (i, prefix, i)
+    body += "default:\n  return 0;\n}"
+    code["create_dof_map"] = body
+
+    # Generate code for create_finite_element
+    num_arguments = form.rank + form.num_coefficients
+    body = "switch ( i )\n{\n"
+    for i in range(num_arguments):
+        body += "case %d:\n  return new %s_finite_element_%d();\n  break;\n" % (i, prefix, i)
+    body += "default:\n  return 0;\n}"
+    code["create_finite_element"] = body
+
+    # Generate code for cell_integral
     code["create_cell_integral"] = "// Not implemented"
+
+    # Generate code for exterior_facet_integral
     code["create_exterior_facet_integral"] = "// Not implemented"
+
+    # Generate code for interior_facet_integral
     code["create_interior_facet_integral"] = "// Not implemented"
 
-    output += form_combined % code
+    output += __generate_code(form_combined, code)
 
     return output
+
+def __generate_code(format_string, code):
+    "Generate code according to format string and code dictionary"
+    # Fix indentation
+    for key in code:
+        if not key in ["classname", "members"]:
+            code[key] = indent(code[key], 4)
+    # Generate code
+    return format_string % code

@@ -192,6 +192,15 @@ class FiniteElement:
             facet_shape = self.facet_shape()
             return self.element.function_space().trace_tabulate_jet(facet_shape, facet, order, points)
 
+    def signature(self):
+        "Return a string identifying the finite element"
+        if self.vectordim() > 1:
+            return "%s finite element of degree %d on a %s with %d components" % \
+                   (self.type_str, self.degree(), self.shape_str, self.vectordim())
+        else:
+            return "%s finite element of degree %d on a %s" % \
+                   (self.type_str, self.degree(), self.shape_str)
+
     def __add__(self, other):
         "Create mixed element."
         if isinstance(other, FiniteElement):
@@ -201,14 +210,9 @@ class FiniteElement:
         else:
             raise RuntimeError, "Unable to create mixed element from given object: " + str(other)
 
-    def __repr__(self):
-        "Print nicely formatted representation of FiniteElement."
-        if self.vectordim() > 1:
-            return "%s finite element of degree %d on a %s with %d components" % \
-                   (self.type_str, self.degree(), self.shape_str, self.vectordim())
-        else:
-            return "%s finite element of degree %d on a %s" % \
-                   (self.type_str, self.degree(), self.shape_str)
+    def __str__(self):
+        "Pretty print"
+        return self.signature()
 
 if __name__ == "__main__":
 
