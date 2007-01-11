@@ -144,7 +144,18 @@ class FiniteElement:
     
     def value_dimension(self, i):
         "Return the dimension of the value space for axis i"
-        return self.basis().tensor_dim()[i]
+        if self.value_rank() == 0:
+            return 1
+        else:
+            return self.basis().tensor_dim()[i]
+
+    def num_sub_elements(self):
+        "Return the number of sub elements"
+        return 1
+
+    def sub_element(self, i):
+        "Return sub element i"
+        return self
 
     def vectordim(self):
         "Return vector dimension (number of components)"

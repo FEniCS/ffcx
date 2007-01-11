@@ -163,6 +163,14 @@ class MixedElement:
             raise RuntimeError, "Illegal tensor dimension for vector-valued mixed element."
         return self.mixed_tensordim
 
+    def num_sub_elements(self):
+        "Return the number of sub elements"
+        return len(self.elements)
+
+    def sub_element(self, i):
+        "Return sub element i"
+        return self.elements[i]
+
     def num_facets(self):
         "Return number of facets for shape of element."
         return self.elements[0].num_facets()

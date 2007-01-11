@@ -145,14 +145,41 @@ def __generate_finite_element(element, prefix, i, options):
     
     # Generate code for space_dimension
     code["space_dimension"] = "return %d;" % element.space_dimension()
-    
-    code["value_rank"] = "// Not implemented"
-    code["value_dimension"] = "// Not implemented"
+
+    # Generate code for value_rank
+    code["value_rank"] = "return %d;" % element.value_rank()
+
+    # Generate code for value_dimension
+    if element.value_rank() == 0:
+        body = "return %d;" % element.value_dimension(0)
+    else:
+        body = "switch ( i )\n{\n"
+        for i in range(element.value_rank()):
+            body += "case %d:\n  return %d;\n  break;\n" % element.value_dimension(i)
+        body += "default:\n  return 0;\n}"
+    code["value_dimension"] = body
+
+    # Generate code for evaluate_basis (FIXME: not implemented)
     code["evaluate_basis"] = "// Not implemented"
-    code["evaluate_dof"] = "// Not implemented"
+
+    # Generate code for evaluate_dof (FIXME: not implemented)
+    code["evaluate_dof"] = "// Not implemented\nreturn 0.0;"
+
+    # Generate code for inperpolate_vertex_values (FIXME: not implemented)
     code["interpolate_vertex_values"] = "// Not implemented"
-    code["num_sub_elements"] = "// Not implemented"
-    code["sub_element"] = "// Not implemented"
+
+    # Generate code for num_sub_elements
+    code["num_sub_elements"] = "return %d;" % element.num_sub_elements()
+
+    # Generate code for sub_element
+    if element.num_sub_elements() == 1:
+        body = "return new %s;" % code["classname"]
+    else:
+        body = "switch ( i )\n{\n"
+        for i in range(element.num_sub_elements()):
+            body += "case %d:\n  return new %s_sub_element_%d();\n  break;\n" % (i, code["classname"], i)
+        body += "default:\n  return 0;\n}"
+    code["create_sub_element"] = body
 
     return __generate_code(finite_element_combined, code)
 
