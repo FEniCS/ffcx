@@ -1,7 +1,7 @@
 # Code generation format strings for UFC (Unified Form-assembly Code) v. 1.0.
 # This code is released into the public domain.
 #
-# The FEniCS Project (http://www.fenics.org/) 2006.
+# The FEniCS Project (http://www.fenics.org/) 2006-2007.
 
 finite_element_combined = """\
 /// This class defines the interface for a finite element.
@@ -11,7 +11,7 @@ class %(classname)s: public ufc::finite_element
 public:
 
   /// Constructor
-  %(classname)s()
+  %(classname)s() : ufc::finite_element()
   {
 %(constructor)s
   }
@@ -148,7 +148,7 @@ public:
 finite_element_implementation= """\
 
 /// Constructor
-%(classname)s::%(classname)s()
+%(classname)s::%(classname)s() : ufc::finite_element()
 {
 %(constructor)s
 }

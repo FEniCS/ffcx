@@ -1,7 +1,7 @@
 # Code generation format strings for UFC (Unified Form-assembly Code) v. 1.0.
 # This code is released into the public domain.
 #
-# The FEniCS Project (http://www.fenics.org/) 2006.
+# The FEniCS Project (http://www.fenics.org/) 2006-2007.
 
 form_combined = """\
 /// This class defines the interface for the assembly of the global
@@ -24,7 +24,7 @@ class %(classname)s: public ufc::form
 public:
 
   /// Constructor
-  %(classname)s()
+  %(classname)s() : ufc::form()
   {
 %(constructor)s
   }
@@ -141,7 +141,7 @@ public:
 
 form_implementation = """\
 /// Constructor
-%(classname)s::%(classname)s()
+%(classname)s::%(classname)s() : ufc::form()
 {
 %(constructor)s
 }

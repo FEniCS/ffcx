@@ -1,7 +1,7 @@
 # Code generation format strings for UFC (Unified Form-assembly Code) v. 1.0.
 # This code is released into the public domain.
 #
-# The FEniCS Project (http://www.fenics.org/) 2006.
+# The FEniCS Project (http://www.fenics.org/) 2006-2007.
 
 cell_integral_combined = """\
 /// This class defines the interface for the tabulation of the cell
@@ -13,7 +13,7 @@ class %(classname)s: public ufc::cell_integral
 public:
 
   /// Constructor
-  %(classname)s()
+  %(classname)s() : ufc::cell_integral()
   {
 %(constructor)s
   }
@@ -60,7 +60,7 @@ public:
 
 cell_integral_implementation = """\
 /// Constructor
-%(classname)s::%(classname)s()
+%(classname)s::%(classname)s() : ufc::cell_integral()
 {
 %(constructor)s
 }
@@ -90,7 +90,7 @@ class %(classname)s: public ufc::exterior_facet_integral
 public:
 
   /// Constructor
-  %(classname)s()
+  %(classname)s() : ufc::exterior_facet_integral()
   {
 %(constructor)s
   }
@@ -139,7 +139,7 @@ public:
 
 exterior_facet_integral_implementation = """\
 /// Constructor
-%(classname)s::%(classname)s()
+%(classname)s::%(classname)s() : ufc::exterior_facet_integral()
 {
 %(constructor)s
 }
@@ -170,7 +170,7 @@ class %(classname)s: public ufc::interior_facet_integral
 public:
 
   /// Constructor
-  %(classname)s()
+  %(classname)s() : ufc::interior_facet_integral()
   {
 %(constructor)s
   }
@@ -223,7 +223,7 @@ public:
 
 interior_facet_integral_implementation = """\
 /// Constructor
-%(classname)s::%(classname)s()
+%(classname)s::%(classname)s() : ufc::interior_facet_integral()
 {
 %(constructor)s
 }

@@ -1,7 +1,7 @@
 // This is UFC (Unified Form-assembly Code) v. 1.0.
 // This code is released into the public domain.
 //
-// The FEniCS Project (http://www.fenics.org/) 2006.
+// The FEniCS Project (http://www.fenics.org/) 2006-2007.
 
 #ifndef __UFC_H
 #define __UFC_H

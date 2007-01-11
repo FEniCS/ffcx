@@ -1,7 +1,7 @@
 # Code generation format strings for UFC (Unified Form-assembly Code) v. 1.0.
 # This code is released into the public domain.
 #
-# The FEniCS Project (http://www.fenics.org/) 2006.
+# The FEniCS Project (http://www.fenics.org/) 2006-2007.
 
 function_combined = """\
 /// This class defines the interface for a general tensor-valued function.
@@ -11,7 +11,7 @@ class %(classname)s: public ufc::function
 public:
 
   /// Constructor
-  %(classname)s()
+  %(classname)s() : ufc::function()
   {
 %(constructor)s
   }
@@ -58,7 +58,7 @@ public:
 
 function_implementation = """\
 /// Constructor
-%(classname)s::%(classname)s()
+%(classname)s::%(classname)s() : ufc::function()
 {
 %(constructor)s
 }
