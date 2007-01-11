@@ -31,6 +31,7 @@ from operators import *
 from signature import *
 from elementsearch import *
 from finiteelement import *
+from dofmap import *
 from mixedelement import *
 from elementtensor import *
 from exteriorfacettensor import *
@@ -224,6 +225,9 @@ def __build_form(form, format, options):
     if not form.trial == None:
         form.finite_elements += [form.trial]
     form.finite_elements += form.elements
+    form.dof_maps = []
+    for element in form.finite_elements:
+        form.dof_maps += [DofMap(element)]
 
 def __check_primary_ranks(form, num_facets, num_alignments):
     "Check that all primary ranks are equal."
