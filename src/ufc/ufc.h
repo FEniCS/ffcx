@@ -177,11 +177,11 @@ namespace ufc
     virtual void interpolate_vertex_values(double* vertex_values,
                                            const double* dof_values) const = 0;
 
-    /// Return the number of sub elements (for a mixed finite element)
+    /// Return the number of sub elements (for a mixed element)
     virtual unsigned int num_sub_elements() const = 0;
 
-    /// Return sub element i (for a mixed finite element)
-    virtual const finite_element& sub_element(unsigned int i) const = 0;
+    /// Create a new finite element for sub element i (for a mixed element)
+    virtual finite_element* create_sub_element(unsigned int i) const = 0;
 
   };
 
