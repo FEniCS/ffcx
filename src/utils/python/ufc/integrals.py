@@ -19,15 +19,15 @@ public:
   }
 
   /// Destructor
-  ~%(classname)s()
+  virtual ~%(classname)s()
   {
 %(destructor)s
   }
 
   /// Tabulate the tensor for the contribution from a local cell
-  void tabulate_tensor(double* A,
-                       const double * const * w,
-                       const ufc::cell& c) const
+  virtual void tabulate_tensor(double* A,
+                               const double * const * w,
+                               const ufc::cell& c) const
   {
 %(tabulate_tensor)s
   }
@@ -48,12 +48,12 @@ public:
   %(classname)s();
 
   /// Destructor
-  ~%(classname)s();
+  virtual ~%(classname)s();
 
   /// Tabulate the tensor for the contribution from a local cell
-  void tabulate_tensor(double* A,
-                       const double * const * w,
-                       const ufc::cell& c) const;
+  virtual void tabulate_tensor(double* A,
+                               const double * const * w,
+                               const ufc::cell& c) const;
 
 };
 """
@@ -73,8 +73,8 @@ cell_integral_implementation = """\
 
 /// Tabulate the tensor for the contribution from a local cell
 void %(classname)s::tabulate_tensor(double* A,
-                     const double * const * w,
-                     const ufc::cell& c) const
+                                    const double * const * w,
+                                    const ufc::cell& c) const
 {
 %(tabulate_tensor)s
 }
@@ -96,16 +96,16 @@ public:
   }
 
   /// Destructor
-  ~%(classname)s()
+  virtual ~%(classname)s()
   {
 %(destructor)s
   }
 
   /// Tabulate the tensor for the contribution from a local exterior facet
-  void tabulate_tensor(double* A,
-                       const double * const * w,
-                       const ufc::cell& c,
-                       unsigned int facet) const
+  virtual void tabulate_tensor(double* A,
+                               const double * const * w,
+                               const ufc::cell& c,
+                               unsigned int facet) const
   {
 %(tabulate_tensor)s
   }
@@ -126,13 +126,13 @@ public:
   %(classname)s();
 
   /// Destructor
-  ~%(classname)s();
+  virtual ~%(classname)s();
 
   /// Tabulate the tensor for the contribution from a local exterior facet
-  void tabulate_tensor(double* A,
-                       const double * const * w,
-                       const ufc::cell& c,
-                       unsigned int facet) const;
+  virtual void tabulate_tensor(double* A,
+                               const double * const * w,
+                               const ufc::cell& c,
+                               unsigned int facet) const;
 
 };
 """
@@ -152,9 +152,9 @@ exterior_facet_integral_implementation = """\
 
 /// Tabulate the tensor for the contribution from a local exterior facet
 void %(classname)s::tabulate_tensor(double* A,
-                     const double * const * w,
-                     const ufc::cell& c,
-                     unsigned int facet) const
+                                    const double * const * w,
+                                    const ufc::cell& c,
+                                    unsigned int facet) const
 {
 %(tabulate_tensor)s
 }
@@ -176,18 +176,18 @@ public:
   }
 
   /// Destructor
-  ~%(classname)s()
+  virtual ~%(classname)s()
   {
 %(destructor)s
   }
 
   /// Tabulate the tensor for the contribution from a local interior facet
-  void tabulate_tensor(double* A,
-                       const double * const * w,
-                       const ufc::cell& c0,
-                       const ufc::cell& c1,
-                       unsigned int facet0,
-                       unsigned int facet1) const
+  virtual void tabulate_tensor(double* A,
+                               const double * const * w,
+                               const ufc::cell& c0,
+                               const ufc::cell& c1,
+                               unsigned int facet0,
+                               unsigned int facet1) const
   {
 %(tabulate_tensor)s
   }
@@ -208,15 +208,15 @@ public:
   %(classname)s();
 
   /// Destructor
-  ~%(classname)s();
+  virtual ~%(classname)s();
 
   /// Tabulate the tensor for the contribution from a local interior facet
-  void tabulate_tensor(double* A,
-                       const double * const * w,
-                       const ufc::cell& c0,
-                       const ufc::cell& c1,
-                       unsigned int facet0,
-                       unsigned int facet1) const;
+  virtual void tabulate_tensor(double* A,
+                               const double * const * w,
+                               const ufc::cell& c0,
+                               const ufc::cell& c1,
+                               unsigned int facet0,
+                               unsigned int facet1) const;
 
 };
 """
@@ -236,11 +236,11 @@ interior_facet_integral_implementation = """\
 
 /// Tabulate the tensor for the contribution from a local interior facet
 void %(classname)s::tabulate_tensor(double* A,
-                     const double * const * w,
-                     const ufc::cell& c0,
-                     const ufc::cell& c1,
-                     unsigned int facet0,
-                     unsigned int facet1) const
+                                    const double * const * w,
+                                    const ufc::cell& c0,
+                                    const ufc::cell& c1,
+                                    unsigned int facet0,
+                                    unsigned int facet1) const
 {
 %(tabulate_tensor)s
 }

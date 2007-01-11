@@ -17,15 +17,15 @@ public:
   }
 
   /// Destructor
-  ~%(classname)s()
+  virtual ~%(classname)s()
   {
 %(destructor)s
   }
 
   /// Evaluate function at given point in cell
-  void evaluate(double* values,
-                const double* coordinates,
-                const ufc::cell& c) const
+  virtual void evaluate(double* values,
+                        const double* coordinates,
+                        const ufc::cell& c) const
   {
 %(evaluate)s
   }
@@ -44,12 +44,12 @@ public:
   %(classname)s();
 
   /// Destructor
-  ~%(classname)s();
+  virtual ~%(classname)s();
 
   /// Evaluate function at given point in cell
-  void evaluate(double* values,
-                const double* coordinates,
-                const ufc::cell& c) const;
+  virtual void evaluate(double* values,
+                        const double* coordinates,
+                        const ufc::cell& c) const;
 
 };
 """

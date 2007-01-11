@@ -18,67 +18,67 @@ public:
   }
 
   /// Destructor
-  ~%(classname)s()
+  virtual ~%(classname)s()
   {
 %(destructor)s
   }
 
   /// Return a string identifying the dof map
-  const char* signature() const
+  virtual const char* signature() const
   {
 %(signature)s
   }
 
   /// Return true iff mesh entities of topological dimension d are needed
-  bool needs_mesh_entities(unsigned int d) const
+  virtual bool needs_mesh_entities(unsigned int d) const
   {
 %(needs_mesh_entities)s
   }
 
   /// Initialize dof map for mesh (return true iff init_cell() is needed)
-  bool init_mesh(const ufc::mesh& mesh)
+  virtual bool init_mesh(const ufc::mesh& mesh)
   {
 %(init_mesh)s
   }
 
   /// Initialize dof map for given cell
-  void init_cell(const ufc::mesh& m,
-                 const ufc::cell& c)
+  virtual void init_cell(const ufc::mesh& m,
+                         const ufc::cell& c)
   {
 %(init_cell)s
   }
 
   /// Return the dimension of the global finite element function space
-  unsigned int global_dimension() const
+  virtual unsigned int global_dimension() const
   {
 %(global_dimension)s
   }
 
   /// Return the dimension of the local finite element function space
-  unsigned int local_dimension() const
+  virtual unsigned int local_dimension() const
   {
 %(local_dimension)s
   }
 
   /// Return the number of dofs on a facets of a cell
-  unsigned int num_facet_dofs() const
+  virtual unsigned int num_facet_dofs() const
   {
 %(num_facet_dofs)s
   }
 
   /// Tabulate the local-to-global mapping of dofs on a cell
-  void tabulate_dofs(unsigned int* dofs,
-                     const ufc::mesh& m,
-                     const ufc::cell& c) const
+  virtual void tabulate_dofs(unsigned int* dofs,
+                             const ufc::mesh& m,
+                             const ufc::cell& c) const
   {
 %(tabulate_dofs)s
   }
 
   /// Tabulate the local-to-global mapping of dofs on a facet of a cell
-  void tabulate_facet_dofs(unsigned int* dofs,
-                           const ufc::mesh& m,
-                           const ufc::cell& c,
-                           unsigned int facet) const
+  virtual void tabulate_facet_dofs(unsigned int* dofs,
+                                   const ufc::mesh& m,
+                                   const ufc::cell& c,
+                                   unsigned int facet) const
   {
 %(tabulate_facet_dofs)s
   }
@@ -98,40 +98,40 @@ public:
   %(classname)s();
 
   /// Destructor
-  ~%(classname)s();
+  virtual ~%(classname)s();
 
   /// Return a string identifying the dof map
-  const char* signature() const;
+  virtual const char* signature() const;
 
   /// Return true iff mesh entities of topological dimension d are needed
-  bool needs_mesh_entities(unsigned int d) const;
+  virtual bool needs_mesh_entities(unsigned int d) const;
 
   /// Initialize dof map for mesh (return true iff init_cell() is needed)
-  bool init_mesh(const ufc::mesh& mesh);
+  virtual bool init_mesh(const ufc::mesh& mesh);
 
   /// Initialize dof map for given cell
-  void init_cell(const ufc::mesh& m,
-                 const ufc::cell& c);
+  virtual void init_cell(const ufc::mesh& m,
+                         const ufc::cell& c);
 
   /// Return the dimension of the global finite element function space
-  unsigned int global_dimension() const;
+  virtual unsigned int global_dimension() const;
 
   /// Return the dimension of the local finite element function space
-  unsigned int local_dimension() const;
+  virtual unsigned int local_dimension() const;
 
   /// Return the number of dofs on a facets of a cell
-  unsigned int num_facet_dofs() const;
+  virtual unsigned int num_facet_dofs() const;
 
   /// Tabulate the local-to-global mapping of dofs on a cell
-  void tabulate_dofs(unsigned int* dofs,
-                     const ufc::mesh& m,
-                     const ufc::cell& c) const;
+  virtual void tabulate_dofs(unsigned int* dofs,
+                             const ufc::mesh& m,
+                             const ufc::cell& c) const;
 
   /// Tabulate the local-to-global mapping of dofs on a facet of a cell
-  void tabulate_facet_dofs(unsigned int* dofs,
-                           const ufc::mesh& m,
-                           const ufc::cell& c,
-                           unsigned int facet) const;
+  virtual void tabulate_facet_dofs(unsigned int* dofs,
+                                   const ufc::mesh& m,
+                                   const ufc::cell& c,
+                                   unsigned int facet) const;
 
 };
 """

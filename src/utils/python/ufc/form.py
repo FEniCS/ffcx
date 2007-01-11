@@ -30,55 +30,55 @@ public:
   }
 
   /// Destructor
-  ~%(classname)s()
+  virtual ~%(classname)s()
   {
 %(destructor)s
   }
 
   /// Return a string identifying the form
-  const char* signature() const
+  virtual const char* signature() const
   {
 %(signature)s
   }
 
   /// Return the rank of the global tensor (r)
-  unsigned int rank() const
+  virtual unsigned int rank() const
   {
 %(rank)s
   }
 
   /// Return the number of coefficients (n)
-  unsigned int num_coefficients() const
+  virtual unsigned int num_coefficients() const
   {
 %(num_coefficients)s
   }
 
   /// Create a new finite element for argument function i
-  ufc::finite_element* create_finite_element(unsigned int i) const
+  virtual ufc::finite_element* create_finite_element(unsigned int i) const
   {
 %(create_finite_element)s
   }
   
   /// Create a new dof map for argument function i
-  ufc::dof_map* create_dof_map(unsigned int i) const
+  virtual ufc::dof_map* create_dof_map(unsigned int i) const
   {
 %(create_dof_map)s
   }
 
   /// Create a new cell integral (return 0 if contribution is zero)
-  ufc::cell_integral* create_cell_integral() const
+  virtual ufc::cell_integral* create_cell_integral() const
   {
 %(create_cell_integral)s
   }
 
   /// Create a new exterior facet integral (return 0 if contribution is zero)
-  ufc::exterior_facet_integral* create_exterior_facet_integral() const
+  virtual ufc::exterior_facet_integral* create_exterior_facet_integral() const
   {
 %(create_exterior_facet_integral)s
   }
 
   /// Create a new interior facet integral (return 0 if contribution is zero)
-  ufc::interior_facet_integral* create_interior_facet_integral() const
+  virtual ufc::interior_facet_integral* create_interior_facet_integral() const
   {
 %(create_interior_facet_integral)s
   }
@@ -110,31 +110,31 @@ public:
   %(classname)s();
 
   /// Destructor
-  ~%(classname)s();
+  virtual ~%(classname)s();
 
   /// Return a string identifying the form
-  const char* signature() const;
+  virtual const char* signature() const;
 
   /// Return the rank of the global tensor (r)
-  unsigned int rank() const;
+  virtual unsigned int rank() const;
 
   /// Return the number of coefficients (n)
-  unsigned int num_coefficients() const;
+  virtual unsigned int num_coefficients() const;
 
   /// Create a new finite element for argument function i
-  ufc::finite_element* create_finite_element(unsigned int i) const;
+  virtual ufc::finite_element* create_finite_element(unsigned int i) const;
 
   /// Create a new dof map for argument function i
-  ufc::dof_map* create_dof_map(unsigned int i) const;
+  virtual ufc::dof_map* create_dof_map(unsigned int i) const;
 
   /// Create a new cell integral (return 0 if contribution is zero)
-  ufc::cell_integral* create_cell_integral() const;
+  virtual ufc::cell_integral* create_cell_integral() const;
 
   /// Create a new exterior facet integral (return 0 if contribution is zero)
-  ufc::exterior_facet_integral* create_exterior_facet_integral() const;
+  virtual ufc::exterior_facet_integral* create_exterior_facet_integral() const;
 
   /// Create a new interior facet integral (return 0 if contribution is zero)
-  ufc::interior_facet_integral* create_interior_facet_integral() const;
+  virtual ufc::interior_facet_integral* create_interior_facet_integral() const;
 
 };
 """
