@@ -1,6 +1,6 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-09-27 -- 2006-12-01"
-__copyright__ = "Copyright (C) 2004-2006 Anders Logg"
+__date__ = "2004-09-27 -- 2007-01-11"
+__copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # Python modules
@@ -137,6 +137,6 @@ class Form:
         else:
             return self.AK.terms[term].A0.a.indices
 
-    def __repr__(self):
-        "Print nicely formatted representation of Form."
+    def __str__(self):
+        "Pretty print"
         return str(self.sum)

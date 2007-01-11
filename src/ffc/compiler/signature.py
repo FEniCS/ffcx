@@ -3,7 +3,7 @@ products. Signatures are used to uniquely identify reference
 tensors that may be common to a group of terms."""
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2005-09-06 -- 2006-12-08"
+__date__ = "2005-09-06 -- 2007-01-11"
 __copyright__ = "Copyright (C) 2005-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -29,10 +29,9 @@ def compute_hard_signature(product):
         factors += ["{%s;%s;%s;%s;%s}" % \
                     (str(v.element),     \
                      str(v.index),       \
-                     str(v.component),   \
-                     str(v.derivatives),
+                     "[" + ", ".join([str(c) for c in v.component]) + "]",
+                     "[" + ", ".join([str(d) for d in v.derivatives]) + "]",
                      str(v.restriction))]
-
 
     # Sort signatures for basis functions
     factors.sort()

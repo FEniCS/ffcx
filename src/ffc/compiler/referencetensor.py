@@ -1,6 +1,6 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-11-03 -- 2006-12-06"
-__copyright__ = "Copyright (C) 2004-2006 Anders Logg"
+__date__ = "2004-11-03 -- 2007-01-11"
+__copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # Modified by Garth N. Wells 2006
@@ -158,7 +158,7 @@ class ReferenceTensor:
         "Return given element of reference tensor."
         return self.A0[i + a]
 
-    def __repr__(self):
-        "Print nicely formatted representation of ReferenceTensor."
-        v = "*".join([v.__repr__() for v in self.basisfunctions])
-        return v + "*" + self.integral.__repr__()
+    def __str__(self):
+        "Pretty print"
+        v = "*".join([v.__str__() for v in self.basisfunctions])
+        return v + "*" + self.integral.__str__()

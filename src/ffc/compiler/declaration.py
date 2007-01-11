@@ -1,6 +1,6 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-11-09 -- 2005-10-04"
-__copyright__ = "Copyright (C) 2004 Anders Logg"
+__date__ = "2004-11-09 -- 2007-01-11"
+__copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 class Declaration:
@@ -14,5 +14,6 @@ class Declaration:
         self.used = False
         return
 
-    def __repr__(self):
+    def __str__(self):
+        "Pretty print"
         return self.name + " = " + self.value

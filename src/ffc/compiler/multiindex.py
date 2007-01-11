@@ -1,6 +1,6 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-11-03 -- 2005-09-13"
-__copyright__ = "Copyright (C) 2004, 2005 Anders Logg"
+__date__ = "2004-11-03 -- 2007-01-11"
+__copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # Modified by Garth N. Wells 2006
@@ -48,6 +48,6 @@ class MultiIndex:
         self.indices = build_indices(dims)
         return
 
-    def __repr__(self):
-        "Print nicely formatted representation of MultiIndex."
+    def __str__(self):
+        "Pretty print"
         return "rank = %d dims = %s" % (self.rank, str(self.dims))

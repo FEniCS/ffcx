@@ -25,8 +25,8 @@ algebra:
     Unary  ()     (operand must be multi-valued, +/-)"""
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-09-27 -- 2006-12-21"
-__copyright__ = "Copyright (C) 2004-2006 Anders Logg"
+__date__ = "2004-09-27 -- 2007-01-11"
+__copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # Modified by Garth N. Wells 2006
@@ -127,9 +127,9 @@ class Element:
         "Return value rank of Element."
         return Sum(self).rank()
 
-    def __repr__(self):
+    def __str__(self):
         "Print nicely formatted representation of Element."
-        return Sum(self).__repr__()
+        return Sum(self).__str__()
 
 class Constant(Element):
     """A Constant represents a numerical constant or a Function that
@@ -163,7 +163,7 @@ class Constant(Element):
             c.inverted = True
         return c
 
-    def __repr__(self):
+    def __str__(self):
         "Print nicely formatted representation of Constant."
         return "c" + str(self.number)
 
@@ -210,7 +210,7 @@ class Function(Element):
             self.P  = None
         return
 
-    def __repr__(self):
+    def __str__(self):
         "Print nicely formatted representation of Function."
         return "w" + str(self.n0)
 
@@ -277,13 +277,13 @@ class BasisFunction(Element):
                 v.restriction = Restriction.MINUS
         return v
 
-    def __repr__(self):
+    def __str__(self):
         "Print nicely formatted representation of BasisFunction."
-        d = "".join([d.__repr__() for d in self.derivatives])
-        i = self.index.__repr__()
+        d = "".join([d.__str__() for d in self.derivatives])
+        i = self.index.__str__()
 
         if self.component:
-            c = "[" + ",".join([c.__repr__() for c in self.component]) + "]"
+            c = "[" + ", ".join([c.__str__() for c in self.component]) + "]"
         else:
             c = ""
 
@@ -529,7 +529,7 @@ class Product(Element):
             v.transforms[i].restriction = restriction
         return v
 
-    def __repr__(self):
+    def __str__(self):
         "Print nicely formatted representation of Product."
         if not (self.coefficients or self.transforms or self.basisfunctions):
             return str(self.numeric)
@@ -543,12 +543,12 @@ class Product(Element):
             d = ""
         else:
             d = "|det(F)|^" + "(" + str(self.determinant) + ")"
-        c = "".join([w.__repr__() for w in self.constants])
-        w = "".join([w.__repr__() for w in self.coefficients])
-        t = "".join([t.__repr__() for t in self.transforms])
-        v = "*".join([v.__repr__() for v in self.basisfunctions])
+        c = "".join([w.__str__() for w in self.constants])
+        w = "".join([w.__str__() for w in self.coefficients])
+        t = "".join([t.__str__() for t in self.transforms])
+        v = "*".join([v.__str__() for v in self.basisfunctions])
         if not self.integral == None:
-            i = "*" + self.integral.__repr__()
+            i = "*" + str(self.integral)
         else:
             i = ""
         return s + c + d + w + t + " | " + v + i
@@ -669,9 +669,9 @@ class Sum(Element):
         v.products = ([w(r) for w in v.products])
         return v
 
-    def __repr__(self):
+    def __str__(self):
         "Print nicely formatted representation of Sum."
-        return " + ".join([p.__repr__() for p in self.products])
+        return " + ".join([p.__str__() for p in self.products])
 
     def dx(self, index = None):
         "Operator: (d/dx)Sum in given coordinate direction."

@@ -1,6 +1,6 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-11-03 -- 2006-12-11"
-__copyright__ = "Copyright (C) 2004-2006 Anders Logg"
+__date__ = "2004-11-03 -- 2007-01-11"
+__copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # FFC common modules
@@ -121,8 +121,8 @@ class GeometryTensor:
         # Compute product of all factors
         return format.format["multiplication"]([f for f in [format.format["determinant"]] + f0 + f1])
 
-    def __repr__(self):
+    def __str__(self):
         "Print nicely formatted representation of GeometryTensor."
-        c = "".join([c.__repr__() for c in self.coefficients])
-        t = "".join([t.__repr__() for t in self.transforms])
+        c = "".join([c.__str__() for c in self.coefficients])
+        t = "".join([t.__str__() for t in self.transforms])
         return c + t

@@ -1,6 +1,6 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-09-29 -- 2005-11-08"
-__copyright__ = "Copyright (C) 2004, 2005 Anders Logg"
+__date__ = "2004-09-29 -- 2007-01-11"
+__copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 class Index:
@@ -118,7 +118,7 @@ class Index:
             return 0
         return -1 # Ignore self > other
 
-    def __repr__(self):
+    def __str__(self):
         "Print nicely formatted representation of Index."
         if self.type == self.FIXED:
             return str(self.index)

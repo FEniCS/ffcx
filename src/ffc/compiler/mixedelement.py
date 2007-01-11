@@ -1,6 +1,6 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2005-09-16 -- 2006-12-19"
-__copyright__ = "Copyright (C) 2005-2006 Anders Logg"
+__date__ = "2005-09-16 -- 2007-01-11"
+__copyright__ = "Copyright (C) 2005-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # Modified by Garth N. Wells 2006
@@ -254,7 +254,7 @@ class MixedElement:
         return component_table
 
     def __add__(self, other):
-        "Create mixed element."
+        "Create mixed element"
         if isinstance(other, FiniteElement):
             return MixedElement(self.elements + [other])
         elif isinstance(other, MixedElement):
@@ -262,6 +262,6 @@ class MixedElement:
         else:
             raise RuntimeError, "Unable to create mixed element from given object: " + str(other)
 
-    def __repr__(self):
-        "Print nicely formatted representation of MixedElement."
+    def __str__(self):
+        "Pretty print"
         return "Mixed finite element: " + str(self.elements)
