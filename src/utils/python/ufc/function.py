@@ -22,8 +22,7 @@ public:
 %(destructor)s
   }
 
-  /// Evaluate function in the cell at the point
-  /// x = (coordinates[0], coordinates[1], ...)
+  /// Evaluate function at given point in cell
   void evaluate(double* values,
                 const double* coordinates,
                 const ufc::cell& c) const
@@ -47,8 +46,7 @@ public:
   /// Destructor
   ~%(classname)s();
 
-  /// Evaluate function in the cell at the point
-  /// x = (coordinates[0], coordinates[1], ...)
+  /// Evaluate function at given point in cell
   void evaluate(double* values,
                 const double* coordinates,
                 const ufc::cell& c) const;
@@ -69,8 +67,7 @@ function_implementation = """\
 %(destructor)s
 }
 
-/// Evaluate function in the cell at the point
-/// x = (coordinates[0], coordinates[1], ...)
+/// Evaluate function at given point in cell
 void %(classname)s::evaluate(double* values,
                              const double* coordinates,
                              const ufc::cell& c) const

@@ -52,8 +52,7 @@ public:
 %(value_dimension)s
   }
 
-  /// Evaluate basis function i in cell at the point
-  /// x = (coordinates[0], coordinates1], ...)
+  /// Evaluate basis function i at given point in cell
   void evaluate_basis(double* values,
                       const double* coordinates,
                       unsigned int i,
@@ -120,8 +119,7 @@ public:
   /// Return the dimension of the value space for axis i
   unsigned int value_dimension(unsigned int i) const;
 
-  /// Evaluate basis function i in cell at the point
-  /// x = (coordinates[0], coordinates1], ...)
+  /// Evaluate basis function i at given point in cell
   void evaluate_basis(double* values,
                       const double* coordinates,
                       unsigned int i,
@@ -189,8 +187,7 @@ unsigned int %(classname)s::value_dimension(unsigned int i) const
 %(value_dimension)s
 }
 
-/// Evaluate basis function i in cell at the point
-/// x = (coordinates[0], coordinates1], ...)
+/// Evaluate basis function i at given point in cell
 void %(classname)s::evaluate_basis(double* values,
                                    const double* coordinates,
                                    unsigned int i,
