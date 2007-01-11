@@ -77,8 +77,6 @@ class ReferenceTensor:
         
         return
 
-  # FIXME: dubbla dims for primary
-
     def __create_index(self, type):
         "Find dimensions and create MultiIndex."
         # Compute rank
