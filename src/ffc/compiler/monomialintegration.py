@@ -57,7 +57,7 @@ def __init_quadrature(basisfunctions, type):
     debug("Initializing quadrature.", 1)
 
     # Get shape (check first one, all should be the same)
-    shape = basisfunctions[0].element.shape()
+    shape = basisfunctions[0].element.cell_shape()
     facet_shape = basisfunctions[0].element.facet_shape()
 
     # Compute number of points to match the degree

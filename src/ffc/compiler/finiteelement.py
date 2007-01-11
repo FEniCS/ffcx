@@ -122,13 +122,13 @@ class FiniteElement:
         "Return degree of polynomial basis."
         return self.basis().degree()
 
-    def shape(self):
-        "Return shape used for element."
+    def cell_shape(self):
+        "Return the cell shape"
         return self.element.domain_shape()
 
     def facet_shape(self):
         "Return shape of facet."
-        return self.shape() - 1
+        return self.cell_shape() - 1
 
     def space_dimension(self):
         "Return the dimension of the finite element function space"
@@ -136,7 +136,7 @@ class FiniteElement:
 
     def shapedim(self):
         "Return dimension of of shape."
-        return dim[self.shape()]
+        return dim[self.cell_shape()]
 
     def rank(self):
         "Return rank of basis functions."

@@ -141,11 +141,11 @@ def __generate_finite_element(element, prefix, i, options):
     code["signature"] = "return \"%s\";" % element.signature()
 
     # Generate code for cell_shape
-    code["cell_shape"] = "return %s;" % shape_to_string[element.shape()]
+    code["cell_shape"] = "return %s;" % shape_to_string[element.cell_shape()]
     
-
+    # Generate code for space_dimension
+    code["space_dimension"] = "return %d;" % element.space_dimension()
     
-    code["space_dimension"] = "// Not implemented"
     code["value_rank"] = "// Not implemented"
     code["value_dimension"] = "// Not implemented"
     code["evaluate_basis"] = "// Not implemented"

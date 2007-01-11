@@ -132,10 +132,10 @@ class MixedElement:
         "Return degree of polynomial basis."
         return self.mixed_degree
 
-    def shape(self):
-        "Return shape used for element."
-        return self.elements[0].shape()
-
+    def cell_shape(self):
+        "Return the cell shape"
+        return self.elements[0].cell_shape()
+    
     def facet_shape(self):
         "Return shape of facet."
         return self.elements[0].facet_shape()
@@ -218,7 +218,7 @@ class MixedElement:
         for i in range(len(self.elements) - 1):
             e0 = self.elements[i]
             e1 = self.elements[i + 1]
-            if not e0.shape() == e1.shape():
+            if not e0.cell_shape() == e1.cell_shape():
                 raise FormError, ((e0, e1), "Elements defined on different shapes.")
         return self.elements[0].shapedim()
     

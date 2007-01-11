@@ -69,13 +69,6 @@ class ReferenceTensor:
         self.cputime = time.time() - t
         debug("Reference tensor computed in %.3g seconds" % self.cputime)
 
-        # For testing
-        #B = self.__compute_reference_tensor()
-        #print "Maximum error: %.3e" % max(abs(numpy.ravel(self.A0 - B)))
-
-        # Compute reference tensor (old version)
-        #self.A0 = self.__compute_reference_tensor()
-
         # Get rank
         self.rank = self.i.rank + self.a.rank
 
@@ -113,46 +106,6 @@ class ReferenceTensor:
                     return d.element.shapedim()
         # Didn't find dimension
         raise RuntimeError, "Unable to find dimension for Index " + str(index)
-
-    def __compute_reference_tensor(self):
-        "Compute reference tensor."
-
-        # This is the old (slow) version, not used but still here for testing
-
-        # Make sure that the iteration is not empty
-        iindices = self.i.indices or [[]]
-        aindices = self.a.indices or [[]]
-        bindices = self.b.indices or [[]]
-
-        # Create tensor
-        A0 = numpy.zeros(self.i.dims + self.a.dims, dtype = numpy.float)
-        debug("Number of entries in reference tensor: %d" % numpy.size(A0), 1)
-
-        # Create quadrature rule
-        integrate = Integrator(self.basisfunctions)
-
-        # Count the number of integrals
-        n = numpy.product(self.i.dims) * \
-            numpy.product(self.a.dims) * \
-            numpy.product(self.b.dims)
-        debug("Computing %d integrals, this may take some time" % n)
-
-        # Iterate over all combinations of indices
-        debug("Computing reference tensor", 2)
-        progress = Progress(n)
-        for i in iindices:
-            debug("i = " + str(i), 3)
-            for a in aindices:
-                debug("  a = " + str(a), 3)
-                integral = 0.0
-                for b in bindices:
-                    debug("    b = " + str(b), 3)
-                    integral += integrate(self.basisfunctions, i, a, b)
-                    progress += 1
-                integral *= self.numeric
-                A0[i + a] = integral
-                debug("  integral = " + str(integral), 3)
-        return A0
 
     def  __call__(self, i, a = []):
         "Return given element of reference tensor."
