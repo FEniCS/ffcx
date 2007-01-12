@@ -1,6 +1,6 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-10-04 -- 2007-01-11"
-__copyright__ = "Copyright (C) 2004-2006 Anders Logg"
+__date__ = "2004-10-04 -- 2007-01-12"
+__copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # Modified by Garth N. Wells 2006
@@ -28,8 +28,8 @@ from pointmap import *
 from vertexeval import *
 import mixedelement
 
-shape_to_string = { LINE: "line", TRIANGLE: "triangle", TETRAHEDRON: "tetrahedron" }
-string_to_shape = { "line": LINE, "triangle": TRIANGLE, "tetrahedron": TETRAHEDRON }
+shape_to_string = {LINE: "line", TRIANGLE: "triangle", TETRAHEDRON: "tetrahedron"}
+string_to_shape = {"line": LINE, "triangle": TRIANGLE, "tetrahedron": TETRAHEDRON}
 
 class FiniteElement:
 
@@ -56,6 +56,8 @@ class FiniteElement:
     The transform defaults to "Standard" for H1 and L2 elements,
     "Piola" for H(div) elements.
     """
+
+    # FIXME: Make functions attributes: space_dimension() --> space_dimension etc
 
     def __init__(self, type, shape, degree = None, num_components = None, element = None):
         "Create FiniteElement."
@@ -111,6 +113,10 @@ class FiniteElement:
 
         # Create vertex evaluation
         self.vertexeval = VertexEval(self)
+
+        # FIXME: Attributes in new format
+        self.fiat_element = self.element
+        self.dof_entities = self.fiat_element.dual_basis().entity_ids
 
         return
 

@@ -17,9 +17,11 @@ from ffc.compiler.finiteelement import *
 from ufc import *
 
 # Specify formatting for code generation
-format = { "sum": lambda l: " + ".join(l),
+format = { "add": lambda l: " + ".join(l),
+           "sum": lambda l: " + ".join(l), # FIXME: Remove
            "subtract": lambda l: " - ".join(l),
-           "multiplication": lambda l: "*".join(l),
+           "multiply": lambda l: "*".join(l),
+           "multiplication": lambda l: "*".join(l), # FIXME: Remove
            "grouping": lambda s: "(%s)" % s,
            "determinant": "det",
            "floating point": lambda a: "%.15e" % a,
@@ -55,7 +57,8 @@ format = { "sum": lambda l: " + ".join(l),
            ("check",  3, 0) : lambda i : "not defined",
            ("check",  3, 1) : lambda i : "cell.alignment(1, %d)" % i,
            ("check",  3, 2) : lambda i : "cell.alignment(2, %d)" % i,
-           ("check",  3, 3) : lambda i : "not defined" }
+           ("check",  3, 3) : lambda i : "not defined",
+           "num_entities" : lambda dim : "m.num_entities[%d]" % dim}
 
 def init(options):
     "Initialize code generation for the UFC 1.0 format."
@@ -201,10 +204,10 @@ def __generate_dof_map(dof_map, prefix, i, options):
     code["classname"] = "%s_dof_map_%d" % (prefix, i)
 
     # Generate code for members
-    code["members"] = ""
+    code["members"] = "\nprivate:\n\n  unsigned int __global_dimension;\n"
 
     # Generate code for constructor
-    code["constructor"] = "// Do nothing"
+    code["constructor"] = "__global_dimension = 0;"
 
     # Generate code for destructor
     code["destructor"] = "// Do nothing"
@@ -216,7 +219,7 @@ def __generate_dof_map(dof_map, prefix, i, options):
     code["needs_mesh_entities"] = "// Not implemented"
 
     # Generate code for init_mesh
-    code["init_mesh"] = "// Not implemented"
+    code["init_mesh"] = "__global_dimension = %s;\nreturn false;" % dof_map.global_dimension
 
     # Generate code for init_cell
     code["init_cell"] = "// Do nothing"
@@ -225,7 +228,7 @@ def __generate_dof_map(dof_map, prefix, i, options):
     code["init_cell_finalize"] = "// Do nothing"
 
     # Generate code for global_dimension
-    code["global_dimension"] = "// Not implemented"
+    code["global_dimension"] = "return __global_dimension;"
 
     # Generate code for local dimension
     code["local_dimension"] = "return %d;" % dof_map.local_dimension
