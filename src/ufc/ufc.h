@@ -163,6 +163,9 @@ namespace ufc
     virtual void init_cell(const mesh& m,
                            const cell& c) = 0;
 
+    /// Finish initialization of dof map for cells
+    virtual void init_cell_finalize() = 0;
+
     /// Return the dimension of the global finite element function space
     virtual unsigned int global_dimension() const = 0;
 

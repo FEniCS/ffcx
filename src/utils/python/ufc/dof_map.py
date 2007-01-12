@@ -48,6 +48,12 @@ public:
 %(init_cell)s
   }
 
+  /// Finish initialization of dof map for cells
+  virtual void init_cell_finalize()
+  {
+%(init_cell_finalize)s
+  }
+
   /// Return the dimension of the global finite element function space
   virtual unsigned int global_dimension() const
   {
@@ -113,6 +119,9 @@ public:
   virtual void init_cell(const ufc::mesh& m,
                          const ufc::cell& c);
 
+  /// Finish initialization of dof map for cells
+  virtual void init_cell_finalize();
+
   /// Return the dimension of the global finite element function space
   virtual unsigned int global_dimension() const;
 
@@ -172,6 +181,12 @@ void %(classname)s::init_cell(const ufc::mesh& m,
                               const ufc::cell& c)
 {
 %(init_cell)s
+}
+
+/// Finish initialization of dof map for cells
+void %(classname)s::init_cell_finalize()
+{
+%(init_cell_finalize)s
 }
 
 /// Return the dimension of the global finite element function space
