@@ -218,7 +218,7 @@ unsigned int %(classname)s::num_sub_elements() const
 }
 
 /// Create a new finite element for sub element i (for a mixed element)
-ufc::finite_element* create_sub_element(unsigned int i) const
+ufc::finite_element* %(classname)s::create_sub_element(unsigned int i) const
 {
 %(create_sub_element)s
 }
