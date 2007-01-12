@@ -15,6 +15,6 @@ setup(name="FFC",
                 "ffc/common",
                 "ffc/compiler",
                 "ffc/format",
-                "ffc/parser"],
+                "ffc/formlanguage"],
       scripts=["bin/ffc"],
       data_files=[("share/man/man1", ["../doc/man/man1/ffc.1.gz"])])
