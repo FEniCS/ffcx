@@ -226,8 +226,8 @@ def __build_form(form, format, options):
         form.finite_elements += [form.trial]
     form.finite_elements += form.elements
     form.dof_maps = []
-    #for element in form.finite_elements:
-    #    form.dof_maps += [DofMap(element)]
+    for element in form.finite_elements:
+        form.dof_maps += [DofMap(element, format)]
 
 def __check_primary_ranks(form, num_facets, num_alignments):
     "Check that all primary ranks are equal."

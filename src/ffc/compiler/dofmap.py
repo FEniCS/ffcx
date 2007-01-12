@@ -13,39 +13,18 @@ from FIAT.shapes import *
 from declaration import *
 from alignment import *
 
-# FIXME: Should not be DOLFIN-specific
-format = { ("entity", 2, 0) : lambda i : "cell.entities(0)[%d]" % i,
-           ("entity", 2, 1) : lambda i : "cell.entities(1)[%d]" % i,
-           ("entity", 2, 2) : lambda i : "cell.index()",
-           ("entity", 2, 3) : lambda i : "not defined",
-           ("entity", 3, 0) : lambda i : "cell.entities(0)[%d]" % i,
-           ("entity", 3, 1) : lambda i : "cell.entities(1)[%d]" % i,
-           ("entity", 3, 2) : lambda i : "cell.entities(2)[%d]" % i,
-           ("entity", 3, 3) : lambda i : "cell.index()",
-           ("num",    2, 0) : "mesh.topology().size(0)",
-           ("num",    2, 1) : "mesh.topology().size(1)",
-           ("num",    2, 2) : "mesh.topology().size(2)",
-           ("num",    2, 3) : "not defined",
-           ("num",    3, 0) : "mesh.topology().size(0)",
-           ("num",    3, 1) : "mesh.topology().size(1)",
-           ("num",    3, 2) : "mesh.topology().size(2)",
-           ("num",    3, 3) : "mesh.topology().size(3)",
-           ("check",  2, 0) : lambda i : "not defined",
-           ("check",  2, 1) : lambda i : "cell.alignment(1, %d)" % i,
-           ("check",  2, 2) : lambda i : "not defined",
-           ("check",  2, 3) : lambda i : "not defined",
-           ("check",  3, 0) : lambda i : "not defined",
-           ("check",  3, 1) : lambda i : "cell.alignment(1, %d)" % i,
-           ("check",  3, 2) : lambda i : "cell.alignment(2, %d)" % i,
-           ("check",  3, 3) : lambda i : "not defined" }
-
 class DofMap:
 
     """A NodeMap maps the nodes (degrees of freedom) on a local element
     to global degrees of freedom."""
 
-    def __init__(self, elements):
+    def __init__(self, elements, format):
         "Create NodeMap."
+
+        # FIXME: Temporary check
+        from ffc.format import ufcformat
+        if not format == ufcformat:
+            return
 
         # FIXME: Argument should be a single element
         self.local_dimension = elements.space_dimension()
@@ -58,7 +37,7 @@ class DofMap:
         self.declarations = []
         data = { "local offset" : 0, "global offset" : None, "num offset" : 0, "num alignment" : 0 }
         for i in range(len(elements)):
-            (declarations, data) = self.compute_nodemap(elements[i], data, i)
+            (declarations, data) = self.compute_nodemap(elements[i], data, i, format)
             self.declarations += declarations
 
     def write_edge_reordering(self, nodes_per_entity, subelement):
@@ -79,11 +58,11 @@ class DofMap:
         value = "{" + ", ".join(rows) + "}"
         return Declaration(name, value)
 
-    def write_map(self, nodes_per_entity, entity_ids, num_dims, dim, entity, node, data, subelement):
+    def write_map(self, nodes_per_entity, entity_ids, num_dims, dim, entity, node, data, subelement, format):
         "Write map from local to global node."
         local_node = entity_ids[dim][entity][node]
         if nodes_per_entity[dim] == 1:
-            global_node = format[("entity", num_dims - 1, dim)](entity)
+            global_node = format.format[("entity", num_dims - 1, dim)](entity)
         elif nodes_per_entity[dim] > 1:
             global_node = reorder(nodes_per_entity, num_dims, dim, entity, node, subelement)
         else:
@@ -101,13 +80,13 @@ class DofMap:
             name = "int alignment"
         else:
             name = "alignment"
-        value = format[("check", num_dims - 1, dim)](entity)
+        value = format.format[("check", num_dims - 1, dim)](entity)
         data["num alignment"] += 1
         return Declaration(name, value)
 
     def reorder(self, nodes_per_entity, num_dims, dim, entity, node, subelement):
         "Compute reordering of map from local to global node."
-        start = "%d*%s" % (nodes_per_entity[dim], format[("entity", num_dims - 1, dim)](entity))
+        start = "%d*%s" % (nodes_per_entity[dim], format.format[("entity", num_dims - 1, dim)](entity))
         num_nodes = nodes_per_entity[dim]
         # Don't worry about internal nodes
         if dim == (num_dims - 1):
@@ -134,16 +113,16 @@ class DofMap:
         data["num offset"] += 1
         return Declaration(name, value)
 
-    def compute_offset(self, nodes_per_entity, num_dims, dim):
+    def compute_offset(self, nodes_per_entity, num_dims, dim, format):
         "Compute increment for global offset."
         increment = None
         if nodes_per_entity[dim] == 1:
-            increment = format[("num", num_dims - 1, dim)]
+            increment = format.format[("num", num_dims - 1, dim)]
         elif nodes_per_entity[dim] > 1:
-            increment = "%d*%s" % (nodes_per_entity[dim], format[("num", num_dims - 1, dim)])
+            increment = "%d*%s" % (nodes_per_entity[dim], format.format[("num", num_dims - 1, dim)])
         return increment
 
-    def compute_nodemap(self, element, data, subelement):
+    def compute_nodemap(self, element, data, subelement, format):
         "Compute nodemap for given element."
 
         # Get shape and dual basis from FIAT
@@ -206,11 +185,11 @@ class DofMap:
                             data["global offset"] = None
 
                         # Write map from local to global node
-                        declarations += [self.write_map(nodes_per_entity, entity_ids, num_dims, dim, entity, node, data, subelement)]
+                        declarations += [self.write_map(nodes_per_entity, entity_ids, num_dims, dim, entity, node, data, subelement, format)]
 
                 # Add to global offset
                 if nodes_per_entity[dim] > 0:
-                    data["global offset"] = self.compute_offset(nodes_per_entity, num_dims, dim)
+                    data["global offset"] = self.compute_offset(nodes_per_entity, num_dims, dim, format)
 
             # Add to local offset (only for vector elements)
             data["local offset"] += num_nodes
