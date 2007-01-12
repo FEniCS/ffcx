@@ -221,6 +221,9 @@ def __generate_dof_map(dof_map, prefix, i, options):
     # Generate code for init_cell
     code["init_cell"] = "// Do nothing"
 
+    # Generate code for init_cell_finalize
+    code["init_cell_finalize"] = "// Do nothing"
+
     # Generate code for global_dimension
     code["global_dimension"] = "// Not implemented"
 
