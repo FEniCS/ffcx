@@ -36,7 +36,7 @@ public:
   }
 
   /// Initialize dof map for mesh (return true iff init_cell() is needed)
-  virtual bool init_mesh(const ufc::mesh& mesh)
+  virtual bool init_mesh(const ufc::mesh& m)
   {
 %(init_mesh)s
   }
@@ -113,7 +113,7 @@ public:
   virtual bool needs_mesh_entities(unsigned int d) const;
 
   /// Initialize dof map for mesh (return true iff init_cell() is needed)
-  virtual bool init_mesh(const ufc::mesh& mesh);
+  virtual bool init_mesh(const ufc::mesh& m);
 
   /// Initialize dof map for given cell
   virtual void init_cell(const ufc::mesh& m,
@@ -171,7 +171,7 @@ bool %(classname)s::needs_mesh_entities(unsigned int d) const
 }
 
 /// Initialize dof map for mesh (return true iff init_cell() is needed)
-bool %(classname)s::init_mesh(const ufc::mesh& mesh)
+bool %(classname)s::init_mesh(const ufc::mesh& m)
 {
 %(init_mesh)s
 }
