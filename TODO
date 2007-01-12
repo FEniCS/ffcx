@@ -14,11 +14,10 @@
 
 common
 
-    compiler
+    compiler, code generation, put call other components
         compile.py
-        parse.py
 
-    formlanguage
+    formlanguage, no code generation, only input representation
         algebra.py
         tokens.py
         operators.py
@@ -26,27 +25,17 @@ common
         index.py
         multiindex.py
 
-    fem
+    fem: no code generation, only FEM
         finiteelement.py
         dofmap.py
    
+    format: formats and templates for code generation, writing actual code
+        ufcformat.py
+        latex.py
 
-
-
-
-parser
-formlanguage
-codegenerator
-format
-
-fem
-
-representation
-  tensor
-  quadrature
-
-  - Remove parser module
-
+    representation
+        tensor
+        quadrature
 
 o [logg] Bug fix: LaTeX format not working
 o [logg] Use Numeric.array instead of Python list for vectors

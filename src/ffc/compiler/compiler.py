@@ -3,8 +3,8 @@ and building the data structures (geometry and reference tensors) for
 the evaluation of the multi-linear form."""
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-11-17 -- 2007-01-11"
-__copyright__ = "Copyright (C) 2004-2006 Anders Logg"
+__date__ = "2004-11-17 -- 2007-01-12"
+__copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # Modified by Garth N. Wells 2060
@@ -18,8 +18,10 @@ from ffc.common.debug import *
 from ffc.common.constants import *
 from ffc.common.exceptions import *
 
-# FFC format modules
 sys.path.append("../../")
+
+# FFC form language modules
+from ffc.formlanguage.operators import *
 
 # FFC compiler modules
 from form import *
@@ -226,8 +228,11 @@ def __build_form(form, format, options):
         form.finite_elements += [form.trial]
     form.finite_elements += form.elements
     form.dof_maps = []
-    for element in form.finite_elements:
-        form.dof_maps += [DofMap(element, format)]
+    from ffc.format import ufcformat
+    if format == ufcformat:
+        print "hej"
+        for element in form.finite_elements:
+            form.dof_maps += [DofMap(element, format)]
 
 def __check_primary_ranks(form, num_facets, num_alignments):
     "Check that all primary ranks are equal."

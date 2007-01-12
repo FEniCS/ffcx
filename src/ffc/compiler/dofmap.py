@@ -22,11 +22,6 @@ class DofMap:
     def __init__(self, element, format):
         "Create NodeMap."
 
-        # FIXME: Temporary check
-        from ffc.format import ufcformat
-        if not format == ufcformat:
-            return
-
         # Check that we get a FiniteElement
         if not isinstance(element, FiniteElement):
             raise RuntimeError, "A DofMap must be generated from a FiniteElement."

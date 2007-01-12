@@ -2,7 +2,7 @@
 based on the basic form algebra operations."""
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2005-09-07 -- 2007-01-11"
+__date__ = "2005-09-07 -- 2007-01-12"
 __copyright__ = "Copyright (C) 2005-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -20,10 +20,10 @@ sys.path.append("../../")
 from ffc.common.exceptions import *
 
 # FFC compiler modules
-from index import *
-from algebra import *
-from projection import *
-from finiteelement import *
+from ffc.compiler.index import *
+from ffc.compiler.algebra import *
+from ffc.compiler.projection import *
+from ffc.compiler.finiteelement import *
 
 def Identity(n):
     "Return identity matrix of given size."
