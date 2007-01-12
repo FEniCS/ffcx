@@ -3,8 +3,8 @@
 Three format strings are defined for each of the following UFC classes:
 
     function
-    dof_map
     finite_element
+    dof_map
     cell_integral
     exterior_facet_integral
     interior_facet_integral
@@ -27,14 +27,14 @@ For more information about UFC and the FEniCS project, visit
 
 # -*- coding: utf-8 -*-
 __author__  = "Martin Sandve Alnaes, Hans Petter Langtangen, Anders Logg, Kent-Andre Mardal and Ola Skavhaug"
-__date__    = "2007-01-10"
+__date__    = "2007-01-11"
 __version__ = "1.0-rc1"
 __license__ = "This code is released into the public domain"
 
 UFC_VERSION = __version__
 
 from function import *
-from dof_map import *
 from finite_element import *
+from dof_map import *
 from integrals import *
 from form import *
