@@ -8,6 +8,46 @@
 
   - Generate UFC code
 
+  - New layout:
+
+    common
+
+common
+
+    compiler
+        compile.py
+        parse.py
+
+    formlanguage
+        algebra.py
+        tokens.py
+        operators.py
+        variables.py
+        index.py
+        multiindex.py
+
+    fem
+        finiteelement.py
+        dofmap.py
+   
+
+
+
+
+parser
+formlanguage
+codegenerator
+format
+
+fem
+
+representation
+  tensor
+  quadrature
+
+  - Remove parser module
+
+
 o [logg] Bug fix: LaTeX format not working
 o [logg] Use Numeric.array instead of Python list for vectors
 o [logg] Write about TestFunction and TrialFunction in manual
