@@ -33,6 +33,7 @@ __license__ = "This code is released into the public domain"
 
 UFC_VERSION = __version__
 
+from function import *
 from dof_map import *
 from finite_element import *
 from integrals import *
