@@ -65,7 +65,7 @@ def Functions(element):
             offset += 1
         elif e.value_rank() == 1:
             subvector = [vector[i] for i in range(offset, offset + e.value_dimension(0))]
-            offset += e.value_dimensio(0)
+            offset += e.value_dimension(0)
         else:
             raise RuntimeError, "Mixed elements can only be created from scalar or vector-valued elements."
         subvectors += [subvector]
