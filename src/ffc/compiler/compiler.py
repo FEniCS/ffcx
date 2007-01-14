@@ -29,7 +29,6 @@ from index import *
 from tokens import *
 from algebra import *
 from integral import *
-from operators import *
 from signature import *
 from elementsearch import *
 from finiteelement import *
