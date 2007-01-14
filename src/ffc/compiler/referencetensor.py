@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-11-03 -- 2007-01-11"
+__date__ = "2004-11-03 -- 2007-01-14"
 __copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -20,7 +20,6 @@ from index import *
 from algebra import *
 from reassign import *
 from multiindex import *
-from integrator import *
 from monomialintegration import *
 
 class ReferenceTensor:
