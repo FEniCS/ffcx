@@ -81,14 +81,16 @@ def write(forms, options):
         output += "\n"
 
         # Generate code for ufc::finite_element(s)
-        #for i in range(len(form.finite_elements)):
-        #    output += __generate_finite_element(form.finite_elements[i], prefix, i, options)
-        #    output += "\n"
+        for i in range(len(form.finite_elements)):
+            output += __generate_finite_element(form.finite_elements[i], prefix, i, options)
+            output += "\n"
 
         # Generate code for ufc::dof_map(s)
         for i in range(len(form.dof_maps)):
             output += __generate_dof_map(form.dof_maps[i], prefix, i, options)
             output += "\n"
+
+        # Generate code for ufc::
 
         # Generate code for ufc::form
         #output += "\n"

@@ -229,7 +229,6 @@ def __build_form(form, format, options):
     form.dof_maps = []
     from ffc.format import ufcformat
     if format == ufcformat:
-        print "hej"
         for element in form.finite_elements:
             form.dof_maps += [DofMap(element, format)]
 

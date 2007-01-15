@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-10-04 -- 2007-01-12"
+__date__ = "2004-10-04 -- 2007-01-15"
 __copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -86,10 +86,8 @@ class FiniteElement:
             elif type == "Discontinuous vector Lagrange":
                 self.element = DiscontinuousVectorLagrange(self.fiat_shape, degree, num_components)
             elif type == "Crouzeix-Raviart":
-                print "Warning: element minimally tested"
                 self.element = CrouzeixRaviart(self.fiat_shape)
             elif type == "Vector Crouzeix-Raviart":
-                print "Warning: element minimally tested"
                 self.element = VectorCrouzeixRaviart(self.fiat_shape)
             elif type == "Raviart-Thomas" or type == "RT":
                 print "Warning: element untested"
