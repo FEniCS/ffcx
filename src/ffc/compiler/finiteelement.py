@@ -5,6 +5,7 @@ __license__  = "GNU GPL Version 2"
 
 # Modified by Garth N. Wells 2006
 # Modified by Marie E. Rognes 2006
+# Modified by Andy R Terrel 2007
 
 # Python modules
 import sys
@@ -13,7 +14,7 @@ import sys
 from FIAT.shapes import *
 from FIAT.Lagrange import Lagrange, VectorLagrange
 from FIAT.DiscontinuousLagrange import DiscontinuousLagrange, DiscontinuousVectorLagrange
-from FIAT.CrouzeixRaviart import CrouzeixRaviart
+from FIAT.CrouzeixRaviart import CrouzeixRaviart, VectorCrouzeixRaviart
 from FIAT.RaviartThomas import RaviartThomas
 from FIAT.BDM import BDM
 from FIAT.Nedelec import Nedelec
@@ -85,8 +86,11 @@ class FiniteElement:
             elif type == "Discontinuous vector Lagrange":
                 self.element = DiscontinuousVectorLagrange(self.fiat_shape, degree, num_components)
             elif type == "Crouzeix-Raviart":
-                print "Warning: element untested"
+                print "Warning: element minimally tested"
                 self.element = CrouzeixRaviart(self.fiat_shape)
+            elif type == "Vector Crouzeix-Raviart":
+                print "Warning: element minimally tested"
+                self.element = VectorCrouzeixRaviart(self.fiat_shape)
             elif type == "Raviart-Thomas" or type == "RT":
                 print "Warning: element untested"
                 self.element = RaviartThomas(self.fiat_shape, degree)
