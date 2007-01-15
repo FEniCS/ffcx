@@ -3,6 +3,8 @@ __date__ = "2005-05-16 -- 2006-10-19"
 __copyright__ = "Copyright (C) 2005-2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
+# modified by Andy R Terrel, 2007
+
 # FIAT modules
 from FIAT.dualbasis import *
 from FIAT.shapes import *
