@@ -223,7 +223,7 @@ def __generate_dof_map(dof_map, prefix, i, options):
     code["destructor"] = "// Do nothing"
 
     # Generate code for signature
-    code["signature"] = "return %s;" % dof_map.signature
+    code["signature"] = "return \"%s\";" % dof_map.signature
 
     # Generate code for needs_mesh_entities
     code["needs_mesh_entities"] = "// Not implemented\nreturn true;"
