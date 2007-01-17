@@ -1,5 +1,5 @@
 __author__ = "Robert C. Kirby (kirby@cs.uchicago.edu) and Anders Logg (logg@simula.no)"
-__date__ = "2005-05-03 -- 2007-01-19"
+__date__ = "2005-05-03 -- 2007-01-17"
 __copyright__ = "Copyright (C) 2005-2007 Kirby/Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -32,7 +32,8 @@ class DofMap:
         # Get local dimension (equal to space dimension of element)
         self.local_dimension = element.space_dimension()
 
-
+        # Compute signature
+        self.signature = "FFC dof map for " + element.signature()
 
         # Make sure we have a list of elements
         #if not isinstance(elements, list):
