@@ -1,4 +1,4 @@
-// This is UFC (Unified Form-assembly Code) v. 1.0.
+// This is UFC (Unified Form-assembly Code) v. 1.0-rc2.
 // This code is released into the public domain.
 //
 // The FEniCS Project (http://www.fenics.org/) 2006-2007.
@@ -6,7 +6,7 @@
 #ifndef __UFC_H
 #define __UFC_H
 
-const char UFC_VERSION[] = "1.0-rc1";
+const char UFC_VERSION[] = "1.0-rc2";
 
 namespace ufc
 {
@@ -115,9 +115,9 @@ namespace ufc
     virtual unsigned int value_dimension(unsigned int i) const = 0;
 
     /// Evaluate basis function i at given point in cell
-    virtual void evaluate_basis(double* values,
+    virtual void evaluate_basis(unsigned int i,
+                                double* values,
                                 const double* coordinates,
-                                unsigned int i,
                                 const cell& c) const = 0;
 
     /// Evaluate linear functional for dof i on the function f

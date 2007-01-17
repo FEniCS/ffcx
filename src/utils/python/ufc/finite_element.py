@@ -53,9 +53,9 @@ public:
   }
 
   /// Evaluate basis function i at given point in cell
-  virtual void evaluate_basis(double* values,
+  virtual void evaluate_basis(unsigned int i,
+                              double* values,
                               const double* coordinates,
-                              unsigned int i,
                               const ufc::cell& c) const
   {
 %(evaluate_basis)s
@@ -120,9 +120,9 @@ public:
   virtual unsigned int value_dimension(unsigned int i) const;
 
   /// Evaluate basis function i at given point in cell
-  virtual void evaluate_basis(double* values,
+  virtual void evaluate_basis(unsigned int i,
+                              double* values,
                               const double* coordinates,
-                              unsigned int i,
                               const ufc::cell& c) const;
 
   /// Evaluate linear functional for dof i on the function f
@@ -188,9 +188,9 @@ unsigned int %(classname)s::value_dimension(unsigned int i) const
 }
 
 /// Evaluate basis function i at given point in cell
-void %(classname)s::evaluate_basis(double* values,
+void %(classname)s::evaluate_basis(unsigned int i,
+                                   double* values,
                                    const double* coordinates,
-                                   unsigned int i,
                                    const ufc::cell& c) const
 {
 %(evaluate_basis)s
