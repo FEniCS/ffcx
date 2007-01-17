@@ -83,7 +83,7 @@ public:
   }
 
   /// Create a new finite element for sub element i (for a mixed element)
-  virtual ufc::finite_element* create_sub_element(unsigned int i) const = 0;
+  virtual ufc::finite_element* create_sub_element(unsigned int i) const = 0
   {
 %(create_sub_element)s
   }
