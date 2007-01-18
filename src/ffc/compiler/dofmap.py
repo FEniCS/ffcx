@@ -10,7 +10,6 @@ from FIAT.dualbasis import *
 from FIAT.shapes import *
 
 # FFC compiler modules
-from finiteelement import *
 from declaration import *
 from alignment import *
 

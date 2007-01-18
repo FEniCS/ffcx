@@ -31,7 +31,6 @@ from algebra import *
 from integral import *
 from signature import *
 from elementsearch import *
-from finiteelement import *
 from dofmap import *
 from mixedelement import *
 from elementtensor import *

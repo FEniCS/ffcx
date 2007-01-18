@@ -20,7 +20,6 @@ from index import *
 from checks import *
 from algebra import *
 from reassign import *
-from finiteelement import *
 from elementtensor import *
 from simplify import *
 

@@ -18,7 +18,6 @@ sys.path.append("../../")
 from ffc.common.exceptions import *
 
 # FFC compiler modules
-#from finiteelement import *
 from algebra import *
 
 class Projection:
@@ -152,27 +151,3 @@ class Projection:
         self.projections[name] = P
         
         return P
-
-if __name__ == "__main__":
-
-    from finiteelement import *
-    from algebra import *
-    
-    P0 = FiniteElement("Discontinuous Lagrange", "tetrahedron", 0)
-    P1 = FiniteElement("Lagrange", "tetrahedron", 1)
-
-    f0 = Function(P0)
-    f1 = Function(P1)
-    
-    pi0 = Projection(P0)
-    pi1 = Projection(P1)
-
-    print f0
-    print f1
-    
-    print pi0(f0)
-    print pi0(f1)
-
-    print pi1(f0)
-    print pi1(f1)
-    print pi1(f1)

@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-10-04 -- 2007-01-15"
+__date__ = "2004-10-04 -- 2007-01-18"
 __copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -24,10 +24,13 @@ sys.path.append("../../")
 from ffc.common.debug import *
 
 # FFC compiler modules
-from nodemap import *
-from pointmap import *
-from vertexeval import *
-import mixedelement
+from ffc.compiler.nodemap import *
+from ffc.compiler.pointmap import *
+from ffc.compiler.vertexeval import *
+import ffc.compiler.mixedelement
+
+# FFC fem modules
+from mixedelement import *
 
 shape_to_string = {LINE: "line", TRIANGLE: "triangle", TETRAHEDRON: "tetrahedron"}
 string_to_shape = {"line": LINE, "triangle": TRIANGLE, "tetrahedron": TETRAHEDRON}
