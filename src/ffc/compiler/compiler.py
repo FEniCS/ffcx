@@ -3,7 +3,7 @@ and building the data structures (geometry and reference tensors) for
 the evaluation of the multi-linear form."""
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-11-17 -- 2007-01-12"
+__date__ = "2004-11-17 -- 2007-01-18"
 __copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -21,18 +21,20 @@ from ffc.common.exceptions import *
 sys.path.append("../../")
 
 # FFC form language modules
+from ffc.formlanguage.index import *
+from ffc.formlanguage.tokens import *
+from ffc.formlanguage.algebra import *
+from ffc.formlanguage.integral import *
+from ffc.formlanguage.signature import *
 from ffc.formlanguage.operators import *
+
+# FFC fem modules
+from ffc.fem.mixedelement import *
 
 # FFC compiler modules
 from form import *
-from index import *
-from tokens import *
-from algebra import *
-from integral import *
-from signature import *
 from elementsearch import *
 from dofmap import *
-from mixedelement import *
 from elementtensor import *
 from exteriorfacettensor import *
 from interiorfacettensor import *

@@ -27,10 +27,9 @@ from ffc.common.debug import *
 from ffc.compiler.nodemap import *
 from ffc.compiler.pointmap import *
 from ffc.compiler.vertexeval import *
-import ffc.compiler.mixedelement
 
 # FFC fem modules
-from mixedelement import *
+import mixedelement
 
 shape_to_string = {LINE: "line", TRIANGLE: "triangle", TETRAHEDRON: "tetrahedron"}
 string_to_shape = {"line": LINE, "triangle": TRIANGLE, "tetrahedron": TETRAHEDRON}

@@ -1,12 +1,14 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-10-05 -- 2006-12-01"
-__copyright__ = "Copyright (C) 2004-2006 Anders Logg"
+__date__ = "2004-10-05 -- 2007-01-18"
+__copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
+
+# FFC formlanguage modules
+from ffc.formlanguage.signature import *
 
 # FFC compiler modules
 from referencetensor import *
 from geometrytensor import *
-import signature
 
 class Term:
     """A Term represents a term of a multi-linear form and is
@@ -31,4 +33,4 @@ class Term:
 
     def signature(self):
         "Return signature of Term."
-        return signature.compute_hard_signature(self.product)
+        return compute_hard_signature(self.product)

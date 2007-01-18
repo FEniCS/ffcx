@@ -11,8 +11,10 @@ import numpy
 # FFC common modules
 from ffc.common.debug import *
 
+# FFC formlanguage modules
+from ffc.formlanguage.algebra import *
+
 # FFC compiler modules
-from ffc.compiler.algebra import *
 from ffc.compiler.nodemap import *
 from ffc.compiler.pointmap import *
 from ffc.compiler.vertexeval import *

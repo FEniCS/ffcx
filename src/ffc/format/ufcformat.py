@@ -10,8 +10,8 @@ from ffc.common.util import *
 from ffc.common.debug import *
 from ffc.common.constants import *
 
-# FFC compiler modules
-from ffc.compiler.finiteelement import *
+# FFC fem modules
+from ffc.fem.finiteelement import *
 
 # FFC format modules
 from ufc import *

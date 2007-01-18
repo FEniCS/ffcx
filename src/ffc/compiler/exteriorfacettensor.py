@@ -1,6 +1,6 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2006-12-01 -- 2006-12-06"
-__copyright__ = "Copyright (C) 2006 Anders Logg"
+__date__ = "2006-12-01 -- 2007-01-180"
+__copyright__ = "Copyright (C) 2006-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # FFC common modules
@@ -8,9 +8,11 @@ from ffc.common.debug import *
 from ffc.common.constants import *
 from ffc.common.exceptions import *
 
+# FFC formlanguage modules
+from ffc.formlanguage.integral import *
+
 # FFC compiler modules
 from tensorrepresentation import *
-from integral import *
 
 class ExteriorFacetTensor:
     """An ExteriorElementTensor represents the exterior facet tensor for
