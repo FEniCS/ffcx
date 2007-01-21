@@ -3,6 +3,8 @@ __date__ = "2006-03-22 -- 2006-10-17"
 __copyright__ = "Copyright (C) 2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
+# Modified by Andy R Terrel, 2007
+
 # FFC common modules
 from ffc.common.debug import *
 from ffc.common.constants import *
@@ -30,6 +32,7 @@ def optimize(terms, format):
 
     # Iterate over terms
     num_ops = 0
+    remove = []
     for j in range(num_terms):
 
         # Get current term
@@ -52,27 +55,31 @@ def optimize(terms, format):
 
         #print code
 
-        #print "FErari code with FFC tensor"
-        #print "---------------------------"
-        #for line in code:
-        #    print line
-        #print ""
+#         print "FErari code with FFC tensor"
+#         print "---------------------------"
+#         for line in code:
+#             print line
+#         print ""
 
         # Generate code according to format from abstract FErari code
         for (lhs, rhs) in code:
+#	    print lhs, rhs, j, iindices,aindices,num_terms
             name = build_lhs(lhs, j, iindices, aindices, num_terms, format)
             (value, num_ops) = build_rhs(rhs, j, iindices, aindices, num_terms, format, num_ops)
-            declarations += [Declaration(name, value)]
-
+#	    print name, value, num_ops
+	    if value == "0.0": 
+		remove.append((j,lhs[1]))
+	    else:
+		declarations += [Declaration(name, value)]
     # Add all terms if more than one term
     if num_terms > 1:
-        declarations += build_sum(iindices, num_terms, format)
+        declarations += build_sum(iindices, num_terms, remove, format)
 
-    #print "Formatted code"
-    #print "--------------"
-    #for declaration in declarations:
-    #    print declaration
-    #print ""
+#     print "Formatted code"
+#     print "--------------"
+#     for declaration in declarations:
+#         print declaration
+#     print ""
 
     return (declarations, num_ops)
             
@@ -124,7 +131,7 @@ def build_rhs(rhs, j, iindices, aindices, num_terms, format, num_ops):
             term = format.format["multiplication"]([format.format["floating point"](coefficient), variable])
 
         # Add term to list
-        terms += [term]
+	terms += [term]
 
     # Special case, no terms
     if len(terms) == 0:
@@ -133,7 +140,7 @@ def build_rhs(rhs, j, iindices, aindices, num_terms, format, num_ops):
     # Add terms
     return (format.format["sum"](terms), num_ops)
 
-def build_sum(iindices, num_terms, format):
+def build_sum(iindices, num_terms, remove, format):
     "Build sum of terms if more than one term."
     declarations = []
     for k in range(len(iindices)):
@@ -145,8 +152,14 @@ def build_sum(iindices, num_terms, format):
         # Build sum
         terms = []
         for j in range(num_terms):
-            terms += [format.format["tmp access"](j, k)]
-        value = format.format["sum"](terms)
+	    if (j,k) not in remove:
+		terms += [format.format["tmp access"](j, k)]
+	if len(terms) == 0:
+	    value = "0.0"
+	elif len(terms) == 1:
+	    value = terms[0]
+	else:
+	    value = format.format["sum"](terms)
 
         declarations += [Declaration(name, value)]
 
