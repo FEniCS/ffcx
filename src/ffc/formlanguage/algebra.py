@@ -43,7 +43,6 @@ from ffc.common.debug import *
 from ffc.common.util import *
 
 # FFC compiler modules
-#from finiteelement import FiniteElement
 from reassign import *
 from tokens import *
 from variables import *

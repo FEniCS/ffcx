@@ -1,7 +1,9 @@
 __author__ = "Marie Rognes (meg@math.uio.no)"
-__date__ = "2006-10-23 -- 2006-10-23"
+__date__ = "2006-10-23 -- 2007-01-18"
 __copyright__ = "Copyright (C) 2006"
 __license__  = "GNU GPL Version 2"
+
+# Modified by Anders Logg 2007
 
 # Python modules
 import sys
@@ -11,10 +13,10 @@ sys.path.append("../")
 from ffc.common.debug import *
 from ffc.common.exceptions import *
 
-# FFC compiler modules
-from ffc.compiler.index import *
-from ffc.compiler.algebra import *
-from ffc.compiler.tokens import *
+# FFC formlanguage modules
+from index import *
+from algebra import *
+from tokens import *
 
 def simplify(f):
     """ Simplification of a Sum f with respect to transforms and

@@ -10,8 +10,8 @@ from ffc.common.util import *
 from ffc.common.debug import *
 from ffc.common.constants import *
 
-# FFC compiler modules
-from ffc.compiler.finiteelement import *
+# FFC fem modules
+from ffc.fem.finiteelement import *
 
 # FFC format modules
 from ufc import *
@@ -163,7 +163,7 @@ def __generate_finite_element(finite_element, prefix, i, options):
     code["signature"] = "return \"%s\";" % finite_element.signature()
 
     # Generate code for cell_shape
-    code["cell_shape"] = "return %s;" % shape_to_string[finite_element.cell_shape()]
+    code["cell_shape"] = "return ufc::%s;" % shape_to_string[finite_element.cell_shape()]
     
     # Generate code for space_dimension
     code["space_dimension"] = "return %d;" % finite_element.space_dimension()
@@ -223,10 +223,10 @@ def __generate_dof_map(dof_map, prefix, i, options):
     code["destructor"] = "// Do nothing"
 
     # Generate code for signature
-    code["signature"] = "// Not implemented"
+    code["signature"] = "return \"%s\";" % dof_map.signature
 
     # Generate code for needs_mesh_entities
-    code["needs_mesh_entities"] = "// Not implemented"
+    code["needs_mesh_entities"] = "// Not implemented\nreturn true;"
 
     # Generate code for init_mesh
     code["init_mesh"] = "__global_dimension = %s;\nreturn false;" % dof_map.global_dimension
@@ -244,7 +244,7 @@ def __generate_dof_map(dof_map, prefix, i, options):
     code["local_dimension"] = "return %d;" % dof_map.local_dimension
 
     # Generate code for num_facet_dofs
-    code["num_facet_dofs"] = "// Not implemented"
+    code["num_facet_dofs"] = "// Not implemented\nreturn 0;"
 
     # Generate code for tabulate_dofs
     code["tabulate_dofs"] = "// Not implemented"
@@ -346,30 +346,30 @@ def __generate_form(form, prefix, options):
     # Generate code for num_coefficients
     code["num_coefficients"] = "return %d;" % form.num_coefficients
 
-    # Generate code for create_dof_map
-    num_arguments = form.rank + form.num_coefficients
-    body = "switch ( i )\n{\n"
-    for i in range(num_arguments):
-        body += "case %d:\n  return new %s_dof_map_%d();\n  break;\n" % (i, prefix, i)
-    body += "default:\n  return 0;\n}"
-    code["create_dof_map"] = body
-
     # Generate code for create_finite_element
     num_arguments = form.rank + form.num_coefficients
     body = "switch ( i )\n{\n"
     for i in range(num_arguments):
         body += "case %d:\n  return new %s_finite_element_%d();\n  break;\n" % (i, prefix, i)
-    body += "default:\n  return 0;\n}"
+    body += "default:\n  return 0;\n}\n\nreturn 0;"
     code["create_finite_element"] = body
 
+    # Generate code for create_dof_map
+    num_arguments = form.rank + form.num_coefficients
+    body = "switch ( i )\n{\n"
+    for i in range(num_arguments):
+        body += "case %d:\n  return new %s_dof_map_%d();\n  break;\n" % (i, prefix, i)
+    body += "default:\n  return 0;\n}\n\nreturn 0;"
+    code["create_dof_map"] = body
+
     # Generate code for cell_integral
-    code["create_cell_integral"] = "// Not implemented"
+    code["create_cell_integral"] = "// Not implemented\nreturn 0;"
 
     # Generate code for exterior_facet_integral
-    code["create_exterior_facet_integral"] = "// Not implemented"
+    code["create_exterior_facet_integral"] = "// Not implemented\nreturn 0;"
 
     # Generate code for interior_facet_integral
-    code["create_interior_facet_integral"] = "// Not implemented"
+    code["create_interior_facet_integral"] = "// Not implemented\nreturn 0;"
 
     return __generate_code(form_combined, code)
 

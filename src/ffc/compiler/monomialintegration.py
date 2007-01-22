@@ -1,7 +1,7 @@
 "This module provides efficient integration of monomial forms."
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-11-03 -- 2007-01-11"
+__date__ = "2004-11-03 -- 2007-01-18"
 __copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -21,11 +21,13 @@ from FIAT.shapes import *
 from ffc.common.debug import *
 from ffc.common.progress import *
 
+# FFC formlanguage modules
+from ffc.formlanguage.index import *
+from ffc.formlanguage.algebra import *
+from ffc.formlanguage.integral import *
+from ffc.formlanguage.multiindex import *
+
 # FFC compiler modules
-from index import *
-from algebra import *
-from integral import *
-from multiindex import *
 from pointreordering import *
 
 def integrate(product, facet0, facet1, alignment):

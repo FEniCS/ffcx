@@ -15,7 +15,7 @@ from ffc.common.constants import *
 from ffc.common.util import *
 
 # FFC compiler modules
-from ffc.compiler.mixedelement import *
+from ffc.fem.mixedelement import *
 
 #from ffc.compiler.finiteelement import *
 

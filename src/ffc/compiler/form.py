@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-09-27 -- 2007-01-11"
+__date__ = "2004-09-27 -- 2007-01-18"
 __copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -15,14 +15,15 @@ from ffc.common.exceptions import *
 from ffc.format import dolfin
 from ffc.format import latex
 
+# FFC formlanguage modules
+from ffc.formlanguage.index import *
+from ffc.formlanguage.checks import *
+from ffc.formlanguage.algebra import *
+from ffc.formlanguage.reassign import *
+from ffc.formlanguage.simplify import *
+
 # FFC compiler modules
-from index import *
-from checks import *
-from algebra import *
-from reassign import *
-from finiteelement import *
 from elementtensor import *
-from simplify import *
 
 class Form:
     """A Form represents a multi-linear form typically appearing in

@@ -4,8 +4,8 @@ given Sum. All functions assume that all Indices of the given Sum have
 already been reassigned."""
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2005-03-15 -- 2006-12-01"
-__copyright__ = "Copyright (C) 2005-2006 Anders Logg"
+__date__ = "2005-03-15 -- 2007-01-18"
+__copyright__ = "Copyright (C) 2005-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # Modified by Garth N. Wells 2006
@@ -20,8 +20,10 @@ from ffc.common.debug import *
 from ffc.common.exceptions import *
 from ffc.common.constants import *
 
+# FFC form language modules
+from ffc.formlanguage.index import *
+
 # FFC compiler modules
-from index import *
 from declaration import *
 
 def find_test(sum):

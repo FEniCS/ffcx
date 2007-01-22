@@ -13,7 +13,6 @@ __license__  = "GNU GPL Version 2"
 from re import sub
 
 # FFC modules
-from finiteelement import *
 from algebra import *
 from tokens import *
 

@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-11-03 -- 2007-01-11"
+__date__ = "2004-11-03 -- 2007-01-18"
 __copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -7,10 +7,10 @@ __license__  = "GNU GPL Version 2"
 from ffc.common.debug import *
 from ffc.common.util import *
 
-# FFC compiler modules
-from algebra import *
-from reassign import *
-from multiindex import *
+# FFC formlanguage modules
+from ffc.formlanguage.algebra import *
+from ffc.formlanguage.reassign import *
+from ffc.formlanguage.multiindex import *
 
 class GeometryTensor:
 
