@@ -151,7 +151,7 @@ def build_sum(iindices, num_terms, remove, format):
         # Build sum
         terms = []
         for j in range(num_terms):
-	    if (j, k) not in remove or True:
+	    if (j, k) not in remove:
 		terms += [format.format["tmp access"](j, k)]
 	if len(terms) == 0:
 	    value = "0.0"
