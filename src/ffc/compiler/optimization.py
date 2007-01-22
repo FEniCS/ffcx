@@ -66,11 +66,10 @@ def optimize(terms, format):
 #	    print lhs, rhs, j, iindices,aindices,num_terms
             name = build_lhs(lhs, j, iindices, aindices, num_terms, format)
             (value, num_ops) = build_rhs(rhs, j, iindices, aindices, num_terms, format, num_ops)
-#	    print name, value, num_ops
-	    if value == "0.0": 
-		remove.append((j,lhs[1]))
+            if num_terms > 1 and value == "0.0":
+		remove.append((j, lhs[1]))
 	    else:
-		declarations += [Declaration(name, value)]
+                declarations += [Declaration(name, value)]
     # Add all terms if more than one term
     if num_terms > 1:
         declarations += build_sum(iindices, num_terms, remove, format)
@@ -152,7 +151,7 @@ def build_sum(iindices, num_terms, remove, format):
         # Build sum
         terms = []
         for j in range(num_terms):
-	    if (j,k) not in remove:
+	    if (j, k) not in remove or True:
 		terms += [format.format["tmp access"](j, k)]
 	if len(terms) == 0:
 	    value = "0.0"
