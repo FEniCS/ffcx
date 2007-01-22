@@ -1,5 +1,5 @@
 __author__ = "Robert C. Kirby (kirby@cs.uchicago.edu) and Anders Logg (logg@simula.no)"
-__date__ = "2005-05-03 -- 2007-01-17"
+__date__ = "2005-05-03 -- 2007-01-22"
 __copyright__ = "Copyright (C) 2005-2007 Kirby/Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -8,6 +8,9 @@ __license__  = "GNU GPL Version 2"
 # FIAT modules
 from FIAT.dualbasis import *
 from FIAT.shapes import *
+
+# FFC fem modules
+from ffc.fem.finiteelement import *
 
 # FFC compiler modules
 from declaration import *
