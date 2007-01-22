@@ -65,20 +65,20 @@ public:
 %(create_dof_map)s
   }
 
-  /// Create a new cell integral (return 0 if contribution is zero)
-  virtual ufc::cell_integral* create_cell_integral() const
+  /// Create a new cell integral on sub domain i
+  virtual ufc::cell_integral* create_cell_integral(unsigned int i) const
   {
 %(create_cell_integral)s
   }
 
-  /// Create a new exterior facet integral (return 0 if contribution is zero)
-  virtual ufc::exterior_facet_integral* create_exterior_facet_integral() const
+  /// Create a new exterior facet integral on sub domain i
+  virtual ufc::exterior_facet_integral* create_exterior_facet_integral(unsigned int i) const
   {
 %(create_exterior_facet_integral)s
   }
 
-  /// Create a new interior facet integral (return 0 if contribution is zero)
-  virtual ufc::interior_facet_integral* create_interior_facet_integral() const
+  /// Create a new interior facet integral on sub domain i
+  virtual ufc::interior_facet_integral* create_interior_facet_integral(unsigned int i) const
   {
 %(create_interior_facet_integral)s
   }
@@ -127,14 +127,14 @@ public:
   /// Create a new dof map for argument function i
   virtual ufc::dof_map* create_dof_map(unsigned int i) const;
 
-  /// Create a new cell integral (return 0 if contribution is zero)
-  virtual ufc::cell_integral* create_cell_integral() const;
+  /// Create a new cell integral on sub domain i
+  virtual ufc::cell_integral* create_cell_integral(unsigned int i) const;
 
-  /// Create a new exterior facet integral (return 0 if contribution is zero)
-  virtual ufc::exterior_facet_integral* create_exterior_facet_integral() const;
+  /// Create a new exterior facet integral on sub domain i
+  virtual ufc::exterior_facet_integral* create_exterior_facet_integral(unsigned int i) const;
 
-  /// Create a new interior facet integral (return 0 if contribution is zero)
-  virtual ufc::interior_facet_integral* create_interior_facet_integral() const;
+  /// Create a new interior facet integral on sub domain i
+  virtual ufc::interior_facet_integral* create_interior_facet_integral(unsigned int i) const;
 
 };
 """
@@ -182,20 +182,20 @@ ufc::dof_map* %(classname)s::create_dof_map(unsigned int i) const
 %(create_dof_map)s
 }
 
-/// Create a new cell integral (return 0 if contribution is zero)
-ufc::cell_integral* %(classname)s::create_cell_integral() const
+/// Create a new cell integral on sub domain i
+ufc::cell_integral* %(classname)s::create_cell_integral(unsigned int i) const
 {
 %(create_cell_integral)s
 }
 
-/// Create a new exterior facet integral (return 0 if contribution is zero)
-ufc::exterior_facet_integral* %(classname)s::create_exterior_facet_integral() const
+/// Create a new exterior facet integral on sub domain i
+ufc::exterior_facet_integral* %(classname)s::create_exterior_facet_integral(unsigned int i) const
 {
 %(create_exterior_facet_integral)s
 }
 
-/// Create a new interior facet integral (return 0 if contribution is zero)
-ufc::interior_facet_integral* %(classname)s::create_interior_facet_integral() const
+/// Create a new interior facet integral on sub domain i
+ufc::interior_facet_integral* %(classname)s::create_interior_facet_integral(unsigned int i) const
 {
 %(create_interior_facet_integral)s
 }
