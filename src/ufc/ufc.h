@@ -302,7 +302,7 @@ namespace ufc
     virtual exterior_facet_integral* create_exterior_facet_integral(unsigned int i) const = 0;
 
     /// Create a new interior facet integral on sub domain i
-    virtual interior_facet_integral* create_interior_facet_integral (unsigned int i) const = 0;
+    virtual interior_facet_integral* create_interior_facet_integral(unsigned int i) const = 0;
 
   };
 
