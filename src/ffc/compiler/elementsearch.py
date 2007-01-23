@@ -4,7 +4,7 @@ given Sum. All functions assume that all Indices of the given Sum have
 already been reassigned."""
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2005-03-15 -- 2007-01-18"
+__date__ = "2005-03-15 -- 2007-01-23"
 __copyright__ = "Copyright (C) 2005-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -21,7 +21,7 @@ from ffc.common.exceptions import *
 from ffc.common.constants import *
 
 # FFC form language modules
-from ffc.formlanguage.index import *
+from ffc.formlang.index import *
 
 # FFC compiler modules
 from declaration import *

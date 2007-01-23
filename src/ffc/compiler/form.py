@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-09-27 -- 2007-01-18"
+__date__ = "2004-09-27 -- 2007-01-23"
 __copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -15,12 +15,12 @@ from ffc.common.exceptions import *
 from ffc.format import dolfin
 from ffc.format import latex
 
-# FFC formlanguage modules
-from ffc.formlanguage.index import *
-from ffc.formlanguage.checks import *
-from ffc.formlanguage.algebra import *
-from ffc.formlanguage.reassign import *
-from ffc.formlanguage.simplify import *
+# FFC formlang modules
+from ffc.formlang.index import *
+from ffc.formlang.checks import *
+from ffc.formlang.algebra import *
+from ffc.formlang.reassign import *
+from ffc.formlang.simplify import *
 
 # FFC compiler modules
 from elementtensor import *

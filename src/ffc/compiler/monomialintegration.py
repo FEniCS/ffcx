@@ -1,7 +1,7 @@
 "This module provides efficient integration of monomial forms."
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-11-03 -- 2007-01-18"
+__date__ = "2004-11-03 -- 2007-01-23"
 __copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -21,11 +21,11 @@ from FIAT.shapes import *
 from ffc.common.debug import *
 from ffc.common.progress import *
 
-# FFC formlanguage modules
-from ffc.formlanguage.index import *
-from ffc.formlanguage.algebra import *
-from ffc.formlanguage.integral import *
-from ffc.formlanguage.multiindex import *
+# FFC formlang modules
+from ffc.formlang.index import *
+from ffc.formlang.algebra import *
+from ffc.formlang.integral import *
+from ffc.formlang.multiindex import *
 
 # FFC compiler modules
 from pointreordering import *

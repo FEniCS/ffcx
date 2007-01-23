@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-11-06 -- 2007-01-18"
+__date__ = "2004-11-06 -- 2007-01-23"
 __copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -10,8 +10,8 @@ from ffc.common.debug import *
 from ffc.common.constants import *
 from ffc.common.exceptions import *
 
-# FFC formlanguage modules
-from ffc.formlanguage.integral import *
+# FFC formlang modules
+from ffc.formlang.integral import *
 
 # FFC compiler modules
 from tensorrepresentation import *

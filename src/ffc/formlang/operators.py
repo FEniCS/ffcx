@@ -2,7 +2,7 @@
 based on the basic form algebra operations."""
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2005-09-07 -- 2007-01-18"
+__date__ = "2005-09-07 -- 2007-01-22"
 __copyright__ = "Copyright (C) 2005-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -25,9 +25,9 @@ from ffc.fem.finiteelement import *
 # FFC compiler modules
 from ffc.compiler.projection import *
 
-# FFC formlanguage modules
-from ffc.formlanguage.index import *
-from ffc.formlanguage.algebra import *
+# FFC formlang modules
+from ffc.formlang.index import *
+from ffc.formlang.algebra import *
 
 def Identity(n):
     "Return identity matrix of given size."

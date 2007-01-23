@@ -1,5 +1,5 @@
 __author__ = "Marie Rognes (meg@math.uio.no)"
-__date__ = "2006-10-23 -- 2007-01-18"
+__date__ = "2006-10-23 -- 2007-01-23"
 __copyright__ = "Copyright (C) 2006"
 __license__  = "GNU GPL Version 2"
 
@@ -13,7 +13,7 @@ sys.path.append("../")
 from ffc.common.debug import *
 from ffc.common.exceptions import *
 
-# FFC formlanguage modules
+# FFC formlang modules
 from index import *
 from algebra import *
 from tokens import *

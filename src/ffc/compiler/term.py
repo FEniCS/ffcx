@@ -1,10 +1,10 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-10-05 -- 2007-01-18"
+__date__ = "2004-10-05 -- 2007-01-22"
 __copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
-# FFC formlanguage modules
-from ffc.formlanguage.signature import *
+# FFC formlang modules
+from ffc.formlang.signature import *
 
 # FFC compiler modules
 from referencetensor import *

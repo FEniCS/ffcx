@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2005-09-16 -- 2007-01-18"
+__date__ = "2005-09-16 -- 2007-01-22"
 __copyright__ = "Copyright (C) 2005-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -11,8 +11,8 @@ import numpy
 # FFC common modules
 from ffc.common.debug import *
 
-# FFC formlanguage modules
-from ffc.formlanguage.algebra import *
+# FFC formlang modules
+from ffc.formlang.algebra import *
 
 # FFC compiler modules
 from ffc.compiler.nodemap import *
