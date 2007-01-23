@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-09-29 -- 2007-01-11"
+__date__ = "2004-09-29 -- 2007-01-23"
 __copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -32,7 +32,7 @@ class Index:
     Note that only primary and secondary indices are used in the
     creation of an element of the algebra. Auxiliary indices are
     detected automatically in a preprocessing of an element of the
-    algebra when creating a Form (using the reassign module)."""
+    algebra (using the reassign module)."""
 
     # Avaiable index types
     FIXED       = 0

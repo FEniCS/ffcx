@@ -18,24 +18,24 @@ from index import *
 from algebra import *
 from tokens import *
 
-def simplify(f):
-    """ Simplification of a Sum f with respect to transforms and
+def simplify(form):
+    """ Simplification of a Form f with respect to transforms and
     derivatives.
 
     This function will simplify terms reading:
     (dx_j/dX_i)(dX_l/dx_j) | (d/DX_l) => (d/dX_i)"""
 
-    if not isinstance(f, Sum):
-        raise FormError, "I only know how to simplify a Sum!"
+    if not isinstance(form, Form):
+        raise FormError, "I only know how to simplify a Form!"
 
-    modified = Sum(f)
+    modified = Form(form)
 
-    # We aim to simplify each product on its own:
-    for product in modified.products:
+    # We aim to simplify each monomial on its own:
+    for monomial in modified.monomials:
 
-        # Then we run thorough the basis functions in this product and
+        # Then we run thorough the basis functions in this monomial and
         # check for simplifications:
-        for basis in product.basisfunctions:
+        for basis in monomial.basisfunctions:
             success = 0
             first = None
             second = None
@@ -49,13 +49,13 @@ def simplify(f):
                 theindex = derivative.index
                 # Now, lets run through the transforms and see whether
                 # there are two matching:
-                for transform in product.transforms:
+                for transform in monomial.transforms:
                     # For simplicity assume that transform.power == 1 | -1
                     if transform.power == 1:
                         if not cmp(transform.index0, theindex):
                             first = transform
                             break
-                for transform in product.transforms:
+                for transform in monomial.transforms:
                     if transform.power == -1:
                         if not cmp(transform.index1, first.index1):
                             second = transform
@@ -67,7 +67,7 @@ def simplify(f):
                     # the transform list. Second: replace the old
                     # derivative with the new one.
                     basis.derivatives[i] = Derivative(derivative.element, second.index0)
-                    product.transforms.remove(first) 
-                    product.transforms.remove(second)
+                    monomial.transforms.remove(first) 
+                    monomial.transforms.remove(second)
 
     return modified

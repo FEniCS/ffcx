@@ -831,8 +831,8 @@ def __eval_interior_boundary_default(form, options):
 %s""" % "".join(["  const real %s = 0.0;\n" % gS.name for gS in form.ASi[-1][-1][-1].gS if gS.used])
 
     if not options["debug-no-element-tensor"]:
-        num_facets = form.sum.products[0].basisfunctions[0].element.num_facets()
-        num_alignments = form.sum.products[0].basisfunctions[0].element.num_alignments()
+        num_facets = form.form.monomials[0].basisfunctions[0].element.num_facets()
+        num_alignments = form.form.monomials[0].basisfunctions[0].element.num_alignments()
         output += """\
 
   // Compute interior facet tensor

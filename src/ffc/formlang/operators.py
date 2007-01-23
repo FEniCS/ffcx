@@ -38,12 +38,12 @@ def value_rank(v):
     "Return value rank for given object."
     if isinstance(v, BasisFunction):
         return v.element.value_rank() - len(v.component)
-    elif isinstance(v, Product):
+    elif isinstance(v, Monomial):
         return value_rank(v.basisfunctions[0])
-    elif isinstance(v, Sum):
-        return value_rank(v.products[0])
+    elif isinstance(v, Form):
+        return value_rank(v.monomials[0])
     elif isinstance(v, Function):
-        return value_rank(Sum(v))
+        return value_rank(Form(v))
     else:
         return numpy.rank(v)
     return 0
@@ -90,11 +90,11 @@ def dot(v, w):
         if not len(v) == len(w):
             raise FormError, ((v, w), "Dimensions don't match for scalar product.")
         # Compute dot product (:) of matrices
-        sum = Sum()
+        form = Form()
         for i in range(len(v)):
             for j in range(len(v)):
-                sum = sum + v[i][j]*w[i][j]
-        return sum
+                form = form + v[i][j]*w[i][j]
+        return form
 
 def cross(v, w):
     "Return cross product of given functions."
@@ -170,11 +170,11 @@ def div(v):
     if isinstance(v, Element):
         i = Index()
         return v[i].dx(i)
-    # Otherwise, compute the sum explicitly
-    sum = Sum()
+    # Otherwise, compute the form explicitly
+    form = Form()
     for i in range(len(v)):
-        sum = sum + D(v[i], i)
-    return sum
+        form = form + D(v[i], i)
+    return form
 
 def rot(v):
     "Return rotation of given function."
@@ -218,10 +218,10 @@ def jump(v, n):
         return [v('+')*n[i]('+') + v('-')*n[i]('-') for i in range(len(n))]
     else:
         # v and n are vectors
-        sum = Sum();
+        form = Form();
         for i in range(len(v)):
-            sum = sum + v[i]('+')*n[i]('+') + v[i]('-')*n[i]('-')
-        return sum
+            form = form + v[i]('+')*n[i]('+') + v[i]('-')*n[i]('-')
+        return form
 
 def __shapedim(v):
     "Return shape dimension for given object."
@@ -234,12 +234,12 @@ def __shapedim(v):
         return __shapedim(v[0])
     elif isinstance(v, BasisFunction):
         return v.element.shapedim()
-    elif isinstance(v, Product):
+    elif isinstance(v, Monomial):
         return __shapedim(v.basisfunctions[0])
-    elif isinstance(v, Sum):
-        return __shapedim(v.products[0])
+    elif isinstance(v, Form):
+        return __shapedim(v.monomials[0])
     elif isinstance(v, Function):
-        return __shapedim(Sum(v))
+        return __shapedim(Form(v))
     else:
         raise FormError, (v, "Shape dimension is not defined for given expression.")
     return 0
@@ -250,12 +250,12 @@ def __value_dimension(v, i):
         raise FormError, ((v, i), "Tensor dimension out of range.")
     if isinstance(v, BasisFunction):
         return v.element.value_dimension(i + len(v.component))
-    elif isinstance(v, Product):
+    elif isinstance(v, Monomial):
         return __value_dimension(v.basisfunctions[0], i)
-    elif isinstance(v, Sum):
-        return __value_dimension(v.products[0], i)
+    elif isinstance(v, Form):
+        return __value_dimension(v.monomials[0], i)
     elif isinstance(v, Function):
-        return __value_dimension(Sum(v), i)
+        return __value_dimension(Form(v), i)
     else:
         raise FormError, ((v, i), "Tensor dimension is not defined for given expression.")
     return 0

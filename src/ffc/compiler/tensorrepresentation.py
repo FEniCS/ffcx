@@ -3,7 +3,7 @@ for a given subset of terms in a sum, specified as the terms matching
 a given integral type."""
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-11-06 -- 2007-01-22"
+__date__ = "2004-11-06 -- 2007-01-23"
 __copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -22,23 +22,23 @@ from term import *
 from declaration import *
 from optimization import *
 
-def compute_terms(sum, type, facet0, facet1, alignment):
+def compute_terms(form, type, facet0, facet1, alignment):
 
     # Check if there are any terms to compute
-    num_terms = __terms_to_compile(sum, type)
+    num_terms = __terms_to_compile(form, type)
     debug("Number of terms to compile: %d" % num_terms)
     if num_terms == 0:
         return []
 
     # Reorder indices and compute factorization
-    factorization = reorder_indices(sum)
+    factorization = reorder_indices(form)
 #    print "factorization ",factorization
 
     # Compute terms
-    terms = [None for i in range(len(sum.products))]
-    for i in range(len(sum.products)):
+    terms = [None for i in range(len(form.monomials))]
+    for i in range(len(form.monomials)):
         debug("Compiling term %d" % i, 1)
-        p = sum.products[i]
+        p = form.monomials[i]
 #        print "p ", p
 #        print "i ",i
         if p.integral.type == type:
@@ -185,10 +185,10 @@ def __compute_element_tensor_optimized(terms, format):
     # Call FErari to do optimizations
     return optimize(terms, format)
 
-def __terms_to_compile(sum, type):
+def __terms_to_compile(form, type):
     "Count the number of terms to be computed."
     count = 0
-    for p in sum.products:
+    for p in form.monomials:
         if p.integral.type == type:
             count += 1
     return count

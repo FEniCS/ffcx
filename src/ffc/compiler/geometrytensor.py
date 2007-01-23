@@ -24,17 +24,17 @@ class GeometryTensor:
         coefficients - a list of Coefficients
         transforms   - a list of Transforms"""
 
-    def __init__(self, product):
+    def __init__(self, monomial):
         "Create GeometryTensor."
 
-        # Check that we get a Product
-        if not isinstance(product, Product):
-            raise RuntimeError, "GeometryTensor must be created from Product."
+        # Check that we get a Monomial
+        if not isinstance(monomial, Monomial):
+            raise RuntimeError, "GeometryTensor must be created from Monomial."
 
-        # Get data from Product
-        self.constants = listcopy(product.constants)
-        self.coefficients = listcopy(product.coefficients)
-        self.transforms = listcopy(product.transforms)
+        # Get data from Monomial
+        self.constants = listcopy(monomial.constants)
+        self.coefficients = listcopy(monomial.coefficients)
+        self.transforms = listcopy(monomial.transforms)
 
         # Create MultiIndices
         self.a = self.__create_index(Index.SECONDARY)
@@ -95,10 +95,10 @@ class GeometryTensor:
                 factors += [format.format["transform"](t.index0([], a, [], []), \
                                                        t.index1([], a, [], []), \
                                                        t.restriction),]
-        product = format.format["multiplication"](factors)
-        if product: f0 = [product]
+        monomial = format.format["multiplication"](factors)
+        if monomial: f0 = [monomial]
         else: f0 = []
-        # Compute sum of products inside sum
+        # Compute sum of monomials inside sum
         terms = []
         for b in self.b.indices:
             factors = []

@@ -1,11 +1,11 @@
 """An algebra for multi-linear forms. Objects of the following classes
 are elements of the algebra:
 
-    BasisFunction - basic building block
-    Product       - product of BasisFunctions
-    Sum           - sum of Products
-    Function      - linear combination of BasisFunctions
-    Constant      - a constant function on the mesh
+    BasisFunction  - basic building block
+    Monomial       - monomial product of BasisFunctions
+    Form           - sum of Monomials
+    Function       - linear combination of BasisFunctions
+    Constant       - a constant function on the mesh
 
 Each element of the algebra except Constant can be either
 scalar or tensor-valued. Elements of the algebra may also
@@ -25,7 +25,7 @@ algebra:
     Unary  ()     (operand must be multi-valued, +/-)"""
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-09-27 -- 2007-01-11"
+__date__ = "2004-09-27 -- 2007-01-23"
 __copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -55,44 +55,44 @@ class Element:
 
     def __add__(self, other):
         "Operator: Element + Element"
-        return Sum(self) + other
+        return Form(self) + other
 
     def __radd__(self, other):
         "Operator: Element + Element (other + self)"
-        return Sum(self) + other
+        return Form(self) + other
 
     def __sub__(self, other):
         "Operator: Element - Element"
-        return Sum(self) + (-other)
+        return Form(self) + (-other)
 
     def __rsub__(self, other):
         "Operator: Element + Element (other - self)"
-        return Sum(-self) + other
+        return Form(-self) + other
 
     def __mul__(self, other):
         "Operator: Element * Element"
         if isinstance(other, Element):
-            return Sum(self) * other
+            return Form(self) * other
         elif isinstance(other, Integral):
-            return Sum(self) * other
+            return Form(self) * other
         elif isinstance(other, float):
-            return Sum(self) * other
+            return Form(self) * other
         elif isinstance(other, int):
-            return Sum(self) * float(other)
+            return Form(self) * float(other)
         else:
-            raise FormError, ((self, other), "Product not defined for given operands.")
+            raise FormError, ((self, other), "Monomial not defined for given operands.")
 
     def __rmul__(self, other):
         "Operator: Element * Element (other * self)"
-        return Sum(self) * other
+        return Form(self) * other
 
     def __div__(self, other):
         "Operator: Element / Element (only works if other is scalar)."
-        return Sum(self) * (~other)
+        return Form(self) * (~other)
 
     def __rdiv__(self, other):
         "Operator: Element / Element (only works if other is scalar)."
-        return Sum(other) * (~self)
+        return Form(other) * (~self)
 
     def __invert__(self):
         "Operator: ~Element"
@@ -100,35 +100,35 @@ class Element:
 
     def __pos__(self):
         "Operator: +Element"
-        return Sum(self)
+        return Form(self)
 
     def __neg__(self):
         "Operator: -Element"
-        return -Sum(self)
+        return -Form(self)
 
     def __getitem__(self, component):
         "Operator: Element[component], pick given component."
-        return Sum(self)[component]
+        return Form(self)[component]
 
     def __len__(self):
         "Operator: len(Element)"
-        return len(Sum(self))
+        return len(Form(self))
 
     def __call__(self, restriction = None):
         "Operator: Element(restriction), restrict multi-valued function."
-        return Sum(self)(restriction)
+        return Form(self)(restriction)
 
     def dx(self, index = None):
         "Operator: (d/dx)Element in given coordinate direction."
-        return Sum(self).dx(index)
+        return Form(self).dx(index)
 
     def value_rank(self):
         "Return value rank of Element."
-        return Sum(self).value_rank()
+        return Form(self).value_rank()
 
     def __str__(self):
         "Print nicely formatted representation of Element."
-        return Sum(self).__str__()
+        return Form(self).__str__()
 
 class Constant(Element):
     """A Constant represents a numerical constant or a Function that
@@ -301,7 +301,7 @@ class BasisFunction(Element):
     def dx(self, index = None):
         "Operator: (d/dx)BasisFunction in given coordinate direction."
         i = Index() # Create new secondary indexF
-        w = Product(self)
+        w = Monomial(self)
         w.basisfunctions[0].derivatives.insert(0, Derivative(self.element, i))
         w.transforms.insert(0, Transform(self.element, i, index, self.restriction))
         return w
@@ -339,7 +339,7 @@ class BasisFunction(Element):
         rank = self.element.value_rank()
         if self.component or rank == 0:
             raise FormError, (self, "Cannot pick component of scalar BasisFunction.")
-        w = Product(self)
+        w = Monomial(self)
         if isinstance(component, list):
             if not rank == len(component):
                 raise FormError, (component, "Illegal component index, does not match rank.")
@@ -355,7 +355,7 @@ class BasisFunction(Element):
         rank = v.element.value_rank()
         if v.component or rank == 0:
             raise FormError, (self, "Cannot pick component of scalar BasisFunction.")    
-        w = Product(v)
+        w = Monomial(v)
         j = Index()
         if isinstance(component, list):
             if not rank == len(component):
@@ -373,8 +373,8 @@ class BasisFunction(Element):
             w.determinant = -1
         return w
 
-class Product(Element):
-    """A Product represents a product of factors, including
+class Monomial(Element):
+    """A Monomial represents a monomial product of factors, including
     BasisFunctions and Functions.
 
     Attributes:
@@ -390,9 +390,9 @@ class Product(Element):
     """
 
     def __init__(self, other = None):
-        "Create Product."
+        "Create Monomial."
         if other == None:
-            # Create default Product (unity)
+            # Create default Monomial (unity)
             self.numeric = 1.0
             self.constants = []
             self.coefficients = []
@@ -401,7 +401,7 @@ class Product(Element):
             self.determinant = 0
             self.integral = None
         elif isinstance(other, int) or isinstance(other, float):
-            # Create Product from scalar
+            # Create Monomial from scalar
             self.numeric = float(other)
             self.constants = []
             self.coefficients = []
@@ -410,7 +410,7 @@ class Product(Element):
             self.determinant = 0
             self.integral = None
         elif isinstance(other, Function):
-            # Create Product from Function
+            # Create Monomial from Function
             index = Index()
             self.numeric = 1.0
             self.constants = []
@@ -420,7 +420,7 @@ class Product(Element):
             self.determinant = 0
             self.integral = None
         elif isinstance(other, Constant):
-            # Create Product from Constant
+            # Create Monomial from Constant
             index = Index()
             self.numeric = 1.0
             self.constants = [Constant(other)]
@@ -430,7 +430,7 @@ class Product(Element):
             self.determinant = 0
             self.integral = None
         elif isinstance(other, BasisFunction):
-            # Create Product from BasisFunction
+            # Create Monomial from BasisFunction
             self.numeric = 1.0
             self.constants = []
             self.coefficients = []
@@ -438,8 +438,8 @@ class Product(Element):
             self.basisfunctions = [BasisFunction(other)]
             self.determinant = 0
             self.integral = None
-        elif isinstance(other, Product):
-            # Create Product from Product (copy constructor)
+        elif isinstance(other, Monomial):
+            # Create Monomial from Monomial (copy constructor)
             self.numeric = float(other.numeric)
             self.constants = listcopy(other.constants)
             self.coefficients = listcopy(other.coefficients)
@@ -448,35 +448,35 @@ class Product(Element):
             self.determinant = other.determinant
             self.integral = other.integral
         else:
-            raise FormError, (other, "Unable to create Product from given expression.")
+            raise FormError, (other, "Unable to create Monomial from given expression.")
 
         return
     
     def __mul__(self, other):
-        "Operator: Product * Element"
+        "Operator: Monomial * Element"
         if isinstance(other, Integral):
             if not self.integral == None:
                 raise FormError, (self, "Integrand can only be integrated once.")
-            w = Product(self)
+            w = Monomial(self)
             w.integral = Integral(other)
             w.determinant += 1 
             return w
-        elif isinstance(other, Sum):
-            return Sum(self) * Sum(other)
+        elif isinstance(other, Form):
+            return Form(self) * Form(other)
         else:
             # Create two copies
-            w0 = Product(self)
-            w1 = Product(other)
+            w0 = Monomial(self)
+            w1 = Monomial(other)
             # Check ranks
             if not w0.value_rank() == w1.value_rank() == 0:
-                raise FormError, (self, "Operands for product must be scalar.")
+                raise FormError, (self, "Operands for monomial must be scalar.")
             # Reassign all complete Indices to avoid collisions
             reassign_complete(w0, Index.SECONDARY)
             reassign_complete(w0, Index.AUXILIARY)
             reassign_complete(w1, Index.SECONDARY)
             reassign_complete(w1, Index.AUXILIARY)
-            # Compute product
-            w = Product()
+            # Compute monomial
+            w = Monomial()
             w.numeric = float(w0.numeric * w1.numeric)
             w.constants = listcopy(w0.constants + w1.constants)
             w.coefficients = listcopy(w0.coefficients + w1.coefficients)
@@ -495,32 +495,32 @@ class Product(Element):
             return w
 
     def __neg__(self):
-        "Operator: -Product"
-        w = Product(self)
+        "Operator: -Monomial"
+        w = Monomial(self)
         w.numeric = -w.numeric
         return w
 
     def  __getitem__(self, component):
-        "Operator: Product[component], pick given component."
-        # Always scalar if product of more than one basis function
+        "Operator: Monomial[component], pick given component."
+        # Always scalar if monomial of more than one basis function
         if not len(self.basisfunctions) == 1:
             raise FormError, (self, "Cannot pick component of scalar expression.")
         # Otherwise, return component of first and only BasisFunction
-        p = Product(self)
+        p = Monomial(self)
         p.basisfunctions = [] 
-        w = Product(self.basisfunctions[0][component]) 
+        w = Monomial(self.basisfunctions[0][component]) 
         return w*p
 
     def __len__(self):
-        "Operator: len(Product)"
-        # Always scalar if product of more than one basis function
+        "Operator: len(Monomial)"
+        # Always scalar if monomial of more than one basis function
         if not len(self.basisfunctions) == 1:
             raise FormError, (self, "Vector length of scalar expression is undefined.")
         # Otherwise, return length of first and only BasisFunction
         return len(self.basisfunctions[0])
 
     def __call__(self, r):
-        v = Product(self)
+        v = Monomial(self)
         v.basisfunctions = ([w(r) for w in v.basisfunctions])
         # Same restriction for all basis functions so pick first
         restriction = v.basisfunctions[0].restriction
@@ -529,7 +529,7 @@ class Product(Element):
         return v
 
     def __str__(self):
-        "Print nicely formatted representation of Product."
+        "Print nicely formatted representation of Monomial."
         if not (self.coefficients or self.transforms or self.basisfunctions):
             return str(self.numeric)
         if self.numeric == -1.0:
@@ -553,10 +553,10 @@ class Product(Element):
         return s + c + d + w + t + " | " + v + i
 
     def dx(self, index = None):
-        "Operator: (d/dx)Product in given coordinate direction."
-        w = Sum()
+        "Operator: (d/dx)Monomial in given coordinate direction."
+        w = Form()
         for i in range(len(self.basisfunctions)):
-            p = Product(self)
+            p = Monomial(self)
             p.basisfunctions = []
             for j in range(len(self.basisfunctions)):
                 if i == j:
@@ -567,13 +567,13 @@ class Product(Element):
         return w
 
     def value_rank(self):
-        "Return value rank of Product."
+        "Return value rank of Monomial."
         if not self.basisfunctions:
             return 0
         if len(self.basisfunctions) > 1:
             for v in self.basisfunctions:
                 if not v.value_rank() == 0:
-                    raise FormError, (self, "Illegal rank for BasisFunction of Product (non-scalar).")
+                    raise FormError, (self, "Illegal rank for BasisFunction of Monomial (non-scalar).")
         return self.basisfunctions[0].value_rank()
             
     def indexcall(self, foo, args = None):
@@ -584,113 +584,113 @@ class Product(Element):
         [v.indexcall(foo, args) for v in self.basisfunctions]
         return
 
-class Sum(Element):
-    """A Sum represents a sum of Products. Each Product will be
-    compiled separately, since different Products are probably of
+class Form(Element):
+    """A Form represents a sum of Monomials. Each Monomial will be
+    compiled separately, since different Monomials are probably of
     different rank.
 
     Attributes:
 
-        products - a list of Products (terms) in the Sum
+        monomials - a list of Monomials (terms) in the Form
     """
     
     def __init__(self, other = None):
-        "Create Sum."
+        "Create Form."
         if other == None:
-            # Create default Sum (zero)
-            self.products = []
+            # Create default Form (zero)
+            self.monomials = []
         elif isinstance(other, int) or isinstance(other, float):
-            # Create Sum from float
-            self.products = [Product(other)]
+            # Create Form from float
+            self.monomials = [Monomial(other)]
         elif isinstance(other, BasisFunction):
-            # Create Sum from BasisFunction
-            self.products = [Product(other)]
+            # Create Form from BasisFunction
+            self.monomials = [Monomial(other)]
         elif isinstance(other, Function):
-            # Create Sum from Function
-            self.products = [Product(other)]
+            # Create Form from Function
+            self.monomials = [Monomial(other)]
         elif isinstance(other, Constant):
-            # Create Sum from Constant
-            self.products = [Product(other)]
-        elif isinstance(other, Product):
-            # Create Sum from Product
-            self.products = [Product(other)]
-        elif isinstance(other, Sum):
-            # Create Sum from Sum (copy constructor)
-            self.products = listcopy(other.products)
+            # Create Form from Constant
+            self.monomials = [Monomial(other)]
+        elif isinstance(other, Monomial):
+            # Create Form from Monomial
+            self.monomials = [Monomial(other)]
+        elif isinstance(other, Form):
+            # Create Form from Form (copy constructor)
+            self.monomials = listcopy(other.monomials)
         else:
-            raise FormError, (other, "Unable to create Sum from given expression.")
+            raise FormError, (other, "Unable to create Form from given expression.")
         return
 
     def __add__(self, other):
-        "Operator: Sum + Element"
-        w0 = Sum(self)
-        w1 = Sum(other)
+        "Operator: Form + Element"
+        w0 = Form(self)
+        w1 = Form(other)
         if not w0.value_rank() == w1.value_rank():
             raise FormError, (self, "Operands for addition have non-matching ranks.")
-        w = Sum()
-        w.products = w0.products + w1.products
+        w = Form()
+        w.monomials = w0.monomials + w1.monomials
         return w
     
     def __mul__(self, other):
-        "Operator: Sum * Element"
-        if isinstance(other, Sum):
-            w = Sum()
-            w.products = [p*q for p in self.products for q in other.products]
+        "Operator: Form * Element"
+        if isinstance(other, Form):
+            w = Form()
+            w.monomials = [p*q for p in self.monomials for q in other.monomials]
             return w
         else:
-            w = Sum()
-            w.products = [p*other for p in self.products]
+            w = Form()
+            w.monomials = [p*other for p in self.monomials]
             return w
 
     def __neg__(self):
-        "Operator: -Sum"
-        w = Sum()
-        w.products = [-p for p in self.products]
+        "Operator: -Form"
+        w = Form()
+        w.monomials = [-p for p in self.monomials]
         return w
 
     def  __getitem__(self, component):
         "Operator: indexing, pick given component."
-        w = Sum()
-        w.products = [p[component] for p in self.products]
+        w = Form()
+        w.monomials = [p[component] for p in self.monomials]
         return w
 
     def __len__(self):
-        "Operator: len(Sum)"
+        "Operator: len(Form)"
         # Check that all terms have the same length
-        for i in range(len(self.products) - 1):
-            if not len(self.products[i]) == len(self.products[i + 1]):
+        for i in range(len(self.monomials) - 1):
+            if not len(self.monomials[i]) == len(self.monomials[i + 1]):
                 raise FormError, (self, "Terms have different vector length.")
         # Return length of first term
-        return len(self.products[0])
+        return len(self.monomials[0])
 
     def __call__(self, r):
-        v = Sum(self)
-        v.products = ([w(r) for w in v.products])
+        v = Form(self)
+        v.monomials = ([w(r) for w in v.monomials])
         return v
 
     def __str__(self):
-        "Print nicely formatted representation of Sum."
-        return " + ".join([p.__str__() for p in self.products])
+        "Print nicely formatted representation of Form."
+        return " + ".join([p.__str__() for p in self.monomials])
 
     def dx(self, index = None):
-        "Operator: (d/dx)Sum in given coordinate direction."
-        w = Sum()
-        for p in self.products:
+        "Operator: (d/dx)Form in given coordinate direction."
+        w = Form()
+        for p in self.monomials:
             w = w + p.dx(index)
         return w
 
     def value_rank(self):
-        "Return value rank of Sum."
-        if not self.products:
+        "Return value rank of Form."
+        if not self.monomials:
             return 0
-        for j in range(len(self.products) - 1):
-            if not self.products[j].value_rank() == self.products[j + 1].value_rank():
+        for j in range(len(self.monomials) - 1):
+            if not self.monomials[j].value_rank() == self.monomials[j + 1].value_rank():
                 raise FormError, (self, "Terms have different rank.")
-        return self.products[0].value_rank()
+        return self.monomials[0].value_rank()
   
     def indexcall(self, foo, args = None):
         "Call given function on all Indices."
-        [p.indexcall(foo, args) for p in self.products]
+        [p.indexcall(foo, args) for p in self.monomials]
         return
 
 class TestFunction(BasisFunction):

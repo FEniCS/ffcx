@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-10-05 -- 2007-01-22"
+__date__ = "2004-10-05 -- 2007-01-23"
 __copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -17,9 +17,9 @@ class Term:
 
     Attributes:
 
-        product - the Product generating the Term
-        A0      - reference tensor
-        G       - list of geometry tensors (factorized)
+        monomial - the Monomial generating the Term
+        A0       - reference tensor
+        G        - list of geometry tensors (factorized)
     """
 
     def __init__(self, product, A0, G):

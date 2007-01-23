@@ -1,4 +1,4 @@
-"""This is the compiler, taking a multi-linear form expressed as a Sum
+"""This is the compiler, taking a multi-linear form expressed as a Form
 and building the data structures (geometry and reference tensors) for
 the evaluation of the multi-linear form."""
 
@@ -40,11 +40,12 @@ from exteriorfacettensor import *
 from interiorfacettensor import *
 from projection import *
 
-def compile(sums, name = "Form", language = FFC_LANGUAGE, options = FFC_OPTIONS):
+def compile(forms, name = "Form", language = FFC_LANGUAGE, options = FFC_OPTIONS):
     """Compile variational form(s). This function takes as argument a
-    Sum or a list of Sums representing the multilinear form(s). The
-    return value is a Form or a list of Forms. Calling this function
-    is equivalent to first calling build() followed by write()."""
+    Form or a list of Forms representing the multilinear form(s). The
+    return value is a FormCode or a list of FormCodes. Calling this
+    function is equivalent to first calling build() followed by
+    write()."""
 
     # Add default values for any missing options
     for key in FFC_OPTIONS:
@@ -52,15 +53,15 @@ def compile(sums, name = "Form", language = FFC_LANGUAGE, options = FFC_OPTIONS)
             options[key] = FFC_OPTIONS[key]
 
     # Build data structures
-    forms = build(sums, name, language, options)
+    formcodes = build(forms, name, language, options)
 
     # Generate code
-    if not forms == None:
-        write(forms, options)
+    if not formcodes == None:
+        write(formcodes, options)
 
-    return forms
+    return formcodes
 
-def build(sums, name = "Form", language = FFC_LANGUAGE, options = FFC_OPTIONS):
+def build(forms, name = "Form", language = FFC_LANGUAGE, options = FFC_OPTIONS):
     "Build data structures for evaluation of the variational form(s)."
 
     # Add default values for any missing options
@@ -68,14 +69,14 @@ def build(sums, name = "Form", language = FFC_LANGUAGE, options = FFC_OPTIONS):
         if not key in options:
             options[key] = FFC_OPTIONS[key]
 
-    # Create a Form from the given sum(s)
-    if isinstance(sums, list):
-        forms = [Form(Sum(sum), name) for sum in sums if not sum == None]
+    # Create a FormCode from the given Form(s)
+    if isinstance(forms, list):
+        formcodes = [FormCode(Form(form), name) for form in forms if not form == None]
     else:
-        forms = [Form(Sum(sums), name)]
+        formcodes = [FormCode(Form(forms), name)]
 
     # Check that the list is not empty
-    if not len(forms) > 0:
+    if not len(formcodes) > 0:
         debug("No forms specified, nothing to do.")
         return None
 
@@ -84,16 +85,16 @@ def build(sums, name = "Form", language = FFC_LANGUAGE, options = FFC_OPTIONS):
     format.init(options)
 
     # Generate the element tensor for all given forms
-    for form in forms:
-        __build_form(form, format, options)
+    for formcode in formcodes:
+        __build_form(formcode, format, options)
 
-    # Return form(s)
-    if len(forms) > 1:
-        return forms
+    # Return formcode(s)
+    if len(formcodes) > 1:
+        return formcodes
     else:
-        return forms[0]
+        return formcodes[0]
 
-def write(forms, options = FFC_OPTIONS):
+def write(formcodes, options = FFC_OPTIONS):
     "Generate code from previously built data structures."
 
     # Add default values for any missing options
@@ -101,24 +102,24 @@ def write(forms, options = FFC_OPTIONS):
         if not key in options:
             options[key] = FFC_OPTIONS[key]
 
-    # Make sure we have a list of forms
-    if isinstance(forms, list):
-        forms = [form for form in forms if not form == None]
-    elif not forms == None:
-        forms = [forms]
+    # Make sure we have a list of formcodes
+    if isinstance(formcodes, list):
+        formcodes = [formcode for formcode in formcodes if not formcode == None]
+    elif not formcodes == None:
+        formcodes = [formcodes]
     else:
-        forms = []
+        formcodes = []
 
     # Check that the list is not empty
-    if not len(forms) > 0:
+    if not len(formcodes) > 0:
         debug("No forms specified, nothing to do.", 1)
         return None
 
     # Get output format (all forms have the same format, so pick the first)
-    format = forms[0].format
+    format = formcodes[0].format
 
-    # Generate output for all forms
-    format.write(forms, options)
+    # Generate output for all formcodes
+    format.write(formcodes, options)
 
     return
 
@@ -140,33 +141,33 @@ def writeFiniteElement(element, name = "MyElement", language = FFC_LANGUAGE, opt
     # Generate code
     format.writeFiniteElement(element, name, options)
 
-def __build_form(form, format, options):
+def __build_form(formcode, format, options):
     "Build data structures for evaluation of the variational form."
     
-    debug("\nCompiling form: " + str(form), 0)
-    debug("Number of terms in form: %d" % len(form.sum.products), 1)
+    debug("\nCompiling form: " + str(formcode), 0)
+    debug("Number of terms in form: %d" % len(formcode.form.monomials), 1)
         
     # Count the number of functions
-    form.nfunctions = max_index(form.sum, Index.FUNCTION) + 1
-    debug("Number of functions (coefficients): " + str(form.nfunctions), 1)
+    formcode.nfunctions = max_index(formcode.form, Index.FUNCTION) + 1
+    debug("Number of functions (coefficients): " + str(formcode.nfunctions), 1)
 
     # Count the number of projections
-    form.nprojections = max_index(form.sum, Index.PROJECTION) + 1
-    debug("Number of projections (coefficients): " + str(form.nprojections), 1)
+    formcode.nprojections = max_index(formcode.form, Index.PROJECTION) + 1
+    debug("Number of projections (coefficients): " + str(formcode.nprojections), 1)
 
     # Count the number of constants
-    form.nconstants = max_index(form.sum, Index.CONSTANT) + 1
-    debug("Number of constants: " + str(form.nconstants), 1)
+    formcode.nconstants = max_index(formcode.form, Index.CONSTANT) + 1
+    debug("Number of constants: " + str(formcode.nconstants), 1)
 
     # Find the test and trial finite elements
-    form.test = find_test(form.sum)
-    form.trial = find_trial(form.sum)
+    formcode.test = find_test(formcode.form)
+    formcode.trial = find_trial(formcode.form)
 
     # Find the original elements for all functions
-    form.elements = find_elements(form.sum, form.nfunctions)
+    formcode.elements = find_elements(formcode.form, formcode.nfunctions)
 
     # Find the projections for all functions
-    form.projections = find_projections(form.sum, form.nprojections)
+    formcode.projections = find_projections(formcode.form, formcode.nprojections)
 
     # Create empty sets of used coefficient declarations
     cK_used  = set()
@@ -180,96 +181,96 @@ def __build_form(form, format, options):
 
     # Compute element tensor for cell
     debug("Compiling tensor representation over cells")
-    form.AK = ElementTensor(form.sum, format, cK_used, gK_used, options)
-    form.num_ops = form.AK.num_ops
+    formcode.AK = ElementTensor(formcode.form, format, cK_used, gK_used, options)
+    formcode.num_ops = formcode.AK.num_ops
         
     # FIXME: Number of operations not counted for facet terms
 
     # Compute element tensors for exterior facets
     debug("Compiling tensor representation over exterior facets")
-    num_facets = form.sum.products[0].basisfunctions[0].element.num_facets()
-    form.ASe = [None for i in range(num_facets)]
+    num_facets = formcode.form.monomials[0].basisfunctions[0].element.num_facets()
+    formcode.ASe = [None for i in range(num_facets)]
     for i in range(num_facets):
-        form.ASe[i] = ExteriorFacetTensor(form.sum, format, cSe_used, gSe_used, options, i)
+        formcode.ASe[i] = ExteriorFacetTensor(formcode.form, format, cSe_used, gSe_used, options, i)
 
     # Compute element tensors for combinations of interior facets
     debug("Compiling tensor representation over exterior facets")
-    num_facets = form.sum.products[0].basisfunctions[0].element.num_facets()
-    num_alignments = form.sum.products[0].basisfunctions[0].element.num_alignments()
-    form.ASi = [[[None for k in range(num_alignments)] for j in range(num_facets)] for i in range(num_facets)]
+    num_facets = formcode.form.monomials[0].basisfunctions[0].element.num_facets()
+    num_alignments = formcode.form.monomials[0].basisfunctions[0].element.num_alignments()
+    formcode.ASi = [[[None for k in range(num_alignments)] for j in range(num_facets)] for i in range(num_facets)]
     for i in range(num_facets):
         for j in range (num_facets):
             for k in range(num_alignments):
-                form.ASi[i][j][k] = InteriorFacetTensor(form.sum, format, cSi_used, gSi_used, options, i, j, k)
+                formcode.ASi[i][j][k] = InteriorFacetTensor(formcode.form, format, cSi_used, gSi_used, options, i, j, k)
 
     # Report number of operations
-    debug("Number of operations (multiplications) in computation of element tensor: " + str(form.num_ops), 1)
+    debug("Number of operations (multiplications) in computation of element tensor: " + str(formcode.num_ops), 1)
 
     # Compute coefficient declarations, common to all terms
-    form.cK  = __compute_coefficients(form.projections, format, cK_used,  1)
-    form.cSe = __compute_coefficients(form.projections, format, cSe_used, 1)
-    form.cSi = __compute_coefficients(form.projections, format, cSi_used, 2)
+    formcode.cK  = __compute_coefficients(formcode.projections, format, cK_used,  1)
+    formcode.cSe = __compute_coefficients(formcode.projections, format, cSe_used, 1)
+    formcode.cSi = __compute_coefficients(formcode.projections, format, cSi_used, 2)
       
     # Check primary ranks
-    __check_primary_ranks(form, num_facets, num_alignments)
+    __check_primary_ranks(formcode, num_facets, num_alignments)
     
     # Save format
-    form.format = format
+    formcode.format = format
 
     # Copy variables to new names
-    # FIXME: Move to new names and put this code into the Form class
-    form.signature = str(form.sum) # FIXME: Use signature.py
-    form.rank = form.rank
-    form.num_coefficients = form.nfunctions
-    form.finite_elements = []
-    if not form.test == None:
-        form.finite_elements += [form.test]
-    if not form.trial == None:
-        form.finite_elements += [form.trial]
-    form.finite_elements += form.elements
-    form.dof_maps = []
+    # FIXME: Move to new names and put this code into the FormCode class
+    formcode.signature = str(formcode.form) # FIXME: Use signature.py
+    formcode.rank = formcode.rank
+    formcode.num_coefficients = formcode.nfunctions
+    formcode.finite_elements = []
+    if not formcode.test == None:
+        formcode.finite_elements += [formcode.test]
+    if not formcode.trial == None:
+        formcode.finite_elements += [formcode.trial]
+    formcode.finite_elements += formcode.elements
+    formcode.dof_maps = []
     from ffc.format import ufcformat
     if format == ufcformat:
-        for element in form.finite_elements:
-            form.dof_maps += [DofMap(element, format)]
+        for element in formcode.finite_elements:
+            formcode.dof_maps += [DofMap(element, format)]
 
-def __check_primary_ranks(form, num_facets, num_alignments):
+def __check_primary_ranks(formcode, num_facets, num_alignments):
     "Check that all primary ranks are equal."
 
-    form.rank = None
-    form.dims = None
-    form.indices = None
+    formcode.rank = None
+    formcode.dims = None
+    formcode.indices = None
 
     # Check ranks for cell terms
-    for term in form.AK.terms:
-        if form.rank == None:
-            form.rank = term.A0.i.rank
-            form.dims = term.A0.i.dims
-            form.indices = term.A0.i.indices
-        elif not form.rank == term.A0.i.rank:
-            raise FormError(form.sum, "Form must be linear in each of its arguments.")
+    for term in formcode.AK.terms:
+        if formcode.rank == None:
+            formcode.rank = term.A0.i.rank
+            formcode.dims = term.A0.i.dims
+            formcode.indices = term.A0.i.indices
+        elif not formcode.rank == term.A0.i.rank:
+            raise FormcodeError(formcode.form, "Formcode must be linear in each of its arguments.")
 
     # Check ranks for exterior facet terms
     for i in range(num_facets):
-        for term in form.ASe[i].terms:
-            if form.rank == None:
-                form.rank = term.A0.i.rank
-                form.dims = term.A0.i.dims
-                form.indices = term.A0.i.indices
-            elif not form.rank == term.A0.i.rank:
-                raise FormError(form.sum, "Form must be linear in each of its arguments.")
+        for term in formcode.ASe[i].terms:
+            if formcode.rank == None:
+                formcode.rank = term.A0.i.rank
+                formcode.dims = term.A0.i.dims
+                formcode.indices = term.A0.i.indices
+            elif not formcode.rank == term.A0.i.rank:
+                raise FormcodeError(formcode.form, "Formcode must be linear in each of its arguments.")
 
     # Check ranks for interior facet terms
     for i in range(num_facets):
         for j in range(num_facets):
             for k in range(num_alignments):
-                for term in form.ASi[i][j][k].terms:
-                    if form.rank == None:
-                        form.rank = term.A0.i.rank
-                        form.dims = term.A0.i.dims
-                        form.indices = term.A0.i.indices
-                    elif not form.rank == term.A0.i.rank:
-                        raise FormError(form.sum, "Form must be linear in each of its arguments.")
+                for term in formcode.ASi[i][j][k].terms:
+                    if formcode.rank == None:
+                        formcode.rank = term.A0.i.rank
+                        formcode.dims = term.A0.i.dims
+                        formcode.indices = term.A0.i.indices
+                    elif not formcode.rank == term.A0.i.rank:
+                        raise FormcodeError(formcode.form, "Formcode must be linear in each of its arguments.")
 
 def __compute_coefficients(projections, format, c_used, num_spaces):
     "Precompute declarations of coefficients according to given format."

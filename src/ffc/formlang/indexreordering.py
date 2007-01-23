@@ -4,8 +4,8 @@ reference tensors from terms that have the same tensor structure but
 with different names of indices."""
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2005-09-06 -- 2006-12-01"
-__copyright__ = "Copyright (C) 2004 Anders Logg"
+__date__ = "2005-09-06 -- 2007-01-23"
+__copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # Python modules
@@ -21,19 +21,19 @@ from ffc.common.util import permutations
 from reassign import *
 from signature import *
 
-def reorder_indices(sum):
+def reorder_indices(form):
     """Reorder indices to find terms with common reference tensors and
     compute factorization, mapping terms with already computed
     reference tensors to the already computed matching term."""
 
-    if not isinstance(sum, Sum):
-        raise FormError, (sum, "Indices can only be reordered for Sums.")
+    if not isinstance(form, Form):
+        raise FormError, (form, "Indices can only be reordered for Forms.")
 
     # Create empty factorization
-    factorization = [None for i in range(len(sum.products))]
+    factorization = [None for i in range(len(form.monomials))]
     # Compare signatures for pairs of terms
-    for i in range(len(sum.products) - 1):
-        p = sum.products[i]
+    for i in range(len(form.monomials) - 1):
+        p = form.monomials[i]
         p_soft = compute_soft_signature(p)
         p_hard = compute_hard_signature(p)
 
@@ -41,13 +41,13 @@ def reorder_indices(sum):
         debug("Hard signature: " + p_hard, 1)
 
         # Compare term i against term j for j > i
-        for j in range(i + 1, len(sum.products)):
+        for j in range(i + 1, len(form.monomials)):
             # Don't factorize against another term if already factorized
             if not factorization[j] == None:
                 continue
 
             # Compute signatures
-            q = sum.products[j]
+            q = form.monomials[j]
             q_soft = compute_soft_signature(q)
             q_hard = compute_hard_signature(q)
 
@@ -58,20 +58,20 @@ def reorder_indices(sum):
             elif p_soft == q_soft:
                 debug("Soft signatures match for terms %d and %d, reordering and factorizing" % (i, j))
                 # Reorder terms if soft signature matches
-                sum.products[j] = __reorder_indices(p, q, p_hard)
-                q = sum.products[j]
+                form.monomials[j] = __reorder_indices(p, q, p_hard)
+                q = form.monomials[j]
                 # Check that the hard signatures now match
                 q_hard = compute_hard_signature(q)
                 if not p_hard == q_hard:
-                    raise FormError, (sum, "Hard signatures don't match after reordering.")
+                    raise FormError, (form, "Hard signatures don't match after reordering.")
                 # Group terms if hard signature matches
                 factorization[j] = i
 
     return factorization
 
 def __reorder_indices(p, q, p_hard):
-    """Reorder secondary indices of Product q to match the secondary
-    indices of Product p."""
+    """Reorder secondary indices of Monomial q to match the secondary
+    indices of Monomial p."""
 
     # Get the number of secondary indices (assuming indices have been
     # previously reassigned to be in the range 0,...,n-1)
@@ -84,7 +84,7 @@ def __reorder_indices(p, q, p_hard):
     # Generate all permutations of indices in the range 0,...,n-1
     for reordering in permutations(range(n)):
         # Copy q and add n to indices (so we can reorder properly)
-        q_new = Product(q)
+        q_new = Monomial(q)
         for i in range(n):
             num_changed = reassign_index(q_new, i, i + n, Index.SECONDARY)
             if not num_changed == 1:
@@ -97,4 +97,4 @@ def __reorder_indices(p, q, p_hard):
         if q_new_hard == p_hard:
             return q_new
 
-    raise Form, ((p, q), "Unable to find a proper reordering of indices.")
+    raise FormError, ((p, q), "Unable to find a proper reordering of indices.")

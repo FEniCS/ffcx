@@ -41,21 +41,21 @@ class ReferenceTensor:
         integral       - an Integral
         cputime        - time to compute the reference tensor"""
 
-    def __init__(self, product, facet0, facet1, alignment):
+    def __init__(self, monomial, facet0, facet1, alignment):
         "Create ReferenceTensor."
 
-        # Check that we get a Product
-        if not isinstance(product, Product):
-            raise RuntimError, "ReferenceTensor must be created from Product."
+        # Check that we get a Monomial
+        if not isinstance(monomial, Monomial):
+            raise RuntimError, "ReferenceTensor must be created from Monomial."
 
-        # Check that the Product contains an Integral
-        if product.integral == None:
-            raise FormError, (product, "Missing integral in term.")
+        # Check that the Monomial contains an Integral
+        if monomial.integral == None:
+            raise FormError, (monomial, "Missing integral in term.")
 
-        # Get data from Product
-        self.numeric = product.numeric
-        self.basisfunctions = listcopy(product.basisfunctions)
-        self.integral = product.integral
+        # Get data from Monomial
+        self.numeric = monomial.numeric
+        self.basisfunctions = listcopy(monomial.basisfunctions)
+        self.integral = monomial.integral
 
         # Create MultiIndices
         self.i = self.__create_index(Index.PRIMARY)
@@ -64,7 +64,7 @@ class ReferenceTensor:
 
         # Compute reference tensor
         t = time.time()
-        self.A0 = integrate(product, facet0, facet1, alignment)
+        self.A0 = integrate(monomial, facet0, facet1, alignment)
 
         # Report time to compute the reference tensor
         self.cputime = time.time() - t

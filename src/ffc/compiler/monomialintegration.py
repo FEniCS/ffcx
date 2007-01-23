@@ -30,26 +30,26 @@ from ffc.formlang.multiindex import *
 # FFC compiler modules
 from pointreordering import *
 
-def integrate(product, facet0, facet1, alignment):
+def integrate(monomial, facet0, facet1, alignment):
     """Compute the reference tensor for a given monomial term of a
-    multilinear form, given as a Product."""
+    multilinear form, given as a Monomial."""
 
     debug("Pretabulating basis functions at quadrature points")
 
     # Check for integral type
-    type = product.integral.type
+    type = monomial.integral.type
 
     # Initialize quadrature points and weights
-    (points, weights, vscaling, dscaling) = __init_quadrature(product.basisfunctions, type)
+    (points, weights, vscaling, dscaling) = __init_quadrature(monomial.basisfunctions, type)
 
     # Initialize quadrature table for basis functions
-    table = __init_table(product.basisfunctions, type, points, facet0, facet1, alignment)
+    table = __init_table(monomial.basisfunctions, type, points, facet0, facet1, alignment)
 
     # Compute table Psi for each factor
-    psis = [__compute_psi(v, table, len(points), dscaling) for v in product.basisfunctions]
+    psis = [__compute_psi(v, table, len(points), dscaling) for v in monomial.basisfunctions]
 
     # Compute product of all Psis
-    A0 = __compute_product(psis, vscaling * product.numeric * weights)
+    A0 = __compute_product(psis, vscaling * monomial.numeric * weights)
 
     return A0
 

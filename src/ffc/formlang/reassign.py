@@ -5,8 +5,8 @@ starting at 0. This makes it simpler to implement the algebra, since
 the algebra doesn't need to keep track of indices."""
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-10-13 -- 2006-12-01"
-__copyright__ = "Copyright (C) 2004-2006 Anders Logg"
+__date__ = "2004-10-13 -- 2007-01-23"
+__copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # Python modules
@@ -20,60 +20,60 @@ from ffc.common.exceptions import *
 import algebra
 from index import *
 
-def reassign_indices(sum):
-    """Reassign indices of Sum with all indices starting at 0. Modify
+def reassign_indices(form):
+    """Reassign indices of Form with all indices starting at 0. Modify
     secondary indices not appearing in both the reference and geometry
     tensors to auxiliary indices."""
 
-    # Check that we got a Sum
-    if not isinstance(sum, algebra.Sum):
-        raise RuntimeError, "Can only reassign indices for Sum."
+    # Check that we got a Form
+    if not isinstance(form, algebra.Form):
+        raise RuntimeError, "Can only reassign indices for Form."
 
     # Check for completeness
-    if not iscomplete(sum):
-        raise FormError, (sum, "Given form is not complete.")
+    if not iscomplete(form):
+        raise FormError, (form, "Given form is not complete.")
 
     # Modify secondary indices to auxiliary indices
-    [__create_auxiliary(p) for p in sum.products]
+    [__create_auxiliary(p) for p in form.monomials]
 
-    # Reassign primary indices (global for the Sum)
-    __reassign(sum, Index.PRIMARY)
+    # Reassign primary indices (global for the Form)
+    __reassign(form, Index.PRIMARY)
 
-    # Reassign Function indices (global for the Sum)
-    __reassign(sum, Index.FUNCTION)
+    # Reassign Function indices (global for the Form)
+    __reassign(form, Index.FUNCTION)
 
-    # Reassign Projection indices (global for the Sum)
-    __reassign(sum, Index.PROJECTION)
+    # Reassign Projection indices (global for the Form)
+    __reassign(form, Index.PROJECTION)
 
-    # Reassign Constant indices (global for the Sum)
-    __reassign(sum, Index.CONSTANT)
+    # Reassign Constant indices (global for the Form)
+    __reassign(form, Index.CONSTANT)
 
-    # Reassign secondary indices (global for each Product)
-    [__reassign(p, Index.SECONDARY) for p in sum.products]
+    # Reassign secondary indices (global for each Monomial)
+    [__reassign(p, Index.SECONDARY) for p in form.monomials]
 
-    # Reassign reference tensor auxiliary indices (global for each Product)
-    [__reassign(p, Index.AUXILIARY_0) for p in sum.products]
+    # Reassign reference tensor auxiliary indices (global for each Monomial)
+    [__reassign(p, Index.AUXILIARY_0) for p in form.monomials]
 
-    # Reassign geometry tensor auxiliary indices (global for each Product)
-    [__reassign(p, Index.AUXILIARY_G) for p in sum.products]
+    # Reassign geometry tensor auxiliary indices (global for each Monomial)
+    [__reassign(p, Index.AUXILIARY_G) for p in form.monomials]
 
     # Check for completeness again
-    if not iscomplete(sum):
-        raise FormError, (sum, "Given form is not complete.")
+    if not iscomplete(form):
+        raise FormError, (form, "Given form is not complete.")
     
     return
 
 def iscomplete(object):
-    """Check if given Product or Sum is complete with respect to
+    """Check if given Monomial or Form is complete with respect to
     secondary and auxiliary Indices, that is, each such Index appear
-    exactly twice in each Product."""
-    if isinstance(object, algebra.Sum):
-        # Check that each Product is complete
-        for p in object.products:
+    exactly twice in each Monomial."""
+    if isinstance(object, algebra.Form):
+        # Check that each Monomial is complete
+        for p in object.monomials:
             if not iscomplete(p):
                 return False
         return True
-    elif isinstance (object, algebra.Product):
+    elif isinstance (object, algebra.Monomial):
         # Get secondary and auxiliary Indices
         aindices = []
         bindices = []
@@ -83,14 +83,14 @@ def iscomplete(object):
     else:
         raise RuntimeError, "Unsupported type."
 
-def reassign_complete(product, type):
+def reassign_complete(monomial, type):
     """Reassign complete secondary and auxiliary Index pairs of given
-    type for the given Product, so that they don't collide with
-    Indices in other Products (that may get multiplied with current
-    Product)."""
+    type for the given Monomial, so that they don't collide with
+    Indices in other Monomials (that may get multiplied with current
+    Monomial)."""
     # Get indices
     indices = []
-    product.indexcall(__index_add, [indices, type])
+    monomial.indexcall(__index_add, [indices, type])
     # Find complete pairs
     pairs = []
     for i in range(len(indices)):
@@ -154,27 +154,27 @@ def __have_index(object, index):
     object.indexcall(__index_add_value, [indices, index.type])
     return index.index in indices
 
-def __create_auxiliary(product):
+def __create_auxiliary(monomial):
     """Modify secondary indices not appearing in both the reference
     tensor and geometry tensor to auxiliary indices."""
 
     # Build list of reference tensor secondary indices
     ir = []
-    [v.indexcall(__index_add_value, [ir, Index.SECONDARY]) for v in product.basisfunctions]
+    [v.indexcall(__index_add_value, [ir, Index.SECONDARY]) for v in monomial.basisfunctions]
     # Build list of geometry tensor secondary indices
     ig = []
-    [c.indexcall(__index_add_value, [ig, Index.SECONDARY]) for c in product.coefficients]
-    [t.indexcall(__index_add_value, [ig, Index.SECONDARY]) for t in product.transforms]
+    [c.indexcall(__index_add_value, [ig, Index.SECONDARY]) for c in monomial.coefficients]
+    [t.indexcall(__index_add_value, [ig, Index.SECONDARY]) for t in monomial.transforms]
     # Build lists of indices that should be modified
     irm = [i for i in ir if i not in ig]
     igm = [i for i in ig if i not in ir]
     # Modify indices of reference tensor
-    for v in product.basisfunctions:
+    for v in monomial.basisfunctions:
         v.indexcall(__index_modify, (irm, Index.AUXILIARY_0))
     # Modify indices of geometry tensor
-    for c in product.coefficients:
+    for c in monomial.coefficients:
         c.indexcall(__index_modify, (igm, Index.AUXILIARY_G))
-    for t in product.transforms:
+    for t in monomial.transforms:
         t.indexcall(__index_modify, (igm, Index.AUXILIARY_G))
     return
 
