@@ -16,7 +16,7 @@ from ffc.fem.finiteelement import *
 from declaration import *
 from alignment import *
 
-class DofMap:
+class DofMapOld:
 
     """A NodeMap maps the nodes (degrees of freedom) on a local element
     to global degrees of freedom."""
@@ -215,12 +215,12 @@ def compute_global_dimension(element, format):
     "Compute code for evaluation of global dimension"
     
     # Get topological dimension of cell
-    topological_dimension = len(element.dof_entities) - 1
+    topological_dimension = len(element.entity_dofs()) - 1
 
     # Count the number of dofs associated with each topological dimension
-    dofs_per_dimension = [0 for i in range(len(element.dof_entities))]
-    for dim in element.dof_entities:
-        dof_entities = element.dof_entities[dim]
+    dofs_per_dimension = [0 for i in range(len(element.entity_dofs()))]
+    for dim in element.entity_dofs():
+        dof_entities = element.entity_dofs()[dim]
         num_dofs = [len(dof_entities[entity]) for entity in dof_entities]
         # Check that the number of dofs is equal for each entity
         if not num_dofs[1:] == num_dofs[:-1]:

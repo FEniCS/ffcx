@@ -37,11 +37,12 @@ from ffc.format import ufcformat
 
 # FFC fem modules
 from ffc.fem.mixedelement import *
+from ffc.fem.dofmap import *
 
 # FFC compiler modules
 from form import *
-from elementsearch import *
 from dofmap import *
+from elementsearch import *
 from elementtensor import *
 from exteriorfacettensor import *
 from interiorfacettensor import *
@@ -236,15 +237,16 @@ def __build_form(formcode, format, options):
     if not formcode.trial == None:
         formcode.finite_elements += [formcode.trial]
     formcode.finite_elements += formcode.elements
-    formcode.dof_maps = []
+    formcode.dof_maps_old = []
     if format == ufcformat:
         for element in formcode.finite_elements:
-            formcode.dof_maps += [DofMap(element, format)]
+            formcode.dof_maps_old += [DofMapOld(element, format)]
+    formcode.dof_maps = [DofMap(element) for element in formcode.finite_elements]
 
     # Generate code
     code = {}
     if format == ufcformat:
-        code = generate_code(formcode.finite_elements, format)
+        code = generate_code(formcode.finite_elements, formcode.dof_maps, format)
 
     return code
 

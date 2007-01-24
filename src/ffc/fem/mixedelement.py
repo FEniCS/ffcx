@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2005-09-16 -- 2007-01-22"
+__date__ = "2005-09-16 -- 2007-01-24"
 __copyright__ = "Copyright (C) 2005-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -205,6 +205,10 @@ class MixedElement:
             offset += element.space_dimension()
 
         return mixed_table
+
+    def signature(self):
+        "Return a string identifying the finite element"
+        return "Mixed finite element: [%s]" % ", ".join([element.signature() for element in self.elements])
 
 #    def __create_basis(self):
 #        "Create basis for mixed element."

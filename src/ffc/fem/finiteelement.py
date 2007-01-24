@@ -120,7 +120,7 @@ class FiniteElement:
 
         # FIXME: Attributes in new format
         self.fiat_element = self.element
-        self.dof_entities = self.fiat_element.dual_basis().entity_ids
+        self.__entity_dofs = self.fiat_element.dual_basis().entity_ids
 
         return
 
@@ -213,6 +213,12 @@ class FiniteElement:
         else:
             return "%s finite element of degree %d on a %s" % \
                    (self.type_str, self.degree(), self.shape_str)
+
+    def entity_dofs(self):
+        """Return a dictionary mapping the mesh entities of the
+        reference cell to the degrees of freedom associated with
+        the entity"""
+        return self.__entity_dofs
 
     def __add__(self, other):
         "Create mixed element."

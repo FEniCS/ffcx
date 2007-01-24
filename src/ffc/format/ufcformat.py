@@ -86,8 +86,8 @@ def write(forms, code, options):
             output += "\n"
 
         # Generate code for ufc::dof_map(s)
-        for i in range(len(form.dof_maps)):
-            output += __generate_dof_map(form.dof_maps[i], prefix, i, options)
+        for i in range(len(form.dof_maps_old)):
+            output += __generate_dof_map(form.dof_maps_old[i], code[("dof_map", i)], prefix, i, options)
             output += "\n"
 
         # Generate code for ufc::cell_integral
@@ -144,34 +144,34 @@ def __generate_footer(prefix, options):
 #endif
 """
 
-def __generate_finite_element(finite_element, finite_element_code, prefix, i, options):
-    "Generate code for ufc::finite_element"
+def __generate_finite_element(finite_element, code, prefix, i, options):
+    "Generate (modify) code for ufc::finite_element"
 
-    code = {}
+    ufc_code = {}
 
     # Set class name
-    code["classname"] = "%s_finite_element_%d" % (prefix, i)
+    ufc_code["classname"] = "%s_finite_element_%d" % (prefix, i)
 
     # Generate code for members
-    code["members"] = ""
+    ufc_code["members"] = ""
 
     # Generate code for constructor
-    code["constructor"] = "// Do nothing"
+    ufc_code["constructor"] = "// Do nothing"
 
     # Generate code for destructor
-    code["destructor"] = "// Do nothing"
+    ufc_code["destructor"] = "// Do nothing"
 
     # Generate code for signature
-    code["signature"] = "return \"%s\";" % finite_element_code["signature"]
+    ufc_code["signature"] = "return \"%s\";" % code["signature"]
 
     # Generate code for cell_shape
-    code["cell_shape"] = "return ufc::%s;" % shape_to_string[finite_element.cell_shape()]
+    ufc_code["cell_shape"] = "return ufc::%s;" % shape_to_string[finite_element.cell_shape()]
     
     # Generate code for space_dimension
-    code["space_dimension"] = "return %s;" % finite_element_code["space_dimension"]
+    ufc_code["space_dimension"] = "return %s;" % code["space_dimension"]
 
     # Generate code for value_rank
-    code["value_rank"] = "return %s;" % finite_element_code["value_rank"]
+    ufc_code["value_rank"] = "return %s;" % code["value_rank"]
 
     # Generate code for value_dimension
     if finite_element.value_rank() == 0:
@@ -181,80 +181,80 @@ def __generate_finite_element(finite_element, finite_element_code, prefix, i, op
         for i in range(finite_element.value_rank()):
             body += "case %d:\n  return %d;\n  break;\n" % finite_element.value_dimension(i)
         body += "default:\n  return 0;\n}"
-    code["value_dimension"] = body
+    ufc_code["value_dimension"] = body
 
     # Generate code for evaluate_basis (FIXME: not implemented)
-    code["evaluate_basis"] = "// Not implemented"
+    ufc_code["evaluate_basis"] = "// Not implemented"
 
     # Generate code for evaluate_dof (FIXME: not implemented)
-    code["evaluate_dof"] = "// Not implemented\nreturn 0.0;"
+    ufc_code["evaluate_dof"] = "// Not implemented\nreturn 0.0;"
 
     # Generate code for inperpolate_vertex_values (FIXME: not implemented)
-    code["interpolate_vertex_values"] = "// Not implemented"
+    ufc_code["interpolate_vertex_values"] = "// Not implemented"
 
     # Generate code for num_sub_elements
-    code["num_sub_elements"] = "return %d;" % finite_element.num_sub_elements()
+    ufc_code["num_sub_elements"] = "return %d;" % finite_element.num_sub_elements()
 
     # Generate code for sub_element
     if finite_element.num_sub_elements() == 1:
-        body = "return new %s;" % code["classname"]
+        body = "return new %s;" % ufc_code["classname"]
     else:
         body = "switch ( i )\n{\n"
         for i in range(finite_element.num_sub_elements()):
-            body += "case %d:\n  return new %s_sub_element_%d();\n  break;\n" % (i, code["classname"], i)
+            body += "case %d:\n  return new %s_sub_element_%d();\n  break;\n" % (i, ufc_code["classname"], i)
         body += "default:\n  return 0;\n}"
-    code["create_sub_element"] = body
+    ufc_code["create_sub_element"] = body
 
-    return __generate_code(finite_element_combined, code)
+    return __generate_code(finite_element_combined, ufc_code)
 
-def __generate_dof_map(dof_map, prefix, i, options):
+def __generate_dof_map(dof_map, code, prefix, i, options):
     "Generate code for ufc::dof_map"
 
-    code = {}
+    ufc_code = {}
 
     # Set class name
-    code["classname"] = "%s_dof_map_%d" % (prefix, i)
+    ufc_code["classname"] = "%s_dof_map_%d" % (prefix, i)
 
     # Generate code for members
-    code["members"] = "\nprivate:\n\n  unsigned int __global_dimension;\n"
+    ufc_code["members"] = "\nprivate:\n\n  unsigned int __global_dimension;\n"
 
     # Generate code for constructor
-    code["constructor"] = "__global_dimension = 0;"
+    ufc_code["constructor"] = "__global_dimension = 0;"
 
     # Generate code for destructor
-    code["destructor"] = "// Do nothing"
+    ufc_code["destructor"] = "// Do nothing"
 
     # Generate code for signature
-    code["signature"] = "return \"%s\";" % dof_map.signature
+    ufc_code["signature"] = "return \"%s\";" % code["signature"]
 
     # Generate code for needs_mesh_entities
-    code["needs_mesh_entities"] = "// Not implemented\nreturn true;"
+    ufc_code["needs_mesh_entities"] = "// Not implemented\nreturn true;"
 
     # Generate code for init_mesh
-    code["init_mesh"] = "__global_dimension = %s;\nreturn false;" % dof_map.global_dimension
+    ufc_code["init_mesh"] = "__global_dimension = %s;\nreturn false;" % dof_map.global_dimension
 
     # Generate code for init_cell
-    code["init_cell"] = "// Do nothing"
+    ufc_code["init_cell"] = "// Do nothing"
 
     # Generate code for init_cell_finalize
-    code["init_cell_finalize"] = "// Do nothing"
+    ufc_code["init_cell_finalize"] = "// Do nothing"
 
     # Generate code for global_dimension
-    code["global_dimension"] = "return __global_dimension;"
+    ufc_code["global_dimension"] = "return __global_dimension;"
 
     # Generate code for local dimension
-    code["local_dimension"] = "return %d;" % dof_map.local_dimension
+    ufc_code["local_dimension"] = "return %d;" % dof_map.local_dimension
 
     # Generate code for num_facet_dofs
-    code["num_facet_dofs"] = "// Not implemented\nreturn 0;"
+    ufc_code["num_facet_dofs"] = "// Not implemented\nreturn 0;"
 
     # Generate code for tabulate_dofs
-    code["tabulate_dofs"] = "// Not implemented"
+    ufc_code["tabulate_dofs"] = "// Not implemented"
 
     # Generate code for tabulate_facet_dofs
-    code["tabulate_facet_dofs"] = "// Not implemented"
+    ufc_code["tabulate_facet_dofs"] = "// Not implemented"
 
-    return __generate_code(dof_map_combined, code)
+    return __generate_code(dof_map_combined, ufc_code)
 
 def __generate_cell_integral(prefix, options):
     "Generate code for ufc::cell_integral"
