@@ -1,3 +1,5 @@
+# FIXME: This module will be removed and replaced by codegen.dofmap
+
 __author__ = "Robert C. Kirby (kirby@cs.uchicago.edu) and Anders Logg (logg@simula.no)"
 __date__ = "2005-05-03 -- 2007-01-22"
 __copyright__ = "Copyright (C) 2005-2007 Kirby/Logg"
@@ -27,9 +29,6 @@ class DofMapOld:
         # Check that we get a FiniteElement
         if not isinstance(element, FiniteElement):
             raise RuntimeError, "A DofMap must be generated from a FiniteElement."
-
-        # Compute global dimension
-        self.global_dimension = compute_global_dimension(element, format)
 
         # Get local dimension (equal to space dimension of element)
         self.local_dimension = element.space_dimension()
@@ -211,34 +210,3 @@ class DofMapOld:
 
         return (declarations, data)
 
-def compute_global_dimension(element, format):
-    "Compute code for evaluation of global dimension"
-    
-    # Get topological dimension of cell
-    topological_dimension = len(element.entity_dofs()) - 1
-
-    # Count the number of dofs associated with each topological dimension
-    dofs_per_dimension = [0 for i in range(len(element.entity_dofs()))]
-    for dim in element.entity_dofs():
-        dof_entities = element.entity_dofs()[dim]
-        num_dofs = [len(dof_entities[entity]) for entity in dof_entities]
-        # Check that the number of dofs is equal for each entity
-        if not num_dofs[1:] == num_dofs[:-1]:
-            raise RuntimeError, "The number of dofs must be equal for all entities within a dimension."
-        # The number of dofs is equal so pick the first
-        dofs_per_dimension[dim] = num_dofs[0]
-
-    # Generate code for computing global dimension
-    terms = []
-    for dim in range(len(dofs_per_dimension)):
-        n = dofs_per_dimension[dim]
-        if n == 1:
-            terms += [format.format["num_entities"](dim)]
-        elif n > 1:
-            terms += format.format["multiply"]([n, format.format["num_entities"](dim)])
-    if len(terms) == 0:
-        code = "0"
-    else:
-        code = format.format["add"](terms)
-
-    return code

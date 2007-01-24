@@ -231,7 +231,7 @@ def __generate_dof_map(dof_map, code, prefix, i, options):
     ufc_code["needs_mesh_entities"] = "// Not implemented\nreturn true;"
 
     # Generate code for init_mesh
-    ufc_code["init_mesh"] = "__global_dimension = %s;\nreturn false;" % dof_map.global_dimension
+    ufc_code["init_mesh"] = "__global_dimension = %s;\nreturn false;" % code["global_dimension"]
 
     # Generate code for init_cell
     ufc_code["init_cell"] = "// Do nothing"

@@ -15,11 +15,46 @@ def generate_dof_map(dof_map, format):
     code = {}
 
     # Generate code for signature
-    print dof_map
     code["signature"] = dof_map.signature()
 
+    # Generate code for global_dimension
+    code["global_dimension"] = __compute_global_dimension(dof_map, format)
 
     return code
+
+def __compute_global_dimension(dof_map, format):
+    "Compute code for evaluation of global dimension"
+    
+    # Get topological dimension of cell
+    topological_dimension = len(dof_map.entity_dofs()) - 1
+
+    # Count the number of dofs associated with each topological dimension
+    dofs_per_dimension = [0 for dim in dof_map.entity_dofs()]
+    for dim in dof_map.entity_dofs():
+        entity_dofs = dof_map.entity_dofs()[dim]
+        num_dofs = [len(entity_dofs[entity]) for entity in entity_dofs]
+        # Check that the number of dofs is equal for each entity
+        if not num_dofs[1:] == num_dofs[:-1]:
+            raise RuntimeError, "The number of dofs must be equal for all entities within a topological dimension."
+        # The number of dofs is equal so pick the first
+        dofs_per_dimension[dim] = num_dofs[0]
+
+    # Generate code for computing global dimension
+    terms = []
+    for dim in range(len(dofs_per_dimension)):
+        n = dofs_per_dimension[dim]
+        if n == 1:
+            terms += [format.format["num_entities"](dim)]
+        elif n > 1:
+            terms += [format.format["multiply"]([str(n), format.format["num_entities"](dim)])]
+    if len(terms) == 0:
+        code = "0"
+    else:
+        code = format.format["add"](terms)
+
+    return code
+
+
 
 # # FIAT modules
 # from FIAT.dualbasis import *
@@ -227,34 +262,3 @@ def generate_dof_map(dof_map, format):
 
 #         return (declarations, data)
 
-# def compute_global_dimension(element, format):
-#     "Compute code for evaluation of global dimension"
-    
-#     # Get topological dimension of cell
-#     topological_dimension = len(element.dof_entities) - 1
-
-#     # Count the number of dofs associated with each topological dimension
-#     dofs_per_dimension = [0 for i in range(len(element.dof_entities))]
-#     for dim in element.dof_entities:
-#         dof_entities = element.dof_entities[dim]
-#         num_dofs = [len(dof_entities[entity]) for entity in dof_entities]
-#         # Check that the number of dofs is equal for each entity
-#         if not num_dofs[1:] == num_dofs[:-1]:
-#             raise RuntimeError, "The number of dofs must be equal for all entities within a dimension."
-#         # The number of dofs is equal so pick the first
-#         dofs_per_dimension[dim] = num_dofs[0]
-
-#     # Generate code for computing global dimension
-#     terms = []
-#     for dim in range(len(dofs_per_dimension)):
-#         n = dofs_per_dimension[dim]
-#         if n == 1:
-#             terms += [format.format["num_entities"](dim)]
-#         elif n > 1:
-#             terms += format.format["multiply"]([n, format.format["num_entities"](dim)])
-#     if len(terms) == 0:
-#         code = "0"
-#     else:
-#         code = format.format["add"](terms)
-
-#     return code
