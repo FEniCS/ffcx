@@ -1,4 +1,5 @@
  - Add support for Discontinuous Galerkin (DG) methods
+ - Use Set from set module for Python2.3 compatibility
 0.3.5 [2006-12-01]
  - Bug fixes
  - Move from Numeric to numpy

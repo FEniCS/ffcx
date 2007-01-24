@@ -12,6 +12,7 @@ __license__  = "GNU GPL Version 2"
 
 # Python modules
 import sys
+from sets import Set
 
 # FFC common modules
 from ffc.common.debug import *
@@ -179,14 +180,14 @@ def __build_form(formcode, format, options):
     formcode.projections = find_projections(formcode.form, formcode.nprojections)
 
     # Create empty sets of used coefficient declarations
-    cK_used  = set()
-    cSe_used = set()
-    cSi_used = set()
+    cK_used  = Set()
+    cSe_used = Set()
+    cSi_used = Set()
 
     # Create empty sets of used geometry tensor declarations
-    gK_used  = set()
-    gSe_used = set()
-    gSi_used = set()
+    gK_used  = Set()
+    gSe_used = Set()
+    gSi_used = Set()
 
     # Compute element tensor for cell
     debug("Compiling tensor representation over cells")
