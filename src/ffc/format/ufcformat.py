@@ -1,7 +1,7 @@
 "Code generation for the UFC 1.0 format."
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-01-08 -- 2007-01-08"
+__date__ = "2007-01-08 -- 2007-01-24"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -64,9 +64,11 @@ def init(options):
     "Initialize code generation for the UFC 1.0 format."
     pass
     
-def write(forms, options):
+def write(forms, code, options):
     "Generate code for the UFC 1.0 format."
     debug("Generating code for UFC 1.0")
+
+    print "code = ", code
 
     for form in forms:
     
@@ -80,7 +82,7 @@ def write(forms, options):
 
         # Generate code for ufc::finite_element(s)
         for i in range(len(form.finite_elements)):
-            output += __generate_finite_element(form.finite_elements[i], prefix, i, options)
+            output += __generate_finite_element(form.finite_elements[i], code[("finite_element", i)], prefix, i, options)
             output += "\n"
 
         # Generate code for ufc::dof_map(s)
@@ -142,7 +144,7 @@ def __generate_footer(prefix, options):
 #endif
 """
 
-def __generate_finite_element(finite_element, prefix, i, options):
+def __generate_finite_element(finite_element, finite_element_code, prefix, i, options):
     "Generate code for ufc::finite_element"
 
     code = {}
@@ -160,16 +162,16 @@ def __generate_finite_element(finite_element, prefix, i, options):
     code["destructor"] = "// Do nothing"
 
     # Generate code for signature
-    code["signature"] = "return \"%s\";" % finite_element.signature()
+    code["signature"] = "return \"%s\";" % finite_element_code["signature"]
 
     # Generate code for cell_shape
     code["cell_shape"] = "return ufc::%s;" % shape_to_string[finite_element.cell_shape()]
     
     # Generate code for space_dimension
-    code["space_dimension"] = "return %d;" % finite_element.space_dimension()
+    code["space_dimension"] = "return %s;" % finite_element_code["space_dimension"]
 
     # Generate code for value_rank
-    code["value_rank"] = "return %d;" % finite_element.value_rank()
+    code["value_rank"] = "return %s;" % finite_element_code["value_rank"]
 
     # Generate code for value_dimension
     if finite_element.value_rank() == 0:

@@ -66,7 +66,7 @@ def init(options):
 
     return
 
-def write(forms, options):
+def write(forms, code, options):
     "Generate code for DOLFIN format."
     debug("\nGenerating output for DOLFIN")
 

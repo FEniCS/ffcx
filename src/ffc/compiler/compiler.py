@@ -28,6 +28,13 @@ from ffc.formlang.integral import *
 from ffc.formlang.signature import *
 from ffc.formlang.operators import *
 
+# FFC codegen modules
+from ffc.codegen.codegenerator import *
+
+# FFC format modules
+from ffc.format import dolfin
+from ffc.format import ufcformat
+
 # FFC fem modules
 from ffc.fem.mixedelement import *
 
@@ -53,11 +60,11 @@ def compile(forms, name = "Form", language = FFC_LANGUAGE, options = FFC_OPTIONS
             options[key] = FFC_OPTIONS[key]
 
     # Build data structures
-    formcodes = build(forms, name, language, options)
+    (formcodes, code) = build(forms, name, language, options)
 
     # Generate code
     if not formcodes == None:
-        write(formcodes, options)
+        write(formcodes, code, options)
 
     return formcodes
 
@@ -86,15 +93,15 @@ def build(forms, name = "Form", language = FFC_LANGUAGE, options = FFC_OPTIONS):
 
     # Generate the element tensor for all given forms
     for formcode in formcodes:
-        __build_form(formcode, format, options)
+        code = __build_form(formcode, format, options)
 
     # Return formcode(s)
     if len(formcodes) > 1:
-        return formcodes
+        return (formcodes, code)
     else:
-        return formcodes[0]
+        return (formcodes[0], code)
 
-def write(formcodes, options = FFC_OPTIONS):
+def write(formcodes, code, options = FFC_OPTIONS):
     "Generate code from previously built data structures."
 
     # Add default values for any missing options
@@ -119,7 +126,8 @@ def write(formcodes, options = FFC_OPTIONS):
     format = formcodes[0].format
 
     # Generate output for all formcodes
-    format.write(formcodes, options)
+    # FIXME: Should be two arguments when this is fixed: code, options
+    format.write(formcodes, code, options)
 
     return
 
@@ -229,10 +237,16 @@ def __build_form(formcode, format, options):
         formcode.finite_elements += [formcode.trial]
     formcode.finite_elements += formcode.elements
     formcode.dof_maps = []
-    from ffc.format import ufcformat
     if format == ufcformat:
         for element in formcode.finite_elements:
             formcode.dof_maps += [DofMap(element, format)]
+
+    # Generate code
+    code = {}
+    if format == ufcformat:
+        code = generate_code(formcode.finite_elements, format)
+
+    return code
 
 def __check_primary_ranks(formcode, num_facets, num_alignments):
     "Check that all primary ranks are equal."
@@ -326,22 +340,16 @@ def __choose_format(language):
 
     # Choose format
     if language.lower() == "ufc":
-        from ffc.format import ufcformat
         format = ufcformat
     elif language.lower() == "dolfin":
-        from ffc.format import dolfin
         format = dolfin
     elif language.lower() == "latex":
-        from ffc.format import latex
         format = latex
     elif language.lower() == "raw":
-        from ffc.format import raw
         format = raw
     elif language.lower() == "ase":
-        from ffc.format import ase
         format = ase
     elif language.lower() == "xml":
-        from ffc.format import xml
         format = xml
     else:
         raise "RuntimeError", "Unknown language " + str(language)
