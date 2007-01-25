@@ -56,10 +56,6 @@ class DofMap:
             if not num_dofs[1:] == num_dofs[:-1]:
                 raise RuntimeError, "The number of dofs must be equal for all entities within a topological dimension."
             # The number of dofs is equal so pick the first
-            # FIXME: The if-case is a bug fix for a BDM bug in FIAT
-            if len(num_dofs) == 0:
-                dofs_per_dimension[dim] = 0
-            else:
-                dofs_per_dimension[dim] = num_dofs[0]
+            dofs_per_dimension[dim] = num_dofs[0]
 
         return tuple(dofs_per_dimension)
