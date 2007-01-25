@@ -42,7 +42,6 @@ from ffc.fem.dofmap import *
 
 # FFC compiler modules
 from form import *
-from dofmap import *
 from elementsearch import *
 from elementtensor import *
 from exteriorfacettensor import *
@@ -232,16 +231,13 @@ def __build_form(formcode, format, options):
     formcode.signature = str(formcode.form) # FIXME: Use signature.py
     formcode.rank = formcode.rank
     formcode.num_coefficients = formcode.nfunctions
+    formcode.num_arguments = formcode.rank + formcode.num_coefficients
     formcode.finite_elements = []
     if not formcode.test == None:
         formcode.finite_elements += [formcode.test]
     if not formcode.trial == None:
         formcode.finite_elements += [formcode.trial]
     formcode.finite_elements += formcode.elements
-    formcode.dof_maps_old = []
-    if format == ufcformat:
-        for element in formcode.finite_elements:
-            formcode.dof_maps_old += [DofMapOld(element, format)]
     formcode.dof_maps = [DofMap(element) for element in formcode.finite_elements]
 
     # Generate code

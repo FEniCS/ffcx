@@ -80,14 +80,17 @@ def write(forms, code, options):
         output += __generate_header(prefix, options)
         output += "\n"
 
+        # Compute number of argument functions
+        
+
         # Generate code for ufc::finite_element(s)
-        for i in range(len(form.finite_elements)):
+        for i in range(form.num_arguments):
             output += __generate_finite_element(form.finite_elements[i], code[("finite_element", i)], prefix, i, options)
             output += "\n"
 
         # Generate code for ufc::dof_map(s)
-        for i in range(len(form.dof_maps_old)):
-            output += __generate_dof_map(form.dof_maps_old[i], code[("dof_map", i)], prefix, i, options)
+        for i in range(form.num_arguments):
+            output += __generate_dof_map(code[("dof_map", i)], options, prefix, i)
             output += "\n"
 
         # Generate code for ufc::cell_integral
@@ -207,7 +210,7 @@ def __generate_finite_element(finite_element, code, prefix, i, options):
 
     return __generate_code(finite_element_combined, ufc_code)
 
-def __generate_dof_map(dof_map, code, prefix, i, options):
+def __generate_dof_map(code, options, prefix, i):
     "Generate code for ufc::dof_map"
 
     ufc_code = {}
@@ -243,7 +246,7 @@ def __generate_dof_map(dof_map, code, prefix, i, options):
     ufc_code["global_dimension"] = "return __global_dimension;"
 
     # Generate code for local dimension
-    ufc_code["local_dimension"] = "return %d;" % dof_map.local_dimension
+    ufc_code["local_dimension"] = "return %s;" % code["local_dimension"]
 
     # Generate code for num_facet_dofs
     ufc_code["num_facet_dofs"] = "// Not implemented\nreturn 0;"
@@ -349,17 +352,15 @@ def __generate_form(form, prefix, options):
     code["num_coefficients"] = "return %d;" % form.num_coefficients
 
     # Generate code for create_finite_element
-    num_arguments = form.rank + form.num_coefficients
     body = "switch ( i )\n{\n"
-    for i in range(num_arguments):
+    for i in range(form.num_arguments):
         body += "case %d:\n  return new %s_finite_element_%d();\n  break;\n" % (i, prefix, i)
     body += "default:\n  return 0;\n}\n\nreturn 0;"
     code["create_finite_element"] = body
 
     # Generate code for create_dof_map
-    num_arguments = form.rank + form.num_coefficients
     body = "switch ( i )\n{\n"
-    for i in range(num_arguments):
+    for i in range(form.num_arguments):
         body += "case %d:\n  return new %s_dof_map_%d();\n  break;\n" % (i, prefix, i)
     body += "default:\n  return 0;\n}\n\nreturn 0;"
     code["create_dof_map"] = body

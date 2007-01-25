@@ -1,4 +1,4 @@
-__author__ = "Anders Logg (logg@simula.no)"
+_author__ = "Anders Logg (logg@simula.no)"
 __date__ = "2005-09-16 -- 2007-01-24"
 __copyright__ = "Copyright (C) 2005-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
@@ -122,6 +122,10 @@ class MixedElement:
         # Create vertex evaluation
         self.vertexeval = VertexEval(self.elements)
 
+        # FIXME: Not implemented
+        self.__entity_dofs = {}
+
+
     def basis(self):
         "Return basis of finite element space."
         raise RuntimeError, "Basis cannot be accessed explicitly for mixed element."
@@ -209,6 +213,12 @@ class MixedElement:
     def signature(self):
         "Return a string identifying the finite element"
         return "Mixed finite element: [%s]" % ", ".join([element.signature() for element in self.elements])
+
+    def entity_dofs(self):
+        """Return a dictionary mapping the mesh entities of the
+        reference cell to the degrees of freedom associated with
+        the entity"""
+        return self.__entity_dofs
 
 #    def __create_basis(self):
 #        "Create basis for mixed element."
