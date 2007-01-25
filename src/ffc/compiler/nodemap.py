@@ -1,9 +1,9 @@
+# FIXME: This module will be removed (replaced by two dofmap modules)
+
 __author__ = "Robert C. Kirby (kirby@cs.uchicago.edu) and Anders Logg (logg@simula.no)"
 __date__ = "2005-05-03 -- 2006-10-19"
 __copyright__ = "Copyright (C) 2005-2006 Kirby/Logg"
 __license__  = "GNU GPL Version 2"
-
-# This file was previously named dofmap.py
 
 # FIAT modules
 from FIAT.dualbasis import *

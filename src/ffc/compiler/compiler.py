@@ -46,7 +46,6 @@ from elementsearch import *
 from elementtensor import *
 from exteriorfacettensor import *
 from interiorfacettensor import *
-from projection import *
 
 def compile(forms, name = "Form", language = FFC_LANGUAGE, options = FFC_OPTIONS):
     """Compile variational form(s). This function takes as argument a

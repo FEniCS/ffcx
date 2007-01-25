@@ -2,7 +2,7 @@
 based on the basic form algebra operations."""
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2005-09-07 -- 2007-01-22"
+__date__ = "2005-09-07 -- 2007-01-26"
 __copyright__ = "Copyright (C) 2005-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -21,9 +21,7 @@ from ffc.common.exceptions import *
 
 # FFC fem modules
 from ffc.fem.finiteelement import *
-
-# FFC compiler modules
-from ffc.compiler.projection import *
+from ffc.fem.projection import *
 
 # FFC formlang modules
 from ffc.formlang.index import *
