@@ -35,9 +35,9 @@ def __generate_global_dimension(dof_map, format):
     for dim in range(len(dofs_per_dimension)):
         n = dofs_per_dimension[dim]
         if n == 1:
-            terms += [format.format["num_entities"](dim)]
+            terms += [format.format["num entities"](dim)]
         elif n > 1:
-            terms += [format.format["multiply"]([str(n), format.format["num_entities"](dim)])]
+            terms += [format.format["multiply"]([str(n), format.format["num entities"](dim)])]
     if len(terms) == 0:
         code = "0"
     else:

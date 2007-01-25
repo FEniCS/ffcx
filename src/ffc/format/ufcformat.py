@@ -10,9 +10,6 @@ from ffc.common.util import *
 from ffc.common.debug import *
 from ffc.common.constants import *
 
-# FFC fem modules
-from ffc.fem.finiteelement import *
-
 # FFC format modules
 from ufc import *
 
@@ -34,31 +31,10 @@ format = { "add": lambda l: " + ".join(l),
            "element tensor": lambda i, k: "block[%d]" % k,
            "tmp declaration": lambda j, k: "const real tmp%d_%d" % (j, k),
            "tmp access": lambda j, k: "tmp%d_%d" % (j, k),
-           ("entity", 2, 0) : lambda i : "cell.entities(0)[%d]" % i,
-           ("entity", 2, 1) : lambda i : "cell.entities(1)[%d]" % i,
-           ("entity", 2, 2) : lambda i : "cell.index()",
-           ("entity", 2, 3) : lambda i : "not defined",
-           ("entity", 3, 0) : lambda i : "cell.entities(0)[%d]" % i,
-           ("entity", 3, 1) : lambda i : "cell.entities(1)[%d]" % i,
-           ("entity", 3, 2) : lambda i : "cell.entities(2)[%d]" % i,
-           ("entity", 3, 3) : lambda i : "cell.index()",
-           ("num",    2, 0) : "mesh.topology().size(0)",
-           ("num",    2, 1) : "mesh.topology().size(1)",
-           ("num",    2, 2) : "mesh.topology().size(2)",
-           ("num",    2, 3) : "not defined",
-           ("num",    3, 0) : "mesh.topology().size(0)",
-           ("num",    3, 1) : "mesh.topology().size(1)",
-           ("num",    3, 2) : "mesh.topology().size(2)",
-           ("num",    3, 3) : "mesh.topology().size(3)",
-           ("check",  2, 0) : lambda i : "not defined",
-           ("check",  2, 1) : lambda i : "cell.alignment(1, %d)" % i,
-           ("check",  2, 2) : lambda i : "not defined",
-           ("check",  2, 3) : lambda i : "not defined",
-           ("check",  3, 0) : lambda i : "not defined",
-           ("check",  3, 1) : lambda i : "cell.alignment(1, %d)" % i,
-           ("check",  3, 2) : lambda i : "cell.alignment(2, %d)" % i,
-           ("check",  3, 3) : lambda i : "not defined",
-           "num_entities" : lambda dim : "m.num_entities[%d]" % dim}
+           "entity": lambda d, i: "c.entities(%d)[%d]" % (d, i),
+           "num entities": lambda dim : "m.num_entities[%d]" % dim,
+           "sub element": lambda i: "sub_element_%d" % i,
+           "cell shape": lambda i: {1: "ufc::line", 2: "ufc::triangle", 3: "ufc::tetrahedron"}[i]}
 
 def init(options):
     "Initialize code generation for the UFC 1.0 format."
@@ -67,8 +43,6 @@ def init(options):
 def write(forms, code, options):
     "Generate code for the UFC 1.0 format."
     debug("Generating code for UFC 1.0")
-
-    print "code = ", code
 
     for form in forms:
     
@@ -80,12 +54,9 @@ def write(forms, code, options):
         output += __generate_header(prefix, options)
         output += "\n"
 
-        # Compute number of argument functions
-        
-
         # Generate code for ufc::finite_element(s)
         for i in range(form.num_arguments):
-            output += __generate_finite_element(form.finite_elements[i], code[("finite_element", i)], prefix, i, options)
+            output += __generate_finite_element(code[("finite_element", i)], options, prefix, i)
             output += "\n"
 
         # Generate code for ufc::dof_map(s)
@@ -147,7 +118,7 @@ def __generate_footer(prefix, options):
 #endif
 """
 
-def __generate_finite_element(finite_element, code, prefix, i, options):
+def __generate_finite_element(code, options, prefix, i):
     "Generate (modify) code for ufc::finite_element"
 
     ufc_code = {}
@@ -168,7 +139,7 @@ def __generate_finite_element(finite_element, code, prefix, i, options):
     ufc_code["signature"] = "return \"%s\";" % code["signature"]
 
     # Generate code for cell_shape
-    ufc_code["cell_shape"] = "return ufc::%s;" % shape_to_string[finite_element.cell_shape()]
+    ufc_code["cell_shape"] = "return %s;" % code["cell_shape"]
     
     # Generate code for space_dimension
     ufc_code["space_dimension"] = "return %s;" % code["space_dimension"]
@@ -177,12 +148,13 @@ def __generate_finite_element(finite_element, code, prefix, i, options):
     ufc_code["value_rank"] = "return %s;" % code["value_rank"]
 
     # Generate code for value_dimension
-    if finite_element.value_rank() == 0:
-        body = "return %d;" % finite_element.value_dimension(0)
+    value_rank = len(code["value_dimension"])
+    if value_rank == 1:
+        body = "return %s;" % code["value_dimension"][0]
     else:
         body = "switch ( i )\n{\n"
-        for i in range(finite_element.value_rank()):
-            body += "case %d:\n  return %d;\n  break;\n" % finite_element.value_dimension(i)
+        for i in range(value_rank):
+            body += "case %d:\n  return %s;\n  break;\n" % (i, code["value_dimension"][i])
         body += "default:\n  return 0;\n}"
     ufc_code["value_dimension"] = body
 
@@ -196,15 +168,16 @@ def __generate_finite_element(finite_element, code, prefix, i, options):
     ufc_code["interpolate_vertex_values"] = "// Not implemented"
 
     # Generate code for num_sub_elements
-    ufc_code["num_sub_elements"] = "return %d;" % finite_element.num_sub_elements()
+    ufc_code["num_sub_elements"] = "return %s;" % code["num_sub_elements"]
 
     # Generate code for sub_element
-    if finite_element.num_sub_elements() == 1:
+    num_sub_elements = len(code["create_sub_elements"])
+    if num_sub_elements == 1:
         body = "return new %s;" % ufc_code["classname"]
     else:
         body = "switch ( i )\n{\n"
-        for i in range(finite_element.num_sub_elements()):
-            body += "case %d:\n  return new %s_sub_element_%d();\n  break;\n" % (i, ufc_code["classname"], i)
+        for i in range(num_sub_elements):
+            body += "case %d:\n  return new %s_%s();\n  break;\n" % (i, ufc_code["classname"], code["create_sub_elements"][i])
         body += "default:\n  return 0;\n}"
     ufc_code["create_sub_element"] = body
 

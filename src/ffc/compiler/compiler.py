@@ -231,18 +231,23 @@ def __build_form(formcode, format, options):
     formcode.rank = formcode.rank
     formcode.num_coefficients = formcode.nfunctions
     formcode.num_arguments = formcode.rank + formcode.num_coefficients
-    formcode.finite_elements = []
+
+    # FIXME: Don't do this here
+    # Extract finite elements
+    elements = []
     if not formcode.test == None:
-        formcode.finite_elements += [formcode.test]
+        elements += [formcode.test]
     if not formcode.trial == None:
-        formcode.finite_elements += [formcode.trial]
-    formcode.finite_elements += formcode.elements
-    formcode.dof_maps = [DofMap(element) for element in formcode.finite_elements]
+        elements += [formcode.trial]
+    elements += formcode.elements
+
+    # Create dof maps
+    dof_maps = [DofMap(element) for element in elements]
 
     # Generate code
     code = {}
     if format == ufcformat:
-        code = generate_code(formcode.finite_elements, formcode.dof_maps, format)
+        code = generate_code(elements, dof_maps, format)
 
     return code
 
