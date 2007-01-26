@@ -1,7 +1,7 @@
 "Code generation for finite element"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-01-23 -- 2007-01-23"
+__date__ = "2007-01-23 -- 2007-01-26"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -40,9 +40,5 @@ def generate_finite_element(element, format):
 
     # Generate code for num_sub_elements
     code["num_sub_elements"] = "%d" % element.num_sub_elements()
-
-    # Generate code for create_sub_elements
-    print format
-    code["create_sub_elements"] = [format.format["sub element"](i) for i in range(element.num_sub_elements())]
 
     return code

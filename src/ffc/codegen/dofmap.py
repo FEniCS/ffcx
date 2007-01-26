@@ -17,6 +17,9 @@ def generate_dof_map(dof_map, format):
     # Generate code for signature
     code["signature"] = dof_map.signature()
 
+    # Generate code for needs_mesh_entities
+    code["needs_mesh_entities"] = __generate_needs_mesh_entities(dof_map, format)
+
     # Generate code for global_dimension
     code["global_dimension"] = __generate_global_dimension(dof_map, format)
 
@@ -25,12 +28,24 @@ def generate_dof_map(dof_map, format):
 
     return code
 
+def __generate_needs_mesh_entities(dof_map, format):
+    "Generate code for needs_mesh_entities"
+
+    # Get the number of dofs per dimension
+    dofs_per_dimension = dof_map.dofs_per_dimension()
+
+    # Entities needed if at least one dof is associated
+    code = [format.format["bool"](num_dofs > 0) for num_dofs in dofs_per_dimension]
+
+    return code
+
 def __generate_global_dimension(dof_map, format):
     "Generate code for global dimension"
 
-    dofs_per_dimension = dof_map.global_dimension()
+    # Get the number of dofs per dimension
+    dofs_per_dimension = dof_map.dofs_per_dimension()
 
-    # Generate code for computing global dimension
+    # Sum the number of dofs for each dimension
     terms = []
     for dim in range(len(dofs_per_dimension)):
         n = dofs_per_dimension[dim]

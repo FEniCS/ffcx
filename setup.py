@@ -13,7 +13,7 @@ setup(name="FFC",
       url="http://www.fenics.org/ffc/",
       packages=["ffc/",
                 "ffc/common",
-                "ffc/codegen"
+                "ffc/codegen",
                 "ffc/compiler",
                 "ffc/fem",
                 "ffc/format",

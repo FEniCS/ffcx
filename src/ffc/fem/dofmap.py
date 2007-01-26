@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-01-24 -- 2007-01-25"
+__date__ = "2007-01-24 -- 2007-01-26"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -15,20 +15,23 @@ class DofMap:
     def __init__(self, element):
         "Create dof map from given finite element"
 
+        # Get entity dofs from element
+        entity_dofs = element.entity_dofs()
+
         # FIXME: Temporary fix for mixed elements
         if not isinstance(element, MixedElement):
-            self.__entity_dofs = element.entity_dofs()
-            
+            self.__entity_dofs = entity_dofs
+
         self.__signature = "FFC dof map for " + element.signature()
 
         self.__local_dimension = element.space_dimension()
 
-        self.__global_dimension = self.__compute_global_dimension(element.entity_dofs())
+        self.__dofs_per_dimension = self.__compute_dofs_per_dimension(entity_dofs)
 
     def entity_dofs(self):
         """Return a dictionary mapping the mesh entities of the
-        reference cell to the degrees of freedom associated with
-        the entity"""
+        reference cell to the degrees of freedom associated with the
+        entity"""
         return self.__entity_dofs
 
     def signature(self):
@@ -39,15 +42,20 @@ class DofMap:
         "Return the dimension of the local finite element function space"
         return self.__local_dimension
 
-    def global_dimension(self):
-        """Compute global dimension as a tuple of the number or mesh
-        entities of each topological dimension"""
-        return self.__global_dimension
+    def needed_mesh_entities(self):
+        """Return a tuple of topological dimensions for the mesh
+        entities that are needed to compute the dof map"""
+        return self.__needed_mesh_entities
 
-    def __compute_global_dimension(self, entity_dofs):
-        """Compute global dimension as a tuple of the number or mesh
-        entities of each topological dimension"""
+    def dofs_per_dimension(self):
+        """Return a tuple of the number of dofs associated with each
+        topological dimension"""
+        return self.__dofs_per_dimension
 
+    def __compute_dofs_per_dimension(self, entity_dofs):
+        """Compute a tuple of the number of dofs associated with each
+        topological dimension"""
+        
         # Count the number of dofs associated with each topological dimension
         dofs_per_dimension = [0 for dim in entity_dofs]
         for dim in entity_dofs:

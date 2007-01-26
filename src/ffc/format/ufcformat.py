@@ -22,6 +22,7 @@ format = { "add": lambda l: " + ".join(l),
            "grouping": lambda s: "(%s)" % s,
            "determinant": "det",
            "floating point": lambda a: "%.15e" % a,
+           "bool": lambda b: {True: "true", False: "false"}[b],
            "constant": lambda j: "c%d" % j,
            "coefficient table": lambda j, k: "c[%d][%d]" % (j, k),
            "coefficient": lambda j, k: "c%d_%d" % (j, k),
@@ -33,7 +34,6 @@ format = { "add": lambda l: " + ".join(l),
            "tmp access": lambda j, k: "tmp%d_%d" % (j, k),
            "entity": lambda d, i: "c.entities(%d)[%d]" % (d, i),
            "num entities": lambda dim : "m.num_entities[%d]" % dim,
-           "sub element": lambda i: "sub_element_%d" % i,
            "cell shape": lambda i: {1: "ufc::line", 2: "ufc::triangle", 3: "ufc::tetrahedron"}[i]}
 
 def init(options):
@@ -148,15 +148,7 @@ def __generate_finite_element(code, options, prefix, i):
     ufc_code["value_rank"] = "return %s;" % code["value_rank"]
 
     # Generate code for value_dimension
-    value_rank = len(code["value_dimension"])
-    if value_rank == 1:
-        body = "return %s;" % code["value_dimension"][0]
-    else:
-        body = "switch ( i )\n{\n"
-        for i in range(value_rank):
-            body += "case %d:\n  return %s;\n  break;\n" % (i, code["value_dimension"][i])
-        body += "default:\n  return 0;\n}"
-    ufc_code["value_dimension"] = body
+    ufc_code["value_dimension"] = __generate_switch("i", code["value_dimension"], "0")
 
     # Generate code for evaluate_basis (FIXME: not implemented)
     ufc_code["evaluate_basis"] = "// Not implemented"
@@ -171,15 +163,12 @@ def __generate_finite_element(code, options, prefix, i):
     ufc_code["num_sub_elements"] = "return %s;" % code["num_sub_elements"]
 
     # Generate code for sub_element
-    num_sub_elements = len(code["create_sub_elements"])
+    num_sub_elements = eval(code["num_sub_elements"])
     if num_sub_elements == 1:
-        body = "return new %s;" % ufc_code["classname"]
+        cases = ["new %s()" % ufc_code["classname"]]
     else:
-        body = "switch ( i )\n{\n"
-        for i in range(num_sub_elements):
-            body += "case %d:\n  return new %s_%s();\n  break;\n" % (i, ufc_code["classname"], code["create_sub_elements"][i])
-        body += "default:\n  return 0;\n}"
-    ufc_code["create_sub_element"] = body
+        cases = ["new %s_sub_element_%d()" % (ufc_code["classname"], i) for i in range(num_sub_elements)]
+    ufc_code["create_sub_element"] = __generate_switch(i, cases, 0)
 
     return __generate_code(finite_element_combined, ufc_code)
 
@@ -325,18 +314,12 @@ def __generate_form(form, prefix, options):
     code["num_coefficients"] = "return %d;" % form.num_coefficients
 
     # Generate code for create_finite_element
-    body = "switch ( i )\n{\n"
-    for i in range(form.num_arguments):
-        body += "case %d:\n  return new %s_finite_element_%d();\n  break;\n" % (i, prefix, i)
-    body += "default:\n  return 0;\n}\n\nreturn 0;"
-    code["create_finite_element"] = body
+    cases = ["new %s_finite_element_%d()" % (prefix, i) for i in range(form.num_arguments)]
+    code["create_finite_element"] = __generate_switch("i", cases, "0")
 
     # Generate code for create_dof_map
-    body = "switch ( i )\n{\n"
-    for i in range(form.num_arguments):
-        body += "case %d:\n  return new %s_dof_map_%d();\n  break;\n" % (i, prefix, i)
-    body += "default:\n  return 0;\n}\n\nreturn 0;"
-    code["create_dof_map"] = body
+    cases = ["new %s_dof_map_%d()" % (prefix, i) for i in range(form.num_arguments)]
+    code["create_dof_map"] = __generate_switch("i", cases, "0")
 
     # Generate code for cell_integral
     code["create_cell_integral"] = "// Not implemented\nreturn 0;"
@@ -349,11 +332,27 @@ def __generate_form(form, prefix, options):
 
     return __generate_code(form_combined, code)
 
+def __generate_switch(variable, cases, default):
+    "Generate switch statement from given variable and cases"
+
+    # Special case: just one case
+    if len(cases) == 1:
+        return "return %s;" % cases[0]
+
+    # Generate switch
+    code = "switch ( %s )\n{\n" % variable
+    for i in range(len(cases)):
+        code += "case %d:\n  return %s;\n  break;\n" % (i, cases[i])
+    code += "default:\n  return 0;\n}\n\nreturn %s;" % default
+    return code
+
 def __generate_code(format_string, code):
     "Generate code according to format string and code dictionary"
+
     # Fix indentation
     for key in code:
         if not key in ["classname", "members"]:
             code[key] = indent(code[key], 4)
+
     # Generate code
     return format_string % code
