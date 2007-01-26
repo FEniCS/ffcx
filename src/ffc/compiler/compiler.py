@@ -93,7 +93,7 @@ def build(forms, name = "Form", language = FFC_LANGUAGE, options = FFC_OPTIONS):
 
     # Generate the element tensor for all given forms
     for formcode in formcodes:
-        code = __build_form(formcode, format, options)
+        code = __build_form(name, formcode, format, options)
 
     # Return formcode(s)
     if len(formcodes) > 1:
@@ -127,7 +127,10 @@ def write(formcodes, code, options = FFC_OPTIONS):
 
     # Generate output for all formcodes
     # FIXME: Should be two arguments when this is fixed: code, options
-    format.write(formcodes, code, options)
+    if format == ufcformat:
+        format.write(code, options)
+    else:
+        format.write(formcodes, code, options)
 
     return
 
@@ -149,7 +152,7 @@ def writeFiniteElement(element, name = "MyElement", language = FFC_LANGUAGE, opt
     # Generate code
     format.writeFiniteElement(element, name, options)
 
-def __build_form(formcode, format, options):
+def __build_form(name, formcode, format, options):
     "Build data structures for evaluation of the variational form."
     
     debug("\nCompiling form: " + str(formcode), 0)
@@ -247,7 +250,7 @@ def __build_form(formcode, format, options):
     # Generate code
     code = {}
     if format == ufcformat:
-        code = generate_code(elements, dof_maps, format)
+        code = generate_code(name, elements, dof_maps, formcode, format)
 
     return code
 

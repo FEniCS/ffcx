@@ -1,7 +1,7 @@
 "Code generation for the UFC 1.0 format."
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-01-08 -- 2007-01-24"
+__date__ = "2007-01-08 -- 2007-01-27"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -40,55 +40,53 @@ def init(options):
     "Initialize code generation for the UFC 1.0 format."
     pass
     
-def write(forms, code, options):
+def write(code, options):
     "Generate code for the UFC 1.0 format."
     debug("Generating code for UFC 1.0")
 
-    for form in forms:
+    # Set prefix
+    prefix = code["name"].lower()
+
+    # Generate file header
+    output = ""
+    output += __generate_header(prefix, options)
+    output += "\n"
+
+    # Generate code for ufc::finite_element(s)
+    for i in range(code["num_arguments"]):
+        output += __generate_finite_element(code[("finite_element", i)], options, prefix, i)
+        output += "\n"
+
+    # Generate code for ufc::dof_map(s)
+    for i in range(code["num_arguments"]):
+        output += __generate_dof_map(code[("dof_map", i)], options, prefix, i)
+        output += "\n"
+
+    # Generate code for ufc::cell_integral
+    output += __generate_cell_integral(prefix, options)
+    output += "\n"
+
+    # Generate code for ufc::exterior_facet_integral
+    output += __generate_exterior_facet_integral(prefix, options)
+    output += "\n"
     
-        # Set prefix
-        prefix = form.name.lower()
-        
-        # Generate file header
-        output = ""
-        output += __generate_header(prefix, options)
-        output += "\n"
+    # Generate code for ufc::cell_integral
+    output += __generate_interior_facet_integral(prefix, options)
+    output += "\n"
 
-        # Generate code for ufc::finite_element(s)
-        for i in range(form.num_arguments):
-            output += __generate_finite_element(code[("finite_element", i)], options, prefix, i)
-            output += "\n"
-
-        # Generate code for ufc::dof_map(s)
-        for i in range(form.num_arguments):
-            output += __generate_dof_map(code[("dof_map", i)], options, prefix, i)
-            output += "\n"
-
-        # Generate code for ufc::cell_integral
-        output += __generate_cell_integral(prefix, options)
-        output += "\n"
-
-        # Generate code for ufc::exterior_facet_integral
-        output += __generate_exterior_facet_integral(prefix, options)
-        output += "\n"
-        
-        # Generate code for ufc::cell_integral
-        output += __generate_interior_facet_integral(prefix, options)
-        output += "\n"
-
-        # Generate code for ufc::form
-        output += __generate_form(form, prefix, options)
-        output += "\n"
+    # Generate code for ufc::form
+    output += __generate_form(code["form"], options, prefix, code["num_arguments"])
+    output += "\n"
     
-        # Generate code for footer
-        output += __generate_footer(prefix, options)
+    # Generate code for footer
+    output += __generate_footer(prefix, options)
 
-        # Write file
-        filename = "%s_ufc.h" % prefix
-        file = open(filename, "w")
-        file.write(output)
-        file.close()
-        debug("Output written to " + filename)
+    # Write file
+    filename = "%s_ufc.h" % prefix
+    file = open(filename, "w")
+    file.write(output)
+    file.close()
+    debug("Output written to " + filename)
 
 def __generate_header(prefix, options):
     "Generate file header"
@@ -150,13 +148,13 @@ def __generate_finite_element(code, options, prefix, i):
     # Generate code for value_dimension
     ufc_code["value_dimension"] = __generate_switch("i", code["value_dimension"], "0")
 
-    # Generate code for evaluate_basis (FIXME: not implemented)
+    # Generate code for evaluate_basis
     ufc_code["evaluate_basis"] = "// Not implemented"
 
-    # Generate code for evaluate_dof (FIXME: not implemented)
+    # Generate code for evaluate_dof
     ufc_code["evaluate_dof"] = "// Not implemented\nreturn 0.0;"
 
-    # Generate code for inperpolate_vertex_values (FIXME: not implemented)
+    # Generate code for inperpolate_vertex_values
     ufc_code["interpolate_vertex_values"] = "// Not implemented"
 
     # Generate code for num_sub_elements
@@ -193,7 +191,7 @@ def __generate_dof_map(code, options, prefix, i):
     ufc_code["signature"] = "return \"%s\";" % code["signature"]
 
     # Generate code for needs_mesh_entities
-    ufc_code["needs_mesh_entities"] = "// Not implemented\nreturn true;"
+    ufc_code["needs_mesh_entities"] = __generate_switch("d", code["needs_mesh_entities"], "false")
 
     # Generate code for init_mesh
     ufc_code["init_mesh"] = "__global_dimension = %s;\nreturn false;" % code["global_dimension"]
@@ -287,50 +285,50 @@ def __generate_interior_facet_integral(prefix, options):
     
     return __generate_code(interior_facet_integral_combined, code)
 
-def __generate_form(form, prefix, options):
+def __generate_form(code, options, prefix, num_arguments):
     "Generate code for ufc::form"
 
-    code = {}
+    ufc_code = {}
 
     # Set class name
-    code["classname"] = prefix
+    ufc_code["classname"] = prefix
 
     # Generate code for members
-    code["members"] = ""
+    ufc_code["members"] = ""
 
     # Generate code for constructor
-    code["constructor"] = "// Do nothing"
+    ufc_code["constructor"] = "// Do nothing"
 
     # Generate code for destructor
-    code["destructor"] = "// Do nothing"
+    ufc_code["destructor"] = "// Do nothing"
 
     # Generate code for signature
-    code["signature"] = "return \"%s\";" % form.signature
+    ufc_code["signature"] = "return \"%s\";" % code["signature"]
 
     # Generate code for rank
-    code["rank"] = "return %d;" % form.rank
+    ufc_code["rank"] = "return %s;" % code["rank"]
 
     # Generate code for num_coefficients
-    code["num_coefficients"] = "return %d;" % form.num_coefficients
+    ufc_code["num_coefficients"] = "return %s;" % code["num_coefficients"]
 
     # Generate code for create_finite_element
-    cases = ["new %s_finite_element_%d()" % (prefix, i) for i in range(form.num_arguments)]
-    code["create_finite_element"] = __generate_switch("i", cases, "0")
+    cases = ["new %s_finite_element_%d()" % (prefix, i) for i in range(num_arguments)]
+    ufc_code["create_finite_element"] = __generate_switch("i", cases, "0")
 
     # Generate code for create_dof_map
-    cases = ["new %s_dof_map_%d()" % (prefix, i) for i in range(form.num_arguments)]
-    code["create_dof_map"] = __generate_switch("i", cases, "0")
+    cases = ["new %s_dof_map_%d()" % (prefix, i) for i in range(num_arguments)]
+    ufc_code["create_dof_map"] = __generate_switch("i", cases, "0")
 
     # Generate code for cell_integral
-    code["create_cell_integral"] = "// Not implemented\nreturn 0;"
+    ufc_code["create_cell_integral"] = "// Not implemented\nreturn 0;"
 
     # Generate code for exterior_facet_integral
-    code["create_exterior_facet_integral"] = "// Not implemented\nreturn 0;"
+    ufc_code["create_exterior_facet_integral"] = "// Not implemented\nreturn 0;"
 
     # Generate code for interior_facet_integral
-    code["create_interior_facet_integral"] = "// Not implemented\nreturn 0;"
+    ufc_code["create_interior_facet_integral"] = "// Not implemented\nreturn 0;"
 
-    return __generate_code(form_combined, code)
+    return __generate_code(form_combined, ufc_code)
 
 def __generate_switch(variable, cases, default):
     "Generate switch statement from given variable and cases"
