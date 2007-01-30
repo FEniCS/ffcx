@@ -32,8 +32,11 @@ format = { "add": lambda l: " + ".join(l),
            "element tensor": lambda i, k: "block[%d]" % k,
            "tmp declaration": lambda j, k: "const real tmp%d_%d" % (j, k),
            "tmp access": lambda j, k: "tmp%d_%d" % (j, k),
-           "entity": lambda d, i: "c.entities(%d)[%d]" % (d, i),
+           "dofs": lambda i: "dofs[%d]" % i,
+           "entity index": lambda d, i: "c.entity_indices[%d][%d]" % (d, i),
            "num entities": lambda dim : "m.num_entities[%d]" % dim,
+           "offset declaration": "unsigned int offset",
+           "offset access": "offset",
            "cell shape": lambda i: {1: "ufc::line", 2: "ufc::triangle", 3: "ufc::tetrahedron"}[i]}
 
 def init(options):
@@ -212,7 +215,7 @@ def __generate_dof_map(code, options, prefix, i):
     ufc_code["num_facet_dofs"] = "// Not implemented\nreturn 0;"
 
     # Generate code for tabulate_dofs
-    ufc_code["tabulate_dofs"] = "// Not implemented"
+    ufc_code["tabulate_dofs"] = "\n".join("%s = %s;" % declaration for declaration in code["tabulate_dofs"])
 
     # Generate code for tabulate_facet_dofs
     ufc_code["tabulate_facet_dofs"] = "// Not implemented"

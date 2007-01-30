@@ -3,6 +3,8 @@ __date__ = "2004-11-09 -- 2007-01-11"
 __copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
+# FIXME: Move to codegen
+
 class Declaration:
 
     """A Declaration represents the declaration of a variable,

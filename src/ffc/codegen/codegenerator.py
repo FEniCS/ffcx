@@ -13,6 +13,8 @@ from form import *
 def generate_code(name, elements, dof_maps, form, format):
     "Generate code according to given format"
 
+    # FIXME: format.format --> format
+    
     code = {}
 
     # Set name
