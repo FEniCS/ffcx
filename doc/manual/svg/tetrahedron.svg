@@ -107,10 +107,10 @@
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="true"
-     inkscape:window-width="1600"
-     inkscape:window-height="1157"
+     inkscape:window-width="1590"
+     inkscape:window-height="1118"
      inkscape:window-x="0"
-     inkscape:window-y="43"
+     inkscape:window-y="29"
      gridspacingx="1px"
      gridspacingy="1px"
      inkscape:object-bbox="false"
@@ -143,23 +143,23 @@
     <text
        xml:space="preserve"
        style="font-size:24px;font-style:normal;font-weight:normal;fill:black;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Bitstream Vera Sans"
-       x="80"
+       x="30"
        y="872.36218"
        id="text3929"><tspan
          sodipodi:role="line"
          id="tspan3931"
-         x="80"
+         x="30"
          y="872.36218">v0</tspan></text>
     <text
        xml:space="preserve"
        style="font-size:24px;font-style:normal;font-weight:normal;fill:black;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Bitstream Vera Sans"
-       x="400"
+       x="350"
        y="972.36218"
        id="text2785"
        inkscape:transform-center-x="97.765625"><tspan
          sodipodi:role="line"
          id="tspan2787"
-         x="400"
+         x="350"
          y="972.36218">v1</tspan></text>
     <text
        xml:space="preserve"
@@ -174,12 +174,12 @@
     <text
        xml:space="preserve"
        style="font-size:24px;font-style:normal;font-weight:normal;fill:black;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Bitstream Vera Sans"
-       x="80"
+       x="30"
        y="522.36218"
        id="text2793"><tspan
          sodipodi:role="line"
          id="tspan2795"
-         x="80"
+         x="30"
          y="522.36218">v3</tspan></text>
     <path
        style="fill:#6286ed;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:3;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;stroke-miterlimit:4;stroke-dasharray:none"

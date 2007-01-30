@@ -2,7 +2,7 @@
 % Licensed under the GNU GPL Version 2.
 %
 % First added:  2004-09-03
-% Last changed: 2006-12-22
+% Last changed: 2007-01-30
 %
 % LaTeX document class for FEniCS manuals.
 
@@ -25,6 +25,7 @@
 \RequirePackage{here}
 \RequirePackage[latin1]{inputenc}
 \RequirePackage[colorlinks]{hyperref}
+\RequirePackage[small]{caption}
 
 %--- Misc options ---
 \setlength{\parindent}{0pt}
@@ -87,13 +88,15 @@
 
 \newcommand{\fenics}{\textbf{\textsf{\normalsize{FE}\Large{ni}\normalsize{CS}}}}
 \newcommand{\dolfin}{\textbf{\textsf{DOLFIN}}}
+\newcommand{\pydolfin}{\textbf{\textsf{PyDOLFIN}}}
 \newcommand{\ffc}{\textbf{\textsf{FFC}}}
 \newcommand{\fiat}{\textbf{\textsf{FIAT}}}
 \newcommand{\fixme}[1]{\ \\ \begin{tabular}{||p{\textwidth}||}\hline\rm\textbf{FIXME:}\rm #1 \\ \hline\end{tabular} \\}
 \newcommand{\devnote}[1]{$\blacktriangleright$ \emph{Developer's note:} #1}
 
 %--- Environments ---
-\DefineVerbatimEnvironment{code}{Verbatim}{commandchars=\\\{\},frame=single,rulecolor=\color{blue}}
+\DefineVerbatimEnvironment{code}{Verbatim}{frame=single,rulecolor=\color{blue}}
+\DefineVerbatimEnvironment{macrocode}{Verbatim}{commandchars=\\\{\},frame=single,rulecolor=\color{blue}}
 
 %--- Macros ---
 \newcommand{\dx}{\, \mathrm{d}x}

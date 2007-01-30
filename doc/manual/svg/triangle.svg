@@ -107,7 +107,7 @@
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="true"
-     inkscape:window-width="976"
+     inkscape:window-width="977"
      inkscape:window-height="802"
      inkscape:window-x="166"
      inkscape:window-y="216"
@@ -143,32 +143,32 @@
     <text
        xml:space="preserve"
        style="font-size:24px;font-style:normal;font-weight:normal;fill:black;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Bitstream Vera Sans"
-       x="60"
+       x="40"
        y="952.36218"
        id="text3929"><tspan
          sodipodi:role="line"
          id="tspan3931"
-         x="60"
+         x="40"
          y="952.36218">v0</tspan></text>
     <text
        xml:space="preserve"
        style="font-size:24px;font-style:normal;font-weight:normal;fill:black;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Bitstream Vera Sans"
-       x="560"
+       x="540"
        y="952.36218"
        id="text4019"><tspan
          sodipodi:role="line"
          id="tspan4021"
-         x="560"
+         x="540"
          y="952.36218">v1</tspan></text>
     <text
        xml:space="preserve"
        style="font-size:24px;font-style:normal;font-weight:normal;fill:black;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Bitstream Vera Sans"
-       x="59.285156"
+       x="40"
        y="432.36218"
        id="text4023"><tspan
          sodipodi:role="line"
          id="tspan4025"
-         x="59.285156"
+         x="40"
          y="432.36218">v2</tspan></text>
   </g>
 </svg>

@@ -107,9 +107,9 @@
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="true"
-     inkscape:window-width="976"
+     inkscape:window-width="977"
      inkscape:window-height="802"
-     inkscape:window-x="873"
+     inkscape:window-x="613"
      inkscape:window-y="185"
      gridspacingx="1px"
      gridspacingy="1px"
@@ -151,12 +151,12 @@
     <text
        xml:space="preserve"
        style="font-size:24px;font-style:normal;font-weight:normal;fill:black;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Bitstream Vera Sans"
-       x="60"
+       x="40"
        y="952.36218"
        id="text3929"><tspan
          sodipodi:role="line"
          id="tspan3931"
-         x="60"
+         x="40"
          y="952.36218">v0</tspan></text>
     <text
        xml:space="preserve"
@@ -182,12 +182,12 @@
     <text
        xml:space="preserve"
        style="font-size:24px;font-style:normal;font-weight:normal;fill:black;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Bitstream Vera Sans"
-       x="60"
+       x="40"
        y="432.36218"
        id="text2793"><tspan
          sodipodi:role="line"
          id="tspan2795"
-         x="60"
+         x="40"
          y="432.36218">v3</tspan></text>
   </g>
 </svg>
