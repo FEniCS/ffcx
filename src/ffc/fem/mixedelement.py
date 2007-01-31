@@ -1,5 +1,5 @@
 _author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2005-09-16 -- 2007-01-24"
+__date__ = "2005-09-16 -- 2007-01-31"
 __copyright__ = "Copyright (C) 2005-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -14,10 +14,10 @@ from ffc.common.debug import *
 # FFC formlang modules
 from ffc.formlang.algebra import *
 
-# FFC compiler modules
-from ffc.compiler.nodemap import *
-from ffc.compiler.pointmap import *
-from ffc.compiler.vertexeval import *
+# FIXME: Remove
+from ffc.remove.nodemap import *
+from ffc.remove.pointmap import *
+from ffc.remove.vertexeval import *
 
 def BasisFunctions(element, functiontype = BasisFunction):
     "Create tuple of BasisFunctions from given MixedElement."

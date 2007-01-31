@@ -4,7 +4,7 @@ given Form. All functions assume that all Indices of the given Form
 have already been reassigned."""
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2005-03-15 -- 2007-01-23"
+__date__ = "2005-03-15 -- 2007-01-31"
 __copyright__ = "Copyright (C) 2005-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -22,9 +22,6 @@ from ffc.common.constants import *
 
 # FFC form language modules
 from ffc.formlang.index import *
-
-# FFC compiler modules
-from declaration import *
 
 def find_test(form):
     "Return the FiniteElement associated with the test function (if any)."

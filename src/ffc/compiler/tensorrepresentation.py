@@ -3,7 +3,7 @@ for a given subset of terms in a sum, specified as the terms matching
 a given integral type."""
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-11-06 -- 2007-01-23"
+__date__ = "2004-11-06 -- 2007-01-31"
 __copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -19,8 +19,10 @@ from ffc.formlang.indexreordering import *
 
 # FFC compiler modules
 from term import *
-from declaration import *
 from optimization import *
+
+# FIXME: Remove
+from ffc.remove.declaration import *
 
 def compute_terms(form, type, facet0, facet1, alignment):
 

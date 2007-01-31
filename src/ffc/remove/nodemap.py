@@ -1,7 +1,7 @@
 # FIXME: This module will be removed (replaced by two dofmap modules)
 
 __author__ = "Robert C. Kirby (kirby@cs.uchicago.edu) and Anders Logg (logg@simula.no)"
-__date__ = "2005-05-03 -- 2006-10-19"
+__date__ = "2005-05-03 -- 2007-01-31"
 __copyright__ = "Copyright (C) 2005-2006 Kirby/Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -9,9 +9,11 @@ __license__  = "GNU GPL Version 2"
 from FIAT.dualbasis import *
 from FIAT.shapes import *
 
-# FFC modules
-from declaration import *
-from alignment import *
+# FFC compiler modules
+from ffc.compiler.alignment import *
+
+# FIXME: Remove
+from ffc.remove.declaration import *
 
 # FIXME: Should not be DOLFIN-specific
 format = { ("entity", 2, 0) : lambda i : "cell.entities(0)[%d]" % i,

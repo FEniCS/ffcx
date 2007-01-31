@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2006-03-22 -- 2006-10-17"
+__date__ = "2006-03-22 -- 2007-01-31"
 __copyright__ = "Copyright (C) 2006 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -9,8 +9,8 @@ __license__  = "GNU GPL Version 2"
 from ffc.common.debug import *
 from ffc.common.constants import *
 
-# FFC compiler modules
-from declaration import *
+# FIXME: Remove
+from ffc.remove.declaration import *
 
 def optimize(terms, format):
     """Generate optimized abstract code for the tensor contraction from
