@@ -188,6 +188,17 @@ common edge.
   \end{center}
 \end{figure}
 
+\subsection{Limitations}
+ 
+The UFC specification is only concerned with the ordering of mesh
+entities with respect to entities of larger topological dimension. In
+other words, the UFC specification is only concerned with the ordering
+of incidence relations of the class $d - d'$ where $d > d'$. For
+example, the UFC specification is not concerned with the ordering of
+incidence relations of the class $0 - 1$, that is, the ordering of
+edges incident to a vertex.
+
+\newpage
 \section{Numbering for reference cells}
 
 The numbering scheme is demonstrated below for cells
@@ -203,11 +214,11 @@ isomorphic to each of the five reference cells.
       Entity & Incident vertices & Non-incident vertices \\
       \hline
       \hline
-      $v_0 = (0, 0)$ & $\{v_0\}$ & $\{v_1\}$ \\
+      $v_0 = (0, 0)$ & $(v_0)$ & $(v_1)$ \\
       \hline
-      $v_1 = (0, 1)$ & $\{v_1\}$ & $\{v_0\}$ \\
+      $v_1 = (0, 1)$ & $(v_1)$ & $(v_0)$ \\
       \hline
-      $c_0 = (1, 0)$ & $\{v_0, v_1\}$ & $\emptyset$ \\
+      $c_0 = (1, 0)$ & $(v_0, v_1)$ & $\emptyset$ \\
       \hline
     \end{tabular}
     \caption{Numbering of mesh entities on intervals.}
@@ -225,19 +236,19 @@ isomorphic to each of the five reference cells.
       Entity & Incident vertices & Non-incident vertices \\
       \hline
       \hline
-      $v_0 = (0, 0)$ & $\{v_0\}$ & $\{v_1, v_2\}$ \\
+      $v_0 = (0, 0)$ & $(v_0)$ & $(v_1, v_2)$ \\
       \hline
-      $v_1 = (0, 1)$ & $\{v_1\}$ & $\{v_0, v_2\}$ \\
+      $v_1 = (0, 1)$ & $(v_1)$ & $(v_0, v_2)$ \\
       \hline
-      $v_2 = (0, 2)$ & $\{v_2\}$ & $\{v_0, v_1\}$ \\
+      $v_2 = (0, 2)$ & $(v_2)$ & $(v_0, v_1)$ \\
       \hline
-      $e_0 = (1, 0)$ & $\{v_1, v_2\}$ & $\{v_0\}$ \\
+      $e_0 = (1, 0)$ & $(v_1, v_2)$ & $(v_0)$ \\
       \hline
-      $e_1 = (1, 1)$ & $\{v_0, v_2\}$ & $\{v_1\}$ \\
+      $e_1 = (1, 1)$ & $(v_0, v_2)$ & $(v_1)$ \\
       \hline
-      $e_2 = (1, 2)$ & $\{v_0, v_1\}$ & $\{v_2\}$ \\
+      $e_2 = (1, 2)$ & $(v_0, v_1)$ & $(v_2)$ \\
       \hline
-      $c_0 = (2, 0)$ & $\{v_0, v_1, v_2\}$ & $\emptyset$ \\
+      $c_0 = (2, 0)$ & $(v_0, v_1, v_2)$ & $\emptyset$ \\
       \hline
     \end{tabular}
     \caption{Numbering of mesh entities on triangular cells.}
@@ -255,23 +266,23 @@ isomorphic to each of the five reference cells.
       Entity & Incident vertices & Non-incident vertices \\
       \hline
       \hline
-      $v_0 = (0, 0)$ & $\{v_0\}$ & $\{v_1, v_2, v_3\}$ \\
+      $v_0 = (0, 0)$ & $(v_0)$ & $(v_1, v_2, v_3)$ \\
       \hline
-      $v_1 = (0, 1)$ & $\{v_1\}$ & $\{v_0, v_2, v_3\}$ \\
+      $v_1 = (0, 1)$ & $(v_1)$ & $(v_0, v_2, v_3)$ \\
       \hline
-      $v_2 = (0, 2)$ & $\{v_2\}$ & $\{v_0, v_1, v_3\}$ \\
+      $v_2 = (0, 2)$ & $(v_2)$ & $(v_0, v_1, v_3)$ \\
       \hline
-      $v_3 = (0, 3)$ & $\{v_3\}$ & $\{v_0, v_1, v_2\}$ \\
+      $v_3 = (0, 3)$ & $(v_3)$ & $(v_0, v_1, v_2)$ \\
       \hline
-      $e_0 = (1, 0)$ & $\{v_2, v_3\}$ & $\{v_0, v_1\}$ \\
+      $e_0 = (1, 0)$ & $(v_2, v_3)$ & $(v_0, v_1)$ \\
       \hline
-      $e_1 = (1, 1)$ & $\{v_1, v_2\}$ & $\{v_0, v_3\}$ \\
+      $e_1 = (1, 1)$ & $(v_1, v_2)$ & $(v_0, v_3)$ \\
       \hline
-      $e_2 = (1, 2)$ & $\{v_0, v_3\}$ & $\{v_1, v_2\}$ \\
+      $e_2 = (1, 2)$ & $(v_0, v_3)$ & $(v_1, v_2)$ \\
       \hline
-      $e_3 = (1, 3)$ & $\{v_0, v_1\}$ & $\{v_2, v_3\}$ \\
+      $e_3 = (1, 3)$ & $(v_0, v_1)$ & $(v_2, v_3)$ \\
       \hline
-      $c_0 = (2, 0)$ & $\{v_0, v_1, v_2, v_3\}$ & $\emptyset$ \\
+      $c_0 = (2, 0)$ & $(v_0, v_1, v_2, v_3)$ & $\emptyset$ \\
       \hline
     \end{tabular}
     \caption{Numbering of mesh entities on quadrilateral cells.}
@@ -289,35 +300,35 @@ isomorphic to each of the five reference cells.
       Entity & Incident vertices & Non-incident vertices \\
       \hline
       \hline
-      $v_0 = (0, 0)$ & $\{v_0\}$ & $\{v_1, v_2, v_3\}$ \\
+      $v_0 = (0, 0)$ & $(v_0)$ & $(v_1, v_2, v_3)$ \\
       \hline
-      $v_1 = (0, 1)$ & $\{v_1\}$ & $\{v_0, v_2, v_3\}$ \\
+      $v_1 = (0, 1)$ & $(v_1)$ & $(v_0, v_2, v_3)$ \\
       \hline
-      $v_2 = (0, 2)$ & $\{v_2\}$ & $\{v_0, v_1, v_3\}$ \\
+      $v_2 = (0, 2)$ & $(v_2)$ & $(v_0, v_1, v_3)$ \\
       \hline
-      $v_3 = (0, 3)$ & $\{v_3\}$ & $\{v_0, v_1, v_2\}$ \\
+      $v_3 = (0, 3)$ & $(v_3)$ & $(v_0, v_1, v_2)$ \\
       \hline
-      $e_0 = (1, 0)$ & $\{v_2, v_3\}$ & $\{v_0, v_1\}$ \\
+      $e_0 = (1, 0)$ & $(v_2, v_3)$ & $(v_0, v_1)$ \\
       \hline
-      $e_1 = (1, 1)$ & $\{v_1, v_3\}$ & $\{v_0, v_2\}$ \\
+      $e_1 = (1, 1)$ & $(v_1, v_3)$ & $(v_0, v_2)$ \\
       \hline
-      $e_2 = (1, 2)$ & $\{v_1, v_2\}$ & $\{v_0, v_3\}$ \\
+      $e_2 = (1, 2)$ & $(v_1, v_2)$ & $(v_0, v_3)$ \\
       \hline
-      $e_3 = (1, 3)$ & $\{v_0, v_3\}$ & $\{v_1, v_2\}$ \\
+      $e_3 = (1, 3)$ & $(v_0, v_3)$ & $(v_1, v_2)$ \\
       \hline
-      $e_4 = (1, 4)$ & $\{v_0, v_2\}$ & $\{v_1, v_3\}$ \\
+      $e_4 = (1, 4)$ & $(v_0, v_2)$ & $(v_1, v_3)$ \\
       \hline
-      $e_5 = (1, 5)$ & $\{v_0, v_1\}$ & $\{v_2, v_3\}$ \\
+      $e_5 = (1, 5)$ & $(v_0, v_1)$ & $(v_2, v_3)$ \\
       \hline
-      $f_0 = (2, 0)$ & $\{v_1, v_2, v_3\}$ & $\{v_0\}$ \\
+      $f_0 = (2, 0)$ & $(v_1, v_2, v_3)$ & $(v_0)$ \\
       \hline
-      $f_1 = (2, 1)$ & $\{v_0, v_2, v_3\}$ & $\{v_1\}$ \\
+      $f_1 = (2, 1)$ & $(v_0, v_2, v_3)$ & $(v_1)$ \\
       \hline
-      $f_2 = (2, 2)$ & $\{v_0, v_1, v_3\}$ & $\{v_2\}$ \\
+      $f_2 = (2, 2)$ & $(v_0, v_1, v_3)$ & $(v_2)$ \\
       \hline
-      $f_3 = (2, 3)$ & $\{v_0, v_1, v_2\}$ & $\{v_3\}$ \\
+      $f_3 = (2, 3)$ & $(v_0, v_1, v_2)$ & $(v_3)$ \\
       \hline
-      $c_0 = (3, 0)$ & $\{v_0, v_1, v_2, v_3\}$ & $\emptyset$ \\
+      $c_0 = (3, 0)$ & $(v_0, v_1, v_2, v_3)$ & $\emptyset$ \\
       \hline
     \end{tabular}
     \caption{Numbering of mesh entities on tetrahedral cells.}
@@ -337,59 +348,59 @@ isomorphic to each of the five reference cells.
       Entity & Incident vertices & Non-incident vertices \\
       \hline
       \hline
-      $v_0 = (0, 0)$ & $\{v_0\}$ & $\{v_1, v_2, v_3, v_4, v_5, v_6, v_7\}$ \\
+      $v_0 = (0, 0)$ & $(v_0)$ & $(v_1, v_2, v_3, v_4, v_5, v_6, v_7)$ \\
       \hline
-      $v_1 = (0, 1)$ & $\{v_1\}$ & $\{v_0, v_2, v_3, v_4, v_5, v_6, v_7\}$ \\
+      $v_1 = (0, 1)$ & $(v_1)$ & $(v_0, v_2, v_3, v_4, v_5, v_6, v_7)$ \\
       \hline
-      $v_2 = (0, 2)$ & $\{v_2\}$ & $\{v_0, v_1, v_3, v_4, v_5, v_6, v_7\}$ \\
+      $v_2 = (0, 2)$ & $(v_2)$ & $(v_0, v_1, v_3, v_4, v_5, v_6, v_7)$ \\
       \hline
-      $v_3 = (0, 3)$ & $\{v_3\}$ & $\{v_0, v_1, v_2, v_4, v_5, v_6, v_7\}$ \\
+      $v_3 = (0, 3)$ & $(v_3)$ & $(v_0, v_1, v_2, v_4, v_5, v_6, v_7)$ \\
       \hline
-      $v_4 = (0, 4)$ & $\{v_4\}$ & $\{v_0, v_1, v_2, v_3, v_5, v_6, v_7\}$ \\
+      $v_4 = (0, 4)$ & $(v_4)$ & $(v_0, v_1, v_2, v_3, v_5, v_6, v_7)$ \\
       \hline
-      $v_5 = (0, 5)$ & $\{v_5\}$ & $\{v_0, v_1, v_2, v_3, v_4, v_6, v_7\}$ \\
+      $v_5 = (0, 5)$ & $(v_5)$ & $(v_0, v_1, v_2, v_3, v_4, v_6, v_7)$ \\
       \hline
-      $v_6 = (0, 6)$ & $\{v_6\}$ & $\{v_0, v_1, v_2, v_3, v_4, v_5, v_7\}$ \\
+      $v_6 = (0, 6)$ & $(v_6)$ & $(v_0, v_1, v_2, v_3, v_4, v_5, v_7)$ \\
       \hline
-      $v_7 = (0, 7)$ & $\{v_7\}$ & $\{v_0, v_1, v_2, v_3, v_4, v_5, v_6\}$ \\
+      $v_7 = (0, 7)$ & $(v_7)$ & $(v_0, v_1, v_2, v_3, v_4, v_5, v_6)$ \\
       \hline
-      $e_0 = (1, 0)$ & $\{v_6, v_7\}$ & $\{v_0, v_1, v_2, v_3, v_4, v_5\}$ \\
+      $e_0 = (1, 0)$ & $(v_6, v_7)$ & $(v_0, v_1, v_2, v_3, v_4, v_5)$ \\
       \hline
-      $e_1 = (1, 1)$ & $\{v_5, v_6\}$ & $\{v_0, v_1, v_2, v_3, v_4, v_7\}$ \\
+      $e_1 = (1, 1)$ & $(v_5, v_6)$ & $(v_0, v_1, v_2, v_3, v_4, v_7)$ \\
       \hline
-      $e_2 = (1, 2)$ & $\{v_4, v_7\}$ & $\{v_0, v_1, v_2, v_3, v_5, v_6\}$ \\
+      $e_2 = (1, 2)$ & $(v_4, v_7)$ & $(v_0, v_1, v_2, v_3, v_5, v_6)$ \\
       \hline
-      $e_3 = (1, 3)$ & $\{v_4, v_5\}$ & $\{v_0, v_1, v_2, v_3, v_6, v_7\}$ \\
+      $e_3 = (1, 3)$ & $(v_4, v_5)$ & $(v_0, v_1, v_2, v_3, v_6, v_7)$ \\
       \hline
-      $e_4 = (1, 4)$ & $\{v_3, v_7\}$ & $\{v_0, v_1, v_2, v_4, v_5, v_6\}$ \\
+      $e_4 = (1, 4)$ & $(v_3, v_7)$ & $(v_0, v_1, v_2, v_4, v_5, v_6)$ \\
       \hline
-      $e_5 = (1, 5)$ & $\{v_2, v_6\}$ & $\{v_0, v_1, v_3, v_4, v_5, v_7\}$ \\
+      $e_5 = (1, 5)$ & $(v_2, v_6)$ & $(v_0, v_1, v_3, v_4, v_5, v_7)$ \\
       \hline
-      $e_6 = (1, 6)$ & $\{v_2, v_3\}$ & $\{v_0, v_1, v_4, v_5, v_6, v_7\}$ \\
+      $e_6 = (1, 6)$ & $(v_2, v_3)$ & $(v_0, v_1, v_4, v_5, v_6, v_7)$ \\
       \hline
-      $e_7 = (1, 7)$ & $\{v_1, v_5\}$ & $\{v_0, v_2, v_3, v_4, v_6, v_7\}$ \\
+      $e_7 = (1, 7)$ & $(v_1, v_5)$ & $(v_0, v_2, v_3, v_4, v_6, v_7)$ \\
       \hline
-      $e_8 = (1, 8)$ & $\{v_1, v_2\}$ & $\{v_0, v_3, v_4, v_5, v_6, v_7\}$ \\
+      $e_8 = (1, 8)$ & $(v_1, v_2)$ & $(v_0, v_3, v_4, v_5, v_6, v_7)$ \\
       \hline
-      $e_9 = (1, 9)$ & $\{v_0, v_4\}$ & $\{v_1, v_2, v_3, v_5, v_6, v_7\}$ \\
+      $e_9 = (1, 9)$ & $(v_0, v_4)$ & $(v_1, v_2, v_3, v_5, v_6, v_7)$ \\
       \hline
-      $e_{10} = (1, 10)$ & $\{v_0, v_3\}$ & $\{v_1, v_2, v_4, v_5, v_6, v_7\}$ \\
+      $e_{10} = (1, 10)$ & $(v_0, v_3)$ & $(v_1, v_2, v_4, v_5, v_6, v_7)$ \\
       \hline
-      $e_{11} = (1, 11)$ & $\{v_0, v_1\}$ & $\{v_2, v_3, v_4, v_5, v_6, v_7\}$ \\
+      $e_{11} = (1, 11)$ & $(v_0, v_1)$ & $(v_2, v_3, v_4, v_5, v_6, v_7)$ \\
       \hline
-      $f_0 = (2, 0)$ & $\{v_4, v_5, v_6, v_7\}$ & $\{v_0, v_1, v_2, v_3\}$ \\
+      $f_0 = (2, 0)$ & $(v_4, v_5, v_6, v_7)$ & $(v_0, v_1, v_2, v_3)$ \\
       \hline
-      $f_1 = (2, 1)$ & $\{v_2, v_3, v_6, v_7\}$ & $\{v_0, v_1, v_4, v_5\}$ \\
+      $f_1 = (2, 1)$ & $(v_2, v_3, v_6, v_7)$ & $(v_0, v_1, v_4, v_5)$ \\
       \hline
-      $f_2 = (2, 2)$ & $\{v_1, v_2, v_5, v_6\}$ & $\{v_0, v_3, v_4, v_7\}$ \\
+      $f_2 = (2, 2)$ & $(v_1, v_2, v_5, v_6)$ & $(v_0, v_3, v_4, v_7)$ \\
       \hline
-      $f_3 = (2, 3)$ & $\{v_0, v_3, v_4, v_7\}$ & $\{v_1, v_2, v_5, v_6\}$ \\
+      $f_3 = (2, 3)$ & $(v_0, v_3, v_4, v_7)$ & $(v_1, v_2, v_5, v_6)$ \\
       \hline
-      $f_4 = (2, 4)$ & $\{v_0, v_1, v_4, v_5\}$ & $\{v_2, v_3, v_6, v_7\}$ \\
+      $f_4 = (2, 4)$ & $(v_0, v_1, v_4, v_5)$ & $(v_2, v_3, v_6, v_7)$ \\
       \hline
-      $f_5 = (2, 5)$ & $\{v_0, v_1, v_2, v_3\}$ & $\{v_4, v_5, v_6, v_7\}$ \\
+      $f_5 = (2, 5)$ & $(v_0, v_1, v_2, v_3)$ & $(v_4, v_5, v_6, v_7)$ \\
       \hline
-      $c_0 = (3, 0)$ & $\{v_0, v_1, v_2, v_3, v_4, v_5, v_6, v_7\}$ & $\emptyset$ \\
+      $c_0 = (3, 0)$ & $(v_0, v_1, v_2, v_3, v_4, v_5, v_6, v_7)$ & $\emptyset$ \\
       \hline
     \end{tabular}
     \caption{Numbering of mesh entities on hexahedral cells.}
