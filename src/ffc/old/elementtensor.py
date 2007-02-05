@@ -10,8 +10,8 @@ from ffc.common.debug import *
 from ffc.common.constants import *
 from ffc.common.exceptions import *
 
-# FFC formlang modules
-from ffc.formlang.integral import *
+# FFC compiler.language modules
+from ffc.compiler.language.integral import *
 
 # FFC compiler modules
 from tensorrepresentation import *

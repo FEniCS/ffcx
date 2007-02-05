@@ -1,2 +1,2 @@
 # Import basic functionality
-from ffc.compiler.compiler import *
+from ffc.old.compiler import *

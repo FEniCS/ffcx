@@ -13,7 +13,7 @@ sys.path.append("../")
 from ffc.common.debug import *
 from ffc.common.exceptions import *
 
-# FFC formlang modules
+# FFC compiler.language modules
 from index import *
 from algebra import *
 from tokens import *

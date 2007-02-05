@@ -17,8 +17,8 @@ from FIAT.quadrature import *
 sys.path.append("../../")
 from ffc.common.exceptions import *
 
-# FFC formlang modules
-from ffc.formlang.algebra import *
+# FFC compiler.language modules
+from ffc.compiler.language.algebra import *
 
 class Projection:
     """A Projection represents the local L2 projection onto a given

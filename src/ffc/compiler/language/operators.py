@@ -23,9 +23,9 @@ from ffc.common.exceptions import *
 from ffc.fem.finiteelement import *
 from ffc.fem.projection import *
 
-# FFC formlang modules
-from ffc.formlang.index import *
-from ffc.formlang.algebra import *
+# FFC compiler.language modules
+from ffc.compiler.language.index import *
+from ffc.compiler.language.algebra import *
 
 def Identity(n):
     "Return identity matrix of given size."

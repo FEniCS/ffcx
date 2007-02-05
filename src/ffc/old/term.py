@@ -3,8 +3,8 @@ __date__ = "2004-10-05 -- 2007-01-23"
 __copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
-# FFC formlang modules
-from ffc.formlang.signature import *
+# FFC compiler.language modules
+from ffc.compiler.language.signature import *
 
 # FFC compiler modules
 from referencetensor import *

@@ -21,11 +21,11 @@ from FIAT.shapes import *
 from ffc.common.debug import *
 from ffc.common.progress import *
 
-# FFC formlang modules
-from ffc.formlang.index import *
-from ffc.formlang.algebra import *
-from ffc.formlang.integral import *
-from ffc.formlang.multiindex import *
+# FFC compiler.language modules
+from ffc.compiler.language.index import *
+from ffc.compiler.language.algebra import *
+from ffc.compiler.language.integral import *
+from ffc.compiler.language.multiindex import *
 
 # FFC compiler modules
 from pointreordering import *

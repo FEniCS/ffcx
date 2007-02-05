@@ -12,15 +12,15 @@ from ffc.common.debug import *
 from ffc.common.exceptions import *
 
 # FFC format modules
-from ffc.format import dolfin
-from ffc.format import latex
+from ffc.compiler.format import dolfin
+from ffc.compiler.format import latex
 
-# FFC formlang modules
-from ffc.formlang.index import *
-from ffc.formlang.checks import *
-from ffc.formlang.algebra import *
-from ffc.formlang.reassign import *
-from ffc.formlang.simplify import *
+# FFC compiler.language modules
+from ffc.compiler.language.index import *
+from ffc.compiler.language.checks import *
+from ffc.compiler.language.algebra import *
+from ffc.compiler.language.reassign import *
+from ffc.compiler.language.simplify import *
 
 # FFC compiler modules
 from elementtensor import *

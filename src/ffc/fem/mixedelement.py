@@ -11,8 +11,8 @@ import numpy
 # FFC common modules
 from ffc.common.debug import *
 
-# FFC formlang modules
-from ffc.formlang.algebra import *
+# FFC compiler.language modules
+from ffc.compiler.language.algebra import *
 
 # FIXME: Remove
 from ffc.remove.nodemap import *

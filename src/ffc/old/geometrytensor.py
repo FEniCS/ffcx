@@ -7,10 +7,10 @@ __license__  = "GNU GPL Version 2"
 from ffc.common.debug import *
 from ffc.common.util import *
 
-# FFC formlang modules
-from ffc.formlang.algebra import *
-from ffc.formlang.reassign import *
-from ffc.formlang.multiindex import *
+# FFC compiler.language modules
+from ffc.compiler.language.algebra import *
+from ffc.compiler.language.reassign import *
+from ffc.compiler.language.multiindex import *
 
 class GeometryTensor:
 

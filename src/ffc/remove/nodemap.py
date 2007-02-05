@@ -10,7 +10,7 @@ from FIAT.dualbasis import *
 from FIAT.shapes import *
 
 # FFC compiler modules
-from ffc.compiler.alignment import *
+from ffc.old.alignment import *
 
 # FIXME: Remove
 from ffc.remove.declaration import *

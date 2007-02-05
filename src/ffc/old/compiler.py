@@ -22,19 +22,19 @@ from ffc.common.exceptions import *
 sys.path.append("../../")
 
 # FFC form language modules
-from ffc.formlang.index import *
-from ffc.formlang.tokens import *
-from ffc.formlang.algebra import *
-from ffc.formlang.integral import *
-from ffc.formlang.signature import *
-from ffc.formlang.operators import *
+from ffc.compiler.language.index import *
+from ffc.compiler.language.tokens import *
+from ffc.compiler.language.algebra import *
+from ffc.compiler.language.integral import *
+from ffc.compiler.language.signature import *
+from ffc.compiler.language.operators import *
 
 # FFC codegen modules
-from ffc.codegen.codegenerator import *
+from ffc.compiler.codegeneration.codegenerator import *
 
 # FFC format modules
-from ffc.format import dolfin
-from ffc.format import ufcformat
+from ffc.compiler.format import dolfin
+from ffc.compiler.format import ufcformat
 
 # FFC fem modules
 from ffc.fem.mixedelement import *

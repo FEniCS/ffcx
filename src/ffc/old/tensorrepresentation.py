@@ -14,12 +14,14 @@ from ffc.common.debug import *
 from ffc.common.constants import *
 from ffc.common.exceptions import *
 
-# FFC formlang modules
-from ffc.formlang.indexreordering import *
+# FFC compiler.language modules
+from ffc.compiler.language.indexreordering import *
 
 # FFC compiler modules
 from term import *
-from optimization import *
+
+# FFC optimization modules
+from ffc.compiler.optimization.ferari import *
 
 # FIXME: Remove
 from ffc.remove.declaration import *

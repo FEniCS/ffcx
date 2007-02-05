@@ -21,7 +21,7 @@ from ffc.common.exceptions import *
 from ffc.common.constants import *
 
 # FFC form language modules
-from ffc.formlang.index import *
+from ffc.compiler.language.index import *
 
 def find_test(form):
     "Return the FiniteElement associated with the test function (if any)."

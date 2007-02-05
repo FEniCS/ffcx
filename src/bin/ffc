@@ -136,13 +136,15 @@ def __make_module(filename, language, options):
 
     # Get prefix of file name
     prefix = filename.replace(".form", "")
+
+    print language
     
     # Generate output
     output = """\
 import sys
 sys.path.append("../../")
 sys.path.append("./")
-from ffc.compiler.compiler import *
+from ffc.old.compiler import *
 
 name = "%s"
 
