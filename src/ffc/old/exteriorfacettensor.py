@@ -4,12 +4,12 @@ __copyright__ = "Copyright (C) 2006-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # FFC common modules
-from ffc.common.debug import *
-from ffc.common.constants import *
-from ffc.common.exceptions import *
+from debug import *
+from constants import *
+from exceptions import *
 
 # FFC compiler.language modules
-from ffc.compiler.language.integral import *
+from integral import *
 
 # FFC compiler modules
 from tensorrepresentation import *

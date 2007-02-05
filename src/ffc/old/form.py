@@ -8,19 +8,15 @@ import sys
 
 # FFC common modules
 sys.path.append("../../")
-from ffc.common.debug import *
-from ffc.common.exceptions import *
-
-# FFC format modules
-from ffc.compiler.format import dolfin
-from ffc.compiler.format import latex
+from debug import *
+from exceptions import *
 
 # FFC compiler.language modules
-from ffc.compiler.language.index import *
-from ffc.compiler.language.checks import *
-from ffc.compiler.language.algebra import *
-from ffc.compiler.language.reassign import *
-from ffc.compiler.language.simplify import *
+from index import *
+from checks import *
+from algebra import *
+from reassign import *
+from simplify import *
 
 # FFC compiler modules
 from elementtensor import *

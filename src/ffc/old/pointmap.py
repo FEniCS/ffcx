@@ -10,7 +10,7 @@ from FIAT.dualbasis import *
 from FIAT.shapes import *
 
 # FIXME: Remove
-from ffc.remove.declaration import *
+from declaration import *
 
 # FIXME: Should not be DOLFIN-specific
 format = { "point"     : lambda x : "points[%s]" % x,

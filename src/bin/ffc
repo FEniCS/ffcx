@@ -142,9 +142,6 @@ def __make_module(filename, language, options):
 import sys
 sys.path.append("../../")
 sys.path.append("./")
-from ffc.fem.finiteelement import *
-from ffc.compiler.language.algebra import *
-from ffc.compiler.language.operators import *
 from ffc.old.compiler import *
 
 name = "%s"
@@ -166,7 +163,6 @@ else:
 """ % (prefix, input, language, options, language, options)
 
     # FIXME: Temporary while developing the UFC output
-    print language
     if language == "ufc":
         output = output.replace("ffc.old.compiler", "ffc.compiler.compiler")
         output = output.replace("compile([a, L, M]", "compile(a")

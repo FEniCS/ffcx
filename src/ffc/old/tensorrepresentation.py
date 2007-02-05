@@ -10,21 +10,21 @@ __license__  = "GNU GPL Version 2"
 # Modified by Garth N. Wells 2006
 
 # FFC common modules
-from ffc.common.debug import *
-from ffc.common.constants import *
-from ffc.common.exceptions import *
+from debug import *
+from constants import *
+from exceptions import *
 
 # FFC compiler.language modules
-from ffc.compiler.language.indexreordering import *
+from indexreordering import *
 
 # FFC compiler modules
 from term import *
 
 # FFC optimization modules
-from ffc.compiler.optimization.ferari import *
+from optimization import *
 
 # FIXME: Remove
-from ffc.remove.declaration import *
+from declaration import *
 
 def compute_terms(form, type, facet0, facet1, alignment):
 

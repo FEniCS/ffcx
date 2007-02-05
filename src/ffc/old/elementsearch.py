@@ -16,12 +16,12 @@ import numpy
 
 # FFC common modules
 sys.path.append("../../")
-from ffc.common.debug import *
-from ffc.common.exceptions import *
-from ffc.common.constants import *
+from debug import *
+from exceptions import *
+from constants import *
 
 # FFC form language modules
-from ffc.compiler.language.index import *
+from index import *
 
 def find_test(form):
     "Return the FiniteElement associated with the test function (if any)."

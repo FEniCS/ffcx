@@ -8,7 +8,7 @@ from FIAT.dualbasis import *
 from FIAT.shapes import *
 
 # FIXME: remove
-from ffc.remove.declaration import *
+from declaration import *
 
 # FIXME: Should not be DOLFIN-specific
 format = { ("entity", 2, 0) : lambda i : "cell.entities(0)[%d]" % i,

@@ -18,14 +18,14 @@ from FIAT.quadrature import *
 from FIAT.shapes import *
 
 # FFC common modules
-from ffc.common.debug import *
-from ffc.common.progress import *
+from debug import *
+from progress import *
 
 # FFC compiler.language modules
-from ffc.compiler.language.index import *
-from ffc.compiler.language.algebra import *
-from ffc.compiler.language.integral import *
-from ffc.compiler.language.multiindex import *
+from index import *
+from algebra import *
+from integral import *
+from multiindex import *
 
 # FFC compiler modules
 from pointreordering import *

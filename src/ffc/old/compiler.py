@@ -15,30 +15,25 @@ import sys
 from sets import Set
 
 # FFC common modules
-from ffc.common.debug import *
-from ffc.common.constants import *
-from ffc.common.exceptions import *
+from debug import *
+from constants import *
+from exceptions import *
 
 sys.path.append("../../")
 
 # FFC form language modules
-from ffc.compiler.language.index import *
-from ffc.compiler.language.tokens import *
-from ffc.compiler.language.algebra import *
-from ffc.compiler.language.integral import *
-from ffc.compiler.language.signature import *
-from ffc.compiler.language.operators import *
-
-# FFC codegen modules
-from ffc.compiler.codegeneration.codegenerator import *
+from index import *
+from tokens import *
+from algebra import *
+from integral import *
+from signature import *
+from operators import *
 
 # FFC format modules
-from ffc.compiler.format import dolfin
-from ffc.compiler.format import ufcformat
+import dolfin
 
 # FFC fem modules
-from ffc.fem.mixedelement import *
-from ffc.fem.dofmap import *
+from mixedelement import *
 
 # FFC compiler modules
 from form import *
@@ -126,11 +121,7 @@ def write(formcodes, code, options = FFC_OPTIONS):
     format = formcodes[0].format
 
     # Generate output for all formcodes
-    # FIXME: Should be two arguments when this is fixed: code, options
-    if format == ufcformat:
-        format.write(code, options)
-    else:
-        format.write(formcodes, code, options)
+    format.write(formcodes, code, options)
 
     return
 
@@ -244,16 +235,6 @@ def __build_form(name, formcode, format, options):
         elements += [formcode.trial]
     elements += formcode.elements
 
-    # Create dof maps
-    dof_maps = [DofMap(element) for element in elements]
-
-    # Generate code
-    code = {}
-    if format == ufcformat:
-        code = generate_code(name, elements, dof_maps, formcode, format)
-
-    return code
-
 def __check_primary_ranks(formcode, num_facets, num_alignments):
     "Check that all primary ranks are equal."
 
@@ -344,19 +325,4 @@ def __choose_format(language):
     if not language:
         language = "dolfin"
 
-    # Choose format
-    if language.lower() == "ufc":
-        format = ufcformat
-    elif language.lower() == "dolfin":
-        format = dolfin
-    elif language.lower() == "latex":
-        format = latex
-    elif language.lower() == "raw":
-        format = raw
-    elif language.lower() == "ase":
-        format = ase
-    elif language.lower() == "xml":
-        format = xml
-    else:
-        raise "RuntimeError", "Unknown language " + str(language)
-    return format
+    return dolfin

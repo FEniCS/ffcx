@@ -13,7 +13,7 @@ from FIAT.shapes import *
 from ffc.old.alignment import *
 
 # FIXME: Remove
-from ffc.remove.declaration import *
+from declaration import *
 
 # FIXME: Should not be DOLFIN-specific
 format = { ("entity", 2, 0) : lambda i : "cell.entities(0)[%d]" % i,

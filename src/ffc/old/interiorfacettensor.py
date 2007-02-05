@@ -7,13 +7,13 @@ __license__  = "GNU GPL Version 2"
 import numpy
 
 # FFC common modules
-from ffc.common.debug import *
-from ffc.common.constants import *
-from ffc.common.exceptions import *
+from debug import *
+from constants import *
+from exceptions import *
 
 # FFC compiler.language modules
-from ffc.compiler.language.multiindex import *
-from ffc.compiler.language.integral import *
+from multiindex import *
+from integral import *
 
 # FFC compiler modules
 from tensorrepresentation import *

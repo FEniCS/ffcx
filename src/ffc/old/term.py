@@ -4,7 +4,7 @@ __copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # FFC compiler.language modules
-from ffc.compiler.language.signature import *
+from signature import *
 
 # FFC compiler modules
 from referencetensor import *

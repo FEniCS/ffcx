@@ -10,16 +10,16 @@ import numpy
 import time
 
 # FFC common modules
-from ffc.common.exceptions import *
-from ffc.common.progress import *
-from ffc.common.debug import *
-from ffc.common.util import *
+from exceptions import *
+from progress import *
+from debug import *
+from util import *
 
 # FFC compiler.language modules
-from ffc.compiler.language.index import *
-from ffc.compiler.language.algebra import *
-from ffc.compiler.language.reassign import *
-from ffc.compiler.language.multiindex import *
+from index import *
+from algebra import *
+from reassign import *
+from multiindex import *
 
 # FFC compiler modules
 from monomialintegration import *

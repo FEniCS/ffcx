@@ -4,13 +4,13 @@ __copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # FFC common modules
-from ffc.common.debug import *
-from ffc.common.util import *
+from debug import *
+from util import *
 
 # FFC compiler.language modules
-from ffc.compiler.language.algebra import *
-from ffc.compiler.language.reassign import *
-from ffc.compiler.language.multiindex import *
+from algebra import *
+from reassign import *
+from multiindex import *
 
 class GeometryTensor:
 
