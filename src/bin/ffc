@@ -78,8 +78,8 @@ def main(argv):
         outname = __make_module(filename, language, options)
         # Compile generated file (also provide a namespace)
         ns = {}
-        # Catch exceptions only if debug level is zero
-        if debuglevel > 0:
+        # Catch exceptions only if debug level is non-negative
+        if debuglevel >= 0:
             execfile(outname, ns)
         else:
             try:
@@ -88,13 +88,13 @@ def main(argv):
                 print ""
                 print "*** Error at " + str(exception.expression)
                 print "*** " + exception.message
-                print "*** To get more information about this error, rerun ffc with the option -d1."
+                print "*** To get more information about this error, rerun ffc with the option -d0."
             except RuntimeError, exception:
                 print "*** " + str(exception)
-                print "*** To get more information about this error, rerun ffc with the option -d1."
+                print "*** To get more information about this error, rerun ffc with the option -d0."
             except Exception, exception:
                 print "*** " + str(exception)
-                print "*** To get more information about this error, rerun ffc with the option -d1."
+                print "*** To get more information about this error, rerun ffc with the option -d0."
 
 def usage():
     "Display usage info."
@@ -137,13 +137,14 @@ def __make_module(filename, language, options):
     # Get prefix of file name
     prefix = filename.replace(".form", "")
 
-    print language
-    
     # Generate output
     output = """\
 import sys
 sys.path.append("../../")
 sys.path.append("./")
+from ffc.fem.finiteelement import *
+from ffc.compiler.language.algebra import *
+from ffc.compiler.language.operators import *
 from ffc.old.compiler import *
 
 name = "%s"
@@ -163,6 +164,12 @@ else:
   print \"No forms specified, nothing to do.\"
 
 """ % (prefix, input, language, options, language, options)
+
+    # FIXME: Temporary while developing the UFC output
+    print language
+    if language == "ufc":
+        output = output.replace("ffc.old.compiler", "ffc.compiler.compiler")
+        output = output.replace("compile([a, L, M]", "compile(a")
 
     # Write output
     outname = prefix + ".py"
