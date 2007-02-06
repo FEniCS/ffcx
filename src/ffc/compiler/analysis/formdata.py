@@ -14,9 +14,6 @@ from ffc.common.debug import *
 # FFC fem modules
 from ffc.fem.dofmap import *
 
-# FFC language modules
-from ffc.compiler.language import *
-
 class FormData:
     """This class holds meta data for a form. The following attributes
     are extracted and stored for a given form:
@@ -38,7 +35,7 @@ class FormData:
         self.form = form
         self.rank = self.__extract_rank(form)
         self.num_coefficients = self.__extract_num_coefficients(form)
-        self.elements = self.__extract_elements(form, self.rank)
+        self.elements = self.__extract_elements(form, self.rank, self.num_coefficients)
         self.dof_maps = self.__extract_dof_maps(self.elements)
 
         debug("done")
@@ -51,7 +48,7 @@ class FormData:
         "Extract the number of coefficients"
         return max_index(form, Index.FUNCTION) + 1
     
-    def __extract_elements(self, form, rank):
+    def __extract_elements(self, form, rank, num_coefficients):
         """Extract all elements associated with form. The list of elements is
         ordered first by the indices of the corresponding basis functions
         and then by the indices of the corresponding functions."""
@@ -64,6 +61,17 @@ class FormData:
             for v in monomial.basisfunctions:
                 if v.index.type == Index.PRIMARY and v.index.index == i:
                     elements += [v.element]
+
+        # Now extract elements corresponding to coefficients
+        for i in range(num_coefficients):
+            for m in form.monomials:
+                for c in m.coefficients:
+                    if c.n0.index == i and len(elements) < rank + i + 1:
+                        elements += [c.e0]
+
+        # Check that we found an element for each function
+        if not len(elements) == rank + num_coefficients:
+            raise FormError, (form, "Unable to extract all elements.")
 
         return elements
 
@@ -83,44 +91,3 @@ Dof maps:     %s""" % (str(self.form),
                        str(self.num_coefficients),
                        str(self.elements),
                        str(self.dof_maps))
-    
-def find_elesdfments(form, nfunctions):
-    """Return a list of FiniteElements associated with the (original)
-    function spaces of the Functions appearing in the form."""
-
-    # List of elements used for functions
-    elements = [None for j in range(nfunctions)]
-
-    # Iterate over all Coefficients in all Monomials
-    for p in form.monomials:
-        for c in p.coefficients:
-            elements[c.n0.index] = c.e0
-
-    # Check that we found an element for each function
-    for element in elements:
-        if not element:
-            raise FormError, (form, "Unable to find element for each function.")
-
-    if elements:
-        debug("Finite elements for functions: " + str(elements), 0)
-          
-    return elements
-
-def find_projections(form, nprojections):
-    """Return a list of tuples (n0, n1, e0, e1, P) defining the
-    projections of all Functions appearing in the form."""
-
-    # List of projections used for functions
-    projections = [None for j in range(nprojections)]
-
-    # Iterate over all Coefficients in all Monomials
-    for p in form.monomials:
-        for c in p.coefficients:
-            projections[c.n1.index] = (c.n0.index, c.n1.index, c.e0, c.e1, c.P)
-
-    # Check that we found an element for each projection
-    for projection in projections:
-        if not projection:
-            raise FormError, (form, "Unable to find a projection for each function.")
-
-    return projections

@@ -77,9 +77,7 @@ def analyze_form(form):
     # Extract form data
     form_data = FormData(form)
     
-    # Print summary
-    debug("")
-    debug(str(form_data))
+    #debug(str(form_data))
 
     debug_indent(-1)
     
