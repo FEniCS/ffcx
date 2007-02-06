@@ -26,6 +26,7 @@ def index_call(object, foo, args = None):
     elif isinstance(object, tokens.Coefficient):
         index_call(object.n0, foo, args)
         index_call(object.n1, foo, args)
+        index_call(object.index, foo, args)
     elif isinstance(object, tokens.Transform):
         index_call(object.index0, foo, args)
         index_call(object.index1, foo, args)

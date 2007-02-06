@@ -215,7 +215,7 @@ class FiniteElement:
         else:
             raise RuntimeError, "Unable to create mixed element from given object: " + str(other)
 
-    def __str__(self):
+    def __repr__(self):
         "Pretty print"
         return self.signature()
 

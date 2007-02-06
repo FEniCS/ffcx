@@ -1,16 +1,9 @@
-# Copyright (C) 2004-2006 Anders Logg (logg@simula.no)
-# Licensed under the GNU GPL Version 2
-#
-# The bilinear form a(v, U) and linear form L(v) for
-# Poisson's equation.
-#
-# Compile this form with FFC: ffc Poisson.form
-
 element = FiniteElement("Lagrange", "triangle", 1)
 
 v = TestFunction(element)
-U = TrialFunction(element)
+u = TrialFunction(element)
+w = Function(element)
 f = Function(element)
 
-a = dot(grad(v), grad(U))*dx
+a = w*dot(grad(v), grad(u))*dx
 L = v*f*dx

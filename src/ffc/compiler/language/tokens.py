@@ -3,7 +3,7 @@ represent multilinear forms, that is, small basic data types used to
 build the data structure representing an element of the form algebra."""
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-09-29 -- 2007-01-11"
+__date__ = "2004-09-29 -- 2007-02-06"
 __copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -47,7 +47,7 @@ class Coefficient:
             self.index = Index(index)
         return
 
-    def __str__(self):
+    def __repr__(self):
         "Print nicely formatted representation of Coefficient."
         return "w" + str(self.n1) + "_" + str(self.index)
 
@@ -75,7 +75,7 @@ class Derivative:
             self.index = Index(index)
         return
 
-    def __str__(self):
+    def __repr__(self):
         "Print nicely formatted representation of Derivative."
         return "(d/dX" + str(self.index) + ")"
 
@@ -113,7 +113,7 @@ class Transform:
             self.restriction = restriction
         return
 
-    def __str__(self):
+    def __repr__(self):
         "Print nicely formatted representation of Transform."
         if self.power == 1:
             p = ""
@@ -122,11 +122,11 @@ class Transform:
         else:
             p = "^("+ str(self.power) + ")"
         if self.restriction == None:
-            return "(dX" + self.index0.__str__() + "/" + "dx" + self.index1.__str__() + ")" + p
+            return "(dX" + self.index0.__repr__() + "/" + "dx" + self.index1.__repr__() + ")" + p
         elif self.restriction == Restriction.PLUS:
-            return "(dX" + self.index0.__str__() + "/" + "dx" + self.index1.__str__() + ")" + p + "(+)"
+            return "(dX" + self.index0.__repr__() + "/" + "dx" + self.index1.__repr__() + ")" + p + "(+)"
         elif self.restriction == Restriction.MINUS:
-            return "(dX" + self.index0.__str__() + "/" + "dx" + self.index1.__str__() + ")" + p + "(-)"
+            return "(dX" + self.index0.__repr__() + "/" + "dx" + self.index1.__repr__() + ")" + p + "(-)"
         else: 
             raise FormError("Wrong value for restriction of transform")
 

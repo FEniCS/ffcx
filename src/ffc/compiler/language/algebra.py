@@ -126,9 +126,9 @@ class Element:
         "Return value rank of Element."
         return Form(self).value_rank()
 
-    def __str__(self):
+    def __repr__(self):
         "Print nicely formatted representation of Element."
-        return Form(self).__str__()
+        return Form(self).__repr__()
 
 class Constant(Element):
     """A Constant represents a numerical constant or a Function that
@@ -162,7 +162,7 @@ class Constant(Element):
             c.inverted = True
         return c
 
-    def __str__(self):
+    def __repr__(self):
         "Print nicely formatted representation of Constant."
         return "c" + str(self.number)
 
@@ -204,7 +204,7 @@ class Function(Element):
             self.P  = None
         return
 
-    def __str__(self):
+    def __repr__(self):
         "Print nicely formatted representation of Function."
         return "w" + str(self.n0)
 
@@ -271,13 +271,13 @@ class BasisFunction(Element):
                 v.restriction = Restriction.MINUS
         return v
 
-    def __str__(self):
+    def __repr__(self):
         "Print nicely formatted representation of BasisFunction."
-        d = "".join([d.__str__() for d in self.derivatives])
-        i = self.index.__str__()
+        d = "".join([d.__repr__() for d in self.derivatives])
+        i = self.index.__repr__()
 
         if self.component:
-            c = "[" + ", ".join([c.__str__() for c in self.component]) + "]"
+            c = "[" + ", ".join([c.__repr__() for c in self.component]) + "]"
         else:
             c = ""
 
@@ -516,7 +516,7 @@ class Monomial(Element):
             v.transforms[i].restriction = restriction
         return v
 
-    def __str__(self):
+    def __repr__(self):
         "Print nicely formatted representation of Monomial."
         if not (self.coefficients or self.transforms or self.basisfunctions):
             return str(self.numeric)
@@ -530,10 +530,10 @@ class Monomial(Element):
             d = ""
         else:
             d = "|det(F)|^" + "(" + str(self.determinant) + ")"
-        c = "".join([w.__str__() for w in self.constants])
-        w = "".join([w.__str__() for w in self.coefficients])
-        t = "".join([t.__str__() for t in self.transforms])
-        v = "*".join([v.__str__() for v in self.basisfunctions])
+        c = "".join([w.__repr__() for w in self.constants])
+        w = "".join([w.__repr__() for w in self.coefficients])
+        t = "".join([t.__repr__() for t in self.transforms])
+        v = "*".join([v.__repr__() for v in self.basisfunctions])
         if not self.integral == None:
             i = "*" + str(self.integral)
         else:
@@ -648,9 +648,9 @@ class Form(Element):
         v.monomials = ([w(r) for w in v.monomials])
         return v
 
-    def __str__(self):
+    def __repr__(self):
         "Print nicely formatted representation of Form."
-        return " + ".join([p.__str__() for p in self.monomials])
+        return " + ".join([p.__repr__() for p in self.monomials])
 
     def dx(self, index = None):
         "Operator: (d/dx)Form in given coordinate direction."

@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-09-29 -- 2007-01-11"
+__date__ = "2004-09-29 -- 2007-02-06"
 __copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -25,7 +25,7 @@ class Integral:
             raise RuntimeError, "Unknown integral type " + str(type) + "."
         return
 
-    def __str__(self):
+    def __repr__(self):
         "Print nicely formatted representation of Integral."
         if self.type == self.CELL:
             return "dX"

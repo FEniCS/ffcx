@@ -22,8 +22,12 @@ from ffc.common.constants import *
 
 # FFC compiler modules
 import language
+
+from language.reassignment import *
+
 from analysis.checks import *
-#from analysis.reassign import *
+from analysis.formdata import *
+
 #import representation
 #import optimization
 #import codegeneration
@@ -70,9 +74,12 @@ def analyze_form(form):
     # Check validity of form again
     check_form(form)
 
+    # Extract form data
+    form_data = FormData(form)
+    
     # Print summary
     debug("")
-    debug("Form: " + str(form))
+    debug(str(form_data))
 
     debug_indent(-1)
     

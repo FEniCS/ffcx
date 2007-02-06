@@ -9,6 +9,8 @@ __license__  = "GNU GPL Version 2"
 
 import sys
 
+from util import *
+
 __level = -1
 __indent = 0
 __no_indent = False
@@ -20,15 +22,14 @@ def debug(string, debuglevel = 0):
 
     # Print message (not fancy handling of strings containing ...)
     if debuglevel <= __level:
-        indentation = "".join(["    " for i in range(__indent)])
         if "..." in string:
-            print indentation + string,
+            print indent(string, 2*__indent),
             __no_indent = True
         elif __no_indent:
             print string
             __no_indent = False
         else:
-            print indentation + string
+            print indent(string, 2*__indent)
 
     # Flush buffer so messages are printed *now*
     sys.stdout.flush()

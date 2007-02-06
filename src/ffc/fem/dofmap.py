@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-01-24 -- 2007-01-26"
+__date__ = "2007-01-24 -- 2007-02-06"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -67,3 +67,7 @@ class DofMap:
             dofs_per_dimension[dim] = num_dofs[0]
 
         return tuple(dofs_per_dimension)
+
+    def __repr__(self):
+        "Pretty print"
+        return self.signature()
