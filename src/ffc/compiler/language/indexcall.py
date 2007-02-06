@@ -30,7 +30,7 @@ def index_call(object, foo, args = None):
         index_call(object.index0, foo, args)
         index_call(object.index1, foo, args)
     elif isinstance(object, algebra.BasisFunction):
-        # FIXME: Why not call index_call not called on basis function index?
+        index_call(object.index, foo, args)
         [index_call(i, foo, args) for i in object.component]
         [index_call(d, foo, args) for d in object.derivatives]
     elif isinstance(object, tokens.Derivative):

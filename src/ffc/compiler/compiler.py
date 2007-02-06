@@ -58,9 +58,8 @@ def analyze_form(form):
     debug("")
     debug("Compiler phase 1: Analyzing form")
     debug("--------------------------------")
+    debug("")
     debug_indent()
-
-    print form
 
     # Check validity of form
     check_form(form)
@@ -68,7 +67,12 @@ def analyze_form(form):
     # Reassign form indices
     reassign_indices(form)
 
-    print form
+    # Check validity of form again
+    check_form(form)
+
+    # Print summary
+    debug("")
+    debug("Form: " + str(form))
 
     debug_indent(-1)
     

@@ -28,8 +28,6 @@ def reassign_indices(form):
     # Modify secondary indices to auxiliary indices
     [__create_auxiliary(m) for m in form.monomials]
 
-    print form
-
     # Reassign primary indices (global for the Form)
     __reassign(form, Index.PRIMARY)
 
@@ -122,12 +120,6 @@ def __reassign(object, type):
     imax = max_index(object, type)
     if 0 < imin < sys.maxint:
         raise RuntimeError, "Failed to reassign indices."
-
-def __have_index(object, index):
-    "Check if object contains given index"
-    indices = []
-    index_call(object, index_add_value, [indices, index.type])
-    return index.index in indices
 
 def __create_auxiliary(monomial):
     """Modify secondary indices not appearing in both the reference

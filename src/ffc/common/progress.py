@@ -17,6 +17,7 @@ class Progress:
 
     def __init__(self, n):
         "Create progress bar for process consisting of n steps."
+
         self.n = n
         self.i = 0
         self.pos = 0
@@ -25,6 +26,7 @@ class Progress:
 
     def __iadd__(self, other):
         "Add increment to progress bar."
+        
         self.i += other      
         newpos = int(float(self.i) / float(self.n) * float(width))
         if newpos > width:
