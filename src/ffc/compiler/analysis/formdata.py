@@ -24,6 +24,7 @@ class FormData:
         rank             - the rank (arity) of the form
         num_coefficients - the number of coefficients
         num_arguments    - the sum of rank and num_coefficients
+        num_terms        - the number of terms
         elements         - the finite elements associated with the form
         dof_maps         - the dof maps associated with the form
 
@@ -41,6 +42,7 @@ class FormData:
         self.rank = self.__extract_rank(form)
         self.num_coefficients = self.__extract_num_coefficients(form)
         self.num_arguments = self.rank + self.num_coefficients
+        self.num_terms = self.__extract_num_terms(form)
         self.elements = self.__extract_elements(form, self.rank, self.num_coefficients)
         self.dof_maps = self.__extract_dof_maps(self.elements)
 
@@ -57,6 +59,10 @@ class FormData:
     def __extract_num_coefficients(self, form):
         "Extract the number of coefficients"
         return max_index(form, Index.FUNCTION) + 1
+
+    def __extract_num_terms(self, form):
+        "Extract the number of terms"
+        return len(form.monomials)
     
     def __extract_elements(self, form, rank, num_coefficients):
         """Extract all elements associated with form. The list of elements is

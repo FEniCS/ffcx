@@ -77,8 +77,14 @@ def analyze_form(form, name):
 
     # Extract form data
     form_data = FormData(form, name)
+
+    # Print a short summary
+    debug("")
+    debug("Rank of form: %d" % form_data.rank)
+    debug("Coefficients: %d" % form_data.num_coefficients)
+    debug("Arguments:    %d" % form_data.num_arguments)
+    debug("Terms:        %d" % form_data.num_terms)
     
-    debug("\n" + str(form_data), 1)
     debug_end()
     
     return form_data
