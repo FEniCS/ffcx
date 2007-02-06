@@ -1,6 +1,6 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2005-02-04 -- 2006-03-28"
-__copyright__ = "Copyright (C) 2005-2006 Anders Logg"
+__date__ = "2005-02-04 -- 2007-02-06"
+__copyright__ = "Copyright (C) 2005-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 __level = -1
@@ -17,6 +17,10 @@ def debug(string, debuglevel = 0):
         indentation = "".join(["    " for i in range(__indent)])
         print indentation + string
 
+def debug_indent(increment = 1):
+    global __indent
+    __indent += increment
+
 def setlevel(newlevel):
     global __level
     __level = newlevel
@@ -24,6 +28,3 @@ def setlevel(newlevel):
 def getlevel():
     return __level
 
-#def indent(increment = 1):
-#    global __indent
-#    __indent += increment

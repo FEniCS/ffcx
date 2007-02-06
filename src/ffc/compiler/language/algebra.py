@@ -25,7 +25,7 @@ algebra:
     Unary  ()     (operand must be multi-valued, +/-)"""
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-09-27 -- 2007-01-23"
+__date__ = "2004-09-27 -- 2007-02-06"
 __copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -42,13 +42,13 @@ from ffc.common.exceptions import *
 from ffc.common.debug import *
 from ffc.common.util import *
 
-# FFC compiler modules
-from reassign import *
+# FFC language modules
 from tokens import *
 from variables import *
 from index import Index
 from integral import *
 from restriction import *
+from reassign import *
 
 class Element:
     "Base class for elements of the algebra."

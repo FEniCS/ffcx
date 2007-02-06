@@ -123,20 +123,21 @@ Alternatively, the following long options may be used:
 def version():
     "Display version number."
     print("This is FFC, the FEniCS Form Compiler, version %s." % FFC_VERSION)
-    print("For further information, go to http://www/fenics.org/ffc/.")
+    print("For further information, go to http://www/fenics.org/ffc/.\n")
     return
 
 def __make_module(filename, language, options):
     "Create Python module from given .form file and return name of module file"
-    debug("Parsing " + filename)
+
+    # Get prefix of file name and generate Python script file name
+    prefix = filename.replace(".form", "")
+    outname = prefix + ".py"
+    debug("Preprocessing form file: %s --> %s" % (filename, outname))
 
     # Read input
     infile = open(filename, "r")
     input = infile.read()
     infile.close()
-
-    # Get prefix of file name
-    prefix = filename.replace(".form", "")
 
     # Generate output
     output = """\
@@ -169,11 +170,9 @@ else:
         output = output.replace("compile([a, L, M]", "compile(a")
 
     # Write output
-    outname = prefix + ".py"
     outfile = open(outname, "w")
     outfile.write(output)
     outfile.close()
-    debug("Output written to " + outname)
 
     # Return output file name
     return outname

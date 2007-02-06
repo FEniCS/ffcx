@@ -51,13 +51,6 @@ class Coefficient:
         "Print nicely formatted representation of Coefficient."
         return "w" + str(self.n1) + "_" + str(self.index)
 
-    def indexcall(self, foo, args = None):
-        "Call given function on all Indices."
-        self.n0.indexcall(foo, args)
-        self.n1.indexcall(foo, args)
-        self.index.indexcall(foo, args)
-        return
-
 class Derivative:
     """A Derivative represents a derivative on the reference cell in
     either a given fixed coordinate direction (in which case it is a
@@ -85,11 +78,6 @@ class Derivative:
     def __str__(self):
         "Print nicely formatted representation of Derivative."
         return "(d/dX" + str(self.index) + ")"
-
-    def indexcall(self, foo, args = None):
-        "Call given function on all Indices."
-        self.index.indexcall(foo, args)
-        return
 
 class Transform:
     """A Transform represents an element of the inverse Jacobian
@@ -141,12 +129,6 @@ class Transform:
             return "(dX" + self.index0.__str__() + "/" + "dx" + self.index1.__str__() + ")" + p + "(-)"
         else: 
             raise FormError("Wrong value for restriction of transform")
-
-    def indexcall(self, foo, args = None):
-        "Call given function on all Indices."
-        self.index0.indexcall(foo, args)
-        self.index1.indexcall(foo, args)
-        return
 
 i = Index()
 j = Index()

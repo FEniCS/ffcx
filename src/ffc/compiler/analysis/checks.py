@@ -2,18 +2,22 @@
 if a given form is valid."""
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2006-12-01 -- 2007-02-25"
+__date__ = "2006-12-01 -- 2007-02-06"
 __copyright__ = "Copyright (C) 2006-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # FFC common modules
+from ffc.debug import *
 from ffc.common.exceptions import *
 
 # FFC language modules
-from ffc.compiler.language import *
+from ffc.compiler.language.algebra import *
+from ffc.compiler.language.integral import *
+from ffc.compiler.language.indexcall import *
 
 def check_form(form):
     "Check that the form is valid"
+    debug("Checking validity of form...
     check_type(form)
     check_integrals(form)
     check_restrictions(form)
@@ -50,8 +54,8 @@ def check_completeness(form):
     for m in form.monomials:
         aindices = []
         bindices = []
-        m.indexcall(__index_add, [aindices, Index.SECONDARY])
-        m.indexcall(__index_add, [bindices, Index.AUXILIARY])
+        index_call(m, index_add, [aindices, Index.SECONDARY])
+        index_call(m, index_add, [bindices, Index.AUXILIARY])
         if not __check_completeness(aindices) or not __check_completeness(bindices):
             raise FormError, (m, "Index does not appear exactly twice in term.")
 

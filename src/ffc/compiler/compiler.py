@@ -37,10 +37,10 @@ def compile(form, name = "Form", output = FFC_LANGUAGE, options = FFC_OPTIONS):
         raise RuntimeError, "Not a form: " + str(form)
 
     # Phase 1: analyze form
-    analyze_form(form)
+    form = analyze_form(form)
 
     # Phase 2: compute form representation
-    #representation.compute_representation(form)
+    compute_representation(form)
 
     # Phase 3: optimize form representation
     #optimization.compute_optimization(form)
@@ -55,14 +55,29 @@ def compile(form, name = "Form", output = FFC_LANGUAGE, options = FFC_OPTIONS):
 def analyze_form(form):
     "Analyze form"
 
-    debug("Phase 1: Analyzing form")
+    debug("")
+    debug("Compiler phase 1: Analyzing form")
+    debug("--------------------------------")
+    debug_indent()
 
     print form
 
     # Check validity of form
     check_form(form)
 
-    
+    # Reassign form indices
+    reassign_indices(form)
+
     print form
 
+    debug_indent(-1)
     
+    return form
+
+def compute_representation(form):
+    "Compute form representation"
+
+    debug("")
+    debug("Compiler phase 2: Computing form representation")
+    debug("-----------------------------------------------")
+    debug_indent()
