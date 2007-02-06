@@ -37,8 +37,6 @@ from codegeneration.form import *
 
 from format import ufcformat
 
-#import format
-
 def compile(form, name = "Form", output_language = FFC_LANGUAGE, options = FFC_OPTIONS):
     "Compile the given form for the given language."
 
@@ -59,19 +57,14 @@ def compile(form, name = "Form", output_language = FFC_LANGUAGE, options = FFC_O
     format = __choose_format(output_language)
 
     # Phase 4: generate code
-    generate_code(form_data, format.format)
+    code = generate_code(form_data, format.format)
 
     # Phase 5: format code
-    format_code(form)
+    format_code(code, format, options)
 
 def analyze_form(form, name):
-    "Analyze form"
-
-    debug("")
-    debug("Compiler phase 1: Analyzing form")
-    debug("--------------------------------")
-    debug("")
-    debug_indent()
+    "Compiler phase 1: Analyze form"
+    debug_begin("Phase 1: Analyzing form")
 
     # Check validity of form
     check_form(form)
@@ -86,41 +79,29 @@ def analyze_form(form, name):
     form_data = FormData(form, name)
     
     debug("\n" + str(form_data), 1)
-    debug_indent(-1)
+    debug_end()
     
     return form_data
 
 def compute_representation(form):
-    "Compute form representation"
-
-    debug("")
-    debug("Compiler phase 2: Computing form representation")
-    debug("-----------------------------------------------")
-    debug_indent()
+    "Compiler phase 2: Compute form representation"
+    debug_begin("Compiler phase 2: Computing form representation")
 
     debug("Not implemented")
 
-    debug_indent(-1)
+    debug_end()
     
 def compute_optimization(form):
     "Compute form representation"
-
-    debug("")
-    debug("Compiler phase 3: Computing optimization")
-    debug("----------------------------------------")
-    debug_indent()
+    debug_begin("Compiler phase 3: Computing optimization")
 
     debug("Not implemented")
 
-    debug_indent(-1)
+    debug_end()
 
 def generate_code(form_data, format):
-    "Generate code"
-
-    debug("")
-    debug("Compiler phase 4: Generating code")
-    debug("---------------------------------")
-    debug_indent()
+    "Compiler phase 4: Generate code"
+    debug_begin("Compiler phase 4: Generating code")
 
     code = {}
 
@@ -128,34 +109,40 @@ def generate_code(form_data, format):
     code["name"] = form_data.name
 
     # Set number of arguments
-    #code["num_arguments"] = form_data.num_arguments
+    code["num_arguments"] = form_data.num_arguments
 
     # Generate code for finite elements
+    debug("Generating code for finite elements...")
     for i in range(len(form_data.elements)):
         code[("finite_element", i)] = generate_finite_element(form_data.elements[i], format)
+    debug("done")
 
     # Generate code for dof maps
+    debug("Generating code for dof maps...")
     for i in range(len(form_data.dof_maps)):
         code[("dof_map", i)] = generate_dof_map(form_data.dof_maps[i], format)
+    debug("done")
 
     # Generate code for form
+    debug("Generating code for form...")
     code["form"] = generate_form(form_data, format)
+    debug("done")
 
+    print ""
     print code
-    
-    debug_indent(-1)
 
-def format_code(form):
-    "Format code"
+    debug_end()
 
-    debug("")
-    debug("Compiler phase 5: Formatting code")
-    debug("---------------------------------")
-    debug_indent()
+    return code
 
-    debug("Not implemented")
+def format_code(code, format, options):
+    "Compiler phase 5: Format code"
+    debug_begin("Compiler phase 5: Formatting code")
 
-    debug_indent(-1)
+    # Format the pre-generated code
+    format.write(code, options)
+
+    debug_end()
 
 def __choose_format(output_language):
     "Choose format from specified language."

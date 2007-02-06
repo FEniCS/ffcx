@@ -39,6 +39,18 @@ def debug_indent(increment = 1):
     global __indent
     __indent += increment
 
+def debug_begin(string):
+    "Begin task"
+    debug("")
+    debug(string)
+    debug("".join(["-" for i in range(len(string))]))
+    debug("")
+    debug_indent()
+
+def debug_end():
+    "End task"
+    debug_indent(-1)
+
 def setlevel(newlevel):
     "Set debug level"
     global __level
