@@ -27,7 +27,7 @@ def main(argv):
 
     # Get command-line arguments
     try:
-        opts, args = getopt.getopt(argv, "hvOl:d:f:", ["help", "version", "optimize", "language=", "debug="])
+        opts, args = getopt.getopt(argv, "hvOsl:d:f:", ["help", "version", "optimize", "silent", "language=", "debug="])
     except getopt.GetoptError:
         usage()
         sys.exit(2)
@@ -42,7 +42,7 @@ def main(argv):
 
     # Set default arguments
     language = "dolfin"
-    debuglevel = -1
+    debuglevel = 0
     options = FFC_OPTIONS
 
     # Get options
@@ -55,6 +55,8 @@ def main(argv):
             sys.exit()
         elif opt in ("-O", "--optimize"):
             options["optimize"] = True
+        elif opt in ("-s", "--silent"):
+            debuglevel = -1
         elif opt in  ("-l", "--language"):
             language = arg
         elif opt in  ("-d", "--debug"):
@@ -105,9 +107,10 @@ Usage: ffc [OPTION]... input.form
   -h            display this help text and exit
   -v            display version number and exit
   -O            generate optimized code using FErari optimizations
+  -s            run silently (same as debug level -1)
   -l language   specify output language, one of 'dolfin' (default),
                 'latex', 'raw', 'ase' or 'xml'
-  -d debuglevel specify debug level (default is -1)
+  -d debuglevel specify debug level (default is 0)
   -f option     specify code generation options, one of 'blas' or 'no-gpl'
 
 Alternatively, the following long options may be used:

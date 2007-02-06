@@ -8,7 +8,7 @@ for f in *.form; do
     PREFIX=`echo $f | cut -d'.' -f1`
     rm -f $PREFIX.h
     if [ $f != 'Stabilization.form' ]; then
-      ../bin/ffc $f
+      ../bin/ffc --silent $f
       if [ -f $PREFIX.h ]; then
 	  echo "Form $f compiled"
       else
@@ -19,7 +19,7 @@ for f in *.form; do
 done
 
 # Compile one of the forms with optimization
-../bin/ffc -O Optimization.form
+../bin/ffc --silent -O Optimization.form
 if [ -f Optimization.h ]; then
     echo "Form Optimization.form compiled"
 else

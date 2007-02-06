@@ -11,6 +11,7 @@ __license__  = "GNU GPL Version 2"
 import sys
 
 # FFC common modules
+from ffc.common.debug import *
 from ffc.common.exceptions import *
 
 # FFC language modules
@@ -21,6 +22,8 @@ def reassign_indices(form):
     """Reassign indices of Form with all indices starting at 0 and
     modify secondary indices not appearing in both the reference and
     geometry tensors to auxiliary indices"""
+
+    debug("Reassigning form indices...")
 
     # Modify secondary indices to auxiliary indices
     [__create_auxiliary(p) for p in form.monomials]
@@ -46,7 +49,7 @@ def reassign_indices(form):
     # Reassign geometry tensor auxiliary indices (global for each Monomial)
     [__reassign(p, Index.AUXILIARY_G) for p in form.monomials]
 
-    return
+    debug("done")
 
 def reassign_complete(monomial, type):
     """Reassign complete secondary and auxiliary index pairs of given
