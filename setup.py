@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from distutils.core import setup, Extension
+from distutils.core import setup
 import sys
 
 try:    prefix = [ item for item in sys.argv[1:] if "--prefix=" in item ][0].split("=")[1]
@@ -13,5 +13,4 @@ setup(name = "UFC",
       url = "http://www.fenics.org/ufc/",
       packages = ["ufc"],
       package_dir= {"ufc": "src/utils/python/ufc"},
-      data_files=[("%s/include" % prefix, ["src/ufc/ufc.h"])]
-    )
+      data_files=[("%s/include" % prefix, ["src/ufc/ufc.h"])])
