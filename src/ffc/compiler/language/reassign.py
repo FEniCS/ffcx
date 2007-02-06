@@ -26,7 +26,9 @@ def reassign_indices(form):
     debug("Reassigning form indices...")
 
     # Modify secondary indices to auxiliary indices
-    [__create_auxiliary(p) for p in form.monomials]
+    [__create_auxiliary(m) for m in form.monomials]
+
+    print form
 
     # Reassign primary indices (global for the Form)
     __reassign(form, Index.PRIMARY)
@@ -90,25 +92,25 @@ def reassign_complete(monomial, type):
 
 def reassign_index(object, iold, inew, type):
     """Change value of index from iold to inew for given object,
-    and return the number of indices changed."""
+    and return the number of indices changed"""
     increment = [0]
     index_call(object, index_reassign, (iold, inew, type, increment))
     return increment[0]
     
 def min_index(object, type):
-    "Compute minimum index of given type for given object."
+    "Compute minimum index of given type for given object"
     indices = []
     index_call(object, index_add_value, [indices, type])
     return min([sys.maxint] + indices)
 
 def max_index(object, type):
-    "Compute maximum index of given type for given object."
+    "Compute maximum index of given type for given object"
     indices = []
     index_call(object, index_add_value, [indices, type])
     return max([-1] + indices)
 
 def __reassign(object, type):
-    "Reassign all indices of given type for object from iold to inew."
+    "Reassign all indices of given type for object from iold to inew"
     imin = min_index(object, type)
     imax = max_index(object, type)
     inew = 0 # Increase when index is found
@@ -122,28 +124,32 @@ def __reassign(object, type):
         raise RuntimeError, "Failed to reassign indices."
 
 def __have_index(object, index):
-    "Check if object contains given index."
+    "Check if object contains given index"
     indices = []
     index_call(object, index_add_value, [indices, index.type])
     return index.index in indices
 
 def __create_auxiliary(monomial):
     """Modify secondary indices not appearing in both the reference
-    tensor and geometry tensor to auxiliary indices."""
+    tensor and geometry tensor to auxiliary indices"""
 
     # Build list of reference tensor secondary indices
     ir = []
     [index_call(v, index_add_value, [ir, Index.SECONDARY]) for v in monomial.basisfunctions]
+    
     # Build list of geometry tensor secondary indices
     ig = []
-    [index_call(v, index_add_value, [ig, Index.SECONDARY]) for c in monomial.coefficients]
-    [index_call(v, index_add_value, [ig, Index.SECONDARY]) for t in monomial.transforms]
+    [index_call(c, index_add_value, [ig, Index.SECONDARY]) for c in monomial.coefficients]
+    [index_call(t, index_add_value, [ig, Index.SECONDARY]) for t in monomial.transforms]
+    
     # Build lists of indices that should be modified
     irm = [i for i in ir if i not in ig]
     igm = [i for i in ig if i not in ir]
+    
     # Modify indices of reference tensor
     for v in monomial.basisfunctions:
         index_call(v, index_modify, (irm, Index.SECONDARY, Index.AUXILIARY_0))
+
     # Modify indices of geometry tensor
     for c in monomial.coefficients:
         index_call(c, index_modify, (igm, Index.SECONDARY, Index.AUXILIARY_G))
