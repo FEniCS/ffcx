@@ -1,7 +1,7 @@
 "Code generation for dof map"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-01-24 -- 2007-01-30"
+__date__ = "2007-01-24 -- 2007-02-06"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -38,7 +38,7 @@ def __generate_needs_mesh_entities(dof_map, format):
     dofs_per_dimension = dof_map.dofs_per_dimension()
 
     # Entities needed if at least one dof is associated
-    code = [format.format["bool"](num_dofs > 0) for num_dofs in dofs_per_dimension]
+    code = [format["bool"](num_dofs > 0) for num_dofs in dofs_per_dimension]
 
     return code
 
@@ -53,15 +53,15 @@ def __generate_global_dimension(dof_map, format):
     for dim in range(len(dofs_per_dimension)):
         n = dofs_per_dimension[dim]
         if n == 1:
-            terms += [format.format["num entities"](dim)]
+            terms += [format["num entities"](dim)]
         elif n > 1:
-            terms += [format.format["multiply"]([str(n), format.format["num entities"](dim)])]
+            terms += [format["multiply"]([str(n), format["num entities"](dim)])]
 
     # Special case, no terms
     if len(terms) == 0:
         code = "0"
     else:
-        code = format.format["add"](terms)
+        code = format["add"](terms)
 
     return code
 
@@ -85,15 +85,15 @@ def __generate_tabulate_dofs(dof_map, format):
         # Add to offset if needed
         if dim > 0 and dofs_per_dimension[dim - 1] > 0:
             if dofs_per_dimension[dim - 1] > 1:
-                value = format.format["multiply"](["%d" % dofs_per_dimension[dim - 1], format.format["num entities"](dim - 1)])
+                value = format["multiply"](["%d" % dofs_per_dimension[dim - 1], format["num entities"](dim - 1)])
             else:
-                value = format.format["num entities"](dim - 1)
+                value = format["num entities"](dim - 1)
             if not offset_declared:
-                name = format.format["offset declaration"]
+                name = format["offset declaration"]
                 offset_declared = True
             else:
-                name = format.format["offset access"]
-                value = format.format["add"]([name, value])
+                name = format["offset access"]
+                value = format["add"]([name, value])
                 
             code += [(name, value)]
 
@@ -107,16 +107,16 @@ def __generate_tabulate_dofs(dof_map, format):
                 dof = entity_dofs[dim][entity][pos]
 
                 # Assign dof
-                name = format.format["dofs"](dof)
-                value = format.format["entity index"](dim, entity)
+                name = format["dofs"](dof)
+                value = format["entity index"](dim, entity)
 
                 # Add position on entity if any
                 if pos > 0:
-                    value = format.format["add"]([value, "%d" % pos])
+                    value = format["add"]([value, "%d" % pos])
 
                 # Add offset if any
                 if offset_declared:
-                    value = format.format["add"]([format.format["offset access"], value])
+                    value = format["add"]([format["offset access"], value])
 
                 # Add declaration
                 code += [(name, value)]

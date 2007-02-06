@@ -19,26 +19,36 @@ class FormData:
     are extracted and stored for a given form:
 
         form             - the form
+        name             - the name of the form
+        signature        - the signature of the form
         rank             - the rank (arity) of the form
         num_coefficients - the number of coefficients
+        num_arguments    - the sum of rank and num_coefficients
         elements         - the finite elements associated with the form
         dof_maps         - the dof maps associated with the form
 
     It is assumed that the indices of the given form have been reassigned.
     """
 
-    def __init__(self, form):
+    def __init__(self, form, name):
         "Create form data for form"
 
         debug("Extracting form data...")
 
         self.form = form
+        self.name = name
+        self.signature = self.__extract_signature(form)
         self.rank = self.__extract_rank(form)
         self.num_coefficients = self.__extract_num_coefficients(form)
+        self.num_arguments = self.rank + self.num_coefficients
         self.elements = self.__extract_elements(form, self.rank, self.num_coefficients)
         self.dof_maps = self.__extract_dof_maps(self.elements)
 
         debug("done")
+
+    def __extract_signature(self, form):
+        "Extract the signature"
+        return str(form)
 
     def __extract_rank(self, form):
         "Extract the rank"
