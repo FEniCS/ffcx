@@ -1,41 +1,80 @@
-- Restructure code:
+Notes for current code reorganization:
+--------------------------------------
 
-  - Add preprocessing stage:
+Moved to compiler:
 
-    - Extract terms for different integral types
-    - Check form for consistency
-    - Dispatch to processing: tensor representation, SyFi or quadrature
+    compiler.py
 
-  - Generate UFC code
+Moved to compiler.language:
 
-  - New layout:
+    algebra.py
+    tokens.py
+    variables.py
+    integral.py
+    index.py
+    restriction.py
+    operators.py
+    constants.py
+    signature.py
+    multiindex.py
 
-    common
+    reassign.py --> reassignment.py (would like to move it to analysis)
 
-common
+Moved to compiler.analysis:
 
-    compiler, code generation, put call other components
-        compile.py
+    checks.py
+    elementsearch.py --> formdata.py
 
-    formlanguage, no code generation, only input representation
-        algebra.py
-        tokens.py
-        operators.py
-        variables.py
-        index.py
-        multiindex.py
+Moved to compiler.format:
 
-    fem: no code generation, only FEM
-        finiteelement.py
-        dofmap.py
-   
-    format: formats and templates for code generation, writing actual code
-        ufcformat.py
-        latex.py
+    ufcformat.py
 
-    representation
-        tensor
-        quadrature
+Moved to common:
+
+    util.py --> utils.py
+    debug.py
+    exceptions.py
+
+Moved to fem:
+
+    finiteelement.py
+    mixedelement.py
+    projection.py
+
+Removed modules
+
+    form.py
+    declaration.py
+    ase.py
+    dolfin.py
+    raw.py
+
+Remaining modules:
+
+    quadtest.py
+    progress.py
+
+    alignment.py
+    elementtensor.py
+    exteriorfacettensor.py
+    geometrytensor.py
+    indexreordering.py
+    interiorfacettensor.py
+    latex.py
+    monomialintegration.py
+    nodemap.py
+    optimization.py
+    pointmap.py
+    pointreordering.py
+    referencetensor.py
+    simplify.py
+    tensorrepresentation.py
+    term.py
+    vertexeval.py
+    xml.py
+
+Old TODO list, possibly inaccurate:
+-----------------------------------
 
 o [logg] Bug fix: LaTeX format not working
 o [logg] Use Numeric.array instead of Python list for vectors

@@ -129,10 +129,3 @@ class Transform:
             return "(dX" + self.index0.__repr__() + "/" + "dx" + self.index1.__repr__() + ")" + p + "(-)"
         else: 
             raise FormError("Wrong value for restriction of transform")
-
-i = Index()
-j = Index()
-k = Index()
-l = Index()
-m = Index()
-n = Index()
