@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-10-04 -- 2007-01-31"
+__date__ = "2004-10-04 -- 2007-02-05"
 __copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -25,11 +25,6 @@ from ffc.common.debug import *
 
 # FFC fem modules
 import mixedelement
-
-# FIXME: Remove
-from ffc.remove.nodemap import *
-from ffc.remove.pointmap import *
-from ffc.remove.vertexeval import *
 
 shape_to_string = {LINE: "line", TRIANGLE: "triangle", TETRAHEDRON: "tetrahedron"}
 string_to_shape = {"line": LINE, "triangle": TRIANGLE, "tetrahedron": TETRAHEDRON}
@@ -108,15 +103,6 @@ class FiniteElement:
 
         # Save dual basis
         self.fiat_dual = self.element.dual_basis()
-
-        # Create node map
-        self.nodemap = NodeMap(self)
-
-        # Create point map
-        self.pointmap = PointMap(self)
-
-        # Create vertex evaluation
-        self.vertexeval = VertexEval(self)
 
         # FIXME: Attributes in new format
         self.fiat_element = self.element

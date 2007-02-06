@@ -166,11 +166,6 @@ class Constant(Element):
         "Print nicely formatted representation of Constant."
         return "c" + str(self.number)
 
-    def indexcall(self, foo, args = None):
-        "Call given function on all Indices."
-        self.number.indexcall(foo, args)
-        return
-        
 class Function(Element):
     """A Function represents a projection of a given function onto a
     finite element space, expressed as a linear combination of
@@ -326,13 +321,6 @@ class BasisFunction(Element):
             dorder += 1
         dindex = tuple(dindex)
         return (self.element, vindex, cindex, dorder, dindex)
-
-    def indexcall(self, foo, args = None):
-        "Call given function on all Indices."
-        self.index.indexcall(foo, args)
-        [i.indexcall(foo, args) for i in self.component]
-        [d.indexcall(foo, args) for d in self.derivatives]
-        return
 
     def pick_component_default(self, component):
         "Pick given component of BasisFunction."
@@ -576,14 +564,6 @@ class Monomial(Element):
                     raise FormError, (self, "Illegal rank for BasisFunction of Monomial (non-scalar).")
         return self.basisfunctions[0].value_rank()
             
-    def indexcall(self, foo, args = None):
-        "Call given function on all Indices."
-        [c.indexcall(foo, args) for c in self.constants]
-        [w.indexcall(foo, args) for w in self.coefficients]
-        [t.indexcall(foo, args) for t in self.transforms]
-        [v.indexcall(foo, args) for v in self.basisfunctions]
-        return
-
 class Form(Element):
     """A Form represents a sum of Monomials. Each Monomial will be
     compiled separately, since different Monomials are probably of
@@ -688,11 +668,6 @@ class Form(Element):
                 raise FormError, (self, "Terms have different rank.")
         return self.monomials[0].value_rank()
   
-    def indexcall(self, foo, args = None):
-        "Call given function on all Indices."
-        [p.indexcall(foo, args) for p in self.monomials]
-        return
-
 class TestFunction(BasisFunction):
     """A TestFunction is the BasisFunction with the lowest primary
     index. We simply pick an index lower than all others (-2)."""

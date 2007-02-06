@@ -22,11 +22,12 @@ from ffc.common.constants import *
 
 # FFC compiler modules
 import language
-import analysis
-import representation
-import optimization
-import codegeneration
-import format
+from analysis.checks import *
+#from analysis.reassign import *
+#import representation
+#import optimization
+#import codegeneration
+#import format
 
 def compile(form, name = "Form", output = FFC_LANGUAGE, options = FFC_OPTIONS):
     "Compile the given form for the given language."
@@ -36,16 +37,32 @@ def compile(form, name = "Form", output = FFC_LANGUAGE, options = FFC_OPTIONS):
         raise RuntimeError, "Not a form: " + str(form)
 
     # Phase 1: analyze form
-    analysis.analyze_form(form)
+    analyze_form(form)
 
     # Phase 2: compute form representation
-    representation.compute_representation(form)
+    #representation.compute_representation(form)
 
     # Phase 3: optimize form representation
-    optimization.compute_optimization(form)
+    #optimization.compute_optimization(form)
 
     # Phase 4: generate code
-    codegeneration.generate_code(form)
+    #codegeneration.generate_code(form)
 
     # Phase 5: format code
-    format.format_code(form)
+    #format.format_code(form)
+
+
+def analyze_form(form):
+    "Analyze form"
+
+    debug("Phase 1: Analyzing form")
+
+    print form
+
+    # Check validity of form
+    check_form(form)
+
+    
+    print form
+
+    

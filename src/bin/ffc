@@ -1,15 +1,16 @@
 #!/usr/bin/env python
-
-# Copyright (C) 2004-2007 Anders Logg (logg@simula.no)
-# Licensed under the GNU GPL Version 2
 #
+# This script is the command-line interface to FFC. It parses
+# command-line arguments and wraps the given form file code in a
+# Python module which is then executed.
+
+__author__ = "Anders Logg (logg@simula.no)"
+__date__ = "2004-10-14 -- 2007-02-05"
+__copyright__ = "Copyright (C) 2004-2007 Anders Logg"
+__license__  = "GNU GPL Version 2"
+
 # Modified by Johan Jansson 2005
 # Modified by Ola Skavhaug 2006
-#
-# 2004-10-14 -- 2007-01-12
-#
-# This script parses command-line arguments, calls
-# the parser, and then compiles the generated form.
 
 # Python modules
 import sys
@@ -22,7 +23,7 @@ from ffc.common.constants import *
 from ffc.common.exceptions import *
 
 def main(argv):
-    "Main function."
+    "Main function"
 
     # Get command-line arguments
     try:
@@ -164,7 +165,7 @@ else:
 
     # FIXME: Temporary while developing the UFC output
     if language == "ufc":
-        output = output.replace("ffc.old.compiler", "ffc.compiler.compiler")
+        output = output.replace("ffc.old.compiler", "ffc")
         output = output.replace("compile([a, L, M]", "compile(a")
 
     # Write output

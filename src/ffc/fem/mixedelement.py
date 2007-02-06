@@ -1,5 +1,5 @@
 _author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2005-09-16 -- 2007-01-31"
+__date__ = "2005-09-16 -- 2007-02-05"
 __copyright__ = "Copyright (C) 2005-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -13,11 +13,6 @@ from ffc.common.debug import *
 
 # FFC compiler.language modules
 from ffc.compiler.language.algebra import *
-
-# FIXME: Remove
-from ffc.remove.nodemap import *
-from ffc.remove.pointmap import *
-from ffc.remove.vertexeval import *
 
 def BasisFunctions(element, functiontype = BasisFunction):
     "Create tuple of BasisFunctions from given MixedElement."
@@ -113,18 +108,8 @@ class MixedElement:
         # Compute number of components
         self.mixed_tensordim = self.__compute_tensordim()
 
-        # Create node map
-        self.nodemap = NodeMap(self.elements)
-
-        # Create point map
-        self.pointmap = PointMap(self.elements)
-
-        # Create vertex evaluation
-        self.vertexeval = VertexEval(self.elements)
-
         # FIXME: Not implemented
         self.__entity_dofs = {}
-
 
     def basis(self):
         "Return basis of finite element space."

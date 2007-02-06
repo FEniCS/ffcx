@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-09-29 -- 2007-01-23"
+__date__ = "2004-09-29 -- 2007-02-05"
 __copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -134,11 +134,6 @@ class Index:
             return str(self.index)        
         else:
             return "b" + str(self.index)
-
-    def indexcall(self, foo, args = None):
-        "Call given function on Index."
-        foo(self, args)
-        return
 
 next_index_0 = 0 # Next available primary index
 next_index_1 = 0 # Next available secondary index
