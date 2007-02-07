@@ -20,7 +20,7 @@ as \emph{edges}, entities of dimension $2$ as \emph{faces}, entities of
 $0$ \emph{cells}. These concepts are summarized in
 Table~\ref{tab:entities}.
 
-Thus, the vertices of a tetrahedron are
+Thus, the vertices of a tetrahedron are identified as
 $v_0 = (0, 0)$, $v_1 = (0, 1)$ and $v_2 = (0, 2)$,
 the edges are
 $e_0 = (1, 0)$, $e_1 = (1, 1)$, $e_2 = (1, 2)$,
@@ -54,7 +54,9 @@ $c_0 = (3, 0)$.
 
 For simplicial cells (intervals, triangles and tetrahedra) of a finite
 element mesh, the vertices are numbered locally based on the
-corresponding global vertex numbers. This is illustrated in
+corresponding global vertex numbers. In particular, a tuple of
+increasing local vertex numbers corresponds to a tuple of increasing
+global vertex numbers.  This is illustrated in
 Figure~\ref{fig:numbering_example_triangles} for a mesh consisting of
 two triangles.
  
