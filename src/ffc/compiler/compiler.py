@@ -12,7 +12,7 @@ each represented by a separate module:
 """
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-02-05 -- 2007-02-05"
+__date__ = "2007-02-05 -- 2007-02-07"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -27,6 +27,8 @@ from language.reassignment import *
 
 from analysis.checks import *
 from analysis.formdata import *
+
+from representation.tensor import *
 
 #import representation
 #import optimization
@@ -48,7 +50,7 @@ def compile(form, name = "Form", output_language = FFC_LANGUAGE, options = FFC_O
     form_data = analyze_form(form, name)
 
     # Phase 2: compute form representation
-    compute_representation(form)
+    representation = compute_representation(form_data)
 
     # Phase 3: optimize form representation
     compute_optimization(form)
@@ -86,16 +88,21 @@ def analyze_form(form, name):
     debug("Terms:        %d" % form_data.num_terms)
     
     debug_end()
-    
     return form_data
 
 def compute_representation(form):
     "Compiler phase 2: Compute form representation"
     debug_begin("Compiler phase 2: Computing form representation")
 
-    debug("Not implemented")
+    # At this point, we need to choose the type of representation, but
+    # currently only the tensor representation is implemented. Another
+    # natural candidate would be a quadrature representation.
+
+    # Compute tensor representation
+    representation = TensorRepresentation(form)
 
     debug_end()
+    return representation
     
 def compute_optimization(form):
     "Compute form representation"
@@ -138,7 +145,6 @@ def generate_code(form_data, format):
     print code
 
     debug_end()
-
     return code
 
 def format_code(code, format, options):

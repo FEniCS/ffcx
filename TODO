@@ -25,6 +25,10 @@ Moved to compiler.analysis:
     checks.py
     elementsearch.py --> formdata.py
 
+Moved to compiler.representation.tensor:
+
+    tensorrepresentation.py (changed completely, only name of module)
+
 Moved to compiler.format:
 
     ufcformat.py
@@ -48,6 +52,7 @@ Removed modules
     ase.py
     dolfin.py
     raw.py
+    term.py
 
 Remaining modules:
 
@@ -68,10 +73,15 @@ Remaining modules:
     pointreordering.py
     referencetensor.py
     simplify.py
-    tensorrepresentation.py
-    term.py
     vertexeval.py
     xml.py
+
+Things to fix:
+
+ - Constant --> DG0
+ - Handle projections
+ - Implement check primary ranks i checks
+
 
 Old TODO list, possibly inaccurate:
 -----------------------------------

@@ -39,7 +39,6 @@ class FiniteElementTests(unittest.TestCase):
         
         P3 = FiniteElement("Discontinuous Lagrange", "triangle", 3)
         self.assertEqual(P3.space_dimension(), 10)
-        
-        
+
 if __name__ == "__main__":
     unittest.main()
