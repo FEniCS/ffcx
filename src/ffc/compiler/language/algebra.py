@@ -25,7 +25,7 @@ algebra:
     Unary  ()     (operand must be multi-valued, +/-)"""
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-09-27 -- 2007-02-06"
+__date__ = "2004-09-27 -- 2007-02-11"
 __copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -48,7 +48,7 @@ from variables import *
 from index import Index
 from integral import *
 from restriction import *
-from reassign import *
+from reassignment import *
 
 class Element:
     "Base class for elements of the algebra."
