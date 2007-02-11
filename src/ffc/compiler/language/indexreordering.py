@@ -15,7 +15,7 @@ import sys
 sys.path.append("../../")
 from ffc.common.debug import *
 from ffc.common.exceptions import *
-from ffc.common.util import permutations
+from ffc.common.utils import permutations
 
 # FFC compiler modules
 from reassign import *

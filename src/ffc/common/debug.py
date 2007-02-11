@@ -3,13 +3,13 @@ debug level lower than or equal to the current debug level will be
 printed. To see more messages, raise the debug level."""
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2005-02-04 -- 2007-02-06"
+__date__ = "2005-02-04 -- 2007-02-11"
 __copyright__ = "Copyright (C) 2005-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 import sys
 
-from util import *
+from utils import *
 
 __level = -1
 __indent = 0

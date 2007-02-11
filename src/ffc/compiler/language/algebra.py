@@ -40,7 +40,7 @@ import sys
 sys.path.append("../../")
 from ffc.common.exceptions import *
 from ffc.common.debug import *
-from ffc.common.util import *
+from ffc.common.utils import *
 
 # FFC language modules
 from tokens import *

@@ -9,7 +9,7 @@ __license__  = "GNU GPL Version 2"
 import numpy
 
 # FFC common modules
-from ffc.common.util import *
+from ffc.common.utils import *
 
 def build_indices(dims):
     """Create a list of all index combinations matching the given list

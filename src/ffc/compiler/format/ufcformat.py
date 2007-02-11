@@ -6,7 +6,7 @@ __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # FFC common modules
-from ffc.common.util import *
+from ffc.common.utils import *
 from ffc.common.debug import *
 from ffc.common.constants import *
 
