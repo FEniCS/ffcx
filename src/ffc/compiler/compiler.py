@@ -90,7 +90,7 @@ def analyze_form(form, name):
     debug_end()
     return form_data
 
-def compute_representation(form):
+def compute_representation(form_data):
     "Compiler phase 2: Compute form representation"
     debug_begin("Compiler phase 2: Computing form representation")
 
@@ -99,7 +99,7 @@ def compute_representation(form):
     # natural candidate would be a quadrature representation.
 
     # Compute tensor representation
-    representation = TensorRepresentation(form)
+    representation = TensorRepresentation(form_data)
 
     debug_end()
     return representation
@@ -140,9 +140,6 @@ def generate_code(form_data, format):
     debug("Generating code for form...")
     code["form"] = generate_form(form_data, format)
     debug("done")
-
-    print ""
-    print code
 
     debug_end()
     return code

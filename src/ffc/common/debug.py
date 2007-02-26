@@ -3,7 +3,7 @@ debug level lower than or equal to the current debug level will be
 printed. To see more messages, raise the debug level."""
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2005-02-04 -- 2007-02-11"
+__date__ = "2005-02-04 -- 2007-02-26"
 __copyright__ = "Copyright (C) 2005-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -20,7 +20,7 @@ def debug(string, debuglevel = 0):
 
     global __level, __no_indent
 
-    # Print message (not fancy handling of strings containing ...)
+    # Print message (note fancy handling of strings containing ...)
     if debuglevel <= __level:
         if "..." in string:
             print indent(string, 2*__indent),

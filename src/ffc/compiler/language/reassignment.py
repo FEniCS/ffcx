@@ -1,9 +1,9 @@
-"""This module provides reassignment of indices for forms in such a
+"""This module implements reassignment of indices for forms in such a
 way that each unique index is given a number from 0 to n - 1 where n
 is the number of indices."""
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-10-13 -- 2007-02-06"
+__date__ = "2004-10-13 -- 2007-02-26"
 __copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 

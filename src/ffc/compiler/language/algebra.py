@@ -1,4 +1,4 @@
-"""An algebra for multi-linear forms. Objects of the following classes
+"""An algebra for multilinear forms. Objects of the following classes
 are elements of the algebra:
 
     BasisFunction  - basic building block
