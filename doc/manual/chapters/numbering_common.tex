@@ -16,8 +16,8 @@ the number of mesh entities of topological dimension $d$.
 For convenience, mesh entities of topological dimension $0$ are
 referred to as \emph{vertices}, entities of dimension $1$
 as \emph{edges}, entities of dimension $2$ as \emph{faces}, entities of
-\emph{codimension} $1$ as \emph{facets} and entities of codimension as
-$0$ \emph{cells}. These concepts are summarized in
+\emph{codimension} $1$ as \emph{facets} and entities of codimension
+$0$ as \emph{cells}. These concepts are summarized in
 Table~\ref{tab:entities}.
 
 Thus, the vertices of a tetrahedron are identified as
@@ -69,14 +69,14 @@ two triangles.
     \psfrag{1}{$1$}
     \psfrag{2}{$2$}
     \psfrag{3}{$3$}
-    \includegraphics[width=9cm]{eps/numbering_example_triangles.eps}
+    \includegraphics[width=8cm]{eps/numbering_example_triangles.eps}
     \caption{The vertices of a simplicial mesh are numbered locally
       based on the corresponding global vertex numbers.}
     \label{fig:numbering_example_triangles}
   \end{center}
 \end{figure}
 
-For non-simplical cells (quadrilaterals and hexahedra), the ordering
+For non-simplicial cells (quadrilaterals and hexahedra), the ordering
 is arbitrary, as long as each cell is isomorphic to the corresponding
 reference cell by matching each vertex with the corresponding vertex
 in the reference cell. This is illustrated in
@@ -95,16 +95,16 @@ consisting of two quadrilaterals.
     \psfrag{3}{$3$}
     \psfrag{4}{$4$}
     \psfrag{5}{$5$}
-    \includegraphics[width=9cm]{eps/numbering_example_quadrilaterals.eps}
-    \caption{The local numbering of vertices on a non-simplicial mesh
-      is artibrary, as long as each cell is isomorphic to the
+    \includegraphics[width=8cm]{eps/numbering_example_quadrilaterals.eps}
+    \caption{The local numbering of vertices of a non-simplicial mesh
+      is arbitrary, as long as each cell is isomorphic to the
       reference cell by matching each vertex to the corresponding
       vertex of the reference cell.}
     \label{fig:numbering_example_quadrilaterals}
   \end{center}
 \end{figure}
 
-\section{Numbering of other mesh entities}
+\section{Numbering of remaining mesh entities}
 
 When the vertices have been numbered, the remaining mesh entities are
 numbered within each topological dimension based on a
@@ -160,10 +160,10 @@ and $v_1$ as shown in Figure~\ref{fig:orderingexample,tetrahedron}.
 
 \subsection{Relative ordering}
 
-The relative ordering of mesh entities with respect to other
-indicident mesh entities follows by sorting the entities by their
+The relative ordering of mesh entities with respect to other incident
+mesh entities follows by sorting the entities by their (local)
 indices. Thus, the pair of vertices incident to the first edge $e_0$
-of a triangular cell is $(v_0, v_1)$, not $(v_1, v_0)$. Similarly, the
+of a triangular cell is $(v_1, v_2)$, not $(v_2, v_1)$. Similarly, the
 first face $f_0$ of a tetrahedral cell is incident to vertices $(v_1,
 v_2, v_3)$.
 
@@ -174,8 +174,8 @@ orientation of incident sub simplices. Thus, two incident triangles
 will agree on the orientation of the common edge and two incident
 tetrahedra will agree on the orientation of the common edge(s) and the
 orientation of the common face (if any). This is illustrated in
-Figure~\ref{fig:orientation_example_triangles} for two incident triangles sharing a
-common edge.
+Figure~\ref{fig:orientation_example_triangles} for two incident
+triangles sharing a common edge.
 
 \begin{figure}[htbp]
   \begin{center}
@@ -198,9 +198,10 @@ other words, the UFC specification is only concerned with the ordering
 of incidence relations of the class $d - d'$ where $d > d'$. For
 example, the UFC specification is not concerned with the ordering of
 incidence relations of the class $0 - 1$, that is, the ordering of
-edges incident to a vertex.
+edges incident to vertices.
 
 \newpage
+
 \section{Numbering for reference cells}
 
 The numbering scheme is demonstrated below for cells
@@ -228,7 +229,7 @@ isomorphic to each of the five reference cells.
   \end{center}
 \end{table}
 
-\subsection{Numbering for triangular cells.}
+\subsection{Numbering for triangular cells}
 
 \begin{table}[H]
 \linespread{1.2}\selectfont
@@ -292,6 +293,8 @@ isomorphic to each of the five reference cells.
   \end{center}
 \end{table}
 
+\newpage
+
 \subsection{Numbering for tetrahedral cells}
 
 \begin{table}[H]
@@ -337,6 +340,10 @@ isomorphic to each of the five reference cells.
         \label{tab:tetrahedron,entities} 
   \end{center}
 \end{table}
+
+\vfill
+
+\newpage
 
 \subsection{Numbering for hexahedral cells}
 
