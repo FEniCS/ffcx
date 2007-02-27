@@ -123,6 +123,7 @@ class TensorRepresentation:
             
             # Compute reference tensor if not factorized
             if factorization[i] == None:
+                # Compute new reference tensor
                 A0 = ReferenceTensor(m, facet0, facet1)
                 terms[i] = Term(A0, [G])
             else:
@@ -131,3 +132,5 @@ class TensorRepresentation:
 
         # Remove terms not computed (factorized)
         [terms.remove(None) for i in range(len(terms)) if None in terms]
+
+        return terms

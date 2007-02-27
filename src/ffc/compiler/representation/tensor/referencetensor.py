@@ -3,6 +3,15 @@ __date__ = "2004-11-03 -- 2007-02-27"
 __copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
+# Modified by Garth N. Wells 2006
+
+# Python modules
+import time
+import numpy
+
+# FFC tensor representation modules
+from monomialintegration import *
+
 class ReferenceTensor:
     """This class represents the reference tensor for a monomial term
     of a multilinear form"""
@@ -10,13 +19,15 @@ class ReferenceTensor:
     def __init__(self, monomial, facet0, facet1):
         "Create reference tensor for given monomial"
 
-        print "Not implemented"
-
-# Modified by Garth N. Wells 2006
-
-# # Python modules
-# import numpy
-# import time
+        # Compute reference tensor
+        debug("Computing reference tensor...")
+        tic = time.time()
+        self.A0 = integrate(monomial, facet0, facet1)
+        toc = time.time() - tic
+        
+        # Report elapsed time and number of entries
+        num_entries = numpy.prod(numpy.shape(self.A0))
+        debug("%d entries computed in %g seconds" % (num_entries, toc))
 
 # # FFC common modules
 # from exceptions import *
@@ -30,8 +41,7 @@ class ReferenceTensor:
 # from reassign import *
 # from multiindex import *
 
-# # FFC compiler modules
-# from monomialintegration import *
+
 
 # class ReferenceTensor:
 
@@ -70,10 +80,6 @@ class ReferenceTensor:
 #         self.i = self.__create_index(Index.PRIMARY)
 #         self.a = self.__create_index(Index.SECONDARY)
 #         self.b = self.__create_index(Index.AUXILIARY_0)
-
-#         # Compute reference tensor
-#         t = time.time()
-#         self.A0 = integrate(monomial, facet0, facet1, alignment)
 
 #         # Report time to compute the reference tensor
 #         self.cputime = time.time() - t

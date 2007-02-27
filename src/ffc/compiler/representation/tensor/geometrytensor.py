@@ -3,6 +3,9 @@ __date__ = "2004-11-03 -- 2007-02-27"
 __copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
+# FFC common modules
+from ffc.common.debug import *
+
 class GeometryTensor:
     """This class represents the geometry tensor for a monomial term
     of a multilinear form"""
@@ -10,10 +13,11 @@ class GeometryTensor:
     def __init__(self, monomial):
         "Create geometry tensor for given monomial"
 
-        print "Not implemented"
+        debug("Computing geometry tensor...")
 
-# # FFC common modules
-# from debug import *
+        debug("not implemented")
+
+
 # from util import *
 
 # # FFC compiler.language modules
