@@ -1,7 +1,7 @@
-"Code generation for the UFC 1.0 format."
+"Code generation for the UFC 1.0 format"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-01-08 -- 2007-01-27"
+__date__ = "2007-01-08 -- 2007-02-27"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -26,7 +26,7 @@ format = { "add": lambda l: " + ".join(l),
            "constant": lambda j: "c%d" % j,
            "coefficient table": lambda j, k: "c[%d][%d]" % (j, k),
            "coefficient": lambda j, k: "c%d_%d" % (j, k),
-           "transform": lambda j, k, r: "%s.g%d%d" % (r, j, k),
+           "transform": lambda j, k, r: "map%s.g%d%d" % (r, j, k),
            "reference tensor" : lambda j, i, a: None,
            "geometry tensor": lambda j, a: "G%d_%s" % (j, "_".join(["%d" % index for index in a])),
            "element tensor": lambda i, k: "block[%d]" % k,
@@ -66,16 +66,16 @@ def write(code, options):
         output += "\n"
 
     # Generate code for ufc::cell_integral
-    output += __generate_cell_integral(prefix, options)
+    output += __generate_cell_integral(code["cell_integral"], options, prefix)
     output += "\n"
 
     # Generate code for ufc::exterior_facet_integral
-    output += __generate_exterior_facet_integral(prefix, options)
-    output += "\n"
+    #output += __generate_exterior_facet_integral(code["exterior_facet_integral"], options, prefix)
+    #output += "\n"
     
-    # Generate code for ufc::cell_integral
-    output += __generate_interior_facet_integral(prefix, options)
-    output += "\n"
+    # Generate code for ufc::interior_facet_integral
+    #output += __generate_interior_facet_integral(code["interior_facet_integral"], options, prefix)
+    #output += "\n"
 
     # Generate code for ufc::form
     output += __generate_form(code["form"], options, prefix, code["num_arguments"])
@@ -222,71 +222,71 @@ def __generate_dof_map(code, options, prefix, i):
 
     return __generate_code(dof_map_combined, ufc_code)
 
-def __generate_cell_integral(prefix, options):
+def __generate_cell_integral(code, options, prefix):
     "Generate code for ufc::cell_integral"
 
-    code = {}
+    ufc_code = {}
 
     # Set class name
-    code["classname"] = "%s_cell_integral" % prefix
+    ufc_code["classname"] = "%s_cell_integral" % prefix
 
     # Generate code for members
-    code["members"] = ""
+    ufc_code["members"] = ""
 
     # Generate code for constructor
-    code["constructor"] = "// Do nothing"
+    ufc_code["constructor"] = "// Do nothing"
 
     # Generate code for destructor
-    code["destructor"] = "// Do nothing"
+    ufc_code["destructor"] = "// Do nothing"
 
     # Generate code for tabulate_tensor
-    code["tabulate_tensor"] = "// Not implemented"
+    ufc_code["tabulate_tensor"] = "\n".join("%s = %s;" % declaration for declaration in code["tabulate_tensor"])
     
-    return __generate_code(cell_integral_combined, code)
+    return __generate_code(cell_integral_combined, ufc_code)
 
-def __generate_exterior_facet_integral(prefix, options):
+def __generate_exterior_facet_integral(code, options, prefix):
     "Generate code for ufc::exterior_facet_integral"
 
-    code = {}
-
+    ufc_code = {}
+    
     # Set class name
-    code["classname"] = "%s_exterior_facet_integral" % prefix
+    ufc_code["classname"] = "%s_exterior_facet_integral" % prefix
 
     # Generate code for members
-    code["members"] = ""
+    ufc_code["members"] = ""
 
     # Generate code for constructor
-    code["constructor"] = "// Do nothing"
+    ufc_code["constructor"] = "// Do nothing"
 
     # Generate code for destructor
-    code["destructor"] = "// Do nothing"
+    ufc_code["destructor"] = "// Do nothing"
 
     # Generate code for tabulate_tensor
-    code["tabulate_tensor"] = "// Not implemented"
+    ufc_code["tabulate_tensor"] = "// Not implemented"
     
-    return __generate_code(exterior_facet_integral_combined, code)
+    return __generate_code(exterior_facet_integral_combined, ufc_code)
 
-def __generate_interior_facet_integral(prefix, options):
+def __generate_interior_facet_integral(code, options, prefix):
     "Generate code for ufc::interior_facet_integral"
 
-    code = {}
+    ufc_code = {}
 
     # Set class name
-    code["classname"] = "%s_interior_facet_integral" % prefix
+    ufc_code["classname"] = "%s_interior_facet_integral" % prefix
 
     # Generate code for members
-    code["members"] = ""
+    ufc_code["members"] = ""
 
     # Generate code for constructor
-    code["constructor"] = "// Do nothing"
+    ufc_code["constructor"] = "// Do nothing"
 
     # Generate code for destructor
-    code["destructor"] = "// Do nothing"
+    ufc_code["destructor"] = "// Do nothing"
 
     # Generate code for tabulate_tensor
-    code["tabulate_tensor"] = "// Not implemented"
+    ufc_code["tabulate_tensor"] = "// Not implemented"
     
-    return __generate_code(interior_facet_integral_combined, code)
+    return __generate_code(interior_facet_integral_combined, ufc_code)
 
 def __generate_form(code, options, prefix, num_arguments):
     "Generate code for ufc::form"

@@ -22,6 +22,11 @@ class GeometryTensor:
 
         debug("Computing geometry tensor...")
 
+        # Save constants, coefficients and transforms
+        self.constants = monomial.constants
+        self.coefficients = monomial.coefficients
+        self.transforms = monomial.transforms
+
         # Create secondary and auxiliary multi indices
         self.a = self.__create_multi_index(monomial, Index.SECONDARY)
         self.b = self.__create_multi_index(monomial, Index.AUXILIARY_G)
@@ -72,27 +77,9 @@ class GeometryTensor:
 
 # class GeometryTensor:
 
-#     """A GeometryTensor represents the geometry tensor of a
-#     multi-linear form computed on the current cell.
-
-#         a            - secondary multiindex
-#         b            - auxiliary multiindex
-#         rank         - rank of the tensor
-#         constants    - a list of Constants
-#         coefficients - a list of Coefficients
-#         transforms   - a list of Transforms"""
 
 #     def __init__(self, monomial):
 #         "Create GeometryTensor."
-
-#         # Check that we get a Monomial
-#         if not isinstance(monomial, Monomial):
-#             raise RuntimeError, "GeometryTensor must be created from Monomial."
-
-#         # Get data from Monomial
-#         self.constants = listcopy(monomial.constants)
-#         self.coefficients = listcopy(monomial.coefficients)
-#         self.transforms = listcopy(monomial.transforms)
 
 #         # Get rank
 #         self.rank = self.a.rank
@@ -148,9 +135,3 @@ class GeometryTensor:
 #         else: f1 = []
 #         # Compute product of all factors
 #         return format.format["multiplication"]([f for f in [format.format["determinant"]] + f0 + f1])
-
-#     def __str__(self):
-#         "Print nicely formatted representation of GeometryTensor."
-#         c = "".join([c.__str__() for c in self.coefficients])
-#         t = "".join([t.__str__() for t in self.transforms])
-#         return c + t

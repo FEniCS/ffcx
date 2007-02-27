@@ -35,6 +35,7 @@ from representation.tensor import *
 
 from codegeneration.finiteelement import *
 from codegeneration.dofmap import *
+from codegeneration.cellintegral import *
 from codegeneration.form import *
 
 from format import ufcformat
@@ -46,26 +47,26 @@ def compile(form, name = "Form", output_language = FFC_LANGUAGE, options = FFC_O
     if not isinstance(form, language.Form):
         raise RuntimeError, "Not a form: " + str(form)
 
-    # Phase 1: analyze form
+    # Compiler phase 1: analyze form
     form_data = analyze_form(form, name)
 
-    # Phase 2: compute form representation
-    representation = compute_representation(form_data)
+    # Compiler phase 2: compute form representation
+    form_representation = compute_representation(form_data)
 
-    # Phase 3: optimize form representation
+    # Compiler phase 3: optimize form representation
     compute_optimization(form)
 
     # Choose format for stages 4 and 5
     format = __choose_format(output_language)
 
-    # Phase 4: generate code
-    code = generate_code(form_data, format.format)
+    # Compiler phase 4: generate code
+    code = generate_code(form_data, form_representation, format.format)
 
-    # Phase 5: format code
+    # Compiler phase 5: format code
     format_code(code, format, options)
 
 def analyze_form(form, name):
-    "Compiler phase 1: Analyze form"
+    "Compiler phase 1: analyze form"
     debug_begin("Phase 1: Analyzing form")
 
     # Check validity of form
@@ -91,29 +92,29 @@ def analyze_form(form, name):
     return form_data
 
 def compute_representation(form_data):
-    "Compiler phase 2: Compute form representation"
+    "Compiler phase 2: compute form representation"
     debug_begin("Compiler phase 2: Computing form representation")
 
     # At this point, we need to choose the type of representation, but
-    # currently only the tensor representation is implemented. Another
-    # natural candidate would be a quadrature representation.
+    # currently only the tensor representation is implemented.
+    # Hint: do something differently for quadrature here.
 
     # Compute tensor representation
-    representation = TensorRepresentation(form_data)
+    form_representation = TensorRepresentation(form_data)
 
     debug_end()
-    return representation
+    return form_representation
     
 def compute_optimization(form):
-    "Compute form representation"
+    "Compiler phase 3: optimize form representation"
     debug_begin("Compiler phase 3: Computing optimization")
 
     debug("Not implemented")
 
     debug_end()
 
-def generate_code(form_data, format):
-    "Compiler phase 4: Generate code"
+def generate_code(form_data, form_representation, format):
+    "Compiler phase 4: generate code"
     debug_begin("Compiler phase 4: Generating code")
 
     code = {}
@@ -136,6 +137,13 @@ def generate_code(form_data, format):
         code[("dof_map", i)] = generate_dof_map(form_data.dof_maps[i], format)
     debug("done")
 
+    # FIXME: Should be multiple integrals for each type
+
+    # Generate code for cell integral
+    debug("Generating code for cell integral...")
+    code["cell_integral"] = generate_cell_integral(form_representation, format)
+    debug("done")
+
     # Generate code for form
     debug("Generating code for form...")
     code["form"] = generate_form(form_data, format)
@@ -145,7 +153,7 @@ def generate_code(form_data, format):
     return code
 
 def format_code(code, format, options):
-    "Compiler phase 5: Format code"
+    "Compiler phase 5: format code"
     debug_begin("Compiler phase 5: Formatting code")
 
     # Format the pre-generated code
