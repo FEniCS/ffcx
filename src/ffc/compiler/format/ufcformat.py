@@ -10,8 +10,14 @@ from ffc.common.utils import *
 from ffc.common.debug import *
 from ffc.common.constants import *
 
+# FFC language modules
+from ffc.compiler.language.restriction import *
+
 # FFC format modules
 from ufc import *
+
+# Choose map from restriction
+choose_map = {Restriction.PLUS: "0_", Restriction.MINUS: "1_", None: ""}
 
 # Specify formatting for code generation
 format = { "add": lambda l: " + ".join(l),
@@ -26,7 +32,8 @@ format = { "add": lambda l: " + ".join(l),
            "constant": lambda j: "c%d" % j,
            "coefficient table": lambda j, k: "c[%d][%d]" % (j, k),
            "coefficient": lambda j, k: "c%d_%d" % (j, k),
-           "transform": lambda j, k, r: "map%s.g%d%d" % (r, j, k),
+           "transform": lambda j, k, r: "J%s%d%d" % (choose_map[r], j, k),
+           "inverse transform": lambda j, k, r: "Jinv%s%d%d" % (choose_map[r], j, k),
            "reference tensor" : lambda j, i, a: None,
            "geometry tensor": lambda j, a: "G%d_%s" % (j, "_".join(["%d" % index for index in a])),
            "element tensor": lambda i, k: "block[%d]" % k,

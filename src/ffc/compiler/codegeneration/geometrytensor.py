@@ -49,9 +49,9 @@ def __generate_entry(G, a, format):
             factors += [coefficient]
     for t in G.transforms:
         if not (t.index0.type == Index.AUXILIARY_G or  t.index1.type == Index.AUXILIARY_G):
-            factors += [format["transform"](t.index0([], a, [], []), \
-                                            t.index1([], a, [], []), \
-                                            t.restriction),]
+            factors += [format["inverse transform"](t.index0([], a, [], []), \
+                                                    t.index1([], a, [], []), \
+                                                    t.restriction),]
     monomial = format["multiplication"](factors)
     if monomial: f0 = [monomial]
     else: f0 = []
@@ -66,9 +66,9 @@ def __generate_entry(G, a, format):
                 factors += [coefficient]
         for t in G.transforms:
             if t.index0.type == Index.AUXILIARY_G or t.index1.type == Index.AUXILIARY_G:
-                factors += [format["transform"](t.index0([], a, [], b), \
-                                                t.index1([], a, [], b), \
-                                                t.restriction)]
+                factors += [format["inverse transform"](t.index0([], a, [], b), \
+                                                        t.index1([], a, [], b), \
+                                                        t.restriction)]
         terms += [format["multiplication"](factors)]
     sum = format["sum"](terms)
     if sum: sum = format["grouping"](sum)
