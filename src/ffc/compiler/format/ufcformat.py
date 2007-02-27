@@ -21,14 +21,15 @@ choose_map = {Restriction.PLUS: "0_", Restriction.MINUS: "1_", None: ""}
 
 # Specify formatting for code generation
 format = { "add": lambda l: " + ".join(l),
-           "sum": lambda l: " + ".join(l), # FIXME: Remove
            "subtract": lambda l: " - ".join(l),
            "multiply": lambda l: "*".join(l),
-           "multiplication": lambda l: "*".join(l), # FIXME: Remove
            "grouping": lambda s: "(%s)" % s,
-           "determinant": "det",
-           "floating point": lambda a: "%.15e" % a,
            "bool": lambda b: {True: "true", False: "false"}[b],
+           "floating point": lambda a: "%.15e" % a,
+           "tmp declaration": lambda j, k: "const real tmp%d_%d" % (j, k),
+           "tmp access": lambda j, k: "tmp%d_%d" % (j, k),
+           "comment": lambda s: "// %s" % s,
+           "determinant": "det",
            "constant": lambda j: "c%d" % j,
            "coefficient table": lambda j, k: "c[%d][%d]" % (j, k),
            "coefficient": lambda j, k: "c%d_%d" % (j, k),
@@ -37,8 +38,6 @@ format = { "add": lambda l: " + ".join(l),
            "reference tensor" : lambda j, i, a: None,
            "geometry tensor": lambda j, a: "G%d_%s" % (j, "_".join(["%d" % index for index in a])),
            "element tensor": lambda i, k: "block[%d]" % k,
-           "tmp declaration": lambda j, k: "const real tmp%d_%d" % (j, k),
-           "tmp access": lambda j, k: "tmp%d_%d" % (j, k),
            "dofs": lambda i: "dofs[%d]" % i,
            "entity index": lambda d, i: "c.entity_indices[%d][%d]" % (d, i),
            "num entities": lambda dim : "m.num_entities[%d]" % dim,
@@ -222,7 +221,7 @@ def __generate_dof_map(code, options, prefix, i):
     ufc_code["num_facet_dofs"] = "// Not implemented\nreturn 0;"
 
     # Generate code for tabulate_dofs
-    ufc_code["tabulate_dofs"] = "\n".join("%s = %s;" % declaration for declaration in code["tabulate_dofs"])
+    ufc_code["tabulate_dofs"] = __generate_body(code["tabulate_dofs"])
 
     # Generate code for tabulate_facet_dofs
     ufc_code["tabulate_facet_dofs"] = "// Not implemented"
@@ -247,8 +246,8 @@ def __generate_cell_integral(code, options, prefix):
     ufc_code["destructor"] = "// Do nothing"
 
     # Generate code for tabulate_tensor
-    ufc_code["tabulate_tensor"] = "\n".join("%s = %s;" % declaration for declaration in code["tabulate_tensor"])
-    
+    ufc_code["tabulate_tensor"] = __generate_body(code["tabulate_tensor"])
+
     return __generate_code(cell_integral_combined, ufc_code)
 
 def __generate_exterior_facet_integral(code, options, prefix):
@@ -353,6 +352,16 @@ def __generate_switch(variable, cases, default):
         code += "case %d:\n  return %s;\n  break;\n" % (i, cases[i])
     code += "default:\n  return 0;\n}\n\nreturn %s;" % default
     return code
+
+def __generate_body(declarations):
+    "Generate function body from list of declarations or statements"
+    lines = []
+    for declaration in declarations:
+        if isinstance(declaration, tuple):
+            lines += ["%s = %s;" % declaration]
+        else:
+            lines += ["%s" % declaration]
+    return "\n".join(lines)
 
 def __generate_code(format_string, code):
     "Generate code according to format string and code dictionary"

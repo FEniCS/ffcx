@@ -9,7 +9,7 @@ __license__  = "GNU GPL Version 2"
 from ffc.compiler.representation.tensor import *
 
 # FFC code generation modules
-from geometrytensor import *
+import tensorrepresentation
 
 def generate_cell_integral(representation, format):
     """Generate dictionary of code for cell integral from the given
@@ -30,10 +30,4 @@ def __generate_tabulate_tensor(representation, format):
     # the tensor representation. Hint: do something differently for
     # quadrature here.
 
-    # Generate code as a list of declarations
-    code = []
-
-    # Generate code for geometry tensor
-    code += generate_geometry_tensor(representation.cell_tensor, format)
-
-    return code
+    return tensorrepresentation.generate_tabulate_tensor(representation, format)
