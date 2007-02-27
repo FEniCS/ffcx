@@ -12,6 +12,7 @@ __license__  = "GNU GPL Version 2"
 
 # Python modules
 import numpy
+import time
 
 # FIAT modules
 from FIAT.quadrature import *
@@ -25,11 +26,16 @@ from ffc.common.progress import *
 from ffc.compiler.language.index import *
 from ffc.compiler.language.algebra import *
 from ffc.compiler.language.integral import *
-from ffc.compiler.language.multiindex import *
+
+# FFC tensor representation modules
+from multiindex import *
 
 def integrate(monomial, facet0, facet1):
     """Compute the reference tensor for a given monomial term of a
     multilinear form"""
+
+    debug("Computing reference tensor...")
+    tic = time.time()
 
     # Check for integral type
     integral_type = monomial.integral.type
@@ -46,6 +52,11 @@ def integrate(monomial, facet0, facet1):
     # Compute product of all Psis
     A0 = __compute_product(psis, vscaling * monomial.numeric * weights)
 
+    # Report elapsed time and number of entries
+    toc = time.time() - tic
+    num_entries = numpy.prod(numpy.shape(A0))
+    debug("%d entries computed in %.3g seconds" % (num_entries, toc))
+
     return A0
 
 def __init_quadrature(basisfunctions, integral_type):
@@ -58,7 +69,7 @@ def __init_quadrature(basisfunctions, integral_type):
     # Compute number of points to match the degree
     q = __compute_degree(basisfunctions)
     m = (q + 1 + 1) / 2 # integer division gives 2m - 1 >= q
-    debug("Total degree is %d, using %d quadrature point(s) in each dimension" % (q, m), 1)
+    #debug("Total degree is %d, using %d quadrature point(s) in each dimension" % (q, m), 1)
 
     # Create quadrature rule and get points and weights
     # FIXME: FIAT ot finiteelement should return shape of facet
@@ -127,8 +138,6 @@ def __init_table(basisfunctions, integral_type, points, facet0, facet1):
 
 def __compute_psi(v, table, num_points, dscaling):
     "Compute the table Psi for the given BasisFunction v."
-
-    debug("Computing table for factor v = " + str(v), 1)
 
     # We just need to pick the values for Psi from the table, which is
     # somewhat tricky since the table created by tabulate_jet() is a

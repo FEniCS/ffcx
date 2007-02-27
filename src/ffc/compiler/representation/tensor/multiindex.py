@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-11-03 -- 2007-01-11"
+__date__ = "2004-11-03 -- 2007-02-27"
 __copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -42,7 +42,7 @@ class MultiIndex:
         indices - list of all possible multiindex values"""
 
     def __init__(self, dims):
-        "Create MultiIndex from given list of dimensions."
+        "Create multi index from given list of dimensions"
         self.rank = len(dims)
         self.dims = listcopy(dims)
         self.indices = build_indices(dims)

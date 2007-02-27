@@ -13,23 +13,31 @@ from utils import *
 
 __level = -1
 __indent = 0
-__no_indent = False
+__continuation = False
+__continuation_level = 0
 
 def debug(string, debuglevel = 0):
     "Print given string at given debug level"
 
-    global __level, __no_indent
+    global __level, __indent, __continuation, __continuation_level
+
+    # Set indentation
+    indentation = 2*__indent
 
     # Print message (note fancy handling of strings containing ...)
     if debuglevel <= __level:
-        if "..." in string:
-            print indent(string, 2*__indent),
-            __no_indent = True
-        elif __no_indent:
-            print string
-            __no_indent = False
+        if __continuation:
+            if __continuation_level == debuglevel:
+                print string
+            else:
+                print "\n" + indent(string, indentation)
+            __continuation = False
+        elif "..." in string:
+            print indent(string, indentation),
+            __continuation = True
+            __continuation_level = debuglevel
         else:
-            print indent(string, 2*__indent)
+            print indent(string, indentation)
 
     # Flush buffer so messages are printed *now*
     sys.stdout.flush()

@@ -6,6 +6,13 @@ __license__  = "GNU GPL Version 2"
 # FFC common modules
 from ffc.common.debug import *
 
+# FFC language modules
+from ffc.compiler.language.index import *
+from ffc.compiler.language.reassignment import *
+
+# FFC tensor representation modules
+from multiindex import *
+
 class GeometryTensor:
     """This class represents the geometry tensor for a monomial term
     of a multilinear form"""
@@ -15,8 +22,46 @@ class GeometryTensor:
 
         debug("Computing geometry tensor...")
 
-        debug("not implemented")
+        # Create secondary and auxiliary multi indices
+        self.a = self.__create_multi_index(monomial, Index.SECONDARY)
+        self.b = self.__create_multi_index(monomial, Index.AUXILIARY_G)
+        debug("Secondary multi index: " + str(self.a), 1)
+        debug("Auxiliary multi index: " + str(self.b), 1)
 
+        debug("done")
+
+    def __create_multi_index(self, monomial, index_type):
+        "Find dimensions and create multi index"
+        
+        # Compute rank
+        rank = max([max_index(c, index_type) for c in monomial.coefficients] + \
+                   [max_index(t, index_type) for t in monomial.transforms] + [-1]) + 1
+        
+        # Compute all dimensions
+        dims = [self.__find_dim(monomial, i, index_type) for i in range(rank)]
+
+        # Create multi index from dims
+        return MultiIndex(dims)
+
+    def __find_dim(self, monomial, i, index_type):
+        "Find dimension of given Index."
+
+        # Create index to search for
+        index = Index(i)
+        index.type = index_type
+        
+        # Check coefficients
+        for c in monomial.coefficients:
+            if c.index == index:
+                return c.e1.space_dimension()
+            
+        # Check transforms
+        for t in monomial.transforms:
+            if t.index0 == index or t.index1 == index:
+                return t.element.shapedim()
+            
+        # Didn't find dimension
+        raise RuntimeError, "Unable to find dimension for index " + str(index)
 
 # from util import *
 
@@ -49,10 +94,6 @@ class GeometryTensor:
 #         self.coefficients = listcopy(monomial.coefficients)
 #         self.transforms = listcopy(monomial.transforms)
 
-#         # Create MultiIndices
-#         self.a = self.__create_index(Index.SECONDARY)
-#         self.b = self.__create_index(Index.AUXILIARY_G)
-
 #         # Get rank
 #         self.rank = self.a.rank
 
@@ -61,32 +102,6 @@ class GeometryTensor:
 
 #         return
 
-#     def __create_index(self, type):
-#         "Find dimensions and create MultiIndex."
-#         # Compute rank
-#         rank = max([max_index(c, type) for c in self.coefficients] + \
-#                    [max_index(t, type) for t in self.transforms] + [-1]) + 1
-        
-#         # Compute all dimensions
-#         dims = [self.__find_dim(i, type) for i in range(rank)]
-#         # Create MultiIndex
-#         return MultiIndex(dims)
-
-#     def __find_dim(self, i, type):
-#         "Find dimension of given Index."
-#         index = Index(0)
-#         index.index = i
-#         index.type = type
-#         # Check coefficients
-#         for c in self.coefficients:
-#             if c.index == index:
-#                 return c.e1.space_dimension()
-#         # Check transforms
-#         for t in self.transforms:
-#             if t.index0 == index or t.index1 == index:
-#                 return t.element.shapedim()
-#         # Didn't find dimension
-#         raise RuntimeError, "Unable to find dimension for Index " + str(index)
 
 #     def __call__(self, a, format, cK_used, used):
 #         "Return given element of geometry tensor."
