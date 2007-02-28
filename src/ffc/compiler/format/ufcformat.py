@@ -29,7 +29,7 @@ format = { "add": lambda l: " + ".join(l),
            "grouping": lambda s: "(%s)" % s,
            "bool": lambda b: {True: "true", False: "false"}[b],
            "floating point": lambda a: "%.15e" % a,
-           "tmp declaration": lambda j, k: "const double tmp%d_%d" % (j, k),
+           "tmp declaration": lambda j, k: "const double " + format["tmp access"](j, k),
            "tmp access": lambda j, k: "tmp%d_%d" % (j, k),
            "comment": lambda s: "// %s" % s,
            "determinant": "det",
@@ -39,8 +39,9 @@ format = { "add": lambda l: " + ".join(l),
            "transform": lambda j, k, r: "J%s%d%d" % (choose_map[r], j, k),
            "inverse transform": lambda j, k, r: "Jinv%s%d%d" % (choose_map[r], j, k),
            "reference tensor" : lambda j, i, a: None,
-           "geometry tensor": lambda j, a: "G%d_%s" % (j, "_".join(["%d" % index for index in a])),
-           "element tensor": lambda i, k: "block[%d]" % k,
+           "geometry tensor declaration": lambda j, a: "const double " + format["geometry tensor access"](j, a),
+           "geometry tensor access": lambda j, a: "G%d_%s" % (j, "_".join(["%d" % index for index in a])),
+           "element tensor": lambda i, k: "A[%d]" % k,
            "dofs": lambda i: "dofs[%d]" % i,
            "entity index": lambda d, i: "c.entity_indices[%d][%d]" % (d, i),
            "num entities": lambda dim : "m.num_entities[%d]" % dim,
@@ -75,16 +76,19 @@ def write(code, form_data, options):
         output += "\n"
 
     # Generate code for ufc::cell_integral
-    output += __generate_cell_integral(code["cell_integral"], form_data, options, prefix)
-    output += "\n"
+    for i in range(form_data.num_cell_integrals):
+        output += __generate_cell_integral(code["cell_integral"], form_data, options, prefix, i)
+        output += "\n"
 
     # Generate code for ufc::exterior_facet_integral
-    #output += __generate_exterior_facet_integral(code["exterior_facet_integral"], options, prefix)
-    #output += "\n"
+    for i in range(form_data.num_exterior_facet_integrals):
+        output += __generate_exterior_facet_integral(code["exterior_facet_integral"], form_data, options, prefix, i)
+        output += "\n"
     
     # Generate code for ufc::interior_facet_integral
-    #output += __generate_interior_facet_integral(code["interior_facet_integral"], options, prefix)
-    #output += "\n"
+    for i in range(form_data.num_interior_facet_integrals):
+        output += __generate_interior_facet_integral(code["interior_facet_integral"], form_data, options, prefix, i)
+        output += "\n"
 
     # Generate code for ufc::form
     output += __generate_form(code["form"], form_data, options, prefix)
@@ -231,13 +235,13 @@ def __generate_dof_map(code, form_data, options, prefix, i):
 
     return __generate_code(dof_map_combined, ufc_code)
 
-def __generate_cell_integral(code, form_data, options, prefix):
+def __generate_cell_integral(code, form_data, options, prefix, i):
     "Generate code for ufc::cell_integral"
 
     ufc_code = {}
 
     # Set class name
-    ufc_code["classname"] = "%s_cell_integral" % prefix
+    ufc_code["classname"] = "%s_cell_integral_%d" % (prefix, i)
 
     # Generate code for members
     ufc_code["members"] = ""
@@ -255,13 +259,13 @@ def __generate_cell_integral(code, form_data, options, prefix):
 
     return __generate_code(cell_integral_combined, ufc_code)
 
-def __generate_exterior_facet_integral(code, form_data, options, prefix):
+def __generate_exterior_facet_integral(code, form_data, options, prefix, i):
     "Generate code for ufc::exterior_facet_integral"
 
     ufc_code = {}
     
     # Set class name
-    ufc_code["classname"] = "%s_exterior_facet_integral" % prefix
+    ufc_code["classname"] = "%s_exterior_facet_integral_%d" % (prefix, i)
 
     # Generate code for members
     ufc_code["members"] = ""
@@ -277,13 +281,13 @@ def __generate_exterior_facet_integral(code, form_data, options, prefix):
     
     return __generate_code(exterior_facet_integral_combined, ufc_code)
 
-def __generate_interior_facet_integral(code, form_data, options, prefix):
+def __generate_interior_facet_integral(code, form_data, options, prefix, i):
     "Generate code for ufc::interior_facet_integral"
 
     ufc_code = {}
 
     # Set class name
-    ufc_code["classname"] = "%s_interior_facet_integral" % prefix
+    ufc_code["classname"] = "%s_interior_facet_integral_%d" % (prefix, i)
 
     # Generate code for members
     ufc_code["members"] = ""
@@ -337,18 +341,27 @@ def __generate_form(code, form_data, options, prefix):
 
     # Generate code for cell_integral
     num_cases = form_data.num_cell_integrals
-    cases = ["new %s_cell_integral_%d()" % (prefix, i) for i in range(num_cases)]
-    ufc_code["create_cell_integral"] = __generate_switch("i", cases, "0")
+    if num_cases > 0:
+        cases = ["new %s_cell_integral_%d()" % (prefix, i) for i in range(num_cases)]
+        ufc_code["create_cell_integral"] = __generate_switch("i", cases, "0")
+    else:
+        ufc_code["create_cell_integral"] = "return 0;"
 
     # Generate code for exterior_facet_integral
     num_cases = form_data.num_exterior_facet_integrals
-    cases = ["new %s_exterior_facet_integral_%d()" % (prefix, i) for i in range(num_cases)]
-    ufc_code["create_exterior_facet_integral"] = __generate_switch("i", cases, "0")
+    if num_cases > 0:
+        cases = ["new %s_exterior_facet_integral_%d()" % (prefix, i) for i in range(num_cases)]
+        ufc_code["create_exterior_facet_integral"] = __generate_switch("i", cases, "0")
+    else:
+        ufc_code["create_exterior_facet_integral"] = "return 0;"
 
     # Generate code for interior_facet_integral
     num_cases = form_data.num_interior_facet_integrals
-    cases = ["new %s_interior_facet_integral_%d()" % (prefix, i) for i in range(num_cases)]
-    ufc_code["create_interior_facet_integral"] = __generate_switch("i", cases, "0")
+    if num_cases > 0:
+        cases = ["new %s_interior_facet_integral_%d()" % (prefix, i) for i in range(num_cases)]
+        ufc_code["create_interior_facet_integral"] = __generate_switch("i", cases, "0")
+    else:
+        ufc_code["create_interior_facet_integral"] = "return 0;"
 
     return __generate_code(form_combined, ufc_code)
 

@@ -47,7 +47,7 @@ def __generate_geometry_tensor(terms, format):
         for a in aindices:
             
             # Sum factorized values
-            name = format["geometry tensor"](j, a)
+            name = format["geometry tensor declaration"](j, a)
             value = format["add"]([__generate_entry(G, a, format) for G in terms[j].G])
 
             # Add declaration
@@ -69,7 +69,7 @@ def __generate_element_tensor(terms, format):
 
     # Prefetch formats to speed up code generation
     format_element_tensor  = format["element tensor"]
-    format_geometry_tensor = format["geometry tensor"]
+    format_geometry_tensor = format["geometry tensor access"]
     format_add             = format["add"]
     format_subtract        = format["subtract"]
     format_multiply        = format["multiply"]

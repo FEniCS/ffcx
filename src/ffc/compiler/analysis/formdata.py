@@ -80,12 +80,12 @@ class FormData:
     def __extract_num_exterior_facet_integrals(self, form):
         "Extract the number of exterior facet integrals"
         # FIXME: Not implemented
-        return 1
+        return 0
 
     def __extract_num_interior_facet_integrals(self, form):
         "Extract the number of interiof facet integrals"
         # FIXME: Not implemented
-        return 1
+        return 0
     
     def __extract_elements(self, form, rank, num_coefficients):
         """Extract all elements associated with form. The list of elements is

@@ -38,6 +38,8 @@ from representation.tensor import *
 from codegeneration.finiteelement import *
 from codegeneration.dofmap import *
 from codegeneration.cellintegral import *
+from codegeneration.exteriorfacetintegral import *
+from codegeneration.interiorfacetintegral import *
 from codegeneration.form import *
 
 # FFC format modules
@@ -139,6 +141,16 @@ def generate_code(form_data, form_representation, format):
     # Generate code for cell integral
     debug("Generating code for cell integral...")
     code["cell_integral"] = generate_cell_integral(form_representation, format)
+    debug("done")
+
+    # Generate code for cell exterior facet integral
+    debug("Generating code for exterior facet integral...")
+    code["exterior_facet_integral"] = generate_exterior_facet_integral(form_representation, format)
+    debug("done")
+
+    # Generate code for cell interior facet integral
+    debug("Generating code for interior facet integral...")
+    code["interior_facet_integral"] = generate_interior_facet_integral(form_representation, format)
     debug("done")
 
     # Generate code for form

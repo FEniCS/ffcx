@@ -8,10 +8,10 @@ __license__  = "GNU GPL Version 2"
 # Code snippet for computing the Jacobian, its inverse and determinant in 2D
 jacobian_2D = """\
 // Compute Jacobian of affine map from reference cell
-const double J%(restriction)s00 = coordinates[1][0] - coordinates[0][0];
-const double J%(restriction)s01 = coordinates[2][0] - coordinates[0][0];
-const double J%(restriction)s10 = coordinates[1][1] - coordinates[0][1];
-const double J%(restriction)s11 = coordinates[2][1] - coordinates[0][1];
+const double J%(restriction)s00 = c.coordinates[1][0] - c.coordinates[0][0];
+const double J%(restriction)s01 = c.coordinates[2][0] - c.coordinates[0][0];
+const double J%(restriction)s10 = c.coordinates[1][1] - c.coordinates[0][1];
+const double J%(restriction)s11 = c.coordinates[2][1] - c.coordinates[0][1];
   
 // Compute determinant
 double det = J%(restriction)s00*J%(restriction)s11 - J%(restriction)s01*J%(restriction)s10;
@@ -28,15 +28,15 @@ det = std::abs(det);
 # Code snippet for computing the Jacobian, its inverse and determinant in 3D
 jacobian_3D = """\
 // Compute Jacobian of affine map from reference cell
-const double J%(restriction)s00 = coordinates[1][0] - coordinates[0][0];
-const double J%(restriction)s01 = coordinates[2][0] - coordinates[0][0];
-const double J%(restriction)s02 = coordinates[3][0] - coordinates[0][0];
-const double J%(restriction)s10 = coordinates[1][1] - coordinates[0][1];
-const double J%(restriction)s11 = coordinates[2][1] - coordinates[0][1];
-const double J%(restriction)s12 = coordinates[3][1] - coordinates[0][1];
-const double J%(restriction)s20 = coordinates[1][2] - coordinates[0][2];
-const double J%(restriction)s21 = coordinates[2][2] - coordinates[0][2];
-const double J%(restriction)s22 = coordinates[3][2] - coordinates[0][2];
+const double J%(restriction)s00 = c.coordinates[1][0] - c.coordinates[0][0];
+const double J%(restriction)s01 = c.coordinates[2][0] - c.coordinates[0][0];
+const double J%(restriction)s02 = c.coordinates[3][0] - c.coordinates[0][0];
+const double J%(restriction)s10 = c.coordinates[1][1] - c.coordinates[0][1];
+const double J%(restriction)s11 = c.coordinates[2][1] - c.coordinates[0][1];
+const double J%(restriction)s12 = c.coordinates[3][1] - c.coordinates[0][1];
+const double J%(restriction)s20 = c.coordinates[1][2] - c.coordinates[0][2];
+const double J%(restriction)s21 = c.coordinates[2][2] - c.coordinates[0][2];
+const double J%(restriction)s22 = c.coordinates[3][2] - c.coordinates[0][2];
   
 // Compute sub determinants
 const double d00 = J%(restriction)s11*J%(restriction)s22 - J%(restriction)s12*J%(restriction)s21;
