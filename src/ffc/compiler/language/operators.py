@@ -155,7 +155,7 @@ def D(v, i):
 def grad(v):
     "Return gradient of given function."
     # Get shape dimension
-    d = __shapedim(v)
+    d = __shape_dimension(v)
     # Check if we have a vector
     if value_rank(v) == 1:
         return [ [D(v[i], j) for j in range(d)] for i in range(len(v)) ]
@@ -177,7 +177,7 @@ def div(v):
 def rot(v):
     "Return rotation of given function."
     # Check dimensions
-    if not len(v) == __shapedim(v) == 3:
+    if not len(v) == __shape_dimension(v) == 3:
         raise FormError, (v, "Rotation only defined for v : R^3 --> R^3")
     # Compute rotation
     return [D(v[2], 1) - D(v[1], 2), D(v[0], 2) - D(v[2], 0), D(v[1], 0) - D(v[0], 1)]
@@ -221,23 +221,23 @@ def jump(v, n):
             form = form + v[i]('+')*n[i]('+') + v[i]('-')*n[i]('-')
         return form
 
-def __shapedim(v):
+def __shape_dimension(v):
     "Return shape dimension for given object."
     if isinstance(v, list):
         # Check that all components have the same shape dimension
         for i in range(len(v) - 1):
-            if not __shapedim(v[i]) == __shapedim(v[i + 1]):
+            if not __shape_dimension(v[i]) == __shape_dimension(v[i + 1]):
                 raise FormError, (v, "Components have different shape dimensions.")
         # Return length of first term
-        return __shapedim(v[0])
+        return __shape_dimension(v[0])
     elif isinstance(v, BasisFunction):
-        return v.element.shapedim()
+        return v.element.shape_dimension()
     elif isinstance(v, Monomial):
-        return __shapedim(v.basisfunctions[0])
+        return __shape_dimension(v.basisfunctions[0])
     elif isinstance(v, Form):
-        return __shapedim(v.monomials[0])
+        return __shape_dimension(v.monomials[0])
     elif isinstance(v, Function):
-        return __shapedim(Form(v))
+        return __shape_dimension(Form(v))
     else:
         raise FormError, (v, "Shape dimension is not defined for given expression.")
     return 0

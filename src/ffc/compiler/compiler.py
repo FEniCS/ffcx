@@ -25,6 +25,7 @@ import language
 
 from language.reassignment import *
 
+# FFC analysis modules
 from analysis.checks import *
 from analysis.formdata import *
 
@@ -33,11 +34,14 @@ from representation.tensor import *
 #import representation
 #import optimization
 
+# FFC code generation modules
+from codegeneration.metadata import *
 from codegeneration.finiteelement import *
 from codegeneration.dofmap import *
 from codegeneration.cellintegral import *
 from codegeneration.form import *
 
+# FFC format modules
 from format import ufcformat
 
 def compile(form, name = "Form", output_language = FFC_LANGUAGE, options = FFC_OPTIONS):
@@ -119,12 +123,9 @@ def generate_code(form_data, form_representation, format):
 
     code = {}
 
-    # Set name
-    code["name"] = form_data.name
-
-    # Set number of arguments
-    code["num_arguments"] = form_data.num_arguments
-
+    # Set form meta data
+    code["meta_data"] = generate_meta_data(form_data, format)
+    
     # Generate code for finite elements
     debug("Generating code for finite elements...")
     for i in range(len(form_data.elements)):

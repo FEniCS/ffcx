@@ -75,7 +75,7 @@ class MixedElement:
         mixed_basis            - a list of mixed basis functions
         mixed_degree           - maximum degree of basis functions
         mixed_space_dimension  - number of basis functions
-        mixed shapedim         - number of shape dimensions
+        mixed shape_dimension         - number of shape dimensions
         mixed_tensordim        - number of components
     """
 
@@ -104,7 +104,7 @@ class MixedElement:
         # Compute number of basis functions
         self.mixed_space_dimension = self.__compute_space_dimension()
         # Compute number of shape dimensions
-        self.mixed_shapedim = self.__compute_shapedim()
+        self.mixed_shape_dimension = self.__compute_shape_dimension()
         # Compute number of components
         self.mixed_tensordim = self.__compute_tensordim()
 
@@ -131,9 +131,9 @@ class MixedElement:
         "Return dimension of finite element space."
         return self.mixed_space_dimension
 
-    def shapedim(self):
+    def shape_dimension(self):
         "Return dimension of of shape."
-        return self.mixed_shapedim
+        return self.mixed_shape_dimension
 
     def value_rank(self):
         "Return the rank of the value space"
@@ -217,7 +217,7 @@ class MixedElement:
         "Compute number of basis functions."
         return sum([element.space_dimension() for element in self.elements])
 
-    def __compute_shapedim(self):
+    def __compute_shape_dimension(self):
         "Compute number of shape dimensions."
         # Check that all elements are defined on the same shape
         for i in range(len(self.elements) - 1):
@@ -225,7 +225,7 @@ class MixedElement:
             e1 = self.elements[i + 1]
             if not e0.cell_shape() == e1.cell_shape():
                 raise FormError, ((e0, e1), "Elements defined on different shapes.")
-        return self.elements[0].shapedim()
+        return self.elements[0].shape_dimension()
     
     def __compute_tensordim(self):
         "Compute number of components."

@@ -156,7 +156,7 @@ def __compute_psi(v, table, num_points, dscaling):
 
     # Get FiniteElement for v
     element = v.element
-    shapedim = element.shapedim()
+    shape_dimension = element.shape_dimension()
     space_dimension = element.space_dimension()
 
     # Get restriction for v
@@ -164,7 +164,7 @@ def __compute_psi(v, table, num_points, dscaling):
 
     # Get Indices and shapes for Derivatives
     dindex = [d.index for d in v.derivatives]
-    dshape = [shapedim for d in v.derivatives]
+    dshape = [shape_dimension for d in v.derivatives]
     dorder = len(dindex)
 
     # Get Indices and shapes for BasisFunction
@@ -195,14 +195,14 @@ def __compute_psi(v, table, num_points, dscaling):
         for component in range(cshape[0]):
             for dlist in dlists:
                 # Translate derivative multiindex to lookup tuple
-                dtuple = __multiindex_to_tuple(dlist, shapedim)
+                dtuple = __multiindex_to_tuple(dlist, shape_dimension)
                 # Get values from table
                 Psi[component][tuple(dlist)] = etable[component][dorder][dtuple]
     else:
         etable = table[(element, restriction)][dorder]
         for dlist in dlists:
             # Translate derivative multiindex to lookup tuple
-            dtuple = __multiindex_to_tuple(dlist, shapedim)
+            dtuple = __multiindex_to_tuple(dlist, shape_dimension)
             # Get values from table
             Psi[tuple(dlist)] = etable[dtuple]
 
@@ -318,13 +318,13 @@ def __find_indices(indices, index_type):
     val = [indices[i].index for i in range(len(indices)) if indices[i].type == index_type]
     return [pos[i] for i in numpy.argsort(val)]
 
-def __multiindex_to_tuple(dindex, shapedim):
+def __multiindex_to_tuple(dindex, shape_dimension):
     """Compute lookup tuple from given derivative
     multiindex. Necessary since the table we get from FIAT is a
     dictionary with the tuples as keys. A derivative tuple specifies
     the number of derivatives in each space dimension, rather than
     listing the space dimensions for the derivatives."""
-    dtuple = [0 for i in range(shapedim)]
+    dtuple = [0 for i in range(shape_dimension)]
     for d in dindex:
         dtuple[d] += 1
     return tuple(dtuple)

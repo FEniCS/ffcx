@@ -98,7 +98,7 @@ class Projection:
         n = e0.space_dimension()
 
         # Create zero order tuple for tables
-        dindex = tuple(numpy.zeros(e0.shapedim(), dtype = numpy.int))
+        dindex = tuple(numpy.zeros(e0.shape_dimension(), dtype = numpy.int))
 
         # Compute matrix Q = (vi, vj) for vi in V1
         Q = numpy.zeros((m, m), dtype = numpy.float)

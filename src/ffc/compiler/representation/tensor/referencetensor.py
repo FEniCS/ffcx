@@ -69,7 +69,7 @@ class ReferenceTensor:
             # Check derivatives
             for d in v.derivatives:
                 if d.index == index:
-                    return d.element.shapedim()
+                    return d.element.shape_dimension()
                 
         # Didn't find dimension
         raise RuntimeError, "Unable to find dimension for index " + str(index)
@@ -152,7 +152,7 @@ class ReferenceTensor:
 #             # Check Derivatives
 #             for d in v.derivatives:
 #                 if d.index == index:
-#                     return d.element.shapedim()
+#                     return d.element.shape_dimension()
 #         # Didn't find dimension
 #         raise RuntimeError, "Unable to find dimension for Index " + str(index)
 
