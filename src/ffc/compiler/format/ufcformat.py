@@ -5,6 +5,9 @@ __date__ = "2007-01-08 -- 2007-02-27"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
+# UFC code templates
+from ufc import *
+
 # FFC common modules
 from ffc.common.utils import *
 from ffc.common.debug import *
@@ -14,7 +17,7 @@ from ffc.common.constants import *
 from ffc.compiler.language.restriction import *
 
 # FFC format modules
-from ufc import *
+from codesnippets import *
 
 # Choose map from restriction
 choose_map = {Restriction.PLUS: "0_", Restriction.MINUS: "1_", None: ""}
@@ -26,7 +29,7 @@ format = { "add": lambda l: " + ".join(l),
            "grouping": lambda s: "(%s)" % s,
            "bool": lambda b: {True: "true", False: "false"}[b],
            "floating point": lambda a: "%.15e" % a,
-           "tmp declaration": lambda j, k: "const real tmp%d_%d" % (j, k),
+           "tmp declaration": lambda j, k: "const double tmp%d_%d" % (j, k),
            "tmp access": lambda j, k: "tmp%d_%d" % (j, k),
            "comment": lambda s: "// %s" % s,
            "determinant": "det",
@@ -246,7 +249,9 @@ def __generate_cell_integral(code, options, prefix):
     ufc_code["destructor"] = "// Do nothing"
 
     # Generate code for tabulate_tensor
-    ufc_code["tabulate_tensor"] = __generate_body(code["tabulate_tensor"])
+    ufc_code["tabulate_tensor"]  = __generate_jacobian()
+    ufc_code["tabulate_tensor"] += "\n"
+    ufc_code["tabulate_tensor"] += __generate_body(code["tabulate_tensor"])
 
     return __generate_code(cell_integral_combined, ufc_code)
 
@@ -338,6 +343,11 @@ def __generate_form(code, options, prefix, num_arguments):
     ufc_code["create_interior_facet_integral"] = "// Not implemented\nreturn 0;"
 
     return __generate_code(form_combined, ufc_code)
+
+def __generate_jacobian():
+    "Generate code for computing jacobian"
+    # FIXME: Choose dimension here
+    return jacobian_3D % { "restriction": "" }
 
 def __generate_switch(variable, cases, default):
     "Generate switch statement from given variable and cases"

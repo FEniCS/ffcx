@@ -53,14 +53,14 @@ Removed modules
     dolfin.py
     raw.py
     term.py
+    alignment.py
+    elementtensor.py
 
 Remaining modules:
 
     quadtest.py
     progress.py
 
-    alignment.py
-    elementtensor.py
     exteriorfacettensor.py
     geometrytensor.py
     indexreordering.py
@@ -79,7 +79,9 @@ Remaining modules:
 Things to fix:
 
  - Constant --> DG0
- - Handle projections
+ - Projections
+ - Optimization
+ - BLAS mode
  - Implement check primary ranks i checks
 
 
