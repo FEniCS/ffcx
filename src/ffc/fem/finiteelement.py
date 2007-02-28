@@ -130,7 +130,7 @@ class FiniteElement:
         "Return the dimension of the finite element function space"
         return len(self.basis())
 
-    def shape_dimension(self):
+    def cell_dimension(self):
         "Return dimension of of shape."
         return dim[self.cell_shape()]
 

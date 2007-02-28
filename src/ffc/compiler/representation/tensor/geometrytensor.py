@@ -63,7 +63,7 @@ class GeometryTensor:
         # Check transforms
         for t in monomial.transforms:
             if t.index0 == index or t.index1 == index:
-                return t.element.shape_dimension()
+                return t.element.cell_dimension()
             
         # Didn't find dimension
         raise RuntimeError, "Unable to find dimension for index " + str(index)

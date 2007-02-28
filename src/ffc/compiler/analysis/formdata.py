@@ -18,15 +18,19 @@ class FormData:
     """This class holds meta data for a form. The following attributes
     are extracted and stored for a given form:
 
-        form             - the form
-        name             - the name of the form
-        signature        - the signature of the form
-        rank             - the rank (arity) of the form
-        num_coefficients - the number of coefficients
-        num_arguments    - the sum of rank and num_coefficients
-        num_terms        - the number of terms
-        elements         - the finite elements associated with the form
-        dof_maps         - the dof maps associated with the form
+        form                         - the form
+        name                         - the name of the form
+        signature                    - the signature of the form
+        rank                         - the rank (arity) of the form
+        num_coefficients             - the number of coefficients
+        num_arguments                - the sum of rank and num_coefficients
+        num_terms                    - the number of terms
+        num_cell_integrals           - the number of cell integrals
+        num_exterior_facet_integrals - the number of exterior facet integrals
+        num_interior_facet_integrals - the number of interior facet integrals
+        elements                     - the finite elements associated with the form
+        dof_maps                     - the dof maps associated with the form
+        cell_dimension               - the dimension of the cell
 
     It is assumed that the indices of the given form have been reassigned.
     """
@@ -36,15 +40,19 @@ class FormData:
 
         debug("Extracting form data...")
 
-        self.form = form
-        self.name = name
-        self.signature = self.__extract_signature(form)
-        self.rank = self.__extract_rank(form)
-        self.num_coefficients = self.__extract_num_coefficients(form)
-        self.num_arguments = self.rank + self.num_coefficients
-        self.num_terms = self.__extract_num_terms(form)
-        self.elements = self.__extract_elements(form, self.rank, self.num_coefficients)
-        self.dof_maps = self.__extract_dof_maps(self.elements)
+        self.form                         = form
+        self.name                         = name
+        self.signature                    = self.__extract_signature(form)
+        self.rank                         = self.__extract_rank(form)
+        self.num_coefficients             = self.__extract_num_coefficients(form)
+        self.num_arguments                = self.rank + self.num_coefficients
+        self.num_terms                    = self.__extract_num_terms(form)
+        self.num_cell_integrals           = self.__extract_num_cell_integrals(form)
+        self.num_exterior_facet_integrals = self.__extract_num_exterior_facet_integrals(form)
+        self.num_interior_facet_integrals = self.__extract_num_interior_facet_integrals(form)
+        self.elements                     = self.__extract_elements(form, self.rank, self.num_coefficients)
+        self.dof_maps                     = self.__extract_dof_maps(self.elements)
+        self.cell_dimension               = self.__extract_cell_dimension(self.elements)
 
         debug("done")
 
@@ -63,6 +71,21 @@ class FormData:
     def __extract_num_terms(self, form):
         "Extract the number of terms"
         return len(form.monomials)
+
+    def __extract_num_cell_integrals(self, form):
+        "Extract the number of cell integrals"
+        # FIXME: Not implemented
+        return 1
+
+    def __extract_num_exterior_facet_integrals(self, form):
+        "Extract the number of exterior facet integrals"
+        # FIXME: Not implemented
+        return 1
+
+    def __extract_num_interior_facet_integrals(self, form):
+        "Extract the number of interiof facet integrals"
+        # FIXME: Not implemented
+        return 1
     
     def __extract_elements(self, form, rank, num_coefficients):
         """Extract all elements associated with form. The list of elements is
@@ -94,6 +117,12 @@ class FormData:
     def __extract_dof_maps(self, elements):
         "Extract (generate) dof maps for all elements"
         return [DofMap(element) for element in elements]
+
+    def __extract_cell_dimension(self, elements):
+        "Extract cell dimension"
+
+        # Should be the same so pick first
+        return elements[0].cell_dimension()
 
     def __repr__(self):
         "Pretty print"

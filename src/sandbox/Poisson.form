@@ -5,7 +5,7 @@ u = TrialFunction(element)
 w = Function(element)
 f = Function(element)
 
-a = dot(grad(v), grad(u))*dx
+a = w*dot(grad(v), grad(u))*dx
 L = v*f*dx
 
-#a = w*dot(grad(v), grad(u))*dx
+

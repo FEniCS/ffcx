@@ -34,8 +34,8 @@ format = { "add": lambda l: " + ".join(l),
            "comment": lambda s: "// %s" % s,
            "determinant": "det",
            "constant": lambda j: "c%d" % j,
-           "coefficient table": lambda j, k: "c[%d][%d]" % (j, k),
-           "coefficient": lambda j, k: "c%d_%d" % (j, k),
+           "coefficient table": lambda j, k: "w[%d][%d]" % (j, k),
+           "coefficient": lambda j, k: "w[%d][%d]" % (j, k),
            "transform": lambda j, k, r: "J%s%d%d" % (choose_map[r], j, k),
            "inverse transform": lambda j, k, r: "Jinv%s%d%d" % (choose_map[r], j, k),
            "reference tensor" : lambda j, i, a: None,
@@ -52,14 +52,12 @@ def init(options):
     "Initialize code generation for the UFC 1.0 format."
     pass
     
-def write(code, options):
+def write(code, form_data, options):
     "Generate code for the UFC 1.0 format."
     debug("Generating code for UFC 1.0")
 
-    # Get form meta data
-    prefix = code["meta_data"]["name"].lower()
-    num_arguments = code["meta_data"]["num_arguments"]
-    shape_dimension = code["meta_data"]["shape_dimension"]
+    # Set prfix
+    prefix = form_data.name.lower()
 
     # Generate file header
     output = ""
@@ -67,17 +65,17 @@ def write(code, options):
     output += "\n"
 
     # Generate code for ufc::finite_element(s)
-    for i in range(num_arguments):
-        output += __generate_finite_element(code[("finite_element", i)], options, prefix, i)
+    for i in range(form_data.num_arguments):
+        output += __generate_finite_element(code[("finite_element", i)], form_data, options, prefix, i)
         output += "\n"
 
     # Generate code for ufc::dof_map(s)
-    for i in range(num_arguments):
-        output += __generate_dof_map(code[("dof_map", i)], options, prefix, i)
+    for i in range(form_data.num_arguments):
+        output += __generate_dof_map(code[("dof_map", i)], form_data, options, prefix, i)
         output += "\n"
 
     # Generate code for ufc::cell_integral
-    output += __generate_cell_integral(code["cell_integral"], options, prefix, shape_dimension)
+    output += __generate_cell_integral(code["cell_integral"], form_data, options, prefix)
     output += "\n"
 
     # Generate code for ufc::exterior_facet_integral
@@ -89,7 +87,7 @@ def write(code, options):
     #output += "\n"
 
     # Generate code for ufc::form
-    output += __generate_form(code["form"], options, prefix, num_arguments)
+    output += __generate_form(code["form"], form_data, options, prefix)
     output += "\n"
     
     # Generate code for footer
@@ -129,7 +127,7 @@ def __generate_footer(prefix, options):
 #endif
 """
 
-def __generate_finite_element(code, options, prefix, i):
+def __generate_finite_element(code, form_data, options, prefix, i):
     "Generate (modify) code for ufc::finite_element"
 
     ufc_code = {}
@@ -159,7 +157,8 @@ def __generate_finite_element(code, options, prefix, i):
     ufc_code["value_rank"] = "return %s;" % code["value_rank"]
 
     # Generate code for value_dimension
-    ufc_code["value_dimension"] = __generate_switch("i", code["value_dimension"], "0")
+    num_cases = code["value_dimension"]
+    ufc_code["value_dimension"] = __generate_switch("i", num_cases, "0")
 
     # Generate code for evaluate_basis
     ufc_code["evaluate_basis"] = "// Not implemented"
@@ -183,7 +182,7 @@ def __generate_finite_element(code, options, prefix, i):
 
     return __generate_code(finite_element_combined, ufc_code)
 
-def __generate_dof_map(code, options, prefix, i):
+def __generate_dof_map(code, form_data, options, prefix, i):
     "Generate code for ufc::dof_map"
 
     ufc_code = {}
@@ -232,7 +231,7 @@ def __generate_dof_map(code, options, prefix, i):
 
     return __generate_code(dof_map_combined, ufc_code)
 
-def __generate_cell_integral(code, options, prefix, shape_dimension):
+def __generate_cell_integral(code, form_data, options, prefix):
     "Generate code for ufc::cell_integral"
 
     ufc_code = {}
@@ -250,13 +249,13 @@ def __generate_cell_integral(code, options, prefix, shape_dimension):
     ufc_code["destructor"] = "// Do nothing"
 
     # Generate code for tabulate_tensor
-    ufc_code["tabulate_tensor"]  = __generate_jacobian(shape_dimension, False)
+    ufc_code["tabulate_tensor"]  = __generate_jacobian(form_data.cell_dimension, False)
     ufc_code["tabulate_tensor"] += "\n"
     ufc_code["tabulate_tensor"] += __generate_body(code["tabulate_tensor"])
 
     return __generate_code(cell_integral_combined, ufc_code)
 
-def __generate_exterior_facet_integral(code, options, prefix):
+def __generate_exterior_facet_integral(code, form_data, options, prefix):
     "Generate code for ufc::exterior_facet_integral"
 
     ufc_code = {}
@@ -278,7 +277,7 @@ def __generate_exterior_facet_integral(code, options, prefix):
     
     return __generate_code(exterior_facet_integral_combined, ufc_code)
 
-def __generate_interior_facet_integral(code, options, prefix):
+def __generate_interior_facet_integral(code, form_data, options, prefix):
     "Generate code for ufc::interior_facet_integral"
 
     ufc_code = {}
@@ -300,7 +299,7 @@ def __generate_interior_facet_integral(code, options, prefix):
     
     return __generate_code(interior_facet_integral_combined, ufc_code)
 
-def __generate_form(code, options, prefix, num_arguments):
+def __generate_form(code, form_data, options, prefix):
     "Generate code for ufc::form"
 
     ufc_code = {}
@@ -327,29 +326,37 @@ def __generate_form(code, options, prefix, num_arguments):
     ufc_code["num_coefficients"] = "return %s;" % code["num_coefficients"]
 
     # Generate code for create_finite_element
-    cases = ["new %s_finite_element_%d()" % (prefix, i) for i in range(num_arguments)]
+    num_cases = form_data.num_arguments
+    cases = ["new %s_finite_element_%d()" % (prefix, i) for i in range(num_cases)]
     ufc_code["create_finite_element"] = __generate_switch("i", cases, "0")
 
     # Generate code for create_dof_map
-    cases = ["new %s_dof_map_%d()" % (prefix, i) for i in range(num_arguments)]
+    num_cases = form_data.num_arguments
+    cases = ["new %s_dof_map_%d()" % (prefix, i) for i in range(num_cases)]
     ufc_code["create_dof_map"] = __generate_switch("i", cases, "0")
 
     # Generate code for cell_integral
-    ufc_code["create_cell_integral"] = "// Not implemented\nreturn 0;"
+    num_cases = form_data.num_cell_integrals
+    cases = ["new %s_cell_integral_%d()" % (prefix, i) for i in range(num_cases)]
+    ufc_code["create_cell_integral"] = __generate_switch("i", cases, "0")
 
     # Generate code for exterior_facet_integral
-    ufc_code["create_exterior_facet_integral"] = "// Not implemented\nreturn 0;"
+    num_cases = form_data.num_exterior_facet_integrals
+    cases = ["new %s_exterior_facet_integral_%d()" % (prefix, i) for i in range(num_cases)]
+    ufc_code["create_exterior_facet_integral"] = __generate_switch("i", cases, "0")
 
     # Generate code for interior_facet_integral
-    ufc_code["create_interior_facet_integral"] = "// Not implemented\nreturn 0;"
+    num_cases = form_data.num_interior_facet_integrals
+    cases = ["new %s_interior_facet_integral_%d()" % (prefix, i) for i in range(num_cases)]
+    ufc_code["create_interior_facet_integral"] = __generate_switch("i", cases, "0")
 
     return __generate_code(form_combined, ufc_code)
 
-def __generate_jacobian(shape_dimension, interior_facet):
+def __generate_jacobian(cell_dimension, interior_facet):
     "Generate code for computing jacobian"
 
     # Choose space dimension
-    if shape_dimension == 2:
+    if cell_dimension == 2:
         jacobian = jacobian_2D
     else:
         jacobian = jacobian_3D

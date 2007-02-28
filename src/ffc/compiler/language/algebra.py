@@ -315,7 +315,7 @@ class BasisFunction(Element):
         vindex = self.index(iindices, aindices, bindices, [])
         cindex = [i(iindices, aindices, bindices, []) for i in self.component]
         dorder = 0
-        dindex = [0 for i in range(self.element.shape_dimension())]
+        dindex = [0 for i in range(self.element.cell_dimension())]
         for d in self.derivatives:
             dindex[d.index(iindices, aindices, bindices, [])] += 1
             dorder += 1

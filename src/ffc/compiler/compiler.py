@@ -35,7 +35,6 @@ from representation.tensor import *
 #import optimization
 
 # FFC code generation modules
-from codegeneration.metadata import *
 from codegeneration.finiteelement import *
 from codegeneration.dofmap import *
 from codegeneration.cellintegral import *
@@ -67,7 +66,7 @@ def compile(form, name = "Form", output_language = FFC_LANGUAGE, options = FFC_O
     code = generate_code(form_data, form_representation, format.format)
 
     # Compiler phase 5: format code
-    format_code(code, format, options)
+    format_code(code, form_data, format, options)
 
 def analyze_form(form, name):
     "Compiler phase 1: analyze form"
@@ -123,9 +122,6 @@ def generate_code(form_data, form_representation, format):
 
     code = {}
 
-    # Set form meta data
-    code["meta_data"] = generate_meta_data(form_data, format)
-    
     # Generate code for finite elements
     debug("Generating code for finite elements...")
     for i in range(len(form_data.elements)):
@@ -153,12 +149,12 @@ def generate_code(form_data, form_representation, format):
     debug_end()
     return code
 
-def format_code(code, format, options):
+def format_code(code, form_data, format, options):
     "Compiler phase 5: format code"
     debug_begin("Compiler phase 5: Formatting code")
 
     # Format the pre-generated code
-    format.write(code, options)
+    format.write(code, form_data, options)
 
     debug_end()
 
