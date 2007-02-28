@@ -80,22 +80,15 @@ def __generate_tabulate_dofs(dof_map, format):
 
     # Iterate over dimensions
     offset_declared = False
+    offset_code = []
     for dim in entity_dofs:
 
-        # Add to offset if needed
-        if dim > 0 and dofs_per_dimension[dim - 1] > 0:
-            if dofs_per_dimension[dim - 1] > 1:
-                value = format["multiply"](["%d" % dofs_per_dimension[dim - 1], format["num entities"](dim - 1)])
-            else:
-                value = format["num entities"](dim - 1)
-            if not offset_declared:
-                name = format["offset declaration"]
-                offset_declared = True
-            else:
-                name = format["offset access"]
-                value = format["add"]([name, value])
-                
-            code += [(name, value)]
+        # Skip dimension if there are no dofs
+        if dofs_per_dimension[dim] == 0:
+            continue
+
+        # Write offset code
+        code += offset_code
 
         # Iterate over entities in dimension
         for entity in entity_dofs[dim]:
@@ -120,5 +113,20 @@ def __generate_tabulate_dofs(dof_map, format):
 
                 # Add declaration
                 code += [(name, value)]
+
+        # Add to offset if needed
+        if dofs_per_dimension[dim] > 0:
+            if dofs_per_dimension[dim] > 1:
+                value = format["multiply"](["%d" % dofs_per_dimension[dim], format["num entities"](dim)])
+            else:
+                value = format["num entities"](dim)
+            if not offset_declared:
+                name = format["offset declaration"]
+                offset_declared = True
+            else:
+                name = format["offset access"]
+                value = format["add"]([name, value])
+                
+            offset_code += [(name, value)]
 
     return code
