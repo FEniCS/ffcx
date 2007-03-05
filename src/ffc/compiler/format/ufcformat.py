@@ -58,7 +58,7 @@ def write(code, form_data, options):
     debug("Generating code for UFC 1.0")
 
     # Set prfix
-    prefix = form_data.name.lower()
+    prefix = form_data.name
 
     # Generate file header
     output = ""
@@ -98,7 +98,7 @@ def write(code, form_data, options):
     output += __generate_footer(prefix, options)
 
     # Write file
-    filename = "%s_ufc.h" % prefix
+    filename = "%s.h" % prefix
     file = open(filename, "w")
     file.write(output)
     file.close()

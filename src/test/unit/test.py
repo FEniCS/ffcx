@@ -8,7 +8,7 @@ __license__  = "GNU GPL Version 2"
 import unittest
 import sys
 
-sys.path.append("..")
+sys.path.append("../..")
 from ffc import *
 
 class FiniteElementTests(unittest.TestCase):

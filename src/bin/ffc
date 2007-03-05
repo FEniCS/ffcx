@@ -30,7 +30,7 @@ def main(argv):
         opts, args = getopt.getopt(argv, "hvOsl:d:f:", ["help", "version", "optimize", "silent", "language=", "debug="])
     except getopt.GetoptError:
         usage()
-        sys.exit(2)
+        return 2
 
     # Check that we got a filename
     if opts == [("-v", "")] or opts == [("--version", "")]:
@@ -38,7 +38,7 @@ def main(argv):
         sys.exit(0)
     elif not args:
         usage()
-        sys.exit(2)
+        return 2
 
     # Set default arguments
     language = "dolfin"
@@ -49,10 +49,10 @@ def main(argv):
     for opt, arg in opts:
         if opt in ("-h", "--help"):
             usage()
-            sys.exit()
+            return 0
         elif opt in ("-v", "--version"):
             version()
-            sys.exit()
+            return 0
         elif opt in ("-O", "--optimize"):
             options["optimize"] = True
         elif opt in ("-s", "--silent"):
@@ -66,7 +66,7 @@ def main(argv):
                 options[arg] = True
             else:
                 usage()
-                sys.exit(2)
+                return 2
 
     # Set debug level
     setlevel(debuglevel)
@@ -92,12 +92,17 @@ def main(argv):
                 print "*** Error at " + str(exception.expression)
                 print "*** " + exception.message
                 print "*** To get more information about this error, rerun ffc with the option -d1."
+                return 2
             except RuntimeError, exception:
                 print "*** " + str(exception)
                 print "*** To get more information about this error, rerun ffc with the option -d1."
+                return 2
             except Exception, exception:
                 print "*** " + str(exception)
                 print "*** To get more information about this error, rerun ffc with the option -d1."
+                return 2
+
+    return 0
 
 def usage():
     "Display usage info."
@@ -181,4 +186,4 @@ else:
     return outname
 
 if __name__ == "__main__":
-    main(sys.argv[1:])
+    sys.exit(main(sys.argv[1:]))
