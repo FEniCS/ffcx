@@ -11,18 +11,18 @@ from ffc.compiler.representation.tensor import *
 # FFC code generation modules
 import tensorrepresentation
 
-def generate_cell_integral(representation, format):
+def generate_cell_integral(representation, sub_domain, format):
     """Generate dictionary of code for cell integral from the given
     form representation according to the given format"""
 
     code = {}
 
     # Generate code for tabulate_tensor
-    code["tabulate_tensor"] = __generate_tabulate_tensor(representation, format)
+    code["tabulate_tensor"] = __generate_tabulate_tensor(representation, sub_domain, format)
 
     return code
 
-def __generate_tabulate_tensor(representation, format):
+def __generate_tabulate_tensor(representation, sub_domain, format):
     "Generate code for tabulate_tensor"
 
     # At this point, we need to check the type of representation and
@@ -30,4 +30,4 @@ def __generate_tabulate_tensor(representation, format):
     # the tensor representation. Hint: do something differently for
     # quadrature here.
 
-    return tensorrepresentation.generate_tabulate_tensor(representation, format)
+    return tensorrepresentation.generate_tabulate_tensor(representation, sub_domain, format)

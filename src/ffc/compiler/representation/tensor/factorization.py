@@ -4,7 +4,7 @@ tensors from terms that have the same tensor structure but with
 different names of indices."""
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2005-09-06 -- 2007-02-26"
+__date__ = "2005-09-06 -- 2007-03-05"
 __copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -14,34 +14,37 @@ import sys
 # FFC common modules
 from ffc.common.exceptions import *
 from ffc.common.utils import *
+from ffc.common.debug import *
 
 # FFC language modules
 from ffc.compiler.language.reassignment import *
 from ffc.compiler.language.signature import *
 
-def factorize(form):
+def factorize(monomials):
     """Reorder indices to factorize common reference tensors and
     return a list mapping each term to a previous matching term (if
     any)"""
 
+    debug("Computing factorization...")
+
     # Create empty factorization
-    factorization = [None for i in range(len(form.monomials))]
+    factorization = [None for i in range(len(monomials))]
 
     # Compare signatures for pairs of terms
-    for i in range(len(form.monomials) - 1):
-        p = form.monomials[i]
+    for i in range(len(monomials) - 1):
+        p = monomials[i]
         p_soft = compute_soft_signature(p)
         p_hard = compute_hard_signature(p)
 
         # Compare term j against term i for i < j
-        for j in range(i + 1, len(form.monomials)):
+        for j in range(i + 1, len(monomials)):
             
             # Don't factorize against another term if already factorized
             if not factorization[j] == None:
                 continue
 
             # Compute signatures
-            q = form.monomials[j]
+            q = monomials[j]
             q_soft = compute_soft_signature(q)
             q_hard = compute_hard_signature(q)
 
@@ -54,8 +57,8 @@ def factorize(form):
             elif p_soft == q_soft:
 
                 # Reorder terms if soft signature matches
-                form.monomials[j] = __reorder_indices(p, q, p_hard)
-                q = form.monomials[j]
+                monomials[j] = __reorder_indices(p, q, p_hard)
+                q = monomials[j]
 
                 # Check that the hard signatures now match
                 q_hard = compute_hard_signature(q)
@@ -64,6 +67,8 @@ def factorize(form):
 
                 # Group terms if hard signature matches
                 factorization[j] = i
+
+    debug("done")
 
     return factorization
 

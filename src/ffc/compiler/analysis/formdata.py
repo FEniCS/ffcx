@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2005-03-15 -- 2007-02-06"
+__date__ = "2005-03-15 -- 2007-03-05"
 __copyright__ = "Copyright (C) 2005-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -7,12 +7,16 @@ __license__  = "GNU GPL Version 2"
 
 # Python modules
 import numpy
+import sets
 
 # FFC common modules
 from ffc.common.debug import *
 
 # FFC fem modules
 from ffc.fem.dofmap import *
+
+# FFC language modules
+from ffc.compiler.language.integral import *
 
 class FormData:
     """This class holds meta data for a form. The following attributes
@@ -74,18 +78,21 @@ class FormData:
 
     def __extract_num_cell_integrals(self, form):
         "Extract the number of cell integrals"
-        # FIXME: Not implemented
-        return 1
+        integrals = [monomial.integral for monomial in form.monomials if monomial.integral.type == Integral.CELL]
+        sub_domains = sets.Set([integral.sub_domain for integral in integrals])
+        if not (max(sub_domains) + 1 == len(sub_domains) and min(sub_domains) == 0):
+            raise FormError, "Sub domains must be numbered from 0 to n - 1"
+        return len(sub_domains)
 
     def __extract_num_exterior_facet_integrals(self, form):
         "Extract the number of exterior facet integrals"
         # FIXME: Not implemented
-        return 0
+        return 1
 
     def __extract_num_interior_facet_integrals(self, form):
         "Extract the number of interiof facet integrals"
         # FIXME: Not implemented
-        return 0
+        return 1
     
     def __extract_elements(self, form, rank, num_coefficients):
         """Extract all elements associated with form. The list of elements is

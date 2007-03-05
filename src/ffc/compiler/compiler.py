@@ -136,21 +136,22 @@ def generate_code(form_data, form_representation, format):
         code[("dof_map", i)] = generate_dof_map(form_data.dof_maps[i], format)
     debug("done")
 
-    # FIXME: Should be multiple integrals for each type
-
     # Generate code for cell integral
-    debug("Generating code for cell integral...")
-    code["cell_integral"] = generate_cell_integral(form_representation, format)
+    debug("Generating code for cell integrals...")
+    for i in range(form_data.num_cell_integrals):
+        code[("cell_integral", i)] = generate_cell_integral(form_representation, i, format)
     debug("done")
 
     # Generate code for cell exterior facet integral
-    debug("Generating code for exterior facet integral...")
-    code["exterior_facet_integral"] = generate_exterior_facet_integral(form_representation, format)
+    debug("Generating code for exterior facet integrals...")
+    for i in range(form_data.num_exterior_facet_integrals):
+        code[("exterior_facet_integral", i)] = generate_exterior_facet_integral(form_representation, i, format)
     debug("done")
 
     # Generate code for cell interior facet integral
-    debug("Generating code for interior facet integral...")
-    code["interior_facet_integral"] = generate_interior_facet_integral(form_representation, format)
+    debug("Generating code for interior facet integrals...")
+    for i in range(form_data.num_interior_facet_integrals):
+        code[("interior_facet_integral", i)] = generate_interior_facet_integral(form_representation, i, format)
     debug("done")
 
     # Generate code for form

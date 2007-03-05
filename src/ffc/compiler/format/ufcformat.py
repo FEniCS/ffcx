@@ -57,7 +57,7 @@ def write(code, form_data, options):
     "Generate code for the UFC 1.0 format."
     debug("Generating code for UFC 1.0")
 
-    # Set prfix
+    # Set prefix
     prefix = form_data.name
 
     # Generate file header
@@ -77,17 +77,17 @@ def write(code, form_data, options):
 
     # Generate code for ufc::cell_integral
     for i in range(form_data.num_cell_integrals):
-        output += __generate_cell_integral(code["cell_integral"], form_data, options, prefix, i)
+        output += __generate_cell_integral(code[("cell_integral", i)], form_data, options, prefix, i)
         output += "\n"
 
     # Generate code for ufc::exterior_facet_integral
     for i in range(form_data.num_exterior_facet_integrals):
-        output += __generate_exterior_facet_integral(code["exterior_facet_integral"], form_data, options, prefix, i)
+        output += __generate_exterior_facet_integral(code[("exterior_facet_integral", i)], form_data, options, prefix, i)
         output += "\n"
     
     # Generate code for ufc::interior_facet_integral
     for i in range(form_data.num_interior_facet_integrals):
-        output += __generate_interior_facet_integral(code["interior_facet_integral"], form_data, options, prefix, i)
+        output += __generate_interior_facet_integral(code[("interior_facet_integral", i)], form_data, options, prefix, i)
         output += "\n"
 
     # Generate code for ufc::form
@@ -161,8 +161,8 @@ def __generate_finite_element(code, form_data, options, prefix, i):
     ufc_code["value_rank"] = "return %s;" % code["value_rank"]
 
     # Generate code for value_dimension
-    num_cases = code["value_dimension"]
-    ufc_code["value_dimension"] = __generate_switch("i", num_cases, "0")
+    cases = code["value_dimension"]
+    ufc_code["value_dimension"] = __generate_switch("i", cases, "0")
 
     # Generate code for evaluate_basis
     ufc_code["evaluate_basis"] = "// Not implemented"
@@ -207,7 +207,8 @@ def __generate_dof_map(code, form_data, options, prefix, i):
     ufc_code["signature"] = "return \"%s\";" % code["signature"]
 
     # Generate code for needs_mesh_entities
-    ufc_code["needs_mesh_entities"] = __generate_switch("d", code["needs_mesh_entities"], "false")
+    cases = code["needs_mesh_entities"]
+    ufc_code["needs_mesh_entities"] = __generate_switch("d", cases, "false")
 
     # Generate code for init_mesh
     ufc_code["init_mesh"] = "__global_dimension = %s;\nreturn false;" % code["global_dimension"]
@@ -252,7 +253,7 @@ def __generate_cell_integral(code, form_data, options, prefix, i):
     # Generate code for destructor
     ufc_code["destructor"] = "// Do nothing"
 
-    # Generate code for tabulate_tensor
+    # Generate code for tabulate_tensor    
     ufc_code["tabulate_tensor"]  = __generate_jacobian(form_data.cell_dimension, False)
     ufc_code["tabulate_tensor"] += "\n"
     ufc_code["tabulate_tensor"] += __generate_body(code["tabulate_tensor"])
@@ -277,6 +278,10 @@ def __generate_exterior_facet_integral(code, form_data, options, prefix, i):
     ufc_code["destructor"] = "// Do nothing"
 
     # Generate code for tabulate_tensor
+    ufc_code["tabulate_tensor"]  = __generate_jacobian(form_data.cell_dimension, False)
+    ufc_code["tabulate_tensor"] += "\n"
+    ufc_code["tabulate_tensor"] += __generate_body(code["tabulate_tensor"])
+
     ufc_code["tabulate_tensor"] = "// Not implemented"
     
     return __generate_code(exterior_facet_integral_combined, ufc_code)
@@ -299,8 +304,10 @@ def __generate_interior_facet_integral(code, form_data, options, prefix, i):
     ufc_code["destructor"] = "// Do nothing"
 
     # Generate code for tabulate_tensor
-    ufc_code["tabulate_tensor"] = "// Not implemented"
-    
+    ufc_code["tabulate_tensor"]  = __generate_jacobian(form_data.cell_dimension, True)
+    ufc_code["tabulate_tensor"] += "\n"
+    ufc_code["tabulate_tensor"] += __generate_body(code["tabulate_tensor"])
+
     return __generate_code(interior_facet_integral_combined, ufc_code)
 
 def __generate_form(code, form_data, options, prefix):

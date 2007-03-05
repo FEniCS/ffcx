@@ -34,7 +34,6 @@ def integrate(monomial, facet0, facet1):
     """Compute the reference tensor for a given monomial term of a
     multilinear form"""
 
-    debug("Computing reference tensor...")
     tic = time.time()
 
     # Check for integral type
@@ -55,7 +54,7 @@ def integrate(monomial, facet0, facet1):
     # Report elapsed time and number of entries
     toc = time.time() - tic
     num_entries = numpy.prod(numpy.shape(A0))
-    debug("%d entries computed in %.3g seconds" % (num_entries, toc))
+    debug("%d entries computed in %.3g seconds" % (num_entries, toc), 1)
 
     return A0
 

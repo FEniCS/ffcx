@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-11-03 -- 2007-02-27"
+__date__ = "2004-11-03 -- 2007-03-05"
 __copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -20,8 +20,6 @@ class GeometryTensor:
     def __init__(self, monomial):
         "Create geometry tensor for given monomial"
 
-        debug("Computing geometry tensor...")
-
         # Save constants, coefficients and transforms
         self.constants = monomial.constants
         self.coefficients = monomial.coefficients
@@ -32,8 +30,6 @@ class GeometryTensor:
         self.b = self.__create_multi_index(monomial, Index.AUXILIARY_G)
         debug("Secondary multi index: " + str(self.a), 1)
         debug("Auxiliary multi index: " + str(self.b), 1)
-
-        debug("done")
 
     def __create_multi_index(self, monomial, index_type):
         "Find dimensions and create multi index"

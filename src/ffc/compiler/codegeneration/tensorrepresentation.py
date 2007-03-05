@@ -1,7 +1,7 @@
 "Code generation for geometry tensor (for tensor representation)"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-11-03 -- 2007-02-27"
+__date__ = "2004-11-03 -- 2007-03-05"
 __copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -11,7 +11,7 @@ from ffc.common.constants import *
 # FFC language modules
 from ffc.compiler.language.index import *
 
-def generate_tabulate_tensor(representation, format):
+def generate_tabulate_tensor(representation, sub_domain, format):
     "Generate code for tabulate_tensor"
 
     # Generate code as a list of declarations
