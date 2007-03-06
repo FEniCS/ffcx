@@ -53,6 +53,24 @@ public:
 %(num_coefficients)s
   }
 
+  /// Return the number of cell integrals
+  virtual unsigned int num_cell_integrals() const
+  {
+%(num_cell_integrals)s
+  }
+  
+  /// Return the number of exterior facet integrals
+  virtual unsigned int num_exterior_facet_integrals() const
+  {
+%(num_exterior_facet_integrals)s
+  }
+  
+  /// Return the number of interior facet integrals
+  virtual unsigned int num_interior_facet_integrals() const
+  {
+%(num_interior_facet_integrals)s
+  }
+    
   /// Create a new finite element for argument function i
   virtual ufc::finite_element* create_finite_element(unsigned int i) const
   {
@@ -121,6 +139,15 @@ public:
   /// Return the number of coefficients (n)
   virtual unsigned int num_coefficients() const;
 
+  /// Return the number of cell integrals
+  virtual unsigned int num_cell_integrals() const;
+  
+  /// Return the number of exterior facet integrals
+  virtual unsigned int num_exterior_facet_integrals() const;
+  
+  /// Return the number of interior facet integrals
+  virtual unsigned int num_interior_facet_integrals() const;
+
   /// Create a new finite element for argument function i
   virtual ufc::finite_element* create_finite_element(unsigned int i) const;
 
@@ -168,6 +195,24 @@ unsigned int %(classname)s::rank() const
 unsigned int %(classname)s::num_coefficients() const
 {
 %(num_coefficients)s
+}
+
+/// Return the number of cell integrals
+unsigned int %(classname)s::num_cell_integrals() const
+{
+%(num_cell_integrals)s
+}
+  
+/// Return the number of exterior facet integrals
+unsigned int %(classname)s::num_exterior_facet_integrals() const
+{
+%(num_exterior_facet_integrals)s
+}
+  
+/// Return the number of interior facet integrals
+unsigned int %(classname)s::num_interior_facet_integrals() const
+{
+%(num_interior_facet_integrals)s
 }
 
 /// Create a new finite element for argument function i
