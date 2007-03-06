@@ -181,7 +181,7 @@ def __generate_finite_element(code, form_data, options, prefix, i):
     if num_sub_elements == 1:
         ufc_code["create_sub_element"] = "return new %s();" % ufc_code["classname"]
     else:
-        cases = ["return new %s_sub_element_%d()" % (ufc_code["classname"], i) for i in range(num_sub_elements)]
+        cases = ["return new %s_sub_element_%d();" % (ufc_code["classname"], i) for i in range(num_sub_elements)]
         ufc_code = __generate_switch("i", cases, "\nreturn 0;")
 
     return __generate_code(finite_element_combined, ufc_code)
@@ -207,7 +207,7 @@ def __generate_dof_map(code, form_data, options, prefix, i):
     ufc_code["signature"] = "return \"%s\";" % code["signature"]
 
     # Generate code for needs_mesh_entities
-    cases = ["return %s" % case for case in code["needs_mesh_entities"]]
+    cases = ["return %s;" % case for case in code["needs_mesh_entities"]]
     ufc_code["needs_mesh_entities"] = __generate_switch("d", cases, "\nreturn false;")
 
     # Generate code for init_mesh
@@ -343,27 +343,27 @@ def __generate_form(code, form_data, options, prefix):
 
     # Generate code for create_finite_element
     num_cases = form_data.num_arguments
-    cases = ["return new %s_finite_element_%d()" % (prefix, i) for i in range(num_cases)]
+    cases = ["return new %s_finite_element_%d();" % (prefix, i) for i in range(num_cases)]
     ufc_code["create_finite_element"] = __generate_switch("i", cases, "\nreturn 0;")
 
     # Generate code for create_dof_map
     num_cases = form_data.num_arguments
-    cases = ["return new %s_dof_map_%d()" % (prefix, i) for i in range(num_cases)]
+    cases = ["return new %s_dof_map_%d();" % (prefix, i) for i in range(num_cases)]
     ufc_code["create_dof_map"] = __generate_switch("i", cases, "\nreturn 0;")
 
     # Generate code for cell_integral
     num_cases = form_data.num_cell_integrals
-    cases = ["return new %s_cell_integral_%d()" % (prefix, i) for i in range(num_cases)]
+    cases = ["return new %s_cell_integral_%d();" % (prefix, i) for i in range(num_cases)]
     ufc_code["create_cell_integral"] = __generate_switch("i", cases, "\nreturn 0;")
 
     # Generate code for exterior_facet_integral
     num_cases = form_data.num_exterior_facet_integrals
-    cases = ["return new %s_exterior_facet_integral_%d()" % (prefix, i) for i in range(num_cases)]
+    cases = ["return new %s_exterior_facet_integral_%d();" % (prefix, i) for i in range(num_cases)]
     ufc_code["create_exterior_facet_integral"] = __generate_switch("i", cases, "\nreturn 0;")
 
     # Generate code for interior_facet_integral
     num_cases = form_data.num_interior_facet_integrals
-    cases = ["return new %s_interior_facet_integral_%d()" % (prefix, i) for i in range(num_cases)]
+    cases = ["return new %s_interior_facet_integral_%d();" % (prefix, i) for i in range(num_cases)]
     ufc_code["create_interior_facet_integral"] = __generate_switch("i", cases, "\nreturn 0;")
 
     return __generate_code(form_combined, ufc_code)
