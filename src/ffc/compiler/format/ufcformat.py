@@ -281,8 +281,6 @@ def __generate_exterior_facet_integral(code, form_data, options, prefix, i):
     ufc_code["tabulate_tensor"]  = __generate_jacobian(form_data.cell_dimension, False)
     ufc_code["tabulate_tensor"] += "\n"
     ufc_code["tabulate_tensor"] += __generate_body(code["tabulate_tensor"])
-
-    ufc_code["tabulate_tensor"] = "// Not implemented"
     
     return __generate_code(exterior_facet_integral_combined, ufc_code)
 

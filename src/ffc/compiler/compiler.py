@@ -29,18 +29,25 @@ from language.reassignment import *
 from analysis.checks import *
 from analysis.formdata import *
 
+# FFC form representation modules
 from representation.tensor import *
+from representation.quadrature import *
+
+# FFC code generation modules
+from codegeneration.tensor import *
+from codegeneration.quadrature import *
+
 
 #import representation
 #import optimization
 
 # FFC code generation modules
-from codegeneration.finiteelement import *
-from codegeneration.dofmap import *
-from codegeneration.cellintegral import *
-from codegeneration.exteriorfacetintegral import *
-from codegeneration.interiorfacetintegral import *
-from codegeneration.form import *
+#from codegeneration.finiteelement import *
+#from codegeneration.dofmap import *
+#from codegeneration.cellintegral import *
+#from codegeneration.exteriorfacetintegral import *
+#from codegeneration.interiorfacetintegral import *
+#from codegeneration.form import *
 
 # FFC format modules
 from format import ufcformat
@@ -100,12 +107,11 @@ def compute_representation(form_data):
     "Compiler phase 2: compute form representation"
     debug_begin("Compiler phase 2: Computing form representation")
 
-    # At this point, we need to choose the type of representation, but
-    # currently only the tensor representation is implemented.
-    # Hint: do something differently for quadrature here.
+    # Choose representation
+    Representation = __choose_representation()
 
-    # Compute tensor representation
-    form_representation = TensorRepresentation(form_data)
+    # Compute form representation
+    form_representation = Representation(form_data)
 
     debug_end()
     return form_representation
@@ -122,43 +128,13 @@ def generate_code(form_data, form_representation, format):
     "Compiler phase 4: generate code"
     debug_begin("Compiler phase 4: Generating code")
 
-    code = {}
+    # Choose code generator
+    CodeGenerator = __choose_code_generator()
 
-    # Generate code for finite elements
-    debug("Generating code for finite elements...")
-    for i in range(len(form_data.elements)):
-        code[("finite_element", i)] = generate_finite_element(form_data.elements[i], format)
-    debug("done")
-
-    # Generate code for dof maps
-    debug("Generating code for dof maps...")
-    for i in range(len(form_data.dof_maps)):
-        code[("dof_map", i)] = generate_dof_map(form_data.dof_maps[i], format)
-    debug("done")
-
-    # Generate code for cell integral
-    debug("Generating code for cell integrals...")
-    for i in range(form_data.num_cell_integrals):
-        code[("cell_integral", i)] = generate_cell_integral(form_representation, i, format)
-    debug("done")
-
-    # Generate code for cell exterior facet integral
-    debug("Generating code for exterior facet integrals...")
-    for i in range(form_data.num_exterior_facet_integrals):
-        code[("exterior_facet_integral", i)] = generate_exterior_facet_integral(form_representation, i, format)
-    debug("done")
-
-    # Generate code for cell interior facet integral
-    debug("Generating code for interior facet integrals...")
-    for i in range(form_data.num_interior_facet_integrals):
-        code[("interior_facet_integral", i)] = generate_interior_facet_integral(form_representation, i, format)
-    debug("done")
-
-    # Generate code for form
-    debug("Generating code for form...")
-    code["form"] = generate_form(form_data, format)
-    debug("done")
-
+    # Generate code
+    code_generator = CodeGenerator(form_data, form_representation, format)
+    code = code_generator.generate_code()
+        
     debug_end()
     return code
 
@@ -172,9 +148,21 @@ def format_code(code, form_data, format, options):
     debug_end()
 
 def __choose_format(output_language):
-    "Choose format from specified language."
+    "Choose format from specified language"
 
     if output_language.lower() == "ufc":
         return ufcformat
     else:
         raise RuntimeError, "Don't know how to compile code for language \"%s\".", output_language
+
+def __choose_representation():
+    "Choose form representation"
+    
+    # Hint: do something differently for quadrature here
+    return TensorRepresentation
+
+def __choose_code_generator():
+    "Choose code generator"
+    
+    # Hint: do something differently for quadrature here
+    return TensorGenerator

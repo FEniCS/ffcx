@@ -79,20 +79,17 @@ class FormData:
     def __extract_num_cell_integrals(self, form):
         "Extract the number of cell integrals"
         integrals = [monomial.integral for monomial in form.monomials if monomial.integral.type == Integral.CELL]
-        sub_domains = sets.Set([integral.sub_domain for integral in integrals])
-        if not (max(sub_domains) + 1 == len(sub_domains) and min(sub_domains) == 0):
-            raise FormError, "Sub domains must be numbered from 0 to n - 1"
-        return len(sub_domains)
+        return self.__extract_num_sub_domains(integrals)
 
     def __extract_num_exterior_facet_integrals(self, form):
         "Extract the number of exterior facet integrals"
-        # FIXME: Not implemented
-        return 1
+        integrals = [monomial.integral for monomial in form.monomials if monomial.integral.type == Integral.EXTERIOR_FACET]
+        return self.__extract_num_sub_domains(integrals)
 
     def __extract_num_interior_facet_integrals(self, form):
         "Extract the number of interiof facet integrals"
-        # FIXME: Not implemented
-        return 1
+        integrals = [monomial.integral for monomial in form.monomials if monomial.integral.type == Integral.INTERIOR_FACET]
+        return self.__extract_num_sub_domains(integrals)
     
     def __extract_elements(self, form, rank, num_coefficients):
         """Extract all elements associated with form. The list of elements is
@@ -130,6 +127,15 @@ class FormData:
 
         # Should be the same so pick first
         return elements[0].cell_dimension()
+
+    def __extract_num_sub_domains(self, integrals):
+        "Extract number of sub domains from list of integrals"
+        sub_domains = sets.Set([integral.sub_domain for integral in integrals])
+        if len(sub_domains) == 0:
+            return 0
+        if not (max(sub_domains) + 1 == len(sub_domains) and min(sub_domains) == 0):
+            raise FormError, "Sub domains must be numbered from 0 to n - 1"
+        return len(sub_domains)
 
     def __repr__(self):
         "Pretty print"

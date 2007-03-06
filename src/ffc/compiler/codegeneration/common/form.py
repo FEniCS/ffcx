@@ -7,7 +7,7 @@ __license__  = "GNU GPL Version 2"
 
 def generate_form(form_data, format):
     """Generate dictionary of code for the given form data map
-    according to the given format."""
+    according to the given format"""
 
     code = {}
 

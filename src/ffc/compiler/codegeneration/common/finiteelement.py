@@ -10,7 +10,7 @@ from ffc.fem.finiteelement import *
 
 def generate_finite_element(element, format):
     """Generate dictionary of code for the given finite element
-    according to the given format."""
+    according to the given format"""
 
     code = {}
 

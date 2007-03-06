@@ -10,7 +10,7 @@ from ffc.fem.finiteelement import *
 
 def generate_dof_map(dof_map, format):
     """Generate dictionary of code for the given dof map according to
-    the given format."""
+    the given format"""
 
     code = {}
 

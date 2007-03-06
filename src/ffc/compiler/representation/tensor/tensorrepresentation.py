@@ -111,6 +111,7 @@ class TensorRepresentation:
         for i in range(num_facets):
             for j in range(num_facets):
                 terms[i][j] = self.__compute_terms(monomials, factorization, Integral.INTERIOR_FACET, i, j)
+                
 
         debug_end()
         return terms
