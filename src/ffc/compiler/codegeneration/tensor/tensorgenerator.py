@@ -75,7 +75,7 @@ class TensorGenerator(CodeGenerator):
         common = self.__generate_geometry_tensors(terms[0][0], format)
 
         # Generate code for element tensor(s)
-        common += [""] + [format["comment"]("Compute element tensor for all facets")]
+        common += [""] + [format["comment"]("Compute element tensor for all facet-facet combinations")]
         num_facets = len(terms)
         cases = [[None for j in range(num_facets)] for i in range(num_facets)]
         for i in range(num_facets):
