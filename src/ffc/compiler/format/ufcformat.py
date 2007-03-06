@@ -162,7 +162,7 @@ def __generate_finite_element(code, form_data, options, prefix, i):
 
     # Generate code for value_dimension
     cases = ["return %s;" % case for case in code["value_dimension"]]
-    ufc_code["value_dimension"] = __generate_switch("i", cases, "\nreturn 0;")
+    ufc_code["value_dimension"] = __generate_switch("i", cases, "return 0;")
 
     # Generate code for evaluate_basis
     ufc_code["evaluate_basis"] = "// Not implemented"
@@ -182,7 +182,7 @@ def __generate_finite_element(code, form_data, options, prefix, i):
         ufc_code["create_sub_element"] = "return new %s();" % ufc_code["classname"]
     else:
         cases = ["return new %s_sub_element_%d();" % (ufc_code["classname"], i) for i in range(num_sub_elements)]
-        ufc_code = __generate_switch("i", cases, "\nreturn 0;")
+        ufc_code = __generate_switch("i", cases, "return 0;")
 
     return __generate_code(finite_element_combined, ufc_code)
 
@@ -208,7 +208,7 @@ def __generate_dof_map(code, form_data, options, prefix, i):
 
     # Generate code for needs_mesh_entities
     cases = ["return %s;" % case for case in code["needs_mesh_entities"]]
-    ufc_code["needs_mesh_entities"] = __generate_switch("d", cases, "\nreturn false;")
+    ufc_code["needs_mesh_entities"] = __generate_switch("d", cases, "return false;")
 
     # Generate code for init_mesh
     ufc_code["init_mesh"] = "__global_dimension = %s;\nreturn false;" % code["global_dimension"]
@@ -306,7 +306,7 @@ def __generate_interior_facet_integral(code, form_data, options, prefix, i):
     ufc_code["destructor"] = "// Do nothing"
 
     # Generate code for tabulate_tensor, impressive line of Python code follows
-    switch = __generate_switch("i", [__generate_switch("j", [__generate_body(case) for case in cases]) for cases in code["tabulate_tensor"][1]])
+    switch = __generate_switch("facet0", [__generate_switch("facet1", [__generate_body(case) for case in cases]) for cases in code["tabulate_tensor"][1]])
     ufc_code["tabulate_tensor"]  = __generate_jacobian(form_data.cell_dimension, False)
     ufc_code["tabulate_tensor"] += "\n"
     ufc_code["tabulate_tensor"] += __generate_body(code["tabulate_tensor"][0])
@@ -340,31 +340,40 @@ def __generate_form(code, form_data, options, prefix):
 
     # Generate code for num_coefficients
     ufc_code["num_coefficients"] = "return %s;" % code["num_coefficients"]
+    
+    # Generate code for num_cell_integrals
+    ufc_code["num_cell_integrals"] = "return %s;" % code["num_cell_integrals"]
+
+    # Generate code for num_exterior_facet_integrals
+    ufc_code["num_exterior_facet_integrals"] = "return %s;" % code["num_exterior_facet_integrals"]
+    
+    # Generate code for num_interior_facet_integrals
+    ufc_code["num_interior_facet_integrals"] = "return %s;" % code["num_interior_facet_integrals"]
 
     # Generate code for create_finite_element
     num_cases = form_data.num_arguments
     cases = ["return new %s_finite_element_%d();" % (prefix, i) for i in range(num_cases)]
-    ufc_code["create_finite_element"] = __generate_switch("i", cases, "\nreturn 0;")
+    ufc_code["create_finite_element"] = __generate_switch("i", cases, "return 0;")
 
     # Generate code for create_dof_map
     num_cases = form_data.num_arguments
     cases = ["return new %s_dof_map_%d();" % (prefix, i) for i in range(num_cases)]
-    ufc_code["create_dof_map"] = __generate_switch("i", cases, "\nreturn 0;")
+    ufc_code["create_dof_map"] = __generate_switch("i", cases, "return 0;")
 
     # Generate code for cell_integral
     num_cases = form_data.num_cell_integrals
     cases = ["return new %s_cell_integral_%d();" % (prefix, i) for i in range(num_cases)]
-    ufc_code["create_cell_integral"] = __generate_switch("i", cases, "\nreturn 0;")
+    ufc_code["create_cell_integral"] = __generate_switch("i", cases, "return 0;")
 
     # Generate code for exterior_facet_integral
     num_cases = form_data.num_exterior_facet_integrals
     cases = ["return new %s_exterior_facet_integral_%d();" % (prefix, i) for i in range(num_cases)]
-    ufc_code["create_exterior_facet_integral"] = __generate_switch("i", cases, "\nreturn 0;")
+    ufc_code["create_exterior_facet_integral"] = __generate_switch("i", cases, "return 0;")
 
     # Generate code for interior_facet_integral
     num_cases = form_data.num_interior_facet_integrals
     cases = ["return new %s_interior_facet_integral_%d();" % (prefix, i) for i in range(num_cases)]
-    ufc_code["create_interior_facet_integral"] = __generate_switch("i", cases, "\nreturn 0;")
+    ufc_code["create_interior_facet_integral"] = __generate_switch("i", cases, "return 0;")
 
     return __generate_code(form_combined, ufc_code)
 
@@ -402,7 +411,7 @@ def __generate_switch(variable, cases, default = ""):
     code = "switch ( %s )\n{\n" % variable
     for i in range(len(cases)):
         code += "case %d:\n%s\n  break;\n" % (i, indent(cases[i], 2))
-    code += "}"
+    code += "}\n"
     code += default
     
     return code
