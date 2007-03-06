@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-02-05 -- 2007-03-05"
+__date__ = "2007-02-05 -- 2007-03-06"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -26,7 +26,17 @@ class Term:
 class TensorRepresentation:
     """This class represents a given multilinear form as a tensor
     contraction, or more precisely, a sum of tensor contractions for
-    each type of integral: cell, exterior facet and interior facet."""
+    each type of integral: cell, exterior facet and interior facet.
+
+    Attributes:
+
+        form                   - the form generating the tensor contraction
+        cell_tensor            - the representation of the cell tensor
+        exterior_facet_tensors - the representation of the interior facet tensors,
+                                 one for each facet
+        interior_facet_tensors - the representation of the exterior facet tensors,
+                                 one for each facet-facet combination
+    """
 
     def __init__(self, form_data):
         "Create tensor representation for given form"
@@ -112,7 +122,6 @@ class TensorRepresentation:
             for j in range(num_facets):
                 terms[i][j] = self.__compute_terms(monomials, factorization, Integral.INTERIOR_FACET, i, j)
                 
-
         debug_end()
         return terms
 
