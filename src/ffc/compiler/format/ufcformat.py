@@ -253,8 +253,9 @@ def __generate_cell_integral(code, form_data, options, prefix, i):
     # Generate code for destructor
     ufc_code["destructor"] = "// Do nothing"
 
-    # Generate code for tabulate_tensor    
-    ufc_code["tabulate_tensor"]  = __generate_jacobian(form_data.cell_dimension, False)
+    # Generate code for tabulate_tensor
+    ufc_code["tabulate_tensor"]  = "\n"
+    ufc_code["tabulate_tensor"] += __generate_jacobian(form_data.cell_dimension, False)
     ufc_code["tabulate_tensor"] += "\n"
     ufc_code["tabulate_tensor"] += __generate_body(code["tabulate_tensor"])
 
@@ -277,15 +278,14 @@ def __generate_exterior_facet_integral(code, form_data, options, prefix, i):
     # Generate code for destructor
     ufc_code["destructor"] = "// Do nothing"
 
-    # Generate code for tabulate_tensor, common code
-    ufc_code["tabulate_tensor"]  = __generate_jacobian(form_data.cell_dimension, False)
+    # Generate code for tabulate_tensor
+    cases = [__generate_body(case) for case in code["tabulate_tensor"][1]]
+    switch = __generate_switch("facet", cases)
+    ufc_code["tabulate_tensor"]  = "\n"
+    ufc_code["tabulate_tensor"] += __generate_jacobian(form_data.cell_dimension, False)
     ufc_code["tabulate_tensor"] += "\n"
     ufc_code["tabulate_tensor"] += __generate_body(code["tabulate_tensor"][0])
-
-    # Generate code for tabulate_tensor, cases
-    cases = [__generate_body(case) for case in code["tabulate_tensor"][1]]
-    print cases
-    ufc_code["tabulate_tensor"] += __generate_switch("facet", cases)
+    ufc_code["tabulate_tensor"] += switch
     
     return __generate_code(exterior_facet_integral_combined, ufc_code)
 
@@ -306,10 +306,13 @@ def __generate_interior_facet_integral(code, form_data, options, prefix, i):
     # Generate code for destructor
     ufc_code["destructor"] = "// Do nothing"
 
-    # Generate code for tabulate_tensor
-    ufc_code["tabulate_tensor"]  = __generate_jacobian(form_data.cell_dimension, True)
+    # Generate code for tabulate_tensor, impressive line of Python code follows
+    switch = __generate_switch("i", [__generate_switch("j", [__generate_body(case) for case in cases]) for cases in code["tabulate_tensor"][1]])
+    ufc_code["tabulate_tensor"]  = "\n"
+    ufc_code["tabulate_tensor"] += __generate_jacobian(form_data.cell_dimension, False)
     ufc_code["tabulate_tensor"] += "\n"
-    ufc_code["tabulate_tensor"] += __generate_body(code["tabulate_tensor"])
+    ufc_code["tabulate_tensor"] += __generate_body(code["tabulate_tensor"][0])
+    ufc_code["tabulate_tensor"] += switch
 
     return __generate_code(interior_facet_integral_combined, ufc_code)
 
@@ -399,13 +402,13 @@ def __generate_switch(variable, cases):
 
     # Special case: just one case
     if len(cases) == 1:
-        return "return %s;" % cases[0]
+        return "%s" % cases[0]
 
     # Generate switch
     code = "switch ( %s )\n{\n" % variable
     for i in range(len(cases)):
-        code += "case %d:\n%s;\n  break;\n" % (i, indent(cases[i], 2))
-    code += "}\n"
+        code += "case %d:\n%s\n  break;\n" % (i, indent(cases[i], 2))
+    code += "}"
     return code
 
 def __generate_body(declarations):

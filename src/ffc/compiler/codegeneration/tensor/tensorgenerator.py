@@ -27,22 +27,16 @@ class TensorGenerator(CodeGenerator):
         """Generate dictionary of code for cell integral from the given
         form representation according to the given format"""
 
-        # Generate code for tabulate_tensor as a list of declarations
-        code = []
-
         # Extract terms
         terms = form_representation.cell_tensor
+        if len(terms) == 0:
+            return None
         
         # Generate code for geometry tensor
-        code += self.__generate_geometry_tensors(terms, format)
-        
-        # Add newline
-        code += [""]
-
-        # Add comment
-        code += [format["comment"]("Compute element tensor")]
+        code = self.__generate_geometry_tensors(terms, format)
         
         # Generate code for element tensor(s)
+        code += [""] + [format["comment"]("Compute element tensor")]
         code += self.__generate_element_tensor(terms, format)
 
         return {"tabulate_tensor": code}
@@ -51,28 +45,20 @@ class TensorGenerator(CodeGenerator):
         """Generate dictionary of code for exterior facet integral from the given
         form representation according to the given format"""
 
-        # Generate code for tabulate_tensor as a list of declarations
-        common = []
-
         # Extract terms
         terms = form_representation.exterior_facet_tensors
+        if len(terms) == 0:
+            return None
         
         # Generate code for geometry tensor (should be the same so pick first)
-        common += self.__generate_geometry_tensors(terms[0], format)
-        
-        # Add newline
-        common += [""]
+        common = self.__generate_geometry_tensors(terms[0], format)
 
-        # Add comment
-        common += [format["comment"]("Compute element tensor for all facets")]
-
-        # Add newline
-        common += [""]
-        
         # Generate code for element tensor(s)
-        cases = []
-        for i in range(len(terms)):
-            cases += [self.__generate_element_tensor(terms[0], format)]
+        common += [""] + [format["comment"]("Compute element tensor for all facets")]
+        num_facets = len(terms)
+        cases = [None for i in range(num_facets)]
+        for i in range(num_facets):
+            cases += [self.__generate_element_tensor(terms[i], format)]
 
         return {"tabulate_tensor": (common, cases)}
     
@@ -80,7 +66,23 @@ class TensorGenerator(CodeGenerator):
         """Generate dictionary of code for interior facet integral from the given
         form representation according to the given format"""
 
-        return {"tabulate_tensor": ["// Not implemented"]}
+        # Extract terms
+        terms = form_representation.interior_facet_tensors
+        if len(terms) == 0:
+            return None
+        
+        # Generate code for geometry tensor (should be the same so pick first)
+        common = self.__generate_geometry_tensors(terms[0][0], format)
+
+        # Generate code for element tensor(s)
+        common += [""] + [format["comment"]("Compute element tensor for all facets")]
+        num_facets = len(terms)
+        cases = [[None for j in range(num_facets)] for i in range(num_facets)]
+        for i in range(num_facets):
+            for j in range(num_facets):
+                cases[i][j] = self.__generate_element_tensor(terms[i][j], format)
+
+        return {"tabulate_tensor": (common, cases)}
 
     def __generate_geometry_tensors(self, terms, format):
         "Generate list of declarations for computation of geometry tensors"
