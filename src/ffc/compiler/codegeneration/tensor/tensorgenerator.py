@@ -113,7 +113,7 @@ class TensorGenerator(CodeGenerator):
     
     def __generate_element_tensor(self, terms, format):
         "Generate list of declaration for computation of element tensor"
-    
+
         # Generate code as a list of declarations
         code = []    
     
@@ -129,8 +129,8 @@ class TensorGenerator(CodeGenerator):
         format_floating_point  = format["floating point"]
     
         # Generate code for geometry tensor entries
-        gk_tensor = [ ( [(format_geometry_tensor(j, a), a) for a in terms[j].A0.a.indices], j) for j in range(len(terms)) ]
-    
+        gk_tensor = [ ( [(format_geometry_tensor(j, a), a) for a in terms[j].A0.a.indices or [[]]], j) for j in range(len(terms)) ]
+
         # Generate code for computing the element tensor
         k = 0
         num_dropped = 0
@@ -156,7 +156,7 @@ class TensorGenerator(CodeGenerator):
             value = value or zero
             code += [(name, value)]
             k += 1
-    
+
         return code
     
     def __generate_entry(self, G, a, format):

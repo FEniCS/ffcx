@@ -49,7 +49,6 @@ def debug_indent(increment = 1):
 
 def debug_begin(string):
     "Begin task"
-    debug("")
     debug(string)
     debug("".join(["-" for i in range(len(string))]))
     debug("")
@@ -57,6 +56,7 @@ def debug_begin(string):
 
 def debug_end():
     "End task"
+    debug("")
     debug_indent(-1)
 
 def setlevel(newlevel):

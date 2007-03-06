@@ -148,9 +148,6 @@ class TensorRepresentation:
     def __compute_terms(self, monomials, factorization, integral_type, facet0, facet1):
         "Compute terms and factorize common reference tensors"
 
-        # Check how many terms we need to compute
-        
-
         # Compute terms
         terms = [None for i in range(len(monomials))]
         for i in range(len(monomials)):

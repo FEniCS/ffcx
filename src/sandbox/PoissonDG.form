@@ -29,4 +29,4 @@ alpha = Constant()
 
 #L = v*f*dx + v*g*ds
 
-a = v*u*dx + v('+')*u('-')*dS
+a = v('+')*u('-')*dS

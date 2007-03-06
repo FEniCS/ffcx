@@ -181,7 +181,7 @@ def __generate_finite_element(code, form_data, options, prefix, i):
     if num_sub_elements == 1:
         ufc_code["create_sub_element"] = "return new %s();" % ufc_code["classname"]
     else:
-        cases = ["new %s_sub_element_%d()" % (ufc_code["classname"], i) for i in range(num_sub_elements)]
+        cases = ["return new %s_sub_element_%d()" % (ufc_code["classname"], i) for i in range(num_sub_elements)]
         ufc_code = __generate_switch("i", cases, "\nreturn 0;")
 
     return __generate_code(finite_element_combined, ufc_code)
@@ -363,7 +363,7 @@ def __generate_form(code, form_data, options, prefix):
 
     # Generate code for interior_facet_integral
     num_cases = form_data.num_interior_facet_integrals
-    cases = ["new %s_interior_facet_integral_%d()" % (prefix, i) for i in range(num_cases)]
+    cases = ["return new %s_interior_facet_integral_%d()" % (prefix, i) for i in range(num_cases)]
     ufc_code["create_interior_facet_integral"] = __generate_switch("i", cases, "\nreturn 0;")
 
     return __generate_code(form_combined, ufc_code)
