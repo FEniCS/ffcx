@@ -163,7 +163,7 @@ class TensorRepresentation:
             G = GeometryTensor(m)
             
             # Compute reference tensor if not factorized
-            debug("Computing tensor representation...")
+            self.__debug(i, facet0, facet1)
             if factorization[i] == None:
                 # Compute new reference tensor
                 A0 = ReferenceTensor(m, facet0, facet1)
@@ -178,3 +178,12 @@ class TensorRepresentation:
         [terms.remove(None) for i in range(len(terms)) if None in terms]
 
         return terms
+
+    def __debug(self, i, facet0, facet1):
+        "Fancy printing of progress"
+        if facet0 == facet1 == None:
+            debug("Computing tensor representation for term %d..." % i)
+        elif facet0 == None:
+            debug("Computing tensor representation for term %d, facet %d..." % (i, facet0))
+        else:
+            debug("Computing tensor representation for term %d, facets (%d, %d)..." % (i, facet0, facet1))
