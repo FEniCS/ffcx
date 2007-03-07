@@ -1,7 +1,7 @@
 "Code generation for the UFC 1.0 format"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-01-08 -- 2007-02-27"
+__date__ = "2007-01-08 -- 2007-03-07"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -15,12 +15,13 @@ from ffc.common.constants import *
 
 # FFC language modules
 from ffc.compiler.language.restriction import *
+from ffc.compiler.language.integral import *
 
 # FFC format modules
 from codesnippets import *
 
 # Choose map from restriction
-choose_map = {Restriction.PLUS: "0_", Restriction.MINUS: "1_", None: ""}
+choose_map = {Restriction.PLUS: "0", Restriction.MINUS: "1", None: ""}
 
 # Specify formatting for code generation
 format = { "add": lambda l: " + ".join(l),
@@ -36,8 +37,8 @@ format = { "add": lambda l: " + ".join(l),
            "constant": lambda j: "c%d" % j,
            "coefficient table": lambda j, k: "w[%d][%d]" % (j, k),
            "coefficient": lambda j, k: "w[%d][%d]" % (j, k),
-           "transform": lambda j, k, r: "J%s%d%d" % (choose_map[r], j, k),
-           "inverse transform": lambda j, k, r: "Jinv%s%d%d" % (choose_map[r], j, k),
+           "transform": lambda j, k, r: "J%s_%d%d" % (choose_map[r], j, k),
+           "inverse transform": lambda j, k, r: "Jinv%s_%d%d" % (choose_map[r], j, k),
            "reference tensor" : lambda j, i, a: None,
            "geometry tensor declaration": lambda j, a: "const double " + format["geometry tensor access"](j, a),
            "geometry tensor access": lambda j, a: "G%d_%s" % (j, "_".join(["%d" % index for index in a])),
@@ -254,7 +255,7 @@ def __generate_cell_integral(code, form_data, options, prefix, i):
     ufc_code["destructor"] = "// Do nothing"
 
     # Generate code for tabulate_tensor
-    ufc_code["tabulate_tensor"]  = __generate_jacobian(form_data.cell_dimension, False)
+    ufc_code["tabulate_tensor"]  = __generate_jacobian(form_data.cell_dimension, Integral.CELL)
     ufc_code["tabulate_tensor"] += "\n"
     ufc_code["tabulate_tensor"] += __generate_body(code["tabulate_tensor"])
 
@@ -280,7 +281,7 @@ def __generate_exterior_facet_integral(code, form_data, options, prefix, i):
     # Generate code for tabulate_tensor
     cases = [__generate_body(case) for case in code["tabulate_tensor"][1]]
     switch = __generate_switch("facet", cases)
-    ufc_code["tabulate_tensor"]  = __generate_jacobian(form_data.cell_dimension, False)
+    ufc_code["tabulate_tensor"]  = __generate_jacobian(form_data.cell_dimension, Integral.EXTERIOR_FACET)
     ufc_code["tabulate_tensor"] += "\n"
     ufc_code["tabulate_tensor"] += __generate_body(code["tabulate_tensor"][0])
     ufc_code["tabulate_tensor"] += "\n"
@@ -307,7 +308,7 @@ def __generate_interior_facet_integral(code, form_data, options, prefix, i):
 
     # Generate code for tabulate_tensor, impressive line of Python code follows
     switch = __generate_switch("facet0", [__generate_switch("facet1", [__generate_body(case) for case in cases]) for cases in code["tabulate_tensor"][1]])
-    ufc_code["tabulate_tensor"]  = __generate_jacobian(form_data.cell_dimension, False)
+    ufc_code["tabulate_tensor"]  = __generate_jacobian(form_data.cell_dimension, Integral.INTERIOR_FACET)
     ufc_code["tabulate_tensor"] += "\n"
     ufc_code["tabulate_tensor"] += __generate_body(code["tabulate_tensor"][0])
     ufc_code["tabulate_tensor"] += "\n"
@@ -377,22 +378,30 @@ def __generate_form(code, form_data, options, prefix):
 
     return __generate_code(form_combined, ufc_code)
 
-def __generate_jacobian(cell_dimension, interior_facet):
+def __generate_jacobian(cell_dimension, integral_type):
     "Generate code for computing jacobian"
 
     # Choose space dimension
     if cell_dimension == 2:
         jacobian = jacobian_2D
+        facet_determinant = facet_determinant_2D
     else:
         jacobian = jacobian_3D
-
+        facet_determinant = facet_determinant_2D
+    
     # Check if we need to compute more than one Jacobian
-    if interior_facet:
-        code  = jacobian % {"restriction": "0_"}
+    if integral_type == Integral.CELL:
+        code  = jacobian % {"restriction":  ""}
+    elif integral_type == Integral.EXTERIOR_FACET:
+        code  = jacobian % {"restriction":  ""}
         code += "\n"
-        code += jacobian % {"restriction": "1_"}
-    else:
-        code = jacobian % {"restriction":  ""}
+        code += facet_determinant % {"facet" : "facet"}
+    elif integral_type == Integral.INTERIOR_FACET:
+        code  = jacobian % {"restriction": choose_map[Restriction.PLUS]}
+        code += "\n"
+        code += jacobian % {"restriction": choose_map[Restriction.MINUS]}
+        code += "\n"
+        code += facet_determinant % {"restriction": choose_map[Restriction.PLUS], "facet": "facet0"}
 
     return code
 
