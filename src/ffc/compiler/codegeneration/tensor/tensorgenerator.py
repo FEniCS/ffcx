@@ -97,7 +97,7 @@ class TensorGenerator(CodeGenerator):
         for j in range(len(terms)):
 
             # Get list of secondary indices (should be the same so pick first)
-            aindices = terms[j].G[0].a.indices or [[]]
+            aindices = terms[j].G[0].a.indices
 
             # Iterate over secondary indices
             for a in aindices:
@@ -118,7 +118,7 @@ class TensorGenerator(CodeGenerator):
         code = []    
     
         # Get list of primary indices (should be the same so pick first)
-        iindices = terms[0].A0.i.indices or [[]]
+        iindices = terms[0].A0.i.indices
     
         # Prefetch formats to speed up code generation
         format_element_tensor  = format["element tensor"]
@@ -129,7 +129,7 @@ class TensorGenerator(CodeGenerator):
         format_floating_point  = format["floating point"]
     
         # Generate code for geometry tensor entries
-        gk_tensor = [ ( [(format_geometry_tensor(j, a), a) for a in terms[j].A0.a.indices or [[]]], j) for j in range(len(terms)) ]
+        gk_tensor = [ ( [(format_geometry_tensor(j, a), a) for a in terms[j].A0.a.indices], j) for j in range(len(terms)) ]
 
         # Generate code for computing the element tensor
         k = 0

@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-11-03 -- 2007-02-27"
+__date__ = "2004-11-03 -- 2007-03-08"
 __copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -19,7 +19,7 @@ def build_indices(dims):
     represented with the base of each position determined by the given
     dimension for that index."""
     if not dims:
-        return []
+        return [[]]
     rdims = [] + dims;
     rdims.reverse()
     current = numpy.zeros(len(rdims), dtype = numpy.int)
@@ -30,7 +30,7 @@ def build_indices(dims):
             j = len(rdims) - 1
             current[len(rdims) - 1 - pos] = (i / posvalue[pos]) % rdims[pos]
         indices += [list(current)]
-    return indices
+    return indices or [[]]
 
 class MultiIndex:
 

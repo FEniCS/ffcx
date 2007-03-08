@@ -13,13 +13,15 @@ from ffc.compiler.language.integral import *
 from factorization import *
 from referencetensor import *
 from geometrytensor import *
+from tensorreordering import *
 
 class Term:
     """This class represents a tensor contraction A0 : (G0 + G1 + ...)
     of a reference tensor A0 and a sum of geometry tensors G0, G1, ..."""
 
-    def __init__(self, A0, G):
+    def __init__(self, monomial, A0, G):
         "Create term A0 : (G0 + G1 + ...)"
+        self.monomial = monomial
         self.A0 = A0
         self.G  = G
 
@@ -121,6 +123,7 @@ class TensorRepresentation:
         for i in range(num_facets):
             for j in range(num_facets):
                 terms[i][j] = self.__compute_terms(monomials, factorization, Integral.INTERIOR_FACET, i, j)
+                reorder_entries(terms[i][j])
                 
         debug_end()
         return terms
@@ -167,7 +170,7 @@ class TensorRepresentation:
             if factorization[i] == None:
                 # Compute new reference tensor
                 A0 = ReferenceTensor(m, facet0, facet1)
-                terms[i] = Term(A0, [G])
+                terms[i] = Term(m, A0, [G])
                 debug("done")
             else:
                 # Add geometry tensor to previous term
