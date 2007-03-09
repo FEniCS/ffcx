@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-02-05 -- 2007-03-06"
+__date__ = "2007-02-05 -- 2007-03-09"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -187,6 +187,6 @@ class TensorRepresentation:
         if facet0 == facet1 == None:
             debug("Computing tensor representation for term %d..." % i)
         elif facet1 == None:
-            debug("Computing tensor representation for term %d, facet %d..." % (i, facet0))
+            debug("Computing tensor representation for facet %d, term %d..." % (facet0, i))
         else:
-            debug("Computing tensor representation for term %d, facets (%d, %d)..." % (i, facet0, facet1))
+            debug("Computing tensor representation for facets (%d, %d), term %d..." % (facet0, facet1, i))

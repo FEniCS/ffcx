@@ -22,11 +22,11 @@ n = Function(DG0)
 h = Function(DGh)
 alpha = Constant()
 
-#a =  dot(grad(v), grad(u))*dx \
+#a =  dot(grad(v), grad(u))*dx
 #   - dot(avg(grad(v)), jump(u, n))*dS \
 #   - dot(jump(v, n), avg(grad(u)))*dS \
 #   + alpha*avg(h)*dot(jump(v, n), jump(u, n))*dS
 
 #L = v*f*dx + v*g*ds
 
-a = v('+')*u('-')*dS
+a = v('+')*u('-')*dS + v('-')*u('+')*dS
