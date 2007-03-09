@@ -186,7 +186,7 @@ class TensorRepresentation:
         "Fancy printing of progress"
         if facet0 == facet1 == None:
             debug("Computing tensor representation for term %d..." % i)
-        elif facet0 == None:
+        elif facet1 == None:
             debug("Computing tensor representation for term %d, facet %d..." % (i, facet0))
         else:
             debug("Computing tensor representation for term %d, facets (%d, %d)..." % (i, facet0, facet1))

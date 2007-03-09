@@ -12,7 +12,7 @@ each represented by a separate module:
 """
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-02-05 -- 2007-02-07"
+__date__ = "2007-02-05 -- 2007-03-07"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -36,18 +36,6 @@ from representation.quadrature import *
 # FFC code generation modules
 from codegeneration.tensor import *
 from codegeneration.quadrature import *
-
-
-#import representation
-#import optimization
-
-# FFC code generation modules
-#from codegeneration.finiteelement import *
-#from codegeneration.dofmap import *
-#from codegeneration.cellintegral import *
-#from codegeneration.exteriorfacetintegral import *
-#from codegeneration.interiorfacetintegral import *
-#from codegeneration.form import *
 
 # FFC format modules
 from format import ufcformat

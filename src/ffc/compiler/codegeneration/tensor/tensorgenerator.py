@@ -1,7 +1,7 @@
 "Code generator for tensor representation"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-11-03 -- 2007-03-06"
+__date__ = "2004-11-03 -- 2007-03-08"
 __copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -58,7 +58,7 @@ class TensorGenerator(CodeGenerator):
         num_facets = len(terms)
         cases = [None for i in range(num_facets)]
         for i in range(num_facets):
-            cases += [self.__generate_element_tensor(terms[i], format)]
+            cases[i] = self.__generate_element_tensor(terms[i], format)
 
         return {"tabulate_tensor": (common, cases)}
     
@@ -202,4 +202,4 @@ class TensorGenerator(CodeGenerator):
         else: f1 = []
     
         # Compute product of all factors
-        return format["multiply"]([f for f in [format["determinant"]] + f0 + f1])
+        return format["multiply"]([f for f in [format["scale factor"]] + f0 + f1])

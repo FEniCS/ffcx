@@ -16,17 +16,17 @@ const double J%(restriction)s_01 = x%(restriction)s[2][0] - x%(restriction)s[0][
 const double J%(restriction)s_10 = x%(restriction)s[1][1] - x%(restriction)s[0][1];
 const double J%(restriction)s_11 = x%(restriction)s[2][1] - x%(restriction)s[0][1];
   
-// Compute determinant
-double det%(restriction)s = J%(restriction)s_00*J%(restriction)s_11 - J%(restriction)s_01*J%(restriction)s_10;
+// Compute determinant of Jacobian
+double detJ%(restriction)s = J%(restriction)s_00*J%(restriction)s_11 - J%(restriction)s_01*J%(restriction)s_10;
   
 // Compute inverse of Jacobian
-const double Jinv%(restriction)s_00 =  J%(restriction)s_11 / det%(restriction)s;
-const double Jinv%(restriction)s_01 = -J%(restriction)s_01 / det%(restriction)s;
-const double Jinv%(restriction)s_10 = -J%(restriction)s_10 / det%(restriction)s;
-const double Jinv%(restriction)s_11 =  J%(restriction)s_00 / det%(restriction)s;
+const double Jinv%(restriction)s_00 =  J%(restriction)s_11 / detJ%(restriction)s;
+const double Jinv%(restriction)s_01 = -J%(restriction)s_01 / detJ%(restriction)s;
+const double Jinv%(restriction)s_10 = -J%(restriction)s_10 / detJ%(restriction)s;
+const double Jinv%(restriction)s_11 =  J%(restriction)s_00 / detJ%(restriction)s;
 
 // Take absolute value of determinant
-det%(restriction)s = std::abs(det%(restriction)s);
+detJ%(restriction)s = std::abs(detJ%(restriction)s);
 """
 # Code snippet for computing the Jacobian, its inverse and determinant in 3D
 jacobian_3D = """\
@@ -57,22 +57,28 @@ const double d20 = J%(restriction)s_01*J%(restriction)s_12 - J%(restriction)s_02
 const double d21 = J%(restriction)s_02*J%(restriction)s_10 - J%(restriction)s_00*J%(restriction)s_12;
 const double d22 = J%(restriction)s_00*J%(restriction)s_11 - J%(restriction)s_01*J%(restriction)s_10;
   
-// Compute determinant
-double det%(restriction)s = J%(restriction)s_00*d00 + J%(restriction)s_10*d10 + J%(restriction)s_20*d20;
+// Compute determinant of Jacobian
+double detJ%(restriction)s = J%(restriction)s_00*d00 + J%(restriction)s_10*d10 + J%(restriction)s_20*d20;
   
 // Compute inverse of Jacobian
-const double Jinv%(restriction)s_00 = d00 / det%(restriction)s;
-const double Jinv%(restriction)s_01 = d10 / det%(restriction)s;
-const double Jinv%(restriction)s_02 = d20 / det%(restriction)s;
-const double Jinv%(restriction)s_10 = d01 / det%(restriction)s;
-const double Jinv%(restriction)s_11 = d11 / det%(restriction)s;
-const double Jinv%(restriction)s_12 = d21 / det%(restriction)s;
-const double Jinv%(restriction)s_20 = d02 / det%(restriction)s;
-const double Jinv%(restriction)s_21 = d12 / det%(restriction)s;
-const double Jinv%(restriction)s_22 = d22 / det%(restriction)s;
+const double Jinv%(restriction)s_00 = d00 / detJ%(restriction)s;
+const double Jinv%(restriction)s_01 = d10 / detJ%(restriction)s;
+const double Jinv%(restriction)s_02 = d20 / detJ%(restriction)s;
+const double Jinv%(restriction)s_10 = d01 / detJ%(restriction)s;
+const double Jinv%(restriction)s_11 = d11 / detJ%(restriction)s;
+const double Jinv%(restriction)s_12 = d21 / detJ%(restriction)s;
+const double Jinv%(restriction)s_20 = d02 / detJ%(restriction)s;
+const double Jinv%(restriction)s_21 = d12 / detJ%(restriction)s;
+const double Jinv%(restriction)s_22 = d22 / detJ%(restriction)s;
 
 // Take absolute value of determinant
-det%(restriction)s = std::abs(det%(restriction)s);
+detJ%(restriction)s = std::abs(detJ%(restriction)s);
+"""
+
+# Code snippet for computing the scale factor (determinant)
+scale_factor = """\
+// Set scale factor
+const double det = detJ;
 """
 
 # Code snippet for computing the determinant of the facet mapping in 2D
@@ -84,7 +90,7 @@ static unsigned int edge_vertices[3][2] = {{1, 2}, {0, 2}, {0, 1}};
 const unsigned int v0 = edge_vertices[%(facet)s][0];
 const unsigned int v1 = edge_vertices[%(facet)s][1];
 
-// Compute determinant as length of edge scaled by length of reference interval
+// Compute scale factor (length of edge scaled by length of reference interval)
 const double dx0 = x%(restriction)s[v1][0] - x%(restriction)s[v0][0];
 const double dx1 = x%(restriction)s[v1][1] - x%(restriction)s[v0][1];
 const double dx2 = x%(restriction)s[v1][2] - x%(restriction)s[v0][2];
@@ -101,7 +107,7 @@ const unsigned int v0 = face_vertices[%(facet)s][0];
 const unsigned int v1 = face_vertices[%(facet)s][1];
 const unsigned int v2 = face_vertices[&(facet)s][1];
 
-// Compute determinant as area of face scaled by area of reference triangle
+// Compute scale factor (area of face scaled by area of reference triangle)
 const double a0 = (x%(restriction)s[v0][1]*x%(restriction)s[v1][2] + x%(restriction)s[v0][2]*x%(restriction)s[v2][1] + x%(restriction)s[v1][1]*x%(restriction)s[v2][2])
               - (x%(restriction)s[v2][1]*x%(restriction)s[v1][2] + x%(restriction)s[v2][2]*x%(restriction)s[v0][1] + x%(restriction)s[v1][1]*x%(restriction)s[v0][2]);
 const double a1 = (x%(restriction)s[v0][2]*x%(restriction)s[v1][0] + x%(restriction)s[v0][0]*x%(restriction)s[v2][2] + x%(restriction)s[v1][2]*x%(restriction)s[v2][0])

@@ -1,7 +1,7 @@
 "Code generation for the UFC 1.0 format"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-01-08 -- 2007-03-07"
+__date__ = "2007-01-08 -- 2007-03-08"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -34,7 +34,8 @@ format = { "add": lambda l: " + ".join(l),
            "tmp declaration": lambda j, k: "const double " + format["tmp access"](j, k),
            "tmp access": lambda j, k: "tmp%d_%d" % (j, k),
            "comment": lambda s: "// %s" % s,
-           "determinant": "det",
+           "determinant": "detJ",
+           "scale factor": "det",
            "constant": lambda j: "c%d" % j,
            "coefficient table": lambda j, k: "w[%d][%d]" % (j, k),
            "coefficient": lambda j, k: "w[%d][%d]" % (j, k),
@@ -281,7 +282,7 @@ def __generate_exterior_facet_integral(code, form_data, options, prefix, i):
     ufc_code["destructor"] = "// Do nothing"
 
     # Generate code for tabulate_tensor
-    cases = __generate_switch(facet, [__generate_body(case) for case in code["tabulate_tensor"][1]])
+    switch = __generate_switch("facet", [__generate_body(case) for case in code["tabulate_tensor"][1]])
     body  = __generate_jacobian(form_data.cell_dimension, Integral.EXTERIOR_FACET)
     body += "\n"
     body += __generate_body(code["tabulate_tensor"][0])
@@ -395,10 +396,12 @@ def __generate_jacobian(cell_dimension, integral_type):
     # Check if we need to compute more than one Jacobian
     if integral_type == Integral.CELL:
         code  = jacobian % {"restriction":  ""}
+        code += "\n"
+        code += scale_factor
     elif integral_type == Integral.EXTERIOR_FACET:
         code  = jacobian % {"restriction":  ""}
         code += "\n"
-        code += facet_determinant % {"facet" : "facet"}
+        code += facet_determinant % {"restriction": "", "facet" : "facet"}
     elif integral_type == Integral.INTERIOR_FACET:
         code  = jacobian % {"restriction": choose_map[Restriction.PLUS]}
         code += "\n"
