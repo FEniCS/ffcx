@@ -12,7 +12,7 @@ each represented by a separate module:
 """
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-02-05 -- 2007-03-07"
+__date__ = "2007-02-05 -- 2007-03-12"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -21,8 +21,7 @@ from ffc.common.debug import *
 from ffc.common.constants import *
 
 # FFC compiler modules
-import language
-
+from language.algebra import *
 from language.reassignment import *
 
 # FFC analysis modules
@@ -44,7 +43,9 @@ def compile(form, name = "Form", output_language = FFC_LANGUAGE, options = FFC_O
     "Compile the given form for the given language."
 
     # Check that we get a Form
-    if not isinstance(form, language.Form):
+    if isinstance(form, Monomial):
+        form = Form(form)
+    elif not isinstance(form, Form):
         raise RuntimeError, "Not a form: " + str(form)
 
     # Compiler phase 1: analyze form
