@@ -25,10 +25,13 @@ def BasisFunctions(element, functiontype = BasisFunction):
     offset = 0
     for e in element.elements:
         if e.value_rank() == 0:
-            subvector = vector[offset]
+            subvector = vector.pick_component_default(offset)
             offset += 1
         elif e.value_rank() == 1:
-            subvector = [vector[i] for i in range(offset, offset + e.value_dimension(0))]
+            if e.mapping == "Piola":
+                subvector = [vector.pick_component_piola(k) for k in range(0, e.value_dimension(0))]
+            else:
+                subvector = [vector.pick_component_default(i) for i in range(offset, offset + e.value_dimension(0))]
             offset += e.value_dimension(0)
         else:
             raise RuntimeError, "Mixed elements can only be created from scalar or vector-valued elements."
@@ -81,9 +84,7 @@ class MixedElement:
 
     def __init__(self, elements):
         "Create MixedElement from a list of elements."
-
-        # FIXME: Temporary fix, need to figure this out
-        self.mapping = "Standard"
+        
 
         # Create list of elements
         if not isinstance(elements, list):
@@ -107,6 +108,10 @@ class MixedElement:
         self.mixed_cell_dimension = self.__compute_cell_dimension()
         # Compute number of components
         self.mixed_tensordim = self.__compute_tensordim()
+
+        # FIXME: Temporary fix, need to figure this out. Don't really use it at this time.
+        self.mappings = [element.mapping for element in elements]
+        # self.mapping = [element.mapping for element in elements]
 
         # FIXME: Not implemented
         self.__entity_dofs = {}

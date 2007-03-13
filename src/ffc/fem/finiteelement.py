@@ -14,7 +14,7 @@ import sys
 from FIAT.shapes import *
 from FIAT.Lagrange import Lagrange, VectorLagrange
 from FIAT.DiscontinuousLagrange import DiscontinuousLagrange, DiscontinuousVectorLagrange
-from FIAT.CrouzeixRaviart import CrouzeixRaviart, VectorCrouzeixRaviart
+from FIAT.CrouzeixRaviart import CrouzeixRaviart, VectorCrouzeixRaviart 
 from FIAT.RaviartThomas import RaviartThomas
 from FIAT.BDM import BDM
 from FIAT.Nedelec import Nedelec

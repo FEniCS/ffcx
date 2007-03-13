@@ -29,6 +29,7 @@ class DofMap:
         self.__local_dimension = element.space_dimension()
 
         self.__dofs_per_dimension = self.__compute_dofs_per_dimension(entity_dofs)
+
         self.__entities_per_dofs = self.__compute_entities_per_dofs(entity_dofs)
 
     def entity_dofs(self):
@@ -63,7 +64,7 @@ class DofMap:
     def __compute_dofs_per_dimension(self, entity_dofs):
         """Compute a tuple of the number of dofs associated with each
         topological dimension"""
-        
+
         # Count the number of dofs associated with each topological dimension
         dofs_per_dimension = [0 for dim in entity_dofs]
         for dim in entity_dofs:
