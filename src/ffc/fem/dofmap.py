@@ -3,6 +3,8 @@ __date__ = "2007-01-24 -- 2007-02-06"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
+# Modified by Marie E. Rognes (meg@math.uio.no), March 2007
+
 # FIXME: Temporary fix, do this in mixed element
 from mixedelement import *
 
@@ -27,6 +29,7 @@ class DofMap:
         self.__local_dimension = element.space_dimension()
 
         self.__dofs_per_dimension = self.__compute_dofs_per_dimension(entity_dofs)
+        self.__entities_per_dofs = self.__compute_entities_per_dofs(entity_dofs)
 
     def entity_dofs(self):
         """Return a dictionary mapping the mesh entities of the
@@ -52,6 +55,11 @@ class DofMap:
         topological dimension"""
         return self.__dofs_per_dimension
 
+    def entities_per_dofs(self):
+        """Return a tuple of the topological entities that correspond
+        to each dof:"""
+        return self.__entities_per_dofs
+
     def __compute_dofs_per_dimension(self, entity_dofs):
         """Compute a tuple of the number of dofs associated with each
         topological dimension"""
@@ -67,6 +75,16 @@ class DofMap:
             dofs_per_dimension[dim] = num_dofs[0]
 
         return tuple(dofs_per_dimension)
+    
+    def __compute_entities_per_dofs(self, entity_dofs):
+        """Compute a tuple of the topological entities that correspond
+        to each dof:"""
+        entities_per_dofs = []
+        for dim in entity_dofs:
+            for entity_no in entity_dofs[dim]:
+                for dof_no in entity_dofs[dim][entity_no]:
+                    entities_per_dofs += [dof_no, [dim, entity_no] ]
+        return tuple(entities_per_dofs)
 
     def __repr__(self):
         "Pretty print"
