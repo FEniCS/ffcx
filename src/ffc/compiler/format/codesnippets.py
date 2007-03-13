@@ -1,7 +1,7 @@
 "Code snippets for code generation"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-02-28 -- 2007-03-07"
+__date__ = "2007-02-28 -- 2007-03-13"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -83,7 +83,7 @@ const double det = detJ;
 
 # Code snippet for computing the determinant of the facet mapping in 2D
 facet_determinant_2D = """\
-// Vertices on each edge
+// Vertices on edges
 static unsigned int edge_vertices[3][2] = {{1, 2}, {0, 2}, {0, 1}};
 
 // Get vertices
@@ -93,13 +93,12 @@ const unsigned int v1 = edge_vertices[%(facet)s][1];
 // Compute scale factor (length of edge scaled by length of reference interval)
 const double dx0 = x%(restriction)s[v1][0] - x%(restriction)s[v0][0];
 const double dx1 = x%(restriction)s[v1][1] - x%(restriction)s[v0][1];
-const double dx2 = x%(restriction)s[v1][2] - x%(restriction)s[v0][2];
-const double det = std::sqrt(dx0*dx0 + dx1*dx1 + dx2*dx2);
+const double det = std::sqrt(dx0*dx0 + dx1*dx1);
 """
 
 # Code snippet for computing the determinant of the facet mapping in 2D
 facet_determinant_3D = """\
-// Vertices on each face
+// Vertices on faces
 static unsigned int face_vertices[4][3] = {{1, 2, 3}, {0, 2, 3}, {0, 1, 3}, {0, 1, 2}};
 
 // Get vertices
