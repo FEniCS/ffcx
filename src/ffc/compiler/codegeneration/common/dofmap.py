@@ -1,7 +1,7 @@
 "Code generation for dof map"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-01-24 -- 2007-02-06"
+__date__ = "2007-01-24 -- 2007-03-13"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -101,8 +101,11 @@ def __generate_tabulate_dofs(dof_map, format):
 
                 # Assign dof
                 name = format["dofs"](dof)
-                value = format["entity index"](dim, entity)
-
+                if dofs_per_dimension[dim] > 1:
+                    value = format["multiply"](["%d" % dofs_per_dimension[dim], format["entity index"](dim, entity)])
+                else:
+                    value = format["entity index"](dim, entity)
+                    
                 # Add position on entity if any
                 if pos > 0:
                     value = format["add"]([value, "%d" % pos])
@@ -114,12 +117,16 @@ def __generate_tabulate_dofs(dof_map, format):
                 # Add declaration
                 code += [(name, value)]
 
-        # Add to offset if needed
+        # Update offset
         if dofs_per_dimension[dim] > 0:
+
+            # Compute additional offset
             if dofs_per_dimension[dim] > 1:
                 value = format["multiply"](["%d" % dofs_per_dimension[dim], format["num entities"](dim)])
             else:
                 value = format["num entities"](dim)
+
+            # Add to previous offset
             if not offset_declared:
                 name = format["offset declaration"]
                 offset_declared = True
@@ -127,6 +134,6 @@ def __generate_tabulate_dofs(dof_map, format):
                 name = format["offset access"]
                 value = format["add"]([name, value])
                 
-            offset_code += [(name, value)]
+            offset_code = [(name, value)]
 
     return code
