@@ -3,7 +3,7 @@ __date__ = "2007-01-24 -- 2007-02-06"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
-# Modified by Marie E. Rognes (meg@math.uio.no), March 2007
+# Modified by Marie E. Rognes (meg@math.uio.no), 2007
 
 # FIXME: Temporary fix, do this in mixed element
 from mixedelement import *
@@ -51,7 +51,7 @@ class DofMap:
         entities that are needed to compute the dof map"""
         return self.__needed_mesh_entities
 
-    def dofs_per_dimension(self):
+    def num_dofs_per_dimension(self):
         """Return a tuple of the number of dofs associated with each
         topological dimension"""
         return self.__dofs_per_dimension

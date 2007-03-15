@@ -1,7 +1,7 @@
 "Code generation for dof map"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-01-24 -- 2007-03-13"
+__date__ = "2007-01-24 -- 2007-03-15"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -35,10 +35,10 @@ def __generate_needs_mesh_entities(dof_map, format):
     "Generate code for needs_mesh_entities"
 
     # Get the number of dofs per dimension
-    dofs_per_dimension = dof_map.dofs_per_dimension()
+    num_dofs_per_dimension = dof_map.num_dofs_per_dimension()
 
     # Entities needed if at least one dof is associated
-    code = [format["bool"](num_dofs > 0) for num_dofs in dofs_per_dimension]
+    code = [format["bool"](num_dofs > 0) for num_dofs in num_dofs_per_dimension]
 
     return code
 
@@ -46,12 +46,12 @@ def __generate_global_dimension(dof_map, format):
     "Generate code for global dimension"
 
     # Get the number of dofs per dimension
-    dofs_per_dimension = dof_map.dofs_per_dimension()
+    num_dofs_per_dimension = dof_map.num_dofs_per_dimension()
 
     # Sum the number of dofs for each dimension
     terms = []
-    for dim in range(len(dofs_per_dimension)):
-        n = dofs_per_dimension[dim]
+    for dim in range(len(num_dofs_per_dimension)):
+        n = num_dofs_per_dimension[dim]
         if n == 1:
             terms += [format["num entities"](dim)]
         elif n > 1:
@@ -73,7 +73,7 @@ def __generate_tabulate_dofs(dof_map, format):
 
     # Get entity dofs and dofs per dimension
     entity_dofs = dof_map.entity_dofs()
-    dofs_per_dimension = dof_map.dofs_per_dimension()
+    num_dofs_per_dimension = dof_map.num_dofs_per_dimension()
 
     #for dim in entity_dofs:
     #    print "dim = " + str(dim) + ": " + str(entity_dofs[dim])
@@ -84,7 +84,7 @@ def __generate_tabulate_dofs(dof_map, format):
     for dim in entity_dofs:
 
         # Skip dimension if there are no dofs
-        if dofs_per_dimension[dim] == 0:
+        if num_dofs_per_dimension[dim] == 0:
             continue
 
         # Write offset code
@@ -101,8 +101,8 @@ def __generate_tabulate_dofs(dof_map, format):
 
                 # Assign dof
                 name = format["dofs"](dof)
-                if dofs_per_dimension[dim] > 1:
-                    value = format["multiply"](["%d" % dofs_per_dimension[dim], format["entity index"](dim, entity)])
+                if num_dofs_per_dimension[dim] > 1:
+                    value = format["multiply"](["%d" % num_dofs_per_dimension[dim], format["entity index"](dim, entity)])
                 else:
                     value = format["entity index"](dim, entity)
                     
@@ -118,11 +118,11 @@ def __generate_tabulate_dofs(dof_map, format):
                 code += [(name, value)]
 
         # Update offset
-        if dofs_per_dimension[dim] > 0:
+        if num_dofs_per_dimension[dim] > 0:
 
             # Compute additional offset
-            if dofs_per_dimension[dim] > 1:
-                value = format["multiply"](["%d" % dofs_per_dimension[dim], format["num entities"](dim)])
+            if num_dofs_per_dimension[dim] > 1:
+                value = format["multiply"](["%d" % num_dofs_per_dimension[dim], format["num entities"](dim)])
             else:
                 value = format["num entities"](dim)
 
