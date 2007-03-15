@@ -58,7 +58,9 @@ def compute_terms(form, type, facet0, facet1, alignment):
             else:
                 # Add geometry tensor to previous term
                 terms[factorization[i]].G += [G]
-#                print "add "
+                A0 = terms[factorization[i]].A0
+            print "Shapes: " + str(A0.i.dims) + " " + str(A0.a.dims)
+
     debug("All terms compiled", 1)
 
     # Remove terms not computed (factorized)

@@ -6,4 +6,3 @@ v = TestFunction(BDM);
 u = TrialFunction(BDM);
 
 a = dot(v, u)*dx
-a = Form(a)

@@ -1,7 +1,7 @@
 "This module implements efficient integration of monomial forms"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-11-03 -- 2007-02-27"
+__date__ = "2004-11-03 -- 2007-03-14"
 __copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -29,6 +29,7 @@ from ffc.compiler.language.integral import *
 
 # FFC tensor representation modules
 from multiindex import *
+from pointreordering import *
 
 def integrate(monomial, facet0, facet1):
     """Compute the reference tensor for a given monomial term of a
@@ -130,8 +131,10 @@ def __init_table(basisfunctions, integral_type, points, facet0, facet1):
         elif integral_type == Integral.EXTERIOR_FACET:
             table[(element, None)] = element.tabulate(order, points, facet0)
         elif integral_type == Integral.INTERIOR_FACET:
-            table[(element, Restriction.PLUS)]  = element.tabulate(order, points, facet0)
-            table[(element, Restriction.MINUS)] = element.tabulate(order, points, facet1)
+            points0 = reorder_points(points, facet0, element.cell_shape())
+            points1 = reorder_points(points, facet1, element.cell_shape())
+            table[(element, Restriction.PLUS)]  = element.tabulate(order, points0, facet0)
+            table[(element, Restriction.MINUS)] = element.tabulate(order, points1, facet1)
 
     return table
 
