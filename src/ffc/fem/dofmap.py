@@ -24,19 +24,23 @@ class DofMap:
         if not isinstance(element, MixedElement):
             self.__entity_dofs = entity_dofs
 
+        self.__dof_entities = self.__compute_dof_entities(entity_dofs)
+
         self.__signature = "FFC dof map for " + element.signature()
 
         self.__local_dimension = element.space_dimension()
 
-        self.__dofs_per_dimension = self.__compute_dofs_per_dimension(entity_dofs)
-
-        self.__entities_per_dofs = self.__compute_entities_per_dofs(entity_dofs)
+        self.__num_dofs_per_dimension = self.__compute_num_dofs_per_dimension(entity_dofs)
 
     def entity_dofs(self):
         """Return a dictionary mapping the mesh entities of the
         reference cell to the degrees of freedom associated with the
         entity"""
         return self.__entity_dofs
+
+    def dof_entities(self):
+        """Return a list of which entnties are associated with each dof"""
+        return self.__dof_entities
 
     def signature(self):
         "Return a string identifying the finite element"
@@ -54,39 +58,34 @@ class DofMap:
     def num_dofs_per_dimension(self):
         """Return a tuple of the number of dofs associated with each
         topological dimension"""
-        return self.__dofs_per_dimension
+        return self.__num_dofs_per_dimension
 
-    def entities_per_dofs(self):
-        """Return a tuple of the topological entities that correspond
+    def __compute_dof_entities(self, entity_dofs):
+        """Compute a tuple of the topological entities that correspond
         to each dof:"""
-        return self.__entities_per_dofs
+        dof_entities = {}
+        for dim in entity_dofs:
+            for entity in entity_dofs[dim]:
+                for dof in entity_dofs[dim][entity]:
+                    dof_entities[dof] = (dim, entity)
+        return dof_entities
 
-    def __compute_dofs_per_dimension(self, entity_dofs):
+    def __compute_num_dofs_per_dimension(self, entity_dofs):
         """Compute a tuple of the number of dofs associated with each
         topological dimension"""
 
         # Count the number of dofs associated with each topological dimension
-        dofs_per_dimension = [0 for dim in entity_dofs]
+        num_dofs_per_dimension = [0 for dim in entity_dofs]
         for dim in entity_dofs:
             num_dofs = [len(entity_dofs[dim][entity]) for entity in entity_dofs[dim]]
             # Check that the number of dofs is equal for each entity
             if not num_dofs[1:] == num_dofs[:-1]:
                 raise RuntimeError, "The number of dofs must be equal for all entities within a topological dimension."
             # The number of dofs is equal so pick the first
-            dofs_per_dimension[dim] = num_dofs[0]
+            num_dofs_per_dimension[dim] = num_dofs[0]
 
-        return tuple(dofs_per_dimension)
+        return tuple(num_dofs_per_dimension)
     
-    def __compute_entities_per_dofs(self, entity_dofs):
-        """Compute a tuple of the topological entities that correspond
-        to each dof:"""
-        entities_per_dofs = []
-        for dim in entity_dofs:
-            for entity_no in entity_dofs[dim]:
-                for dof_no in entity_dofs[dim][entity_no]:
-                    entities_per_dofs += [dof_no, [dim, entity_no] ]
-        return tuple(entities_per_dofs)
-
     def __repr__(self):
         "Pretty print"
         return self.signature()
