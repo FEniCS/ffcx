@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-01-24 -- 2007-02-06"
+__date__ = "2007-01-24 -- 2007-03-16"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -20,16 +20,11 @@ class DofMap:
         # Get entity dofs from element
         entity_dofs = element.entity_dofs()
 
-        # FIXME: Temporary fix for mixed elements
-        if not isinstance(element, MixedElement):
-            self.__entity_dofs = entity_dofs
-
-        self.__dof_entities = self.__compute_dof_entities(entity_dofs)
-
-        self.__signature = "FFC dof map for " + element.signature()
-
-        self.__local_dimension = element.space_dimension()
-
+        # Generate dof map data
+        self.__entity_dofs            = entity_dofs
+        self.__dof_entities           = self.__compute_dof_entities(entity_dofs)
+        self.__signature              = "FFC dof map for " + element.signature()
+        self.__local_dimension        = element.space_dimension()
         self.__num_dofs_per_dimension = self.__compute_num_dofs_per_dimension(entity_dofs)
 
     def entity_dofs(self):

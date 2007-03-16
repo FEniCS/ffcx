@@ -71,6 +71,9 @@ def __generate_tabulate_dofs(dof_map, format):
     # Generate code as a list of declarations
     code = []
 
+    print "Generating tabulate_dofs..."
+    print dof_map.entity_dofs()
+
     # Get entity dofs and dofs per dimension
     entity_dofs = dof_map.entity_dofs()
     num_dofs_per_dimension = dof_map.num_dofs_per_dimension()
