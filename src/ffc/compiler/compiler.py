@@ -24,6 +24,7 @@ from ffc.common.constants import *
 from ffc.fem.finiteelement import *
 from ffc.fem.vectorelement import *
 from ffc.fem.mixedelement import *
+from ffc.fem.mixedfunctions import *
 
 # FFC language modules
 from language.algebra import *

@@ -1,8 +1,14 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2005-02-04 -- 2005-10-30"
+__date__ = "2005-02-04 -- 2007-10-20"
 __copyright__ = "Copyright (C) 2005 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
+def pick_first(values):
+    "Check that all values are equal and return the value"
+    if not values[:-1] == values[1:]:
+        raise RuntimeError, "Different values for method %s for objects %s." % (str(method), str(object_list))
+    return values[0]
+    
 def listcopy(l):
     """Create a copy of the list, calling the copy constructor on each
     object in the list (problems when using copy.deepcopy)."""

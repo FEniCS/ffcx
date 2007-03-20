@@ -1,5 +1,5 @@
 __author__ = "Marie Rognes (meg@math.uio.no)"
-__date__ = "2006-10-23 -- 2007-01-23"
+__date__ = "2006-10-23 -- 2007-03-20"
 __copyright__ = "Copyright (C) 2006"
 __license__  = "GNU GPL Version 2"
 
@@ -9,7 +9,6 @@ __license__  = "GNU GPL Version 2"
 import sys
 
 # FFC common modules
-sys.path.append("../")
 from ffc.common.debug import *
 from ffc.common.exceptions import *
 

@@ -2,7 +2,7 @@
 based on the basic form algebra operations."""
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2005-09-07 -- 2007-01-26"
+__date__ = "2005-09-07 -- 2007-03-20"
 __copyright__ = "Copyright (C) 2005-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -16,7 +16,6 @@ import sys
 import numpy
 
 # FFC common modules
-sys.path.append("../../")
 from ffc.common.exceptions import *
 
 # FFC fem modules

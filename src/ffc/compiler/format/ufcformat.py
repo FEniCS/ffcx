@@ -1,7 +1,7 @@
 "Code generation for the UFC 1.0 format"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-01-08 -- 2007-03-08"
+__date__ = "2007-01-08 -- 2007-03-21"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -185,7 +185,7 @@ def __generate_finite_element(code, form_data, options, prefix, i):
         ufc_code["create_sub_element"] = "return new %s();" % ufc_code["classname"]
     else:
         cases = ["return new %s_sub_element_%d();" % (ufc_code["classname"], i) for i in range(num_sub_elements)]
-        ufc_code = __generate_switch("i", cases, "return 0;")
+        ufc_code["create_sub_element"] = __generate_switch("i", cases, "return 0;")
 
     return __generate_code(finite_element_combined, ufc_code)
 

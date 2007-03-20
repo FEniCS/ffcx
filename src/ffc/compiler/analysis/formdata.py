@@ -60,6 +60,11 @@ class FormData:
 
         debug("done")
 
+        for i in range(len(self.dof_maps)):
+            debug("dof map %d:" % i, 2)
+            debug("  entity_dofs:  " + str(self.dof_maps[i].entity_dofs()), 2)
+            debug("  dof_entities: " + str(self.dof_maps[i].dof_entities()), 2)
+
     def __extract_signature(self, form):
         "Extract the signature"
         return str(form)

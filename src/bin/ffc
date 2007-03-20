@@ -5,7 +5,7 @@
 # Python module which is then executed.
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-10-14 -- 2007-03-08"
+__date__ = "2004-10-14 -- 2007-03-20"
 __copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -153,8 +153,6 @@ def __make_module(filename, language, options):
     # Generate output
     output = """\
 import sys
-sys.path.append("../../")
-sys.path.append("./")
 from ffc.old.compiler import *
 
 name = "%s"

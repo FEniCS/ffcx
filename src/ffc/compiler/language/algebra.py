@@ -37,7 +37,6 @@ __license__  = "GNU GPL Version 2"
 import sys
 
 # FFC common modules
-sys.path.append("../../")
 from ffc.common.exceptions import *
 from ffc.common.debug import *
 from ffc.common.utils import *

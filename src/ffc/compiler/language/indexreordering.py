@@ -4,7 +4,7 @@ reference tensors from terms that have the same tensor structure but
 with different names of indices."""
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2005-09-06 -- 2007-01-23"
+__date__ = "2005-09-06 -- 2007-03-20"
 __copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -12,7 +12,6 @@ __license__  = "GNU GPL Version 2"
 import sys
 
 # FFC common modules
-sys.path.append("../../")
 from ffc.common.debug import *
 from ffc.common.exceptions import *
 from ffc.common.utils import permutations

@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2005-11-07 -- 2007-01-23"
+__date__ = "2005-11-07 -- 2007-03-20"
 __copyright__ = "Copyright (C) 2005-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -14,7 +14,6 @@ import numpy.linalg
 from FIAT.quadrature import *
 
 # FFC common modules
-sys.path.append("../../")
 from ffc.common.exceptions import *
 
 # FFC compiler.language modules

@@ -50,7 +50,7 @@ class FiniteElement:
     """
 
     def __init__(self, family, shape, degree = None):
-        "Create FiniteElement."
+        "Create FiniteElement"
 
         # Save element family
         self.__family = family
@@ -62,7 +62,7 @@ class FiniteElement:
         (self.__fiat_element, self.__mapping) = self.__choose_element(family, shape, degree)
 
         # Get entity dofs from FIAT element
-        self.__entity_dofs = self.__fiat_element.dual_basis().entity_ids
+        self.__entity_dofs = [self.__fiat_element.dual_basis().entity_ids]
 
     def signature(self):
         "Return a string identifying the finite element"
@@ -136,7 +136,7 @@ class FiniteElement:
             return self.__fiat_element.function_space().trace_tabulate_jet(facet_shape, facet, order, points)
 
     def __add__(self, other):
-        "Create mixed element."
+        "Create mixed element"
         if isinstance(other, FiniteElement):
             return mixedelement.MixedElement([self, other])
         elif isinstance(other, mixedelement.MixedElement):

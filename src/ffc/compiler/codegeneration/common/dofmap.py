@@ -1,9 +1,12 @@
 "Code generation for dof map"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-01-24 -- 2007-03-15"
+__date__ = "2007-01-24 -- 2007-03-20"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
+
+# FFC common modules
+from ffc.common.utils import *
 
 # FFC fem modules
 from ffc.fem.finiteelement import *
@@ -35,8 +38,8 @@ def __generate_needs_mesh_entities(dof_map, format):
     "Generate code for needs_mesh_entities"
 
     # Get the number of dofs per dimension
-    num_dofs_per_dimension = dof_map.num_dofs_per_dimension()
-
+    num_dofs_per_dimension = __compute_num_dofs_per_dimension(dof_map.entity_dofs())
+    
     # Entities needed if at least one dof is associated
     code = [format["bool"](num_dofs > 0) for num_dofs in num_dofs_per_dimension]
 
@@ -46,7 +49,7 @@ def __generate_global_dimension(dof_map, format):
     "Generate code for global dimension"
 
     # Get the number of dofs per dimension
-    num_dofs_per_dimension = dof_map.num_dofs_per_dimension()
+    num_dofs_per_dimension = __compute_num_dofs_per_dimension(dof_map.entity_dofs())
 
     # Sum the number of dofs for each dimension
     terms = []
@@ -71,72 +74,88 @@ def __generate_tabulate_dofs(dof_map, format):
     # Generate code as a list of declarations
     code = []
 
-    print "Generating tabulate_dofs..."
-    print dof_map.entity_dofs()
-
-    # Get entity dofs and dofs per dimension
-    entity_dofs = dof_map.entity_dofs()
-    num_dofs_per_dimension = dof_map.num_dofs_per_dimension()
-
-    #for dim in entity_dofs:
-    #    print "dim = " + str(dim) + ": " + str(entity_dofs[dim])
-
-    # Iterate over dimensions
+    # Iterate over sub dofs
     offset_declared = False
     offset_code = []
-    for dim in entity_dofs:
+    local_offset = 0
+    for sub_entity_dofs in dof_map.entity_dofs():
 
-        # Skip dimension if there are no dofs
-        if num_dofs_per_dimension[dim] == 0:
-            continue
+        # Get the number of dofs per dimension
+        num_dofs_per_dimension = __compute_num_dofs_per_dimension([sub_entity_dofs])
 
-        # Write offset code
-        code += offset_code
+        # Iterate over dimensions
+        num_dofs = 0
+        for dim in sub_entity_dofs:
 
-        # Iterate over entities in dimension
-        for entity in entity_dofs[dim]:
+            # Skip dimension if there are no dofs
+            if num_dofs_per_dimension[dim] == 0:
+                continue
 
-            # Iterate over dofs on entity
-            for pos in range(len(entity_dofs[dim][entity])):
+            # Write offset code
+            code += offset_code
 
-                # Get number of current dof
-                dof = entity_dofs[dim][entity][pos]
+            # Iterate over entities in dimension
+            for entity in sub_entity_dofs[dim]:
 
-                # Assign dof
-                name = format["dofs"](dof)
-                if num_dofs_per_dimension[dim] > 1:
-                    value = format["multiply"](["%d" % num_dofs_per_dimension[dim], format["entity index"](dim, entity)])
-                else:
-                    value = format["entity index"](dim, entity)
+                # Iterate over dofs on entity
+                for pos in range(len(sub_entity_dofs[dim][entity])):
+
+                    # Get number of current dof
+                    dof = sub_entity_dofs[dim][entity][pos]
+
+                    # Assign dof
+                    name = format["dofs"](local_offset + dof)
+                    if num_dofs_per_dimension[dim] > 1:
+                        value = format["multiply"](["%d" % num_dofs_per_dimension[dim], format["entity index"](dim, entity)])
+                    else:
+                        value = format["entity index"](dim, entity)
                     
-                # Add position on entity if any
-                if pos > 0:
-                    value = format["add"]([value, "%d" % pos])
+                    # Add position on entity if any
+                    if pos > 0:
+                        value = format["add"]([value, "%d" % pos])
 
-                # Add offset if any
-                if offset_declared:
-                    value = format["add"]([format["offset access"], value])
+                    # Add offset if any
+                    if offset_declared:
+                        value = format["add"]([format["offset access"], value])
 
-                # Add declaration
-                code += [(name, value)]
+                    # Add declaration
+                    code += [(name, value)]
 
-        # Update offset
-        if num_dofs_per_dimension[dim] > 0:
+                    # Count the number of dofs for sub dof map
+                    num_dofs += 1
 
-            # Compute additional offset
-            if num_dofs_per_dimension[dim] > 1:
-                value = format["multiply"](["%d" % num_dofs_per_dimension[dim], format["num entities"](dim)])
-            else:
-                value = format["num entities"](dim)
+            # Update offset
+            if num_dofs_per_dimension[dim] > 0:
 
-            # Add to previous offset
-            if not offset_declared:
-                name = format["offset declaration"]
-                offset_declared = True
-            else:
-                name = format["offset access"]
-                value = format["add"]([name, value])
+                # Compute additional offset
+                if num_dofs_per_dimension[dim] > 1:
+                    value = format["multiply"](["%d" % num_dofs_per_dimension[dim], format["num entities"](dim)])
+                else:
+                    value = format["num entities"](dim)
+
+                # Add to previous offset
+                if not offset_declared:
+                    name = format["offset declaration"]
+                    offset_declared = True
+                else:
+                    name = format["offset access"]
+                    value = format["add"]([name, value])
                 
-            offset_code = [(name, value)]
+                offset_code = [(name, value)]
+
+        # Add to local offset
+        local_offset += num_dofs 
 
     return code
+
+def __compute_num_dofs_per_dimension(entity_dofs):
+    "Compute the number of dofs associated with each topological dimension"
+    num_dofs_per_dimension = {}
+    for sub_entity_dofs in entity_dofs:
+        for dim in sub_entity_dofs:
+            num_dofs = [len(sub_entity_dofs[dim][entity]) for entity in sub_entity_dofs[dim]]
+            if dim in num_dofs_per_dimension:
+                num_dofs_per_dimension[dim] += pick_first(num_dofs)
+            else:
+                num_dofs_per_dimension[dim] = pick_first(num_dofs)
+    return num_dofs_per_dimension

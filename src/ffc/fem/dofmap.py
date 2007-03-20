@@ -25,7 +25,6 @@ class DofMap:
         self.__local_dimension        = element.space_dimension()
         self.__entity_dofs            = entity_dofs
         self.__dof_entities           = self.__compute_dof_entities(entity_dofs)
-        self.__num_dofs_per_dimension = self.__compute_num_dofs_per_dimension(entity_dofs)
 
     def signature(self):
         "Return a string identifying the dof map"
@@ -45,52 +44,18 @@ class DofMap:
         """Return a list of which entnties are associated with each dof"""
         return self.__dof_entities
 
-    def num_dofs_per_dimension(self):
-        """Return a tuple of the number of dofs associated with each
-        topological dimension"""
-        return self.__num_dofs_per_dimension
-
-    def __compute_dof_entities(self, entity_dofs, offset=0):
-        """Compute a tuple of the topological entities that correspond
-        to each dof:"""
-
-        print ""
-        print "Entity dofs: " + str(entity_dofs)
-
+    def __compute_dof_entities(self, entity_dofs):
+        "Compute the entities associated with each dof"
         dof_entities = {}
-
-        # Recursively check for nested dofs
-        if isinstance(entity_dofs, list):
-            for sub_entity_dofs in entity_dofs:
-                sub_dof_entities = self.__compute_dof_entities(sub_entity_dofs)
-                offset = max([0] + [dof for dof in dof_entities])
-                for dof in sub_dof_entities:
-                    dof_entities[offset + dof] = sub_dof_entities[dof]
-            return dof_entities
-
-        # Store the entity corresponding to each dof
-        for dim in entity_dofs:
-            for entity in entity_dofs[dim]:
-                for dof in entity_dofs[dim][entity]:
-                    dof_entities[dof] = (dim, entity)
+        offset = 0
+        for sub_entity_dofs in entity_dofs:
+            for dim in sub_entity_dofs:
+                for entity in sub_entity_dofs[dim]:
+                    for dof in sub_entity_dofs[dim][entity]:
+                        dof_entities[offset + dof] = (dim, entity)
+            offset = max(dof_entities) + 1
         return dof_entities
 
-    def __compute_num_dofs_per_dimension(self, entity_dofs):
-        """Compute a tuple of the number of dofs associated with each
-        topological dimension"""
-
-        # Count the number of dofs associated with each topological dimension
-        num_dofs_per_dimension = [0 for dim in entity_dofs]
-        for dim in entity_dofs:
-            num_dofs = [len(entity_dofs[dim][entity]) for entity in entity_dofs[dim]]
-            # Check that the number of dofs is equal for each entity
-            if not num_dofs[1:] == num_dofs[:-1]:
-                raise RuntimeError, "The number of dofs must be equal for all entities within a topological dimension."
-            # The number of dofs is equal so pick the first
-            num_dofs_per_dimension[dim] = num_dofs[0]
-
-        return tuple(num_dofs_per_dimension)
-    
     def __repr__(self):
         "Pretty print"
         return self.signature()
