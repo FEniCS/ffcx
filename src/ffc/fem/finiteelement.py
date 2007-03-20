@@ -12,9 +12,9 @@ import sys
 
 # FIAT modules
 from FIAT.shapes import *
-from FIAT.Lagrange import Lagrange, VectorLagrange
-from FIAT.DiscontinuousLagrange import DiscontinuousLagrange, DiscontinuousVectorLagrange
-from FIAT.CrouzeixRaviart import CrouzeixRaviart, VectorCrouzeixRaviart 
+from FIAT.Lagrange import Lagrange
+from FIAT.DiscontinuousLagrange import DiscontinuousLagrange
+from FIAT.CrouzeixRaviart import CrouzeixRaviart
 from FIAT.RaviartThomas import RaviartThomas
 from FIAT.BDM import BDM
 from FIAT.Nedelec import Nedelec
@@ -26,8 +26,12 @@ from ffc.common.debug import *
 from mapping import *
 import mixedelement
 
+# Dictionaries of basic element data
 shape_to_string = {LINE: "line", TRIANGLE: "triangle", TETRAHEDRON: "tetrahedron"}
 string_to_shape = {"line": LINE, "triangle": TRIANGLE, "tetrahedron": TETRAHEDRON}
+shape_to_dim = {LINE: 1, TRIANGLE: 2, TETRAHEDRON: 3}
+shape_to_facet = {LINE: None, TRIANGLE: LINE, TETRAHEDRON: TRIANGLE}
+shape_to_num_facets = {LINE: 2, TRIANGLE: 3, TETRAHEDRON: 4}
 
 class FiniteElement:
     """A FiniteElement represents a finite element in the classical
@@ -45,7 +49,7 @@ class FiniteElement:
     The shape and degree must match the chosen family of finite element.
     """
 
-    def __init__(self, family, shape, degree = None, num_components = None):
+    def __init__(self, family, shape, degree = None):
         "Create FiniteElement."
 
         # Save element family
@@ -55,53 +59,28 @@ class FiniteElement:
         self.__fiat_shape = string_to_shape[shape]
 
         # Get FIAT element from string
-        (self.__fiat_element, self.__mapping) = self.__choose_element(family, shape, degree, num_components)
+        (self.__fiat_element, self.__mapping) = self.__choose_element(family, shape, degree)
 
         # Get entity dofs from FIAT element
         self.__entity_dofs = self.__fiat_element.dual_basis().entity_ids
 
-        # Repeat entity dofs for tensor product elements
-        num_reps = self.__fiat_element.dual_basis().num_reps
-        if num_reps > 1:
-            self.__entity_dofs = [self.__entity_dofs for i in range(num_reps)]
-
     def signature(self):
         "Return a string identifying the finite element"
-        if self.vectordim() > 1:
-            return "%s finite element of degree %d on a %s with %d components" % \
-                   (self.__family, self.degree(), shape_to_string[self.__fiat_shape], self.vectordim())
-        else:
-            return "%s finite element of degree %d on a %s" % \
-                   (self.__family, self.degree(), shape_to_string[self.__fiat_shape])
-
-    def basis(self):
-        "Return basis of finite element space"
-        return self.__fiat_element.function_space()
-
-    def degree(self):
-        "Return degree of polynomial basis"
-        return self.basis().degree()
+        return "%s finite element of degree %d on a %s" % \
+               (self.__family, self.degree(), shape_to_string[self.__fiat_shape])
 
     def cell_shape(self):
         "Return the cell shape"
         return self.__fiat_element.domain_shape()
 
-    def facet_shape(self):
-        "Return shape of facet"
-        return self.cell_shape() - 1
-
     def space_dimension(self):
         "Return the dimension of the finite element function space"
         return len(self.basis())
 
-    def cell_dimension(self):
-        "Return dimension of shape"
-        return dim[self.cell_shape()]
-
     def value_rank(self):
         "Return the rank of the value space"
         return self.basis().rank()
-    
+
     def value_dimension(self, i):
         "Return the dimension of the value space for axis i"
         if self.value_rank() == 0:
@@ -117,27 +96,33 @@ class FiniteElement:
         "Return sub element i"
         return self
 
-    def vectordim(self):
-        "Return vector dimension (number of components)"
-        if self.value_rank() == 0:
-            return 1
-        elif self.value_rank() == 1:
-            return self.value_dimension(0)
-        else:
-            raise RuntimeError, "Can only handle scalar or vector-valued elements."
-
-    def num_facets(self):
-        "Return number of facets for shape of element."
-        if self.__fiat_element.domain_shape() == TRIANGLE:
-            return 3
-        elif self.__fiat_element.domain_shape() == TETRAHEDRON:
-            return 4
-        else:
-            raise RuntimeError, "Unknown shape."
+    def degree(self):
+        "Return degree of polynomial basis"
+        return self.basis().degree()
 
     def mapping(self):
         "Return the type of mapping associated with the element"
         return self.__mapping
+
+    def cell_dimension(self):
+        "Return dimension of shape"
+        return shape_to_dim[self.cell_shape()]
+
+    def facet_shape(self):
+        "Return shape of facet"
+        return shape_to_facet[self.cell_shape()]
+
+    def num_facets(self):
+        "Return number of facets for shape of element"
+        return shape_to_num_facets[self.cell_shape]
+
+    def entity_dofs(self):
+        "Return the mapping from entities to dofs"
+        return self.__entity_dofs
+
+    def basis(self):
+        "Return basis of finite element space"
+        return self.__fiat_element.function_space()
 
     def tabulate(self, order, points, facet = None):
         """Return tabulated values of derivatives up to given order of
@@ -150,12 +135,6 @@ class FiniteElement:
             facet_shape = self.facet_shape()
             return self.__fiat_element.function_space().trace_tabulate_jet(facet_shape, facet, order, points)
 
-    def entity_dofs(self):
-        """Return a dictionary mapping the mesh entities of the
-        reference cell to the degrees of freedom associated with
-        the entity"""
-        return self.__entity_dofs
-
     def __add__(self, other):
         "Create mixed element."
         if isinstance(other, FiniteElement):
@@ -165,7 +144,7 @@ class FiniteElement:
         else:
             raise RuntimeError, "Unable to create mixed element from given object: " + str(other)
 
-    def __choose_element(self, family, shape, degree, num_components):
+    def __choose_element(self, family, shape, degree):
         "Choose FIAT finite element from string"
     
         # Choose FIAT function space
@@ -173,24 +152,12 @@ class FiniteElement:
             return (Lagrange(self.__fiat_shape, degree),
                     Mapping.AFFINE)
 
-        if family == "Vector Lagrange":
-            return (VectorLagrange(self.__fiat_shape, degree, num_components),
-                    Mapping.AFFINE)
-
         if family == "Discontinuous Lagrange":
             return (DiscontinuousLagrange(self.__fiat_shape, degree),
                     Mapping.AFFINE)
 
-        if family == "Discontinuous vector Lagrange":
-            return (DiscontinuousVectorLagrange(self.__fiat_shape, degree, num_components),
-                    Mapping.AFFINE)
-
         if family == "Crouzeix-Raviart":
             return (CrouzeixRaviart(self.__fiat_shape),
-                    Mapping.AFFINE)
-
-        if family == "Vector Crouzeix-Raviart":
-            return (VectorCrouzeixRaviart(self.__fiat_shape),
                     Mapping.AFFINE)
 
         if family == "Raviart-Thomas" or family == "RT":

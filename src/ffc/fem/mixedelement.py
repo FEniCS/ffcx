@@ -1,5 +1,5 @@
 _author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2005-09-16 -- 2007-02-05"
+__date__ = "2005-09-16 -- 2007-03-20"
 __copyright__ = "Copyright (C) 2005-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -14,58 +14,8 @@ from ffc.common.debug import *
 # FFC compiler.language modules
 from ffc.compiler.language.algebra import *
 
-def BasisFunctions(element, functiontype = BasisFunction):
-    "Create tuple of BasisFunctions from given MixedElement."
-    if not isinstance(element, MixedElement):
-        raise RuntimeError, "Basis function tuple must be created from mixed element."
-    # Create basis function for mixed element
-    vector = functiontype(element)
-    # Pick components/subvectors of the mixed basis function
-    subvectors = []
-    offset = 0
-    for e in element.elements:
-        if e.value_rank() == 0:
-            subvector = vector.pick_component_default(offset)
-            offset += 1
-        elif e.value_rank() == 1:
-            if e.mapping == "Piola":
-                subvector = [vector.pick_component_piola(k) for k in range(0, e.value_dimension(0))]
-            else:
-                subvector = [vector.pick_component_default(i) for i in range(offset, offset + e.value_dimension(0))]
-            offset += e.value_dimension(0)
-        else:
-            raise RuntimeError, "Mixed elements can only be created from scalar or vector-valued elements."
-        subvectors += [subvector]
-    return tuple(subvectors)
-
-def TestFunctions(element):
-    "Create tuple of TestFunctions from given MixedElement."
-    return BasisFunctions(element, TestFunction)
-
-def TrialFunctions(element):
-    "Create tuple of TrialFunctions from given MixedElement."
-    return BasisFunctions(element, TrialFunction)
-
-def Functions(element):
-    "Create tuple of Functions from given MixedElement."
-    if not isinstance(element, MixedElement):
-        raise RuntimeError, "Function tuple must be created from mixed element."
-    # Create function fox mixed element
-    vector = Function(element)
-    # Pick components/subvectors of the mixed basis function
-    subvectors = []
-    offset = 0
-    for e in element.elements:
-        if e.value_rank() == 0:
-            subvector = vector[offset]
-            offset += 1
-        elif e.value_rank() == 1:
-            subvector = [vector[i] for i in range(offset, offset + e.value_dimension(0))]
-            offset += e.value_dimension(0)
-        else:
-            raise RuntimeError, "Mixed elements can only be created from scalar or vector-valued elements."
-        subvectors += [subvector]
-    return tuple(subvectors)
+# FFC FEM modules
+from finiteelement import *
 
 class MixedElement:
     """A MixedElement represents a vector-valued finite element
@@ -84,7 +34,6 @@ class MixedElement:
 
     def __init__(self, elements):
         "Create MixedElement from a list of elements."
-        
 
         # Create list of elements
         if not isinstance(elements, list):
@@ -116,9 +65,13 @@ class MixedElement:
         # FIXME: Not implemented
         self.__entity_dofs = {}
 
+    def signature(self):
+        "Return a string identifying the finite element"
+        return "Mixed finite element: [%s]" % ", ".join([element.signature() for element in self.elements])
+
     def basis(self):
-        "Return basis of finite element space."
-        raise RuntimeError, "Basis cannot be accessed explicitly for mixed element."
+        "Return basis of finite element space"
+        raise RuntimeError, "Basis cannot be accessed explicitly for a mixed element."
 
     def degree(self):
         "Return degree of polynomial basis."
@@ -168,15 +121,14 @@ class MixedElement:
         return self.elements[0].num_facets()
 
     def tabulate(self, order, points, facet = None):
-        """Return tabulated values of derivatives up to given order of
-        basis functions at given points. If facet is not None, then the
-        values are tabulated on the given facet, with the points given
-        on the corresponding reference facet."""
+        """Tabulate values on mixed element by appropriately reordering
+        the tabulated values for the sub elements."""
+
         # Special case: only one element
         if len(self.elements) == 1:
             return elements[0].tabulate(order, points, facet)
-        # Iterate over elements and build mixed table from element tables.
-        # This is a bit nasty, so it needs some thought...
+
+        # Iterate over sub elements and build mixed table from element tables
         mixed_table = []
         offset = 0
         for i in range(len(self.elements)):
@@ -196,19 +148,11 @@ class MixedElement:
 
         return mixed_table
 
-    def signature(self):
-        "Return a string identifying the finite element"
-        return "Mixed finite element: [%s]" % ", ".join([element.signature() for element in self.elements])
-
     def entity_dofs(self):
         """Return a dictionary mapping the mesh entities of the
         reference cell to the degrees of freedom associated with
         the entity"""
         return self.__entity_dofs
-
-#    def __create_basis(self):
-#        "Create basis for mixed element."
-#        raise RuntimeError, "Not implemented."
 
     def __compute_degree(self):
         "Compute maximum degree."
@@ -271,3 +215,56 @@ class MixedElement:
     def __repr__(self):
         "Pretty print"
         return "Mixed finite element: " + str(self.elements)
+
+def BasisFunctions(element, functiontype = BasisFunction):
+    "Create tuple of BasisFunctions from given MixedElement."
+    if not isinstance(element, MixedElement):
+        raise RuntimeError, "Basis function tuple must be created from mixed element."
+    # Create basis function for mixed element
+    vector = functiontype(element)
+    # Pick components/subvectors of the mixed basis function
+    subvectors = []
+    offset = 0
+    for e in element.elements:
+        if e.value_rank() == 0:
+            subvector = vector.pick_component_default(offset)
+            offset += 1
+        elif e.value_rank() == 1:
+            if e.mapping == "Piola":
+                subvector = [vector.pick_component_piola(k) for k in range(0, e.value_dimension(0))]
+            else:
+                subvector = [vector.pick_component_default(i) for i in range(offset, offset + e.value_dimension(0))]
+            offset += e.value_dimension(0)
+        else:
+            raise RuntimeError, "Mixed elements can only be created from scalar or vector-valued elements."
+        subvectors += [subvector]
+    return tuple(subvectors)
+
+def TestFunctions(element):
+    "Create tuple of TestFunctions from given MixedElement."
+    return BasisFunctions(element, TestFunction)
+
+def TrialFunctions(element):
+    "Create tuple of TrialFunctions from given MixedElement."
+    return BasisFunctions(element, TrialFunction)
+
+def Functions(element):
+    "Create tuple of Functions from given MixedElement."
+    if not isinstance(element, MixedElement):
+        raise RuntimeError, "Function tuple must be created from mixed element."
+    # Create function fox mixed element
+    vector = Function(element)
+    # Pick components/subvectors of the mixed basis function
+    subvectors = []
+    offset = 0
+    for e in element.elements:
+        if e.value_rank() == 0:
+            subvector = vector[offset]
+            offset += 1
+        elif e.value_rank() == 1:
+            subvector = [vector[i] for i in range(offset, offset + e.value_dimension(0))]
+            offset += e.value_dimension(0)
+        else:
+            raise RuntimeError, "Mixed elements can only be created from scalar or vector-valued elements."
+        subvectors += [subvector]
+    return tuple(subvectors)

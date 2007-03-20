@@ -50,10 +50,25 @@ class DofMap:
         topological dimension"""
         return self.__num_dofs_per_dimension
 
-    def __compute_dof_entities(self, entity_dofs):
+    def __compute_dof_entities(self, entity_dofs, offset=0):
         """Compute a tuple of the topological entities that correspond
         to each dof:"""
+
+        print ""
+        print "Entity dofs: " + str(entity_dofs)
+
         dof_entities = {}
+
+        # Recursively check for nested dofs
+        if isinstance(entity_dofs, list):
+            for sub_entity_dofs in entity_dofs:
+                sub_dof_entities = self.__compute_dof_entities(sub_entity_dofs)
+                offset = max([0] + [dof for dof in dof_entities])
+                for dof in sub_dof_entities:
+                    dof_entities[offset + dof] = sub_dof_entities[dof]
+            return dof_entities
+
+        # Store the entity corresponding to each dof
         for dim in entity_dofs:
             for entity in entity_dofs[dim]:
                 for dof in entity_dofs[dim][entity]:
