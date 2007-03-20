@@ -12,8 +12,8 @@ __license__  = "GNU GPL Version 2"
 # FIAT modules
 from FIAT.shapes import *
 
-def reorder_points(points, facet, shape):
-    """Reorder points on given reference shape for given alignment."""
+def reorder_points(points, shape, facet):
+    """Reorder points on given reference shape for given facet."""
 
     if shape == TRIANGLE:
         return __reorder_edge(points, facet)
@@ -60,27 +60,27 @@ def __reorder_face(points, facet):
     def Phi2(x):
         return 0.5*x[1] + 0.5
 
-    if alignment == 0:
+    if facet == 0:
       p0 = (-1.0, -1.0)
       p1 = (1.0, -1.0)
       p2 = (-1.0, 1.0)
-    elif alignment == 1:
+    elif facet == 1:
       p0 = (-1.0, -1.0)
       p1 = (-1.0, 1.0)
       p2 = (1.0, -1.0)
-    if alignment == 2:
+    if facet == 2:
       p0 = (1.0, -1.0)
       p1 = (-1.0, 1.0)
       p2 = (-1.0, -1.0)
-    elif alignment == 3:
+    elif facet == 3:
       p0 = (1.0, -1.0)
       p1 = (-1.0, -1.0)
       p2 = (-1.0, 1.0)
-    if alignment == 4:
+    if facet == 4:
       p0 = (-1.0, 1.0)
       p1 = (-1.0, -1.0)
       p2 = (1.0, -1.0)
-    elif alignment == 5:
+    elif facet == 5:
       p0 = (-1.0, 1.0)
       p1 = (1.0, -1.0)
       p2 = (-1.0, -1.0)

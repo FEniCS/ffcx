@@ -131,8 +131,8 @@ def __init_table(basisfunctions, integral_type, points, facet0, facet1):
         elif integral_type == Integral.EXTERIOR_FACET:
             table[(element, None)] = element.tabulate(order, points, facet0)
         elif integral_type == Integral.INTERIOR_FACET:
-            points0 = reorder_points(points, facet0, element.cell_shape())
-            points1 = reorder_points(points, facet1, element.cell_shape())
+            points0 = reorder_points(points, element.cell_shape(), facet0)
+            points1 = reorder_points(points, element.cell_shape(), facet1)
             table[(element, Restriction.PLUS)]  = element.tabulate(order, points0, facet0)
             table[(element, Restriction.MINUS)] = element.tabulate(order, points1, facet1)
 

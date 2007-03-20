@@ -167,10 +167,6 @@ class MixedElement:
         "Return number of facets for shape of element."
         return self.elements[0].num_facets()
 
-    def num_alignments(self):
-        "Return number of possible alignments of two cells at a common facet."
-        return self.elements[0].num_alignments()
-
     def tabulate(self, order, points, facet = None):
         """Return tabulated values of derivatives up to given order of
         basis functions at given points. If facet is not None, then the

@@ -25,7 +25,7 @@ algebra:
     Unary  ()     (operand must be multi-valued, +/-)"""
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-09-27 -- 2007-02-11"
+__date__ = "2004-09-27 -- 2007-03-20"
 __copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -42,10 +42,13 @@ from ffc.common.exceptions import *
 from ffc.common.debug import *
 from ffc.common.utils import *
 
+# FFC FEM modules
+from ffc.fem.mapping import *
+
 # FFC language modules
 from tokens import *
 from variables import *
-from index import Index
+from index import *
 from integral import *
 from restriction import *
 from reassignment import *
@@ -248,7 +251,7 @@ class BasisFunction(Element):
 
     def  __getitem__(self, component):
         "Operator: BasisFunction[component], pick given component."
-        if self.element.mapping == "Piola":
+        if self.element.mapping() == Mapping.PIOLA:
             return self.pick_component_piola(component)
         else:
             return self.pick_component_default(component)
