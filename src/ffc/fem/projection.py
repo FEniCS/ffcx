@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2005-11-07 -- 2007-03-20"
+__date__ = "2005-11-07 -- 2007-03-21"
 __copyright__ = "Copyright (C) 2005-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -69,7 +69,7 @@ class Projection:
 
         # Check that the two elements are defined on the same shape
         e1 = self.element
-        if not e0.fiat_shape == e1.fiat_shape:
+        if not e0.cell_shape() == e1.cell_shape():
             raise FormError, (((e0, e1)), "Incompatible finite elements for projection.")
 
         # Check that the two elements have the same rank (and rank must be 0 or 1)
@@ -84,7 +84,7 @@ class Projection:
         # Get quadrature points and weights for integrals
         q = e1.degree() + max(e0.degree(), e1.degree()) # same points for both integrals
         m = (q + 1 + 1) / 2 # integer division gives 2m - 1 >= q
-        quadrature = make_quadrature(e0.fiat_shape, m)
+        quadrature = make_quadrature(e0.cell_shape(), m)
         points = quadrature.get_points()
         weights = quadrature.get_weights()
 

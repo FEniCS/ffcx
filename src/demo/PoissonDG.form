@@ -1,17 +1,17 @@
-# Copyright (C) 2006 Kristiand Oelgaard and Anders Logg.
+# Copyright (C) 2006-2007 Kristiand Oelgaard and Anders Logg.
 # Licensed under the GNU GPL Version 2.
 #
 # First added:  2006-12-05
-# Last changed: 2006-12-18
+# Last changed: 2007-03-22
 #
-# The bilinear form a(v, U) and linear form L(v) for
+# The bilinear form a(v, u) and linear form L(v) for
 # Poisson's equation in a discontinuous Galerkin (DG)
 # formulation.
 #
 # Compile this form with FFC: ffc Poisson.form
 
 DG1 = FiniteElement("Discontinuous Lagrange", "triangle", 1)
-DG0 = FiniteElement("Discontinuous vector Lagrange", "triangle", 0)
+DG0 = VectorElement("Discontinuous Lagrange", "triangle", 0)
 DGh = FiniteElement("Discontinuous Lagrange", "triangle", 0)
 
 v = TestFunction(DG1)

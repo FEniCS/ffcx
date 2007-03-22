@@ -44,8 +44,8 @@ def main(argv):
         return 2
 
     # Set default arguments
-    language = "dolfin"
-    debuglevel = 0
+    language = FFC_LANGUAGE
+    debuglevel = FFC_DEBUG_LEVEL
     options = FFC_OPTIONS
 
     # Get options
@@ -152,31 +152,14 @@ def __make_module(filename, language, options):
 
     # Generate output
     output = """\
-import sys
-from ffc.old.compiler import *
+from ffc import *
 
-name = "%s"
-
-a = None
-L = None
-M = None
-element = None
+# Reserved variables for forms
+(a, L, M) = (None, None, None)
 
 %s
-
-if not (a == L == M == None):
-  compile([a, L, M], name, \"%s\", %s)
-elif not element == None:
-  writeFiniteElement(element, name, \"%s\", %s)
-else:
-  print \"No forms specified, nothing to do.\"
-
-""" % (prefix, input, language, options, language, options)
-
-    # FIXME: Temporary while developing the UFC output
-    if language == "ufc":
-        output = output.replace("ffc.old.compiler", "ffc")
-        output = output.replace("compile([a, L, M]", "compile(a")
+compile(a, \"%s\", \"%s\", %s)
+""" % (input, prefix, language, options)
 
     # Write output
     outfile = open(outname, "w")

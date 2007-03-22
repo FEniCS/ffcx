@@ -1,4 +1,4 @@
-# Copyright (C) 2004-2006 Anders Logg (logg@simula.no)
+# Copyright (C) 2004-2007 Anders Logg (logg@simula.no)
 # Licensed under the GNU GPL Version 2
 #
 # The bilinear form for the nonlinear term in the
@@ -6,11 +6,11 @@
 #
 # Compile this form with FFC: ffc NavierStokes.form
 
-element = FiniteElement("Vector Lagrange", "tetrahedron", 1)
+element = VectorElement("Lagrange", "tetrahedron", 1)
 
 v = TestFunction(element)
-U = TrialFunction(element)
+u = TrialFunction(element)
 
 w = Function(element)
 
-a = v[i]*w[j]*D(U[i], j)*dx
+a = v[i]*w[j]*D(u[i], j)*dx

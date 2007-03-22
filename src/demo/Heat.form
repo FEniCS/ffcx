@@ -1,7 +1,7 @@
-# Copyright (C) 2005-2006 Anders Logg (logg@simula.no)
+# Copyright (C) 2005-2007 Anders Logg (logg@simula.no)
 # Licensed under the GNU GPL Version 2
 #
-# The bilinear form a(v, U1) and linear form L(v) for
+# The bilinear form a(v, u1) and linear form L(v) for
 # one backward Euler step with the heat equation.
 #
 # Compile this form with FFC: ffc Heat.form
@@ -9,11 +9,11 @@
 element = FiniteElement("Lagrange", "triangle", 1)
 
 v  = TestFunction(element)  # Test function
-U1 = TrialFunction(element) # Value at t_n
-U0 = Function(element)      # Value at t_n-1
+u1 = TrialFunction(element) # Value at t_n
+u0 = Function(element)      # Value at t_n-1
 c  = Function(element)      # Heat conductivity
 f  = Function(element)      # Heat source
 k  = Constant()             # Time step
 
-a = v*U1*dx + k*c*dot(grad(v), grad(U1))*dx
-L = v*U0*dx + k*v*f*dx
+a = v*u1*dx + k*c*dot(grad(v), grad(u1))*dx
+L = v*u0*dx + k*v*f*dx

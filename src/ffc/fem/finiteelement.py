@@ -55,9 +55,6 @@ class FiniteElement:
         # Save element family
         self.__family = family
 
-        # Get FIAT shape from string
-        self.__fiat_shape = string_to_shape[shape]
-
         # Get FIAT element from string
         (self.__fiat_element, self.__mapping) = self.__choose_element(family, shape, degree)
 
@@ -67,7 +64,7 @@ class FiniteElement:
     def signature(self):
         "Return a string identifying the finite element"
         return "%s finite element of degree %d on a %s" % \
-               (self.__family, self.degree(), shape_to_string[self.__fiat_shape])
+               (self.__family, self.degree(), shape_to_string[self.cell_shape()])
 
     def cell_shape(self):
         "Return the cell shape"
@@ -146,28 +143,31 @@ class FiniteElement:
 
     def __choose_element(self, family, shape, degree):
         "Choose FIAT finite element from string"
+
+        # Get FIAT shape from string
+        fiat_shape = string_to_shape[shape]
     
         # Choose FIAT function space
         if family == "Lagrange":
-            return (Lagrange(self.__fiat_shape, degree),
+            return (Lagrange(fiat_shape, degree),
                     Mapping.AFFINE)
 
         if family == "Discontinuous Lagrange":
-            return (DiscontinuousLagrange(self.__fiat_shape, degree),
+            return (DiscontinuousLagrange(fiat_shape, degree),
                     Mapping.AFFINE)
 
         if family == "Crouzeix-Raviart":
-            return (CrouzeixRaviart(self.__fiat_shape),
+            return (CrouzeixRaviart(fiat_shape),
                     Mapping.AFFINE)
 
         if family == "Raviart-Thomas" or family == "RT":
             print "Warning: element untested"
-            return (RaviartThomas(self.__fiat_shape, degree),
+            return (RaviartThomas(fiat_shape, degree),
                     Mapping.PIOLA)
 
         if family == "Brezzi-Douglas-Marini" or family == "BDM":
             print "Warning: element untested"
-            return (BDM(self.__fiat_shape, degree),
+            return (BDM(fiat_shape, degree),
                     Mapping.PIOLA)
 
         if family == "Nedelec":

@@ -51,6 +51,9 @@ def compile(form, name = "Form", output_language = FFC_LANGUAGE, options = FFC_O
     # Check that we get a Form
     if isinstance(form, Monomial):
         form = Form(form)
+    elif form == None:
+        debug("No forms specified, nothing to do.")
+        return
     elif not isinstance(form, Form):
         raise RuntimeError, "Not a form: " + str(form)
 
@@ -148,7 +151,7 @@ def __choose_format(output_language):
     if output_language.lower() == "ufc":
         return ufcformat
     else:
-        raise RuntimeError, "Don't know how to compile code for language \"%s\".", output_language
+        raise RuntimeError, "Don't know how to compile code for language \"%s\"." % output_language
 
 def __choose_representation():
     "Choose form representation"
