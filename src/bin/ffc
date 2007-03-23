@@ -158,7 +158,7 @@ from ffc import *
 (a, L, M) = (None, None, None)
 
 %s
-compile(a, \"%s\", \"%s\", %s)
+compile([a, L, M], \"%s\", \"%s\", %s)
 """ % (input, prefix, language, options)
 
     # Write output

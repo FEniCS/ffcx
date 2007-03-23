@@ -12,7 +12,7 @@ each represented by a separate module:
 """
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-02-05 -- 2007-03-12"
+__date__ = "2007-02-05 -- 2007-03-23"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -45,37 +45,60 @@ from codegeneration.quadrature import *
 # FFC format modules
 from format import ufcformat
 
-def compile(form, name = "Form", output_language = FFC_LANGUAGE, options = FFC_OPTIONS):
+def compile(forms, prefix = "Form", output_language = FFC_LANGUAGE, options = FFC_OPTIONS):
     "Compile the given form for the given language."
 
-    # Check that we get a Form
-    if isinstance(form, Monomial):
-        form = Form(form)
-    elif form == None:
+    # Check form input
+    forms = preprocess_forms(forms)
+    if len(forms) == 0:
         debug("No forms specified, nothing to do.")
         return
-    elif not isinstance(form, Form):
-        raise RuntimeError, "Not a form: " + str(form)
 
-    # Compiler phase 1: analyze form
-    form_data = analyze_form(form, name)
-
-    # Compiler phase 2: compute form representation
-    form_representation = compute_representation(form_data)
-
-    # Compiler phase 3: optimize form representation
-    compute_optimization(form)
-
-    # Choose format for stages 4 and 5
+    # Choose format
     format = __choose_format(output_language)
 
-    # Compiler phase 4: generate code
-    code = generate_code(form_data, form_representation, format.format)
+    # Iterate over forms for stages 1 - 4
+    generated_forms = []
+    for form in forms:
+
+        # Compiler phase 1: analyze form
+        form_data = analyze_form(form)
+
+        # Compiler phase 2: compute form representation
+        form_representation = compute_representation(form_data)
+
+        # Compiler phase 3: optimize form representation
+        compute_optimization(form)
+
+        # Compiler phase 4: generate code
+        form_code = generate_code(form_data, form_representation, format.format)
+
+        # Add to list of codes
+        generated_forms += [(form_code, form_data)]
 
     # Compiler phase 5: format code
-    format_code(code, form_data, format, options)
+    format_code(generated_forms, prefix, format, options)
 
-def analyze_form(form, name):
+def preprocess_forms(forms):
+    "Check and possibly convert form input to a list of Forms"
+
+    # Check that we get a list of forms
+    if not isinstance(forms, list):
+        forms = [forms]
+
+    # Check each form
+    preprocessed_forms = []
+    for form in forms:
+        if isinstance(form, Form):
+            preprocessed_forms += [form]
+        elif isinstance(form, Monomial):
+            preprocessed_forms += [Form(form)]
+        elif not form == None:
+            raise RuntimeError, "Not a form: " + str(form)
+
+    return preprocessed_forms
+
+def analyze_form(form):
     "Compiler phase 1: analyze form"
     debug_begin("Phase 1: Analyzing form")
 
@@ -89,7 +112,7 @@ def analyze_form(form, name):
     check_form(form)
 
     # Extract form data
-    form_data = FormData(form, name)
+    form_data = FormData(form)
 
     # Print a short summary
     debug("")
@@ -136,12 +159,12 @@ def generate_code(form_data, form_representation, format):
     debug_end()
     return code
 
-def format_code(code, form_data, format, options):
+def format_code(generated_forms, prefix, format, options):
     "Compiler phase 5: format code"
     debug_begin("Compiler phase 5: Formatting code")
 
     # Format the pre-generated code
-    format.write(code, form_data, options)
+    format.write(generated_forms, prefix, options)
 
     debug_end()
 

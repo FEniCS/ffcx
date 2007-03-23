@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2005-03-15 -- 2007-03-05"
+__date__ = "2005-03-15 -- 2007-03-23"
 __copyright__ = "Copyright (C) 2005-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -23,7 +23,6 @@ class FormData:
     are extracted and stored for a given form:
 
         form                         - the form
-        name                         - the name of the form
         signature                    - the signature of the form
         rank                         - the rank (arity) of the form
         num_coefficients             - the number of coefficients
@@ -39,13 +38,12 @@ class FormData:
     It is assumed that the indices of the given form have been reassigned.
     """
 
-    def __init__(self, form, name):
+    def __init__(self, form):
         "Create form data for form"
 
         debug("Extracting form data...")
 
         self.form                         = form
-        self.name                         = name
         self.signature                    = self.__extract_signature(form)
         self.rank                         = self.__extract_rank(form)
         self.num_coefficients             = self.__extract_num_coefficients(form)

@@ -1,7 +1,7 @@
 "Code generation for the UFC 1.0 format"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-01-08 -- 2007-03-21"
+__date__ = "2007-01-08 -- 2007-03-23"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -55,47 +55,51 @@ format = { "add": lambda l: " + ".join(l),
 def init(options):
     "Initialize code generation for the UFC 1.0 format."
     pass
-    
-def write(code, form_data, options):
-    "Generate code for the UFC 1.0 format."
-    debug("Generating code for UFC 1.0")
 
-    # Set prefix
-    prefix = form_data.name
+def write(generated_forms, prefix, options):
+    "Generate UFC 1.0 code for a given list of pregenerated forms"
+    debug("Generating code for UFC 1.0")
 
     # Generate file header
     output = ""
     output += __generate_header(prefix, options)
     output += "\n"
 
-    # Generate code for ufc::finite_element(s)
-    for i in range(form_data.num_arguments):
-        output += __generate_finite_element(code[("finite_element", i)], form_data, options, prefix, i)
-        output += "\n"
+    # Iterate over forms
+    for i in range(len(generated_forms)):
 
-    # Generate code for ufc::dof_map(s)
-    for i in range(form_data.num_arguments):
-        output += __generate_dof_map(code[("dof_map", i)], form_data, options, prefix, i)
-        output += "\n"
+        # Get pregenerated code, form data and prefix
+        (form_code, form_data) = generated_forms[i]
+        form_prefix = __compute_prefix(prefix, generated_forms, i)
 
-    # Generate code for ufc::cell_integral
-    for i in range(form_data.num_cell_integrals):
-        output += __generate_cell_integral(code[("cell_integral", i)], form_data, options, prefix, i)
-        output += "\n"
+        # Generate code for ufc::finite_element(s)
+        for j in range(form_data.num_arguments):
+            output += __generate_finite_element(form_code[("finite_element", j)], form_data, options, form_prefix, j)
+            output += "\n"
 
-    # Generate code for ufc::exterior_facet_integral
-    for i in range(form_data.num_exterior_facet_integrals):
-        output += __generate_exterior_facet_integral(code[("exterior_facet_integral", i)], form_data, options, prefix, i)
-        output += "\n"
+        # Generate code for ufc::dof_map(s)
+        for j in range(form_data.num_arguments):
+            output += __generate_dof_map(form_code[("dof_map", j)], form_data, options, form_prefix, j)
+            output += "\n"
+            
+        # Generate code for ufc::cell_integral
+        for j in range(form_data.num_cell_integrals):
+            output += __generate_cell_integral(form_code[("cell_integral", j)], form_data, options, form_prefix, j)
+            output += "\n"
+
+        # Generate code for ufc::exterior_facet_integral
+        for j in range(form_data.num_exterior_facet_integrals):
+            output += __generate_exterior_facet_integral(form_code[("exterior_facet_integral", j)], form_data, options, form_prefix, j)
+            output += "\n"
     
-    # Generate code for ufc::interior_facet_integral
-    for i in range(form_data.num_interior_facet_integrals):
-        output += __generate_interior_facet_integral(code[("interior_facet_integral", i)], form_data, options, prefix, i)
-        output += "\n"
+        # Generate code for ufc::interior_facet_integral
+        for j in range(form_data.num_interior_facet_integrals):
+            output += __generate_interior_facet_integral(form_code[("interior_facet_integral", j)], form_data, options, form_prefix, j)
+            output += "\n"
 
-    # Generate code for ufc::form
-    output += __generate_form(code["form"], form_data, options, prefix)
-    output += "\n"
+        # Generate code for ufc::form
+        output += __generate_form(form_code["form"], form_data, options, form_prefix)
+        output += "\n"
     
     # Generate code for footer
     output += __generate_footer(prefix, options)
@@ -451,3 +455,21 @@ def __generate_code(format_string, code):
 
     # Generate code
     return format_string % code
+
+def __compute_prefix(prefix, generated_forms, i):
+    "Compute prefix for form i"
+
+    # Get form ranks
+    ranks = [form_data.rank for (form_code, form_data) in generated_forms]
+
+    # Return prefix_i if we have ranks greater than 2
+    if max(ranks) > 2:
+        return "%s_%d" % (prefix, i)
+
+    # Return prefix_i if we have more than one form of rank 0, 1 or 2
+    if ranks.count(0) > 1 or ranks.count(1) > 1 or ranks.count(2) > 2:
+        return "%s_%d" % (prefix, i)
+
+    # Otherwise, return prefixFunctional, prefixLinearForm or prefixBilinearForm
+    postfixes = ["Functional", "LinearForm", "BilinearForm"]
+    return "%s%s" % (prefix, postfixes[ranks[i]])
