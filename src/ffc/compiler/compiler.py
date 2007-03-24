@@ -44,6 +44,7 @@ from codegeneration.quadrature import *
 
 # FFC format modules
 from format import ufcformat
+from format import dolfinformat
 
 def compile(forms, prefix = "Form", output_language = FFC_LANGUAGE, options = FFC_OPTIONS):
     "Compile the given form for the given language."
@@ -173,6 +174,8 @@ def __choose_format(output_language):
 
     if output_language.lower() == "ufc":
         return ufcformat
+    elif output_language.lower() == "dolfin":
+        return dolfinformat
     else:
         raise RuntimeError, "Don't know how to compile code for language \"%s\"." % output_language
 
