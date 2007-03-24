@@ -84,8 +84,7 @@ def __generate_dolfin_wrappers(generated_forms, prefix, options):
     output = """\
 // DOLFIN wrappers
 
-#include <dolfin/Function.h>
-#include <dolfin/Form.h>
+#include <dolfin/NewForm.h>
 
 """
 
@@ -97,11 +96,11 @@ def __generate_dolfin_wrappers(generated_forms, prefix, options):
         if constructor_body == "":
             constructor_body = "    // Do nothing"
         output += """\
-class %s : public UFC_%s, public dolfin::Form
+class %s : public UFC_%s, public dolfin::NewForm
 {
 public:
 
-  %s(%s) : UFC_%s(), dolfin::Form()
+  %s(%s) : UFC_%s(), dolfin::NewForm()
   {
 %s
   }
