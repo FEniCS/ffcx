@@ -25,7 +25,6 @@ setup(name = "FFC",
                   "ffc/compiler/representation/quadrature",
                   "ffc/compiler/representation/tensor",
                   "ffc/compiler/language",
-                  "ffc/compiler/analysis",
-                  "ffc/old"],
+                  "ffc/compiler/analysis"]
       scripts = ["bin/ffc"],
       data_files = [("share/man/man1", ["../doc/man/man1/ffc.1.gz"])])
