@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-10-04 -- 2007-03-20"
+__date__ = "2004-10-04 -- 2007-03-30"
 __copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -111,7 +111,7 @@ class FiniteElement:
 
     def num_facets(self):
         "Return number of facets for shape of element"
-        return shape_to_num_facets[self.cell_shape]
+        return shape_to_num_facets[self.cell_shape()]
 
     def entity_dofs(self):
         "Return the mapping from entities to dofs"

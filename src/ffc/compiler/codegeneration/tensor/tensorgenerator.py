@@ -1,7 +1,7 @@
 "Code generator for tensor representation"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-11-03 -- 2007-03-08"
+__date__ = "2004-11-03 -- 2007-03-30"
 __copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -17,11 +17,11 @@ from ffc.compiler.codegeneration.common.codegenerator import *
 class TensorGenerator(CodeGenerator):
     "Code generator for for tensor representation"
 
-    def __init__(self, form_data, form_representation, format):
+    def __init__(self):
         "Constructor"
 
         # Initialize common code generator
-        CodeGenerator.__init__(self, form_data, form_representation, format)
+        CodeGenerator.__init__(self)
 
     def generate_cell_integral(self, form_representation, sub_domain, format):
         """Generate dictionary of code for cell integral from the given

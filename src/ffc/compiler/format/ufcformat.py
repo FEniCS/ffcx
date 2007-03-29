@@ -139,8 +139,9 @@ def generate_ufc(generated_forms, prefix, options):
             output += "\n"
 
         # Generate code for ufc::form
-        output += __generate_form(form_code["form"], form_data, options, form_prefix)
-        output += "\n"
+        if "form" in form_code:
+            output += __generate_form(form_code["form"], form_data, options, form_prefix)
+            output += "\n"
 
     return output
 
@@ -150,17 +151,19 @@ def compute_prefix(prefix, generated_forms, i):
     # Get form ranks
     ranks = [form_data.rank for (form_code, form_data) in generated_forms]
 
-    # Return prefix_i if we have ranks greater than 2
-    if max(ranks) > 2:
+    # Return prefixFunctional, prefixLinearForm or prefixBilinearForm
+    # when we have exactly one form of ranks 0, 1 or 2
+    count = [ranks.count(0), ranks.count(1), ranks.count(2)]
+    if len(ranks) <= 3 and sum(count) > 0 and min(count) >= 0 and max(count) <= 1:
+        postfixes = ["Functional", "LinearForm", "BilinearForm"]
+        return "%s%s" % (prefix, postfixes[ranks[i]])
+
+    # Return prefix_i if we have more than one rank
+    if len(ranks) > 1:
         return "%s_%d" % (prefix, i)
 
-    # Return prefix_i if we have more than one form of rank 0, 1 or 2
-    if ranks.count(0) > 1 or ranks.count(1) > 1 or ranks.count(2) > 2:
-        return "%s_%d" % (prefix, i)
-
-    # Otherwise, return prefixFunctional, prefixLinearForm or prefixBilinearForm
-    postfixes = ["Functional", "LinearForm", "BilinearForm"]
-    return "%s%s" % (prefix, postfixes[ranks[i]])
+    # Else, just return prefix
+    return prefix
 
 def __generate_finite_element(code, form_data, options, prefix, i):
     "Generate code for ufc::finite_element"

@@ -12,7 +12,7 @@ from form import *
 
 class CodeGenerator:
 
-    def __init__(self, form_data, form_representation, format):
+    def __init__(self):
         "Constructor"
 
         # Common methods
@@ -20,19 +20,10 @@ class CodeGenerator:
         self.generate_finite_element = generate_finite_element
         self.generate_form = generate_form
 
-        # Save data
-        self.form_data = form_data
-        self.form_representation = form_representation
-        self.format = format
-        
-    def generate_code(self):
-        "Generator code according to given format"
+    def generate_form_code(self, form_data, form_representation, format):
+        "Generator form code according to given format"
 
         code = {}
-
-        form_data = self.form_data
-        form_representation = self.form_representation
-        format = self.format
 
         # Generate code for finite elements
         debug("Generating code for finite elements...")
@@ -67,6 +58,25 @@ class CodeGenerator:
         # Generate code for form
         debug("Generating code for form...")
         code["form"] = generate_form(form_data, format)
+        debug("done")
+
+        return code
+
+    def generate_element_code(self, element_data, format):
+        "Generate element code according to given format"
+
+        code = {}
+        
+        # Generate code for finite elements
+        debug("Generating code for finite elements...")
+        for i in range(len(element_data.elements)):
+            code[("finite_element", i)] = self.generate_finite_element(element_data.elements[i], format)
+        debug("done")
+
+        # Generate code for dof maps
+        debug("Generating code for dof maps...")
+        for i in range(len(element_data.dof_maps)):
+            code[("dof_map", i)] = self.generate_dof_map(element_data.dof_maps[i], format)
         debug("done")
 
         return code

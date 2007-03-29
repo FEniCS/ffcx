@@ -33,6 +33,7 @@ from language.reassignment import *
 # FFC analysis modules
 from analysis.checks import *
 from analysis.formdata import *
+from analysis.elementdata import *
 
 # FFC form representation modules
 from representation.tensor import *
@@ -41,20 +42,38 @@ from representation.quadrature import *
 # FFC code generation modules
 from codegeneration.tensor import *
 from codegeneration.quadrature import *
+from codegeneration.common.finiteelement import *
+from codegeneration.common.dofmap import *
 
 # FFC format modules
 from format import ufcformat
 from format import dolfinformat
 
 def compile(forms, prefix = "Form", output_language = FFC_LANGUAGE, options = FFC_OPTIONS):
-    "Compile the given form for the given language."
+    "Compile the given forms and/or elements for the given language"
+
+    # Check input
+    (forms, elements) = preprocess_forms(forms)
+    if len(forms) == 0 and len(elements) == 0:
+        debug("No forms or elements specified, nothing to do.")
+        return
+
+    # Compile forms
+    if len(forms) > 0:
+        compile_forms(forms, prefix, output_language, options)
+
+    # Compile elements, but only if there are no forms
+    if len(elements) > 0 and len(forms) == 0:
+        compile_elements(elements, prefix, output_language, options)
+
+def compile_forms(forms, prefix = "Form", output_language = FFC_LANGUAGE, options = FFC_OPTIONS):
+    "Compile the given forms for the given language"
 
     # Check form input
-    forms = preprocess_forms(forms)
     if len(forms) == 0:
         debug("No forms specified, nothing to do.")
         return
-
+    
     # Choose format
     format = __choose_format(output_language)
 
@@ -66,13 +85,13 @@ def compile(forms, prefix = "Form", output_language = FFC_LANGUAGE, options = FF
         form_data = analyze_form(form)
 
         # Compiler phase 2: compute form representation
-        form_representation = compute_representation(form_data)
+        form_representation = compute_form_representation(form_data)
 
         # Compiler phase 3: optimize form representation
-        compute_optimization(form)
+        optimize_form_representation(form)
 
-        # Compiler phase 4: generate code
-        form_code = generate_code(form_data, form_representation, format.format)
+        # Compiler phase 4: generate form code
+        form_code = generate_form_code(form_data, form_representation, format.format)
 
         # Add to list of codes
         generated_forms += [(form_code, form_data)]
@@ -80,24 +99,70 @@ def compile(forms, prefix = "Form", output_language = FFC_LANGUAGE, options = FF
     # Compiler phase 5: format code
     format_code(generated_forms, prefix, format, options)
 
-def preprocess_forms(forms):
-    "Check and possibly convert form input to a list of Forms"
+def compile_elements(elements, prefix = "Element", output_language = FFC_LANGUAGE, options = FFC_OPTIONS):
+    "Compile the given elements for the given language"
 
-    # Check that we get a list of forms
+    # Check element input
+    if len(elements) == 0:
+        debug("No elements specified, nothing to do.")
+        return
+
+    # Compiler phase 1: analyze form
+    debug_begin("Compiler phase 1: Analyzing form (elements)")
+    element_data = ElementData(elements)
+    debug_end()
+
+    # Go directly to phase 4, code generation
+    debug_begin("Compiler phase 2-3: Nothing to do")
+    debug("-")
+    debug_end()
+    debug_begin("Compiler phase 4: Generating code")
+
+    # Choose format and code generator
+    format = __choose_format(output_language)
+    CodeGenerator = __choose_code_generator()
+    code_generator = CodeGenerator()
+
+    # Generate code
+    element_code = code_generator.generate_element_code(element_data, format.format)
+
+    # Compiler phase 5: format code
+    debug_end()
+    debug_begin("Compiler phase 5: Formatting code")
+    format.write([(element_code, element_data)], prefix, options)
+    debug_end()
+
+    # Format the pre-generated code
+
+
+    # Compiler phase 5: format code
+
+    #for element in elements:
+    #    print generate_finite_element(element, format.format)
+
+    #element_code = generate_
+    
+def preprocess_forms(forms):
+    "Check and possibly convert form input to a list of Forms and a list if elements"
+
+    # Check that we get a list
     if not isinstance(forms, list):
         forms = [forms]
 
     # Check each form
     preprocessed_forms = []
+    preprocessed_elements = []
     for form in forms:
         if isinstance(form, Form):
             preprocessed_forms += [form]
         elif isinstance(form, Monomial):
             preprocessed_forms += [Form(form)]
+        elif isinstance(form, FiniteElement) or isinstance(form, MixedElement):
+            preprocessed_elements += [form]
         elif not form == None:
             raise RuntimeError, "Not a form: " + str(form)
 
-    return preprocessed_forms
+    return (preprocessed_forms, preprocessed_elements)
 
 def analyze_form(form):
     "Compiler phase 1: analyze form"
@@ -125,7 +190,7 @@ def analyze_form(form):
     debug_end()
     return form_data
 
-def compute_representation(form_data):
+def compute_form_representation(form_data):
     "Compiler phase 2: compute form representation"
     debug_begin("Compiler phase 2: Computing form representation")
 
@@ -138,7 +203,7 @@ def compute_representation(form_data):
     debug_end()
     return form_representation
     
-def compute_optimization(form):
+def optimize_form_representation(form):
     "Compiler phase 3: optimize form representation"
     debug_begin("Compiler phase 3: Computing optimization")
 
@@ -146,7 +211,7 @@ def compute_optimization(form):
 
     debug_end()
 
-def generate_code(form_data, form_representation, format):
+def generate_form_code(form_data, form_representation, format):
     "Compiler phase 4: generate code"
     debug_begin("Compiler phase 4: Generating code")
 
@@ -154,8 +219,8 @@ def generate_code(form_data, form_representation, format):
     CodeGenerator = __choose_code_generator()
 
     # Generate code
-    code_generator = CodeGenerator(form_data, form_representation, format)
-    code = code_generator.generate_code()
+    code_generator = CodeGenerator()
+    code = code_generator.generate_form_code(form_data, form_representation, format)
         
     debug_end()
     return code

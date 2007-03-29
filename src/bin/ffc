@@ -143,7 +143,7 @@ def __make_module(filename, language, options):
     # Get prefix of file name and generate Python script file name
     prefix = filename.replace(".form", "")
     outname = prefix + ".py"
-    debug("Preprocessing form file: %s --> %s" % (filename, outname))
+    debug("Preprocessing form file: %s --> %s\n" % (filename, outname))
 
     # Read input
     infile = open(filename, "r")
@@ -157,8 +157,11 @@ from ffc import *
 # Reserved variables for forms
 (a, L, M) = (None, None, None)
 
+# Reserved variable for element
+element = None
+
 %s
-compile([a, L, M], \"%s\", \"%s\", %s)
+compile([a, L, M, element], \"%s\", \"%s\", %s)
 """ % (input, prefix, language, options)
 
     # Write output
