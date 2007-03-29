@@ -134,12 +134,7 @@ class FiniteElement:
 
     def __add__(self, other):
         "Create mixed element"
-        if isinstance(other, FiniteElement):
-            return mixedelement.MixedElement([self, other])
-        elif isinstance(other, mixedelement.MixedElement):
-            return mixedelement.MixedElement([self] + other.elements)
-        else:
-            raise RuntimeError, "Unable to create mixed element from given object: " + str(other)
+        return mixedelement.MixedElement([self, other])
 
     def __choose_element(self, family, shape, degree):
         "Choose FIAT finite element from string"

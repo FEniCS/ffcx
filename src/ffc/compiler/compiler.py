@@ -20,7 +20,7 @@ __license__  = "GNU GPL Version 2"
 from ffc.common.debug import *
 from ffc.common.constants import *
 
-# FFC FEM modules
+# FFC fem modules
 from ffc.fem.finiteelement import *
 from ffc.fem.vectorelement import *
 from ffc.fem.mixedelement import *

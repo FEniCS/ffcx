@@ -1,5 +1,5 @@
 _author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2005-09-16 -- 2007-03-20"
+__date__ = "2005-09-16 -- 2007-03-29"
 __copyright__ = "Copyright (C) 2005-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -15,37 +15,36 @@ from ffc.common.utils import *
 # FFC compiler.language modules
 from ffc.compiler.language.algebra import *
 
-# FFC FEM modules
-from finiteelement import *
+# FFC fem modules
+import finiteelement
 
 class MixedElement:
     """A MixedElement represents a finite element defined as the
-    tensor product of a list of finite elements."""
+    tensor product of a list of finite elements. It is represented as
+    list of finite elements (mixed or simple) and may thus be
+    recursively defined in terms of other mixed elements."""
     
     def __init__(self, elements):
         "Create MixedElement from a list of elements."
 
-        # Create list of elements
-        if not isinstance(elements, list):
-            self.elements = [elements]
-        else:
-            self.elements = elements
+        # Make sure we get a list of elements
+        if not isinstance(elements, list) or not len(elements) > 1:
+            raise FormError, "Mixed finite element must be created from a list of at least two elements."
 
-        # Check that we have at least one element
-        if not len(self.elements) > 1:
-            raise FormError, "Mixed finite element must contain at least two elements."
+        # Save list of elements
+        self.__elements = elements
 
     def signature(self):
         "Return a string identifying the finite element"
-        return "Mixed finite element: [%s]" % ", ".join([element.signature() for element in self.elements])
+        return "Mixed finite element: [%s]" % ", ".join([element.signature() for element in self.__elements])
 
     def cell_shape(self):
         "Return the cell shape"
-        return pick_first([element.cell_shape() for element in self.elements])
+        return pick_first([element.cell_shape() for element in self.__elements])
 
     def space_dimension(self):
         "Return the dimension of the finite element function space"
-        return sum([element.space_dimension() for element in self.elements])
+        return sum([element.space_dimension() for element in self.__elements])
 
     def value_rank(self):
         "Return the rank of the value space"
@@ -53,39 +52,39 @@ class MixedElement:
 
     def value_dimension(self, i):
         "Return the dimension of the value space for axis i"
-        return sum([element.value_dimension(i) for element in self.elements])
+        return sum([element.value_dimension(i) for element in self.__elements])
 
     def num_sub_elements(self):
         "Return the number of sub elements"
-        return len(self.elements)
+        return len(self.__elements)
 
     def sub_element(self, i):
         "Return sub element i"
-        return self.elements[i]
+        return self.__elements[i]
 
     def degree(self):
         "Return degree of polynomial basis"
-        return max([element.degree() for element in self.elements])
+        return max([element.degree() for element in self.__elements])
 
     def mapping(self):
         "Return the type of mapping associated with the element"
-        return pick_first([element.mapping() for element in self.elements])
+        return pick_first([element.mapping() for element in self.__elements])
 
     def cell_dimension(self):
         "Return dimension of shape"
-        return pick_first([element.cell_dimension() for element in self.elements])
+        return pick_first([element.cell_dimension() for element in self.__elements])
 
     def facet_shape(self):
         "Return shape of facet"
-        return pick_first([element.facet_shape() for element in self.elements])
+        return pick_first([element.facet_shape() for element in self.__elements])
 
     def num_facets(self):
         "Return number of facets for shape of element"
-        return pick_first([element.num_facets() for element in self.elements])
+        return pick_first([element.num_facets() for element in self.__elements])
 
     def entity_dofs(self):
         "Return the mapping from entities to dofs"
-        return [entity_dofs for element in self.elements for entity_dofs in element.entity_dofs()]
+        return [entity_dofs for element in self.__elements for entity_dofs in element.entity_dofs()]
 
     def basis(self):
         "Return basis of finite element space"
@@ -96,15 +95,15 @@ class MixedElement:
         the tabulated values for the sub elements."""
 
         # Special case: only one element
-        if len(self.elements) == 1:
+        if len(self.__elements) == 1:
             return elements[0].tabulate(order, points, facet)
 
         # Iterate over sub elements and build mixed table from element tables
         mixed_table = []
         offset = 0
-        for i in range(len(self.elements)):
+        for i in range(len(self.__elements)):
             # Get current element and table
-            element = self.elements[i]
+            element = self.__elements[i]
             table = element.tabulate(order, points, facet)
             # Iterate over the components corresponding to the current element
             if element.value_rank() == 0:
@@ -150,13 +149,8 @@ class MixedElement:
 
     def __add__(self, other):
         "Create mixed element"
-        if isinstance(other, FiniteElement):
-            return MixedElement(self.elements + [other])
-        elif isinstance(other, MixedElement):
-            return MixedElement(self.elements + other.elements)
-        else:
-            raise RuntimeError, "Unable to create mixed element from given object: " + str(other)
+        return MixedElement([self, other])
 
     def __repr__(self):
         "Pretty print"
-        return "Mixed finite element: " + str(self.elements)
+        return "Mixed finite element: " + str(self.__elements)
