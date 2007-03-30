@@ -89,6 +89,26 @@ public:
 %(tabulate_facet_dofs)s
   }
 
+  /// Tabulate the coordinates of all dofs on a cell
+  virtual void tabulate_coordinates(double **coordinates,
+                                    const ufc::mesh& m,
+                                    const ufc::cell& c) const
+  {
+%(tabulate_coordinates)s
+  }
+
+  /// Return the number of sub dof maps (for a mixed element)
+  virtual unsigned int num_sub_dof_maps() const
+  {
+%(num_sub_dof_maps)s
+  }
+
+  /// Create a new dof_map for sub dof map i (for a mixed element)
+  virtual finite_element* create_sub_dof_map(unsigned int i) const
+  {
+%(create_sub_dof_map)s
+  }
+
 };
 """
 
@@ -141,6 +161,17 @@ public:
                                    const ufc::mesh& m,
                                    const ufc::cell& c,
                                    unsigned int facet) const;
+
+  /// Tabulate the coordinates of all dofs on a cell
+  virtual void tabulate_coordinates(double **coordinates,
+                                    const ufc::mesh& m,
+                                    const ufc::cell& c) const;
+
+  /// Return the number of sub dof maps (for a mixed element)
+  virtual unsigned int num_sub_dof_maps() const;
+
+  /// Create a new dof_map for sub dof map i (for a mixed element)
+  virtual finite_element* create_sub_dof_map(unsigned int i) const;
 
 };
 """
@@ -223,4 +254,25 @@ void %(classname)s::tabulate_facet_dofs(unsigned int* dofs,
 {
 %(tabulate_facet_dofs)s
 }
+
+/// Tabulate the coordinates of all dofs on a cell
+void %(classname)s::tabulate_coordinates(double **coordinates,
+                                         const ufc::mesh& m,
+                                         const ufc::cell& c) const
+{
+%(tabulate_coordinates)s
+}
+
+/// Return the number of sub dof maps (for a mixed element)
+unsigned int %(classname)s::num_sub_dof_maps() const
+{
+%(num_sub_dof_maps)s
+}
+
+/// Create a new dof_map for sub dof map i (for a mixed element)
+finite_element* %(classname)s::create_sub_dof_map(unsigned int i) const
+{
+%(create_sub_dof_map)s
+}
+
 """

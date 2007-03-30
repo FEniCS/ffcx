@@ -1,4 +1,4 @@
-// This is UFC (Unified Form-assembly Code) v. 1.0-rc2.
+// This is UFC (Unified Form-assembly Code) v. 1.0-rc3.
 // This code is released into the public domain.
 //
 // The FEniCS Project (http://www.fenics.org/) 2006-2007.
@@ -6,7 +6,7 @@
 #ifndef __UFC_H
 #define __UFC_H
 
-const char UFC_VERSION[] = "1.0-rc2";
+const char UFC_VERSION[] = "1.0-rc3";
 
 namespace ufc
 {
@@ -84,7 +84,7 @@ namespace ufc
     virtual void evaluate(double* values,
                           const double* coordinates,
                           const cell& c) const = 0;
-    
+
   };
 
   /// This class defines the interface for a finite element.
@@ -186,6 +186,17 @@ namespace ufc
                                      const mesh& m,
                                      const cell& c,
                                      unsigned int facet) const = 0;
+
+    /// Tabulate the coordinates of all dofs on a cell
+    virtual void tabulate_coordinates(double **coordinates,
+                                      const mesh& m,
+                                      const cell& c) const = 0;
+
+    /// Return the number of sub dof maps (for a mixed element)
+    virtual unsigned int num_sub_dof_maps() const = 0;
+
+    /// Create a new dof_map for sub dof map i (for a mixed element)
+    virtual finite_element* create_sub_dof_map(unsigned int i) const = 0;
 
   };
 
