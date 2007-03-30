@@ -104,7 +104,7 @@ public:
   }
 
   /// Create a new dof_map for sub dof map i (for a mixed element)
-  virtual ufc::finite_element* create_sub_dof_map(unsigned int i) const
+  virtual ufc::dof_map* create_sub_dof_map(unsigned int i) const
   {
 %(create_sub_dof_map)s
   }
@@ -171,7 +171,7 @@ public:
   virtual unsigned int num_sub_dof_maps() const;
 
   /// Create a new dof_map for sub dof map i (for a mixed element)
-  virtual ufc::finite_element* create_sub_dof_map(unsigned int i) const;
+  virtual ufc::dof_map* create_sub_dof_map(unsigned int i) const;
 
 };
 """
@@ -270,7 +270,7 @@ unsigned int %(classname)s::num_sub_dof_maps() const
 }
 
 /// Create a new dof_map for sub dof map i (for a mixed element)
-ufc::finite_element* %(classname)s::create_sub_dof_map(unsigned int i) const
+ufc::dof_map* %(classname)s::create_sub_dof_map(unsigned int i) const
 {
 %(create_sub_dof_map)s
 }
