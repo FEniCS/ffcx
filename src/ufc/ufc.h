@@ -196,7 +196,7 @@ namespace ufc
     virtual unsigned int num_sub_dof_maps() const = 0;
 
     /// Create a new dof_map for sub dof map i (for a mixed element)
-    virtual finite_element* create_sub_dof_map(unsigned int i) const = 0;
+    virtual dof_map* create_sub_dof_map(unsigned int i) const = 0;
 
   };
 
