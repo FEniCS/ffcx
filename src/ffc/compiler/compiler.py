@@ -108,7 +108,7 @@ def compile_elements(elements, prefix = "Element", output_language = FFC_LANGUAG
         return
 
     # Compiler phase 1: analyze form
-    debug_begin("Compiler phase 1: Analyzing form (elements)")
+    debug_begin("Compiler phase 1: Analyzing elements")
     element_data = ElementData(elements)
     debug_end()
 
@@ -131,16 +131,6 @@ def compile_elements(elements, prefix = "Element", output_language = FFC_LANGUAG
     debug_begin("Compiler phase 5: Formatting code")
     format.write([(element_code, element_data)], prefix, options)
     debug_end()
-
-    # Format the pre-generated code
-
-
-    # Compiler phase 5: format code
-
-    #for element in elements:
-    #    print generate_finite_element(element, format.format)
-
-    #element_code = generate_
     
 def preprocess_forms(forms):
     "Check and possibly convert form input to a list of Forms and a list if elements"

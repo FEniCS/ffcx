@@ -46,7 +46,6 @@ from ffc.fem.mapping import *
 
 # FFC language modules
 from tokens import *
-from variables import *
 from index import *
 from integral import *
 from restriction import *

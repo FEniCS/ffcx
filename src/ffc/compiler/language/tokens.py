@@ -9,7 +9,6 @@ __license__  = "GNU GPL Version 2"
 
 # Modified by Marie Rognes (meg@math.uio.no), 2006
 
-
 # FFC modules
 from index import Index
 from restriction import *

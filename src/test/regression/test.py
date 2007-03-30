@@ -1,7 +1,7 @@
 "Regression tests for FFC"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-03-05 -- 2007-03-05"
+__date__ = "2007-03-05 -- 2007-03-30"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -10,11 +10,10 @@ from difflib import unified_diff
 
 # Check all in demo directory
 chdir("../../demo")
-form_files = listdir(".")
-# Temporary until all forms work
-form_files = ["Poisson.form", "Mass.form"]
+form_files = [f for f in listdir(".") if ".form" in f]
 num_forms = len(form_files)
 num_forms_ok = 0
+forms_not_ok = []
 
 # Iterate over form files
 for form_file in form_files:
@@ -24,7 +23,7 @@ for form_file in form_files:
         print "Compiling and verifying form %s..." % form_file
 
         # Compile form
-        if system("../bin/ffc -s -l ufc %s" % form_file) == 0:
+        if system("../bin/ffc -s %s" % form_file) == 0:
 
             # Compare against reference
             code_file = form_file.split(".")[0] + ".h"
@@ -41,6 +40,7 @@ for form_file in form_files:
                 diff = unified_diff(c0, c1)
                 for line in diff:
                     print line
+                forms_not_ok += [form_file]
 
 # Print summary
 if num_forms_ok == num_forms:
@@ -50,4 +50,6 @@ if num_forms_ok == num_forms:
     print "OK"
 else:
     print ""
-    print "Regression test failed for %d of %d forms" % (num_forms - num_forms_ok, num_forms)
+    print "*** Regression test failed for %d of %d forms:" % (num_forms - num_forms_ok, num_forms)
+    for form_file in forms_not_ok:
+        print "  " + form_file
