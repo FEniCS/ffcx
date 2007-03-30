@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 from distutils.core import setup
+from distutils import sysconfig
 import sys
 
 # Version number
@@ -9,7 +10,8 @@ minor = 0
 
 # Set prefix
 try:    prefix = [item for item in sys.argv[1:] if "--prefix=" in item][0].split("=")[1]
-except: prefix = "/usr/local"
+except: prefix = ("/").join(sysconfig.get_python_inc().split("/")[:-2])
+print "Installing UFC under %s..." % prefix
 
 # Generate pkgconfig file
 file = open("ufc-%d.pc" % major, "w")
