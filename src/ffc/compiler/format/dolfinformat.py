@@ -1,7 +1,7 @@
 "Code generation for the UFC 1.0 format with DOLFIN"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-03-24 -- 2007-03-24"
+__date__ = "2007-03-24 -- 2007-04-02"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -84,7 +84,6 @@ def __generate_dolfin_wrappers(generated_forms, prefix, options):
     output = """\
 // DOLFIN wrappers
 
-#include <dolfin/Function.h>
 #include <dolfin/NewForm.h>
 
 """
@@ -93,21 +92,41 @@ def __generate_dolfin_wrappers(generated_forms, prefix, options):
         (form_code, form_data) = generated_forms[i]
         form_prefix = ufcformat.compute_prefix(prefix, generated_forms, i)
         constructor_args = ", ".join(["dolfin::Function& w%d" % i for i in range(form_data.num_coefficients)])
-        constructor_body = "\n".join(["    coefficients.push_back(&w%d);" % i for i in range(form_data.num_coefficients)])
+        constructor_body = "\n".join(["    __coefficients.push_back(&w%d);" % i for i in range(form_data.num_coefficients)])
         if constructor_body == "":
             constructor_body = "    // Do nothing"
         output += """\
-class %s : public UFC_%s, public dolfin::NewForm
+class %s : public dolfin::NewForm
 {
 public:
 
-  %s(%s) : UFC_%s(), dolfin::NewForm()
+  %s(%s) : dolfin::NewForm()
   {
 %s
   }
 
+  /// Return UFC form
+  virtual const ufc::form& form() const
+  {
+    return __form;
+  }
+  
+  /// Return array of coefficients
+  virtual const dolfin::Array<dolfin::Function*>& coefficients() const
+  {
+    return __coefficients;
+  }
+
+private:
+
+  // UFC form
+  UFC_%s __form;
+
+  /// Array of coefficients
+  dolfin::Array<dolfin::Function*> __coefficients;
+
 };
 
-""" % (form_prefix, form_prefix, form_prefix, constructor_args, form_prefix, constructor_body)
+""" % (form_prefix, form_prefix, constructor_args, constructor_body, form_prefix)
     
     return output
