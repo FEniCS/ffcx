@@ -268,6 +268,15 @@ def __generate_dof_map(code, form_data, options, prefix, i):
     # Generate code for tabulate_facet_dofs
     ufc_code["tabulate_facet_dofs"] = "// Not implemented"
 
+    # Generate code for tabulate_coordinates
+    ufc_code["tabulate_coordinates"] = "// Not implemented"
+
+    # Generate code for num_sub_dof_maps
+    ufc_code["num_sub_dof_maps"] = "// Not implemented\nreturn 0;"
+
+    # Generate code for create_sub_dof_map
+    ufc_code["create_sub_dof_map"] = "// Not implemented\nreturn 0;"
+
     return __generate_code(dof_map_combined, ufc_code)
 
 def __generate_cell_integral(code, form_data, options, prefix, i):
