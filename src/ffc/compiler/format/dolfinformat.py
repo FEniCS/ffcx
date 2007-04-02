@@ -84,6 +84,7 @@ def __generate_dolfin_wrappers(generated_forms, prefix, options):
     output = """\
 // DOLFIN wrappers
 
+#include <dolfin/Function.h>
 #include <dolfin/NewForm.h>
 
 """
@@ -91,7 +92,7 @@ def __generate_dolfin_wrappers(generated_forms, prefix, options):
     for i in range(len(generated_forms)):
         (form_code, form_data) = generated_forms[i]
         form_prefix = ufcformat.compute_prefix(prefix, generated_forms, i)
-        constructor_args = ", ".join(["Function& w%d" % i for i in range(form_data.num_coefficients)])
+        constructor_args = ", ".join(["dolfin::Function& w%d" % i for i in range(form_data.num_coefficients)])
         constructor_body = "\n".join(["    coefficients.push_back(&w%d);" % i for i in range(form_data.num_coefficients)])
         if constructor_body == "":
             constructor_body = "    // Do nothing"
