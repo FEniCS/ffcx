@@ -11,6 +11,7 @@ __license__  = "GNU GPL Version 2"
 
 # Modified by Johan Jansson 2005
 # Modified by Ola Skavhaug 2006
+# Modified by Kristian B. Oelgaard 2007
 
 # Python modules
 import sys
@@ -30,7 +31,8 @@ def main(argv):
 
     # Get command-line arguments
     try:
-        opts, args = getopt.getopt(argv, "hvOsl:d:f:", ["help", "version", "optimize", "silent", "language=", "debug="])
+        opts, args = getopt.getopt(argv, "hvOsl:d:f:r:", \
+        ["help", "version", "optimize", "silent", "language=", "debug=", "representation="])
     except getopt.GetoptError:
         usage()
         return 2
@@ -47,6 +49,7 @@ def main(argv):
     language = FFC_LANGUAGE
     debuglevel = FFC_DEBUG_LEVEL
     options = FFC_OPTIONS
+    representation = FFC_REPRESENTATION
 
     # Get options
     for opt, arg in opts:
@@ -70,6 +73,12 @@ def main(argv):
             else:
                 usage()
                 return 2
+        elif opt in  ("-r", "--representation"):
+            if arg in (FFC_REPRESENTATION, "quadrature"):
+                representation = arg
+            else:
+                usage()
+                return 2
 
     # Set debug level
     setlevel(debuglevel)
@@ -81,7 +90,7 @@ def main(argv):
     # Call parser and compiler for each file
     for filename in args:
         # Parse current file
-        outname = __make_module(filename, language, options)
+        outname = __make_module(filename, language, options, representation)
         # Compile generated file (also provide a namespace)
         ns = {}
         # Catch exceptions only if debug level is non-negative
@@ -137,7 +146,7 @@ def version():
     print("For further information, go to http://www/fenics.org/ffc/.\n")
     return
 
-def __make_module(filename, language, options):
+def __make_module(filename, language, options, representation):
     "Create Python module from given .form file and return name of module file"
 
     # Get prefix of file name and generate Python script file name
@@ -161,8 +170,8 @@ from ffc import *
 element = None
 
 %s
-compile([a, L, M, element], \"%s\", \"%s\", %s)
-""" % (input, prefix, language, options)
+compile([a, L, M, element], \"%s\", \"%s\", %s, \"%s\")
+""" % (input, prefix, language, options, representation)
 
     # Write output
     outfile = open(outname, "w")

@@ -9,3 +9,4 @@ FFC_LANGUAGE    = "ufc"
 FFC_DEBUG_LEVEL = 0
 FFC_OPTIONS     = {"optimize": False,
                    "blas": False}
+FFC_REPRESENTATION = "tensor"

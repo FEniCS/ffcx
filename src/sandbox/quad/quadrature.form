@@ -1,0 +1,25 @@
+elem = FiniteElement("Lagrange", "triangle", 1)
+#elem = FiniteElement("Lagrange", "tetrahedron", 1)
+#elem2 = FiniteElement("Lagrange", "triangle", 2)
+
+#elem = VectorElement("Lagrange", "triangle", 1)
+
+v = TestFunction(elem)
+u = TrialFunction(elem)
+
+#v2 = TestFunction(elem2)
+#u2 = TrialFunction(elem2)
+
+f = Function(elem)
+
+
+#print v
+#print u
+a = v*u*dx
+#a = dot(v,u)*dx + v*u*dx
+#a = dot(grad(v),grad(u))*dx
+#a = dot(grad(grad(v)),grad(grad(u)))*dx
+#a = v*u*ds
+#a = dot(grad(v('+')),grad(u('-')))*dS
+#a = v*u*dx + dot(grad(v),grad(u))*dx
+#a = v*u*dx + dot(grad(v),grad(u))*dx# + dot(grad(v('+')),grad(u('-')))*dS

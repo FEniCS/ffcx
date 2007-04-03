@@ -50,7 +50,15 @@ format = { "add": lambda l: " + ".join(l),
            "num entities": lambda dim : "m.num_entities[%d]" % dim,
            "offset declaration": "unsigned int offset",
            "offset access": "offset",
-           "cell shape": lambda i: {1: "ufc::line", 2: "ufc::triangle", 3: "ufc::tetrahedron"}[i]}
+           "cell shape": lambda i: {1: "ufc::line", 2: "ufc::triangle", 3: "ufc::tetrahedron"}[i],
+# quadrature
+           "indent comment": lambda s,i: indent("// %s",i) % s,
+           "add equal": lambda i,j: "%s += %s" % (i,j),
+           "derivatives": lambda i,j,k,l: "dNdx%d_%d[%s][%s]" % (i,j,k,l),
+           "coordinates": lambda i,j: "x[%s][%s]" % (i,j),
+           "absolute value": lambda i: "std::abs(%s)" % (i),
+           "weights": lambda i,j: "W%d[%s]" % (i,j),
+           "psis": lambda l: "Psi%d_%d_%d_%s[%s][%s]" % (l[0],l[1],l[2], "".join(["%d" % index for index in l[3]]), l[4], l[5])}
 
 def write(generated_forms, prefix, options):
     "Generate UFC 1.0 code for a given list of pregenerated forms"
