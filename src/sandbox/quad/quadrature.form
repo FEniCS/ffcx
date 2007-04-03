@@ -15,9 +15,9 @@ f = Function(elem)
 
 #print v
 #print u
-a = v*u*dx
+#a = v*u*dx
 #a = dot(v,u)*dx + v*u*dx
-#a = dot(grad(v),grad(u))*dx
+a = f*dot(grad(v),grad(u))*dx
 #a = dot(grad(grad(v)),grad(grad(u)))*dx
 #a = v*u*ds
 #a = dot(grad(v('+')),grad(u('-')))*dS

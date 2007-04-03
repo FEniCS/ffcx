@@ -54,6 +54,7 @@ format = { "add": lambda l: " + ".join(l),
 # quadrature
            "indent comment": lambda s,i: indent("// %s",i) % s,
            "add equal": lambda i,j: "%s += %s" % (i,j),
+           "element tensor quad": lambda k: "A[%s]" % k,
            "derivatives": lambda i,j,k,l: "dNdx%d_%d[%s][%s]" % (i,j,k,l),
            "coordinates": lambda i,j: "x[%s][%s]" % (i,j),
            "absolute value": lambda i: "std::abs(%s)" % (i),
