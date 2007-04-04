@@ -8,7 +8,7 @@ def pick_first(values):
     if not values[:-1] == values[1:]:
         raise RuntimeError, "Different values for method %s for objects %s." % (str(method), str(object_list))
     return values[0]
-    
+
 def listcopy(l):
     """Create a copy of the list, calling the copy constructor on each
     object in the list (problems when using copy.deepcopy)."""
