@@ -78,7 +78,7 @@ detJ%(restriction)s = std::abs(detJ%(restriction)s);
 # Code snippet for computing the scale factor (determinant)
 scale_factor = """\
 // Set scale factor
-const double det = detJ;
+//const double det = detJ;
 """
 
 # Code snippet for computing the determinant of the facet mapping in 2D

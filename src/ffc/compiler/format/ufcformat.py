@@ -208,7 +208,8 @@ def __generate_finite_element(code, form_data, options, prefix, i):
     ufc_code["value_dimension"] = __generate_switch("i", cases, "return 0;")
 
     # Generate code for evaluate_basis
-    ufc_code["evaluate_basis"] = "// Not implemented"
+#    ufc_code["evaluate_basis"] = "// Not implemented"
+    ufc_code["evaluate_basis"] = __generate_body(code["evaluate_basis"])
 
     # Generate code for evaluate_dof
     ufc_code["evaluate_dof"] = "// Not implemented\nreturn 0.0;"

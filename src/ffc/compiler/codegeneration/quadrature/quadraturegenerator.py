@@ -120,7 +120,7 @@ class QuadratureGenerator(CodeGenerator):
             # Tabulate variables,
             # Tabulate the derivatives of shapefunctions, used to generate the Jacobian
             # FIXME: Switched off until a nodemap is available (Jacobian)
-#            tabulate_code += self.__tabulate_derivatives(tensor.Derivatives, i, format)
+#            tabulate_code += self.__tabulate_derivatives(tensors[i].Derivatives, i, format)
 
             # Tabulate the quadrature weights
             tabulate_code += self.__tabulate_weights(tensors[i].quadrature.weights, i, format)
@@ -134,12 +134,12 @@ class QuadratureGenerator(CodeGenerator):
         for i in range(num_tensors):
             # Loop all quadrature points
             element_code += [format_comment("Loop quadrature points (tensor %d)" %(i,), self.indent_size)]
-            element_code += self.__begin_loop("gp", len(tensors[i].quadrature.weights))
+            element_code += self.__begin_loop("ip", len(tensors[i].quadrature.weights))
 
             # Generate code to evaluate the Jacobian at every quadrature point
             # FIXME: get dim and num_dofs more clever
             # FIXME: Switched off until a nodemap is available (assuming affine map)
-#            element_code += self.__generate_jacobian(len(tensor.Derivatives), len(tensor.Psis[0][0][0,:]), i, format)
+#            element_code += self.__generate_jacobian(len(tensors[i].Derivatives), len(tensors[i].Psis[0][0][:,0]), i, #format)
             print "generating code for tensor :", i
             # Generate the element tensor
             element_code += self.__element_tensor(tensors[i], i, format)
@@ -204,14 +204,17 @@ class QuadratureGenerator(CodeGenerator):
 
                 # Get derivatives
                 derivatives = Derivatives[directions[d]]
-
-#                print "Derivatives: ", Derivatives
+                print "derivatives: ", derivatives
+                print numpy.shape(derivatives)
 
                 # Get number of dofs (rows)
                 num_dofs = len(derivatives[:,0])
 
                 # Get number of quadrature points (columns)
                 num_quadrature_points = len(derivatives[0,:])
+                print "dofs: ", num_dofs
+                print "ip: ", num_quadrature_points
+
 
                 # Create variable name, static double array[num_dofs][num_quadraturepoints]
                 # Create variable name, static double array[num_quadraturepoints][num_dofs]
@@ -436,7 +439,7 @@ class QuadratureGenerator(CodeGenerator):
                     name = indent(format_transform(i,j, None), self.indent_size)
 #                    print "name: ", name
 #                    value = "dNdx%d[%s][%s]" % (i,"j","i")
-                    value = format_multiply([format_derivatives(tensor_number, i,"i","j"), format_coordinates("j",str(j))])
+                    value = format_multiply([format_derivatives(tensor_number, i,"ip","j"), format_coordinates("j",str(j))])
 #                    print "value: ", value
 
 #                    print "format_add_equal: ", format_add_equal(1,1)
@@ -496,7 +499,7 @@ class QuadratureGenerator(CodeGenerator):
         code += [format_comment("Loop second primary index", self.indent_size)]
         code += self.__begin_loop("j", num_dofs)
 
-        scaling = [format_multiply([format_weights(tensor_number, "gp"), format_determinant]) + \
+        scaling = [format_multiply([format_weights(tensor_number, "ip"), format_determinant]) + \
                   " \\\n%s" %("".join([" " for i in range(self.indent_size)]))]
 #        print "scaling: ", scaling
         code += [format_comment("Compute block entries (tensor %d)" % (tensor_number,), self.indent_size)]
@@ -606,7 +609,7 @@ class QuadratureGenerator(CodeGenerator):
 #    def __generate_psi_entry(self, tensor_number, primary_indices, secondary_indices, psi_indices, format):
     def __generate_psi_entry(self, tensor_number, secondary_indices, psi_indices, format):
 
-        psi_args = [tensor_number, 0, 0, [], "gp", 0]
+        psi_args = [tensor_number, 0, 0, [], "ip", 0]
 
         primary_indices = ["i", "j"]
 #        print "psi_indices: ", psi_indices

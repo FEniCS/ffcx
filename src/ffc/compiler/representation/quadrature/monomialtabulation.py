@@ -57,17 +57,17 @@ def tabulate(monomial, facet0, facet1):
     num_quadrature_points = len(weights)
 
     Derivatives = __derivatives(monomial.basisfunctions, integral_type, points, dscaling, facet0, facet1)
-
+#    print "Derivatives: ", Derivatives
 #    quadrature = Quadrature(points, weights)
 
     # Correction of weights by scaling factor
     quadrature = Quadrature(points, weights*vscaling)
-
+#    points[0] = (-1,-1)
 #    print "\n monomial integration, points: \n", points
 #    print "\n monomial integration, weights: \n", weights
 #    print "\n monomial integration, vscaling: \n", vscaling
 #    print "\n monomial integration, dscaling: \n", dscaling
-
+    print "init table"
     # Initialize quadrature table for basis functions
     table = __init_table(monomial.basisfunctions, integral_type, points, facet0, facet1)
 
@@ -84,8 +84,8 @@ def tabulate(monomial, facet0, facet1):
 #    print "\n monomial integration, monomial.basisfunctions[0].element.basis()[0]: \n", \
 #    monomial.basisfunctions[0].element.basis()[0]
 
-#    print "\n monomial integration, monomial.basisfunctions[0].element.basis()[0](points[0]): \n", \
-#    monomial.basisfunctions[0].element.basis()[0]((-1,-1))
+    print "\n monomial integration, monomial.basisfunctions[0].element.basis()[0](points[0]): \n", \
+    monomial.basisfunctions[0].element.basis()[1]((-1,-1))
 
 #    print "\n monomial integration, monomial.basisfunctions[0].element.basis()[2].deriv(0)(points[0]): \n", \
 #    monomial.basisfunctions[0].element.basis()[2].deriv(0)(points[0])
