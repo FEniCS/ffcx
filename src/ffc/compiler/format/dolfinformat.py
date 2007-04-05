@@ -1,7 +1,7 @@
 "Code generation for the UFC 1.0 format with DOLFIN"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-03-24 -- 2007-04-02"
+__date__ = "2007-03-24 -- 2007-04-05"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -84,7 +84,7 @@ def __generate_dolfin_wrappers(generated_forms, prefix, options):
     output = """\
 // DOLFIN wrappers
 
-#include <dolfin/NewForm.h>
+#include <dolfin/Form.h>
 
 """
 
@@ -96,11 +96,11 @@ def __generate_dolfin_wrappers(generated_forms, prefix, options):
         if constructor_body == "":
             constructor_body = "    // Do nothing"
         output += """\
-class %s : public dolfin::NewForm
+class %s : public dolfin::Form
 {
 public:
 
-  %s(%s) : dolfin::NewForm()
+  %s(%s) : dolfin::Form()
   {
 %s
   }
