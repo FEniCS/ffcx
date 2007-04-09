@@ -66,7 +66,7 @@ public:
 %(local_dimension)s
   }
 
-  /// Return the number of dofs on a facets of a cell
+  /// Return the number of dofs on each cell facet
   virtual unsigned int num_facet_dofs() const
   {
 %(num_facet_dofs)s
@@ -148,7 +148,7 @@ public:
   /// Return the dimension of the local finite element function space
   virtual unsigned int local_dimension() const;
 
-  /// Return the number of dofs on a facets of a cell
+  /// Return the number of dofs on each cell facet
   virtual unsigned int num_facet_dofs() const;
 
   /// Tabulate the local-to-global mapping of dofs on a cell
@@ -232,7 +232,7 @@ unsigned int %(classname)s::local_dimension() const
 %(local_dimension)s
 }
 
-/// Return the number of dofs on a facets of a cell
+/// Return the number of dofs on each cell facet
 unsigned int %(classname)s::num_facet_dofs() const
 {
 %(num_facet_dofs)s
