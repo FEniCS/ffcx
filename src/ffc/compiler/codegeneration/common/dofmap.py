@@ -160,4 +160,4 @@ def __generate_tabulate_dofs(dof_map, format):
 def __generate_tabulate_facet_dofs(dof_map, format):
     "Generate code for tabulate_dofs"
     
-    return "Not implemented"
+    return ["// Not implemented"]

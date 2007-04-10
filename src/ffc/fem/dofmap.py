@@ -25,14 +25,15 @@ class DofMap:
         entity_dofs = element.entity_dofs()
 
         # Generate dof map data
-        self.__signature        = "FFC dof map for " + element.signature()
-        self.__local_dimension  = element.space_dimension()
-        self.__entity_dofs      = entity_dofs
-        self.__num_dofs_per_dim = self.__compute_num_dofs_per_dim(entity_dofs)
-        self.__num_facet_dofs   = self.__compute_num_facet_dofs(entity_dofs, element.cell_shape())
-        self.__dof_entities     = self.__compute_dof_entities(entity_dofs)
-        self.__dof_coordinates  = self.__compute_dof_coordinates(element)
-        self.__dof_components   = self.__compute_dof_components(element)
+        self.__signature          = "FFC dof map for " + element.signature()
+        self.__local_dimension    = element.space_dimension()
+        self.__entity_dofs        = entity_dofs
+        self.__num_dofs_per_dim   = self.__compute_num_dofs_per_dim(entity_dofs)
+        self.__num_facet_dofs     = self.__compute_num_facet_dofs(entity_dofs, element.cell_shape())
+        self.__dof_entities       = self.__compute_dof_entities(entity_dofs)
+        self.__dof_coordinates    = self.__compute_dof_coordinates(element)
+        self.__dof_components     = self.__compute_dof_components(element)
+        self.__incident_entitites = self.__compute_incident_entities(element.cell_shape())
 
     def signature(self):
         "Return a string identifying the dof map"
@@ -157,6 +158,37 @@ class DofMap:
 
         # Can't handle element
         return None
+
+    def __compute_incident_entities(self, cell_shape):
+        "Compute which entities are incident with which"
+
+        # Set topological dimension of simplex
+        if cell_shape == LINE:
+            D = 1
+        elif cell_shape == TRIANGLE:
+            D = 2
+        elif cell_shape == TETRAHEDRON:
+            D = 3
+        else:
+            raise RuntimeError, "Cannot handle cell shape: " + str(cell_shape)
+
+        
+        self.__compute_sub_simplex(D, D - 1, 0)
+
+    def __compute_sub_simplex(self, D, d, i):
+        "Compute vertices for sub simplex (d, i), code taken from Exterior"
+
+        # Compute all permutations of num_vertices - (d + 1)
+        num_vertices = D + 1
+        permutations = compute_permutations(num_vertices - d - 1, num_vertices)
+
+        # Pick tuple i among permutations (non-incident vertices)
+        remove = permutations[i]
+
+        # Remove vertices, keeping d + 1 vertices
+        sub_vertices = [v for v in range(num_vertices) if not v in remove]
+
+        return sub_vertices
 
     def __is_vector_lagrange(self, element):
         "Check if element is vector Lagrange element"

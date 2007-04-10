@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2005-02-04 -- 2007-04-02"
+__date__ = "2005-02-04 -- 2007-04-10"
 __copyright__ = "Copyright (C) 2005-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -27,6 +27,21 @@ def permutations(l):
         for p in permutations(other):
             yield [pivot] + p
     return
+
+def compute_permutations(k, n, skip = []):
+    """Compute all permutations of k elements from (0, n) in rising order.
+    Any elements that are contained in the list skip are not included."""
+    if k == 1:
+        return [(i,) for i in range(n) if not i in skip]
+    pp = compute_permutations(k - 1, n, skip)
+    permutations = []
+    for i in range(n):
+        if i in skip:
+            continue
+        for p in pp:
+            if i < p[0]:
+                permutations += [(i, ) + p]
+    return permutations
 
 def indent(s, n):
     "Indent each row of the given string s with n spaces"

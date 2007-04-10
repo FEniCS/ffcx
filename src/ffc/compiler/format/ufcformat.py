@@ -266,7 +266,7 @@ def __generate_dof_map(code, form_data, options, prefix, i):
     ufc_code["tabulate_dofs"] = __generate_body(code["tabulate_dofs"])
 
     # Generate code for tabulate_facet_dofs
-    ufc_code["tabulate_facet_dofs"] = "// Not implemented"
+    ufc_code["tabulate_facet_dofs"] = __generate_body(code["tabulate_facet_dofs"])
 
     # Generate code for tabulate_coordinates
     ufc_code["tabulate_coordinates"] = "// Not implemented"
