@@ -5,7 +5,7 @@
 # Python module which is then executed.
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-10-14 -- 2007-03-20"
+__date__ = "2004-10-14 -- 2007-04-10"
 __copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -46,10 +46,10 @@ def main(argv):
         return 2
 
     # Set default arguments
+    representation = FFC_REPRESENTATION
     language = FFC_LANGUAGE
     debuglevel = FFC_DEBUG_LEVEL
     options = FFC_OPTIONS
-    representation = FFC_REPRESENTATION
 
     # Get options
     for opt, arg in opts:
@@ -90,7 +90,7 @@ def main(argv):
     # Call parser and compiler for each file
     for filename in args:
         # Parse current file
-        outname = __make_module(filename, language, options, representation)
+        outname = __make_module(filename, representation, language, options)
         # Compile generated file (also provide a namespace)
         ns = {}
         # Catch exceptions only if debug level is non-negative
@@ -146,7 +146,7 @@ def version():
     print("For further information, go to http://www/fenics.org/ffc/.\n")
     return
 
-def __make_module(filename, language, options, representation):
+def __make_module(filename, representation, language, options):
     "Create Python module from given .form file and return name of module file"
 
     # Get prefix of file name and generate Python script file name
@@ -170,8 +170,8 @@ from ffc import *
 element = None
 
 %s
-compile([a, L, M, element], \"%s\", \"%s\", %s, \"%s\")
-""" % (input, prefix, language, options, representation)
+compile([a, L, M, element], \"%s\", \"%s\", \"%s\", %s)
+""" % (input, prefix, representation, language, options)
 
     # Write output
     outfile = open(outname, "w")

@@ -12,7 +12,7 @@ each represented by a separate module:
 """
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-02-05 -- 2007-03-23"
+__date__ = "2007-02-05 -- 2007-04-10"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -51,9 +51,8 @@ from codegeneration.common.dofmap import *
 from format import ufcformat
 from format import dolfinformat
 
-def compile(forms, prefix = "Form", output_language = FFC_LANGUAGE, options = FFC_OPTIONS, \
-            representation = FFC_REPRESENTATION):
-    "Compile the given forms and/or elements for the given language"
+def compile(forms, prefix="Form", representation=FFC_REPRESENTATION, output_language=FFC_LANGUAGE, options=FFC_OPTIONS):
+    "Compile the given forms and/or elements"
 
     # Check input
     (forms, elements) = preprocess_forms(forms)
@@ -63,15 +62,14 @@ def compile(forms, prefix = "Form", output_language = FFC_LANGUAGE, options = FF
 
     # Compile forms
     if len(forms) > 0:
-        compile_forms(forms, prefix, output_language, options, representation)
+        compile_forms(forms, prefix, representation, output_language, options)
 
     # Compile elements, but only if there are no forms
     if len(elements) > 0 and len(forms) == 0:
-        compile_elements(elements, prefix, output_language, options)
+        compile_elements(elements, prefix, representation, output_language, options)
 
-def compile_forms(forms, prefix = "Form", output_language = FFC_LANGUAGE, options = FFC_OPTIONS, \
-                  representation = FFC_REPRESENTATION):
-    "Compile the given forms for the given language"
+def compile_forms(forms, prefix="Form", representation=FFC_REPRESENTATION, output_language=FFC_LANGUAGE, options=FFC_OPTIONS):
+    "Compile the given forms"
 
     # Check form input
     if len(forms) == 0:
@@ -103,7 +101,7 @@ def compile_forms(forms, prefix = "Form", output_language = FFC_LANGUAGE, option
     # Compiler phase 5: format code
     format_code(generated_forms, prefix, format, options)
 
-def compile_elements(elements, prefix = "Element", output_language = FFC_LANGUAGE, options = FFC_OPTIONS):
+def compile_elements(elements, prefix="Element", representation=FFC_REPRESENTATION, output_language=FFC_LANGUAGE, options=FFC_OPTIONS):
     "Compile the given elements for the given language"
 
     # Check element input
@@ -124,7 +122,7 @@ def compile_elements(elements, prefix = "Element", output_language = FFC_LANGUAG
 
     # Choose format and code generator
     format = __choose_format(output_language)
-    CodeGenerator = __choose_code_generator()
+    CodeGenerator = __choose_code_generator(representation)
     code_generator = CodeGenerator()
 
     # Generate code
@@ -210,7 +208,7 @@ def generate_form_code(form_data, form_representation, format):
     debug_begin("Compiler phase 4: Generating code")
 
     # Choose code generator
-#    CodeGenerator = __choose_code_generator()
+    CodeGenerator = __choose_code_generator(form_representation)
     if isinstance(form_representation, TensorRepresentation):
         CodeGenerator = TensorGenerator
     else:
@@ -242,17 +240,18 @@ def __choose_format(output_language):
     else:
         raise RuntimeError, "Don't know how to compile code for language \"%s\"." % output_language
 
-def __choose_representation(representation):
+def __choose_representation(form_representation):
     "Choose form representation"
 
-    if representation == "tensor":
+    if form_representation == "tensor":
         return TensorRepresentation
     else:
-    # Hint: do something differently for quadrature here
         return QuadratureRepresentation
 
-#def __choose_code_generator():
-#    "Choose code generator"
-    
-    # Hint: do something differently for quadrature here
-#    return TensorGenerator
+def __choose_code_generator(form_representation):
+    "Choose code generator"
+
+    if form_representation == "tensor":
+        return TensorGenerator
+    else:
+        return QuadratureGenerator
