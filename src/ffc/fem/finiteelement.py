@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-10-04 -- 2007-03-30"
+__date__ = "2004-10-04 -- 2007-04-04"
 __copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -61,6 +61,10 @@ class FiniteElement:
         # Get entity dofs from FIAT element
         self.__entity_dofs = [self.__fiat_element.dual_basis().entity_ids]
 
+    def family(self):
+        "Return a string indentifying the finite element family"
+        return self.__family
+
     def signature(self):
         "Return a string identifying the finite element"
         return "%s finite element of degree %d on a %s" % \
@@ -121,6 +125,10 @@ class FiniteElement:
         "Return basis of finite element space"
         return self.__fiat_element.function_space()
 
+    def dual_basis(self):
+        "Return dual basis of finite element space"
+        return self.__fiat_element.dual_basis()
+
     def tabulate(self, order, points, facet = None):
         """Return tabulated values of derivatives up to given order of
         basis functions at given points. If facet is not None, then the
@@ -143,30 +151,33 @@ class FiniteElement:
         fiat_shape = string_to_shape[shape]
     
         # Choose FIAT function space
-        if family == "Lagrange":
+        if family == "Lagrange" or family == "CG":
+            self.__family = "Lagrange"
             return (Lagrange(fiat_shape, degree),
                     Mapping.AFFINE)
 
-        if family == "Discontinuous Lagrange":
+        if family == "Discontinuous Lagrange" or family == "DG":
+            self.__family = "Discontinuous Lagrange"
             return (DiscontinuousLagrange(fiat_shape, degree),
                     Mapping.AFFINE)
 
-        if family == "Crouzeix-Raviart":
+        if family == "Crouzeix-Raviart" or family == "CR":
+            self.__family = "Crouzeix-Raviart"
             return (CrouzeixRaviart(fiat_shape),
                     Mapping.AFFINE)
 
         if family == "Raviart-Thomas" or family == "RT":
-            print "Warning: element untested"
+            self.__family = "Raviart-Thomas"
             return (RaviartThomas(fiat_shape, degree),
                     Mapping.PIOLA)
 
         if family == "Brezzi-Douglas-Marini" or family == "BDM":
-            print "Warning: element untested"
+            self.__family = "Brezzi-Douglas-Marini"
             return (BDM(fiat_shape, degree),
                     Mapping.PIOLA)
 
         if family == "Nedelec":
-            print "Warning: element untested"
+            self.__family = "Nedelec"
             return (Nedelec(degree),
                     Mapping.PIOLA) # ?
 

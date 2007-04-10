@@ -34,6 +34,10 @@ class MixedElement:
         # Save list of elements
         self.__elements = elements
 
+    def family(self):
+        "Return a string indentifying the finite element family"
+        return "Mixed"
+
     def signature(self):
         "Return a string identifying the finite element"
         return "Mixed finite element: [%s]" % ", ".join([element.signature() for element in self.__elements])
