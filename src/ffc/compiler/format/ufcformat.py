@@ -260,7 +260,7 @@ def __generate_dof_map(code, form_data, options, prefix, i):
     ufc_code["local_dimension"] = "return %s;" % code["local_dimension"]
 
     # Generate code for num_facet_dofs
-    ufc_code["num_facet_dofs"] = "// Not implemented\nreturn 0;"
+    ufc_code["num_facet_dofs"] = "return %s;" % code["num_facet_dofs"]
 
     # Generate code for tabulate_dofs
     ufc_code["tabulate_dofs"] = __generate_body(code["tabulate_dofs"])

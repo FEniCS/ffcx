@@ -1,7 +1,7 @@
 "Code generation for dof map"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-01-24 -- 2007-03-20"
+__date__ = "2007-01-24 -- 2007-04-10"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -26,8 +26,11 @@ def generate_dof_map(dof_map, format):
     # Generate code for global_dimension
     code["global_dimension"] = __generate_global_dimension(dof_map, format)
 
-    # Generate code for local dimension
+    # Generate code for local_dimension
     code["local_dimension"] = "%d" % dof_map.local_dimension() 
+
+    # Generate code for num_facet_dofs
+    code["num_facet_dofs"] = "%d" % dof_map.num_facet_dofs()
 
     # Generate code for tabulate_dofs
     code["tabulate_dofs"] = __generate_tabulate_dofs(dof_map, format)

@@ -8,7 +8,8 @@ __license__  = "GNU GPL Version 2"
 # FFC common modules
 from ffc.common.utils import *
 
-# FIXME: Temporary fix, do this in mixed element
+# FFC fem modules
+from finiteelement import *
 from mixedelement import *
 
 class DofMap:
@@ -28,7 +29,7 @@ class DofMap:
         self.__local_dimension  = element.space_dimension()
         self.__entity_dofs      = entity_dofs
         self.__num_dofs_per_dim = self.__compute_num_dofs_per_dim(entity_dofs)
-        self.__num_facet_dofs   = self.__compute_num_facet_dofs(entity_dofs)
+        self.__num_facet_dofs   = self.__compute_num_facet_dofs(entity_dofs, element.cell_shape())
         self.__dof_entities     = self.__compute_dof_entities(entity_dofs)
         self.__dof_coordinates  = self.__compute_dof_coordinates(element)
         self.__dof_components   = self.__compute_dof_components(element)
@@ -93,20 +94,22 @@ class DofMap:
             num_dofs_per_dim += [sub_num_dofs_per_dim]
         return num_dofs_per_dim
 
-    def __compute_num_facet_dofs(self, entity_dofs):
+    def __compute_num_facet_dofs(self, entity_dofs, cell_shape):
         "Compute the number of dofs on each cell facet"
 
-        #print ""
-        #print entity_dofs
+        # Number of entites of each dimension incident with a facet
+        num_facet_entities = {LINE: [1, 0], TRIANGLE: [2, 1, 0], TETRAHEDRON: [3, 3, 1, 0]}
 
-        #for sub_entity_dofs in entity_dofs:
-        #    for dim in sub_entity_dofs:
-                #print "dim = " + str(dim)
-                #for entity in sub_entity_dofs[dim]:
-                #    print str(entity) + ": " + str(sub_entity_dofs[dim])
+        # Get total number of dofs per dimension
+        num_dofs_per_dim = self.num_dofs_per_dim()
+
+        # Count the total
+        num_facet_dofs = 0
+        for dim in range(len(num_dofs_per_dim)):
+            num_facet_dofs += num_facet_entities[cell_shape][dim]*num_dofs_per_dim[dim]
+
+        return num_facet_dofs
         
-        return 1
-
     def __compute_dof_entities(self, entity_dofs):
         "Compute the entities associated with each dof"
         dof_entities = {}
