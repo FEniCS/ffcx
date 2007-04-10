@@ -37,24 +37,24 @@ def generate_dof_map(dof_map, format):
 def __generate_needs_mesh_entities(dof_map, format):
     "Generate code for needs_mesh_entities"
 
-    # Get the number of dofs per dimension
-    num_dofs_per_dimension = __compute_num_dofs_per_dimension(dof_map.entity_dofs())
-    
+    # Get total number of dofs per dimension
+    num_dofs_per_dim = dof_map.num_dofs_per_dim()
+
     # Entities needed if at least one dof is associated
-    code = [format["bool"](num_dofs > 0) for num_dofs in num_dofs_per_dimension]
+    code = [format["bool"](num_dofs_per_dim[dim] > 0) for dim in range(len(num_dofs_per_dim))]
 
     return code
 
 def __generate_global_dimension(dof_map, format):
     "Generate code for global dimension"
 
-    # Get the number of dofs per dimension
-    num_dofs_per_dimension = __compute_num_dofs_per_dimension(dof_map.entity_dofs())
-
+    # Get total number of dofs per dimension
+    num_dofs_per_dim = dof_map.num_dofs_per_dim()
+    
     # Sum the number of dofs for each dimension
     terms = []
-    for dim in range(len(num_dofs_per_dimension)):
-        n = num_dofs_per_dimension[dim]
+    for dim in range(len(num_dofs_per_dim)):
+        n = num_dofs_per_dim[dim]
         if n == 1:
             terms += [format["num entities"](dim)]
         elif n > 1:
@@ -78,17 +78,20 @@ def __generate_tabulate_dofs(dof_map, format):
     offset_declared = False
     offset_code = []
     local_offset = 0
-    for sub_entity_dofs in dof_map.entity_dofs():
+    for sub_dof_map in range(len(dof_map.entity_dofs())):
 
-        # Get the number of dofs per dimension
-        num_dofs_per_dimension = __compute_num_dofs_per_dimension([sub_entity_dofs])
+        # Get entity dofs for sub dof map
+        sub_entity_dofs = dof_map.entity_dofs()[sub_dof_map]
+
+        # Get the number of dofs per dimension for sub dof map
+        num_dofs_per_dim = dof_map.num_dofs_per_dim(sub_dof_map)
 
         # Iterate over dimensions
         num_dofs = 0
         for dim in sub_entity_dofs:
 
             # Skip dimension if there are no dofs
-            if num_dofs_per_dimension[dim] == 0:
+            if num_dofs_per_dim[dim] == 0:
                 continue
 
             # Write offset code
@@ -105,8 +108,8 @@ def __generate_tabulate_dofs(dof_map, format):
 
                     # Assign dof
                     name = format["dofs"](local_offset + dof)
-                    if num_dofs_per_dimension[dim] > 1:
-                        value = format["multiply"](["%d" % num_dofs_per_dimension[dim], format["entity index"](dim, entity)])
+                    if num_dofs_per_dim[dim] > 1:
+                        value = format["multiply"](["%d" % num_dofs_per_dim[dim], format["entity index"](dim, entity)])
                     else:
                         value = format["entity index"](dim, entity)
                     
@@ -125,11 +128,11 @@ def __generate_tabulate_dofs(dof_map, format):
                     num_dofs += 1
 
             # Update offset
-            if num_dofs_per_dimension[dim] > 0:
+            if num_dofs_per_dim[dim] > 0:
 
                 # Compute additional offset
-                if num_dofs_per_dimension[dim] > 1:
-                    value = format["multiply"](["%d" % num_dofs_per_dimension[dim], format["num entities"](dim)])
+                if num_dofs_per_dim[dim] > 1:
+                    value = format["multiply"](["%d" % num_dofs_per_dim[dim], format["num entities"](dim)])
                 else:
                     value = format["num entities"](dim)
 
@@ -147,15 +150,3 @@ def __generate_tabulate_dofs(dof_map, format):
         local_offset += num_dofs 
 
     return code
-
-def __compute_num_dofs_per_dimension(entity_dofs):
-    "Compute the number of dofs associated with each topological dimension"
-    num_dofs_per_dimension = {}
-    for sub_entity_dofs in entity_dofs:
-        for dim in sub_entity_dofs:
-            num_dofs = [len(sub_entity_dofs[dim][entity]) for entity in sub_entity_dofs[dim]]
-            if dim in num_dofs_per_dimension:
-                num_dofs_per_dimension[dim] += pick_first(num_dofs)
-            else:
-                num_dofs_per_dimension[dim] = pick_first(num_dofs)
-    return num_dofs_per_dimension

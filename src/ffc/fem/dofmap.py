@@ -1,9 +1,12 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-01-24 -- 2007-04-04"
+__date__ = "2007-01-24 -- 2007-04-10"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # Modified by Marie E. Rognes (meg@math.uio.no), 2007
+
+# FFC common modules
+from ffc.common.utils import *
 
 # FIXME: Temporary fix, do this in mixed element
 from mixedelement import *
@@ -21,12 +24,14 @@ class DofMap:
         entity_dofs = element.entity_dofs()
 
         # Generate dof map data
-        self.__signature       = "FFC dof map for " + element.signature()
-        self.__local_dimension = element.space_dimension()
-        self.__entity_dofs     = entity_dofs
-        self.__dof_entities    = self.__compute_dof_entities(entity_dofs)
-        self.__dof_coordinates = self.__compute_dof_coordinates(element)
-        self.__dof_components  = self.__compute_dof_components(element)
+        self.__signature        = "FFC dof map for " + element.signature()
+        self.__local_dimension  = element.space_dimension()
+        self.__entity_dofs      = entity_dofs
+        self.__num_dofs_per_dim = self.__compute_num_dofs_per_dim(entity_dofs)
+        self.__num_facet_dofs   = self.__compute_num_facet_dofs(entity_dofs)
+        self.__dof_entities     = self.__compute_dof_entities(entity_dofs)
+        self.__dof_coordinates  = self.__compute_dof_coordinates(element)
+        self.__dof_components   = self.__compute_dof_components(element)
 
     def signature(self):
         "Return a string identifying the dof map"
@@ -41,6 +46,22 @@ class DofMap:
         reference cell to the degrees of freedom associated with the
         entity"""
         return self.__entity_dofs
+
+    def num_facet_dofs(self):
+        "Return the number of dofs on each cell facet"
+        return self.__num_facet_dofs
+
+    def num_dofs_per_dim(self, sub_dof_map=None):
+        "Return the number of dofs associated with each topological dimension for sub dof map or total"
+        if sub_dof_map == None:
+            D = max(self.__entity_dofs[0])
+            num_dofs_per_dim = (D + 1)*[0]
+            for sub_num_dofs_per_dim in self.__num_dofs_per_dim:
+                for dim in sub_num_dofs_per_dim:
+                    num_dofs_per_dim[dim] += sub_num_dofs_per_dim[dim]
+            return num_dofs_per_dim
+        else:
+            return self.__num_dofs_per_dim[sub_dof_map]
 
     def dof_entities(self):
         "Return a list of which entities are associated with each dof"
@@ -57,6 +78,34 @@ class DofMap:
         dof. This only makes sense for Lagrange elements and other
         elements which have dofs defined by point evaluation."""
         return self.__dof_components
+
+    def __compute_num_dofs_per_dim(self, entity_dofs):
+        "Compute the number of dofs associated with each topological dimension"
+        num_dofs_per_dim = []
+        for sub_entity_dofs in entity_dofs:
+            sub_num_dofs_per_dim = {}
+            for dim in sub_entity_dofs:
+                num_dofs = [len(sub_entity_dofs[dim][entity]) for entity in sub_entity_dofs[dim]]
+                if dim in sub_num_dofs_per_dim:
+                    sub_num_dofs_per_dim[dim] += pick_first(num_dofs)
+                else:
+                    sub_num_dofs_per_dim[dim] = pick_first(num_dofs)
+            num_dofs_per_dim += [sub_num_dofs_per_dim]
+        return num_dofs_per_dim
+
+    def __compute_num_facet_dofs(self, entity_dofs):
+        "Compute the number of dofs on each cell facet"
+
+        #print ""
+        #print entity_dofs
+
+        #for sub_entity_dofs in entity_dofs:
+        #    for dim in sub_entity_dofs:
+                #print "dim = " + str(dim)
+                #for entity in sub_entity_dofs[dim]:
+                #    print str(entity) + ": " + str(sub_entity_dofs[dim])
+        
+        return 1
 
     def __compute_dof_entities(self, entity_dofs):
         "Compute the entities associated with each dof"
