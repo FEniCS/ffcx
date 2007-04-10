@@ -6,7 +6,7 @@
 #
 # Compile this form with FFC: ffc Poisson.form
 
-element = FiniteElement("Lagrange", "tetrahedron", 2)
+element = FiniteElement("Lagrange", "triangle", 1)
 
 v = TestFunction(element)
 U = TrialFunction(element)

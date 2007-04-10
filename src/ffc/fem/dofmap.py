@@ -33,7 +33,7 @@ class DofMap:
         self.__dof_entities       = self.__compute_dof_entities(entity_dofs)
         self.__dof_coordinates    = self.__compute_dof_coordinates(element)
         self.__dof_components     = self.__compute_dof_components(element)
-        self.__incident_entitites = self.__compute_incident_entities(element.cell_shape())
+        self.__incidence          = self.__compute_incidence(element.cell_shape())
 
     def signature(self):
         "Return a string identifying the dof map"
@@ -80,6 +80,10 @@ class DofMap:
         dof. This only makes sense for Lagrange elements and other
         elements which have dofs defined by point evaluation."""
         return self.__dof_components
+
+    def incidence(self):
+        "Return a dictionary of which entities are incident with which"
+        return self.__incidence
 
     def __compute_num_dofs_per_dim(self, entity_dofs):
         "Compute the number of dofs associated with each topological dimension"
@@ -159,7 +163,7 @@ class DofMap:
         # Can't handle element
         return None
 
-    def __compute_incident_entities(self, cell_shape):
+    def __compute_incidence(self, cell_shape):
         "Compute which entities are incident with which"
 
         # Set topological dimension of simplex
@@ -172,23 +176,51 @@ class DofMap:
         else:
             raise RuntimeError, "Cannot handle cell shape: " + str(cell_shape)
 
-        
-        self.__compute_sub_simplex(D, D - 1, 0)
+        # Compute the incident vertices for each entity
+        sub_simplices = []
+        for dim in range(D + 1):
+            sub_simplices += [self.__compute_sub_simplices(D, dim)]
 
-    def __compute_sub_simplex(self, D, d, i):
-        "Compute vertices for sub simplex (d, i), code taken from Exterior"
+        # Check which entities are incident, d0 --> d1 for d0 > d1
+        incidence = {}
+        for d0 in range(1, D + 1):
+            for i0 in range(len(sub_simplices[d0])):
+                for d1 in range(d0):
+                    for i1 in range(len(sub_simplices[d1])):
+                        if min([v in sub_simplices[d0][i0] for v in sub_simplices[d1][i1]]) == True:
+                            incidence[((d0, i0), (d1, i1))] = True
+                        else:
+                            incidence[((d0, i0), (d1, i1))] = False
+
+        return incidence
+
+    def __compute_sub_simplices(self, D, d):
+        "Compute vertices for all sub simplices of dimension d (code taken from Exterior)"
+
+        # Number of vertices
+        num_vertices = D + 1
+
+        # Special cases: d = 0 and d = D
+        if d == 0:
+            return [[i] for i in range(num_vertices)]
+        elif d == D:
+            return [range(num_vertices)]
 
         # Compute all permutations of num_vertices - (d + 1)
-        num_vertices = D + 1
         permutations = compute_permutations(num_vertices - d - 1, num_vertices)
 
-        # Pick tuple i among permutations (non-incident vertices)
-        remove = permutations[i]
+        # Iterate over sub simplices
+        sub_simplices = []
+        for i in range(len(permutations)):
 
-        # Remove vertices, keeping d + 1 vertices
-        sub_vertices = [v for v in range(num_vertices) if not v in remove]
+            # Pick tuple i among permutations (non-incident vertices)
+            remove = permutations[i]
 
-        return sub_vertices
+            # Remove vertices, keeping d + 1 vertices
+            vertices = [v for v in range(num_vertices) if not v in remove]
+            sub_simplices += [vertices]
+
+        return sub_simplices
 
     def __is_vector_lagrange(self, element):
         "Check if element is vector Lagrange element"
