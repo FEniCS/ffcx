@@ -1,14 +1,17 @@
-"""Code generation for finite element basis values. This module generates code which is more
-   or less a C++ representation of FIAT code. More specifically the functions from
-   the modules expansion.py and jacobi.py are translated into C++"""
+"""Code generation for evaluation of finite element basis values. This module generates
+   code which is more or less a C++ representation of FIAT code. More specifically the
+   functions from the modules expansion.py and jacobi.py are translated into C++"""
 
 __author__ = "Kristian B. Oelgaard (k.b.oelgaard@tudelft.nl)"
-__date__ = "2007-04-04 -- 2007-04-04"
+__date__ = "2007-04-04 -- 2007-04-10"
 __copyright__ = "Copyright (C) 2007 Kristian B. Oelgaard"
 __license__  = "GNU GPL Version 2"
 
 # FFC fem modules
 from ffc.fem.finiteelement import *
+
+# Python modules
+import math
 
 def evaluate_basis(element, format):
     """Evaluate element basisfunction at a point, currently only being implemented/tested
@@ -65,7 +68,7 @@ def tabulate_coefficients(element, format):
         else:
             value += " {"
         for j in range(num_dofs):
-            value += "%f" %(coefficients[i,j],)
+            value += "%.15e" %(coefficients[i,j],)
             if j == num_dofs - 1:
                 value += "}"
             else:
@@ -86,8 +89,8 @@ def generate_map(element, format):
     code = []
 
     # Code snippets reproduced from FIAT: expansions.py: eta_triangle(xi) & eta_tetrahedron(xi)
-    eta_triangle = ["if ((y - 1.0) < DOLFIN_EPS)", indent("x = -1.0;",2), "else",\
-                    indent("x = 2.0 * (1.0 + x)/(1.0 - y);",2)]
+    eta_triangle = ["if (std::abs(y - 1.0) < DOLFIN_EPS)", indent("x = -1.0;",2), "else",\
+                    indent("x = 2.0 * (1.0 + x)/(1.0 - y) - 1.0;",2)]
     eta_tetrahedron = [format["comment"]("Mapping from a tetrahedron not implemented yet")]
 
     # List of coordinate declarations, 3D ready
@@ -118,13 +121,13 @@ def compute_scaling(element, format):
     # Scale factor, for triangles 1/2*(1-y)^i i being the order of the element
     scale_factor = "(0.5 - 0.5 * y)"
 
-    code += [format["comment"]("Generate scaling")]
+    code += [format["comment"]("Generate scalings")]
 
     # Declare scaling variable
-    name = "const double scaling[%d]" %(degree+1,)
+    name = "const double scalings[%d]" %(degree+1,)
     value = "{1.0"
     if degree > 0:
-        value += ", " + ", ".join(["scaling[%d]*%s" %(i-1,scale_factor) for i in range(1, degree+1)])
+        value += ", " + ", ".join(["scalings[%d]*%s" %(i-1,scale_factor) for i in range(1, degree+1)])
     value += "}"
 
     code += [(name, value)]
@@ -148,18 +151,34 @@ def compute_psitilde_a(element, format):
 
     # Get coefficients
     coeff = eval_jacobi_batch(0,0,degree)
-    var = [["%f", "%f*x"], ["(%f * x) * psitilde_a[%d]","%f * psitilde_a[%d]"]]
+    var = [["%.15e", "%.15e*x"], ["%.15e * psitilde_a[%d]","%.15e * x * psitilde_a[%d]","%.15e * psitilde_a[%d]"]]
 
     value = "{1.0"
     if degree > 0:
-        value += ", %s" % " + ".join([var[0][i] % (coeff[0][i],) for i in range(2) if coeff[0][i]!=0.0])
+        if coeff[0][1] < 0:
+            value += ", %s" % " ".join([var[0][i] % (coeff[0][i],) for i in range(2) if coeff[0][i]!=0.0])
+        else:
+            value += ", %s" % " + ".join([var[0][i] % (coeff[0][i],) for i in range(2) if coeff[0][i]!=0.0])
+
         for k in range(2, degree+1):
-            if coeff[k-1][1] < 0:
-                value += ", %s" %" ".join([var[1][i] % (coeff[k-1][i],k-1-i,) \
-                         for i in range(2) if coeff[k-1][i]!=0.0])
-            else:
-                value += ", %s" %" + ".join([var[1][i] % (coeff[k-1][i],k-1-i) \
-                         for i in range(2) if coeff[k-1][i]!=0.0])
+            signs = [""]
+            for j in range(1,3):
+                print j
+                if coeff[k-1][j] < 0:
+                    signs += ["-"]
+                    coeff[k-1][j] = abs(coeff[k-1][j])
+                else:
+                    if coeff[k-1][j-1] != 0.0:
+                        signs += ["+"]
+                        coeff[k-1][j] = abs(coeff[k-1][j])
+                    else:
+                        signs += [""]
+                        coeff[k-1][j] = abs(coeff[k-1][j])
+
+            print "signs", signs
+            val = "".join([signs[i] + (var[1][i] % (coeff[k-1][i], k-1)) for i in range(2) if coeff[k-1][i] != 0.0])
+            val += "".join([signs[i] + (var[1][i] % (coeff[k-1][i], k-2)) for i in range(2,3) if coeff[k-1][i] != 0.0])
+            value += ", %s" % (val,)
     value += "}"
 
     code += [(name, value)]
@@ -175,15 +194,45 @@ def compute_psitilde_b(element, format):
 
     # From FIAT jacobi.py: jacobi.eval_jacobi_batch(2*i+1,0,n-i,eta2s) for i in range(0,degree+1)
 
-#    psitilde_bs = [ jacobi.eval_jacobi_batch(2*i+1,0,n-i,eta2s) \
-#		    for i in range(0,n+1) ]
-
     code += [format["comment"]("Compute psitilde_bs")]
+    var = [["%.15e", "%.15e*y"], ["%.15e * psitilde_bs_%d[%d]","%.15e * y * psitilde_bs_%d[%d]",\
+            "%.15e * psitilde_bs_%d[%d]"]]
 
     for i in range(0, degree + 1):
         # Declare variable
-        name = "const double psitilde_b_%d[%d]" %(i, degree+1-i,)
-        value = ""
+        name = "const double psitilde_bs_%d[%d]" %(i, degree+1-i,)
+
+        # Get coefficients
+        coeff = eval_jacobi_batch(2*i+1,0,degree-i)
+        value = "{1.0"
+        if degree - i > 0:
+            if coeff[0][1] < 0:
+                value += ", %s" % " ".join([var[0][j] % (coeff[0][j],) for j in range(2) if coeff[0][j]!=0.0])
+            else:
+                value += ", %s" % " + ".join([var[0][j] % (coeff[0][j],) for j in range(2) if coeff[0][j]!=0.0])
+
+            for k in range(2, degree - i + 1):
+                signs = [""]
+                for j in range(1,3):
+                    print j
+                    if coeff[k-1][j] < 0:
+                        signs += ["-"]
+                        coeff[k-1][j] = abs(coeff[k-1][j])
+                    else:
+                        if coeff[k-1][j-1] != 0.0:
+                            signs += ["+"]
+                            coeff[k-1][j] = abs(coeff[k-1][j])
+                        else:
+                            signs += [""]
+                            coeff[k-1][j] = abs(coeff[k-1][j])
+
+                print "signs", signs
+                val = "".join([signs[j] + (var[1][j] % (coeff[k-1][j], i, k-1)) for j in range(2) if coeff[k-1][j] != 0.0])
+                val += "".join([signs[j] + (var[1][j] % (coeff[k-1][j], i, k-2)) for j in range(2,3) if coeff[k-1][j] != 0.0])
+                value += ", %s" % (val,)
+
+        value += "}"
+
         code += [(name, value)]
 
     return code + [""]
@@ -192,9 +241,22 @@ def compute_basisvalues(element, format):
 
     code = []
     code += [format["comment"]("Compute basisvalues")]
+    dofs = element.space_dimension()
+
     # Declare variable
-    name = "const double basisvalues[%d]" %(element.space_dimension(),)
-    value = ""
+    name = "const double basisvalues[%d]" %(dofs,)
+    value = "{"
+
+    var = []
+    for k in range(0,element.degree()+1):
+        for i in range(0,k+1):
+            ii = k-i
+            jj = i
+            factor = math.sqrt( (ii+0.5)*(ii+jj+1.0) )
+            var += ["psitilde_a[%d] * scalings[%d] * psitilde_bs_%d[%d]*%.15e" %(ii,ii,ii,jj,factor)]
+
+    value += ", ".join(var)
+    value += "}"
 
     code += [(name, value)]
 
@@ -210,10 +272,10 @@ def dot_product(element, format):
     code += [format["comment"]("Compute value")]
     # Reset value as it is a pointer
     code += [("*values", "0.0")]
+
     # Loop dofs to generate dot product, 3D ready
     code += ["for (unsigned int j = 0; j < %d; j++)" % (element.space_dimension(),)]
-    code += [indent(format["add equal"]("*values","coefficients[i][j]*coefficients[i][j];"),2)]
-#    code += [indent(format["add equal"]("values","coefficients[i][j]*bvals[j];"),2)]
+    code += [indent(format["add equal"]("*values","coefficients[i][j]*basisvalues[j];"),2)]
 
     return code
 
@@ -222,8 +284,7 @@ def eval_jacobi_batch(a,b,n):
     up to degree n. Returns coefficients in an array wher rows correspond to the Jacobi
     polynomials and the columns correspond to the coefficient."""
 
-#    result = numpy.zeros( (n+1, len(xs)),"d" )
-#    result = []#[[1.0]]
+    result = []
     if n > 0:
         result = [[0.5 * (a - b), 0.5 * ( a + b + 2.0 )]]
         apb = a + b
@@ -235,7 +296,7 @@ def eval_jacobi_batch(a,b,n):
             a2 = a2 / a1
             a3 = a3 / a1
             a4 = a4 / a1
-            result += [[( a2 + a3 ),-a4]]
+            result += [[a2, a3,-a4]]
     return result
 
 
