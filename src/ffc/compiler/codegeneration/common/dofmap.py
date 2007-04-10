@@ -159,5 +159,28 @@ def __generate_tabulate_dofs(dof_map, format):
 
 def __generate_tabulate_facet_dofs(dof_map, format):
     "Generate code for tabulate_dofs"
-    
+
     return ["// Not implemented"]
+
+    # Get the number of facets
+    num_facets = dof_map.element().num_facets()
+    print num_facets
+
+    # Get incidence
+    incidence = dof_map.incidence()
+
+    # Count the number of facets
+    incident_entities = num_facets*[{}]
+
+    print ""
+
+    D = 2
+    
+    # Find out which entities are incident with each facet
+    for facet in range(num_facets):
+        incident_entities[facet] = [pair[1] for pair in incidence if incidence[pair] and pair[0] == (D - 1, facet)]
+        print incident_entities[facet]
+
+    print incident_entities
+    
+

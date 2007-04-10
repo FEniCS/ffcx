@@ -25,15 +25,16 @@ class DofMap:
         entity_dofs = element.entity_dofs()
 
         # Generate dof map data
-        self.__signature          = "FFC dof map for " + element.signature()
-        self.__local_dimension    = element.space_dimension()
-        self.__entity_dofs        = entity_dofs
-        self.__num_dofs_per_dim   = self.__compute_num_dofs_per_dim(entity_dofs)
-        self.__num_facet_dofs     = self.__compute_num_facet_dofs(entity_dofs, element.cell_shape())
-        self.__dof_entities       = self.__compute_dof_entities(entity_dofs)
-        self.__dof_coordinates    = self.__compute_dof_coordinates(element)
-        self.__dof_components     = self.__compute_dof_components(element)
-        self.__incidence          = self.__compute_incidence(element.cell_shape())
+        self.__signature        = "FFC dof map for " + element.signature()
+        self.__local_dimension  = element.space_dimension()
+        self.__entity_dofs      = entity_dofs
+        self.__num_dofs_per_dim = self.__compute_num_dofs_per_dim(entity_dofs)
+        self.__num_facet_dofs   = self.__compute_num_facet_dofs(entity_dofs, element.cell_shape())
+        self.__dof_entities     = self.__compute_dof_entities(entity_dofs)
+        self.__dof_coordinates  = self.__compute_dof_coordinates(element)
+        self.__dof_components   = self.__compute_dof_components(element)
+        self.__incidence        = self.__compute_incidence(element.cell_shape())
+        self.__element          = element
 
     def signature(self):
         "Return a string identifying the dof map"
@@ -84,6 +85,10 @@ class DofMap:
     def incidence(self):
         "Return a dictionary of which entities are incident with which"
         return self.__incidence
+
+    def element(self):
+        "Return the finite element associated with the dof map"
+        return self.__element
 
     def __compute_num_dofs_per_dim(self, entity_dofs):
         "Compute the number of dofs associated with each topological dimension"
