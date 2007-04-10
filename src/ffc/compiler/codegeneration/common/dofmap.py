@@ -170,25 +170,29 @@ def __generate_tabulate_facet_dofs(dof_map, format):
     # Get topological dimension
     D = max([pair[0][0] for pair in incidence])
 
-    # Find out which entities to skip for each facet
-    skip = num_facets*[[]]
+    # Find out which entities are incident to each facet
+    incident = num_facets*[[]]
     for facet in range(num_facets):
-
-        # Skip the cell
-        skip[facet] = [(D, 0)]
-
-        # Skip other facets
-        skip[facet] += [(D - 1, i) for i in range(num_facets) if not i == facet]
-
-        # Skip non-incident entities of lower dimension
-        skip[facet] += [pair[1] for pair in incidence if incidence[pair] == False and pair[0] == (D - 1, facet)]
-
-        #print facet, skip[facet]
+        incident[facet] = [pair[1] for pair in incidence if incidence[pair] == True and pair[0] == (D - 1, facet)]
 
     # Tabulate dofs for each facet
-    #code = []
-    #for facet in range(num_facets):
-    #    code = __generate_tabulate_dofs(dof_map, format, skip)
-    #    print code
+    code = []
+    for facet in range(num_facets):
+        case = []
+        facet_dof = 0
+        local_offset = 0
+        for sub_entity_dofs in dof_map.entity_dofs():
+            num_dofs = 0
+            for dim in sub_entity_dofs:
+                for entity in sub_entity_dofs[dim]:
+                    for dof in sub_entity_dofs[dim][entity]:
+                        if (dim, entity) in incident[facet]:
+                            name = format["dofs"](facet_dof)
+                            value = "%d" % (local_offset + dof)
+                            case += [(name, value)]
+                            facet_dof += 1
+                        num_dofs += 1
+            local_offset += num_dofs
+        code += [case]
 
-    return ["// Not implemented"]
+    return code

@@ -266,7 +266,7 @@ def __generate_dof_map(code, form_data, options, prefix, i):
     ufc_code["tabulate_dofs"] = __generate_body(code["tabulate_dofs"])
 
     # Generate code for tabulate_facet_dofs
-    ufc_code["tabulate_facet_dofs"] = __generate_body(code["tabulate_facet_dofs"])
+    ufc_code["tabulate_facet_dofs"] = __generate_switch("facet", [__generate_body(case) for case in code["tabulate_facet_dofs"]])
 
     # Generate code for tabulate_coordinates
     ufc_code["tabulate_coordinates"] = "// Not implemented"
@@ -497,8 +497,9 @@ def __generate_switch(variable, cases, default = ""):
     code = "switch ( %s )\n{\n" % variable
     for i in range(len(cases)):
         code += "case %d:\n%s\n  break;\n" % (i, indent(cases[i], 2))
-    code += "}\n"
-    code += default
+    code += "}"
+    if not default == "":
+        code += "\n" + default
     
     return code
 
