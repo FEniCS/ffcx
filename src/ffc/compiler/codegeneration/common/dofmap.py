@@ -35,6 +35,9 @@ def generate_dof_map(dof_map, format):
     # Generate code for tabulate_dofs
     code["tabulate_dofs"] = __generate_tabulate_dofs(dof_map, format)
 
+    # Generate code for tabulate_facet_dofs
+    code["tabulate_facet_dofs"] = __generate_tabulate_facet_dofs(dof_map, format)
+
     return code
 
 def __generate_needs_mesh_entities(dof_map, format):
@@ -153,3 +156,8 @@ def __generate_tabulate_dofs(dof_map, format):
         local_offset += num_dofs 
 
     return code
+
+def __generate_tabulate_facet_dofs(dof_map, format):
+    "Generate code for tabulate_dofs"
+    
+    return "Not implemented"
