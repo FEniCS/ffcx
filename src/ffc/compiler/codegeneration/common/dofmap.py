@@ -74,7 +74,7 @@ def __generate_global_dimension(dof_map, format):
 
     return code
 
-def __generate_tabulate_dofs(dof_map, format):
+def __generate_tabulate_dofs(dof_map, format, skip=[]):
     "Generate code for tabulate_dofs"
 
     # Generate code as a list of declarations
@@ -128,7 +128,8 @@ def __generate_tabulate_dofs(dof_map, format):
                         value = format["add"]([format["offset access"], value])
 
                     # Add declaration
-                    code += [(name, value)]
+                    if (dim, entity) not in skip:
+                        code += [(name, value)]
 
                     # Count the number of dofs for sub dof map
                     num_dofs += 1
@@ -160,27 +161,34 @@ def __generate_tabulate_dofs(dof_map, format):
 def __generate_tabulate_facet_dofs(dof_map, format):
     "Generate code for tabulate_dofs"
 
-    return ["// Not implemented"]
-
     # Get the number of facets
     num_facets = dof_map.element().num_facets()
-    print num_facets
 
     # Get incidence
     incidence = dof_map.incidence()
 
-    # Count the number of facets
-    incident_entities = num_facets*[{}]
+    # Get topological dimension
+    D = max([pair[0][0] for pair in incidence])
 
-    print ""
-
-    D = 2
-    
-    # Find out which entities are incident with each facet
+    # Find out which entities to skip for each facet
+    skip = num_facets*[[]]
     for facet in range(num_facets):
-        incident_entities[facet] = [pair[1] for pair in incidence if incidence[pair] and pair[0] == (D - 1, facet)]
-        print incident_entities[facet]
 
-    print incident_entities
-    
+        # Skip the cell
+        skip[facet] = [(D, 0)]
 
+        # Skip other facets
+        skip[facet] += [(D - 1, i) for i in range(num_facets) if not i == facet]
+
+        # Skip non-incident entities of lower dimension
+        skip[facet] += [pair[1] for pair in incidence if incidence[pair] == False and pair[0] == (D - 1, facet)]
+
+        #print facet, skip[facet]
+
+    # Tabulate dofs for each facet
+    #code = []
+    #for facet in range(num_facets):
+    #    code = __generate_tabulate_dofs(dof_map, format, skip)
+    #    print code
+
+    return ["// Not implemented"]
