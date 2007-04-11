@@ -209,7 +209,7 @@ def generate_form_code(form_data, form_representation, format):
     debug_begin("Compiler phase 4: Generating code")
 
     # Choose code generator
-    CodeGenerator = __choose_code_generator(form_representation)
+#    CodeGenerator = __choose_code_generator(form_representation)
     if isinstance(form_representation, TensorRepresentation):
         CodeGenerator = TensorGenerator
     else:
