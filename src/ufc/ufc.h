@@ -181,7 +181,7 @@ namespace ufc
                                const mesh& m,
                                const cell& c) const = 0;
 
-    /// Tabulate the local-to-global mapping of dofs on a facet of a cell
+    /// Tabulate the local-to-local mapping from facet dofs to cell dofs
     virtual void tabulate_facet_dofs(unsigned int* dofs,
                                      const mesh& m,
                                      const cell& c,
