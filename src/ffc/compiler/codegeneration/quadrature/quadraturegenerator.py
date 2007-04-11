@@ -10,6 +10,7 @@ import numpy
 
 # FFC common modules
 from ffc.common.constants import *
+from ffc.common.utils import *
 
 # FFC language modules
 from ffc.compiler.language.index import *
@@ -64,7 +65,7 @@ class QuadratureGenerator(CodeGenerator):
         tensors = form_representation.exterior_facet_tensors
 #        if len(tensors) == 0:
 #            return None
-        
+
         # Generate code for geometry tensor (should be the same so pick first)
 #        common = self.__generate_geometry_tensors(tensors[0], format)
 
@@ -74,7 +75,6 @@ class QuadratureGenerator(CodeGenerator):
 #        cases = [None for i in range(num_facets)]
 #        for i in range(num_facets):
 #            cases[i] = self.__generate_element_tensor(tensors[i], format)
-#        code = ['// Testing',('A[1]', '4.166666666666659e-02*G0_')]
         common = [""]
         cases = [""]
         return {"tabulate_tensor": (common, cases)}
@@ -109,12 +109,12 @@ class QuadratureGenerator(CodeGenerator):
         tabulate_code = []
         element_code = []
 
-        format_comment = format["indent comment"]
+        format_comment = format["comment"]
 
         # Number of tensors to evaluate
         num_tensors = len(tensors)
 
-        # Loop tensors
+        # Loop tensors to generate tables
         for i in range(num_tensors):
 
             # Tabulate variables,
@@ -131,10 +131,11 @@ class QuadratureGenerator(CodeGenerator):
         # Reset values of the element tensor (assuming same dimensions for the tensors)
         tabulate_code += self.__reset_element_tensor(tensors[0], format)
 
+        # Loop tensors to generate quadrature loops
         for i in range(num_tensors):
             # Loop all quadrature points
-            element_code += [format_comment("Loop quadrature points (tensor %d)" %(i,), self.indent_size)]
-            element_code += self.__begin_loop("ip", len(tensors[i].quadrature.weights))
+            element_code += [indent(format_comment("Loop quadrature points (tensor %d)" %(i,)), self.indent_size)]
+            element_code += self.__begin_loop("ip", len(tensors[i].quadrature.weights), format)
 
             # Generate code to evaluate the Jacobian at every quadrature point
             # FIXME: get dim and num_dofs more clever
@@ -145,7 +146,7 @@ class QuadratureGenerator(CodeGenerator):
             element_code += self.__element_tensor(tensors[i], i, format)
 
             # End the quadrature loop
-            element_code += self.__end_loop()
+            element_code += self.__end_loop(format)
 
             if i + 1 < len(tensors):
                 element_code += [""]
@@ -166,15 +167,16 @@ class QuadratureGenerator(CodeGenerator):
         code += [format["comment"]("Array of quadrature weights (tensor %d)" %(tensor_number,) )]
 
         # Create variable name
-        name = "const static double "+ format["weights"](tensor_number, str(num_weights))
+#        name = "const static double "+ format["weights"](tensor_number, str(num_weights))
+        name = format["table declaration"] + format["weights"](tensor_number, str(num_weights))
 
         # Generate entries
-        value = "{"
+        value = format["block begin"]
         for i in range(num_weights):
 #            value += "%f" %(weights[i],)
             value += format_floating_point(weights[i])
             if i == num_weights - 1:
-                value += "}"
+                value += format["block end"]
             else:
                 value += ", "
 
@@ -220,29 +222,29 @@ class QuadratureGenerator(CodeGenerator):
                 # Create variable name, static double array[num_quadraturepoints][num_dofs]
                 # Note that this is the transpose of what is returned from FIAT
 #                name = "static double "+ format["derivatives"](d, str(num_dofs), str(num_quadrature_points))
-                name = "const static double " + format["derivatives"]\
+                name = format["table declaration"] + format["derivatives"]\
                 (tensor_number, d, str(num_quadrature_points), str(num_dofs))
 
                 # Generate arrays
-                value = "\\\n{"
+                value = "\\\n" + format["block begin"]
 #                for i in range(num_dofs):
                 for j in range(num_quadrature_points):
                     if j == 0:
-                        value += "{"
+                        value += format["block begin"]
                     else:
-                        value += " {"
+                        value += " " + format["block begin"]
 #                    for j in range(num_quadrature_points):
                     for i in range(num_dofs):
 #                        value += "%f" %(derivatives[i,j],)
-                        value += "%f" %(derivatives[i,j],)
+                        value += format["floating point"] %(derivatives[i,j],)
 #                        if j == num_quadrature_points - 1:
                         if i == num_dofs - 1:
-                            value += "}"
+                            value += format["block end"]
                         else:
                             value += ", "
 #                    if i == num_dofs - 1:
                     if j == num_quadrature_points - 1:
-                        value += "}"
+                        value += format["block end"]
                     else:
                         value += ",\n"
 
@@ -265,6 +267,8 @@ class QuadratureGenerator(CodeGenerator):
         # Prefetch formats to speed up code generation
         format_psis = format["psis"]
         format_floating_point = format["floating point"]
+        format_block_begin = format["block begin"]
+        format_block_end = format["block end"]
 
 #        print "\n quad codegenerator, tabulate_psis: ", psis
 
@@ -377,20 +381,20 @@ class QuadratureGenerator(CodeGenerator):
 #                                                str(num_quadrature_points), str(num_dofs))
 
                 # Generate array of values
-                value = "\\\n{"
+                value = "\\\n" + format_block_begin
                 for i in range(num_quadrature_points):
                     if i == 0:
-                        value += "{"
+                        value += format_block_begin
                     else:
-                        value += " {"
+                        value += " " + format_block_begin
                     for j in range(num_dofs):
                         value += format_floating_point(values[j,i])
                         if j == num_dofs - 1:
-                            value += "}"
+                            value += format_block_end
                         else:
                             value += ", "
                     if i == num_quadrature_points - 1:
-                        value += "}"
+                        value += format_block_end
                     else:
                         value += ",\n"
 
@@ -402,7 +406,7 @@ class QuadratureGenerator(CodeGenerator):
         "Generate Jacobian at integration points"
 
         # Prefetch formats to speed up code generation
-        format_comment        = format["indent comment"]
+        format_comment        = format["comment"]
         format_transform      = format["transform"]
         format_determinant    = format["determinant"]
         format_derivatives    = format["derivatives"]
@@ -412,23 +416,24 @@ class QuadratureGenerator(CodeGenerator):
         format_subtract       = format["subtract"]
         format_multiply       = format["multiply"]
         format_floating_point = format["floating point"]
+        format_float = format["float declaration"]
 
         code = []
 
         # Declare variables
-        code += [format_comment("Declare and initialize variables for Jacobian and the determinant (tensor %d)" % (tensor_number,), self.indent_size)]
+        code += [indent(format_comment("Declare and initialize variables for Jacobian and the determinant (tensor %d)" % (tensor_number,)), self.indent_size)]
 
         # FIXME: hardcoded variables
-        code += [(indent("double " + format_transform(0,0,None), self.indent_size), format_floating_point(0.0))]
-        code += [(indent("double " + format_transform(0,1,None), self.indent_size), format_floating_point(0.0))]
-        code += [(indent("double " + format_transform(1,0,None), self.indent_size), format_floating_point(0.0))]
-        code += [(indent("double " + format_transform(1,1,None), self.indent_size), format_floating_point(0.0))]
-        code += [(indent("double " + format_determinant, self.indent_size), format_floating_point(0.0))]
+        code += [(indent(format_float + format_transform(0,0,None), self.indent_size), format_floating_point(0.0))]
+        code += [(indent(format_float + format_transform(0,1,None), self.indent_size), format_floating_point(0.0))]
+        code += [(indent(format_float + format_transform(1,0,None), self.indent_size), format_floating_point(0.0))]
+        code += [(indent(format_float + format_transform(1,1,None), self.indent_size), format_floating_point(0.0))]
+        code += [(indent(format_float + format_determinant, self.indent_size), format_floating_point(0.0))]
         code += [""]
 
         # Create loop over dofs
-        code += [format_comment("Jacobian, loop dofs (tensor %d)" % (tensor_number,), self.indent_size)]
-        code += self.__begin_loop("j", num_dofs)
+        code += [indent(format_comment("Jacobian, loop dofs (tensor %d)" % (tensor_number,)), self.indent_size)]
+        code += self.__begin_loop("j", num_dofs, format)
 
         # Compute Jacobian values and determinant
 #        code += [format_comment("Compute values of the Jacobian and determinant, loop dofs", self.indent_size)]
@@ -445,12 +450,12 @@ class QuadratureGenerator(CodeGenerator):
 #                    print "format_add_equal: ", format_add_equal(1,1)
 #                    print "format_add_equal(name, value): ", format_add_equal(name,value)
 
-                    code += [format_add_equal(name, value)+";"]
+                    code += [format_add_equal(name, value)]
 
 #                    code += [(name, value)]
 
             code += [""]
-            code += [format_comment("Compute determinant of Jacobian", self.indent_size)]
+            code += [indent(format_comment("Compute determinant of Jacobian"), self.indent_size)]
 
             # FIXME: determinant is hardcoded
             value = format_subtract([format_multiply([format_transform(0,0,None),format_transform(1,1,None)]), \
@@ -459,14 +464,14 @@ class QuadratureGenerator(CodeGenerator):
             code += [(indent(format_determinant, self.indent_size), value)]
             code += [""]
 
-            code += [format_comment("Take absolute value of determinant", self.indent_size)]
+            code += [indent(format_comment("Take absolute value of determinant"), self.indent_size)]
             code += [(indent(format_determinant, self.indent_size), format["absolute value"](format_determinant))]
 
         else:
             RuntimeError("Jacobian for 3D not implemented yet!")
 
         # End node loop
-        code += self.__end_loop()
+        code += self.__end_loop(format)
         code += [""]
 
         return code
@@ -478,7 +483,8 @@ class QuadratureGenerator(CodeGenerator):
 
         # Prefetch formats to speed up code generation
         format_element_tensor = format["element tensor"]
-        format_comment        = format["indent comment"]
+#        format_comment        = format["indent comment"]
+        format_comment        = format["comment"]
         format_determinant    = format["determinant"]
         format_weights        = format["weights"]
         format_add_equal      = format["add equal"]
@@ -492,17 +498,20 @@ class QuadratureGenerator(CodeGenerator):
         num_dofs = tensor.Psis[0][2][0]
 
         # Loop first primary index
-        code += [format_comment("Loop first primary index", self.indent_size)]
-        code += self.__begin_loop("i", num_dofs)
+#        code += [format_comment("Loop first primary index", self.indent_size)]
+        code += [indent(format_comment("Loop first primary index"), self.indent_size)]
+        code += self.__begin_loop("i", num_dofs, format)
 
         # Loop second primary index
-        code += [format_comment("Loop second primary index", self.indent_size)]
-        code += self.__begin_loop("j", num_dofs)
+#        code += [format_comment("Loop second primary index", self.indent_size)]
+        code += [indent(format_comment("Loop second primary index"), self.indent_size)]
+        code += self.__begin_loop("j", num_dofs, format)
 
         scaling = [format_multiply([format_weights(tensor_number, "ip"), format_determinant]) + \
                   " \\\n%s" %("".join([" " for i in range(self.indent_size)]))]
 #        print "scaling: ", scaling
-        code += [format_comment("Compute block entries (tensor %d)" % (tensor_number,), self.indent_size)]
+#        code += [format_comment("Compute block entries (tensor %d)" % (tensor_number,), self.indent_size)]
+        code += [indent(format_comment("Compute block entries (tensor %d)" % (tensor_number,)), self.indent_size)]
 
         iindices = tensor.i.indices
         aindices = tensor.a.indices
@@ -521,16 +530,15 @@ class QuadratureGenerator(CodeGenerator):
             value += [format_multiply([self.__generate_psi_entry(tensor_number, a, psi_indices, format) for psi_indices in indices] + factor + scaling)]
 
         value = format_add(value)
-        value += ";"
 
         code += [format_add_equal(name, value)]
 #        code += [(name, value)]
 
         # End loop second primary index
-        code += self.__end_loop()
+        code += self.__end_loop(format)
 
         # End loop first primary index
-        code += self.__end_loop()
+        code += self.__end_loop(format)
 
 #        for i in iindices:
 #            name = indent(format_element_tensor(i, k), self.indent_size)
@@ -551,32 +559,32 @@ class QuadratureGenerator(CodeGenerator):
         code = []
 
         # Prefetch formats to speed up code generation
-        format_comment = format["indent comment"]
+        format_comment = format["comment"]
 
         # Get number of dofs, assuming all psis have the same number of dofs.
         num_dofs = tensor.Psis[0][2][0]
 
         # Loop first primary index
-        code += [format_comment("Reset values of the element tensor block, loop first primary index", self.indent_size)]
-        code += self.__begin_loop("i", num_dofs)
+        code += [indent(format_comment("Reset values of the element tensor block, loop first primary index"), self.indent_size)]
+        code += self.__begin_loop("i", num_dofs, format)
 
         # Loop second primary index
-        code += [format_comment("Loop second primary index", self.indent_size)]
-        code += self.__begin_loop("j", num_dofs)
+        code += [indent(format_comment("Loop second primary index"), self.indent_size)]
+        code += self.__begin_loop("j", num_dofs, format)
 
         # Generate entry, name and value
         k = "i*%d+j" %(num_dofs,)
         name = indent(format["element tensor quad"](k), self.indent_size)
         value = format["floating point"](0.0)
 
-        code += [format_comment("Reset entry", self.indent_size)]
+        code += [indent(format_comment("Reset entry"), self.indent_size)]
         code += [(name, value)]
 
         # End loop second primary index
-        code += self.__end_loop()
+        code += self.__end_loop(format)
 
         # End loop first primary index
-        code += self.__end_loop()
+        code += self.__end_loop(format)
 
         code += [""]
 
@@ -602,7 +610,7 @@ class QuadratureGenerator(CodeGenerator):
         names = []
         for multiindex in aindices:
             psi_args[3] = multiindex
-            names += ["const static double " + format["psis"](psi_args)]
+            names += [format["table declaration"] + format["psis"](psi_args)]
  
         return (names, aindices)
 
@@ -692,21 +700,20 @@ class QuadratureGenerator(CodeGenerator):
         # Compute product of all factors
 #        return format["multiply"]([f for f in [format["scale factor"]] + f0 + f1])
 
-    def __begin_loop(self, variable, num_loops):
+    def __begin_loop(self, variable, num_loops, format):
         "Generate the beginning of a loop"
 
-        code = [indent("for (unsigned int %s = 0; %s < %d; %s++)\n{", self.indent_size) \
-                       % (variable, variable, num_loops, variable)]
+        code = [indent(format["loop begin"](variable, variable, num_loops, variable), self.indent_size)]
 
         # Increment indentation size
         self.indent_size += self.indent_increment
 
         return code
 
-    def __end_loop(self):
+    def __end_loop(self, format):
         "Ends a loop"
 
         # Decrement indentation size
         self.indent_size -= self.indent_increment
 
-        return [indent("}", self.indent_size)]
+        return [indent(format["loop end"], self.indent_size)]

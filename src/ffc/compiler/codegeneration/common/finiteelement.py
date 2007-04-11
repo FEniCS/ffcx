@@ -8,6 +8,9 @@ __license__  = "GNU GPL Version 2"
 # FFC fem modules
 from ffc.fem.finiteelement import *
 
+# FFC evaluatebasis module
+from ffc.compiler.codegeneration.common.evaluatebasis import *
+
 def generate_finite_element(element, format):
     """Generate dictionary of code for the given finite element
     according to the given format"""
@@ -31,6 +34,7 @@ def generate_finite_element(element, format):
 
     # Generate code for evaluate_basis (FIXME: not implemented)
     code["evaluate_basis"] = ["// Not implemented"]
+#    code["evaluate_basis"] = evaluate_basis(element, format)
 
     # Generate code for evaluate_dof
     code["evaluate_dof"] = ["// Not implemented"]
