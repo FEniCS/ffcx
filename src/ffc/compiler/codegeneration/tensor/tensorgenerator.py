@@ -1,7 +1,7 @@
 "Code generator for tensor representation"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-11-03 -- 2007-03-30"
+__date__ = "2004-11-03 -- 2007-04-12"
 __copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -11,7 +11,7 @@ from ffc.common.constants import *
 # FFC language modules
 from ffc.compiler.language.index import *
 
-# FFC code generation modules
+# FFC code generation common modules
 from ffc.compiler.codegeneration.common.codegenerator import *
 
 class TensorGenerator(CodeGenerator):

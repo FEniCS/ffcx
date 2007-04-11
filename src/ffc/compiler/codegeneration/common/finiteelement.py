@@ -1,15 +1,20 @@
 "Code generation for finite element"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-01-23 -- 2007-02-06"
+__date__ = "2007-01-23 -- 2007-04-10"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
+# Modified by Kristian Oelgaard 2007
+
 # FFC fem modules
 from ffc.fem.finiteelement import *
+from ffc.fem.vectorelement import *
+from ffc.fem.projection import *
 
-# FFC evaluatebasis module
-from ffc.compiler.codegeneration.common.evaluatebasis import *
+# FFC code generation common modules
+from evaluatebasis import *
+from utils import *
 
 def generate_finite_element(element, format):
     """Generate dictionary of code for the given finite element
@@ -39,10 +44,50 @@ def generate_finite_element(element, format):
     # Generate code for evaluate_dof
     code["evaluate_dof"] = ["// Not implemented"]
 
-    # Generate code for inperpolate_vertex_values (FIXME: not implemented)
-    code["interpolate_vertex_values"] = ["// Not implemented"]
+    # Generate code for inperpolate_vertex_values
+    code["interpolate_vertex_values"] = __generate_interpolate_vertex_values(element, format)
 
     # Generate code for num_sub_elements
     code["num_sub_elements"] = "%d" % element.num_sub_elements()
+
+    return code
+
+def __generate_interpolate_vertex_values(element, format):
+    "Generate code for interpolate_vertex_values"
+
+    # Check that we have a scalar- or vector-valued element
+    if element.value_rank() > 1:
+        return format["comment"]("Not implemented (only for scalars or vectors)")
+
+    # Generate code as a list of declarations
+    code = []
+
+    # Set vertices (note that we need to use the FIAT reference cells)
+    if element.cell_shape() == LINE:
+        vertices = [(-1,), (1,)]
+    elif element.cell_shape() == TRIANGLE:
+        vertices = [(-1, -1), (1, -1), (-1, 1)]
+    elif element.cell_shape() == TETRAHEDRON:
+        vertices =  [(-1, -1, -1), (1, -1, -1), (-1, 1, -1), (-1, -1, 1)]
+
+    # Tabulate basis functions at vertices
+    table = element.tabulate(0, vertices)
+
+    # Get vector dimension
+    if element.value_rank() == 0:
+        for i in range(len(vertices)):
+            coefficients = table[0][(0, 0)][:, i]
+            dof_values = [format["dof values"](j) for j in range(len(coefficients))]
+            name = format["vertex values"](i)
+            value = inner_product(coefficients, dof_values, format)
+            code += [(name, value)]
+    else:
+        for dim in range(element.value_dimension(0)):
+            for i in range(len(vertices)):
+                coefficients = table[dim][0][(0, 0)][:, i]
+                dof_values = [format["dof values"](j) for j in range(len(coefficients))]
+                name = format["vertex values"](dim*len(vertices) + i)
+                value = inner_product(coefficients, dof_values, format)
+                code += [(name, value)]
 
     return code

@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2005-11-07 -- 2007-03-21"
+__date__ = "2005-11-07 -- 2007-04-11"
 __copyright__ = "Copyright (C) 2005-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -31,24 +31,29 @@ class Projection:
     """
 
     def __init__(self, element):
-        "Create Projection onto given FiniteElement."
+        "Create projection onto given finite element"
 
         self.element = element
         self.projections = {}
 
-    def __call__(self, function):
-        "Compute projection of given Function."
+    def __call__(self, object):
+        "Compute projection of given function or finite element"
 
-        # Check that we got a Function
-        if not isinstance(function, Function):
-            raise FormError, (function, "Projections are only supported for Functions.")
+        # Check input
+        if isinstance(object, Function):
+            return self.__compute_function_projection(object)
+        else:
+            return self.__compute_element_projection(object)
+
+    def __compute_function_projection(self, function):
+        "Compute projection of given function"
 
         # Check that we have not already computed the projection
         if not function.P == None:
             raise FormError, (function, "Only one projection can be applied to each Function.")
 
         # Compute the projection matrix
-        P = self.__compute_projection(function.e0)
+        P = self.__compute_element_projection(function.e0)
 
         # Create new function and set projection
         f = Function(function)
@@ -58,9 +63,13 @@ class Projection:
 
         return f
 
-    def __compute_projection(self, e0):
-        "Compute projection matrix from e0 to e1."
+    def __compute_element_projection(self, element):
+        "Compute projection of given finite element"
 
+        # Rename elements, projecting from e0 to e1
+        e0 = element
+        e1 = self.element
+        
         # Check if we already know the projection
         name = e0.signature()
         if name in self.projections:
@@ -68,7 +77,6 @@ class Projection:
             return self.projections[name]
 
         # Check that the two elements are defined on the same shape
-        e1 = self.element
         if not e0.cell_shape() == e1.cell_shape():
             raise FormError, (((e0, e1)), "Incompatible finite elements for projection.")
 
