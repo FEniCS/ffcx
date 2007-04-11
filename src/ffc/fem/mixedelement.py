@@ -4,6 +4,7 @@ __copyright__ = "Copyright (C) 2005-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # Modified by Garth N. Wells 2006
+# Modified by Marie E. Rognes (meg@math.uio.no) 2007
 
 # Python modules
 import numpy
@@ -70,9 +71,15 @@ class MixedElement:
         "Return degree of polynomial basis"
         return max([element.degree() for element in self.__elements])
 
-    def mapping(self):
-        "Return the type of mapping associated with the element"
-        return pick_first([element.mapping() for element in self.__elements])
+    def mapping(self, i):
+        """Return the type of mapping associated with the given
+        component i of the element. """
+        if isinstance(i, Index):
+            return self.sub_element(0).mapping(0) # meg: Sudden fix.
+        mappings = []
+        for sub_element in self.__elements:
+            mappings += [sub_element.mapping(j) for j in range(sub_element.value_dimension(0))]
+        return mappings[i]
 
     def cell_dimension(self):
         "Return dimension of shape"

@@ -101,7 +101,7 @@ class FiniteElement:
         "Return degree of polynomial basis"
         return self.basis().degree()
 
-    def mapping(self):
+    def mapping(self, i):
         "Return the type of mapping associated with the element"
         return self.__mapping
 

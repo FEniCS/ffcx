@@ -175,7 +175,7 @@ class TensorGenerator(CodeGenerator):
                 factors += [coefficient]
         for t in G.transforms:
             if not (t.index0.type == Index.AUXILIARY_G or  t.index1.type == Index.AUXILIARY_G):
-                factors += [format["inverse transform"](t.index0([], a, [], []), \
+                factors += [format["transform"](t.power, t.index0([], a, [], []), \
                                                         t.index1([], a, [], []), \
                                                         t.restriction),]
         monomial = format["multiply"](factors)
@@ -192,7 +192,7 @@ class TensorGenerator(CodeGenerator):
                     factors += [coefficient]
             for t in G.transforms:
                 if t.index0.type == Index.AUXILIARY_G or t.index1.type == Index.AUXILIARY_G:
-                    factors += [format["inverse transform"](t.index0([], a, [], b), \
+                    factors += [format["transform"](t.power, t.index0([], a, [], b), \
                                                             t.index1([], a, [], b), \
                                                             t.restriction)]
             terms += [format["multiply"](factors)]

@@ -31,6 +31,7 @@ from ffc.fem.mixedfunctions import *
 # FFC language modules
 from language.algebra import *
 from language.reassignment import *
+from language.simplify import *
 
 # FFC analysis modules
 from analysis.checks import *

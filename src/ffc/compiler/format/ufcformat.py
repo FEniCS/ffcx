@@ -23,6 +23,8 @@ from removeunused import *
 
 # Choose map from restriction
 choose_map = {Restriction.PLUS: "0", Restriction.MINUS: "1", None: ""}
+# Choose transform from transforms:
+choose_transform = {-1: "J", 1: "Jinv"} # meg: FIXME: Others ever relevant? 
 
 # Specify formatting for code generation
 format = { "add": lambda l: " + ".join(l),
@@ -39,8 +41,7 @@ format = { "add": lambda l: " + ".join(l),
            "constant": lambda j: "c%d" % j,
            "coefficient table": lambda j, k: "w[%d][%d]" % (j, k),
            "coefficient": lambda j, k: "w[%d][%d]" % (j, k),
-           "transform": lambda j, k, r: "J%s_%d%d" % (choose_map[r], j, k),
-           "inverse transform": lambda j, k, r: "Jinv%s_%d%d" % (choose_map[r], j, k),
+           "transform": lambda p, j, k, r: "%s%s_%d%d" % (choose_transform[p], choose_map[r], j, k),
            "reference tensor" : lambda j, i, a: None,
            "geometry tensor declaration": lambda j, a: "const double " + format["geometry tensor access"](j, a),
            "geometry tensor access": lambda j, a: "G%d_%s" % (j, "_".join(["%d" % index for index in a])),
