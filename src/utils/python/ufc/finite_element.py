@@ -72,7 +72,7 @@ public:
   /// Interpolate vertex values from dof values
   virtual void interpolate_vertex_values(double* vertex_values,
                                          const double* dof_values,
-                                         const ufc::cell & c) const
+                                         const ufc::cell& c) const
   {
 %(interpolate_vertex_values)s
   }
@@ -134,7 +134,7 @@ public:
   /// Interpolate vertex values from dof values
   virtual void interpolate_vertex_values(double* vertex_values,
                                          const double* dof_values,
-                                         const ufc::cell & c) const;
+                                         const ufc::cell& c) const;
 
   /// Return the number of sub elements (for a mixed element)
   virtual unsigned int num_sub_elements() const;
@@ -209,7 +209,7 @@ double %(classname)s::evaluate_dof(unsigned int i,
 /// Interpolate vertex values from dof values
 void %(classname)s::interpolate_vertex_values(double* vertex_values,
                                               const double* dof_values,
-                                              const ufc::cell & c) const
+                                              const ufc::cell& c) const
 {
 %(interpolate_vertex_values)s
 }

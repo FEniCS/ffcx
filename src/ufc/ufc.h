@@ -128,7 +128,7 @@ namespace ufc
     /// Interpolate vertex values from dof values
     virtual void interpolate_vertex_values(double* vertex_values,
                                            const double* dof_values,
-                                           const cell & c) const = 0;
+                                           const cell& c) const = 0;
 
     /// Return the number of sub elements (for a mixed element)
     virtual unsigned int num_sub_elements() const = 0;
