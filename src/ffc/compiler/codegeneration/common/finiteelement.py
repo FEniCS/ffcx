@@ -76,7 +76,7 @@ def __generate_interpolate_vertex_values(element, format):
     # Get vector dimension
     if element.value_rank() == 0:
         for i in range(len(vertices)):
-            coefficients = table[0][(0, 0)][:, i]
+            coefficients = table[0][element.cell_dimension()*(0,)][:, i]
             dof_values = [format["dof values"](j) for j in range(len(coefficients))]
             name = format["vertex values"](i)
             value = inner_product(coefficients, dof_values, format)
@@ -84,7 +84,7 @@ def __generate_interpolate_vertex_values(element, format):
     else:
         for dim in range(element.value_dimension(0)):
             for i in range(len(vertices)):
-                coefficients = table[dim][0][(0, 0)][:, i]
+                coefficients = table[dim][0][element.cell_dimension()*(0,)][:, i]
                 dof_values = [format["dof values"](j) for j in range(len(coefficients))]
                 name = format["vertex values"](dim*len(vertices) + i)
                 value = inner_product(coefficients, dof_values, format)
