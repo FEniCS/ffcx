@@ -703,7 +703,8 @@ class QuadratureGenerator(CodeGenerator):
     def __begin_loop(self, variable, num_loops, format):
         "Generate the beginning of a loop"
 
-        code = [indent(format["loop begin"](variable, variable, num_loops, variable), self.indent_size)]
+        code = [indent(format["loop"](variable, variable, num_loops, variable), self.indent_size)]
+        code += [indent(format["block begin"], self.indent_size)]
 
         # Increment indentation size
         self.indent_size += self.indent_increment
@@ -716,4 +717,7 @@ class QuadratureGenerator(CodeGenerator):
         # Decrement indentation size
         self.indent_size -= self.indent_increment
 
-        return [indent(format["loop end"], self.indent_size)]
+        return [indent(format["block end"], self.indent_size)]
+
+
+

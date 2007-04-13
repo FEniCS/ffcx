@@ -12,9 +12,11 @@ from ffc.common.constants import *
 
 # FFC fem modules
 from ffc.fem.finiteelement import *
+from ffc.fem.mixedelement import *
 
 # Python modules
 import math
+import numpy
 
 def evaluate_basis(element, format):
     """Evaluate element basisfunction at a point, currently only being implemented/tested
@@ -23,18 +25,48 @@ def evaluate_basis(element, format):
        basisvalues which are dependent on the coordinate and thus have to be comuted at
        run time."""
 
-# The current code is working for Lagrange elements of any order
+# Supported:
+# 2D
+# Lagrange                + mixed
+# Discontinuous Lagrange  + mixed
+# Crouzeix-Raviart        + mixed
+# Brezzi-Douglas-Marini   + mixed
+# 3D
+
+# Not supported:
+# 2D
+# Raviart-Thomas ? (not tested since it is broken in FFC, but should work)
+# Nedelec (broken?)
+#
+# 3D
+# Lagrange
+# Discontinuous Lagrange
+# Crouzeix-Raviart
+# Raviart-Thomas
+# Brezzi-Douglas-Marini (BDM)
+# Nedelec (broken?)
+
 # To be fixed:
-# support vector Lagrange 2D
-# support Lagrange/vector Lagrange in 3D
-# support other element types (also vector valued) in 2D and 3D (hopefully this is working without any additional fixes)
-# support mixed elements of all types in 2D and 3D, since vector valued elements are special cases of
-#   mixed elements this should be working without to many changes
 # check that the code is language-independent
+# clean up code
 
     code = []
 
     code += [format["comment"]("Not implemented.. yet")]
+
+    # Check if we have just one element
+    if (element.num_sub_elements() == 1):
+        code += generate_element_code(element, format)
+
+    # If the element is vector valued or mixed
+    else:
+        code += generate_cases(element, format)
+
+    return code
+
+def generate_element_code(element, format):
+
+    code = []
 
     # Tabulate coefficients
     code += tabulate_coefficients(element, format)
@@ -69,34 +101,52 @@ def tabulate_coefficients(element, format):
     # Get coefficients from basis functions, computed by FIAT at compile time
     coefficients = element.basis().coeffs
 
+    # Get shape of coefficients
+    shape = numpy.shape(coefficients)
+
+    # Scalar valued basis element [Lagrange, Discontinuous Lagrange, Crouzeix-Raviart]
+    if (len(shape) == 2):
+        num_components = 1
+        poly_dim = shape[1]
+        coefficients = [coefficients]
+
+    # Vector valued basis element [Raviart-Thomas, Brezzi-Douglas-Marini (BDM)]
+    elif (len(shape) == 3):
+        num_components = shape[1]
+        poly_dim = shape[2]
+        coefficients = numpy.transpose(coefficients, [1,0,2])
+
+    # ???
+    else:
+        raise RuntimeError(), "These coefficients have a strange shape!"
+
     # Get the number of dofs from element
     num_dofs = element.space_dimension()
 
-    # Declare varable name for coefficients
-    code += [format["comment"]("Table of coefficients")]
-    name = format["table declaration"] + "coefficients[%d][%d]" %(num_dofs, num_dofs,)
+    code += [format["comment"]("Table(s) of coefficients")]
 
-    # Generate array of values
-    value = "\\\n" + format_block_begin
-    for i in range(num_dofs):
-        if i == 0:
-            value += format_block_begin
-        else:
-            value += " " + format_block_begin
+    # Generate tables for each component
+    for i in range(num_components):
+
+        # Extract coefficients for current component
+        coeffs = coefficients[i]
+
+        # Declare varable name for coefficients
+        name = format["table declaration"] + "coefficients%d[%d][%d]" %(i, num_dofs, poly_dim,)
+
+        # Generate array of values
+        value = "\\\n" + format_block_begin
+        rows = []
         for j in range(num_dofs):
-            value += format["floating point"](coefficients[i,j])
-            if j == num_dofs - 1:
-                value += format_block_end
-            else:
-                value += ", "
-        if i == num_dofs - 1:
-            value += format_block_end
-        else:
-            value += ",\n"
+            rows += [format_block_begin + ", ".join([format["floating point"](coeffs[j,k])\
+                     for k in range(poly_dim)]) + format_block_end]
 
-    code += [(name, value)]
+        value += ",\n".join(rows)
+        value += format_block_end
 
-    return code + [""]
+        code += [(name, value)] + [""]
+
+    return code
 
 
 def generate_map(element, format):
@@ -308,15 +358,44 @@ def dot_product(element, format):
 
     code = []
 
-    code += [format["comment"]("Compute value")]
+    code += [format["comment"]("Compute values")]
 
-    # Reset value as it is a pointer
-    code += [("*values", "0.0")]
+    # Get coefficients from basis functions, computed by FIAT at compile time
+    coefficients = element.basis().coeffs
 
-    # Loop dofs to generate dot product, 3D ready
-    code += [format["loop begin"]("j", "j", element.space_dimension(), "j")]
-    code += [indent(format["add equal"]("*values","coefficients[i][j]*basisvalues[j]"),2)]
-    code += [format["loop end"]]
+    # Get shape of coefficients
+    shape = numpy.shape(coefficients)
+
+    # Scalar valued basis element [Lagrange, Discontinuous Lagrange, Crouzeix-Raviart]
+    if (len(shape) == 2):
+
+        # Reset value as it is a pointer
+        code += [("*values", "0.0")]
+
+        # Loop dofs to generate dot product, 3D ready
+        code += [format["loop"]("j", "j", element.space_dimension(), "j")]
+        code += [indent(format["add equal"]("*values","coefficients0[i][j]*basisvalues[j]"),2)]
+
+    # Vector valued basis element [Raviart-Thomas, Brezzi-Douglas-Marini (BDM)]
+    elif (len(shape) == 3):
+        num_components = shape[1]
+        poly_dim = shape[2]
+
+        # Reset value as it is a pointer
+        code += [("values[%d]" %(i), "0.0") for i in range(num_components)]
+
+        # Loop dofs to generate dot product, 3D ready
+        code += [format["loop"]("j", "j", element.space_dimension(), "j")]
+        code += [format["block begin"]]
+
+        code += [indent(format["add equal"]("values[%d]" %(i),\
+                 "coefficients%d[i][j]*basisvalues[j]" %(i)),2) for i in range(num_components)]
+
+        code += [format["block end"]]
+
+    # ???
+    else:
+        raise RuntimeError(), "These coefficients have a strange shape!"
 
     return code
 
@@ -340,12 +419,146 @@ def eval_jacobi_batch(a,b,n):
             result += [[a2, a3,-a4]]
     return result
 
+def generate_cases(element, format):
+    "Generate cases in the event of vector elements or mixed elements"
+
+    # Prefetch formats to speed up code generation
+    format_block_begin = format["block begin"]
+    format_block_end = format["block end"]
+
+#    print "elements: ", element
+
+    # Extract basis elements
+    elements = extract_elements(element)
+#    print "extracted elements: ", elements
+
+    code, unique_elements = element_types(elements, format)
+
+#    print "unique_elements: ",unique_elements
+
+    code += dof_map(elements, format)
+
+    num_unique_elements = len(unique_elements)
+    if (num_unique_elements > 1):
+        code += [format["switch"]("element")]
+        code += [format_block_begin]
+
+        for i in range(len(unique_elements)):
+            code += [format["case"](i)]
+            code += [format_block_begin]
+            element = unique_elements[i]
+            code += generate_element_code(element, format)
+            code += [format["break"]]
+            code += [format_block_end]
+
+        code += [format_block_end]
+
+    else:
+        element = unique_elements[0]
+        code += generate_element_code(element, format)
+
+    return code
+
+def extract_elements(element):
+    """This function extracts the individual elements from vector elements and mixed elements.
+    Example, the following mixed element:
+
+    element1 = FiniteElement("Lagrange", "triangle", 1)
+    element2 = VectorElement("Lagrange", "triangle", 2)
+
+    element  = element2 + element1
+
+    has the structure: mixed-element[mixed-element[Lagrange order 2, Lagrange order 2], Lagrange order 1]
+
+    This function returns the list of basis elements:
+    elements = [Lagrange order 2, Lagrange order 2, Lagrange order 1]"""
+
+    elements = [element.sub_element(i) for i in range(element.num_sub_elements())]
+    mixed = True
+    while (mixed == True):
+        mixed = False
+        for i in range(len(elements)):
+            sub_element = elements[i]
+            if isinstance(sub_element, MixedElement):
+                mixed = True
+                elements.pop(i)
+                for j in range(sub_element.num_sub_elements()):
+                    elements.insert(i+j, sub_element.sub_element(j))
+
+    return elements
+
+def element_types(elements, format):
+    code = []
+
+    # Prefetch formats to speed up code generation
+    format_block_begin = format["block begin"]
+    format_block_end = format["block end"]
+
+    unique_elements = []
+    types = [0]
+
+    for i in range(1, len(elements)):
+        unique = True
+        element = elements[i]
+        elem_type = len(unique_elements)
+        for j in range(elem_type):
+            if (element.signature() == unique_elements[j].signature()):
+                unique = False
+                elem_type = j
+                break
+        if unique:
+            unique_elements += [element]
+        types += [elem_type]
+
+    # Declare element types and tabulate
+    name = format["const uint declaration"] + "element_types[%d]" %(len(elements),)
+    value = format_block_begin
+    value += ", ".join(["%d" %(element_type) for element_type in types])
+    value += format_block_end
+    code += [(name, value)]
+    return (code, unique_elements)
 
 
+def dof_map(elements, format):
 
+    code = []
 
+    # Prefetch formats to speed up code generation
+    format_block_begin = format["block begin"]
+    format_block_end = format["block end"]
 
+    # Declare variable for dof map
+    code += [(format["uint declaration"] + "element",0)]
+#    code += [(format["uint declaration"] + "dof",0)]
+    code += [(format["uint declaration"] + "tmp",0)]
 
+    # Declare dofs_per_element variable and tabulate
+    name = format["const uint declaration"] + "dofs_per_element[%d]" %(len(elements),)
+    value = format_block_begin
+    value += ", ".join(["%d" %(element.space_dimension()) for element in elements])
+    value += format_block_end
+    code += [(name, value)]
 
+    # Loop elements
+    code += [format["loop"]("j", "j", len(elements), "j")]
+    code += [format_block_begin]
+    # if
+    code += ["if (tmp +  dofs_per_element[j] > i)" %()]
+    code += [format_block_begin]
+    code += [("i", "i - tmp")]
+#    code += [("dof", "i - tmp")]
+    code += [("element", "element_types[j]")]
+    code += [format["break"]]
+    code += [format_block_end]
+    # else
+    code += ["else"]
+    code += [format_block_begin]
+    code += [format["add equal"]("tmp","dofs_per_element[j]")]
+    code += [format_block_end]
+
+    # end loop    
+    code += [format_block_end]
+
+    return code
 
 

@@ -32,7 +32,7 @@ detJ%(restriction)s = std::abs(detJ%(restriction)s);
 # Code snippet for computing the Jacobian, its inverse and determinant in 3D
 jacobian_3D = """\
 // Extract vertex coordinates
-const double * const * x%(restriction)s = x%(restriction)s.coordinates;
+const double * const * x%(restriction)s = c%(restriction)s.coordinates;
 
 // Compute Jacobian of affine map from reference cell
 const double J%(restriction)s_00 = x%(restriction)s[1][0] - x%(restriction)s[0][0];

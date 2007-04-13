@@ -67,13 +67,17 @@ format = { "add": lambda l: " + ".join(l),
 # evalutate_basis()
            "coordinate access": lambda i: "coordinates[%d]" % (i,),
            "absolute value": lambda i: "std::abs(%s)" % (i,),
+           "switch": lambda i: "switch ( %s )" % (i,),
+           "case": lambda i: "case %d:" % (i,),
+           "break": "break;",
+           "uint declaration": "unsigned int ",
+           "const uint declaration": "const static unsigned int ",
 # quadrature + evalutate_basis()
            "add equal": lambda i,j: "%s += %s;" % (i,j),
            "table declaration": "const static double ",
            "block begin": "{",
            "block end": "}",
-           "loop begin": lambda i,j,k,l: "for (unsigned int %s = 0; %s < %d; %s++)\n{"% (i, j, k, l),
-           "loop end": "}"}
+           "loop": lambda i,j,k,l: "for (unsigned int %s = 0; %s < %d; %s++)"% (i, j, k, l)}
 
 def write(generated_forms, prefix, options):
     "Generate UFC 1.0 code for a given list of pregenerated forms"
