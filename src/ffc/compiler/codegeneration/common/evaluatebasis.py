@@ -329,10 +329,29 @@ def compute_basisvalues(element, format):
 
     code = []
     code += [format["comment"]("Compute basisvalues")]
-    dofs = element.space_dimension()
+
+
+    # Get coefficients from basis functions, computed by FIAT at compile time
+    coefficients = element.basis().coeffs
+
+    # Get shape of coefficients
+    shape = numpy.shape(coefficients)
+
+    # Scalar valued basis element [Lagrange, Discontinuous Lagrange, Crouzeix-Raviart]
+    if (len(shape) == 2):
+        poly_dim = shape[1]
+
+    # Vector valued basis element [Raviart-Thomas, Brezzi-Douglas-Marini (BDM)]
+    elif (len(shape) == 3):
+        poly_dim = shape[2]
+
+    # ???
+    else:
+        raise RuntimeError(), "These coefficients have a strange shape!"
+
 
     # Declare variable
-    name = format["table declaration"] + "basisvalues[%d]" %(dofs,)
+    name = format["table declaration"] + "basisvalues[%d]" %(poly_dim,)
 
     value = format["block begin"]
     var = []
@@ -368,12 +387,13 @@ def dot_product(element, format):
 
     # Scalar valued basis element [Lagrange, Discontinuous Lagrange, Crouzeix-Raviart]
     if (len(shape) == 2):
+        poly_dim = shape[1]
 
         # Reset value as it is a pointer
         code += [("*values", "0.0")]
 
         # Loop dofs to generate dot product, 3D ready
-        code += [format["loop"]("j", "j", element.space_dimension(), "j")]
+        code += [format["loop"]("j", "j", poly_dim, "j")]
         code += [indent(format["add equal"]("*values","coefficients0[i][j]*basisvalues[j]"),2)]
 
     # Vector valued basis element [Raviart-Thomas, Brezzi-Douglas-Marini (BDM)]
@@ -385,7 +405,7 @@ def dot_product(element, format):
         code += [("values[%d]" %(i), "0.0") for i in range(num_components)]
 
         # Loop dofs to generate dot product, 3D ready
-        code += [format["loop"]("j", "j", element.space_dimension(), "j")]
+        code += [format["loop"]("j", "j", poly_dim, "j")]
         code += [format["block begin"]]
 
         code += [indent(format["add equal"]("values[%d]" %(i),\
