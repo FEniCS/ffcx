@@ -481,7 +481,7 @@ def __generate_evaluate_dof(element, dof_map, cell_dimension):
 
     # Check element family
     if dof_map.dof_components() == None:
-        return "// Not implemented"
+        return "// Not implemented\nreturn 0.0;"
 
     # Get dof coordinates
     cs = dof_map.dof_coordinates()
