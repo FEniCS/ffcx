@@ -547,8 +547,10 @@ class Monomial(Element):
             s = ""
         if self.determinant == 0:
             d = ""
+        elif self.determinant == 1.0:
+            d = "|det F'|"
         else:
-            d = "|det(F)|^" + "(" + str(self.determinant) + ")"
+            d = "|det F'|^" + "(" + str(self.determinant) + ")"
         c = "".join([w.__repr__() for w in self.constants])
         w = "".join([w.__repr__() for w in self.coefficients])
         t = "".join([t.__repr__() for t in self.transforms])

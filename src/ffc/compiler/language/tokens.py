@@ -114,17 +114,25 @@ class Transform:
 
     def __repr__(self):
         "Print nicely formatted representation of Transform."
-        if self.power == 1:
-            p = ""
+        p = ""
+        [top, bottom] = ["dX", "dx"]
+        [index0, index1] = [self.index0.__repr__(), self.index1.__repr__()]
+        if self.power == -1: 
+            [bottom,top] = [top, bottom]
+            [index1, index0] = [index0, index1]
         elif not self.power:
             return "" 
-        else:
-            p = "^("+ str(self.power) + ")"
+        elif not self.power == 1: 
+            p = "^(" + str(self.power) + ")"
+
+        restric = ""
         if self.restriction == None:
-            return "(dX" + self.index0.__repr__() + "/" + "dx" + self.index1.__repr__() + ")" + p
+            restric = ""
         elif self.restriction == Restriction.PLUS:
-            return "(dX" + self.index0.__repr__() + "/" + "dx" + self.index1.__repr__() + ")" + p + "(+)"
+            restric = "(+)"
         elif self.restriction == Restriction.MINUS:
-            return "(dX" + self.index0.__repr__() + "/" + "dx" + self.index1.__repr__() + ")" + p + "(-)"
+            restric = "(-)"
         else: 
             raise FormError("Wrong value for restriction of transform")
+
+        return "(" + top + index0 + "/" + bottom + index1 + ")" + p + restric
