@@ -1,6 +1,6 @@
 """Code generation for evaluation of finite element basis values. This module generates
-   code which is more or less a C++ representation of FIAT code. More specifically the
-   functions from the modules expansion.py and jacobi.py are translated into C++"""
+code which is more or less a C++ representation of FIAT code. More specifically the
+functions from the modules expansion.py and jacobi.py are translated into C++"""
 
 __author__ = "Kristian B. Oelgaard (k.b.oelgaard@tudelft.nl)"
 __date__ = "2007-04-04 -- 2007-04-16"
@@ -9,77 +9,112 @@ __license__  = "GNU GPL Version 2"
 
 # FFC common modules
 from ffc.common.constants import *
+from ffc.common.utils import *
 
 # FFC fem modules
 from ffc.fem.finiteelement import *
 from ffc.fem.mixedelement import *
 
+# FFC format modules
+#from ffc.compiler.format.codesnippets import *
+
 # Python modules
 import math
 import numpy
 
+class IndentControl:
+    "Class to control the indentation of code"
+
+    def __init__(self):
+        "Constructor"
+        self.size = 0
+        self.increment = 2
+
+    def increase(self):
+        "Increase indentation by increment"
+        self.size += self.increment
+
+    def decrease(self):
+        "Decrease indentation by increment"
+        self.size -= self.increment
+
+    def indent(self, a):
+        "Indent string input string by size"
+        return indent(a, self.size)
+
 def evaluate_basis(element, format):
     """Evaluate an element basisfunction at a point. The value(s) of the basisfunction is/are
-       computed as in FIAT as the dot product of the coefficients (computed at compile time)
-       and basisvalues which are dependent on the coordinate and thus have to be computed at
-       run time.
+    computed as in FIAT as the dot product of the coefficients (computed at compile time)
+    and basisvalues which are dependent on the coordinate and thus have to be computed at
+    run time.
 
-       Currently the following elements are supported in 2D and 3D:
+    Currently the following elements are supported in 2D and 3D:
 
-       Lagrange                + mixed/vector valued
-       Discontinuous Lagrange  + mixed/vector valued
-       Crouzeix-Raviart        + mixed/vector valued
-       Brezzi-Douglas-Marini   + mixed/vector valued
+    Lagrange                + mixed/vector valued
+    Discontinuous Lagrange  + mixed/vector valued
+    Crouzeix-Raviart        + mixed/vector valued
+    Brezzi-Douglas-Marini   + mixed/vector valued
 
-       Not supported in 2D or 3D:
+    Not supported in 2D or 3D:
 
-       Raviart-Thomas ? (not tested since it is broken in FFC, but should work)
-       Nedelec (broken?)"""
+    Raviart-Thomas ? (not tested since it is broken in FFC, but should work)
+    Nedelec (broken?)"""
 
 # To be fixed:
 # check that the code is language-independent
 
     code = []
 
+    Indent = IndentControl()
+
+    # Get coordinates and generate map
+    code += generate_map(element, Indent, format)
+
     # Check if we have just one element
     if (element.num_sub_elements() == 1):
-        code += generate_element_code(element, format)
+        code += generate_element_code(element, Indent, format)
 
     # If the element is vector valued or mixed
     else:
-        code += generate_cases(element, format)
+        code += generate_cases(element, Indent, format)
 
     return code
 
-def generate_element_code(element, format):
+def generate_element_code(element, Indent, format):
     "Generate code for each basis element"
 
     code = []
 
     # Tabulate coefficients
-    code += tabulate_coefficients(element, format)
+    code += tabulate_coefficients(element, Indent, format)
 
     # Get coordinates and generate map
-    code += generate_map(element, format)
+#    code += generate_map(element, Indent, format)
 
     # Compute scaling of y and z 1/2(1-y)^n and 1/2(1-z)^n
-    code += compute_scaling(element, format)
+    code += compute_scaling(element, Indent, format)
 
-    # Compute auxilliary functions
-    code += compute_psitilde_a(element, format)
-    code += compute_psitilde_b(element, format)
-    code += compute_psitilde_c(element, format)
+    # Compute auxilliary functions currently only 2D and 3D is supported
+    if (element.cell_shape() == 2):
+        code += compute_psitilde_a(element, Indent, format)
+        code += compute_psitilde_b(element, Indent, format)
+    elif (element.cell_shape() == 3):
+        code += compute_psitilde_a(element, Indent, format)
+        code += compute_psitilde_b(element, Indent, format)
+        code += compute_psitilde_c(element, Indent, format)
+    else:
+        raise RuntimeError(), "Cannot compute auxilliary functions for shape: %d" %(element.cell_shape())
 
     # Compute the basisvalues
-    code += compute_basisvalues(element, format)
+    code += compute_basisvalues(element, Indent, format)
 
     # Compute the value of the basisfunction as the dot product of the coefficients
     # and basisvalues
-    code += dot_product(element, format)
+    code += dot_product(element, Indent, format)
 
     return code
 
-def tabulate_coefficients(element, format):
+def tabulate_coefficients(element, Indent, format):
     """This function tabulates the element coefficients that are generated by FIAT at
     compile time."""
 
@@ -114,7 +149,7 @@ def tabulate_coefficients(element, format):
     # Get the number of dofs from element
     num_dofs = element.space_dimension()
 
-    code += [format["comment"]("Table(s) of coefficients")]
+    code += [Indent.indent(format["comment"]("Table(s) of coefficients"))]
 
     # Generate tables for each component
     for i in range(num_components):
@@ -135,51 +170,47 @@ def tabulate_coefficients(element, format):
         value += ",\n".join(rows)
         value += format_block_end
 
-        code += [(name, value)] + [""]
+        code += [(Indent.indent(name), Indent.indent(value))] + [""]
 
     return code
 
 
-def generate_map(element, format):
+def generate_map(element, Indent, format):
     """Generates map from reference triangle/tetrahedron to reference square/cube.
-       The function is an implementation of the FIAT functions, eta_triangle( xi )
-       and eta_tetrahedron( xi ) from expansions.py"""
+    The function is an implementation of the FIAT functions, eta_triangle( xi )
+    and eta_tetrahedron( xi ) from expansions.py"""
 
     code = []
 
     # Prefetch formats to speed up code generation
     format_comment      = format["comment"]
     format_float        = format["float declaration"]
+    format_floating_point = format["floating point"]
     format_coordinates  = format["coordinate access"]
 
     # Code snippets reproduced from FIAT: expansions.py: eta_triangle(xi) & eta_tetrahedron(xi)
-    eta_triangle = ["if (%s < %s)" % (format["absolute value"]("y - 1.0"), format["floating point"](FFC_EPSILON),),\
-    (indent("x",2), -1.0), "else", (indent("x",2), "2.0 * (1.0 + x)/(1.0 - y) - 1.0")]
+    eta_triangle = [Indent.indent(format["snippet eta_triangle"]) %(format_floating_point(FFC_EPSILON))]
 
-    eta_tetrahedron = ["if (%s < %s)" % (format["absolute value"]("y + z"), format["floating point"](FFC_EPSILON),),\
-    (indent("x",2), 1.0), "else", (indent("x",2), "-2.0 * (1.0 + x)/(y + z) - 1.0"),\
-    "if (%s < %s)" % (format["absolute value"]("z - 1.0"), format["floating point"](FFC_EPSILON),),\
-    (indent("y",2), -1.0), "else", (indent("y",2), "2.0 * (1.0 + y)/(1.0 - z) - 1.0")]
-
-    # List of coordinate declarations
-    coordinates = [(format_float + "x", format_coordinates(0)), \
-    (format_float + "y", format_coordinates(1)), (format_float + "z", format_coordinates(2))]
+    eta_tetrahedron = [Indent.indent(format["snippet eta_tetrahedron"]) %(format_floating_point(FFC_EPSILON),\
+                       format_floating_point(FFC_EPSILON))]
 
     # Dictionaries
     reference = {2:"square", 3:"cube"}
     mappings = {2:eta_triangle, 3:eta_tetrahedron}
 
     # Generate code
-    code += [format_comment("Get coordinates")]
-    code += [coordinates[i] for i in range(element.cell_shape())] + [""]
-    code += [format_comment("Map coordinates to the reference %s" % (reference[element.cell_shape()]))]
+    # Get coordinates and map to the reference (FIAT) element from codesnippets.py
+    code += [Indent.indent(format["coordinate map"](element.cell_shape()))] + [""]
+
+    # Map coordinates to the reference square/cube
+    code += [Indent.indent(format_comment("Map coordinates to the reference %s") % (reference[element.cell_shape()]))]
     code += mappings[element.cell_shape()]
 
     return code + [""]
 
-def compute_scaling(element, format):
+def compute_scaling(element, Indent, format):
     """Generate the scalings of y and z coordinates. This function is an implementation of
-       the FIAT function make_scalings( etas ) from expasions.py"""
+    the FIAT function make_scalings( etas ) from expasions.py"""
 
     code = []
 
@@ -200,31 +231,41 @@ def compute_scaling(element, format):
     else:
         raise RuntimeError(), "Cannot compute scaling for shape: %d" %(elemet_shape)
 
-    code += [format["comment"]("Generate scalings")]
+    code += [Indent.indent(format["comment"]("Generate scalings"))]
 
     for i in range(len(scalings)):
+
+      # Old 'array' code
       # Declare scaling variable
-      name = format["const float declaration"] + "scalings_%s[%d]" %(scalings[i], degree+1,)
-      value = format["block begin"] + "1.0"
-      if degree > 0:
-          value += ", " + ", ".join(["scalings_%s[%d]*%s" %(scalings[i],j-1,factors[i])\
-                                     for j in range(1, degree+1)])
-      value += format["block end"]
+#      name = format["const float declaration"] + "scalings_%s[%d]" %(scalings[i], degree+1,)
+#      value = format["block begin"] + "1.0"
+#      if degree > 0:
+#          value += ", " + ", ".join(["scalings_%s[%d]*%s" %(scalings[i],j-1,factors[i])\
+#                                     for j in range(1, degree+1)])
+#      value += format["block end"]
+#      code += [(Indent.indent(name), Indent.indent(value))] + [""]
 
-      code += [(name, value)] + [""]
+      name = format["const float declaration"] + "scalings_%s_%d" %(scalings[i], 0,)
+      value = "1.0"
+      code += [(Indent.indent(name), Indent.indent(value))]
 
-    return code
+      for j in range(1, degree+1):
+          name = format["const float declaration"] + "scalings_%s_%d" %(scalings[i], j,)
+          value = "scalings_%s_%d*%s" %(scalings[i],j-1,factors[i])
+          code += [(Indent.indent(name), value)]
 
-def compute_psitilde_a(element, format):
+    return code + [""]
+
+def compute_psitilde_a(element, Indent, format):
     """Compute Legendre functions in x-direction. The function relies on
-       eval_jacobi_batch(a,b,n) to compute the coefficients.
+    eval_jacobi_batch(a,b,n) to compute the coefficients.
 
-       The format is:
-       psitilde_a[0] = 1.0
-       psitilde_a[1] = a + b * x
-       psitilde_a[n] = a * psitilde_a[n-1] + b * psitilde_a[n-1] * x + c * psitilde_a[n-2]
-       where a, b and c are coefficients computed by eval_jacobi_batch(0,0,n)
-       and n is the element degree"""
+    The format is:
+    psitilde_a[0] = 1.0
+    psitilde_a[1] = a + b * x
+    psitilde_a[n] = a * psitilde_a[n-1] + b * psitilde_a[n-1] * x + c * psitilde_a[n-2]
+    where a, b and c are coefficients computed by eval_jacobi_batch(0,0,n)
+    and n is the element degree"""
 
     code = []
 
@@ -234,34 +275,44 @@ def compute_psitilde_a(element, format):
     # Get the element degree
     degree = element.degree()
 
-    code += [format["comment"]("Compute psitilde_a")]
+    code += [Indent.indent(format["comment"]("Compute psitilde_a"))]
 
     # Create list of variable names
     variables = ["x","psitilde_a"]
 
+    # Old 'array' code
     # Declare variable
-    name = format["const float declaration"] + variables[1] + "[%d]" %(degree+1,)
+#    name = format["const float declaration"] + variables[1] + "[%d]" %(degree+1,)
 
     # Compute values
-    value = eval_jacobi_batch(0, 0, degree, variables, format)
+#    value = eval_jacobi_batch_array(0, 0, degree, variables, format)
 
-    code += [(name, value)]
+#    code += [(Indent.indent(name), Indent.indent(value))]
+
+    for n in range(degree+1):
+        # Declare variable
+        name = format["const float declaration"] + variables[1] + "_%d" %(n,)
+
+        # Compute value
+        value = eval_jacobi_batch_scalar(0, 0, n, variables, format)
+
+        code += [(Indent.indent(name), Indent.indent(value))]
 
     return code + [""]
 
-def compute_psitilde_b(element, format):
+def compute_psitilde_b(element, Indent, format):
     """Compute Legendre functions in y-direction. The function relies on
-       eval_jacobi_batch(a,b,n) to compute the coefficients.
+    eval_jacobi_batch(a,b,n) to compute the coefficients.
 
-       The format is:
-       psitilde_bs_0[0] = 1.0
-       psitilde_bs_0[1] = a + b * y
-       psitilde_bs_0[n] = a * psitilde_bs_0[n-1] + b * psitilde_bs_0[n-1] * x + c * psitilde_bs_0[n-2]
-       psitilde_bs_(n-1)[0] = 1.0
-       psitilde_bs_(n-1)[1] = a + b * y
-       psitilde_bs_n[0] = 1.0
-       where a, b and c are coefficients computed by eval_jacobi_batch(2*i+1,0,n-i) with i in range(0,n+1)
-       and n is the element degree + 1"""
+    The format is:
+    psitilde_bs_0[0] = 1.0
+    psitilde_bs_0[1] = a + b * y
+    psitilde_bs_0[n] = a * psitilde_bs_0[n-1] + b * psitilde_bs_0[n-1] * x + c * psitilde_bs_0[n-2]
+    psitilde_bs_(n-1)[0] = 1.0
+    psitilde_bs_(n-1)[1] = a + b * y
+    psitilde_bs_n[0] = 1.0
+    where a, b and c are coefficients computed by eval_jacobi_batch(2*i+1,0,n-i) with i in range(0,n+1)
+    and n is the element degree + 1"""
 
     code = []
 
@@ -271,7 +322,7 @@ def compute_psitilde_b(element, format):
     # Get the element degree
     degree = element.degree()
 
-    code += [format["comment"]("Compute psitilde_bs")]
+    code += [Indent.indent(format["comment"]("Compute psitilde_bs"))]
 
     for i in range(0, degree + 1):
 
@@ -283,31 +334,40 @@ def compute_psitilde_b(element, format):
         # Create list of variable names
         variables = ["y", "psitilde_bs_%d" %(i)]
 
+        # Old 'array' code
         # Declare variable
-        name = format["const float declaration"] + variables[1] + "[%d]" %(n+1)
+#        name = format["const float declaration"] + variables[1] + "[%d]" %(n+1)
 
         # Compute values
-        value = eval_jacobi_batch(a, b, n, variables, format)
+#        value = eval_jacobi_batch_array(a, b, n, variables, format)
 
-        code += [(name, value)] + [""]
+#        code += [(Indent.indent(name), Indent.indent(value))] + [""]
 
-    return code
+        for j in range(n+1):
+            # Declare variable
+            name = format["const float declaration"] + variables[1] + "_%d" %(j)
 
-def compute_psitilde_c(element, format):
+            # Compute values
+            value = eval_jacobi_batch_scalar(a, b, j, variables, format)
+
+            code += [(Indent.indent(name), value)]
+
+    return code + [""]
+
+def compute_psitilde_c(element, Indent, format):
     """Compute Legendre functions in y-direction. The function relies on
-       eval_jacobi_batch(a,b,n) to compute the coefficients.
+    eval_jacobi_batch(a,b,n) to compute the coefficients.
 
-       The format is:
-       psitilde_cs_0[0] = 1.0
-       psitilde_cs_0[1] = a + b * y
-       psitilde_cs_0[n] = a * psitilde_cs_0[n-1] + b * psitilde_cs_0[n-1] * x + c * psitilde_cs_0[n-2]
-       psitilde_cs_(n-1)[0] = 1.0
-       psitilde_cs_(n-1)[1] = a + b * y
-       psitilde_cs_n[0] = 1.0
-       where a, b and c are coefficients computed by 
+    The format is:
+    psitilde_cs_0[0] = 1.0
+    psitilde_cs_0[1] = a + b * y
+    psitilde_cs_0[n] = a * psitilde_cs_0[n-1] + b * psitilde_cs_0[n-1] * x + c * psitilde_cs_0[n-2]
+    psitilde_cs_(n-1)[0] = 1.0
+    psitilde_cs_(n-1)[1] = a + b * y
+    psitilde_cs_n[0] = 1.0
+    where a, b and c are coefficients computed by 
 
-       [[jacobi.eval_jacobi_batch(2*(i+j+1),0, n-i-j) for j in range(0,n+1-i)] for i in range(0,n+1)]
-       """
+    [[jacobi.eval_jacobi_batch(2*(i+j+1),0, n-i-j) for j in range(0,n+1-i)] for i in range(0,n+1)]"""
 
     code = []
 
@@ -317,7 +377,7 @@ def compute_psitilde_c(element, format):
     # Get the element degree
     degree = element.degree()
 
-    code += [format["comment"]("Compute psitilde_cs")]
+    code += [Indent.indent(format["comment"]("Compute psitilde_cs"))]
 
     for i in range(0, degree + 1):
         for j in range(0, degree + 1 - i):
@@ -330,24 +390,34 @@ def compute_psitilde_c(element, format):
             # Create list of variable names
             variables = ["z", "psitilde_cs_%d%d" %(i,j)]
 
+            # Old 'array' code
             # Declare variable
-            name = format["const float declaration"] + variables[1] + "[%d]" %(n+1)
+#            name = format["const float declaration"] + variables[1] + "[%d]" %(n+1)
 
             # Compute values
-            value = eval_jacobi_batch(a, b, n, variables, format)
+#            value = eval_jacobi_batch_array(a, b, n, variables, format)
 
-            code += [(name, value)] + [""]
+#            code += [(Indent.indent(name), Indent.indent(value))] + [""]
 
-    return code
+            for k in range(n+1):
+                # Declare variable
+                name = format["const float declaration"] + variables[1] + "_%d" %(k)
+
+                # Compute values
+                value = eval_jacobi_batch_scalar(a, b, k, variables, format)
+
+                code += [(Indent.indent(name), value)]
+
+    return code + [""]
 
 
-def compute_basisvalues(element, format):
+def compute_basisvalues(element, Indent, format):
     """This function is an implementation of the loops inside the FIAT functions
-       tabulate_phis_triangle( n , xs ) and tabulate_phis_tetrahedron( n , xs ) in
-       expansions.py. It computes the basis values from all the previously tabulated variables."""
+    tabulate_phis_triangle( n , xs ) and tabulate_phis_tetrahedron( n , xs ) in
+    expansions.py. It computes the basis values from all the previously tabulated variables."""
 
     code = []
-    code += [format["comment"]("Compute basisvalues")]
+    code += [Indent.indent(format["comment"]("Compute basisvalues"))]
 
     # Get coefficients from basis functions, computed by FIAT at compile time
     coefficients = element.basis().coeffs
@@ -369,7 +439,7 @@ def compute_basisvalues(element, format):
 
     # Declare variable
     name = format["const float declaration"] + "basisvalues[%d]" %(poly_dim,)
-    value = ""
+    value = "\\\n"
 
     # Get the element shape
     element_shape = element.cell_shape()
@@ -384,10 +454,10 @@ def compute_basisvalues(element, format):
                 ii = k-i
                 jj = i
                 factor = math.sqrt( (ii+0.5)*(ii+jj+1.0) )
-                var += [format["multiply"](["psitilde_a[%d]" %(ii), "scalings_x[%d]" %(ii),\
-                        "psitilde_bs_%d[%d]" %(ii,jj), format["floating point"](factor)])]
+                var += [format["multiply"](["psitilde_a_%d" %(ii), "scalings_y_%d" %(ii),\
+                        "psitilde_bs_%d_%d" %(ii,jj), format["floating point"](factor)])]
 
-        value += ", ".join(var)
+        value += ",\n".join(var)
         value += format["block end"]
     # 3D
     elif (element_shape == 3):
@@ -402,58 +472,73 @@ def compute_basisvalues(element, format):
                     kk = i
                     factor = math.sqrt( (ii+0.5) * (ii+jj+1.0) * (ii+jj+kk+1.5) )
                     var += []
-                    var += [format["multiply"](["psitilde_a[%d]" %(ii), "scalings_y[%d]" %(ii),\
-                        "psitilde_bs_%d[%d]" %(ii,jj), "scalings_z[%d]" %(ii+jj),\
-                        "psitilde_cs_%d%d[%d]" %(ii,jj,kk), format["floating point"](factor)])]
+                    var += [format["multiply"](["psitilde_a_%d" %(ii), "scalings_y_%d" %(ii),\
+                        "psitilde_bs_%d_%d" %(ii,jj), "scalings_z_%d" %(ii+jj),\
+                        "psitilde_cs_%d%d_%d" %(ii,jj,kk), format["floating point"](factor)])]
 
-        value += ", ".join(var)
+        value += ",\\\n ".join(var)
         value += format["block end"]
     else:
         raise RuntimeError(), "Cannot compute basis values for shape: %d" %(elemet_shape)
 
-    code += [(name, value)]
+    code += [(Indent.indent(name), Indent.indent(value))]
 
     return code + [""]
 
-def dot_product(element, format):
+def dot_product(element, Indent, format):
     """This function computes the value of the basisfunction as the dot product of the
-       coefficients and basisvalues """
+    coefficients and basisvalues """
 
     code = []
 
-    code += [format["comment"]("Compute values")]
+    code += [Indent.indent(format["comment"]("Compute value(s)"))]
 
     # Get coefficients from basis functions, computed by FIAT at compile time
     coefficients = element.basis().coeffs
 
     # Get shape of coefficients
-    shape = numpy.shape(coefficients)
+    shape_coeff = numpy.shape(coefficients)
 
     # Scalar valued basis element [Lagrange, Discontinuous Lagrange, Crouzeix-Raviart]
-    if (len(shape) == 2):
-        poly_dim = shape[1]
+    if (len(shape_coeff) == 2):
+        poly_dim = shape_coeff[1]
 
         # Reset value as it is a pointer
-        code += [("*values", "0.0")]
+        code += [(Indent.indent("*values"), "0.0")]
 
         # Loop dofs to generate dot product, 3D ready
-        code += [format["loop"]("j", "j", poly_dim, "j")]
-        code += [indent(format["add equal"]("*values","coefficients0[i][j]*basisvalues[j]"),2)]
+        code += [Indent.indent(format["loop"]("j", "j", poly_dim, "j"))]
+
+        # Increase indentation
+        Indent.increase()
+
+        code += [Indent.indent(format["add equal"]("*values","coefficients0[i][j]*basisvalues[j]"))]
+
+        # Decrease indentation
+        Indent.decrease()
 
     # Vector valued basis element [Raviart-Thomas, Brezzi-Douglas-Marini (BDM)]
-    elif (len(shape) == 3):
-        num_components = shape[1]
-        poly_dim = shape[2]
+    elif (len(shape_coeff) == 3):
+        num_components = shape_coeff[1]
+        poly_dim = shape_coeff[2]
 
         # Reset value as it is a pointer
-        code += [("values[%d]" %(i), "0.0") for i in range(num_components)]
+        code += [(Indent.indent("values[%d]" %(i)), "0.0") for i in range(num_components)]
 
         # Loop dofs to generate dot product, 3D ready
-        code += [format["loop"]("j", "j", poly_dim, "j")]
-        code += [format["block begin"]]
-        code += [indent(format["add equal"]("values[%d]" %(i),\
-                 "coefficients%d[i][j]*basisvalues[j]" %(i)),2) for i in range(num_components)]
-        code += [format["block end"]]
+        code += [Indent.indent(format["loop"]("j", "j", poly_dim, "j"))]
+        code += [Indent.indent(format["block begin"])]
+
+        # Increase indentation
+        Indent.increase()
+
+        code += [Indent.indent(format["add equal"]("values[%d]" %(i),\
+                 "coefficients%d[i][j]*basisvalues[j]" %(i))) for i in range(num_components)]
+
+        # Decrease indentation
+        Indent.decrease()
+
+        code += [Indent.indent(format["block end"])]
 
     # ???
     else:
@@ -461,7 +546,7 @@ def dot_product(element, format):
 
     return code
 
-def eval_jacobi_batch(a, b, n, variables, format):
+def eval_jacobi_batch_array(a, b, n, variables, format):
     """Implementation of FIAT function eval_jacobi_batch(a,b,n,xs) from jacobi.py"""
 
     # Prefetch formats to speed up code generation
@@ -536,8 +621,79 @@ def eval_jacobi_batch(a, b, n, variables, format):
 
     return value
 
+def eval_jacobi_batch_scalar(a, b, n, variables, format):
+    """Implementation of FIAT function eval_jacobi_batch(a,b,n,xs) from jacobi.py"""
 
-def generate_cases(element, format):
+    # Prefetch formats to speed up code generation
+    format_float  = format["floating point"]
+    format_mult   = format["multiply"]
+    format_add   = format["add"]
+
+    # Format variables
+    access = lambda i: variables[1] + "_%d" %(i)
+    coord = variables[0]
+
+    # Entry 0 is always 1.0
+    value = format["block begin"] + "1.0"
+
+    if n == 0:
+        return "1.0"
+    if n == 1:
+        # Results for entry 1, of type (a + b * coordinate) (coordinate = x, y or z)
+        res0 = 0.5 * (a - b)
+        res1 = 0.5 * ( a + b + 2.0 )
+        val0, val1 = ("", "")
+        if (res0 != 0.0): # Only include if the value is not zero
+            val0 = format_float(res0)
+
+        if (res1 != 0.0): # Only include if the value is not zero
+            if (res1 < 0.0): # If value is less than zero minus sign is needed
+                val1 = format_mult([format_float(res1), coord])
+            else:
+                if (val0): # If the value in front is present plus sign is needed
+                    val1 = " + " + format_mult([format_float(res1), coord])
+                else:
+                    val1 = format_mult([format_float(res1), coord])
+
+        return "".join([val0, val1])
+
+    else:
+        apb = a + b
+        # Compute remaining entries, of type (a + b * coordinate) * psitilde[n-1] - c * psitilde[n-2])
+        a1 = 2.0 * n * ( n + apb ) * ( 2.0 * n + apb - 2.0 )
+        a2 = ( 2.0 * n + apb - 1.0 ) * ( a * a - b * b )
+        a3 = ( 2.0 * n + apb - 2.0 ) * ( 2.0 * n + apb - 1.0 ) * ( 2.0 * n + apb )
+        a4 = 2.0 * ( n + a - 1.0 ) * ( n + b - 1.0 ) * ( 2.0 * n + apb )
+        a2 = a2 / a1
+        a3 = a3 / a1
+        # Note:  we subtract the value of a4!
+        a4 = -a4 / a1
+
+        val2, val3, val4 = ("", "", "")
+        if (a2 != 0.0): # Only include if the value is not zero
+            val2 = format_mult([format_float(a2), access(n-1)])
+
+        if (a3 != 0.0): # Only include if the value is not zero
+            if (a3 < 0.0): # If value is less than zero minus sign is needed
+                val3 = format_mult([format_float(a3), coord, access(n-1)])
+            else:
+                if (val2): # If the value in front is present plus sign is needed
+                    val3 = " + " + format_mult([format_float(a3), coord, access(n-1)])
+                else:
+                    val3 = format_mult([format_float(a3), coord, access(n-1)])
+
+        if (a4 != 0.0): # Only include if the value is not zero
+            if (a4 < 0.0): # If value is less than zero minus sign is needed
+                val4 = format_mult([format_float(a4), access(n-2)])
+            else:
+                if (val2 or val3): # If the value(s) in front is/are present plus sign is needed
+                    val4 = " + " + format_mult([format_float(a4), access(n-2)])
+                else:
+                    val4 = format_mult([format_float(a4), access(n-2)])
+
+        return "".join([val2, val3, val4])
+
+def generate_cases(element, Indent, format):
     "Generate cases in the event of vector valued elements or mixed elements"
 
     # Prefetch formats to speed up code generation
@@ -547,28 +703,52 @@ def generate_cases(element, format):
     # Extract basis elements
     elements = extract_elements(element)
 
-    code, unique_elements = element_types(elements, format)
+    code, unique_elements = element_types(elements, Indent, format)
 
-    code += dof_map(elements, format)
+    code += dof_map(elements, Indent, format) + [""]
 
+    code += [Indent.indent(format["comment"]("Switch for each of the unique sub elements"))]
+
+    # Get number of unique sub elements
     num_unique_elements = len(unique_elements)
+
+    # Generate switch
     if (num_unique_elements > 1):
-        code += [format["switch"]("element")]
-        code += [format_block_begin]
+        code += [Indent.indent(format["switch"]("element"))]
+        code += [Indent.indent(format_block_begin)]
 
+        # Increase indentation
+        Indent.increase()
+
+        # Generate case
         for i in range(len(unique_elements)):
-            code += [format["case"](i)]
-            code += [format_block_begin]
-            element = unique_elements[i]
-            code += generate_element_code(element, format)
-            code += [format["break"]]
-            code += [format_block_end]
+            code += [Indent.indent(format["case"](i))]
+            code += [Indent.indent(format_block_begin)]
 
-        code += [format_block_end]
+            # Increase indentation
+            Indent.increase()
+
+            # Get unique sub element
+            element = unique_elements[i]
+
+            # Generate code for unique sub element
+            code += generate_element_code(element, Indent, format)
+
+            code += [Indent.indent(format["break"])]
+
+            # Decrease indentation
+            Indent.decrease()
+
+            code += [Indent.indent(format_block_end)]
+
+        # Decrease indentation
+        Indent.decrease()
+
+        code += [Indent.indent(format_block_end)]
 
     else:
         element = unique_elements[0]
-        code += generate_element_code(element, format)
+        code += generate_element_code(element, Indent, format)
 
     return code
 
@@ -601,7 +781,7 @@ def extract_elements(element):
 
     return elements
 
-def element_types(elements, format):
+def element_types(elements, Indent, format):
     """This function creates a list of element types and a list of unique elements.
 
     Example, the following mixed element:
@@ -638,28 +818,28 @@ def element_types(elements, format):
             unique_elements += [element]
         types += [elem_type]
 
-    code += [format["comment"]("Element types")]
+    code += [Indent.indent(format["comment"]("Element types"))]
 
     # Declare element types and tabulate
     name = format["const uint declaration"] + "element_types[%d]" %(len(elements),)
     value = format_block_begin
     value += ", ".join(["%d" %(element_type) for element_type in types])
     value += format_block_end
-    code += [(name, value)] + [""]
+    code += [(Indent.indent(name), value)] + [""]
 
     # Declare dofs_per_element variable and tabulate
-    code += [format["comment"]("Number of degrees of freedom per element")]
+    code += [(format["comment"]("Number of degrees of freedom per element"))]
     name = format["const uint declaration"] + "dofs_per_element[%d]" %(len(elements),)
     value = format_block_begin
     value += ", ".join(["%d" %(element.space_dimension()) for element in elements])
     value += format_block_end
-    code += [(name, value)] + [""]
+    code += [(Indent.indent(name), value)] + [""]
 
 
     return (code, unique_elements)
 
 
-def dof_map(elements, format):
+def dof_map(elements, Indent, format):
     """This function creates code to map a basis function to a local basis function.
     Example, the following mixed element:
 
@@ -669,37 +849,9 @@ def dof_map(elements, format):
 
     However since only one unique element exists, the evaluation of basis function 8 is 
     mapped to 2 (8-6) for the unique element."""
-    
-    code = []
 
-    # Prefetch formats to speed up code generation
-    format_block_begin = format["block begin"]
-    format_block_end = format["block end"]
-    format_comment =  format["comment"]
-
-    code += [format_comment("Map basis function to local basisfunction")]
-
-    # Declare variable for dof map
-    code += [(format["uint declaration"] + "element",0)]
-    code += [(format["uint declaration"] + "tmp",0)]
-
-    # Loop elements
-    code += [format["loop"]("j", "j", len(elements), "j")]
-    code += [format_block_begin]
-    # if
-    code += [indent("if (tmp +  dofs_per_element[j] > i)",2)]
-    code += [indent(format_block_begin,2)]
-    code += [(indent("i",4), "i - tmp")]
-    code += [(indent("element",4), "element_types[j]")]
-    code += [indent(format["break"],4)]
-    code += [indent(format_block_end,2)]
-    # else
-    code += [indent("else",2)]
-    code += [indent(format_block_begin,2)]
-    code += [indent(format["add equal"]("tmp","dofs_per_element[j]"),4)]
-    code += [indent(format_block_end,2)]
-
-    # end loop    
-    code += [format_block_end]
+    # Use snippet from codesnippets.py    
+    code = [Indent.indent(format["comment"]("Map basis function to local basisfunction"))]
+    code += [Indent.indent(format["snippet dof map"] % len(elements))]
 
     return code

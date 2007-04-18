@@ -5,6 +5,8 @@ __date__ = "2007-02-28 -- 2007-04-04"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
+# Modified by Kristian Oelgaard 2007
+
 # Code snippet for computing the Jacobian, its inverse and determinant in 2D
 jacobian_2D = """\
 // Extract vertex coordinates
@@ -176,3 +178,107 @@ f.evaluate(values, coordinates, c);
 
 // Pick component for evaluation
 return values[components[i]];"""
+
+# Code snippets reproduced from FIAT: expansions.py: eta_triangle(xi) & eta_tetrahedron(xi),
+# used by 'evaluate_basis.py'
+eta_triangle_snippet = """\
+if (std::abs(y - 1.0) < %s)
+  x = -1.0;
+else
+  x = 2.0 * (1.0 + x)/(1.0 - y) - 1.0;"""
+
+eta_tetrahedron_snippet = """\
+if (std::abs(y + z) < %s)
+  x = 1.0;
+else
+  x = -2.0 * (1.0 + x)/(y + z) - 1.0;
+if (std::abs(z - 1.0) < %s)
+  y = -1.0;
+else
+  y = 2.0 * (1.0 + y)/(1.0 - z) - 1.0;"""
+
+# Map basis function to local basisfunction, used by 'evaluate_basis.py'
+evaluate_basis_dof_map = """\
+unsigned int element = 0;
+unsigned int tmp = 0;
+for (unsigned int j = 0; j < %d; j++)
+{
+  if (tmp +  dofs_per_element[j] > i)
+  {
+    i = i - tmp;
+    element = element_types[j];
+    break;
+  }
+  else
+    tmp += dofs_per_element[j];
+}"""
+# Map coordinates (affine!!!) from physical element to reference element, 
+# used by 'evaluate_basis.py' and 'evaluate_basis_derivatives.py'
+map_coordinates_2D = """\
+// Extract vertex coordinates
+const double * const * element_coordinates = c.coordinates;
+
+// Compute Jacobian of affine map from reference cell
+const double J_00 = element_coordinates[1][0] - element_coordinates[0][0];
+const double J_01 = element_coordinates[2][0] - element_coordinates[0][0];
+const double J_10 = element_coordinates[1][1] - element_coordinates[0][1];
+const double J_11 = element_coordinates[2][1] - element_coordinates[0][1];
+  
+// Compute determinant of Jacobian
+const double detJ = J_00*J_11 - J_01*J_10;
+
+const double C0 = element_coordinates[1][0] + element_coordinates[2][0];
+const double C1 = element_coordinates[1][1] + element_coordinates[2][1];
+
+// Get coordinates and map to the reference (FIAT) element
+double x = -(C0*J_11 - J_01*C1 + 2.0*J_01*coordinates[1] - 2.0*J_11*coordinates[0]) / detJ;
+double y =  (J_10*C0 - J_00*C1 - 2.0*J_10*coordinates[0] + 2.0*J_00*coordinates[1]) / detJ;"""
+
+map_coordinates_3D = """\
+// Extract vertex coordinates
+const double * const * element_coordinates = c.coordinates;
+
+// Compute Jacobian of affine map from reference cell
+const double J_00 = element_coordinates[1][0] - element_coordinates[0][0];
+const double J_01 = element_coordinates[2][0] - element_coordinates[0][0];
+const double J_02 = element_coordinates[3][0] - element_coordinates[0][0];
+const double J_10 = element_coordinates[1][1] - element_coordinates[0][1];
+const double J_11 = element_coordinates[2][1] - element_coordinates[0][1];
+const double J_12 = element_coordinates[3][1] - element_coordinates[0][1];
+const double J_20 = element_coordinates[1][2] - element_coordinates[0][2];
+const double J_21 = element_coordinates[2][2] - element_coordinates[0][2];
+const double J_22 = element_coordinates[3][2] - element_coordinates[0][2];
+  
+// Compute sub determinants
+const double d00 = J_11*J_22 - J_12*J_21;
+const double d01 = J_12*J_20 - J_10*J_22;
+const double d02 = J_10*J_21 - J_11*J_20;
+
+const double d10 = J_02*J_21 - J_01*J_22;
+const double d11 = J_00*J_22 - J_02*J_20;
+const double d12 = J_01*J_20 - J_00*J_21;
+
+const double d20 = J_01*J_12 - J_02*J_11;
+const double d21 = J_02*J_10 - J_00*J_12;
+const double d22 = J_00*J_11 - J_01*J_10;
+  
+// Compute determinant of Jacobian
+double detJ = J_00*d00 + J_10*d10 + J_20*d20;
+
+// Compute constants
+const double C0 = element_coordinates[3][0] + element_coordinates[2][0] \\
+                + element_coordinates[1][0] - element_coordinates[0][0];
+const double C1 = element_coordinates[3][1] + element_coordinates[2][1] \\
+                + element_coordinates[1][1] - element_coordinates[0][1];
+const double C2 = element_coordinates[3][2] + element_coordinates[2][2] \\
+                + element_coordinates[1][2] - element_coordinates[0][2];
+
+// Get coordinates and map to the reference (FIAT) element
+double x = coordinates[0];
+double y = coordinates[1];
+double z = coordinates[2];
+
+x = (2.0*d00*x + 2.0*d10*y + 2.0*d20*z - d00*C0 - d10*C1 - d20*C2) / detJ;
+y = (2.0*d01*x + 2.0*d11*y + 2.0*d21*z - d01*C0 - d11*C1 - d21*C2) / detJ;
+z = (2.0*d02*x + 2.0*d12*y + 2.0*d22*z - d02*C0 - d12*C1 - d22*C2) / detJ;"""
+

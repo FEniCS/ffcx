@@ -14,6 +14,7 @@ from ffc.fem.projection import *
 
 # FFC code generation common modules
 from evaluatebasis import *
+from evaluatebasisderivatives import *
 from utils import *
 
 def generate_finite_element(element, format):
@@ -40,6 +41,10 @@ def generate_finite_element(element, format):
     # Generate code for evaluate_basis (FIXME: not implemented)
     code["evaluate_basis"] = ["// Not implemented"]
 #    code["evaluate_basis"] = evaluate_basis(element, format)
+
+    # Generate code for evaluate_basis_derivatives (FIXME: not implemented)
+#    code["evaluate_basis_derivatives"] = ["// Not implemented"]
+#    code["evaluate_basis_derivatives"] = evaluate_basis_derivatives(element, format)
 
     # Generate code for evaluate_dof
     code["evaluate_dof"] = ["// Not implemented"]

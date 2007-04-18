@@ -64,14 +64,18 @@ format = { "add": lambda l: " + ".join(l),
            "weights": lambda i,j: "Weight%d[%s]" % (i,j),
            "psis": lambda l: "Psi%d_%d_%d_%s[%s][%s]" % (l[0],l[1],l[2],\
                              "".join(["%d" % index for index in l[3]]), l[4], l[5]),
-# evalutate_basis()
+# evalutate_basis() + evaluate_basis_derivatives()
            "coordinate access": lambda i: "coordinates[%d]" % (i,),
+           "coordinate map": lambda i: {2:map_coordinates_2D, 3:map_coordinates_3D}[i],
            "absolute value": lambda i: "std::abs(%s)" % (i,),
            "switch": lambda i: "switch ( %s )" % (i,),
            "case": lambda i: "case %d:" % (i,),
            "break": "break;",
            "uint declaration": "unsigned int ",
            "const uint declaration": "const static unsigned int ",
+           "snippet dof map": evaluate_basis_dof_map,
+           "snippet eta_triangle": eta_triangle_snippet,
+           "snippet eta_tetrahedron": eta_tetrahedron_snippet,
 # quadrature + evalutate_basis()
            "add equal": lambda i,j: "%s += %s;" % (i,j),
            "table declaration": "const static double ",
@@ -227,6 +231,9 @@ def __generate_finite_element(code, form_data, options, prefix, i):
 
     # Generate code for evaluate_basis
     ufc_code["evaluate_basis"] = __generate_body(code["evaluate_basis"])
+
+    # Generate code for evaluate_basis
+#    ufc_code["evaluate_basis_derivatives"] = __generate_body(code["evaluate_basis_derivatives"])
 
     # Generate code for evaluate_dof
     ufc_code["evaluate_dof"] = __generate_evaluate_dof(form_data.elements[i], form_data.dof_maps[i], form_data.cell_dimension)
