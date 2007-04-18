@@ -70,6 +70,12 @@ class CodeGenerator:
         # Generate code for finite elements
         debug("Generating code for finite elements...")
         for i in range(len(element_data.elements)):
+            sub_elements = self.__extract_sub_elements(element_data.elements[i], (i,))
+
+            print ""
+            print "sub elements: " + str(sub_elements)
+
+            
             code[("finite_element", i)] = self.generate_finite_element(element_data.elements[i], format)
         debug("done")
 
@@ -80,3 +86,15 @@ class CodeGenerator:
         debug("done")
 
         return code
+
+    def __extract_sub_elements(self, element, parent):
+        """Recursively extract sub elements as a list of tuples where
+        each tuple consists of the sub element and a tuple labeling
+        the sub element."""
+        sub_elements = [(element, parent)]
+        if isinstance(element, FiniteElement):
+            return sub_elements
+        for i in range(element.num_sub_elements()):
+            print "hej"
+            sub_elements += self.__extract_sub_elements(element.sub_element(i), parent + (i,))
+        return sub_elements
