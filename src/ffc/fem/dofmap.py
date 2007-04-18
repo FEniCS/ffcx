@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-01-24 -- 2007-04-10"
+__date__ = "2007-01-24 -- 2007-04-18"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -233,7 +233,7 @@ class DofMap:
             return False
         families = [element.sub_element(i).family() for i in range(element.num_sub_elements())]
         dimensions = [element.sub_element(i).space_dimension() for i in range(element.num_sub_elements())]
-        return families[:-1] == families[1:] and dimensions[:-1] == dimensions[1:]
+        return families[:-1] == families[1:] and dimensions[:-1] == dimensions[1:] and not families[0] == "Mixed"
         
     def __repr__(self):
         "Pretty print"
