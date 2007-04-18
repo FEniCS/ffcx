@@ -1,7 +1,7 @@
 "Code snippets for code generation"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-02-28 -- 2007-04-04"
+__date__ = "2007-02-28 -- 2007-04-18"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -99,7 +99,7 @@ const double dx1 = x%(restriction)s[v1][1] - x%(restriction)s[v0][1];
 const double det = std::sqrt(dx0*dx0 + dx1*dx1);
 """
 
-# Code snippet for computing the determinant of the facet mapping in 2D
+# Code snippet for computing the determinant of the facet mapping in 3D
 facet_determinant_3D = """\
 // Vertices on faces
 static unsigned int face_vertices[4][3] = {{1, 2, 3}, {0, 2, 3}, {0, 1, 3}, {0, 1, 2}};
@@ -121,8 +121,8 @@ const double det = std::sqrt(a0*a0 + a1*a1 + a2*a2);
 
 # Code snippet for evaluate_dof in 2D
 evaluate_dof_2D = """\
-static double values[%d];
-static double coordinates[2];
+double values[%d];
+double coordinates[2];
 
 // Nodal coordinates on reference cell
 static double X[%d][2] = %s;
@@ -150,8 +150,8 @@ return values[components[i]];"""
 
 # Code snippet for evaluate_dof in 3D
 evaluate_dof_3D = """\
-static double values[%d];
-static double coordinates[3];
+double values[%d];
+double coordinates[3];
 
 // Nodal coordinates on reference cell
 static double X[%d][3] = %s;
@@ -179,14 +179,14 @@ f.evaluate(values, coordinates, c);
 // Pick component for evaluation
 return values[components[i]];"""
 
-# Code snippets reproduced from FIAT: expansions.py: eta_triangle(xi) & eta_tetrahedron(xi),
-# used by 'evaluate_basis.py'
+# Code snippet for eta basis on triangles (reproduced from FIAT expansions.py)
 eta_triangle_snippet = """\
 if (std::abs(y - 1.0) < %s)
   x = -1.0;
 else
   x = 2.0 * (1.0 + x)/(1.0 - y) - 1.0;"""
 
+# Code snippet for eta basis on tetrahedra (reproduced from FIAT expansions.py)
 eta_tetrahedron_snippet = """\
 if (std::abs(y + z) < %s)
   x = 1.0;
@@ -205,15 +205,15 @@ for (unsigned int j = 0; j < %d; j++)
 {
   if (tmp +  dofs_per_element[j] > i)
   {
-    i = i - tmp;
+    i -= tmp;
     element = element_types[j];
     break;
   }
   else
     tmp += dofs_per_element[j];
 }"""
-# Map coordinates (affine!!!) from physical element to reference element, 
-# used by 'evaluate_basis.py' and 'evaluate_basis_derivatives.py'
+
+# Inverse affine map from physical cell to (FIAT) reference cell in 2D
 map_coordinates_2D = """\
 // Extract vertex coordinates
 const double * const * element_coordinates = c.coordinates;
@@ -227,6 +227,7 @@ const double J_11 = element_coordinates[2][1] - element_coordinates[0][1];
 // Compute determinant of Jacobian
 const double detJ = J_00*J_11 - J_01*J_10;
 
+// Compute constants
 const double C0 = element_coordinates[1][0] + element_coordinates[2][0];
 const double C1 = element_coordinates[1][1] + element_coordinates[2][1];
 
@@ -234,6 +235,7 @@ const double C1 = element_coordinates[1][1] + element_coordinates[2][1];
 double x = -(C0*J_11 - J_01*C1 + 2.0*J_01*coordinates[1] - 2.0*J_11*coordinates[0]) / detJ;
 double y =  (J_10*C0 - J_00*C1 - 2.0*J_10*coordinates[0] + 2.0*J_00*coordinates[1]) / detJ;"""
 
+# Inverse affine map from physical cell to (FIAT) reference cell in 3D
 map_coordinates_3D = """\
 // Extract vertex coordinates
 const double * const * element_coordinates = c.coordinates;
@@ -281,4 +283,3 @@ double z = coordinates[2];
 x = (2.0*d00*x + 2.0*d10*y + 2.0*d20*z - d00*C0 - d10*C1 - d20*C2) / detJ;
 y = (2.0*d01*x + 2.0*d11*y + 2.0*d21*z - d01*C0 - d11*C1 - d21*C2) / detJ;
 z = (2.0*d02*x + 2.0*d12*y + 2.0*d22*z - d02*C0 - d12*C1 - d22*C2) / detJ;"""
-
