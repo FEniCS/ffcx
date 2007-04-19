@@ -149,13 +149,13 @@ def generate_ufc(generated_forms, prefix, options):
         form_prefix = compute_prefix(prefix, generated_forms, i)
 
         # Generate code for ufc::finite_element(s)
-        for j in range(form_data.num_arguments):
-            output += __generate_finite_element(form_code[("finite_element", j)], form_data, options, form_prefix, j)
-            output += "\n"
-
-        #for (label, sub_element) in form_code["finite_elements"]:
-        #    output += __generate_finite_element(sub_element, form_data, options, form_prefix, label)
+        #for j in range(form_data.num_arguments):
+        #    output += __generate_finite_element(form_code[("finite_element", j)], form_data, options, form_prefix, j)
         #    output += "\n"
+
+        for (label, sub_element) in form_code["finite_elements"]:
+            output += __generate_finite_element(sub_element, form_data, options, form_prefix, label)
+            output += "\n"
 
         # Generate code for ufc::dof_map(s)
         for j in range(form_data.num_arguments):
@@ -204,14 +204,14 @@ def compute_prefix(prefix, generated_forms, i):
     # Else, just return prefix
     return prefix
 
-def __generate_finite_element(code, form_data, options, prefix, i):
+def __generate_finite_element(code, form_data, options, prefix, label):
     "Generate code for ufc::finite_element"
 
     ufc_code = {}
 
     # Set class name
-    ufc_code["classname"] = "%s_finite_element_%d" % (prefix, i)
-    #ufc_code["classname"] = "%s_finite_element_%s" % (prefix, "_".join(str(i) for i in label))
+    #ufc_code["classname"] = "%s_finite_element_%d" % (prefix, i)
+    ufc_code["classname"] = "%s_finite_element_%s" % (prefix, "_".join(str(i) for i in label))
 
     # Generate code for members
     ufc_code["members"] = ""
@@ -258,7 +258,7 @@ def __generate_finite_element(code, form_data, options, prefix, i):
     if num_sub_elements == 1:
         ufc_code["create_sub_element"] = "return new %s();" % ufc_code["classname"]
     else:
-        cases = ["return new %s_sub_element_%d();" % (ufc_code["classname"], i) for i in range(num_sub_elements)]
+        cases = ["return new %s_%d();" % (ufc_code["classname"], i) for i in range(num_sub_elements)]
         ufc_code["create_sub_element"] = __generate_switch("i", cases, "return 0;")
 
     return __generate_code(finite_element_combined, ufc_code)

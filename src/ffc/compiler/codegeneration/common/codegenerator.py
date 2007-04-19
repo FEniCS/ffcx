@@ -26,10 +26,7 @@ class CodeGenerator:
         code = {}
 
         # Generate code for finite elements
-        debug("Generating code for finite elements...")
-        for i in range(len(form_data.elements)):
-            code[("finite_element", i)] = self.generate_finite_element(form_data.elements[i], format)
-        debug("done")
+        code["finite_elements"] = self.__generate_finite_elements(form_data.elements, format)
 
         # Generate code for dof maps
         debug("Generating code for dof maps...")
@@ -66,17 +63,9 @@ class CodeGenerator:
         "Generate element code according to given format"
 
         code = {}
-        
+
         # Generate code for finite elements
-        debug("Generating code for finite elements...")
-        element_code = []
-        for i in range(len(element_data.elements)):
-            sub_elements = self.__extract_sub_elements(element_data.elements[i], (i,))
-            for (label, sub_element) in sub_elements:
-                element_code += [(label, self.generate_finite_element(sub_element, format))]
-            code[("finite_element", i)] = self.generate_finite_element(element_data.elements[i], format)
-        code["finite_elements"] = element_code
-        debug("done")
+        code["finite_elements"] = self.__generate_finite_elements(element_data.elements, format)
 
         # Generate code for dof maps
         debug("Generating code for dof maps...")
@@ -84,6 +73,26 @@ class CodeGenerator:
             code[("dof_map", i)] = self.generate_dof_map(element_data.dof_maps[i], format)
         debug("done")
 
+        return code
+
+    def __generate_finite_elements(self, elements, format):
+        "Generate code for finite elements, including recursively nested sub elements"
+
+        debug("Generating code for finite elements...")
+        code = []
+
+        # Iterate over form elements
+        for i in range(len(elements)):
+
+            # Extract sub elements (reverse list to get declaration in the right order)
+            sub_elements = self.__extract_sub_elements(elements[i], (i,))
+            sub_elements.reverse()
+
+            # Generate code for each element
+            for (label, sub_element) in sub_elements:
+                code += [(label, self.generate_finite_element(sub_element, format))]
+                
+        debug("done")
         return code
 
     def __extract_sub_elements(self, element, parent):
