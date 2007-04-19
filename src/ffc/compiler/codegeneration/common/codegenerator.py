@@ -69,14 +69,13 @@ class CodeGenerator:
         
         # Generate code for finite elements
         debug("Generating code for finite elements...")
+        element_code = []
         for i in range(len(element_data.elements)):
             sub_elements = self.__extract_sub_elements(element_data.elements[i], (i,))
-
-            print ""
-            print "sub elements: " + str(sub_elements)
-
-            
+            for (label, sub_element) in sub_elements:
+                element_code += [(label, self.generate_finite_element(sub_element, format))]
             code[("finite_element", i)] = self.generate_finite_element(element_data.elements[i], format)
+        code["finite_elements"] = element_code
         debug("done")
 
         # Generate code for dof maps
@@ -89,12 +88,11 @@ class CodeGenerator:
 
     def __extract_sub_elements(self, element, parent):
         """Recursively extract sub elements as a list of tuples where
-        each tuple consists of the sub element and a tuple labeling
-        the sub element."""
-        sub_elements = [(element, parent)]
+        each tuple consists of a tuple labeling the sub element and
+        the sub element itself"""
+        sub_elements = [(parent, element)]
         if isinstance(element, FiniteElement):
             return sub_elements
         for i in range(element.num_sub_elements()):
-            print "hej"
             sub_elements += self.__extract_sub_elements(element.sub_element(i), parent + (i,))
         return sub_elements

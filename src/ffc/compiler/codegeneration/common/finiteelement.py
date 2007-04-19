@@ -1,7 +1,7 @@
 "Code generation for finite element"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-01-23 -- 2007-04-10"
+__date__ = "2007-01-23 -- 2007-04-19"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -11,6 +11,7 @@ __license__  = "GNU GPL Version 2"
 from ffc.fem.finiteelement import *
 from ffc.fem.vectorelement import *
 from ffc.fem.projection import *
+from ffc.fem.dofmap import *
 
 # FFC code generation common modules
 from evaluatebasis import *
@@ -47,7 +48,7 @@ def generate_finite_element(element, format):
 #    code["evaluate_basis_derivatives"] = evaluate_basis_derivatives(element, format)
 
     # Generate code for evaluate_dof
-    code["evaluate_dof"] = ["// Not implemented"]
+    code["evaluate_dof"] = __generate_evaluate_dof(element, format)
 
     # Generate code for inperpolate_vertex_values
     code["interpolate_vertex_values"] = __generate_interpolate_vertex_values(element, format)
@@ -55,6 +56,44 @@ def generate_finite_element(element, format):
     # Generate code for num_sub_elements
     code["num_sub_elements"] = "%d" % element.num_sub_elements()
 
+    return code
+
+def __generate_evaluate_dof(element, format):
+    "Generate code for evaluate_dof"
+
+    # Generate code as a list of lines
+    code = []
+
+    # Generate dof map
+    dof_map = DofMap(element)
+    
+    # Check if evaluate_dof is supported
+    if dof_map.dof_components() == None:
+        code += [format["comment"]("Not implemented (only for Lagrange elements")]
+        code += [format["return"](format["floating point"](0.0))]
+        return code
+
+    # Get code formats
+    block = format["block"]
+    separator = format["separator"]
+    floating_point = format["floating point"]
+
+    # Get dof coordinates
+    cs = dof_map.dof_coordinates()
+    X = block(separator.join([block(separator.join([floating_point(x) for x in c])) for c in cs]))
+
+    # Get dof components
+    cs = dof_map.dof_components()
+    components = block(separator.join(["%d" % c for c in cs]))
+
+    # Compute number of values
+    num_values = 1
+    for i in range(element.value_rank()):
+        num_values *= element.value_dimension(i)
+
+    code += [format["snippet evaluate_dof"](element.cell_dimension()) % \
+             (num_values, dof_map.local_dimension(), X, dof_map.local_dimension(), components)]
+    
     return code
 
 def __generate_interpolate_vertex_values(element, format):

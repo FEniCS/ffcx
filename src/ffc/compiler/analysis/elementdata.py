@@ -3,6 +3,9 @@ __date__ = "2005-03-30 -- 2007-03-30"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
+# FFC common utils
+from ffc.common.utils import *
+
 # FFC common modules
 from ffc.common.debug import *
 
@@ -30,6 +33,6 @@ class ElementData:
         self.num_interior_facet_integrals = 0
         self.elements                     = elements
         self.dof_maps                     = [DofMap(element) for element in elements]
-        self.cell_dimension               = 0
+        self.cell_dimension               = pick_first([element.cell_dimension() for element in elements])
 
         debug("done")

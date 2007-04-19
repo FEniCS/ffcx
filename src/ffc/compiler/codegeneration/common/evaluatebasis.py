@@ -121,8 +121,8 @@ def tabulate_coefficients(element, Indent, format):
     code = []
 
     # Prefetch formats to speed up code generation
-    format_block_begin  = format["block begin"]
-    format_block_end    = format["block end"]
+    format_block_begin = format["block begin"]
+    format_block_end   = format["block end"]
 
     # Get coefficients from basis functions, computed by FIAT at compile time
     coefficients = element.basis().coeffs

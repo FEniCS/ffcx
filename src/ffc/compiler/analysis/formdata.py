@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2005-03-15 -- 2007-03-23"
+__date__ = "2005-03-15 -- 2007-04-19"
 __copyright__ = "Copyright (C) 2005-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -11,6 +11,7 @@ import sets
 
 # FFC common modules
 from ffc.common.debug import *
+from ffc.common.utils import *
 
 # FFC fem modules
 from ffc.fem.dofmap import *
@@ -127,9 +128,7 @@ class FormData:
 
     def __extract_cell_dimension(self, elements):
         "Extract cell dimension"
-
-        # Should be the same so pick first
-        return elements[0].cell_dimension()
+        return pick_first([element.cell_dimension() for element in elements])
 
     def __extract_num_sub_domains(self, integrals):
         "Extract number of sub domains from list of integrals"
