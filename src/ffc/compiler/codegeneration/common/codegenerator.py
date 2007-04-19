@@ -29,10 +29,7 @@ class CodeGenerator:
         code["finite_elements"] = self.__generate_finite_elements(form_data.elements, format)
 
         # Generate code for dof maps
-        debug("Generating code for dof maps...")
-        for i in range(len(form_data.dof_maps)):
-            code[("dof_map", i)] = self.generate_dof_map(form_data.dof_maps[i], format)
-        debug("done")
+        code["dof_maps"] = self.__generate_dof_maps(form_data.dof_maps, format)
 
         # Generate code for cell integral
         debug("Generating code for cell integrals...")
@@ -70,12 +67,6 @@ class CodeGenerator:
         # Generate code for dof maps
         code["dof_maps"] = self.__generate_dof_maps(element_data.dof_maps, format)
 
-        # Generate code for dof maps
-        debug("Generating code for dof maps...")
-        for i in range(len(element_data.dof_maps)):
-            code[("dof_map", i)] = self.generate_dof_map(element_data.dof_maps[i], format)
-        debug("done")
-
         return code
 
     def __generate_finite_elements(self, elements, format):
@@ -87,9 +78,8 @@ class CodeGenerator:
         # Iterate over form elements
         for i in range(len(elements)):
 
-            # Extract sub elements (reverse list to get declarations in the right order)
+            # Extract sub elements
             sub_elements = self.__extract_sub_elements(elements[i], (i,))
-            sub_elements.reverse()
 
             # Generate code for each element
             for (label, sub_element) in sub_elements:
@@ -107,9 +97,8 @@ class CodeGenerator:
         # Iterate over form dof maps
         for i in range(len(dof_maps)):
 
-            # Extract sub dof maps (reverse list to get declarations in the right order)
+            # Extract sub dof maps
             sub_dof_maps = self.__extract_sub_dof_maps(dof_maps[i], (i,))
-            sub_dof_maps.reverse()
 
             # Generate code for each dof map
             for (label, sub_dof_map) in sub_dof_maps:
@@ -122,20 +111,20 @@ class CodeGenerator:
         """Recursively extract sub elements as a list of tuples where
         each tuple consists of a tuple labeling the sub element and
         the sub element itself"""
-        sub_elements = [(parent, element)]
         if isinstance(element, FiniteElement):
-            return sub_elements
+            return [(parent, element)]
+        sub_elements = []
         for i in range(element.num_sub_elements()):
             sub_elements += self.__extract_sub_elements(element.sub_element(i), parent + (i,))
-        return sub_elements
+        return sub_elements + [(parent, element)]
 
     def __extract_sub_dof_maps(self, dof_map, parent):
         """Recursively extract sub dof maps as a list of tuples where
         each tuple consists of a tuple labeling the sub dof map and
         the sub dof map itself"""
-        sub_dof_maps = [(parent, dof_map)]
         if dof_map.num_sub_dof_maps() == 0:
-            return sub_dof_maps
+            return [(parent, dof_map)]
+        sub_dof_maps = []
         for i in range(dof_map.num_sub_dof_maps()):
             sub_dof_maps += self.__extract_sub_dof_maps(dof_map.sub_dof_map(i), parent + (i,))
-        return sub_dof_maps
+        return sub_dof_maps + [(parent, dof_map)]
