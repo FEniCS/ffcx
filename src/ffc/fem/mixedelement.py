@@ -20,10 +20,10 @@ from ffc.compiler.language.algebra import *
 import finiteelement
 
 class MixedElement:
-    """A MixedElement represents a finite element defined as the
-    tensor product of a list of finite elements. It is represented as
-    list of finite elements (mixed or simple) and may thus be
-    recursively defined in terms of other mixed elements."""
+    """A MixedElement represents a finite element defined as a tensor
+    product of finite elements. It is represented as a list of finite
+    elements (mixed or simple) and may thus be recursively defined in
+    terms of other mixed elements."""
     
     def __init__(self, elements):
         "Create MixedElement from a list of elements."
@@ -94,7 +94,9 @@ class MixedElement:
         return pick_first([element.num_facets() for element in self.__elements])
 
     def entity_dofs(self):
-        "Return the mapping from entities to dofs"
+        """Return the mapping from entities to dofs. Note that we
+        unnest the possibly recursively nested entity_dofs here to
+        generate just a list of entity dofs for basic elements."""
         return [entity_dofs for element in self.__elements for entity_dofs in element.entity_dofs()]
 
     def basis(self):

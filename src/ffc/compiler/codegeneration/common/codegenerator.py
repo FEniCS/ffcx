@@ -1,7 +1,7 @@
 "Common base class for code generators"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-03-06 -- 2007-02-06"
+__date__ = "2007-03-06 -- 2007-04-19"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -68,6 +68,9 @@ class CodeGenerator:
         code["finite_elements"] = self.__generate_finite_elements(element_data.elements, format)
 
         # Generate code for dof maps
+        code["dof_maps"] = self.__generate_dof_maps(element_data.dof_maps, format)
+
+        # Generate code for dof maps
         debug("Generating code for dof maps...")
         for i in range(len(element_data.dof_maps)):
             code[("dof_map", i)] = self.generate_dof_map(element_data.dof_maps[i], format)
@@ -84,13 +87,33 @@ class CodeGenerator:
         # Iterate over form elements
         for i in range(len(elements)):
 
-            # Extract sub elements (reverse list to get declaration in the right order)
+            # Extract sub elements (reverse list to get declarations in the right order)
             sub_elements = self.__extract_sub_elements(elements[i], (i,))
             sub_elements.reverse()
 
             # Generate code for each element
             for (label, sub_element) in sub_elements:
                 code += [(label, self.generate_finite_element(sub_element, format))]
+                
+        debug("done")
+        return code
+
+    def __generate_dof_maps(self, dof_maps, format):
+        "Generate code for dof maps, including recursively nested dof maps"
+
+        debug("Generating code for finite dof maps...")
+        code = []
+
+        # Iterate over form dof maps
+        for i in range(len(dof_maps)):
+
+            # Extract sub dof maps (reverse list to get declarations in the right order)
+            sub_dof_maps = self.__extract_sub_dof_maps(dof_maps[i], (i,))
+            sub_dof_maps.reverse()
+
+            # Generate code for each dof map
+            for (label, sub_dof_map) in sub_dof_maps:
+                code += [(label, self.generate_dof_map(sub_dof_map, format))]
                 
         debug("done")
         return code
@@ -105,3 +128,14 @@ class CodeGenerator:
         for i in range(element.num_sub_elements()):
             sub_elements += self.__extract_sub_elements(element.sub_element(i), parent + (i,))
         return sub_elements
+
+    def __extract_sub_dof_maps(self, dof_map, parent):
+        """Recursively extract sub dof maps as a list of tuples where
+        each tuple consists of a tuple labeling the sub dof map and
+        the sub dof map itself"""
+        sub_dof_maps = [(parent, dof_map)]
+        if dof_map.num_sub_dof_maps() == 0:
+            return sub_dof_maps
+        for i in range(dof_map.num_sub_dof_maps()):
+            sub_dof_maps += self.__extract_sub_dof_maps(dof_map.sub_dof_map(i), parent + (i,))
+        return sub_dof_maps

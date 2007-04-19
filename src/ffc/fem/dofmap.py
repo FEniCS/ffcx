@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-01-24 -- 2007-04-18"
+__date__ = "2007-01-24 -- 2007-04-19"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -13,7 +13,6 @@ from finiteelement import *
 from mixedelement import *
 
 class DofMap:
-
     """A DofMap represents a description of the degrees of a freedom
     of a finite element space, from which the mapping from local to
     global degrees of freedom can be computed."""
@@ -34,6 +33,7 @@ class DofMap:
         self.__dof_coordinates  = self.__compute_dof_coordinates(element)
         self.__dof_components   = self.__compute_dof_components(element)
         self.__incidence        = self.__compute_incidence(element.cell_shape())
+        self.__dof_maps         = self.__compute_dof_maps(element)
         self.__element          = element
 
     def signature(self):
@@ -85,6 +85,14 @@ class DofMap:
     def incidence(self):
         "Return a dictionary of which entities are incident with which"
         return self.__incidence
+
+    def num_sub_dof_maps(self):
+        "Return the number of sub dof maps"
+        return len(self.__dof_maps)
+
+    def sub_dof_map(self, i):
+        "Return sub dof map i"
+        return self.__dof_maps[i]
 
     def element(self):
         "Return the finite element associated with the dof map"
@@ -198,6 +206,12 @@ class DofMap:
                             incidence[((d0, i0), (d1, i1))] = False
 
         return incidence
+
+    def __compute_dof_maps(self, element):
+        "Compute recursively nested dof maps"
+        if isinstance(element, FiniteElement):
+            return []
+        return [DofMap(element.sub_element(i)) for i in range(element.num_sub_elements())]
 
     def __compute_sub_simplices(self, D, d):
         "Compute vertices for all sub simplices of dimension d (code taken from Exterior)"

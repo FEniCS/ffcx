@@ -53,3 +53,12 @@ else:
     print "*** Regression test failed for %d of %d forms:" % (num_forms - num_forms_ok, num_forms)
     for form_file in forms_not_ok:
         print "  " + form_file
+
+# Generate script for viewing diffs in meld                                    \
+file = open("../test/regression/viewdiff.sh", "w")
+file.write("#!/bin/sh\n\n")
+for form_file in forms_not_ok:
+    code_file = form_file.split(".")[0] + ".h"
+    file.write("meld reference/%s ../../demo/%s\n" % (code_file, code_file))
+file.close()
+print "\nTo view diffs with meld, run the script viewdiff.sh"
