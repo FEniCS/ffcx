@@ -6,11 +6,11 @@
 #
 # Compile this form with FFC: ffc Poisson.form
 
-element = FiniteElement("Lagrange", "triangle", 1)
+element = VectorElement("Lagrange", "triangle", 1)
 
 v = TestFunction(element)
 u = TrialFunction(element)
 f = Function(element)
 
 a = dot(grad(v), grad(u))*dx
-L = v*f*dx
+L = dot(v,f)*dx

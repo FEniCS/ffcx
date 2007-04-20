@@ -65,16 +65,16 @@ format = { "add": lambda v: " + ".join(v),
            "element tensor quad": lambda k: "A[%s]" % k,
            "derivatives": lambda i,j,k,l: "dNdx%d_%d[%s][%s]" % (i,j,k,l),
            "coordinates": lambda i,j: "x[%s][%s]" % (i,j),
-           "absolute value": lambda i: "std::abs(%s)" % (i),
+           "absolute value": lambda i: "std::abs(%s)" % i,
            "weights": lambda i,j: "Weight%d[%s]" % (i,j),
            "psis": lambda l: "Psi%d_%d_%d_%s[%s][%s]" % (l[0],l[1],l[2],\
                              "".join(["%d" % index for index in l[3]]), l[4], l[5]),
 # evalutate_basis() + evaluate_basis_derivatives()
-           "coordinate access": lambda i: "coordinates[%d]" % (i,),
+           "coordinate access": lambda i: "coordinates[%d]" % i,
            "coordinate map": lambda i: {2:map_coordinates_2D, 3:map_coordinates_3D}[i],
-           "absolute value": lambda i: "std::abs(%s)" % (i,),
-           "switch": lambda i: "switch ( %s )" % (i,),
-           "case": lambda i: "case %d:" % (i,),
+           "absolute value": lambda i: "std::abs(%s)" % i,
+           "switch": lambda i: "switch ( %s )" % i,
+           "case": lambda i: "case %d:" % i,
            "break": "break;",
            "uint declaration": "unsigned int ",
            "const uint declaration": "const static unsigned int ",
@@ -84,7 +84,7 @@ format = { "add": lambda v: " + ".join(v),
 # quadrature + evalutate_basis()
            "add equal": lambda i,j: "%s += %s;" % (i,j),
            "table declaration": "const static double ",
-           "loop": lambda i,j,k,l: "for (unsigned int %s = 0; %s < %d; %s++)"% (i, j, k, l),
+           "loop": lambda i,j: "for (unsigned int %s = 0; %s < %s; %s++)"% (i, i, j, i),
            "snippet evaluate_dof": lambda d : {2: evaluate_dof_2D, 3: evaluate_dof_3D}[d]}
 
 def write(generated_forms, prefix, options):
@@ -237,7 +237,7 @@ def __generate_finite_element(code, form_data, options, prefix, label):
     ufc_code["evaluate_basis"] = __generate_body(code["evaluate_basis"])
 
     # Generate code for evaluate_basis
-    #ufc_code["evaluate_basis_derivatives"] = __generate_body(code["evaluate_basis_derivatives"])
+    ufc_code["evaluate_basis_derivatives"] = __generate_body(code["evaluate_basis_derivatives"])
 
     # Generate code for evaluate_dof
     ufc_code["evaluate_dof"] = __generate_body(code["evaluate_dof"])
