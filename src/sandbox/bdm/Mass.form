@@ -1,0 +1,8 @@
+q = 1
+
+BDM = FiniteElement("Brezzi-Douglas-Marini", "triangle", q)
+
+v = TestFunction(BDM)
+q = TrialFunction(BDM)
+
+a = dot(v, q)*dx

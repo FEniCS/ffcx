@@ -1,0 +1,9 @@
+q = 1
+
+BDM = FiniteElement("Brezzi-Douglas-Marini", "triangle", q)
+DG  = FiniteElement("Discontinuous Lagrange", "triangle", q - 1)
+
+w = TestFunction(DG)
+q = TrialFunction(BDM)
+
+a = w*div(q)*dx
