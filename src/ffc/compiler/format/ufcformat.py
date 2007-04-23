@@ -127,6 +127,7 @@ def generate_header(prefix, options):
 #ifndef __%s_H
 #define __%s_H
 
+#include <cmath>
 #include <ufc.h>%s
 """ % (FFC_VERSION, blas_warning, prefix.upper(), prefix.upper(), blas_include)
 
