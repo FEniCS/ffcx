@@ -197,9 +197,9 @@ def generate_map(element, Indent, format):
     code += mappings[element.cell_shape()]
 
     # Debug code
-    code += [Indent.indent("""// Debug code
-            std::cout << "coordinates : " << coordinates[0] << " " << coordinates[1] << std::endl;
-            std::cout << " mapped coordinates : " << x << " " << y << std::endl;""")]
+    #code += [Indent.indent("""// Debug code
+    #        std::cout << "coordinates : " << coordinates[0] << " " << coordinates[1] << std::endl;
+    #        std::cout << " mapped coordinates : " << x << " " << y << std::endl;""")]
 
     return code + [""]
 
