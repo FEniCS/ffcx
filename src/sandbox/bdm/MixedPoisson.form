@@ -14,8 +14,8 @@ DG  = FiniteElement("Discontinuous Lagrange", "triangle", q - 1)
 
 mixed_element = BDM + DG
 
-(v, w) = TestFunctions(mixed_element)
-(q, u) = TrialFunctions(mixed_element)
+(tau, w) = TestFunctions(mixed_element)
+(sigma, u) = TrialFunctions(mixed_element)
 
-a = (dot(v, q) - div(v)*u + w*div(q))*dx
+a = (dot(sigma, tau) - div(tau)*u + w*div(sigma))*dx
 L = w*f*dx
