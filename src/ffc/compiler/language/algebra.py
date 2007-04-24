@@ -458,7 +458,6 @@ class Monomial(Element):
                 raise FormError, (self, "Integrand can only be integrated once.")
             w = Monomial(self)
             w.integral = Integral(other)
-            w.determinant += 1 
             return w
         elif isinstance(other, Form):
             return Form(self) * Form(other)
