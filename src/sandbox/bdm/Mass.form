@@ -5,4 +5,4 @@ BDM = FiniteElement("Brezzi-Douglas-Marini", "triangle", q)
 tau = TestFunction(BDM)
 sigma = TrialFunction(BDM)
 
-a = dot(sigma, tau)*dx
+a = dot(tau, sigma)*dx
