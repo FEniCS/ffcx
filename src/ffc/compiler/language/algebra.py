@@ -341,44 +341,36 @@ class BasisFunction(Element):
 
     def pick_component_piola(self, component):
         "Pick given component of BasisFunction mapped with the Piola transform."
-        component = self.__shift_piola_component(component) # !
         rank = self.element.value_rank()
-        if self.component or rank == 0:
-            raise FormError, (self, "Cannot pick component of scalar BasisFunction.")    
-        w = Monomial(self)
-        j = Index()
         if isinstance(component, list):
             if not rank == len(component):
                 raise FormError, (component, "Illegal component index, does not match rank.")
-            end = len(component)
-            last = component[end]
-            w.transforms = [Transform(self.element, j, last, None, -1)] 
-            w.basisfunctions[0].component = [component[1:end-1], Index(j)]
-            w.determinant = -1
-            print "The Piola transform is not working in the tensor-valued case."
-        else:  
-            if not rank == 1:
-                raise FormError, (component, "Illegal component index, does not match rank.") 
-            w.transforms = [Transform(self.element, j, component, None, -1)] 
-            w.basisfunctions[0].component = [Index(j)]    
+            print "The Piola transform is not implemented in the tensor case!"
+            return self
+        
+        if not rank == 1:
+            raise FormError, (component, "Illegal component index, does not match rank.") 
+
+        (sub_element, offset) = self.element.offset(component)
+        i = Index(component - offset)
+        if self.element.family() == "Mixed":
+            # Do summation explicitely:
+            w = Form()
+            for k in range(sub_element.value_dimension(0)):
+                q = Monomial(self)
+                q.transforms = [Transform(self.element, Index(k), i, None, -1)]
+                q.basisfunctions[0].component = [Index(k + offset)]
+                q.determinant = -1
+                w = w + q
+        else:
+            # Do summation implicitely.
+            w = Monomial(self)
+            j = Index();
+            w.transforms = [Transform(self.element, j, i, None, -1)] 
+            w.basisfunctions[0].component = [j]    
             w.determinant = -1
         return w
 
-    def __shift_piola_component(self, component):
-        """Modify the component index for Piola functions according to
-        the location of the finite element space if in a mixed
-        element."""
-        # meg: Fixme: Does not yet work with nested mixed elements
-        if self.element.num_sub_elements() == 1:
-            return component
-        offset = 0
-        for i in range(self.element.num_sub_elements()):
-            sub_value_dimension = self.element.sub_element(i).value_dimension(0)
-            offset += sub_value_dimension
-            if offset > component:
-                component = component - (offset - sub_value_dimension)
-                return component
-        raise FormError, (self, "Illegal component index: Out of range.")
 
 class Monomial(Element):
     """A Monomial represents a monomial product of factors, including
