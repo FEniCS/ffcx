@@ -52,7 +52,8 @@ def evaluate_basis_derivatives(element, format):
 
     # Check if we have just one element
     if (element.num_sub_elements() == 1):
-        code += generate_element_code(element, Indent, format)
+        code += evaluatebasis.dof_map(0, Indent, format)
+        code += generate_element_code(element, 0, False, Indent, format)
 
     # If the element is vector valued or mixed
     else:
@@ -60,7 +61,7 @@ def evaluate_basis_derivatives(element, format):
 
     return code
 
-def generate_element_code(element, Indent, format):
+def generate_element_code(element, value_num, vector, Indent, format):
     "Generate code for each basis element"
 
     code = []
@@ -76,69 +77,102 @@ def generate_element_code(element, Indent, format):
     # Tabulate coefficients for derivatives
     code += tabulate_dmats(element, Indent, format)
 
-    # Compute the value of the basisfunction as the dot product of the new coefficients
+    # Compute the value of the derivatives of the basisfunctions as the dot product of the new coefficients
     # and basisvalues
     code += compute_values(element, Indent, format)
-
-#    code += dot_product(element, Indent, format)
 
     return code
 
 def generate_cases(element, Indent, format):
     "Generate cases in the event of vector valued elements or mixed elements"
 
+    code = []
+
     # Prefetch formats to speed up code generation
     format_block_begin = format["block begin"]
     format_block_end = format["block end"]
 
-    # Extract basis elements
+    # Extract basis elements, and determine number of elements
     elements = evaluatebasis.extract_elements(element)
+    num_elements = len(elements)
 
-    code, unique_elements = evaluatebasis.element_types(elements, Indent, format)
+    # Loop all elements
+    code += [Indent.indent(format["loop"]("element", num_elements))]
 
-    code += evaluatebasis.dof_map(elements, Indent, format) + [""]
-
-    # Get number of unique sub elements
-    num_unique_elements = len(unique_elements)
+    code += [Indent.indent(format["comment"]("Switch for each of the basis elements"))]
+    code += [Indent.indent(format_block_begin)]
+    # Increase indentation
+    Indent.increase()
 
     # Generate switch
-    if (num_unique_elements > 1):
-        code += [Indent.indent(format["comment"]("Switch for each of the unique sub elements"))]
-        code += [Indent.indent(format["switch"]("element"))]
-        code += [Indent.indent(format_block_begin)]
+    code += [Indent.indent(format["switch"]("element"))]
+    code += [Indent.indent(format_block_begin)]
+    # Increase indentation
+    Indent.increase()
 
+    sum_value_num = 0
+    sum_space_dim = 0
+
+    # Generate cases
+    for i in range(num_elements):
+        code += [Indent.indent(format["case"](i))]
+        code += [Indent.indent(format_block_begin)]
         # Increase indentation
         Indent.increase()
 
-        # Generate case
-        for i in range(len(unique_elements)):
-            code += [Indent.indent(format["case"](i))]
-            code += [Indent.indent(format_block_begin)]
+        # Get sub element
+        basis_element = elements[i]
 
-            # Increase indentation
-            Indent.increase()
+        # FIXME: This must most likely change for tensor valued elements
+        value_dimension = basis_element.value_dimension(0)
+        value_num = basis_element.value_dimension(0)
+        space_dim = basis_element.space_dimension()
 
-            # Get unique sub element
-            element = unique_elements[i]
+        # Determine if the element has a value, for the given dof
+# Not languge-independent
+        code += [Indent.indent("if (%d <= i and i <= %d)\n{" % (sum_space_dim, sum_space_dim + space_dim -1))]
+        # Increase indentation
+        Indent.increase()
 
-            # Generate code for unique sub element
-            code += generate_element_code(element, Indent, format)
+        # Generate map from global to local dof
+        code += [Indent.indent(format["comment"]("Compute local degree of freedom"))]
+        code += evaluatebasis.dof_map(sum_space_dim, Indent, format)
 
-            code += [Indent.indent(format["break"])]
+        # Generate code for basis element
+        code += generate_element_code(basis_element, sum_value_num, True, Indent, format)
 
-            # Decrease indentation
-            Indent.decrease()
-
-            code += [Indent.indent(format_block_end)]
-
-        # Decrease indentation
+        # Decrease indentation, finish block - end element code
         Indent.decrease()
-
         code += [Indent.indent(format_block_end)]
 
-    else:
-        element = unique_elements[0]
-        code += generate_element_code(element, Indent, format)
+        # If the element does not have a value for the given dof, return 0.0
+# Not languge-independent
+        code += [Indent.indent("else\n{")]
+        # Increase indentation
+        Indent.increase()
+        # Reset values
+        code += evaluatebasis.reset_values(value_dimension, sum_value_num, True, Indent, format)
+        # Decrease indentation
+        Indent.decrease()
+        code += [Indent.indent(format_block_end)]
+
+        # End case
+        code += [Indent.indent(format["break"])]
+        # Decrease indentation
+        Indent.decrease()
+        code += [Indent.indent(format_block_end)]
+
+        # Increase sum of value dimension, and space dimension
+        sum_value_num += value_num
+        sum_space_dim += space_dim
+
+    # Decrease indentation, end switch
+    Indent.decrease()
+    code += [Indent.indent(format_block_end)]
+
+    # Decrease indentation, end loop elements
+    Indent.decrease()
+    code += [Indent.indent(format_block_end)]
 
     return code
 
@@ -173,14 +207,8 @@ def tabulate_dmats(element, Indent, format):
     # Get derivative matrices (coefficients) of basis functions, computed by FIAT at compile time
     derivative_matrices = element.basis().base.dmats
 
-#    for i in range(len(derivative_matrices)):
-#        print "\nderiv, basis().base.dmats[i]\n", element.basis().base.dmats[i]
-
     # Get the shape of the element
     cell_shape = element.cell_shape()
-
-#    print "derivative_matrices: ", derivative_matrices
-#    print "shape(derivative_matrices): ", numpy.shape(derivative_matrices)
 
     code += [Indent.indent(format["comment"]("Tables of derivative matrices (transpose)"))]
 
@@ -190,8 +218,8 @@ def tabulate_dmats(element, Indent, format):
         # Extract derivatives for current direction (take transpose, FIAT ScalarPolynomialSet.deriv_all())
         matrix = numpy.transpose(derivative_matrices[i])
 
-        # Get the polynomium dimension of element
-        poly_dim = numpy.shape(matrix)[0]
+        # Get polynomial dimension of basis
+        poly_dim = len(element.basis().base.bs)
 
         # Declare varable name for coefficients
         name = format["table declaration"] + "dmats%d[%d][%d]" %(i, poly_dim, poly_dim)
@@ -204,8 +232,11 @@ def compute_values(element, Indent, format):
 
     code = []
 
-    # Get number of components and polynomial dimension
-    num_components, poly_dim = evaluatebasis.analyse_element(element)
+    # Get number of components, must change for tensor valued elements
+    num_components = element.value_dimension(0)
+
+    # Get polynomial dimension of basis
+    poly_dim = len(element.basis().base.bs)
 
     # Get element shape
     cell_shape = element.cell_shape()
@@ -227,7 +258,7 @@ def compute_values(element, Indent, format):
     for i in range(num_components):
         for j in range(poly_dim):
             code += [(Indent.indent(format["float declaration"] + "new_coeff%d_%d") % (i,j),\
-                                    "coefficients%d[i][%d]" % (i,j))]
+                                    "coefficients%d[dof][%d]" % (i,j))]
 
     # Debug coefficients
     value = "std::cout << "
@@ -262,8 +293,11 @@ def multiply_coeffs(element, Indent, format):
 
     code = []
 
-    # Get number of components and polynomial dimension
-    num_components, poly_dim = evaluatebasis.analyse_element(element)
+    # Get number of components, must change for tensor valued elements
+    num_components = element.value_dimension(0)
+
+    # Get polynomial dimension of basis
+    poly_dim = len(element.basis().base.bs)
 
     # Get the shape of the element
     cell_shape = element.cell_shape()
@@ -305,7 +339,11 @@ def dot_product(element, Indent, format):
 
     code = []
 
-    num_components, poly_dim = evaluatebasis.analyse_element(element)
+    # Get number of components, must change for tensor valued elements
+    num_components = element.value_dimension(0)
+
+    # Get polynomial dimension of basis
+    poly_dim = len(element.basis().base.bs)
 
     for i in range(num_components):
         for j in range(poly_dim):
