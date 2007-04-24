@@ -61,6 +61,7 @@ def evaluate_basis(element, format):
     Nedelec (broken?)"""
 
 # To be fixed:
+# doc strings
 # check that the code is language-independent
 
     code = []
@@ -72,6 +73,9 @@ def evaluate_basis(element, format):
 
     # Check if we have just one element
     if (element.num_sub_elements() == 1):
+
+        code += dof_map(0, Indent, format)
+
         code += generate_element_code(element, 0, False, Indent, format)
 
     # If the element is vector valued or mixed
@@ -87,9 +91,6 @@ def generate_element_code(element, value_num, vector, Indent, format):
 
     # Tabulate coefficients
     code += tabulate_coefficients(element, Indent, format)
-
-    # Get coordinates and generate map
-#    code += generate_map(element, Indent, format)
 
     # Compute scaling of y and z 1/2(1-y)^n and 1/2(1-z)^n
     code += compute_scaling(element, Indent, format)
@@ -122,27 +123,26 @@ def tabulate_coefficients(element, Indent, format):
 
     format_block_begin = format["block begin"]
     format_block_end   = format["block end"]
+
     # Get coefficients from basis functions, computed by FIAT at compile time
     coefficients = element.basis().coeffs
 
-    # Get shape of coefficients
-    shape = numpy.shape(coefficients)
-
     # Scalar valued basis element [Lagrange, Discontinuous Lagrange, Crouzeix-Raviart]
-    if (len(shape) == 2):
-        num_components = 1
-        poly_dim = shape[1]
+    if (element.value_rank() == 0):
         coefficients = [coefficients]
 
     # Vector valued basis element [Raviart-Thomas, Brezzi-Douglas-Marini (BDM)]
-    elif (len(shape) == 3):
-        num_components = shape[1]
-        poly_dim = shape[2]
+    elif (element.value_rank() == 1):
         coefficients = numpy.transpose(coefficients, [1,0,2])
 
-    # ???
     else:
-        raise RuntimeError(), "These coefficients have a strange shape!"
+        raise RuntimeError(), "Tensor elements not supported!"
+
+    # Get number of components, must change for tensor valued elements
+    num_components = element.value_dimension(0)
+
+    # Get polynomial dimension of basis
+    poly_dim = len(element.basis().base.bs)
 
     # Get the number of dofs from element
     num_dofs = element.space_dimension()
@@ -196,6 +196,11 @@ def generate_map(element, Indent, format):
     code += [Indent.indent(format_comment("Map coordinates to the reference %s") % (reference[element.cell_shape()]))]
     code += mappings[element.cell_shape()]
 
+    # Debug code
+    code += [Indent.indent("""// Debug code
+            std::cout << "coordinates : " << coordinates[0] << " " << coordinates[1] << std::endl;
+            std::cout << " mapped coordinates : " << x << " " << y << std::endl;""")]
+
     return code + [""]
 
 def compute_scaling(element, Indent, format):
@@ -223,17 +228,8 @@ def compute_scaling(element, Indent, format):
 
     code += [Indent.indent(format["comment"]("Generate scalings"))]
 
+    # Can be optimized by leaving out the 1.0 variable
     for i in range(len(scalings)):
-
-      # Old 'array' code
-      # Declare scaling variable
-#      name = format["const float declaration"] + "scalings_%s[%d]" %(scalings[i], degree+1,)
-#      value = format["block begin"] + "1.0"
-#      if degree > 0:
-#          value += ", " + ", ".join(["scalings_%s[%d]*%s" %(scalings[i],j-1,factors[i])\
-#                                     for j in range(1, degree+1)])
-#      value += format["block end"]
-#      code += [(Indent.indent(name), Indent.indent(value))] + [""]
 
       name = format["const float declaration"] + "scalings_%s_%d" %(scalings[i], 0)
       value = "1.0"
@@ -269,15 +265,6 @@ def compute_psitilde_a(element, Indent, format):
 
     # Create list of variable names
     variables = ["x","psitilde_a"]
-
-    # Old 'array' code
-    # Declare variable
-#    name = format["const float declaration"] + variables[1] + "[%d]" %(degree+1,)
-
-    # Compute values
-#    value = eval_jacobi_batch_array(0, 0, degree, variables, format)
-
-#    code += [(Indent.indent(name), Indent.indent(value))]
 
     for n in range(degree+1):
         # Declare variable
@@ -323,15 +310,6 @@ def compute_psitilde_b(element, Indent, format):
             
         # Create list of variable names
         variables = ["y", "psitilde_bs_%d" % i]
-
-        # Old 'array' code
-        # Declare variable
-#        name = format["const float declaration"] + variables[1] + "[%d]" %(n+1)
-
-        # Compute values
-#        value = eval_jacobi_batch_array(a, b, n, variables, format)
-
-#        code += [(Indent.indent(name), Indent.indent(value))] + [""]
 
         for j in range(n+1):
             # Declare variable
@@ -380,15 +358,6 @@ def compute_psitilde_c(element, Indent, format):
             # Create list of variable names
             variables = ["z", "psitilde_cs_%d%d" %(i,j)]
 
-            # Old 'array' code
-            # Declare variable
-#            name = format["const float declaration"] + variables[1] + "[%d]" %(n+1)
-
-            # Compute values
-#            value = eval_jacobi_batch_array(a, b, n, variables, format)
-
-#            code += [(Indent.indent(name), Indent.indent(value))] + [""]
-
             for k in range(n+1):
                 # Declare variable
                 name = format["const float declaration"] + variables[1] + "_%d" % k
@@ -409,23 +378,8 @@ def compute_basisvalues(element, Indent, format):
     code = []
     code += [Indent.indent(format["comment"]("Compute basisvalues"))]
 
-    # Get coefficients from basis functions, computed by FIAT at compile time
-    coefficients = element.basis().coeffs
-
-    # Get shape of coefficients
-    shape = numpy.shape(coefficients)
-
-    # Scalar valued basis element [Lagrange, Discontinuous Lagrange, Crouzeix-Raviart]
-    if (len(shape) == 2):
-        poly_dim = shape[1]
-
-    # Vector valued basis element [Raviart-Thomas, Brezzi-Douglas-Marini (BDM)]
-    elif (len(shape) == 3):
-        poly_dim = shape[2]
-
-    # ???
-    else:
-        raise RuntimeError(), "These coefficients have a strange shape!"
+    # Get polynomial dimension of base
+    poly_dim = len(element.basis().base.bs)
 
     # Declare variable
     name = format["const float declaration"] + "basisvalues[%d]" % poly_dim
@@ -434,6 +388,7 @@ def compute_basisvalues(element, Indent, format):
     # Get the element shape
     element_shape = element.cell_shape()
 
+    # Optimize by declaring doubles instead of array
     # Currently only 2D and 3D is supported
     # 2D
     if (element_shape == 2):
@@ -473,7 +428,6 @@ def compute_basisvalues(element, Indent, format):
 
     code += [(Indent.indent(name), Indent.indent(value))]
 
-
     # Debug basis
 #    code += ["std::cout" + "".join([" << basisvalues[%d] << " % i + '" "' for i in range(poly_dim)]) + " << std::endl;"]
 
@@ -484,25 +438,11 @@ def compute_values(element, value_num, vector, Indent, format):
     code = []
     code += [Indent.indent(format["comment"]("Compute value(s)"))]
 
-    # Get coefficients from basis functions, computed by FIAT at compile time
-    coefficients = element.basis().coeffs
+    # Get number of components, change for tensor valued elements
+    num_components = element.value_dimension(0)
 
-    # Get shape of coefficients
-    shape_coeff = numpy.shape(coefficients)
-
-    # Scalar valued basis element [Lagrange, Discontinuous Lagrange, Crouzeix-Raviart]
-    if (len(shape_coeff) == 2):
-        num_components = 1
-        poly_dim = shape_coeff[1]
-
-    # Vector valued basis element [Raviart-Thomas, Brezzi-Douglas-Marini (BDM)]
-    elif (len(shape_coeff) == 3):
-        num_components = shape_coeff[1]
-        poly_dim = shape_coeff[2]
-
-    # ???
-    else:
-        raise RuntimeError(), "These coefficients have a strange shape!"
+    # Get polynomial dimension of base
+    poly_dim = len(element.basis().base.bs)
 
     code += dot_product(num_components, poly_dim, "coefficients", value_num, vector, Indent, format)
 
@@ -512,7 +452,7 @@ def reset_values(num_components, value_num, vector, Indent, format):
 
     code = []
 
-    if vector:
+    if (vector or num_components != 1):
         # Reset values as it is a pointer
         code += [(Indent.indent("values[%d]" % (i+value_num)), "0.0") for i in range(num_components)]
     else:
@@ -529,6 +469,7 @@ def dot_product(num_components, poly_dim, name_coefficients, value_num, vector, 
     # Reset values
     code += reset_values(num_components, value_num, vector, Indent, format)
 
+    # Optimize by using scalars instead of array (basisvalues), skip loop
     if (vector or num_components != 1):
         # Loop dofs to generate dot product, 3D ready
         code += [Indent.indent(format["loop"]("j", poly_dim))]
@@ -538,24 +479,20 @@ def dot_product(num_components, poly_dim, name_coefficients, value_num, vector, 
         Indent.increase()
 
         code += [Indent.indent(format["add equal"]("values[%d]" % (i+value_num),\
-                 name_coefficients+"%d[i][j]*basisvalues[j]" % i)) for i in range(num_components)]
+                 name_coefficients+"%d[dof][j]*basisvalues[j]" % i)) for i in range(num_components)]
 
         # Decrease indentation
         Indent.decrease()
 
         code += [Indent.indent(format["block end"])]
     else:
-
-        # Reset value as it is a pointer
-#        code += [(Indent.indent("*values"), "0.0")]
-
-        # Loop dofs to generate dot product, 3D ready
+        # Loop poly_dim to generate dot product
         code += [Indent.indent(format["loop"]("j", poly_dim))]
 
         # Increase indentation
         Indent.increase()
 
-        code += [Indent.indent(format["add equal"]("*values", name_coefficients +"0[i][j]*basisvalues[j]"))]
+        code += [Indent.indent(format["add equal"]("*values", name_coefficients +"0[dof][j]*basisvalues[j]"))]
 
         # Decrease indentation
         Indent.decrease()
@@ -565,32 +502,14 @@ def dot_product(num_components, poly_dim, name_coefficients, value_num, vector, 
 def generate_cases(element, Indent, format):
     "Generate cases in the event of vector valued elements or mixed elements"
 
-
     code = []
 
     # Prefetch formats to speed up code generation
     format_block_begin = format["block begin"]
     format_block_end = format["block end"]
 
-    # Extract basis elements
-    elements = extract_elements2(element)
-
-#    print "element.value_rank(): ", element.value_rank()
-#    print "element.value_dimension(): ", element.value_dimension(0)
-#    print "element.space_dimension(): ", element.space_dimension()
-
-    # Extract basis elements
-#    elements2 = extract_elements2(element)
-
-#    print "\nelement: \n", element
-
-#    print "\nelements 1: \n", elements
-#    print "\nelements 2: \n", elements2
-
-#    code, unique_elements = element_types(elements, Indent, format)
-
-#    code += dof_map(elements, Indent, format) + [""]
-
+    # Extract basis elements, and determine number of elements
+    elements = extract_elements(element)
     num_elements = len(elements)
 
     # Loop all elements
@@ -601,21 +520,16 @@ def generate_cases(element, Indent, format):
     # Increase indentation
     Indent.increase()
 
-    # Get number of unique sub elements
-#    num_unique_elements = len(unique_elements)
-
     # Generate switch
-#    if (num_unique_elements > 1):
     code += [Indent.indent(format["switch"]("element"))]
     code += [Indent.indent(format_block_begin)]
-
     # Increase indentation
     Indent.increase()
 
     sum_value_num = 0
     sum_space_dim = 0
 
-    # Generate case
+    # Generate cases
     for i in range(num_elements):
         code += [Indent.indent(format["case"](i))]
         code += [Indent.indent(format_block_begin)]
@@ -630,18 +544,25 @@ def generate_cases(element, Indent, format):
         value_num = basis_element.value_dimension(0)
         space_dim = basis_element.space_dimension()
 
+        # Determine if the element has a value, for the given dof
+# Not languge-independent
         code += [Indent.indent("if (%d <= i and i <= %d)\n{" % (sum_space_dim, sum_space_dim + space_dim -1))]
         # Increase indentation
         Indent.increase()
 
-        # Generate code for unique sub element
+        # Generate map from global to local dof
+        code += [Indent.indent(format["comment"]("Compute local degree of freedom"))]
+        code += dof_map(sum_space_dim, Indent, format)
+
+        # Generate code for basis element
         code += generate_element_code(basis_element, sum_value_num, True, Indent, format)
 
-        # Decrease indentation
+        # Decrease indentation, finish block - end element code
         Indent.decrease()
         code += [Indent.indent(format_block_end)]
 
-
+        # If the element does not have a value for the given dof, return 0.0
+# Not languge-independent
         code += [Indent.indent("else\n{")]
         # Increase indentation
         Indent.increase()
@@ -651,36 +572,28 @@ def generate_cases(element, Indent, format):
         Indent.decrease()
         code += [Indent.indent(format_block_end)]
 
-
+        # End case
         code += [Indent.indent(format["break"])]
-
         # Decrease indentation
         Indent.decrease()
         code += [Indent.indent(format_block_end)]
 
-#        print "basis_element.value_rank(): ", basis_element.value_rank()
-#        print "basis_element.value_dimension(): ", basis_element.value_dimension(0)
-#        print "basis_element.space_dimension(): ", basis_element.space_dimension()
-
+        # Increase sum of value dimension, and space dimension
         sum_value_num += value_num
         sum_space_dim += space_dim
 
-    # Decrease indentation
+    # Decrease indentation, end switch
     Indent.decrease()
     code += [Indent.indent(format_block_end)]
 
-    # Decrease indentation
+    # Decrease indentation, end loop elements
     Indent.decrease()
     code += [Indent.indent(format_block_end)]
-
-#    else:
-#        element = unique_elements[0]
-#        code += generate_element_code(element, Indent, format)
 
     return code
 
 def extract_elements(element):
-    """This function extracts the individual elements from vector elements and mixed elements.
+    """This function extracts the basis elements recursively from vector elements and mixed elements.
     Example, the following mixed element:
 
     element1 = FiniteElement("Lagrange", "triangle", 1)
@@ -693,91 +606,17 @@ def extract_elements(element):
     This function returns the list of basis elements:
     elements = [Lagrange order 2, Lagrange order 2, Lagrange order 1]"""
 
-    elements = [element.sub_element(i) for i in range(element.num_sub_elements())]
-
-    mixed = True
-    while (mixed == True):
-        mixed = False
-        for i in range(len(elements)):
-            sub_element = elements[i]
-            if isinstance(sub_element, MixedElement):
-                mixed = True
-                elements.pop(i)
-                for j in range(sub_element.num_sub_elements()):
-                    elements.insert(i+j, sub_element.sub_element(j))
-
-    return elements
-
-def extract_elements2(element):
-
     elements = []
 
     if isinstance(element, FiniteElement):
         elements += [element]
     else:
         for i in range(element.num_sub_elements()):
-            elements += extract_elements2(element.sub_element(i))
+            elements += extract_elements(element.sub_element(i))
 
     return elements
 
-def element_types(elements, Indent, format):
-    """This function creates a list of element types and a list of unique elements.
-
-    Example, the following mixed element:
-
-    element1 = FiniteElement("Lagrange", "triangle", 1)
-    element2 = VectorElement("Lagrange", "triangle", 2)
-
-    element  = element2 + element1
-
-    has the element list, elements = [Lagrange order 2, Lagrange order 2, Lagrange order 1]
-
-    Unique elements are: unique_elements = [Lagrange order 2, Lagrange order 1]
-    and the element types, element_types = [0, 0, 1]"""
-
-    code = []
-
-    # Prefetch formats to speed up code generation
-    format_block_begin = format["block begin"]
-    format_block_end = format["block end"]
-
-    unique_elements = [elements[0]]
-    types = [0]
-
-    for i in range(1, len(elements)):
-        unique = True
-        element = elements[i]
-        elem_type = len(unique_elements)
-        for j in range(elem_type):
-            if (element.signature() == unique_elements[j].signature()):
-                unique = False
-                elem_type = j
-                break
-        if unique:
-            unique_elements += [element]
-        types += [elem_type]
-
-    code += [Indent.indent(format["comment"]("Element types"))]
-
-    # Declare element types and tabulate
-    name = format["const uint declaration"] + "element_types[%d]" % len(elements)
-    value = format_block_begin
-    value += ", ".join(["%d" % element_type for element_type in types])
-    value += format_block_end
-    code += [(Indent.indent(name), value)] + [""]
-
-    # Declare dofs_per_element variable and tabulate
-    code += [(format["comment"]("Number of degrees of freedom per element"))]
-    name = format["const uint declaration"] + "dofs_per_element[%d]" % len(elements)
-    value = format_block_begin
-    value += ", ".join(["%d" % element.space_dimension() for element in elements])
-    value += format_block_end
-    code += [(Indent.indent(name), value)] + [""]
-
-
-    return (code, unique_elements)
-
-def dof_map(elements, Indent, format):
+def dof_map(sum_space_dim, Indent, format):
     """This function creates code to map a basis function to a local basis function.
     Example, the following mixed element:
 
@@ -789,8 +628,12 @@ def dof_map(elements, Indent, format):
     mapped to 2 (8-6) for the unique element."""
 
     # Use snippet from codesnippets.py    
-    code = [Indent.indent(format["comment"]("Map basis function to local basisfunction"))]
-    code += [Indent.indent(format["snippet dof map"] % len(elements))]
+#    code = [Indent.indent(format["comment"]("Map basis function to local basisfunction"))]
+#    code += [Indent.indent(format["snippet dof map"] % len(elements))]
+    if sum_space_dim == 0:
+        code = [(Indent.indent(format["const uint declaration"] + "dof"), "i")] + [""]
+    else:
+        code = [(Indent.indent(format["const uint declaration"] + "dof"), "i - %d" % (sum_space_dim))] + [""]
 
     return code
 
@@ -812,30 +655,6 @@ def tabulate_matrix(matrix, Indent, format):
     value += format["block end"]
 
     return value
-
-def analyse_element(element):
-
-    # Get coefficients from basis functions, computed by FIAT at compile time
-    coefficients = element.basis().coeffs
-
-    # Get shape of coefficients
-    shape_coeff = numpy.shape(coefficients)
-
-    # Scalar valued basis element [Lagrange, Discontinuous Lagrange, Crouzeix-Raviart]
-    if (len(shape_coeff) == 2):
-        num_components = 1
-        poly_dim = shape_coeff[1]
-
-    # Vector valued basis element [Raviart-Thomas, Brezzi-Douglas-Marini (BDM)]
-    elif (len(shape_coeff) == 3):
-        num_components = shape_coeff[1]
-        poly_dim = shape_coeff[2]
-
-    # ???
-    else:
-        raise RuntimeError(), "These coefficients have a strange shape!"
-
-    return (num_components, poly_dim)
 
 def eval_jacobi_batch_array(a, b, n, variables, format):
     """Implementation of FIAT function eval_jacobi_batch(a,b,n,xs) from jacobi.py"""

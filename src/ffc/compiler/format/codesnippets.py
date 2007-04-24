@@ -233,14 +233,7 @@ const double C1 = element_coordinates[1][1] + element_coordinates[2][1];
 
 // Get coordinates and map to the reference (FIAT) element
 double x = (J_01*C1 - J_11*C0 + 2.0*J_11*coordinates[0] - 2.0*J_01*coordinates[1]) / detJ;
-double y = (J_10*C0 - J_00*C1 - 2.0*J_10*coordinates[0] + 2.0*J_00*coordinates[1]) / detJ;
-
-// Debug code
-
-std::cout << "coordinates : " << coordinates[0] << " " << coordinates[1] << std::endl;
-std::cout << " mapped coordinates : " << x << " " << y << std::endl;
-
-"""
+double y = (J_10*C0 - J_00*C1 - 2.0*J_10*coordinates[0] + 2.0*J_00*coordinates[1]) / detJ;"""
 
 # Inverse affine map from physical cell to (FIAT) reference cell in 3D
 map_coordinates_3D = """\

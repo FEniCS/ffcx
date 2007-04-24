@@ -84,7 +84,7 @@ format = { "add": lambda v: " + ".join(v),
 # quadrature + evalutate_basis()
            "add equal": lambda i,j: "%s += %s;" % (i,j),
            "table declaration": "const static double ",
-           "loop": lambda i,j,k,l: "for (unsigned int %s = 0; %s < %d; %s++)"% (i, j, k, l),
+           "loop": lambda i,j: "for (unsigned int %s = 0; %s < %s; %s++)"% (i, i, j, i),
            "snippet evaluate_dof": lambda d : {2: evaluate_dof_2D, 3: evaluate_dof_3D}[d]}
 
 def write(generated_forms, prefix, options):
