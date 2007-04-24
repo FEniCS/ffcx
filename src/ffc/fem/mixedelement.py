@@ -74,12 +74,13 @@ class MixedElement:
     def mapping(self, i):
         """Return the type of mapping associated with the given
         component i of the element. """
-        if isinstance(i, Index):
-            return self.sub_element(0).mapping(0) # meg: Sudden fix.
-        mappings = []
-        for sub_element in self.__elements:
-            mappings += [sub_element.mapping(j) for j in range(sub_element.value_dimension(0))]
-        return mappings[i]
+        i = Index(i)
+        if i.type == i.FIXED:
+            (sub_element, offset) = self.offset(i)
+            return sub_element.mapping(Index(i.index - offset))
+        else:
+            # All the elements must have the same mapping:
+            return self.__elements[0].mapping(Index(0))
 
     def offset(self, component):
         """Given an absolute component (index), return the associated
@@ -88,7 +89,7 @@ class MixedElement:
         adjustment = 0
         for element in self.__elements:
             value_dim = element.value_dimension(0)
-            if (adjustment + value_dim) > component:
+            if (adjustment + value_dim) > component.index:
                 return (element, adjustment)
             else:
                 adjustment += value_dim

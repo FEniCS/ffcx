@@ -47,10 +47,10 @@ def tabulate_components(element, functiontype):
     for i in range(element.num_sub_elements()):
         sub_element = element.sub_element(i)
         if sub_element.value_rank() == 0:
-            sub_vector = vector[offset]
+            sub_vector = vector[Index(offset)]
             offset += 1
         elif sub_element.value_rank() == 1:
-            sub_vector = [vector[k] for k in range(offset, sub_element.value_dimension(0)+offset)]
+            sub_vector = [vector[Index(k)] for k in range(offset, sub_element.value_dimension(0)+offset)]
             offset += sub_element.value_dimension(0)
         else:
             raise RuntimeError, "Mixed elements can only be created from scalar or vector-valued elements."
