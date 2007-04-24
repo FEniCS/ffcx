@@ -105,6 +105,11 @@ class FiniteElement:
         "Return the type of mapping associated with the element"
         return self.__mapping
 
+    def offset(self, component):
+        """Given an absolute component (index), return the associated
+        subelement and offset of the component""" 
+        return (self, 0)
+
     def cell_dimension(self):
         "Return dimension of shape"
         return shape_to_dim[self.cell_shape()]

@@ -81,6 +81,19 @@ class MixedElement:
             mappings += [sub_element.mapping(j) for j in range(sub_element.value_dimension(0))]
         return mappings[i]
 
+    def offset(self, component):
+        """Given an absolute component (index), return the associated
+        subelement and relative position of the component""" 
+        # Does not yet work with nested mixed elements
+        adjustment = 0
+        for element in self.__elements:
+            value_dim = element.value_dimension(0)
+            if (adjustment + value_dim) > component:
+                return (element, adjustment)
+            else:
+                adjustment += value_dim
+        raise RuntimeError("Component does not match value dimension")
+    
     def cell_dimension(self):
         "Return dimension of shape"
         return pick_first([element.cell_dimension() for element in self.__elements])
