@@ -351,10 +351,10 @@ class BasisFunction(Element):
         if not rank == 1:
             raise FormError, (component, "Illegal component index, does not match rank.") 
 
-        (sub_element, offset) = self.element.offset(component)
-        i = Index(component - offset)
         if self.element.family() == "Mixed":
             # Do summation explicitely:
+            (sub_element, offset) = self.element.offset(component)
+            i = Index(component - offset)
             w = Form()
             for k in range(sub_element.value_dimension(0)):
                 q = Monomial(self)
@@ -366,7 +366,7 @@ class BasisFunction(Element):
             # Do summation implicitely.
             w = Monomial(self)
             j = Index();
-            w.transforms = [Transform(self.element, j, i, None, -1)] 
+            w.transforms = [Transform(self.element, j, Index(component), None, -1)] 
             w.basisfunctions[0].component = [j]    
             w.determinant = -1
         return w
