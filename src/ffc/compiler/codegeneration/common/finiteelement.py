@@ -40,8 +40,8 @@ def generate_finite_element(element, format):
     code["value_dimension"] = ["%d" % element.value_dimension(i) for i in range(max(element.value_rank(), 1))]
 
     # Generate code for evaluate_basis (FIXME: not implemented)
-    code["evaluate_basis"] = ["// Not implemented"]
-    #code["evaluate_basis"] = evaluate_basis(element, format)
+    #code["evaluate_basis"] = ["// Not implemented"]
+    code["evaluate_basis"] = evaluate_basis(element, format)
 
     # Generate code for evaluate_basis_derivatives (FIXME: not implemented)
     #code["evaluate_basis_derivatives"] = ["// Not implemented"]
