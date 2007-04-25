@@ -283,3 +283,59 @@ double z = coordinates[2];
 x = (2.0*d00*x + 2.0*d10*y + 2.0*d20*z - d00*C0 - d10*C1 - d20*C2) / detJ;
 y = (2.0*d01*x + 2.0*d11*y + 2.0*d21*z - d01*C0 - d11*C1 - d21*C2) / detJ;
 z = (2.0*d02*x + 2.0*d12*y + 2.0*d22*z - d02*C0 - d12*C1 - d22*C2) / detJ;"""
+
+# Snippet to generate combinations of derivatives of order n
+combinations_snippet = """\
+// Declare pointer to two dimensional array that holds combinations of derivatives and initialise
+unsigned int **%(combinations)s = new unsigned int *[%(num_derivatives)s];
+    
+for (unsigned int j = 0; j < %(num_derivatives)s; j++)
+{
+  %(combinations)s[j] = new unsigned int [%(n)s];
+  for (unsigned int k = 0; k < %(n)s; k++)
+    %(combinations)s[j][k] = 0;
+}
+    
+// Generate combinations of derivatives
+for (unsigned int row = 1; row < %(num_derivatives)s; row++)
+{
+  for (unsigned int num = 0; num < row; num++)
+  {
+    for (unsigned int col = 0; col < %(n)s; col++)
+    {
+      if (%(combinations)s[row][col] + 1 > %(shape-1)s)
+        %(combinations)s[row][col] = 0;
+      else
+      {
+        %(combinations)s[row][col] += 1;
+        break;
+      }
+    }
+  }
+}"""
+
+# Snippet to transform of derivatives of order n
+transform2D_snippet = """\
+// Compute inverse of Jacobian
+const double Jinv[2][2] =  {{J_11 / detJ, -J_01 / detJ}, {-J_10 / detJ, J_00 / detJ}};
+
+// Declare transformation matrix
+// Declare pointer to two dimensional array and initialise
+double **%(transform)s = new double *[%(num_derivatives)s];
+    
+for (unsigned int j = 0; j < %(num_derivatives)s; j++)
+{
+  %(transform)s[j] = new double [%(num_derivatives)s];
+  for (unsigned int k = 0; k < %(num_derivatives)s; k++)
+    %(transform)s[j][k] = 1;
+}
+
+// Construct transformation matrix
+for (unsigned int row = 0; row < %(num_derivatives)s; row++)
+{
+  for (unsigned int col = 0; col < %(num_derivatives)s; col++)
+  {
+    for (unsigned int k = 0; k < %(n)s; k++)
+      %(transform)s[row][col] *= %(Jinv)s[%(combinations)s[row][k]][%(combinations)s[col][k]];
+  }
+}"""
