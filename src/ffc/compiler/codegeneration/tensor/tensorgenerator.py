@@ -200,6 +200,11 @@ class TensorGenerator(CodeGenerator):
         if sum: sum = format["grouping"](sum)
         if sum: f1 = [sum]
         else: f1 = []
-    
+
+        if G.determinant:
+            d0 = format["power"](format["determinant"], G.determinant)
+            d = format["multiply"]([format["scale factor"], d0])
+        else:
+            d = format["scale factor"]
         # Compute product of all factors
-        return format["multiply"]([f for f in [format["scale factor"]] + f0 + f1])
+        return format["multiply"]([f for f in [d] + f0 + f1])
