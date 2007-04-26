@@ -171,7 +171,7 @@ def generate_ufc(generated_forms, prefix, options):
         for j in range(form_data.num_exterior_facet_integrals):
             output += __generate_exterior_facet_integral(form_code[("exterior_facet_integral", j)], form_data, options, form_prefix, j)
             output += "\n"
-    
+
         # Generate code for ufc::interior_facet_integral
         for j in range(form_data.num_interior_facet_integrals):
             output += __generate_interior_facet_integral(form_code[("interior_facet_integral", j)], form_data, options, form_prefix, j)

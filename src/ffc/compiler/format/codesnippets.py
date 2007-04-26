@@ -1,7 +1,7 @@
 "Code snippets for code generation"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-02-28 -- 2007-04-18"
+__date__ = "2007-02-28 -- 2007-04-26"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -170,8 +170,8 @@ const double w3 = X[i][2];
 
 // Compute affine mapping x = F(X)
 coordinates[0] = w0*x[0][0] + w1*x[1][0] + w2*x[2][0] + w3*x[3][0];
-coordinates[0] = w0*x[0][1] + w1*x[1][1] + w2*x[2][1] + w3*x[3][1];
-coordinates[0] = w0*x[0][2] + w1*x[1][2] + w2*x[2][2] + w3*x[3][2];
+coordinates[1] = w0*x[0][1] + w1*x[1][1] + w2*x[2][1] + w3*x[3][1];
+coordinates[2] = w0*x[0][2] + w1*x[1][2] + w2*x[2][2] + w3*x[3][2];
 
 // Evaluate function at coordinates
 f.evaluate(values, coordinates, c);
