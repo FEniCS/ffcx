@@ -31,7 +31,6 @@ from ffc.fem.mixedfunctions import *
 # FFC language modules
 from language.algebra import *
 from language.reassignment import *
-from language.simplify import *
 
 # FFC analysis modules
 from analysis.checks import *
@@ -94,7 +93,7 @@ def compile_forms(forms, prefix="Form", representation=FFC_REPRESENTATION, outpu
         optimize_form_representation(form)
 
         # Compiler phase 4: generate form code
-        form_code = generate_form_code(form_data, form_representation, format.format)
+        form_code = generate_form_code(form_data, form_representation, representation, format.format)
 
         # Add to list of codes
         generated_forms += [(form_code, form_data)]
@@ -204,16 +203,12 @@ def optimize_form_representation(form):
 
     debug_end()
 
-def generate_form_code(form_data, form_representation, format):
+def generate_form_code(form_data, form_representation, representation, format):
     "Compiler phase 4: generate code"
     debug_begin("Compiler phase 4: Generating code")
 
     # Choose code generator
-#    CodeGenerator = __choose_code_generator(form_representation)
-    if isinstance(form_representation, TensorRepresentation):
-        CodeGenerator = TensorGenerator
-    else:
-        CodeGenerator = QuadratureGenerator
+    CodeGenerator = __choose_code_generator(representation)
 
     # Generate code
     code_generator = CodeGenerator()
