@@ -317,7 +317,36 @@ for (unsigned int row = 1; row < %(num_derivatives)s; row++)
 # Snippet to transform of derivatives of order n
 transform2D_snippet = """\
 // Compute inverse of Jacobian
-const double Jinv[2][2] =  {{J_11 / detJ, -J_01 / detJ}, {-J_10 / detJ, J_00 / detJ}};
+const double %(Jinv)s[2][2] =  {{J_11 / detJ, -J_01 / detJ}, {-J_10 / detJ, J_00 / detJ}};
+
+// Declare transformation matrix
+// Declare pointer to two dimensional array and initialise
+double **%(transform)s = new double *[%(num_derivatives)s];
+    
+for (unsigned int j = 0; j < %(num_derivatives)s; j++)
+{
+  %(transform)s[j] = new double [%(num_derivatives)s];
+  for (unsigned int k = 0; k < %(num_derivatives)s; k++)
+    %(transform)s[j][k] = 1;
+}
+
+// Construct transformation matrix
+for (unsigned int row = 0; row < %(num_derivatives)s; row++)
+{
+  for (unsigned int col = 0; col < %(num_derivatives)s; col++)
+  {
+    for (unsigned int k = 0; k < %(n)s; k++)
+      %(transform)s[row][col] *= %(Jinv)s[%(combinations)s[row][k]][%(combinations)s[col][k]];
+  }
+}"""
+
+transform3D_snippet = """\
+// Not correct
+// Compute inverse of Jacobian
+const double %(Jinv)s[3][3] =\
+{{J_11 / detJ, -J_01 / detJ, -J_01 / detJ},\
+ {-J_10 / detJ, J_00 / detJ, -J_01 / detJ},\
+ {-J_10 / detJ, J_00 / detJ, -J_01 / detJ}};
 
 // Declare transformation matrix
 // Declare pointer to two dimensional array and initialise

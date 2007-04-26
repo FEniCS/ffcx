@@ -56,7 +56,7 @@ def tabulate_matrix(matrix, Indent, format):
 
     # Check input
     if not len(numpy.shape(matrix)) == 2:
-        raise runtimeError, "This is not a matrix."
+        raise RuntimeError, "This is not a matrix."
 
     # Prefetch formats to speed up code generation
     format_block          = format["block"]

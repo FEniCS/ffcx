@@ -107,28 +107,38 @@ def generate_map(element, Indent, format):
     format_comment      = format["comment"]
     format_floating_point = format["floating point"]
 
-    # Code snippets reproduced from FIAT: expansions.py: eta_triangle(xi) & eta_tetrahedron(xi)
-    eta_triangle = [Indent.indent(format["snippet eta_triangle"]) %(format_floating_point(FFC_EPSILON))]
-
-    eta_tetrahedron = [Indent.indent(format["snippet eta_tetrahedron"]) %(format_floating_point(FFC_EPSILON),\
-                       format_floating_point(FFC_EPSILON))]
-
-    # Dictionaries
-    reference = {2:"square", 3:"cube"}
-    mappings = {2:eta_triangle, 3:eta_tetrahedron}
-
     # Get coordinates and map to the reference (FIAT) element from codesnippets.py
     code += [Indent.indent(format["coordinate map"](element.cell_shape()))] + [""]
 
-    # Debug code
-#    code += [Indent.indent("""// Debug code
-#            std::cout << "coordinates : " << coordinates[0] << " " << coordinates[1] << std::endl;
-#            std::cout << " mapped coordinates : " << x << " " << y << std::endl;""")]
+    if (element.cell_shape() == 2):
 
-    # Map coordinates to the reference square/cube
-    code += [Indent.indent(format_comment("Map coordinates to the reference %s") % (reference[element.cell_shape()]))]
-    code += mappings[element.cell_shape()]
+        # Debug code
+#        code += [Indent.indent("""// Debug code
+#                 std::cout << "coordinates : " << coordinates[0] << " " << coordinates[1] << std::endl;
+#                 std::cout << " mapped coordinates : " << x << " " << y << std::endl;""")]
 
+        # Map coordinates to the reference square
+        code += [Indent.indent(format_comment("Map coordinates to the reference square"))]
+ 
+        # Code snippet reproduced from FIAT: expansions.py: eta_triangle(xi) & eta_tetrahedron(xi)
+        code += [Indent.indent(format["snippet eta_triangle"]) %(format_floating_point(FFC_EPSILON))]
+
+    elif (element.cell_shape() == 3):
+
+        # Debug code
+#        code += [Indent.indent("""// Debug code
+#        std::cout << "coordinates : " << coordinates[0] << " " << coordinates[1] << " " << coordinates[2] << std::endl;
+#        std::cout << " mapped coordinates : " << x << " " << y << " " << z << std::endl;""")]
+
+        # Map coordinates to the reference cube
+        code += [Indent.indent(format_comment("Map coordinates to the reference cube"))]
+
+        # Code snippet reproduced from FIAT: expansions.py: eta_triangle(xi) & eta_tetrahedron(xi)
+        code += [Indent.indent(format["snippet eta_tetrahedron"]) %(format_floating_point(FFC_EPSILON),\
+                       format_floating_point(FFC_EPSILON))]
+    else:
+        raise RuntimeError, "Cannot generate map for shape: %d" %(element.cell_shape())
+ 
     return code + [""]
 
 def reset_values(num_components, vector, Indent, format):
@@ -140,10 +150,10 @@ def reset_values(num_components, vector, Indent, format):
         # Reset values as it is a pointer
         code += [Indent.indent(format["comment"]("Reset values"))]
         code += [(Indent.indent(format["argument values"] + format["array access"](i)),\
-                                format["zero double"]) for i in range(num_components)]
+                                format["floating point"](0.0)) for i in range(num_components)]
     else:
         code += [Indent.indent(format["comment"]("Reset values"))]
-        code += [(Indent.indent(format["pointer"] + format["argument values"]), format["zero double"])]
+        code += [(Indent.indent(format["pointer"] + format["argument values"]), format["floating point"](0.0))]
 
     return code + [""]
 
@@ -229,6 +239,9 @@ def generate_element_code(element, value_num, vector, Indent, format):
     # Tabulate coefficients
     code += tabulate_coefficients(element, Indent, format)
 
+    # Extract relevant coefficients
+    code += relevant_coefficients(element, Indent, format)
+
     # Compute the value of the basisfunction as the dot product of the coefficients
     # and basisvalues
     code += compute_values(element, value_num, vector, Indent, format)
@@ -252,7 +265,7 @@ def generate_basisvalues(element, Indent, format):
         code += compute_psitilde_b(element, Indent, format)
         code += compute_psitilde_c(element, Indent, format)
     else:
-        raise RuntimeError(), "Cannot compute auxilliary functions for shape: %d" %(element.cell_shape())
+        raise RuntimeError, "Cannot compute auxilliary functions for shape: %d" %(element.cell_shape())
 
     # Compute the basisvalues
     code += compute_basisvalues(element, Indent, format)
@@ -271,9 +284,6 @@ def tabulate_coefficients(element, Indent, format):
     format_coefficients       = format["coefficients table"]
     format_matrix_access      = format["matrix access"]
     format_const_float        = format["const float declaration"]
-    format_coeff              = format["coefficient scalar"]
-    format_secondary_index    = format["secondary index"]
-    format_local_dof          = format["local dof"]
 
     # Get coefficients from basis functions, computed by FIAT at compile time
     coefficients = element.basis().coeffs
@@ -287,7 +297,7 @@ def tabulate_coefficients(element, Indent, format):
         coefficients = numpy.transpose(coefficients, [1,0,2])
 
     else:
-        raise RuntimeError(), "Tensor elements not supported!"
+        raise RuntimeError, "Tensor elements not supported!"
 
     # Get number of components, must change for tensor valued elements
     num_components = element.value_dimension(0)
@@ -312,6 +322,28 @@ def tabulate_coefficients(element, Indent, format):
 
         # Generate array of values
         code += [(Indent.indent(name), Indent.indent(value))] + [""]
+
+    return code
+
+def relevant_coefficients(element, Indent, format):
+    "Declare relevant coefficients as const floats"
+
+    code = []
+
+    # Prefetch formats to speed up code generation
+    format_comment            = format["comment"]
+    format_const_float        = format["const float declaration"]
+    format_coeff              = format["coefficient scalar"]
+    format_secondary_index    = format["secondary index"]
+    format_coefficients       = format["coefficients table"]
+    format_matrix_access      = format["matrix access"]
+    format_local_dof          = format["local dof"]
+
+    # Get number of components, must change for tensor valued elements
+    num_components = element.value_dimension(0)
+
+    # Get polynomial dimension of basis
+    poly_dim = len(element.basis().base.bs)
 
     # Extract relevant coefficients and declare as floats
     code += [Indent.indent(format_comment("Extract relevant coefficients"))]
@@ -400,7 +432,7 @@ def compute_scaling(element, Indent, format):
                    format_grouping(format_subtract(["0.5", format_multiply(["0.5", format_z])]))]
 #        factors = ["(0.5 - 0.5 * y)", "(0.5 - 0.5 * z)"]
     else:
-        raise RuntimeError(), "Cannot compute scaling for shape: %d" %(elemet_shape)
+        raise RuntimeError, "Cannot compute scaling for shape: %d" %(elemet_shape)
 
     code += [Indent.indent(format["comment"]("Generate scalings"))]
 
@@ -408,7 +440,7 @@ def compute_scaling(element, Indent, format):
     for i in range(len(scalings)):
 
       name = format_const_float + format_scalings(scalings[i], 0)
-      value = "1.0"
+      value = format["floating point"](1.0)
       code += [(Indent.indent(name), value)]
 
       for j in range(1, degree+1):
@@ -600,7 +632,7 @@ def compute_basisvalues(element, Indent, format):
                 code += [(Indent.indent(name), value)]
                 count += 1
         if (count != poly_dim):
-            raise RuntimeError(), "The number of basis values must be the same as the polynomium dimension of the base"
+            raise RuntimeError, "The number of basis values must be the same as the polynomium dimension of the base"
 
     # 3D
     elif (element_shape == 3):
@@ -631,9 +663,9 @@ def compute_basisvalues(element, Indent, format):
                     code += [(Indent.indent(name), value)]
                     count += 1
         if (count != poly_dim):
-            raise RuntimeError(), "The number of basis values must be the same as the polynomium dimension of the base"
+            raise RuntimeError, "The number of basis values must be the same as the polynomium dimension of the base"
     else:
-        raise RuntimeError(), "Cannot compute basis values for shape: %d" % elemet_shape
+        raise RuntimeError, "Cannot compute basis values for shape: %d" % elemet_shape
 
     # Debug basis
 #    code += ["std::cout" + "".join([" << basisvalue%d << " % i + '" "' for i in range(poly_dim)]) + " << std::endl;"]
@@ -677,7 +709,7 @@ def eval_jacobi_batch_scalar(a, b, n, variables, format):
     coord = variables[0]
 
     if n == 0:
-        return "1.0"
+        return format["floating point"](1.0)
     if n == 1:
         # Results for entry 1, of type (a + b * coordinate) (coordinate = x, y or z)
         res0 = 0.5 * (a - b)

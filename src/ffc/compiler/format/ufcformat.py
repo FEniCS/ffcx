@@ -76,9 +76,6 @@ format = { "add": lambda v: " + ".join(v),
 # program flow
            "dof map if": lambda i,j: "if (%d <= %s and %s <= %d)" %(i,\
                          format["argument basis num"], format["argument basis num"], j),
-#           "switch": lambda i: "switch ( %s )" % (i),
-#           "case": lambda i: "case %d:" % (i),
-#           "break": "break;",
            "loop": lambda i,j,k: "for (unsigned int %s = %s; %s < %s; %s++)"% (i, j, i, k, i),
 # operators
            "times equal": lambda i,j: "%s *= %s;" %(i,j),
@@ -94,6 +91,7 @@ format = { "add": lambda v: " + ".join(v),
            "argument coordinates": "coordinates",
            "argument values": "values",
            "argument basis num": "i",
+           "argument derivative order": "n",
            "local dof": "dof",
            "x coordinate": "x",
            "y coordinate": "y",
@@ -105,6 +103,11 @@ format = { "add": lambda v: " + ".join(v),
            "psitilde_bs": lambda i: "psitilde_bs_%d" %(i),
            "psitilde_cs": lambda i,j: "psitilde_cs_%d%d" %(i,j),
            "basisvalue": lambda i: "basisvalue%d" %(i),
+           "num derivatives": "num_derivatives",
+           "reference derivatives": "derivatives",
+           "derivative combinations": "combinations",
+           "transform matrix": "transform",
+           "transform Jinv": "Jinv",
 # snippets
            "coordinate map": lambda i: {2:map_coordinates_2D, 3:map_coordinates_3D}[i],
            "snippet dof map": evaluate_basis_dof_map,
@@ -112,12 +115,14 @@ format = { "add": lambda v: " + ".join(v),
            "snippet eta_tetrahedron": eta_tetrahedron_snippet,
            "snippet combinations": combinations_snippet,
            "snippet transform2D": transform2D_snippet,
+           "snippet transform3D": transform2D_snippet,
            "snippet evaluate_dof": lambda d : {2: evaluate_dof_2D, 3: evaluate_dof_3D}[d],
 # misc
            "block separator": ",\n",
            "new line": "\\\n",
            "pointer": "*",
-           "zero double": "0.0"}
+           "new": "new ",
+           "delete": "delete "}
 
 def write(generated_forms, prefix, options):
     "Generate UFC 1.0 code for a given list of pregenerated forms"

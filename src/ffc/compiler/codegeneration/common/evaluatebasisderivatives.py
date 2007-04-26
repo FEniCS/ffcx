@@ -17,6 +17,9 @@ from ffc.fem.mixedelement import *
 # FFC code generation common modules
 import evaluatebasis
 
+# FFC code generation common modules
+from utils import *
+
 # Python modules
 import math
 import numpy
@@ -50,16 +53,143 @@ def evaluate_basis_derivatives(element, format):
     # Get coordinates and generate map
     code += evaluatebasis.generate_map(element, Indent, format)
 
+    # Compute number of derivatives that has to be computed, and declare an array to hold
+    # the values of the derivatives on the reference element
+    code += compute_num_derivatives(element, Indent, format)
+
+    # Generate all possible combinations of derivatives
+    code += generate_combinations(element, Indent, format)
+
+    # Reset all values
+    code += reset_values(element, Indent, format)
+
     # Check if we have just one element
     if (element.num_sub_elements() == 1):
+
+        # Map degree of freedom to local degree of freedom for current element
         code += evaluatebasis.dof_map(0, Indent, format)
+
         code += generate_element_code(element, 0, False, Indent, format)
 
     # If the element is vector valued or mixed
     else:
-        code += generate_cases(element, Indent, format)
+
+        code += mixed_elements(element, Indent, format)
 
     return code
+
+def compute_num_derivatives(element, Indent, format):
+    """Computes the number of derivatives of order 'n' as: element.cell_shape()^n. Also
+    declares a pointer to an array that holds the derivatives on the reference (FIAT) element."""
+
+    code = []
+
+    format_comment            = format["comment"]
+    format_num_derivatives    = format["num derivatives"]
+    format_float_declaration  = format["float declaration"]
+
+    code += [format_comment("Compute number of derivatives")]
+
+    code += [(Indent.indent(format["uint declaration"] + format_num_derivatives), "1")] + [""]
+
+    # Loop order (n) to compute shape^n, std::pow doesn't work with (int, int) ambiguous call??
+    code += [Indent.indent(format["loop"]("j", 0, format["argument derivative order"]))]
+
+    # Increase indentation
+    Indent.increase()
+
+    code += [Indent.indent(format["times equal"](format_num_derivatives, element.cell_shape()))] + [""]
+
+    # Decrease indentation
+    Indent.decrease()
+
+    # Declare pointer to array that holds derivatives on the FIAT element
+    code += [format_comment("Declare pointer to array of derivatives on FIAT element")]
+
+    code += [(Indent.indent(format_float_declaration + format["pointer"] + format["reference derivatives"]),\
+              format["new"] + format_float_declaration + format["array access"](format_num_derivatives))]
+
+    # Debug code
+    code += [format["comment"]("Debug code")]
+    code += [Indent.indent('std::cout << "number of derivatives = " << num_derivatives << std::endl;')]
+
+    return code + [""]
+
+def generate_combinations(element, Indent, format):
+    "Generate all possible combinations of derivatives of order 'n'"
+
+    code = []
+
+    shape = element.cell_shape() - 1
+
+    # Use code from codesnippets.py
+    code += [Indent.indent(format["snippet combinations"])\
+            % {"combinations": format["derivative combinations"], "shape-1": shape,\
+               "num_derivatives" : format["num derivatives"], "n": format["argument derivative order"]}]
+
+    # Debug code
+    code += debug_combinations(element, Indent, format)
+    
+    return code + [""]
+
+def generate_transform(element, Indent, format):
+    """Generate the transformation matrix, whic is used to transform derivatives from reference
+    element back to the physical element."""
+
+    code = []
+
+    # Generate code to construct the inverse of the Jacobian
+    transform = "transform"
+    num_derivatives = "num_derivatives"
+    n = "n"
+    combinations = "combinations"
+    Jinv = "Jinv"
+
+    if (element.cell_shape() == 2):
+
+        # Use code from codesnippets.py
+        code += [Indent.indent(format["snippet transform2D"])\
+        % {"transform": format["transform matrix"], "num_derivatives" : format["num derivatives"],\
+           "n": format["argument derivative order"], "combinations": format["derivative combinations"],\
+           "Jinv":format["transform Jinv"]}]
+
+    elif (element.cell_shape() == 3):
+        code += [Indent.indent(format["snippet transform3D"])\
+        % {"transform": format["transform matrix"], "num_derivatives" : format["num derivatives"],\
+           "n": format["argument derivative order"], "combinations": format["derivative combinations"],\
+           "Jinv":format["transform Jinv"]}]
+    else:
+        raise RuntimeError, "Cannot generate transform for shape: %d" %(element.cell_shape())
+
+    # Debug code
+    code += debug_transform(element, Indent, format)
+
+    return code + [""]
+
+def reset_values(element, Indent, format):
+    "Reset all components of the 'values' array as it is a pointer to an array."
+
+    code = []
+
+    code += [Indent.indent(format["comment"]("Reset values"))]
+
+    # Get number of components, change for tensor valued elements
+    num_components = element.value_dimension(0)
+
+    # Loop all values and set them equal to zero
+    num_values = format["multiply"](["%d" %num_components, format["num derivatives"]])
+    code += [Indent.indent(format["loop"]("j", 0, num_values))]
+
+    # Increase indentation
+    Indent.increase()
+
+    # Reset values as it is a pointer
+    code += [(Indent.indent(format["argument values"] + format["array access"]("j")),format["floating point"](0.0))]
+
+    # Decrease indentation
+    Indent.decrease()
+
+    return code + [""]
 
 def generate_element_code(element, value_num, vector, Indent, format):
     "Generate code for each basis element"
@@ -67,7 +197,7 @@ def generate_element_code(element, value_num, vector, Indent, format):
     code = []
 
     # Compute basisvalues, from evaluatebasis.py
-    code += compute_basisvalues(element, Indent, format)
+    code += evaluatebasis.generate_basisvalues(element, Indent, format)
 
     # Tabulate coefficients
     code += evaluatebasis.tabulate_coefficients(element, Indent, format)
@@ -98,42 +228,25 @@ def generate_element_code(element, value_num, vector, Indent, format):
 
     return code
 
-def generate_cases(element, Indent, format):
-    "Generate cases in the event of vector valued elements or mixed elements"
+def mixed_elements(element, Indent, format):
+    "Generate code for each sub-element in the event of vector valued elements or mixed elements"
 
     code = []
 
     # Prefetch formats to speed up code generation
     format_block_begin = format["block begin"]
     format_block_end = format["block end"]
+    format_dof_map_if = format["dof map if"]
 
     # Extract basis elements, and determine number of elements
     elements = evaluatebasis.extract_elements(element)
     num_elements = len(elements)
 
-    # Loop all elements
-    code += [Indent.indent(format["loop"]("element", 0, num_elements))]
-
-    code += [Indent.indent(format["comment"]("Switch for each of the basis elements"))]
-    code += [Indent.indent(format_block_begin)]
-    # Increase indentation
-    Indent.increase()
-
-    # Generate switch
-    code += [Indent.indent(format["switch"]("element"))]
-    code += [Indent.indent(format_block_begin)]
-    # Increase indentation
-    Indent.increase()
-
     sum_value_num = 0
     sum_space_dim = 0
 
-    # Generate cases
+    # Generate code for each element
     for i in range(num_elements):
-        code += [Indent.indent(format["case"](i))]
-        code += [Indent.indent(format_block_begin)]
-        # Increase indentation
-        Indent.increase()
 
         # Get sub element
         basis_element = elements[i]
@@ -144,13 +257,12 @@ def generate_cases(element, Indent, format):
         space_dim = basis_element.space_dimension()
 
         # Determine if the element has a value, for the given dof
-# Not languge-independent
-        code += [Indent.indent("if (%d <= i and i <= %d)\n{" % (sum_space_dim, sum_space_dim + space_dim -1))]
+        code += [Indent.indent(format_dof_map_if(sum_space_dim, sum_space_dim + space_dim -1))]
+        code += [Indent.indent(format_block_begin)]
         # Increase indentation
         Indent.increase()
 
         # Generate map from global to local dof
-        code += [Indent.indent(format["comment"]("Compute local degree of freedom"))]
         code += evaluatebasis.dof_map(sum_space_dim, Indent, format)
 
         # Generate code for basis element
@@ -158,60 +270,11 @@ def generate_cases(element, Indent, format):
 
         # Decrease indentation, finish block - end element code
         Indent.decrease()
-        code += [Indent.indent(format_block_end)]
-
-        # If the element does not have a value for the given dof, return 0.0
-# Not languge-independent
-        code += [Indent.indent("else\n{")]
-        # Increase indentation
-        Indent.increase()
-        # Reset values
-        code += evaluatebasis.reset_values(value_dimension, sum_value_num, True, Indent, format)
-        # Decrease indentation
-        Indent.decrease()
-        code += [Indent.indent(format_block_end)]
-
-        # End case
-        code += [Indent.indent(format["break"])]
-        # Decrease indentation
-        Indent.decrease()
-        code += [Indent.indent(format_block_end)]
+        code += [Indent.indent(format_block_end)] + [""]
 
         # Increase sum of value dimension, and space dimension
         sum_value_num += value_num
         sum_space_dim += space_dim
-
-    # Decrease indentation, end switch
-    Indent.decrease()
-    code += [Indent.indent(format_block_end)]
-
-    # Decrease indentation, end loop elements
-    Indent.decrease()
-    code += [Indent.indent(format_block_end)]
-
-    return code
-
-def compute_basisvalues(element, Indent, format):
-    "Code generation from evaluatebasis.py"
-
-    code = []
-
-    # Compute scaling of y and z 1/2(1-y)^n and 1/2(1-z)^n
-    code += evaluatebasis.compute_scaling(element, Indent, format)
-
-    # Compute auxilliary functions currently only 2D and 3D is supported
-    if (element.cell_shape() == 2):
-        code += evaluatebasis.compute_psitilde_a(element, Indent, format)
-        code += evaluatebasis.compute_psitilde_b(element, Indent, format)
-    elif (element.cell_shape() == 3):
-        code += evaluatebasis.compute_psitilde_a(element, Indent, format)
-        code += evaluatebasis.compute_psitilde_b(element, Indent, format)
-        code += evaluatebasis.compute_psitilde_c(element, Indent, format)
-    else:
-        raise RuntimeError(), "Cannot compute auxilliary functions for shape: %d" % element.cell_shape()
-
-    # Compute the basisvalues
-    code += evaluatebasis.compute_basisvalues(element, Indent, format)
 
     return code
 
@@ -390,7 +453,7 @@ def multiply_coeffs(element, Indent, format):
             Indent.decrease()
             code += [Indent.indent(format["block end"])]
     else:
-        raise RuntimeError(), "Not implemented for 3D"
+        raise RuntimeError, "Not implemented for 3D"
 
     return code + [""]
 
@@ -434,92 +497,58 @@ def transform_derivatives(element, Indent, format):
 
     return code
 
-def compute_num_derivatives(element, Indent, format):
+
+
+def delete_pointers(element, Indent, format):
 
     code = []
-    code += [format["comment"]("Compute number of derivatives")]
 
-    # Declare variable
-    name0 = "num_derivatives"
-    code += [(Indent.indent(format["uint declaration"] + name0), "1")] + [""]
+    # Delete pointers
+    code += [format["comment"]("Delete pointer to array of derivatives on FIAT element")]
+    code += [Indent.indent("delete [] derivatives;")] + [""]
 
-    # Loop order (n) to compute shape^n, std::pow doesn't work with (int, int) ambiguous call??
-    code += [Indent.indent(format["loop"]("j", 0, "n"))]
-    # Increase indentation
+    code += [format["comment"]("Delete pointer to array of combinations of derivatives")]
+    code += [Indent.indent("delete [] combinations;")] + [""]
+
+    return code + [""]
+
+
+
+def debug_combinations(element, Indent, format):
+
+    code = []
+
+    # Debug code
+    code += [Indent.indent('std::cout << "%s = " << std::endl;' % format["derivative combinations"])]
+    code += [Indent.indent(format["loop"]("j", 0, format["num derivatives"]))]
+    code += [Indent.indent(format["block begin"])]
+    # Increase indent
     Indent.increase()
+    code += [Indent.indent(format["loop"]("k", 0, format["argument derivative order"]))]
+    code += [Indent.indent(format["block begin"])]
+    # Increase indent
+    Indent.increase()
+    code += [Indent.indent('std::cout << %s << " ";') % (format["derivative combinations"] + "[j][k]")]
 
-    code += [Indent.indent(format["times equal"](name0, element.cell_shape()))] + [""]
-
-    # Decrease indentation
+    # Decrease indent
     Indent.decrease()
-
-    # Declare pointer to array that holds derivatives on the FIAT element
-    code += [format["comment"]("Declare pointer to array of derivatives on FIAT element")]
-
-    # Declare variable
-    name1 = "*derivatives"
-    code += [(Indent.indent(format["float declaration"] + name1),\
-              "new " + format["float declaration"] + "[%s]" %name0)] + [""]
-
-    # Debug code
-    code += [format["comment"]("Debug code")]
-    code += [Indent.indent('std::cout << "number of derivatives = " << num_derivatives << std::endl;')]
-
-    return code + [""]
-
-def generate_combinations(element, Indent, format):
-
-    code = []
-
-    name = "combinations"
-    num_derivatives = "num_derivatives"
-    n = "n"
-    shape = element.cell_shape() - 1
-
-    # Use code from codesnippets.py
-    code += [Indent.indent(format["snippet combinations"])\
-            % {"combinations": name, "num_derivatives" : num_derivatives, "shape-1": shape, "n":n}]
-
-    # Debug code
-#    code += [Indent.indent('std::cout << "%s = " << std::endl;' % name)]
-#    code += [Indent.indent(format["loop"]("j", 0, num_derivatives))]
-#    code += [Indent.indent(format["block begin"])]
-    # Increase indent
-#    Indent.increase()
-#    code += [Indent.indent(format["loop"]("k", 0, n))]
-#    code += [Indent.indent(format["block begin"])]
-    # Increase indent
-#    Indent.increase()
-#    code += [Indent.indent('std::cout << %s << " ";') % (name + "[j][k]")]
+    code += [Indent.indent(format["block end"])]
+    code += [Indent.indent("std::cout << std::endl;")]
 
     # Decrease indent
-#    Indent.decrease()
-#    code += [Indent.indent(format["block end"])]
-#    code += [Indent.indent("std::cout << std::endl;")]
+    Indent.decrease()
+    code += [Indent.indent(format["block end"])]
 
-    # Decrease indent
-#    Indent.decrease()
-#    code += [Indent.indent(format["block end"])]
-    
-    return code + [""]
+    return code
 
-def generate_transform(element, Indent, format):
+def debug_transform(element, Indent, format):
 
     code = []
-
-    # Generate code to construct the inverse of the Jacobian
-    transform = "transform"
-    num_derivatives = "num_derivatives"
-    n = "n"
-    combinations = "combinations"
-    Jinv = "Jinv"
 
     cell_shape = element.cell_shape()
-
-# not 3D ready yet!
-    # Use code from codesnippets.py
-    code += [Indent.indent(format["snippet transform2D"])\
-            % {"transform": transform, "num_derivatives" : num_derivatives, "n":n, "combinations":combinations, "Jinv":Jinv}]
+    num_derivatives = format["num derivatives"]
+    Jinv = format["transform Jinv"]
+    transform = format["transform matrix"]
 
     # Debug code
     code += [format["comment"]("Debug code")]
@@ -567,29 +596,6 @@ def generate_transform(element, Indent, format):
     Indent.decrease()
     code += [Indent.indent(format["block end"])]
 
-    return code + [""]
-
-def delete_pointers(element, Indent, format):
-
-    code = []
-
-    # Delete pointers
-    code += [format["comment"]("Delete pointer to array of derivatives on FIAT element")]
-    code += [Indent.indent("delete [] derivatives;")] + [""]
-
-    code += [format["comment"]("Delete pointer to array of combinations of derivatives")]
-    code += [Indent.indent("delete [] combinations;")] + [""]
-
-
-
-    return code + [""]
-
-
-
-
-
-
-
-
+    return code
 
 
