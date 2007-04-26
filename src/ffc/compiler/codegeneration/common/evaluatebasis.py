@@ -192,7 +192,7 @@ def mixed_elements(element, Indent, format):
     elements = extract_elements(element)
     num_elements = len(elements)
 
-    sum_value_num = 0
+    sum_value_dim = 0
     sum_space_dim = 0
 
     # Generate code for each element
@@ -202,8 +202,7 @@ def mixed_elements(element, Indent, format):
         basis_element = elements[i]
 
         # FIXME: This must most likely change for tensor valued elements
-        value_dimension = basis_element.value_dimension(0)
-        value_num = basis_element.value_dimension(0)
+        value_dim = basis_element.value_dimension(0)
         space_dim = basis_element.space_dimension()
 
         # Determine if the element has a value, for the given dof
@@ -216,19 +215,19 @@ def mixed_elements(element, Indent, format):
         code += dof_map(sum_space_dim, Indent, format)
 
         # Generate code for basis element
-        code += generate_element_code(basis_element, sum_value_num, True, Indent, format)
+        code += generate_element_code(basis_element, sum_value_dim, True, Indent, format)
 
         # Decrease indentation, finish block - end element code
         Indent.decrease()
         code += [Indent.indent(format_block_end)] + [""]
 
         # Increase sum of value dimension, and space dimension
-        sum_value_num += value_num
+        sum_value_dim += value_dim
         sum_space_dim += space_dim
 
     return code
 
-def generate_element_code(element, value_num, vector, Indent, format):
+def generate_element_code(element, sum_value_dim, vector, Indent, format):
     "Generate code for a single basis element"
 
     code = []
@@ -244,7 +243,7 @@ def generate_element_code(element, value_num, vector, Indent, format):
 
     # Compute the value of the basisfunction as the dot product of the coefficients
     # and basisvalues
-    code += compute_values(element, value_num, vector, Indent, format)
+    code += compute_values(element, sum_value_dim, vector, Indent, format)
 
     return code
 
@@ -356,7 +355,7 @@ def relevant_coefficients(element, Indent, format):
 
     return code + [""]
 
-def compute_values(element, value_num, vector, Indent, format):
+def compute_values(element, sum_value_dim, vector, Indent, format):
     """This function computes the value of the basisfunction as the dot product of the
     coefficients and basisvalues """
 
@@ -384,7 +383,7 @@ def compute_values(element, value_num, vector, Indent, format):
 
         # Loop number of components
         for i in range(num_components):
-            name = format_values + format_array_access(i+value_num)
+            name = format_values + format_array_access(i + sum_value_dim)
             value = format_add([format_multiply([format_coefficients(i) + format_secondary_index(j),\
                     format_basisvalue(j)]) for j in range(poly_dim)])
 
