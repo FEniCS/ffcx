@@ -13,9 +13,9 @@ from ffc.common.debug import *
 from ffc.common.exceptions import *
 
 # FFC compiler.language modules
-from index import *
-from algebra import *
-from tokens import *
+from ffc.compiler.language.index import *
+from ffc.compiler.language.algebra import *
+from ffc.compiler.language.tokens import *
 
 def simplify(form):
     """ Simplification of a Form f with respect to transforms and
@@ -27,10 +27,8 @@ def simplify(form):
     if not isinstance(form, Form):
         raise FormError, "I only know how to simplify a Form!"
 
-    modified = Form(form)
-
     # We aim to simplify each monomial on its own:
-    for monomial in modified.monomials:
+    for monomial in form.monomials:
 
         # Then we run thorough the basis functions in this monomial and
         # check for simplifications:
@@ -68,5 +66,3 @@ def simplify(form):
                     basis.derivatives[i] = Derivative(derivative.element, second.index0)
                     monomial.transforms.remove(first) 
                     monomial.transforms.remove(second)
-
-    return modified
