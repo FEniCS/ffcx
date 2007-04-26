@@ -30,12 +30,9 @@ from ffc.fem.mixedfunctions import *
 
 # FFC language modules
 from language.algebra import *
-from language.reassignment import *
 
 # FFC analysis modules
-from analysis.checks import *
-from analysis.formdata import *
-from analysis.elementdata import *
+from analysis.analyze import *
 
 # FFC form representation modules
 from representation.tensor import *
@@ -160,25 +157,9 @@ def analyze_form(form):
     "Compiler phase 1: analyze form"
     debug_begin("Phase 1: Analyzing form")
 
-    # Check validity of form
-    check_form(form)
+    # Analyze form and extract form data
+    form_data = analyze(form)
 
-    # Reassign form indices
-    reassign_indices(form)
-
-    # Check validity of form again
-    check_form(form)
-
-    # Extract form data
-    form_data = FormData(form)
-
-    # Print a short summary
-    debug("")
-    debug("Rank of form: %d" % form_data.rank)
-    debug("Coefficients: %d" % form_data.num_coefficients)
-    debug("Arguments:    %d" % form_data.num_arguments)
-    debug("Terms:        %d" % form_data.num_terms)
-    
     debug_end()
     return form_data
 
