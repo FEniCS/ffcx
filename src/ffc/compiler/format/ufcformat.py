@@ -62,33 +62,72 @@ format = { "add": lambda v: " + ".join(v),
            "offset declaration": "unsigned int offset",
            "offset access": "offset",
            "cell shape": lambda i: {1: "ufc::line", 2: "ufc::triangle", 3: "ufc::tetrahedron"}[i],
-# quadrature
+# quadrature, evalutate_basis(), evaluate_basis_derivatives()
+# declarations
            "float declaration": "double ",
            "const float declaration": "const double ",
+           "uint declaration": "unsigned int ",
+           "const uint declaration": "const unsigned int ",
+           "table declaration": "const static double ",
+# access
+           "array access": lambda i: "[%s]" %(i),
+           "matrix access": lambda i,j: "[%s][%s]" %(i,j),
+           "secondary index": lambda i: "_%d" %(i),
+# program flow
+           "dof map if": lambda i,j: "if (%d <= %s and %s <= %d)" %(i,\
+                         format["argument basis num"], format["argument basis num"], j),
+           "loop": lambda i,j,k: "for (unsigned int %s = %s; %s < %s; %s++)"% (i, j, i, k, i),
+           "if": "if",
+# operators
+           "times equal": lambda i,j: "%s *= %s;" %(i,j),
+           "add equal": lambda i,j: "%s += %s;" % (i,j),
+           "is equal": " == ",
+           "absolute value": lambda i: "std::abs(%s)" % (i),
+# variable names
            "element tensor quad": lambda k: "A[%s]" % k,
            "derivatives": lambda i,j,k,l: "dNdx%d_%d[%s][%s]" % (i,j,k,l),
-           "coordinates": lambda i,j: "x[%s][%s]" % (i,j),
-           "absolute value": lambda i: "std::abs(%s)" % (i),
+           "element coordinates": lambda i,j: "x[%s][%s]" % (i,j),
            "weights": lambda i,j: "Weight%d[%s]" % (i,j),
            "psis": lambda l: "Psi%d_%d_%d_%s[%s][%s]" % (l[0],l[1],l[2],\
                              "".join(["%d" % index for index in l[3]]), l[4], l[5]),
-# evalutate_basis() + evaluate_basis_derivatives()
-           "coordinate access": lambda i: "coordinates[%d]" % (i,),
+           "argument coordinates": "coordinates",
+           "argument values": "values",
+           "argument basis num": "i",
+           "argument derivative order": "n",
+           "local dof": "dof",
+           "x coordinate": "x",
+           "y coordinate": "y",
+           "z coordinate": "z",
+           "scalings": lambda i,j: "scalings_%s_%d" %(i,j),
+           "coefficients table": lambda i: "coefficients%d" %(i),
+           "dmats table": lambda i: "dmats%d" %(i),
+           "coefficient scalar": lambda i: "coeff%d" %(i),
+           "new coefficient scalar": lambda i: "new_coeff%d" %(i),
+           "psitilde_a": "psitilde_a",
+           "psitilde_bs": lambda i: "psitilde_bs_%d" %(i),
+           "psitilde_cs": lambda i,j: "psitilde_cs_%d%d" %(i,j),
+           "basisvalue": lambda i: "basisvalue%d" %(i),
+           "num derivatives": "num_derivatives",
+           "reference derivatives": "derivatives",
+           "derivative combinations": "combinations",
+           "transform matrix": "transform",
+           "transform Jinv": "Jinv",
+# snippets
            "coordinate map": lambda i: {2:map_coordinates_2D, 3:map_coordinates_3D}[i],
-           "absolute value": lambda i: "std::abs(%s)" % (i,),
-           "switch": lambda i: "switch ( %s )" % (i,),
-           "case": lambda i: "case %d:" % (i,),
-           "break": "break;",
-           "uint declaration": "unsigned int ",
-           "const uint declaration": "const static unsigned int ",
            "snippet dof map": evaluate_basis_dof_map,
            "snippet eta_triangle": eta_triangle_snippet,
            "snippet eta_tetrahedron": eta_tetrahedron_snippet,
-# quadrature + evalutate_basis()
-           "add equal": lambda i,j: "%s += %s;" % (i,j),
-           "table declaration": "const static double ",
-           "loop": lambda i,j: "for (unsigned int %s = 0; %s < %s; %s++)"% (i, i, j, i),
-           "snippet evaluate_dof": lambda d : {2: evaluate_dof_2D, 3: evaluate_dof_3D}[d]}
+           "snippet combinations": combinations_snippet,
+           "snippet transform2D": transform2D_snippet,
+           "snippet transform3D": transform3D_snippet,
+           "snippet evaluate_dof": lambda d : {2: evaluate_dof_2D, 3: evaluate_dof_3D}[d],
+# misc
+           "block separator": ",\n",
+           "new line": "\\\n",
+           "end line": ";",
+           "pointer": "*",
+           "new": "new ",
+           "delete": "delete "}
 
 def write(generated_forms, prefix, options):
     "Generate UFC 1.0 code for a given list of pregenerated forms"
@@ -171,7 +210,7 @@ def generate_ufc(generated_forms, prefix, options):
         for j in range(form_data.num_exterior_facet_integrals):
             output += __generate_exterior_facet_integral(form_code[("exterior_facet_integral", j)], form_data, options, form_prefix, j)
             output += "\n"
-
+    
         # Generate code for ufc::interior_facet_integral
         for j in range(form_data.num_interior_facet_integrals):
             output += __generate_interior_facet_integral(form_code[("interior_facet_integral", j)], form_data, options, form_prefix, j)

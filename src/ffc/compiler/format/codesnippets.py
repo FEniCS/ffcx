@@ -1,7 +1,7 @@
 "Code snippets for code generation"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-02-28 -- 2007-04-26"
+__date__ = "2007-02-28 -- 2007-04-18"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -170,8 +170,8 @@ const double w3 = X[i][2];
 
 // Compute affine mapping x = F(X)
 coordinates[0] = w0*x[0][0] + w1*x[1][0] + w2*x[2][0] + w3*x[3][0];
-coordinates[1] = w0*x[0][1] + w1*x[1][1] + w2*x[2][1] + w3*x[3][1];
-coordinates[2] = w0*x[0][2] + w1*x[1][2] + w2*x[2][2] + w3*x[3][2];
+coordinates[0] = w0*x[0][1] + w1*x[1][1] + w2*x[2][1] + w3*x[3][1];
+coordinates[0] = w0*x[0][2] + w1*x[1][2] + w2*x[2][2] + w3*x[3][2];
 
 // Evaluate function at coordinates
 f.evaluate(values, coordinates, c);
@@ -283,3 +283,87 @@ double z = coordinates[2];
 x = (2.0*d00*x + 2.0*d10*y + 2.0*d20*z - d00*C0 - d10*C1 - d20*C2) / detJ;
 y = (2.0*d01*x + 2.0*d11*y + 2.0*d21*z - d01*C0 - d11*C1 - d21*C2) / detJ;
 z = (2.0*d02*x + 2.0*d12*y + 2.0*d22*z - d02*C0 - d12*C1 - d22*C2) / detJ;"""
+
+# Snippet to generate combinations of derivatives of order n
+combinations_snippet = """\
+// Declare pointer to two dimensional array that holds combinations of derivatives and initialise
+unsigned int **%(combinations)s = new unsigned int *[%(num_derivatives)s];
+    
+for (unsigned int j = 0; j < %(num_derivatives)s; j++)
+{
+  %(combinations)s[j] = new unsigned int [%(n)s];
+  for (unsigned int k = 0; k < %(n)s; k++)
+    %(combinations)s[j][k] = 0;
+}
+    
+// Generate combinations of derivatives
+for (unsigned int row = 1; row < %(num_derivatives)s; row++)
+{
+  for (unsigned int num = 0; num < row; num++)
+  {
+    for (unsigned int col = 0; col < %(n)s; col++)
+    {
+      if (%(combinations)s[row][col] + 1 > %(shape-1)s)
+        %(combinations)s[row][col] = 0;
+      else
+      {
+        %(combinations)s[row][col] += 1;
+        break;
+      }
+    }
+  }
+}"""
+
+# Snippet to transform of derivatives of order n
+transform2D_snippet = """\
+// Compute inverse of Jacobian, components are scaled because of difference in FFC/FIAT reference elements
+const double %(Jinv)s[2][2] =  {{2*J_11 / detJ, -2*J_01 / detJ}, {-2*J_10 / detJ, 2*J_00 / detJ}};
+
+// Declare transformation matrix
+// Declare pointer to two dimensional array and initialise
+double **%(transform)s = new double *[%(num_derivatives)s];
+    
+for (unsigned int j = 0; j < %(num_derivatives)s; j++)
+{
+  %(transform)s[j] = new double [%(num_derivatives)s];
+  for (unsigned int k = 0; k < %(num_derivatives)s; k++)
+    %(transform)s[j][k] = 1;
+}
+
+// Construct transformation matrix
+for (unsigned int row = 0; row < %(num_derivatives)s; row++)
+{
+  for (unsigned int col = 0; col < %(num_derivatives)s; col++)
+  {
+    for (unsigned int k = 0; k < %(n)s; k++)
+      %(transform)s[row][col] *= %(Jinv)s[%(combinations)s[row][k]][%(combinations)s[col][k]];
+  }
+}"""
+
+transform3D_snippet = """\
+// Compute inverse of Jacobian, components are scaled because of difference in FFC/FIAT reference elements
+const double %(Jinv)s[3][3] =\
+{{2*d00 / detJ, 2*d10 / detJ, 2*d20 / detJ},\
+ {2*d01 / detJ, 2*d11 / detJ, 2*d21 / detJ},\
+ {2*d02 / detJ, 2*d12 / detJ, 2*d22 / detJ}};
+
+// Declare transformation matrix
+// Declare pointer to two dimensional array and initialise
+double **%(transform)s = new double *[%(num_derivatives)s];
+    
+for (unsigned int j = 0; j < %(num_derivatives)s; j++)
+{
+  %(transform)s[j] = new double [%(num_derivatives)s];
+  for (unsigned int k = 0; k < %(num_derivatives)s; k++)
+    %(transform)s[j][k] = 1;
+}
+
+// Construct transformation matrix
+for (unsigned int row = 0; row < %(num_derivatives)s; row++)
+{
+  for (unsigned int col = 0; col < %(num_derivatives)s; col++)
+  {
+    for (unsigned int k = 0; k < %(n)s; k++)
+      %(transform)s[row][col] *= %(Jinv)s[%(combinations)s[row][k]][%(combinations)s[col][k]];
+  }
+}"""
