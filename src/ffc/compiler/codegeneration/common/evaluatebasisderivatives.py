@@ -42,9 +42,7 @@ def evaluate_basis_derivatives(element, format):
     Nedelec (broken?)"""
 
 # To be fixed:
-# doc strings
 # clean code
-# check that the code is language-independent
 
     code = []
 
@@ -292,6 +290,9 @@ def tabulate_dmats(element, Indent, format):
     return code
 
 def compute_reference_derivatives(element, Indent, format):
+    """Compute derivatives on the reference element by recursively multiply coefficients with
+    the relevant derivatives of the polynomial base until the requested order of derivatives
+    has been reached. After this take the dot product with the basisvalues."""
 
     code = []
 
@@ -413,6 +414,7 @@ def compute_reference_derivatives(element, Indent, format):
     return code + [""]
 
 def multiply_coeffs(element, Indent, format):
+    "Auxilliary function that multiplies coefficients with directional derivatives."
 
     code = []
 
@@ -478,7 +480,6 @@ def transform_derivatives(element, sum_value_dim, Indent, format):
     format_matrix_access    = format["matrix access"]
     format_transform        = format["transform matrix"]
 
-
     code += [Indent.indent(format["comment"]("Transform derivatives back to physical element"))]
     
     code += [Indent.indent(format_loop("row", 0, format_num_derivatives))]
@@ -529,6 +530,7 @@ def transform_derivatives(element, sum_value_dim, Indent, format):
     return code
 
 def delete_pointers(element, Indent, format):
+    "Delete the pointers to arrays."
 
     code = []
 
