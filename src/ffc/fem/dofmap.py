@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-01-24 -- 2007-04-19"
+__date__ = "2007-01-24 -- 2007-04-27"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -92,7 +92,10 @@ class DofMap:
 
     def sub_dof_map(self, i):
         "Return sub dof map i"
-        return self.__dof_maps[i]
+        if len(self.__dof_maps) > 0:
+            return self.__dof_maps[i]
+        else:
+            return None
 
     def element(self):
         "Return the finite element associated with the dof map"
@@ -145,7 +148,7 @@ class DofMap:
 
         # We can handle scalar Lagrange elements
         if element.family() == "Lagrange":
-            points = element.sub_element(0).dual_basis().pts
+            points = element.dual_basis().pts
             return [tuple([0.5*(x + 1.0) for x in point]) for point in points]
 
         # We can handle tensor products of scalar Lagrange elements

@@ -1,7 +1,7 @@
 "Code generation for the UFC 1.0 format"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-01-08 -- 2007-03-24"
+__date__ = "2007-01-08 -- 2007-03-27"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -354,10 +354,16 @@ def __generate_dof_map(code, form_data, options, prefix, label):
     ufc_code["tabulate_coordinates"] = "// Not implemented"
 
     # Generate code for num_sub_dof_maps
-    ufc_code["num_sub_dof_maps"] = "// Not implemented\nreturn 0;"
+    ufc_code["num_sub_dof_maps"] = "return %s;" % code["num_sub_dof_maps"]
 
     # Generate code for create_sub_dof_map
-    ufc_code["create_sub_dof_map"] = "// Not implemented\nreturn 0;"
+    num_sub_dof_maps = eval(code["num_sub_dof_maps"])
+    if num_sub_dof_maps == 1:
+        ufc_code["create_sub_dof_map"] = "return new %s();" % ufc_code["classname"]
+    else:
+        cases = ["return new %s_%d();" % (ufc_code["classname"], i) for i in range(num_sub_dof_maps)]
+        ufc_code["create_sub_dof_map"] = __generate_switch("i", cases, "return 0;")
+
 
     return __generate_code(dof_map_combined, ufc_code)
 

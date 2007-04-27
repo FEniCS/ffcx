@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-10-04 -- 2007-04-04"
+__date__ = "2004-10-04 -- 2007-04-27"
 __copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -91,11 +91,11 @@ class FiniteElement:
 
     def num_sub_elements(self):
         "Return the number of sub elements"
-        return 1
+        return 0
 
     def sub_element(self, i):
         "Return sub element i"
-        return self
+        return None
 
     def degree(self):
         "Return degree of polynomial basis"
