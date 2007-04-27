@@ -91,11 +91,11 @@ class FiniteElement:
 
     def num_sub_elements(self):
         "Return the number of sub elements"
-        return 0
+        return 1
 
     def sub_element(self, i):
         "Return sub element i"
-        return None
+        return self
 
     def degree(self):
         "Return degree of polynomial basis"

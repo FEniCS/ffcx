@@ -1,7 +1,7 @@
 "Common base class for code generators"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-03-06 -- 2007-04-19"
+__date__ = "2007-03-06 -- 2007-04-27"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -111,7 +111,7 @@ class CodeGenerator:
         """Recursively extract sub elements as a list of tuples where
         each tuple consists of a tuple labeling the sub element and
         the sub element itself"""
-        if isinstance(element, FiniteElement):
+        if element.num_sub_elements() == 1:
             return [(parent, element)]
         sub_elements = []
         for i in range(element.num_sub_elements()):
@@ -122,7 +122,7 @@ class CodeGenerator:
         """Recursively extract sub dof maps as a list of tuples where
         each tuple consists of a tuple labeling the sub dof map and
         the sub dof map itself"""
-        if dof_map.num_sub_dof_maps() == 0:
+        if dof_map.num_sub_dof_maps() == 1:
             return [(parent, dof_map)]
         sub_dof_maps = []
         for i in range(dof_map.num_sub_dof_maps()):

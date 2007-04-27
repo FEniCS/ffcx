@@ -213,7 +213,7 @@ class DofMap:
     def __compute_dof_maps(self, element):
         "Compute recursively nested dof maps"
         if isinstance(element, FiniteElement):
-            return []
+            return [self]
         return [DofMap(element.sub_element(i)) for i in range(element.num_sub_elements())]
 
     def __compute_sub_simplices(self, D, d):
