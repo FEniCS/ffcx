@@ -536,11 +536,11 @@ def delete_pointers(element, Indent, format):
 
     # Delete pointers
     code += [Indent.indent(format["comment"]("Delete pointer to array of derivatives on FIAT element"))]
-    code += [Indent.indent(format["delete"] + format["array access"]("") +\
+    code += [Indent.indent(format["delete"] + format["array access"]("") + " " +\
                            format["reference derivatives"] + format["end line"])] + [""]
 
     code += [Indent.indent(format["comment"]("Delete pointer to array of combinations of derivatives"))]
-    code += [Indent.indent(format["delete"] + format["array access"]("") +\
+    code += [Indent.indent(format["delete"] + format["array access"]("") + " " +\
                            format["derivative combinations"] + format["end line"])] + [""]
 
     return code

@@ -281,7 +281,7 @@ def __generate_finite_element(code, form_data, options, prefix, label):
     ufc_code["evaluate_basis"] = __generate_body(code["evaluate_basis"])
 
     # Generate code for evaluate_basis
-    #ufc_code["evaluate_basis_derivatives"] = __generate_body(code["evaluate_basis_derivatives"])
+    ufc_code["evaluate_basis_derivatives"] = __generate_body(code["evaluate_basis_derivatives"])
 
     # Generate code for evaluate_dof
     ufc_code["evaluate_dof"] = __generate_body(code["evaluate_dof"])
