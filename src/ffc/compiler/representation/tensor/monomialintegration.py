@@ -261,8 +261,6 @@ def __compute_product(psis, weights):
     # Rearrange Indices as (primary, secondary)
     (rearrangement, num_indices) = __compute_rearrangement(indices)
     A0 = numpy.transpose(A0, rearrangement)
-
-    
     
     return A0
 

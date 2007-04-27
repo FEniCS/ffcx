@@ -1,7 +1,7 @@
 "Code generation for finite element"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-01-23 -- 2007-04-19"
+__date__ = "2007-01-23 -- 2007-04-27"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -39,11 +39,10 @@ def generate_finite_element(element, format):
     # Generate code for value_dimension
     code["value_dimension"] = ["%d" % element.value_dimension(i) for i in range(max(element.value_rank(), 1))]
 
-    # Generate code for evaluate_basis (FIXME: not implemented)
-    code["evaluate_basis"] = ["// Not implemented"]
+    # Generate code for evaluate_basis
     code["evaluate_basis"] = evaluate_basis(element, format)
 
-    # Generate code for evaluate_basis_derivatives (FIXME: not implemented)
+    # Generate code for evaluate_basis_derivatives
     code["evaluate_basis_derivatives"] = ["// Not implemented"]
     #code["evaluate_basis_derivatives"] = evaluate_basis_derivatives(element, format)
 

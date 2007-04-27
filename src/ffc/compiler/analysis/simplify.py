@@ -27,6 +27,8 @@ def simplify(form):
     if not isinstance(form, Form):
         raise FormError, "I only know how to simplify a Form!"
 
+    debug("Simplifying form...")
+
     # We aim to simplify each monomial on its own:
     for monomial in form.monomials:
 
@@ -66,3 +68,5 @@ def simplify(form):
                     basis.derivatives[i] = Derivative(derivative.element, second.index0)
                     monomial.transforms.remove(first) 
                     monomial.transforms.remove(second)
+
+    debug("done")

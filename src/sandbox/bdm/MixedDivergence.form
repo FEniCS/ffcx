@@ -9,3 +9,5 @@ mixed_element = BDM + DG
 (sigma, u) = TrialFunctions(mixed_element)
 
 a = w*div(sigma)*dx
+
+print sigma
