@@ -301,7 +301,7 @@ for (unsigned int row = 1; row < %(num_derivatives)s; row++)
 {
   for (unsigned int num = 0; num < row; num++)
   {
-    for (unsigned int col = 0; col < %(n)s; col++)
+    for (unsigned int col = %(n)s-1; col+1 > 0; col--)
     {
       if (%(combinations)s[row][col] + 1 > %(shape-1)s)
         %(combinations)s[row][col] = 0;

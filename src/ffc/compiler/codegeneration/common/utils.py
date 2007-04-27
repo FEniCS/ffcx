@@ -51,7 +51,7 @@ def inner_product(a, b, format):
 
     return value or format_floating_point(0.0)
 
-def tabulate_matrix(matrix, Indent, format):
+def tabulate_matrix(matrix, format):
     "Function that tabulates the values of a matrix, into a two dimensional array."
 
     # Check input
@@ -63,7 +63,7 @@ def tabulate_matrix(matrix, Indent, format):
     format_separator      = format["separator"]
     format_floating_point = format["floating point"]
 
-    # Get size of array
+    # Get size of matrix
     num_rows = numpy.shape(matrix)[0]
     num_cols = numpy.shape(matrix)[1]
 

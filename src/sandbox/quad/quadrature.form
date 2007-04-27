@@ -1,22 +1,29 @@
-elem = FiniteElement("Lagrange", "triangle", 1)
-#elem = FiniteElement("Lagrange", "tetrahedron", 1)
-#elem2 = FiniteElement("Lagrange", "triangle", 2)
+elements = ["Lagrange","Discontinuous Lagrange", "Crouzeix-Raviart", "Raviart-Thomas",\
+            "Brezzi-Douglas-Marini", "Nedelec"]
 
-#elem = VectorElement("Lagrange", "triangle", 1)
+shape = ["triangle", "tetrahedron"]
 
-v = TestFunction(elem)
-u = TrialFunction(elem)
+elem1 = FiniteElement(elements[0], shape[0], 2)
+elem2 = VectorElement(elements[2], shape[0], 2)
+elem3 = FiniteElement(elements[4], shape[0], 2)
+
+#elem3 = elem2
+element = elem1# + elem2 + elem3
+
+v = TestFunction(element)
+u = TrialFunction(element)
 
 #v2 = TestFunction(elem2)
 #u2 = TrialFunction(elem2)
 
-f = Function(elem)
+f = Function(element)
 
 
 #print v
 #print u
-a = v*u*dx
-#a = dot(v,u)*dx + v*u*dx
+#a = v*u*dx
+
+a = dot(v,u)*dx# + v*u*dx
 #a = dot(grad(v),grad(u))*dx
 #a = dot(grad(grad(v)),grad(grad(u)))*dx
 #a = v*u*ds

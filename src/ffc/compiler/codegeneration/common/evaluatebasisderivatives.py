@@ -284,7 +284,7 @@ def tabulate_dmats(element, Indent, format):
 
         # Declare varable name for coefficients
         name = format_table + format_dmats(i) + format_matrix_access(poly_dim, poly_dim)
-        value = tabulate_matrix(matrix, Indent, format)
+        value = tabulate_matrix(matrix, format)
         code += [(Indent.indent(name), Indent.indent(value))] + [""]
 
     return code

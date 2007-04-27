@@ -15,9 +15,6 @@ from ffc.common.utils import *
 from ffc.fem.finiteelement import *
 from ffc.fem.mixedelement import *
 
-# FFC format modules
-#from ffc.compiler.format.codesnippets import *
-
 # FFC code generation common modules
 from utils import *
 
@@ -317,7 +314,7 @@ def tabulate_coefficients(element, Indent, format):
 
         # Declare varable name for coefficients
         name = format_table_declaration + format_coefficients(i) + format_matrix_access(num_dofs, poly_dim)
-        value = tabulate_matrix(coeffs, Indent, format)
+        value = tabulate_matrix(coeffs, format)
 
         # Generate array of values
         code += [(Indent.indent(name), Indent.indent(value))] + [""]

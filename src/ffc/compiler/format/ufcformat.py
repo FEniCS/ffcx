@@ -85,6 +85,7 @@ format = { "add": lambda v: " + ".join(v),
            "absolute value": lambda i: "std::abs(%s)" % (i),
 # variable names
            "element tensor quad": lambda k: "A[%s]" % k,
+           "loop integration points": "ip",
            "derivatives": lambda i,j,k,l: "dNdx%d_%d[%s][%s]" % (i,j,k,l),
            "element coordinates": lambda i,j: "x[%s][%s]" % (i,j),
            "weights": lambda i,j: "Weight%d[%s]" % (i,j),
