@@ -1,4 +1,4 @@
-// This is UFC (Unified Form-assembly Code) v. 1.0-rc3.
+// This is UFC (Unified Form-assembly Code) v. 1.0-rc4.
 // This code is released into the public domain.
 //
 // The FEniCS Project (http://www.fenics.org/) 2006-2007.
@@ -119,6 +119,13 @@ namespace ufc
                                 double* values,
                                 const double* coordinates,
                                 const cell& c) const = 0;
+
+    /// Evaluate order n derivatives of basis function i at given point in cell
+    virtual void evaluate_basis_derivatives(unsigned int i,
+                                            unsigned int n,
+                                            double* values,
+                                            const double* coordinates,
+                                            const ufc::cell& c) const = 0;
 
     /// Evaluate linear functional for dof i on the function f
     virtual double evaluate_dof(unsigned int i,

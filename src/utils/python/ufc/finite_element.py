@@ -61,6 +61,16 @@ public:
 %(evaluate_basis)s
   }
 
+  /// Evaluate order n derivatives of basis function i at given point in cell
+  virtual void evaluate_basis_derivatives(unsigned int i,
+                                          unsigned int n,
+                                          double* values,
+                                          const double* coordinates,
+                                          const ufc::cell& c) const
+  {
+%(evaluate_basis_derivatives)s
+  }
+
   /// Evaluate linear functional for dof i on the function f
   virtual double evaluate_dof(unsigned int i,
                               const ufc::function& f,
@@ -125,6 +135,13 @@ public:
                               double* values,
                               const double* coordinates,
                               const ufc::cell& c) const;
+
+  /// Evaluate order n derivatives of basis function i at given point in cell
+  virtual void evaluate_basis_derivatives(unsigned int i,
+                                          unsigned int n,
+                                          double* values,
+                                          const double* coordinates,
+                                          const ufc::cell& c) const;
 
   /// Evaluate linear functional for dof i on the function f
   virtual double evaluate_dof(unsigned int i,
@@ -196,6 +213,16 @@ void %(classname)s::evaluate_basis(unsigned int i,
                                    const ufc::cell& c) const
 {
 %(evaluate_basis)s
+}
+
+/// Evaluate order n derivatives of basis function i at given point in cell
+void %(classname)s::evaluate_basis_derivatives(unsigned int i,
+                                               unsigned int n,
+                                               double* values,
+                                               const double* coordinates,
+                                               const ufc::cell& c) const
+{
+%(evaluate_basis_derivatives)s
 }
 
 /// Evaluate linear functional for dof i on the function f
