@@ -197,11 +197,11 @@ class DofMap:
         for dim in range(D + 1):
             sub_simplices += [self.__compute_sub_simplices(D, dim)]
 
-        # Check which entities are incident, d0 --> d1 for d0 > d1
+        # Check which entities are incident, d0 --> d1 for d0 >= d1
         incidence = {}
-        for d0 in range(1, D + 1):
+        for d0 in range(0, D + 1):
             for i0 in range(len(sub_simplices[d0])):
-                for d1 in range(d0):
+                for d1 in range(d0 + 1):
                     for i1 in range(len(sub_simplices[d1])):
                         if min([v in sub_simplices[d0][i0] for v in sub_simplices[d1][i1]]) == True:
                             incidence[((d0, i0), (d1, i1))] = True
