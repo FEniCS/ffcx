@@ -45,36 +45,43 @@ class Index:
     AUXILIARY_0 = 7
     AUXILIARY_G = 8
 
-    def __init__(self, index = "secondary"):
+    def __init__(self, index = "secondary", range = None):
         "Create Index."
         if isinstance(index, Index):
             # Create Index from Index (copy constructor)
             self.index = index.index
             self.type = index.type
+            self.range = index.range
         elif isinstance(index, int):
             # Create fixed Index
             self.index = index
             self.type = self.FIXED
+            self.range = [index]
         elif index == "primary":
             # Create primary Index
             self.index = next_primary_index()
             self.type = self.PRIMARY
+            self.range = range
         elif index == "secondary":
             # Create secondary Index
             self.index = next_secondary_index()
             self.type = self.SECONDARY
+            self.range = range
         elif index == "function":
             # Create Function Index
             self.index = next_function_index()
             self.type = self.FUNCTION
+            self.range = range
         elif index == "projection":
             # Create Projection Index
             self.index = next_projection_index()
             self.type = self.PROJECTION
+            self.range = range
         elif index == "constant":
             # Create Constant Index
             self.index = next_constant_index()
             self.type = self.CONSTANT
+            self.range = range # meg: ?
         elif index == "auxiliary":
             # Create auxiliary Index (not possible)
             raise RuntimeError, "Auxiliary indices cannot be created (only modified)."
@@ -82,6 +89,7 @@ class Index:
             # Create secondary Index (default)
             self.index = next_secondary_index()
             self.type = self.SECONDARY
+            self.range = range
         else:
             raise RuntimeError, "Unknown index type " + str(index)
         return
@@ -107,11 +115,12 @@ class Index:
                 raise RuntimeError, "Missing index values for auxiliary indices."
             return b1[self.index]
         else:
-            raise RuntimeError, "Uknown index type " + str(self.type)
+            raise RuntimeError, "Unknown index type " + str(self.type)
         return
 
     def __cmp__(self, other):
         "Check if Indices are equal."
+        # meg: Question, are two indices equal if they have different range?
         if not isinstance(other, Index):
             return -1
         if self.index == other.index and self.type == other.type:
@@ -120,20 +129,23 @@ class Index:
 
     def __repr__(self):
         "Print nicely formatted representation of Index."
+        offset = "" # meg: Fixme
+        if self.range and self.range[0]:
+            offset = " + " + str(self.range[0])
         if self.type == self.FIXED:
             return str(self.index)
         elif self.type == self.PRIMARY:
-            return "i" + str(self.index)
+            return "i" + str(self.index) + offset
         elif self.type == self.SECONDARY:
-            return "a" + str(self.index)
+            return "a" + str(self.index) + offset
         elif self.type == self.FUNCTION:
-            return str(self.index)
+            return str(self.index) + offset
         elif self.type == self.PROJECTION:
-            return str(self.index)
+            return str(self.index) + offset
         elif self.type == self.CONSTANT:
-            return str(self.index)        
+            return str(self.index) + offset        
         else:
-            return "b" + str(self.index)
+            return "b" + str(self.index) + offset
 
 next_index_0 = 0 # Next available primary index
 next_index_1 = 0 # Next available secondary index
