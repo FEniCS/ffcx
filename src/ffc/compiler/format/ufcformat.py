@@ -24,7 +24,8 @@ from removeunused import *
 # Choose map from restriction
 choose_map = {Restriction.PLUS: "0", Restriction.MINUS: "1", None: ""}
 # Transform format options  based on the sign of the power of the transform:
-transform_options = {True: "Jinv", False: "J"}
+transform_options = {True: lambda m, j, k: "Jinv%s_%d%d" % (m, j, k),
+                     False: lambda m, j, k: "J%s_%d%d" % (m, k, j)}
 # Options for the printing q or 1.0/q for q string:
 power_options = {True: lambda q: q, False: lambda q: "1.0/(%s)" % q}
 
@@ -49,7 +50,7 @@ format = { "add": lambda v: " + ".join(v),
            "constant": lambda j: "c%d" % j,
            "coefficient table": lambda j, k: "w[%d][%d]" % (j, k),
            "coefficient": lambda j, k: "w[%d][%d]" % (j, k),
-           "transform": lambda p, j, k, r: "%s%s_%d%d" % (transform_options[p >= 0], choose_map[r], j, k),
+           "transform": lambda p, j, k, r: "%s" % (transform_options[p >= 0](choose_map[r], j, k)),
            "reference tensor" : lambda j, i, a: None,
            "geometry tensor declaration": lambda j, a: "const double " + format["geometry tensor access"](j, a),
            "geometry tensor access": lambda j, a: "G%d_%s" % (j, "_".join(["%d" % index for index in a])),
