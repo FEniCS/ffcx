@@ -89,7 +89,8 @@ class Index:
             # Create secondary Index (default)
             self.index = next_secondary_index()
             self.type = self.SECONDARY
-            self.range = range
+            self.range = None
+            print "NB: Now creating an index with empty range." # debug
         else:
             raise RuntimeError, "Unknown index type " + str(index)
         return
@@ -126,6 +127,26 @@ class Index:
         if self.index == other.index and self.type == other.type:
             return 0
         return -1 # Ignore self > other
+
+    def __add__(self, other):
+        "Operator: Index + int (self + other)"
+        if isinstance(other, int):
+            i = Index(self)
+            if self.range:
+                if self.type == self.FIXED:
+                    i.range = [self.range[0] + other]
+                else:
+                    i.range = [self.range[0] + other, self.range[1] + other]
+            return i
+        else:
+            raise RuntimeError("Can only add integers to indices.")
+        
+    def __sub__(self, other):
+        "Operator: Index - int (self - other)"
+        if isinstance(other, int):
+            return self.__add__(-other)
+        else:
+            raise RuntimeError("Can only add integers to indices.")
 
     def __repr__(self):
         "Print nicely formatted representation of Index."
