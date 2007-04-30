@@ -67,7 +67,8 @@ def remove_unused(code):
                 used_lines.remove(line)
         if used_lines == []:
             debug("Removing unused variable: %s" % variable_name, 1)
-            lines[declaration_line] = "// " + lines[declaration_line]
+            #lines[declaration_line] = "// " + lines[declaration_line]
+            lines[declaration_line] = None
             removed_lines += [declaration_line]
         
     return "\n".join([line for line in lines if not line == None])
