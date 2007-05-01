@@ -4,6 +4,7 @@ __copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # Modified by Garth N. Wells 2006
+# Modified by Marie E. Rognes (meg@math.uio.no) 2007
 
 # Python modules
 import numpy
@@ -12,25 +13,20 @@ import numpy
 from ffc.common.utils import *
 
 def build_indices(dims):
-    """Create a list of all index combinations matching the given list
-    of index dimensions. Someone please tell me if there is a better
-    way to iterate over a multi-dimensional array. The list of indices
-    is constucted by iterating over all integer numbers that can be
-    represented with the base of each position determined by the given
-    dimension for that index."""
+    "Create a list of all index combinations"
     if not dims:
         return [[]]
-    rdims = [] + dims;
-    rdims.reverse()
-    current = numpy.zeros(len(rdims), dtype = numpy.int)
-    indices = []
-    posvalue = [1] + list(numpy.cumproduct(rdims)[:-1])
-    for i in range(numpy.product(rdims)):
-        for pos in range(len(rdims)):
-            j = len(rdims) - 1
-            current[len(rdims) - 1 - pos] = (i / posvalue[pos]) % rdims[pos]
-        indices += [list(current)]
-    return indices or [[]]
+    dims.insert(0, [[]]) # Special first case.
+    return reduce(outer_join, dims)
+
+def outer_join(a, b):
+    """Let a be a list of lists and b a list. We append each element
+    of b to each list in a and return the resulting list of lists."""
+    outer = [] 
+    for i in range(len(a)):
+        for j in range(len(b)):
+            outer += [a[i] + [b[j]]]
+    return outer
 
 class MultiIndex:
 
