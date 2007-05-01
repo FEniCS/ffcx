@@ -28,6 +28,7 @@ def determine_index_ranges(form):
             # NB: Does this make sense?
             set_range(coefficient.n0, coefficient.e0.space_dimension())
             set_range(coefficient.n1, coefficient.e1.space_dimension())
+            set_range(coefficient.index, coefficient.e1.space_dimension())
         for transform in monomial.transforms:
             # The indices of the transforms correspond to the cell_dim.
             set_range(transform.index0, transform.element.cell_dimension())
