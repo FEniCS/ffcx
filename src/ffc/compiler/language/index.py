@@ -81,7 +81,7 @@ class Index:
             # Create Constant Index
             self.index = next_constant_index()
             self.type = self.CONSTANT
-            self.range = range # meg: ?
+            self.range = range
         elif index == "auxiliary":
             # Create auxiliary Index (not possible)
             raise RuntimeError, "Auxiliary indices cannot be created (only modified)."
@@ -90,7 +90,6 @@ class Index:
             self.index = next_secondary_index()
             self.type = self.SECONDARY
             self.range = None
-            print "NB: Now creating an index with empty range." # debug
         else:
             raise RuntimeError, "Unknown index type " + str(index)
         return
@@ -132,12 +131,11 @@ class Index:
         "Operator: Index + int (self + other)"
         if isinstance(other, int):
             i = Index(self)
-            if self.range:
-                if self.type == self.FIXED:
-                    i.range = [self.range[0] + other]
-                else:
-                    i.range = [self.range[0] + other, self.range[1] + other]
-            return i
+            if self.type == self.FIXED:
+                i = Index(i.index + other)
+            elif self.range:
+                i.range = [self.range[0] + other, self.range[1] + other]
+            return i # Should we do something when range == None perhaps?
         else:
             raise RuntimeError("Can only add integers to indices.")
         
