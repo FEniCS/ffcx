@@ -9,6 +9,7 @@ __license__  = "GNU GPL Version 2"
 # this implementation is based on.
 
 # Modified by Garth N. Wells 2006
+# Modified by Marie E. Rognes (meg@math.uio.no) 2007
 
 # Python modules
 import numpy
@@ -191,7 +192,7 @@ def __compute_psi(v, table, num_points, dscaling):
     Psi = numpy.zeros(shapes, dtype = numpy.float)
 
     # Iterate over derivative Indices
-    dlists = build_indices(dshape) or [[]]
+    dlists = build_indices([range(d) for d in dshape]) or [[]]
     if len(cindex) > 0:
         etable = table[(element, restriction)]
         for component in range(cshape[0]):
@@ -244,7 +245,7 @@ def __compute_product(psis, weights):
 
     # Initialize list of auxiliary multiindices
     bshape = __compute_auxiliary_shape(psis)
-    bindices = build_indices(bshape) or [[]]
+    bindices = build_indices([range(b) for b in bshape]) or [[]]
 
     # Sum over quadrature points and auxiliary indices
     num_points = len(weights)

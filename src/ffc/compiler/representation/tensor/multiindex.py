@@ -38,11 +38,10 @@ class MultiIndex:
         indices - list of all possible multiindex values"""
 
     def __init__(self, dims):
-        "Create multi index from given list of dimensions"
+        "Create multi index from given list of ranges"
         self.rank = len(dims)
-        self.dims = listcopy(dims)
+        self.dims = [len(dim) for dim in dims]
         self.indices = build_indices(dims)
-        return
 
     def __repr__(self):
         "Pretty print"
