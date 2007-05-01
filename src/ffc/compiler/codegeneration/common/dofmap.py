@@ -5,11 +5,16 @@ __date__ = "2007-01-24 -- 2007-04-27"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
+# Modified by Kristian Oelgaard 2007
+
 # FFC common modules
 from ffc.common.utils import *
 
 # FFC fem modules
 from ffc.fem.finiteelement import *
+
+# FFC codegeneration common modules
+from ffc.compiler.codegeneration.common.utils import *
 
 def generate_dof_map(dof_map, format):
     """Generate dictionary of code for the given dof map according to
@@ -37,6 +42,9 @@ def generate_dof_map(dof_map, format):
 
     # Generate code for tabulate_facet_dofs
     code["tabulate_facet_dofs"] = __generate_tabulate_facet_dofs(dof_map, format)
+
+    # Generate code for tabulate_coordinates
+    code["tabulate_coordinates"] = __generate_tabulate_coordinates(dof_map, format)
 
     # Generate code for num_sub_dof_maps
     code["num_sub_dof_maps"] = "%d" % dof_map.num_sub_dof_maps()
@@ -199,3 +207,64 @@ def __generate_tabulate_facet_dofs(dof_map, format):
         code += [case]
 
     return code
+
+def __generate_tabulate_coordinates(dof_map, format):
+    "Generate code to compute coordinates of the dofs"
+
+    code = []
+
+    # Prefetch formats to speed up code generation
+    format_coordinates          = format["argument coordinates"]
+    format_element_coordinates  = format["element coordinates"]
+    format_matrix_access        = format["matrix access"]
+
+    # Get coordinates of the dofs (on FFC reference element)
+    points = dof_map.dof_coordinates()
+
+    # check if we get some points from fem.dofmap.py
+    if (points):
+        code += [format["comment"]("This function is implemented assuming affine mapping!!")]
+
+        code += [format["comment"]("Get cell vertices")]
+        code += [format["get cell vertices"]]
+
+        # Get the cell shape
+        cell_shape = dof_map.element().cell_shape()
+
+        # Create linear Lagrange element for the transformation
+        element = FiniteElement("Lagrange", shape_to_string[cell_shape], 1)
+
+#    print "element: ", dof_map.element()
+#    print "points: ", points
+
+        # Transform coordinates to FIAT element
+        coordinates = [tuple([2*x - 1.0 for x in point]) for point in points]
+
+        # Tabulate values of basisfunctions (on FIAT element)
+        table = element.tabulate(0, coordinates)
+
+        # Get matrix of values of basisfunctions at points (dof, values at dofs on linear element)
+        transformed_values = numpy.transpose(table[0][(0,)*cell_shape])
+
+        # Get shape of matrix
+        shape_val = numpy.shape(transformed_values)
+
+        # Loop dofs
+        for i in range(shape_val[0]):
+            for j in range(cell_shape):
+            
+                name = format_coordinates + format_matrix_access(i,j)
+
+                values = [transformed_values[i][k] for k in range(shape_val[1])]
+                symbols = [format_element_coordinates(k,j) for k in range(shape_val[1])]
+
+                value = inner_product(values, symbols, format)
+
+                code += [(name, value)]
+
+    else:
+        code += [format["comment"]("Not implemented")]
+
+    return code
+
+

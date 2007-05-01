@@ -123,6 +123,7 @@ format = { "add": lambda v: " + ".join(v),
            "snippet transform2D": transform2D_snippet,
            "snippet transform3D": transform3D_snippet,
            "snippet evaluate_dof": lambda d : {2: evaluate_dof_2D, 3: evaluate_dof_3D}[d],
+           "get cell vertices" : "const double * const * x = c.coordinates;",
 # misc
            "block separator": ",\n",
            "new line": "\\\n",
@@ -353,6 +354,7 @@ def __generate_dof_map(code, form_data, options, prefix, label):
 
     # Generate code for tabulate_coordinates
     ufc_code["tabulate_coordinates"] = "// Not implemented"
+    #ufc_code["tabulate_coordinates"] = __generate_body(code["tabulate_coordinates"])
 
     # Generate code for num_sub_dof_maps
     ufc_code["num_sub_dof_maps"] = "return %s;" % code["num_sub_dof_maps"]

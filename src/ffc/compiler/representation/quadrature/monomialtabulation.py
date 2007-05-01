@@ -1,4 +1,4 @@
-"This module implements the tabulation of monomial forms"
+"This module implements the tabulation of monomial forms, large parts are copied from monomialintegration.py"
 
 __author__ = "Kristian B. Oelgaard (k.b.oelgaard@tudelft.nl)"
 __date__ = "2007-03-23 -- 2007-03-23"
@@ -55,8 +55,8 @@ def tabulate(monomial, facet0, facet1):
     (points, weights, vscaling, dscaling) = __init_quadrature(monomial.basisfunctions, integral_type)
 
     num_quadrature_points = len(weights)
-
     Derivatives = __derivatives(monomial.basisfunctions, integral_type, points, dscaling, facet0, facet1)
+
 #    print "Derivatives: ", Derivatives
 #    quadrature = Quadrature(points, weights)
 
@@ -67,7 +67,7 @@ def tabulate(monomial, facet0, facet1):
 #    print "\n monomial integration, weights: \n", weights
 #    print "\n monomial integration, vscaling: \n", vscaling
 #    print "\n monomial integration, dscaling: \n", dscaling
-    print "init table"
+#    print "init table"
     # Initialize quadrature table for basis functions
     table = __init_table(monomial.basisfunctions, integral_type, points, facet0, facet1)
 
@@ -84,8 +84,8 @@ def tabulate(monomial, facet0, facet1):
 #    print "\n monomial integration, monomial.basisfunctions[0].element.basis()[0]: \n", \
 #    monomial.basisfunctions[0].element.basis()[0]
 
-    print "\n monomial integration, monomial.basisfunctions[0].element.basis()[0](points[0]): \n", \
-    monomial.basisfunctions[0].element.basis()[1]((-1,-1))
+#    print "\n monomial integration, monomial.basisfunctions[0].element.basis()[0](points[0]): \n", \
+#    monomial.basisfunctions[0].element.basis()[1]((-1,-1))
 
 #    print "\n monomial integration, monomial.basisfunctions[0].element.basis()[2].deriv(0)(points[0]): \n", \
 #    monomial.basisfunctions[0].element.basis()[2].deriv(0)(points[0])
@@ -93,7 +93,7 @@ def tabulate(monomial, facet0, facet1):
 #    print "\n monomial integration, monomial.basisfunctions[0].element.basis()[2].deriv(1)(points[0]): \n", \
 #    monomial.basisfunctions[0].element.basis()[2].deriv(1)(points[0])
 
-    print "\n Computing Psis \n"
+#    print "\n Computing Psis \n"
     # Compute table Psi for each factor
     psis = [__compute_psi(v, table, len(points), dscaling) for v in monomial.basisfunctions]
 
@@ -370,7 +370,9 @@ def __derivatives(basisfunctions, integral_type, points, dscaling, facet0, facet
     # Get element
     #FIXME: Assuming all elements are the same, picking first
     element = basisfunctions[0].element
-#    print "element: ", element
+    print "basisfunctions: ", basisfunctions
+    print "element: ", element
+    print "element.num_sub_elements(): ", element.num_sub_elements()
 
 #        if element in num_derivatives:
 #            num_derivatives[element] = max(order, num_derivatives[element])
@@ -396,12 +398,13 @@ def __derivatives(basisfunctions, integral_type, points, dscaling, facet0, facet
 #            points1 = reorder_points(points, facet1, element.cell_shape())
 #            table[(element, Restriction.PLUS)]  = element.tabulate(order, points0, facet0)
 #            table[(element, Restriction.MINUS)] = element.tabulate(order, points1, facet1)
-#    print "derivatives: ", derivatives
+    print "numpy.shape(derivatives): ", numpy.shape(derivatives)
+    print "derivatives: ", derivatives
 #    print "len(derivatives[1]): ", len(derivatives[1])
 #    print "derivatives[1]: ", derivatives[1]
 
     # FIXME: this is just a quick fix
-    directions = [(1,0),(0,1)] 
+    directions = [(1,0),(0,1)]
     for d in directions:
         derivatives[1][d] = derivatives[1][d]*dscaling
 
