@@ -4,6 +4,7 @@ __copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # Modified by Garth N. Wells 2006
+# Modified by Marie E. Rognes (meg@math.uio.no) 2007
 
 # Python modules
 import time
@@ -59,17 +60,17 @@ class ReferenceTensor:
             
             # Check basis function index
             if v.index == index:
-                return v.element.space_dimension()
+                return v.index.range
 
             # Check component indices
             for j in range(len(v.component)):
                 if v.component[j] == index:
-                    return v.element.value_dimension(j)
+                    return v.component[j].range
 
             # Check derivatives
             for d in v.derivatives:
                 if d.index == index:
-                    return d.element.cell_dimension()
+                    return d.index.range
                 
         # Didn't find dimension
         raise RuntimeError, "Unable to find dimension for index " + str(index)

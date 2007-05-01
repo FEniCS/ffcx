@@ -3,6 +3,8 @@ __date__ = "2004-11-03 -- 2007-03-05"
 __copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
+# Modified by Marie E. Rognes (meg@math.uio.no) 2007
+
 # FFC common modules
 from ffc.common.debug import *
 
@@ -41,7 +43,6 @@ class GeometryTensor:
         
         # Compute all dimensions
         dims = [self.__find_dim(monomial, i, index_type) for i in range(rank)]
-
         # Create multi index from dims
         return MultiIndex(dims)
 
@@ -55,12 +56,14 @@ class GeometryTensor:
         # Check coefficients
         for c in monomial.coefficients:
             if c.index == index:
-                return c.e1.space_dimension()
+                return c.index.range
             
         # Check transforms
         for t in monomial.transforms:
-            if t.index0 == index or t.index1 == index:
-                return t.element.cell_dimension()
+            if t.index0 == index:
+                return t.index0.range
+            elif t.index1 == index:
+                return t.index1.range
             
         # Didn't find dimension
         raise RuntimeError, "Unable to find dimension for index " + str(index)

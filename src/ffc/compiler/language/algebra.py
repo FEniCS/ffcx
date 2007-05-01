@@ -347,17 +347,16 @@ class BasisFunction(Element):
                 raise FormError, (component, "Illegal component index, does not match rank.")
             print "The Piola transform is not implemented in the tensor case!"
             return self
-        
         if not rank == 1:
             raise FormError, (component, "Illegal component index, does not match rank.") 
 
-        # Do summation implicitly.
         (sub_element, offset) = self.element.offset(component)
         w = Monomial(self)
         i = Index(component) - offset
         j = Index("secondary", range(self.element.cell_dimension()));
         w.transforms = [Transform(self.element, j, i, None, -1)] 
         w.basisfunctions[0].component = [j + offset]    
+        w.basisfunctions[0].index.range = range(offset, sub_element.space_dimension())
         w.determinant = -1
         return w
 
