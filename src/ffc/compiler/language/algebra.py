@@ -353,17 +353,13 @@ class BasisFunction(Element):
 
         # Do summation implicitly.
         (sub_element, offset) = self.element.offset(component)
-        print "offset = ", offset
         w = Monomial(self)
         i = Index(component) - offset
-        print "i = ", i
         j = Index("secondary", range(self.element.cell_dimension()));
-        print Transform(self.element, j, i, None, -1)
         w.transforms = [Transform(self.element, j, i, None, -1)] 
         w.basisfunctions[0].component = [j + offset]    
         w.determinant = -1
         return w
-
 
 class Monomial(Element):
     """A Monomial represents a monomial product of factors, including
