@@ -114,10 +114,13 @@ class QuadratureGenerator(CodeGenerator):
         # Loop tensors to generate tables
         for i in range(num_tensors):
 
-            # Tabulate variables,
-            # Tabulate the derivatives of shapefunctions, used to generate the Jacobian
-            # FIXME: Switched off until a nodemap is available (Jacobian)
-            tabulate_code += self.__tabulate_derivatives(tensors[i].Derivatives, i, Indent, format)
+            # Tabulate variables:
+
+            # Tabulate the derivatives of map, used to generate the Jacobian
+            # FIXME: Switched off until a nodemap is available (Jacobian), how to specify
+            # on which element the map is defined???
+#            tabulate_code += self.__generate_map_coordinates(tensors[i].map_element, Indent, format)
+#            tabulate_code += self.__tabulate_derivatives(tensors[i].map_derivatives, i, Indent, format)
 
             # Tabulate the quadrature weights
             tabulate_code += self.__tabulate_weights(tensors[i].quadrature.weights, i, Indent, format)
@@ -139,10 +142,9 @@ class QuadratureGenerator(CodeGenerator):
             Indent.increase()
 
             # Generate code to evaluate the Jacobian at every quadrature point
-            # FIXME: get dim and num_dofs more clever
             # FIXME: Switched off until a nodemap is available (assuming affine map)
-            element_code += self.__generate_jacobian(len(tensors[i].Derivatives),\
-                                                     len(tensors[i].Psis[0][0][:,0]), i, Indent, format)
+#            element_code += self.__generate_jacobian(tensors[i].map_element.cell_shape(),\
+#                                                     tensors[i].map_element.space_dimension(), i, Indent, format)
             print "generating code for tensor :", i
 
             # Generate the element tensor
@@ -158,7 +160,7 @@ class QuadratureGenerator(CodeGenerator):
 
         return tabulate_code + element_code
 
-    def __tabulate_derivatives(self, Derivatives, tensor_number, Indent, format):
+    def __tabulate_derivatives(self, map_derivatives, tensor_number, Indent, format):
         "Generate table of the first derivatives at quadrature points, used for Jacobian."
 
         code = []
@@ -167,9 +169,9 @@ class QuadratureGenerator(CodeGenerator):
         format_comment      = format["comment"]
         format_table        = format["table declaration"]
         format_derivatives  = format["derivatives"]
-
+        
         # Get number of directional derivatives
-        dim = len(Derivatives)
+        dim = len(map_derivatives)
 
         if dim == 2:
             # Put this into a dictionary
@@ -177,12 +179,12 @@ class QuadratureGenerator(CodeGenerator):
             # Loop directions
             for d in range(len(directions)):
                 code += [Indent.indent(format_comment\
-                        ("Table of derivatives at quadrature points in x%d-direction" %(d,) ))]
+                        ("Table of derivatives of map at quadrature points in x%d-direction" %(d,) ))]
                 code += [Indent.indent(format_comment\
                         ("Format: [quadrature points][dofs] (tensor %d)" %(tensor_number,) ))]
 
                 # Get derivatives
-                derivatives = Derivatives[directions[d]]
+                derivatives = map_derivatives[directions[d]]
 
                 # Get number of dofs (rows)
                 num_dofs = len(derivatives[:,0])
@@ -346,18 +348,18 @@ class QuadratureGenerator(CodeGenerator):
 
         # Prefetch formats to speed up code generation
         format_comment        = format["comment"]
+        format_float          = format["float declaration"]
         format_transform      = format["transform"]
+        format_floating_point = format["floating point"]
         format_determinant    = format["determinant"]
         format_derivatives    = format["derivatives"]
-        format_coordinates    = format["element coordinates"]
-        format_add_equal      = format["add equal"]
-        format_add            = format["add"]
-        format_subtract       = format["subtract"]
+        format_coordinates    = format["argument coordinates"]
+        format_matrix_access  = format["matrix access"]
         format_multiply       = format["multiply"]
-        format_floating_point = format["floating point"]
-        format_float          = format["float declaration"]
-        format_ip             = format["loop integration points"]
+        format_add_equal      = format["add equal"]
+        format_subtract       = format["subtract"]
         format_abs            = format["absolute value"]
+        format_ip             = format["loop integration points"]
         format_i              = format["first free index"]
 
         code = []
@@ -366,18 +368,15 @@ class QuadratureGenerator(CodeGenerator):
         code += [Indent.indent(format_comment\
                 ("Declare and initialize variables for Jacobian and the determinant (tensor %d)" % (tensor_number,)))]
 
-        # FIXME: hardcoded variables (restriction)
+        # Build indices from dimension
         indices = build_indices([dim, dim])
+
+        # FIXME: hardcoded variables (restriction)
         for index in indices:
             code += [(Indent.indent(format_float + format_transform(-1,index[0],index[1],None)),\
                                     format_floating_point(0.0))]
         code += [(Indent.indent(format_float + format_determinant), format_floating_point(0.0))]
         code += [""]
-
-#        code += [(Indent.indent(format_float + format_transform(-1,0,0,None)), format_floating_point(0.0))]
-#        code += [(Indent.indent(format_float + format_transform(-1,0,1,None)), format_floating_point(0.0))]
-#        code += [(Indent.indent(format_float + format_transform(-1,1,0,None)), format_floating_point(0.0))]
-#        code += [(Indent.indent(format_float + format_transform(-1,1,1,None)), format_floating_point(0.0))]
 
         # Create loop over dofs
         code += [Indent.indent(format_comment("Jacobian, loop dofs (tensor %d)" % (tensor_number,)))]
@@ -388,26 +387,23 @@ class QuadratureGenerator(CodeGenerator):
         # Increase indentation
         Indent.increase()
 
-
+        # FIXME: Need to get coordinates differently
         for i in range(dim):
             for j in range(dim):
                 # FIXME: hardcoded choose_map[], (4th argument)
                 name = format_transform(-1, i, j, None)
                 value = format_multiply([format_derivatives(tensor_number, i,format_ip, format_i),\
-                                         format_coordinates(format_i, str(j))])
+                                         format_coordinates + format_matrix_access(format_i, str(j))])
 
                 code += [format_add_equal(Indent.indent(name), value)]
 
+        # End node loop
+        # Decrease indentation
+        Indent.decrease()
+        code += [Indent.indent(format["block end"])]
+
         # Compute Jacobian values and determinant
         if dim == 2:
-#            for i in range(dim):
- #               for j in range(dim):
-                    # FIXME: hardcoded choose_map[], (4th argument)
-#                    name = format_transform(-1, i, j, None)
-#                    value = format_multiply([format_derivatives(tensor_number, i,format_ip, format_i),\
-#                                             format_coordinates(format_i, str(j))])
-
-#                    code += [format_add_equal(Indent.indent(name), value)]
 
             code += [""]
             code += [Indent.indent(format_comment("Compute determinant of Jacobian"))]
@@ -425,10 +421,6 @@ class QuadratureGenerator(CodeGenerator):
         else:
             RuntimeError("Jacobian for 3D not implemented yet!")
 
-        # End node loop
-        # Decrease indentation
-        Indent.decrease()
-        code += [Indent.indent(format["block end"])]
         code += [""]
 
         return code
@@ -671,5 +663,77 @@ class QuadratureGenerator(CodeGenerator):
     
         # Compute product of all factors
 #        return format["multiply"]([f for f in [format["scale factor"]] + f0 + f1])
+
+    def __generate_map_coordinates(self, map_element, Indent, format):
+
+        code = []
+
+        # This function should not be needed when non-affine mappings are made available,
+        # then the cell that is integrated should carry the information about dof coordinates.
+        # Largely copied from dof_map.py __tabulate_coordinates()
+ 
+        # Prefetch formats to speed up code generation
+        format_coordinates          = format["argument coordinates"]
+        format_element_coordinates  = format["element coordinates"]
+        format_matrix_access        = format["matrix access"]
+        format_block                = format["block"]
+        format_separator            = format["separator"]
+
+        # Get coordinates of the dofs (on FIAT reference element)
+        points = map_element.dual_basis().pts
+
+        # check if we get some points from fem.dofmap.py
+        if (points):
+
+            # Get the cell shape
+            cell_shape = map_element.cell_shape()
+
+#            code += [format["comment"]("Get cell vertices")]
+#            code += [format["get cell vertices"]]
+
+            code += [format["comment"]("DOF coordinates for mapping, assuming affine mapping!!")]
+
+            name = format["const float declaration"] + format_coordinates + format_matrix_access(map_element.space_dimension(), cell_shape)
+
+            # Create linear Lagrange element for the transformation
+            element = FiniteElement("Lagrange", shape_to_string[cell_shape], 1)
+
+            # Tabulate values of basisfunctions (on FIAT element)
+            table = element.tabulate(0, points)
+
+            # Get matrix of values of basisfunctions at points (dof, values at dofs on linear element)
+            transformed_values = numpy.transpose(table[0][(0,)*cell_shape])
+
+            # Get shape of matrix
+            shape_val = numpy.shape(transformed_values)
+
+            # Generate array of values
+            value = format["new line"] + format["block begin"]
+            rows = []
+
+            for i in range(map_element.space_dimension()):
+                cols = []
+                for j in range(cell_shape):
+
+                    values = [transformed_values[i][k] for k in range(shape_val[1])]
+                    symbols = [format_element_coordinates(k,j) for k in range(shape_val[1])]
+                    cols += [inner_product(values, symbols, format)]
+                rows += [format_block(format_separator.join(cols))]
+
+            value += format["block separator"].join(rows)
+            value += format["block end"]
+            code += [(name, value)]
+
+        else:
+            code += [format["comment"]("Not implemented")]
+
+        code += [""]
+
+        return code
+
+
+
+
+
 
 

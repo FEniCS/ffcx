@@ -367,3 +367,51 @@ for (unsigned int row = 0; row < %(num_derivatives)s; row++)
       %(transform)s[row][col] *= %(Jinv)s[%(combinations)s[row][k]][%(combinations)s[col][k]];
   }
 }"""
+
+# Code snippet for computing the inverse of the Jacobian and determinant in 2D
+inverse_jacobian_2D = """\
+// Compute determinant of Jacobian
+double detJ%(restriction)s = J%(restriction)s_00*J%(restriction)s_11 - J%(restriction)s_01*J%(restriction)s_10;
+  
+// Compute inverse of Jacobian
+const double Jinv%(restriction)s_00 =  J%(restriction)s_11 / detJ%(restriction)s;
+const double Jinv%(restriction)s_01 = -J%(restriction)s_01 / detJ%(restriction)s;
+const double Jinv%(restriction)s_10 = -J%(restriction)s_10 / detJ%(restriction)s;
+const double Jinv%(restriction)s_11 =  J%(restriction)s_00 / detJ%(restriction)s;
+
+// Take absolute value of determinant
+detJ%(restriction)s = std::abs(detJ%(restriction)s);
+"""
+
+# Code snippet for computing the inverse of the Jacobian and determinant in 3D
+inverse_jacobian_3D = """\
+// Compute sub determinants
+const double d00 = J%(restriction)s_11*J%(restriction)s_22 - J%(restriction)s_12*J%(restriction)s_21;
+const double d01 = J%(restriction)s_12*J%(restriction)s_20 - J%(restriction)s_10*J%(restriction)s_22;
+const double d02 = J%(restriction)s_10*J%(restriction)s_21 - J%(restriction)s_11*J%(restriction)s_20;
+
+const double d10 = J%(restriction)s_02*J%(restriction)s_21 - J%(restriction)s_01*J%(restriction)s_22;
+const double d11 = J%(restriction)s_00*J%(restriction)s_22 - J%(restriction)s_02*J%(restriction)s_20;
+const double d12 = J%(restriction)s_01*J%(restriction)s_20 - J%(restriction)s_00*J%(restriction)s_21;
+
+const double d20 = J%(restriction)s_01*J%(restriction)s_12 - J%(restriction)s_02*J%(restriction)s_11;
+const double d21 = J%(restriction)s_02*J%(restriction)s_10 - J%(restriction)s_00*J%(restriction)s_12;
+const double d22 = J%(restriction)s_00*J%(restriction)s_11 - J%(restriction)s_01*J%(restriction)s_10;
+  
+// Compute determinant of Jacobian
+double detJ%(restriction)s = J%(restriction)s_00*d00 + J%(restriction)s_10*d10 + J%(restriction)s_20*d20;
+  
+// Compute inverse of Jacobian
+const double Jinv%(restriction)s_00 = d00 / detJ%(restriction)s;
+const double Jinv%(restriction)s_01 = d10 / detJ%(restriction)s;
+const double Jinv%(restriction)s_02 = d20 / detJ%(restriction)s;
+const double Jinv%(restriction)s_10 = d01 / detJ%(restriction)s;
+const double Jinv%(restriction)s_11 = d11 / detJ%(restriction)s;
+const double Jinv%(restriction)s_12 = d21 / detJ%(restriction)s;
+const double Jinv%(restriction)s_20 = d02 / detJ%(restriction)s;
+const double Jinv%(restriction)s_21 = d12 / detJ%(restriction)s;
+const double Jinv%(restriction)s_22 = d22 / detJ%(restriction)s;
+
+// Take absolute value of determinant
+detJ%(restriction)s = std::abs(detJ%(restriction)s);
+"""

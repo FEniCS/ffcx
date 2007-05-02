@@ -235,7 +235,8 @@ def __generate_tabulate_coordinates(dof_map, format):
         element = FiniteElement("Lagrange", shape_to_string[cell_shape], 1)
 
 #    print "element: ", dof_map.element()
-#    print "points: ", points
+#        print "\npoints: ", points
+#        print "\ndl pts: ", dof_map.element().dual_basis().pts
 
         # Transform coordinates to FIAT element
         coordinates = [tuple([2*x - 1.0 for x in point]) for point in points]

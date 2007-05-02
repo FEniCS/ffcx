@@ -15,7 +15,7 @@ from ffc.common.debug import *
 types = [["double"], ["const", "double"]]
 
 # Special characters and delimiters
-special_characters = ["+", "-", "*", "/", "=", ".", " ", ";", "(", ")", "\\"]
+special_characters = ["+", "-", "*", "/", "=", ".", " ", ";", "(", ")", "\\", "{", "}", "[","]"]
 
 def remove_unused(code):
     """Remove unused variables from a given C++ code. This is useful
@@ -41,9 +41,19 @@ def remove_unused(code):
         for type in [type for type in types if len(words) > len(type)]:
             variable_type = words[0:len(type)]
             variable_name = words[len(type)]
+
             if variable_name in special_characters:
                 continue
             if variable_type == type:
+
+                # Test if any of the special characters are present in the variable name
+                # If this is the case, then remove these by assuming that the 'real' name
+                # is the first entry in the return list. This is implemented to prevent
+                # removal of e.g. 'double array[6]' if it is later used in a loop as 'array[i]'
+                var = [variable_name.split(sep)[0] for sep in special_characters\
+                       if str(variable_name) != variable_name.split(sep)[0]]
+                if (var):
+                    variable_name = var[0]
                 variables[variable_name] = (line_number, [])
                 if not variable_name in variable_names:
                     variable_names += [variable_name]
