@@ -49,13 +49,12 @@ def simplify(form):
                 # Now, lets run through the transforms and see whether
                 # there are two matching:
                 for transform in monomial.transforms:
-                    # For simplicity assume that transform.power == 1 | -1
-                    if transform.power == 1:
+                    if transform.type == Transform.JINV:
                         if not cmp(transform.index0, theindex):
                             first = transform
                             break
                 for transform in monomial.transforms:
-                    if transform.power == -1:
+                    if transform.type == Transform.J:
                         if not cmp(transform.index1, first.index1):
                             second = transform
                             success = 1

@@ -79,52 +79,49 @@ class Derivative:
         return "(d/dX" + str(self.index) + ")"
 
 class Transform:
-    """A Transform represents an element of the inverse Jacobian
+    """A Transform represents an element of the (inverse) Jacobian
     matrix of the affine map from the reference cell. With X the
     coordinates on the reference cell mapped to real coordinates x by
     an affine map x = F(X), a Transform represents the partial
-    derivative dX/dx.
+    derivative dX/dx (or dx/dX depending on the 'type' of the Transform.)
 
     Attributes:
 
         element     - a FiniteElement
         index0      - an Index for variable X
         index1      - an Index for variable x
-        power       - the power of (dX/dx)
+        type        - the type of the Transform 
         restriction - a Restriction for facet evaluation
     """
+    # Available types for the transform
+    JINV = 0
+    J = 1
     
-    def __init__(self, element, index0 = None, index1 = None, restriction = None, power = 1):
+    def __init__(self, element, index0 = None, index1 = None, restriction = None, type = JINV):
         "Create Transform."
         if isinstance(element, Transform):
             # Create Transform from Transform (copy constructor)
             self.element = element.element
             self.index0 = Index(element.index0)
             self.index1 = Index(element.index1)
-            self.power = element.power
+            self.type = element.type
             self.restriction = element.restriction
         else:
             # Create Transform from given Indices
             self.element = element
             self.index0 = Index(index0)
             self.index1 = Index(index1)
-            self.power = power
+            self.type = type
             self.restriction = restriction
         return
 
     def __repr__(self):
         "Print nicely formatted representation of Transform."
-        p = ""
         [top, bottom] = ["dX", "dx"]
         [index0, index1] = [self.index0.__repr__(), self.index1.__repr__()]
-        if self.power == -1: 
+        if self.type == self.J: 
             [bottom,top] = [top, bottom]
             [index1, index0] = [index0, index1]
-        elif not self.power:
-            return "" 
-        elif not self.power == 1: 
-            p = "^(" + str(self.power) + ")"
-
         restric = ""
         if self.restriction == None:
             restric = ""
@@ -135,4 +132,4 @@ class Transform:
         else: 
             raise FormError("Wrong value for restriction of transform")
 
-        return "(" + top + index0 + "/" + bottom + index1 + ")" + p + restric
+        return "(" + top + index0 + "/" + bottom + index1 + ")" + restric
