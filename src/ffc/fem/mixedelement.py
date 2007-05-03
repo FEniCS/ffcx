@@ -80,6 +80,7 @@ class MixedElement:
             return sub_element.mapping(Index(i.index - offset))
         else:
             # All the elements must have the same mapping:
+            # meg: No longer true since we changed the index style!
             return self.__elements[0].mapping(Index(0))
 
     def offset(self, component):

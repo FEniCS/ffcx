@@ -45,4 +45,4 @@ class MultiIndex:
 
     def __repr__(self):
         "Pretty print"
-        return "rank = %d dims = %s" % (self.rank, str(self.dims))
+        return "rank = %d dims = %s indices = %s" % (self.rank, str(self.dims), str(self.indices))
