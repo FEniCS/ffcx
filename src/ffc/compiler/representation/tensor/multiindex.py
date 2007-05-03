@@ -16,8 +16,9 @@ def build_indices(dims):
     "Create a list of all index combinations"
     if not dims:
         return [[]]
-    dims.insert(0, [[]]) # Special first case.
-    return reduce(outer_join, dims)
+    ranges = listcopy(dims)
+    ranges.insert(0, [[]]) # Special first case.
+    return reduce(outer_join, ranges)
 
 def outer_join(a, b):
     """Let a be a list of lists and b a list. We append each element
@@ -42,6 +43,7 @@ class MultiIndex:
         self.rank = len(dims)
         self.dims = [len(dim) for dim in dims]
         self.indices = build_indices(dims)
+        return
 
     def __repr__(self):
         "Pretty print"
