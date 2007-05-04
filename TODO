@@ -2,6 +2,7 @@ Things to fix:
 
  - Add attribute range to indices to get BDM working
  - Constant --> DG0
+ - Fix inverse of constants 1/c
  - Flag -fnum_digits
  - Projections
  - Optimization
