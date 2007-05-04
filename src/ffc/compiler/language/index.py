@@ -3,6 +3,8 @@ __date__ = "2004-09-29 -- 2007-02-06"
 __copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
+from ffc.common.utils import *
+
 class Index:
     """An Index represents a tensor index. The type of index can be
     either fixed, primary, or secondary as listed below:
@@ -51,7 +53,7 @@ class Index:
             # Create Index from Index (copy constructor)
             self.index = index.index
             self.type = index.type
-            self.range = index.range
+            self.range = listcopy(index.range)
         elif isinstance(index, int):
             # Create fixed Index
             self.index = index
@@ -128,16 +130,35 @@ class Index:
         return -1 # Ignore self > other
 
     def __add__(self, other):
-        "Operator: Index + int (self + other)"
+        # Index + int
         if isinstance(other, int):
-            i = Index(self)
             if self.type == self.FIXED:
-                i = Index(i.index + other)
+                return Index(self.index + other)
             elif self.range:
-                i.range = [self.range[0] + other, self.range[1] + other]
-            return i # Should we do something when range == None perhaps?
+                i = Index(self)
+                i.range = [r + other for r in self.range]
+                return i
+            else:
+                raise RuntimeError("Cannot add integer to index without range")
+        # Index + Index
+        elif isinstance(other, Index):
+            # Fixed index + Fixed index
+            if self.type == self.FIXED and other.type == self.FIXED:
+                return Index("secondary", self.range + other.range)
+            # Non-Fixed index (but with range) + Fixed index
+            elif self.range and other.type == self.FIXED:
+                i = Index(self)
+                i.range += other.range # FIXME, meg: multiple entries. 
+                return i
+            # Indices of same type, both with range
+            elif self.type == other.type and self.range and other.range:
+                i = Index(self)
+                i.range += other.range
+                return i
+            else: 
+                raise RuntimeError("Cannot add index to index without range")
         else:
-            raise RuntimeError("Can only add integers to indices.")
+            raise RuntimeError("Illegal addition of indices")
         
     def __sub__(self, other):
         "Operator: Index - int (self - other)"
