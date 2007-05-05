@@ -45,6 +45,7 @@ def determine_index_ranges(form):
     debug("done")
 
 def set_range(index, dimension):
+    "Set index range for indices that don't already have their indices specified"
     if isinstance(index, Index):
         if not index.range: # i.e. index.range == none:
             index.range = range(dimension)
