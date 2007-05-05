@@ -347,30 +347,18 @@ class BasisFunction(Element):
                 raise FormError, (component, "Illegal component index, does not match rank.")
             print "The Piola transform is not implemented in the tensor case!"
             return self
-        
         if not rank == 1:
             raise FormError, (component, "Illegal component index, does not match rank.") 
 
-        if self.element.family() == "Mixed":
-            # Do summation explicitly:
-            (sub_element, offset) = self.element.offset(component)
-            i = Index(component.index - offset)
-            w = Form()
-            for k in range(sub_element.value_dimension(0)):
-                q = Monomial(self)
-                q.transforms = [Transform(self.element, Index(k), i, None, -1)]
-                q.basisfunctions[0].component = [Index(k + offset)]
-                q.determinant = -1
-                w = w + q
-        else:
-            # Do summation implicitly.
-            w = Monomial(self)
-            j = Index();
-            w.transforms = [Transform(self.element, j, Index(component), None, -1)] 
-            w.basisfunctions[0].component = [j]    
-            w.determinant = -1
+        (sub_element, offset) = self.element.offset(component)
+        w = Monomial(self)
+        i = Index(component) - offset
+        j = Index("secondary", range(self.element.cell_dimension()));
+        w.transforms = [Transform(self.element, j, i, None, Transform.J)] 
+        w.basisfunctions[0].component = [j + offset]    
+        w.basisfunctions[0].index.range = range(offset, sub_element.space_dimension())
+        w.determinant = -1
         return w
-
 
 class Monomial(Element):
     """A Monomial represents a monomial product of factors, including

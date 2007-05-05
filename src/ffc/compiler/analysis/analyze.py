@@ -16,6 +16,7 @@ from checks import *
 from formdata import *
 from elementdata import *
 from simplify import *
+from ranges import *
 
 def analyze(form):
     "Analyze form and extract form data"
@@ -37,6 +38,11 @@ def analyze(form):
     reassigned_form = str(form)
 
     # Check validity of form again
+    check_form(form)
+
+    # Determine range of indices:
+    determine_index_ranges(form)
+
     check_form(form)
 
     # Extract form data

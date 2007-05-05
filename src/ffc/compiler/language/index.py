@@ -3,6 +3,8 @@ __date__ = "2004-09-29 -- 2007-02-06"
 __copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
+from ffc.common.utils import *
+
 class Index:
     """An Index represents a tensor index. The type of index can be
     either fixed, primary, or secondary as listed below:
@@ -45,36 +47,43 @@ class Index:
     AUXILIARY_0 = 7
     AUXILIARY_G = 8
 
-    def __init__(self, index = "secondary"):
+    def __init__(self, index = "secondary", range = None):
         "Create Index."
         if isinstance(index, Index):
             # Create Index from Index (copy constructor)
             self.index = index.index
             self.type = index.type
+            self.range = listcopy(index.range)
         elif isinstance(index, int):
             # Create fixed Index
             self.index = index
             self.type = self.FIXED
+            self.range = [index]
         elif index == "primary":
             # Create primary Index
             self.index = next_primary_index()
             self.type = self.PRIMARY
+            self.range = range
         elif index == "secondary":
             # Create secondary Index
             self.index = next_secondary_index()
             self.type = self.SECONDARY
+            self.range = range
         elif index == "function":
             # Create Function Index
             self.index = next_function_index()
             self.type = self.FUNCTION
+            self.range = range
         elif index == "projection":
             # Create Projection Index
             self.index = next_projection_index()
             self.type = self.PROJECTION
+            self.range = range
         elif index == "constant":
             # Create Constant Index
             self.index = next_constant_index()
             self.type = self.CONSTANT
+            self.range = range
         elif index == "auxiliary":
             # Create auxiliary Index (not possible)
             raise RuntimeError, "Auxiliary indices cannot be created (only modified)."
@@ -82,6 +91,7 @@ class Index:
             # Create secondary Index (default)
             self.index = next_secondary_index()
             self.type = self.SECONDARY
+            self.range = None
         else:
             raise RuntimeError, "Unknown index type " + str(index)
         return
@@ -107,33 +117,75 @@ class Index:
                 raise RuntimeError, "Missing index values for auxiliary indices."
             return b1[self.index]
         else:
-            raise RuntimeError, "Uknown index type " + str(self.type)
+            raise RuntimeError, "Unknown index type " + str(self.type)
         return
 
     def __cmp__(self, other):
         "Check if Indices are equal."
+        # meg: Question, are two indices equal if they have different range?
         if not isinstance(other, Index):
             return -1
         if self.index == other.index and self.type == other.type:
             return 0
         return -1 # Ignore self > other
 
+    def __add__(self, other):
+        # Index + int
+        if isinstance(other, int):
+            if self.type == self.FIXED:
+                return Index(self.index + other)
+            elif self.range:
+                i = Index(self)
+                i.range = [r + other for r in self.range]
+                return i
+            else:
+                raise RuntimeError("Cannot add integer to index without range")
+        # Index + Index
+        elif isinstance(other, Index):
+            # Fixed index + Fixed index
+            if self.type == self.FIXED and other.type == self.FIXED:
+                return Index("secondary", self.range + other.range)
+            # Non-Fixed index (but with range) + Fixed index
+            elif self.range and other.type == self.FIXED:
+                i = Index(self)
+                i.range += other.range # FIXME, meg: multiple entries. 
+                return i
+            # Indices of same type, both with range
+            elif self.type == other.type and self.range and other.range:
+                i = Index(self)
+                i.range += other.range
+                return i
+            else: 
+                raise RuntimeError("Cannot add index to index without range")
+        else:
+            raise RuntimeError("Illegal addition of indices")
+        
+    def __sub__(self, other):
+        "Operator: Index - int (self - other)"
+        if isinstance(other, int):
+            return self.__add__(-other)
+        else:
+            raise RuntimeError("Can only add integers to indices.")
+
     def __repr__(self):
         "Print nicely formatted representation of Index."
+        offset = "" # meg: Fixme
+        if self.range and self.range[0]:
+            offset = " + " + str(self.range[0])
         if self.type == self.FIXED:
             return str(self.index)
         elif self.type == self.PRIMARY:
-            return "i" + str(self.index)
+            return "i" + str(self.index) + offset
         elif self.type == self.SECONDARY:
-            return "a" + str(self.index)
+            return "a" + str(self.index) + offset
         elif self.type == self.FUNCTION:
-            return str(self.index)
+            return str(self.index) + offset
         elif self.type == self.PROJECTION:
-            return str(self.index)
+            return str(self.index) + offset
         elif self.type == self.CONSTANT:
-            return str(self.index)        
+            return str(self.index) + offset        
         else:
-            return "b" + str(self.index)
+            return "b" + str(self.index) + offset
 
 next_index_0 = 0 # Next available primary index
 next_index_1 = 0 # Next available secondary index

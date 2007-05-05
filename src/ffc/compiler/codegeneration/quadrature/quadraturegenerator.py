@@ -655,7 +655,7 @@ class QuadratureGenerator(CodeGenerator):
 #            print "t: ", t
             if not (t.index0.type == Index.AUXILIARY_G or  t.index1.type == Index.AUXILIARY_G):
 #                print "transform: ", t
-#                print "transform power: ", t.power
+#                print "transform type: ", t.type
 #                print "multiindex: ", multiindex
 #                print "i0: ", t.index0
 #                print "i1: ", t.index1

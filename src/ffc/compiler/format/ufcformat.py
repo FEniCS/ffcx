@@ -15,6 +15,7 @@ from ffc.common.constants import *
 
 # FFC language modules
 from ffc.compiler.language.restriction import *
+from ffc.compiler.language.tokens import *
 from ffc.compiler.language.integral import *
 
 # FFC format modules
@@ -24,8 +25,8 @@ from removeunused import *
 # Choose map from restriction
 choose_map = {Restriction.PLUS: "0", Restriction.MINUS: "1", None: ""}
 # Transform format options  based on the sign of the power of the transform:
-transform_options = {True: lambda m, j, k: "Jinv%s_%d%d" % (m, j, k),
-                     False: lambda m, j, k: "J%s_%d%d" % (m, k, j)}
+transform_options = {Transform.JINV: lambda m, j, k: "Jinv%s_%d%d" % (m, j, k),
+                     Transform.J: lambda m, j, k: "J%s_%d%d" % (m, k, j)}
 # Options for the printing q or 1.0/q for q string:
 power_options = {True: lambda q: q, False: lambda q: "1.0/(%s)" % q}
 
@@ -50,7 +51,7 @@ format = { "add": lambda v: " + ".join(v),
            "constant": lambda j: "c%d" % j,
            "coefficient table": lambda j, k: "w[%d][%d]" % (j, k),
            "coefficient": lambda j, k: "w[%d][%d]" % (j, k),
-           "transform": lambda p, j, k, r: "%s" % (transform_options[p >= 0](choose_map[r], j, k)),
+           "transform": lambda type, j, k, r: "%s" % (transform_options[type](choose_map[r], j, k)),
            "reference tensor" : lambda j, i, a: None,
            "geometry tensor declaration": lambda j, a: "const double " + format["geometry tensor access"](j, a),
            "geometry tensor access": lambda j, a: "G%d_%s" % (j, "_".join(["%d" % index for index in a])),

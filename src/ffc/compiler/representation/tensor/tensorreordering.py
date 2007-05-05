@@ -45,8 +45,8 @@ def reorder_entries(terms):
         term.A0.A0 = A0
 
         # Reinitialize indices to new size
-        iindices = MultiIndex(idims)
-        aindices = MultiIndex(adims)
+        iindices = MultiIndex([range(idim) for idim in idims])
+        aindices = MultiIndex([range(adim) for adim in adims])
         term.A0.i = iindices
         term.A0.a = aindices
         for G in term.G:
