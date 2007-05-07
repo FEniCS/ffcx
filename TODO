@@ -8,6 +8,8 @@ Things to fix:
  - Optimization
  - BLAS mode
  - Implement check primary ranks i checks
+ - Update documentation
+ - Fix man page and help text: -fprecision=14
 
 Old TODO list, possibly inaccurate:
 -----------------------------------

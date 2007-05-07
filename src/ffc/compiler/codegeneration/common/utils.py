@@ -1,7 +1,7 @@
 "Code generation utils"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-04-11 -- 2007-04-11"
+__date__ = "2007-04-11 -- 2007-05-07"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -24,27 +24,28 @@ def inner_product(a, b, format):
     format_subtract       = format["subtract"]
     format_multiply       = format["multiply"]
     format_floating_point = format["floating point"]
+    format_epsilon        = format["epsilon"]
     
     # Add all entries
     value = None
     for i in range(len(a)):
 
         # Skip terms where a is almost zero
-        if abs(a[i]) <= FFC_EPSILON:
+        if abs(a[i]) <= format_epsilon:
             continue
 
         # Fancy handling of +, -, +1, -1
         if value:
-            if abs(a[i] - 1.0) < FFC_EPSILON:
+            if abs(a[i] - 1.0) < format_epsilon:
                 value = format_add([value, b[i]])
-            elif abs(a[i] + 1.0) < FFC_EPSILON:
+            elif abs(a[i] + 1.0) < format_epsilon:
                 value = format_subtract([value, b[i]])
             elif a[i] > 0.0:
                 value = format_add([value, format_multiply([format_floating_point(a[i]), b[i]])])
             else:
                 value = format_subtract([value, format_multiply([format_floating_point(-a[i]), b[i]])])
         else:
-            if abs(a[i] - 1.0) < FFC_EPSILON or abs(a[i] + 1.0) < FFC_EPSILON:
+            if abs(a[i] - 1.0) < format_epsilon or abs(a[i] + 1.0) < format_epsilon:
                 value = b[i]
             else:
                 value = format_multiply([format_floating_point(a[i]), b[i]])
@@ -62,15 +63,16 @@ def tabulate_matrix(matrix, format):
     format_block          = format["block"]
     format_separator      = format["separator"]
     format_floating_point = format["floating point"]
+    format_epsilon        = format["epsilon"]
 
     # Get size of matrix
     num_rows = numpy.shape(matrix)[0]
     num_cols = numpy.shape(matrix)[1]
 
-    # Set matrix entries equal to zero if their absolute values is smaller than FFC_EPSILON
+    # Set matrix entries equal to zero if their absolute values is smaller than format_epsilon
     for i in range(num_rows):
         for j in range(num_cols):
-            if ( abs(matrix[i][j]) < FFC_EPSILON ):
+            if abs(matrix[i][j]) < format_epsilon:
                 matrix[i][j] = 0.0
 
     # Generate array of values

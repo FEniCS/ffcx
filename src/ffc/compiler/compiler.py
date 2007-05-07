@@ -12,7 +12,7 @@ each represented by a separate module:
 """
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-02-05 -- 2007-04-10"
+__date__ = "2007-02-05 -- 2007-05-07"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -21,6 +21,7 @@ __license__  = "GNU GPL Version 2"
 # FFC common modules
 from ffc.common.debug import *
 from ffc.common.constants import *
+import ffc.common.constants
 
 # FFC fem modules
 from ffc.fem.finiteelement import *
@@ -59,22 +60,23 @@ def compile(forms, prefix="Form", representation=FFC_REPRESENTATION, output_lang
 
     # Compile forms
     if len(forms) > 0:
-        compile_forms(forms, prefix, representation, output_language, options)
+        __compile_forms(forms, prefix, representation, output_language, options)
 
     # Compile elements, but only if there are no forms
     if len(elements) > 0 and len(forms) == 0:
-        compile_elements(elements, prefix, representation, output_language, options)
+        __compile_elements(elements, prefix, representation, output_language, options)
 
-def compile_forms(forms, prefix="Form", representation=FFC_REPRESENTATION, output_language=FFC_LANGUAGE, options=FFC_OPTIONS):
+def __compile_forms(forms, prefix="Form", representation=FFC_REPRESENTATION, output_language=FFC_LANGUAGE, options=FFC_OPTIONS):
     "Compile the given forms"
 
     # Check form input
     if len(forms) == 0:
         debug("No forms specified, nothing to do.")
         return
-    
+
     # Choose format
     format = __choose_format(output_language)
+    format.init(options)
 
     # Iterate over forms for stages 1 - 4
     generated_forms = []
@@ -98,7 +100,7 @@ def compile_forms(forms, prefix="Form", representation=FFC_REPRESENTATION, outpu
     # Compiler phase 5: format code
     format_code(generated_forms, prefix, format, options)
 
-def compile_elements(elements, prefix="Element", representation=FFC_REPRESENTATION, output_language=FFC_LANGUAGE, options=FFC_OPTIONS):
+def __compile_elements(elements, prefix="Element", representation=FFC_REPRESENTATION, output_language=FFC_LANGUAGE, options=FFC_OPTIONS):
     "Compile the given elements for the given language"
 
     # Check element input
@@ -117,8 +119,11 @@ def compile_elements(elements, prefix="Element", representation=FFC_REPRESENTATI
     debug_end()
     debug_begin("Compiler phase 4: Generating code")
 
-    # Choose format and code generator
+    # Choose format
     format = __choose_format(output_language)
+    format.init(options)
+
+    # Choose code generator
     CodeGenerator = __choose_code_generator(representation)
     code_generator = CodeGenerator()
 

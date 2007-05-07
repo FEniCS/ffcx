@@ -7,6 +7,8 @@ __date__ = "2007-04-04 -- 2007-04-16"
 __copyright__ = "Copyright (C) 2007 Kristian B. Oelgaard"
 __license__  = "GNU GPL Version 2"
 
+# Modified by Anders Logg 2007
+
 # FFC common modules
 from ffc.common.constants import *
 from ffc.common.utils import *
@@ -101,8 +103,9 @@ def generate_map(element, Indent, format):
     code = []
 
     # Prefetch formats to speed up code generation
-    format_comment      = format["comment"]
+    format_comment        = format["comment"]
     format_floating_point = format["floating point"]
+    format_epsilon        = format["epsilon"]
 
     # Get coordinates and map to the reference (FIAT) element from codesnippets.py
     code += [Indent.indent(format["coordinate map"](element.cell_shape()))] + [""]
@@ -118,7 +121,7 @@ def generate_map(element, Indent, format):
         code += [Indent.indent(format_comment("Map coordinates to the reference square"))]
  
         # Code snippet reproduced from FIAT: expansions.py: eta_triangle(xi) & eta_tetrahedron(xi)
-        code += [Indent.indent(format["snippet eta_triangle"]) %(format_floating_point(FFC_EPSILON))]
+        code += [Indent.indent(format["snippet eta_triangle"]) %(format_floating_point(format_epsilon))]
 
     elif (element.cell_shape() == 3):
 
@@ -131,8 +134,8 @@ def generate_map(element, Indent, format):
         code += [Indent.indent(format_comment("Map coordinates to the reference cube"))]
 
         # Code snippet reproduced from FIAT: expansions.py: eta_triangle(xi) & eta_tetrahedron(xi)
-        code += [Indent.indent(format["snippet eta_tetrahedron"]) %(format_floating_point(FFC_EPSILON),\
-                       format_floating_point(FFC_EPSILON))]
+        code += [Indent.indent(format["snippet eta_tetrahedron"]) %(format_floating_point(format_epsilon),\
+                       format_floating_point(format_epsilon))]
     else:
         raise RuntimeError, "Cannot generate map for shape: %d" %(element.cell_shape())
  
@@ -699,7 +702,8 @@ def eval_jacobi_batch_scalar(a, b, n, variables, format):
     # Prefetch formats to speed up code generation
     format_secondary_index  = format["secondary index"]
     format_float            = format["floating point"]
-
+    format_epsilon          = format["epsilon"]
+    
     # Format variables
     access = lambda i: variables[1] + format_secondary_index(i)
     coord = variables[0]
@@ -713,7 +717,7 @@ def eval_jacobi_batch_scalar(a, b, n, variables, format):
 
         val1 = inner_product([res1], [coord], format)
 
-        if (abs(res0) > FFC_EPSILON): # Only include if the value is not zero
+        if (abs(res0) > format_epsilon): # Only include if the value is not zero
             val0 = format_float(res0)
             if val1:
                 if res0 > 0:

@@ -40,8 +40,9 @@ format = { "add": lambda v: " + ".join(v),
            "block end": "}",
            "separator": ", ",
            "return": lambda v: "return %s;" % v,
-           "bool": lambda b: {True: "true", False: "false"}[b],
-           "floating point": lambda a: "%.12g" % a,
+           "bool": lambda v: {True: "true", False: "false"}[v],
+           "floating point": lambda v: "<not defined>",
+           "epsilon": "<not defined>",
            "tmp declaration": lambda j, k: "const double " + format["tmp access"](j, k),
            "tmp access": lambda j, k: "tmp%d_%d" % (j, k),
            "comment": lambda s: "// %s" % s,
@@ -136,6 +137,14 @@ format = { "add": lambda v: " + ".join(v),
            "pointer": "*",
            "new": "new ",
            "delete": "delete "}
+
+def init(options):
+    "Initialize code generation for given options"
+
+    # Set number of digits for floating point and machine precision
+    format_string = "%%.%dg" % eval(options["precision="])
+    format["floating point"] = lambda v : format_string % v
+    format["epsilon"] = 10.0*eval("1e-%s" % options["precision="])
 
 def write(generated_forms, prefix, options):
     "Generate UFC 1.0 code for a given list of pregenerated forms"

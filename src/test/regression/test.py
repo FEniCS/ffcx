@@ -1,7 +1,7 @@
 "Regression tests for FFC"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-03-05 -- 2007-03-30"
+__date__ = "2007-03-05 -- 2007-05-07"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -23,7 +23,7 @@ for form_file in form_files:
         print "Compiling and verifying form %s..." % form_file
 
         # Compile form
-        if system("../bin/ffc -s %s" % form_file) == 0:
+        if system("../bin/ffc -fprecision=10 -s %s" % form_file) == 0:
 
             # Compare against reference
             code_file = form_file.split(".")[0] + ".h"
