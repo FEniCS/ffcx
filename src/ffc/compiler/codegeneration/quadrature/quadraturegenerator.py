@@ -1,9 +1,11 @@
 "Code generator for quadrature representation"
 
 __author__ = "Kristian B. Oelgaard (k.b.oelgaard@tudelft.nl)"
-__date__ = "2007-03-16 -- 2007-04-27"
+__date__ = "2007-03-16 -- 2007-05-07"
 __copyright__ = "Copyright (C) 2004-2007 Kristian B. Oelgaard"
 __license__  = "GNU GPL Version 2"
+
+# Modified by Anders Logg 2007
 
 # Python modules
 import numpy
@@ -725,15 +727,8 @@ class QuadratureGenerator(CodeGenerator):
             code += [(name, value)]
 
         else:
-            code += [format["comment"]("Not implemented")]
+            code += [format["exception"]("not implemented")]
 
         code += [""]
 
         return code
-
-
-
-
-
-
-

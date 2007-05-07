@@ -1,7 +1,7 @@
 "Code generation for the UFC 1.0 format with DOLFIN"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-03-24 -- 2007-04-05"
+__date__ = "2007-03-24 -- 2007-05-07"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -22,6 +22,10 @@ import ufcformat
 
 # Specify formatting for code generation
 format = ufcformat.format
+
+def init(options):
+    "Initialize code generation for given options"
+    ufcformat.init(options)
 
 def write(generated_forms, prefix, options):
     "Generate UFC 1.0 code with DOLFIN wrappers for a given list of pregenerated forms"
@@ -70,6 +74,7 @@ def generate_header(prefix, options):
 #define __%s_H
 
 #include <cmath>
+#include <stdexcept>
 #include <ufc.h>%s
 """ % (FFC_VERSION, blas_warning, prefix.upper(), prefix.upper(), blas_include)
 

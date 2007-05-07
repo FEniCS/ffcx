@@ -45,7 +45,8 @@ format = { "add": lambda v: " + ".join(v),
            "epsilon": "<not defined>",
            "tmp declaration": lambda j, k: "const double " + format["tmp access"](j, k),
            "tmp access": lambda j, k: "tmp%d_%d" % (j, k),
-           "comment": lambda s: "// %s" % s,
+           "comment": lambda v: "// %s" % v,
+           "exception": lambda v: "throw std::runtime_error(\"%s\");" % v,
            "determinant": "detJ",
            "scale factor": "det",
            "power": lambda base, exp: power_options[exp >= 0](format["multiply"]([str(base)]*abs(exp))),
@@ -187,6 +188,7 @@ def generate_header(prefix, options):
 #define __%s_H
 
 #include <cmath>
+#include <stdexcept>
 #include <ufc.h>%s
 """ % (FFC_VERSION, blas_warning, prefix.upper(), prefix.upper(), blas_include)
 
@@ -367,8 +369,7 @@ def __generate_dof_map(code, form_data, options, prefix, label):
     ufc_code["tabulate_facet_dofs"] = __generate_switch("facet", [__generate_body(case) for case in code["tabulate_facet_dofs"]])
 
     # Generate code for tabulate_coordinates
-    ufc_code["tabulate_coordinates"] = "// Not implemented"
-    #ufc_code["tabulate_coordinates"] = __generate_body(code["tabulate_coordinates"])
+    ufc_code["tabulate_coordinates"] = __generate_body(code["tabulate_coordinates"])
 
     # Generate code for num_sub_dof_maps
     ufc_code["num_sub_dof_maps"] = "return %s;" % code["num_sub_dof_maps"]

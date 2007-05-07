@@ -1,7 +1,7 @@
 "Code generation for finite element"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-01-23 -- 2007-04-27"
+__date__ = "2007-01-23 -- 2007-05-07"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -67,8 +67,7 @@ def __generate_evaluate_dof(element, format):
     
     # Check if evaluate_dof is supported
     if dof_map.dof_components() == None:
-        code += [format["comment"]("Not implemented (only for Lagrange elements")]
-        code += [format["return"](format["floating point"](0.0))]
+        code += [format["exception"]("evaluate_dof not implemented for this type of element")]
         return code
 
     # Get code formats
@@ -99,7 +98,7 @@ def __generate_interpolate_vertex_values(element, format):
 
     # Check that we have a scalar- or vector-valued element
     if element.value_rank() > 1:
-        return format["comment"]("Not implemented (only for scalars or vectors)")
+        return format["exception"]("interpolate_vertex_values not implemented for this type of element")
 
     # Generate code as a list of declarations
     code = []
