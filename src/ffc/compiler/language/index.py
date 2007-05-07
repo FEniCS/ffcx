@@ -1,7 +1,9 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-09-29 -- 2007-02-06"
+__date__ = "2004-09-29 -- 2007-05-06"
 __copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
+
+# Modified by Marie Rognes 2007
 
 from ffc.common.utils import *
 
@@ -122,7 +124,8 @@ class Index:
 
     def __cmp__(self, other):
         "Check if Indices are equal."
-        # meg: Question, are two indices equal if they have different range?
+        # Note: Indices are equal even if range are different (same index may
+        # index two vectors differently in a summation)
         if not isinstance(other, Index):
             return -1
         if self.index == other.index and self.type == other.type:

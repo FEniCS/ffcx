@@ -40,11 +40,13 @@ format = { "add": lambda v: " + ".join(v),
            "block end": "}",
            "separator": ", ",
            "return": lambda v: "return %s;" % v,
-           "bool": lambda b: {True: "true", False: "false"}[b],
-           "floating point": lambda a: "%.12g" % a,
+           "bool": lambda v: {True: "true", False: "false"}[v],
+           "floating point": lambda v: "<not defined>",
+           "epsilon": "<not defined>",
            "tmp declaration": lambda j, k: "const double " + format["tmp access"](j, k),
            "tmp access": lambda j, k: "tmp%d_%d" % (j, k),
-           "comment": lambda s: "// %s" % s,
+           "comment": lambda v: "// %s" % v,
+           "exception": lambda v: "throw std::runtime_error(\"%s\");" % v,
            "determinant": "detJ",
            "scale factor": "det",
            "power": lambda base, exp: power_options[exp >= 0](format["multiply"]([str(base)]*abs(exp))),
@@ -86,8 +88,10 @@ format = { "add": lambda v: " + ".join(v),
            "is equal": " == ",
            "absolute value": lambda i: "std::abs(%s)" % (i),
 # variable names
-           "element tensor quad": lambda k: "A[%s]" % k,
+           "element tensor quad": "A",
            "loop integration points": "ip",
+           "first free index": "j",
+           "second free index": "k",
            "derivatives": lambda i,j,k,l: "dNdx%d_%d[%s][%s]" % (i,j,k,l),
            "element coordinates": lambda i,j: "x[%s][%s]" % (i,j),
            "weights": lambda i,j: "Weight%d[%s]" % (i,j),
@@ -123,7 +127,10 @@ format = { "add": lambda v: " + ".join(v),
            "snippet combinations": combinations_snippet,
            "snippet transform2D": transform2D_snippet,
            "snippet transform3D": transform3D_snippet,
+           "snippet inverse 2D": inverse_jacobian_2D,
+           "snippet inverse 3D": inverse_jacobian_3D,
            "snippet evaluate_dof": lambda d : {2: evaluate_dof_2D, 3: evaluate_dof_3D}[d],
+           "get cell vertices" : "const double * const * x = c.coordinates;",
 # misc
            "block separator": ",\n",
            "new line": "\\\n",
@@ -131,6 +138,14 @@ format = { "add": lambda v: " + ".join(v),
            "pointer": "*",
            "new": "new ",
            "delete": "delete "}
+
+def init(options):
+    "Initialize code generation for given options"
+
+    # Set number of digits for floating point and machine precision
+    format_string = "%%.%dg" % eval(options["precision="])
+    format["floating point"] = lambda v : format_string % v
+    format["epsilon"] = 10.0*eval("1e-%s" % options["precision="])
 
 def write(generated_forms, prefix, options):
     "Generate UFC 1.0 code for a given list of pregenerated forms"
@@ -173,6 +188,7 @@ def generate_header(prefix, options):
 #define __%s_H
 
 #include <cmath>
+#include <stdexcept>
 #include <ufc.h>%s
 """ % (FFC_VERSION, blas_warning, prefix.upper(), prefix.upper(), blas_include)
 
@@ -353,7 +369,7 @@ def __generate_dof_map(code, form_data, options, prefix, label):
     ufc_code["tabulate_facet_dofs"] = __generate_switch("facet", [__generate_body(case) for case in code["tabulate_facet_dofs"]])
 
     # Generate code for tabulate_coordinates
-    ufc_code["tabulate_coordinates"] = "// Not implemented"
+    ufc_code["tabulate_coordinates"] = __generate_body(code["tabulate_coordinates"])
 
     # Generate code for num_sub_dof_maps
     ufc_code["num_sub_dof_maps"] = "return %s;" % code["num_sub_dof_maps"]

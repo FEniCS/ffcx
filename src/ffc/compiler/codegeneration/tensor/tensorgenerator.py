@@ -1,7 +1,7 @@
 "Code generator for tensor representation"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-11-03 -- 2007-04-12"
+__date__ = "2004-11-03 -- 2007-05-07"
 __copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -127,6 +127,7 @@ class TensorGenerator(CodeGenerator):
         format_subtract        = format["subtract"]
         format_multiply        = format["multiply"]
         format_floating_point  = format["floating point"]
+        format_epsilon         = format["epsilon"]
     
         # Generate code for geometry tensor entries
         gk_tensor = [ ( [(format_geometry_tensor(j, a), a) for a in terms[j].A0.a.indices], j) for j in range(len(terms)) ]
@@ -143,7 +144,7 @@ class TensorGenerator(CodeGenerator):
                 A0 = terms[j].A0
                 for (gk, a) in gka:
                     a0 = A0.A0[tuple(i + a)]
-                    if abs(a0) > FFC_EPSILON:
+                    if abs(a0) > format_epsilon:
                         if value and a0 < 0.0:
                             value = format_subtract([value, format_multiply([format_floating_point(-a0), gk])])
                         elif value:

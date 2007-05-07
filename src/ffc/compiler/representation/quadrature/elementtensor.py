@@ -32,7 +32,8 @@ class ElementTensor:
         "Create element tensor for given monomial"
 
         # Tabulate element tensor
-        self.Derivatives, self.Psis, self.quadrature = tabulate(monomial, facet0, facet1)
+        self.map_derivatives, self.map_element, self.Psis, self.quadrature = \
+        tabulate(monomial, facet0, facet1)
 
         # FIXME: needed?
         # Create primary, secondary and auxiliary multi indices
