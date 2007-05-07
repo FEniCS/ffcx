@@ -1,4 +1,4 @@
-// This is UFC (Unified Form-assembly Code) v. 1.0-rc4.
+// This is UFC (Unified Form-assembly Code) v. 1.0-rc5.
 // This code is released into the public domain.
 //
 // The FEniCS Project (http://www.fenics.org/) 2006-2007.
@@ -6,7 +6,7 @@
 #ifndef __UFC_H
 #define __UFC_H
 
-const char UFC_VERSION[] = "1.0-rc3";
+const char UFC_VERSION[] = "1.0-rc5";
 
 namespace ufc
 {
@@ -196,7 +196,6 @@ namespace ufc
 
     /// Tabulate the coordinates of all dofs on a cell
     virtual void tabulate_coordinates(double **coordinates,
-                                      const mesh& m,
                                       const cell& c) const = 0;
 
     /// Return the number of sub dof maps (for a mixed element)

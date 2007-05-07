@@ -91,7 +91,6 @@ public:
 
   /// Tabulate the coordinates of all dofs on a cell
   virtual void tabulate_coordinates(double **coordinates,
-                                    const ufc::mesh& m,
                                     const ufc::cell& c) const
   {
 %(tabulate_coordinates)s
@@ -164,7 +163,6 @@ public:
 
   /// Tabulate the coordinates of all dofs on a cell
   virtual void tabulate_coordinates(double **coordinates,
-                                    const ufc::mesh& m,
                                     const ufc::cell& c) const;
 
   /// Return the number of sub dof maps (for a mixed element)
@@ -257,7 +255,6 @@ void %(classname)s::tabulate_facet_dofs(unsigned int* dofs,
 
 /// Tabulate the coordinates of all dofs on a cell
 void %(classname)s::tabulate_coordinates(double **coordinates,
-                                         const ufc::mesh& m,
                                          const ufc::cell& c) const
 {
 %(tabulate_coordinates)s
