@@ -76,7 +76,7 @@ format = { "add": lambda v: " + ".join(v),
 # access
            "array access": lambda i: "[%s]" %(i),
            "matrix access": lambda i,j: "[%s][%s]" %(i,j),
-           "secondary index": lambda i: "_%d" %(i),
+           "secondary index": lambda i: "_%s" %(i),
 # program flow
            "dof map if": lambda i,j: "if (%d <= %s and %s <= %d)" %(i,\
                          format["argument basis num"], format["argument basis num"], j),
@@ -95,8 +95,7 @@ format = { "add": lambda v: " + ".join(v),
            "derivatives": lambda i,j,k,l: "dNdx%d_%d[%s][%s]" % (i,j,k,l),
            "element coordinates": lambda i,j: "x[%s][%s]" % (i,j),
            "weights": lambda i,j: "Weight%d[%s]" % (i,j),
-           "psis": lambda l: "Psi%d_%d_%d_%s[%s][%s]" % (l[0],l[1],l[2],\
-                             "".join(["%d" % index for index in l[3]]), l[4], l[5]),
+           "psis": "Psi",
            "argument coordinates": "coordinates",
            "argument values": "values",
            "argument basis num": "i",

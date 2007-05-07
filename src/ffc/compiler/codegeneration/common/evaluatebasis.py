@@ -189,7 +189,8 @@ def mixed_elements(element, Indent, format):
     format_dof_map_if = format["dof map if"]
 
     # Extract basis elements, and determine number of elements
-    elements = extract_elements(element)
+#    elements = extract_elements(element)
+    elements = element.basis_elements()
     num_elements = len(elements)
 
     sum_value_dim = 0

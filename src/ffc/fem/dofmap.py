@@ -4,6 +4,7 @@ __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # Modified by Marie E. Rognes (meg@math.uio.no), 2007
+# Modified by Kristian Oelgaard, 2007
 
 # FFC common modules
 from ffc.common.utils import *
@@ -147,20 +148,32 @@ class DofMap:
         "Compute the coordinates associated with each dof"
 
         # We can handle scalar Lagrange elements
-        if element.family() == "Lagrange":
-            points = element.dual_basis().pts
-            return [tuple([0.5*(x + 1.0) for x in point]) for point in points]
+#        if element.family() == "Lagrange":
+#            points = element.dual_basis().pts
+#            return [tuple([0.5*(x + 1.0) for x in point]) for point in points]
 
         # We can handle tensor products of scalar Lagrange elements
-        if self.__is_vector_lagrange(element):
-            points = element.sub_element(0).dual_basis().pts
-            repeated_points = []
-            for i in range(element.value_dimension(0)):
-                repeated_points += points
-            return [tuple([0.5*(x + 1.0) for x in point]) for point in repeated_points]
-
+#        if self.__is_vector_lagrange(element):
+#            points = element.sub_element(0).dual_basis().pts
+#            repeated_points = []
+#            for i in range(element.value_dimension(0)):
+#                repeated_points += points
+#            return [tuple([0.5*(x + 1.0) for x in point]) for point in repeated_points]
         # Can't handle element
-        return None
+#        return None
+
+        element_points = []
+        elements = element.basis_elements()
+        for element in elements:
+            # Test for non-supported (or tested) elements
+            if (element.family() == "Brezzi-Douglas-Marini" or element.family() == "Raviart-Thomas"\
+                or element.family() == "Nedelec"):
+                element_points += [None]
+            else:
+                points = element.dual_basis().pts
+                element_points += [tuple([0.5*(x + 1.0) for x in point]) for point in points]
+
+        return element_points
 
     def __compute_dof_components(self, element):
         "Compute the components associated with each dof"

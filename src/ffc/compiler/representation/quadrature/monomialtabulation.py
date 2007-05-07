@@ -17,6 +17,9 @@ from FIAT.shapes import *
 from ffc.common.debug import *
 from ffc.common.progress import *
 
+# FFC fem modules
+from ffc.fem.finiteelement import *
+
 # FFC language modules
 from ffc.compiler.language.index import *
 from ffc.compiler.language.algebra import *
@@ -60,8 +63,8 @@ def tabulate(monomial, facet0, facet1):
 #    print "Derivatives: ", Derivatives
 #    quadrature = Quadrature(points, weights)
 
-    # Correction of weights by scaling factor
-    quadrature = Quadrature(points, weights*vscaling)
+    # Correction of weights by scaling factor (and numeric constant if any. This might be wrong!!!)
+    quadrature = Quadrature(points, weights*vscaling*monomial.numeric)
 #    points[0] = (-1,-1)
 #    print "\n monomial integration, points: \n", points
 #    print "\n monomial integration, weights: \n", weights
@@ -107,7 +110,7 @@ def tabulate(monomial, facet0, facet1):
 #    print "\n monomial integration, psis[0][1][0]: \n", psis[0][1][0].__doc__
 
 #    print "\n Compute product fo all Psis"
-#    print "\n monomial integration, monomial.numeric: \n", monomial.numeric
+    print "\n monomial integration, monomial.numeric: \n", monomial.numeric
 #    print "\n monomial integration, __compute_product(arg2): \n", vscaling * monomial.numeric * weights
 
 #    print "\n monomial integration, monomial: \n", monomial
@@ -249,20 +252,22 @@ def __compute_psi(v, table, num_points, dscaling):
 
     # Get Indices and shapes for Derivatives
     dindex = [d.index for d in v.derivatives]
-#    print "dindex: ", dindex
+    print "dindex: ", dindex
+#    print "dtype: ", dindex[0].type
 
     dshape = [cell_dimension for d in v.derivatives]
-#    print "dshape: ", dshape
+    print "dshape: ", dshape
 
     dorder = len(dindex)
 #    print "dorder: ", dorder
 
     # Get Indices and shapes for BasisFunction
     vindex = [v.index]
-#    print "vindex: ", vindex
+    print "vindex: ", vindex
+    print "vtype: ", vindex[0].type
 
     vshape = [space_dimension]
-#    print "vshape: ", vshape
+    print "vshape: ", vshape
 
 #    print "v.component", v.component
 
@@ -271,25 +276,37 @@ def __compute_psi(v, table, num_points, dscaling):
         raise RuntimeError, "Can only handle rank 0 or rank 1 tensors."
     if len(v.component) > 0:
         cindex = [v.component[0]]
+        print "v.component: ", v.component
         cshape = [element.value_dimension(0)]
+        print "cindex: ", cindex
+        print "ctype: ", cindex[0].type
+        print "cshape: ", cshape
     else:
         cindex = []
         cshape = []
 
-#    print "cindex: ", cindex
-#    print "cshape: ", cshape
+    
 
     # Create list of Indices that label the dimensions of the tensor Psi
-    indices = cindex + vindex + dindex
-#    print "indices: ", indices
+#    indices = cindex + dindex + vindex
+    indices = vindex + cindex + dindex
+
+    print "indices: ", indices
     shapes = cshape + dshape + vshape + [num_points]
-    dimensions = cshape + vshape + dshape
-#    print "shapes: ", shapes
+
+#    dimensions = cshape + dshape + vshape
+    dimensions = vshape + cshape + dshape
+    print "shapes: ", shapes
     # Initialize tensor Psi: component, derivatives, basis function, points
     Psi = numpy.zeros(shapes, dtype = numpy.float)
 #    print "numpy.shape(Psi): ", numpy.shape(Psi)
 
 #    print "Psi-init:", Psi
+
+    aindices = __create_multi_index(v, indices, Index.SECONDARY)
+    bindices = __create_multi_index(v, indices, Index.AUXILIARY)
+
+    multiindices = [aindices, bindices]
 
     # Iterate over derivative Indices
     dlists = build_indices(dshape) or [[]]
@@ -316,20 +333,34 @@ def __compute_psi(v, table, num_points, dscaling):
             Psi[tuple(dlist)] = etable[dtuple]
 #            print "Psi dic: ", Psi
     # Rearrange Indices as (fixed, auxiliary, primary, secondary)
-    (rearrangement, num_indices) = __compute_rearrangement(indices)
+#    (rearrangement, num_indices) = __compute_rearrangement(indices)
 
 #    print "rearrangement, num_indices: ", rearrangement, num_indices
 
-    indices = [indices[i] for i in rearrangement]
+#    indices = [indices[i] for i in rearrangement]
+#    shapes =  [shapes[i] for i in rearrangement]
+#    dimensions =  [dimensions[i] for i in rearrangement]
+    print "Tabulate.... indices: ", indices
+    print "shapes - rearr: ", shapes
+    print "dimensions - rearr: ", dimensions
+
 #    print "indices  - rearrangement: ", indices
     #Psi = numpy.transpose(Psi, rearrangement + (len(indices),))
 #    print "Psi - rearrange: ", Psi
 #    print "numpy.shape(Psi): ", numpy.shape(Psi)
 
+#    print "num_indices: ", num_indices
+#    print "num_indices[0]: ", num_indices[0]
+
     # Remove fixed indices
-    for i in range(num_indices[0]):
-        Psi = Psi[indices[i].index,...]
-    indices = [index for index in indices if not index.type == Index.FIXED]
+#    for i in range(num_indices[0]):
+#        print "rm fixed, i = ", i
+#        print "rm fixed, indices[i].index = ", indices[i].index
+#        print "rm fixed, Psi = ", Psi
+#        print "rm fixed, Psi[indices[i].index,...] = ", Psi[indices[i].index,...]
+#        Psi = Psi[indices[i].index,...]
+#    indices = [index for index in indices if not index.type == Index.FIXED]
+#    print "Tabulate.... rm fixed indices: ", indices
 
     # Put quadrature points first
 #    rank = numpy.rank(Psi)
@@ -345,9 +376,8 @@ def __compute_psi(v, table, num_points, dscaling):
     bpart = [i.index for i in indices if i.type == Index.AUXILIARY_0]
 
 #    print "Tabulate.... Psi: ", Psi
-#    print "numpy.shape(Psi): ", numpy.shape(Psi)
+    print "numpy.shape(Psi): ", numpy.shape(Psi)
 
-#    print "Tabulate.... indices: ", indices
 #    print "Tabulate.... bpart: ", bpart
 
 #    print "Tabulate.... Psi[0]: ", Psi[0]
@@ -361,39 +391,24 @@ def __compute_psi(v, table, num_points, dscaling):
 
 
 
-    return (Psi, indices, dimensions, bpart)
+    return (Psi, indices, dimensions, multiindices, bpart)
 
 def __derivatives(basisfunctions, integral_type, points, dscaling, facet0, facet1):
-    "Compute derivatives at quadrature points for a given monomial term"
+    "Tabulate derivatives at quadrature points for a given map"
 
-    # Extract all sub-elements from all basisfunctions! This will change when it is possible
-    # to specify which map to use
+    ## Extract all sub-elements from all basisfunctions! This will change when it is possible
+    ## to specify which map to use
     elements = []
     for basis in basisfunctions:
         elements += __extract_elements(basis.element)
 
-    # Pick element of highest degree as a basis for the map.
-    # FIXME: This doesn't take into account the different types of elements, better way to pick
-    # an element for the map??
-    degree = -1
-    for elem in elements:
-        if (elem.degree() > degree):
-            element = elem
-            degree = element.degree()
+#    print "elements: ", elements
 
-    #FIXME: Assuming all elements are the same, picking first
-#    element = basisfunctions[0].element
-#    print "basisfunctions: ", basisfunctions
-#    print "element: ", element
-#    print "element.num_sub_elements(): ", element.num_sub_elements()
+    ## Get the cell shape of the first element
+    cell_shape = elements[0].cell_shape()
 
-#    dirs = compute_permutations(3,2)
-#    dirs = [[0]*3]*3
-#    for i in range(element.cell_shape()):
-#        for j in range(element.cell_shape()):
-#            if (i == j):
-#                dirs[i][j] = 1
-
+    ## Create linear Lagrange element for the transformation (DEFAULT)
+    element = FiniteElement("Lagrange", shape_to_string[cell_shape], 1)
 
         # Tabulate for different integral types
     if integral_type == Integral.CELL:
@@ -408,7 +423,8 @@ def __derivatives(basisfunctions, integral_type, points, dscaling, facet0, facet
 
     print "numpy.shape(derivatives): ", numpy.shape(derivatives)
 
-    # Construct the directions of derivatives
+
+    # Construct the directions of derivatives (this should be OK)
     directions = numpy.identity(element.cell_shape(), int)
     directions = [tuple(direc) for direc in directions]
 
@@ -439,8 +455,10 @@ def __compute_rearrangement(indices):
     primary   = __find_indices(indices, Index.PRIMARY)
     secondary = __find_indices(indices, Index.SECONDARY)
     assert len(fixed + auxiliary + primary + secondary) == len(indices)
-    return (tuple(fixed + auxiliary + primary + secondary), \
-            (len(fixed), len(auxiliary), len(primary), len(secondary)))
+    return (tuple(primary + fixed + auxiliary + secondary), \
+            (len(primary), len(fixed), len(auxiliary), len(secondary)))
+#    return (tuple(fixed + auxiliary + primary + secondary), \
+#            (len(fixed), len(auxiliary), len(primary), len(secondary)))
 
 def __compute_shape(psis):
     "Compute shape of reference tensor from given list of tables."
@@ -515,3 +533,63 @@ def __extract_elements(element):
             elements += __extract_elements(element.sub_element(i))
 
     return elements
+
+def __multi_indices(cindex, cshape, dindex, dshape):
+
+    i = Index()
+    multi = []
+    for index in cindex:
+        t = index.type
+        if (t == i.SECONDARY or t == i.AUXILIARY or t == i.AUXILIARY_0 or t == i.AUXILIARY_G):
+            multi += [build_indices(cshape)]
+
+    for index in dindex:
+        t = index.type
+        if (t == i.SECONDARY or t == i.AUXILIARY or t == i.AUXILIARY_0 or t == i.AUXILIARY_G):
+            multi += [build_indices(dshape)]
+
+
+
+
+
+    return multi
+
+    # FIXME: needed?
+def __create_multi_index(v, indices, index_type):
+    "Find dimensions and create multi index"
+        
+    # Get relevant indices
+    relevant_indices = [index for index in indices if index.type == index_type]
+
+    # Compute all dimensions
+    dims = [__find_dim(v, index) for index in relevant_indices]
+
+    # Create multi index from dims
+    return MultiIndex(dims).indices
+
+# FIXME: needed?
+def __find_dim(v, index):
+    "Find dimension of given index"
+
+    # Create index to search for
+#    index = Index(i)
+#    index.type = index_type
+
+    # Check basis function index
+    if v.index == index:
+        return v.element.space_dimension()
+
+    # Check component indices
+    for j in range(len(v.component)):
+        if v.component[j] == index:
+            return v.element.value_dimension(j)
+
+    # Check derivatives
+    for d in v.derivatives:
+        if d.index == index:
+            return d.element.cell_dimension()
+                
+    # Didn't find dimension
+    raise RuntimeError, "Unable to find dimension for index " + str(index)
+
+

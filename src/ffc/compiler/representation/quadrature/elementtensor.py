@@ -46,13 +46,15 @@ class ElementTensor:
 
         # Save constants, coefficients and transforms (used to generate factor)
         self.constants = monomial.constants
-#        print "geo: constants: ", monomial.constants
+        print "geo: constants: ", monomial.constants
 
         self.coefficients = monomial.coefficients
-#        print "geo: coeff: ", monomial.coefficients
+        print "geo: coeff: ", monomial.coefficients
         self.transforms = monomial.transforms
-#        print "geo: transforms: ", monomial.transforms
+        print "geo: transforms: ", monomial.transforms
 
+        self.determinant = monomial.determinant
+        print "geo: determinant: ", monomial.determinant
 
 #        debug("Primary multi index: " + str(self.i), 1)
 #        debug("Secondary multi index: " + str(self.a), 1)

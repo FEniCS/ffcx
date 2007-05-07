@@ -145,6 +145,10 @@ class FiniteElement:
             facet_shape = self.facet_shape()
             return self.__fiat_element.function_space().trace_tabulate_jet(facet_shape, facet, order, points)
 
+    def basis_elements(self):
+        "Returns a list of all basis elements"
+        return [self]
+
     def __add__(self, other):
         "Create mixed element"
         return mixedelement.MixedElement([self, other])

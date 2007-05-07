@@ -146,6 +146,10 @@ class MixedElement:
 
         return mixed_table
 
+    def basis_elements(self):
+        "Returns a list of all basis elements"
+        return self.__extract_elements(self)
+
     def __compute_mixed_entity_dofs(self, elements):
         "Compute mixed entity dofs as a list of entity dof mappings"
         mixed_entity_dofs = []
@@ -174,6 +178,31 @@ class MixedElement:
                 # Add to dictionary
                 component_table[dorder][dtuple] = mixed_subtable
         return component_table
+
+    def __extract_elements(self, element):
+        """This function extracts the basis elements recursively from vector elements and mixed elements.
+        Example, the following mixed element:
+
+        element1 = FiniteElement("Lagrange", "triangle", 1)
+        element2 = VectorElement("Lagrange", "triangle", 2)
+
+        element  = element2 + element1, has the structure:
+        mixed-element[mixed-element[Lagrange order 2, Lagrange order 2], Lagrange order 1]
+
+        This function returns the list of basis elements:
+        elements = [Lagrange order 2, Lagrange order 2, Lagrange order 1]"""
+
+        elements = []
+
+        # If the element is not mixed (a basis element, add to list)
+        if isinstance(element, finiteelement.FiniteElement):
+            elements += [element]
+        # Else call this function again for each subelement
+        else:
+            for i in range(element.num_sub_elements()):
+                elements += self.__extract_elements(element.sub_element(i))
+
+        return elements
 
     def __add__(self, other):
         "Create mixed element"
