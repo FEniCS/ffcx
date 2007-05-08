@@ -141,6 +141,8 @@ class Index:
                 i = Index(self)
                 i.range = [r + other for r in self.range]
                 return i
+            elif not other:
+                return Index(self) # -0 is ok for indices without range
             else:
                 raise RuntimeError("Cannot add integer to index without range")
         # Index + Index
