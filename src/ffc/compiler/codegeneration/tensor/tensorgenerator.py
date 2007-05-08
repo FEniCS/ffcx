@@ -119,7 +119,7 @@ class TensorGenerator(CodeGenerator):
     
         # Get list of primary indices (should be the same so pick first)
         iindices = terms[0].A0.i.indices
-    
+
         # Prefetch formats to speed up code generation
         format_element_tensor  = format["element tensor"]
         format_geometry_tensor = format["geometry tensor access"]
@@ -128,9 +128,16 @@ class TensorGenerator(CodeGenerator):
         format_multiply        = format["multiply"]
         format_floating_point  = format["floating point"]
         format_epsilon         = format["epsilon"]
-    
+        
         # Generate code for geometry tensor entries
-        gk_tensor = [ ( [(format_geometry_tensor(j, a), a) for a in terms[j].A0.a.indices], j) for j in range(len(terms)) ]
+        gk_tensor = []
+        for j in range(len(terms)):
+            entries_per_term = []
+            gindices = pick_first([G0.a.indices for G0 in terms[j].G])
+            for s in range(len(gindices)):
+                # Leap of faith: We contract an geometry tensor and an element tensor. Should be summable.
+                entries_per_term += [(format_geometry_tensor(j, gindices[s]), terms[j].A0.a.indices[s])]
+            gk_tensor += [tuple([entries_per_term, j])]
 
         # Generate code for computing the element tensor
         k = 0
