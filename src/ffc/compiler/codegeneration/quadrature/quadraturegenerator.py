@@ -147,7 +147,7 @@ class QuadratureGenerator(CodeGenerator):
             # FIXME: Switched off until a nodemap is available (assuming affine map)
 #            element_code += self.__generate_jacobian(tensors[i].map_element.cell_shape(),\
 #                                                     tensors[i].map_element.space_dimension(), i, Indent, format)
-            print "generating code for tensor :", i
+            print "\ngenerating code for tensor :", i
 
             # Generate the element tensor
             element_code += self.__element_tensor(tensors[i], i, Indent, format)
@@ -254,11 +254,11 @@ class QuadratureGenerator(CodeGenerator):
 #        print "\n quad codegenerator, tabulate_psis: ", psis
 #        print "\n quad codegenerator, tabulate_psis[0]: ", psis[0]
 #        print "\n quad codegenerator, tabulate_psis[0][0]: ", psis[0][0]
-        print "\n quad codegenerator, shape(tabulate_psis): ", numpy.shape(psis[0][0])
+#        print "\n quad codegenerator, shape(tabulate_psis): ", numpy.shape(psis[0][0])
 
         # Get number of psis to tabulate
         num_psis = len(psis)
-        print "\n quad codegenerator, num_psis: ", num_psis
+#        print "\n quad codegenerator, num_psis: ", num_psis
 
         code += [Indent.indent(format_comment\
                 ("Values of shapefunctions and their derivatives at quadrature points"))]
@@ -276,7 +276,7 @@ class QuadratureGenerator(CodeGenerator):
 
             # Get list of indices
             indices = psi[1]
-            print "indices: ", indices
+#            print "indices: ", indices
             # Get number of dofs, firste entry in shape list
             num_dofs = psi[2][0]
 
@@ -297,8 +297,8 @@ class QuadratureGenerator(CodeGenerator):
 
             names = []
             multi_indices = []
-            print "aindices: ", aindices
-            print "bindices: ", bindices
+#            print "aindices: ", aindices
+#            print "bindices: ", bindices
 
             for a in aindices:
                 for b in bindices:
@@ -480,7 +480,7 @@ class QuadratureGenerator(CodeGenerator):
             code += [(Indent.indent(format_determinant), format_abs(format_determinant))]
 
         else:
-            RuntimeError("Jacobian for 3D not implemented yet!")
+            raise RuntimeError, "Jacobian for 3D not implemented yet!"
 
         code += [""]
 
@@ -516,19 +516,8 @@ class QuadratureGenerator(CodeGenerator):
         iindices = tensor.i.indices
         aindices = tensor.a.indices
         bindices = tensor.b.indices
-        print "aindices: ", aindices
-        print "bindices: ", bindices
-        # Treating secondary and auxilliary indices the same way
-#        abindices = []
-#        if (tensor.a.indices != [[]]):
-#            print "tensor.a.indices: ", tensor.a.indices
-#            abindices +=  tensor.a.indices
-#        elif (tensor.b.indices != [[]]):
-#            print "tensor.b.indices: ", tensor.b.indices
-#            abindices +=  tensor.b.indices
-#        else:
-#            abindices = [[]]
-#        print "abindices: ", abindices
+#        print "aindices: ", aindices
+#        print "bindices: ", bindices
 
         # Compute scaling
         weight = [format_weights(tensor_number, format_ip)]
@@ -765,7 +754,7 @@ class QuadratureGenerator(CodeGenerator):
 #                print "eval i0: ", t.index0([], multiindex, [], [])
 #                print "eval i1: ", t.index1([], multiindex, [], [])
 #                print "power: ", t.power
-                factors += [format["transform"](t.power, t.index0([], a, b, []), \
+                factors += [format["transform"](t.type, t.index0([], a, b, []), \
                                                         t.index1([], a, b, []), \
                                                         t.restriction),]
         if tensor.determinant:
