@@ -356,7 +356,6 @@ class BasisFunction(Element):
         j = Index("secondary", range(self.element.cell_dimension()));
         w.transforms = [Transform(self.element, j, i, None, Transform.J)] 
         w.basisfunctions[0].component = [j + offset]    
-        w.basisfunctions[0].index.range = range(offset, sub_element.space_dimension())
         w.determinant = -1
         return w
 

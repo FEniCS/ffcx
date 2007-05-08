@@ -60,7 +60,7 @@ class ReferenceTensor:
             
             # Check basis function index
             if v.index == index:
-                return range(v.element.space_dimension()) # Erratic fix, meg.
+                return v.index.range
 
             # Check component indices
             for j in range(len(v.component)):

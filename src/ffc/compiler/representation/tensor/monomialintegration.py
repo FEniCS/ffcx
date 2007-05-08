@@ -192,10 +192,10 @@ def __compute_psi(v, table, num_points, dscaling):
     Psi = numpy.zeros(shapes, dtype = numpy.float)
 
     # Iterate over derivative Indices
-    dlists = build_indices([range(d) for d in dshape]) or [[]]
+    dlists = build_indices([index.range for index in dindex]) or [[]]
     if len(cindex) > 0:
         etable = table[(element, restriction)]
-        for component in range(cshape[0]):
+        for component in cindex[0].range:
             for dlist in dlists:
                 # Translate derivative multiindex to lookup tuple
                 dtuple = __multiindex_to_tuple(dlist, cell_dimension)
