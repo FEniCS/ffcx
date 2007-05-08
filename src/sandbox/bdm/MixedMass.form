@@ -15,3 +15,8 @@ for monomial in a.monomials:
     for basisfunction in monomial.basisfunctions:
         print "  v = %s, index = %s, range = %s" % \
               (str(basisfunction), str(basisfunction.index), str(basisfunction.index.range))
+
+for monomial in a.monomials:
+    print monomial
+    for basisfunction in monomial.basisfunctions:
+        print basisfunction.element
