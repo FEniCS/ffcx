@@ -415,3 +415,10 @@ const double Jinv%(restriction)s_22 = d22 / detJ%(restriction)s;
 // Take absolute value of determinant
 detJ%(restriction)s = std::abs(detJ%(restriction)s);
 """
+
+edge_sign_snippet_2D = """
+// Calculate the sign of some edge etc.
+const int sign_edge_2D_0 = 1;
+const int sign_edge_2D_1 = 1;
+const int sign_edge_2D_2 = 1;
+"""
