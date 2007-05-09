@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-01-24 -- 2007-04-27"
+__date__ = "2007-01-24 -- 2007-05-09"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -147,27 +147,11 @@ class DofMap:
     def __compute_dof_coordinates(self, element):
         "Compute the coordinates associated with each dof"
 
-        # We can handle scalar Lagrange elements
-#        if element.family() == "Lagrange":
-#            points = element.dual_basis().pts
-#            return [tuple([0.5*(x + 1.0) for x in point]) for point in points]
-
-        # We can handle tensor products of scalar Lagrange elements
-#        if self.__is_vector_lagrange(element):
-#            points = element.sub_element(0).dual_basis().pts
-#            repeated_points = []
-#            for i in range(element.value_dimension(0)):
-#                repeated_points += points
-#            return [tuple([0.5*(x + 1.0) for x in point]) for point in repeated_points]
-        # Can't handle element
-#        return None
-
         element_points = []
         elements = element.basis_elements()
         for element in elements:
             # Test for non-supported (or tested) elements
-            if (element.family() == "Brezzi-Douglas-Marini" or element.family() == "Raviart-Thomas"\
-                or element.family() == "Nedelec"):
+            if element.family() in ["Brezzi-Douglas-Marini", "Raviart-Thomas", "Nedelec"]:
                 element_points += [None]
             else:
                 points = element.dual_basis().pts
@@ -179,9 +163,9 @@ class DofMap:
         "Compute the components associated with each dof"
 
         # We can handle scalar Lagrange elements
-        if element.family() == "Lagrange":
+        if element.family() in ["Lagrange", "Discontinuous Lagrange"]:
             return [0 for i in range(element.space_dimension())]
-
+ 
         # We can handle tensor products of scalar Lagrange elements        
         if self.__is_vector_lagrange(element):
             components = []
@@ -263,7 +247,9 @@ class DofMap:
             return False
         families = [element.sub_element(i).family() for i in range(element.num_sub_elements())]
         dimensions = [element.sub_element(i).space_dimension() for i in range(element.num_sub_elements())]
-        return families[:-1] == families[1:] and dimensions[:-1] == dimensions[1:] and not families[0] == "Mixed"
+        return families[:-1] == families[1:] and \
+               dimensions[:-1] == dimensions[1:]  and \
+               families[0] in ["Lagrange", "Discontinuous Lagrange"]
         
     def __repr__(self):
         "Pretty print"
