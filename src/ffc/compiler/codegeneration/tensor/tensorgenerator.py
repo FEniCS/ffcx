@@ -252,10 +252,10 @@ class TensorGenerator(CodeGenerator):
                             else:
                                 computed[value] = name
                         else:
-                            value = "1.0"
+                            value = "1"
 
                         # Add to declarations
-                        declarations += [(name, value)]    
+                        declarations += [(format["sign tensor declaration"](name), value)]    
 
                     # Add declarations for this basis function to the code
                     code += declarations
