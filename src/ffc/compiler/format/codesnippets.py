@@ -416,9 +416,52 @@ const double Jinv%(restriction)s_22 = d22 / detJ%(restriction)s;
 detJ%(restriction)s = std::abs(detJ%(restriction)s);
 """
 
+# Code snippet for calculating the "signs of edges" in 2D:
 edge_sign_snippet_2D = """
-// Calculate the sign of some edge etc.
-const int sign_edge_2D_0 = 1;
-const int sign_edge_2D_1 = 1;
-const int sign_edge_2D_2 = 1;
+// Calculating the signs of the edges ...
+// Calculating the edges
+const double e0_0 = x[2][0] - x[1]x[0];
+const double e0_1 = x[2][1] - x[1]x[1];
+const double e1_0 = - J_01;
+const double e1_1 = - J_11;
+const double e2_0 = J_00;
+const double e2_1 = J_10;
+
+// Calculating the not left normal of each edge
+const double n0_0 = - e0_1;
+const double n0_1 = e0_0;
+const double n1_0 = - e1_1;
+const double n1_1 = e1_0;
+const double n2_0 = -e2_1;
+const double n2_1 = e2_0;
+
+// Calculating the orientation of the normals
+const double o0 = n0_0*e2_0 + n0_1*e2_1;
+const double o1 = n1_0*e0_0 + n1_1*e0_1;
+const double o2 = n2_0*e1_0 + n2_1*e1_1;
+
+const int sign_edge_2D_0;
+const int sign_edge_2D_1;
+const int sign_edge_2D_2;
+
+if (o0 > 0) {
+   sign_edge_2D_0 = 1;
+} else {
+   sign_edge_2D_0 = -1;
+}
+if (o1 > 0) {
+   sign_edge_2D_1 = 1;
+} else {
+   sign_edge_2D_1 = -1;
+}
+
+if (o2 > 0) {
+   sign_edge_2D_2 = 1;
+} else {
+   sign_edge_2D_2 = -1;
+}
+
+std::cout << "Sign edge 0" << sign_edge_2D_0 << std::endl;
+std::cout << "Sign edge 1" << sign_edge_2D_1 << std::endl;
+std::cout << "Sign edge 2" << sign_edge_2D_2 << std::endl;
 """
