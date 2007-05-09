@@ -3,10 +3,13 @@ q = 1
 BDM = FiniteElement("Brezzi-Douglas-Marini", "triangle", q)
 DG  = FiniteElement("Discontinuous Lagrange", "triangle", q - 1)
  
-mixed_element = BDM + DG
- 
-(tau, w) = TestFunctions(mixed_element)
-(sigma, u) = TrialFunctions(mixed_element)
+#mixed_element = BDM + DG
+#(tau, w) = TestFunctions(mixed_element)
+#(sigma, u) = TrialFunctions(mixed_element)
+
+mixed_element = DG + BDM
+(w, tau) = TestFunctions(mixed_element)
+(u, sigma) = TrialFunctions(mixed_element)
 
 a = dot(tau, sigma)*dx
 
@@ -15,8 +18,3 @@ for monomial in a.monomials:
     for basisfunction in monomial.basisfunctions:
         print "  v = %s, index = %s, range = %s" % \
               (str(basisfunction), str(basisfunction.index), str(basisfunction.index.range))
-
-for monomial in a.monomials:
-    print monomial
-    for basisfunction in monomial.basisfunctions:
-        print basisfunction.element
