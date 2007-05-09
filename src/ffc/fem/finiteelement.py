@@ -101,15 +101,26 @@ class FiniteElement:
         "Return degree of polynomial basis"
         return self.basis().degree()
 
-    def mapping(self, i):
-        "Return the type of mapping associated with the element"
+    def value_mapping(self, component):
+        """Return the type of mapping associated with the i'th
+        component of the element"""
         return self.__mapping
 
-    def offset(self, component):
+    def space_mapping(self, i):
+        """Return the type of mapping associated with the i'th basis
+        function of the element"""
+        return self.__mapping
+    
+    def value_offset(self, component):
         """Given an absolute component (index), return the associated
         subelement and offset of the component""" 
         return (self, 0)
 
+    def space_offset(self, i):
+        """Given a basis function number i, return the associated
+        subelement and offset""" 
+        return (self, 0)
+    
     def cell_dimension(self):
         "Return dimension of shape"
         return shape_to_dim[self.cell_shape()]
