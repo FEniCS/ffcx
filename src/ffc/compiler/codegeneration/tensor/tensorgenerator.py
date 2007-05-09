@@ -129,7 +129,8 @@ class TensorGenerator(CodeGenerator):
         format_floating_point  = format["floating point"]
         format_epsilon         = format["epsilon"]
         
-        code += self.__generate_signs(terms, format)
+        (sign_changes, signs) = self.__generate_signs(terms, format)
+        code += signs
         # Generate code for geometry tensor entries
         gk_tensor = []
         for j in range(len(terms)):
@@ -162,6 +163,10 @@ class TensorGenerator(CodeGenerator):
                         num_ops += 1
                     else:
                         num_dropped += 1
+
+            # Add sign changes as appropriate.
+            if sign_changes:
+                value = self.__add_sign(value, 0, i, format)
             value = value or zero
             code += [(name, value)]
             k += 1
@@ -264,7 +269,13 @@ class TensorGenerator(CodeGenerator):
         if necessary:
             code.insert(0, "\n" + format["comment"]("Compute signs"))
             code.insert(0, format["snippet edge signs"](2))
-            return code
+            return (True, code)
         else:
-            return []         # Return [] is the case of no sign changes...
+            return (False, []) # Return [] is the case of no sign changes...)
 
+    def __add_sign(self, value, j, i, format):
+        if value:
+            value = "(%s)" % value
+            for k in range(len(i)):
+                value = format["multiply"]([format["sign tensor"](j, k, i[k]), value])
+        return value
