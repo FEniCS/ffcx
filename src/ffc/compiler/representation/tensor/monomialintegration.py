@@ -1,7 +1,7 @@
 "This module implements efficient integration of monomial forms"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-11-03 -- 2007-03-14"
+__date__ = "2004-11-03 -- 2007-05-09"
 __copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -167,15 +167,7 @@ def __compute_psi(v, table, num_points, dscaling):
         cshape = []
     elif len(v.component) == 1:
         cindex = [v.component[0]]
-
-        # FIXME: hej
-        #cshape = [v.element.value_dimension(0)]
         cshape = [len(v.component[0].range)]
-
-        #print cshape
-       #print v.component
-       #print v.component[0].range
-        
     else:
         raise RuntimeError, "Can only handle rank 0 or rank 1 tensors."
 
@@ -199,18 +191,12 @@ def __compute_psi(v, table, num_points, dscaling):
     dlists = build_indices([index.range for index in dindex]) or [[]]
     if len(cindex) > 0:
         etable = table[(v.element, v.restriction)]
-
-        # FIXME: hej
-        #for component in cindex[0].range:
         for component in range(len(cindex[0].range)):
-
             for dlist in dlists:
                 # Translate derivative multiindex to lookup tuple
                 dtuple = __multiindex_to_tuple(dlist, cell_dimension)
                 # Get values from table
-                # FIXME: hej
                 Psi[component][tuple(dlist)] = etable[cindex[0].range[component]][dorder][dtuple]
-                #Psi[component][tuple(dlist)] = etable[component][dorder][dtuple]
     else:
         etable = table[(v.element, v.restriction)][dorder]
         for dlist in dlists:
@@ -226,8 +212,6 @@ def __compute_psi(v, table, num_points, dscaling):
 
     # Remove fixed indices
     for i in range(num_indices[0]):
-        # FIXME: hej
-        #Psi = Psi[indices[i].index,...]
         Psi = Psi[0, ...]
     indices = [index for index in indices if not index.type == Index.FIXED]
 
