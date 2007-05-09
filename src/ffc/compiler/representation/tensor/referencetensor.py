@@ -60,17 +60,17 @@ class ReferenceTensor:
             
             # Check basis function index
             if v.index == index:
-                return v.index.range
+                return range(len(v.index.range))
 
             # Check component indices
             for j in range(len(v.component)):
                 if v.component[j] == index:
-                    return v.component[j].range
+                    return range(len(v.component[j].range))
 
             # Check derivatives
             for d in v.derivatives:
                 if d.index == index:
-                    return d.index.range
+                    return range(len(d.index.range))
                 
         # Didn't find dimension
         raise RuntimeError, "Unable to find dimension for index " + str(index)

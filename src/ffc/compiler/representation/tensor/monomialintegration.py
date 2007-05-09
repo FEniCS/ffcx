@@ -1,7 +1,7 @@
 "This module implements efficient integration of monomial forms"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-11-03 -- 2007-03-14"
+__date__ = "2004-11-03 -- 2007-05-09"
 __copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -57,6 +57,7 @@ def integrate(monomial, facet0, facet1):
     toc = time.time() - tic
     num_entries = numpy.prod(numpy.shape(A0))
     debug("%d entries computed in %.3g seconds" % (num_entries, toc), 1)
+    debug("Shape of reference tensor: " + str(numpy.shape(A0)), 1)
 
     return A0
 
@@ -157,52 +158,47 @@ def __compute_psi(v, table, num_points, dscaling):
     # corresponding to quadrature points and auxiliary Indices are removed
     # later when we sum over these dimensions.
 
-    # Get FiniteElement for v
-    element = v.element
-    cell_dimension = element.cell_dimension()
-    space_dimension = element.space_dimension()
+    # Get cell dimension
+    cell_dimension = v.element.cell_dimension()
 
-    # Get restriction for v
-    restriction = v.restriction
-
-    # Get Indices and shapes for Derivatives
-    dindex = [d.index for d in v.derivatives]
-    dshape = [cell_dimension for d in v.derivatives]
-    dorder = len(dindex)
-
-    # Get Indices and shapes for BasisFunction
-    vindex = [v.index]
-    vshape = [space_dimension]
-
-    # Get Indices and shapes for components
-    if len(v.component) > 1:
-        raise RuntimeError, "Can only handle rank 0 or rank 1 tensors."
-    if len(v.component) > 0:
-        cindex = [v.component[0]]
-        cshape = [element.value_dimension(0)]
-    else:
+    # Get indices and shapes for components
+    if len(v.component) ==  0:
         cindex = []
         cshape = []
+    elif len(v.component) == 1:
+        cindex = [v.component[0]]
+        cshape = [len(v.component[0].range)]
+    else:
+        raise RuntimeError, "Can only handle rank 0 or rank 1 tensors."
 
-    # Create list of Indices that label the dimensions of the tensor Psi
+    # Get indices and shapes for derivatives
+    dindex = [d.index for d in v.derivatives]
+    dshape = [len(d.index.range) for d in v.derivatives]
+    dorder = len(dindex)
+
+    # Get indices and shapes for basis functions
+    vindex = [v.index]
+    vshape = [len(v.index.range)]
+
+    # Create list of indices that label the dimensions of the tensor Psi
     indices = cindex + dindex + vindex
     shapes = cshape + dshape + vshape + [num_points]
 
     # Initialize tensor Psi: component, derivatives, basis function, points
     Psi = numpy.zeros(shapes, dtype = numpy.float)
 
-    # Iterate over derivative Indices
+    # Iterate over derivative indices
     dlists = build_indices([index.range for index in dindex]) or [[]]
     if len(cindex) > 0:
-        etable = table[(element, restriction)]
-        for component in cindex[0].range:
+        etable = table[(v.element, v.restriction)]
+        for component in range(len(cindex[0].range)):
             for dlist in dlists:
                 # Translate derivative multiindex to lookup tuple
                 dtuple = __multiindex_to_tuple(dlist, cell_dimension)
                 # Get values from table
-                Psi[component][tuple(dlist)] = etable[component][dorder][dtuple]
+                Psi[component][tuple(dlist)] = etable[cindex[0].range[component]][dorder][dtuple]
     else:
-        etable = table[(element, restriction)][dorder]
+        etable = table[(v.element, v.restriction)][dorder]
         for dlist in dlists:
             # Translate derivative multiindex to lookup tuple
             dtuple = __multiindex_to_tuple(dlist, cell_dimension)
@@ -216,7 +212,7 @@ def __compute_psi(v, table, num_points, dscaling):
 
     # Remove fixed indices
     for i in range(num_indices[0]):
-        Psi = Psi[indices[i].index,...]
+        Psi = Psi[0, ...]
     indices = [index for index in indices if not index.type == Index.FIXED]
 
     # Put quadrature points first
