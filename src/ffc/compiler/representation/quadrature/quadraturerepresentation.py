@@ -170,8 +170,8 @@ class QuadratureRepresentation:
 
             # Get monomial
             m = monomials[i]
-            print "\n representation for monomial i\n", i
-            print "\ncompute terms, m: \n", m
+#            print "\n representation for monomial i\n", i
+#            print "\ncompute terms, m: \n", m
 #            print "compute terms, m.basisfunctions: ", m.basisfunctions
 
 #            print "degree: ", compute_degree(m.basisfunctions)
