@@ -97,7 +97,7 @@ class Element:
 
     def __invert__(self):
         "Operator: ~Element"
-        raise FormError, (self, "Only Constants and numeric constants can be inverted.")
+        raise ~Form(self)
 
     def __pos__(self):
         "Operator: +Element"
@@ -131,42 +131,6 @@ class Element:
         "Print nicely formatted representation of Element."
         return Form(self).__repr__()
 
-class OldConstant(Element):
-    """A Constant represents a numerical constant or a Function that
-    is constant over the mesh.
-
-    Attributes:
-
-        number   - a unique index identifying the Constant.
-        inverted - a boolean, true if Constant is inverted
-    """
-
-    def __init__(self, constant = None):
-        "Create Constant."
-        if isinstance(constant, OldConstant):
-            # Create Constant from Constant (copy constructor)
-            self.number = Index(constant.number)
-            self.inverted = bool(constant.inverted)
-        elif constant == None:
-            # Create a new number
-            self.number = Index("constant")
-            self.inverted = False
-        else:
-            raise FormError, (constant, "Unable to create Constant from given expression.")
-        return
-
-    def __invert__(self):
-        c = OldConstant(self)
-        if self.inverted:
-            c.inverted = False
-        else:
-            c.inverted = True
-        return c
-
-    def __repr__(self):
-        "Print nicely formatted representation of Constant."
-        return "c" + str(self.number)
-
 class Function(Element):
     """A Function represents a projection of a given function onto a
     finite element space, expressed as a linear combination of
@@ -190,19 +154,21 @@ class Function(Element):
         "Create Function."
         if isinstance(element, Function):
             # Create Function from Function (copy constructor)
-            self.n0 = Index(element.n0)
-            self.n1 = Index(element.n1)
-            self.e0 = element.e0
-            self.e1 = element.e1
-            self.P  = element.P
+            self.n0  = Index(element.n0)
+            self.n1  = Index(element.n1)
+            self.e0  = element.e0
+            self.e1  = element.e1
+            self.P   = element.P
+            self.ops = [op for of in element.ops]
 
         else:
             # Create Function for given FiniteElement
-            self.n0 = Index("function")
-            self.n1 = Index("projection")
-            self.e0 = element
-            self.e1 = element
-            self.P  = None
+            self.n0  = Index("function")
+            self.n1  = Index("projection")
+            self.e0  = element
+            self.e1  = element
+            self.P   = None
+            self.ops = []
         return
 
     def __repr__(self):
@@ -409,16 +375,6 @@ class Monomial(Element):
             self.basisfunctions = [BasisFunction(other.e1, index)]
             self.determinant = 0
             self.integral = None
-        elif isinstance(other, OldConstant):
-            # Create Monomial from Constant
-            index = Index()
-            self.numeric = 1.0
-            self.constants = [OldConstant(other)]
-            self.coefficients = []
-            self.transforms = []
-            self.basisfunctions = []
-            self.determinant = 0
-            self.integral = None
         elif isinstance(other, BasisFunction):
             # Create Monomial from BasisFunction
             self.numeric = 1.0
@@ -590,9 +546,6 @@ class Form(Element):
             self.monomials = [Monomial(other)]
         elif isinstance(other, Function):
             # Create Form from Function
-            self.monomials = [Monomial(other)]
-        elif isinstance(other, OldConstant):
-            # Create Form from Constant
             self.monomials = [Monomial(other)]
         elif isinstance(other, Monomial):
             # Create Form from Monomial

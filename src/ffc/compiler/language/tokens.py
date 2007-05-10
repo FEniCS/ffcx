@@ -37,6 +37,7 @@ class Coefficient:
             self.e1 = function.e1
             self.P  = function.P
             self.index = Index(function.index)
+            self.ops = [op for op in function.ops]
         else:
             self.n0 = Index(function.n0)
             self.n1 = Index(function.n1)
@@ -44,6 +45,7 @@ class Coefficient:
             self.e1 = function.e1
             self.P  = function.P
             self.index = Index(index)
+            self.ops = []
         return
 
     def __repr__(self):
