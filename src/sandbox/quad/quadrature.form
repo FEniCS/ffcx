@@ -31,4 +31,4 @@ a = dot(grad(v), grad(u))*dx
 #a = dot(grad(v('+')),grad(u('-')))*dS
 #a = v*u*dx + dot(grad(v),grad(u))*dx
 #a = v*u*dx + dot(grad(v),grad(u))*dx# + dot(grad(v('+')),grad(u('-')))*dS
-#L = dot(v,f)*dx
+#L = dot(v,f)*ds

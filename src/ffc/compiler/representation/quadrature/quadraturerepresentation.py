@@ -62,8 +62,6 @@ class QuadratureRepresentation:
         if len(monomials) == 0:
             debug_end()
             return []
-#        print "monomials[0]: ", monomials[0]
-#        print "monomials[1]: ", monomials[1]
 
         # Compute factorization
         #FIXME: this will mean something else for quadrature
@@ -170,18 +168,19 @@ class QuadratureRepresentation:
 
             # Get monomial
             m = monomials[i]
-#            print "\n representation for monomial i\n", i
+            print "\n representation for monomial i\n", i
+            print "\n representation monomial:\n", m
 #            print "\ncompute terms, m: \n", m
 #            print "compute terms, m.basisfunctions: ", m.basisfunctions
 
 #            print "degree: ", compute_degree(m.basisfunctions)
 #            print "num_gauss_points: ", num
 
-            tensors[i] = ElementTensor(m, facet0, facet1)
-
             # Only consider monomials of given integral type
-#            if not m.integral.type == integral_type:
-#                continue
+            if not m.integral.type == integral_type:
+                continue
+
+            tensors[i] = ElementTensor(m, facet0, facet1)
             
             # Compute geometry tensor for current monomial
 #            G = GeometryTensor(m)

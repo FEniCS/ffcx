@@ -336,7 +336,7 @@ for (unsigned int row = 0; row < %(num_derivatives)s; row++)
   for (unsigned int col = 0; col < %(num_derivatives)s; col++)
   {
     for (unsigned int k = 0; k < %(n)s; k++)
-      %(transform)s[row][col] *= %(Jinv)s[%(combinations)s[row][k]][%(combinations)s[col][k]];
+      %(transform)s[row][col] *= %(Jinv)s[%(combinations)s[col][k]][%(combinations)s[row][k]];
   }
 }"""
 
@@ -364,7 +364,7 @@ for (unsigned int row = 0; row < %(num_derivatives)s; row++)
   for (unsigned int col = 0; col < %(num_derivatives)s; col++)
   {
     for (unsigned int k = 0; k < %(n)s; k++)
-      %(transform)s[row][col] *= %(Jinv)s[%(combinations)s[row][k]][%(combinations)s[col][k]];
+      %(transform)s[row][col] *= %(Jinv)s[%(combinations)s[col][k]][%(combinations)s[row][k]];
   }
 }"""
 
