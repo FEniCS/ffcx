@@ -56,14 +56,14 @@ class GeometryTensor:
         # Check coefficients
         for c in monomial.coefficients:
             if c.index == index:
-                return c.index.range
+                return range(len(c.index.range))
             
         # Check transforms
         for t in monomial.transforms:
             if t.index0 == index:
-                return t.index0.range
+                return range(len(t.index0.range))
             elif t.index1 == index:
-                return t.index1.range
+                return range(len(t.index1.range))
             
         # Didn't find dimension
         raise RuntimeError, "Unable to find dimension for index " + str(index)
