@@ -7,11 +7,12 @@ __copyright__ = "Copyright (C) 2006-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # FFC fem modules
-#from ffc.fem.vectorelement import *
-#from ffc.fem.finiteelement import *
+from ffc.fem.vectorelement import VectorElement
+from ffc.fem.finiteelement import FiniteElement
 
 # FFC language modules
-from integral import *
+from algebra import Function
+from integral import Integral
 from index import *
 
 def Constant(shape):

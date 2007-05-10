@@ -18,6 +18,8 @@ from ffc.fem.dofmap import *
 
 # FFC language modules
 from ffc.compiler.language.integral import *
+from ffc.compiler.language.reassignment import max_index
+from ffc.compiler.language.index import Index
 
 class FormData:
     """This class holds meta data for a form. The following attributes

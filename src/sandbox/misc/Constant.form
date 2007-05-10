@@ -7,8 +7,6 @@ f = Function(element)
 
 
 
-c = OldConstant()
+c = Constant("triangle")
 
 print c
-
-a = (1/c)*dot(grad(v), grad(u))*dx
