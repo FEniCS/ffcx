@@ -1,7 +1,7 @@
 "Code generator for tensor representation"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-11-03 -- 2007-05-07"
+__date__ = "2004-11-03 -- 2007-05-10"
 __copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -34,10 +34,14 @@ class TensorGenerator(CodeGenerator):
         
         # Generate code for geometry tensor
         code = self.__generate_geometry_tensors(terms, format)
+
+        # Generate code for sign changes
+        (sign_code, change_signs) = self.__generate_signs(terms, format)
+        code += sign_code
         
         # Generate code for element tensor(s)
         code += [""] + [format["comment"]("Compute element tensor")]
-        code += self.__generate_element_tensor(terms, format)
+        code += self.__generate_element_tensor(terms, change_signs, format)
 
         return {"tabulate_tensor": code}
 
@@ -58,7 +62,7 @@ class TensorGenerator(CodeGenerator):
         num_facets = len(terms)
         cases = [None for i in range(num_facets)]
         for i in range(num_facets):
-            cases[i] = self.__generate_element_tensor(terms[i], format)
+            cases[i] = self.__generate_element_tensor(terms[i], False, format)
 
         return {"tabulate_tensor": (common, cases)}
     
@@ -80,7 +84,7 @@ class TensorGenerator(CodeGenerator):
         cases = [[None for j in range(num_facets)] for i in range(num_facets)]
         for i in range(num_facets):
             for j in range(num_facets):
-                cases[i][j] = self.__generate_element_tensor(terms[i][j], format)
+                cases[i][j] = self.__generate_element_tensor(terms[i][j], False, format)
 
         return {"tabulate_tensor": (common, cases)}
 
@@ -111,7 +115,7 @@ class TensorGenerator(CodeGenerator):
 
         return code
     
-    def __generate_element_tensor(self, terms, format):
+    def __generate_element_tensor(self, terms, sign_changes, format):
         "Generate list of declaration for computation of element tensor"
 
         # Generate code as a list of declarations
@@ -128,9 +132,6 @@ class TensorGenerator(CodeGenerator):
         format_multiply        = format["multiply"]
         format_floating_point  = format["floating point"]
         format_epsilon         = format["epsilon"]
-        
-        (sign_changes, signs) = self.__generate_signs(terms, format)
-        code += signs
 
         # Generate code for geometry tensor entries
         gk_tensor = [ ( [(format_geometry_tensor(j, a), a) for a in terms[j].A0.a.indices], j) for j in range(len(terms)) ]
@@ -214,6 +215,7 @@ class TensorGenerator(CodeGenerator):
             d = format["multiply"]([format["scale factor"], d0])
         else:
             d = format["scale factor"]
+            
         # Compute product of all factors
         return format["multiply"]([f for f in [d] + f0 + f1])
 
@@ -243,7 +245,7 @@ class TensorGenerator(CodeGenerator):
                         name = format["sign tensor"](j, index.index, no)
                         if entity == 1 and element.space_mapping(no) == Mapping.PIOLA: 
                             necessary = True
-                            value = format["call edge sign"](2, entity_no)
+                            value = format["call edge sign"](entity_no)
                             # If the sign of this edge already has
                             # been computed, refer to that entry instead.
                             if value in computed:
@@ -261,11 +263,11 @@ class TensorGenerator(CodeGenerator):
                     computed[str(index)] = True
                     
         if necessary:
-            code.insert(0, "\n" + format["comment"]("Compute signs"))
+            code.insert(0, format["comment"]("Compute signs"))
             code.insert(0, format["snippet edge signs"](2))
-            return (True, code)
+            return (code, True)
         else:
-            return (False, []) # Return [] is the case of no sign changes...)
+            return ([], False) # Return [] is the case of no sign changes...)
 
     def __add_sign(self, value, j, i, format):
         if value:

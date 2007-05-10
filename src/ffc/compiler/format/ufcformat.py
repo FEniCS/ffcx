@@ -1,7 +1,7 @@
 "Code generation for the UFC 1.0 format"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-01-08 -- 2007-03-27"
+__date__ = "2007-01-08 -- 2007-05-10"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -122,7 +122,7 @@ format = { "add": lambda v: " + ".join(v),
            "transform Jinv": "Jinv",
 # snippets
            "coordinate map": lambda i: {2:map_coordinates_2D, 3:map_coordinates_3D}[i],
-           "call edge sign": lambda d, no: "sign_edge_%sD_%d" % (d, no),
+           "call edge sign": lambda e: "sign_e%d" % e,
            "snippet edge signs": lambda d: eval("edge_sign_snippet_%dD" % d),
            "snippet dof map": evaluate_basis_dof_map,
            "snippet eta_triangle": eta_triangle_snippet,
