@@ -415,3 +415,29 @@ const double Jinv%(restriction)s_22 = d22 / detJ%(restriction)s;
 // Take absolute value of determinant
 detJ%(restriction)s = std::abs(detJ%(restriction)s);
 """
+
+# Code snippet for calculating the "signs of edges" in 2D:
+edge_sign_snippet_2D = """
+// Compute signs of edges (need to flip edge degrees of freedom)
+
+// Compute the edges
+const double e0_0 = x[2][0] - x[1][0];
+const double e0_1 = x[2][1] - x[1][1];
+const double e1_0 = x[2][0] - x[0][0];
+const double e1_1 = x[2][1] - x[0][1];
+const double e2_0 = x[1][0] - x[0][0];
+const double e2_1 = x[1][1] - x[0][1];
+
+// Compute edges normals by rotating edges 90 degrees clockwise
+const double n0_0 = e0_1;
+const double n0_1 = -e0_0;
+const double n1_0 = e1_1;
+const double n1_1 = -e1_0;
+const double n2_0 = e2_1;
+const double n2_1 = -e2_0;
+
+// Compute the orientation of the normals relative to the cell
+int sign_e0 = n0_0*e2_0 + n0_1*e2_1 > 0 ? 1 : -1;
+int sign_e1 = n1_0*e0_0 + n1_1*e0_1 > 0 ? 1 : -1;
+int sign_e2 = n2_0*e1_0 + n2_1*e1_1 < 0 ? 1 : -1;
+"""

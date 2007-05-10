@@ -249,7 +249,7 @@ class BasisFunction(Element):
 
     def  __getitem__(self, component):
         "Operator: BasisFunction[component], pick given component."
-        if self.element.mapping(component) == Mapping.PIOLA:
+        if self.element.value_mapping(component) == Mapping.PIOLA:
             return self.pick_component_piola(component)
         else:
             return self.pick_component_default(component)
@@ -350,7 +350,7 @@ class BasisFunction(Element):
         if not rank == 1:
             raise FormError, (component, "Illegal component index, does not match rank.") 
 
-        (sub_element, offset) = self.element.offset(component)
+        (sub_element, offset) = self.element.value_offset(component)
         w = Monomial(self)
         i = Index(component) - offset
         j = Index("secondary", range(self.element.cell_dimension()));

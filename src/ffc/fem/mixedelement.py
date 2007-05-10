@@ -71,19 +71,25 @@ class MixedElement:
         "Return degree of polynomial basis"
         return max([element.degree() for element in self.__elements])
 
-    def mapping(self, i):
+    def value_mapping(self, component):
         """Return the type of mapping associated with the given
-        component i of the element. """
-        i = Index(i)
+        component of the element. """
+        i = Index(component)
         if i.type == i.FIXED:
-            (sub_element, offset) = self.offset(i)
-            return sub_element.mapping(Index(i.index - offset))
+            (sub_element, offset) = self.value_offset(i)
+            return sub_element.value_mapping(Index(i.index - offset))
         else:
             # All the elements must have the same mapping:
             # meg: No longer true since we changed the index style!
-            return self.__elements[0].mapping(Index(0))
+            return self.__elements[0].value_mapping(Index(0))
 
-    def offset(self, component):
+    def space_mapping(self, i):
+        """Return the type of mapping associated with the i'th basis
+        function of the element"""
+        (sub_element, offset) = self.space_offset(i)
+        return sub_element.space_mapping(i - offset)
+        
+    def value_offset(self, component):
         """Given an absolute component (index), return the associated
         subelement and relative position of the component""" 
         # Does not yet work with nested mixed elements
@@ -95,7 +101,20 @@ class MixedElement:
             else:
                 adjustment += value_dim
         raise RuntimeError("Component does not match value dimension")
-    
+
+    def space_offset(self, i):
+        """Given an absolute basis_no (index), return the associated
+        subelement and offset"""
+        # Does not yet work with nested mixed elements
+        adjustment = 0
+        for element in self.__elements:
+            space_dim = element.space_dimension()
+            if (adjustment + space_dim) > i:
+                return (element, adjustment)
+            else:
+                adjustment += space_dim
+        raise RuntimeError("Basis number does not match space dimension")
+
     def cell_dimension(self):
         "Return dimension of shape"
         return pick_first([element.cell_dimension() for element in self.__elements])

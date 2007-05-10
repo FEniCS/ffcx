@@ -1,7 +1,7 @@
 "Code generation for the UFC 1.0 format"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-01-08 -- 2007-03-27"
+__date__ = "2007-01-08 -- 2007-05-10"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -58,6 +58,8 @@ format = { "add": lambda v: " + ".join(v),
            "geometry tensor declaration": lambda j, a: "const double " + format["geometry tensor access"](j, a),
            "geometry tensor access": lambda j, a: "G%d_%s" % (j, "_".join(["%d" % index for index in a])),
            "element tensor": lambda i, k: "A[%d]" % k,
+           "sign tensor": lambda i, j, k: "S%d_%d_%d" % (i, j, k),
+           "sign tensor declaration": lambda s: "const int " + s,
            "vertex values": lambda i: "vertex_values[%d]" % i,
            "dof values": lambda i: "dof_values[%d]" % i,
            "dofs": lambda i: "dofs[%d]" % i,
@@ -120,6 +122,8 @@ format = { "add": lambda v: " + ".join(v),
            "transform Jinv": "Jinv",
 # snippets
            "coordinate map": lambda i: {2:map_coordinates_2D, 3:map_coordinates_3D}[i],
+           "call edge sign": lambda e: "sign_e%d" % e,
+           "snippet edge signs": lambda d: eval("edge_sign_snippet_%dD" % d),
            "snippet dof map": evaluate_basis_dof_map,
            "snippet eta_triangle": eta_triangle_snippet,
            "snippet eta_tetrahedron": eta_tetrahedron_snippet,
