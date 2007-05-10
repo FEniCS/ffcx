@@ -8,21 +8,16 @@ __license__  = "GNU GPL Version 2"
 
 # FFC fem modules
 from ffc.fem.vectorelement import VectorElement
-from ffc.fem.finiteelement import FiniteElement
+from ffc.fem.finiteelement import FiniteElement, shape_to_dim, string_to_shape
 
 # FFC language modules
 from algebra import Function
 from integral import Integral
-from index import *
+from index import Index
 
 def Constant(shape):
     """This like a class but is really a function. It returns a DG(0)
     function which may be thought of as a Constant."""
-
-    print VectorElement
-    print FiniteElement
-    
-    print dir()
 
     # Create discontinuous Lagrange element
     element = FiniteElement("Discontinuous Lagrange", shape, 0)
