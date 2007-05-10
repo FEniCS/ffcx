@@ -13,6 +13,13 @@ __license__  = "GNU GPL Version 2"
 from index import Index
 from restriction import *
 
+class Operators:
+    "A collection of simple operators that may be applied to coefficients"
+
+    INVERSE = 0
+    ABS = 1
+    SQRT = 2
+
 class Coefficient:    
     """A Coefficient represents the coefficient for a function
     expressed as a linear combination of basis functions.
@@ -50,7 +57,12 @@ class Coefficient:
 
     def __repr__(self):
         "Print nicely formatted representation of Coefficient."
-        return "w" + str(self.n1) + "_" + str(self.index)
+        operator_to_string = {Operators.INVERSE: "inv", Operators.ABS: "abs", Operators.SQRT: "sqrt"}
+        operators = ", ".join([operator_to_string[op] for op in self.ops])
+        if not operators == "":
+            return "([" + operators + "]" + "w" + str(self.n1) + "_" + str(self.index) + ")"
+        else:
+            return "w" + str(self.n1) + "_" + str(self.index)
 
 class Derivative:
     """A Derivative represents a derivative on the reference cell in

@@ -79,7 +79,7 @@ def __compile_forms(forms, prefix="Form", representation=FFC_REPRESENTATION, out
     format.init(options)
 
     # Iterate over forms for stages 1 - 4
-    generated_forms = []
+    generated_forms = []    
     for form in forms:
 
         # Compiler phase 1: analyze form

@@ -31,9 +31,12 @@ class TensorGenerator(CodeGenerator):
         terms = form_representation.cell_tensor
         if len(terms) == 0:
             return None
-        
+
+        # Generate code for manipulating coefficients
+        code = self.__generate_coefficients(terms, format)
+
         # Generate code for geometry tensor
-        code = self.__generate_geometry_tensors(terms, format)
+        code += self.__generate_geometry_tensors(terms, format)
 
         # Generate code for sign changes
         (sign_code, change_signs) = self.__generate_signs(terms, format)
@@ -53,18 +56,21 @@ class TensorGenerator(CodeGenerator):
         terms = form_representation.exterior_facet_tensors
         if len(terms) == 0:
             return None
+
+        # Generate code for manipulating coefficients (should be the same so pick first)
+        code = self.__generate_coefficients(terms[0], format)
         
         # Generate code for geometry tensor (should be the same so pick first)
-        common = self.__generate_geometry_tensors(terms[0], format)
+        code += self.__generate_geometry_tensors(terms[0], format)
 
         # Generate code for element tensor(s)
-        common += [""] + [format["comment"]("Compute element tensor for all facets")]
+        code += [""] + [format["comment"]("Compute element tensor for all facets")]
         num_facets = len(terms)
         cases = [None for i in range(num_facets)]
         for i in range(num_facets):
             cases[i] = self.__generate_element_tensor(terms[i], False, format)
 
-        return {"tabulate_tensor": (common, cases)}
+        return {"tabulate_tensor": (code, cases)}
     
     def generate_interior_facet_integral(self, form_representation, sub_domain, format):
         """Generate dictionary of code for interior facet integral from the given
@@ -74,19 +80,67 @@ class TensorGenerator(CodeGenerator):
         terms = form_representation.interior_facet_tensors
         if len(terms) == 0:
             return None
+
+        # Generate code for manipulating coefficients (should be the same so pick first)
+        code = self.__generate_coefficients(terms[0][0], format)
         
         # Generate code for geometry tensor (should be the same so pick first)
-        common = self.__generate_geometry_tensors(terms[0][0], format)
+        code += self.__generate_geometry_tensors(terms[0][0], format)
 
         # Generate code for element tensor(s)
-        common += [""] + [format["comment"]("Compute element tensor for all facet-facet combinations")]
+        code += [""] + [format["comment"]("Compute element tensor for all facet-facet combinations")]
         num_facets = len(terms)
         cases = [[None for j in range(num_facets)] for i in range(num_facets)]
         for i in range(num_facets):
             for j in range(num_facets):
                 cases[i][j] = self.__generate_element_tensor(terms[i][j], False, format)
 
-        return {"tabulate_tensor": (common, cases)}
+        return {"tabulate_tensor": (code, cases)}
+
+    def __generate_coefficients(self, terms, format):
+        "Generate code for manipulating coefficients"
+
+        # Generate code as a list of declarations
+        code = []
+
+        # Add comment
+        code += [format["comment"]("Compute coefficients")]
+
+        # A coefficient is identified by 4 numbers:
+        #
+        #   0 - the number of the function
+        #   1 - the position of the (factored) monomial it appears
+        #   2 - the position of the coefficient inside the monomial
+        #   3 - the position of the expansion coefficient
+
+        # Iterate over all terms
+        j = 0
+        for term in terms:
+            for G in term.G:
+                for k in range(len(G.coefficients)):
+                    coefficient = G.coefficients[k]
+                    for l in coefficient.n0.range:
+                        name = format["modified coefficient declaration"](coefficient.n0.index, j, k, l)
+                        value = format["coefficient"](coefficient.n0.index, l)
+                        for l in range(len(coefficient.ops)):
+                            op = coefficient.ops[len(coefficient.ops) - 1 - l]
+                            if op == Operators.INVERSE:
+                                value = format["inverse"](value)
+                            elif op == Operators.ABS:
+                                value = format["absolute value"](value)
+                            elif op == Operators.SQRT:
+                                value = format["sqrt"](value)
+                        code += [(name, value)]
+                j += 1
+
+        # Don't add code if there are no coefficients
+        if len(code) == 1:
+            return []
+
+        # Add newline
+        code += [""]
+
+        return code
 
     def __generate_geometry_tensors(self, terms, format):
         "Generate list of declarations for computation of geometry tensors"
@@ -98,20 +152,32 @@ class TensorGenerator(CodeGenerator):
         code += [format["comment"]("Compute geometry tensors")]
 
         # Iterate over all terms
-        for j in range(len(terms)):
+        j = 0
+        for i in range(len(terms)):
+
+            term = terms[i]
 
             # Get list of secondary indices (should be the same so pick first)
-            aindices = terms[j].G[0].a.indices
+            aindices = terms[i].G[0].a.indices
 
             # Iterate over secondary indices
             for a in aindices:
 
+                # Compute factorized values
+                values = []
+                jj = j
+                for G in term.G:
+                    values += [self.__generate_entry(G, a, jj, format)]
+                    jj += 1
+
                 # Sum factorized values
-                name = format["geometry tensor declaration"](j, a)
-                value = format["add"]([self.__generate_entry(G, a, format) for G in terms[j].G])
+                name = format["geometry tensor declaration"](i, a)
+                value = format["add"](values)
 
                 # Add declaration
                 code += [(name, value)]
+
+            j += len(term.G)
 
         return code
     
@@ -168,19 +234,15 @@ class TensorGenerator(CodeGenerator):
 
         return code
     
-    def __generate_entry(self, G, a, format):
+    def __generate_entry(self, G, a, i, format):
         "Generate code for the value of entry a of geometry tensor G"
     
         # Compute product of factors outside sum
         factors = []
-        for c in G.constants:
-            if c.inverted:
-                factors += ["(1.0/" + format["constant"](c.number.index) + ")"]
-            else:
-                factors += [format["constant"](c.number.index)]
-        for c in G.coefficients:
+        for j in range(len(G.coefficients)):
+            c = G.coefficients[j]
             if not c.index.type == Index.AUXILIARY_G:
-                coefficient = format["coefficient"](c.n1.index, c.index([], a, [], []))
+                coefficient = format["modified coefficient access"](c.n1.index, i, j, c.index([], a, [], []))
                 factors += [coefficient]
         for t in G.transforms:
             if not (t.index0.type == Index.AUXILIARY_G or  t.index1.type == Index.AUXILIARY_G):
@@ -195,9 +257,10 @@ class TensorGenerator(CodeGenerator):
         terms = []
         for b in G.b.indices:
             factors = []
-            for c in G.coefficients:
+            for j in range(len(G.coefficients)):
+                c = G.coefficients[j]
                 if c.index.type == Index.AUXILIARY_G:
-                    coefficient = format["coefficient"](c.n1.index, c.index([], a, [], b))
+                    coefficient = format["modified coefficient access"](c.n1.index, i, j, c.index([], a, [], b))
                     factors += [coefficient]
             for t in G.transforms:
                 if t.index0.type == Index.AUXILIARY_G or t.index1.type == Index.AUXILIARY_G:

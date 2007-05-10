@@ -1,7 +1,7 @@
 # Copyright (C) 2007 Anders Logg (logg@simula.no)
 # Licensed under the GNU GPL Version 2
 #
-# Test form for scalar and vector constants.
+# Test form for operators on Functions.
 #
 # Compile this form with FFC: ffc Poisson.form
 
@@ -10,14 +10,6 @@ element = FiniteElement("Lagrange", "triangle", 1)
 v = TestFunction(element)
 u = TrialFunction(element)
 f = Function(element)
+g = Function(element)
 
-c = Constant("triangle")
-d = VectorConstant("triangle")
-
-print c
-print isinstance(c, Form)
-
-a = sqrt(1/abs(1/c))*dot(grad(v), grad(u))*dx
-print a
-
-#L = dot(d, grad(v))*dx
+a = sqrt(1/abs(1/f))*sqrt(g)*dot(grad(v), grad(u))*dx + v*u*sqrt(f*g)*g*dx

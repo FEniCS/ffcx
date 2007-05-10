@@ -97,7 +97,7 @@ class Element:
 
     def __invert__(self):
         "Operator: ~Element"
-        raise ~Form(self)
+        return ~Form(self)
 
     def __pos__(self):
         "Operator: +Element"
@@ -445,6 +445,27 @@ class Monomial(Element):
         w.numeric = -w.numeric
         return w
 
+    def __invert__(self):
+        "Operator: ~Monomial"
+        w = Monomial(self)
+        for i in range(len(w.coefficients)):
+            w.coefficients[i].ops = [Operators.INVERSE] + w.coefficients[i].ops
+        return w
+
+    def abs(self):
+        "Take absolute value of monomial"
+        w = Monomial(self)
+        for i in range(len(w.coefficients)):
+            w.coefficients[i].ops = [Operators.ABS] + w.coefficients[i].ops
+        return w
+
+    def sqrt(self):
+        "Take square root of monomial"
+        w = Monomial(self)
+        for i in range(len(w.coefficients)):
+            w.coefficients[i].ops = [Operators.SQRT] + w.coefficients[i].ops
+        return w
+
     def  __getitem__(self, component):
         "Operator: Monomial[component], pick given component."
         # Always scalar if monomial of more than one basis function
@@ -582,6 +603,30 @@ class Form(Element):
         "Operator: -Form"
         w = Form()
         w.monomials = [-p for p in self.monomials]
+        return w
+
+    def __invert__(self):
+        "Operator: ~Form"
+        if len(self.monomials) > 1:
+            raise FormError, (self, "Cannot take inverse of sum.")
+        w = Form()
+        w.monomials = [~p for p in self.monomials]
+        return w
+
+    def abs(self):
+        "Take absolute value of form"
+        if len(self.monomials) > 1:
+            raise FormError, (self, "Cannot take absolute value of sum.")
+        w = Form()
+        w.monomials = [p.abs() for p in self.monomials]
+        return w
+
+    def sqrt(self):
+        "Take square root of form"
+        if len(self.monomials) > 1:
+            raise FormError, (self, "Cannot take square root of sum.")
+        w = Form()
+        w.monomials = [p.sqrt() for p in self.monomials]
         return w
 
     def  __getitem__(self, component):

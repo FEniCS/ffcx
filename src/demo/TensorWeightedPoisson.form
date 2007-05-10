@@ -21,4 +21,4 @@ c11 = Function(P0)
 C = [[c00, c01], [c10, c11]]
 
 a = dot(grad(v), mult(C, grad(u)))*dx
-L = v*f*dx
+#L = v*f*dx

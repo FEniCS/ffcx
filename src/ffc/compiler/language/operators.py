@@ -220,6 +220,14 @@ def jump(v, n):
             form = form + v[i]('+')*n[i]('+') + v[i]('-')*n[i]('-')
         return form
 
+def sqrt(v):
+    "Return the square root (take square root of coefficients)"
+    return Form(v).sqrt()
+
+def abs(v):
+    "Return the absolute value (take absolute value of coefficients)"
+    return Form(v).abs()
+
 def __cell_dimension(v):
     "Return shape dimension for given object."
     if isinstance(v, list):
