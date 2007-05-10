@@ -12,6 +12,8 @@ __license__  = "GNU GPL Version 2"
 # FIAT modules
 from FIAT.shapes import *
 
+from numpy import array
+
 def reorder_points(points, shape, facet):
     """Reorder points on given reference shape for given facet."""
 
