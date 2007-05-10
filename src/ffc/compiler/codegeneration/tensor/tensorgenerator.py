@@ -128,7 +128,10 @@ class TensorGenerator(CodeGenerator):
         format_multiply        = format["multiply"]
         format_floating_point  = format["floating point"]
         format_epsilon         = format["epsilon"]
-    
+        
+        (sign_changes, signs) = self.__generate_signs(terms, format)
+        code += signs
+
         # Generate code for geometry tensor entries
         gk_tensor = [ ( [(format_geometry_tensor(j, a), a) for a in terms[j].A0.a.indices], j) for j in range(len(terms)) ]
 
@@ -154,6 +157,10 @@ class TensorGenerator(CodeGenerator):
                         num_ops += 1
                     else:
                         num_dropped += 1
+
+            # Add sign changes as appropriate.
+            if sign_changes:
+                value = self.__add_sign(value, 0, i, format)
             value = value or zero
             code += [(name, value)]
             k += 1
@@ -209,3 +216,60 @@ class TensorGenerator(CodeGenerator):
             d = format["scale factor"]
         # Compute product of all factors
         return format["multiply"]([f for f in [d] + f0 + f1])
+
+    def __generate_signs(self, terms, format):
+        "Generate list of declarations for computation of signs"
+        code = []
+        computed = {}
+        for j in range(len(terms)):
+            monomial = terms[j].monomial
+            # Inspect each basis function (identified by its index)
+            # and check whether sign changes are relevant.
+            for basisfunction in monomial.basisfunctions:
+                index = basisfunction.index
+                if not str(index) in computed:
+                    necessary = False
+                    element = basisfunction.element
+                    declarations = []
+                    dof_entities = DofMap(element).dof_entities();
+
+                    # Go through the topological entities associated
+                    # with each basis function/dof. If the element is
+                    # a piola mapped element and the basis function is
+                    # associated with an edge, we calculate the
+                    # possible sign change.
+                    for no in dof_entities:
+                        (entity, entity_no) = dof_entities[no]
+                        name = format["sign tensor"](j, index.index, no)
+                        if entity == 1 and element.space_mapping(no) == Mapping.PIOLA: 
+                            necessary = True
+                            value = format["call edge sign"](2, entity_no)
+                            # If the sign of this edge already has
+                            # been computed, refer to that entry instead.
+                            if value in computed:
+                                value = computed[value]
+                            else:
+                                computed[value] = name
+                        else:
+                            value = "1"
+
+                        # Add to declarations
+                        declarations += [(format["sign tensor declaration"](name), value)]    
+
+                    # Add declarations for this basis function to the code
+                    code += declarations
+                    computed[str(index)] = True
+                    
+        if necessary:
+            code.insert(0, "\n" + format["comment"]("Compute signs"))
+            code.insert(0, format["snippet edge signs"](2))
+            return (True, code)
+        else:
+            return (False, []) # Return [] is the case of no sign changes...)
+
+    def __add_sign(self, value, j, i, format):
+        if value:
+            value = "(%s)" % value
+            for k in range(len(i)):
+                value = format["multiply"]([format["sign tensor"](j, k, i[k]), value])
+        return value
