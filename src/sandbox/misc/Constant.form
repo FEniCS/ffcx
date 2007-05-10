@@ -14,5 +14,6 @@ f = Function(element)
 c = Constant("triangle")
 d = VectorConstant("triangle")
 
-a = c*dot(grad(v), grad(u))*dx
+
+a = (1/c)*dot(grad(v), grad(u))*dx
 L = dot(d, grad(v))*dx
