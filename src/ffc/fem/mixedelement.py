@@ -13,11 +13,8 @@ import numpy
 from ffc.common.debug import *
 from ffc.common.utils import *
 
-# FFC compiler.language modules
-from ffc.compiler.language.algebra import *
-
-# FFC fem modules
-import finiteelement
+# FFC language modules
+from ffc.compiler.language.index import Index
 
 class MixedElement:
     """A MixedElement represents a finite element defined as a tensor
@@ -213,8 +210,11 @@ class MixedElement:
 
         elements = []
 
-        # If the element is not mixed (a basis element, add to list)
-        if isinstance(element, finiteelement.FiniteElement):
+        # Import here to avoid cyclic dependency
+        from finiteelement import FiniteElement
+
+        # If the element is not mixed (a basis element, add to list)        
+        if isinstance(element, FiniteElement):
             elements += [element]
         # Else call this function again for each subelement
         else:

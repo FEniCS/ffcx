@@ -270,6 +270,10 @@ class BasisFunction(Element):
                 v.restriction = Restriction.PLUS
             elif restriction == '-':
                 v.restriction = Restriction.MINUS
+            elif restriction == '+/-':
+                v.restriction = Restriction.CONSTANT
+            else:
+                raise FormError, (self, "Illegal restriction: " + str(restriction))
         return v
 
     def __repr__(self):
