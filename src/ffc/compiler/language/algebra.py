@@ -131,7 +131,7 @@ class Element:
         "Print nicely formatted representation of Element."
         return Form(self).__repr__()
 
-class Constant(Element):
+class OldConstant(Element):
     """A Constant represents a numerical constant or a Function that
     is constant over the mesh.
 
@@ -143,7 +143,7 @@ class Constant(Element):
 
     def __init__(self, constant = None):
         "Create Constant."
-        if isinstance(constant, Constant):
+        if isinstance(constant, OldConstant):
             # Create Constant from Constant (copy constructor)
             self.number = Index(constant.number)
             self.inverted = bool(constant.inverted)
@@ -156,7 +156,7 @@ class Constant(Element):
         return
 
     def __invert__(self):
-        c = Constant(self)
+        c = OldConstant(self)
         if self.inverted:
             c.inverted = False
         else:
@@ -405,11 +405,11 @@ class Monomial(Element):
             self.basisfunctions = [BasisFunction(other.e1, index)]
             self.determinant = 0
             self.integral = None
-        elif isinstance(other, Constant):
+        elif isinstance(other, OldConstant):
             # Create Monomial from Constant
             index = Index()
             self.numeric = 1.0
-            self.constants = [Constant(other)]
+            self.constants = [OldConstant(other)]
             self.coefficients = []
             self.transforms = []
             self.basisfunctions = []
@@ -587,7 +587,7 @@ class Form(Element):
         elif isinstance(other, Function):
             # Create Form from Function
             self.monomials = [Monomial(other)]
-        elif isinstance(other, Constant):
+        elif isinstance(other, OldConstant):
             # Create Form from Constant
             self.monomials = [Monomial(other)]
         elif isinstance(other, Monomial):

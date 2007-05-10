@@ -21,7 +21,7 @@ def index_call(object, foo, args = None):
         [index_call(w, foo, args) for w in object.coefficients]
         [index_call(t, foo, args) for t in object.transforms]
         [index_call(v, foo, args) for v in object.basisfunctions]
-    elif isinstance(object, algebra.Constant):
+    elif isinstance(object, algebra.OldConstant):
         index_call(object.number, foo, args)
     elif isinstance(object, tokens.Coefficient):
         index_call(object.n0, foo, args)

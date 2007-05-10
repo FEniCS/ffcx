@@ -10,7 +10,7 @@ from difflib import unified_diff
 
 # Check all in demo directory
 chdir("../../demo")
-form_files = [f for f in listdir(".") if ".form" in f]
+form_files = [f for f in listdir(".") if f[-5:] == ".form"]
 num_forms = len(form_files)
 num_forms_ok = 0
 forms_not_ok = []
@@ -18,29 +18,27 @@ forms_not_ok = []
 # Iterate over form files
 for form_file in form_files:
 
-    # Check only files ending in .form
-    if ".form" in form_file:
-        print "Compiling and verifying form %s..." % form_file
+    print "Compiling and verifying form %s..." % form_file
 
-        # Compile form
-        if system("../bin/ffc -fprecision=10 -s %s" % form_file) == 0:
+    # Compile form
+    if system("../bin/ffc -fprecision=10 -s %s" % form_file) == 0:
 
-            # Compare against reference
-            code_file = form_file.split(".")[0] + ".h"
-            f0 = open("../test/regression/reference/%s" % code_file, "r")
-            f1 = open(code_file, "r")
-            c0 = f0.read().split("\n")
-            c1 = f1.read().split("\n")
-            f0.close()
-            f1.close()
-            if c0 == c1:
-                num_forms_ok += 1
-            else:
-                print "*** Generated code does not match reference, diff follows"
-                diff = unified_diff(c0, c1)
-                for line in diff:
-                    print line
-                forms_not_ok += [form_file]
+        # Compare against reference
+        code_file = form_file.split(".")[0] + ".h"
+        f0 = open("../test/regression/reference/%s" % code_file, "r")
+        f1 = open(code_file, "r")
+        c0 = f0.read().split("\n")
+        c1 = f1.read().split("\n")
+        f0.close()
+        f1.close()
+        if c0 == c1:
+            num_forms_ok += 1
+        else:
+            print "*** Generated code does not match reference, diff follows"
+            diff = unified_diff(c0, c1)
+            for line in diff:
+                print line
+            forms_not_ok += [form_file]
 
 # Print summary
 if num_forms_ok == num_forms:

@@ -20,7 +20,7 @@ f = Function(DG1)
 g = Function(DG1)
 n = Function(DG0)
 h = Function(DGh)
-alpha = Constant()
+alpha = OldConstant()
 
 a =  dot(grad(v), grad(u))*dx \
    - dot(avg(grad(v)), jump(u, n))*dS \

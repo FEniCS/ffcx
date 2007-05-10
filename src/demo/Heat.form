@@ -13,7 +13,7 @@ u1 = TrialFunction(element) # Value at t_n
 u0 = Function(element)      # Value at t_n-1
 c  = Function(element)      # Heat conductivity
 f  = Function(element)      # Heat source
-k  = Constant()             # Time step
+k  = OldConstant()          # Time step
 
 a = v*u1*dx + k*c*dot(grad(v), grad(u1))*dx
 L = v*u0*dx + k*v*f*dx
