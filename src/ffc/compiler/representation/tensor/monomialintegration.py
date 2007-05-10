@@ -48,7 +48,7 @@ def integrate(monomial, facet0, facet1):
     table = __init_table(monomial.basisfunctions, integral_type, points, facet0, facet1)
 
     # Compute table Psi for each factor
-    psis = [__compute_psi(v, table, len(points), dscaling) for v in monomial.basisfunctions]
+    psis = [__compute_psi(v, table, len(points), dscaling, integral_type) for v in monomial.basisfunctions]
 
     # Compute product of all Psis
     A0 = __compute_product(psis, vscaling * monomial.numeric * weights)
@@ -140,7 +140,7 @@ def __init_table(basisfunctions, integral_type, points, facet0, facet1):
 
     return table
 
-def __compute_psi(v, table, num_points, dscaling):
+def __compute_psi(v, table, num_points, dscaling, integral_type):
     "Compute the table Psi for the given BasisFunction v."
 
     # We just need to pick the values for Psi from the table, which is
@@ -187,10 +187,18 @@ def __compute_psi(v, table, num_points, dscaling):
     # Initialize tensor Psi: component, derivatives, basis function, points
     Psi = numpy.zeros(shapes, dtype = numpy.float)
 
+    # Get restriction and handle constants
+    restriction = v.restriction
+    if restriction == Restriction.CONSTANT:
+        if integral_type == Integral.INTERIOR_FACET:
+            restriction = Restriction.PLUS
+        else:
+            restriction = None
+
     # Iterate over derivative indices
     dlists = build_indices([index.range for index in dindex]) or [[]]
     if len(cindex) > 0:
-        etable = table[(v.element, v.restriction)]
+        etable = table[(v.element, restriction)]
         for component in range(len(cindex[0].range)):
             for dlist in dlists:
                 # Translate derivative multiindex to lookup tuple
@@ -198,7 +206,7 @@ def __compute_psi(v, table, num_points, dscaling):
                 # Get values from table
                 Psi[component][tuple(dlist)] = etable[cindex[0].range[component]][dorder][dtuple]
     else:
-        etable = table[(v.element, v.restriction)][dorder]
+        etable = table[(v.element, restriction)][dorder]
         for dlist in dlists:
             # Translate derivative multiindex to lookup tuple
             dtuple = __multiindex_to_tuple(dlist, cell_dimension)

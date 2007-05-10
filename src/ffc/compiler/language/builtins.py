@@ -21,7 +21,7 @@ def Constant(shape):
 
     # Create discontinuous Lagrange element
     element = FiniteElement("Discontinuous Lagrange", shape, 0)
-    return Function(element)
+    f = Function(element)('+/-')
 
 def VectorConstant(shape, vector_dim=None):
     """This looks like a class but is really a function.  It returns a
@@ -34,7 +34,8 @@ def VectorConstant(shape, vector_dim=None):
 
     # Create discontinuous vector Lagrange element
     element = VectorElement("Discontinuous Lagrange", shape, 0, vector_dim)
-    return Function(element)
+    element.isconstant = True
+    return Function(element)('+/-')
 
 # Predefined integrals
 dx = Integral("cell")

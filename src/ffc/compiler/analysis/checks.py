@@ -41,10 +41,10 @@ def check_restrictions(form):
         type = p.integral.type
         for v in p.basisfunctions:
             if type == Integral.CELL:
-                if not v.restriction == None:
+                if not (v.restriction == None or v.restriction == Restriction.CONSTANT):
                     raise FormError, (p, "Integrand may not be restricted in a cell integral.")
             elif type == Integral.EXTERIOR_FACET:
-                if not v.restriction == None:
+                if not (v.restriction == None or v.restriction == Restriction.CONSTANT):
                     raise FormError, (p, "Integrand may not be restricted in an exterior facet integral.")
             elif type == Integral.INTERIOR_FACET:
                 if v.restriction == None:
