@@ -48,31 +48,31 @@ const double J%(restriction)s_21 = x%(restriction)s[2][2] - x%(restriction)s[0][
 const double J%(restriction)s_22 = x%(restriction)s[3][2] - x%(restriction)s[0][2];
   
 // Compute sub determinants
-const double d00 = J%(restriction)s_11*J%(restriction)s_22 - J%(restriction)s_12*J%(restriction)s_21;
-const double d01 = J%(restriction)s_12*J%(restriction)s_20 - J%(restriction)s_10*J%(restriction)s_22;
-const double d02 = J%(restriction)s_10*J%(restriction)s_21 - J%(restriction)s_11*J%(restriction)s_20;
+const double d%(restriction)s_00 = J%(restriction)s_11*J%(restriction)s_22 - J%(restriction)s_12*J%(restriction)s_21;
+const double d%(restriction)s_01 = J%(restriction)s_12*J%(restriction)s_20 - J%(restriction)s_10*J%(restriction)s_22;
+const double d%(restriction)s_02 = J%(restriction)s_10*J%(restriction)s_21 - J%(restriction)s_11*J%(restriction)s_20;
 
-const double d10 = J%(restriction)s_02*J%(restriction)s_21 - J%(restriction)s_01*J%(restriction)s_22;
-const double d11 = J%(restriction)s_00*J%(restriction)s_22 - J%(restriction)s_02*J%(restriction)s_20;
-const double d12 = J%(restriction)s_01*J%(restriction)s_20 - J%(restriction)s_00*J%(restriction)s_21;
+const double d%(restriction)s_10 = J%(restriction)s_02*J%(restriction)s_21 - J%(restriction)s_01*J%(restriction)s_22;
+const double d%(restriction)s_11 = J%(restriction)s_00*J%(restriction)s_22 - J%(restriction)s_02*J%(restriction)s_20;
+const double d%(restriction)s_12 = J%(restriction)s_01*J%(restriction)s_20 - J%(restriction)s_00*J%(restriction)s_21;
 
-const double d20 = J%(restriction)s_01*J%(restriction)s_12 - J%(restriction)s_02*J%(restriction)s_11;
-const double d21 = J%(restriction)s_02*J%(restriction)s_10 - J%(restriction)s_00*J%(restriction)s_12;
-const double d22 = J%(restriction)s_00*J%(restriction)s_11 - J%(restriction)s_01*J%(restriction)s_10;
+const double d%(restriction)s_20 = J%(restriction)s_01*J%(restriction)s_12 - J%(restriction)s_02*J%(restriction)s_11;
+const double d%(restriction)s_21 = J%(restriction)s_02*J%(restriction)s_10 - J%(restriction)s_00*J%(restriction)s_12;
+const double d%(restriction)s_22 = J%(restriction)s_00*J%(restriction)s_11 - J%(restriction)s_01*J%(restriction)s_10;
   
 // Compute determinant of Jacobian
-double detJ%(restriction)s = J%(restriction)s_00*d00 + J%(restriction)s_10*d10 + J%(restriction)s_20*d20;
+double detJ%(restriction)s = J%(restriction)s_00*d%(restriction)s_00 + J%(restriction)s_10*d%(restriction)s_10 + J%(restriction)s_20*d%(restriction)s_20;
   
 // Compute inverse of Jacobian
-const double Jinv%(restriction)s_00 = d00 / detJ%(restriction)s;
-const double Jinv%(restriction)s_01 = d10 / detJ%(restriction)s;
-const double Jinv%(restriction)s_02 = d20 / detJ%(restriction)s;
-const double Jinv%(restriction)s_10 = d01 / detJ%(restriction)s;
-const double Jinv%(restriction)s_11 = d11 / detJ%(restriction)s;
-const double Jinv%(restriction)s_12 = d21 / detJ%(restriction)s;
-const double Jinv%(restriction)s_20 = d02 / detJ%(restriction)s;
-const double Jinv%(restriction)s_21 = d12 / detJ%(restriction)s;
-const double Jinv%(restriction)s_22 = d22 / detJ%(restriction)s;
+const double Jinv%(restriction)s_00 = d%(restriction)s_00 / detJ%(restriction)s;
+const double Jinv%(restriction)s_01 = d%(restriction)s_10 / detJ%(restriction)s;
+const double Jinv%(restriction)s_02 = d%(restriction)s_20 / detJ%(restriction)s;
+const double Jinv%(restriction)s_10 = d%(restriction)s_01 / detJ%(restriction)s;
+const double Jinv%(restriction)s_11 = d%(restriction)s_11 / detJ%(restriction)s;
+const double Jinv%(restriction)s_12 = d%(restriction)s_21 / detJ%(restriction)s;
+const double Jinv%(restriction)s_20 = d%(restriction)s_02 / detJ%(restriction)s;
+const double Jinv%(restriction)s_21 = d%(restriction)s_12 / detJ%(restriction)s;
+const double Jinv%(restriction)s_22 = d%(restriction)s_22 / detJ%(restriction)s;
 
 // Take absolute value of determinant
 detJ%(restriction)s = std::abs(detJ%(restriction)s);
