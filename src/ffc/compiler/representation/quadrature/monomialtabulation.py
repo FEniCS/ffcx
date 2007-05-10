@@ -110,7 +110,7 @@ def tabulate(monomial, facet0, facet1):
 #    print "\n monomial integration, psis[0][1][0]: \n", psis[0][1][0].__doc__
 
 #    print "\n Compute product fo all Psis"
-    print "\n monomial integration, monomial.numeric: \n", monomial.numeric
+#    print "\n monomial integration, monomial.numeric: \n", monomial.numeric
 #    print "\n monomial integration, __compute_product(arg2): \n", vscaling * monomial.numeric * weights
 
 #    print "\n monomial integration, monomial: \n", monomial
@@ -252,22 +252,22 @@ def __compute_psi(v, table, num_points, dscaling):
 
     # Get Indices and shapes for Derivatives
     dindex = [d.index for d in v.derivatives]
-    print "dindex: ", dindex
+#    print "dindex: ", dindex
 #    print "dtype: ", dindex[0].type
 
     dshape = [cell_dimension for d in v.derivatives]
-    print "dshape: ", dshape
+#    print "dshape: ", dshape
 
     dorder = len(dindex)
 #    print "dorder: ", dorder
 
     # Get Indices and shapes for BasisFunction
     vindex = [v.index]
-    print "vindex: ", vindex
-    print "vtype: ", vindex[0].type
+#    print "vindex: ", vindex
+#    print "vtype: ", vindex[0].type
 
     vshape = [space_dimension]
-    print "vshape: ", vshape
+#    print "vshape: ", vshape
 
 #    print "v.component", v.component
 
@@ -276,11 +276,11 @@ def __compute_psi(v, table, num_points, dscaling):
         raise RuntimeError, "Can only handle rank 0 or rank 1 tensors."
     if len(v.component) > 0:
         cindex = [v.component[0]]
-        print "v.component: ", v.component
+#        print "v.component: ", v.component
         cshape = [element.value_dimension(0)]
-        print "cindex: ", cindex
-        print "ctype: ", cindex[0].type
-        print "cshape: ", cshape
+#        print "cindex: ", cindex
+#        print "ctype: ", cindex[0].type
+#        print "cshape: ", cshape
     else:
         cindex = []
         cshape = []
@@ -291,12 +291,12 @@ def __compute_psi(v, table, num_points, dscaling):
 #    indices = cindex + dindex + vindex
     indices = vindex + cindex + dindex
 
-    print "indices: ", indices
+#    print "indices: ", indices
     shapes = cshape + dshape + vshape + [num_points]
 
 #    dimensions = cshape + dshape + vshape
     dimensions = vshape + cshape + dshape
-    print "shapes: ", shapes
+#    print "shapes: ", shapes
     # Initialize tensor Psi: component, derivatives, basis function, points
     Psi = numpy.zeros(shapes, dtype = numpy.float)
 #    print "numpy.shape(Psi): ", numpy.shape(Psi)
@@ -340,9 +340,9 @@ def __compute_psi(v, table, num_points, dscaling):
 #    indices = [indices[i] for i in rearrangement]
 #    shapes =  [shapes[i] for i in rearrangement]
 #    dimensions =  [dimensions[i] for i in rearrangement]
-    print "Tabulate.... indices: ", indices
-    print "shapes - rearr: ", shapes
-    print "dimensions - rearr: ", dimensions
+#    print "Tabulate.... indices: ", indices
+#    print "shapes - rearr: ", shapes
+#    print "dimensions - rearr: ", dimensions
 
 #    print "indices  - rearrangement: ", indices
     #Psi = numpy.transpose(Psi, rearrangement + (len(indices),))
@@ -376,7 +376,7 @@ def __compute_psi(v, table, num_points, dscaling):
     bpart = [i.index for i in indices if i.type == Index.AUXILIARY_0]
 
 #    print "Tabulate.... Psi: ", Psi
-    print "numpy.shape(Psi): ", numpy.shape(Psi)
+#    print "numpy.shape(Psi): ", numpy.shape(Psi)
 
 #    print "Tabulate.... bpart: ", bpart
 
@@ -421,7 +421,7 @@ def __derivatives(basisfunctions, integral_type, points, dscaling, facet0, facet
     elif integral_type == Integral.INTERIOR_FACET:
         RuntimeError("Not implemented yet!")
 
-    print "numpy.shape(derivatives): ", numpy.shape(derivatives)
+#    print "numpy.shape(derivatives): ", numpy.shape(derivatives)
 
 
     # Construct the directions of derivatives (this should be OK)

@@ -586,7 +586,7 @@ def debug_transform(element, Indent, format):
 
     # Debug code
     code += [format["comment"]("Debug code")]
-    code += [Indent.indent("std::cout.precision(3);")]
+    code += [Indent.indent("std::cout.precision(8);")]
 
     # Jinv
     code += [Indent.indent('std::cout << "%s = " << std::endl;' % Jinv)]
