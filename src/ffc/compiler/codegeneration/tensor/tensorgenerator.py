@@ -176,7 +176,7 @@ class TensorGenerator(CodeGenerator):
 
                 # Multiply with determinant factor
                 det = pick_first([G.determinant for G in term.G])
-                value = self.__multiply_value_by_det(value, det, format)
+                value = self.__multiply_value_by_det(value, det, format, len(values) > 1)
                 
                 # Add declaration
                 code += [(name, value)]
@@ -340,9 +340,13 @@ class TensorGenerator(CodeGenerator):
                 value = format["multiply"]([format["sign tensor"](j, k, i[k]), value])
         return value
 
-    def __multiply_value_by_det(self, value, det, format):
+    def __multiply_value_by_det(self, value, det, format, is_sum):
         if det: d0 = [format["power"](format["determinant"], det)]
         else: d0 = []
-        if value == "1.0": v = []
-        else: v = [format["grouping"](value)]
+        if value == "1.0":
+            v = []
+        elif is_sum:
+            v = [format["grouping"](value)]
+        else:
+            v = [value]
         return format["multiply"](d0 + [format["scale factor"]] + v)
