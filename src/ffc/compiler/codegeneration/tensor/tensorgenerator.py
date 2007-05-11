@@ -343,4 +343,6 @@ class TensorGenerator(CodeGenerator):
     def __multiply_value_by_det(self, value, det, format):
         if det: d0 = [format["power"](format["determinant"], det)]
         else: d0 = []
-        return format["multiply"](d0 + [format["scale factor"]] + [format["grouping"](value)])
+        if value == "1.0": v = []
+        else: v = [format["grouping"](value)]
+        return format["multiply"](d0 + [format["scale factor"]] + v)
