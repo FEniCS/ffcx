@@ -63,29 +63,24 @@ def __reorder_face(points, facet):
         return 0.5*x[1] + 0.5
 
     if facet == 0:
-      p0 = (-1.0, -1.0)
-      p1 = (1.0, -1.0)
-      p2 = (-1.0, 1.0)
+        p0 = (-1.0, -1.0)
+        p1 = (-1.0, 1.0)
+        p2 = (1.0, -1.0)
     elif facet == 1:
-      p0 = (-1.0, -1.0)
-      p1 = (-1.0, 1.0)
-      p2 = (1.0, -1.0)
-    if facet == 2:
-      p0 = (1.0, -1.0)
-      p1 = (-1.0, 1.0)
-      p2 = (-1.0, -1.0)
+        p0 = (-1.0, 1.0)
+        p1 = (-1.0, -1.0)
+        p2 = (1.0, -1.0)
+    elif facet == 2:
+        p0 = (-1.0, 1.0)
+        p1 = (1.0, -1.0)
+        p2 = (-1.0, -1.0)
     elif facet == 3:
-      p0 = (1.0, -1.0)
-      p1 = (-1.0, -1.0)
-      p2 = (-1.0, 1.0)
-    if facet == 4:
-      p0 = (-1.0, 1.0)
-      p1 = (-1.0, -1.0)
-      p2 = (1.0, -1.0)
-    elif facet == 5:
-      p0 = (-1.0, 1.0)
-      p1 = (1.0, -1.0)
-      p2 = (-1.0, -1.0)
+        # This is the only case where FIAT does NOT differ from the UFC specification
+        p0 = (-1.0, -1.0)
+        p1 = (1.0, -1.0)
+        p2 = (-1.0, 1.0)
+    else:
+        raise RuntimeError, "Illegal facet for reordering of points on facet."
 
     p0 = array(p0)
     p1 = array(p1)
