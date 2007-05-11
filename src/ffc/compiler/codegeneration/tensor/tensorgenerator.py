@@ -174,6 +174,10 @@ class TensorGenerator(CodeGenerator):
                 name = format["geometry tensor declaration"](i, a)
                 value = format["add"](values)
 
+                # Multiply with determinant factor
+                det = pick_first([G.determinant for G in term.G])
+                value = self.__multiply_value_by_det(value, det, format)
+                
                 # Add declaration
                 code += [(name, value)]
 
@@ -273,14 +277,11 @@ class TensorGenerator(CodeGenerator):
         if sum: f1 = [sum]
         else: f1 = []
 
-        if G.determinant:
-            d0 = format["power"](format["determinant"], G.determinant)
-            d = format["multiply"]([format["scale factor"], d0])
-        else:
-            d = format["scale factor"]
-            
+        fs = f0 + f1
+        if not fs: fs = ["1.0"]
+
         # Compute product of all factors
-        return format["multiply"]([f for f in [d] + f0 + f1])
+        return format["multiply"](fs)
 
     def __generate_signs(self, terms, format):
         "Generate list of declarations for computation of signs"
@@ -334,7 +335,12 @@ class TensorGenerator(CodeGenerator):
 
     def __add_sign(self, value, j, i, format):
         if value:
-            value = "(%s)" % value
+            value = format["grouping"](value)
             for k in range(len(i)):
                 value = format["multiply"]([format["sign tensor"](j, k, i[k]), value])
         return value
+
+    def __multiply_value_by_det(self, value, det, format):
+        if det: d0 = [format["power"](format["determinant"], det)]
+        else: d0 = []
+        return format["multiply"](d0 + [format["scale factor"]] + [format["grouping"](value)])
