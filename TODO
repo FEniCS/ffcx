@@ -10,7 +10,7 @@ Things to fix:
  - Implement check primary ranks i checks
  - Update documentation
  - Fix man page and help text: -fprecision=14
- - evaluate_dof() for DG elements
+ - evaluate_dof() for mixed elements
 
 Old TODO list, possibly inaccurate:
 -----------------------------------
