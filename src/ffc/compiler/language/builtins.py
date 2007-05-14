@@ -24,7 +24,7 @@ def Constant(shape):
     return Function(element)('+/-')
 
 def VectorConstant(shape, vector_dim=None):
-    """This looks like a class but is really a function.  It returns a
+    """This looks like a class but is really a function. It returns a
     vector DG(0) function which may be thought of as a vector
     Constant."""
 
@@ -35,6 +35,24 @@ def VectorConstant(shape, vector_dim=None):
     # Create discontinuous vector Lagrange element
     element = VectorElement("Discontinuous Lagrange", shape, 0, vector_dim)
     return Function(element)('+/-')
+
+def MeshSize(shape):
+    """This looks like a class but is really a function. It returns a DG(0)
+    function which may function as the placeholder for a function defining
+    the mesh size."""
+    element = FiniteElement("Discontinuous Lagrange", shape, 0)
+    h = Function(element)
+    h.name = "mesh size"
+    return h
+
+def FacetNormal(shape):
+    """This looks like a class but is really a function. It returns a
+    vectorDG(0) function which may function as the placeholder for a
+    function defining the facet normal."""
+    element = VectorElement("Discontinuous Lagrange", shape, 0)
+    n = Function(element)
+    n.name = "facet normal"
+    return n
 
 # Predefined integrals
 dx = Integral("cell")
