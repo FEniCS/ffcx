@@ -109,17 +109,22 @@ class TensorGenerator(CodeGenerator):
         # A coefficient is identified by 4 numbers:
         #
         #   0 - the number of the function
-        #   1 - the position of the (factored) monomial it appears
+        #   1 - the position of the (factored) monomial it appears in
         #   2 - the position of the coefficient inside the monomial
         #   3 - the position of the expansion coefficient
 
         # Iterate over all terms
         j = 0
+
         for term in terms:
             for G in term.G:
                 for k in range(len(G.coefficients)):
                     coefficient = G.coefficients[k]
-                    for l in coefficient.n0.range:
+                    if term.monomial.integral.type == Integral.INTERIOR_FACET:
+                        space_dimension = 2*len(coefficient.n0.range)
+                    else:
+                        space_dimension = len(coefficient.n0.range)
+                    for l in range(space_dimension):
                         name = format["modified coefficient declaration"](coefficient.n0.index, j, k, l)
                         value = format["coefficient"](coefficient.n0.index, l)
                         for l in range(len(coefficient.ops)):
