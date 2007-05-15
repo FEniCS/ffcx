@@ -48,6 +48,28 @@ def indent(s, n):
     indentation = " "*n
     return indentation + ("\n" + indentation).join(s.split("\n"))
 
+def is_empty(elements):
+    """ Takes a possibly nested list of lists and returns true if all
+    are empty."""
+    # meg: If there is an easier/prettier way of doing this already,
+    # please replace this.
+    empty = True
+    for element in elements:
+        if isinstance(element, list):
+            empty = is_empty(element)
+        else:
+            if element: empty = False
+        if not empty: return False
+    return empty
+
+def abbreviate(dict):
+    """ Removes key-value pairs of dictionaries where the value is a
+    False value such as []. Use with caution."""
+    d = dict.copy()
+    for key in d.keys():
+        if not d[key]: del d[key]
+    return d
+
 if __name__ == "__main__":
 
     for p in permutations([0, 1, 2, 3]):
