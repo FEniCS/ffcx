@@ -602,6 +602,8 @@ def __generate_code(format_string, code, options):
 
     # Fix indentation
     for key in code:
+        if "no-" + key in options:
+            code[key] = "// Not generated (compiled with -fno-" + key + ")"
         if not key in ["classname", "members"]:
             code[key] = indent(code[key], 4)
 

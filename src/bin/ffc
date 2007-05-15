@@ -74,7 +74,6 @@ def main(argv):
                 options[arg] = True
             elif arg[:3] == "no-":
                 options[arg] = True
-                print "testing"
             else:
                 print arg[:3]
                 usage()

@@ -6,6 +6,7 @@ Things to fix:
  - Implement check primary ranks i checks
  - Update documentation
  - Fix man page and help text: -fprecision=14
+ - Fix man page and help text: -fno-foo
  - Get BDM working
  - Get RT working
  - Get DG working in 3D
