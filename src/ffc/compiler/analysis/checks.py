@@ -27,7 +27,7 @@ def check_form(form):
 def check_type(form):
     "Check that the form is a Form"
     if not isinstance(form, Form):
-        raise FormError, (p, "Not a form.")
+        raise FormError, (form, "Not a form.")
 
 def check_integrals(form):
     "Check that all terms have integrals"
