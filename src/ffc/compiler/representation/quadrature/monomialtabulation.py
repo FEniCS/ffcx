@@ -73,8 +73,8 @@ def tabulate(monomial, facet0, facet1):
 #    print "init table"
     # Initialize quadrature table for basis functions
     table = __init_table(monomial.basisfunctions, integral_type, points, facet0, facet1)
-
-#    print "\n monomial integration, table: \n", table
+    print "monomial: ", monomial
+    print "\n monomial integration, table: \n", table
 
 #    print "\n monomial integration, monomial.basisfunctions: \n", monomial.basisfunctions
 
@@ -98,7 +98,7 @@ def tabulate(monomial, facet0, facet1):
 
 #    print "\n Computing Psis \n"
     # Compute table Psi for each factor
-    psis = [__compute_psi(v, table, len(points), dscaling) for v in monomial.basisfunctions]
+    psis = [__compute_psi(v, table, len(points), dscaling, integral_type) for v in monomial.basisfunctions]
 
 
 #    print "\n monomial integration, psis: \n", psis
@@ -204,14 +204,14 @@ def __init_table(basisfunctions, integral_type, points, facet0, facet1):
         elif integral_type == Integral.EXTERIOR_FACET:
             table[(element, None)] = element.tabulate(order, points, facet0)
         elif integral_type == Integral.INTERIOR_FACET:
-            points0 = reorder_points(points, facet0, element.cell_shape())
-            points1 = reorder_points(points, facet1, element.cell_shape())
+            points0 = reorder_points(points, element.cell_shape(), facet0)
+            points1 = reorder_points(points, element.cell_shape(), facet1)
             table[(element, Restriction.PLUS)]  = element.tabulate(order, points0, facet0)
             table[(element, Restriction.MINUS)] = element.tabulate(order, points1, facet1)
 
     return table
 
-def __compute_psi(v, table, num_points, dscaling):
+def __compute_psi(v, table, num_points, dscaling, integral_type):
     "Compute the table Psi for the given BasisFunction v."
 
     # We just need to pick the values for Psi from the table, which is
@@ -244,8 +244,14 @@ def __compute_psi(v, table, num_points, dscaling):
     space_dimension = element.space_dimension()
 #    print "space_dimension: ", space_dimension
 
-    # Get restriction for v
+    # Get restriction and handle constants
     restriction = v.restriction
+    if restriction == Restriction.CONSTANT:
+        if integral_type == Integral.INTERIOR_FACET:
+            restriction = Restriction.PLUS
+        else:
+            restriction = None
+
 #    print "restriction: ", restriction
 
 #    print "v.derivatives: ", v.derivatives
@@ -416,12 +422,11 @@ def __derivatives(basisfunctions, integral_type, points, dscaling, facet0, facet
         # Tabulating derivatives at all integration points
         derivatives = element.tabulate(1, points)
     elif integral_type == Integral.EXTERIOR_FACET:
-        RuntimeError("Not implemented yet!")
-#            table[(element, None)] = element.tabulate(order, points, facet0)
+        derivatives = element.tabulate(1, points, facet0)
     elif integral_type == Integral.INTERIOR_FACET:
-        RuntimeError("Not implemented yet!")
-
-#    print "numpy.shape(derivatives): ", numpy.shape(derivatives)
+        # This is not correct, but the entire function needs to change before non-affine mappings
+        # can be implemented
+        derivatives = element.tabulate(1, points, facet0)
 
 
     # Construct the directions of derivatives (this should be OK)

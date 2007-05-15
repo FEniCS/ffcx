@@ -85,19 +85,19 @@ class QuadratureRepresentation:
             return []
 
         # Compute factorization
-#        factorization = self.__compute_factorization(monomials)
+        #FIXME: this will mean something else for quadrature
+        factorization = self.__compute_factorization(monomials)
 
         # Get the number of facets
-#        num_facets = form.monomials[0].basisfunctions[0].element.num_facets()
+        num_facets = form.monomials[0].basisfunctions[0].element.num_facets()
 
-#        debug("Number of facets to consider: %d" % num_facets)
+        debug("Number of facets to consider: %d" % num_facets)
         
         # Compute sum of tensor representations for each facet
-#        terms = [None for i in range(num_facets)]
-#        for i in range(num_facets):
-#            terms[i] = self.__compute_tensors(monomials, factorization, Integral.EXTERIOR_FACET, i, None)
+        tensors = [None for i in range(num_facets)]
+        for i in range(num_facets):
+            tensors[i] = self.__compute_tensors(monomials, factorization, Integral.EXTERIOR_FACET, i, None)
 
-        tensors = []
         debug_end()
         return tensors
 
@@ -113,21 +113,21 @@ class QuadratureRepresentation:
             return []
 
         # Compute factorization
-#        factorization = self.__compute_factorization(monomials)
+        #FIXME: this will mean something else for quadrature
+        factorization = self.__compute_factorization(monomials)
 
         # Get the number of facets
-#        num_facets = form.monomials[0].basisfunctions[0].element.num_facets()
+        num_facets = form.monomials[0].basisfunctions[0].element.num_facets()
 
-#        debug("Number of facets to consider: %d x %d" % (num_facets, num_facets))
+        debug("Number of facets to consider: %d x %d" % (num_facets, num_facets))
         
         # Compute sum of tensor representations for each facet-facet combination
-#        terms = [[None for j in range(num_facets)] for i in range(num_facets)]
-#        for i in range(num_facets):
-#            for j in range(num_facets):
-#                terms[i][j] = self.__compute_tensors(monomials, factorization, Integral.INTERIOR_FACET, i, j)
+        tensors = [[None for j in range(num_facets)] for i in range(num_facets)]
+        for i in range(num_facets):
+            for j in range(num_facets):
+                tensors[i][j] = self.__compute_tensors(monomials, factorization, Integral.INTERIOR_FACET, i, j)
 #                reorder_entries(terms[i][j])
 
-        tensors = []               
         debug_end()
         return tensors
 

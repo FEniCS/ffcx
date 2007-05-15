@@ -162,19 +162,30 @@ class DofMap:
     def __compute_dof_components(self, element):
         "Compute the components associated with each dof"
 
+        components = []
+        elements = element.basis_elements()
+        for e in elements:
+            # Test for non-supported (or tested) elements
+            if e.family() in ["Brezzi-Douglas-Marini", "Raviart-Thomas", "Nedelec"]:
+                return None
+        for i in range(element.value_dimension(0)):
+            components += [i]*elements[i].space_dimension()
+
+        return components
+
         # We can handle scalar Lagrange elements
-        if element.family() in ["Lagrange", "Discontinuous Lagrange"]:
-            return [0 for i in range(element.space_dimension())]
+#        if element.family() in ["Lagrange", "Discontinuous Lagrange"]:
+#            return [0 for i in range(element.space_dimension())]
  
         # We can handle tensor products of scalar Lagrange elements        
-        if self.__is_vector_lagrange(element):
-            components = []
-            for i in range(element.value_dimension(0)):
-                components += element.sub_element(0).space_dimension()*[i]
-            return components
+#        if self.__is_vector_lagrange(element):
+#            components = []
+#            for i in range(element.value_dimension(0)):
+#                components += element.sub_element(0).space_dimension()*[i]
+#            return components
 
         # Can't handle element
-        return None
+#        return None
 
     def __compute_incidence(self, cell_shape):
         "Compute which entities are incident with which"

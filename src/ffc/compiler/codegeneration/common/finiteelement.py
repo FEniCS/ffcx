@@ -64,9 +64,9 @@ def __generate_evaluate_dof(element, format):
 
     # Generate dof map
     dof_map = DofMap(element)
-    
     # Check if evaluate_dof is supported
-    if dof_map.dof_coordinates() == None or dof_map.dof_components() == None:
+#    if dof_map.dof_coordinates() == None or dof_map.dof_components() == None:
+    if None in dof_map.dof_coordinates() or dof_map.dof_components() == None:
         code += [format["exception"]("evaluate_dof not implemented for this type of element")]
         return code
 

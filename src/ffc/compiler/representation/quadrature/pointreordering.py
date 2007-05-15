@@ -5,15 +5,17 @@ the common facet. This would not be necessary if FIAT were to use
 the UFC ordering convention for mesh entities."""
 
 __author__ = "Kristian Oelgaard (k.b.oelgaard@tudelft.nl) and Anders Logg (logg@simula.no)"
-__date__ = "2006-12-19 -- 2007-03-14"
+__date__ = "2006-12-19 -- 2007-05-14"
 __copyright__ = "Copyright (C) 2006-2007 Kristian Oelgaard and Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # FIAT modules
 from FIAT.shapes import *
 
-def reorder_points(points, facet, shape):
-    """Reorder points on given reference shape for given alignment."""
+from numpy import array
+
+def reorder_points(points, shape, facet):
+    """Reorder points on given reference shape for given facet."""
 
     if shape == TRIANGLE:
         return __reorder_edge(points, facet)
@@ -60,30 +62,25 @@ def __reorder_face(points, facet):
     def Phi2(x):
         return 0.5*x[1] + 0.5
 
-    if alignment == 0:
-      p0 = (-1.0, -1.0)
-      p1 = (1.0, -1.0)
-      p2 = (-1.0, 1.0)
-    elif alignment == 1:
-      p0 = (-1.0, -1.0)
-      p1 = (-1.0, 1.0)
-      p2 = (1.0, -1.0)
-    if alignment == 2:
-      p0 = (1.0, -1.0)
-      p1 = (-1.0, 1.0)
-      p2 = (-1.0, -1.0)
-    elif alignment == 3:
-      p0 = (1.0, -1.0)
-      p1 = (-1.0, -1.0)
-      p2 = (-1.0, 1.0)
-    if alignment == 4:
-      p0 = (-1.0, 1.0)
-      p1 = (-1.0, -1.0)
-      p2 = (1.0, -1.0)
-    elif alignment == 5:
-      p0 = (-1.0, 1.0)
-      p1 = (1.0, -1.0)
-      p2 = (-1.0, -1.0)
+    if facet == 0:
+        p0 = (-1.0, -1.0)
+        p1 = (-1.0, 1.0)
+        p2 = (1.0, -1.0)
+    elif facet == 1:
+        p0 = (-1.0, 1.0)
+        p1 = (-1.0, -1.0)
+        p2 = (1.0, -1.0)
+    elif facet == 2:
+        p0 = (-1.0, 1.0)
+        p1 = (1.0, -1.0)
+        p2 = (-1.0, -1.0)
+    elif facet == 3:
+        # This is the only case where FIAT does NOT differ from the UFC specification
+        p0 = (-1.0, -1.0)
+        p1 = (1.0, -1.0)
+        p2 = (-1.0, 1.0)
+    else:
+        raise RuntimeError, "Illegal facet for reordering of points on facet."
 
     p0 = array(p0)
     p1 = array(p1)

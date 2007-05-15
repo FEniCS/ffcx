@@ -31,6 +31,9 @@ class ElementTensor:
     def __init__(self, monomial, facet0, facet1):
         "Create element tensor for given monomial"
 
+        # Save monomial
+        self.monomial = monomial
+
         # Tabulate element tensor
         self.map_derivatives, self.map_element, self.Psis, self.quadrature = \
         tabulate(monomial, facet0, facet1)
@@ -42,7 +45,7 @@ class ElementTensor:
         self.a = self.__create_multi_index(monomial, Index.SECONDARY)
 #        print "element tensor, self.a : ", self.a
         self.b = self.__create_multi_index(monomial, Index.AUXILIARY_0)
-#        print "element tensor, self.b : ", self.b
+#        print "element tensor, self.b : ", self.__create_multi_index(monomial, Index.AUXILIARY_G)
 
         # Save constants, coefficients and transforms (used to generate factor)
         self.constants = monomial.constants

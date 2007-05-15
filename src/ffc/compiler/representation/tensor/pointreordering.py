@@ -5,7 +5,7 @@ the common facet. This would not be necessary if FIAT were to use
 the UFC ordering convention for mesh entities."""
 
 __author__ = "Kristian Oelgaard (k.b.oelgaard@tudelft.nl) and Anders Logg (logg@simula.no)"
-__date__ = "2006-12-19 -- 2007-03-14"
+__date__ = "2006-12-19 -- 2007-05-14"
 __copyright__ = "Copyright (C) 2006-2007 Kristian Oelgaard and Anders Logg"
 __license__  = "GNU GPL Version 2"
 

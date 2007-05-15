@@ -55,45 +55,58 @@ class QuadratureGenerator(CodeGenerator):
         """Generate dictionary of code for exterior facet integral from the given
         form representation according to the given format"""
 
+        # Object to control the code indentation
+        Indent = IndentControl()
+
+        # Prefetch formats to speed up code generation
+        format_block_begin  = format["block begin"]
+        format_block_end    = format["block end"]
+
         # Extract tensors
         tensors = form_representation.exterior_facet_tensors
-#        if len(tensors) == 0:
-#            return None
-
-        # Generate code for geometry tensor (should be the same so pick first)
-#        common = self.__generate_geometry_tensors(tensors[0], format)
+        if len(tensors) == 0:
+            return None
 
         # Generate code for element tensor(s)
-#        common += [""] + [format["comment"]("Compute element tensor for all facets")]
-#        num_facets = len(tensors)
-#        cases = [None for i in range(num_facets)]
-#        for i in range(num_facets):
-#            cases[i] = self.__generate_element_tensor(tensors[i], format)
-        common = [""]
-        cases = [""]
+        common = [""] + [format["comment"]("Compute element tensor for all facets")]
+
+        num_facets = len(tensors)
+        cases = [None for i in range(num_facets)]
+        for i in range(num_facets):
+            case = [format_block_begin]
+            case += self.__generate_element_tensor(tensors[i], Indent, format)
+            case += [format_block_end]
+            cases[i] = case
+
         return {"tabulate_tensor": (common, cases)}
     
     def generate_interior_facet_integral(self, form_representation, sub_domain, format):
         """Generate dictionary of code for interior facet integral from the given
         form representation according to the given format"""
 
+        # Object to control the code indentation
+        Indent = IndentControl()
+
+        # Prefetch formats to speed up code generation
+        format_block_begin  = format["block begin"]
+        format_block_end    = format["block end"]
+
         # Extract tensors
         tensors = form_representation.interior_facet_tensors
-#        if len(tensors) == 0:
-#            return None
-        
-        # Generate code for geometry tensor (should be the same so pick first)
-#        common = self.__generate_geometry_tensors(tensors[0][0], format)
+        if len(tensors) == 0:
+            return None
 
         # Generate code for element tensor(s)
-#        common += [""] + [format["comment"]("Compute element tensor for all facet-facet combinations")]
-#        num_facets = len(tensors)
-#        cases = [[None for j in range(num_facets)] for i in range(num_facets)]
-#        for i in range(num_facets):
-#            for j in range(num_facets):
-#                cases[i][j] = self.__generate_element_tensor(tensors[i][j], format)
-        common = [""]
-        cases = [""]
+        common = [""] + [format["comment"]("Compute element tensor for all facet-facet combinations")]
+        num_facets = len(tensors)
+        cases = [[None for j in range(num_facets)] for i in range(num_facets)]
+        for i in range(num_facets):
+            for j in range(num_facets):
+                case = [format_block_begin]
+                case += self.__generate_element_tensor(tensors[i][j], Indent, format)
+                case += [format_block_end]
+                cases[i][j] = case
+
         return {"tabulate_tensor": (common, cases)}
 
     def __generate_element_tensor(self, tensors, Indent, format):
@@ -116,6 +129,7 @@ class QuadratureGenerator(CodeGenerator):
         # Loop tensors to generate tables
         for i in range(num_tensors):
 
+            print "monomial: ", tensors[i].monomial
             # Tabulate variables:
 
             # Tabulate the derivatives of map, used to generate the Jacobian
@@ -270,6 +284,8 @@ class QuadratureGenerator(CodeGenerator):
 
             # Get psi
             psi = psis[psi_number]
+            print "psi: ", psi
+
 
             # Get values of psi
             values = psi[0]
@@ -312,6 +328,9 @@ class QuadratureGenerator(CodeGenerator):
             # Remove redundant names and entries in the psi table
             unique_names = []
             unique_multi_indices = []
+#            print "multi_indices: ", multi_indices
+#            print "names: ", names
+
             for i in range(len(names)):
                 name = names[i]
                 if not name in unique_names:
@@ -320,6 +339,7 @@ class QuadratureGenerator(CodeGenerator):
 
             for i in range(len(unique_names)):
                 # Get values from psi tensor, should have format values[dofs][quad_points]
+#                print "index: ", unique_multi_indices[i]
                 vals = values[tuple(unique_multi_indices[i])]
 
                 # Generate array of values (FIAT returns [dof, ip] transpose to [ip, dof])
