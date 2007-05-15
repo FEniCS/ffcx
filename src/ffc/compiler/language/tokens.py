@@ -3,7 +3,7 @@ represent multilinear forms, that is, small basic data types used to
 build the data structure representing an element of the form algebra."""
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-09-29 -- 2007-02-06"
+__date__ = "2004-09-29 -- 2007-05-15"
 __copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -143,7 +143,9 @@ class Transform:
             restric = "(+)"
         elif self.restriction == Restriction.MINUS:
             restric = "(-)"
-        else: 
-            raise FormError("Wrong value for restriction of transform")
+        elif self.restriction == Restriction.CONSTANT:
+            restric = "(+/-)"
+        else:
+            raise RuntimeError, "Wrong value for restriction of transform"
 
         return "(" + top + index0 + "/" + bottom + index1 + ")" + restric

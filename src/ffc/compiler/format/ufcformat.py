@@ -1,7 +1,7 @@
 "Code generation for the UFC 1.0 format"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-01-08 -- 2007-05-10"
+__date__ = "2007-01-08 -- 2007-05-15"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -23,7 +23,7 @@ from codesnippets import *
 from removeunused import *
 
 # Choose map from restriction
-choose_map = {Restriction.PLUS: "0", Restriction.MINUS: "1", None: ""}
+choose_map = {Restriction.PLUS: "0", Restriction.MINUS: "1", Restriction.CONSTANT: "0", None: ""}
 # Transform format options  based on the sign of the power of the transform:
 transform_options = {Transform.JINV: lambda m, j, k: "Jinv%s_%d%d" % (m, j, k),
                      Transform.J: lambda m, j, k: "J%s_%d%d" % (m, k, j)}
@@ -325,7 +325,7 @@ def __generate_finite_element(code, form_data, options, prefix, label):
         cases = ["return new %s_%d();" % (ufc_code["classname"], i) for i in range(num_sub_elements)]
         ufc_code["create_sub_element"] = __generate_switch("i", cases, "return 0;")
 
-    return __generate_code(finite_element_combined, ufc_code)
+    return __generate_code(finite_element_combined, ufc_code, options)
 
 def __generate_dof_map(code, form_data, options, prefix, label):
     "Generate code for ufc::dof_map"
@@ -390,7 +390,7 @@ def __generate_dof_map(code, form_data, options, prefix, label):
         ufc_code["create_sub_dof_map"] = __generate_switch("i", cases, "return 0;")
 
 
-    return __generate_code(dof_map_combined, ufc_code)
+    return __generate_code(dof_map_combined, ufc_code, options)
 
 def __generate_cell_integral(code, form_data, options, prefix, i):
     "Generate code for ufc::cell_integral"
@@ -415,7 +415,7 @@ def __generate_cell_integral(code, form_data, options, prefix, i):
     body += __generate_body(code["tabulate_tensor"])
     ufc_code["tabulate_tensor"] = remove_unused(body)
 
-    return __generate_code(cell_integral_combined, ufc_code)
+    return __generate_code(cell_integral_combined, ufc_code, options)
 
 def __generate_exterior_facet_integral(code, form_data, options, prefix, i):
     "Generate code for ufc::exterior_facet_integral"
@@ -443,7 +443,7 @@ def __generate_exterior_facet_integral(code, form_data, options, prefix, i):
     body += switch
     ufc_code["tabulate_tensor"] = remove_unused(body)
     
-    return __generate_code(exterior_facet_integral_combined, ufc_code)
+    return __generate_code(exterior_facet_integral_combined, ufc_code, options)
 
 def __generate_interior_facet_integral(code, form_data, options, prefix, i):
     "Generate code for ufc::interior_facet_integral"
@@ -471,7 +471,7 @@ def __generate_interior_facet_integral(code, form_data, options, prefix, i):
     body += switch
     ufc_code["tabulate_tensor"] = remove_unused(body)
 
-    return __generate_code(interior_facet_integral_combined, ufc_code)
+    return __generate_code(interior_facet_integral_combined, ufc_code, options)
 
 def __generate_form(code, form_data, options, prefix):
     "Generate code for ufc::form"
@@ -491,7 +491,7 @@ def __generate_form(code, form_data, options, prefix):
     ufc_code["destructor"] = "// Do nothing"
 
     # Generate code for signature
-    ufc_code["signature"] = "return \"%s\";" % code["signature"]
+    ufc_code["signature"] = "return \"%s\";" % __generate_body(code["signature"])
 
     # Generate code for rank
     ufc_code["rank"] = "return %s;" % code["rank"]
@@ -533,7 +533,7 @@ def __generate_form(code, form_data, options, prefix):
     cases = ["return new %s_interior_facet_integral_%d();" % (prefix, i) for i in range(num_cases)]
     ufc_code["create_interior_facet_integral"] = __generate_switch("i", cases, "return 0;")
 
-    return __generate_code(form_combined, ufc_code)
+    return __generate_code(form_combined, ufc_code, options)
 
 def __generate_jacobian(cell_dimension, integral_type):
     "Generate code for computing jacobian"
@@ -587,6 +587,8 @@ def __generate_switch(variable, cases, default = ""):
 
 def __generate_body(declarations):
     "Generate function body from list of declarations or statements"
+    if not isinstance(declarations, list):
+        declarations = [declarations]
     lines = []
     for declaration in declarations:
         if isinstance(declaration, tuple):
@@ -595,7 +597,7 @@ def __generate_body(declarations):
             lines += ["%s" % declaration]
     return "\n".join(lines)
 
-def __generate_code(format_string, code):
+def __generate_code(format_string, code, options):
     "Generate code according to format string and code dictionary"
 
     # Fix indentation

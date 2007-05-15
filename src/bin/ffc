@@ -72,7 +72,11 @@ def main(argv):
                 options[arg.split("=")[0] + "="] = arg.split("=")[1]
             elif arg in options:
                 options[arg] = True
+            elif arg[:3] == "no-":
+                options[arg] = True
+                print "testing"
             else:
+                print arg[:3]
                 usage()
                 return 2
         elif opt in  ("-r", "--representation"):

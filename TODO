@@ -1,16 +1,14 @@
 Things to fix:
 
- - Add attribute range to indices to get BDM working
- - Constant --> DG0
- - Fix inverse of constants 1/c
- - Flag -fnum_digits
  - Projections
  - Optimization
  - BLAS mode
  - Implement check primary ranks i checks
  - Update documentation
  - Fix man page and help text: -fprecision=14
- - evaluate_dof() for mixed elements
+ - Get BDM working
+ - Get RT working
+ - Get DG working in 3D
 
 Old TODO list, possibly inaccurate:
 -----------------------------------
