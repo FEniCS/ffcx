@@ -99,7 +99,8 @@ def contraction_likely(m, n):
         if len(m.basisfunctions) != len(n.basisfunctions):
             return False
         for i in range(len(m.basisfunctions)):
-            if not contraction_likely(m.basisfunctions[i], n.basisfunctions[i]):
+            if not contraction_likely(m.basisfunctions[i],
+                                      n.basisfunctions[i]):
                 return False
         return True
 
@@ -142,7 +143,8 @@ def contract_indices(m, n):
     # We can contract the indices and thus the monomials, if there is
     # only a difference of one index and if there are at least two
     # occurances of this index. (Summation over _repeated_ indices.)
-    if len(indices[0].keys()) == len(indices[1].keys()) == 1 and len(indices[0].values()[0]) > 1:
+    if len(indices[0].keys()) == len(indices[1].keys()) == 1 \
+           and len(indices[0].values()[0]) > 1:
         # Constructing the new index:
         i0 = indices[0].values()[0][0][1]
         i1 = indices[1].values()[0][0][1]
@@ -197,13 +199,14 @@ def simplify_monomial(monomial):
                 # Now, we should first remove the transforms from
                 # the transform list. Second: replace the old
                 # derivative with the new one.
-                basis.derivatives[i] = Derivative(derivative.element, second.index0)
+                basis.derivatives[i] = Derivative(derivative.element,
+                                                  second.index0)
                 monomial.transforms.remove(first) 
                 monomial.transforms.remove(second)
     return monomial
 
 def diff(m, n, key = None):
-    """ Takes two elements and returns the difference between these in
+    """ Take two elements and returns the difference between these in
     an appropriate manner.""" 
 
     # Dictionaries containing each version when m and n are different
@@ -220,7 +223,7 @@ def diff(m, n, key = None):
                     diffs += [difference]
             return diffs
         else:
-            raise FormError("Only know how to diff between lists of equal length.")
+            raise FormError("Only know how to diff lists of equal length.")
         
     elif isinstance(m, Monomial) and isinstance(n, Monomial):
         # The difference between two monomials
@@ -229,10 +232,12 @@ def diff(m, n, key = None):
         coeffdiff = diff(m.coefficients, n.coefficients, coeffids)
         tids = ["transforms[%d]" % i for i in range(len(m.transforms))]
         tdiff = diff(m.transforms, n.transforms, tids)
-        dictionary = {'constants': constdiff, 'coefficients': coeffdiff, 'transforms': tdiff}
+        dictionary = {'constants': constdiff, 'coefficients': coeffdiff,
+                      'transforms': tdiff}
 
         # Treat the basis functions items separately:
-        bids = ["basisfunctions[%d]." % i for i in range(len(m.basisfunctions))]
+        bids = ["basisfunctions[%d]." % i
+                for i in range(len(m.basisfunctions))]
         bdiff = diff(m.basisfunctions, n.basisfunctions, bids)
         for dict in bdiff:
             for key in dict:
@@ -249,7 +254,8 @@ def diff(m, n, key = None):
         cdiff = diff(m.component, n.component, cids)
         dids = [key + "derivatives[%d]" % i for i in range(len(m.derivatives))]
         ddiff = diff(m.derivatives, n.derivatives, dids)
-        return abbreviate({'index': idiff, 'component': cdiff, 'derivatives': ddiff})
+        return abbreviate({'index': idiff, 'component': cdiff,
+                           'derivatives': ddiff})
 
     elif isinstance(m, Index) and isinstance(n, Index):
         # The difference between two indices
