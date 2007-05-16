@@ -80,8 +80,8 @@ def factorize_monomials(m, n):
 def contract_monomials(m, n):
     if not isinstance(m, Monomial) and isinstance(n, Monomial):
         raise FormError, "contract_monomials can only contract monomials"
-    # First, do some quick checks to see if it is at all likely that
-    # these monomials are contractable
+    # First, check to see if it is at all likely that these monomials
+    # are contractable
     if not contraction_likely(m, n):
         return ([m, n], False)
     q = contract_indices(m, n)
@@ -90,12 +90,24 @@ def contract_monomials(m, n):
 def contraction_likely(m, n):
     """ Given two monomials/basisfunctions, check if they have the
     same numbers of basisfunctions, transforms, derivatives,
-    components etc. (This is just intended as a quick, preliminary
-    check.)"""
+    components etc. (This is just intended as a preliminary check.)"""
     # Comparing monomials:
     if isinstance(m, Monomial) and isinstance(n, Monomial):
+        if m.integral != n.integral:
+            return False
+
+        if len(m.coefficients) != len(n.coefficients):
+            return False
+        for i in range(len(m.coefficients)):
+            if not contraction_likely(m.coefficients[i], n.coefficients[i]):
+                return False
+
         if len(m.transforms) != len(n.transforms):
             return False
+        for i in range(len(m.transforms)):
+            if not contraction_likely(m.transforms[i], n.transforms[i]):
+                return False
+
         if len(m.basisfunctions) != len(n.basisfunctions):
             return False
         for i in range(len(m.basisfunctions)):
@@ -106,11 +118,29 @@ def contraction_likely(m, n):
 
     # Comparing basis functions:
     elif isinstance(m, BasisFunction) and isinstance(n, BasisFunction):
+        if m.element != n.element:
+            return False
         if m.index != n.index:
+            return False
+        if m.restriction != n.restriction:
             return False
         if len(m.component) != len(n.component):
             return False
         if len(m.derivatives) != len(n.derivatives):
+            return False
+        return True
+
+    # Comparing transforms:
+    elif isinstance(m, Transform) and isinstance(n, Transform):
+        if m.type != n.type:
+            return False
+        return True
+
+    # Comparing coefficients:
+    elif isinstance(m, Coefficient) and isinstance(n, Coefficient):
+        if m.n0 != n.n0:
+            return False
+        if m.n1 != n.n1:
             return False
         return True
 
@@ -264,31 +294,22 @@ def diff(m, n, key = None):
             nversion[key] = n
 
     elif isinstance(m, Transform) and isinstance(n, Transform):
-        # The difference between two transforms
+        # The index difference between two transforms
         if not m.index0 == n.index0:
             mversion[key + ".index0"] = m.index0
             nversion[key + ".index0"] = n.index0
         if not m.index1 == n.index1:
             mversion[key + ".index1"] = m.index1
             nversion[key + ".index1"] = n.index1
-        if not m.type == n.type:
-            mversion[key + ".type"] = m.type
-            nversion[key + ".type"] = n.type
         
     elif isinstance(m, Derivative) and isinstance(n, Derivative):
-        # The difference between two derivatives:
+        # The index difference between two derivatives:
         if not m.index == n.index:
             mversion[key + ".index"] = m.index
             nversion[key + ".index"] = n.index
 
     elif isinstance(m, Coefficient) and isinstance(n, Coefficient):
-
-        # if not m.n0 == n.n0:
-        #     mversion[key + ".n0"] = m.n0
-        #     nversion[key + ".n0"] = n.n0
-        if not m.n1 == n.n1:
-            mversion[key + ".n1"] = m.n1
-            nversion[key + ".n1"] = n.n1
+        # The index difference between two coefficients
         if not m.index == n.index:
             mversion[key + ".index"] = m.index
             nversion[key + ".index"] = n.index
