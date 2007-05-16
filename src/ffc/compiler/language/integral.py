@@ -37,3 +37,12 @@ class Integral:
             return "ds(%d)" % self.sub_domain
         elif self.type == self.INTERIOR_FACET:
             return "dS(%d)" % self.sub_domain
+
+    def __cmp__(self, other):
+        "Check if integrals are equal."
+        if not isinstance(other, Integral):
+            return -1
+        if self.type == other.type and self.sub_domain == other.sub_domain:
+            return 0
+        return -1 # Ignore self > other
+        
