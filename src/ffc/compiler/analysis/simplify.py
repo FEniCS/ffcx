@@ -1,5 +1,5 @@
 __author__ = "Marie Rognes (meg@math.uio.no)"
-__date__ = "2006-10-23 -- 2007-03-20"
+__date__ = "2006-10-23 -- 2007-05-15"
 __copyright__ = "Copyright (C) 2006"
 __license__  = "GNU GPL Version 2"
 
@@ -18,54 +18,279 @@ from ffc.compiler.language.algebra import *
 from ffc.compiler.language.tokens import *
 
 def simplify(form):
-    """ Simplification of a Form f with respect to transforms and
-    derivatives.
-
-    This function will simplify terms reading:
-    (dx_j/dX_i)(dX_l/dx_j) | (d/DX_l) => (d/dX_i)"""
-
+    """ Simplification of a form"""
+    
     if not isinstance(form, Form):
-        raise FormError, "I only know how to simplify a Form!"
+        raise FormError, "simplify assumes a Form as input."
 
     debug("Simplifying form...")
-
-    # We aim to simplify each monomial on its own:
-    for monomial in form.monomials:
-
-        # Then we run thorough the basis functions in this monomial and
-        # check for simplifications:
-        for basis in monomial.basisfunctions:
-            success = 0
-            first = None
-            second = None
-
-            # The derivatives of this basis function is a good
-            # starting point so we run through these. We use index
-            # notation since we may have to replace some of them.
-            for i in range(len(basis.derivatives)):
-                derivative = basis.derivatives[i]
-                success = 0
-                theindex = derivative.index
-                # Now, lets run through the transforms and see whether
-                # there are two matching:
-                for transform in monomial.transforms:
-                    if transform.type == Transform.JINV:
-                        if not cmp(transform.index0, theindex):
-                            first = transform
-                            break
-                for transform in monomial.transforms:
-                    if transform.type == Transform.J:
-                        if not cmp(transform.index1, first.index1):
-                            second = transform
-                            success = 1
-                            break
-
-                if success == 1:
-                    # Now, we should first remove the transforms from
-                    # the transform list. Second: replace the old
-                    # derivative with the new one.
-                    basis.derivatives[i] = Derivative(derivative.element, second.index0)
-                    monomial.transforms.remove(first) 
-                    monomial.transforms.remove(second)
-
+    previous = str(form)
+    simplified = ""
+    while(previous != simplified):
+        reassign_indices(form)
+        previous = str(form)
+        simplify_form(form)
+        simplified = str(form)
     debug("done")
+
+def simplify_form(f):
+    # First: factorize the form and contract indices
+    #f.monomials = contract_list(factorize_monomials, f.monomials)
+    f.monomials = contract_list(contract_monomials, f.monomials)
+
+    # Second, simplify each monomial with regard to derivatives.
+    for monomial in f.monomials:
+        monomial = simplify_monomial(monomial)
+        
+def contract_list(contraction, monomials):
+    """ Given a list of ..., run contraction on (all) pairs of these,
+    and return the new list. contraction should return a tuple
+    (result, contracted) where result is a list containing either the
+    contracted result or the original input.""" 
+    # meg: Again, please replace this if there is an easier/prettier
+    # way of doing this.
+    if len(monomials) < 2:
+        return monomials 
+    current = listcopy(monomials)
+    i = 0
+    while i < len(current):
+        j = i+1
+        while j < len(current):
+            (q, contracted) = contraction(current[i], current[j])
+            if contracted:
+                current.remove(current[j])
+                current[i] = q[0]      # (Note that j > i.)
+            else:
+                j +=1
+        i += 1
+    return current
+
+def factorize_monomials(m, n):
+    """ Given a two monomials, factorize any common factors and return
+    the new monomials."""
+    # meg: Not quite finished yet.
+    if contraction_likely(m,n):
+        differences = diff(m, n)
+        if is_empty(differences):
+            q = Monomial(m)
+            q.numeric += n.numeric
+            return ([q], True)
+    return ([m, n], False)
+    
+def contract_monomials(m, n):
+    if not isinstance(m, Monomial) and isinstance(n, Monomial):
+        raise FormError, "contract_monomials can only contract monomials"
+    # First, do some quick checks to see if it is at all likely that
+    # these monomials are contractable
+    if not contraction_likely(m, n):
+        return ([m, n], False)
+    q = contract_indices(m, n)
+    return (q, len(q) == 1)
+
+def contraction_likely(m, n):
+    """ Given two monomials/basisfunctions, check if they have the
+    same numbers of basisfunctions, transforms, derivatives,
+    components etc. (This is just intended as a quick, preliminary
+    check.)"""
+    # Comparing monomials:
+    if isinstance(m, Monomial) and isinstance(n, Monomial):
+        if len(m.transforms) != len(n.transforms):
+            return False
+        if len(m.basisfunctions) != len(n.basisfunctions):
+            return False
+        for i in range(len(m.basisfunctions)):
+            if not contraction_likely(m.basisfunctions[i], n.basisfunctions[i]):
+                return False
+        return True
+
+    # Comparing basis functions:
+    elif isinstance(m, BasisFunction) and isinstance(n, BasisFunction):
+        if m.index != n.index:
+            return False
+        if len(m.component) != len(n.component):
+            return False
+        if len(m.derivatives) != len(n.derivatives):
+            return False
+        return True
+
+    # Others, not implemented
+    else:
+        return True
+            
+def contract_indices(m, n):
+    """ Given two monomials, contract indices in the following way: If
+    m and n only differ by one index, contract and replace this index."""
+    indices = [{}, {}]
+
+    # Extract the differences between the monomials
+    differences = abbreviate(diff(m, n))
+
+    # Extract the different index values:
+    for attribute in differences:
+        for [mv, nv] in differences[attribute]:
+            # Each key/label in mv is also in nv by construction.
+            for label in mv:  
+                if indices[0].has_key(str(mv[label])):
+                    indices[0][str(mv[label])] += [(label, mv[label])]
+                else:
+                    indices[0][str(mv[label])] = [(label, mv[label])]
+                if indices[1].has_key(str(nv[label])):
+                    indices[1][str(nv[label])] += [(label, nv[label])]
+                else:
+                    indices[1][str(nv[label])] = [(label, nv[label])]
+
+    # We can contract the indices and thus the monomials, if there is
+    # only a difference of one index and if there are at least two
+    # occurances of this index. (Summation over _repeated_ indices.)
+    if len(indices[0].keys()) == len(indices[1].keys()) == 1 and len(indices[0].values()[0]) > 1:
+        # Constructing the new index:
+        i0 = indices[0].values()[0][0][1]
+        i1 = indices[1].values()[0][0][1]
+
+        # We only want to contract if each index value occurs once.
+        common_indices = []
+        for i in i0.range:
+            if i in i1.range: common_indices += [i]
+                
+        if not common_indices:
+            # Constucting the new monomial based on the old m:
+            index = Index(i0) + Index(i1)
+            q = Monomial(m)
+            for (label, i) in indices[0][str(i0)]:
+                s = "q.%s = index" % str(label)
+                exec(s)
+            return [q]
+
+    return [m, n]
+
+def simplify_monomial(monomial):
+    """ Simpliy monomials with construction of the form:
+    (dx_j/dX_i)(dX_l/dx_j) | (d/dX_l) => (d/dX_i)"""
+    
+    for basis in monomial.basisfunctions:
+        success = 0
+        first = None
+        second = None
+        
+        # The derivatives of this basis function is a good
+        # starting point so we run through these. We use index
+        # notation since we may have to replace some of them.
+        for i in range(len(basis.derivatives)):
+            derivative = basis.derivatives[i]
+            success = 0
+            theindex = derivative.index
+            # Now, lets run through the transforms and see whether
+            # there are two matching:
+            for transform in monomial.transforms:
+                if transform.type == Transform.JINV:
+                    if not cmp(transform.index0, theindex):
+                        first = transform
+                        break
+            for transform in monomial.transforms:
+                if transform.type == Transform.J:
+                    if not cmp(transform.index1, first.index1):
+                        second = transform
+                        success = 1
+                        break
+                        
+            if success == 1:
+                # Now, we should first remove the transforms from
+                # the transform list. Second: replace the old
+                # derivative with the new one.
+                basis.derivatives[i] = Derivative(derivative.element, second.index0)
+                monomial.transforms.remove(first) 
+                monomial.transforms.remove(second)
+    return monomial
+
+def diff(m, n, key = None):
+    """ Takes two elements and returns the difference between these in
+    an appropriate manner.""" 
+
+    # Dictionaries containing each version when m and n are different
+    mversion = {}
+    nversion = {}
+
+    if isinstance(m, list) and isinstance(n, list):
+        #The difference of two lists (of equal length!)
+        diffs = []
+        if len(m) == len(n):
+            for i in range(len(m)):
+                difference = diff(m[i], n[i], key[i])
+                if not is_empty(difference):
+                    diffs += [difference]
+            return diffs
+        else:
+            raise FormError("Only know how to diff between lists of equal length.")
+        
+    elif isinstance(m, Monomial) and isinstance(n, Monomial):
+        # The difference between two monomials
+        constdiff = [] # Constants not yet considered.
+        coeffids = ["coefficients[%d]" % i for i in range(len(m.coefficients))]
+        coeffdiff = diff(m.coefficients, n.coefficients, coeffids)
+        tids = ["transforms[%d]" % i for i in range(len(m.transforms))]
+        tdiff = diff(m.transforms, n.transforms, tids)
+        dictionary = {'constants': constdiff, 'coefficients': coeffdiff, 'transforms': tdiff}
+
+        # Treat the basis functions items separately:
+        bids = ["basisfunctions[%d]." % i for i in range(len(m.basisfunctions))]
+        bdiff = diff(m.basisfunctions, n.basisfunctions, bids)
+        for dict in bdiff:
+            for key in dict:
+                if dictionary.has_key(key):
+                    dictionary[key] += dict[key]
+                else:
+                    dictionary[key] = dict[key]
+        return abbreviate(dictionary)
+        
+    elif isinstance(m, BasisFunction) and isinstance(n, BasisFunction):
+        # The difference between two basis functions
+        idiff = diff(m.index, n.index, key + "index")
+        cids = [key + "component[%d]" % i for i in range(len(m.component))]
+        cdiff = diff(m.component, n.component, cids)
+        dids = [key + "derivatives[%d]" % i for i in range(len(m.derivatives))]
+        ddiff = diff(m.derivatives, n.derivatives, dids)
+        return abbreviate({'index': idiff, 'component': cdiff, 'derivatives': ddiff})
+
+    elif isinstance(m, Index) and isinstance(n, Index):
+        # The difference between two indices
+        if not m == n:
+            mversion[key] = m
+            nversion[key] = n
+
+    elif isinstance(m, Transform) and isinstance(n, Transform):
+        # The difference between two transforms
+        if not m.index0 == n.index0:
+            mversion[key + ".index0"] = m.index0
+            nversion[key + ".index0"] = n.index0
+        if not m.index1 == n.index1:
+            mversion[key + ".index1"] = m.index1
+            nversion[key + ".index1"] = n.index1
+        if not m.type == n.type:
+            mversion[key + ".type"] = m.type
+            nversion[key + ".type"] = n.type
+        
+    elif isinstance(m, Derivative) and isinstance(n, Derivative):
+        # The difference between two derivatives:
+        if not m.index == n.index:
+            mversion[key + ".index"] = m.index
+            nversion[key + ".index"] = n.index
+
+    elif isinstance(m, Coefficient) and isinstance(n, Coefficient):
+
+        # if not m.n0 == n.n0:
+        #     mversion[key + ".n0"] = m.n0
+        #     nversion[key + ".n0"] = n.n0
+        if not m.n1 == n.n1:
+            mversion[key + ".n1"] = m.n1
+            nversion[key + ".n1"] = n.n1
+        if not m.index == n.index:
+            mversion[key + ".index"] = m.index
+            nversion[key + ".index"] = n.index
+        
+    else:
+        raise FormError, "Diff is not implemented between such elements"
+
+    if mversion:
+        return [mversion, nversion]
+    else:
+        return []
