@@ -34,9 +34,10 @@ def simplify(form):
     debug("done")
 
 def simplify_form(f):
-    # First: factorize the form and contract indices
-    #f.monomials = contract_list(factorize_monomials, f.monomials)
+    # First: contract indices and factorize
     f.monomials = contract_list(contract_monomials, f.monomials)
+    reassign_indices(f)
+    f.monomials = contract_list(factorize_monomials, f.monomials)
 
     # Second, simplify each monomial with regard to derivatives.
     for monomial in f.monomials:
