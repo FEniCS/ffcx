@@ -76,9 +76,12 @@ class MixedElement:
             (sub_element, offset) = self.value_offset(i)
             return sub_element.value_mapping(Index(i.index - offset))
         else:
-            # All the elements must have the same mapping:
-            # meg: No longer true since we changed the index style!
-            return self.__elements[0].value_mapping(Index(0))
+            if component.range:
+                return pick_first([self.value_mapping(i)
+                                   for i in component.range])
+            else:
+                return pick_first([self.value_mapping(i)
+                                   for i in range(self.value_dimension(0))])
 
     def space_mapping(self, i):
         """Return the type of mapping associated with the i'th basis
@@ -100,7 +103,7 @@ class MixedElement:
         raise RuntimeError("Component does not match value dimension")
 
     def space_offset(self, i):
-        """Given an absolute basis_no (index), return the associated
+        """Given an absolute basis_no (i), return the associated
         subelement and offset"""
         # Does not yet work with nested mixed elements
         adjustment = 0
