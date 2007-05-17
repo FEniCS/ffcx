@@ -1,4 +1,4 @@
-# Copyright (C) 2006-2007 Anders Logg (logg@simula.no)
+# Copyright (C) 2006-2007 Anders Logg (logg@simula.no) and Marie Rognes (meg@math.uio.no)"
 # Licensed under the GNU GPL Version 2
 #
 # The bilinear form a(v, u) and linear form L(v) for
@@ -14,8 +14,8 @@ DG  = FiniteElement("Discontinuous Lagrange", "triangle", q - 1)
 
 mixed_element = BDM + DG
 
-(v, w) = TestFunctions(mixed_element)
-(q, u) = TrialFunctions(mixed_element)
+(tau, w) = TestFunctions(mixed_element)
+(sigma, u) = TrialFunctions(mixed_element)
 
-a = (dot(v, q) - div(v)*u + w*div(q))*dx
+a = (dot(tau, sigma) - div(tau)*u + w*div(sigma))*dx
 L = w*f*dx

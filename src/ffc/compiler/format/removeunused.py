@@ -1,7 +1,7 @@
 "Utility function for removing unused variables from a C++ code"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-03-07 -- 2007-04-23"
+__date__ = "2007-03-07 -- 2007-05-17"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -12,7 +12,7 @@ import re
 from ffc.common.debug import *
 
 # Declarations to examine
-types = [["double"], ["const", "double"]]
+types = [["double"], ["const", "double"], ["int"], ["const", "int"]]
 
 # Special characters and delimiters
 special_characters = ["+", "-", "*", "/", "=", ".", " ", ";", "(", ")", "\\", "{", "}", "[","]"]
