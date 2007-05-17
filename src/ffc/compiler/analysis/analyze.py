@@ -26,16 +26,16 @@ def analyze(form):
     # Check validity of form
     check_form(form)
 
-    # Simplify form
-    simplify(form)
-    simplified_form = str(form)
+    # Reassign form indices
+    reassign_indices(form)
+    reassigned_form = str(form)
 
     # Check validity of form again
     check_form(form)
 
-    # Reassign form indices
-    reassign_indices(form)
-    reassigned_form = str(form)
+    # Simplify form
+    simplify(form)
+    simplified_form = str(form)
 
     # Check validity of form again
     check_form(form)
@@ -51,10 +51,10 @@ def analyze(form):
     # Print form before and after reassignment and simplification
     debug("\nRaw input form:\n", 1)
     debug("    " + raw_form, 1)
-    debug("\nAfter simplification:\n", 1)
-    debug("    " + simplified_form, 1)
     debug("\nAfter index reassignment:\n", 1)
     debug("    " + reassigned_form, 1)
+    debug("\nAfter simplification:\n", 1)
+    debug("    " + simplified_form, 1)
     
     # Print a short summary
     debug("")

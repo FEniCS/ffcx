@@ -544,7 +544,7 @@ def __generate_jacobian(cell_dimension, integral_type):
         facet_determinant = facet_determinant_2D
     else:
         jacobian = jacobian_3D
-        facet_determinant = facet_determinant_2D
+        facet_determinant = facet_determinant_3D
     
     # Check if we need to compute more than one Jacobian
     if integral_type == Integral.CELL:

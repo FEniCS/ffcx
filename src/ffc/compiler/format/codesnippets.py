@@ -107,7 +107,7 @@ static unsigned int face_vertices[4][3] = {{1, 2, 3}, {0, 2, 3}, {0, 1, 3}, {0, 
 // Get vertices
 const unsigned int v0 = face_vertices[%(facet)s][0];
 const unsigned int v1 = face_vertices[%(facet)s][1];
-const unsigned int v2 = face_vertices[&(facet)s][1];
+const unsigned int v2 = face_vertices[%(facet)s][2];
 
 // Compute scale factor (area of face scaled by area of reference triangle)
 const double a0 = (x%(restriction)s[v0][1]*x%(restriction)s[v1][2] + x%(restriction)s[v0][2]*x%(restriction)s[v2][1] + x%(restriction)s[v1][1]*x%(restriction)s[v2][2])

@@ -1,4 +1,4 @@
-__author__ = "Marie Rognes (meg@math.uio.no)"
+_author__ = "Marie Rognes (meg@math.uio.no)"
 __date__ = "2006-10-23 -- 2007-05-15"
 __copyright__ = "Copyright (C) 2006"
 __license__  = "GNU GPL Version 2"
@@ -31,6 +31,7 @@ def simplify(form):
         previous = str(form)
         simplify_form(form)
         simplified = str(form)
+    reassign_indices(form)
     debug("done")
 
 def simplify_form(f):
