@@ -17,5 +17,7 @@ mixed_element = BDM + DG
 (tau, w) = TestFunctions(mixed_element)
 (sigma, u) = TrialFunctions(mixed_element)
 
+f = Function(DG)
+
 a = (dot(tau, sigma) - div(tau)*u + w*div(sigma))*dx
 L = w*f*dx
