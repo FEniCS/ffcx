@@ -19,7 +19,7 @@ from ffc.compiler.language.tokens import *
 
 def simplify(form):
     """ Simplification of a form"""
-    
+
     if not isinstance(form, Form):
         raise FormError, "simplify assumes a Form as input."
 

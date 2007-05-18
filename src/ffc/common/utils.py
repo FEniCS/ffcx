@@ -6,7 +6,7 @@ __license__  = "GNU GPL Version 2"
 def pick_first(values):
     "Check that all values are equal and return the value"
     if not values[:-1] == values[1:]:
-        raise RuntimeError, "Different values for method %s for objects %s." % (str(method), str(object_list))
+        raise RuntimeError, "Values differ: " + str(values)
     return values[0]
 
 def listcopy(l):

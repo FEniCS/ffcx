@@ -1,4 +1,4 @@
-# Copyright (C) 2006-2007 Anders Logg (logg@simula.no)
+# Copyright (C) 2006-2007 Anders Logg (logg@simula.no) and Marie Rognes (meg@math.uio.no)"
 # Licensed under the GNU GPL Version 2
 #
 # The bilinear form a(v, u) and linear form L(v) for
@@ -16,6 +16,8 @@ mixed_element = BDM + DG
 
 (tau, w) = TestFunctions(mixed_element)
 (sigma, u) = TrialFunctions(mixed_element)
+
+f = Function(DG)
 
 a = (dot(tau, sigma) - div(tau)*u + w*div(sigma))*dx
 L = w*f*dx

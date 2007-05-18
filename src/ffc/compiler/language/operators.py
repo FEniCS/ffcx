@@ -165,6 +165,8 @@ def div(v):
     "Return divergence of given function."
     # Use index notation if possible
     if isinstance(v, Element):
+        if not v.value_rank() == 1:
+            raise FormError, (v, "Cannot take divergence of scalar expression.")
         i = Index()
         return v[i].dx(i)
     # Otherwise, compute the form explicitly
