@@ -114,6 +114,11 @@ def __generate_interpolate_vertex_values(element, format):
     # Tabulate basis functions at vertices
     table = element.tabulate(0, vertices)
 
+    #print "--------------------------"
+    #print element
+    #for i in range(element.value_dimension(0)):
+    #    print element.value_mapping(0)
+
     # Get vector dimension
     if element.value_rank() == 0:
         for i in range(len(vertices)):

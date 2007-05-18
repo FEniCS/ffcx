@@ -93,10 +93,11 @@ class MixedElement:
         """Given an absolute component (index), return the associated
         subelement and relative position of the component""" 
         # Does not yet work with nested mixed elements
+        i = Index(component)
         adjustment = 0
         for element in self.__elements:
             value_dim = element.value_dimension(0)
-            if (adjustment + value_dim) > component.index:
+            if (adjustment + value_dim) > i.index:
                 return (element, adjustment)
             else:
                 adjustment += value_dim
