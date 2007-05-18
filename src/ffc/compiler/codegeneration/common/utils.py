@@ -17,7 +17,7 @@ def inner_product(a, b, format):
 
     # Check input
     if not len(a) == len(b):
-        raise runtimeError, "Dimensions don't match for inner product."
+        raise RuntimeError, "Dimensions don't match for inner product."
 
     # Prefetch formats to speed up code generation
     format_add            = format["add"]

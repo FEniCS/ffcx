@@ -25,8 +25,10 @@ from removeunused import *
 # Choose map from restriction
 choose_map = {Restriction.PLUS: "0", Restriction.MINUS: "1", Restriction.CONSTANT: "0", None: ""}
 # Transform format options  based on the sign of the power of the transform:
+#transform_options = {Transform.JINV: lambda m, j, k: "Jinv%s_%d%d" % (m, j, k),
+#                     Transform.J: lambda m, j, k: "J%s_%d%d" % (m, k, j)}
 transform_options = {Transform.JINV: lambda m, j, k: "Jinv%s_%d%d" % (m, j, k),
-                     Transform.J: lambda m, j, k: "J%s_%d%d" % (m, k, j)}
+                     Transform.J: lambda m, j, k: "J%s_%d%d" % (m, j, k)}
 # Options for the printing q or 1.0/q for q string:
 power_options = {True: lambda q: q, False: lambda q: "1.0/(%s)" % q}
 
@@ -131,6 +133,7 @@ format = { "add": lambda v: " + ".join(v),
            "snippet dof map": evaluate_basis_dof_map,
            "snippet eta_triangle": eta_triangle_snippet,
            "snippet eta_tetrahedron": eta_tetrahedron_snippet,
+           "snippet jacobian": lambda d: eval("jacobian_%dD" % d),
            "snippet combinations": combinations_snippet,
            "snippet transform2D": transform2D_snippet,
            "snippet transform3D": transform3D_snippet,
@@ -312,7 +315,7 @@ def __generate_finite_element(code, form_data, options, prefix, label):
     ufc_code["evaluate_dof"] = __generate_body(code["evaluate_dof"])
 
     # Generate code for inperpolate_vertex_values
-    ufc_code["interpolate_vertex_values"] = __generate_body(code["interpolate_vertex_values"])
+    ufc_code["interpolate_vertex_values"] = remove_unused(__generate_body(code["interpolate_vertex_values"]))
 
     # Generate code for num_sub_elements
     ufc_code["num_sub_elements"] = "return %s;" % code["num_sub_elements"]
@@ -549,17 +552,17 @@ def __generate_jacobian(cell_dimension, integral_type):
     # Check if we need to compute more than one Jacobian
     if integral_type == Integral.CELL:
         code  = jacobian % {"restriction":  ""}
-        code += "\n"
+        code += "\n\n"
         code += scale_factor
     elif integral_type == Integral.EXTERIOR_FACET:
         code  = jacobian % {"restriction":  ""}
-        code += "\n"
+        code += "\n\n"
         code += facet_determinant % {"restriction": "", "facet" : "facet"}
     elif integral_type == Integral.INTERIOR_FACET:
         code  = jacobian % {"restriction": choose_map[Restriction.PLUS]}
-        code += "\n"
+        code += "\n\n"
         code += jacobian % {"restriction": choose_map[Restriction.MINUS]}
-        code += "\n"
+        code += "\n\n"
         code += facet_determinant % {"restriction": choose_map[Restriction.PLUS], "facet": "facet0"}
 
     return code

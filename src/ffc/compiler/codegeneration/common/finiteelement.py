@@ -1,7 +1,7 @@
 "Code generation for finite element"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-01-23 -- 2007-05-07"
+__date__ = "2007-01-23 -- 2007-05-18"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -49,6 +49,7 @@ def generate_finite_element(element, format):
     code["evaluate_dof"] = __generate_evaluate_dof(element, format)
 
     # Generate code for inperpolate_vertex_values
+    #code["interpolate_vertex_values"] = __generate_interpolate_vertex_values_old(element, format)
     code["interpolate_vertex_values"] = __generate_interpolate_vertex_values(element, format)
 
     # Generate code for num_sub_elements
@@ -93,7 +94,7 @@ def __generate_evaluate_dof(element, format):
     
     return code
 
-def __generate_interpolate_vertex_values(element, format):
+def __generate_interpolate_vertex_values_old(element, format):
     "Generate code for interpolate_vertex_values"
 
     # Check that we have a scalar- or vector-valued element
@@ -114,26 +115,133 @@ def __generate_interpolate_vertex_values(element, format):
     # Tabulate basis functions at vertices
     table = element.tabulate(0, vertices)
 
-    #print "--------------------------"
-    #print element
-    #for i in range(element.value_dimension(0)):
-    #    print element.value_mapping(0)
-
     # Get vector dimension
     if element.value_rank() == 0:
-        for i in range(len(vertices)):
-            coefficients = table[0][element.cell_dimension()*(0,)][:, i]
-            dof_values = [format["dof values"](j) for j in range(len(coefficients))]
-            name = format["vertex values"](i)
+        for v in range(len(vertices)):
+            coefficients = table[0][element.cell_dimension()*(0,)][:, v]
+            dof_values = [format["dof values"](n) for n in range(len(coefficients))]
+            name = format["vertex values"](v)
             value = inner_product(coefficients, dof_values, format)
             code += [(name, value)]
     else:
         for dim in range(element.value_dimension(0)):
-            for i in range(len(vertices)):
-                coefficients = table[dim][0][element.cell_dimension()*(0,)][:, i]
-                dof_values = [format["dof values"](j) for j in range(len(coefficients))]
-                name = format["vertex values"](dim*len(vertices) + i)
+            for v in range(len(vertices)):
+                coefficients = table[dim][0][element.cell_dimension()*(0,)][:, v]
+                dof_values = [format["dof values"](n) for n in range(len(coefficients))]
+                name = format["vertex values"](dim*len(vertices) + v)
                 value = inner_product(coefficients, dof_values, format)
                 code += [(name, value)]
 
+    return code
+
+def __generate_interpolate_vertex_values(element, format):
+    "Generate code for interpolate_vertex_values"
+
+    # Check that we have a scalar- or vector-valued element
+    if element.value_rank() > 1:
+        return format["exception"]("interpolate_vertex_values not implemented for this type of element")
+
+    # Generate code as a list of declarations
+    code = []
+
+    # Set vertices (note that we need to use the FIAT reference cells)
+    if element.cell_shape() == LINE:
+        vertices = [(-1,), (1,)]
+    elif element.cell_shape() == TRIANGLE:
+        vertices = [(-1, -1), (1, -1), (-1, 1)]
+    elif element.cell_shape() == TETRAHEDRON:
+        vertices =  [(-1, -1, -1), (1, -1, -1), (-1, 1, -1), (-1, -1, 1)]
+
+    # Extract nested sub elements
+    sub_elements = element.basis_elements()
+
+    # Iterate over sub elements
+    offset_dof_values = 0
+    offset_vertex_values = 0
+    need_piola = False
+    for sub_element in sub_elements:
+
+        # Tabulate basis functions at vertices
+        table = sub_element.tabulate(0, vertices)
+
+        # Check which transform we should use to map the basis functions
+        mapping = pick_first([sub_element.value_mapping(dim) for dim in range(sub_element.value_dimension(0))])
+
+        # Generate different code depending on mapping
+        if mapping == Mapping.AFFINE:
+
+            code += [format["comment"]("Evaluate at vertices and use affine mapping")]
+
+            # Handle scalars and vectors
+            if sub_element.value_rank() == 0:
+                for v in range(len(vertices)):
+                    coefficients = table[0][sub_element.cell_dimension()*(0,)][:, v]
+                    dof_values = [format["dof values"](offset_dof_values + n) for n in range(len(coefficients))]
+                    name = format["vertex values"](offset_vertex_values + v)
+                    value = inner_product(coefficients, dof_values, format)
+                    code += [(name, value)]
+            else:
+                for dim in range(sub_element.value_dimension(0)):
+                    for v in range(len(vertices)):
+                        coefficients = table[dim][0][sub_element.cell_dimension()*(0,)][:, v]
+                        dof_values = [format["dof values"](offset_dof_values + n) for n in range(len(coefficients))]
+                        name = format["vertex values"](offset_vertex_values + dim*len(vertices) + v)
+                        value = inner_product(coefficients, dof_values, format)
+                        code += [(name, value)]
+
+        elif mapping == Mapping.PIOLA:
+
+            code += [format["comment"]("Evaluate at vertices and use Piola mapping")]
+
+            # Remember to add code later for Jacobian
+            need_piola = True
+
+            # Check that dimension matches for Piola transform
+            if not sub_element.value_dimension(0) == sub_element.cell_dimension():
+                raise RuntimeError, "Vector dimension of basis function does not match for Piola transform."
+
+            # Get entities for the dofs
+            dof_entities = DofMap(sub_element).dof_entities()
+
+            for dim in range(sub_element.value_dimension(0)):
+                for v in range(len(vertices)):
+                    terms = []
+                    for n in range(sub_element.space_dimension()):
+                        # Get basis function values at vertices
+                        coefficients = [table[j][0][sub_element.cell_dimension()*(0,)][n, v] for j in range(sub_element.value_dimension(0))]
+                        # Get row of Jacobian
+                        jacobian_row = [format["transform"](Transform.J, dim, j, None) for j in range(sub_element.cell_dimension())]
+                        # Multiply vector-valued basis function with Jacobian
+                        basis_function = inner_product(coefficients, jacobian_row, format)
+                        # Add paranthesis if necessary
+                        if "+" in basis_function or "-" in basis_function: # Cheating, should use dictionary
+                            basis_function = format["grouping"](basis_function)
+                        # Multiply with dof value
+                        factors = [format["dof values"](offset_dof_values + n), basis_function]
+                        # Add sign change if necessary
+                        (entity_dim, entity) = dof_entities[n]
+                        if entity_dim == 1:
+                            factors = [format["call edge sign"](entity)] + factors
+                        # Add term
+                        if not basis_function == format["floating point"](0):
+                            terms += [format["multiply"](factors)]
+                    if len(terms) > 1:
+                        sum = format["grouping"](format["add"](terms))
+                    else:
+                        sum = format["add"](terms)
+                    name = format["vertex values"](offset_vertex_values + dim*len(vertices) + v)
+                    value = format["multiply"]([format["inverse"](format["determinant"]), sum])
+                    code += [(name, value)]
+
+        else:
+            raise RuntimeError, "Unknown mapping: " + str(mapping)
+
+        offset_dof_values    += sub_element.space_dimension()
+        offset_vertex_values += len(vertices)*sub_element.value_dimension(0)
+
+    # Insert code for computing quantities needed for Piola mapping
+    if need_piola:
+        code.insert(0, format["snippet jacobian"](element.cell_dimension()) % {"restriction": ""})        
+        code.insert(1, format["snippet edge signs"](element.cell_dimension()))
+    
     return code

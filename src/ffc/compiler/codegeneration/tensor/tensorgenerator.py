@@ -312,7 +312,7 @@ class TensorGenerator(CodeGenerator):
                     for no in dof_entities:
                         (entity, entity_no) = dof_entities[no]
                         name = format["sign tensor"](j, index.index, no)
-                        if entity == 1 and element.space_mapping(no) == Mapping.PIOLA: 
+                        if entity == 1 and element.space_mapping(no) == Mapping.PIOLA:
                             necessary = True
                             value = format["call edge sign"](entity_no)
                             # If the sign of this edge already has

@@ -28,8 +28,7 @@ const double Jinv%(restriction)s_10 = -J%(restriction)s_10 / detJ%(restriction)s
 const double Jinv%(restriction)s_11 =  J%(restriction)s_00 / detJ%(restriction)s;
 
 // Take absolute value of determinant
-detJ%(restriction)s = std::abs(detJ%(restriction)s);
-"""
+detJ%(restriction)s = std::abs(detJ%(restriction)s);"""
 
 # Code snippet for computing the Jacobian, its inverse and determinant in 3D
 jacobian_3D = """\
@@ -75,8 +74,7 @@ const double Jinv%(restriction)s_21 = d%(restriction)s_12 / detJ%(restriction)s;
 const double Jinv%(restriction)s_22 = d%(restriction)s_22 / detJ%(restriction)s;
 
 // Take absolute value of determinant
-detJ%(restriction)s = std::abs(detJ%(restriction)s);
-"""
+detJ%(restriction)s = std::abs(detJ%(restriction)s);"""
 
 # Code snippet for computing the scale factor (determinant)
 scale_factor = """\
