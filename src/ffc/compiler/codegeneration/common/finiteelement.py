@@ -210,7 +210,7 @@ def __generate_interpolate_vertex_values(element, format):
                         # Get basis function values at vertices
                         coefficients = [table[j][0][sub_element.cell_dimension()*(0,)][n, v] for j in range(sub_element.value_dimension(0))]
                         # Get row of Jacobian
-                        jacobian_row = [format["transform"](Transform.J, dim, j, None) for j in range(sub_element.cell_dimension())]
+                        jacobian_row = [format["transform"](Transform.J, j, dim, None) for j in range(sub_element.cell_dimension())]
                         # Multiply vector-valued basis function with Jacobian
                         basis_function = inner_product(coefficients, jacobian_row, format)
                         # Add paranthesis if necessary

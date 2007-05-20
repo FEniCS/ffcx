@@ -28,7 +28,7 @@ choose_map = {Restriction.PLUS: "0", Restriction.MINUS: "1", Restriction.CONSTAN
 #transform_options = {Transform.JINV: lambda m, j, k: "Jinv%s_%d%d" % (m, j, k),
 #                     Transform.J: lambda m, j, k: "J%s_%d%d" % (m, k, j)}
 transform_options = {Transform.JINV: lambda m, j, k: "Jinv%s_%d%d" % (m, j, k),
-                     Transform.J: lambda m, j, k: "J%s_%d%d" % (m, j, k)}
+                     Transform.J: lambda m, j, k: "J%s_%d%d" % (m, k, j)}
 # Options for the printing q or 1.0/q for q string:
 power_options = {True: lambda q: q, False: lambda q: "1.0/(%s)" % q}
 
