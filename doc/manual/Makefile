@@ -2,6 +2,8 @@ FILENAME='ufc-user-manual'
 
 all:
 	latex $(FILENAME).tex
+	bibtex $(FILENAME)
+	latex $(FILENAME).tex
 	makeindex $(FILENAME)
 	latex $(FILENAME)
 	dvips -P pdf -o $(FILENAME).ps $(FILENAME).dvi
