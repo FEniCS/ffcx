@@ -223,8 +223,8 @@ def __generate_tabulate_coordinates(dof_map, format):
 
     # Check if we get some points from fem.dofmap.py
     if not None in points:
-        code += [format["comment"]("This function is implemented assuming affine mapping!!")]
-        code += [format["comment"]("Get cell vertices")]
+        #code += [format["comment"]("This function is implemented assuming affine mapping!!")]
+        #code += [format["comment"]("Get cell vertices")]
         code += [format["get cell vertices"]]
 
         # Get the cell shape

@@ -32,6 +32,7 @@ class Coefficient:
         e1    - a Finite Element defining the projection space
         P     - the projection matrix from e0 to e1
         index - an index for summation against corresponding basis function
+        ops   - a list of operators to be applied to the function
     """
 
     def __init__(self, function, index = None):
