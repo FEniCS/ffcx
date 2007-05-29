@@ -12,12 +12,7 @@ from ffc.compiler.language.integral import *
 # FFC quadrature representation modules
 from elementtensor import *
 
-# obsolete modules?
-#from monomialintegration import *
-
 #from factorization import *
-#from referencetensor import *
-#from geometrytensor import *
 #from tensorreordering import *
 
 class QuadratureRepresentation:
@@ -38,8 +33,6 @@ class QuadratureRepresentation:
 
         # Extract form
         form = form_data.form
-
-#        print "\n quadraturerepresentations __init__, form: \n", form
 
         # Save form
         self.form = form
@@ -73,7 +66,6 @@ class QuadratureRepresentation:
         debug_end()
         return tensors
 
-    # FIXME: not implemented/tested
     def __compute_exterior_facet_tensors(self, form):
         "Compute representation of exterior facet tensors"
         debug_begin("Computing exterior facet tensors")
@@ -101,7 +93,6 @@ class QuadratureRepresentation:
         debug_end()
         return tensors
 
-    # FIXME: not implemented/tested
     def __compute_interior_facet_tensors(self, form):
         "Compute representation of interior facet tensors"
         debug_begin("Computing interior facet tensors")
@@ -168,37 +159,12 @@ class QuadratureRepresentation:
 
             # Get monomial
             m = monomials[i]
-            print "\n representation for monomial i\n", i
-            print "\n representation monomial:\n", m
-#            print "\ncompute terms, m: \n", m
-#            print "compute terms, m.basisfunctions: ", m.basisfunctions
-
-#            print "degree: ", compute_degree(m.basisfunctions)
-#            print "num_gauss_points: ", num
 
             # Only consider monomials of given integral type
             if not m.integral.type == integral_type:
                 continue
 
             tensors[i] = ElementTensor(m, facet0, facet1)
-            
-            # Compute geometry tensor for current monomial
-#            G = GeometryTensor(m)
-            
-            # Compute reference tensor if not factorized
-#            self.__debug(i, facet0, facet1)
-#            if factorization[i] == None:
-                # Compute new reference tensor
-#                A0 = ReferenceTensor(m, facet0, facet1)
-#                terms[i] = Term(m, A0, [G])
-#                debug("done")
-#            else:
-                # Add geometry tensor to previous term
-#                terms[factorization[i]].G += [G]
-#                debug("factorized")
-
-        # Remove terms not computed (factorized)
-#        [terms.remove(None) for i in range(len(terms)) if None in terms]
 
         return tensors
 

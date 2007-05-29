@@ -246,7 +246,6 @@ def __compute_product(psis, weights):
     # Initialize zero reference tensor (will be rearranged later)
     (shape, indices) = __compute_shape(psis)
     A0 = numpy.zeros(shape, dtype= numpy.float)
-
     # Initialize list of auxiliary multiindices
     bshape = __compute_auxiliary_shape(psis)
     bindices = build_indices([range(b) for b in bshape]) or [[]]

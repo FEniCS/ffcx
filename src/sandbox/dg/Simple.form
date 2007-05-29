@@ -3,4 +3,13 @@ DG1 = FiniteElement("Discontinuous Lagrange", "triangle", 1)
 v = TestFunction(DG1)
 u = TrialFunction(DG1)
 
-a = v('+')*u('-')*dS
+n = FacetNormal("triangle")
+
+def Jump(v):
+    return [v*n[i] for i in range(2)]
+
+#a = v('+')*u('-')*dS + dot(jump(v,n), jump(u,n))*ds
+a = v('+')*u('-')*dS + dot(Jump(v), Jump(u))*ds
+print a
+
+

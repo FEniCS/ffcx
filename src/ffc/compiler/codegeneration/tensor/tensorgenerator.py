@@ -198,7 +198,7 @@ class TensorGenerator(CodeGenerator):
     
         # Get list of primary indices (should be the same so pick first)
         iindices = terms[0].A0.i.indices
-    
+
         # Prefetch formats to speed up code generation
         format_element_tensor  = format["element tensor"]
         format_geometry_tensor = format["geometry tensor access"]
@@ -277,6 +277,7 @@ class TensorGenerator(CodeGenerator):
                                                             t.index1([], a, [], b), \
                                                             t.restriction)]
             terms += [format["multiply"](factors)]
+
         sum = format["add"](terms)
         if sum: sum = format["grouping"](sum)
         if sum: f1 = [sum]

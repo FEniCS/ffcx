@@ -31,6 +31,7 @@ class GeometryTensor:
         # Create secondary and auxiliary multi indices
         self.a = self.__create_multi_index(monomial, Index.SECONDARY)
         self.b = self.__create_multi_index(monomial, Index.AUXILIARY_G)
+
         debug("Secondary multi index: " + str(self.a), 1)
         debug("Auxiliary multi index: " + str(self.b), 1)
 
@@ -43,6 +44,7 @@ class GeometryTensor:
         
         # Compute all dimensions
         dims = [self.__find_dim(monomial, i, index_type) for i in range(rank)]
+
         # Create multi index from dims
         return MultiIndex(dims)
 

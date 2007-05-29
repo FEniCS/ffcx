@@ -1,9 +1,10 @@
 _author__ = "Marie Rognes (meg@math.uio.no)"
-__date__ = "2006-10-23 -- 2007-05-15"
+__date__ = "2006-10-23 -- 2007-05-29"
 __copyright__ = "Copyright (C) 2006"
 __license__  = "GNU GPL Version 2"
 
 # Modified by Anders Logg 2007
+# Modified by Kristian Oelgaard 2007
 
 # Python modules
 import sys
@@ -16,6 +17,7 @@ from ffc.common.exceptions import *
 from ffc.compiler.language.index import *
 from ffc.compiler.language.algebra import *
 from ffc.compiler.language.tokens import *
+from ffc.compiler.language.integral import *
 
 def simplify(form):
     """ Simplification of a form"""
@@ -24,8 +26,12 @@ def simplify(form):
         raise FormError, "simplify assumes a Form as input."
 
     debug("Simplifying form...")
+    # Handle restrictions on exterior facets before simplifying
+    restriction_exterior(form)
+
     previous = str(form)
     simplified = ""
+
     while(previous != simplified):
         reassign_indices(form)
         previous = str(form)
@@ -323,3 +329,46 @@ def diff(m, n, key = None):
         return [mversion, nversion]
     else:
         return []
+
+def restriction_exterior(form):
+    """Removing restrictions on exterior facets.
+       If this makes monomial terms equal, all but one monomial term will be deleted."""
+
+    # List of numbers of monomials with removed restrictions on exterior facets
+    removed_restrictions = []
+    for i in range(len(form.monomials)):
+        p = form.monomials[i]
+        for v in p.basisfunctions:
+            type = p.integral.type
+            if type == Integral.EXTERIOR_FACET:
+                if not (v.restriction == None or v.restriction == Restriction.CONSTANT):
+                    # Remove restriction and keep track of the monomial number
+                    v.restriction = None
+                    removed_restrictions += [i]
+
+    # Create a set of the removed restrictions, (remove duplicate numbers) and get monomials
+    removed_restrictions = tuple(set(removed_restrictions))
+    monomials = [form.monomials[r] for r in removed_restrictions]
+
+    # If any restrictions were moved
+    if monomials:
+        # The first monomial is always unique
+        unique = [monomials[0]]
+        for i in range(1,len(monomials)):
+            p = monomials[i]
+            equals = False
+            # Check if monomial already exists
+            for p0 in unique:
+                if contraction_likely(p,p0):
+                    if not diff(p,p0):
+                        # If there are no differences the monmials are equal
+                        equals = True
+
+            # If monomial is redundant, remove it. Otherwise add it to the list of uniuqe monomials
+            if equals:
+                form.monomials.remove(p)
+            else:
+                unique += [p]
+
+#    for p in form.monomials:
+#        print p
