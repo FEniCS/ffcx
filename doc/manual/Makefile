@@ -2,6 +2,9 @@ FILENAME='ufc-user-manual'
 
 all:
 	latex $(FILENAME).tex
+
+final:
+	latex $(FILENAME).tex
 	bibtex $(FILENAME)
 	latex $(FILENAME).tex
 	makeindex $(FILENAME)

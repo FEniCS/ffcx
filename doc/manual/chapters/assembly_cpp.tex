@@ -7,7 +7,7 @@ cells. The contributions from all exterior and interior facets may be
 computed similarly.
 
  The implementation is incomplete and system specific details, such as
-interaction with mesh and linear algebra libraries has been
+interaction with mesh and linear algebra libraries have been
 omitted.\footnote{For an example of a complete implementation of a
 UFC-based assembler, refer to the source code of
 DOLFIN~\cite{www:dolfin}, in particular class \texttt{Assembler} as
@@ -62,7 +62,7 @@ void assemble(..., ufc::form& form, ...)
     }
   }
 
-  // Initialize contiguous array for the values of the cell tensor
+  // Initialize array of values for the cell tensor
   unsigned int size = 1;
   for (unsigned int i = 0; i < form.rank(); i++)
     size *= dof_maps[i]->local_dimension();
