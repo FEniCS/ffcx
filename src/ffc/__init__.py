@@ -12,3 +12,6 @@ from ffc.compiler.compiler import compile
 from ffc.compiler.language.algebra import BasisFunction, TestFunction, TrialFunction, Function
 from ffc.compiler.language.operators import *
 from ffc.compiler.language.builtins import *
+
+# Import constants
+from ffc.common.constants import *
