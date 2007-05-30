@@ -1,40 +1,22 @@
-Things to fix before release:
+Things to fix before release of 0.4.0:
 
+ - Get RT working
  - Projections
- - Implement check primary ranks i checks
  - Update documentation
  - Fix man page and help text: -fprecision=14
  - Fix man page and help text: -fno-foo
- - Get RT working
+ - Write about TestFunction and TrialFunction in manual
+ - Write about mean() in manual
+ - Write about Projection in manual
+ - Write about Function operators (/, sqrt) in manual
 
 Things to fix after release:
 
- - Optimization
- - BLAS mode
-
-Old TODO list, possibly inaccurate:
------------------------------------
-
-o [logg] Bug fix: LaTeX format not working
-o [logg] Use Numeric.array instead of Python list for vectors
-o [logg] Write about TestFunction and TrialFunction in manual
-o [logg] Use Constant instead of real in DOLFIN interface
-o [logg] Switch Numeric --> SciPy
-o [logg] (u, p) = Functions(element) does not work?
-o [logg] Write about mean() in manual
-o [logg] Write about Projection in manual
-o [logg] Add time derivative .dt() and Dt()
-o [logg] Optionally generate pair of .h and .cpp files?
-o [logg] Generate loops for geometry tensor in BLAS mode?
-o [logg] Write about division with Constant in manual
-o [logg] gzip XML files by default and add option -a no-gzip
-o [logg] Add new operations for Function (sqrt(), /)
-o [logg] Add predefined function h
-o [logg] Make d available to user
-o [logg] Add vector constants
-o [logg] Make dofmap.py and interpolation.py less DOLFIN specific
-o [logg] Display flop count
-o [logg] Change *(1.0/c) to /c
-o [logg] Option for inexact integration?
-o [logg] Option for using quadrature?
-o [logg] Fix all FIXMEs (grep FIXME *.py)
+ - Optimization (-O)
+ - BLAS mode (-f blas)
+ - Add time derivative .dt() and Dt()
+ - Optionally generate pair of .h and .cpp files?
+ - Generate loops for geometry tensor in BLAS mode?
+ - Add predefined function h
+ - Display flop count
+ - Fix all FIXMEs (grep FIXME *.py)
