@@ -31,8 +31,8 @@ def main(argv):
 
     # Get command-line arguments
     try:
-        opts, args = getopt.getopt(argv, "hvOsl:d:f:r:", \
-        ["help", "version", "optimize", "silent", "language=", "debug=", "representation="])
+        opts, args = getopt.getopt(argv, "hvd:sl:r:f:O", \
+        ["help", "version", "debug=", "silent", "language=", "representation=", "optimize"])
     except getopt.GetoptError:
         usage()
         return 2
@@ -59,14 +59,18 @@ def main(argv):
         elif opt in ("-v", "--version"):
             version()
             return 0
-        elif opt in ("-O", "--optimize"):
-            options["optimize"] = True
+        elif opt in  ("-d", "--debug"):
+            debuglevel = int(arg)
         elif opt in ("-s", "--silent"):
             debuglevel = -1
         elif opt in  ("-l", "--language"):
             language = arg
-        elif opt in  ("-d", "--debug"):
-            debuglevel = int(arg)
+        elif opt in  ("-r", "--representation"):
+            if arg in (FFC_REPRESENTATION, "quadrature"):
+                representation = arg
+            else:
+                usage()
+                return 2
         elif opt in  ("-f"):
             if "=" in arg and arg.split("=")[0] + "=" in options:
                 options[arg.split("=")[0] + "="] = arg.split("=")[1]
@@ -75,15 +79,11 @@ def main(argv):
             elif arg[:3] == "no-":
                 options[arg] = True
             else:
-                print arg[:3]
                 usage()
                 return 2
-        elif opt in  ("-r", "--representation"):
-            if arg in (FFC_REPRESENTATION, "quadrature"):
-                representation = arg
-            else:
-                usage()
-                return 2
+        elif opt in ("-O", "--optimize"):
+            print "*** " + "Optimization unavailable (will arrive in a future version)"
+            options["optimize"] = True
 
     # Set debug level
     setlevel(debuglevel)
