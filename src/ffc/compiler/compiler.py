@@ -12,7 +12,7 @@ each represented by a separate module:
 """
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-02-05 -- 2007-05-07"
+__date__ = "2007-02-05 -- 2007-06-03"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -51,6 +51,9 @@ from format import dolfinformat
 
 def compile(forms, prefix="Form", representation=FFC_REPRESENTATION, output_language=FFC_LANGUAGE, options=FFC_OPTIONS):
     "Compile the given forms and/or elements"
+
+    # Check options
+    check_options(representation, output_language, options)
 
     # Check input
     (forms, elements) = preprocess_forms(forms)
@@ -136,6 +139,14 @@ def __compile_elements(elements, prefix="Element", representation=FFC_REPRESENTA
     format.write([(element_code, element_data)], prefix, options)
     debug_end()
     
+def check_options(representation, language, options):
+    "Check that options are valid"
+    # FIXME: We could do more tests here
+    if options["optimize"]:
+        debug("*** Warning: " + "Optimization unavailable (will return in a future version)")
+    if options["blas"]:
+        debug("*** Warning: " + "BLAS mode unavailable (will return in a future version)")
+
 def preprocess_forms(forms):
     "Check and possibly convert form input to a list of Forms and a list if elements"
 

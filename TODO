@@ -22,6 +22,5 @@ Things to fix after release:
  - Add time derivative .dt() and Dt()
  - Optionally generate pair of .h and .cpp files?
  - Generate loops for geometry tensor in BLAS mode?
- - Add predefined function h
  - Display flop count
  - Fix all FIXMEs (grep FIXME *.py)

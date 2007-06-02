@@ -82,7 +82,6 @@ def main(argv):
                 usage()
                 return 2
         elif opt in ("-O", "--optimize"):
-            print "*** " + "Optimization unavailable (will arrive in a future version)"
             options["optimize"] = True
 
     # Set debug level
