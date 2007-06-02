@@ -9,6 +9,8 @@ Things to fix before release of 0.4.0:
  - Write about mean() in manual
  - Write about Projection in manual
  - Write about Function operators (/, sqrt) in manual
+ - Copy latest reference cell chapters from UFC manual
+ - Check -O and write warning
 
 Things to fix after release:
 
