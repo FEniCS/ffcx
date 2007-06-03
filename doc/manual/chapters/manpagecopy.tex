@@ -1,60 +1,93 @@
-\section{Synopsis}
+NAME
+       FFC - the FEniCS Form Compiler
 
-\begin{code}
-ffc [-h] [-l language] [-d debuglevel] [-f option] input.form
-\end{code}
 
-\section{Description}
+SYNOPSIS
+       ffc  [-h]  [-v]  [-d debuglevel] [-s] [-l language] [-r representation]
+       [-f option] [-O] ... input.form ...
 
-The FEniCS Form Compiler FFC accepts as input one or more files each
-specifying one or more multilinear forms and compiles the given forms
-into efficent low-level code for automatic assembly of the tensors
-representing the multilinear forms. In particular, FFC compiles a pair
-of bilinear and linear forms defining a variational problem into code
-that can be used to efficiently assemble the corresponding linear
-system.
 
-By default, FFC generates C++ code for DOLFIN, but this can be
-changed by specifying a different output language (option -l).
-It is also possible to add new output languages to FFC.
+DESCRIPTION
+       Compile multilinear forms into efficient low-level code.
 
-\section{Options}
+       The FEniCS Form Compiler FFC accepts as input one or more  files,  each
+       specifying  one or more multilinear forms, and compiles the given forms
+       into efficent low-level code for automatic assembly of the tensors rep-
+       resenting  the multilinear forms. In particular, FFC compiles a pair of
+       bilinear and linear forms defining a variational problem into code that
+       can be used to efficiently assemble the corresponding linear system.
 
-\subsection{\texttt{-h, --help}}
+       By  default, FFC generates code according to the UFC specification ver-
+       sion 1.0 (Unified Form-assembly Code, see  http://www.fenics.org/)  but
+       this  can  be  controlled  by  specifying  a  different output language
+       (option -l). It is also possible to add new output languages to FFC.
 
-Display help text and exit.
+       For a full description of FFC, including a specification  of  the  form
+       language  used to define the multilinear forms, see the FFC user manual
+       available on the FEniCS web page: http://www.fenics.org/
 
-\subsection{\texttt{-v, --version}}
 
-Display version number and exit.
+OPTIONS
+       -h, --help
+              Display help text and exit.
 
-\subsection{\texttt{-l language, --language language}}
+       -v, --version
+              Display version number and exit.
 
-Specify output language, one of 
-\texttt{dolfin} (default),
-\texttt{latex},
-\texttt{raw},
-\texttt{ase} or
-\texttt{xml}.
+       -d debuglevel, --debug debuglevel
+              Specify debug level (default is 0).
 
-\subsection{\texttt{-d debuglevel, --debug debuglevel}}
+       -s, --silent
+              Silent mode, no output is printed (same as --debuglevel -1).
 
-Specify debug level (default is \texttt{0}).
+       -l language, --language language
+              Specify output language, one of 'ufc' (default) or 'dolfin' (UFC
+              with a small layer of DOLFIN-specific bindings).
 
-\subsection{\texttt{-f option}}
+       -r representation, --representation representation
+              Specify  representation  for precomputation and code generation,
+              one of 'tensor' (default) or 'quadrature' (in development).
 
-Specify code generation options. The list of options available depends
-on the specified language (format). Current options include
-\texttt{-f no-gpl} and
-\texttt{-f blas}
-described in detail below.
+       -f option
+              Specify code generation options. The list of  options  available
+              depends  on  the  specified  language  (format). Current options
+              include -fprecision=n, -fblas and -fno-foo, described in  detail
+              below.
 
-\subsection{\texttt{-f no-gpl}}
+       -f precision=n
+              Set the number of significant digits to n in the generated code.
+              The default value of n is 15.
 
-Don't add GPL license to generated code. This option has only effect
-when compiling with \texttt{-ldolfin}.
+       -f blas
+              Generate code that uses BLAS to compute tensor  products.   This
+              option  is currently ignored, but can be used to reduce the code
+              size when the BLAS option is  (re-)implemented  in  future  ver-
+              sions.
 
-\subsection{\texttt{-f blas}}
+       -f no-foo
+              Don't  generate  code  for UFC function with name 'foo'. Typical
+              options    include    -fno-evaluate_basis    and     -fno-evalu-
+              ate_basis_derivatives  to  reduce the size of the generated code
+              when these functions are not needed.
 
-Generate code that uses BLAS to compute tensor products. This option
-has only effect when compiling with \texttt{-ldolfin}.
+       -O, --optimize
+              Generate optimized code using FErari optimizations. This  option
+              is  currently  ignored,  but can be used to reduce the operation
+              count for assembly  (run-time  for  the  generated  code).  This
+              option  requires FErari and should be used with caution since it
+              may be very costly  (at  compile-time)  for  other  than  simple
+              forms.
+
+
+
+       BUGS
+
+       Send comments, questions, bug reports etc. to ffc-dev@fenics.org.
+
+
+AUTHOR
+       Anders Logg (logg@simula.no)
+
+
+
+                                                                        FFC(1)

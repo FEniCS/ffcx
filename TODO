@@ -9,6 +9,7 @@ Things to fix before release of 0.4.0:
  - Get RT working
  - Projections
  - Update documentation
+ - Write introduction (copy from papers)
  - Write about TestFunction and TrialFunction in manual
  - Write about mean() in manual
  - Write about Projection in manual
