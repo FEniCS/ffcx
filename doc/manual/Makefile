@@ -2,6 +2,9 @@ FILENAME='ffc-user-manual'
 
 all:
 	latex $(FILENAME).tex
+
+final:
+	latex $(FILENAME).tex
 	makeindex $(FILENAME)
 	bibtex $(FILENAME)
 	latex $(FILENAME)

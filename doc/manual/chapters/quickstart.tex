@@ -19,17 +19,15 @@ The latest version of \ffc{} can be found on the \fenics{} web page:
 http://www.fenics.org/
 \end{code}
 The following commands illustrate the installation process, assuming
-that you have downloaded release 0.1.0 of \ffc{}:
+that you have downloaded release \texttt{x.y.z} of \ffc{}:
 \begin{code}
-# tar zxfv ffc-0.1.0.tar.gz
-# cd ffc-0.1.0
-# python setup.py install
+# tar zxfv ffc-x.y.z.tar.gz
+# cd ffc-x.y.z
+# sudo python setup.py install
 \end{code}
-Make sure that you download the latest release (which is not 0.1.0).
-
-Note that you may need to be root on your system to do the last
-step. You may also need to install the Python packages \fiat{} and
-Numeric. (See Appendix~\ref{app:installation} for detailed instructions.)
+Make sure that you download the latest release.
+You may also need to install the Python packages \fiat{} and
+NumPy. (See Appendix~\ref{app:installation} for detailed instructions.)
 \index{FIAT}
 \index{Numeric}
 
@@ -59,14 +57,14 @@ problem (\ref{eq:varform}) for a pair of discrete function spaces,
 specify the forms in a text file with extension \texttt{.form},
 e.g. \texttt{Poisson.form}, as follows:
 \begin{code}
-element = FiniteElement(``Lagrange'', ``triangle'', 1)
+element = FiniteElement("Lagrange", "triangle", 1)
 
-v = BasisFunction(element)
-U = BasisFunction(element)
+v = TestFunction(element)
+u = TrialFunction(element)
 f = Function(element)
   
-a = dot(grad(v), grad(U))*dx
-L = f*v*dx
+a = dot(grad(v), grad(u))*dx
+L = v*f*dx
 \end{code}
 
 The example is given for piecewise linear finite elements in two
@@ -79,9 +77,19 @@ follows:
 \begin{code}
 # ffc Poisson.form
 \end{code}
-This generates the file \texttt{Poisson.h} which implements the forms
-in C++ for inclusion in \dolfin{}. For help on the \texttt{ffc}
-command, including compilation for other systems than \dolfin{}, type
-\texttt{ffc -h} or \texttt{man ffc}.
-\index{ffc}
-\index{man page}
+This will generate the file \texttt{Poisson.h} containing low level
+C++ code in the UFC (Unified Form-assembly Code) format~\cite{www:ufc}.
+The generated code can be used by any UFC-based assembler
+such as \dolfin{}~\cite{www:dolfin} to assemble the discrete
+representations (the matrix~$A$ and vector~$b$) of the bilinear form
+$a$ and linear form~$L$ of Poisson's equation.
+
+Note that by adding the flag \texttt{-l dolfin}, additional
+\dolfin{}-specific wrappers are added to the generated code which
+simplifies the use of the generated code with \dolfin{}. In
+particular, the handling of forms depending on coefficients like $f$
+in Poisson's equation is simplified.
+
+For further help on the \texttt{ffc} command and available
+command-line options, type \texttt{man ffc}.  \index{ffc} \index{man
+page}
