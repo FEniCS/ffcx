@@ -1,7 +1,7 @@
 "This module implements the tabulation of monomial forms, large parts are copied from monomialintegration.py"
 
 __author__ = "Kristian B. Oelgaard (k.b.oelgaard@tudelft.nl)"
-__date__ = "2007-03-23 -- 2007-03-23"
+__date__ = "2007-03-23 -- 2007-06-01"
 __copyright__ = "Copyright (C) 2007 Kristian B. Oelgaard"
 __license__  = "GNU GPL Version 2"
 
@@ -193,6 +193,7 @@ def __compute_psi(v, table, num_points, dscaling, integral_type):
     indices = cindex + dindex + vindex
     shapes = cshape + dshape + vshape + [num_points]
     dimensions = cshape + dshape + vshape
+
     # Initialize tensor Psi: component, derivatives, basis function, points
     Psi = numpy.zeros(shapes, dtype = numpy.float)
 
@@ -260,6 +261,7 @@ def __compute_rearrangement(indices):
     """Compute rearrangement tuple for given list of Indices, so that
     the tuple reorders the given list of Indices with fixed, auxiliary,
     secondary and primary Indices in rising order."""
+
     fixed     = __find_indices(indices, Index.FIXED)
     auxiliary = __find_indices(indices, Index.AUXILIARY_0)
     primary   = __find_indices(indices, Index.PRIMARY)
@@ -269,10 +271,11 @@ def __compute_rearrangement(indices):
             (len(fixed), len(auxiliary), len(secondary), len(primary)))
 
 def __find_indices(indices, index_type):
-    "Return sorted list of positions for given Index type."
-    pos = [i for i in range(len(indices)) if indices[i].type == index_type]
-    val = [indices[i].index for i in range(len(indices)) if indices[i].type == index_type]
-    return [pos[i] for i in numpy.argsort(val)]
+    "Return unsorted list of positions for given Index type."
+#    pos = [i for i in range(len(indices)) if indices[i].type == index_type]
+#    val = [indices[i].index for i in range(len(indices)) if indices[i].type == index_type]
+#    return [pos[i] for i in numpy.argsort(val)]
+    return [i for i in range(len(indices)) if indices[i].type == index_type]
 
 def __multiindex_to_tuple(dindex, cell_dimension):
     """Compute lookup tuple from given derivative

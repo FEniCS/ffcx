@@ -210,17 +210,21 @@ def avg(v):
     else:
         return [0.5*(v[i]('+') + v[i]('-')) for i in range(len(v))]
 
-def jump(v, n):
-    "Return the jump of v with respect to the given normal n across an interior facet."
-    if value_rank(v) == 0:
-        # v is a scalar and n is a vector
-        return [v('+')*n[i]('+') + v('-')*n[i]('-') for i in range(len(n))]
+def jump(v, n = None):
+    "Return the jump of v, optionally with respect to the given normal n across an interior facet."
+
+    if n == None:
+        return v('+') - v('-')
     else:
-        # v and n are vectors
-        form = Form();
-        for i in range(len(v)):
-            form = form + v[i]('+')*n[i]('+') + v[i]('-')*n[i]('-')
-        return form
+        if value_rank(v) == 0:
+            # v is a scalar and n is a vector
+            return [v('+')*n[i]('+') + v('-')*n[i]('-') for i in range(len(n))]
+        else:
+            # v and n are vectors
+            form = Form();
+            for i in range(len(v)):
+                form = form + v[i]('+')*n[i]('+') + v[i]('-')*n[i]('-')
+            return form
 
 def sqrt(v):
     "Return the square root (take square root of coefficients)"
