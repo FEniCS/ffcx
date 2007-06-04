@@ -118,3 +118,50 @@ dal and O. Skavhaug},
         not = {\url{http://numpy.scipy.org/}},
 
 }
+
+@article{KirLog06,
+  author =       "R. C. Kirby and A. Logg",
+  title =        "A Compiler for Variational Forms",
+  journal =      "{ACM} Transactions on Mathematical Software",
+  volume =       "32",
+  number =       "3",
+  pages =        "417--444",
+  year =         "2006",
+  accepted =     "13 November 2005",
+  abstract =     "As a key step towards a complete automation of the finite element method
+, 
+                 we present a new algorithm for automatic and efficient evaluation of 
+                 multilinear variational forms. The algorithm has been implemented in the 
+                 form of a compiler, the FEniCS Form Compiler FFC. We present benchmark 
+                 results for a series of standard variational forms, including the 
+                 incompressible Navier-Stokes equations and linear elasticity. The speedup
+ 
+                 compared to the standard quadrature-based approach is impressive; in some
+ 
+                 cases the speedup is as large as a factor 1000.",
+  issn = {0098-3500},
+
+}
+
+@article{KirLog07,
+  author =       "R. C. Kirby and A. Logg",
+  title =        "Efficient Compilation of a Class of Variational Forms",
+  journal =      "{ACM} Transactions on Mathematical Software",
+  volume =       "33",
+  number =       "3",
+  year =         "2007",
+  accepted =     "31 August 2006",
+  abstract =     "We investigate the compilation of general multilinear variational
+                 forms over affines simplices and prove a representation theorem for
+                 the representation of the element tensor (element stiffness matrix)
+                 as the contraction of a constant reference tensor and a geometry
+                 tensor that accounts for geometry and variable coefficients. Based
+                 on this representation theorem, we design an algorithm for efficient
+                 pretabulation of the reference tensor.  The new algorithm has been
+                 implemented in the FEniCS Form Compiler~(FFC) and improves on a
+                 previous loop-based implementation by several orders of magnitude,
+                 thus shortening compile-times and development cycles for users of
+                 FFC.",
+  year = "2007",
+  issn = {0098-3500},
+}
