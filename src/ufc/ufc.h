@@ -1,4 +1,4 @@
-// This is UFC (Unified Form-assembly Code) v. 1.0-rc6.
+// This is UFC (Unified Form-assembly Code) v. 1.0-rc7.
 // This code is released into the public domain.
 //
 // The FEniCS Project (http://www.fenics.org/) 2006-2007.
@@ -6,7 +6,7 @@
 #ifndef __UFC_H
 #define __UFC_H
 
-const char UFC_VERSION[] = "1.0-rc5";
+const char UFC_VERSION[] = "1.0-rc7";
 
 namespace ufc
 {
@@ -190,8 +190,6 @@ namespace ufc
 
     /// Tabulate the local-to-local mapping from facet dofs to cell dofs
     virtual void tabulate_facet_dofs(unsigned int* dofs,
-                                     const mesh& m,
-                                     const cell& c,
                                      unsigned int facet) const = 0;
 
     /// Tabulate the coordinates of all dofs on a cell

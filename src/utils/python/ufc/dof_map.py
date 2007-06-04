@@ -82,8 +82,6 @@ public:
 
   /// Tabulate the local-to-local mapping from facet dofs to cell dofs
   virtual void tabulate_facet_dofs(unsigned int* dofs,
-                                   const ufc::mesh& m,
-                                   const ufc::cell& c,
                                    unsigned int facet) const
   {
 %(tabulate_facet_dofs)s
@@ -157,8 +155,6 @@ public:
 
   /// Tabulate the local-to-local mapping from facet dofs to cell dofs
   virtual void tabulate_facet_dofs(unsigned int* dofs,
-                                   const ufc::mesh& m,
-                                   const ufc::cell& c,
                                    unsigned int facet) const;
 
   /// Tabulate the coordinates of all dofs on a cell
@@ -246,8 +242,6 @@ void %(classname)s::tabulate_dofs(unsigned int* dofs,
 
 /// Tabulate the local-to-local mapping from facet dofs to cell dofs
 void %(classname)s::tabulate_facet_dofs(unsigned int* dofs,
-                                        const ufc::mesh& m,
-                                        const ufc::cell& c,
                                         unsigned int facet) const
 {
 %(tabulate_facet_dofs)s

@@ -115,7 +115,7 @@ We thus assume that the form $a$ is given by
     &+
     \sum_{k=1}^{n_i} \sum_{S\in\partial_i\mathcal{T}_k} \int_{S}
     I^i_k(v_1, \ldots, w_n) \ds.
-  \end{split}
+  \end{split} \label{eq:form_integrals}
 \end{equation}
 We refer to an integral over a cell~$K$ as a \emph{cell integral},
 an integral over an exterior facet~$S$ as an \emph{exterior facet integral},
@@ -194,8 +194,11 @@ The global sparse tensor~$A$ is then given by
 To see how to compute the tensor $A$ by summing the local
 contributions from each cell~$K$, we let $n^j_K = |\mathcal{P}_K|$
 denote the dimension of the local finite
-element space on $K$. Furthermore, let $\iota_K^j : [1,n_K^j] \rightarrow
-[1,N^j]$ denote the local-to-global mapping for each discrete
+element space on $K$. Furthermore, let
+\begin{equation}
+  \iota_K^j : [1,n_K^j] \rightarrow [1,N^j] \label{eq:iota_K}
+\end{equation}
+denote the local-to-global mapping for each discrete
 function space $V_h^j$, $j=1,2,\ldots,r$, and define for each $K \in
 \mathcal{T}$ the collective local-to-global mapping $\iota_K :
 \mathcal{I}_K \rightarrow \mathcal{I}$ by
