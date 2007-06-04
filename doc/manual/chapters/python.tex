@@ -8,65 +8,67 @@ script:
 \begin{code}
 from ffc import *
 
-element = FiniteElement(``Lagrange'', ``triangle'', 1)
+element = FiniteElement("Lagrange", "triangle", 1)
 
-v = BasisFunction(element)
-U = BasisFunction(element)
+v = TestFunction(element)
+u = TrialFunction(element)
 f = Function(element)
- 
-a = dot(grad(v), grad(U))*dx
-L = f*v*dx
 
-compile([a, L])
+a = dot(grad(v), grad(u))*dx
+L = v*f*dx
+
+compile([a, L], "Poisson")
 \end{code}
 
 At the basic level, the only difference between the command-line
-interface and the Python interface is that the function
+interface and the Python interface is that one must add the
+import statement from the \ffc{} module and that the function
 \texttt{compile} must be called when using the Python interface.
 
-In addition to the function \texttt{compile}, the Python interface
-provides the functions \texttt{build}, \texttt{write} and
-\texttt{writeFiniteElement}. These functions are documented below.
+\section{The \texttt{compile} function}
 
-Documentation can also be accessed from within Python. To read the
-documentation for the function \texttt{compile}, run the following
-commands in a Python shell:
+The \texttt{compile} function expects a form (see
+Section~\ref{sec:formlanguage}) or a list of forms as its first
+argument. It also accepts up to four additional optional arguments:
+\begin{code}
+compile(forms, prefix, representation, language, options)
+\end{code}
 
+The \texttt{prefix} argument can be used to control the prefix of the
+file containing the generated code, which we in the above example set
+to \texttt{"Poisson"}. The suffix \texttt{".h"} will be added
+automatically.
+
+The \texttt{representation} argument can be used to control the form
+representation used for precomputation and code generation. The
+default value is \texttt{"tensor"}, which indicates that the code
+should be generated based on a tensor representation of the
+multilinear form as described
+in~\cite{KirLog06,KirLog07}. Alternatively, \texttt{"quadrature"} may be
+used to specify that code should be generated based on direct
+quadrature at run-time (experimental).
+
+The \texttt{language} option can be used to control the output
+language for the generated code. The default values is
+\texttt{"ufc"}, which indicates that code should be generated in the
+UFC format~\cite{www:ufc}. Alternatively, \texttt{"dolfin"} may be
+used to generate code according to the UFC format with a small set of
+additional \dolfin{}-specific wrappers.
+
+Finally, the \texttt{compile} function accepts a dictionary of special
+code generation options. The default values for these options may be
+accessed through the variable \texttt{FFC\_OPTIONS} available in
+\ffc{}.
+
+\section{Compiling finite elements}
+
+The \texttt{compile} function may also be used to compile finite
+elements directly (without associated forms). The following example
+demonstrates how to generate code for a fifth degree Lagrange finite
+element on tetrahedra:
 \begin{code}
 from ffc import *
-help(compile)
-\end{code}
 
-\section{\texttt{compile(forms, ...)}}
-
-This function takes as argument a form or list of forms and compiles
-it into low-level code for assembly. Calling this function is
-equivalent to first calling \texttt{build} followed by \texttt{write}.
-
-\section{\texttt{build(forms, ...)}}
-
-This function takes as argument a form or list of forms
-and does preprocessing of the forms (including computation of the
-reference tensor), but does not generate any code.
-
-\section{\texttt{write(forms, ...)}}
-
-This function takes a preprocessed form or list of forms and
-generates code. Note that \texttt{build} must be called before
-\texttt{write}:
-
-\begin{code}
-forms = build([a, L])
-write(forms)
-\end{code}
-
-\section{\texttt{writeFiniteElement(element, ...)}}
-
-This function generates code for a given \texttt{FiniteElement}.
-Use this function if you just want to generate code for a finite
-element (including mapping of nodes and nodal points):
-
-\begin{code}
-element = FiniteElement(``Lagrange'', ``triangle'', 1)
-writeFiniteElement(element)
+element = FiniteElement("Lagrange", "tetrahedron", 5)
+compile(element, "P5")
 \end{code}
