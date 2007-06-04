@@ -36,7 +36,7 @@ class QuadratureGenerator(CodeGenerator):
 
         # Initialize common code generator
         CodeGenerator.__init__(self)
-        self.optimise_level = 2
+        self.optimise_level = 3
         self.save_tables = True
 
     def generate_cell_integral(self, form_representation, sub_domain, format):
@@ -59,7 +59,7 @@ class QuadratureGenerator(CodeGenerator):
 
         # Generate code for element tensor(s)
         code += [Indent.indent(format["comment"]("Compute element tensor"))]
-        code += self.__generate_element_tensor(tensors, change_signs, False, False, Indent, format)
+        code += self.__generate_element_tensor(tensors, change_signs, None, None, Indent, format)
 
         return {"tabulate_tensor": code}
 
@@ -86,7 +86,7 @@ class QuadratureGenerator(CodeGenerator):
         cases = [None for i in range(num_facets)]
         for i in range(num_facets):
             case = [format_block_begin]
-            case += self.__generate_element_tensor(tensors[i], False, i, False, Indent, format)
+            case += self.__generate_element_tensor(tensors[i], False, i, None, Indent, format)
             case += [format_block_end]
             cases[i] = case
 
@@ -297,7 +297,8 @@ class QuadratureGenerator(CodeGenerator):
 
             # Create boundaries for loop
             boundaries = [0, macro_idims[0]]
-            code += generate_loop(name, value, boundaries, Indent, format)
+            loop_vars = [[format["first free index"]] + boundaries]
+            code += generate_loop(name, value, loop_vars, Indent, format)
 
         elif (irank == 2):
             code += [Indent.indent(format["comment"]\
@@ -309,8 +310,11 @@ class QuadratureGenerator(CodeGenerator):
             name =  format["element tensor quad"] + format["array access"](entry)
 
             # Create boundaries for loop
-            boundaries = [0, macro_idims[0], 0, macro_idims[1]]
-            code += generate_loop(name, value, boundaries, Indent, format)
+            boundaries = [[0, macro_idims[0]], [0, macro_idims[1]]]
+            loop_vars = [[format["first free index"]] + boundaries[0],\
+                         [format["second free index"]] + boundaries[1]]
+
+            code += generate_loop(name, value, loop_vars, Indent, format)
         else:
             raise RuntimeError, "Quadrature only supports Linear and Bilinear forms"
 
@@ -356,6 +360,9 @@ class QuadratureGenerator(CodeGenerator):
         elif self.optimise_level == 2:
             values = values_level_2(indices, vindices, aindices, b0indices, bgindices,\
                                     tensor, tensor_number, weight, format)
+        elif self.optimise_level == 3:
+            values = values_level_3(indices, vindices, aindices, b0indices, bgindices,\
+                                    tensor, tensor_number, weight, format)
         else:
             raise RuntimeError, "Optimisation level not implemented!"
 
@@ -383,7 +390,8 @@ class QuadratureGenerator(CodeGenerator):
 
             # Create boundaries for loop
             boundaries = [0, idims[0]]
-            code += generate_loop(name, value, boundaries, Indent, format, format["add equal"])
+            loop_vars = [[format["first free index"]] + boundaries]
+            code += generate_loop(name, value, loop_vars, Indent, format, format["add equal"])
 
         elif (irank == 2):
 
@@ -405,8 +413,10 @@ class QuadratureGenerator(CodeGenerator):
                     ("Compute block entries (tensor/monomial term %d)" % (tensor_number,)))]
 
             # Create boundaries for loop
-            boundaries = [0, idims[0], 0, idims[1]]
-            code += generate_loop(name, value, boundaries, Indent, format, format["add equal"])
+            boundaries = [[0, idims[0]], [0, idims[1]]]
+            loop_vars = [[format["first free index"]] + boundaries[0],\
+                         [format["second free index"]] + boundaries[1]]
+            code += generate_loop(name, value, loop_vars, Indent, format, format["add equal"])
         else:
             raise RuntimeError, "Quadrature only supports Linear and Bilinear forms"
 

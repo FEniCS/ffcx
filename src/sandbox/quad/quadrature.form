@@ -36,7 +36,8 @@ w = Function(element)
 #(dXa0/dxb0)(dXa1/dxb0) | ((d/dXa0)vi0[b0])*((d/dXa1)vi1[b0])*dX(0)
 #print v
 #print u
-a = v*u*ds
+a = grad(w)[0]*v*u*dx
+#a = v*u*ds + v*u*dx
 #a = dot(jump(v,n), grad(u))*ds + dot(grad(v), jump(u,n))*ds
 
 #a = v('+')*u('-')*ds + v('+')*u('-')*ds + v*u*ds + 2*v*u*ds
