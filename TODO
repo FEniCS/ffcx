@@ -6,10 +6,7 @@ Things to fix before release of 0.4.0:
  - Check regression tests
  - Check -h -v
 
- - Get RT working
  - Projections
- - Update documentation
- - Write introduction (copy from papers)
  - Write about TestFunction and TrialFunction in manual
  - Write about mean() in manual
  - Write about Projection in manual
@@ -25,3 +22,4 @@ Things to fix after release:
  - Generate loops for geometry tensor in BLAS mode?
  - Display flop count
  - Fix all FIXMEs (grep FIXME *.py)
+ - Write introduction in manual
