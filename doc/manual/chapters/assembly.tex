@@ -1,4 +1,8 @@
 \chapter{Finite element assembly}
+
+\newtheorem{example}{\small{\sc{Example}}}[section]
+
+
 \label{sec:assembly}
 
 In this section, we present a general algorithm for assembly of finite
@@ -67,6 +71,38 @@ where
 
 \section{Discretization of variational forms}
 
+\subsection{A Finite Element}
+
+A finite element is mathematically defined as a triplet consisting
+of a polygon, a function space, and a set of linear functionals. 
+Given that the dimension of the function space and the number of
+the (linearly independent) linear functionals are equal, the
+finite element is uniquely defined. 
+With this definition of a finite element, the basis functions
+are implicitly defined as the solution of a linear system. 
+
+Our definition of a finite element is motivated by the fact
+that we are interested in the \emph{usage} of a finite element, 
+in particular its basis functions. These basis functions
+are pre-computed by using the triplet mentioned above. 
+Hence, we will refer to a finite element as a collection
+of 
+\begin{itemize}
+\item a polygon,  
+\item basis functions $\{ \phi_i \}_i$,  
+\item derivatives of basis functions,
+\item degrees of freedom, which are linear
+functionals, $L_i : V \rightarrow \mathbb{R}$, where $V$ might be 
+$span\{ \phi_i \}_i$. However, $L_i$ can usually be extended 
+from $V$ to an appropriate Sobolev space, 
+\end{itemize}
+In addition, our finite element will contain functionality
+for interpolation. 
+
+
+
+
+
 \subsection{Variational forms}
 
 In general, we shall be concerned with the discretization of general
@@ -78,13 +114,26 @@ variational forms of arity~$r > 0$,
 defined on the product space $V_h^1 \times V_h^2 \times \cdots \times
 V_h^r \times W_h^1 \times W_h^2 \times \cdots \times W_h^n$ of two sets
 $\{V_h^j\}_{j=1}^r, \{W_h^j\}_{j=1}^n$ of discrete function spaces on
-a triangulation $\mathcal{T}$ of a domain $\Omega \subset \R^d$. In
+a triangulation $\mathcal{T}$ of a domain $\Omega \subset \R^d$. 
+We also often write this as 
+\begin{equation}
+a(v_1, \ldots, v_r; w_1, \ldots, w_n), 
+\end{equation}
+where ';' is used to separate the $V_h$ spaces from the $W_h$ spaces. 
+The distinction between the spaces $\{V_h^j\}_{j=1}^r$ and
+$\{W_h^j\}_{j=1}^n$ lies in how the discretization is made for each
+set of spaces. This will be explained below.
+
+
+
+In
 the simplest case, all function spaces are equal but there are many
 important examples, such as mixed methods, where it is important to
-consider arguments coming from different function spaces. The
-distinction between the spaces $\{V_h^j\}_{j=1}^r$ and
-$\{W_h^j\}_{j=1}^n$ lies in how the discretization is made for each
-set of spaces, as explained below.
+consider arguments coming from different function spaces. 
+
+
+
+
 
 Let $\mathcal{T} = \{K\}$ be a set of disjoint \emph{cells} (a
 triangulation) partitioning a domain $\cup_{K\in\mathcal{T}} K =
@@ -105,16 +154,16 @@ $\partial_i \mathcal{T}$ respectively.
 We thus assume that the form $a$ is given by
 \begin{equation}
   \begin{split}
-    a(v_1, \ldots, w_n)
+    a(v_1, \ldots, v_r; w_1, \ldots,  w_n)
     &=
     \sum_{k=1}^{n_c} \sum_{K\in\mathcal{T}_k} \int_{K}
-    I^c_k(v_1, \ldots, w_n) \dx \\
+    I^c_k(v_1, \ldots, v_r; w_1, \ldots w_n) \dx \\
     &+
     \sum_{k=1}^{n_e} \sum_{S\in\partial_e\mathcal{T}_k} \int_{S}
-    I^e_k(v_1, \ldots, w_n) \ds \\
+    I^e_k(v_1, \ldots, v_r; w_1, \ldots,  w_n) \ds \\
     &+
     \sum_{k=1}^{n_i} \sum_{S\in\partial_i\mathcal{T}_k} \int_{S}
-    I^i_k(v_1, \ldots, w_n) \ds.
+    I^i_k(v_1, \ldots, v_r; w_1, \ldots, w_n) \ds.
   \end{split} \label{eq:form_integrals}
 \end{equation}
 We refer to an integral over a cell~$K$ as a \emph{cell integral},
@@ -122,6 +171,7 @@ an integral over an exterior facet~$S$ as an \emph{exterior facet integral},
 and to an integral over an interior facet~$S$ as an \emph{interior facet integral}.
 
 \subsection{Discretization}
+\label{sec:Discretization}
 
 To discretetize the form $a$, we let
 $\{\phi_i^1\}_{i=1}^{N^1},
@@ -131,7 +181,7 @@ be bases of $V_h^1, V_h^2, \ldots, V_h^r$ respectively and let $i =
 (i_1, i_2, \ldots, i_r)$ be a multiindex of length $|i| = r$. The
 form $a$ then defines a rank~$r$ tensor given by
 \begin{equation} \label{eq:tensor}
-  A_i = a(\phi_{i_1}^1, \phi_{i_2}^2, \ldots, \phi_{i_r}^r, w_1, w_2, \ldots, w_n)
+  A_i = a(\phi_{i_1}^1, \phi_{i_2}^2, \ldots, \phi_{i_r}^r; w_1, w_2, \ldots, w_n)
   \quad \forall i \in \mathcal{I},
 \end{equation}
 where $\mathcal{I}$ is the index set
@@ -168,6 +218,72 @@ assembling a vector from the form
 \end{equation}
 where now $r = 1$ and $n = 1$.
 
+Below we list a few examples to illustrate the notation. 
+Later in Section \ref{CodeGenExamples} code generation based
+on these forms are demontrated with concrete discrete function
+spaces. 
+
+\begin{example}
+\label{example:div}
+Our first example is related
+to the divergence constraint in fluid flow. Let $a(\ldots)$ be    
+\begin{equation}
+a(v,q) = (\nabla \cdot v, q), \quad v\in V_h^1, q \in V_h^2, 
+\end{equation}
+where $V_h^1$ is a space of vector valued functions, 
+and $V_h^2$ is a space of scalar valued functions. 
+The form is bilinear, i.e.,  
+\begin{equation}
+a : V_h^1 \times V_h^2  \rightarrow \R.
+\end{equation}
+Hence, $r=2$, $n=0$.   
+\end{example}
+
+\begin{example}
+\label{example:nonlinearconv}
+Another common form in fluid flow (with variable density) is: 
+\begin{equation}
+a(v,u;w,\varrho) = ( \varrho \, w \cdot \nabla  u, v). 
+\end{equation}
+Here, $v\in V_h^1,\ u \in V_h^2,\ w\in W_h^1, \ \varrho \in W_h^2$, where
+$V_h^1$, $V_h^2$, and $W_h^1$ are spaces of vector valued functions, while $W_h^2$ is a space of  
+scalar valued functions. 
+The form takes four arguments, where two of the arguments
+are coefficients, i.e.,
+\begin{equation}
+a : V_h^1 \times V_h^2 \times W_h^1 \times W_h^2 \rightarrow \R.
+\end{equation}
+Hence, $r=2$ and $n=2$. 
+\end{example}
+
+
+\begin{example}
+\label{example:rhs}
+The right hand side is: 
+\begin{equation}
+a(v,f) = (v,f). 
+\end{equation}
+The form takes two arguments, one of them is a coefficient, i.e.,
+\begin{equation}
+a : V_h^1 \times  W_h^1 \rightarrow \R.
+\end{equation}
+Hence, $r=1$, $n=1$. 
+\end{example}
+
+\begin{example}
+The $H^1$ norm of the error $u-u_h$ squared is: 
+\begin{equation}
+a(u,u_h) = (u-u_h, u-u_h) + (\nabla (u-u_h), \nabla(u-u_h))    
+\end{equation}
+The form takes two arguments, both coefficients i.e.,
+\begin{equation}
+a : W_h^1 \times  W_h^2 \rightarrow \R.
+\end{equation}
+This is a form with $r=0$, $n=2$. 
+\end{example}
+
+
+
 \section{Assembling the discrete operator}
 
 The standard algorithm~\cite{ZieTay67,Hug87,Lan99} for computing
@@ -181,14 +297,14 @@ For simplicity, consider the assembly of the global sparse tensor~$A$
 corresponding to a form~$a$ given by a single integral
 over all cells $\mathcal{T}$,
 \begin{equation}
-  a(v_1, v_2, \ldots, v_r, w_1, w_2, \ldots, w_n) =
+  a(v_1, v_2, \ldots, v_r; w_1, w_2, \ldots, w_n) =
   \sum_{K\in\mathcal{T}} \int_K
-  I^c(v_1, v_2, \ldots, v_r, w_1, w_2, \ldots, w_n) \dx.
+  I^c(v_1, v_2, \ldots, v_r; w_1, w_2, \ldots, w_n) \dx.
 \end{equation}
 The global sparse tensor~$A$ is then given by
 \begin{equation}
   A_i = \sum_{K\in\mathcal{T}} \int_K
-  I^c(\phi^1_{i_1}, \phi^2_{i_2}, \ldots, \phi^r_{i_r}, w_1, w_2, \ldots, w_n) \dx.
+  I^c(\phi^1_{i_1}, \phi^2_{i_2}, \ldots, \phi^r_{i_r}; w_1, w_2, \ldots, w_n) \dx.
 \end{equation}
 
 To see how to compute the tensor $A$ by summing the local
