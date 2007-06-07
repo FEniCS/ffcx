@@ -1,0 +1,191 @@
+\chapter{Example Forms and Corresponding Generated Code}
+
+
+\label{CodeGenExamples}
+In Section \ref{sec:Discretization} we listed various forms to illustrate the notation. We will now show code snippets from generated code to explain 
+the interface described in Section \ref{sec:interface}. 
+
+We begin by listing a few examples on \texttt{cell\_integral}. 
+These code listings are only shown such that the reader get 
+a feeling for the look of it. The formulas are probably not
+very meaningful other than to illustrate their pattern. 
+All these examples are on the reference element in 2D. 
+
+
+\subsection{Taylor--Hood and the Divergence matrix} 
+Earlier in Example \ref{example:div}, we described  
+the form 
+\begin{equation}
+a(v,q) = (\nabla \cdot v, q), \quad v\in V_h^1, q \in V_h^2, 
+\end{equation}
+where $V_h^1$ is a space of vector valued functions, 
+and $V_h^2$ is a space of scalar valued functions. 
+We now use the Taylor--Hood element,  
+i.e., $V_h^1$ consists of quadratic continuous vector valued polynomials, $\P^2_2$,
+while $V_h^2$ contains linear continuous scalar valued polynomials, $\P^1$.  
+
+The SyFi code for generating this form can be found in \\ 
+\texttt{src/syfi-demos/div\_form.py}.
+
+The code for \texttt{tabulate\_tensor} is then: 
+
+
+
+\begin{code}
+/// Tabulate the tensor for the contribution from a local cell
+void cell_itg__div_form__VectorLagrange_2__Lagrange_1_2D ::
+     tabulate_tensor(double* A, const double * const * w,
+                     const ufc::cell& c) const
+{
+  // coordinate
+  double x0=c.coordinates[0][0]; double y0=c.coordinates[0][1];
+  double x1=c.coordinates[1][0]; double y1=c.coordinates[1][1];
+  double x2=c.coordinates[2][0]; double y2=c.coordinates[2][1];
+  
+  // affine map
+  double G00 = x1 - x0;
+  double G01 = x2 - x0;
+  
+  double G10 = y1 - y0;
+  double G11 = y2 - y0;
+  
+  double detG_tmp = G00*G11-G01*G10;
+  double detG = fabs(detG_tmp);
+  
+  double GinvT00 =  G11 / detG_tmp;
+  double GinvT01 = -G10 / detG_tmp;
+  double GinvT10 = -G01 / detG_tmp;
+  double GinvT11 =  G00 / detG_tmp;
+  
+  
+  memset(A, 0, sizeof(double)*36);
+  
+  A[3*0 + 0] = (-GinvT10/6.0-GinvT00/6.0)*detG;
+  A[3*1 + 0] = (-GinvT01/6.0-GinvT11/6.0)*detG;
+  A[3*2 + 0] = detG*(-GinvT10/6.0+GinvT00/6.0);
+  A[3*9 + 1] = (GinvT01/6.0+GinvT11/3.0)*detG;
+  .......
+  A[3*9 + 2] = detG*(GinvT01/3.0+GinvT11/6.0);
+  A[3*10 + 2] = (1.0/6.0)*GinvT10*detG;
+  A[3*11 + 2] = (1.0/6.0)*detG*GinvT11;
+}
+\end{code}
+
+First in this code the coordinate mapping is 
+computed. 
+This mapping relates global coordinates, $x$, to coordinates
+on the reference element, $\xi$,  by the affine relation 
+\[
+x = F(\xi) = G \xi + x_0. 
+\]
+Then the element matrix is initialized to zero with the \texttt{memset}
+function, before its entries are computed. 
+
+The element tensor is a matrix, hence \texttt{form::rank} is 2.
+The dimension (\texttt{finite\_element::space\_dimension}) 
+of  $\P^2_2$ is 12 and the dimension of $\P_1$ is 3.    
+Hence, the dimension of the element matrix \texttt{A} represented as a    
+flat array is 36.   
+Furthermore, \texttt{A} is numbered as $n*i + j$ where
+$n$ is the number of basis functions in the pressure element, 
+$i$ relates to the $i$'th basis function of the velocity element and
+$j$ relates to the $j$'th basis function of the pressure element. 
+Notice here that \texttt{w} is not in use since there are no coefficients here. 
+Therefore, \texttt{form::num\_coefficients} is zero.
+
+
+\subsection{Nonlinear Convection with variable density} 
+In Example \ref{example:nonlinearconv} we described the
+form related to nonlinear convection with variable density. 
+\begin{equation}
+a(v,u; U,\varrho) = ( \varrho \, w \cdot \nabla  u, v). 
+\end{equation}
+We assume for now that 
+$v, u \in \P_1^2$, $U\in P_0^2$, and  $\varrho \in P_0$.
+
+
+The SyFi code for generating this form can be found in \\
+\texttt{src/syfi-demos/conv\_form.py}.
+
+Corresponding generated code: 
+\begin{code}
+void cell_itg__conv_form__VectorLagrange_1__VectorLagrange_1__\
+     VectorP0__P0_2D::tabulate_tensor(double* A, 
+     const double * const * w, const ufc::cell& c) const
+{
+  // computation of geomtry mapping and initialization of A ...
+  
+  A[6*0 + 0] = (-w[0][1]*GinvT11*w[1][0]/6.0 -w[0][0]*
+      w[1][0]*GinvT01/6.0-w[0][1]*GinvT10*w[1][0]/6.0-
+      w[0][0]*w[1][0]*GinvT00/6.0)*detG;
+   ...
+  A[6*5 + 5] = (w[0][1]*GinvT11*w[1][0]/6.0+w[0][0]*
+      w[1][0]*GinvT01/6.0)*detG;
+}
+\end{code}
+
+In this example we have two coefficients, $\varrho$ and $w$. These 
+coefficients are represented by \texttt{w}, as \texttt{w[0]} and \texttt{w[1]}. The first coefficients
+which is in $\P_0^2$, which is of size 2, is represented as 
+\texttt{w[0][0]} and \texttt{w[0][1]}. The second coefficient 
+is in $\P_0^2$, which is of size 1, and is represented by \texttt{w[1][0]}.  
+
+\subsection{The Right Hand Side}
+The next example is the computation of the right hand side, also described in 
+Example \ref{example:rhs}. The form takes two arguments, 
+but one of them, $f$ is a coefficient,  
+\begin{equation}
+a(v,f) = (v,f). 
+\end{equation}
+Below is the code for compting this form assuming that both 
+$v$ and $f$ are expressed as linear Lagrange elements. 
+Notice  however that, $f$ may here be any function, 
+but it is interpolated onto the linear Lagrange element. 
+A more accurate interpolation scheme can be obtained 
+by chosing interpolation onto a higher order Lagrange element. 
+
+
+The SyFi code for generating this form can be found in \\
+\texttt{src/syfi-demos/rhs\_form.py}.
+
+\begin{code}
+void cell_itg__rhs_form__Lagrange_1_2D::
+     tabulate_tensor(double* A, const double * const * w,
+                     const ufc::cell& c) const
+{
+  // computation of geomtry mapping and initialization of A ...
+ 
+  A[0] = (w[0][1]/24.0+w[0][0]/12.0+w[0][2]/24.0)*detG;
+  A[1] = (w[0][1]/12.0+w[0][0]/24.0+w[0][2]/24.0)*detG;
+  A[2] = (w[0][1]/24.0+w[0][0]/24.0+w[0][2]/12.0)*detG;
+}
+\end{code}
+The element tensor is here a vector of size 3, since $v$ is in $\P_2$. 
+The coefficient $f$ is represented by \texttt{w[0][0]}\ldots\texttt{w[0][2]}. 
+
+
+\subsection{The $H^1$-norm of the Error}
+\begin{equation}
+a(u,u_h) = (u-u_h, u-u_h) + (\nabla (u-u_h), \nabla(u-u_h))    
+\end{equation}
+Here, both $u$ and $u_h$ are coefficients. However, $u_h$ is usually
+represeted as a finite element solution while $u$ is the analytical 
+solution represented as a function. 
+
+
+The SyFi code for generating this form can be found under \\ 
+\texttt{src/syfi-demos/h1\_error\_form.py}.
+
+\begin{code}
+void cell_itg__H1_error__Lagrange_1_2D::
+     tabulate_tensor(double* A, const double * const * w,
+                     const ufc::cell& c) const
+{
+
+  // computation of geomtry mapping and initialization of A ...
+
+  A[0] = detG*((w[1][2]*w[1][2])/12.0+w[1][2]*w[1][0]/12.0
+       +w[0][1]*w[0][0]/12.0-w[0][1]*w[1][0]/12.0-w[1][2]
+       *w[0][2]/6.0+(w[1][1]*w[1][1])/12.0+w[0][1]  ... ; 
+}
+\end{code}
