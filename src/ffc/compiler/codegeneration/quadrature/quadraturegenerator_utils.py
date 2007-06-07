@@ -528,26 +528,24 @@ def values_level_3(indices, vindices, aindices, b0indices, bgindices, tensor, te
     format_space    = format["space"]
     format_psis     = format["psis"]
 
-#    dic_indices = {0:format["first free index"], 1:format["second free index"]}
-#    dic_indices = {0:"s", 1:"t", 2:"u"}
     # Get list of free secondary loop indices
-    dic_indices = format["free secondary indices"]
+    list_indices = format["free secondary indices"]
     values = []
     vals = []
     secondary_loop = []
     sec_indices = []
     for index in vindices:
-        if index.type == Index.SECONDARY:
+        if index.type == Index.SECONDARY and len(index.range) > 1:
             sec_indices += [index]
 
             # Generate loop variables
-            old_ind = [d for d in dic_indices]
+            old_ind = [d for d in list_indices]
             m = len(old_ind)
             g = 0
             # If list of loop indices is not long enough generate some more
             while m - 1 < index.index:
-                new_ind = [old_ind[i] + dic_indices[j] for i in range(g, len(old_ind))\
-                                                      for j in range(len(dic_indices))]
+                new_ind = [old_ind[i] + list_indices[j] for i in range(g, len(old_ind))\
+                                                      for j in range(len(list_indices))]
                 g = len(new_ind)
                 old_ind += new_ind
                 m = len(old_ind)
