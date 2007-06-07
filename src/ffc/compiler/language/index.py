@@ -149,16 +149,20 @@ class Index:
         elif isinstance(other, Index):
             # Fixed index + Fixed index
             if self.type == self.FIXED and other.type == self.FIXED:
-                return Index("secondary", self.range + other.range)
+                r = self.range + other.range
+                r.sort()
+                return Index("secondary", r)
             # Non-Fixed index (but with range) + Fixed index
             elif self.range and other.type == self.FIXED:
                 i = Index(self)
                 i.range += other.range # FIXME, meg: multiple entries. 
+                i.range.sort()
                 return i
             # Indices of same type, both with range
             elif self.type == other.type and self.range and other.range:
                 i = Index(self)
                 i.range += other.range
+                i.range.sort()
                 return i
             else: 
                 raise RuntimeError("Cannot add index to index without range")
