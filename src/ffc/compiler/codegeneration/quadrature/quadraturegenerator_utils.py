@@ -103,16 +103,18 @@ def generate_loop(name, value, loop_vars, Indent, format, connect = None):
         # Increase indentation
         Indent.increase()
 
-        # If this is the last loop, write values
-        if index == loop_vars[-1][0]:
-            if connect:
-                code += [connect(Indent.indent(name), value)]
-            else:
-                code += [(Indent.indent(name), value)]
+        if name:
+            # If this is the last loop, write values
+            if index == loop_vars[-1][0]:
+                if connect:
+                    code += [connect(Indent.indent(name), value)]
+                else:
+                    code += [(Indent.indent(name), value)]
 
     # Decrease indentation
-    for i in range(len(loop_vars)):
-        Indent.decrease()
+    if name:
+        for i in range(len(loop_vars)):
+            Indent.decrease()
 
     return code
 
@@ -129,7 +131,7 @@ def extract_unique(aa, bb):
             ubb += [bb[i]]
     return (uaa, ubb)
 
-def equal_num_quadrature_points(tensors):
+def equal_loops(tensors):
 
     group_tensors = {}
     for i in range(len(tensors)):
@@ -139,6 +141,18 @@ def equal_num_quadrature_points(tensors):
             group_tensors[num_points] += [i]
         else:
             group_tensors[num_points] = [i]
+
+    for g in group_tensors:
+        tensor_nums = group_tensors[g]
+        prims = {}
+        for t in tensor_nums:
+            tens = tensors[t]
+            idims = tens.i.dims
+            if tuple(idims) in prims:
+                prims[tuple(idims)] += [t]
+            else:
+                prims[tuple(idims)] = [t]
+        group_tensors[g] = prims
 
     return group_tensors
 
@@ -376,8 +390,8 @@ def generate_factor3(tensor, a, bgindices, format):
         if not c.index.type == Index.AUXILIARY_G:
             offset = tensor.coefficient_offsets[c]
             if offset:
-                coefficient = format["coeff"] + format["matrix access"](c.n1.index,\
-                              format["add"]([c.index([], a, [], []), str(offset)]))
+                coefficient = format["coeff"] + format["matrix access"](str(c.n1.index),\
+                              format["add"]([str(c.index([], a, [], [])), str(offset)]))
             else:
                 coefficient = format["coeff"] + format["matrix access"](c.n1.index, c.index([], a, [], []))
             for l in range(len(c.ops)):
@@ -409,8 +423,8 @@ def generate_factor3(tensor, a, bgindices, format):
             if c.index.type == Index.AUXILIARY_G:
                 offset = tensor.coefficient_offsets[c]
                 if offset:
-                    coefficient = format["coeff"] + format["matrix access"](c.n1.index,\
-                                  format["add"]([c.index([], a, [], b), str(offset)]))
+                    coefficient = format["coeff"] + format["matrix access"](str(c.n1.index),\
+                                  format["add"]([str(c.index([], a, [], b)), str(offset)]))
                 else:
                     coefficient = format["coeff"] + format["matrix access"](c.n1.index, c.index([], a, [], b))
                 for l in range(len(c.ops)):
