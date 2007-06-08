@@ -142,28 +142,31 @@ class Index:
                 i.range = [r + other for r in self.range]
                 return i
             elif not other:
-                return Index(self) # -0 is ok for indices without range
+                return Index(self) #  +- 0 is ok for indices without range
             else:
                 raise RuntimeError("Cannot add integer to index without range")
         # Index + Index
         elif isinstance(other, Index):
-            # Fixed index + Fixed index
-            if self.type == self.FIXED and other.type == self.FIXED:
-                r = self.range + other.range
-                r.sort()
-                return Index("secondary", r)
-            # Non-Fixed index (but with range) + Fixed index
-            elif self.range and other.type == self.FIXED:
-                i = Index(self)
-                i.range += other.range # FIXME, meg: multiple entries. 
-                i.range.sort()
-                return i
-            # Indices of same type, both with range
-            elif self.type == other.type and self.range and other.range:
-                i = Index(self)
-                i.range += other.range
-                i.range.sort()
-                return i
+            if self.range and other.range:
+                if intersection(self.range, other.range):
+                    raise RuntimeError("Cannot add indices with overlapping ranges")
+                range = self.range + other.range
+                range.sort()
+                # Fixed index + Fixed index
+                if self.type == other.type == self.FIXED:
+                    return Index("secondary", range)
+                # Fixed index + other index:
+                elif self.type == self.FIXED:
+                    i = Index(other)
+                    i.range = range
+                    return i
+                # index + fixed index or index + index 
+                elif other.type == self.FIXED or self.type == other.type:
+                    i = Index(self)
+                    i.range = range
+                    return i
+                else:
+                    raise RuntimeError("Cannot add indices of non-compatible types")
             else: 
                 raise RuntimeError("Cannot add index to index without range")
         else:
@@ -174,13 +177,15 @@ class Index:
         if isinstance(other, int):
             return self.__add__(-other)
         else:
-            raise RuntimeError("Can only add integers to indices.")
+            raise RuntimeError("Can only subtract integers from indices.")
 
     def __repr__(self):
         "Print nicely formatted representation of Index."
-        offset = "" # meg: Fixme
+        # If self.range[0] > 0, we print "index + self.range[0]"
+        offset = "" 
         if self.range and self.range[0]:
             offset = " + " + str(self.range[0])
+
         if self.type == self.FIXED:
             return str(self.index)
         elif self.type == self.PRIMARY:
