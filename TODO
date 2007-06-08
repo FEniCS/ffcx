@@ -11,6 +11,8 @@ Things to fix before release of 0.4.0:
  - Proofreading by Rolv
  - Add examples from slides
  - Add common test script for unit and regression
+ - Copy fenicsmanual.cls to common
+ - Copy installation-downloading.tex to common
 
 Things to fix after release:
 
