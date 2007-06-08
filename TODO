@@ -6,10 +6,6 @@ Things to fix before release of 0.4.0:
  - Check regression tests
  - Check -h -v
 
- - Projections
- - Write about TestFunction and TrialFunction in manual
- - Write about mean() in manual
- - Write about Projection in manual
  - Write about Function operators (/, sqrt) in manual
  - Copy latest reference cell chapters from UFC manual
  - Proofreading by Rolv
@@ -17,6 +13,7 @@ Things to fix before release of 0.4.0:
 
 Things to fix after release:
 
+ - Projections, implement and add to manual, including mean()
  - Optimization (-O)
  - BLAS mode (-f blas)
  - Add time derivative .dt() and Dt()

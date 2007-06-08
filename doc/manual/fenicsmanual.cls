@@ -20,6 +20,7 @@
 \RequirePackage{sectsty}
 \RequirePackage{amsmath}
 \RequirePackage{amssymb}
+\RequirePackage{stmaryrd}
 \RequirePackage{makeidx}
 \RequirePackage{url}
 \RequirePackage{here}
