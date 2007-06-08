@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2005-11-07 -- 2007-04-11"
+__date__ = "2005-11-07 -- 2007-06-08"
 __copyright__ = "Copyright (C) 2005-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -32,6 +32,8 @@ class Projection:
 
     def __init__(self, element):
         "Create projection onto given finite element"
+
+        debug("*** Warning: " + "Projection unavailable (will return in a future version)")
 
         self.element = element
         self.projections = {}
