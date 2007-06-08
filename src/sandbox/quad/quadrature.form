@@ -37,10 +37,11 @@ w = Function(element)
 #print v
 #print u
 #a = grad(w)[0]*v*u*dx
+a = w*dot(grad(v), grad(u))*dx + v*u*dx + w*v*u*dx
 #a = v*u*ds + v*u*dx
 #a = dot(jump(v,n), grad(u))*ds + dot(grad(v), jump(u,n))*ds
 #a = dot(jump(v), jump(u))*dS
-a = v('+')*u('-')*ds + v('+')*u('-')*ds + v*u*ds + 2*v*u*ds
+#a = v('+')*u('-')*ds + v('+')*u('-')*ds + v*u*ds + 2*v*u*ds
 #a = dot(avg(v),avg(u))*ds
 #a = v('-')*n[0]('-')*u('+')*n[0]('+')*dS
 #a = dot(v,u)*dx# + v*u*dx

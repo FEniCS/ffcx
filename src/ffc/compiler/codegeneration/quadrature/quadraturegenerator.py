@@ -136,9 +136,10 @@ class QuadratureGenerator(CodeGenerator):
         format_block_begin  = format["block begin"]
         format_block_end    = format["block end"]
 
-        # Group tensors after number of quadrature points, reduce number of loops
-        group_tensors = equal_num_quadrature_points(tensors)
-
+        # Group tensors after number of quadrature points, and dimension of primary indices
+        # to reduce number of loops
+        group_tensors = equal_loops(tensors)
+#        print group_tensors
         tables = None
         name_map = None
         # Get dictionary of unique tables, and the name_map
@@ -149,11 +150,14 @@ class QuadratureGenerator(CodeGenerator):
         if self.save_tables:
             generate_load_table(tensors)
 
-        for points in group_tensors:
+#        for points in group_tensors:
             # Loop tensors to generate tables
-            for i in group_tensors[points]:
+#            for i in group_tensors[points]:
                 # Tabulate the quadrature weights
-                tabulate_code += self.__tabulate_weights(tensors[i].quadrature.weights, i, Indent, format)
+#                tabulate_code += self.__tabulate_weights(tensors[i].quadrature.weights, i, Indent, format)
+        for i in range(len(tensors)):
+            # Tabulate the quadrature weights
+            tabulate_code += self.__tabulate_weights(tensors[i].quadrature.weights, i, Indent, format)
 
         if self.save_tables:
             # Save psi tables instead of tabulating
@@ -167,20 +171,50 @@ class QuadratureGenerator(CodeGenerator):
 
         for points in group_tensors:
             # Loop all quadrature points
-            element_code += [Indent.indent(format_comment("Loop quadrature points (tensor/monomial term %d)" %(i,)))]
+            # Create list of tensors for comment
+            ts = [group_tensors[points][idims][i] for idims in group_tensors[points]\
+                                                  for i in range(len(group_tensors[points][idims]))]
+            element_code += [Indent.indent(format_comment\
+            ("Loop quadrature points (tensor/monomial terms %s)" %(str(tuple(ts)))))]
             element_code += [Indent.indent(format_loop(format_ip, 0, points))]
             element_code += [Indent.indent(format_block_begin)]
 
             # Increase indentation
             Indent.increase()
 
-            # Generate element tensors for all tensors with the current number of quadrature points
-            for i in group_tensors[points]:
-                element_code += self.__element_tensor(tensors[i], i, sign_changes, Indent, format, name_map)
+            # Get dictionary of primary indices
+            prim_dic = group_tensors[points]
+            # Generate loop over primary indices
+            for idims in prim_dic:
+                tensor_numbers = prim_dic[idims]
+                indices = [format["first free index"], format["second free index"]]
+                # Create loop variables
+                loop_vars = [[indices[i], 0, idims[i]] for i in range(len(idims))]
 
+                # Generate loop
+                element_code += generate_loop("", "", loop_vars, Indent, format, "")
+                Indent.decrease()
+                element_code += [Indent.indent(format_block_begin)]
+                Indent.increase()
+
+            # Generate element tensors for all tensors with the current number of quadrature points
+#            for i in group_tensors[points]:
+#                element_code += self.__element_tensor(tensors[i], i, sign_changes, Indent, format, name_map)
+                # Generate element tensors for all tensors with the current number of quadrature points
+                for i in tensor_numbers:
+                    element_code += self.__element_tensor(tensors[i], i, sign_changes, Indent, format, name_map)
+
+                # End loop primary indices
+                # Decrease indentation
+                Indent.decrease()
+                element_code += [Indent.indent(format_block_end)]
+                # Decrease indentation
+                for i in range(len(idims) - 1):
+                    Indent.decrease()
+
+            # End the quadrature loop
             # Decrease indentation
             Indent.decrease()
-            # End the quadrature loop
             element_code += [Indent.indent(format_block_end)]
 
             if i + 1 < len(tensors):
@@ -226,7 +260,6 @@ class QuadratureGenerator(CodeGenerator):
                 value = tabulate_matrix(vals, format)
                 code += [(Indent.indent(names), Indent.indent(value))]# + [""]
         else:
-
             for tensor_number in range(len(tensors)):
                 tensor = tensors[tensor_number]
                 tables = get_names_tables(tensor, tensor_number, format)
@@ -364,9 +397,13 @@ class QuadratureGenerator(CodeGenerator):
                     ("Compute block entries (tensor/monomial term %d)" % (tensor_number,)))]
 
             # Create boundaries for loop
-            boundaries = [0, idims[0]]
-            loop_vars = [[format["first free index"]] + boundaries] + secondary_loop
-            code += generate_loop(name, value, loop_vars, Indent, format, format["add equal"])
+#            boundaries = [0, idims[0]]
+#            loop_vars = [[format["first free index"]] + boundaries] + secondary_loop
+            loop_vars = secondary_loop
+            if secondary_loop:
+                code += generate_loop(name, value, loop_vars, Indent, format, format["add equal"])
+            else:
+                code += [format["add equal"](Indent.indent(name), value)]
 
         elif (irank == 2):
 
@@ -388,10 +425,15 @@ class QuadratureGenerator(CodeGenerator):
                     ("Compute block entries (tensor/monomial term %d)" % (tensor_number,)))]
 
             # Create boundaries for loop
-            boundaries = [[0, idims[0]], [0, idims[1]]]
-            loop_vars = [[format["first free index"]] + boundaries[0],\
-                         [format["second free index"]] + boundaries[1]] + secondary_loop
-            code += generate_loop(name, value, loop_vars, Indent, format, format["add equal"])
+#            boundaries = [[0, idims[0]], [0, idims[1]]]
+#            loop_vars = [[format["first free index"]] + boundaries[0],\
+#                         [format["second free index"]] + boundaries[1]] + secondary_loop
+            loop_vars = secondary_loop
+            if secondary_loop:
+                code += generate_loop(name, value, loop_vars, Indent, format, format["add equal"])
+            else:
+                code += [format["add equal"](Indent.indent(name), value)]
+
         else:
             raise RuntimeError, "Quadrature only supports Linear and Bilinear forms"
 
