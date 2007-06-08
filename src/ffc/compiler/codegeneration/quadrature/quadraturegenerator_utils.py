@@ -255,15 +255,6 @@ def generate_factor(tensor, a, bgindices, format):
 #        f_tot = format["multiply"](f_out + f_in)
 
     return (f_out, f_in)
-# End from tensorgenerator
-
-#        if tensor.determinant:
-#            d0 = format["power"](format["determinant"], tensor.determinant)
-#            d = format["multiply"]([format["scale factor"], d0])
-#        else:
-#            d = format["scale factor"]
-
-#        return format["multiply"]([f_tot] + [d])
 
 def generate_factor_old(tensor, a, b, format):
     "Optimise level 0 and 1"
@@ -315,7 +306,139 @@ def generate_factor_old(tensor, a, b, format):
         d = format["scale factor"]
     return [format["multiply"](factors + [d])]
 
-def values_level_0(indices, vindices, aindices, b0indices, bgindices, tensor, tensor_number, weight, format):
+def generate_factor_old2(tensor, a, b, format):
+    "Optimise level 0 and 1"
+    # Compute product of factors outside sum
+    factors = []
+    for j in range(len(tensor.coefficients)):
+        c = tensor.coefficients[j]
+        if not c.index.type == Index.AUXILIARY_G:
+            offset = tensor.coefficient_offsets[c]
+            if offset:
+                coefficient = format["coeff"] + format["matrix access"](c.n1.index,\
+                              format["add"]([c.index([], a, [], []), str(offset)]))
+            else:
+                coefficient = format["coeff"] + format["matrix access"](c.n1.index, c.index([], a, [], []))
+            for l in range(len(c.ops)):
+                op = c.ops[len(c.ops) - 1 - l]
+                if op == Operators.INVERSE:
+                    coefficient = format["inverse"](coefficient)
+                elif op == Operators.ABS:
+                    coefficient = format["absolute value"](coefficient)
+                elif op == Operators.SQRT:
+                    coefficient = format["sqrt"](coefficient)
+            factors += [coefficient]
+    for t in tensor.transforms:
+        if not (t.index0.type == Index.AUXILIARY_G or  t.index1.type == Index.AUXILIARY_G):
+            factors += [format["transform"](t.type, t.index0([], a, [], []), \
+                                                    t.index1([], a, [], []), \
+                                                    t.restriction),]
+    # Compute sum of monomials inside sum
+    for j in range(len(tensor.coefficients)):
+        c = tensor.coefficients[j]
+        if c.index.type == Index.AUXILIARY_G:
+            offset = tensor.coefficient_offsets[c]
+            if offset:
+                coefficient = format["coeff"] + format["matrix access"](c.n1.index,\
+                              format["add"]([c.index([], a, [], b), str(offset)]))
+            else:
+                coefficient = format["coeff"] + format["matrix access"](c.n1.index, c.index([], a, [], b))
+
+            for l in range(len(c.ops)):
+                op = c.ops[len(c.ops) - 1 - l]
+                if op == Operators.INVERSE:
+                    coefficient = format["inverse"](coefficient)
+                elif op == Operators.ABS:
+                    coefficient = format["absolute value"](coefficient)
+                elif op == Operators.SQRT:
+                    coefficient = format["sqrt"](coefficient)
+            factors += [coefficient]
+    for t in tensor.transforms:
+        if t.index0.type == Index.AUXILIARY_G or t.index1.type == Index.AUXILIARY_G:
+            factors += [format["transform"](t.type, t.index0([], a, [], b), \
+                                                        t.index1([], a, [], b), \
+                                                        t.restriction)]
+    if tensor.determinant:
+        d0 = format["power"](format["determinant"], tensor.determinant)
+        d = format["multiply"]([format["scale factor"], d0])
+    else:
+        d = format["scale factor"]
+    return [format["multiply"](factors + [d])]
+
+def generate_factor3(tensor, a, bgindices, format):
+    "Optimise level 3"
+
+# From tensorgenerator    
+        # Compute product of factors outside sum
+    factors = []
+    for j in range(len(tensor.coefficients)):
+        c = tensor.coefficients[j]
+        if not c.index.type == Index.AUXILIARY_G:
+            offset = tensor.coefficient_offsets[c]
+            if offset:
+                coefficient = format["coeff"] + format["matrix access"](c.n1.index,\
+                              format["add"]([c.index([], a, [], []), str(offset)]))
+            else:
+                coefficient = format["coeff"] + format["matrix access"](c.n1.index, c.index([], a, [], []))
+            for l in range(len(c.ops)):
+                op = c.ops[len(c.ops) - 1 - l]
+                if op == Operators.INVERSE:
+                    coefficient = format["inverse"](coefficient)
+                elif op == Operators.ABS:
+                    coefficient = format["absolute value"](coefficient)
+                elif op == Operators.SQRT:
+                    coefficient = format["sqrt"](coefficient)
+            factors += [coefficient]
+    for t in tensor.transforms:
+        if not (t.index0.type == Index.AUXILIARY_G or  t.index1.type == Index.AUXILIARY_G):
+            factors += [format["transform"](t.type, t.index0([], a, [], []), \
+                                                    t.index1([], a, [], []), \
+                                                    t.restriction),]
+    monomial = format["multiply"](factors)
+    if monomial:
+        f_out = [monomial]
+    else:
+        f_out = []
+    
+    # Compute sum of monomials inside sum
+    terms = []
+    for b in bgindices:
+        factors = []
+        for j in range(len(tensor.coefficients)):
+            c = tensor.coefficients[j]
+            if c.index.type == Index.AUXILIARY_G:
+                offset = tensor.coefficient_offsets[c]
+                if offset:
+                    coefficient = format["coeff"] + format["matrix access"](c.n1.index,\
+                                  format["add"]([c.index([], a, [], b), str(offset)]))
+                else:
+                    coefficient = format["coeff"] + format["matrix access"](c.n1.index, c.index([], a, [], b))
+                for l in range(len(c.ops)):
+                    op = c.ops[len(c.ops) - 1 - l]
+                    if op == Operators.INVERSE:
+                        coefficient = format["inverse"](coefficient)
+                    elif op == Operators.ABS:
+                        coefficient = format["absolute value"](coefficient)
+                    elif op == Operators.SQRT:
+                        coefficient = format["sqrt"](coefficient)
+                factors += [coefficient]
+        for t in tensor.transforms:
+            if t.index0.type == Index.AUXILIARY_G or t.index1.type == Index.AUXILIARY_G:
+                factors += [format["transform"](t.type, t.index0([], a, [], b), \
+                                                        t.index1([], a, [], b), \
+                                                        t.restriction)]
+        terms += [format["multiply"](factors)]
+
+    f_in = format["add"](terms)
+    if f_in: f_in = [format["grouping"](f_in)]
+    else: f_in = []
+
+#        f_tot = format["multiply"](f_out + f_in)
+
+    return (f_out, f_in)
+
+
+def values_level_0(indices, vindices, aindices, b0indices, bgindices, tensor, tensor_number, weight, format, name_map):
     # Generate value (expand multiplication - optimise level 0)
     format_multiply = format["multiply"]
     format_new_line = format["new line"]
@@ -328,9 +451,9 @@ def values_level_0(indices, vindices, aindices, b0indices, bgindices, tensor, te
                            b0, psi_indices, vindices, format) for psi_indices in indices] +\
                            weight + factor) + format_new_line]
 
-    return values
+    return (values, [])
 
-def values_level_1(indices, vindices, aindices, b0indices, bgindices, tensor, tensor_number, weight, format):
+def values_level_1(indices, vindices, aindices, b0indices, bgindices, tensor, tensor_number, weight, format, name_map):
     # Generate brackets of geometry and reference terms (terms outside sum are
     # multiplied with each term in the sum  - optimise level 1)
     format_multiply = format["multiply"]
@@ -356,9 +479,9 @@ def values_level_1(indices, vindices, aindices, b0indices, bgindices, tensor, te
             geo = geo[0]
         values += [format_multiply([ref,geo]) + format_new_line]
 
-    return values
+    return (values, [])
 
-def values_level_2(indices, vindices, aindices, b0indices, bgindices, tensor, tensor_number, weight, format):
+def values_level_2(indices, vindices, aindices, b0indices, bgindices, tensor, tensor_number, weight, format, name_map):
     # Generate brackets of geometry and reference terms, distinguish between terms outside and 
     # inside sum (geometry only). - optimise level 2)
 
@@ -368,6 +491,7 @@ def values_level_2(indices, vindices, aindices, b0indices, bgindices, tensor, te
     format_new_line = format["new line"]
 
     values = []
+
     for a in aindices:
         r = []
         for b0 in b0indices:
@@ -392,33 +516,156 @@ def values_level_2(indices, vindices, aindices, b0indices, bgindices, tensor, te
 
         geo = format_multiply(geo_out + geo_in + d)
         values += [format_multiply([ref,geo]) + format_new_line]
-    return values
+    return (values, [])
 
-def values_level_3(indices, vindices, aindices, b0indices, bgindices, tensor, tensor_number, weight, format):
-    # Generate value (expand multiplication - optimise level 0)
+def values_level_3(indices, vindices, aindices, b0indices, bgindices, tensor, tensor_number, weight, format, name_map):
+    # Generate value - optimise level 3 (Based on level 2 but use loops to multiply reference and geo tensor)
+
     format_multiply = format["multiply"]
+    format_group    = format["grouping"]
+    format_add      = format["add"]
     format_new_line = format["new line"]
+    format_space    = format["space"]
+    format_psis     = format["psis"]
 
-    dic_indices = {0:format["first free index"], 1:format["second free index"]}
+    # Get list of free secondary loop indices
+    list_indices = format["free secondary indices"]
     values = []
-
+    vals = []
+    secondary_loop = []
     sec_indices = []
     for index in vindices:
-        if index.type == Index.SECONDARY:
-            sec_indices += [a]
+        if index.type == Index.SECONDARY and len(index.range) > 1:
+            sec_indices += [index]
 
-    
+            # Generate loop variables
+            old_ind = [d for d in list_indices]
+            m = len(old_ind)
+            g = 0
+            # If list of loop indices is not long enough generate some more
+            while m - 1 < index.index:
+                new_ind = [old_ind[i] + list_indices[j] for i in range(g, len(old_ind))\
+                                                      for j in range(len(list_indices))]
+                g = len(new_ind)
+                old_ind += new_ind
+                m = len(old_ind)
+#            print "new_ind: ", new_ind
+#            print "index: ", index.index
+            # Pick index and generate information for loop generation
+            index_name = old_ind[index.index]
+            secondary_loop += [[index_name, 0, len(index.range)]]
 
+#    print "sec_indices: ", sec_indices
     for a in aindices:
-        print "a: ", a
+        # Change secondary index value to loop indices, for basis function indices
+        for i in range(len(sec_indices)):
+            a[sec_indices[i].index] = secondary_loop[i][0]
+        r = []
         for b0 in b0indices:
-            for bg in bgindices:
-                factor = generate_factor_old(tensor, a, bg, format)
-                values += [format_multiply([generate_psi_entry(tensor_number, a,\
-                           b0, psi_indices, vindices, format) for psi_indices in indices] +\
-                           weight + factor) + format_new_line]
+            r += [format_multiply([generate_psi_entry(tensor_number, a,\
+                  b0, psi_indices, vindices, format) for psi_indices in indices] + weight)]
+
+        if 1 < len(r):
+            ref = format_group(format_add(r))
+        else:
+            ref = r[0]
+
+        # Get geometry terms from inside sum, and outside sum
+        geo_out, geo_in = generate_factor3(tensor, a, bgindices, format)
+        if 1 < len(geo_in):
+            geo_in = [format_group(format_add(geo_in))]
+
+        if tensor.determinant:
+            d0 = format["power"](format["determinant"], tensor.determinant)
+            d = [format["multiply"]([format["scale factor"], d0])]
+        else:
+            d = [format["scale factor"]]
+
+        geo = format_multiply(geo_out + geo_in + d)
+
+        vals += [format_multiply([ref,geo]) + format_new_line]
+
+    # Only use values that are unique
+    for val in vals:
+        if not val in values:
+            values += [val]
+#    print "\nvalues[0]: ", values[0]
+
+#    print "name map: ", name_map
+
+    # Map values to correct table
+    if name_map:
+        map_values = []
+        for val in values:
+            for name in name_map:
+                val = val.replace(name, name_map[name])
+            map_values += [val]
+        values = map_values
 
     return (values, secondary_loop)
+
+def get_names_tables(tensor, tensor_number, format):
+    "Tabulate values of basis functions and their derivatives at quadrature points"
+
+    tables = {}
+
+    # Get list of psis
+    psis = tensor.Psis
+
+    # Loop psis
+    for psi_number in range(len(psis)):
+
+        # Get psi
+        psi = psis[psi_number]
+
+        # Get values of psi, list of indices and index of basisfunction for psi
+        values, indices, vindex = psi[0], psi[1], psi[2]
+
+        # Get the number of dofs
+        num_dofs = len(vindex.range)
+
+        # Get number of quadrature points
+        num_quadrature_points = len(tensor.quadrature.weights)
+
+        # Get lists of secondary indices and auxiliary_0 indices
+        aindices = tensor.a.indices
+        b0indices = tensor.b0.indices
+
+        names = []
+        multi_indices = []
+
+        # Loop secondary and auxiliary indices to generate names and entries in the psi table
+        for a in aindices:
+            for b in b0indices:
+
+                (name, multi_index) = generate_psi_declaration(tensor_number, indices, vindex,\
+                                      a, b, num_quadrature_points, num_dofs, format)
+
+                names += [name]
+                multi_indices += [multi_index]
+
+        # Remove redundant names and entries in the psi table
+        names, multi_indices = extract_unique(names, multi_indices)
+
+        # Loop names and tabulate psis
+        for i in range(len(names)):
+
+            # Get name
+            name = names[i]
+
+            # Get values from psi tensor, should have format values[dofs][quad_points]
+            vals = values[tuple(multi_indices[i])]
+
+            # Check if the values have the correct dimensions, otherwise quadrature is not correctly
+            # implemented for the given form!!
+            if numpy.shape(vals) != (num_dofs, num_quadrature_points):
+                raise RuntimeError, "Quadrature is not correctly implemented for the given form!"
+
+            # Generate values (FIAT returns [dof, quad_points] transpose to [quad_points, dof])
+            value = numpy.transpose(vals)
+            tables[name] = value
+
+    return tables
 
 def generate_load_table(tensors):
     "Generate header to load psi tables"
@@ -492,7 +739,7 @@ void load_table(double A[][%d], const char* name, int m)
     file.write(code)
     file.close()
 
-def save_psis(tensor, tensor_number, facet0, facet1, Indent, format):
+def save_psis(tensors, facet0, facet1, Indent, format, tables):
     "Save psis tables instead of tabulating them"
 
     load_table = "load_table(%s, \"%s\", %d)"
@@ -517,8 +764,8 @@ std::cout << std::endl;
     format_float          = format["static float declaration"]
 
     # Get list of psis
-    psis = tensor.Psis
-    irank = "_i%d" %tensor.i.rank
+#    psis = tensor.Psis
+    irank = "_i%d" %tensors[0].i.rank
     if (facet0 == None) and (facet1 == None):
         facets = ""
     elif (facet0 != None) and (facet1 == None):
@@ -535,59 +782,18 @@ std::cout << std::endl;
     loads = []
 #    outputs = []
 
-    # Loop psis
-    for psi_number in range(len(psis)):
+    if tables:
+#        print "save tables"
 
-        # Get psi
-        psi = psis[psi_number]
-
-        # Get values of psi, list of indices and index of basisfunction for psi
-        values, indices, vindex = psi[0], psi[1], psi[2]
-
-        # Get the number of dofs
-        num_dofs = len(vindex.range)
-
-        # Get number of quadrature points
-        num_quadrature_points = len(tensor.quadrature.weights)
-
-        # Get lists of secondary indices and auxiliary_0 indices
-        aindices = tensor.a.indices
-        b0indices = tensor.b0.indices
-
-        names = []
-        multi_indices = []
-
-        # Loop secondary and auxiliary indices to generate names and entries in the psi table
-        for a in aindices:
-            for b in b0indices:
-
-                (name, multi_index) = generate_psi_declaration(tensor_number, indices, vindex,\
-                                      a, b, num_quadrature_points, num_dofs, format)
-
-                names += [name]
-                multi_indices += [multi_index]
-
-        # Remove redundant names and entries in the psi table
-        names, multi_indices = extract_unique(names, multi_indices)
-
-        # Loop names and tabulate psis
-        for i in range(len(names)):
-            # Get values from psi tensor, should have format values[dofs][quad_points]
-            vals = values[tuple(multi_indices[i])]
-
-            # Check if the values have the correct dimensions, otherwise quadrature is not correctly
-            # implemented for the given form!!
-            if numpy.shape(vals) != (num_dofs, num_quadrature_points):
-                raise RuntimeError, "Quadrature is not correctly implemented for the given form!"
-
-            # Generate array of values (FIAT returns [dof, quad_points] transpose to [quad_points, dof])
-            value = numpy.transpose(vals)
-
-            # Save values as an array
-            name = names[i].split(" ")[-1].split("[")[0]
+        for names in tables:
+#            print "names: ", names
+            # Get value and save as an array
+            value = tables[names]
+            shape = numpy.shape(value)
+            name = names.split(" ")[-1].split("[")[0]
             a = []
-            for j in range(num_quadrature_points):
-                for k in range(num_dofs):
+            for j in range(shape[0]):
+                for k in range(shape[1]):
                     val = value[j][k]
                     if abs(val) < format_epsilon:
                         val = 0.0
@@ -598,20 +804,46 @@ std::cout << std::endl;
             file.close
 
             # Generate code to load table
-            loads += [load_table %(name, "tables/" + name + facets + irank + ".table", num_quadrature_points)]
+            loads += [load_table %(name, "tables/" + name + facets + irank + ".table", shape[0])]
 #            outputs += [out %(name, num_quadrature_points, num_dofs, name)]
-            code += [Indent.indent(names[i].replace(format_table,format_float) + format_end_line)]
+            code += [Indent.indent(names.replace(format_table,format_float) + format_end_line)]
+    else:
+        for tensor_number in range(len(tensors)):
+            tensor = tensors[tensor_number]
+            tables = get_names_tables(tensor, tensor_number, format)
 
-    code += [(Indent.indent(format["static uint declaration"] + "load" + "_%d" %(tensor_number)),"1")]
+            for names in tables:
+                # Get value and save as an array
+                value = tables[names]
+                shape = numpy.shape(value)
+                name = names.split(" ")[-1].split("[")[0]
+                a = []
+                for j in range(shape[0]):
+                    for k in range(shape[1]):
+                        val = value[j][k]
+                        if abs(val) < format_epsilon:
+                            val = 0.0
+                        a += [format_floating_point(val)]
+                a = " ".join(a)
+                file = open("tables/" + name + facets + irank + ".table", "w")
+                file.write(a)
+                file.close
+
+                # Generate code to load table
+                loads += [load_table %(name, "tables/" + name + facets + irank + ".table", shape[0])]
+#                outputs += [out %(name, num_quadrature_points, num_dofs, name)]
+                code += [Indent.indent(names.replace(format_table,format_float) + format_end_line)]
+
+    code += [(Indent.indent(format["static uint declaration"] + "load"),"1")]
 #    code += [Indent.indent(load_int %("load") + format_end_line)]
-    code += [Indent.indent(format["if"] + format["grouping"]("load" + "_%d" %(tensor_number)))]
+    code += [Indent.indent(format["if"] + format["grouping"]("load"))]
     code += [Indent.indent(format["block begin"])]
     code += [Indent.indent("std::cout << \"Loading tables\" << std::endl;")]
 
     for load in loads:
         code += [Indent.indent(load + format_end_line)]
 
-    code += [(Indent.indent("load" + "_%d" %(tensor_number)),"0")]
+    code += [(Indent.indent("load"),"0")]
 #    code += [Indent.indent("save();")]
     code += [Indent.indent(format["block end"])]
 #    for output in outputs:
@@ -621,11 +853,65 @@ std::cout << std::endl;
 #    file.write("0")
 #    file.close
 
-
     return code
 
+def unique_tables(tensors, format):
+    # Determine if some tensors have the same tables (and same names)
 
+    name_map = {}
+    tables = {}
 
+    for tensor_number in range(len(tensors)):
+
+        tensor = tensors[tensor_number]
+        table = get_names_tables(tensor, tensor_number, format)
+        for name in table:
+            tables[name] = table[name]
+
+#    print "tables 2: ", tables
+    # Initialise name map
+    for name in tables:
+        name_map[name] = []
+
+    # Loop all tables to see if some are redundant
+    for name0 in tables:
+        val0 = numpy.array(tables[name0])
+        for name1 in tables:
+            # Don't compare values with self
+            if not name0 == name1:
+                val1 = numpy.array(tables[name1])
+                # Check if dimensions match
+                if numpy.shape(val0) == numpy.shape(val1):
+#                    print "numpy.shape(val0): ", numpy.shape(val0)
+#                    print "numpy.shape(val1): ", numpy.shape(val1)
+#                    print "val0: ", val0
+#                    print "val1: ", val1
+                    diff = val1 - val0
+                    # Check if values are the same
+                    if not diff.any():
+                        if name0 in name_map:
+                            name_map[name0] += [name1]
+                            if name1 in name_map:
+                                del name_map[name1]
+
+    inverse_name_map = {}
+    for name in name_map:
+#        print "name: ", name
+        # Get name of psi
+        name_strip = name.split()[-1].split("[")[0]
+#        print "name_strip: ", name_strip
+
+        maps = name_map[name]
+        for m in maps:
+#            print "m: ", m
+            # Get name of psi
+            m_strip = m.split()[-1].split("[")[0]
+#            print "m_strip: ", m_strip
+            inverse_name_map[m_strip] = name_strip
+            del tables[m]
+#    print "inverse_name_map: ", inverse_name_map
+
+    return (inverse_name_map, tables)
 
 
 
