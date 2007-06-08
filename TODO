@@ -6,7 +6,6 @@ Things to fix before release of 0.4.0:
  - Check regression tests
  - Check -h -v
 
- - Add examples from slides
  - Add common test script for unit and regression
  - Proofreading by Rolv
  - Copy fenicsmanual.cls to common
