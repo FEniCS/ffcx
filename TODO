@@ -10,6 +10,7 @@ Things to fix before release of 0.4.0:
  - Copy latest reference cell chapters from UFC manual
  - Proofreading by Rolv
  - Add examples from slides
+ - Add common test script for unit and regression
 
 Things to fix after release:
 
