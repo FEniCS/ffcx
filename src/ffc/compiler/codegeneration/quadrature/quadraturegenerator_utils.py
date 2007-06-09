@@ -174,13 +174,13 @@ def generate_signs(tensors, format):
             # Go through the topological entities associated
             # with each basis function/dof. If the element is
             # a piola mapped element and the basis function is
-            # associated with an edge, we calculate the
+            # associated with a facet, we calculate the
             # possible sign change.
             for no in dof_entities:
                 (entity, entity_no) = dof_entities[no]
                 if entity == 1 and element.space_mapping(no) == Mapping.PIOLA:
                     necessary = True
-                    values += [format["call edge sign"](entity_no)]
+                    values += [format["facet sign"](entity_no)]
                 else:
                     values += ["1"]
             num_dofs = str(len(dof_entities))
@@ -193,7 +193,7 @@ def generate_signs(tensors, format):
                     
     if necessary:
         code.insert(0, format["comment"]("Compute signs"))
-        code.insert(0, format["snippet edge signs"](2))
+        code.insert(0, format["snippet facet signs"](2))
         return (code, True)
     else:
         return ([], False) # Return [] is the case of no sign changes...)

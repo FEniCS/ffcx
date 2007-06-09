@@ -315,7 +315,7 @@ class TensorGenerator(CodeGenerator):
                         name = format["sign tensor"](j, index.index, no)
                         if entity == 1 and element.space_mapping(no) == Mapping.PIOLA:
                             necessary = True
-                            value = format["call edge sign"](entity_no)
+                            value = format["facet sign"](entity_no)
                             # If the sign of this edge already has
                             # been computed, refer to that entry instead.
                             if value in computed:
@@ -334,7 +334,7 @@ class TensorGenerator(CodeGenerator):
                     
         if necessary:
             code.insert(0, format["comment"]("Compute signs"))
-            code.insert(0, format["snippet edge signs"](2))
+            code.insert(0, format["snippet facet signs"](2))
             return (code, True)
         else:
             return ([], False) # Return [] is the case of no sign changes...)
