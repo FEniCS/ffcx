@@ -1,9 +1,7 @@
 \chapter{Finite element assembly}
+\label{sec:assembly}
 
 \newtheorem{example}{\small{\sc{Example}}}[section]
-
-
-\label{sec:assembly}
 
 In this section, we present a general algorithm for assembly of finite
 element variational forms and define the concepts which the UFC
@@ -71,7 +69,7 @@ where
 
 \section{Discretization of variational forms}
 
-\subsection{A Finite Element}
+\subsection{The Finite Element}
 
 A finite element is mathematically defined as a triplet consisting
 of a polygon, a function space, and a set of linear functionals. 
@@ -79,29 +77,23 @@ Given that the dimension of the function space and the number of
 the (linearly independent) linear functionals are equal, the
 finite element is uniquely defined. 
 With this definition of a finite element, the basis functions
-are implicitly defined as the solution of a linear system. 
+are implicitly defined as the solution of a linear system.
 
-Our definition of a finite element is motivated by the fact
-that we are interested in the \emph{usage} of a finite element, 
-in particular its basis functions. These basis functions
-are pre-computed by using the triplet mentioned above. 
-Hence, we will refer to a finite element as a collection
-of 
+We take our starting point in the standard Ciarlet
+definition~\cite{Cia78}, but consider a finite element with a fixet
+set of basis functions.  These basis functions are pre-computed from
+the triplet mentioned above. Hence, we will refer to a finite
+element as a collection of
 \begin{itemize}
 \item a polygon,  
-\item basis functions $\{ \phi_i \}_i$,  
-\item derivatives of basis functions,
-\item degrees of freedom, which are linear
-functionals, $L_i : V \rightarrow \mathbb{R}$, where $V$ might be 
-$span\{ \phi_i \}_i$. However, $L_i$ can usually be extended 
-from $V$ to an appropriate Sobolev space, 
+\item a set of basis functions $\{\phi_i\}_{i=1}^n$ and
+the derivatives of those basis functions,
+\item the degrees of freedom, which are linear functionals, $L_i : V
+\rightarrow \R, i = 1, 2, \ldots, n$, where $V = \mathrm{span}\{\phi_i\}_{i=1}^n$.  Usually,
+$L_i$ may be extended from $V$ to an appropriate Sobolev space.
 \end{itemize}
 In addition, our finite element will contain functionality
 for interpolation. 
-
-
-
-
 
 \subsection{Variational forms}
 
@@ -117,23 +109,16 @@ $\{V_h^j\}_{j=1}^r, \{W_h^j\}_{j=1}^n$ of discrete function spaces on
 a triangulation $\mathcal{T}$ of a domain $\Omega \subset \R^d$. 
 We also often write this as 
 \begin{equation}
-a(v_1, \ldots, v_r; w_1, \ldots, w_n), 
+a = a(v_1, \ldots, v_r; w_1, \ldots, w_n), 
 \end{equation}
 where ';' is used to separate the $V_h$ spaces from the $W_h$ spaces. 
 The distinction between the spaces $\{V_h^j\}_{j=1}^r$ and
 $\{W_h^j\}_{j=1}^n$ lies in how the discretization is made for each
 set of spaces. This will be explained below.
 
-
-
-In
-the simplest case, all function spaces are equal but there are many
+In the simplest case, all function spaces are equal but there are many
 important examples, such as mixed methods, where it is important to
-consider arguments coming from different function spaces. 
-
-
-
-
+consider arguments coming from different function spaces.
 
 Let $\mathcal{T} = \{K\}$ be a set of disjoint \emph{cells} (a
 triangulation) partitioning a domain $\cup_{K\in\mathcal{T}} K =
@@ -143,13 +128,14 @@ incident with the boundary $\partial \Omega$), and let $\partial_i
 \mathcal{T}$ denote the set of $\emph{interior facets}$ (the set of
 cell facets non-incident with the boundary $\partial \Omega$).
 
-We shall assume that the variational form~(\ref{eq:variationalform}) may
-be expressed as a sum of integrals over the cells~$\mathcal{T}$, the
-exterior facets~$\partial_i \mathcal{T}$ and the interior
+We shall assume that the variational form~(\ref{eq:variationalform})
+may be expressed as a sum of integrals over the cells~$\mathcal{T}$,
+the exterior facets~$\partial_i \mathcal{T}$ and the interior
 facets~$\partial_e \mathcal{T}$. We shall allow integrals expressed on
 disjoint subsets $\{\mathcal{T}_k\}_{k=1}^{n_c}$, $\{\partial_e
-\mathcal{T})_k\}_{k=1}^{n_e}$ and $\{\partial_i \mathcal{T}_k\}_{k=1}^{n_i}$ of $\mathcal{T}$, $\partial_e \mathcal{T}$ and
-$\partial_i \mathcal{T}$ respectively.
+\mathcal{T})_k\}_{k=1}^{n_e}$ and $\{\partial_i
+\mathcal{T}_k\}_{k=1}^{n_i}$ of $\mathcal{T}$, $\partial_e
+\mathcal{T}$ and $\partial_i \mathcal{T}$ respectively.
 
 We thus assume that the form $a$ is given by
 \begin{equation}
@@ -214,75 +200,71 @@ $r = 1$ and the number of coefficients is $n = 1$. We may also choose
 to directly compute the action of the bilinear form $a$ obtained by
 assembling a vector from the form
 \begin{equation}
-  a(v_1, w_1) = \int_{\Omega} v_1 w_1 \dx,
+  a(v_1; w_1) = \int_{\Omega} v_1 w_1 \dx,
 \end{equation}
 where now $r = 1$ and $n = 1$.
 
-Below we list a few examples to illustrate the notation. 
-Later in Section \ref{CodeGenExamples} code generation based
-on these forms are demontrated with concrete discrete function
-spaces. 
+We list below a few other examples to illustrate the notation. Later
+in Section~\ref{CodeGenExamples}, we give examples of UFC code
+generated for these forms for particular choices of finite element
+function spaces.
 
 \begin{example}
 \label{example:div}
 Our first example is related
-to the divergence constraint in fluid flow. Let $a(\ldots)$ be    
+to the divergence constraint in fluid flow. Let $a$ be given by
 \begin{equation}
-a(v,q) = (\nabla \cdot v, q), \quad v\in V_h^1, q \in V_h^2, 
+a(q, v) = \int_{\Omega} q \nabla \cdot v \dx, \quad q\in V_h^1, \quad v\in V_h^2, 
 \end{equation}
-where $V_h^1$ is a space of vector valued functions, 
-and $V_h^2$ is a space of scalar valued functions. 
-The form is bilinear, i.e.,  
-\begin{equation}
-a : V_h^1 \times V_h^2  \rightarrow \R.
-\end{equation}
-Hence, $r=2$, $n=0$.   
+where $V_h^1$ is a space of scalar-valued functions and
+where $V_h^2$ is a space of vector-valued functions.
+The form $a : V_h^1 \times V_h^2  \rightarrow \R$ is bilinear and
+thus $r = 2$. Furthermore, the form does not depend on any
+coefficients and thus $n=0$.   
 \end{example}
 
 \begin{example}
 \label{example:nonlinearconv}
 Another common form in fluid flow (with variable density) is: 
 \begin{equation}
-a(v,u;w,\varrho) = ( \varrho \, w \cdot \nabla  u, v). 
+a(v,u;w,\varrho) = \int_{\Omega} v \, \varrho \, w \cdot \nabla  u \dx. 
 \end{equation}
 Here, $v\in V_h^1,\ u \in V_h^2,\ w\in W_h^1, \ \varrho \in W_h^2$, where
-$V_h^1$, $V_h^2$, and $W_h^1$ are spaces of vector valued functions, while $W_h^2$ is a space of  
-scalar valued functions. 
+$V_h^1$, $V_h^2$, and $W_h^1$ are spaces of vector-valued functions, while $W_h^2$ is a space of  
+scalar-valued functions. 
 The form takes four arguments, where two of the arguments
-are coefficients, i.e.,
+are coefficients,
 \begin{equation}
 a : V_h^1 \times V_h^2 \times W_h^1 \times W_h^2 \rightarrow \R.
 \end{equation}
 Hence, $r=2$ and $n=2$. 
 \end{example}
 
-
 \begin{example}
 \label{example:rhs}
-The right hand side is: 
+The form corresponding to the right-hand side of Poisson's equation
+(and other scalar equations) is given by
 \begin{equation}
-a(v,f) = (v,f). 
+a(v; f) = \int_{\Omega} v f \dx.
 \end{equation}
-The form takes two arguments, one of them is a coefficient, i.e.,
+The form takes two arguments and one of them is a coefficient,
 \begin{equation}
 a : V_h^1 \times  W_h^1 \rightarrow \R.
 \end{equation}
-Hence, $r=1$, $n=1$. 
+Hence, $r = n = 1$.
 \end{example}
 
 \begin{example}
-The $H^1$ norm of the error $u-u_h$ squared is: 
+The $H^1$ norm of the error $e = U - u$ squared is: 
 \begin{equation}
-a(u,u_h) = (u-u_h, u-u_h) + (\nabla (u-u_h), \nabla(u-u_h))    
+a(U, u) = \int_{\Omega} (U - u)^2 + |\nabla (U - u)|^2 \dx.
 \end{equation}
-The form takes two arguments, both coefficients i.e.,
+The form takes two argumentsa and both are coefficients,,
 \begin{equation}
 a : W_h^1 \times  W_h^2 \rightarrow \R.
 \end{equation}
-This is a form with $r=0$, $n=2$. 
+Thus, $r=0$ and $n=2$. 
 \end{example}
-
-
 
 \section{Assembling the discrete operator}
 
