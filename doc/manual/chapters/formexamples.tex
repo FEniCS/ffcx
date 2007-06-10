@@ -1,16 +1,16 @@
-\chapter{Example Forms and Corresponding Generated Code}
-
+\chapter{Examples}
 
 \label{CodeGenExamples}
-In Section \ref{sec:Discretization} we listed various forms to illustrate the notation. We will now show code snippets from generated code to explain 
-the interface described in Section \ref{sec:interface}. 
+In Section \ref{sec:Discretization} we listed various forms to
+illustrate the notation. We will now show code snippets from generated
+code to explain the interface described in Section
+\ref{sec:interface}.
 
 We begin by listing a few examples on \texttt{cell\_integral}. 
 These code listings are only shown such that the reader get 
 a feeling for the look of it. The formulas are probably not
 very meaningful other than to illustrate their pattern. 
 All these examples are on the reference element in 2D. 
-
 
 \subsection{Taylor--Hood and the Divergence matrix} 
 Earlier in Example \ref{example:div}, we described  
@@ -28,9 +28,6 @@ The SyFi code for generating this form can be found in \\
 \texttt{src/syfi-demos/div\_form.py}.
 
 The code for \texttt{tabulate\_tensor} is then: 
-
-
-
 \begin{code}
 /// Tabulate the tensor for the contribution from a local cell
 void cell_itg__div_form__VectorLagrange_2__Lagrange_1_2D ::
@@ -93,7 +90,6 @@ $j$ relates to the $j$'th basis function of the pressure element.
 Notice here that \texttt{w} is not in use since there are no coefficients here. 
 Therefore, \texttt{form::num\_coefficients} is zero.
 
-
 \subsection{Nonlinear Convection with variable density} 
 In Example \ref{example:nonlinearconv} we described the
 form related to nonlinear convection with variable density. 
@@ -102,7 +98,6 @@ a(v,u; U,\varrho) = ( \varrho \, w \cdot \nabla  u, v).
 \end{equation}
 We assume for now that 
 $v, u \in \P_1^2$, $U\in P_0^2$, and  $\varrho \in P_0$.
-
 
 The SyFi code for generating this form can be found in \\
 \texttt{src/syfi-demos/conv\_form.py}.
@@ -163,7 +158,6 @@ void cell_itg__rhs_form__Lagrange_1_2D::
 The element tensor is here a vector of size 3, since $v$ is in $\P_2$. 
 The coefficient $f$ is represented by \texttt{w[0][0]}\ldots\texttt{w[0][2]}. 
 
-
 \subsection{The $H^1$-norm of the Error}
 \begin{equation}
 a(u,u_h) = (u-u_h, u-u_h) + (\nabla (u-u_h), \nabla(u-u_h))    
@@ -171,7 +165,6 @@ a(u,u_h) = (u-u_h, u-u_h) + (\nabla (u-u_h), \nabla(u-u_h))
 Here, both $u$ and $u_h$ are coefficients. However, $u_h$ is usually
 represeted as a finite element solution while $u$ is the analytical 
 solution represented as a function. 
-
 
 The SyFi code for generating this form can be found under \\ 
 \texttt{src/syfi-demos/h1\_error\_form.py}.
