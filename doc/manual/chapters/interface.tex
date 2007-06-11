@@ -162,27 +162,8 @@ vertex etc.
 
 \section{The class \texttt{ufc::function}}
 
-%%   /// This class defines the interface for a general tensor-valued function.
-
-%%   class function
-%%   {
-%%   public:
-
-%%     /// Constructor
-%%     function() {}
-
-%%     /// Destructor
-%%     virtual ~function() {}
-
-%%     /// Evaluate function at given point in cell
-%%     virtual void evaluate(double* values,
-%%                           const double* coordinates,
-%%                           const cell& c) const = 0;
-
-%%   };
-
 The class \texttt{ufc::function} is an interface for evaluation of
-general tensor-valued functions of spatial coordinates.
+general tensor-valued functions on the cells of a mesh.
 
 \begin{code}
 virtual void evaluate(double* values,
@@ -191,13 +172,23 @@ virtual void evaluate(double* values,
 \end{code}
 
 The only function in this class is \texttt{evaluate},
-which evaluates all the value components of the function in a single point.
-The output is placed in the array \texttt{values},
-while the input arguments are the \texttt{coordinates} of the point
-and the cell \texttt{c} in which this point is located.
+which evaluates all the value components of the function at a given
+point in a given cell of the mesh.
 
-See also the description of \texttt{ufc::finite\_element::evaluate\_dof}.
+The output of \texttt{evaluate} should be written to the array
+\texttt{values}. For a scalar-valued functon, a single value should be
+written to \texttt{values[0]}. For general tensor-valued functions,
+the values should be written in a flattened row-major ordering of the
+tensor values. Thus, for a function $f : K \rightarrow \R^2$ with $A =
+f(x)$ a $2 \times 2$ matrix, the array \texttt{values} should contain
+the values $A_{11}, A_{12}, A_{21}, A_{22}$.
 
+The input of \texttt{evalute} are the coordinates of a point in a cell and
+the UFC view of the cell containing the point.
+
+See also the description of
+\texttt{ufc::finite\_element::evaluate\_dof}
+below.
 
 \section{The class \texttt{ufc::finite\_element}}
 
