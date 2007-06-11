@@ -16,6 +16,7 @@ __license__  = "GNU GPL Version 2"
 # Python modules
 import sys
 import getopt
+import os.path
 
 # Enable ffc from within demo and sandbox without installation
 sys.path.append("../")
@@ -90,6 +91,10 @@ def main(argv):
     # Print a nice message
     if debuglevel > -1:
         version()
+
+    # Silly warning
+    if not os.path.join("foo", "bar") == "foo/bar":
+        debug("*** Warning: Please consider using another operating system ;-)")
 
     # Call parser and compiler for each file
     for filename in args:
