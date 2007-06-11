@@ -4,38 +4,34 @@
 % Write about all functions are const except a few and why
 % Write about the order in which we present the interface
 
-\section{A Short Remark On Design}
+\section{A short remark on design}
 
-UFC is organized as a minimalistic C++ class hierarcy
-for representing low-level abstractions in the finite 
+UFC is organized as a minimalistic C++ class hierarchy
+for representing low-level abstractions of the finite 
 element method. The functions in these classes are mainly of
-two types: 1) Functions returning dimensions,  which are typically 
+two types: (i) Functions returning dimensions, which are typically 
 used to allocate an array or check whether an existing array is of
-proper size and 2) Functions that fill the array according to 
+proper size and (ii) Functions that fill the array according to 
 the method and variational form. It is considered the user's or
 the assembly routine's responsibility to allocate and 
 deallocate arrays of proper size. 
-Consider for example the function for evaluating the i'th basis function 
+Consider for example the function for evaluating the $i$th basis function 
 in the class \texttt{finite\_element}:
 \begin{code}
 virtual void evaluate_basis(unsigned int i, double* values,
                             const double* coordinates,
                             const cell& c) const = 0;
 \end{code}
-This function assumes that the \texttt{values} has the 
-correct size, which is \texttt{value\_rank}.  
-Hence, UFC is a minimalistic C++ interface
-on top of flat C arrays that are passed around. 
-UFC assumes that these arrays are correctly allocated
-and deallocated elsewhere. 
+This function assumes that the array \texttt{values} has the 
+correct size, which may be obtained by calling the functions
+\texttt{value\_rank} and \texttt{value\_dimension}.
 
-The reason for choosing this design is that we want it
+We chose The reason for choosing this design is that we want it
 to be ``easy'' to create a UFC interface on top of existing finite
 element codes implemented in either Fortran/C/C++
 using other design patterns. It 
 should then be a small wrapper on top of already implemented
 functionality, since pointers to flat arrays are usually available.
-
 
 \section{Cell shapes}
 
