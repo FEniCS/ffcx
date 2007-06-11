@@ -6,17 +6,18 @@
 
 \section{A short remark on design}
 
-UFC is organized as a minimalistic C++ class hierarchy
-for representing low-level abstractions of the finite 
-element method. The functions in these classes are mainly of
-two types: (i) Functions returning dimensions, which are typically 
-used to allocate an array or check whether an existing array is of
-proper size and (ii) Functions that fill the array according to 
-the method and variational form. It is considered the user's or
-the assembly routine's responsibility to allocate and 
-deallocate arrays of proper size. 
-Consider for example the function for evaluating the $i$th basis function 
-in the class \texttt{finite\_element}:
+UFC is organized as a minimalistic C++ class hierarchy for
+representing low-level abstractions of the finite element method. The
+functions in these classes are mainly of two types: (i) Functions
+returning dimensions, which are typically used to allocate an array or
+check whether an existing array is of proper size and (ii) Functions
+that fill an array with values according to the method and variational
+form.
+
+It is considered the user's or the assembly routine's
+responsibility to allocate and deallocate arrays of proper size.
+Consider for example the function for evaluating the $i$th basis
+function in the class \texttt{finite\_element}:
 \begin{code}
 virtual void evaluate_basis(unsigned int i, double* values,
                             const double* coordinates,
@@ -26,17 +27,11 @@ This function assumes that the array \texttt{values} has the
 correct size, which may be obtained by calling the functions
 \texttt{value\_rank} and \texttt{value\_dimension}.
 
-We chose The reason for choosing this design is that we want it
-to be ``easy'' to create a UFC interface on top of existing finite
-element codes implemented in either Fortran/C/C++
-using other design patterns. It 
-should then be a small wrapper on top of already implemented
-functionality, since pointers to flat arrays are usually available.
+Thus, the UFC interface is a low-level interface that should be simple
+to integrate into an existing C++ finite element code, but which is
+probably not suitable to be exposed as part of an end-user interface.
 
 \section{Cell shapes}
-
-%%  /// Valid cell shapes
-%%  enum shape {interval, triangle, quadrilateral, tetrahedron, hexahedron};
 
 \begin{code}
 enum shape {interval,
@@ -44,48 +39,57 @@ enum shape {interval,
             tetrahedron, hexahedron};
 \end{code}
 
-This enumeration includes all cell shapes that have a UFC definition, see chapter \ref{chapter:meshTODO}.
-
+This enumeration includes all cell shapes that are covered by the UFC
+specification, see Chapter~\ref{sec:referencecells}.
 
 \section{The class \texttt{ufc::mesh}}
 
-The class \texttt{ufc::mesh} defines a data structure containing basic information about
-an unstuctured mesh. It is used for passing a minimal amount of information about the
-global mesh to some UFC functions, with no intrusion on how the mesh is represented.
+The class \texttt{ufc::mesh} defines a data structure containing basic
+information about an unstuctured mesh. It is used for passing a
+minimal amount of information about the global mesh to UFC
+functions.
 
 %%\subsection{The mesh dimensions}
-\subsection{The integers \texttt{topological\_dimension} and \texttt{geometric\_dimension}}
+\subsection{The integer \texttt{topological\_dimension}}
 
-%%     /// Topological dimension of the mesh
-%%     unsigned int topological_dimension;
+\begin{code}
+unsigned int topological_dimension;
+\end{code}
 
-The unsigned integer \texttt{topological\_dimension}
-specifies the topological dimension of the mesh, that is the
+The unsigned integer\texttt{topological\_dimension}
+specifies the topological dimension of the mesh, that is, the
 topological dimension of the cells of the mesh. For the supported
 cell shapes defined above, the topological dimensions are as follows:
-\texttt{interval} has dimension 0, \texttt{triangle} and
-\texttt{quadrilateral} have dimension 2, and tetrahedron and
-hexahedron have dimension 3.
+\texttt{interval} has dimension one, \texttt{triangle} and
+\texttt{quadrilateral} have dimension two, and tetrahedron and
+hexahedron have dimension three.
 
-%%     /// Geometric dimension of the mesh
-%%     unsigned int geometric_dimension;
+\subsection{The integer \texttt{geometric\_dimension}}
+
+\begin{code}
+unsigned int geometric_dimension;
+\end{code}
 
 The unsigned integer \texttt{geometric\_dimension} is the geometric dimension
-of the mesh, that is the dimension of the coordinates.
-This is usually equal to the topological dimension, but can differ f.ex. for
-a 2D surface mesh in a 3D space.
+of the mesh, that is, the dimension of the coordinates of the mesh vertices.
+Often, the geometric dimension is equal to the topological dimension,
+but they may differ. For example, one may have a topologically
+two-dimensional mesh embedded in three-dimensional space.
 
 \subsection{The array \texttt{num\_entities}}
-
-%%     /// Array of the global number of entities of each topological dimension
-%%     unsigned int* num_entities;
 
 \begin{code}
 unsigned int* num_entities;
 \end{code}
 
-TODO: write about \texttt{num\_entities}
-
+The array \texttt{num\_entities} should contain the number of entities
+within each topological dimension of the mesh (see
+Chapter~\ref{sec:referencecells}). Thus, for a mesh of tetrahedral
+cells, \texttt{num\_entitites[0]} should contain the number of
+vertices, \texttt{num\_entities[1]} should contain the number of edges
+(if they are needed, see below) and \texttt{num\_entities[2]} should
+contain the number of faces, and \texttt{num\_entities[3]} should
+contain the number of cells.
 
 \section{The class \texttt{ufc::cell}}
 
