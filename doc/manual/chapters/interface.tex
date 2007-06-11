@@ -61,7 +61,7 @@ specifies the topological dimension of the mesh, that is, the
 topological dimension of the cells of the mesh. For the supported
 cell shapes defined above, the topological dimensions are as follows:
 \texttt{interval} has dimension one, \texttt{triangle} and
-\texttt{quadrilateral} have dimension two, and tetrahedron and
+\texttt{quadri\-lateral} have dimension two, and tetrahedron and
 hexahedron have dimension three.
 
 \subsection{The integer \texttt{geometric\_dimension}}
@@ -93,52 +93,72 @@ contain the number of cells.
 
 \section{The class \texttt{ufc::cell}}
 
-The class \texttt{ufc::cell} defines the data structure for a cell in a mesh.
-Its intended use is not as a building block in a mesh data structure, but merely as a view
-of a single cell for argument passing with no intrusion on how the mesh is represented.
+The class \texttt{ufc::cell} defines the data structure for a cell in
+a mesh. Its intended use is not as a building block in a mesh data
+structure, but merely as a view of specific data for a single cell.
+It is used to pass cell data to UFC functions with a minimal amount of
+assumptions on how the computational mesh is represented and stored.
 
-%%   class cell
-%%   {
-%%   public:
+\subsection{The enum variable \texttt{cell\_shape}}
 
-%%     /// Constructor
-%%     cell(): cell_shape(interval),
-%%             topological_dimension(0), geometric_dimension(0),
-%%             entity_indices(0), coordinates(0) {}
+\begin{code}
+shape cell_shape;
+\end{code}
 
-%%     /// Destructor
-%%     virtual ~cell() {}
+The variable \texttt{cell\_shape} should be set to the corresponding
+\texttt{ufc::shape} for the cell (see above).
 
-%%     /// Shape of the cell
-%%     shape cell_shape;
+\subsection{The integer \texttt{topological\_dimension}}
 
-%%     /// Topological dimension of the mesh
-%%     unsigned int topological_dimension;
+\begin{code}
+unsigned int topological_dimension;
+\end{code}
 
-%%     /// Geometric dimension of the mesh
-%%     unsigned int geometric_dimension;
+The integer \texttt{topological\_dimension} should be set equal to the
+topological dimension of the cell (see above).
 
-%%     /// Array of global indices for the mesh entities of the cell
-%%     unsigned int** entity_indices;
+\subsection{The integer \texttt{geometric\_dimension}}
 
-%%     /// Array of coordinates for the vertices of the cell
-%%     double** coordinates;
+\begin{code}
+unsigned int geometric_dimension;
+\end{code}
 
-%%   };
+The integer \texttt{geometric\_dimension} should be set equal to the
+geometric dimension of the cell (see above).
 
-The cell has a \texttt{ufc::shape}, \texttt{topological\_dimension} and \texttt{geometric\_dimension},
-as well as two pointers to arrays \texttt{entity\_indices} and \texttt{coordinates}.
-Representing these arrays with pointers gives the implementer flexibility
-to fill in the cell structure efficiently in the assembly loop.
+\subsection{The array \texttt{entity\_indices}}
 
-TODO: describe 
-\texttt{entity\_indices}
+\begin{code}
+unsigned int** entity_indices;
+\end{code}
 
-The double pointer pointer \texttt{coordinates} points to an array of coordinates for the vertices of the cell.
-The order of the vertices on a particular cell shape is defined in chapter \ref{chapter:meshTODO}.
-%Within the assembly loop over all cells, these coordinates are filled in by the assembly software in 
-%the way that is most efficient for a particular mesh library.
+The array \texttt{entity\_indices} should contain the global indices
+for all entities of the cell (see Chapter~\ref{sec:referencecells}).
+The length of the array \texttt{entity\_indices} should be equal to
+the value of the variable \texttt{topological\_dimension} plus one.
 
+Thus, \texttt{entity\_indices[0]} should be an array containing the
+global indices of all the vertices of the cell,
+\texttt{entity\_indices[1]} should be an array containing the global
+indices of all the edges of the cell, etc. 
+
+Note that entity indices are not always needed for all entities of the
+cell. Which entities are needed is specified by the
+\texttt{ufc::dof\_map} class (see below).
+
+\subsection{The array \texttt{coordinates}}
+
+\begin{code}
+double** coordinates;
+\end{code}
+
+The array \texttt{coordinates} should contain the global coordinates
+for all vertices of the cell. The length of the array
+\texttt{coordinates} should be equal to number of vertices of the
+mesh. The length of the array \texttt{coordinates[0]} should be equal
+to the value of the variable \texttt{geometric\_dimension} and it
+should contain the $x_0$, $x_1$, \ldots coordinates of the first
+vertex etc.
 
 \section{The class \texttt{ufc::function}}
 
