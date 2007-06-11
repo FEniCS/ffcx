@@ -1,9 +1,11 @@
 "Code generation for the UFC 1.0 format with DOLFIN"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-03-24 -- 2007-05-07"
+__date__ = "2007-03-24 -- 2007-06-11"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
+
+# Modified by Kristian B. Oelgaard 2007
 
 # UFC code templates
 from ufc import *
@@ -75,6 +77,7 @@ def generate_header(prefix, options):
 
 #include <cmath>
 #include <stdexcept>
+#include <fstream>
 #include <ufc.h>%s
 """ % (FFC_VERSION, blas_warning, prefix.upper(), prefix.upper(), blas_include)
 

@@ -1,7 +1,7 @@
 "Code generator for quadrature representation"
 
 __author__ = "Kristian B. Oelgaard (k.b.oelgaard@tudelft.nl)"
-__date__ = "2007-03-16 -- 2007-06-01"
+__date__ = "2007-03-16 -- 2007-06-11"
 __copyright__ = "Copyright (C) 2007 Kristian B. Oelgaard"
 __license__  = "GNU GPL Version 2"
 
@@ -60,9 +60,12 @@ class QuadratureGenerator(CodeGenerator):
 
         # Generate code for element tensor(s)
         code += [Indent.indent(format["comment"]("Compute element tensor"))]
-        code += self.__generate_element_tensor(tensors, change_signs, None, None, Indent, format)
+#        code += self.__generate_element_tensor(tensors, change_signs, None, None, Indent, format)
+        c, members_code = self.__generate_element_tensor(tensors, change_signs, None, None, Indent, format)
 
-        return {"tabulate_tensor": code}
+        code += c
+
+        return {"tabulate_tensor": code, "members":members_code}
 
     def generate_exterior_facet_integral(self, form_representation, sub_domain, format):
         """Generate dictionary of code for exterior facet integral from the given
@@ -87,11 +90,14 @@ class QuadratureGenerator(CodeGenerator):
         cases = [None for i in range(num_facets)]
         for i in range(num_facets):
             case = [format_block_begin]
-            case += self.__generate_element_tensor(tensors[i], False, i, None, Indent, format)
+#            case += self.__generate_element_tensor(tensors[i], False, i, None, Indent, format)
+            # Assuming all tables have same dimensions for all facets
+            c, members_code = self.__generate_element_tensor(tensors[i], False, i, None, Indent, format)
+            case += c
             case += [format_block_end]
             cases[i] = case
 
-        return {"tabulate_tensor": (common, cases)}
+        return {"tabulate_tensor": (common, cases), "constructor":"// Do nothing", "members":members_code}
     
     def generate_interior_facet_integral(self, form_representation, sub_domain, format):
         """Generate dictionary of code for interior facet integral from the given
@@ -116,11 +122,14 @@ class QuadratureGenerator(CodeGenerator):
         for i in range(num_facets):
             for j in range(num_facets):
                 case = [format_block_begin]
-                case += self.__generate_element_tensor(tensors[i][j], False, i, j, Indent, format)
+#                case += self.__generate_element_tensor(tensors[i][j], False, i, j, Indent, format)
+                # Assuming all tables have same dimensions for all facet-facet combinations
+                c, members_code = self.__generate_element_tensor(tensors[i][j], False, i, j, Indent, format)
+                case += c
                 case += [format_block_end]
                 cases[i][j] = case
 
-        return {"tabulate_tensor": (common, cases)}
+        return {"tabulate_tensor": (common, cases), "constructor":"// Do nothing", "members":members_code}
 
     def __generate_element_tensor(self, tensors, sign_changes, facet0, facet1, Indent, format):
         "Construct quadrature code for element tensors"
@@ -148,7 +157,8 @@ class QuadratureGenerator(CodeGenerator):
 
         # Generate load_table.h if tables should be saved.
         if self.save_tables:
-            generate_load_table(tensors)
+            members_code = generate_load_table(tensors)
+#            generate_load_table(tensors)
 
 #        for points in group_tensors:
             # Loop tensors to generate tables
@@ -220,7 +230,7 @@ class QuadratureGenerator(CodeGenerator):
             if i + 1 < len(tensors):
                 element_code += [""]
 
-        return tabulate_code + element_code
+        return (tabulate_code + element_code, members_code)
 
     def __tabulate_weights(self, weights, tensor_number, Indent, format):
         "Generate table of quadrature weights"

@@ -1,9 +1,11 @@
 "Code generator for tensor representation"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-11-03 -- 2007-05-10"
+__date__ = "2004-11-03 -- 2007-06-11"
 __copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
+
+# Modified by Kristian B. Oelgaard 2007
 
 # FFC common modules
 from ffc.common.constants import *
@@ -46,7 +48,7 @@ class TensorGenerator(CodeGenerator):
         code += [""] + [format["comment"]("Compute element tensor")]
         code += self.__generate_element_tensor(terms, change_signs, format)
 
-        return {"tabulate_tensor": code}
+        return {"tabulate_tensor": code, "members":""}
 
     def generate_exterior_facet_integral(self, form_representation, sub_domain, format):
         """Generate dictionary of code for exterior facet integral from the given
@@ -70,7 +72,7 @@ class TensorGenerator(CodeGenerator):
         for i in range(num_facets):
             cases[i] = self.__generate_element_tensor(terms[i], False, format)
 
-        return {"tabulate_tensor": (code, cases)}
+        return {"tabulate_tensor": (code, cases), "members":""}
     
     def generate_interior_facet_integral(self, form_representation, sub_domain, format):
         """Generate dictionary of code for interior facet integral from the given
@@ -95,7 +97,7 @@ class TensorGenerator(CodeGenerator):
             for j in range(num_facets):
                 cases[i][j] = self.__generate_element_tensor(terms[i][j], False, format)
 
-        return {"tabulate_tensor": (code, cases)}
+        return {"tabulate_tensor": (code, cases), "members":""}
 
     def __generate_coefficients(self, terms, format):
         "Generate code for manipulating coefficients"

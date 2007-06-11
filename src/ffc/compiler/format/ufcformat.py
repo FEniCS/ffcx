@@ -1,9 +1,11 @@
 "Code generation for the UFC 1.0 format"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-01-08 -- 2007-05-15"
+__date__ = "2007-01-08 -- 2007-06-11"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
+
+# Modified by Kristian B. Oelgaard 2007
 
 # UFC code templates
 from ufc import *
@@ -411,7 +413,8 @@ def __generate_cell_integral(code, form_data, options, prefix, i):
     ufc_code["classname"] = "%s_cell_integral_%d" % (prefix, i)
 
     # Generate code for members
-    ufc_code["members"] = ""
+#    ufc_code["members"] = ""
+    ufc_code["members"] = __generate_body(code["members"])
 
     # Generate code for constructor
     ufc_code["constructor"] = "// Do nothing"
@@ -436,7 +439,8 @@ def __generate_exterior_facet_integral(code, form_data, options, prefix, i):
     ufc_code["classname"] = "%s_exterior_facet_integral_%d" % (prefix, i)
 
     # Generate code for members
-    ufc_code["members"] = ""
+#    ufc_code["members"] = ""
+    ufc_code["members"] = __generate_body(code["members"])
 
     # Generate code for constructor
     ufc_code["constructor"] = "// Do nothing"
@@ -464,7 +468,8 @@ def __generate_interior_facet_integral(code, form_data, options, prefix, i):
     ufc_code["classname"] = "%s_interior_facet_integral_%d" % (prefix, i)
 
     # Generate code for members
-    ufc_code["members"] = ""
+#    ufc_code["members"] = ""
+    ufc_code["members"] = __generate_body(code["members"])
 
     # Generate code for constructor
     ufc_code["constructor"] = "// Do nothing"

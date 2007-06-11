@@ -1,7 +1,7 @@
 "Code generator for quadrature representation"
 
 __author__ = "Kristian B. Oelgaard (k.b.oelgaard@tudelft.nl)"
-__date__ = "2007-03-16 -- 2007-06-01"
+__date__ = "2007-03-16 -- 2007-06-11"
 __copyright__ = "Copyright (C) 2007 Kristian B. Oelgaard"
 __license__  = "GNU GPL Version 2"
 
@@ -685,7 +685,7 @@ def generate_load_table(tensors):
     "Generate header to load psi tables"
 
     function = """
-void load_table(double A[][%d], const char* name, int m)
+void load_table(double A[][%d], const char* name, int m) const
 {
   std::ifstream in(name, std::ios::in);
   for (int i = 0; i < m; i++)
@@ -728,30 +728,38 @@ void load_table(double A[][%d], const char* name, int m)
             if not num_dofs in group_num_dofs:
                 group_num_dofs += [num_dofs]
 
-    try:
-        file = open("load_table.h", "r")
-        code = file.read()
-        code = code.split("\n")
-        file.close()
-    except IOError:
-        code = False
-    if not code:
+#    try:
+#        file = open("load_table.h", "r")
+#        code = file.read()
+#        code = code.split("\n")
+#        file.close()
+#    except IOError:
+#        code = False
+#    if not code:
         # Create code
-        code = "#include <fstream>"
-        for dof in group_num_dofs:
-            code += function %(dof,dof)
-    else:
-        for dof in group_num_dofs:
-            new_lines = function %(dof,dof)
-            new_lines = new_lines.split("\n")
-            if not new_lines[1] in code:
-                code += new_lines
+#        code = "#include <fstream>"
+#        for dof in group_num_dofs:
+#            code += function %(dof,dof)
+#    else:
+#        for dof in group_num_dofs:
+#            new_lines = function %(dof,dof)
+#            new_lines = new_lines.split("\n")
+#            if not new_lines[1] in code:
+#                code += new_lines
+#        code = "\n".join(code)
+    code = []
+    for dof in group_num_dofs:
+        new_lines = function %(dof,dof)
+        new_lines = new_lines.split("\n")
+        if not new_lines[1] in code:
+            code += new_lines
+    return "\n".join(code)
 
-        code = "\n".join(code)
     # Write code
-    file = open("load_table.h", "w")
-    file.write(code)
-    file.close()
+#    file = open("load_table.h", "w")
+#    file.write(code)
+#    file.close()
+
 
 def save_psis(tensors, facet0, facet1, Indent, format, tables):
     "Save psis tables instead of tabulating them"
@@ -776,6 +784,7 @@ std::cout << std::endl;
     format_end_line       = format["end line"]
     format_table          = format["table declaration"]
     format_float          = format["static float declaration"]
+#    format_float          = format["const float declaration"]
 
     # Get list of psis
 #    psis = tensor.Psis
@@ -852,14 +861,16 @@ std::cout << std::endl;
 #    code += [Indent.indent(load_int %("load") + format_end_line)]
     code += [Indent.indent(format["if"] + format["grouping"]("load"))]
     code += [Indent.indent(format["block begin"])]
-    code += [Indent.indent("std::cout << \"Loading tables\" << std::endl;")]
 
+    load_code = [Indent.indent("std::cout << \"Loading tables\" << std::endl;")]
     for load in loads:
         code += [Indent.indent(load + format_end_line)]
+#        load_code += [Indent.indent(load + format_end_line)]
 
     code += [(Indent.indent("load"),"0")]
 #    code += [Indent.indent("save();")]
     code += [Indent.indent(format["block end"])]
+
 #    for output in outputs:
 #        code += [Indent.indent(output)]
 
