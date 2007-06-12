@@ -1,3 +1,70 @@
 \chapter{Installation}
+\label{app:installation}
+\index{installation}
 
-Need to write this
+\newcommand{\ufc}{UFC}
+
+The \ufc{} package consists of two parts, the main part being a single header file called ufc.h.
+In addition we have provided a set of Python utilities to simplify the generation of \ufc{} compliant code.
+
+%The package is portable and should work on any system with a standard Python installation.
+Questions, bug reports and patches concerning
+the installation should be directed to the
+\ufc{} mailing list at the address
+\begin{code}
+ufc-dev@fenics.org
+\end{code}
+
+\ufc{} must currently be installed directly from source, but Debian
+(Ubuntu) packages will be available in the future, for \ufc{} and
+other \fenics{} components.
+
+%------------------------------------------------------------------------------
+
+\section{Installing from source}
+
+\subsection{Dependencies and requirements}
+\index{dependencies}
+
+The installation system is based on distutils, and should work on any system with a standard Python installation.
+
+\subsubsection{Installing Python}
+
+If Python is not installed on your system, it can be downloaded from
+\begin{code}
+http://www.python.org/
+\end{code}
+Follow the installation instructions for Python given on the Python web page.
+For Debian (Ubuntu) users, the package to install is named \texttt{python}.
+
+\subsection{Installing \ufc{}}
+
+\ufc{} follows the standard installation procedure for Python
+packages. Enter the source directory of \ufc{} and issue the
+following command:
+\begin{code}
+# python setup.py install
+\end{code}
+This will install the \ufc{} utility Python package in a subdirectory
+called \texttt{ufc} in the default location for user-installed Python
+packages (usually something like \texttt{/usr/lib/python2.5/site-packages}).
+In addition, the header file ufc.h will be
+installed in the include/ directory next to the default location for user-installed Python scripts
+(usually in \texttt{/usr/include}).
+
+To install \ufc{} under a different directory, for example if you don't have root access to the system you're using, type
+\begin{code}
+# python setup.py --prefix=~/local install 
+\end{code}
+This installs the \ufc{} header file in the directory \texttt{\~{}/local/include} and the Python utilities under \texttt{\~{}/local/lib/python}.
+If you use this option, make sure to add \texttt{\~{}/local/lib/python} to the environment variable \texttt{PYTHONPATH}
+and to add \texttt{\~{}/local/lib/pkgconfig} to the \texttt{PKG\_CONFIG\_PATH} environment variable.
+
+
+%------------------------------------------------------------------------------
+%\section{Debian (Ubuntu) package}
+%\index{Debian package}
+%\index{Ubuntu package}
+
+%Debian packages for simpler installation of \fenics{} packages are in preparation and will be available in the future.
+
