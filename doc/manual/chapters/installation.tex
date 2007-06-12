@@ -56,16 +56,15 @@ To install \ufc{} under a different directory, for example if you don't have roo
 \begin{code}
 # python setup.py --prefix=~/local install 
 \end{code}
-This installs the \ufc{} package in the directories \texttt{\~{}/local/include} and \texttt{\~{}/local/lib/python}.
-If you use this option, make sure to set the environment variable \texttt{PYTHONPATH}
-to \texttt{\~{}/local/lib/python} and to add \texttt{\~{}/local/lib/pkgconfig}
-to the \texttt{PKG\_CONFIG\_PATH} environment variable.
+This installs the \ufc{} header file in the directory \texttt{\~{}/local/include} and the Python utilities under \texttt{\~{}/local/lib/python}.
+If you use this option, make sure to add \texttt{\~{}/local/lib/python} to the environment variable \texttt{PYTHONPATH}
+and to add \texttt{\~{}/local/lib/pkgconfig} to the \texttt{PKG\_CONFIG\_PATH} environment variable.
 
 
 %------------------------------------------------------------------------------
-\section{Debian (Ubuntu) package}
-\index{Debian package}
+%\section{Debian (Ubuntu) package}
+%\index{Debian package}
 %\index{Ubuntu package}
 
-Debian packages for simpler installation of \fenics{} packages are in preparation and will be available in the future.
+%Debian packages for simpler installation of \fenics{} packages are in preparation and will be available in the future.
 
