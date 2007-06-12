@@ -546,27 +546,24 @@ copy of the dof map element itself.
 
 \section{The integral classes}
 
-The computation of the element tensor $A^K$ on a cell $K$ is split into computation of
-contributions from several integrals, as seen in equation \eqref{eq:form_integrals}.
-Each of the three types of integrals is represented with its own class.
-All three integral classes have a single function \texttt{tabulate\_tensor} which
-computes the tensor values $A_i^K$.
+As described in Section~\ref{sec:assembly}, the global sparse tensor
+(the ``stiffness matrix'') representing a given form (differential
+operator) may be assembled by summing the contributions from the local
+cells, exterior facets and interior facets of the mesh.
 
-For all types of integrals, the coefficient array \texttt{w[i][j]} contains the
-arguments to the form. Each argument $w_i$, $0\le i<n$, is a function that resides in a 
-particular finite element space. For a given argument i, the local degrees of freedom for $w_i$
-is represented by \texttt{w[i][j]}, $0 \le j < d_i$, with $d_i$ being the local dimension of
-the finite element space for argument i.
-
-Note that, to support coefficient functions which should be evaluated in quadrature points
-for use in a quadrature-based implementation of \texttt{tabulate\_tensor()},
-an implementation of \texttt{finite\_element} and \texttt{dof\_map}
-can be written were the degrees of freedom are the values of $f$ in each
-quadrature point. For example, \texttt{finite\_element::evaluate\_dof(j, f, ...)}
-would evaluate the function f in quadrature point j, and \texttt{w[i][j]} would contain
-the value of $f=w_i$ in quadrature point $x_j$.
+These contributions are represented in the UFC interface by the
+classes \texttt{cell\_integral}, \texttt{exterior\_facet\_integral}
+and \texttt{interior\_facet\_integral}. Each of these three integral
+classes has a single function \texttt{tabulate\_tensor} which
+may be called to compute the corresponding local contribution (cell
+tensor, exterior facet tensor or interior facet tensor).
 
 \section{The class \texttt{ufc::cell\_integral}}
+
+The class \texttt{ufc::cell\_integral} represents the integral of a
+form over a local cell in a finite element mesh. It has a single
+function \texttt{tabulate\_tensor} which may be called to tabulate the
+values of the cell tensor for a given cell.
 
 \subsection{The function \texttt{tabulate\_tensor}}
 
@@ -576,22 +573,30 @@ virtual void tabulate_tensor(double* A,
                              const cell& c) const = 0;
 \end{code}
 
-This function computes the contribution to the local element tensor
-on the given cell from this cell integral.
-The size of this tensor is TODO
+This function tabulates the values of the cell tensor for a form into
+the given array \texttt{A}. The size of this array should be equal to
+the product of the local space dimensions for the set of finite
+element function spaces corresponding to the arguments of the
+form. For example, when computing the matrix for a bilinear form
+defined on piecewise linear elements on triangles, the space dimension
+of the local finite element is three and so the size of the array
+\texttt{A} should be $3 \times 3 = 9$.
+
+The array \texttt{w} should contain the expansion coefficients for all
+\emph{coefficients} of the form in the finite element nodal basis for
+each corresponding function space. Thus, the size of the array
+\texttt{w} should be equal to the number of coefficients~$n$ that the
+size of each each array \texttt{w[0]}, \texttt{w[1]} etc. should be
+equal to the space dimension of the corresponding local finite element
+space.
 
 \subsection{The class \texttt{ufc::exterior\_facet\_integral}}
 
-\begin{code}
-virtual void tabulate_tensor(double* A,
-                             const double * const * w,
-                             const cell& c,
-                             unsigned int facet) const = 0;
-\end{code}
-
-\section{The class \texttt{ufc::exterior\_facet\_integral}}
-
-\subsection{The function \texttt{tabulate\_tensor}}
+The class \texttt{ufc::exterior\_facet\_integral} represents the
+integral of a form over a local exterior facet (boundary facet) in a
+finite element mesh. It has a single function
+\texttt{tabulate\_tensor} which may be called to tabulate the values
+of the exterior facet tensor for a given facet.
 
 \begin{code}
 virtual void tabulate_tensor(double* A,
@@ -600,23 +605,29 @@ virtual void tabulate_tensor(double* A,
                              unsigned int facet) const = 0;
 \end{code}
 
-This function computes the contribution to the local element tensor
-on the given cell facet from this exterior facet integral.
-The size of this tensor is TODO
+The arrays \texttt{A} and \texttt{w} have the same function and should
+have the same sizes as described in the documentation for
+\texttt{cell\_integral::tabulate\_tensor}. Thus, the values of the
+exterior facet integral will be tabulated into the array \texttt{A}
+and the nodal basis expansions of all coefficients should be provided
+in the array \texttt{w}.
 
-\subsection{The class \texttt{ufc::interior\_facet\_integral}}
-
-\begin{code}
-virtual void tabulate_tensor(double* A,
-                             const double * const * w,
-                             const cell& c0,
-                             const cell& c1,
-                             unsigned int facet0,
-                             unsigned int facet1) const = 0;
-\end{code}
+An additional argument \texttt{facet} is required and should specify
+the local number of the facet with respect to its (single) incident
+cell. Thus, when the facet is an edge of triangle, the argument
+\texttt{facet} should be an integer between zero and two (0, 1, 2) and
+when the facet is a facet of a tetrahedron, the argument
+\texttt{facet} should be an integer betwen zero and three (0, 1, 2,
+3).
 
 \section{The class \texttt{ufc::interior\_facet\_integral}}
 
+The class \texttt{ufc::interior\_facet\_integral} represents the
+integral of a form over a local interior facet in a finite element
+mesh. It has a single function \texttt{tabulate\_tensor} which may be
+called to tabulate the values of the interior facet tensor for a given
+facet.
+
 \subsection{The function \texttt{tabulate\_tensor}}
 
 \begin{code}
@@ -628,9 +639,50 @@ virtual void tabulate_tensor(double* A,
                              unsigned int facet1) const = 0;
 \end{code}
 
-This function computes the contribution to the local element tensor
-on the given facet between two cells from this interior facet integral.
-The size of this tensor is TODO
+Just as for the \texttt{cell\_integral} and
+\texttt{exterior\_facet\_integral} classes, the
+\texttt{tabulate\_tensor} function for the class
+\texttt{interior\_facet\_integral} tabulates the values of the local
+(exterior facet) tensor into the array \texttt{A}, given the nodal
+basis expansions of the form coefficients in the array \texttt{w}.
+However, the interior facet tensor contains contributions from the two
+incident cells of an interior facet and thus the dimensions of these
+arrays are different.
+
+On each interior facet, the two incident (neighboring) cells form a
+``macro cell'' consisting of the total set of local basis functions on
+the two cells. The set of basis functions on the macro element is
+obtained by extending the basis functions on each of the two cells by
+zero to the macro cell. Thus, the space dimension of the finite
+element function space on the macro element is twice the size of the
+finite element function space on a single cell. The ordering of basis
+functions and degrees of freedom on the macro cell is obtained by
+first enumerating the basis functions and degrees of freedom on one of
+the two cells and then the basis functions and degrees of freedom on
+the second cell.
+
+Thus the size of the array \texttt{A} should be equal to the product
+of twice the local space dimensions for the set of finite element function
+spaces corresponding to the arguments of the form. For example, when
+computing the matrix for a bilinear form defined on piecewise linear
+elements on triangles, the space dimension of the local finite element
+is three and so the size of the array \texttt{A} should be $6 \times 6
+= 36$.
+
+Similarly, the array \texttt{w} should contain the expansion
+coefficients for all \emph{coefficients} of the form in the finite
+element nodal basis for each corresponding function space on the macro
+cell. Thus, the size of the array \texttt{w} should be equal to the
+number of coefficients~$n$ that the size of each each array
+\texttt{w[0]}, \texttt{w[1]} etc. should be equal to twice the space
+dimension of the corresponding local finite element space.
+
+Additional arguments \texttt{facet0} and \texttt{facet1} are required and should specify
+the local number of the facet with respect to its two incident
+cells. Thus, when the facet is an edge of triangle, each of these arguments
+may be an integer between zero and two (0, 1, 2) and
+when the facet is a facet of a tetrahedron, each of these arguments
+may be an integer betwen zero and three (0, 1, 2, 3).
 
 \section{The class \texttt{ufc::form}}
 
