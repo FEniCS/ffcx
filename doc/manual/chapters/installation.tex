@@ -48,25 +48,18 @@ following command:
 This will install the \ufc{} utility Python package in a subdirectory
 called \texttt{ufc} in the default location for user-installed Python
 packages (usually something like \texttt{/usr/lib/python2.5/site-packages}).
-In addition, the compiler executable (a Python script) will be
-installed in the default directory for user-installed Python scripts
-(usually in \texttt{/usr/bin}).
+In addition, the header file ufc.h will be
+installed in the include/ directory next to the default location for user-installed Python scripts
+(usually in \texttt{/usr/include}).
 
-To see a list of optional parameters to the installation script, type
+To install \ufc{} under a different directory, for example if you don't have root access to the system you're using, type
 \begin{code}
-# python setup.py install --help
+# python setup.py --prefix=~/local install 
 \end{code}
-If you don't have root access to the system you are using, you can
-pass the \texttt{--home} option to the installation script to install
-\ufc{} in your home directory:
-\begin{code}
-# mkdir ~/local
-# python setup.py install --home ~/local
-\end{code}
-This installs the \ufc{} package in the directory \texttt{\~{}/local/lib/python}.
+This installs the \ufc{} package in the directories \texttt{\~{}/local/include} and \texttt{\~{}/local/lib/python}.
 If you use this option, make sure to set the environment variable \texttt{PYTHONPATH}
-to \texttt{\~{}/local/lib/python} and to add \texttt{\~{}/local/bin}
-to the \texttt{PATH} environment variable.
+to \texttt{\~{}/local/lib/python} and to add \texttt{\~{}/local/lib/pkgconfig}
+to the \texttt{PKG\_CONFIG\_PATH} environment variable.
 
 
 %------------------------------------------------------------------------------
