@@ -1,3 +1,5 @@
+\index{numbering}
+
 The UFC specification dictates a certain ordering of the vertices,
 edges etc. of the cells of a finite element mesh. First, an \emph{ad
 hoc} ordering is picked for the vertices of each cell. Then, the
@@ -5,6 +7,8 @@ remaining entities are ordered based on a simple rule, as described in
 detail below.
 
 \section{Basic concepts}
+\index{mesh entity}
+\index{topological dimension}
 
 The topological entities of a cell (or mesh) are referred to as
 \emph{mesh entities}. A mesh entity can be identified by a pair
@@ -51,6 +55,7 @@ $c_0 = (3, 0)$.
 \end{table}
 
 \section{Numbering of vertices}
+\index{vertex numbering}
 
 For simplicial cells (intervals, triangles and tetrahedra) of a finite
 element mesh, the vertices are numbered locally based on the

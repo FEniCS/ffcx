@@ -1,9 +1,11 @@
 \chapter{Interface specification}
 \label{sec:interface}
+\index{interface}
 
 % Need to write about the Python utils somewhere, should be in appendix
 
 \section{A short remark on design}
+\index{design}
 
 UFC is organized as a minimalistic C++ class hierarchy for
 representing low-level abstractions of the finite element method. The
@@ -41,6 +43,7 @@ interface (the form compiler generating or the programmer implementing
 the UFC code). All but two functions (\texttt{init\_mesh} and
 \texttt{init\_cell}) are \texttt{const}, meaning that calling these
 \texttt{const} functions will leave the UFC objects unchanged.
+\index{ufc.h}
 
 The interface is presented below in the same order in which it is
 defined in the header file \texttt{ufc.h}. Thus, the interface is
@@ -49,6 +52,12 @@ structures and ending with the definition of the \texttt{ufc::form}
 interface class.
 
 \section{Cell shapes}
+\index{Cell shapes}
+\index{\texttt{interval}}
+\index{\texttt{triangle}}
+\index{\texttt{quadrilateral}}
+\index{\texttt{tetrahedron}}
+\index{\texttt{hexahedron}}
 
 \begin{code}
 enum shape {interval,
@@ -62,6 +71,7 @@ This enumeration includes all cell shapes that are covered by the UFC
 specification, see Chapter~\ref{sec:referencecells}.
 
 \section{The class \texttt{ufc::mesh}}
+\index{\texttt{ufc::mesh}}
 
 The class \texttt{ufc::mesh} defines a data structure containing basic
 information about an unstuctured mesh. It is used for passing a
@@ -109,6 +119,7 @@ contain the number of faces, and \texttt{num\_entities[3]} should
 contain the number of cells.
 
 \section{The class \texttt{ufc::cell}}
+\index{\texttt{ufc::cell}}
 
 The class \texttt{ufc::cell} defines the data structure for a cell in
 a mesh. Its intended use is not as a building block in a mesh data
@@ -178,6 +189,7 @@ should contain the $x$, $y$, \ldots coordinates of the first vertex
 etc.
 
 \section{The class \texttt{ufc::function}}
+\index{\texttt{ufc::function}}
 
 The class \texttt{ufc::function} is an interface for evaluation of
 general tensor-valued functions on the cells of a mesh.
@@ -207,6 +219,7 @@ See also the description of
 \texttt{ufc::finite\_element::evaluate\_dof} below.
 
 \section{The class \texttt{ufc::finite\_element}}
+\index{\texttt{ufc::finite\_element}}
 
 The class \texttt{ufc::finite\_element} represents a finite element in
 the classical Ciarlet sense~\cite{Cia78}, or rather a particular
@@ -395,6 +408,7 @@ between zero and the number of sub elements
 itself.
 
 \section{The class \texttt{ufc::dof\_map}}
+\index{\texttt{ufc::dof\_map}}
 
 This class represents the local-to-global mapping of degrees of
 freedom (dofs), or rather one particular instance of such a mapping
@@ -582,6 +596,7 @@ called to compute the corresponding local contribution (cell tensor,
 exterior facet tensor or interior facet tensor).
 
 \section{The class \texttt{ufc::cell\_integral}}
+\index{\texttt{ufc::cell\_integral}}
 
 The class \texttt{ufc::cell\_integral} represents the integral of a
 form over a local cell in a finite element mesh. It has a single
@@ -589,6 +604,7 @@ function \texttt{tabulate\_tensor} which may be called to tabulate the
 values of the cell tensor for a given cell.
 
 \subsection{The function \texttt{tabulate\_tensor}}
+\index{\texttt{tabulate\_tensor}}
 
 \begin{code}
 virtual void tabulate_tensor(double* A,
@@ -614,6 +630,7 @@ equal to the space dimension of the corresponding local finite element
 space.
 
 \subsection{The class \texttt{ufc::exterior\_facet\_integral}}
+\index{\texttt{ufc::exterior\_facet\_integral}}
 
 The class \texttt{ufc::exterior\_facet\_integral} represents the
 integral of a form over a local exterior facet (boundary facet) in a
@@ -644,6 +661,7 @@ when the facet is a facet of a tetrahedron, the argument
 3).
 
 \section{The class \texttt{ufc::interior\_facet\_integral}}
+\index{\texttt{ufc::interior\_facet\_integral}}
 
 The class \texttt{ufc::interior\_facet\_integral} represents the
 integral of a form over a local interior facet in a finite element
@@ -708,6 +726,7 @@ and when the facet is a facet of a tetrahedron, each of these
 arguments may be an integer betwen zero and three (0, 1, 2, 3).
 
 \section{The class \texttt{ufc::form}}
+\index{\texttt{ufc::form}}
 
 The \texttt{ufc::form} class is the central part of the UFC interface
 and it represents a form

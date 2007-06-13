@@ -8,6 +8,8 @@ element variational forms and define the concepts which the UFC
 interface is based on.
 
 \section{An introductory example}
+\index{Poisson's equation}
+\index{variational problem}
 
 As an introduction, consider Poisson's equation,
 \begin{equation}
@@ -17,9 +19,9 @@ As an introduction, consider Poisson's equation,
   u &= 0, \quad \mbox{ on } \partial\Omega.
   \end{split}
 \end{equation}
-For $v \in \hat{V}$ a test function, we multiply (\ref{eq:poisson})
-by $v$ and integrate by parts to obtain the variational problem: Find
-$u \in V$ such that
+For $v \in \hat{V}$ a test function, we multiply (\ref{eq:poisson}) by
+$v$ and integrate by parts to obtain the variational problem: Find $u
+\in V$ such that
 \begin{equation} \label{eq:poissonvariational}
   \int_{\Omega} \nabla v \cdot \nabla u \dx = \int_{\Omega} v f \dx
   \quad \forall v \in \hat{V},
@@ -28,17 +30,18 @@ which we may restate as: Find $u \in V$ such that
 \begin{equation}
   a(v, u) = L(v) \quad \forall v \in \hat{V},
 \end{equation}
-where the \emph{bilinear form} $a : \hat{V} \times V \rightarrow
-\R$ is given by
+where the \emph{bilinear form} $a : \hat{V} \times V \rightarrow \R$
+is given by
 \begin{equation}
   a(v, u) = \int_{\Omega} \nabla v \cdot \nabla u \dx,
 \end{equation}
-and the \emph{linear form} $L : \hat{V} \rightarrow \R$ is given
-by
+and the \emph{linear form} $L : \hat{V} \rightarrow \R$ is given by
 \begin{equation}
   L(v) = \int_{\Omega} v f \dx.
 \end{equation}
 
+\index{test space}
+\index{trial space}
 By replacing the test space $\hat{V}$ and the trial space $V$ with a
 pair of discrete test and trial spaces $\hat{V}_h$ and $V_h$, we
 obtain the discrete variational problem: Find $U \in V_h$ such that
@@ -70,6 +73,7 @@ where
 \section{Discretization of variational forms}
 
 \subsection{The Finite Element}
+\index{finite element}
 
 A finite element is mathematically defined as a triplet consisting
 of a polygon, a function space, and a set of linear functionals. 
@@ -96,6 +100,7 @@ In addition, our finite element will contain functionality
 for interpolation. 
 
 \subsection{Variational forms}
+\index{variational form}
 
 In general, we shall be concerned with the discretization of general
 variational forms of arity~$r > 0$,
@@ -158,6 +163,7 @@ and to an integral over an interior facet~$S$ as an \emph{interior facet integra
 
 \subsection{Discretization}
 \label{sec:Discretization}
+\index{discretization}
 
 To discretetize the form $a$, we let
 $\{\phi_i^1\}_{i=1}^{N^1},
@@ -180,6 +186,7 @@ For any given form of arity~$r$, the tensor~$A$ is a
 (typically sparse) tensor of rank~$r$ and dimension
 $|V_h^1| \times |V_h^2| \times \ldots \times |V_h^r|
 = N^1 \times N^2 \times \ldots \times N^r$.
+\index{global tensor}
 
 Typically, the arity of the form~$a$ is $r = 0$, $r = 1$
 or $r = 2$. When $r = 0$, the corresponding (rank zero) tensor is a
@@ -264,6 +271,7 @@ Thus, $r=0$ and $n=2$.
 \end{example}
 
 \section{Assembling the discrete operator}
+\index{assembly}
 
 The standard algorithm~\cite{ZieTay67,Hug87,Lan99} for computing
 the global tensor~$A$ is known as \emph{assembly}; it is
@@ -334,6 +342,9 @@ where $A^K$ is the local \emph{cell tensor} on cell $K$ (the ``element
 stiffness matrix''). Similarly, we may sum the local contributions
 from the exterior and interior facets in the form of local
 \emph{exterior facet tensors} and \emph{interior facet tensors}.
+\index{cell tensor}
+\index{exterior facet tensor}
+\index{interior facet tensor}
 
 \begin{figure}[htbp]
   \begin{center}

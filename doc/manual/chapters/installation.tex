@@ -19,16 +19,12 @@ ufc-dev@fenics.org
 (Ubuntu) packages will be available in the future, for \ufc{} and
 other \fenics{} components.
 
-%------------------------------------------------------------------------------
-
-\section{Installing from source}
-
-\subsection{Dependencies and requirements}
+\section{Dependencies and requirements}
 \index{dependencies}
 
 The installation system is based on distutils, and should work on any system with a standard Python installation.
 
-\subsubsection{Installing Python}
+\subsection{Installing Python}
 
 If Python is not installed on your system, it can be downloaded from
 \begin{code}
@@ -37,7 +33,7 @@ http://www.python.org/
 Follow the installation instructions for Python given on the Python web page.
 For Debian (Ubuntu) users, the package to install is named \texttt{python}.
 
-\subsection{Installing \ufc{}}
+\section{Installing \ufc{}}
 
 \ufc{} follows the standard installation procedure for Python
 packages. Enter the source directory of \ufc{} and issue the
@@ -59,7 +55,6 @@ To install \ufc{} under a different directory, for example if you don't have roo
 This installs the \ufc{} header file in the directory \texttt{\~{}/local/include} and the Python utilities under \texttt{\~{}/local/lib/python}.
 If you use this option, make sure to add \texttt{\~{}/local/lib/python} to the environment variable \texttt{PYTHONPATH}
 and to add \texttt{\~{}/local/lib/pkgconfig} to the \texttt{PKG\_CONFIG\_PATH} environment variable.
-
 
 %------------------------------------------------------------------------------
 %\section{Debian (Ubuntu) package}
