@@ -1,8 +1,10 @@
 \chapter{Interface specification}
 \label{sec:interface}
 
-% Write about all functions are const except a few and why
+
 % Write about the order in which we present the interface
+
+% Need to write about the Python utils somewhere, should be in appendix
 
 \section{A short remark on design}
 
@@ -23,13 +25,31 @@ virtual void evaluate_basis(unsigned int i, double* values,
                             const double* coordinates,
                             const cell& c) const = 0;
 \end{code}
-This function assumes that the array \texttt{values} has the 
-correct size, which may be obtained by calling the functions
+This function assumes that the array \texttt{values} has the correct
+size, which may be obtained by calling the functions
 \texttt{value\_rank} and \texttt{value\_dimension}.
 
 Thus, the UFC interface is a low-level interface that should be simple
 to integrate into an existing C++ finite element code, but which is
 probably not suitable to be exposed as part of an end-user interface.
+
+The UFC interface is defined by a single header file \texttt{ufc.h}
+which define the central interface class \texttt{ufc::form} and a
+small set of auxiliary interface classes. In addition a pair of data
+structures \texttt{ufc::mesh} and \texttt{ufc::cell} are defined and
+used for passing data to the interface functions. All functions
+defined by the UFC interface are \emph{pure virtual}, meaning that
+these functions must be overloaded and implemented by the user of the
+interface (the form compiler generating or the programmer implementing
+the UFC code). All but two functions (\texttt{init\_mesh} and
+\texttt{init\_cell}) are \texttt{const}, meaning that calling these
+\texttt{const} functions will leave the UFC objects unchanged.
+
+The interface is presented below in the same order in which it is
+defined in the header file \texttt{ufc.h}. Thus, the interface is
+presented bottom-up, starting with the definition of basic data
+structures and ending with the definition of the \texttt{ufc::form}
+interface class.
 
 \section{Cell shapes}
 
@@ -46,8 +66,7 @@ specification, see Chapter~\ref{sec:referencecells}.
 
 The class \texttt{ufc::mesh} defines a data structure containing basic
 information about an unstuctured mesh. It is used for passing a
-minimal amount of information about the global mesh to UFC
-functions.
+minimal amount of information about the global mesh to UFC functions.
 
 \subsection{The integer \texttt{topological\_dimension}}
 
@@ -55,13 +74,12 @@ functions.
 unsigned int topological_dimension;
 \end{code}
 
-The unsigned integer\texttt{topological\_dimension}
-specifies the topological dimension of the mesh, that is, the
-topological dimension of the cells of the mesh. For the supported
-cell shapes defined above, the topological dimensions are as follows:
-\texttt{interval} has dimension one, \texttt{triangle} and
-\texttt{quadri\-lateral} have dimension two, and tetrahedron and
-hexahedron have dimension three.
+The unsigned integer\texttt{topological\_dimension} specifies the
+topological dimension of the mesh, that is, the topological dimension
+of the cells of the mesh. For the supported cell shapes defined above,
+the topological dimensions are as follows: \texttt{interval} has
+dimension one, \texttt{triangle} and \texttt{quadri\-lateral} have
+dimension two, and tetrahedron and hexahedron have dimension three.
 
 \subsection{The integer \texttt{geometric\_dimension}}
 
@@ -69,11 +87,12 @@ hexahedron have dimension three.
 unsigned int geometric_dimension;
 \end{code}
 
-The unsigned integer \texttt{geometric\_dimension} is the geometric dimension
-of the mesh, that is, the dimension of the coordinates of the mesh vertices.
-Often, the geometric dimension is equal to the topological dimension,
-but they may differ. For example, one may have a topologically
-two-dimensional mesh embedded in three-dimensional space.
+The unsigned integer \texttt{geometric\_dimension} is the geometric
+dimension of the mesh, that is, the dimension of the coordinates of
+the mesh vertices.  Often, the geometric dimension is equal to the
+topological dimension, but they may differ. For example, one may have
+a topologically two-dimensional mesh embedded in three-dimensional
+space.
 
 \subsection{The array \texttt{num\_entities}}
 
@@ -139,7 +158,7 @@ the value of the variable \texttt{topological\_dimension} plus one.
 Thus, \texttt{entity\_indices[0]} should be an array containing the
 global indices of all the vertices of the cell,
 \texttt{entity\_indices[1]} should be an array containing the global
-indices of all the edges of the cell, etc. 
+indices of all the edges of the cell, etc.
 
 Note that entity indices are not always needed for all entities of the
 cell. Which entities are needed is specified by the
@@ -156,8 +175,8 @@ for all vertices of the cell. The length of the array
 \texttt{coordinates} should be equal to number of vertices of the
 mesh. The length of the array \texttt{coordinates[0]} should be equal
 to the value of the variable \texttt{geometric\_dimension} and it
-should contain the $x$, $y$, \ldots coordinates of the first
-vertex etc.
+should contain the $x$, $y$, \ldots coordinates of the first vertex
+etc.
 
 \section{The class \texttt{ufc::function}}
 
@@ -170,9 +189,9 @@ virtual void evaluate(double* values,
                       const cell& c) const = 0;
 \end{code}
 
-The only function in this class is \texttt{evaluate},
-which evaluates all the value components of the function at a given
-point in a given cell of the mesh.
+The only function in this class is \texttt{evaluate}, which evaluates
+all the value components of the function at a given point in a given
+cell of the mesh.
 
 The output of \texttt{evaluate} should be written to the array
 \texttt{values}. For a scalar-valued functon, a single value should be
@@ -182,10 +201,11 @@ tensor values. Thus, for a function $f : K \rightarrow \R^2$ with $A =
 f(x)$ a $2 \times 2$ matrix, the array \texttt{values} should contain
 the values $A_{11}, A_{12}, A_{21}, A_{22}$.
 
-The input of \texttt{evalute} are the coordinates of a point in a cell and
-the UFC view of the cell containing the point.
+The input of \texttt{evalute} are the coordinates of a point in a cell
+and the UFC view of the cell containing the point.
 
-See also the description of \texttt{ufc::finite\_element::evaluate\_dof} below.
+See also the description of
+\texttt{ufc::finite\_element::evaluate\_dof} below.
 
 \section{The class \texttt{ufc::finite\_element}}
 
@@ -207,7 +227,7 @@ virtual const char* signature() const = 0;
 
 This function returns a signature string that uniquely identifies the
 finite element. This can be used to compare whether or not two given
-\texttt{ufc::fi\-nite\_element}s are equal.
+\texttt{ufc::fi\-nite\_element}s are identical.
 
 \subsection{The function \texttt{cell\_shape}}
 
@@ -235,10 +255,10 @@ the corresponding \texttt{ufc::dof\_map} (see below).
 virtual unsigned int value_rank() const = 0;
 \end{code}
 
-A finite element can have general tensor-valued basis functions.
-The function \texttt{value\_rank} returns the rank of the value space
-of the basis functions. For a scalar element, this function should
-return zero, for vector-valued functions it should return one, for
+A finite element can have general tensor-valued basis functions.  The
+function \texttt{value\_rank} returns the rank of the value space of
+the basis functions. For a scalar element, this function should return
+zero, for vector-valued functions it should return one, for
 matrix-valued functions it should return two, etc.
 
 \subsection{The function \texttt{value\_dimension}}
@@ -389,8 +409,8 @@ virtual const char* signature() const = 0;
 
 This function returns a signature string that uniquely identifies the
 finite element. This can be used to compare whether or not two given
-\texttt{ufc::dof\_map}s are equal. (This may be used to optimize the
-assembly of forms by caching previously computed dof maps.)
+\texttt{ufc::dof\_map}s are identical. (This may be used to optimize
+the assembly of forms by caching previously computed dof maps.)
 
 \subsection{The function \texttt{needs\_mesh\_entities}}
 
@@ -513,7 +533,7 @@ implementation of this function. For example, if a dof is defined as
 the integral over a facet, the midpoint of the facet can be used. If
 no other choice makes sense, the midpoint of the cell can be used as a
 last resort. This function must thus be used with care if
-non-Lagrangian elements are used. 
+non-Lagrangian elements are used.
 
 The size of the output array \texttt{coordinates} should be equal to
 the value returned by \texttt{local\_dimension()} and the size of each
@@ -541,8 +561,8 @@ virtual dof_map* create_sub_dof_map(unsigned int i) const = 0;
 This factory function constructs a \texttt{dof\_map} object for sub
 element \texttt{i}. The argument \texttt{i} must be a number between
 zero and the number of sub dof maps (\texttt{num\_sub\_dof\_maps})
-minus one. If the dof map is simple (non-nested), this function creates a
-copy of the dof map element itself.
+minus one. If the dof map is simple (non-nested), this function
+creates a copy of the dof map element itself.
 
 \section{The integral classes}
 
@@ -554,9 +574,9 @@ cells, exterior facets and interior facets of the mesh.
 These contributions are represented in the UFC interface by the
 classes \texttt{cell\_integral}, \texttt{exterior\_facet\_integral}
 and \texttt{interior\_facet\_integral}. Each of these three integral
-classes has a single function \texttt{tabulate\_tensor} which
-may be called to compute the corresponding local contribution (cell
-tensor, exterior facet tensor or interior facet tensor).
+classes has a single function \texttt{tabulate\_tensor} which may be
+called to compute the corresponding local contribution (cell tensor,
+exterior facet tensor or interior facet tensor).
 
 \section{The class \texttt{ufc::cell\_integral}}
 
@@ -662,12 +682,12 @@ the two cells and then the basis functions and degrees of freedom on
 the second cell.
 
 Thus the size of the array \texttt{A} should be equal to the product
-of twice the local space dimensions for the set of finite element function
-spaces corresponding to the arguments of the form. For example, when
-computing the matrix for a bilinear form defined on piecewise linear
-elements on triangles, the space dimension of the local finite element
-is three and so the size of the array \texttt{A} should be $6 \times 6
-= 36$.
+of twice the local space dimensions for the set of finite element
+function spaces corresponding to the arguments of the form. For
+example, when computing the matrix for a bilinear form defined on
+piecewise linear elements on triangles, the space dimension of the
+local finite element is three and so the size of the array \texttt{A}
+should be $6 \times 6 = 36$.
 
 Similarly, the array \texttt{w} should contain the expansion
 coefficients for all \emph{coefficients} of the form in the finite
@@ -677,49 +697,41 @@ number of coefficients~$n$ that the size of each each array
 \texttt{w[0]}, \texttt{w[1]} etc. should be equal to twice the space
 dimension of the corresponding local finite element space.
 
-Additional arguments \texttt{facet0} and \texttt{facet1} are required and should specify
-the local number of the facet with respect to its two incident
-cells. Thus, when the facet is an edge of triangle, each of these arguments
-may be an integer between zero and two (0, 1, 2) and
-when the facet is a facet of a tetrahedron, each of these arguments
-may be an integer betwen zero and three (0, 1, 2, 3).
+Additional arguments \texttt{facet0} and \texttt{facet1} are required
+and should specify the local number of the facet with respect to its
+two incident cells. Thus, when the facet is an edge of triangle, each
+of these arguments may be an integer between zero and two (0, 1, 2)
+and when the facet is a facet of a tetrahedron, each of these
+arguments may be an integer betwen zero and three (0, 1, 2, 3).
 
 \section{The class \texttt{ufc::form}}
 
-This class represents the central object in any UFC implementation.
-A \texttt{form} object can provide some basic information about the form,
-like the rank r and number of coefficients n.
-In addition, an object of this type can be used to construct matching
-implementations of all the other UFC classes with the use of factory functions.
-This includes an arbitrary number of integral objects,
-as well as one \texttt{finite\_element} and one \texttt{dof\_map} for
-each argument (r+n) to the form.
+The \texttt{ufc::form} class is the central part of the UFC interface
+and it represents a form
+\begin{equation}
+  a = a(v_1, \ldots, v_r; w_1, \ldots, w_n), 
+\end{equation}
+defined on the product space $V_h^1 \times V_h^2 \times \cdots \times
+V_h^r \times W_h^1 \times W_h^2 \times \cdots \times W_h^n$ of two
+sets $\{V_h^j\}_{j=1}^r, \{W_h^j\}_{j=1}^n$ of finite element function
+spaces on a triangulation $\mathcal{T}$ of a domain $\Omega \subset
+\R^d$.
 
-TODO: Need a separate section for the sub element concept.
-Some finite elements can be seen as composite elements with a number of sub elements.
-A vector element is an element with a value size larger than one,
-where each value component usually resides in the same function space.
-A mixed element can be seen as a vector element where each value
-component may reside in a different function space.
-Some times it is convenient to see these composite elements as one element,
-and other times it is necessary to extract one sub element at a time.
-
-In UFC we treat vector elements and mixed elements the same way, by allowing
-an element (and dof map) to contain sub elements (and sub dof maps).
-The composite element for argument i is what you get directly from
-\texttt{form::create\_finite\_element(i)} and \texttt{form::create\_dof\_map(i)}.
-To get access to the sub elements, see the documentation for
-\texttt{finite\_element} and \texttt{dof\_map}.
-TODO: Describe recursive sub elements with (v, p) as example.
+A \texttt{ufc::form} provides functions for accessing the rank~$r$ and
+number of coefficients~$n$ for a form, and factory functions for
+creating UFC objects for the corresponding cell integrals, exterior
+facet integrals, interior facet integrals, and all associated finite
+elements and dof maps (local-to-global mappings).
 
 \subsection{The function \texttt{signature}}
-
-This function returns a unique signature for the form.
-TODO: Requirements for the signature.
 
 \begin{code}
 virtual const char* signature() const = 0;
 \end{code}
+
+This function returns a signature string that uniquely identifies the
+form. This can be used to compare whether or not two given
+\texttt{ufc::forms}s are identical.
 
 \subsection{The function \texttt{rank}}
 
@@ -727,7 +739,8 @@ virtual const char* signature() const = 0;
 virtual unsigned int rank() const = 0;
 \end{code}
 
-This function returns the rank of the element tensors created by this form.
+This function returns the rank~$r$ of the global tensor generated by
+the form (arity of the form).
 
 \subsection{The function \texttt{num\_coefficients}}
 
@@ -735,9 +748,10 @@ This function returns the rank of the element tensors created by this form.
 virtual unsigned int num_coefficients() const = 0;
 \end{code}
 
-This function returns the number of coefficients for this form.
-Note that, for simplicity, all integrals in a form must have
-the same coefficients, even if they don't use them.
+This function returns the number of coefficients~$n$ for the form.
+Note that all integral terms of a form must have the same
+coefficients, even if not all coefficients are present in each term of
+the form.
 
 \subsection{The function \texttt{num\_cell\_integrals}}
 
@@ -745,7 +759,9 @@ the same coefficients, even if they don't use them.
 virtual unsigned int num_cell_integrals() const = 0;
 \end{code}
 
-This function returns the number of different cell integrals for this form.
+This function returns the number of different cell integrals for the
+form. A form may have an arbitrary number of integrals over disjoint
+sub domains of the mesh.
 
 \subsection{The function \texttt{num\_exterior\_facet\_integrals}}
 
@@ -753,7 +769,9 @@ This function returns the number of different cell integrals for this form.
 virtual unsigned int num_exterior_facet_integrals() const = 0;
 \end{code}
 
-This function returns the number of different exterior facet integrals for this form.
+This function returns the number of different exterior facet integrals
+for the form. A form may have an arbitrary number of integrals over
+disjoint sub domains of the mesh boundary.
 
 \subsection{The function \texttt{num\_interior\_facet\_integrals}}
 
@@ -761,7 +779,9 @@ This function returns the number of different exterior facet integrals for this 
 virtual unsigned int num_interior_facet_integrals() const = 0;
 \end{code}
 
-This function returns the number of different interior facet integrals for this form.
+This function returns the number of different interior facet integrals
+for the form. A form may have an arbitrary number of integrals over
+disjoint subset of the interior facets of the mesh.
 
 \subsection{The function \texttt{create\_finite\_element}}
 
@@ -769,11 +789,12 @@ This function returns the number of different interior facet integrals for this 
 virtual finite_element* create_finite_element(unsigned int i) const = 0;
 \end{code}
 
-This factory function constructs a \texttt{finite\_element} object for form argument i.
-A form with rank r and a number of coefficients n will have r+n arguments,
-such that this function returns the finite element object for coefficient $k$ if $i=r+k$,
-or for tensor axis $k$ if $i=k<r$. TODO: is axis the right word?
-The caller is responsible for deleting the returned object.
+This factory function constructs a \texttt{finite\_element} object for
+form argument \texttt{i}. A form with rank~$r$ and a number of
+coefficients~$n$ has $r + n$ arguments, such that this function
+returns the finite element object for tensor axis $i$ if $i < r$, or
+the finite element for coefficient $i - r$ if $i \geq r$.  The caller
+is responsible for deleting the returned object.
 
 \subsection{The function \texttt{create\_dof\_map}}
 
@@ -781,11 +802,12 @@ The caller is responsible for deleting the returned object.
 virtual dof_map* create_dof_map(unsigned int i) const = 0;
 \end{code}
 
-This factory function constructs a \texttt{dof\_map} object for form argument i.
-A form with rank r and a number of coefficients n will have r+n arguments,
-such that this function returns the finite element object for coefficient $k$ if $i=r+k$,
-or for tensor axis $k$ if $i=k<r$. TODO: is axis the right word?
-The caller is responsible for deleting the returned object.
+This factory function constructs a \texttt{dof\_map} object for form
+argument \texttt{i}. A form with rank~$r$ and a number of
+coefficients~$n$ has $r + n$ arguments, such that this function
+returns the dof map object for tensor axis $i$ if $i < r$, or the dof
+map for coefficient $i - r$ if $i \geq r$.  The caller is responsible
+for deleting the returned object.
 
 \subsection{The function \texttt{create\_cell\_integral}}
 
@@ -793,9 +815,9 @@ The caller is responsible for deleting the returned object.
 virtual cell_integral* create_cell_integral(unsigned int i) const = 0;
 \end{code}
 
-This factory function constructs a \texttt{cell\_integral} object for cell domain i.
-TODO: math syntax. Domain description?
-The caller is responsible for deleting the returned object.
+This factory function constructs a \texttt{cell\_integral} object for
+cell domain \texttt{i}. The caller is responsible for deleting the
+returned object.
 
 \subsection{The function \texttt{create\_exterior\_facet\_integral}}
 
@@ -803,9 +825,9 @@ The caller is responsible for deleting the returned object.
 virtual exterior_facet_integral* create_exterior_facet_integral(unsigned int i) const = 0;
 \end{code}
 
-This factory function constructs a \texttt{exterior\_facet\_integral} object for exterior facet domain i.
-TODO: math syntax. Domain description?
-The caller is responsible for deleting the returned object.
+This factory function constructs an \texttt{exterior\_facet\_integral}
+object for exterior facet domain \texttt{i}. The caller is responsible
+for deleting the returned object.
 
 \subsection{The function \texttt{create\_interior\_facet\_integral}}
 
@@ -813,8 +835,6 @@ The caller is responsible for deleting the returned object.
 virtual interior_facet_integral* create_interior_facet_integral(unsigned int i) const = 0;
 \end{code}
 
-This factory function constructs a \texttt{interior\_facet\_integral} object for interior facet domain i.
-TODO: math syntax. Domain description?
-The caller is responsible for deleting the returned object.
-
-% Need to write about the Python utils somewhere, should be in appendix
+This factory function constructs an \texttt{interior\_facet\_integral}
+object for interior facet domain \texttt{i}. The caller is responsible
+for deleting the returned object.
