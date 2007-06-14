@@ -49,6 +49,11 @@ from codegeneration.common.dofmap import *
 from format import ufcformat
 from format import dolfinformat
 
+import profile
+import hotshot
+from hotshot import stats
+import time
+
 def compile(forms, prefix="Form", representation=FFC_REPRESENTATION, output_language=FFC_LANGUAGE, options=FFC_OPTIONS):
     "Compile the given forms and/or elements"
 
@@ -218,7 +223,6 @@ def format_code(generated_forms, prefix, format, options):
     "Compiler phase 5: format code"
     debug_begin("Compiler phase 5: Formatting code")
 
-    # Format the pre-generated code
     format.write(generated_forms, prefix, options)
 
     debug_end()

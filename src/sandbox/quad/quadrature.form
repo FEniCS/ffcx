@@ -37,7 +37,8 @@ w = Function(element)
 #print v
 #print u
 #a = grad(w)[0]*v*u*dx
-a = w*dot(grad(v), grad(u))*dx + v*u*dx + w*v*u*dx
+#a = w*dot(grad(v), grad(u))*dx + v*u*dx + w*v*u*dx
+a = (w*w + dot(grad(w), grad(w)))*dx
 #a = v*u*ds + v*u*dx
 #a = dot(jump(v,n), grad(u))*ds + dot(grad(v), jump(u,n))*ds
 #a = dot(jump(v), jump(u))*dS

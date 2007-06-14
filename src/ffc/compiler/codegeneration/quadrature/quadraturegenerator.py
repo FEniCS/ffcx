@@ -37,7 +37,7 @@ class QuadratureGenerator(CodeGenerator):
         # Initialize common code generator
         CodeGenerator.__init__(self)
         self.optimise_level = 3
-        self.save_tables = True
+        self.save_tables = False
         self.unique_tables = True
 
     def generate_cell_integral(self, form_representation, sub_domain, format):
@@ -156,6 +156,7 @@ class QuadratureGenerator(CodeGenerator):
             name_map, tables = unique_tables(tensors, format)
 
         # Generate load_table.h if tables should be saved.
+        members_code = ""
         if self.save_tables:
             members_code = generate_load_table(tensors)
 #            generate_load_table(tensors)
@@ -194,6 +195,7 @@ class QuadratureGenerator(CodeGenerator):
 
             # Get dictionary of primary indices
             prim_dic = group_tensors[points]
+
             # Generate loop over primary indices
             for idims in prim_dic:
                 tensor_numbers = prim_dic[idims]
@@ -229,7 +231,6 @@ class QuadratureGenerator(CodeGenerator):
 
             if i + 1 < len(tensors):
                 element_code += [""]
-
         return (tabulate_code + element_code, members_code)
 
     def __tabulate_weights(self, weights, tensor_number, Indent, format):
@@ -302,8 +303,16 @@ class QuadratureGenerator(CodeGenerator):
         # Generate value
         value = format["floating point"](0.0)
 
-        # FIXME: quadrature only supports Linear and Bilinear forms
-        if (irank == 1):
+        # FIXME: quadrature only support Functionals and Linear and Bilinear forms
+        if (irank == 0):
+            code += [Indent.indent(format["comment"]("Reset value"))]
+
+            # Generate entry and name
+            entry = "0"
+            name =  format["element tensor quad"] + format["array access"](entry)
+            code += [(Indent.indent(name),value)]
+
+        elif (irank == 1):
             code += [Indent.indent(format["comment"]\
                     ("Reset values of the element tensor block"))]
 
@@ -332,7 +341,7 @@ class QuadratureGenerator(CodeGenerator):
 
             code += generate_loop(name, value, loop_vars, Indent, format)
         else:
-            raise RuntimeError, "Quadrature only supports Linear and Bilinear forms"
+            raise RuntimeError, "Quadrature only support Functionals and Linear and Bilinear forms"
 
         return code + [""]
 
@@ -389,8 +398,24 @@ class QuadratureGenerator(CodeGenerator):
         if sign_changes:
             value = add_sign(value, 0, [format["first free index"], format["second free index"]], format)
 
-        # FIXME: quadrature only supports Linear and Bilinear forms
-        if (irank == 1):
+        # FIXME: quadrature only support Functionals and Linear and Bilinear forms
+
+        if (irank == 0):
+            # Entry is zero because functional is a scalar value
+            entry = "0"
+            # Generate name
+            name =  format["element tensor quad"] + format["array access"](entry)
+            code += [Indent.indent(format["comment"]\
+                    ("Compute value (tensor/monomial term %d)" % (tensor_number,)))]
+
+            # Create boundaries for loop
+            loop_vars = secondary_loop
+            if secondary_loop:
+                code += generate_loop(name, value, loop_vars, Indent, format, format["add equal"])
+            else:
+                code += [format["add equal"](Indent.indent(name), value)]
+
+        elif (irank == 1):
             # Generate entry
             for i in range(irank):
                 for v in monomial.basisfunctions:
@@ -416,7 +441,6 @@ class QuadratureGenerator(CodeGenerator):
                 code += [format["add equal"](Indent.indent(name), value)]
 
         elif (irank == 2):
-
             entry = []
             # Generate entry
             for i in range(irank):
@@ -445,6 +469,6 @@ class QuadratureGenerator(CodeGenerator):
                 code += [format["add equal"](Indent.indent(name), value)]
 
         else:
-            raise RuntimeError, "Quadrature only supports Linear and Bilinear forms"
+            raise RuntimeError, "Quadrature only support Functionals and Linear and Bilinear forms"
 
         return code
