@@ -4,7 +4,6 @@ __copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # Modified by Garth N. Wells 2006
-# Modified by Marie E. Rognes (meg@math.uio.no) 2007
 
 # Python modules
 import time

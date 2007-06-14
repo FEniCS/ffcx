@@ -70,6 +70,14 @@ def abbreviate(dict):
         if not d[key]: del d[key]
     return d
 
+def intersection(list1, list2):
+    """ Naive intersection of two lists without using sets. Returns
+    the intersection."""
+    intersection = []
+    for element in list1:
+        if element in list2: intersection += [element]
+    return intersection
+
 if __name__ == "__main__":
 
     for p in permutations([0, 1, 2, 3]):

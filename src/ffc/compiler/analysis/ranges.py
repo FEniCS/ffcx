@@ -23,13 +23,8 @@ def determine_index_ranges(form):
     "Go through the form and set appropriate index ranges."
     debug("Determining the range of the indices...")
     for monomial in form.monomials:
-        # Skip constants for now (will be removed and replaced by DG(0) functions)
-        #for constant in monomial.constants:
-        #    set_range(constant.number, 0)
         for coefficient in monomial.coefficients:
             # The index corresponds to the summation space dimension
-            set_range(coefficient.n0, coefficient.e0.space_dimension())
-            set_range(coefficient.n1, coefficient.e1.space_dimension())
             set_range(coefficient.index, coefficient.e1.space_dimension())
         for transform in monomial.transforms:
             # The indices of the transforms correspond to the cell dimension

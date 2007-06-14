@@ -192,10 +192,7 @@ def contract_indices(m, n):
         i1 = indices[1].values()[0][0][1]
 
         # We only want to contract if each index value occurs once.
-        common_indices = []
-        for i in i0.range:
-            if i in i1.range: common_indices += [i]
-                
+        common_indices = intersection(i0.range, i1.range)
         if not common_indices:
             # Constucting the new monomial based on the old m:
             index = Index(i0) + Index(i1)
@@ -269,13 +266,11 @@ def diff(m, n, key = None):
         
     elif isinstance(m, Monomial) and isinstance(n, Monomial):
         # The difference between two monomials
-        constdiff = [] # Constants not yet considered.
         coeffids = ["coefficients[%d]" % i for i in range(len(m.coefficients))]
         coeffdiff = diff(m.coefficients, n.coefficients, coeffids)
         tids = ["transforms[%d]" % i for i in range(len(m.transforms))]
         tdiff = diff(m.transforms, n.transforms, tids)
-        dictionary = {'constants': constdiff, 'coefficients': coeffdiff,
-                      'transforms': tdiff}
+        dictionary = {'coefficients': coeffdiff, 'transforms': tdiff}
 
         # Treat the basis functions items separately:
         bids = ["basisfunctions[%d]." % i
