@@ -1,15 +1,15 @@
 \chapter{A basic UFC-based assembler}
 \label{app:assembly}
 
-Below, we include a sketch of a UFC-based implementation of assembly
+Below, we include a sketch of a UFC-based implementation of the assembly
 of the global tensor~$A$ by summing the local contributions from all
 cells. The contributions from all exterior and interior facets may be
 computed similarly.
 
- The implementation is incomplete and system specific details, such as
+The implementation is incomplete and system specific details such as
 interaction with mesh and linear algebra libraries have been
 omitted.\footnote{For an example of a complete implementation of a
-UFC-based assembler, refer to the source code of
+UFC-based assembler, we refer to the source code of
 DOLFIN~\cite{www:dolfin}, in particular class \texttt{Assembler} as
 implemented in \texttt{Assembler.cpp}.}
 

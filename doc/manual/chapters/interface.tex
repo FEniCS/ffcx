@@ -29,11 +29,11 @@ size, which may be obtained by calling the functions
 \texttt{value\_rank} and \texttt{value\_dimension}.
 
 Thus, the UFC interface is a low-level interface that should be simple
-to integrate into an existing C++ finite element code, but which is
-probably not suitable to be exposed as part of an end-user interface.
+to integrate into an existing C++ finite element code, but probably
+not suitable to be exposed as part of an end-user interface.
 
 The UFC interface is defined by a single header file \texttt{ufc.h}
-which define the central interface class \texttt{ufc::form} and a
+which defines the central interface class \texttt{ufc::form} and a
 small set of auxiliary interface classes. In addition a pair of data
 structures \texttt{ufc::mesh} and \texttt{ufc::cell} are defined and
 used for passing data to the interface functions. All functions
@@ -45,7 +45,7 @@ the UFC code). All but two functions (\texttt{init\_mesh} and
 \texttt{const} functions will leave the UFC objects unchanged.
 \index{ufc.h}
 
-The interface is presented below in the same order in which it is
+The interface is presented below in the same order as it is
 defined in the header file \texttt{ufc.h}. Thus, the interface is
 presented bottom-up, starting with the definition of basic data
 structures and ending with the definition of the \texttt{ufc::form}
@@ -74,7 +74,7 @@ specification, see Chapter~\ref{sec:referencecells}.
 \index{\texttt{ufc::mesh}}
 
 The class \texttt{ufc::mesh} defines a data structure containing basic
-information about an unstuctured mesh. It is used for passing a
+information about an unstructured mesh. It is used for passing a
 minimal amount of information about the global mesh to UFC functions.
 
 \subsection{The integer \texttt{topological\_dimension}}
@@ -83,12 +83,13 @@ minimal amount of information about the global mesh to UFC functions.
 unsigned int topological_dimension;
 \end{code}
 
-The unsigned integer\texttt{topological\_dimension} specifies the
+The unsigned integer \texttt{topological\_dimension} specifies the
 topological dimension of the mesh, that is, the topological dimension
 of the cells of the mesh. For the supported cell shapes defined above,
 the topological dimensions are as follows: \texttt{interval} has
 dimension one, \texttt{triangle} and \texttt{quadri\-lateral} have
-dimension two, and tetrahedron and hexahedron have dimension three.
+dimension two, and \texttt{tetrahedron} and \texttt{hexahedron} have
+dimension three.
 
 \subsection{The integer \texttt{geometric\_dimension}}
 
@@ -112,9 +113,9 @@ unsigned int* num_entities;
 The array \texttt{num\_entities} should contain the number of entities
 within each topological dimension of the mesh (see
 Chapter~\ref{sec:referencecells}). Thus, for a mesh of tetrahedral
-cells, \texttt{num\_entitites[0]} should contain the number of
+cells, \texttt{num\_entities[0]} should contain the number of
 vertices, \texttt{num\_entities[1]} should contain the number of edges
-(if they are needed, see below) and \texttt{num\_entities[2]} should
+(if they are needed, see below), \texttt{num\_entities[2]} should
 contain the number of faces, and \texttt{num\_entities[3]} should
 contain the number of cells.
 
@@ -170,8 +171,8 @@ global indices of all the vertices of the cell,
 \texttt{entity\_indices[1]} should be an array containing the global
 indices of all the edges of the cell, etc.
 
-Note that entity indices are not always needed for all entities of the
-cell. Which entities are needed is specified by the
+Note that the entity indices are not always needed for all entities of
+the cell. The entities that are required will be specified by the
 \texttt{ufc::dof\_map} class (see below).
 
 \subsection{The array \texttt{coordinates}}
@@ -181,12 +182,11 @@ double** coordinates;
 \end{code}
 
 The array \texttt{coordinates} should contain the global coordinates
-for all vertices of the cell. The length of the array
-\texttt{coordinates} should be equal to number of vertices of the
-mesh. The length of the array \texttt{coordinates[0]} should be equal
-to the value of the variable \texttt{geometric\_dimension} and it
-should contain the $x$, $y$, \ldots coordinates of the first vertex
-etc.
+for all vertices of the cell and thus its length should be equal to
+number of vertices of the mesh. The length of the array
+\texttt{coordinates[0]} should be equal to the value of the variable
+\texttt{geometric\_dimension} and it should contain the $x$, $y$,
+\ldots coordinates of the first vertex etc.
 
 \section{The class \texttt{ufc::function}}
 \index{\texttt{ufc::function}}
@@ -205,15 +205,15 @@ all the value components of the function at a given point in a given
 cell of the mesh.
 
 The output of \texttt{evaluate} should be written to the array
-\texttt{values}. For a scalar-valued functon, a single value should be
+\texttt{values}. For a scalar-valued function, a single value should be
 written to \texttt{values[0]}. For general tensor-valued functions,
 the values should be written in a flattened row-major ordering of the
 tensor values. Thus, for a function $f : K \rightarrow \R^2$ with $A =
 f(x)$ a $2 \times 2$ matrix, the array \texttt{values} should contain
 the values $A_{11}, A_{12}, A_{21}, A_{22}$.
 
-The input of \texttt{evalute} are the coordinates of a point in a cell
-and the UFC view of the cell containing the point.
+The input to \texttt{evaluate} is the coordinates of a point in a cell
+and the UFC view of the cell containing that point.
 
 See also the description of
 \texttt{ufc::finite\_element::evaluate\_dof} below.
@@ -329,7 +329,7 @@ derivatives is $\frac{\partial^2}{\partial x\partial x},
 \frac{\partial^2}{\partial x\partial y}, \ldots,
 \frac{\partial^2}{\partial z\partial z}$. Thus, the derivatives are
 stored in a flattened row-major ordering based on the derivative
-spatial dimensons.
+spatial dimensions.
 
 For tensor-valued basis functions, the ordering of derivatives is
 row-major based on the value space dimensions followed by the
@@ -343,13 +343,14 @@ virtual double evaluate_dof(unsigned int i,
                             const cell& c) const = 0;
 \end{code}
 
-This function evaluates and returns the value degree of freedom
+This function evaluates and returns the value of the degree of freedom
 \texttt{i} (which is a linear functional) on the given function
 \texttt{f}.
   
-For example, the degrees of freedom for Lagrange finite element are
-given by evaluation at a set of points. Degrees of freedom may also be
-given by weighted integrals over facets, normal components etc.
+For example, the degrees of freedom for Lagrange finite elements are
+given by evaluation at a set of points. Other examples of degrees of
+freedom include weighted integrals over facets or normal components at
+facets.
 
 \subsection{The function \texttt{interpolate\_vertex\_values}}
 
@@ -381,14 +382,15 @@ one.
 A nested element is an element that is defined from a set of elements
 by taking the direct sum (tensor product) of the polynomial spaces of
 those elements. For example, the basis functions $\psi_1, \psi_2,
-\ldots$ of a vector-valued Lagrange element may be constructed from a
-scalar Lagrange element by repeating the basis functions $\phi_1,
-\psi_2, \ldots$ of the scalar element and padding with zeros: $\psi_1
-= (\phi_1, 0), \psi_2 = (\phi_2, 0), \ldots, (0, \phi_1), (0, \phi_2),
-\ldots$.
+\ldots, \psi_m$ of a vector-valued Lagrange element may be constructed
+from a scalar Lagrange element by repeating the basis functions
+$\phi_1, \phi_2, \ldots, \phi_n$ of the scalar element and padding
+with zeros: $\psi_1 = (\phi_1, 0), \psi_2 = (\phi_2, 0), \ldots,
+\psi_n = (\phi_n, 0), \psi_{n+1} = (0, \phi_1), \psi_{n+2} = (0,
+\phi_2), \ldots$.
 
 Finite elements may be nested at arbitrary depth. So for example, a
-mixed Taylor--Hood element may be created my combining a vector-valued
+mixed Taylor--Hood element may be created by combining a vector-valued
 quadratic Lagrange finite element with a scalar linear Lagrange finite
 element, and the vector-valued element may in turn be created by
 combining a set of scalar quadratic Lagrange elements.
@@ -401,7 +403,7 @@ create_sub_element(unsigned int i) const = 0;
 \end{code}
 
 This factory function constructs a \texttt{finite\_element} object for
-sub element \texttt{i}. The argument \texttt{i} must be a number
+sub element \texttt{i}. The argument \texttt{i} must be an integer
 between zero and the number of sub elements
 (\texttt{num\_sub\_elements}) minus one. If the element is simple
 (non-nested), this function creates a copy of the finite element
@@ -450,10 +452,10 @@ virtual bool init_mesh(const mesh& mesh) = 0;
 \end{code}
 
 This function initializes the dof map for a given mesh. If it returns
-true, initialization requires calls to \texttt{init\_cell} and
-\texttt{init\_cell\_finalize} to complete the initialization. Only
-initialization is complete may the function \texttt{global\_dimension}
-be called.
+true, calls to \texttt{init\_cell} and \texttt{init\_cell\_finalize}
+are required to complete the initialization. The function
+\texttt{global\_dimension} be may only be called when the
+initialization is complete.
 
 \subsection{The function \texttt{init\_cell}}
 
@@ -484,8 +486,8 @@ virtual unsigned int global_dimension() const = 0;
 
 This function returns the dimension of the global finite element space
 on the mesh that the \texttt{dof\_map} has been initialized for. The
-result of calling this function before initialition is complete is
-undefined.
+result of calling this function before the initialization is complete
+is undefined.
 
 \subsection{The function \texttt{local\_dimension}}
 
@@ -544,7 +546,7 @@ cell. For Lagrange elements, this function will tabulate a set of
 points on the given cell such that the dofs of the finite element are
 given by evaluation of the function at those points.
 
-For elements which do not have a direct relationship between
+For elements that do not have a direct relationship between
 coordinates and dofs, an attempt should be made at a sensible
 implementation of this function. For example, if a dof is defined as
 the integral over a facet, the midpoint of the facet can be used. If
@@ -624,7 +626,7 @@ of the local finite element is three and so the size of the array
 The array \texttt{w} should contain the expansion coefficients for all
 \emph{coefficients} of the form in the finite element nodal basis for
 each corresponding function space. Thus, the size of the array
-\texttt{w} should be equal to the number of coefficients~$n$ that the
+\texttt{w} should be equal to the number of coefficients~$n$ and the
 size of each each array \texttt{w[0]}, \texttt{w[1]} etc. should be
 equal to the space dimension of the corresponding local finite element
 space.
@@ -652,12 +654,12 @@ exterior facet integral will be tabulated into the array \texttt{A}
 and the nodal basis expansions of all coefficients should be provided
 in the array \texttt{w}.
 
-An additional argument \texttt{facet} is required and should specify
+The additional argument \texttt{facet} is required and should specify
 the local number of the facet with respect to its (single) incident
-cell. Thus, when the facet is an edge of triangle, the argument
+cell. Thus, when the facet is an edge of a triangle, the argument
 \texttt{facet} should be an integer between zero and two (0, 1, 2) and
 when the facet is a facet of a tetrahedron, the argument
-\texttt{facet} should be an integer betwen zero and three (0, 1, 2,
+\texttt{facet} should be an integer between zero and three (0, 1, 2,
 3).
 
 \section{The class \texttt{ufc::interior\_facet\_integral}}
@@ -684,7 +686,7 @@ Just as for the \texttt{cell\_integral} and
 \texttt{exterior\_facet\_integral} classes, the
 \texttt{tabulate\_tensor} function for the class
 \texttt{interior\_facet\_integral} tabulates the values of the local
-(exterior facet) tensor into the array \texttt{A}, given the nodal
+(interior facet) tensor into the array \texttt{A}, given the nodal
 basis expansions of the form coefficients in the array \texttt{w}.
 However, the interior facet tensor contains contributions from the two
 incident cells of an interior facet and thus the dimensions of these
@@ -714,16 +716,16 @@ Similarly, the array \texttt{w} should contain the expansion
 coefficients for all \emph{coefficients} of the form in the finite
 element nodal basis for each corresponding function space on the macro
 cell. Thus, the size of the array \texttt{w} should be equal to the
-number of coefficients~$n$ that the size of each each array
+number of coefficients~$n$ and the size of each each array
 \texttt{w[0]}, \texttt{w[1]} etc. should be equal to twice the space
 dimension of the corresponding local finite element space.
 
 Additional arguments \texttt{facet0} and \texttt{facet1} are required
 and should specify the local number of the facet with respect to its
-two incident cells. Thus, when the facet is an edge of triangle, each
+two incident cells. Thus, when the facet is an edge of a triangle, each
 of these arguments may be an integer between zero and two (0, 1, 2)
 and when the facet is a facet of a tetrahedron, each of these
-arguments may be an integer betwen zero and three (0, 1, 2, 3).
+arguments may be an integer between zero and three (0, 1, 2, 3).
 
 \section{The class \texttt{ufc::form}}
 \index{\texttt{ufc::form}}
@@ -814,7 +816,7 @@ create_finite_element(unsigned int i) const = 0;
 
 This factory function constructs a \texttt{finite\_element} object for
 form argument \texttt{i}. A form with rank~$r$ and a number of
-coefficients~$n$ has $r + n$ arguments, such that this function
+coefficients~$n$ has $r + n$ arguments, so this function
 returns the finite element object for tensor axis $i$ if $i < r$, or
 the finite element for coefficient $i - r$ if $i \geq r$.  The caller
 is responsible for deleting the returned object.
@@ -828,7 +830,7 @@ create_dof_map(unsigned int i) const = 0;
 
 This factory function constructs a \texttt{dof\_map} object for form
 argument \texttt{i}. A form with rank~$r$ and a number of
-coefficients~$n$ has $r + n$ arguments, such that this function
+coefficients~$n$ has $r + n$ arguments, so this function
 returns the dof map object for tensor axis $i$ if $i < r$, or the dof
 map for coefficient $i - r$ if $i \geq r$.  The caller is responsible
 for deleting the returned object.

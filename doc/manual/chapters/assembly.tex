@@ -4,7 +4,7 @@
 \newtheorem{example}{\small{\sc{Example}}}[section]
 
 In this section, we present a general algorithm for assembly of finite
-element variational forms and define the concepts which the UFC
+element variational forms and define the concepts that the UFC
 interface is based on.
 
 \section{An introductory example}
@@ -48,13 +48,13 @@ obtain the discrete variational problem: Find $U \in V_h$ such that
 \begin{equation}
   a(v, U) = L(v) \quad \forall v \in \hat{V}_h.
 \end{equation}
-To obtain the discrete solution $U \in V_h$, we make an Ansatz
- for $U$ as a linear combination of a
+To obtain the discrete solution $U \in V_h$, we make an ansatz
+ for $U$ to be expressed as a linear combination of a
 suitable set of basis functions $\{\phi_j\}_{j=1}^N$ for $V_h$,
 \begin{equation}
   U(x) = \sum_{j=1}^N U_j \phi_j(x),
 \end{equation}
-and take $v = \phi_i$ for $i = 1,2,\ldots,N$ for
+and take $v = \hat \phi_i$ for $i = 1,2,\ldots,N$ for
 $\{\hat{\phi}_i\}_{i=1}^N$ a set of basis functions for the test space
 $V_h$. We thus obtain the linear system
 \begin{equation}
@@ -84,9 +84,9 @@ With this definition of a finite element, the basis functions
 are implicitly defined as the solution of a linear system.
 
 We take our starting point in the standard Ciarlet
-definition~\cite{Cia78}, but consider a finite element with a fixet
+definition~\cite{Cia78}, but consider a finite element with a fixed
 set of basis functions.  These basis functions are pre-computed from
-the triplet mentioned above. Hence, we will refer to a finite
+the triplet introduced above. Hence, we will refer to a finite
 element as a collection of
 \begin{itemize}
 \item a polygon,  
@@ -116,10 +116,10 @@ We also often write this as
 \begin{equation}
 a = a(v_1, \ldots, v_r; w_1, \ldots, w_n), 
 \end{equation}
-where ';' is used to separate the $V_h$ spaces from the $W_h$ spaces. 
+where ';' is used to separate the $V_h$ spaces from the $W_h$ spaces.
 The distinction between the spaces $\{V_h^j\}_{j=1}^r$ and
-$\{W_h^j\}_{j=1}^n$ lies in how the discretization is made for each
-set of spaces. This will be explained below.
+$\{W_h^j\}_{j=1}^n$ lies in how each set of spaces is
+discretized. This will be explained in the following.
 
 In the simplest case, all function spaces are equal but there are many
 important examples, such as mixed methods, where it is important to
@@ -127,11 +127,11 @@ consider arguments coming from different function spaces.
 
 Let $\mathcal{T} = \{K\}$ be a set of disjoint \emph{cells} (a
 triangulation) partitioning a domain $\cup_{K\in\mathcal{T}} K =
-\Omega \subset \R^d$, let $\partial_e \mathcal{T}$ denote the set of
-\emph{exterior facets} (the set of cell facets
-incident with the boundary $\partial \Omega$), and let $\partial_i
-\mathcal{T}$ denote the set of $\emph{interior facets}$ (the set of
-cell facets non-incident with the boundary $\partial \Omega$).
+\Omega \subset \R^d$. Further, let $\partial_e \mathcal{T}$ denote the
+set of \emph{exterior facets} (the set of cell facets incident with
+the boundary $\partial \Omega$), and let $\partial_i \mathcal{T}$
+denote the set of $\emph{interior facets}$ (the set of cell facets
+non-incident with the boundary $\partial \Omega$).
 
 We shall assume that the variational form~(\ref{eq:variationalform})
 may be expressed as a sum of integrals over the cells~$\mathcal{T}$,
@@ -165,7 +165,7 @@ and to an integral over an interior facet~$S$ as an \emph{interior facet integra
 \label{sec:Discretization}
 \index{discretization}
 
-To discretetize the form $a$, we let
+To discretize the form $a$, we let
 $\{\phi_i^1\}_{i=1}^{N^1},
  \{\phi_i^2\}_{i=1}^{N^2}, \ldots,
  \{\phi_i^r\}_{i=1}^{N^r}$
@@ -263,7 +263,7 @@ The $H^1$ norm of the error $e = U - u$ squared is:
 \begin{equation}
 a(U, u) = \int_{\Omega} (U - u)^2 + |\nabla (U - u)|^2 \dx.
 \end{equation}
-The form takes two argumentsa and both are coefficients,,
+The form takes two arguments and both are coefficients,
 \begin{equation}
 a : W_h^1 \times  W_h^2 \rightarrow \R.
 \end{equation}
@@ -273,16 +273,15 @@ Thus, $r=0$ and $n=2$.
 \section{Assembling the discrete operator}
 \index{assembly}
 
-The standard algorithm~\cite{ZieTay67,Hug87,Lan99} for computing
-the global tensor~$A$ is known as \emph{assembly}; it is
-computed by iterating over the cells $\mathcal{T}$, 
-the exterior facets $\partial_e\mathcal{T}$ and
-interior facets $\partial_i\mathcal{T}$, and adding from each
-the local contribution to the global sparse tensor $A$.
+The standard algorithm~\cite{ZieTay67,Hug87,Lan99} for computing the
+global tensor~$A$ is known as \emph{assembly}; $A$ is computed by
+iterating over the cells $\mathcal{T}$, the exterior facets
+$\partial_e\mathcal{T}$ and interior facets $\partial_i\mathcal{T}$,
+and adding from each the local contributions.
 
-For simplicity, consider the assembly of the global sparse tensor~$A$
-corresponding to a form~$a$ given by a single integral
-over all cells $\mathcal{T}$,
+For illustration purposes, consider the assembly of the global sparse
+tensor~$A$ corresponding to a form~$a$ given by a single integral over
+all cells $\mathcal{T}$,
 \begin{equation}
   a(v_1, v_2, \ldots, v_r; w_1, w_2, \ldots, w_n) =
   \sum_{K\in\mathcal{T}} \int_K
