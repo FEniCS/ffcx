@@ -266,13 +266,11 @@ def diff(m, n, key = None):
         
     elif isinstance(m, Monomial) and isinstance(n, Monomial):
         # The difference between two monomials
-        constdiff = [] # Constants not yet considered.
         coeffids = ["coefficients[%d]" % i for i in range(len(m.coefficients))]
         coeffdiff = diff(m.coefficients, n.coefficients, coeffids)
         tids = ["transforms[%d]" % i for i in range(len(m.transforms))]
         tdiff = diff(m.transforms, n.transforms, tids)
-        dictionary = {'constants': constdiff, 'coefficients': coeffdiff,
-                      'transforms': tdiff}
+        dictionary = {'coefficients': coeffdiff, 'transforms': tdiff}
 
         # Treat the basis functions items separately:
         bids = ["basisfunctions[%d]." % i
