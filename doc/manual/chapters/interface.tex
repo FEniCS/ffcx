@@ -366,7 +366,7 @@ the expansion coefficients for some function in the nodal basis and
 computes the values of that function at the vertices of the given
 cell, storing those values in the array \texttt{vertex\_values}. If
 the function is tensor-valued, the values are stored in the array
-\texttt{dof\_values} row-major on the list of vertices followed by the
+\texttt{vertex\_values} row-major on the list of vertices followed by the
 row-major ordering of the tensor values as described above.
 
 \subsection{The function \texttt{num\_sub\_elements}}
@@ -439,7 +439,13 @@ virtual bool needs_mesh_entities(unsigned int d) const = 0;
 
 This function returns true if the \texttt{dof\_map} requires mesh
 entities of topological dimension \texttt{d} to be filled in
-\texttt{ufc::cell} arguments. This may be used to check which entities
+\texttt{ufc::cell} arguments. Thus, if this function returns false for
+a given value of \texttt{d}, then the array
+\texttt{entity\_indices[d]} of the \texttt{ufc::cell} data structure
+will not be used during calls to \texttt{ufc::dof\_map} functions. In
+those cases, the array \texttt{entity\_indices[d]} may be set to zero.
+
+This may be used to check which entities
 must be generated to tabulate the local-to-global mapping. For
 example, linear Lagrange elements will only need to know the vertices
 of each cell in the mesh, while quadratic Lagrange elements will also
