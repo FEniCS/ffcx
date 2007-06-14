@@ -1,4 +1,4 @@
-// This is UFC (Unified Form-assembly Code) v. 1.0-rc8.
+// This is UFC (Unified Form-assembly Code) v. 1.0-rc9.
 // This code is released into the public domain.
 //
 // The FEniCS Project (http://www.fenics.org/) 2006-2007.
@@ -6,7 +6,10 @@
 #ifndef __UFC_H
 #define __UFC_H
 
-const char UFC_VERSION[] = "1.0-rc7";
+#define UFC_VERSION_MAJOR 1
+#define UFC_VERSION_MINOR 0
+
+const char UFC_VERSION[] = "1.0-rc9";
 
 namespace ufc
 {
