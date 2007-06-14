@@ -315,8 +315,9 @@ class BasisFunction(Element):
         if isinstance(component, list):
             if not rank == len(component):
                 raise FormError, (component, "Illegal component index, does not match rank.")
+            # The Piola transform for the tensor case requires some thought.
             print "The Piola transform is not implemented in the tensor case!"
-            return self
+            return self.pick_component_default(component)
         if not rank == 1:
             raise FormError, (component, "Illegal component index, does not match rank.") 
 

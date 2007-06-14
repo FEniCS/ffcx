@@ -26,12 +26,9 @@ from removeunused import *
 
 # Choose map from restriction
 choose_map = {Restriction.PLUS: "0", Restriction.MINUS: "1", Restriction.CONSTANT: "0", None: ""}
-# Transform format options  based on the sign of the power of the transform:
-#transform_options = {Transform.JINV: lambda m, j, k: "Jinv%s_%d%d" % (m, j, k),
-#                     Transform.J: lambda m, j, k: "J%s_%d%d" % (m, k, j)}
 transform_options = {Transform.JINV: lambda m, j, k: "Jinv%s_%d%d" % (m, j, k),
                      Transform.J: lambda m, j, k: "J%s_%d%d" % (m, k, j)}
-# Options for the printing q or 1.0/q for q string:
+# Options for the printing q or 1.0/(q) for q string:
 power_options = {True: lambda q: q, False: lambda q: "1.0/(%s)" % q}
 
 # Specify formatting for code generation
@@ -135,8 +132,8 @@ format = { "add": lambda v: " + ".join(v),
            "transform Jinv": "Jinv",
 # snippets
            "coordinate map": lambda i: {2:map_coordinates_2D, 3:map_coordinates_3D}[i],
-           "call edge sign": lambda e: "sign_e%d" % e,
-           "snippet edge signs": lambda d: eval("edge_sign_snippet_%dD" % d),
+           "facet sign": lambda e: "sign_facet%d" % e,
+           "snippet facet signs": lambda d: eval("facet_sign_snippet_%dD" % d),
            "snippet dof map": evaluate_basis_dof_map,
            "snippet eta_triangle": eta_triangle_snippet,
            "snippet eta_tetrahedron": eta_tetrahedron_snippet,

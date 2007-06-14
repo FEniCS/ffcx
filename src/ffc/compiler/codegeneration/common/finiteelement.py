@@ -221,7 +221,7 @@ def __generate_interpolate_vertex_values(element, format):
                         # Add sign change if necessary
                         (entity_dim, entity) = dof_entities[n]
                         if entity_dim == 1:
-                            factors = [format["call edge sign"](entity)] + factors
+                            factors = [format["facet sign"](entity)] + factors
                         # Add term
                         if not basis_function == format["floating point"](0):
                             terms += [format["multiply"](factors)]
@@ -242,6 +242,6 @@ def __generate_interpolate_vertex_values(element, format):
     # Insert code for computing quantities needed for Piola mapping
     if need_piola:
         code.insert(0, format["snippet jacobian"](element.cell_dimension()) % {"restriction": ""})        
-        code.insert(1, format["snippet edge signs"](element.cell_dimension()))
+        code.insert(1, format["snippet facet signs"](element.cell_dimension()))
     
     return code

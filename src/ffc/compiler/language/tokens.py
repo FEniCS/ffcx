@@ -133,10 +133,12 @@ class Transform:
     def __repr__(self):
         "Print nicely formatted representation of Transform."
         [top, bottom] = ["dX", "dx"]
-        [index0, index1] = [self.index0.__repr__(), self.index1.__repr__()]
+        [tindex, bindex] = [self.index0.__repr__(), self.index1.__repr__()]
+        # If the transform represents dx/dX, we swap notation and indices:
         if self.type == self.J: 
-            [bottom,top] = [top, bottom]
-            [index1, index0] = [index0, index1]
+            [bottom, top] = [top, bottom]
+            [tindex, bindex] = [bindex, tindex]
+            
         restric = ""
         if self.restriction == None:
             restric = ""
@@ -149,4 +151,4 @@ class Transform:
         else:
             raise RuntimeError, "Wrong value for restriction of transform"
 
-        return "(" + top + index0 + "/" + bottom + index1 + ")" + restric
+        return "(" + top + tindex + "/" + bottom + bindex + ")" + restric
