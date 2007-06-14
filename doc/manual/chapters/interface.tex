@@ -596,7 +596,8 @@ The caller is responsible for deleting the returned object.
 
 \section{The integral classes}
 
-As described in Section~\ref{sec:assembly}, the global sparse tensor
+As described in Section~\ref{sec:assembly}, and in particular Equation
+\eqref{eq:form_integrals}, the global sparse tensor
 (the ``stiffness matrix'') representing a given form (differential
 operator) may be assembled by summing the contributions from the local
 cells, exterior facets and interior facets of the mesh.
@@ -630,19 +631,19 @@ the given array \texttt{A}. The size of this array should be equal to
 the product of the local space dimensions for the set of finite
 element function spaces corresponding to the arguments of the
 form. For example, when computing the matrix for a bilinear form
-defined on piecewise linear elements on triangles, the space dimension
+defined on piecewise linear scalar elements on triangles, the space dimension
 of the local finite element is three and so the size of the array
 \texttt{A} should be $3 \times 3 = 9$.
 
 The array \texttt{w} should contain the expansion coefficients for all
 \emph{coefficients} of the form in the finite element nodal basis for
 each corresponding function space. Thus, the size of the array
-\texttt{w} should be equal to the number of coefficients~$n$ and the
+\texttt{w} should be equal to the number of coefficients~$n$, and the
 size of each each array \texttt{w[0]}, \texttt{w[1]} etc. should be
 equal to the space dimension of the corresponding local finite element
 space.
 
-\subsection{The class \texttt{ufc::exterior\_facet\_integral}}
+\section{The class \texttt{ufc::exterior\_facet\_integral}}
 \index{\texttt{ufc::exterior\_facet\_integral}}
 
 The class \texttt{ufc::exterior\_facet\_integral} represents the
@@ -650,6 +651,9 @@ integral of a form over a local exterior facet (boundary facet) in a
 finite element mesh. It has a single function
 \texttt{tabulate\_tensor} which may be called to tabulate the values
 of the exterior facet tensor for a given facet.
+
+\subsection{The function \texttt{tabulate\_tensor}}
+\index{\texttt{tabulate\_tensor}}
 
 \begin{code}
 virtual void tabulate_tensor(double* A,
