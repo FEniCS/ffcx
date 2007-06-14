@@ -7,7 +7,7 @@
 \section{A short remark on design}
 \index{design}
 
-UFC is organized as a minimalistic C++ class hierarchy for
+UFC is organized as a minimalistic set of abstract C++ classes 
 representing low-level abstractions of the finite element method. The
 functions in these classes are mainly of two types: (i) Functions
 returning dimensions, which are typically used to allocate an array or
@@ -15,8 +15,8 @@ check whether an existing array is of proper size and (ii) Functions
 that fill an array with values according to the method and variational
 form.
 
-It is considered the user's or the assembly routine's
-responsibility to allocate and deallocate arrays of proper size.
+It is considered the assembly routine's responsibility
+to allocate and deallocate arrays of proper size.
 Consider for example the function for evaluating the $i$th basis
 function in the class \texttt{finite\_element}:
 \begin{code}
@@ -37,12 +37,12 @@ which defines the central interface class \texttt{ufc::form} and a
 small set of auxiliary interface classes. In addition a pair of data
 structures \texttt{ufc::mesh} and \texttt{ufc::cell} are defined and
 used for passing data to the interface functions. All functions
-defined by the UFC interface are \emph{pure virtual}, meaning that
-these functions must be overloaded and implemented by the user of the
-interface (the form compiler generating or the programmer implementing
-the UFC code). All but two functions (\texttt{init\_mesh} and
+defined by the UFC interface are \emph{pure virtual}, meaning that all
+these functions must be overloaded in each implementation of the classes.
+All but two functions (\texttt{init\_mesh} and
 \texttt{init\_cell}) are \texttt{const}, meaning that calling these
 \texttt{const} functions will leave the UFC objects unchanged.
+Input argument (pointers) are always \texttt{const}, while output arguments (pointers) are always non-\texttt{const}.
 \index{ufc.h}
 
 The interface is presented below in the same order as it is
@@ -83,7 +83,7 @@ minimal amount of information about the global mesh to UFC functions.
 unsigned int topological_dimension;
 \end{code}
 
-The unsigned integer \texttt{topological\_dimension} specifies the
+The unsigned integer \texttt{topological\_dimension} holds the
 topological dimension of the mesh, that is, the topological dimension
 of the cells of the mesh. For the supported cell shapes defined above,
 the topological dimensions are as follows: \texttt{interval} has
@@ -97,7 +97,7 @@ dimension three.
 unsigned int geometric_dimension;
 \end{code}
 
-The unsigned integer \texttt{geometric\_dimension} is the geometric
+The unsigned integer \texttt{geometric\_dimension} holds the geometric
 dimension of the mesh, that is, the dimension of the coordinates of
 the mesh vertices.  Often, the geometric dimension is equal to the
 topological dimension, but they may differ. For example, one may have
@@ -115,9 +115,12 @@ within each topological dimension of the mesh (see
 Chapter~\ref{sec:referencecells}). Thus, for a mesh of tetrahedral
 cells, \texttt{num\_entities[0]} should contain the number of
 vertices, \texttt{num\_entities[1]} should contain the number of edges
-(if they are needed, see below), \texttt{num\_entities[2]} should
-contain the number of faces, and \texttt{num\_entities[3]} should
-contain the number of cells.
+(if they are needed, see \texttt{dof\_map::needs\_mesh\_entities} below),
+\texttt{num\_entities[2]} should contain the number of faces,
+and \texttt{num\_entities[3]} should contain the number of volumes.
+If d is the topological dimension of the mesh,
+\texttt{num\_entities[d]} should contain the number of cells or elements.
+
 
 \section{The class \texttt{ufc::cell}}
 \index{\texttt{ufc::cell}}
@@ -135,7 +138,7 @@ shape cell_shape;
 \end{code}
 
 The variable \texttt{cell\_shape} should be set to the corresponding
-\texttt{ufc::shape} for the cell (see above).
+\texttt{ufc::shape} for the cell (see \texttt{ufc::mesh} above).
 
 \subsection{The integer \texttt{topological\_dimension}}
 
@@ -144,7 +147,8 @@ unsigned int topological_dimension;
 \end{code}
 
 The integer \texttt{topological\_dimension} should be set equal to the
-topological dimension of the cell (see above).
+topological dimension of the cell (see \texttt{ufc::mesh} above).
+
 
 \subsection{The integer \texttt{geometric\_dimension}}
 
@@ -169,11 +173,12 @@ the value of the variable \texttt{topological\_dimension} plus one.
 Thus, \texttt{entity\_indices[0]} should be an array containing the
 global indices of all the vertices of the cell,
 \texttt{entity\_indices[1]} should be an array containing the global
-indices of all the edges of the cell, etc.
+indices of all the edges of the cell, etc. The sizes of these arrays
+are implicitly defined by the cell type.
 
 Note that the entity indices are not always needed for all entities of
 the cell. The entities that are required will be specified by the
-\texttt{ufc::dof\_map} class (see below).
+\texttt{ufc::dof\_map} class (see \texttt{dof\_map::needs\_mesh\_entities} below).
 
 \subsection{The array \texttt{coordinates}}
 
@@ -208,9 +213,9 @@ The output of \texttt{evaluate} should be written to the array
 \texttt{values}. For a scalar-valued function, a single value should be
 written to \texttt{values[0]}. For general tensor-valued functions,
 the values should be written in a flattened row-major ordering of the
-tensor values. Thus, for a function $f : K \rightarrow \R^2$ with $A =
-f(x)$ a $2 \times 2$ matrix, the array \texttt{values} should contain
-the values $A_{11}, A_{12}, A_{21}, A_{22}$.
+tensor values. Thus, for a function $f : K \rightarrow \R^{2x2}$ (where $A =
+f(x)$ is a $2 \times 2$ matrix), the array \texttt{values} should contain
+the values $A_{11}, A_{12}, A_{21}, A_{22}$ in this order.
 
 The input to \texttt{evaluate} is the coordinates of a point in a cell
 and the UFC view of the cell containing that point.
@@ -239,7 +244,7 @@ virtual const char* signature() const = 0;
 
 This function returns a signature string that uniquely identifies the
 finite element. This can be used to compare whether or not two given
-\texttt{ufc::fi\-nite\_element}s are identical.
+\texttt{ufc::fi\-nite\_element} objects are identical.
 
 \subsection{The function \texttt{cell\_shape}}
 
@@ -285,7 +290,7 @@ element basis functions for the given axis, where the given axis must
 be a number between zero and the value rank minus one.
 
 Note that the total size (number of values) of the value space is
-obtained as the product \texttt{value\_dimension(i)} for $0 \le i <$
+obtained as the product of \texttt{value\_dimension(i)} for $0 \le i <$
 \texttt{value\_rank()}.
 
 \subsection{The function \texttt{evaluate\_basis}}
@@ -300,8 +305,7 @@ virtual void evaluate_basis(unsigned int i,
 This function evaluates basis function \texttt{i} at the given
 \texttt{coordinates} within the given cell \texttt{c}, and stores the
 values in the array \texttt{values}. The size of this output array
-equals the value size of value space (as described in the previous
-section).
+equals the value size of the value space (see \texttt{value\_dimension} above).
 
 \subsection{The function \texttt{evaluate\_basis\_derivatives}}
 
@@ -348,7 +352,7 @@ This function evaluates and returns the value of the degree of freedom
 \texttt{f}.
   
 For example, the degrees of freedom for Lagrange finite elements are
-given by evaluation at a set of points. Other examples of degrees of
+given by evaluation of f at a set of points. Other examples of degrees of
 freedom include weighted integrals over facets or normal components at
 facets.
 
@@ -407,7 +411,7 @@ sub element \texttt{i}. The argument \texttt{i} must be an integer
 between zero and the number of sub elements
 (\texttt{num\_sub\_elements}) minus one. If the element is simple
 (non-nested), this function creates a copy of the finite element
-itself.
+itself. The caller is responsible for deleting the returned object.
 
 \section{The class \texttt{ufc::dof\_map}}
 \index{\texttt{ufc::dof\_map}}
@@ -415,10 +419,10 @@ itself.
 This class represents the local-to-global mapping of degrees of
 freedom (dofs), or rather one particular instance of such a mapping
 (there are many possible local-to-global mappings) as defined in
-\eqref{eq:iota_K}.  The most central function of this class is
+Equation \eqref{eq:iota_K}. The most central function of this class is
 \texttt{tabulate\_dofs}, which tabulates the local-to-global mapping
-from the degrees of freedom on a local cell to a global vector of
-degrees of freedom.
+from the degree of freedom indices on a local cell to a global vector of
+degree of freedom indices.
 
 \subsection{The function \texttt{signature}}
 
@@ -588,6 +592,7 @@ element \texttt{i}. The argument \texttt{i} must be a number between
 zero and the number of sub dof maps (\texttt{num\_sub\_dof\_maps})
 minus one. If the dof map is simple (non-nested), this function
 creates a copy of the dof map element itself.
+The caller is responsible for deleting the returned object.
 
 \section{The integral classes}
 
