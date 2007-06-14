@@ -75,17 +75,17 @@ class Index:
             # Create Function Index
             self.index = next_function_index()
             self.type = self.FUNCTION
-            self.range = range
+            self.range = [self.index]
         elif index == "projection":
             # Create Projection Index
             self.index = next_projection_index()
             self.type = self.PROJECTION
-            self.range = range
+            self.range = [self.index]
         elif index == "constant":
             # Create Constant Index
             self.index = next_constant_index()
             self.type = self.CONSTANT
-            self.range = range
+            self.range = [self.index]
         elif index == "auxiliary":
             # Create auxiliary Index (not possible)
             raise RuntimeError, "Auxiliary indices cannot be created (only modified)."
@@ -193,11 +193,11 @@ class Index:
         elif self.type == self.SECONDARY:
             return "a" + str(self.index) + offset
         elif self.type == self.FUNCTION:
-            return str(self.index) + offset
+            return str(self.index) 
         elif self.type == self.PROJECTION:
-            return str(self.index) + offset
+            return str(self.index) 
         elif self.type == self.CONSTANT:
-            return str(self.index) + offset        
+            return str(self.index) 
         else:
             return "b" + str(self.index) + offset
 

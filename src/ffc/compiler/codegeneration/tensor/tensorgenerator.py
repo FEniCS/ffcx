@@ -123,9 +123,9 @@ class TensorGenerator(CodeGenerator):
                 for k in range(len(G.coefficients)):
                     coefficient = G.coefficients[k]
                     if term.monomial.integral.type == Integral.INTERIOR_FACET:
-                        space_dimension = 2*len(coefficient.n0.range)
+                        space_dimension = 2*len(coefficient.index.range)
                     else:
-                        space_dimension = len(coefficient.n0.range)
+                        space_dimension = len(coefficient.index.range)
                     for l in range(space_dimension):
                         name = format["modified coefficient declaration"](coefficient.n0.index, j, k, l)
                         value = format["coefficient"](coefficient.n0.index, l)
@@ -255,6 +255,7 @@ class TensorGenerator(CodeGenerator):
             if not c.index.type == Index.AUXILIARY_G:
                 coefficient = format["modified coefficient access"](c.n1.index, i, j, c.index([], a, [], []))
                 factors += [coefficient]
+            
         for t in G.transforms:
             if not (t.index0.type == Index.AUXILIARY_G or  t.index1.type == Index.AUXILIARY_G):
                 factors += [format["transform"](t.type, t.index0([], a, [], []), \
