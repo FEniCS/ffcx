@@ -587,8 +587,8 @@ documentation of the function
 virtual dof_map* create_sub_dof_map(unsigned int i) const = 0;
 \end{code}
 
-This factory function constructs a \texttt{dof\_map} object for sub
-element \texttt{i}. The argument \texttt{i} must be a number between
+This factory function constructs a \texttt{dof\_map} object for 
+subelement \texttt{i}. The argument \texttt{i} must be a number between
 zero and the number of sub-dofmaps (\texttt{num\_sub\_dof\_maps})
 minus one. If the dofmap is simple (non-nested), this function
 creates a copy of the dofmap element itself.
