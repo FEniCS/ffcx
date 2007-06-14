@@ -36,14 +36,14 @@ void assemble(..., ufc::form& form, ...)
   for (unsigned int i = 0; i < form.num_cell_integrals(); i++)
     cell_integrals[i] = form.create_cell_integral(i);
 
-  // Create dof maps
+  // Create dofmaps
   ufc::dof_maps** dof_maps;
   dof_maps = new ufc::dof_map*[form.rank() + form.num_coefficients()];
   for (unsigned int i = 0; i < form.rank() + form.num_coefficients(); i++)
   {
     dof_maps[i] = form.create_dof_map(i);
 
-    // Initialize dof map
+    // Initialize dofmap
     if (dof_maps[i]->init_mesh(mesh))
     { 
       // Iterate over cells
@@ -54,7 +54,7 @@ void assemble(..., ufc::form& form, ...)
         cell.coordinates[...] = ...
         ...
        
-        // Initialize dof map for cell
+        // Initialize dofmap for cell
         dof_maps[i]->init_cell(mesh, cell);        
       }
 
@@ -68,7 +68,7 @@ void assemble(..., ufc::form& form, ...)
     size *= dof_maps[i]->local_dimension();
   double* AK = new double[size];
 
-  // Initialize array of local to global dof maps
+  // Initialize array of local to global dofmaps
   unsigned int** dofs = new unsigned int*[form.rank()];
   for (unsigned int i = 0; i < form.rank(); i++)
     dofs[i] = new unsigned int[dof_maps[i]->local_dimension()];

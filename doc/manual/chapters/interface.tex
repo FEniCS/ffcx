@@ -433,7 +433,7 @@ virtual const char* signature() const = 0;
 This function returns a signature string that uniquely identifies the
 finite element. This can be used to compare whether or not two given
 \texttt{ufc::dof\_map} objects are identical. (This may be used to optimize
-the assembly of forms by caching previously computed dof maps.)
+the assembly of forms by caching previously computed dofmaps.)
 
 \subsection{The function \texttt{needs\_mesh\_entities}}
 
@@ -461,7 +461,7 @@ need to know the edges (or faces) of each cell in the mesh.
 virtual bool init_mesh(const mesh& mesh) = 0;
 \end{code}
 
-This function initializes the dof map for a given mesh. If it returns
+This function initializes the dofmap for a given mesh. If it returns
 true, calls to \texttt{init\_cell} and \texttt{init\_cell\_finalize}
 are required to complete the initialization. The function
 \texttt{global\_dimension} be may only be called when the
@@ -590,8 +590,8 @@ virtual dof_map* create_sub_dof_map(unsigned int i) const = 0;
 This factory function constructs a \texttt{dof\_map} object for sub
 element \texttt{i}. The argument \texttt{i} must be a number between
 zero and the number of sub-dofmaps (\texttt{num\_sub\_dof\_maps})
-minus one. If the dof map is simple (non-nested), this function
-creates a copy of the dof map element itself.
+minus one. If the dofmap is simple (non-nested), this function
+creates a copy of the dofmap element itself.
 The caller is responsible for deleting the returned object.
 
 \section{The integral classes}
@@ -760,7 +760,7 @@ A \texttt{ufc::form} provides functions for accessing the rank~$r$ and
 number of coefficients~$n$ for a form, and factory functions for
 creating UFC objects for the corresponding cell integrals, exterior
 facet integrals, interior facet integrals, and all associated finite
-elements and dof maps (local-to-global mappings).
+elements and dofmaps (local-to-global mappings).
 
 \subsection{The function \texttt{signature}}
 
@@ -846,7 +846,7 @@ create_dof_map(unsigned int i) const = 0;
 This factory function constructs a \texttt{dof\_map} object for form
 argument \texttt{i}. A form with rank~$r$ and a number of
 coefficients~$n$ has $r + n$ arguments, so this function
-returns the dof map object for tensor axis $i$ if $i < r$, or the dof
+returns the dofmap object for tensor axis $i$ if $i < r$, or the dof
 map for coefficient $i - r$ if $i \geq r$.  The caller is responsible
 for deleting the returned object.
 
