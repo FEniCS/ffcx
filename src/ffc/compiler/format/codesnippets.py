@@ -445,8 +445,6 @@ int sign_facet2 = n2_0*e1_0 + n2_1*e1_1 < 0 ? 1 : -1;
 
 # Cross product of u = (u0, u1, u2) and v = (v0, v1, v2):
 # (u1*v2 - u2*v1)i - (u0*v2 - u2*v0)j + (u0*v1 - u1*v0)
-# meg: Think about how to choose suitable edges so that this is consistent.
-
 facet_sign_snippet_3D = """
 // Compute signs of facets (need to flip edge degrees of freedom)
 
@@ -472,26 +470,26 @@ const double e5_2 = x[1][2] - x[0][2];
 
 
 // Compute the facet normals by taking suitable cross products of edges
-// Normal of facet 0: -e0 x -e1 = e1 x - e0 = e0 x e1
-const double n0_0 = e0_1*e1_2 - e0_2*e1_1
-const double n0_1 = -(e0_0*e1_2 - e0_2* e1_0)
-const double n0_2 = e0_0 e1_1 - e0_1 e1_0
-// Normal of facet 1: -e0 x -e3 = e0 x e3
-const double n1_0 = e0_1*e3_2 - e0_2*e3_1
-const double n1_1 = -(e0_0*e3_2 - e0_2* e3_0)
-const double n1_2 = e0_0 e3_1 - e0_1 e3_0
-// Normal of facet 2: -e1 x -e3 = e1 x e3
-const double n2_0 = e1_1*e3_2 - e1_2*e3_1
-const double n2_1 = -(e1_0*e3_2 - e1_2* e3_0)
-const double n2_2 = e1_0 e3_1 - e1_1 e3_0
-// Normal of facet 3: -e2 x -e4 = e2 x e4:
-const double n3_0 = e2_1*e4_2 - e2_2*e4_1
-const double n3_1 = -(e2_0*e4_2 - e2_2* e4_0)
-const double n3_2 = e2_0 e4_1 - e2_1 e4_0
+// Normal of facet 0: e2 x e1
+const double n0_0 = e2_1*e1_2 - e2_2*e1_1
+const double n0_1 = -(e2_0*e1_2 - e2_2* e1_0)
+const double n0_2 = e2_0*e1_1 - e2_1*e1_0
+// Normal of facet 1: e4 x e3
+const double n1_0 = e4_1*e3_2 - e4_2*e3_1
+const double n1_1 = -(e4_0*e3_2 - e4_2* e3_0)
+const double n1_2 = e4_0*e3_1 - e4_1*e3_0
+// Normal of facet 2: e5 x e3
+const double n2_0 = e5_1*e3_2 - e5_2*e3_1
+const double n2_1 = -(e5_0*e3_2 - e5_2* e3_0)
+const double n2_2 = e5_0*e3_1 - e5_1*e3_0
+// Normal of facet 3: e5 x e4:
+const double n3_0 = e5_1*e4_2 - e5_2*e4_1
+const double n3_1 = -(e5_0*e4_2 - e5_2*e4_0)
+const double n3_2 = e5_0*e4_1 - e5_1*e4_0
 
 // Compute the orientation of the normals relative to the cell
 int sign_facet0 = n0_0*e3_0 + n0_1*e3_1 + n0_2*e3_2 > 0 ? 1 : -1;     // n0*e3
 int sign_facet1 = n1_0*e1_0 + n1_1*e1_1 + n1_2*e1_2 > 0 ? 1 : -1;     // n1*e1
 int sign_facet2 = n2_0*e0_0 + n2_1*e0_1 + n2_2*e0_2 > 0 ? 1 : -1;     // n2*e0
-int sign_facet2 = - (n3_0*e0_0 + n3_1*e0_1 + n3_2*e0_2) > 0 ? 1 : -1; // n3*-e0
+int sign_facet3 = n3_0*e3_0 + n3_1*e3_1 + n3_2*e3_2 < 0 ? 1 : -1; // n3*-e3
 """
