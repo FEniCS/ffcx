@@ -442,7 +442,7 @@ virtual bool needs_mesh_entities(unsigned int d) const = 0;
 \end{code}
 
 This function returns true if the \texttt{dof\_map} requires mesh
-entities of topological dimension \texttt{d} to be filled in
+entities of topological dimension \texttt{d} to be available in
 \texttt{ufc::cell} arguments. Thus, if this function returns false for
 a given value of \texttt{d}, then the array
 \texttt{entity\_indices[d]} of the \texttt{ufc::cell} data structure
