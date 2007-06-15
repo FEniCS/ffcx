@@ -6,12 +6,8 @@ Things to fix before release of 0.4.0:
  - Check regression tests
  - Check -h -v
 
- - Make convergence demo work in DOLFIN
- - Proofreading by Rolv
  - Copy latest reference cell chapters from UFC manual
  - Copy latest fenicsmanual.cls from UFC to common
- - Fix index in UFC manual
- - Spelling of Ciarlet in UFC manual
 
 The following list of items will or should be fixed in future
 versions of FFC. The items are listed in approximate order of
@@ -19,7 +15,6 @@ priority.
 
 * Fix bug in RT1
   - RT elements work for q = 0, 2, 3 but not for q = 1
-  for some reason...
 
 * Write introduction in manual
   - The introduction is currently empty

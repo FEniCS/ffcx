@@ -9,20 +9,14 @@ License:
 Dependencies:
 -------------
 
-  1. Python, version 2.4 (might work with 2.3)
+  1. Python, version 2.3, 2.4 or 2.5
 
-     If you're running Debian, you need to install the
-     package python2.4.
-
-  2. FIAT, version 0.2.4
+  2. The latest version of FIAT
 
      You need to have FIAT installed. FIAT is available from
      the FEniCS web page: http://www.fenics.org/.
 
-  3. The Python Numpy module
-
-     If you're running Debian, you need to install the
-     package python-numpy.
+  3. The Python NumPy module
 
   4. FErari version, version 0.1.0 (optional)
 
