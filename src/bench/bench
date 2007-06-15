@@ -3,20 +3,18 @@
 # Copyright (C) 2005-2006 Anders Logg
 # Licensed under the GNU GPL Version 2
 
-from timing import *
+from time import time
 from commands import *
 
 # Run benchmark
-start()
+t = time()
 getoutput("../bin/ffc NavierStokes.form")
-finish()
-t1 = milli() / 1000.0;
+t1 = time() - t
 
 # Run benchmark
-start()
+t = time()
 getoutput("../bin/ffc Stabilization.form")
-finish()
-t2 = milli() / 1000.0;
+t2 = time() - t
 
 # Write report
 print "Navier-Stokes: %.3f seconds" % t1
