@@ -75,12 +75,13 @@ following command:
 \begin{code}
 # python setup.py install
 \end{code}
-This will install the \ffc{} Python package in a subdirectory
-called \texttt{ffc} in the default location for user-installed Python
-packages (usually something like \texttt{/usr/lib/python2.5/site-packages}).
-In addition, the compiler executable (a Python script) will be
-installed in the default directory for user-installed Python scripts
-(usually in \texttt{/usr/bin}).
+This will install the \ffc{} Python package in a subdirectory called
+\texttt{ffc} in the default location for user-installed Python
+packages (usually something like
+\texttt{/usr/lib/python2.5/site-packages}).  In addition, the compiler
+executable \texttt{ffc} (a Python script) will be installed in the
+default directory for user-installed Python scripts (usually in
+\texttt{/usr/bin}).
 
 To see a list of optional parameters to the installation script, type
 \begin{code}
@@ -109,7 +110,7 @@ With \ffc{} installed on your system, just type
 \end{code}
 to compile the bilinear and linear forms for Poisson's equation.
 This will generate a C++ header file called \texttt{Poisson.h}
-containing UFC~\cite{www:ufc} code that can be used to assemble
+containing UFC~\cite{www:ufc,ufcmanual} code that can be used to assemble
 the linear system for Poisson's equation.
 
 It is also possible to compile the forms in \texttt{src/demo} without
