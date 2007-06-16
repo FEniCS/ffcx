@@ -1,0 +1,59 @@
+UFC 1.0
+-------
+
+Contents:
+
+  1. Introduction
+  2. Installation
+  3. License
+  4. Feedback
+
+-------------------------------------------------------------------------------
+1. Introduction
+
+UFC (Unified Form-assembly Code) is a unified framework for finite
+element assembly. More precisely, it defines a fixed interface for
+communicating low level routines (functions) for evaluating and
+assembling finite element variational forms. The UFC interface
+consists of a single header file ufc.h that specifies a C++ interface
+that must be implemented by code that complies with the UFC
+specification. Examples of form compilers that support the UFC
+interface are FFC and SyFi. For more information, visit the UFC web
+page at
+
+    http://www.fenics.org/ufc/
+
+or refer to the UFC Specification and User Manual in
+
+    doc/manual/ufc-user-manual.pdf
+
+in this source tree.
+
+-------------------------------------------------------------------------------
+2. Installation
+
+To install UFC, simply run
+
+    sudo python setup.py install
+
+This installs the header file ufc.h and a small set of Python
+utils (templates) for generating UFC code.
+
+Alternatively, just copy the single header file src/ufc/ufc.h
+into a suitable include directory.
+
+-------------------------------------------------------------------------------
+3. License
+
+The header file ufc.h and UFC Python utils are released into
+the public domain.
+
+-------------------------------------------------------------------------------
+4. Feedback
+
+Feedback, comments and suggestions should be sent to
+
+    ufc-dev@fenics.org
+
+-------------------------------------------------------------------------------
+Oslo, June 2007
