@@ -2,8 +2,6 @@
 \label{sec:interface}
 \index{interface}
 
-% Need to write about the Python utils somewhere, should be in appendix
-
 \section{A short remark on design}
 \index{design}
 
@@ -38,12 +36,12 @@ small set of auxiliary interface classes. In addition a pair of data
 structures \texttt{ufc::mesh} and \texttt{ufc::cell} are defined and
 used for passing data to the interface functions. All functions
 defined by the UFC interface are \emph{pure virtual}, meaning that all
-these functions must be overloaded in each implementation of the classes.
-All but two functions (\texttt{init\_mesh} and
+these functions must be overloaded in each implementation of the
+classes.  All but two functions (\texttt{init\_mesh} and
 \texttt{init\_cell}) are \texttt{const}, meaning that calling these
-\texttt{const} functions will leave the UFC objects unchanged.
-Input argument (pointers) are always \texttt{const}, while output arguments (pointers) are always non-\texttt{const}.
-\index{ufc.h}
+\texttt{const} functions will leave the UFC objects unchanged.  Input
+argument (pointers) are always \texttt{const}, while output arguments
+(pointers) are always non-\texttt{const}.  \index{ufc.h}
 
 The interface is presented below in the same order as it is
 defined in the header file \texttt{ufc.h}. Thus, the interface is
