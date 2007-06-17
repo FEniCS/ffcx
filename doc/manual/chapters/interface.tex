@@ -5,34 +5,34 @@
 \section{A short remark on design}
 \index{design}
 
-UFC is organized as a minimalistic set of abstract C++ classes 
+UFC is organized as a minimalistic set of abstract C++ classes
 representing low-level abstractions of the finite element method. The
-functions in these classes are mainly of two types: (i) Functions
-returning dimensions, which are typically used to allocate an array or
-check whether an existing array is of proper size and (ii) Functions
-that fill an array with values according to the method and variational
-form.
+functions in these classes are mainly of two types: (i) functions
+returning dimensions, which are typically used to allocate an array,
+and (ii) functions that fill an array with values.
 
 It is considered the assembly routine's responsibility
 to allocate and deallocate arrays of proper size.
 Consider for example the function for evaluating the $i$th basis
-function in the class \texttt{finite\_element}:
+function in the class \texttt{ufc::finite\_element}:
 \begin{code}
-virtual void evaluate_basis(unsigned int i, double* values,
+virtual void evaluate_basis(unsigned int i,
+                            double* values,
                             const double* coordinates,
                             const cell& c) const = 0;
 \end{code}
 This function assumes that the array \texttt{values} has the correct
 size, which may be obtained by calling the functions
-\texttt{value\_rank} and \texttt{value\_dimension}.
+\texttt{value\_rank} and \texttt{value\_dimension} as described in
+detail below.
 
 Thus, the UFC interface is a low-level interface that should be simple
-to integrate into an existing C++ finite element code, but probably
-not suitable to be exposed as part of an end-user interface.
+to integrate into an existing C++ finite element code, but which is
+probably not suitable to be exposed as part of an end-user interface.
 
 The UFC interface is defined by a single header file \texttt{ufc.h}
 which defines the central interface class \texttt{ufc::form} and a
-small set of auxiliary interface classes. In addition a pair of data
+small set of auxiliary interface classes. In addition, a pair of data
 structures \texttt{ufc::mesh} and \texttt{ufc::cell} are defined and
 used for passing data to the interface functions. All functions
 defined by the UFC interface are \emph{pure virtual}, meaning that all
@@ -43,11 +43,11 @@ classes.  All but two functions (\texttt{init\_mesh} and
 argument (pointers) are always \texttt{const}, while output arguments
 (pointers) are always non-\texttt{const}.  \index{ufc.h}
 
-The interface is presented below in the same order as it is
-defined in the header file \texttt{ufc.h}. Thus, the interface is
-presented bottom-up, starting with the definition of basic data
-structures and ending with the definition of the \texttt{ufc::form}
-interface class.
+The interface is presented below in the same order as it is defined in
+the header file \texttt{ufc.h}. Thus, the interface is presented
+bottom-up, starting with the definition of basic data structures and
+ending with the definition of the main \texttt{ufc::form} interface
+class.
 
 \section{Cell shapes}
 \index{Cell shapes}
@@ -110,15 +110,18 @@ unsigned int* num_entities;
 
 The array \texttt{num\_entities} should contain the number of entities
 within each topological dimension of the mesh (see
-Chapter~\ref{sec:referencecells}). Thus, for a mesh of tetrahedral
-cells, \texttt{num\_entities[0]} should contain the number of
-vertices, \texttt{num\_entities[1]} should contain the number of edges
-(if they are needed, see \texttt{dof\_map::needs\_mesh\_entities} below),
-\texttt{num\_entities[2]} should contain the number of faces,
-and \texttt{num\_entities[3]} should contain the number of volumes.
-If d is the topological dimension of the mesh,
-\texttt{num\_entities[d]} should contain the number of cells or elements.
+Chapter~\ref{sec:referencecells}). The size of the array should be
+equal to the topological dimension of the mesh plus one.
 
+Thus, for a mesh of tetrahedral cells, \texttt{num\_entities[0]}
+should contain the number of vertices, \texttt{num\_entities[1]}
+should contain the number of edges (if they are needed, see
+\texttt{ufc::dof\_map::needs\_mesh\_entities} below),
+\texttt{num\_entities[2]} should contain the number of faces, and
+\texttt{num\_entities[3]} should contain the number of volumes.  If
+\texttt{d} is the topological dimension of the mesh,
+\texttt{num\_entities[d]} should contain the number of cells or
+elements.
 
 \section{The class \texttt{ufc::cell}}
 \index{\texttt{ufc::cell}}
@@ -136,7 +139,7 @@ shape cell_shape;
 \end{code}
 
 The variable \texttt{cell\_shape} should be set to the corresponding
-\texttt{ufc::shape} for the cell (see \texttt{ufc::mesh} above).
+\texttt{ufc::shape} for the cell.
 
 \subsection{The integer \texttt{topological\_dimension}}
 
@@ -144,9 +147,8 @@ The variable \texttt{cell\_shape} should be set to the corresponding
 unsigned int topological_dimension;
 \end{code}
 
-The integer \texttt{topological\_dimension} should be set equal to the
+The integer \texttt{topological\_dimension} should be set to the
 topological dimension of the cell (see \texttt{ufc::mesh} above).
-
 
 \subsection{The integer \texttt{geometric\_dimension}}
 
@@ -154,8 +156,8 @@ topological dimension of the cell (see \texttt{ufc::mesh} above).
 unsigned int geometric_dimension;
 \end{code}
 
-The integer \texttt{geometric\_dimension} should be set equal to the
-geometric dimension of the cell (see above).
+The integer \texttt{geometric\_dimension} should be set to the
+geometric dimension of the cell (see \texttt{ufc::mesh} above).
 
 \subsection{The array \texttt{entity\_indices}}
 
@@ -175,8 +177,9 @@ indices of all the edges of the cell, etc. The sizes of these arrays
 are implicitly defined by the cell type.
 
 Note that the entity indices are not always needed for all entities of
-the cell. The entities that are required will be specified by the
-\texttt{ufc::dof\_map} class (see \texttt{dof\_map::needs\_mesh\_entities} below).
+the cell. Which entities are required is specified by the
+\texttt{ufc::dof\_map} class (see
+\texttt{ufc::dof\_map::needs\_mesh\_entities} below).
 
 \subsection{The array \texttt{coordinates}}
 
@@ -186,7 +189,7 @@ double** coordinates;
 
 The array \texttt{coordinates} should contain the global coordinates
 for all vertices of the cell and thus its length should be equal to
-number of vertices of the mesh. The length of the array
+number of vertices of the cell. The length of the array
 \texttt{coordinates[0]} should be equal to the value of the variable
 \texttt{geometric\_dimension} and it should contain the $x$, $y$,
 \ldots coordinates of the first vertex etc.
@@ -196,6 +199,8 @@ number of vertices of the mesh. The length of the array
 
 The class \texttt{ufc::function} is an interface for evaluation of
 general tensor-valued functions on the cells of a mesh.
+
+\subsection{The function \texttt{evaluate}}
 
 \begin{code}
 virtual void evaluate(double* values,
@@ -215,7 +220,7 @@ tensor values. Thus, for a function $f : K \rightarrow \R^{2x2}$ (where $A =
 f(x)$ is a $2 \times 2$ matrix), the array \texttt{values} should contain
 the values $A_{11}, A_{12}, A_{21}, A_{22}$ in this order.
 
-The input to \texttt{evaluate} is the coordinates of a point in a cell
+The input to \texttt{evaluate} are the coordinates of a point in a cell
 and the UFC view of the cell containing that point.
 
 See also the description of
@@ -302,8 +307,9 @@ virtual void evaluate_basis(unsigned int i,
 
 This function evaluates basis function \texttt{i} at the given
 \texttt{coordinates} within the given cell \texttt{c}, and stores the
-values in the array \texttt{values}. The size of this output array
-equals the value size of the value space (see \texttt{value\_dimension} above).
+values in the array \texttt{values}. The size of the output array
+should be equal to size of the value space (see
+\texttt{value\_dimension} above).
 
 \subsection{The function \texttt{evaluate\_basis\_derivatives}}
 
@@ -350,9 +356,9 @@ This function evaluates and returns the value of the degree of freedom
 \texttt{f}.
   
 For example, the degrees of freedom for Lagrange finite elements are
-given by evaluation of f at a set of points. Other examples of degrees of
-freedom include weighted integrals over facets or normal components at
-facets.
+given by evaluation of \texttt{f} at a set of points. Other examples
+of degrees of freedom include weighted integrals over facets or normal
+components on facets.
 
 \subsection{The function \texttt{interpolate\_vertex\_values}}
 
@@ -391,8 +397,8 @@ with zeros: $\psi_1 = (\phi_1, 0), \psi_2 = (\phi_2, 0), \ldots,
 \psi_n = (\phi_n, 0), \psi_{n+1} = (0, \phi_1), \psi_{n+2} = (0,
 \phi_2), \ldots$.
 
-Finite elements may be nested at arbitrary depth. So for example, a
-mixed Taylor--Hood element may be created by combining a vector-valued
+Finite elements may be nested at arbitrary depth. For example, a mixed
+Taylor--Hood element may be created by combining a vector-valued
 quadratic Lagrange finite element with a scalar linear Lagrange finite
 element, and the vector-valued element may in turn be created by
 combining a set of scalar quadratic Lagrange elements.
@@ -404,9 +410,9 @@ virtual finite_element*
 create_sub_element(unsigned int i) const = 0;
 \end{code}
 
-This factory function constructs a \texttt{finite\_element} object for
-subelement \texttt{i}. The argument \texttt{i} must be an integer
-between zero and the number of subelements
+This factory function constructs a \texttt{ufc::finite\_element}
+object for subelement \texttt{i}. The argument \texttt{i} must be an
+integer between zero and the number of subelements
 (\texttt{num\_sub\_elements}) minus one. If the element is simple
 (non-nested), this function creates a copy of the finite element
 itself. The caller is responsible for deleting the returned object.
@@ -429,9 +435,10 @@ virtual const char* signature() const = 0;
 \end{code}
 
 This function returns a signature string that uniquely identifies the
-finite element. This can be used to compare whether or not two given
-\texttt{ufc::dof\_map} objects are identical. (This may be used to optimize
-the assembly of forms by caching previously computed dofmaps.)
+dofmap. This can be used to compare whether or not two given
+\texttt{ufc::dof\_map} objects are identical. (This may be used to
+optimize the assembly of forms by caching previously computed
+dofmaps.)
 
 \subsection{The function \texttt{needs\_mesh\_entities}}
 
@@ -439,7 +446,7 @@ the assembly of forms by caching previously computed dofmaps.)
 virtual bool needs_mesh_entities(unsigned int d) const = 0;
 \end{code}
 
-This function returns true if the \texttt{dof\_map} requires mesh
+This function returns true if the \texttt{ufc::dof\_map} requires mesh
 entities of topological dimension \texttt{d} to be available in
 \texttt{ufc::cell} arguments. Thus, if this function returns false for
 a given value of \texttt{d}, then the array
@@ -447,11 +454,11 @@ a given value of \texttt{d}, then the array
 will not be used during calls to \texttt{ufc::dof\_map} functions. In
 those cases, the array \texttt{entity\_indices[d]} may be set to zero.
 
-This may be used to check which entities
-must be generated to tabulate the local-to-global mapping. For
-example, linear Lagrange elements will only need to know the vertices
-of each cell in the mesh, while quadratic Lagrange elements will also
-need to know the edges (or faces) of each cell in the mesh.
+This may be used to check which entities must be generated to tabulate
+the local-to-global mapping. For example, linear Lagrange elements
+will only need to know the vertices of each cell in the mesh, while
+quadratic Lagrange elements will also need to know the edges of each
+cell in the mesh.
 
 \subsection{The function \texttt{init\_mesh}}
 
@@ -472,9 +479,9 @@ virtual void init_cell(const mesh& m,
                        const cell& c) = 0;
 \end{code}
 
-For \texttt{dof\_map} objects where \texttt{init\_mesh} returns true,
+For \texttt{ufc::dof\_map} objects where \texttt{init\_mesh} returns true,
 this function must be called for each cell in the mesh to initialize
-the dof mapping.
+the dofmap.
 
 \subsection{The function \texttt{init\_cell\_finalize}}
 
@@ -482,9 +489,9 @@ the dof mapping.
 virtual void init_cell_finalize() = 0;
 \end{code}
 
-For \texttt{dof\_map} objects where \texttt{init\_mesh} returns true,
-this function must be called after \texttt{init\_cell} is called for
-each cell in the mesh to complete initialization of the dof mapping.
+For \texttt{ufc::dof\_map} objects where \texttt{init\_mesh} returns
+true, this function must be called after \texttt{init\_cell} is called
+for each cell in the mesh to complete initialization of the dofmap.
 
 \subsection{The function \texttt{global\_dimension}}
 
@@ -493,9 +500,9 @@ virtual unsigned int global_dimension() const = 0;
 \end{code}
 
 This function returns the dimension of the global finite element space
-on the mesh that the \texttt{dof\_map} has been initialized for. The
-result of calling this function before the initialization is complete
-is undefined.
+on the mesh that the \texttt{ufc::dof\_map} has been initialized
+for. The result of calling this function before the initialization is
+complete is undefined.
 
 \subsection{The function \texttt{local\_dimension}}
 
@@ -552,7 +559,7 @@ virtual void tabulate_coordinates(double** coordinates,
 This function tabulates the coordinates for each dof on the given
 cell. For Lagrange elements, this function will tabulate a set of
 points on the given cell such that the dofs of the finite element are
-given by evaluation of the function at those points.
+given by evaluation at those points.
 
 For elements that do not have a direct relationship between
 coordinates and dofs, an attempt should be made at a sensible
@@ -576,8 +583,8 @@ virtual unsigned int num_sub_dof_maps() const = 0;
 This function returns the number of sub-dofmaps for a nested (mixed)
 element. For a discussion on the subelement concept, see the
 documentation of the function
-\texttt{finite\_element::num\_sub\_dof\_maps}. For simple elements
-(non-nested), this function should return one.
+\texttt{ufc::finite\_element::num\_sub\_elements}. For simple
+elements (non-nested), this function should return one.
 
 \subsection{The function \texttt{create\_sub\_dof\_map}}
 
@@ -585,12 +592,12 @@ documentation of the function
 virtual dof_map* create_sub_dof_map(unsigned int i) const = 0;
 \end{code}
 
-This factory function constructs a \texttt{dof\_map} object for 
-subelement \texttt{i}. The argument \texttt{i} must be a number between
-zero and the number of sub-dofmaps (\texttt{num\_sub\_dof\_maps})
-minus one. If the dofmap is simple (non-nested), this function
-creates a copy of the dofmap element itself.
-The caller is responsible for deleting the returned object.
+This factory function constructs a \texttt{ufc::dof\_map} object for
+subelement \texttt{i}. The argument \texttt{i} must be a number
+between zero and the number of sub-dofmaps
+(\texttt{num\_sub\_dof\_maps}) minus one. If the dofmap is simple
+(non-nested), this function creates a copy of the dofmap itself. The
+caller is responsible for deleting the returned object.
 
 \section{The integral classes}
 
@@ -637,7 +644,7 @@ The array \texttt{w} should contain the expansion coefficients for all
 \emph{coefficients} of the form in the finite element nodal basis for
 each corresponding function space. Thus, the size of the array
 \texttt{w} should be equal to the number of coefficients~$n$, and the
-size of each each array \texttt{w[0]}, \texttt{w[1]} etc. should be
+size of each each array \texttt{w[0]}, \texttt{w[1]} etc should be
 equal to the space dimension of the corresponding local finite element
 space.
 
@@ -667,13 +674,12 @@ exterior facet integral will be tabulated into the array \texttt{A}
 and the nodal basis expansions of all coefficients should be provided
 in the array \texttt{w}.
 
-The additional argument \texttt{facet} is required and should specify
-the local number of the facet with respect to its (single) incident
-cell. Thus, when the facet is an edge of a triangle, the argument
-\texttt{facet} should be an integer between zero and two (0, 1, 2) and
-when the facet is a facet of a tetrahedron, the argument
-\texttt{facet} should be an integer between zero and three (0, 1, 2,
-3).
+The additional argument \texttt{facet} should specify the local number
+of the facet with respect to its (single) incident cell. Thus, when
+the facet is an edge of a triangle, the argument \texttt{facet} should
+be an integer between zero and two (0, 1, 2) and when the facet is a
+facet of a tetrahedron, the argument \texttt{facet} should be an
+integer between zero and three (0, 1, 2, 3).
 
 \section{The class \texttt{ufc::interior\_facet\_integral}}
 \index{\texttt{ufc::interior\_facet\_integral}}
@@ -730,15 +736,15 @@ coefficients for all \emph{coefficients} of the form in the finite
 element nodal basis for each corresponding function space on the macro
 cell. Thus, the size of the array \texttt{w} should be equal to the
 number of coefficients~$n$ and the size of each each array
-\texttt{w[0]}, \texttt{w[1]} etc. should be equal to twice the space
+\texttt{w[0]}, \texttt{w[1]} etc should be equal to twice the space
 dimension of the corresponding local finite element space.
 
-Additional arguments \texttt{facet0} and \texttt{facet1} are required
-and should specify the local number of the facet with respect to its
-two incident cells. Thus, when the facet is an edge of a triangle, each
-of these arguments may be an integer between zero and two (0, 1, 2)
-and when the facet is a facet of a tetrahedron, each of these
-arguments may be an integer between zero and three (0, 1, 2, 3).
+The additional arguments \texttt{facet0} and \texttt{facet1} should
+specify the local number of the facet with respect to its two incident
+cells. Thus, when the facet is an edge of a triangle, each of these
+arguments may be an integer between zero and two (0, 1, 2) and when
+the facet is a face of a tetrahedron, each of these arguments may be
+an integer between zero and three (0, 1, 2, 3).
 
 \section{The class \texttt{ufc::form}}
 \index{\texttt{ufc::form}}
@@ -768,7 +774,7 @@ virtual const char* signature() const = 0;
 
 This function returns a signature string that uniquely identifies the
 form. This can be used to compare whether or not two given
-\texttt{ufc::forms} objects are identical.
+\texttt{ufc::form} objects are identical.
 
 \subsection{The function \texttt{rank}}
 
@@ -827,12 +833,12 @@ virtual finite_element*
 create_finite_element(unsigned int i) const = 0;
 \end{code}
 
-This factory function constructs a \texttt{finite\_element} object for
-form argument \texttt{i}. A form with rank~$r$ and a number of
-coefficients~$n$ has $r + n$ arguments, so this function
-returns the finite element object for tensor axis $i$ if $i < r$, or
-the finite element for coefficient $i - r$ if $i \geq r$.  The caller
-is responsible for deleting the returned object.
+This factory function constructs a \texttt{ufc::finite\_element}
+object for form argument \texttt{i}. A form with rank~$r$ and number
+of coefficients~$n$ has $r + n$ arguments, so this function returns
+the finite element object for tensor axis $i$ if $i < r$, or the
+finite element for coefficient $i - r$ if $i \geq r$.  The caller is
+responsible for deleting the returned object.
 
 \subsection{The function \texttt{create\_dof\_map}}
 
@@ -841,12 +847,12 @@ virtual dof_map*
 create_dof_map(unsigned int i) const = 0;
 \end{code}
 
-This factory function constructs a \texttt{dof\_map} object for form
-argument \texttt{i}. A form with rank~$r$ and a number of
-coefficients~$n$ has $r + n$ arguments, so this function
-returns the dofmap object for tensor axis $i$ if $i < r$, or the dof
-map for coefficient $i - r$ if $i \geq r$.  The caller is responsible
-for deleting the returned object.
+This factory function constructs a \texttt{ufc::dof\_map} object for
+form argument \texttt{i}. A form with rank~$r$ and number of
+coefficients~$n$ has $r + n$ arguments, so this function returns the
+dofmap object for tensor axis $i$ if $i < r$, or the dofmap for
+coefficient $i - r$ if $i \geq r$.  The caller is responsible for
+deleting the returned object.
 
 \subsection{The function \texttt{create\_cell\_integral}}
 

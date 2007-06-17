@@ -40,21 +40,20 @@ and the \emph{linear form} $L : \hat{V} \rightarrow \R$ is given by
   L(v) = \int_{\Omega} v f \dx.
 \end{equation}
 
-\index{test space}
-\index{trial space}
-By replacing the test space $\hat{V}$ and the trial space $V$ with a
-pair of discrete test and trial spaces $\hat{V}_h$ and $V_h$, we
-obtain the discrete variational problem: Find $U \in V_h$ such that
+\index{test space} \index{trial space} By replacing the test space
+$\hat{V}$ and the trial space $V$ with a pair of discrete test and
+trial spaces $\hat{V}_h \subset \hat{V}$ and $V_h \subset{V}$, we
+obtain the discrete variational problem: Find $u_h \in V_h$ such that
 \begin{equation}
-  a(v, U) = L(v) \quad \forall v \in \hat{V}_h.
+  a(v, u_h) = L(v) \quad \forall v \in \hat{V}_h.
 \end{equation}
-To obtain the discrete solution $U \in V_h$, we make an ansatz
- for $U$ to be expressed as a linear combination of a
+To obtain the discrete solution $u_h \in V_h$, we make an ansatz
+ for $u_h$ to be expressed as a linear combination of a
 suitable set of basis functions $\{\phi_j\}_{j=1}^N$ for $V_h$,
 \begin{equation}
-  U(x) = \sum_{j=1}^N U_j \phi_j(x),
+  u_h(x) = \sum_{j=1}^N U_j \phi_j(x),
 \end{equation}
-and take $v = \hat \phi_i$ for $i = 1,2,\ldots,N$ for
+and take $v = \hat \phi_i$ for $i = 1,2,\ldots,N$ with
 $\{\hat{\phi}_i\}_{i=1}^N$ a set of basis functions for the test space
 $V_h$. We thus obtain the linear system
 \begin{equation}
@@ -89,12 +88,13 @@ set of basis functions.  These basis functions are pre-computed from
 the triplet introduced above. Hence, we will refer to a finite
 element as a collection of
 \begin{itemize}
-\item a polygon,  
-\item a set of basis functions $\{\phi_i\}_{i=1}^n$ and
-the derivatives of those basis functions,
+\item a polygon $K$,
+\item a set of basis functions $\{\phi_i\}_{i=1}^n$ spanning
+$\mathcal{P}_K$ and the derivatives of those basis functions,
 \item the degrees of freedom, which are linear functionals, $L_i : V
-\rightarrow \R, i = 1, 2, \ldots, n$, where $V = \mathrm{span}\{\phi_i\}_{i=1}^n$.  Usually,
-$L_i$ may be extended from $V$ to an appropriate Sobolev space.
+\rightarrow \R, i = 1, 2, \ldots, n$, where $V =
+\mathrm{span}\{\phi_i\}_{i=1}^n$. Usually, $L_i$ may be extended from
+$V$ to an appropriate Sobolev space.
 \end{itemize}
 In addition, our finite element will contain functionality
 for interpolation. 
@@ -135,10 +135,10 @@ non-incident with the boundary $\partial \Omega$).
 
 We shall assume that the variational form~(\ref{eq:variationalform})
 may be expressed as a sum of integrals over the cells~$\mathcal{T}$,
-the exterior facets~$\partial_i \mathcal{T}$ and the interior
-facets~$\partial_e \mathcal{T}$. We shall allow integrals expressed on
+the exterior facets~$\partial_e \mathcal{T}$ and the interior
+facets~$\partial_i \mathcal{T}$. We shall allow integrals expressed on
 disjoint subsets $\{\mathcal{T}_k\}_{k=1}^{n_c}$, $\{\partial_e
-\mathcal{T})_k\}_{k=1}^{n_e}$ and $\{\partial_i
+\mathcal{T}_k\}_{k=1}^{n_e}$ and $\{\partial_i
 \mathcal{T}_k\}_{k=1}^{n_i}$ of $\mathcal{T}$, $\partial_e
 \mathcal{T}$ and $\partial_i \mathcal{T}$ respectively.
 
@@ -204,10 +204,10 @@ problem~(\ref{eq:poissonvariational}) for Poisson's equation. For the
 bilinear form~$a$, the arity (rank) is $r = 2$ and the number of
 coefficients is $n = 0$, while for the linear form~$L$, the arity is
 $r = 1$ and the number of coefficients is $n = 1$. We may also choose
-to directly compute the action of the bilinear form $a$ obtained by
-assembling a vector from the form
+to directly compute the \emph{action} of the bilinear form $a$
+obtained by assembling a vector from the form
 \begin{equation}
-  a(v_1; w_1) = \int_{\Omega} v_1 w_1 \dx,
+  a(v_1; w_1) = \int_{\Omega} \nabla v_1 \cdot \nabla w_1 \dx,
 \end{equation}
 where now $r = 1$ and $n = 1$.
 
@@ -246,7 +246,7 @@ Hence, $r=2$ and $n=2$.
 
 \begin{example}
 \label{example:rhs}
-The form corresponding to the right-hand side (of e.g., Poisson's equation)
+The form corresponding to the right-hand side (of, e.g., Poisson's equation)
 is given by
 \begin{equation}
 a(v; f) = \int_{\Omega} v f \dx.
@@ -255,19 +255,19 @@ The form takes two arguments and one of them is a coefficient,
 \begin{equation}
 a : V_h^1 \times  W_h^1 \rightarrow \R.
 \end{equation}
-Hence, $r = n = 1$.
+Hence, $r = 1$ and $n = 1$.
 \end{example}
 
 \begin{example}
-The $H^1$ norm of the error $e = U - u$ squared is: 
+The $H^1(\Omega)$ norm of the error $e = u_h - u$ squared is: 
 \begin{equation}
-a(U, u) = \int_{\Omega} (U - u)^2 + |\nabla (U - u)|^2 \dx.
+a(u_h, u) = \int_{\Omega} (u_h - u)^2 + |\nabla (u_h - u)|^2 \dx.
 \end{equation}
 The form takes two arguments and both are coefficients,
 \begin{equation}
 a : W_h^1 \times  W_h^2 \rightarrow \R.
 \end{equation}
-Thus, $r=0$ and $n=2$. 
+Hence, $r=0$ and $n=2$. 
 \end{example}
 
 \section{Assembling the discrete operator}
@@ -283,14 +283,14 @@ For illustration purposes, consider the assembly of the global sparse
 tensor~$A$ corresponding to a form~$a$ given by a single integral over
 all cells $\mathcal{T}$,
 \begin{equation}
-  a(v_1, v_2, \ldots, v_r; w_1, w_2, \ldots, w_n) =
+  a(v_1, \ldots, v_r; w_1, \ldots, w_n) =
   \sum_{K\in\mathcal{T}} \int_K
-  I^c(v_1, v_2, \ldots, v_r; w_1, w_2, \ldots, w_n) \dx.
+  I^c(v_1, \ldots, v_r; w_1, \ldots, w_n) \dx.
 \end{equation}
 The global sparse tensor~$A$ is then given by
 \begin{equation}
   A_i = \sum_{K\in\mathcal{T}} \int_K
-  I^c(\phi^1_{i_1}, \phi^2_{i_2}, \ldots, \phi^r_{i_r}; w_1, w_2, \ldots, w_n) \dx.
+  I^c(\phi^1_{i_1}, \ldots, \phi^r_{i_r}; w_1, \ldots, w_n) \dx.
 \end{equation}
 
 To see how to compute the tensor $A$ by summing the local
@@ -326,12 +326,12 @@ each local cell~$K$,
   A_{\iota_K(i)}
   &=
   \sum_{K\in\mathcal{T}} \int_K
-  I^c(\phi_{\iota_K(i_1)}^1, \phi_{\iota_K(i_2)}^2, \ldots, \phi_{\iota_K(i_r)}^r) \dx \\
+  I^c(\phi_{\iota_K(i_1)}^1, \ldots, \phi_{\iota_K(i_r)}^r; w_1, \ldots, w_n) \dx \\
   &=
   \sum_{K\in\mathcal{T}} \int_K
   I^c(\phi_{i_1}^{K,1},
-      \phi_{i_2}^{K,2}, \ldots,
-      \phi_{i_r}^{K,r}) \dx
+      \ldots,
+      \phi_{i_r}^{K,r}; w_1, \ldots, w_n) \dx
   =
   \sum_{K\in\mathcal{T}}
   A^K_i,
@@ -372,8 +372,8 @@ interior facet tensors into a global sparse tensor. In
 Appendix~\ref{app:assembly}, we present a sketch of the corresponding
 implementation in C++ based on UFC. In both cases, we iterate over the
 local cells, exterior and interior facets. On each local entity, we
-compute the local tensor and add it to the global tensor as in
-Figure~\ref{fig:insertion}.
+compute the local tensor and add it to the global tensor as
+illustrated in Figure~\ref{fig:insertion}.
 
 \begin{algorithm}
 $A = 0$ \\

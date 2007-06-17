@@ -1,8 +1,8 @@
 \index{numbering}
 
-The UFC specification dictates a certain ordering of the vertices,
+The UFC specification dictates a certain numbering of the vertices,
 edges etc. of the cells of a finite element mesh. First, an \emph{ad
-hoc} ordering is picked for the vertices of each cell. Then, the
+hoc} numbering is picked for the vertices of each cell. Then, the
 remaining entities are ordered based on a simple rule, as described in
 detail below.
 
@@ -81,7 +81,7 @@ two triangles.
   \end{center}
 \end{figure}
 
-For non-simplicial cells (quadrilaterals and hexahedra), the ordering
+For non-simplicial cells (quadrilaterals and hexahedra), the numbering
 is arbitrary, as long as each cell is isomorphic to the corresponding
 reference cell by matching each vertex with the corresponding vertex
 in the reference cell. This is illustrated in
@@ -109,7 +109,7 @@ consisting of two quadrilaterals.
   \end{center}
 \end{figure}
 
-\section{Numbering of remaining mesh entities}
+\section{Numbering of other mesh entities}
 
 When the vertices have been numbered, the remaining mesh entities are
 numbered within each topological dimension based on a
@@ -207,7 +207,7 @@ edges incident to vertices.
 
 \newpage
 
-\section{Numbering for reference cells}
+\section{Numbering schemes for reference cells}
 
 The numbering scheme is demonstrated below for cells
 isomorphic to each of the five reference cells.
