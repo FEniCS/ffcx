@@ -1,5 +1,5 @@
 //
-// This code complies with UFC version 1.0-rc7, and is generated with SyFi version 0.4.0.
+// This code complies with UFC version 1.0, and is generated with SyFi version 0.4.0.
 //
 // http://www.fenics.org/syfi/
 // http://www.fenics.org/ufc/
@@ -148,7 +148,7 @@ void dof_map_Lagrange_1_2D::tabulate_facet_dofs(unsigned int* dofs,
 }
 
 /// Tabulate the coordinates of all dofs on a cell
-void dof_map_Lagrange_1_2D::tabulate_coordinates(double **coordinates,
+void dof_map_Lagrange_1_2D::tabulate_coordinates(double** coordinates,
                                          const ufc::cell& c) const
 {
   // coordinates

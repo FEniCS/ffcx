@@ -1,5 +1,5 @@
 //
-// This code complies with UFC version 1.0-rc7, and is generated with SyFi version 0.4.0.
+// This code complies with UFC version 1.0, and is generated with SyFi version 0.4.0.
 //
 // http://www.fenics.org/syfi/
 // http://www.fenics.org/ufc/
@@ -45,8 +45,7 @@ public:
 
 
 /// Constructor
-cell_itg__stiffness_form__Lagrange_1_2D::cell_itg__stiffness_form__Lagrange_1_2D() 
-    : ufc::cell_integral()
+cell_itg__stiffness_form__Lagrange_1_2D::cell_itg__stiffness_form__Lagrange_1_2D() : ufc::cell_integral()
 {
 
 }
@@ -85,18 +84,13 @@ void cell_itg__stiffness_form__Lagrange_1_2D::tabulate_tensor(double* A,
   
   memset(A, 0, sizeof(double)*9);
   
-  A[3*0 + 0] = detG*((GinvT01*GinvT01)/2.0+(GinvT11*GinvT11)/2.0+GinvT10*GinvT00
-               +GinvT01*GinvT11+(GinvT00*GinvT00)/2.0+(GinvT10*GinvT10)/2.0);
-  A[3*0 + 1] = detG*(-(GinvT01*GinvT01)/2.0-GinvT10*GinvT00/2.0
-               -GinvT01*GinvT11/2.0-(GinvT00*GinvT00)/2.0);
-  A[3*0 + 2] = detG*(-(GinvT11*GinvT11)/2.0-GinvT10*GinvT00/2.0
-               -GinvT01*GinvT11/2.0-(GinvT10*GinvT10)/2.0);
-  A[3*1 + 0] = detG*(-(GinvT01*GinvT01)/2.0-GinvT10*GinvT00/2.0
-               -GinvT01*GinvT11/2.0-(GinvT00*GinvT00)/2.0);
+  A[3*0 + 0] = detG*((GinvT01*GinvT01)/2.0+(GinvT11*GinvT11)/2.0+GinvT10*GinvT00+GinvT01*GinvT11+(GinvT00*GinvT00)/2.0+(GinvT10*GinvT10)/2.0);
+  A[3*0 + 1] = detG*(-(GinvT01*GinvT01)/2.0-GinvT10*GinvT00/2.0-GinvT01*GinvT11/2.0-(GinvT00*GinvT00)/2.0);
+  A[3*0 + 2] = detG*(-(GinvT11*GinvT11)/2.0-GinvT10*GinvT00/2.0-GinvT01*GinvT11/2.0-(GinvT10*GinvT10)/2.0);
+  A[3*1 + 0] = detG*(-(GinvT01*GinvT01)/2.0-GinvT10*GinvT00/2.0-GinvT01*GinvT11/2.0-(GinvT00*GinvT00)/2.0);
   A[3*1 + 1] = detG*((GinvT01*GinvT01)/2.0+(GinvT00*GinvT00)/2.0);
   A[3*1 + 2] = detG*(GinvT10*GinvT00/2.0+GinvT01*GinvT11/2.0);
-  A[3*2 + 0] = detG*(-(GinvT11*GinvT11)/2.0-GinvT10*GinvT00/2.0
-               -GinvT01*GinvT11/2.0-(GinvT10*GinvT10)/2.0);
+  A[3*2 + 0] = detG*(-(GinvT11*GinvT11)/2.0-GinvT10*GinvT00/2.0-GinvT01*GinvT11/2.0-(GinvT10*GinvT10)/2.0);
   A[3*2 + 1] = detG*(GinvT10*GinvT00/2.0+GinvT01*GinvT11/2.0);
   A[3*2 + 2] = detG*((GinvT11*GinvT11)/2.0+(GinvT10*GinvT10)/2.0);
 }
@@ -152,8 +146,7 @@ unsigned int form__stiffness_form__Lagrange_1_2D::num_interior_facet_integrals()
 }
 
 /// Create a new finite element for argument function i
-ufc::finite_element* form__stiffness_form__Lagrange_1_2D::
-     create_finite_element(unsigned int i) const
+ufc::finite_element* form__stiffness_form__Lagrange_1_2D::create_finite_element(unsigned int i) const
 {
   switch(i)
   {
@@ -179,22 +172,19 @@ ufc::dof_map* form__stiffness_form__Lagrange_1_2D::create_dof_map(unsigned int i
 }
 
 /// Create a new cell integral on sub domain i
-ufc::cell_integral* form__stiffness_form__Lagrange_1_2D::
-     create_cell_integral(unsigned int i) const
+ufc::cell_integral* form__stiffness_form__Lagrange_1_2D::create_cell_integral(unsigned int i) const
 {
   return new cell_itg__stiffness_form__Lagrange_1_2D();
 }
 
 /// Create a new exterior facet integral on sub domain i
-ufc::exterior_facet_integral* form__stiffness_form__Lagrange_1_2D::
-     create_exterior_facet_integral(unsigned int i) const
+ufc::exterior_facet_integral* form__stiffness_form__Lagrange_1_2D::create_exterior_facet_integral(unsigned int i) const
 {
   return 0;
 }
 
 /// Create a new interior facet integral on sub domain i
-ufc::interior_facet_integral* form__stiffness_form__Lagrange_1_2D::
-     create_interior_facet_integral(unsigned int i) const
+ufc::interior_facet_integral* form__stiffness_form__Lagrange_1_2D::create_interior_facet_integral(unsigned int i) const
 {
   return 0;
 }

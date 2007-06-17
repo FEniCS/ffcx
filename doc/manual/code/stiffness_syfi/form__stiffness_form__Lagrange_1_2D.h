@@ -1,5 +1,5 @@
 //
-// This code complies with UFC version 1.0-rc7, and is generated with SyFi version 0.4.0.
+// This code complies with UFC version 1.0, and is generated with SyFi version 0.4.0.
 //
 // http://www.fenics.org/syfi/
 // http://www.fenics.org/ufc/
@@ -77,12 +77,10 @@ public:
   virtual ufc::cell_integral* create_cell_integral(unsigned int i) const;
 
   /// Create a new exterior facet integral on sub domain i
-  virtual ufc::exterior_facet_integral* 
-          create_exterior_facet_integral(unsigned int i) const;
+  virtual ufc::exterior_facet_integral* create_exterior_facet_integral(unsigned int i) const;
 
   /// Create a new interior facet integral on sub domain i
-  virtual ufc::interior_facet_integral* 
-          create_interior_facet_integral(unsigned int i) const;
+  virtual ufc::interior_facet_integral* create_interior_facet_integral(unsigned int i) const;
 
 };
 

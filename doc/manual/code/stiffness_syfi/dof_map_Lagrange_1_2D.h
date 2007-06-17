@@ -1,5 +1,5 @@
 //
-// This code complies with UFC version 1.0-rc7, and is generated with SyFi version 0.4.0.
+// This code complies with UFC version 1.0, and is generated with SyFi version 0.4.0.
 //
 // http://www.fenics.org/syfi/
 // http://www.fenics.org/ufc/
@@ -75,7 +75,7 @@ public:
                                    unsigned int facet) const;
 
   /// Tabulate the coordinates of all dofs on a cell
-  virtual void tabulate_coordinates(double **coordinates,
+  virtual void tabulate_coordinates(double** coordinates,
                                     const ufc::cell& c) const;
 
   /// Return the number of sub dof maps (for a mixed element)

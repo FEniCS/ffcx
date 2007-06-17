@@ -1,5 +1,5 @@
 //
-// This code complies with UFC version 1.0-rc7, and is generated with SyFi version 0.4.0.
+// This code complies with UFC version 1.0, and is generated with SyFi version 0.4.0.
 //
 // http://www.fenics.org/syfi/
 // http://www.fenics.org/ufc/
