@@ -77,10 +77,12 @@ public:
   virtual ufc::cell_integral* create_cell_integral(unsigned int i) const;
 
   /// Create a new exterior facet integral on sub domain i
-  virtual ufc::exterior_facet_integral* create_exterior_facet_integral(unsigned int i) const;
+  virtual ufc::exterior_facet_integral* 
+    create_exterior_facet_integral(unsigned int i) const;
 
   /// Create a new interior facet integral on sub domain i
-  virtual ufc::interior_facet_integral* create_interior_facet_integral(unsigned int i) const;
+  virtual ufc::interior_facet_integral* 
+    create_interior_facet_integral(unsigned int i) const;
 
 };
 
