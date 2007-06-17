@@ -3,12 +3,12 @@ To install FFC, type
     sudo python setup.py install
 
 This will install FFC in the default Python path of your system,
-probably in /usr/lib/python2.4/site-packages/.
+something like /usr/lib/python2.5/site-packages/.
 
-The installation script requires the Python module distutils,
-which for Debian users is available with the python-dev package.
-Other dependencies are listed in the file README.
+The installation script requires the Python module distutils, which
+for Debian users is available with the python-dev package.  Other
+dependencies are listed in the file README.
 
-For detailed installation instructions, see the FFC user manual which is 
-available on http://www.fenics.org/ and also in the subdirectory
+For detailed installation instructions, see the FFC user manual which
+is available on http://www.fenics.org/ and also in the subdirectory
 doc/manual/ of this source tree.
