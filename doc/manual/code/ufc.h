@@ -1,4 +1,4 @@
-// This is UFC (Unified Form-assembly Code) v. 1.0-rc7.
+// This is UFC (Unified Form-assembly Code) v. 1.0.
 // This code is released into the public domain.
 //
 // The FEniCS Project (http://www.fenics.org/) 2006-2007.
@@ -6,7 +6,10 @@
 #ifndef __UFC_H
 #define __UFC_H
 
-const char UFC_VERSION[] = "1.0-rc7";
+#define UFC_VERSION_MAJOR 1
+#define UFC_VERSION_MINOR 0
+
+const char UFC_VERSION[] = "1.0";
 
 namespace ufc
 {
@@ -193,7 +196,7 @@ namespace ufc
                                      unsigned int facet) const = 0;
 
     /// Tabulate the coordinates of all dofs on a cell
-    virtual void tabulate_coordinates(double **coordinates,
+    virtual void tabulate_coordinates(double** coordinates,
                                       const cell& c) const = 0;
 
     /// Return the number of sub dof maps (for a mixed element)
