@@ -8,6 +8,7 @@ Three format strings are defined for each of the following UFC classes:
     cell_integral
     exterior_facet_integral
     interior_facet_integral
+    form
 
 The strings are named '<classname>_header', '<classname>_implementation',
 and '<classname>_combined'. The header and implementation contain the
