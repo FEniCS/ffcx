@@ -1,12 +1,12 @@
-# Copyright (C) 2006 Anders Logg
+# Copyright (C) 2007 Anders Logg
 # Licensed under the GNU GPL Version 2
 #
 # The bilinear form for a stabilization term in the
 # Navier-Stokes equations.
 #
-# Compile this form with FFC: ffc FFCBench.form
+# Compile this form with FFC: ffc Stabilization.form
 
-element = FiniteElement("Vector Lagrange", "tetrahedron", 1)
+element = VectorElement("Lagrange", "tetrahedron", 1)
 
 v = TestFunction(element)
 U = TrialFunction(element)

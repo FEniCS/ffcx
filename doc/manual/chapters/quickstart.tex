@@ -36,15 +36,15 @@ NumPy. (See Appendix~\ref{app:installation} for detailed instructions.)
 \index{Poisson's equation}
 
 The discrete variational (finite element) formulation of Poisson's
-equation, $-\Delta u = f$, reads: Find $U \in V_h$ such that
+equation, $-\Delta u = f$, reads: Find $u_h \in V_h$ such that
 \begin{equation} \label{eq:varform}
-  a(v, U) = L(v) \quad \forall v\in \hat{V}_h, 
+  a(v, u_h) = L(v) \quad \forall v\in \hat{V}_h, 
 \end{equation}
 with $(\hat{V}_h, V_h)$ a pair of suitable function spaces (the test and
 trial spaces). The bilinear form $a : \hat{V}_h \times V_h \rightarrow
 \R$ is given by
 \begin{equation}
-  a(v, U) = \int_{\Omega} \nabla v \cdot \nabla U \dx
+  a(v, u_h) = \int_{\Omega} \nabla v \cdot \nabla u_h \dx
 \end{equation}
 and the linear form $L : \hat{V}_h \rightarrow \R$ is given by
 \begin{equation}
@@ -78,11 +78,11 @@ follows:
 # ffc Poisson.form
 \end{code}
 This will generate the file \texttt{Poisson.h} containing low level
-C++ code in the UFC (Unified Form-assembly Code) format~\cite{www:ufc}.
-The generated code can be used by any UFC-based assembler
-such as \dolfin{}~\cite{www:dolfin} to assemble the discrete
-representations (the matrix~$A$ and vector~$b$) of the bilinear form
-$a$ and linear form~$L$ of Poisson's equation.
+C++ code in the UFC (Unified Form-assembly Code)
+format~\cite{www:ufc,ufcmanual}. The generated code can be used by
+any UFC-based assembler such as \dolfin{}~\cite{www:dolfin} to
+assemble the discrete representations (the matrix~$A$ and vector~$b$)
+of the bilinear form $a$ and linear form~$L$ of Poisson's equation.
 
 Note that by adding the flag \texttt{-l dolfin}, additional
 \dolfin{}-specific wrappers are added to the generated code which
@@ -91,5 +91,9 @@ particular, the handling of forms depending on coefficients like $f$
 in Poisson's equation is simplified.
 
 For further help on the \texttt{ffc} command and available
-command-line options, type \texttt{man ffc}.  \index{ffc} \index{man
-page}
+command-line options, refer to the \ffc{} man page:
+\begin{code}
+# man ffc
+\end{code}
+\index{ffc}
+\index{man page}

@@ -22,7 +22,7 @@ compile([a, L], "Poisson")
 
 At the basic level, the only difference between the command-line
 interface and the Python interface is that one must add the
-import statement from the \ffc{} module and that the function
+import statement of the \ffc{} module and that the function
 \texttt{compile} must be called when using the Python interface.
 
 \section{The \texttt{compile} function}
@@ -49,11 +49,11 @@ used to specify that code should be generated based on direct
 quadrature at run-time (experimental).
 
 The \texttt{language} option can be used to control the output
-language for the generated code. The default values is
-\texttt{"ufc"}, which indicates that code should be generated in the
-UFC format~\cite{www:ufc}. Alternatively, \texttt{"dolfin"} may be
-used to generate code according to the UFC format with a small set of
-additional \dolfin{}-specific wrappers.
+language for the generated code. The default value is \texttt{"ufc"},
+which indicates that code should be generated in the UFC
+format~\cite{www:ufc,ufcmanual}. Alternatively, \texttt{"dolfin"} may
+be used to generate code according to the UFC format with a small set
+of additional \dolfin{}-specific wrappers.
 
 Finally, the \texttt{compile} function accepts a dictionary of special
 code generation options. The default values for these options may be

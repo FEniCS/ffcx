@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Copyright (C) Anders Logg 2004-2006
+# Copyright (C) Anders Logg 2004-2007
 # Licensed under the GNU GPL Version 2
 #
 # This script creates a new release of FFC
@@ -89,8 +89,10 @@ scp TODO fenics@fenics.org:www.fenics.org/pub/software/ffc/
 
 # Update on web server
 echo '--- Update web pages'
-ssh -t fenics@fenics.org 'emacs -nw www.fenics.org/ffc/index.cpp'
-ssh -t fenics@fenics.org 'emacs -nw www.fenics.org/download/index.cpp'
+echo '1. Update FFC page'
+echo '2. Update download page'
+#ssh -t fenics@fenics.org 'emacs -nw www.fenics.org/ffc/index.cpp'
+#ssh -t fenics@fenics.org 'emacs -nw www.fenics.org/download/index.cpp'
 ssh -t fenics@fenics.org '/home/fenics/local/bin/news'
 
 # Notify ffc-dev of the new version

@@ -1,4 +1,15 @@
+ - Move to UFC interface for code generation
+ - Major rewrite, restructure, cleanup
+ - Add support for Brezzi-Douglas-Marini (BDM) elements
+ - Add support for Raviart-Thomas (RT) elements
  - Add support for Discontinuous Galerkin (DG) methods
+ - Operators jump() and avg()
+ - Add quadrature compilation mode (experimental)
+ - Simplification of forms
+ - Operators sqrt(), abs() and inverse
+ - Improved Python interface
+ - Add flag -f precision=n
+ - Generate code for basis functions and derivatives
  - Use Set from set module for Python2.3 compatibility
 0.3.5 [2006-12-01]
  - Bug fixes
