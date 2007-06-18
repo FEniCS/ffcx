@@ -410,7 +410,6 @@ def __generate_cell_integral(code, form_data, options, prefix, i):
     ufc_code["classname"] = "%s_cell_integral_%d" % (prefix, i)
 
     # Generate code for members
-#    ufc_code["members"] = ""
     ufc_code["members"] = __generate_body(code["members"])
 
     # Generate code for constructor
@@ -436,7 +435,6 @@ def __generate_exterior_facet_integral(code, form_data, options, prefix, i):
     ufc_code["classname"] = "%s_exterior_facet_integral_%d" % (prefix, i)
 
     # Generate code for members
-#    ufc_code["members"] = ""
     ufc_code["members"] = __generate_body(code["members"])
 
     # Generate code for constructor
@@ -465,7 +463,6 @@ def __generate_interior_facet_integral(code, form_data, options, prefix, i):
     ufc_code["classname"] = "%s_interior_facet_integral_%d" % (prefix, i)
 
     # Generate code for members
-#    ufc_code["members"] = ""
     ufc_code["members"] = __generate_body(code["members"])
 
     # Generate code for constructor
