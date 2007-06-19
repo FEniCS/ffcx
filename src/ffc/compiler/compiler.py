@@ -49,11 +49,6 @@ from codegeneration.common.dofmap import *
 from format import ufcformat
 from format import dolfinformat
 
-import profile
-import hotshot
-from hotshot import stats
-import time
-
 def compile(forms, prefix="Form", representation=FFC_REPRESENTATION, output_language=FFC_LANGUAGE, options=FFC_OPTIONS):
     "Compile the given forms and/or elements"
 
