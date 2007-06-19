@@ -13,10 +13,14 @@ t1 = time() - t
 
 # Run benchmark
 t = time()
-getoutput("../bin/ffc Stabilization.form")
+#getoutput("../bin/ffc Stabilization.form")
 t2 = time() - t
 
 # Write report
 print "Navier-Stokes: %.3f seconds" % t1
-print "Stabilization: %.3f seconds" % t2
+#print "Stabilization: %.3f seconds" % t2
+print "Stabilization: too much"
+print ""
+print "remove_unused() is *very* slow but this"
+print "will be fixed in a future release"
 print "-----------------------------------"

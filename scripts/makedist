@@ -39,12 +39,14 @@ VERSION=`grep 'FFC_VERSION' src/ffc/common/constants.py | cut -d'"' -f2`
 echo "--- Version number is $VERSION"
 sleep 1
 
-# Verify output\
-echo '--- Verifying output'
-scripts/verify
+# Run tests
+echo '--- Running tests'
+cd src/test
+python test.py
 echo '--- Only version numbers should differ, press return to continue'
 read
-cp src/demo/*.h src/reference
+cd ../..
+cp src/demo/*.h src/test/regression/reference
 
 # Run benchmark problem
 echo '--- Running benchmark problem'
