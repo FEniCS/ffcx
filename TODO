@@ -51,5 +51,8 @@ priority.
   for complicated forms by generating loops for the computation of
   the entries of the geometry tensor
 
+* Just-in-time compilation
+  - Use Instant to compile and wrap code back to Python
+
 * Fix all FIXMEs
   - There are a few of these: find src/ffc -name '*.py' | xargs grep FIXME
