@@ -37,7 +37,7 @@ class QuadratureGenerator(CodeGenerator):
         # Initialize common code generator
         CodeGenerator.__init__(self)
         self.optimise_level = 3
-        self.save_tables = False
+        self.save_tables = True
         self.unique_tables = True
 
     def generate_cell_integral(self, form_representation, sub_domain, format):
