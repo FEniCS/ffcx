@@ -1,7 +1,7 @@
 "Code generator for quadrature representation"
 
 __author__ = "Kristian B. Oelgaard (k.b.oelgaard@tudelft.nl)"
-__date__ = "2007-03-16 -- 2007-06-11"
+__date__ = "2007-03-16 -- 2007-06-19"
 __copyright__ = "Copyright (C) 2007 Kristian B. Oelgaard"
 __license__  = "GNU GPL Version 2"
 
@@ -37,7 +37,7 @@ class QuadratureGenerator(CodeGenerator):
         # Initialize common code generator
         CodeGenerator.__init__(self)
         self.optimise_level = 3
-        self.save_tables = True
+        self.save_tables = False
         self.unique_tables = True
 
     def generate_cell_integral(self, form_representation, sub_domain, format):
@@ -161,11 +161,6 @@ class QuadratureGenerator(CodeGenerator):
             members_code = generate_load_table(tensors)
 #            generate_load_table(tensors)
 
-#        for points in group_tensors:
-            # Loop tensors to generate tables
-#            for i in group_tensors[points]:
-                # Tabulate the quadrature weights
-#                tabulate_code += self.__tabulate_weights(tensors[i].quadrature.weights, i, Indent, format)
         for i in range(len(tensors)):
             # Tabulate the quadrature weights
             tabulate_code += self.__tabulate_weights(tensors[i].quadrature.weights, i, Indent, format)
@@ -209,9 +204,6 @@ class QuadratureGenerator(CodeGenerator):
                 element_code += [Indent.indent(format_block_begin)]
                 Indent.increase()
 
-            # Generate element tensors for all tensors with the current number of quadrature points
-#            for i in group_tensors[points]:
-#                element_code += self.__element_tensor(tensors[i], i, sign_changes, Indent, format, name_map)
                 # Generate element tensors for all tensors with the current number of quadrature points
                 for i in tensor_numbers:
                     element_code += self.__element_tensor(tensors[i], i, sign_changes, Indent, format, name_map)
@@ -361,8 +353,6 @@ class QuadratureGenerator(CodeGenerator):
         # Get rank and dims of primary indices
         irank, idims = tensor.i.rank, tensor.i.dims
 
-#        print "name_map: ", name_map
-
         # Get monomial and compute macro dimensions in case of restricted basisfunctions
         monomial = tensor.monomial
         macro_idims = compute_macro_idims(monomial, idims, irank)
@@ -399,7 +389,6 @@ class QuadratureGenerator(CodeGenerator):
             value = add_sign(value, 0, [format["first free index"], format["second free index"]], format)
 
         # FIXME: quadrature only support Functionals and Linear and Bilinear forms
-
         if (irank == 0):
             # Entry is zero because functional is a scalar value
             entry = "0"
@@ -432,8 +421,6 @@ class QuadratureGenerator(CodeGenerator):
                     ("Compute block entries (tensor/monomial term %d)" % (tensor_number,)))]
 
             # Create boundaries for loop
-#            boundaries = [0, idims[0]]
-#            loop_vars = [[format["first free index"]] + boundaries] + secondary_loop
             loop_vars = secondary_loop
             if secondary_loop:
                 code += generate_loop(name, value, loop_vars, Indent, format, format["add equal"])
@@ -459,9 +446,6 @@ class QuadratureGenerator(CodeGenerator):
                     ("Compute block entries (tensor/monomial term %d)" % (tensor_number,)))]
 
             # Create boundaries for loop
-#            boundaries = [[0, idims[0]], [0, idims[1]]]
-#            loop_vars = [[format["first free index"]] + boundaries[0],\
-#                         [format["second free index"]] + boundaries[1]] + secondary_loop
             loop_vars = secondary_loop
             if secondary_loop:
                 code += generate_loop(name, value, loop_vars, Indent, format, format["add equal"])

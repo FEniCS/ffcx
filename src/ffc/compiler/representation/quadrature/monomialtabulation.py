@@ -1,7 +1,7 @@
 "This module implements the tabulation of monomial forms, large parts are copied from monomialintegration.py"
 
 __author__ = "Kristian B. Oelgaard (k.b.oelgaard@tudelft.nl)"
-__date__ = "2007-03-23 -- 2007-06-01"
+__date__ = "2007-03-23 -- 2007-06-19"
 __copyright__ = "Copyright (C) 2007 Kristian B. Oelgaard"
 __license__  = "GNU GPL Version 2"
 
@@ -39,7 +39,6 @@ class Quadrature:
 
         self.points  = points
         self.weights = weights
-
 
 def tabulate(monomial, facet0, facet1):
     """Tabulate the element tensor for a given monomial term of a
@@ -244,9 +243,6 @@ def __compute_psi(v, table, num_points, dscaling, integral_type):
 
     # Return Psis the list of indices, and the index of the basis function
     return (Psi, indices, vindex[0])
-
-#    return (Psi, indices, vindex[0], bpart)
-#    return (Psi, indices, dimensions, multiindices, bpart)
 
 def __compute_degree(basisfunctions):
     "Compute total degree for given monomial term."

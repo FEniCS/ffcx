@@ -1,5 +1,7 @@
+"Quadrature representation class, generates"
+
 __author__ = "Kristian B. Oelgaard (k.b.oelgaard@tudelft.nl)"
-__date__ = "2007-03-16 -- 2007-03-23"
+__date__ = "2007-03-16 -- 2007-06-19"
 __copyright__ = "Copyright (C) 2007 Kristian B. Oelgaard"
 __license__  = "GNU GPL Version 2"
 
@@ -138,9 +140,6 @@ class QuadratureRepresentation:
     def __compute_factorization(self, monomials):
         "Compute factorization"
 
-#        factorization = factorize(monomials)
-#        print "factor"
-#        print "len(monomials): ", len(monomials)
         factorization = [None for i in range(len(monomials))]
 
         num_terms = sum([1 for m in factorization if m == None])

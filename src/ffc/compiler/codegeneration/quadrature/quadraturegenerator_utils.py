@@ -1,7 +1,7 @@
 "Code generator for quadrature representation"
 
 __author__ = "Kristian B. Oelgaard (k.b.oelgaard@tudelft.nl)"
-__date__ = "2007-03-16 -- 2007-06-11"
+__date__ = "2007-03-16 -- 2007-06-19"
 __copyright__ = "Copyright (C) 2007 Kristian B. Oelgaard"
 __license__  = "GNU GPL Version 2"
 
@@ -10,20 +10,12 @@ __license__  = "GNU GPL Version 2"
 # Python modules
 import os
 
-# FFC common modules
-#from ffc.common.constants import *
-#from ffc.common.utils import *
-
 # FFC language modules
 from ffc.compiler.language.index import *
 from ffc.compiler.language.restriction import *
 
 # FFC code generation modules
 from ffc.compiler.codegeneration.common.codegenerator import *
-#from ffc.compiler.codegeneration.common.utils import *
-
-# FFC tensor representation modules
-#from ffc.compiler.representation.tensor.multiindex import *
 
 # Should be in dictionary!!
 index_names = {0: lambda i: "f%s" %(i), 1: lambda i: "p%s" %(i), 2: lambda i: "s%s" %(i),\
@@ -207,9 +199,8 @@ def add_sign(value, j, i, format):
     return value
 
 def generate_factor(tensor, a, bgindices, format):
-    "Optimise level 2 and 3"
+    "Optimise level 2"
 
-# From tensorgenerator    
         # Compute product of factors outside sum
     factors = []
     for j in range(len(tensor.coefficients)):
@@ -320,65 +311,6 @@ def generate_factor_old(tensor, a, b, format):
         d = format["scale factor"]
     return [format["multiply"](factors + [d])]
 
-def generate_factor_old2(tensor, a, b, format):
-    "Optimise level 0 and 1"
-    # Compute product of factors outside sum
-    factors = []
-    for j in range(len(tensor.coefficients)):
-        c = tensor.coefficients[j]
-        if not c.index.type == Index.AUXILIARY_G:
-            offset = tensor.coefficient_offsets[c]
-            if offset:
-                coefficient = format["coeff"] + format["matrix access"](c.n1.index,\
-                              format["add"]([c.index([], a, [], []), str(offset)]))
-            else:
-                coefficient = format["coeff"] + format["matrix access"](c.n1.index, c.index([], a, [], []))
-            for l in range(len(c.ops)):
-                op = c.ops[len(c.ops) - 1 - l]
-                if op == Operators.INVERSE:
-                    coefficient = format["inverse"](coefficient)
-                elif op == Operators.ABS:
-                    coefficient = format["absolute value"](coefficient)
-                elif op == Operators.SQRT:
-                    coefficient = format["sqrt"](coefficient)
-            factors += [coefficient]
-    for t in tensor.transforms:
-        if not (t.index0.type == Index.AUXILIARY_G or  t.index1.type == Index.AUXILIARY_G):
-            factors += [format["transform"](t.type, t.index0([], a, [], []), \
-                                                    t.index1([], a, [], []), \
-                                                    t.restriction),]
-    # Compute sum of monomials inside sum
-    for j in range(len(tensor.coefficients)):
-        c = tensor.coefficients[j]
-        if c.index.type == Index.AUXILIARY_G:
-            offset = tensor.coefficient_offsets[c]
-            if offset:
-                coefficient = format["coeff"] + format["matrix access"](c.n1.index,\
-                              format["add"]([c.index([], a, [], b), str(offset)]))
-            else:
-                coefficient = format["coeff"] + format["matrix access"](c.n1.index, c.index([], a, [], b))
-
-            for l in range(len(c.ops)):
-                op = c.ops[len(c.ops) - 1 - l]
-                if op == Operators.INVERSE:
-                    coefficient = format["inverse"](coefficient)
-                elif op == Operators.ABS:
-                    coefficient = format["absolute value"](coefficient)
-                elif op == Operators.SQRT:
-                    coefficient = format["sqrt"](coefficient)
-            factors += [coefficient]
-    for t in tensor.transforms:
-        if t.index0.type == Index.AUXILIARY_G or t.index1.type == Index.AUXILIARY_G:
-            factors += [format["transform"](t.type, t.index0([], a, [], b), \
-                                                        t.index1([], a, [], b), \
-                                                        t.restriction)]
-    if tensor.determinant:
-        d0 = format["power"](format["determinant"], tensor.determinant)
-        d = format["multiply"]([format["scale factor"], d0])
-    else:
-        d = format["scale factor"]
-    return [format["multiply"](factors + [d])]
-
 def generate_factor3(tensor, a, bgindices, format):
     "Optimise level 3"
 
@@ -465,6 +397,15 @@ def values_level_0(indices, vindices, aindices, b0indices, bgindices, tensor, te
                            b0, psi_indices, vindices, format) for psi_indices in indices] +\
                            weight + factor) + format_new_line]
 
+    # Map values to correct table
+    if name_map:
+        map_values = []
+        for val in values:
+            for name in name_map:
+                val = val.replace(name, name_map[name])
+            map_values += [val]
+        values = map_values
+
     return (values, [])
 
 def values_level_1(indices, vindices, aindices, b0indices, bgindices, tensor, tensor_number, weight, format, name_map):
@@ -492,6 +433,15 @@ def values_level_1(indices, vindices, aindices, b0indices, bgindices, tensor, te
         else:
             geo = geo[0]
         values += [format_multiply([ref,geo]) + format_new_line]
+
+    # Map values to correct table
+    if name_map:
+        map_values = []
+        for val in values:
+            for name in name_map:
+                val = val.replace(name, name_map[name])
+            map_values += [val]
+        values = map_values
 
     return (values, [])
 
@@ -530,6 +480,16 @@ def values_level_2(indices, vindices, aindices, b0indices, bgindices, tensor, te
 
         geo = format_multiply(geo_out + geo_in + d)
         values += [format_multiply([ref,geo]) + format_new_line]
+
+    # Map values to correct table
+    if name_map:
+        map_values = []
+        for val in values:
+            for name in name_map:
+                val = val.replace(name, name_map[name])
+            map_values += [val]
+        values = map_values
+
     return (values, [])
 
 def values_level_3(indices, vindices, aindices, b0indices, bgindices, tensor, tensor_number, weight, format, name_map):
