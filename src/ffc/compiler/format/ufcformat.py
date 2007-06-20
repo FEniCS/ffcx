@@ -145,6 +145,7 @@ format = { "add": lambda v: " + ".join(v),
            "snippet inverse 3D": inverse_jacobian_3D,
            "snippet evaluate_dof": lambda d : {2: evaluate_dof_2D, 3: evaluate_dof_3D}[d],
            "get cell vertices" : "const double * const * x = c.coordinates;",
+           "generate jacobian": lambda d,i: __generate_jacobian(d,i),
 # misc
            "block separator": ",\n",
 #           "block separator": ",",
@@ -419,10 +420,11 @@ def __generate_cell_integral(code, form_data, options, prefix, i):
     ufc_code["destructor"] = "// Do nothing"
 
     # Generate code for tabulate_tensor
-    body  = __generate_jacobian(form_data.cell_dimension, Integral.CELL)
-    body += "\n"
-    body += __generate_body(code["tabulate_tensor"])
-    ufc_code["tabulate_tensor"] = remove_unused(body)
+#    body  = __generate_jacobian(form_data.cell_dimension, Integral.CELL)
+#    body += "\n"
+    body = __generate_body(code["tabulate_tensor"])
+#    ufc_code["tabulate_tensor"] = remove_unused(body)
+    ufc_code["tabulate_tensor"] = body
 
     return __generate_code(cell_integral_combined, ufc_code, options)
 
@@ -445,13 +447,14 @@ def __generate_exterior_facet_integral(code, form_data, options, prefix, i):
 
     # Generate code for tabulate_tensor
     switch = __generate_switch("facet", [__generate_body(case) for case in code["tabulate_tensor"][1]])
-    body  = __generate_jacobian(form_data.cell_dimension, Integral.EXTERIOR_FACET)
-    body += "\n"
-    body += __generate_body(code["tabulate_tensor"][0])
+#    body  = __generate_jacobian(form_data.cell_dimension, Integral.EXTERIOR_FACET)
+#    body += "\n"
+    body = __generate_body(code["tabulate_tensor"][0])
     body += "\n"
     body += switch
-    ufc_code["tabulate_tensor"] = remove_unused(body)
-    
+#    ufc_code["tabulate_tensor"] = remove_unused(body)
+    ufc_code["tabulate_tensor"] = body
+
     return __generate_code(exterior_facet_integral_combined, ufc_code, options)
 
 def __generate_interior_facet_integral(code, form_data, options, prefix, i):
@@ -473,12 +476,13 @@ def __generate_interior_facet_integral(code, form_data, options, prefix, i):
 
     # Generate code for tabulate_tensor, impressive line of Python code follows
     switch = __generate_switch("facet0", [__generate_switch("facet1", [__generate_body(case) for case in cases]) for cases in code["tabulate_tensor"][1]])
-    body  = __generate_jacobian(form_data.cell_dimension, Integral.INTERIOR_FACET)
-    body += "\n"
-    body += __generate_body(code["tabulate_tensor"][0])
+#    body  = __generate_jacobian(form_data.cell_dimension, Integral.INTERIOR_FACET)
+#    body += "\n"
+    body = __generate_body(code["tabulate_tensor"][0])
     body += "\n"
     body += switch
-    ufc_code["tabulate_tensor"] = remove_unused(body)
+#    ufc_code["tabulate_tensor"] = remove_unused(body)
+    ufc_code["tabulate_tensor"] = body
 
     return __generate_code(interior_facet_integral_combined, ufc_code, options)
 

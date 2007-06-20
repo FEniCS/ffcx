@@ -9,6 +9,8 @@ __license__  = "GNU GPL Version 2"
 
 # Python modules
 import os
+from sets import Set
+
 
 # FFC language modules
 from ffc.compiler.language.index import *
@@ -191,12 +193,14 @@ def generate_signs(tensors, format):
         return ([], False) # Return [] is the case of no sign changes...)
 
 def add_sign(value, j, i, format):
+    s_set = Set()
     if value:
         value = format["grouping"](value)
         for k in range(len(i)):
             value = format["multiply"]([format["signs"] + format["secondary index"]\
                    (str(j))+ format["secondary index"](str(k)) + format["array access"](i[k]),value])
-    return value
+            s_set.add(format["signs"] + format["secondary index"](str(j))+ format["secondary index"](str(k)))
+    return (value, s_set)
 
 def generate_factor(tensor, a, bgindices, format):
     "Optimise level 2"
@@ -316,6 +320,7 @@ def generate_factor3(tensor, a, bgindices, format):
 
 # From tensorgenerator    
         # Compute product of factors outside sum
+    trans_set = Set()
     factors = []
     for j in range(len(tensor.coefficients)):
         c = tensor.coefficients[j]
@@ -337,9 +342,14 @@ def generate_factor3(tensor, a, bgindices, format):
             factors += [coefficient]
     for t in tensor.transforms:
         if not (t.index0.type == Index.AUXILIARY_G or  t.index1.type == Index.AUXILIARY_G):
-            factors += [format["transform"](t.type, t.index0([], a, [], []), \
-                                                    t.index1([], a, [], []), \
-                                                    t.restriction),]
+#            factors += [format["transform"](t.type, t.index0([], a, [], []), \
+#                                                    t.index1([], a, [], []), \
+#                                                    t.restriction),]
+            trans = format["transform"](t.type, t.index0([], a, [], []), \
+                                                t.index1([], a, [], []), t.restriction)
+            factors += [trans]
+            trans_set.add(trans)
+
     monomial = format["multiply"](factors)
     if monomial:
         f_out = [monomial]
@@ -370,9 +380,14 @@ def generate_factor3(tensor, a, bgindices, format):
                 factors += [coefficient]
         for t in tensor.transforms:
             if t.index0.type == Index.AUXILIARY_G or t.index1.type == Index.AUXILIARY_G:
-                factors += [format["transform"](t.type, t.index0([], a, [], b), \
-                                                        t.index1([], a, [], b), \
-                                                        t.restriction)]
+#                factors += [format["transform"](t.type, t.index0([], a, [], b), \
+#                                                        t.index1([], a, [], b), \
+#                                                        t.restriction)]
+                trans = format["transform"](t.type, t.index0([], a, [], b), \
+                                                t.index1([], a, [], b), t.restriction)
+                factors += [trans]
+                trans_set.add(trans)
+
         terms += [format["multiply"](factors)]
 
     f_in = format["add"](terms)
@@ -381,7 +396,7 @@ def generate_factor3(tensor, a, bgindices, format):
 
 #        f_tot = format["multiply"](f_out + f_in)
 
-    return (f_out, f_in)
+    return (f_out, f_in, trans_set)
 
 
 def values_level_0(indices, vindices, aindices, b0indices, bgindices, tensor, tensor_number, weight, format, name_map):
@@ -508,6 +523,7 @@ def values_level_3(indices, vindices, aindices, b0indices, bgindices, tensor, te
     vals = []
     secondary_loop = []
     sec_indices = []
+    trans_set = Set()
     for index in vindices:
         if index.type == Index.SECONDARY and len(index.range) > 1:
             sec_indices += [index]
@@ -545,7 +561,8 @@ def values_level_3(indices, vindices, aindices, b0indices, bgindices, tensor, te
             ref = r[0]
 
         # Get geometry terms from inside sum, and outside sum
-        geo_out, geo_in = generate_factor3(tensor, a, bgindices, format)
+        geo_out, geo_in, t_set = generate_factor3(tensor, a, bgindices, format)
+        trans_set = trans_set | t_set
         if 1 < len(geo_in):
             geo_in = [format_group(format_add(geo_in))]
 
@@ -554,6 +571,8 @@ def values_level_3(indices, vindices, aindices, b0indices, bgindices, tensor, te
             d = [format["multiply"]([format["scale factor"], d0])]
         else:
             d = [format["scale factor"]]
+
+        trans_set.add(d[0])
 
         geo = format_multiply(geo_out + geo_in + d)
 
@@ -576,7 +595,7 @@ def values_level_3(indices, vindices, aindices, b0indices, bgindices, tensor, te
             map_values += [val]
         values = map_values
 
-    return (values, secondary_loop)
+    return (values, secondary_loop, trans_set)
 
 def get_names_tables(tensor, tensor_number, format):
     "Tabulate values of basis functions and their derivatives at quadrature points"
