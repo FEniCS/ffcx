@@ -12,10 +12,10 @@ ffc-uninstall
 # Make sure we have the current version
 echo '--- Synchronizing repository'
 sleep 1
-hg pull
+hg pull http://www.fenics.org/hg/ffc
 hg update
 hg commit
-hg push default
+hg push ssh://ffc@fenics.org/hg/ffc
 echo '--- Repository synchronized, press return to continue'
 read
 
@@ -60,7 +60,7 @@ cd ../../
 # Commit changes to hg
 echo '--- Pushing changes to parent repository'
 hg commit
-hg push default
+hg push ssh://ffc@fenics.org/hg/ffc
 echo '--- Changes pushed, press return to continue'
 read
 
