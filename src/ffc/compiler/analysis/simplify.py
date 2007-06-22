@@ -108,6 +108,9 @@ def contraction_likely(m, n):
         if m.integral != n.integral:
             return False
 
+        if m.numeric != n.numeric:
+            return False
+
         if len(m.coefficients) != len(n.coefficients):
             return False
         for i in range(len(m.coefficients)):

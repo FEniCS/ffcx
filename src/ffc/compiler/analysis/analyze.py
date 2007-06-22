@@ -34,7 +34,8 @@ def analyze(form):
     check_form(form)
 
     # Simplify form
-#    simplify(form)
+    simplify(form)
+ 
     simplified_form = str(form)
 
     # Check validity of form again
