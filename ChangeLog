@@ -1,3 +1,6 @@
+0.4.1 [2007-06-22]
+ - Fix bug in simplification of forms
+ - Optimize removal of unused terms in code formattting
 0.4.0 [2007-06-20]
  - Move to UFC interface for code generation
  - Major rewrite, restructure, cleanup
