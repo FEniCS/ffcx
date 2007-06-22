@@ -368,6 +368,3 @@ def restriction_exterior(form):
                 form.monomials.remove(p)
             else:
                 unique += [p]
-
-#    for p in form.monomials:
-#        print p
