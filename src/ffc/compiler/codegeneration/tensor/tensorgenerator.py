@@ -451,7 +451,14 @@ class TensorGenerator(CodeGenerator):
         return format["multiply"](d0 + [format["scale factor"]] + v)
 
     def __remove_unused(self, code, set, format):
+        "Remove unused variables so that the compiler will not complain"
 
+        # Normally, the removal of unused variables should happen at the
+        # formatting stage, but since the code for the tensor contraction
+        # may grow to considerable size, we make an exception and remove
+        # unused variables here when we know the names of the used
+        # variables. No searching necessary and much, much, much faster.
+        
         if code:
             # Generate body of code, using the format
             lines = format["generate body"](code)
