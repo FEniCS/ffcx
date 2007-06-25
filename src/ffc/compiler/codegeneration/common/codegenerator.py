@@ -34,19 +34,21 @@ class CodeGenerator:
         # Generate code for cell integral
         debug("Generating code for cell integrals...")
         for i in range(form_data.num_cell_integrals):
-            code[("cell_integral", i)] = self.generate_cell_integral(form_representation, i, format)
+            code[("cell_integral", i)] = self.generate_cell_integral(form_data, form_representation, i, format)
         debug("done")
 
         # Generate code for exterior facet integral
         debug("Generating code for exterior facet integrals...")
         for i in range(form_data.num_exterior_facet_integrals):
-            code[("exterior_facet_integral", i)] = self.generate_exterior_facet_integral(form_representation, i, format)
+            code[("exterior_facet_integral", i)] = self.generate_exterior_facet_integral(form_data,\
+                                                   form_representation, i, format)
         debug("done")
 
         # Generate code for interior facet integral
         debug("Generating code for interior facet integrals...")
         for i in range(form_data.num_interior_facet_integrals):
-            code[("interior_facet_integral", i)] = self.generate_interior_facet_integral(form_representation, i, format)
+            code[("interior_facet_integral", i)] = self.generate_interior_facet_integral(form_data,\
+                                                   form_representation, i, format)
         debug("done")
 
         # Generate code for form

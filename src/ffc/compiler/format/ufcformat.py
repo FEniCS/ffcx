@@ -146,6 +146,7 @@ format = { "add": lambda v: " + ".join(v),
            "snippet evaluate_dof": lambda d : {2: evaluate_dof_2D, 3: evaluate_dof_3D}[d],
            "get cell vertices" : "const double * const * x = c.coordinates;",
            "generate jacobian": lambda d,i: __generate_jacobian(d,i),
+           "generate body": lambda d: __generate_body(d),
 # misc
            "block separator": ",\n",
 #           "block separator": ",",

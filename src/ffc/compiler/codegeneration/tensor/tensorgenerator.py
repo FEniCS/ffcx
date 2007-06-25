@@ -31,7 +31,7 @@ class TensorGenerator(CodeGenerator):
         # Initialize common code generator
         CodeGenerator.__init__(self)
 
-    def generate_cell_integral(self, form_representation, sub_domain, format):
+    def generate_cell_integral(self, form_data, form_representation, sub_domain, format):
         """Generate dictionary of code for cell integral from the given
         form representation according to the given format"""
 
@@ -39,20 +39,6 @@ class TensorGenerator(CodeGenerator):
         terms = form_representation.cell_tensor
         if len(terms) == 0:
             return None
-
-        # Generate code for manipulating coefficients
-#        code = self.__generate_coefficients(terms, format)
-
-        # Generate code for geometry tensor
-#        code += self.__generate_geometry_tensors(terms, format)
-
-        # Generate code for sign changes
-#        (sign_code, change_signs) = self.__generate_signs(terms, format)
-#        code += sign_code
-        
-        # Generate code for element tensor(s)
-#        code += [""] + [format["comment"]("Compute element tensor")]
-#        code += self.__generate_element_tensor(terms, change_signs, format)
 
         # Generate code for sign changes
         (sign_code, change_signs) = self.__generate_signs(terms, format)
@@ -66,11 +52,8 @@ class TensorGenerator(CodeGenerator):
         # Generate geometry code + set of used coefficients + set of jacobi terms
         geo_code, coeff_set, trans_set = self.__generate_geometry_tensors(terms, geo_set, format)
 
-        # FIXME: Get cell_shape in a more general way
-        cell_shape = terms[0].monomial.basisfunctions[0].element.cell_shape()
-
         # Get Jacobian snippet
-        jacobi_code = [format["generate jacobian"](cell_shape, Integral.CELL)]
+        jacobi_code = [format["generate jacobian"](form_data.cell_dimension, Integral.CELL)]
 
         # Remove unused declarations
         code = self.__remove_unused(jacobi_code, trans_set, format)
@@ -87,7 +70,7 @@ class TensorGenerator(CodeGenerator):
 
         return {"tabulate_tensor": code, "members":""}
 
-    def generate_exterior_facet_integral(self, form_representation, sub_domain, format):
+    def generate_exterior_facet_integral(self, form_data, form_representation, sub_domain, format):
         """Generate dictionary of code for exterior facet integral from the given
         form representation according to the given format"""
 
@@ -96,19 +79,8 @@ class TensorGenerator(CodeGenerator):
         if len(terms) == 0:
             return None
 
-        # Generate code for manipulating coefficients (should be the same so pick first)
-#        code = self.__generate_coefficients(terms[0], format)
-        
-        # Generate code for geometry tensor (should be the same so pick first)
-#        code += self.__generate_geometry_tensors(terms[0], format)
-
-        # Generate code for element tensor(s)
-#        code += [""] + [format["comment"]("Compute element tensor for all facets")]
-
         num_facets = len(terms)
         cases = [None for i in range(num_facets)]
-#        for i in range(num_facets):
-#            cases[i] = self.__generate_element_tensor(terms[i], False, format)
 
         # Generate element code + set of used geometry terms
         geo_set = Set()
@@ -118,14 +90,11 @@ class TensorGenerator(CodeGenerator):
             geo_set = geo_set | g_set
 
         # Generate code for geometry tensor (should be the same so pick first)
-        # Generate geometry code + set of used coefficients + set of jacobi terms
+        # Generate set of used coefficients + set of jacobi terms
         geo_code, coeff_set, trans_set = self.__generate_geometry_tensors(terms[0], geo_set, format)
 
-        # FIXME: Get cell_shape in a more general way
-        cell_shape = terms[0][0].monomial.basisfunctions[0].element.cell_shape()
-
         # Get Jacobian snippet
-        jacobi_code = [format["generate jacobian"](cell_shape, Integral.EXTERIOR_FACET)]
+        jacobi_code = [format["generate jacobian"](form_data.cell_dimension, Integral.EXTERIOR_FACET)]
 
         # Remove unused declarations
         code = self.__remove_unused(jacobi_code, trans_set, format)
@@ -141,7 +110,7 @@ class TensorGenerator(CodeGenerator):
 
         return {"tabulate_tensor": (code, cases), "members":""}
     
-    def generate_interior_facet_integral(self, form_representation, sub_domain, format):
+    def generate_interior_facet_integral(self, form_data, form_representation, sub_domain, format):
         """Generate dictionary of code for interior facet integral from the given
         form representation according to the given format"""
 
@@ -150,19 +119,8 @@ class TensorGenerator(CodeGenerator):
         if len(terms) == 0:
             return None
 
-        # Generate code for manipulating coefficients (should be the same so pick first)
-#        code = self.__generate_coefficients(terms[0][0], format)
-        
-        # Generate code for geometry tensor (should be the same so pick first)
-#        code += self.__generate_geometry_tensors(terms[0][0], format)
-
-        # Generate code for element tensor(s)
-#        code += [""] + [format["comment"]("Compute element tensor for all facet-facet combinations")]
         num_facets = len(terms)
         cases = [[None for j in range(num_facets)] for i in range(num_facets)]
-#        for i in range(num_facets):
-#            for j in range(num_facets):
-#                cases[i][j] = self.__generate_element_tensor(terms[i][j], False, format)
 
         # Generate element code + set of used geometry terms
         geo_set = Set()
@@ -173,14 +131,11 @@ class TensorGenerator(CodeGenerator):
                 geo_set = geo_set | g_set
 
         # Generate code for geometry tensor (should be the same so pick first)
-        # Generate geometry code + set of used coefficients + set of jacobi terms
+        # Generate set of used coefficients + set of jacobi terms
         geo_code, coeff_set, trans_set = self.__generate_geometry_tensors(terms[0][0], geo_set, format)
 
-        # FIXME: Get cell_shape in a more general way
-        cell_shape = terms[0][0][0].monomial.basisfunctions[0].element.cell_shape()
-
         # Get Jacobian snippet
-        jacobi_code = [format["generate jacobian"](cell_shape, Integral.INTERIOR_FACET)]
+        jacobi_code = [format["generate jacobian"](form_data.cell_dimension, Integral.INTERIOR_FACET)]
 
         # Remove unused declarations
         code = self.__remove_unused(jacobi_code, trans_set, format)
@@ -498,24 +453,19 @@ class TensorGenerator(CodeGenerator):
     def __remove_unused(self, code, set, format):
 
         if code:
-            # Fixme: Following lines are from ufcformat.py __generate_body()
-            lines = []
-            for line in code:
-                if isinstance(line, tuple):
-                    lines += ["%s = %s;" % line]
-                else:
-                    lines += ["%s" % line]
+            # Generate body of code, using the format
+            lines = format["generate body"](code)
 
             # Generate auxiliary code line that uses all members of the set (to trick remove_unused)
             line_set = format["add equal"]("A", format["multiply"](set))
-            lines += [line_set]
+            lines += "\n" + line_set
 
             # Remove unused Jacobi declarations
-            code = remove_unused("\n".join(lines))
+            code = remove_unused(lines)
 
             # Delete auxiliary line
             code = code.replace("\n" + line_set, "")
 
-            return code.split("\n")
+            return [code]
         else:
             return code

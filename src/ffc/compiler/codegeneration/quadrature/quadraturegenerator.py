@@ -45,7 +45,7 @@ class QuadratureGenerator(CodeGenerator):
         self.save_tables = False
         self.unique_tables = True
 
-    def generate_cell_integral(self, form_representation, sub_domain, format):
+    def generate_cell_integral(self, form_data, form_representation, sub_domain, format):
         """Generate dictionary of code for cell integral from the given
         form representation according to the given format"""
 
@@ -63,26 +63,15 @@ class QuadratureGenerator(CodeGenerator):
         (sign_code, change_signs) = generate_signs(tensors, format)
         code += sign_code
 
-        # Generate code for element tensor(s)
-#        code += [Indent.indent(format["comment"]("Compute element tensor"))]
-#        code += self.__generate_element_tensor(tensors, change_signs, None, None, Indent, format)
-#        c, members_code = self.__generate_element_tensor(tensors, change_signs, None, None, Indent, format)
-
-#        code += c
-
         # Generate element code + set of used geometry terms + set of used signs
-#        element_code, geo_set, sign_set = self.__generate_element_tensor(terms, change_signs, format)
         element_code, members_code, trans_set, signs_set = self.__generate_element_tensor\
                                                      (tensors, change_signs, None, None, Indent, format)
 
         # Remove unused declarations
         sign_code = self.__remove_unused(sign_code, signs_set, format)
 
-        # FIXME: Get cell_shape in a more general way
-        cell_shape = tensors[0].monomial.basisfunctions[0].element.cell_shape()
-
         # Get Jacobian snippet
-        jacobi_code = [format["generate jacobian"](cell_shape, Integral.CELL)]
+        jacobi_code = [format["generate jacobian"](form_data.cell_dimension, Integral.CELL)]
 
         # Remove unused declarations
         code = self.__remove_unused(jacobi_code, trans_set, format)
@@ -96,7 +85,7 @@ class QuadratureGenerator(CodeGenerator):
 
         return {"tabulate_tensor": code, "members":members_code}
 
-    def generate_exterior_facet_integral(self, form_representation, sub_domain, format):
+    def generate_exterior_facet_integral(self, form_data, form_representation, sub_domain, format):
         """Generate dictionary of code for exterior facet integral from the given
         form representation according to the given format"""
 
@@ -112,27 +101,21 @@ class QuadratureGenerator(CodeGenerator):
         if len(tensors) == 0:
             return None
 
-        # Generate code for element tensor(s)
-#        common = [""] + [format["comment"]("Compute element tensor for all facets")]
-
         num_facets = len(tensors)
         cases = [None for i in range(num_facets)]
         trans_set = Set()
         for i in range(num_facets):
             case = [format_block_begin]
-#            case += self.__generate_element_tensor(tensors[i], False, i, None, Indent, format)
-            # Assuming all tables have same dimensions for all facets
+
+            # Assuming all tables have same dimensions for all facets (members_code)
             c, members_code, t_set, s_set = self.__generate_element_tensor(tensors[i], False, i, None, Indent, format)
             case += c
             case += [format_block_end]
             cases[i] = case
             trans_set = trans_set | t_set
 
-        # FIXME: Get cell_shape in a more general way
-        cell_shape = tensors[0][0].monomial.basisfunctions[0].element.cell_shape()
-
         # Get Jacobian snippet
-        jacobi_code = [format["generate jacobian"](cell_shape, Integral.EXTERIOR_FACET)]
+        jacobi_code = [format["generate jacobian"](form_data.cell_dimension, Integral.EXTERIOR_FACET)]
 
         # Remove unused declarations
         common = self.__remove_unused(jacobi_code, trans_set, format)
@@ -142,7 +125,7 @@ class QuadratureGenerator(CodeGenerator):
 
         return {"tabulate_tensor": (common, cases), "constructor":"// Do nothing", "members":members_code}
     
-    def generate_interior_facet_integral(self, form_representation, sub_domain, format):
+    def generate_interior_facet_integral(self, form_data, form_representation, sub_domain, format):
         """Generate dictionary of code for interior facet integral from the given
         form representation according to the given format"""
 
@@ -158,27 +141,23 @@ class QuadratureGenerator(CodeGenerator):
         if len(tensors) == 0:
             return None
 
-        # Generate code for element tensor(s)
-#        common = [""] + [format["comment"]("Compute element tensor for all facet-facet combinations")]
         num_facets = len(tensors)
         cases = [[None for j in range(num_facets)] for i in range(num_facets)]
         trans_set = Set()
         for i in range(num_facets):
             for j in range(num_facets):
                 case = [format_block_begin]
-#                case += self.__generate_element_tensor(tensors[i][j], False, i, j, Indent, format)
-                # Assuming all tables have same dimensions for all facet-facet combinations
-                c, members_code, t_set, s_set = self.__generate_element_tensor(tensors[i][j], False, i, j, Indent, format)
+
+                # Assuming all tables have same dimensions for all facet-facet combinations (members_code)
+                c, members_code, t_set, s_set = self.__generate_element_tensor(tensors[i][j],\
+                                                False, i, j, Indent, format)
                 case += c
                 case += [format_block_end]
                 cases[i][j] = case
                 trans_set = trans_set | t_set
 
-        # FIXME: Get cell_shape in a more general way
-        cell_shape = tensors[0][0][0].monomial.basisfunctions[0].element.cell_shape()
-
         # Get Jacobian snippet
-        jacobi_code = [format["generate jacobian"](cell_shape, Integral.INTERIOR_FACET)]
+        jacobi_code = [format["generate jacobian"](form_data.cell_dimension, Integral.INTERIOR_FACET)]
 
         # Remove unused declarations
         common = self.__remove_unused(jacobi_code, trans_set, format)
@@ -207,7 +186,6 @@ class QuadratureGenerator(CodeGenerator):
         # Group tensors after number of quadrature points, and dimension of primary indices
         # to reduce number of loops
         group_tensors = equal_loops(tensors)
-#        print group_tensors
         tables = None
         name_map = None
         # Get dictionary of unique tables, and the name_map
@@ -218,7 +196,6 @@ class QuadratureGenerator(CodeGenerator):
         members_code = ""
         if self.save_tables:
             members_code = generate_load_table(tensors)
-#            generate_load_table(tensors)
 
         for i in range(len(tensors)):
             # Tabulate the quadrature weights
@@ -531,24 +508,19 @@ class QuadratureGenerator(CodeGenerator):
     def __remove_unused(self, code, set, format):
 
         if code:
-            # Fixme: Following lines are from ufcformat.py __generate_body()
-            lines = []
-            for line in code:
-                if isinstance(line, tuple):
-                    lines += ["%s = %s;" % line]
-                else:
-                    lines += ["%s" % line]
+            # Generate body of code, using the format
+            lines = format["generate body"](code)
 
             # Generate auxiliary code line that uses all members of the set (to trick remove_unused)
             line_set = format["add equal"]("A", format["multiply"](set))
-            lines += [line_set]
+            lines += "\n" + line_set
 
             # Remove unused Jacobi declarations
-            code = remove_unused("\n".join(lines))
+            code = remove_unused(lines)
 
             # Delete auxiliary line
             code = code.replace("\n" + line_set, "")
 
-            return code.split("\n")
+            return [code]
         else:
             return code
