@@ -7,7 +7,7 @@ elem1 = FiniteElement(elements[1], shape[0], 1)
 elem2 = VectorElement(elements[0], shape[0], 1)
 elem3 = FiniteElement(elements[4], shape[0], 1)
 
-element = elem3# + elem2# + elem2
+element = elem1# + elem2# + elem2
 
 v = TestFunction(element)
 u = TrialFunction(element)
@@ -17,7 +17,11 @@ w = Function(element)
 
 #a = w*dot(v,u)*dx
 #a = w*dot(grad(v),grad(u))*dx
+
 a = dot(grad(v),grad(u))*dx
-#a = dot(jump(grad(v),n),jump(grad(u),n))*dS
+
+
+#a = dot(grad(v),grad(u))*dx + 0.1*dot(grad(v),grad(u))*dx
+
 #L = dot(v,w)*dx
 #a = dot(w,w)*dx
