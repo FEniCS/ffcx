@@ -21,7 +21,6 @@ __license__  = "GNU GPL Version 2"
 # FFC common modules
 from ffc.common.debug import *
 from ffc.common.constants import *
-import ffc.common.constants
 
 # FFC fem modules
 from ffc.fem.finiteelement import *
@@ -62,12 +61,15 @@ def compile(forms, prefix="Form", representation=FFC_REPRESENTATION, output_lang
         return
 
     # Compile forms
+    form_data = None
     if len(forms) > 0:
-        __compile_forms(forms, prefix, representation, output_language, options)
+        form_data = __compile_forms(forms, prefix, representation, output_language, options)
 
     # Compile elements, but only if there are no forms
     if len(elements) > 0 and len(forms) == 0:
-        __compile_elements(elements, prefix, representation, output_language, options)
+        r1 = __compile_elements(elements, prefix, representation, output_language, options)
+
+    return form_data
 
 def __compile_forms(forms, prefix="Form", representation=FFC_REPRESENTATION, output_language=FFC_LANGUAGE, options=FFC_OPTIONS):
     "Compile the given forms"
@@ -82,11 +84,13 @@ def __compile_forms(forms, prefix="Form", representation=FFC_REPRESENTATION, out
     format.init(options)
 
     # Iterate over forms for stages 1 - 4
-    generated_forms = []    
+    generated_forms = []
+    form_datas = []
     for form in forms:
 
         # Compiler phase 1: analyze form
         form_data = analyze_form(form)
+        form_datas += [form_data]
 
         # Compiler phase 2: compute form representation
         form_representation = compute_form_representation(form_data, representation)
@@ -102,6 +106,8 @@ def __compile_forms(forms, prefix="Form", representation=FFC_REPRESENTATION, out
 
     # Compiler phase 5: format code
     format_code(generated_forms, prefix, format, options)
+
+    return form_datas
 
 def __compile_elements(elements, prefix="Element", representation=FFC_REPRESENTATION, output_language=FFC_LANGUAGE, options=FFC_OPTIONS):
     "Compile the given elements for the given language"

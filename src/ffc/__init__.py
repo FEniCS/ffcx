@@ -20,6 +20,9 @@ from ffc.fem.dofmap import DofMap
 # Import compiler
 from ffc.compiler.compiler import compile
 
+# Import JIT compiler
+from ffc.jit.jit import jit
+
 # Import form language
 from ffc.compiler.language.algebra import BasisFunction, TestFunction, TrialFunction, Function
 from ffc.compiler.language.operators import *
