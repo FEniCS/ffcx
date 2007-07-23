@@ -6,10 +6,6 @@ Main author:
 
 Contributors:
 
-    Dag Lindbo
-    email: dag@f.kth.se
-    www:   http://www.f.kth.se/~dag/
-
     Johan Jansson
     email: johanjan@math.chalmers.se
     www:   http://www.math.chalmers.se/~johanjan/
@@ -21,6 +17,10 @@ Contributors:
     Matthew G. Knepley
     email: knepley@mcs.anl.gov
     www:   http://www-unix.mcs.anl.gov/~knepley/
+
+    Dag Lindbo
+    email: dag@f.kth.se
+    www:   http://www.f.kth.se/~dag/
 
     Kristian Oelgaard
     email: k.b.oelgaard@tudelft.nl
@@ -39,7 +39,3 @@ Contributors:
     Garth N. Wells
     email: g.n.wells@tudelft.nl
     www:   http://www.mechanics.citg.tudelft.nl/~garth/
-
-    Dag Lindbo
-    email: dag@f.kth.se
-    www:   http://www.f.kth.se/~dag/
