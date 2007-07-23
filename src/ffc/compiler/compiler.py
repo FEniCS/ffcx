@@ -12,7 +12,7 @@ each represented by a separate module:
 """
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-02-05 -- 2007-06-14"
+__date__ = "2007-02-05 -- 2007-07-22"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -48,11 +48,11 @@ from codegeneration.common.dofmap import *
 from format import ufcformat
 from format import dolfinformat
 
-def compile(forms, prefix="Form", representation=FFC_REPRESENTATION, output_language=FFC_LANGUAGE, options=FFC_OPTIONS):
+def compile(forms, prefix="Form", representation=FFC_REPRESENTATION, language=FFC_LANGUAGE, options=FFC_OPTIONS):
     "Compile the given forms and/or elements"
 
     # Check options
-    check_options(representation, output_language, options)
+    check_options(representation, language, options)
 
     # Check input
     (forms, elements) = preprocess_forms(forms)
@@ -63,15 +63,15 @@ def compile(forms, prefix="Form", representation=FFC_REPRESENTATION, output_lang
     # Compile forms
     form_data = None
     if len(forms) > 0:
-        form_data = __compile_forms(forms, prefix, representation, output_language, options)
+        form_data = __compile_forms(forms, prefix, representation, language, options)
 
     # Compile elements, but only if there are no forms
     if len(elements) > 0 and len(forms) == 0:
-        r1 = __compile_elements(elements, prefix, representation, output_language, options)
+        r1 = __compile_elements(elements, prefix, representation, language, options)
 
     return form_data
 
-def __compile_forms(forms, prefix="Form", representation=FFC_REPRESENTATION, output_language=FFC_LANGUAGE, options=FFC_OPTIONS):
+def __compile_forms(forms, prefix="Form", representation=FFC_REPRESENTATION, language=FFC_LANGUAGE, options=FFC_OPTIONS):
     "Compile the given forms"
 
     # Check form input
@@ -80,7 +80,7 @@ def __compile_forms(forms, prefix="Form", representation=FFC_REPRESENTATION, out
         return
 
     # Choose format
-    format = __choose_format(output_language)
+    format = __choose_format(language)
     format.init(options)
 
     # Iterate over forms for stages 1 - 4
@@ -109,7 +109,7 @@ def __compile_forms(forms, prefix="Form", representation=FFC_REPRESENTATION, out
 
     return form_datas
 
-def __compile_elements(elements, prefix="Element", representation=FFC_REPRESENTATION, output_language=FFC_LANGUAGE, options=FFC_OPTIONS):
+def __compile_elements(elements, prefix="Element", representation=FFC_REPRESENTATION, language=FFC_LANGUAGE, options=FFC_OPTIONS):
     "Compile the given elements for the given language"
 
     # Check element input
@@ -129,7 +129,7 @@ def __compile_elements(elements, prefix="Element", representation=FFC_REPRESENTA
     debug_begin("Compiler phase 4: Generating code")
 
     # Choose format
-    format = __choose_format(output_language)
+    format = __choose_format(language)
     format.init(options)
 
     # Choose code generator
@@ -228,15 +228,15 @@ def format_code(generated_forms, prefix, format, options):
 
     debug_end()
 
-def __choose_format(output_language):
+def __choose_format(language):
     "Choose format from specified language"
 
-    if output_language.lower() == "ufc":
+    if language.lower() == "ufc":
         return ufcformat
-    elif output_language.lower() == "dolfin":
+    elif language.lower() == "dolfin":
         return dolfinformat
     else:
-        raise RuntimeError, "Don't know how to compile code for language \"%s\"." % output_language
+        raise RuntimeError, "Don't know how to compile code for language \"%s\"." % language
 
 def __choose_representation(form_representation):
     "Choose form representation"
