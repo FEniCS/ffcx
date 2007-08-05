@@ -222,15 +222,17 @@ def jump(v, n = None):
             # v is a possible multidimensional array, call jump() recursively
             return [jump(v[i]) for i in range(len(v))]
     else:
-        if value_rank(v) == 0:
+        if value_rank(v) == 0 and value_rank(n) == 1:
             # v is a scalar and n is a vector
             return [v('+')*n[i]('+') + v('-')*n[i]('-') for i in range(len(n))]
-        else:
-            # Assuming v and n are vectors
+        elif value_rank(v) == 1 and value_rank(n) == 1:
+            # v and n are vectors
             form = Form();
             for i in range(len(v)):
                 form = form + v[i]('+')*n[i]('+') + v[i]('-')*n[i]('-')
             return form
+        else:
+            raise FormError, ((v, n), "Jump operator with respect to normal vector does not tensors of this rank.")
 
 def sqrt(v):
     "Return the square root (take square root of coefficients)"
