@@ -232,7 +232,7 @@ def jump(v, n = None):
                 form = form + v[i]('+')*n[i]('+') + v[i]('-')*n[i]('-')
             return form
         else:
-            raise FormError, ((v, n), "Jump operator with respect to normal vector does not tensors of this rank.")
+            raise FormError, ((v, n), "Jump operator with respect to normal vector does not support tensors of this rank.")
 
 def sqrt(v):
     "Return the square root (take square root of coefficients)"
