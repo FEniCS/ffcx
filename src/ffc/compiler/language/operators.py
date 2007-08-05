@@ -9,7 +9,7 @@ __license__  = "GNU GPL Version 2"
 # Modified by Ola Skavhaug, 2005
 # Modified by Dag Lindbo, 2006
 # Modified by Garth N. Wells 2006
-# Modified by Kristian Oelgaard 2006
+# Modified by Kristian Oelgaard 2006, 2007
 
 # Python modules
 import sys
@@ -206,21 +206,27 @@ def mean(v):
 def avg(v):
     "Return the average of v across an interior facet."
     if value_rank(v) == 0:
+        # v is a scalar, so return the average
         return 0.5*(v('+') + v('-'))
     else:
-        return [0.5*(v[i]('+') + v[i]('-')) for i in range(len(v))]
+        # v is a possible multidimensional array, call avg() recursively
+        return [avg(v[i]) for i in range(len(v))]
 
 def jump(v, n = None):
     "Return the jump of v, optionally with respect to the given normal n across an interior facet."
-
     if n == None:
-        return v('+') - v('-')
+        if value_rank(v) == 0:
+            # v is a scalar
+            return v('+') - v('-')
+        else:
+            # v is a possible multidimensional array, call jump() recursively
+            return [jump(v[i]) for i in range(len(v))]
     else:
         if value_rank(v) == 0:
             # v is a scalar and n is a vector
             return [v('+')*n[i]('+') + v('-')*n[i]('-') for i in range(len(n))]
         else:
-            # v and n are vectors
+            # Assuming v and n are vectors
             form = Form();
             for i in range(len(v)):
                 form = form + v[i]('+')*n[i]('+') + v[i]('-')*n[i]('-')
