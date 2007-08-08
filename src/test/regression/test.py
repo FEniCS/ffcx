@@ -5,6 +5,7 @@ __date__ = "2007-03-05 -- 2007-05-07"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
+import sys
 from os import chdir, listdir, system
 from difflib import unified_diff
 
@@ -60,3 +61,6 @@ else:
         file.write("meld reference/%s ../../demo/%s\n" % (code_file, code_file))
     file.close()
     print "\nTo view diffs with meld, run the script viewdiff.sh"
+
+    # Return error code if tests failed
+    sys.exit(True)

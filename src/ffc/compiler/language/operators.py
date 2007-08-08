@@ -128,7 +128,7 @@ def mult(v, w):
     else:
         raise FormError, ((v, w), "Dimensions don't match for multiplication.")
 
-def outer(v,w):
+def outer(v, w):
     "Return outer product of vector valued functions, p = v'*w"
     # Check that we got a Function
     if not isinstance(v, Function):
