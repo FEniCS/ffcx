@@ -79,8 +79,8 @@ def dot(v, w):
         if isinstance(v, Element) and isinstance(w, Element):
             i = Index()
             return v[i]*w[i]
-        # Otherwise, use numpy.dot
-        return numpy.dot(vec(v), vec(w))
+        # Otherwise, use numpy.inner
+        return numpy.inner(vec(v), vec(w))
     elif value_rank(v) == value_rank(w) == 2:
         
         # Check dimensions
