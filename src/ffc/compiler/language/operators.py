@@ -8,7 +8,7 @@ __license__  = "GNU GPL Version 2"
 
 # Modified by Ola Skavhaug, 2005
 # Modified by Dag Lindbo, 2006
-# Modified by Garth N. Wells 2006
+# Modified by Garth N. Wells 2006, 2007
 # Modified by Kristian Oelgaard 2006, 2007
 
 # Python modules
@@ -95,11 +95,12 @@ def dot(v, w):
 
 def cross(v, w):
     "Return cross product of given functions."
+    vv = vec(v)
+    ww = vec(w)
     # Check dimensions
     if not len(v) == len(w):
         raise FormError, ((v, w), "Cross product only defined for vectors in R^3.")
-    # Compute cross product
-    return [v[1]*w[2] - v[2]*w[1], v[2]*w[0] - v[0]*w[2], v[0]*w[1] - v[1]*w[0]]
+    return numpy.cross(vv, ww)
 
 def trace(v):
     "Return trace of given matrix"
@@ -129,19 +130,15 @@ def mult(v, w):
         raise FormError, ((v, w), "Dimensions don't match for multiplication.")
 
 def outer(v, w):
-    "Return outer product of vector valued functions, p = v'*w"
-    # Check that we got a Function
-    if not isinstance(v, Function):
-        raise FormError, (v, "Outer products are only defined for Functions.")
-    if not isinstance(w, Function):
-        raise FormError, (w, "Outer products are only defined for Functions.")
-    if not len(v) == len(w):
-        raise FormError, ((v, w),"Invalid operand dims in outer product")
-    
+    "Return outer product of vector valued functions, p = v*w'"
     vv = vec(v)
     ww = vec(w)
-    
-    return mult(transp([vv]),[ww])
+    # Check ranks
+    if not value_rank(v) == 1:
+        raise FormError, (v, "Outer product is only defined for rank = 1 .")
+    if not value_rank(w) == 1:
+        raise FormError, (w, "Outer product is only defined for rank = 1 .")
+    return numpy.outer(vv, ww)
     
 def D(v, i):
     "Return derivative of v in given coordinate direction."
