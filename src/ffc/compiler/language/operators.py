@@ -95,12 +95,10 @@ def dot(v, w):
 
 def cross(v, w):
     "Return cross product of given functions."
-    vv = vec(v)
-    ww = vec(w)
     # Check dimensions
     if not len(v) == len(w):
         raise FormError, ((v, w), "Cross product only defined for vectors in R^3.")
-    return numpy.cross(vv, ww)
+    return numpy.cross(vec(v), vec(w))
 
 def trace(v):
     "Return trace of given matrix"
@@ -131,14 +129,12 @@ def mult(v, w):
 
 def outer(v, w):
     "Return outer product of vector valued functions, p = v*w'"
-    vv = vec(v)
-    ww = vec(w)
     # Check ranks
     if not value_rank(v) == 1:
         raise FormError, (v, "Outer product is only defined for rank = 1 .")
     if not value_rank(w) == 1:
         raise FormError, (w, "Outer product is only defined for rank = 1 .")
-    return numpy.outer(vv, ww)
+    return numpy.outer(vec(v), vec(w))
     
 def D(v, i):
     "Return derivative of v in given coordinate direction."
