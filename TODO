@@ -7,6 +7,10 @@ of FFC. The items are listed in approximate order of priority.
 * Write introduction in manual
   - The introduction is currently empty
 
+* Write about a, L, M in manual
+  - Missing in current manual
+  - Add example of computing functional
+
 * Projections
   - Reimplement (worked before)
   - Add to manual
