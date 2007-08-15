@@ -2,13 +2,14 @@
 It uses Instant to wrap the generated code into a Python module."""
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-07-20 -- 2007-07-22"
+__date__ = "2007-07-20 -- 2007-08-15"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
 # Python module
 from os import system
 from commands import getoutput
+from distutils import sysconfig
 
 # FFC common modules
 from ffc.common.debug import *
@@ -22,8 +23,6 @@ counter = 0
 
 def jit(form, representation=FFC_REPRESENTATION, language=FFC_LANGUAGE, options=FFC_OPTIONS, return_module=False):
     "Just-in-time compile the given form or element"
-
-    print language
 
     # Choose prefix
     global counter
@@ -42,18 +41,18 @@ def jit(form, representation=FFC_REPRESENTATION, language=FFC_LANGUAGE, options=
     code = file.read()
     file.close()
 
-    # Get DOLFIN includes through pkg-config if compiling for DOLFIN
-    #if language.lower() == "dolfin":
-    #    command = "pkg-config --cflags-only-I dolfin"
-    #    if not system(command + " > /dev/null") == 0:
-    #        raise RuntimeError, "Unable to get DOLFIN CFLAGS from pkg-config."
-    #    include_dirs = [dir for dir in getoutput(command).split("-I") if not dir==""]
-    #    print include_dirs
+    # FIXME: Move this to top when we have added dependence on Instant
+    from instant import create_extension, header_and_libs_from_pkgconfig
+
+    # Get include directory for ufc.h (might be better way to do this?)
+    (path, dummy, dummy, dummy) = header_and_libs_from_pkgconfig("ufc-1")
+    if len(path) == 0:
+        path = [("/").join(sysconfig.get_python_inc().split("/")[:-2]) + "/include"]
+    ufc_include = '%%include "%s/ufc.h"' % path[0]
 
     # Wrap code into a Python module using Instant
-    from instant import create_extension
     module_name = prefix + "_module"
-    create_extension(code=code, module=module_name)
+    create_extension(code=code, module=module_name, additional_declarations=ufc_include)
 
     # Get name of form
     rank = form_data[0].rank
