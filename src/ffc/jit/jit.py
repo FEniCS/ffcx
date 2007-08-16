@@ -34,7 +34,7 @@ def jit(form, representation=FFC_REPRESENTATION, language=FFC_LANGUAGE, options=
         raise RuntimeError, "Just-in-time compiler requires a single form (not a list of forms"
 
     # Compile form
-    form_data = compile(form, prefix, representation, language, options)
+    (form_data, form_representation) = compile(form, prefix, representation, language, options)
 
     # Filename of code to wrap
     filename = "../" + prefix + ".h"
