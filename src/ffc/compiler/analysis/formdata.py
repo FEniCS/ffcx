@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2005-03-15 -- 2007-04-19"
+__date__ = "2005-03-15 -- 2007-08-16"
 __copyright__ = "Copyright (C) 2005-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -36,6 +36,7 @@ class FormData:
         num_interior_facet_integrals - the number of interior facet integrals
         elements                     - the finite elements associated with the form
         dof_maps                     - the dof maps associated with the form
+        coefficients                 - the coefficients associated with the form
         cell_dimension               - the dimension of the cell
 
     It is assumed that the indices of the given form have been reassigned.
@@ -57,6 +58,7 @@ class FormData:
         self.num_interior_facet_integrals = self.__extract_num_interior_facet_integrals(form)
         self.elements                     = self.__extract_elements(form, self.rank, self.num_coefficients)
         self.dof_maps                     = self.__extract_dof_maps(self.elements)
+        self.coefficients                 = self.__extract_coefficients(form, self.num_coefficients)
         self.cell_dimension               = self.__extract_cell_dimension(self.elements)
 
         debug("done")
@@ -120,13 +122,28 @@ class FormData:
 
         # Check that we found an element for each function
         if not len(elements) == rank + num_coefficients:
-            raise FormError, (form, "Unable to extract all elements.")
+            raise FormError, (form, "Unable to extract all elements")
 
         return elements
 
     def __extract_dof_maps(self, elements):
         "Extract (generate) dof maps for all elements"
         return [DofMap(element) for element in elements]
+
+    def __extract_coefficients(self, form, num_coefficients):
+        "Extract all coefficients associated with form"
+
+        coefficients = []
+        for i in range(num_coefficients):
+            for m in form.monomials:
+                for c in m.coefficients:
+                    if c.n0.index == i and len(coefficients) < i + 1:
+                        coefficients += [c]
+
+        if not len(coefficients) == num_coefficients:
+            raise RuntimeError, (form, "Unable to extract all coefficients")
+
+        return coefficients
 
     def __extract_cell_dimension(self, elements):
         "Extract cell dimension"

@@ -2,7 +2,7 @@
 It uses Instant to wrap the generated code into a Python module."""
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-07-20 -- 2007-08-15"
+__date__ = "2007-07-20 -- 2007-08-16"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -21,7 +21,7 @@ from ffc.compiler.compiler import compile
 # Global counter for numbering forms
 counter = 0
 
-def jit(form, representation=FFC_REPRESENTATION, language=FFC_LANGUAGE, options=FFC_OPTIONS, return_module=False):
+def jit(form, representation=FFC_REPRESENTATION, language=FFC_LANGUAGE, options=FFC_OPTIONS):
     "Just-in-time compile the given form or element"
 
     # Choose prefix
@@ -36,10 +36,8 @@ def jit(form, representation=FFC_REPRESENTATION, language=FFC_LANGUAGE, options=
     # Compile form
     form_data = compile(form, prefix, representation, language, options)
 
-    # Get code as a string
-    file = open(prefix + ".h")
-    code = file.read()
-    file.close()
+    # Filename of code to wrap
+    filename = "../" + prefix + ".h"
 
     # FIXME: Move this to top when we have added dependence on Instant
     from instant import create_extension, header_and_libs_from_pkgconfig
@@ -52,7 +50,7 @@ def jit(form, representation=FFC_REPRESENTATION, language=FFC_LANGUAGE, options=
 
     # Wrap code into a Python module using Instant
     module_name = prefix + "_module"
-    create_extension(code=code, module=module_name, additional_declarations=ufc_include)
+    create_extension(wrap_headers=[filename], module=module_name, additional_declarations=ufc_include)
 
     # Get name of form
     rank = form_data[0].rank
@@ -65,10 +63,7 @@ def jit(form, representation=FFC_REPRESENTATION, language=FFC_LANGUAGE, options=
     else:
         form_name = prefix
 
-    # Return the module and the form
+    # Return the form, module and form data
     exec("import %s as compiled_module" % module_name)
     exec("compiled_form = compiled_module.%s()" % form_name)
-    if return_module:
-        return (compiled_form, compiled_module)
-    else:
-        return compiled_form
+    return (compiled_form, compiled_module, form_data)
