@@ -3,3 +3,10 @@ element = FiniteElement("Lagrange", "triangle", 1)
 v = TestFunction(element)
 u = TrialFunction(element)
 a = dot(grad(v), grad(u))*dx
+
+(form_data, form_representation) = compile(a)
+
+# Get reference tensor
+A0 = form_representation[0].cell_tensor[0].A0.A0
+
+print A0

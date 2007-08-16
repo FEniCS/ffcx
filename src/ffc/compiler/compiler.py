@@ -62,14 +62,15 @@ def compile(forms, prefix="Form", representation=FFC_REPRESENTATION, language=FF
 
     # Compile forms
     form_data = None
+    form_representation = None
     if len(forms) > 0:
-        form_data = __compile_forms(forms, prefix, representation, language, options)
+        (form_data, form_representation) = __compile_forms(forms, prefix, representation, language, options)
 
     # Compile elements, but only if there are no forms
     if len(elements) > 0 and len(forms) == 0:
         r1 = __compile_elements(elements, prefix, representation, language, options)
 
-    return form_data
+    return (form_data, form_representation)
 
 def __compile_forms(forms, prefix="Form", representation=FFC_REPRESENTATION, language=FFC_LANGUAGE, options=FFC_OPTIONS):
     "Compile the given forms"
@@ -86,6 +87,7 @@ def __compile_forms(forms, prefix="Form", representation=FFC_REPRESENTATION, lan
     # Iterate over forms for stages 1 - 4
     generated_forms = []
     form_datas = []
+    form_representations = []
     for form in forms:
 
         # Compiler phase 1: analyze form
@@ -94,6 +96,7 @@ def __compile_forms(forms, prefix="Form", representation=FFC_REPRESENTATION, lan
 
         # Compiler phase 2: compute form representation
         form_representation = compute_form_representation(form_data, representation)
+        form_representations += [form_representation]
 
         # Compiler phase 3: optimize form representation
         optimize_form_representation(form)
@@ -107,7 +110,7 @@ def __compile_forms(forms, prefix="Form", representation=FFC_REPRESENTATION, lan
     # Compiler phase 5: format code
     format_code(generated_forms, prefix, format, options)
 
-    return form_datas
+    return (form_datas, form_representations)
 
 def __compile_elements(elements, prefix="Element", representation=FFC_REPRESENTATION, language=FFC_LANGUAGE, options=FFC_OPTIONS):
     "Compile the given elements for the given language"
