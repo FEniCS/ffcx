@@ -1,5 +1,6 @@
-The following list of items will or should be fixed in future versions
-of FFC. The items are listed in approximate order of priority.
+This file lists TODO items for FFC. As usual, the priority depends
+on the current interests of the various FFC developers. To edit this
+file, it is convenient to install org-mode in Emacs.
 
 * Fix bug in RT1
   - RT elements work for q = 0, 2, 3 but not for q = 1
@@ -21,7 +22,9 @@ of FFC. The items are listed in approximate order of priority.
   - Add to man page
 
 * BLAS mode
-  - Reimplement (worked before)
+  - Reimplement level 2 BLAS (worked before)
+  - Implement level 3 BLAS
+  - Generate loops for geometry tensor
   - Add to man page
 
 * Facet integrals for Piola-mapped elements
@@ -48,8 +51,22 @@ of FFC. The items are listed in approximate order of priority.
   for complicated forms by generating loops for the computation of
   the entries of the geometry tensor
 
-* Just-in-time compilation
-  - Use Instant to compile and wrap code back to Python
+* 1D elements
+
+* QuadratureElement
+  - Use array w for values and quadrature points
+
+* UFL
+  - Extend FFC form language
+  - Differentiation of forms
+
+* Time derivatives
+  - Dt(u)
+
+* Quad elements
+  - Isoparametric mapping
+
+* Tensor-valued functions
 
 * Fix all FIXMEs
   - There are a few of these: find src/ffc -name '*.py' | xargs grep FIXME

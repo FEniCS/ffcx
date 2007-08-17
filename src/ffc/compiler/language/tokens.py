@@ -3,7 +3,7 @@ represent multilinear forms, that is, small basic data types used to
 build the data structure representing an element of the form algebra."""
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-09-29 -- 2007-05-15"
+__date__ = "2004-09-29 -- 2008-08-16"
 __copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL Version 2"
 
@@ -26,6 +26,7 @@ class Coefficient:
 
     Attributes:
 
+        f     - the function
         n0    - a unique Index identifying the original function
         n1    - a unique Index identifying the projected function
         e0    - a Finite Element defining the original space
@@ -39,6 +40,7 @@ class Coefficient:
         "Create Coefficient."
         if isinstance(function, Coefficient):
             # Create Coefficient from Coefficient (copy constructor)
+            self.f  = function.f
             self.n0 = Index(function.n0)
             self.n1 = Index(function.n1)
             self.e0 = function.e0
@@ -47,6 +49,7 @@ class Coefficient:
             self.index = Index(function.index)
             self.ops = [op for op in function.ops]
         else:
+            self.f =  function
             self.n0 = Index(function.n0)
             self.n1 = Index(function.n1)
             self.e0 = function.e0
