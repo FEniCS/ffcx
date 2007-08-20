@@ -1,8 +1,8 @@
 % Copyright (C) 2005-2007 Anders Logg.
-% Licensed under the GNU GPL Version 2.
+% Licensed under the GNU GPL Version 3 or any later version.
 %
 % First added:  2004-09-03
-% Last changed: 2007-05-27
+% Last changed: 2007-08-20
 %
 % LaTeX document class for FEniCS manuals.
 
