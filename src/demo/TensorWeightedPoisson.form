@@ -1,5 +1,5 @@
 # Copyright (C) 2005-2007 Anders Logg (logg@simula.no)
-# Licensed under the GNU GPL Version 2
+# Licensed under the GNU GPL version 3 or any later version
 #
 # The bilinear form a(v, u) and linear form L(v) for
 # tensor-weighted Poisson's equation.

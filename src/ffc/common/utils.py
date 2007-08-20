@@ -1,7 +1,7 @@
 __author__ = "Anders Logg (logg@simula.no)"
 __date__ = "2005-02-04 -- 2007-04-10"
 __copyright__ = "Copyright (C) 2005-2007 Anders Logg"
-__license__  = "GNU GPL Version 2"
+__license__  = "GNU GPL version 3 or any later version"
 
 def pick_first(values):
     "Check that all values are equal and return the value"

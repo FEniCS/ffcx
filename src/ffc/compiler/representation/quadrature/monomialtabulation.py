@@ -3,7 +3,7 @@
 __author__ = "Kristian B. Oelgaard (k.b.oelgaard@tudelft.nl)"
 __date__ = "2007-03-23 -- 2007-06-19"
 __copyright__ = "Copyright (C) 2007 Kristian B. Oelgaard"
-__license__  = "GNU GPL Version 2"
+__license__  = "GNU GPL version 3 or any later version"
 
 # Python modules
 import numpy

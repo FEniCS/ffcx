@@ -3,7 +3,7 @@
 __author__ = "Anders Logg (logg@simula.no)"
 __date__ = "2007-03-20 -- 2007-03-29"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
-__license__  = "GNU GPL Version 2"
+__license__  = "GNU GPL version 3 or any later version"
 
 from finiteelement import *
 from mixedelement import *

@@ -1,7 +1,7 @@
 __author__ = "Anders Logg (logg@simula.no)"
 __date__ = "2006-03-22 -- 2007-02-05"
 __copyright__ = "Copyright (C) 2006 Anders Logg"
-__license__  = "GNU GPL Version 2"
+__license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Andy R Terrel, 2007
 

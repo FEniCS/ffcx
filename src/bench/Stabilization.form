@@ -1,5 +1,5 @@
 # Copyright (C) 2007 Anders Logg
-# Licensed under the GNU GPL Version 2
+# Licensed under the GNU GPL version 3 or any later version
 #
 # The bilinear form for a stabilization term in the
 # Navier-Stokes equations.
