@@ -1,0 +1,37 @@
+# Copyright (C) 2006-2007 Marie Rognes (meg@math.uio.no)
+# Licensed under the GNU GPL Version 3
+#
+# Testing nested mixed elements with piola
+
+# Compile this form with FFC: ffc MixedPoisson.form
+
+q = 1
+shape = "triangle"
+BDM = FiniteElement("Brezzi-Douglas-Marini", shape, q)
+DG  = FiniteElement("Discontinuous Lagrange", shape, q)
+
+element1 = BDM + DG
+element2 = DG + BDM
+
+mixed_element = element1 + element2
+
+t = TestFunctions(element1)
+print "Testing BDM + DG:"
+print "t = ", t
+print
+
+s = TestFunctions(element2)
+print "Testing DG + BDM:"
+print "s = ", s
+print
+
+p = TestFunctions(mixed_element)
+print "Testing [BDM+ DG] + [DG + BDM]:"
+print "p = ", p
+print
+
+element = DG + BDM + BDM + DG + (DG + mixed_element)
+r = TestFunctions(element)
+print "Testing DG + BDM + BDM + DG + (DG + mixed_element)"
+print "r = ", r
+print
