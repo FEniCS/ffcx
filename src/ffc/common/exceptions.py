@@ -3,7 +3,7 @@
 __author__ = "Anders Logg (logg@simula.no)"
 __date__ = "2005-09-14"
 __copyright__ = "Copyright (C) 2005 Anders Logg"
-__license__  = "GNU GPL Version 2"
+__license__  = "GNU GPL version 3 or any later version"
 
 class FFCError(Exception):
     "Base class for FFC exceptions."

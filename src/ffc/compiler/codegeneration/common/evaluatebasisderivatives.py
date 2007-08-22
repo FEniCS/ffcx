@@ -5,7 +5,7 @@ specifically the functions from the modules expansion.py and jacobi.py are trans
 __author__ = "Kristian B. Oelgaard (k.b.oelgaard@tudelft.nl)"
 __date__ = "2007-04-16 -- 2007-04-16"
 __copyright__ = "Copyright (C) 2007 Kristian B. Oelgaard"
-__license__  = "GNU GPL Version 2"
+__license__  = "GNU GPL version 3 or any later version"
 
 # FFC common modules
 from ffc.common.constants import *
@@ -540,9 +540,28 @@ def delete_pointers(element, Indent, format):
     code += [Indent.indent(format["delete"] + format["array access"]("") + " " +\
                            format["reference derivatives"] + format["end line"])] + [""]
 
-    code += [Indent.indent(format["comment"]("Delete pointer to array of combinations of derivatives"))]
+    code += [Indent.indent(format["comment"]("Delete pointer to array of combinations of derivatives and transform"))]
+
+    code += [Indent.indent(format["loop"]("row", 0, format["num derivatives"]))]
+    code += [Indent.indent(format["block begin"])]
+    # Increase indentation
+    Indent.increase()
+
     code += [Indent.indent(format["delete"] + format["array access"]("") + " " +\
-                           format["derivative combinations"] + format["end line"])] + [""]
+                           format["derivative combinations"] + format["array access"]("row") + format["end line"])]
+
+    code += [Indent.indent(format["delete"] + format["array access"]("") + " " +\
+                           format["transform matrix"] + format["array access"]("row") + format["end line"])]
+
+    # Decrease indentation
+    Indent.decrease()
+    code += [Indent.indent(format["block end"])] + [""]
+
+    code += [Indent.indent(format["delete"] + format["array access"]("") + " " +\
+                           format["derivative combinations"] + format["end line"])]
+
+    code += [Indent.indent(format["delete"] + format["array access"]("") + " " +\
+                           format["transform matrix"] + format["end line"])]
 
     return code
 

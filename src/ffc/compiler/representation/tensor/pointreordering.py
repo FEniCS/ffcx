@@ -7,7 +7,7 @@ the UFC ordering convention for mesh entities."""
 __author__ = "Kristian Oelgaard (k.b.oelgaard@tudelft.nl) and Anders Logg (logg@simula.no)"
 __date__ = "2006-12-19 -- 2007-05-14"
 __copyright__ = "Copyright (C) 2006-2007 Kristian Oelgaard and Anders Logg"
-__license__  = "GNU GPL Version 2"
+__license__  = "GNU GPL version 3 or any later version"
 
 # FIAT modules
 from FIAT.shapes import *

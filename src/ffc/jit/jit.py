@@ -4,7 +4,7 @@ It uses Instant to wrap the generated code into a Python module."""
 __author__ = "Anders Logg (logg@simula.no)"
 __date__ = "2007-07-20 -- 2007-08-16"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
-__license__  = "GNU GPL Version 2"
+__license__  = "GNU GPL version 3 or any later version"
 
 # Python module
 from os import system

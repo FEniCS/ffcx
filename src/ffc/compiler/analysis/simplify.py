@@ -1,7 +1,7 @@
 _author__ = "Marie Rognes (meg@math.uio.no)"
 __date__ = "2006-10-23 -- 2007-05-29"
 __copyright__ = "Copyright (C) 2006"
-__license__  = "GNU GPL Version 2"
+__license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Anders Logg 2007
 # Modified by Kristian Oelgaard 2007
@@ -189,7 +189,7 @@ def contract_indices(m, n):
     # only a difference of one index and if there are at least two
     # occurances of this index. (Summation over _repeated_ indices.)
     if len(indices[0].keys()) == len(indices[1].keys()) == 1 \
-           and len(indices[0].values()[0]) > 1:
+           and len(indices[0].values()[0]) == 2:
         # Constructing the new index:
         i0 = indices[0].values()[0][0][1]
         i1 = indices[1].values()[0][0][1]
