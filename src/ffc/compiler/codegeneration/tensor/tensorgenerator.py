@@ -45,7 +45,7 @@ class TensorGenerator(CodeGenerator):
         sign_code, sign_change_set = self.__generate_signs(terms, format)
 
         # Generate element code + set of used geometry terms + set of used signs
-        element_code, geo_set, sign_set = self.__generate_element_tensor(terms, sign_change_set, format)
+        element_code, geo_set, primary_sign_set = self.__generate_element_tensor(terms, sign_change_set, format)
 
         # Generate geometry code + set of used coefficients + set of jacobi terms
         geo_code, coeff_set, trans_set = self.__generate_geometry_tensors(terms, geo_set, format)
@@ -53,18 +53,19 @@ class TensorGenerator(CodeGenerator):
         # Get Jacobian snippet
         jacobi_code = [format["generate jacobian"](form_data.cell_dimension, Integral.CELL)]
 
+        # Generate code for manipulating coefficients
+        coeff_code, secondary_sign_set = self.__generate_coefficients(terms, coeff_set, sign_change_set, format) 
+
         # Remove unused declarations
         code = self.__remove_unused(jacobi_code, trans_set, format)
+        sign_set = primary_sign_set | secondary_sign_set
         sign_code = self.__remove_unused(sign_code, sign_set, format)
 
         # Add sign code:
         code += sign_code
-    
-        # Generate code for manipulating coefficients
-        code += self.__generate_coefficients(terms, coeff_set, format)
 
-        # Add geometry tensor declarations
-        code += geo_code
+        # Add coefficient and geometry tensor declarations
+        code += coeff_code + geo_code
 
         # Add element code
         code += [""] + [format["comment"]("Compute element tensor")]
@@ -102,7 +103,7 @@ class TensorGenerator(CodeGenerator):
         code = self.__remove_unused(jacobi_code, trans_set, format)
 
         # Generate code for manipulating coefficients (should be the same so pick first)
-        code += self.__generate_coefficients(terms[0], coeff_set, format)
+        code += self.__generate_coefficients(terms[0], coeff_set, Set(), format)[0]
 
         # Add geometry tensor declarations
         code += geo_code
@@ -143,7 +144,7 @@ class TensorGenerator(CodeGenerator):
         code = self.__remove_unused(jacobi_code, trans_set, format)
 
         # Generate code for manipulating coefficients (should be the same so pick first)
-        code += self.__generate_coefficients(terms[0][0], coeff_set, format)
+        code += self.__generate_coefficients(terms[0][0], coeff_set, Set(), format)[0]
 
         # Add geometry tensor declarations
         code += geo_code
@@ -153,11 +154,12 @@ class TensorGenerator(CodeGenerator):
 
         return {"tabulate_tensor": (code, cases), "members":""}
 
-    def __generate_coefficients(self, terms, coeff_set, format):
+    def __generate_coefficients(self, terms, coeff_set, sign_change_set, format):
         "Generate code for manipulating coefficients"
 
         # Generate code as a list of declarations
         code = []
+        sign_set = Set()
 
         # Add comment
         code += [format["comment"]("Compute coefficients")]
@@ -171,21 +173,21 @@ class TensorGenerator(CodeGenerator):
 
         # Iterate over all terms
         j = 0
-
         for term in terms:
             for G in term.G:
                 for k in range(len(G.coefficients)):
                     coefficient = G.coefficients[k]
+                    index = coefficient.n0.index
                     if term.monomial.integral.type == Integral.INTERIOR_FACET:
                         space_dimension = 2*len(coefficient.index.range)
                     else:
                         space_dimension = len(coefficient.index.range)
                     for l in range(space_dimension):
                         # If coefficient is not used don't declare it
-                        if not format["modified coefficient access"](coefficient.n0.index, j, k, l) in coeff_set:
+                        if not format["modified coefficient access"](index, j, k, l) in coeff_set:
                             continue
-                        name = format["modified coefficient declaration"](coefficient.n0.index, j, k, l)
-                        value = format["coefficient"](coefficient.n0.index, l)
+                        name = format["modified coefficient declaration"](index, j, k, l)
+                        value = format["coefficient"](index, l)
                         for l in range(len(coefficient.ops)):
                             op = coefficient.ops[len(coefficient.ops) - 1 - l]
                             if op == Operators.INVERSE:
@@ -194,17 +196,24 @@ class TensorGenerator(CodeGenerator):
                                 value = format["absolute value"](value)
                             elif op == Operators.SQRT:
                                 value = format["sqrt"](value)
+
+                        # Add signs associated with secondary indices:
+                        if sign_change_set:
+                            sign = format["sign tensor"]("a", index, l)
+                            if sign in sign_change_set:
+                                value = format["multiply"]([sign, value])
+                                sign_set.add(sign)
                         code += [(name, value)]
                 j += 1
 
         # Don't add code if there are no coefficients
         if len(code) == 1:
-            return []
+            return ([], sign_set)
 
         # Add newline
         code += [""]
 
-        return code
+        return (code, sign_set)
 
     def __generate_geometry_tensors(self, terms, geo_set, format):
         "Generate list of declarations for computation of geometry tensors"
@@ -420,8 +429,7 @@ class TensorGenerator(CodeGenerator):
                     code += declarations
                     computed[str(index)] = True
         if sign_set:
-            code.insert(0, format["comment"]("Compute signs"))
-            code.insert(0, format["snippet facet signs"](2))
+            code = [format["snippet facet signs"](2)] + [format["comment"]("Compute signs")] + code + [""]
 
         return (code, sign_set)
 
