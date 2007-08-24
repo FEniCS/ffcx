@@ -51,12 +51,19 @@ OPTIONS
        -f option
               Specify code generation options. The list of  options  available
               depends  on  the  specified  language  (format). Current options
-              include -fprecision=n, -fblas and -fno-foo, described in  detail
-              below.
-
+              include   -fprecision=n,   -fquadrature_points=n,   -fblas,  and
+              -fno-foo described in detail below.
+        
        -f precision=n
               Set the number of significant digits to n in the generated code.
               The default value of n is 15.
+
+       -f quadrature_points=n
+              Will  generate  n quadrature  points  in  each spatial direction
+              regardless of the  polynomial order of the  form. The  specified
+              number  of points  will apply to ALL terms of the given form! As
+              default  FFC  will  determine  the  number of quadrature  points
+              needed for exact representation of the form.
 
        -f blas
               Generate code that uses BLAS to compute tensor  products.   This
