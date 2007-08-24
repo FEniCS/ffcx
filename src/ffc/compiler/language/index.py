@@ -6,6 +6,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Marie Rognes 2007
 
 from ffc.common.utils import *
+from sets import Set
 
 class Index:
     """An Index represents a tensor index. The type of index can be
@@ -148,7 +149,7 @@ class Index:
         # Index + Index
         elif isinstance(other, Index):
             if self.range and other.range:
-                if intersection(self.range, other.range):
+                if (Set(self.range) & Set(other.range)):
                     raise RuntimeError("Cannot add indices with overlapping ranges")
                 range = self.range + other.range
                 range.sort()
