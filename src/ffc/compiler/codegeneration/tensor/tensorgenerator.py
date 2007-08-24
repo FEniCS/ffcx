@@ -85,12 +85,17 @@ class TensorGenerator(CodeGenerator):
         num_facets = len(terms)
         cases = [None for i in range(num_facets)]
 
+        # Generate code for sign tensor (Picking first assuming the same...)
+        sign_code, sign_change_set = self.__generate_signs(terms[0], format)
+
         # Generate element code + set of used geometry terms
         geo_set = Set()
+        primary_sign_set = Set()
         for i in range(num_facets):
-            case, g_set, s_set = self.__generate_element_tensor(terms[i], False, format)
+            case, g_set, s_set = self.__generate_element_tensor(terms[i], sign_change_set, format)
             cases[i] = case
             geo_set = geo_set | g_set
+            primary_sign_set = primary_sign_set | s_set
 
         # Generate code for geometry tensor (should be the same so pick first)
         # Generate set of used coefficients + set of jacobi terms
@@ -99,14 +104,19 @@ class TensorGenerator(CodeGenerator):
         # Get Jacobian snippet
         jacobi_code = [format["generate jacobian"](form_data.cell_dimension, Integral.EXTERIOR_FACET)]
 
+        # Generate code for manipulating coefficients (should be the same so pick first)
+        coeff_code, secondary_sign_set = self.__generate_coefficients(terms[0], coeff_set, sign_change_set, format)
+
         # Remove unused declarations
         code = self.__remove_unused(jacobi_code, trans_set, format)
+        sign_set = primary_sign_set | secondary_sign_set
+        sign_code = self.__remove_unused(sign_code, sign_set, format)
 
-        # Generate code for manipulating coefficients (should be the same so pick first)
-        code += self.__generate_coefficients(terms[0], coeff_set, Set(), format)[0]
+        # Add sign declarations
+        code += sign_code
 
-        # Add geometry tensor declarations
-        code += geo_code
+        # Add coefficient and geometry tensor declarations
+        code += coeff_code + geo_code
 
         # Add element code
         code += [""] + [format["comment"]("Compute element tensor for all facets")]
@@ -125,13 +135,18 @@ class TensorGenerator(CodeGenerator):
         num_facets = len(terms)
         cases = [[None for j in range(num_facets)] for i in range(num_facets)]
 
+        # Generate code for sign tensor (Picking first assuming the same...)
+        sign_code, sign_change_set = self.__generate_signs(terms[0][0], format)
+
         # Generate element code + set of used geometry terms
         geo_set = Set()
+        primary_sign_set = Set()
         for i in range(num_facets):
             for j in range(num_facets):
-                case, g_set, s_set = self.__generate_element_tensor(terms[i][j], False, format)
+                case, g_set, s_set = self.__generate_element_tensor(terms[i][j], sign_change_set, format)
                 cases[i][j] = case
                 geo_set = geo_set | g_set
+                primary_sign_set = primary_sign_set | s_set
 
         # Generate code for geometry tensor (should be the same so pick first)
         # Generate set of used coefficients + set of jacobi terms
@@ -140,14 +155,19 @@ class TensorGenerator(CodeGenerator):
         # Get Jacobian snippet
         jacobi_code = [format["generate jacobian"](form_data.cell_dimension, Integral.INTERIOR_FACET)]
 
+        # Generate code for manipulating coefficients (should be the same so pick first)
+        coeff_code, secondary_sign_set = self.__generate_coefficients(terms[0][0], coeff_set, sign_change_set, format)
+
         # Remove unused declarations
         code = self.__remove_unused(jacobi_code, trans_set, format)
+        sign_set = primary_sign_set | secondary_sign_set
+        sign_code = self.__remove_unused(sign_code, sign_set, format)
 
-        # Generate code for manipulating coefficients (should be the same so pick first)
-        code += self.__generate_coefficients(terms[0][0], coeff_set, Set(), format)[0]
+        # Add sign declarations
+        code += sign_code
 
-        # Add geometry tensor declarations
-        code += geo_code
+        # Add coefficient and geometry tensor declarations
+        code += coeff_code + geo_code
 
         # Add element code
         code += [""] + [format["comment"]("Compute element tensor for all facet-facet combinations")]
