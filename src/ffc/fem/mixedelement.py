@@ -92,13 +92,13 @@ class MixedElement:
     def value_offset(self, component):
         """Given an absolute component (index), return the associated
         subelement and relative position of the component""" 
-        # Does not yet work with nested mixed elements
         i = Index(component)
         adjustment = 0
         for element in self.__elements:
             value_dim = element.value_dimension(0)
             if (adjustment + value_dim) > i.index:
-                return (element, adjustment)
+                (subelement, offset) = element.value_offset(i.index - adjustment)
+                return (subelement, offset + adjustment)
             else:
                 adjustment += value_dim
         raise RuntimeError("Component does not match value dimension")
@@ -106,12 +106,12 @@ class MixedElement:
     def space_offset(self, i):
         """Given an absolute basis_no (i), return the associated
         subelement and offset"""
-        # Does not yet work with nested mixed elements
         adjustment = 0
         for element in self.__elements:
             space_dim = element.space_dimension()
             if (adjustment + space_dim) > i:
-                return (element, adjustment)
+                (subelement, offset) = element.space_offset(i - adjustment)
+                return (subelement, offset + adjustment)
             else:
                 adjustment += space_dim
         raise RuntimeError("Basis number does not match space dimension")

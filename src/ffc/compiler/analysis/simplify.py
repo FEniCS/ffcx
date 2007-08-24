@@ -8,6 +8,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Python modules
 import sys
+from sets import Set
 
 # FFC common modules
 from ffc.common.debug import *
@@ -195,7 +196,7 @@ def contract_indices(m, n):
         i1 = indices[1].values()[0][0][1]
 
         # We only want to contract if each index value occurs once.
-        common_indices = intersection(i0.range, i1.range)
+        common_indices = Set(i0.range) & Set(i1.range)
         if not common_indices:
             # Constucting the new monomial based on the old m:
             index = Index(i0) + Index(i1)
