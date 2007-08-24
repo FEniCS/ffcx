@@ -58,7 +58,7 @@ def generate_psi_declaration(tensor_number, psi_indices, vindex, aindices, bindi
 
     return (name, multi_index)
 
-def generate_psi_entry(tensor_number, aindices, bindices, psi_indices, vindices, format):
+def generate_psi_entry(tensor_number, aindices, bindices, psi_indices, vindices, name_map, format):
 
     # Prefetch formats to speed up code generation
     format_secondary_index  = format["secondary index"]
@@ -73,8 +73,11 @@ def generate_psi_entry(tensor_number, aindices, bindices, psi_indices, vindices,
         else:
             indices += format_secondary_index(index_names[index.type](index([], aindices, bindices, [])))
 
-    entry = format["psis"] + format_secondary_index("t%d" %tensor_number)\
-              + indices + format["matrix access"](format["integration points"], dof_num)
+    name = format["psis"] + format_secondary_index("t%d" %tensor_number) + indices
+    if name in name_map:
+        entry = name_map[name] + format["matrix access"](format["integration points"], dof_num)
+    else:
+        entry = name + format["matrix access"](format["integration points"], dof_num)
 
     return entry
 
@@ -409,17 +412,8 @@ def values_level_0(indices, vindices, aindices, b0indices, bgindices, tensor, te
             for bg in bgindices:
                 factor = generate_factor_old(tensor, a, bg, format)
                 values += [format_multiply([generate_psi_entry(tensor_number, a,\
-                           b0, psi_indices, vindices, format) for psi_indices in indices] +\
+                           b0, psi_indices, vindices, name_map, format) for psi_indices in indices] +\
                            weight + factor) + format_new_line]
-
-    # Map values to correct table
-    if name_map:
-        map_values = []
-        for val in values:
-            for name in name_map:
-                val = val.replace(name, name_map[name])
-            map_values += [val]
-        values = map_values
 
     return (values, [])
 
@@ -435,7 +429,7 @@ def values_level_1(indices, vindices, aindices, b0indices, bgindices, tensor, te
         r = []
         for b0 in b0indices:
             r += [format_multiply([generate_psi_entry(tensor_number, a,\
-                  b0, psi_indices, vindices, format) for psi_indices in indices] + weight)]
+                  b0, psi_indices, vindices, name_map, format) for psi_indices in indices] + weight)]
 
         if 1 < len(r):
             ref = format_group(format_add(r))
@@ -448,15 +442,6 @@ def values_level_1(indices, vindices, aindices, b0indices, bgindices, tensor, te
         else:
             geo = geo[0]
         values += [format_multiply([ref,geo]) + format_new_line]
-
-    # Map values to correct table
-    if name_map:
-        map_values = []
-        for val in values:
-            for name in name_map:
-                val = val.replace(name, name_map[name])
-            map_values += [val]
-        values = map_values
 
     return (values, [])
 
@@ -475,7 +460,7 @@ def values_level_2(indices, vindices, aindices, b0indices, bgindices, tensor, te
         r = []
         for b0 in b0indices:
             r += [format_multiply([generate_psi_entry(tensor_number, a,\
-                  b0, psi_indices, vindices, format) for psi_indices in indices] + weight)]
+                  b0, psi_indices, vindices, name_map, format) for psi_indices in indices] + weight)]
 
         if 1 < len(r):
             ref = format_group(format_add(r))
@@ -495,15 +480,6 @@ def values_level_2(indices, vindices, aindices, b0indices, bgindices, tensor, te
 
         geo = format_multiply(geo_out + geo_in + d)
         values += [format_multiply([ref,geo]) + format_new_line]
-
-    # Map values to correct table
-    if name_map:
-        map_values = []
-        for val in values:
-            for name in name_map:
-                val = val.replace(name, name_map[name])
-            map_values += [val]
-        values = map_values
 
     return (values, [])
 
@@ -553,7 +529,7 @@ def values_level_3(indices, vindices, aindices, b0indices, bgindices, tensor, te
         r = []
         for b0 in b0indices:
             r += [format_multiply([generate_psi_entry(tensor_number, a,\
-                  b0, psi_indices, vindices, format) for psi_indices in indices] + weight)]
+                  b0, psi_indices, vindices, name_map, format) for psi_indices in indices] + weight)]
 
         if 1 < len(r):
             ref = format_group(format_add(r))
@@ -583,17 +559,6 @@ def values_level_3(indices, vindices, aindices, b0indices, bgindices, tensor, te
         if not val in values:
             values += [val]
 #    print "\nvalues[0]: ", values[0]
-
-#    print "name map: ", name_map
-
-    # Map values to correct table
-    if name_map:
-        map_values = []
-        for val in values:
-            for name in name_map:
-                val = val.replace(name, name_map[name])
-            map_values += [val]
-        values = map_values
 
     return (values, secondary_loop, trans_set)
 

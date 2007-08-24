@@ -187,7 +187,7 @@ class QuadratureGenerator(CodeGenerator):
         # to reduce number of loops
         group_tensors = equal_loops(tensors)
         tables = None
-        name_map = None
+        name_map = {}
         # Get dictionary of unique tables, and the name_map
         if self.unique_tables:
             name_map, tables = unique_tables(tensors, format)
