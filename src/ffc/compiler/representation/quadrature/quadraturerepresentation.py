@@ -22,15 +22,18 @@ class QuadratureRepresentation:
 
     Attributes:
 
-        form                   - the form generating the quadrature representation
-        cell_tensor            - the representation of the cell tensor
-        exterior_facet_tensors - the representation of the interior facet tensors,
-                                 one for each facet
-        interior_facet_tensors - the representation of the exterior facet tensors,
-                                 one for each facet-facet combination
+        form                            - the form generating the quadrature representation
+        cell_tensor                     - the representation of the cell tensor
+        exterior_facet_tensors          - the representation of the interior facet tensors,
+                                          one for each facet
+        interior_facet_tensors          - the representation of the exterior facet tensors,
+                                          one for each facet-facet combination
+        num_user_specified_quad_points  - the number of desired quadrature points specified
+                                          by the user. Will be used for ALL terms
+
     """
 
-    def __init__(self, form_data):
+    def __init__(self, form_data, num_quadrature_points):
         "Create tensor representation for given form"
 
         # Extract form
@@ -38,6 +41,9 @@ class QuadratureRepresentation:
 
         # Save form
         self.form = form
+
+        # Set number of specified quadrature points
+        self.num_user_specified_quad_points = num_quadrature_points
 
         # Compute representation of cell tensor
         self.cell_tensor = self.__compute_cell_tensor(form)
@@ -163,7 +169,7 @@ class QuadratureRepresentation:
             if not m.integral.type == integral_type:
                 continue
 
-            tensors[i] = ElementTensor(m, facet0, facet1)
+            tensors[i] = ElementTensor(m, facet0, facet1, self.num_user_specified_quad_points)
 
         return tensors
 

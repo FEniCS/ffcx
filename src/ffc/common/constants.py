@@ -8,5 +8,6 @@ FFC_LANGUAGE       = "ufc"
 FFC_DEBUG_LEVEL    = 0
 FFC_OPTIONS        = {"optimize": False,
                       "blas": False,
-                      "precision=": "15"}
+                      "precision=": "15",
+                      "quadrature_points=": False}
 FFC_REPRESENTATION = "tensor"

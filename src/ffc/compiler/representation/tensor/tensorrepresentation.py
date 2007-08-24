@@ -40,7 +40,7 @@ class TensorRepresentation:
                                  one for each facet-facet combination
     """
 
-    def __init__(self, form_data):
+    def __init__(self, form_data, num_quadrature_points):
         "Create tensor representation for given form"
 
         # Extract form

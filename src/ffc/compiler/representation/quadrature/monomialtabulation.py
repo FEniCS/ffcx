@@ -40,7 +40,7 @@ class Quadrature:
         self.points  = points
         self.weights = weights
 
-def tabulate(monomial, facet0, facet1):
+def tabulate(monomial, facet0, facet1, num_quad_points):
     """Tabulate the element tensor for a given monomial term of a
     multilinear form"""
 
@@ -50,7 +50,7 @@ def tabulate(monomial, facet0, facet1):
     integral_type = monomial.integral.type
 
     # Initialize quadrature points and weights
-    (points, weights, vscaling, dscaling) = __init_quadrature(monomial.basisfunctions, integral_type)
+    (points, weights, vscaling, dscaling) = __init_quadrature(monomial.basisfunctions, integral_type, num_quad_points)
 
     num_quadrature_points = len(weights)
 
@@ -70,7 +70,7 @@ def tabulate(monomial, facet0, facet1):
 #    return (map_derivatives, map_element, psis, quadrature)
 #    return (Derivatives, num_quadrature_points, psis)
 
-def __init_quadrature(basisfunctions, integral_type):
+def __init_quadrature(basisfunctions, integral_type, num_quad_points):
     "Initialize quadrature for given monomial term."
 
     # Get shape (check first one, all should be the same)
@@ -81,6 +81,10 @@ def __init_quadrature(basisfunctions, integral_type):
     q = __compute_degree(basisfunctions)
     m = (q + 1 + 1) / 2 # integer division gives 2m - 1 >= q
     debug("Total degree is %d, using %d quadrature point(s) in each dimension" % (q, m), 1)
+
+    # Use user specified number of quadrature points if present
+    if num_quad_points:
+        m = num_quad_points
 
     # Create quadrature rule and get points and weights
     # FIXME: FIAT not finiteelement should return shape of facet

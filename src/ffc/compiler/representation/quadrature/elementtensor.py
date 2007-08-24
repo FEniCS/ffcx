@@ -36,14 +36,14 @@ class ElementTensor:
         determinant
     """
 
-    def __init__(self, monomial, facet0, facet1):
+    def __init__(self, monomial, facet0, facet1, num_quad_points):
         "Create element tensor for given monomial"
 
         # Save monomial
         self.monomial = monomial
 
         # Tabulate element tensor
-        self.Psis, self.quadrature = tabulate(monomial, facet0, facet1)
+        self.Psis, self.quadrature = tabulate(monomial, facet0, facet1, num_quad_points)
 
         # Create primary, secondary and auxiliary multi indices
         self.i = self.__create_multi_index(monomial, Index.PRIMARY)

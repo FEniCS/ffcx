@@ -95,7 +95,7 @@ def __compile_forms(forms, prefix="Form", representation=FFC_REPRESENTATION, lan
         form_datas += [form_data]
 
         # Compiler phase 2: compute form representation
-        form_representation = compute_form_representation(form_data, representation)
+        form_representation = compute_form_representation(form_data, representation, int(options["quadrature_points="]))
         form_representations += [form_representation]
 
         # Compiler phase 3: optimize form representation
@@ -188,7 +188,7 @@ def analyze_form(form):
     debug_end()
     return form_data
 
-def compute_form_representation(form_data, representation):
+def compute_form_representation(form_data, representation, num_quadrature_points):
     "Compiler phase 2: compute form representation"
     debug_begin("Compiler phase 2: Computing form representation")
 
@@ -196,7 +196,7 @@ def compute_form_representation(form_data, representation):
     Representation = __choose_representation(representation)
 
     # Compute form representation
-    form_representation = Representation(form_data)
+    form_representation = Representation(form_data, num_quadrature_points)
 
     debug_end()
     return form_representation
