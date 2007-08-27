@@ -10,6 +10,7 @@ import numpy
 import sets
 
 # FFC common modules
+from ffc.common.exceptions import *
 from ffc.common.debug import *
 from ffc.common.utils import *
 

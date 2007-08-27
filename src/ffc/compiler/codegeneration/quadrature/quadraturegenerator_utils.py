@@ -208,6 +208,8 @@ def add_sign(value, j, i, format):
 def generate_factor(tensor, a, bgindices, format):
     "Optimise level 2"
 
+    trans_set = Set()
+
         # Compute product of factors outside sum
     factors = []
     for j in range(len(tensor.coefficients)):
@@ -226,9 +228,12 @@ def generate_factor(tensor, a, bgindices, format):
             factors += [coefficient]
     for t in tensor.transforms:
         if not (t.index0.type == Index.AUXILIARY_G or  t.index1.type == Index.AUXILIARY_G):
-            factors += [format["transform"](t.type, t.index0([], a, [], []), \
+            trans = format["transform"](t.type, t.index0([], a, [], []), \
                                                     t.index1([], a, [], []), \
-                                                    t.restriction),]
+                                                    t.restriction)
+            factors += [trans]
+            trans_set.add(trans)
+
     monomial = format["multiply"](factors)
     if monomial:
         f_out = [monomial]
@@ -255,9 +260,12 @@ def generate_factor(tensor, a, bgindices, format):
                 factors += [coefficient]
         for t in tensor.transforms:
             if t.index0.type == Index.AUXILIARY_G or t.index1.type == Index.AUXILIARY_G:
-                factors += [format["transform"](t.type, t.index0([], a, [], b), \
+                trans = format["transform"](t.type, t.index0([], a, [], b), \
                                                         t.index1([], a, [], b), \
-                                                        t.restriction)]
+                                                        t.restriction)
+                factors += [trans]
+                trans_set.add(trans)
+
         terms += [format["multiply"](factors)]
 
     f_in = format["add"](terms)
@@ -266,12 +274,14 @@ def generate_factor(tensor, a, bgindices, format):
 
 #        f_tot = format["multiply"](f_out + f_in)
 
-    return (f_out, f_in)
+    return (f_out, f_in, trans_set)
 
 def generate_factor_old(tensor, a, b, format):
     "Optimise level 0 and 1"
     # Compute product of factors outside sum
     factors = []
+    trans_set = Set()
+
     for j in range(len(tensor.coefficients)):
         c = tensor.coefficients[j]
         if not c.index.type == Index.AUXILIARY_G:
@@ -288,9 +298,12 @@ def generate_factor_old(tensor, a, b, format):
             factors += [coefficient]
     for t in tensor.transforms:
         if not (t.index0.type == Index.AUXILIARY_G or  t.index1.type == Index.AUXILIARY_G):
-            factors += [format["transform"](t.type, t.index0([], a, [], []), \
+            trans = format["transform"](t.type, t.index0([], a, [], []), \
                                                     t.index1([], a, [], []), \
-                                                    t.restriction),]
+                                                    t.restriction)
+            factors += [trans]
+            trans_set.add(trans)
+
     # Compute sum of monomials inside sum
     for j in range(len(tensor.coefficients)):
         c = tensor.coefficients[j]
@@ -308,15 +321,21 @@ def generate_factor_old(tensor, a, b, format):
             factors += [coefficient]
     for t in tensor.transforms:
         if t.index0.type == Index.AUXILIARY_G or t.index1.type == Index.AUXILIARY_G:
-            factors += [format["transform"](t.type, t.index0([], a, [], b), \
+            trans= format["transform"](t.type, t.index0([], a, [], b), \
                                                         t.index1([], a, [], b), \
-                                                        t.restriction)]
+                                                        t.restriction)
+            factors += [trans]
+            trans_set.add(trans)
+
     if tensor.determinant:
         d0 = format["power"](format["determinant"], tensor.determinant)
         d = format["multiply"]([format["scale factor"], d0])
     else:
         d = format["scale factor"]
-    return [format["multiply"](factors + [d])]
+
+    trans_set.add(d)
+
+    return ([format["multiply"](factors + [d])], trans_set)
 
 def generate_factor3(tensor, a, bgindices, format):
     "Optimise level 3"
@@ -406,16 +425,21 @@ def values_level_0(indices, vindices, aindices, b0indices, bgindices, tensor, te
     # Generate value (expand multiplication - optimise level 0)
     format_multiply = format["multiply"]
     format_new_line = format["new line"]
+
     values = []
+    trans_set = Set()
+
     for a in aindices:
         for b0 in b0indices:
             for bg in bgindices:
-                factor = generate_factor_old(tensor, a, bg, format)
+                factor, t_set = generate_factor_old(tensor, a, bg, format)
+                trans_set = trans_set | t_set
+
                 values += [format_multiply([generate_psi_entry(tensor_number, a,\
                            b0, psi_indices, vindices, name_map, format) for psi_indices in indices] +\
                            weight + factor) + format_new_line]
 
-    return (values, [])
+    return (values, [], trans_set)
 
 def values_level_1(indices, vindices, aindices, b0indices, bgindices, tensor, tensor_number, weight, format, name_map):
     # Generate brackets of geometry and reference terms (terms outside sum are
@@ -424,7 +448,10 @@ def values_level_1(indices, vindices, aindices, b0indices, bgindices, tensor, te
     format_group = format["grouping"]
     format_add = format["add"]
     format_new_line = format["new line"]
+
     values = []
+    trans_set = Set()
+
     for a in aindices:
         r = []
         for b0 in b0indices:
@@ -436,14 +463,19 @@ def values_level_1(indices, vindices, aindices, b0indices, bgindices, tensor, te
         else:
             ref = r[0]
 
-        geo = [format_multiply(generate_factor_old(tensor, a, bg, format)) for bg in bgindices]
+        geo = []
+        for bg in bgindices:
+            factor, t_set = generate_factor_old(tensor, a, bg, format)
+            trans_set = trans_set | t_set
+            geo += [format_multiply(factor)]
+
         if 1 < len(geo):
             geo = format_group(format_add(geo))
         else:
             geo = geo[0]
         values += [format_multiply([ref,geo]) + format_new_line]
 
-    return (values, [])
+    return (values, [], trans_set)
 
 def values_level_2(indices, vindices, aindices, b0indices, bgindices, tensor, tensor_number, weight, format, name_map):
     # Generate brackets of geometry and reference terms, distinguish between terms outside and 
@@ -455,6 +487,7 @@ def values_level_2(indices, vindices, aindices, b0indices, bgindices, tensor, te
     format_new_line = format["new line"]
 
     values = []
+    trans_set = Set()
 
     for a in aindices:
         r = []
@@ -468,7 +501,9 @@ def values_level_2(indices, vindices, aindices, b0indices, bgindices, tensor, te
             ref = r[0]
 
         # Get geometry terms from inside sum, and outside sum
-        geo_out, geo_in = generate_factor(tensor, a, bgindices, format)
+        geo_out, geo_in, t_set = generate_factor(tensor, a, bgindices, format)
+        trans_set = trans_set | t_set
+
         if 1 < len(geo_in):
             geo_in = [format_group(format_add(geo_in))]
 
@@ -478,10 +513,12 @@ def values_level_2(indices, vindices, aindices, b0indices, bgindices, tensor, te
         else:
             d = [format["scale factor"]]
 
+        trans_set.add(d[0])
+
         geo = format_multiply(geo_out + geo_in + d)
         values += [format_multiply([ref,geo]) + format_new_line]
 
-    return (values, [])
+    return (values, [], trans_set)
 
 def values_level_3(indices, vindices, aindices, b0indices, bgindices, tensor, tensor_number, weight, format, name_map):
     # Generate value - optimise level 3 (Based on level 2 but use loops to multiply reference and geo tensor)
