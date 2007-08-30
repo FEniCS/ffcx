@@ -1,5 +1,6 @@
  - Change license from GPL v2 to GPL v3 or later
  - Add JIT (just-in-time) compiler
+ - Fix bug for constants on interior facets
 0.4.1 [2007-06-22]
  - Fix bug in simplification of forms
  - Optimize removal of unused terms in code formattting

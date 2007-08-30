@@ -25,7 +25,7 @@ interface and the Python interface is that one must add the
 import statement of the \ffc{} module and that the function
 \texttt{compile} must be called when using the Python interface.
 
-\section{The \texttt{compile} function}
+\section{Compiling forms: \texttt{compile}}
 
 The \texttt{compile} function expects a form (see
 Section~\ref{sec:formlanguage}) or a list of forms as its first
@@ -33,6 +33,8 @@ argument. It also accepts up to four additional optional arguments:
 \begin{code}
 compile(forms, prefix, representation, language, options)
 \end{code}
+
+\subsection{Input arguments}
 
 The \texttt{prefix} argument can be used to control the prefix of the
 file containing the generated code, which we in the above example set
@@ -55,12 +57,25 @@ format~\cite{www:ufc,ufcmanual}. Alternatively, \texttt{"dolfin"} may
 be used to generate code according to the UFC format with a small set
 of additional \dolfin{}-specific wrappers.
 
-Finally, the \texttt{compile} function accepts a dictionary of special
+The \texttt{compile} function accepts a dictionary of special
 code generation options. The default values for these options may be
 accessed through the variable \texttt{FFC\_OPTIONS} available in
 \ffc{}.
 
-\section{Compiling finite elements}
+\subsection{Output arguments}
+
+The \texttt{compile} function returns a tuple
+\begin{code}
+(form_data, form_representation)
+\end{code}
+where \texttt{form\_data} is a list of metadata
+extracted for each input form and where \texttt{form\_representation}
+is a list that holds a particular internal representation of each
+input form. The form representation depends on the chosen
+representation mode. Accessing this data is mainly intended for
+developers.
+
+\subsection{Compiling finite elements}
 
 The \texttt{compile} function may also be used to compile finite
 elements directly (without associated forms). The following example
@@ -72,3 +87,29 @@ from ffc import *
 element = FiniteElement("Lagrange", "tetrahedron", 5)
 compile(element, "P5")
 \end{code}
+
+\section{Just-in-time (JIT) compiler: \texttt{jit}}
+
+The \texttt{jit} function expects a single form
+as its first argument. It also accepts up to three additional optional arguments:
+\begin{code}
+jit(form, representation, language, options)
+\end{code}
+However, instead of generating code, the \texttt{jit} function returns
+the \emph{compiled} form as a Python object. It does this by
+generating code, compiling it (by calling the C++ compiler) and
+wrapping it as a Python module (by calling Instant/SWIG).
+
+The \texttt{jit} function returns a tuple
+\begin{code}
+(compiled_form, compiled_module, form_data)
+\end{code}
+where \texttt{compiled\_form} is the compiled form (a Python wrapper
+for \texttt{ufc::form}), \texttt{compiled\_module} is a Python module
+containing the compiled form, finite elements, dof maps etc (a Python
+wrapper for the complete set of generated code), and
+\texttt{form\_data} is form metadata generated from the input form.
+
+The JIT compiler caches generated modules such that if a Python script
+including a call to the JIT compiler is run twice (in the same
+directory) the Python module is only generated once.
