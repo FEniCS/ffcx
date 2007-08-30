@@ -1,5 +1,5 @@
 _author__ = "Marie Rognes (meg@math.uio.no)"
-__date__ = "2006-10-23 -- 2007-05-29"
+__date__ = "2006-10-23 -- 2007-08-30"
 __copyright__ = "Copyright (C) 2006"
 __license__  = "GNU GPL version 3 or any later version"
 
@@ -29,6 +29,9 @@ def simplify(form):
     debug("Simplifying form...")
     # Handle restrictions on exterior facets before simplifying
     restriction_exterior(form)
+
+    # Change constant restrictions on interior facets before simplifying
+    change_constant_restrictions(form)
 
     previous = str(form)
     simplified = ""
@@ -372,3 +375,12 @@ def restriction_exterior(form):
                 form.monomials.remove(p)
             else:
                 unique += [p]
+
+def change_constant_restrictions(form):
+    """Change Restriction.CONSTANT to Restriction.PLUS on interior facets"""
+
+    for m in form.monomials:
+        if m.integral.type == Integral.INTERIOR_FACET:
+            for v in m.basisfunctions:
+                if v.restriction == Restriction.CONSTANT:
+                    v.restriction = Restriction.PLUS
