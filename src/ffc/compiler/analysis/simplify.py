@@ -45,7 +45,7 @@ def simplify_form(f):
     # First: contract indices and factorize
     f.monomials = contract_list(contract_monomials, f.monomials)
     reassign_indices(f)
-    f.monomials = contract_list(factorize_monomials, f.monomials)
+    #f.monomials = contract_list(factorize_monomials, f.monomials)
 
     for monomial in f.monomials:
         # Second, remove monomials with numeric = 0.0:
