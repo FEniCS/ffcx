@@ -279,7 +279,10 @@ A finite element can have general tensor-valued basis functions.  The
 function \texttt{value\_rank} returns the rank of the value space of
 the basis functions. For a scalar element, this function should return
 zero, for vector-valued functions it should return one, for
-matrix-valued functions it should return two, etc.
+matrix-valued functions it should return two, etc. For mixed elements, this
+may not always make sense, for example with a tensor-vector-scalar element.
+Thus the value rank of a mixed element must be 1 if any of the subelements have
+different value ranks.
 
 \subsection{The function \texttt{value\_dimension}}
 
@@ -294,7 +297,10 @@ be a number between zero and the value rank minus one.
 
 Note that the total size (number of values) of the value space is
 obtained as the product of \texttt{value\_dimension(i)} for $0 \le i <$
-\texttt{value\_rank()}.
+\texttt{value\_rank()}. For a mixed element with value rank 1 
+Since the value rank of a mixed element must be 1 if any of the subelements
+have different value ranks, \texttt{value\_dimension(0)} is then the total value
+size of all the subelements.
 
 \subsection{The function \texttt{evaluate\_basis}}
 
