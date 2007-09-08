@@ -44,13 +44,14 @@ def jit(form, representation=FFC_REPRESENTATION, language=FFC_LANGUAGE, options=
 
     # Get include directory for ufc.h (might be better way to do this?)
     (path, dummy, dummy, dummy) = header_and_libs_from_pkgconfig("ufc-1")
+
     if len(path) == 0:
         path = [("/").join(sysconfig.get_python_inc().split("/")[:-2]) + "/include"]
     ufc_include = '%%include "%s/ufc.h"' % path[0]
 
     # Wrap code into a Python module using Instant
     module_name = prefix + "_module"
-    create_extension(wrap_headers=[filename], module=module_name, additional_declarations=ufc_include)
+    create_extension(wrap_headers=[filename], module=module_name, additional_declarations=ufc_include, include_dirs=path)
 
     # Get name of form
     rank = form_data[0].rank
