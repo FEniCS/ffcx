@@ -17,6 +17,7 @@ from FIAT.DiscontinuousLagrange import DiscontinuousLagrange
 from FIAT.CrouzeixRaviart import CrouzeixRaviart
 from FIAT.RaviartThomas import RaviartThomas
 from FIAT.BDM import BDM
+from FIAT.BDFM import BDFM
 from FIAT.Nedelec import Nedelec
 
 # FFC common modules
@@ -194,6 +195,11 @@ class FiniteElement:
         if family == "Brezzi-Douglas-Marini" or family == "BDM":
             self.__family = "Brezzi-Douglas-Marini"
             return (BDM(fiat_shape, degree),
+                    Mapping.PIOLA)
+
+        if family == "Brezzi-Douglas-Fortin-Marini" or family == "BDFM":
+            self.__family = "Brezzi-Douglas-Fortin-Marini"
+            return (BDFM(fiat_shape, degree),
                     Mapping.PIOLA)
 
         if family == "Nedelec":

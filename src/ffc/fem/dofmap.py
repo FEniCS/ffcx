@@ -151,7 +151,7 @@ class DofMap:
         elements = element.basis_elements()
         for element in elements:
             # Test for non-supported (or tested) elements
-            if element.family() in ["Brezzi-Douglas-Marini", "Raviart-Thomas", "Nedelec"]:
+            if element.family() in ["Brezzi-Douglas-Marini", "Raviart-Thomas", "Nedelec", "Brezzi-Douglas-Fortin-Marini"]:
                 element_points += [None]
             else:
                 points = element.dual_basis().pts
@@ -166,7 +166,7 @@ class DofMap:
         elements = element.basis_elements()
         for e in elements:
             # Test for non-supported (or tested) elements
-            if e.family() in ["Brezzi-Douglas-Marini", "Raviart-Thomas", "Nedelec"]:
+            if e.family() in ["Brezzi-Douglas-Marini", "Raviart-Thomas", "Nedelec", "Brezzi-Douglas-Fortin-Marini"]:
                 return None
         for i in range(element.value_dimension(0)):
             components += [i]*elements[i].space_dimension()
