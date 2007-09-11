@@ -11,7 +11,6 @@ __license__  = "GNU GPL version 3 or any later version"
 import numpy
 from sets import Set
 
-
 # FFC common modules
 from ffc.common.constants import *
 from ffc.common.utils import *
@@ -59,25 +58,16 @@ class QuadratureGenerator(CodeGenerator):
         if len(tensors) == 0:
             return None
 
-        # Generate code for sign changes
-        (sign_code, change_signs) = generate_signs(tensors, format)
-        code += sign_code
 
-        # Generate element code + set of used geometry terms + set of used signs
-        element_code, members_code, trans_set, signs_set = self.__generate_element_tensor\
-                                                     (tensors, change_signs, None, None, Indent, format)
-
-        # Remove unused declarations
-        sign_code = self.__remove_unused(sign_code, signs_set, format)
+        # Generate element code + set of used geometry terms
+        element_code, members_code, trans_set = self.__generate_element_tensor\
+                                                     (tensors, None, Indent, format)
 
         # Get Jacobian snippet
         jacobi_code = [format["generate jacobian"](form_data.cell_dimension, Integral.CELL)]
 
         # Remove unused declarations
         code = self.__remove_unused(jacobi_code, trans_set, format)
-
-        # Add geometry tensor declarations and sign code
-        code += sign_code
 
         # Add element code
         code += [""] + [format["comment"]("Compute element tensor")]
@@ -108,7 +98,7 @@ class QuadratureGenerator(CodeGenerator):
             case = [format_block_begin]
 
             # Assuming all tables have same dimensions for all facets (members_code)
-            c, members_code, t_set, s_set = self.__generate_element_tensor(tensors[i], False, i, None, Indent, format)
+            c, members_code, t_set, s_set = self.__generate_element_tensor(tensors[i], i, None, Indent, format)
             case += c
             case += [format_block_end]
             cases[i] = case
@@ -149,8 +139,7 @@ class QuadratureGenerator(CodeGenerator):
                 case = [format_block_begin]
 
                 # Assuming all tables have same dimensions for all facet-facet combinations (members_code)
-                c, members_code, t_set, s_set = self.__generate_element_tensor(tensors[i][j],\
-                                                False, i, j, Indent, format)
+                c, members_code, t_set = self.__generate_element_tensor(tensors[i][j], i, j, Indent, format)
                 case += c
                 case += [format_block_end]
                 cases[i][j] = case
@@ -167,14 +156,13 @@ class QuadratureGenerator(CodeGenerator):
 
         return {"tabulate_tensor": (common, cases), "constructor":"// Do nothing", "members":members_code}
 
-    def __generate_element_tensor(self, tensors, sign_changes, facet0, facet1, Indent, format):
+    def __generate_element_tensor(self, tensors, facet0, facet1, Indent, format):
         "Construct quadrature code for element tensors"
 
         # Initialize code segments
         tabulate_code = []
         element_code = []
         trans_set = Set()
-        signs_set = Set()
 
         # Prefetch formats to speed up code generation
         format_comment      = format["comment"]
@@ -242,11 +230,10 @@ class QuadratureGenerator(CodeGenerator):
 
                 # Generate element tensors for all tensors with the current number of quadrature points
                 for i in tensor_numbers:
-                    e_code, t_set, s_set = self.__element_tensor(tensors[i], i, sign_changes, Indent, format, name_map)
+                    e_code, t_set = self.__element_tensor(tensors[i], i, Indent, format, name_map)
 #                    element_code += self.__element_tensor(tensors[i], i, sign_changes, Indent, format, name_map)
                     element_code += e_code
                     trans_set = trans_set | t_set
-                    signs_set = signs_set | s_set
 
                 # End loop primary indices
                 # Decrease indentation
@@ -263,7 +250,7 @@ class QuadratureGenerator(CodeGenerator):
 
             if i + 1 < len(tensors):
                 element_code += [""]
-        return (tabulate_code + element_code, members_code, trans_set, signs_set)
+        return (tabulate_code + element_code, members_code, trans_set)
 
     def __tabulate_weights(self, weights, tensor_number, Indent, format):
         "Generate table of quadrature weights"
@@ -377,7 +364,7 @@ class QuadratureGenerator(CodeGenerator):
 
         return code + [""]
 
-    def __element_tensor(self, tensor, tensor_number, sign_changes, Indent, format, name_map):
+    def __element_tensor(self, tensor, tensor_number, Indent, format, name_map):
         "Generate loop over primary indices"
 
         code = []
@@ -429,9 +416,6 @@ class QuadratureGenerator(CodeGenerator):
         # FIXME: quadrature only support Functionals and Linear and Bilinear forms
         if (irank == 0):
 
-            if sign_changes:
-                value, s_set = add_sign(value, 0, [], format)
-
             # Entry is zero because functional is a scalar value
             entry = "0"
             # Generate name
@@ -457,9 +441,6 @@ class QuadratureGenerator(CodeGenerator):
                             entry = dic_indices[i]
                         break
 
-            if sign_changes:
-                value, s_set = add_sign(value, 0, [format["first free index"]], format)
-
             # Generate name
             name =  format["element tensor quad"] + format["array access"](entry)
             code += [Indent.indent(format["comment"]\
@@ -484,9 +465,6 @@ class QuadratureGenerator(CodeGenerator):
                             entry += [dic_indices[i]]
                         break
 
-            if sign_changes:
-                value, s_set = add_sign(value, 0, [format["first free index"], format["second free index"]], format)
-
             entry[0] = format_multiply([entry[0], str(macro_idims[1])])
             name =  format["element tensor quad"] + format["array access"](format_add(entry))
 
@@ -503,7 +481,7 @@ class QuadratureGenerator(CodeGenerator):
         else:
             raise RuntimeError, "Quadrature only support Functionals and Linear and Bilinear forms"
 
-        return (code, t_set, s_set)
+        return (code, t_set)
 
     def __remove_unused(self, code, set, format):
 

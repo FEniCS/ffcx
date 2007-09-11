@@ -153,57 +153,57 @@ def equal_loops(tensors):
 
     return group_tensors
 
-def generate_signs(tensors, format):
-    "Generate list of declarations for computation of signs"
-    code = []
-    for j in range(len(tensors)):
-        monomial = tensors[j].monomial
-        # Inspect each basis function (identified by its index)
-        # and check whether sign changes are relevant.
-        for basisfunction in monomial.basisfunctions:
-            index = basisfunction.index
-            values = []
-            necessary = False
-            element = basisfunction.element
-            declarations = []
-            dof_entities = DofMap(element).dof_entities();
+# def generate_signs(tensors, format):
+#     "Generate list of declarations for computation of signs"
+#     code = []
+#     for j in range(len(tensors)):
+#         monomial = tensors[j].monomial
+#         # Inspect each basis function (identified by its index)
+#         # and check whether sign changes are relevant.
+#         for basisfunction in monomial.basisfunctions:
+#             index = basisfunction.index
+#             values = []
+#             necessary = False
+#             element = basisfunction.element
+#             declarations = []
+#             dof_entities = DofMap(element).dof_entities();
 
-            # Go through the topological entities associated
-            # with each basis function/dof. If the element is
-            # a piola mapped element and the basis function is
-            # associated with a facet, we calculate the
-            # possible sign change.
-            for no in dof_entities:
-                (entity, entity_no) = dof_entities[no]
-                if entity == 1 and element.space_mapping(no) == Mapping.PIOLA:
-                    necessary = True
-                    values += [format["facet sign"](entity_no)]
-                else:
-                    values += ["1"]
-            num_dofs = str(len(dof_entities))
-            name = format["sign tensor declaration"](format["signs"] + format["secondary index"]\
-                   (str(j))+ format["secondary index"](str(index.index)) + format["array access"](num_dofs))
-            value = format["block"](format["separator"].join([str(val) for val in values]))
+#             # Go through the topological entities associated
+#             # with each basis function/dof. If the element is
+#             # a piola mapped element and the basis function is
+#             # associated with a facet, we calculate the
+#             # possible sign change.
+#             for no in dof_entities:
+#                 (entity, entity_no) = dof_entities[no]
+#                 if entity == 1 and element.space_mapping(no) == Mapping.PIOLA:
+#                     necessary = True
+#                     values += [format["facet sign"](entity_no)]
+#                 else:
+#                     values += ["1"]
+#             num_dofs = str(len(dof_entities))
+#             name = format["sign tensor declaration"](format["signs"] + format["secondary index"]\
+#                    (str(j))+ format["secondary index"](str(index.index)) + format["array access"](num_dofs))
+#             value = format["block"](format["separator"].join([str(val) for val in values]))
  
-            # Add declarations for this basis function to the code
-            code += [(name,value)]
+#             # Add declarations for this basis function to the code
+#             code += [(name,value)]
                     
-    if necessary:
-        code.insert(0, format["comment"]("Compute signs"))
-        code.insert(0, format["snippet facet signs"](2))
-        return (code, True)
-    else:
-        return ([], False) # Return [] is the case of no sign changes...)
+#     if necessary:
+#         code.insert(0, format["comment"]("Compute signs"))
+#         code.insert(0, format["snippet facet signs"](2))
+#         return (code, True)
+#     else:
+#         return ([], False) # Return [] is the case of no sign changes...)
 
-def add_sign(value, j, i, format):
-    s_set = Set()
-    if value:
-        value = format["grouping"](value)
-        for k in range(len(i)):
-            value = format["multiply"]([format["signs"] + format["secondary index"]\
-                   (str(j))+ format["secondary index"](str(k)) + format["array access"](i[k]),value])
-            s_set.add(format["signs"] + format["secondary index"](str(j))+ format["secondary index"](str(k)))
-    return (value, s_set)
+# def add_sign(value, j, i, format):
+#     s_set = Set()
+#     if value:
+#         value = format["grouping"](value)
+#         for k in range(len(i)):
+#             value = format["multiply"]([format["signs"] + format["secondary index"]\
+#                    (str(j))+ format["secondary index"](str(k)) + format["array access"](i[k]),value])
+#             s_set.add(format["signs"] + format["secondary index"](str(j))+ format["secondary index"](str(k)))
+#     return (value, s_set)
 
 def generate_factor(tensor, a, bgindices, format):
     "Optimise level 2"
