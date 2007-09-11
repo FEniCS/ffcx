@@ -29,7 +29,7 @@ const double Jinv%(restriction)s_10 = -J%(restriction)s_10 / detJ%(restriction)s
 const double Jinv%(restriction)s_11 =  J%(restriction)s_00 / detJ%(restriction)s;
 
 // Take absolute value of determinant
-detJ%(restriction)s = std::abs(detJ%(restriction)s);"""
+// detJ%(restriction)s = std::abs(detJ%(restriction)s);"""
 
 # Code snippet for computing the Jacobian, its inverse and determinant in 3D
 jacobian_3D = """\
@@ -75,12 +75,12 @@ const double Jinv%(restriction)s_21 = d%(restriction)s_12 / detJ%(restriction)s;
 const double Jinv%(restriction)s_22 = d%(restriction)s_22 / detJ%(restriction)s;
 
 // Take absolute value of determinant
-detJ%(restriction)s = std::abs(detJ%(restriction)s);"""
+// detJ%(restriction)s = std::abs(detJ%(restriction)s);"""
 
 # Code snippet for computing the scale factor (determinant)
 scale_factor = """\
 // Set scale factor
-const double det = detJ;
+const double det = std::abs(detJ);
 """
 
 # Code snippet for computing the determinant of the facet mapping in 2D
@@ -379,7 +379,7 @@ const double Jinv%(restriction)s_10 = -J%(restriction)s_10 / detJ%(restriction)s
 const double Jinv%(restriction)s_11 =  J%(restriction)s_00 / detJ%(restriction)s;
 
 // Take absolute value of determinant
-detJ%(restriction)s = std::abs(detJ%(restriction)s);
+// detJ%(restriction)s = std::abs(detJ%(restriction)s);
 """
 
 # Code snippet for computing the inverse of the Jacobian and determinant in 3D
@@ -412,84 +412,5 @@ const double Jinv%(restriction)s_21 = d12 / detJ%(restriction)s;
 const double Jinv%(restriction)s_22 = d22 / detJ%(restriction)s;
 
 // Take absolute value of determinant
-detJ%(restriction)s = std::abs(detJ%(restriction)s);
-"""
-
-# Code snippets for calculating the direction of the normal of the
-# facets. (1/-1 refers to outward/inwards pointing with respect to the
-# simplex cell.
-facet_sign_snippet_2D = """
-// Compute signs of edges (need to flip edge degrees of freedom)
-
-// Compute the edges
-const double e0_0 = x[2][0] - x[1][0];
-const double e0_1 = x[2][1] - x[1][1];
-const double e1_0 = x[2][0] - x[0][0];
-const double e1_1 = x[2][1] - x[0][1];
-const double e2_0 = x[1][0] - x[0][0];
-const double e2_1 = x[1][1] - x[0][1];
-
-// Compute edges normals by rotating edges 90 degrees clockwise
-const double n0_0 = e0_1;
-const double n0_1 = -e0_0;
-const double n1_0 = e1_1;
-const double n1_1 = -e1_0;
-const double n2_0 = e2_1;
-const double n2_1 = -e2_0;
-
-// Compute the orientation of the normals relative to the cell
-int sign_facet0 = n0_0*e2_0 + n0_1*e2_1 > 0 ? 1 : -1;
-int sign_facet1 = n1_0*e0_0 + n1_1*e0_1 > 0 ? 1 : -1;
-int sign_facet2 = n2_0*e1_0 + n2_1*e1_1 < 0 ? 1 : -1;
-"""
-
-# Cross product of u = (u0, u1, u2) and v = (v0, v1, v2):
-# (u1*v2 - u2*v1)i - (u0*v2 - u2*v0)j + (u0*v1 - u1*v0)
-facet_sign_snippet_3D = """
-// Compute signs of facets (need to flip edge degrees of freedom)
-
-// Compute the edges
-const double e0_0 = x[3][0] - x[2][0];
-const double e0_1 = x[3][1] - x[2][1];
-const double e0_2 = x[3][2] - x[2][2];
-const double e1_0 = x[3][0] - x[1][0];
-const double e1_1 = x[3][1] - x[1][1];
-const double e1_2 = x[3][2] - x[1][2];
-const double e2_0 = x[2][0] - x[1][0];
-const double e2_1 = x[2][1] - x[1][1];
-const double e2_2 = x[2][2] - x[1][2];
-const double e3_0 = x[3][0] - x[0][0];
-const double e3_1 = x[3][1] - x[0][1];
-const double e3_2 = x[3][2] - x[0][2];
-const double e4_0 = x[2][0] - x[0][0];
-const double e4_1 = x[2][1] - x[0][1];
-const double e4_2 = x[2][2] - x[0][2];
-const double e5_0 = x[1][0] - x[0][0];
-const double e5_1 = x[1][1] - x[0][1];
-const double e5_2 = x[1][2] - x[0][2];
-
-
-// Compute the facet normals by taking suitable cross products of edges
-// Normal of facet 0: e2 x e1
-const double n0_0 = e2_1*e1_2 - e2_2*e1_1
-const double n0_1 = -(e2_0*e1_2 - e2_2* e1_0)
-const double n0_2 = e2_0*e1_1 - e2_1*e1_0
-// Normal of facet 1: e4 x e3
-const double n1_0 = e4_1*e3_2 - e4_2*e3_1
-const double n1_1 = -(e4_0*e3_2 - e4_2* e3_0)
-const double n1_2 = e4_0*e3_1 - e4_1*e3_0
-// Normal of facet 2: e5 x e3
-const double n2_0 = e5_1*e3_2 - e5_2*e3_1
-const double n2_1 = -(e5_0*e3_2 - e5_2* e3_0)
-const double n2_2 = e5_0*e3_1 - e5_1*e3_0
-// Normal of facet 3: e5 x e4:
-const double n3_0 = e5_1*e4_2 - e5_2*e4_1
-const double n3_1 = -(e5_0*e4_2 - e5_2*e4_0)
-const double n3_2 = e5_0*e4_1 - e5_1*e4_0
-
-// Compute the orientation of the normals relative to the cell
-int sign_facet0 = n0_0*e3_0 + n0_1*e3_1 + n0_2*e3_2 > 0 ? 1 : -1;     // n0*e3
-int sign_facet1 = n1_0*e1_0 + n1_1*e1_1 + n1_2*e1_2 > 0 ? 1 : -1;     // n1*e1
-int sign_facet2 = n2_0*e0_0 + n2_1*e0_1 + n2_2*e0_2 > 0 ? 1 : -1;     // n2*e0
-int sign_facet3 = n3_0*e3_0 + n3_1*e3_1 + n3_2*e3_2 < 0 ? 1 : -1; // n3*-e3
+// detJ%(restriction)s = std::abs(detJ%(restriction)s);
 """
