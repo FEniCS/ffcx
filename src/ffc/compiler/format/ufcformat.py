@@ -87,7 +87,7 @@ format = { "add": lambda v: " + ".join(v),
            "matrix access": lambda i,j: "[%s][%s]" %(i,j),
            "secondary index": lambda i: "_%s" %(i),
 # program flow
-           "dof map if": lambda i,j: "if (%d <= %s and %s <= %d)" %(i,\
+           "dof map if": lambda i,j: "if (%d <= %s && %s <= %d)" %(i,\
                          format["argument basis num"], format["argument basis num"], j),
            "loop": lambda i,j,k: "for (unsigned int %s = %s; %s < %s; %s++)"% (i, j, i, k, i),
            "if": "if",
