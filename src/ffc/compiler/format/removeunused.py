@@ -12,7 +12,7 @@ import re
 from ffc.common.debug import *
 
 # Declarations to examine
-types = [["double"], ["const", "double"], ["int"], ["const", "int"]]
+types = [["double"], ["const", "double"], ["const", "double", "*", "const", "*"], ["int"], ["const", "int"]]
 
 # Special characters and delimiters
 special_characters = ["+", "-", "*", "/", "=", ".", " ", ";", "(", ")", "\\", "{", "}", "[","]"]

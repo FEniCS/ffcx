@@ -61,7 +61,7 @@ class QuadratureGenerator(CodeGenerator):
 
         # Generate element code + set of used geometry terms
         element_code, members_code, trans_set = self.__generate_element_tensor\
-                                                     (tensors, None, Indent, format)
+                                                     (tensors, None, None, Indent, format)
 
         # Get Jacobian snippet
         jacobi_code = [format["generate jacobian"](form_data.cell_dimension, Integral.CELL)]
@@ -98,7 +98,7 @@ class QuadratureGenerator(CodeGenerator):
             case = [format_block_begin]
 
             # Assuming all tables have same dimensions for all facets (members_code)
-            c, members_code, t_set, s_set = self.__generate_element_tensor(tensors[i], i, None, Indent, format)
+            c, members_code, t_set = self.__generate_element_tensor(tensors[i], i, None, Indent, format)
             case += c
             case += [format_block_end]
             cases[i] = case
