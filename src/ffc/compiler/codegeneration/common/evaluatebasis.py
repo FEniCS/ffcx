@@ -17,6 +17,9 @@ from ffc.common.utils import *
 from ffc.fem.finiteelement import *
 from ffc.fem.mixedelement import *
 
+# FFC language modules
+from ffc.compiler.language.tokens import *
+
 # FFC code generation common modules
 from utils import *
 
@@ -371,6 +374,13 @@ def compute_values(element, sum_value_dim, vector, Indent, format):
     format_secondary_index  = format["secondary index"]
     format_basisvalue       = format["basisvalue"]
     format_pointer          = format["pointer"]
+    format_det              = format["determinant"]
+    format_inv              = format["inverse"]
+    format_add              = format["add"]
+    format_mult             = format["multiply"]
+    format_group            = format["grouping"]
+    format_tmp              = format["tmp declaration"]
+    format_tmp_access       = format["tmp access"]
 
     code += [Indent.indent(format["comment"]("Compute value(s)"))]
 
@@ -380,6 +390,11 @@ def compute_values(element, sum_value_dim, vector, Indent, format):
     # Get polynomial dimension of base
     poly_dim = len(element.basis().base.bs)
 
+    # Check which transform we should use to map the basis functions
+    mapping = pick_first([element.value_mapping(dim) for dim in range(element.value_dimension(0))])
+    if mapping == Mapping.PIOLA:
+        code += [Indent.indent(format["comment"]("Using Piola transform to map values back to the physical element"))]
+
     if (vector or num_components != 1):
 
         # Loop number of components
@@ -387,6 +402,15 @@ def compute_values(element, sum_value_dim, vector, Indent, format):
             name = format_values + format_array_access(i + sum_value_dim)
             value = format_add([format_multiply([format_coefficients(i) + format_secondary_index(j),\
                     format_basisvalue(j)]) for j in range(poly_dim)])
+
+            # Use Piola transform to map basisfunctions back to physical element if needed
+            if mapping == Mapping.PIOLA:
+                code.insert(i+1,(Indent.indent(format_tmp(0, i)), value))
+                basis_col = [format_tmp_access(0, j) for j in range(element.cell_dimension())]
+                jacobian_row = [format["transform"](Transform.J, j, i, None) for j in range(element.cell_dimension())]
+                inner = [format_mult([jacobian_row[j], basis_col[j]]) for j in range(element.cell_dimension())]
+                sum = format_group(format_add(inner))
+                value = format_mult([format_inv(format_det), sum])
 
             code += [(Indent.indent(name), value)]
     else:
