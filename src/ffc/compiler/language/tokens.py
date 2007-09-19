@@ -155,3 +155,50 @@ class Transform:
             raise RuntimeError, "Wrong value for restriction of transform"
 
         return "(" + top + tindex + "/" + bottom + bindex + ")" + restric
+
+class Determinant:
+    """ A Determinant represents a power of the determinant of the
+    Jacobean matrix of the affine map from the reference cell.
+
+    Attributes:
+
+        power       - the power of the determinant
+        restriction - the restriction of the Jacobean.
+
+    """
+    def __init__(self, power, restriction = None):
+        "Create Derivative."
+        if isinstance(power, Determinant):
+            # Create Determinant from Determinant (copy constructor)
+            self.power = power.power
+            self.restriction = power.restriction
+        else:
+            # Create Derivative from given power (and restriction)
+            self.power = power
+            self.restriction = restriction
+        return
+
+    def __mul__(self, other):
+        if self.restriction == other.restriction:
+            return Determinant(self.power + other.power, self.restriction)
+        else:
+            return None
+        
+    def __repr__(self):
+        "Print nicely formatted representation of Determinant."
+        if self.power == 0:
+            s = ""
+        elif self.power == 1.0:
+            s = "det J"
+        else:
+            s = "(det J)^(%s)" % str(self.power)
+        # Maybe make restriction a class and add repr?
+        if self.restriction == Restriction.PLUS:
+            r = "(+)"
+        elif self.restriction == Restriction.MINUS:
+            r = "(-)"
+        elif self.restriction == Restriction.CONSTANT:
+            r = "(+/-)"
+        else:
+            r = ""
+        return s + r

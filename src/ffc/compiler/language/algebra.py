@@ -325,9 +325,9 @@ class BasisFunction(Element):
         w = Monomial(self)
         i = Index(component) - offset
         j = Index("secondary", range(self.element.cell_dimension()));
-        w.transforms = [Transform(self.element, j, i, None, Transform.J)] 
+        w.transforms = [Transform(self.element, j, i, self.restriction, Transform.J)] 
         w.basisfunctions[0].component = [j + offset]    
-        w.determinant = -1
+        w.determinants += [Determinant(-1, self.restriction)]
         return w
 
 class Monomial(Element):
@@ -342,8 +342,7 @@ class Monomial(Element):
         transforms     - a list of Transforms
         basisfunctions - a list of BasisFunctions
         integral       - an Integral
-        determinant    - the power of the absolute value of 
-                         the determinant of the geometry mapping
+        determinants    - a list of Determinants
     """
 
     def __init__(self, other = None):
@@ -355,7 +354,7 @@ class Monomial(Element):
             self.coefficients = []
             self.transforms = []
             self.basisfunctions = []
-            self.determinant = 0
+            self.determinants = []
             self.integral = None
         elif isinstance(other, int) or isinstance(other, float):
             # Create Monomial from scalar
@@ -364,7 +363,7 @@ class Monomial(Element):
             self.coefficients = []
             self.transforms = []
             self.basisfunctions = []
-            self.determinant = 0
+            self.determinants = []
             self.integral = None
         elif isinstance(other, Function):
             # Create Monomial from Function
@@ -374,7 +373,7 @@ class Monomial(Element):
             self.coefficients = [Coefficient(other, index)]
             self.transforms = []
             self.basisfunctions = [BasisFunction(other.e1, index)]
-            self.determinant = 0
+            self.determinants = []
             self.integral = None
         elif isinstance(other, BasisFunction):
             # Create Monomial from BasisFunction
@@ -383,7 +382,7 @@ class Monomial(Element):
             self.coefficients = []
             self.transforms = []
             self.basisfunctions = [BasisFunction(other)]
-            self.determinant = 0
+            self.determinants = []
             self.integral = None
         elif isinstance(other, Monomial):
             # Create Monomial from Monomial (copy constructor)
@@ -392,7 +391,7 @@ class Monomial(Element):
             self.coefficients = listcopy(other.coefficients)
             self.transforms = listcopy(other.transforms)
             self.basisfunctions = listcopy(other.basisfunctions)
-            self.determinant = other.determinant
+            self.determinants = listcopy(other.determinants)
             self.integral = other.integral
         else:
             raise FormError, (other, "Unable to create Monomial from given expression.")
@@ -428,7 +427,7 @@ class Monomial(Element):
             w.coefficients = listcopy(w0.coefficients + w1.coefficients)
             w.transforms = listcopy(w0.transforms + w1.transforms)
             w.basisfunctions = listcopy(w0.basisfunctions + w1.basisfunctions)
-            w.determinant = w0.determinant + w1.determinant
+            w.determinants = listcopy(w0.determinants + w1.determinants)
             if w0.integral and w1.integral:
                 raise FormError, (self, "Integrand can only be integrated once.")
             elif w0.integral:
@@ -493,6 +492,8 @@ class Monomial(Element):
         restriction = v.basisfunctions[0].restriction
         for i in range(len(v.transforms)):
             v.transforms[i].restriction = restriction
+        for i in range(len(v.determinants)):
+            v.determinants[i].restriction = restriction
         return v
 
     def __repr__(self):
@@ -505,12 +506,7 @@ class Monomial(Element):
             s = str(self.numeric)
         else:
             s = ""
-        if self.determinant == 0:
-            d = ""
-        elif self.determinant == 1.0:
-            d = "|det F'|"
-        else:
-            d = "|det F'|^" + "(" + str(self.determinant) + ")"
+        d = "".join([d.__repr__() for d in self.determinants])
         c = "".join([w.__repr__() for w in self.constants])
         w = "".join([w.__repr__() for w in self.coefficients])
         t = "".join([t.__repr__() for t in self.transforms])

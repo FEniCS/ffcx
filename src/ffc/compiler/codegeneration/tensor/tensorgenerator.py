@@ -240,12 +240,14 @@ class TensorGenerator(CodeGenerator):
                 value = format["add"](values)
 
                 # Multiply with determinant factor
-                det = pick_first([G.determinant for G in term.G])
-                value = self.__multiply_value_by_det(value, det, format, len(values) > 1)
+                dets = pick_first([G.determinants for G in term.G])
+                value = self.__multiply_value_by_det(value, dets, format, len(values) > 1)
 
                 # Add determinant to transformation set
-                if det:
-                    trans_set.add(format["power"](format["determinant"], det))
+                if dets:
+                    d0 = [format["power"](format["determinant"](det.restriction),
+                                          det.power) for det in dets]
+                    trans_set.add(format["multiply"](d0))
 
                 # Add declaration
                 code += [(name, value)]
@@ -367,9 +369,12 @@ class TensorGenerator(CodeGenerator):
         # Compute product of all factors
         return (format["multiply"](fs), coeff_set, trans_set)
 
-    def __multiply_value_by_det(self, value, det, format, is_sum):
-        if det: d0 = [format["power"](format["determinant"], det)]
-        else: d0 = []
+    def __multiply_value_by_det(self, value, dets, format, is_sum):
+        if dets:
+            d0 = [format["power"](format["determinant"](det.restriction),
+                                  det.power) for det in dets]
+        else:
+            d0 = []
         if value == "1.0":
             v = []
         elif is_sum:

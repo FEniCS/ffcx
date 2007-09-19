@@ -26,7 +26,7 @@ class GeometryTensor:
         self.constants = monomial.constants
         self.coefficients = monomial.coefficients
         self.transforms = monomial.transforms
-        self.determinant = monomial.determinant
+        self.determinants = monomial.determinants
 
         # Create secondary and auxiliary multi indices
         self.a = self.__create_multi_index(monomial, Index.SECONDARY)

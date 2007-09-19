@@ -226,7 +226,7 @@ def __generate_interpolate_vertex_values(element, format):
                     else:
                         sum = format["add"](terms)
                     name = format["vertex values"](offset_vertex_values + dim*len(vertices) + v)
-                    value = format["multiply"]([format["inverse"](format["determinant"]), sum])
+                    value = format["multiply"]([format["inverse"](format["determinant"](None)), sum])
                     code += [(name, value)]
 
         else:

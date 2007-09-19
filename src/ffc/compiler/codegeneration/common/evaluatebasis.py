@@ -410,7 +410,7 @@ def compute_values(element, sum_value_dim, vector, Indent, format):
                 jacobian_row = [format["transform"](Transform.J, j, i, None) for j in range(element.cell_dimension())]
                 inner = [format_mult([jacobian_row[j], basis_col[j]]) for j in range(element.cell_dimension())]
                 sum = format_group(format_add(inner))
-                value = format_mult([format_inv(format_det), sum])
+                value = format_mult([format_inv(format_det(None)), sum])
 
             code += [(Indent.indent(name), value)]
     else:

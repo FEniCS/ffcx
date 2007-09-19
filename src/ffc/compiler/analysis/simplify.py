@@ -55,8 +55,14 @@ def simplify_form(f):
         if monomial.numeric == 0.0:
             f.monomials.remove(monomial)
             continue
-        # Third, simplify each monomial with regard to derivatives.
+        # Third, contract determinants:
+        if monomial.determinants:
+            monomial.determinants = contract_list(contract_determinants,
+                                                  monomial.determinants)
+        
+        # Fourth, simplify each monomial with regard to derivatives.
         monomial = simplify_monomial(monomial)
+
         
 def contract_list(contraction, monomials):
     """ Given a list of ..., run contraction on (all) pairs of these,
@@ -94,7 +100,7 @@ def factorize_monomials(m, n):
     return ([m, n], False)
     
 def contract_monomials(m, n):
-    if not isinstance(m, Monomial) and isinstance(n, Monomial):
+    if not (isinstance(m, Monomial) and isinstance(n, Monomial)):
         raise FormError, "contract_monomials can only contract monomials"
     # First, check to see if it is at all likely that these monomials
     # are contractable
@@ -102,6 +108,14 @@ def contract_monomials(m, n):
         return ([m, n], False)
     q = contract_indices(m, n)
     return (q, len(q) == 1)
+
+def contract_determinants(d0, d1):
+    if not (isinstance(d0, Determinant) and isinstance(d1, Determinant)):
+        raise FormError,"contract_determinants can only contract determinants!"
+    # Determinants are contracted by trying to multiply them:
+    d = d0*d1
+    if d: return ([d], True)
+    else: return ([d0, d1], False)
 
 def contraction_likely(m, n):
     """ Given two monomials/basisfunctions, check if they have the
