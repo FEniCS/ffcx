@@ -58,7 +58,7 @@ class ElementTensor:
         # Compute offsets (for restricted elements)
         self.coefficient_offsets = self.__compute_coefficient_offsets(monomial)
         self.transforms = monomial.transforms
-        self.determinant = monomial.determinant
+        self.determinants = monomial.determinants
 
         debug("Primary multi index: " + str(self.i), 1)
         debug("Secondary multi index: " + str(self.a), 1)

@@ -272,8 +272,6 @@ def generate_factor(tensor, a, bgindices, format):
     if f_in: f_in = [format["grouping"](f_in)]
     else: f_in = []
 
-#        f_tot = format["multiply"](f_out + f_in)
-
     return (f_out, f_in, trans_set)
 
 def generate_factor_old(tensor, a, b, format):
@@ -327,9 +325,10 @@ def generate_factor_old(tensor, a, b, format):
             factors += [trans]
             trans_set.add(trans)
 
-    if tensor.determinant:
-        d0 = format["power"](format["determinant"], tensor.determinant)
-        d = format["multiply"]([format["scale factor"], d0])
+    if tensor.determinants:
+        d0 = [format["power"](format["determinant"](det.restriction),
+                                          det.power) for det in tensor.determinants]
+        d = format["multiply"]([format["scale factor"]] + d0)
     else:
         d = format["scale factor"]
 
@@ -364,9 +363,6 @@ def generate_factor3(tensor, a, bgindices, format):
             factors += [coefficient]
     for t in tensor.transforms:
         if not (t.index0.type == Index.AUXILIARY_G or  t.index1.type == Index.AUXILIARY_G):
-#            factors += [format["transform"](t.type, t.index0([], a, [], []), \
-#                                                    t.index1([], a, [], []), \
-#                                                    t.restriction),]
             trans = format["transform"](t.type, t.index0([], a, [], []), \
                                                 t.index1([], a, [], []), t.restriction)
             factors += [trans]
@@ -402,9 +398,6 @@ def generate_factor3(tensor, a, bgindices, format):
                 factors += [coefficient]
         for t in tensor.transforms:
             if t.index0.type == Index.AUXILIARY_G or t.index1.type == Index.AUXILIARY_G:
-#                factors += [format["transform"](t.type, t.index0([], a, [], b), \
-#                                                        t.index1([], a, [], b), \
-#                                                        t.restriction)]
                 trans = format["transform"](t.type, t.index0([], a, [], b), \
                                                 t.index1([], a, [], b), t.restriction)
                 factors += [trans]
@@ -415,8 +408,6 @@ def generate_factor3(tensor, a, bgindices, format):
     f_in = format["add"](terms)
     if f_in: f_in = [format["grouping"](f_in)]
     else: f_in = []
-
-#        f_tot = format["multiply"](f_out + f_in)
 
     return (f_out, f_in, trans_set)
 
@@ -507,9 +498,10 @@ def values_level_2(indices, vindices, aindices, b0indices, bgindices, tensor, te
         if 1 < len(geo_in):
             geo_in = [format_group(format_add(geo_in))]
 
-        if tensor.determinant:
-            d0 = format["power"](format["determinant"], tensor.determinant)
-            d = [format["multiply"]([format["scale factor"], d0])]
+        if tensor.determinants:
+            d0 = [format["power"](format["determinant"](det.restriction),
+                                  det.power) for det in tensor.determinants]
+            d = [format["multiply"]([format["scale factor"]] + d0)]
         else:
             d = [format["scale factor"]]
 
@@ -579,9 +571,10 @@ def values_level_3(indices, vindices, aindices, b0indices, bgindices, tensor, te
         if 1 < len(geo_in):
             geo_in = [format_group(format_add(geo_in))]
 
-        if tensor.determinant:
-            d0 = format["power"](format["determinant"], tensor.determinant)
-            d = [format["multiply"]([format["scale factor"], d0])]
+        if tensor.determinants:
+            d0 = [format["power"](format["determinant"](det.restriction),
+                                  det.power) for det in tensor.determinants]
+            d = [format["multiply"]([format["scale factor"]] + d0)]
         else:
             d = [format["scale factor"]]
 
