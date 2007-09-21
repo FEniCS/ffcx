@@ -231,9 +231,9 @@ def sqrt(v):
     "Return the square root (take square root of coefficients)"
     return Form(v).sqrt()
 
-def abs(v):
-    "Return the absolute value (take absolute value of coefficients)"
-    return Form(v).abs()
+def modulus(v):
+    "Return the modulus/absolute value (take absolute value of coefficients)"
+    return Form(v).modulus()
 
 def __cell_dimension(v):
     "Return shape dimension for given object."

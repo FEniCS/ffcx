@@ -183,7 +183,7 @@ class TensorGenerator(CodeGenerator):
                             op = coefficient.ops[len(coefficient.ops) - 1 - l]
                             if op == Operators.INVERSE:
                                 value = format["inverse"](value)
-                            elif op == Operators.ABS:
+                            elif op == Operators.MODULUS:
                                 value = format["absolute value"](value)
                             elif op == Operators.SQRT:
                                 value = format["sqrt"](value)

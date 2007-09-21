@@ -17,7 +17,7 @@ class Operators:
     "A collection of simple operators that may be applied to coefficients"
 
     INVERSE = 0
-    ABS = 1
+    MODULUS = 1
     SQRT = 2
 
 class Coefficient:    
@@ -61,7 +61,7 @@ class Coefficient:
 
     def __repr__(self):
         "Print nicely formatted representation of Coefficient."
-        operator_to_string = {Operators.INVERSE: "inv", Operators.ABS: "abs", Operators.SQRT: "sqrt"}
+        operator_to_string = {Operators.INVERSE: "inv", Operators.MODULUS: "abs", Operators.SQRT: "sqrt"}
         operators = ", ".join([operator_to_string[op] for op in self.ops])
         if not operators == "":
             return "([" + operators + "]" + "w" + str(self.n1) + "_" + str(self.index) + ")"

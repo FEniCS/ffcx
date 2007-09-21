@@ -454,12 +454,12 @@ class Monomial(Element):
             w.coefficients[i].ops = [Operators.INVERSE] + w.coefficients[i].ops
         return w
 
-    def abs(self):
+    def modulus(self):
         "Take absolute value of monomial"
         w = Monomial(self)
         w.numeric = abs(w.numeric)
         for i in range(len(w.coefficients)):
-            w.coefficients[i].ops = [Operators.ABS] + w.coefficients[i].ops
+            w.coefficients[i].ops = [Operators.MODULUS] + w.coefficients[i].ops
         return w
 
     def sqrt(self):
@@ -614,12 +614,12 @@ class Form(Element):
         w.monomials = [~p for p in self.monomials]
         return w
 
-    def abs(self):
+    def modulus(self):
         "Take absolute value of form"
         if len(self.monomials) > 1:
             raise FormError, (self, "Cannot take absolute value of sum.")
         w = Form()
-        w.monomials = [p.abs() for p in self.monomials]
+        w.monomials = [p.modulus() for p in self.monomials]
         return w
 
     def sqrt(self):
