@@ -35,6 +35,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Python modules
 import sys
+import math
 
 # FFC common modules
 from ffc.common.exceptions import *
@@ -448,6 +449,7 @@ class Monomial(Element):
     def __invert__(self):
         "Operator: ~Monomial"
         w = Monomial(self)
+        w.numeric = 1.0/w.numeric
         for i in range(len(w.coefficients)):
             w.coefficients[i].ops = [Operators.INVERSE] + w.coefficients[i].ops
         return w
@@ -455,6 +457,7 @@ class Monomial(Element):
     def abs(self):
         "Take absolute value of monomial"
         w = Monomial(self)
+        w.numeric = abs(w.numeric)
         for i in range(len(w.coefficients)):
             w.coefficients[i].ops = [Operators.ABS] + w.coefficients[i].ops
         return w
@@ -462,6 +465,7 @@ class Monomial(Element):
     def sqrt(self):
         "Take square root of monomial"
         w = Monomial(self)
+        w.numeric = math.sqrt(w.numeric)
         for i in range(len(w.coefficients)):
             w.coefficients[i].ops = [Operators.SQRT] + w.coefficients[i].ops
         return w
