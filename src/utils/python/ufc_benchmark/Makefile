@@ -37,4 +37,4 @@ clean:
 	rm -f _$(MODULENAME).so
 	rm -f $(MODULENAME)_wrap.cxx
 	rm -f $(MODULENAME)_wrap.o
-
+	rm -rf build

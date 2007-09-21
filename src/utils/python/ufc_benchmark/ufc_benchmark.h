@@ -3,6 +3,6 @@
 
 #include <ufc.h>
 
-int benchmark(const ufc::form & form, unsigned int n);
+int benchmark(const ufc::form & form, unsigned int geometric_dimension, unsigned int n);
 
 #endif

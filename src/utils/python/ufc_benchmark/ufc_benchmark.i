@@ -8,7 +8,7 @@
 
 %pythoncode{
 
-def benchmark_forms(forms, n=1e8):
+def benchmark_forms(forms, geometric_dimension, n=1e8):
     from time import time
     times = []
     for f in forms:
@@ -16,7 +16,7 @@ def benchmark_forms(forms, n=1e8):
         ts = 1e999
         for i in range(3):
             t = -time()
-            benchmark(f, n)
+            benchmark(f, geometric_dimension, n)
             t += time()
             ts = min(t, ts)
         times.append(ts)
