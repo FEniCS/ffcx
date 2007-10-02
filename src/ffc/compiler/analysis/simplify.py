@@ -56,6 +56,7 @@ def simplify_form(f):
             f.monomials.remove(monomial)
             continue
         # Third, contract determinants:
+        # FIX: Should move this.
         if monomial.determinants:
             monomial.determinants = contract_list(contract_determinants,
                                                   monomial.determinants)
@@ -128,6 +129,12 @@ def contraction_likely(m, n):
 
         if m.numeric != n.numeric:
             return False
+
+        if len(m.determinants) != len(n.determinants):
+            return False
+        for i in range (len(m.determinants)):
+            if not m.determinants[i] == n.determinants[i]:
+                return False
 
         if len(m.coefficients) != len(n.coefficients):
             return False
