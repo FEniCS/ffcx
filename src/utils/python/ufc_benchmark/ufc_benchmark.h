@@ -2,7 +2,9 @@
 #define __UFC_BENCHMARK_H__
 
 #include <ufc.h>
+#include <vector>
+#include <list>
 
-int benchmark(const ufc::form & form, unsigned int geometric_dimension, unsigned int n);
+std::vector< std::list<double> > benchmark(const ufc::form & form);
 
 #endif

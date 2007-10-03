@@ -6,20 +6,28 @@
 
 %include "ufc_benchmark.h"
 
+%include stl.i
+%include std_list.i
+%include std_vector.i
+
+
+%template(list_double) std::list<double>;
+%template(vector_list_double) std::vector< std::list<double> >;
+
+%typedef std::list<double> list_double;
+%typedef std::vector< std::list<double> > vector_list_double;
+
+
 %pythoncode{
 
-def benchmark_forms(forms, geometric_dimension, n=1e8):
-    from time import time
+def benchmark_forms(forms):
+    import gc
+    gc.collect()
+    
     times = []
     for f in forms:
-        # take best time of three runs
-        ts = 1e999
-        for i in range(3):
-            t = -time()
-            benchmark(f, geometric_dimension, n)
-            t += time()
-            ts = min(t, ts)
-        times.append(ts)
+        res = benchmark(f)
+        times.append(res)
     return times
 
 }
