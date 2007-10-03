@@ -1,6 +1,10 @@
+
+
 #include "ufc_benchmark.h"
 
 typedef unsigned int uint; 
+
+
 
 int benchmark(const ufc::form & form, uint geometric_dimension, uint n)
 {
@@ -38,14 +42,13 @@ int benchmark(const ufc::form & form, uint geometric_dimension, uint n)
     // TODO: assuming one cell integral only, allow benchmarking of any single integral
     ufc::cell_integral *itg = form.create_cell_integral(0);
 
-    // assuming top. and geom. dims are equal
-    ufc::mesh m;
-    m.topological_dimension = geometric_dimension;
-    m.geometric_dimension   = geometric_dimension;
 
-    ufc::cell c;
-    c.topological_dimension = m.topological_dimension;
-    c.geometric_dimension   = m.geometric_dimension;
+    // assuming top. and geom. dims are equal
+    ufc::reference_cell c(fe->cell_shape());
+    
+    ufc::mesh m;
+    m.topological_dimension = c.topological_dimension;
+    m.geometric_dimension   = c.geometric_dimension;
 
     ufc::finite_element * fe = form.create_finite_element(0);
     c.cell_shape = fe->cell_shape();
