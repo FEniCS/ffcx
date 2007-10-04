@@ -1,7 +1,7 @@
 
 
-#define TMIN 1.0
-#define MMIN 10
+#define TMIN 3.0
+#define MMIN 1000
 
 #include <iostream>
 using std::cout;
