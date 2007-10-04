@@ -41,7 +41,7 @@ namespace ufc
             geometric_dimension = topological_dimension;
 
             // Fill global indices like we had a single-cell mesh.
-            entity_indices = new unsigned int*[topological_dimension];
+            entity_indices = new unsigned int*[topological_dimension+1];
             for(unsigned int i = 0; i <= topological_dimension; i++)
             {
                 entity_indices[i] = new unsigned int[num_entities[i]];
