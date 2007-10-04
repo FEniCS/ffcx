@@ -109,4 +109,45 @@ int benchmark(const ufc::form & form, uint geometric_dimension, uint n)
     delete [] c.coordinates;
 }
 
+/*
+#define TMIN 1.0
+#define MMIN 10
 
+#include <ctime>
+
+clock_t __tic_time;
+
+void tic()
+{
+  __tic_time = clock();
+}
+
+double toc()
+{
+  clock_t __toc_time = clock();
+  double elapsed_time = ((real) (__toc_time - __tic_time)) / CLOCKS_PER_SEC;
+  return elapsed_time;
+}
+
+// Adaptive timing: make sure we run for at least TMIN to get reliable results
+double time_tabulate_tensor(ufc::cell_integral& cell_integral)
+{
+  unsigned int M = MMIN;
+  while ( true )
+  {
+    tic();
+    for (unsigned int i = 0; i < M; i++)
+    {
+      cell_integral.tabulate_tensor(A, w, c); // FIXME: define A, w, c
+    }
+    double t = toc();
+    if ( t >= TMIN )
+      return t / static_cast<double>(M);
+    M *= 10;
+    cout << "Elapsed time too short, increasing number of iterations to" << M << endl;
+  }
+
+  return 0.0;
+}
+
+*/
