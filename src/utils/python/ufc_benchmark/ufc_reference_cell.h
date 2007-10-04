@@ -7,7 +7,7 @@
 #define __UFC_REFERENCE_CELL_H
 
 #include "ufc.h"
-
+#include <stdexcept>
 
 namespace ufc
 {
@@ -35,6 +35,7 @@ namespace ufc
             case quadrilateral: topological_dimension = 2; num_entities[0] = 4; num_entities[1] = 4;  num_entities[2] = 1; break;
             case tetrahedron:   topological_dimension = 3; num_entities[0] = 4; num_entities[1] = 6;  num_entities[2] = 4; num_entities[3] = 1; break;
             case hexahedron:    topological_dimension = 3; num_entities[0] = 8; num_entities[1] = 12; num_entities[2] = 6; num_entities[3] = 1; break;
+            default: throw std::runtime_error("Invalid shape.");
             }
 
             // Assume same geometric dimension.

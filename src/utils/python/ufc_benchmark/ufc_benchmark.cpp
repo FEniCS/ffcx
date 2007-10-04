@@ -72,6 +72,7 @@ double time_tabulate_tensor(ufc::exterior_facet_integral& integral, double *A, c
   return 0.0;
 }
 
+
 // Benchmark all integrals of a form.
 std::vector< std::list<double> > benchmark(const ufc::form & form)
 {
@@ -170,4 +171,3 @@ std::vector< std::list<double> > benchmark(const ufc::form & form)
 
     return result;
 }
-
