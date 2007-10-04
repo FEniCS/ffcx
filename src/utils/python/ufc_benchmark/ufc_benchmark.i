@@ -8,11 +8,18 @@
 
 %pythoncode{
 
-def benchmark_forms(forms, geometric_dimension, n=1e8):
-    from timeit import Timer
+def benchmark_forms(forms, geometric_dimension, n=1e6):
+    from time import time
+    from ufc_benchmark import benchmark
+    times = []
     for f in forms:
-        t = Timer( "benchmark(f, geometric_dimension, n)" )
-        times += [ min( t.repeat(3, 1) ) ]
+        tm = 1e300
+        for i in range(3):
+            t = -time()
+            benchmark(f, geometric_dimension, int(n))
+            t += time()
+            tm = min(t, tm)
+        times.append(tm)
     return times
 
 }
