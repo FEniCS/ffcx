@@ -98,10 +98,10 @@ def evaluate_basis(element, format):
     return code
 
 def generate_map(element, Indent, format):
-    """Generates map from physical element to reference (FIAT) element, and from this element
+    """Generates map from physical element to the UFC reference element, and from this element
     to reference square/cube. An affine map is assumed for the first mapping and for the second
-    map this function implements the FIAT functions, eta_triangle( xi )
-    and eta_tetrahedron( xi ) from expansions.py"""
+    map this function implements the UFC version of the FIAT functions, eta_triangle( xi )
+    and eta_tetrahedron( xi ) from reference.py"""
 
     code = []
 
@@ -110,7 +110,7 @@ def generate_map(element, Indent, format):
     format_floating_point = format["floating point"]
     format_epsilon        = format["epsilon"]
 
-    # Get coordinates and map to the reference (FIAT) element from codesnippets.py
+    # Get coordinates and map to the UFC reference element from codesnippets.py
     code += [Indent.indent(format["coordinate map"](element.cell_shape()))] + [""]
 
     if (element.cell_shape() == 2):
@@ -123,7 +123,7 @@ def generate_map(element, Indent, format):
         # Map coordinates to the reference square
         code += [Indent.indent(format_comment("Map coordinates to the reference square"))]
  
-        # Code snippet reproduced from FIAT: expansions.py: eta_triangle(xi) & eta_tetrahedron(xi)
+        # Code snippet reproduced from FIAT: reference.py: eta_triangle(xi) & eta_tetrahedron(xi) 
         code += [Indent.indent(format["snippet eta_triangle"]) %(format_floating_point(format_epsilon))]
 
     elif (element.cell_shape() == 3):
@@ -136,7 +136,7 @@ def generate_map(element, Indent, format):
         # Map coordinates to the reference cube
         code += [Indent.indent(format_comment("Map coordinates to the reference cube"))]
 
-        # Code snippet reproduced from FIAT: expansions.py: eta_triangle(xi) & eta_tetrahedron(xi)
+        # Code snippet reproduced from FIAT: reference.py: eta_triangle(xi) & eta_tetrahedron(xi)
         code += [Indent.indent(format["snippet eta_tetrahedron"]) %(format_floating_point(format_epsilon),\
                        format_floating_point(format_epsilon))]
     else:

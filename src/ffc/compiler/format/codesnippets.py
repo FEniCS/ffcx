@@ -172,23 +172,23 @@ f.evaluate(values, coordinates, c);
 // Pick component for evaluation
 return values[components[i]];"""
 
-# Code snippet for eta basis on triangles (reproduced from FIAT expansions.py)
+# Code snippet for eta basis on triangles (reproduced from FIAT reference.py)
 eta_triangle_snippet = """\
 if (std::abs(y - 1.0) < %s)
   x = -1.0;
 else
-  x = 2.0 * (1.0 + x)/(1.0 - y) - 1.0;"""
+  x = 2.0 *x/(1.0 - y) - 1.0;"""
 
-# Code snippet for eta basis on tetrahedra (reproduced from FIAT expansions.py)
+# Code snippet for eta basis on tetrahedra (reproduced from FIAT reference.py)
 eta_tetrahedron_snippet = """\
-if (std::abs(y + z) < %s)
+if (std::abs(y + z - 1.0) < %s)
   x = 1.0;
 else
-  x = -2.0 * (1.0 + x)/(y + z) - 1.0;
+  x = -2.0 * x/(y + z - 1.0) - 1.0;
 if (std::abs(z - 1.0) < %s)
   y = -1.0;
 else
-  y = 2.0 * (1.0 + y)/(1.0 - z) - 1.0;"""
+  y = 2.0 * y/(1.0 - z) - 1.0;"""
 
 # Map basis function to local basisfunction, used by 'evaluate_basis.py'
 evaluate_basis_dof_map = """\
@@ -204,10 +204,86 @@ for (unsigned int j = 0; j < %d; j++)
   }
   else
     tmp += dofs_per_element[j];
+
+
 }"""
 
-# Inverse affine map from physical cell to (FIAT) reference cell in 2D
+
+# Inverse affine map from physical cell to UFC reference cell in 2D
 map_coordinates_2D = """\
+// Extract vertex coordinates
+const double * const * element_coordinates = c.coordinates;
+
+// Compute Jacobian of affine map from reference cell
+const double J_00 = element_coordinates[1][0] - element_coordinates[0][0];
+const double J_01 = element_coordinates[2][0] - element_coordinates[0][0];
+const double J_10 = element_coordinates[1][1] - element_coordinates[0][1];
+const double J_11 = element_coordinates[2][1] - element_coordinates[0][1];
+  
+// Compute determinant of Jacobian
+const double detJ = J_00*J_11 - J_01*J_10;
+
+// Compute constants
+const double C0 = element_coordinates[1][0] + element_coordinates[2][0];
+const double C1 = element_coordinates[1][1] + element_coordinates[2][1];
+
+// Get coordinates and map to the reference (FIAT) element
+double x = (J_01*C1 - J_11*C0 + J_11*coordinates[0] - J_01*coordinates[1]) / detJ;
+double y = (J_10*C0 - J_00*C1 - J_10*coordinates[0] + J_00*coordinates[1]) / detJ;"""
+
+# Inverse affine map from physical cell to the UFC reference cell in 3D
+map_coordinates_3D = """\
+// Extract vertex coordinates
+const double * const * element_coordinates = c.coordinates;
+
+// Compute Jacobian of affine map from reference cell
+const double J_00 = element_coordinates[1][0] - element_coordinates[0][0];
+const double J_01 = element_coordinates[2][0] - element_coordinates[0][0];
+const double J_02 = element_coordinates[3][0] - element_coordinates[0][0];
+const double J_10 = element_coordinates[1][1] - element_coordinates[0][1];
+const double J_11 = element_coordinates[2][1] - element_coordinates[0][1];
+const double J_12 = element_coordinates[3][1] - element_coordinates[0][1];
+const double J_20 = element_coordinates[1][2] - element_coordinates[0][2];
+const double J_21 = element_coordinates[2][2] - element_coordinates[0][2];
+const double J_22 = element_coordinates[3][2] - element_coordinates[0][2];
+  
+// Compute sub determinants
+const double d00 = J_11*J_22 - J_12*J_21;
+const double d01 = J_12*J_20 - J_10*J_22;
+const double d02 = J_10*J_21 - J_11*J_20;
+
+const double d10 = J_02*J_21 - J_01*J_22;
+const double d11 = J_00*J_22 - J_02*J_20;
+const double d12 = J_01*J_20 - J_00*J_21;
+
+const double d20 = J_01*J_12 - J_02*J_11;
+const double d21 = J_02*J_10 - J_00*J_12;
+const double d22 = J_00*J_11 - J_01*J_10;
+  
+// Compute determinant of Jacobian
+double detJ = J_00*d00 + J_10*d10 + J_20*d20;
+
+// Compute constants
+const double C0 = element_coordinates[3][0] + element_coordinates[2][0] \\
+                + element_coordinates[1][0] - element_coordinates[0][0];
+const double C1 = element_coordinates[3][1] + element_coordinates[2][1] \\
+                + element_coordinates[1][1] - element_coordinates[0][1];
+const double C2 = element_coordinates[3][2] + element_coordinates[2][2] \\
+                + element_coordinates[1][2] - element_coordinates[0][2];
+
+// Get coordinates and map to the UFC reference element
+double x = coordinates[0];
+double y = coordinates[1];
+double z = coordinates[2];
+
+// meg: Why is this working? Why is x and y updated while calculated?
+x = (d00*x + d10*y + d20*z - d00*C0 - d10*C1 - d20*C2) / detJ;
+y = (d01*x + d11*y + d21*z - d01*C0 - d11*C1 - d21*C2) / detJ;
+z = (d02*x + d12*y + d22*z - d02*C0 - d12*C1 - d22*C2) / detJ;"""
+
+
+# Inverse affine map from physical cell to the FIAT reference cell in 2D
+map_coordinates_FIAT_2D = """\
 // Extract vertex coordinates
 const double * const * element_coordinates = c.coordinates;
 
@@ -229,7 +305,7 @@ double x = (J_01*C1 - J_11*C0 + 2.0*J_11*coordinates[0] - 2.0*J_01*coordinates[1
 double y = (J_10*C0 - J_00*C1 - 2.0*J_10*coordinates[0] + 2.0*J_00*coordinates[1]) / detJ;"""
 
 # Inverse affine map from physical cell to (FIAT) reference cell in 3D
-map_coordinates_3D = """\
+map_coordinates_FIAT_3D = """\
 // Extract vertex coordinates
 const double * const * element_coordinates = c.coordinates;
 
@@ -309,6 +385,60 @@ for (unsigned int row = 1; row < %(num_derivatives)s; row++)
 
 # Snippet to transform of derivatives of order n
 transform2D_snippet = """\
+// Compute inverse of Jacobian
+const double %(Jinv)s[2][2] =  {{J_11 / detJ, -J_01 / detJ}, {-J_10 / detJ, J_00 / detJ}};
+
+// Declare transformation matrix
+// Declare pointer to two dimensional array and initialise
+double **%(transform)s = new double *[%(num_derivatives)s];
+    
+for (unsigned int j = 0; j < %(num_derivatives)s; j++)
+{
+  %(transform)s[j] = new double [%(num_derivatives)s];
+  for (unsigned int k = 0; k < %(num_derivatives)s; k++)
+    %(transform)s[j][k] = 1;
+}
+
+// Construct transformation matrix
+for (unsigned int row = 0; row < %(num_derivatives)s; row++)
+{
+  for (unsigned int col = 0; col < %(num_derivatives)s; col++)
+  {
+    for (unsigned int k = 0; k < %(n)s; k++)
+      %(transform)s[row][col] *= %(Jinv)s[%(combinations)s[col][k]][%(combinations)s[row][k]];
+  }
+}"""
+
+transform3D_snippet = """\
+// Compute inverse of Jacobian
+const double %(Jinv)s[3][3] =\
+{{d00 / detJ, d10 / detJ, d20 / detJ},\
+ {d01 / detJ, d11 / detJ, d21 / detJ},\
+ {d02 / detJ, d12 / detJ, d22 / detJ}};
+
+// Declare transformation matrix
+// Declare pointer to two dimensional array and initialise
+double **%(transform)s = new double *[%(num_derivatives)s];
+    
+for (unsigned int j = 0; j < %(num_derivatives)s; j++)
+{
+  %(transform)s[j] = new double [%(num_derivatives)s];
+  for (unsigned int k = 0; k < %(num_derivatives)s; k++)
+    %(transform)s[j][k] = 1;
+}
+
+// Construct transformation matrix
+for (unsigned int row = 0; row < %(num_derivatives)s; row++)
+{
+  for (unsigned int col = 0; col < %(num_derivatives)s; col++)
+  {
+    for (unsigned int k = 0; k < %(n)s; k++)
+      %(transform)s[row][col] *= %(Jinv)s[%(combinations)s[col][k]][%(combinations)s[row][k]];
+  }
+}"""
+
+# Snippet to transform of derivatives of order n
+transform2D_FIAT_snippet = """\
 // Compute inverse of Jacobian, components are scaled because of difference in FFC/FIAT reference elements
 const double %(Jinv)s[2][2] =  {{2*J_11 / detJ, -2*J_01 / detJ}, {-2*J_10 / detJ, 2*J_00 / detJ}};
 
@@ -333,7 +463,7 @@ for (unsigned int row = 0; row < %(num_derivatives)s; row++)
   }
 }"""
 
-transform3D_snippet = """\
+transform3D_FIAT_snippet = """\
 // Compute inverse of Jacobian, components are scaled because of difference in FFC/FIAT reference elements
 const double %(Jinv)s[3][3] =\
 {{2*d00 / detJ, 2*d10 / detJ, 2*d20 / detJ},\
