@@ -1,6 +1,6 @@
-# Start by setting the FIAT numbering scheme for entities.
-# This differs between FFC and FIAT but may change in future
-# versions of FIAT. It's important that we do this first
+# Start by setting the FIAT numbering scheme for entities and the
+# reference element. This differs between FFC and FIAT but may change
+# in future versions of FIAT. It's important that we do this first
 # before any other FIAT modules are loaded
 try:
     from FIAT import numbering
@@ -9,6 +9,14 @@ except:
     print "*** Warning: Unable to reorder entities. You need to patch or update your"
     print "*** Warning: installation of FIAT. Variable numbering_scheme is missing."
     print "*** Warning: Results may be incorrect for higher order elements on tets"
+
+try:
+    from FIAT import reference
+    reference.reference_element = "UFC"
+except:
+    print "*** Warning: Unable to use UFC reference element. You need to patch or update your"
+    print "*** Warning: installation of FIAT. Variable reference_element is missing."
+    
 
 # Import finite elements and dof map
 from ffc.fem.finiteelement import FiniteElement
