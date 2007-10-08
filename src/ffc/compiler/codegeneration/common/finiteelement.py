@@ -104,13 +104,13 @@ def __generate_interpolate_vertex_values_old(element, format):
     # Generate code as a list of declarations
     code = []
 
-    # Set vertices (note that we need to use the FIAT reference cells)
+    # Set vertices
     if element.cell_shape() == LINE:
-        vertices = [(-1,), (1,)]
+        vertices = [(0.0,), (1.0,)]
     elif element.cell_shape() == TRIANGLE:
-        vertices = [(-1, -1), (1, -1), (-1, 1)]
+        vertices = [(0.0, 0.0), (1.0, 0.0), (0.0, 1.0)]
     elif element.cell_shape() == TETRAHEDRON:
-        vertices =  [(-1, -1, -1), (1, -1, -1), (-1, 1, -1), (-1, -1, 1)]
+        vertices =  [(0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0,0), (0,0, 0,0, 1.0)]
 
     # Tabulate basis functions at vertices
     table = element.tabulate(0, vertices)
@@ -146,11 +146,11 @@ def __generate_interpolate_vertex_values(element, format):
 
     # Set vertices (note that we need to use the FIAT reference cells)
     if element.cell_shape() == LINE:
-        vertices = [(-1,), (1,)]
+        vertices = [(0,), (1,)]
     elif element.cell_shape() == TRIANGLE:
-        vertices = [(-1, -1), (1, -1), (-1, 1)]
+        vertices = [(0, 0), (1, 0), (0, 1)]
     elif element.cell_shape() == TETRAHEDRON:
-        vertices =  [(-1, -1, -1), (1, -1, -1), (-1, 1, -1), (-1, -1, 1)]
+        vertices =  [(0, 0, 0), (1, 0, 0), (0, 1, 0), (0, 0, 1)]
 
     # Extract nested sub elements
     sub_elements = element.basis_elements()

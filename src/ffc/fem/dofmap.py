@@ -150,13 +150,12 @@ class DofMap:
         element_points = []
         elements = element.basis_elements()
         for element in elements:
-            # Test for non-supported (or tested) elements
-            if element.family() in ["Brezzi-Douglas-Marini", "Raviart-Thomas", "Nedelec", "Brezzi-Douglas-Fortin-Marini"]:
+            # Test for non-supported elements
+            if element.family() in ["Brezzi-Douglas-Marini", "Raviart-Thomas",
+                                    "Nedelec", "Brezzi-Douglas-Fortin-Marini"]:
                 element_points += [None]
             else:
-                points = element.dual_basis().pts
-                element_points += [tuple([0.5*(x + 1.0) for x in point]) for point in points]
-
+                element_points += element.dual_basis().pts
         return element_points
 
     def __compute_dof_components(self, element):

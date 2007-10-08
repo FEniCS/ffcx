@@ -42,16 +42,16 @@ def integrate(monomial, facet0, facet1):
     integral_type = monomial.integral.type
 
     # Initialize quadrature points and weights
-    (points, weights, vscaling, dscaling) = __init_quadrature(monomial.basisfunctions, integral_type)
+    (points, weights) = __init_quadrature(monomial.basisfunctions, integral_type)
 
     # Initialize quadrature table for basis functions
     table = __init_table(monomial.basisfunctions, integral_type, points, facet0, facet1)
 
     # Compute table Psi for each factor
-    psis = [__compute_psi(v, table, len(points), dscaling, integral_type) for v in monomial.basisfunctions]
+    psis = [__compute_psi(v, table, len(points), integral_type) for v in monomial.basisfunctions]
 
     # Compute product of all Psis
-    A0 = __compute_product(psis, vscaling * monomial.numeric * weights)
+    A0 = __compute_product(psis, monomial.numeric * weights)
 
     # Report elapsed time and number of entries
     toc = time.time() - tic
@@ -84,30 +84,7 @@ def __init_quadrature(basisfunctions, integral_type):
     points = quadrature.get_points()
     weights = quadrature.get_weights()
 
-    # Compensate for different choice of reference cells in FIAT
-    # FIXME: Convince Rob to change his reference elements
-    if shape == TRIANGLE:
-        if integral_type == Integral.CELL:
-            vscaling = 0.25  # Area 1/2 instead of 2
-            dscaling = 2.0   # Scaling of derivative
-        elif integral_type == Integral.EXTERIOR_FACET:
-            vscaling = 0.5   # Length 1 instead of 2
-            dscaling = 2.0   # Scaling of derivative        
-        elif integral_type == Integral.INTERIOR_FACET:
-            vscaling = 0.5   # Length 1 instead of 2
-            dscaling = 2.0   # Scaling of derivative        
-    elif shape == TETRAHEDRON:
-        if integral_type == Integral.CELL:
-            vscaling = 0.125 # Volume 1/6 instead of 4/3
-            dscaling = 2.0   # Scaling of derivative
-        elif integral_type == Integral.EXTERIOR_FACET:
-            vscaling = 0.25  # Area 1/2 instead of 2
-            dscaling = 2.0   # Scaling of derivative
-        elif integral_type == Integral.INTERIOR_FACET:
-            vscaling = 0.25  # Area 1/2 instead of 2
-            dscaling = 2.0   # Scaling of derivative
-
-    return (points, weights, vscaling, dscaling)
+    return (points, weights)
 
 def __init_table(basisfunctions, integral_type, points, facet0, facet1):
     """Initialize table of basis functions and their derivatives at
@@ -138,7 +115,7 @@ def __init_table(basisfunctions, integral_type, points, facet0, facet1):
 
     return table
 
-def __compute_psi(v, table, num_points, dscaling, integral_type):
+def __compute_psi(v, table, num_points, integral_type):
     "Compute the table Psi for the given BasisFunction v."
 
     # We just need to pick the values for Psi from the table, which is
@@ -224,9 +201,6 @@ def __compute_psi(v, table, num_points, dscaling, integral_type):
     # Put quadrature points first
     rank = numpy.rank(Psi)
     Psi = numpy.transpose(Psi, (rank - 1,) + tuple(range(0, rank - 1)))
-
-    # Scale derivatives (FIAT uses different reference element)
-    Psi = pow(dscaling, dorder) * Psi
 
     # Compute auxiliary index positions for current Psi
     bpart = [i.index for i in indices if i.type == Index.AUXILIARY_0]

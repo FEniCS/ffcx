@@ -219,10 +219,10 @@ def __generate_tabulate_coordinates(dof_map, format):
     format_matrix_access        = format["matrix access"]
 
     # Get coordinates of the dofs (on FFC reference element)
-    points = dof_map.dof_coordinates()
+    coordinates = dof_map.dof_coordinates()
 
     # Check if we get some points from fem.dofmap.py
-    if not None in points:
+    if not None in coordinates:
         #code += [format["comment"]("This function is implemented assuming affine mapping!!")]
         #code += [format["comment"]("Get cell vertices")]
         code += [format["get cell vertices"]]
@@ -233,10 +233,7 @@ def __generate_tabulate_coordinates(dof_map, format):
         # Create linear Lagrange element for the transformation
         element = FiniteElement("Lagrange", shape_to_string[cell_shape], 1)
 
-        # Transform coordinates to FIAT element
-        coordinates = [tuple([2*x - 1.0 for x in point]) for point in points]
-
-        # Tabulate values of basisfunctions (on FIAT element)
+        # Tabulate values of basisfunctions
         table = element.tabulate(0, coordinates)
 
         # Get matrix of values of basisfunctions at points (dof, values at dofs on linear element)
