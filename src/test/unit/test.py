@@ -46,7 +46,8 @@ class FiniteElementTests(unittest.TestCase):
         P1 = FiniteElement("Lagrange", "triangle", 1)
         basis = P1.basis()
 
-        x = [(-1, -1), (1, -1), (-1, 1)]
+        #x = [(-1, -1), (1, -1), (-1, 1)]
+        x = [(0, 0), (1, 0), (0, 1)]
         for i in range(3):
             for j in range(3):
                 value = basis[i](x[j])
@@ -61,7 +62,8 @@ class FiniteElementTests(unittest.TestCase):
         P1 = FiniteElement("Lagrange", "tetrahedron", 1)
         basis = P1.basis()
 
-        x = [(-1, -1, -1), (1, -1, -1), (-1, 1, -1), (-1, -1, 1)]
+        #x = [(-1, -1, -1), (1, -1, -1), (-1, 1, -1), (-1, -1, 1)]
+        x = [(0, 0, 0), (1, 0, 0), (0, 1, 0), (0, 0, 1)]
         for i in range(4):
             for j in range(4):
                 value = basis[i](x[j])
