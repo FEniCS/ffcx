@@ -183,6 +183,14 @@ class Determinant:
             return Determinant(self.power + other.power, self.restriction)
         else:
             return None
+
+    def __cmp__(self, other):
+        "Check if Determinants are equal."
+        if not isinstance(other, Determinant):
+            return -1
+        if self.power == other.power and self.restriction == other.restriction:
+            return 0
+        return -1
         
     def __repr__(self):
         "Print nicely formatted representation of Determinant."

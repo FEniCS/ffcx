@@ -56,6 +56,7 @@ def simplify_form(f):
             f.monomials.remove(monomial)
             continue
         # Third, contract determinants:
+        # FIX: Should move this.
         if monomial.determinants:
             monomial.determinants = contract_list(contract_determinants,
                                                   monomial.determinants)
@@ -129,6 +130,12 @@ def contraction_likely(m, n):
         if m.numeric != n.numeric:
             return False
 
+        if len(m.determinants) != len(n.determinants):
+            return False
+        for i in range (len(m.determinants)):
+            if not m.determinants[i] == n.determinants[i]:
+                return False
+
         if len(m.coefficients) != len(n.coefficients):
             return False
         for i in range(len(m.coefficients)):
@@ -165,7 +172,7 @@ def contraction_likely(m, n):
 
     # Comparing transforms:
     elif isinstance(m, Transform) and isinstance(n, Transform):
-        if m.type != n.type:
+        if m.type != n.type or m.restriction != n.restriction:
             return False
         return True
 
@@ -239,18 +246,24 @@ def simplify_monomial(monomial):
         # notation since we may have to replace some of them.
         for i in range(len(basis.derivatives)):
             derivative = basis.derivatives[i]
+            therestriction = basis.restriction
             success = 0
             theindex = derivative.index
             # Now, lets run through the transforms and see whether
             # there are two matching:
             for transform in monomial.transforms:
                 if transform.type == Transform.JINV:
-                    if not cmp(transform.index0, theindex):
+                    if (not cmp(transform.index0, theindex)
+                        and transform.restriction == therestriction):
                         first = transform
                         break
+            # If there are no matching JINV-transforms, no hope of success.
+            if not first: break
+
             for transform in monomial.transforms:
                 if transform.type == Transform.J:
-                    if not cmp(transform.index1, first.index1):
+                    if (not cmp(transform.index1, first.index1)
+                        and transform.restriction == therestriction):
                         second = transform
                         success = 1
                         break

@@ -1,7 +1,7 @@
 "Unit tests for FFC"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-02-06 -- 2007-02-06"
+__date__ = "2007-02-06 -- 2007-10-16"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
@@ -39,6 +39,36 @@ class FiniteElementTests(unittest.TestCase):
         
         P3 = FiniteElement("Discontinuous Lagrange", "triangle", 3)
         self.assertEqual(P3.space_dimension(), 10)
+
+    def testFunctionValues2D(self):
+        "Test values of simple Lagrange functions in 2D"
+
+        P1 = FiniteElement("Lagrange", "triangle", 1)
+        basis = P1.basis()
+
+        x = [(-1, -1), (1, -1), (-1, 1)]
+        for i in range(3):
+            for j in range(3):
+                value = basis[i](x[j])
+                if i == j:
+                    self.assertAlmostEqual(value, 1)
+                else:
+                    self.assertAlmostEqual(value, 0)
+                    
+    def testFunctionValues3D(self):
+        "Test values of simple Lagrange functions in 3D"
+
+        P1 = FiniteElement("Lagrange", "tetrahedron", 1)
+        basis = P1.basis()
+
+        x = [(-1, -1, -1), (1, -1, -1), (-1, 1, -1), (-1, -1, 1)]
+        for i in range(4):
+            for j in range(4):
+                value = basis[i](x[j])
+                if i == j:
+                    self.assertAlmostEqual(value, 1)
+                else:
+                    self.assertAlmostEqual(value, 0)
 
 if __name__ == "__main__":
     unittest.main()
