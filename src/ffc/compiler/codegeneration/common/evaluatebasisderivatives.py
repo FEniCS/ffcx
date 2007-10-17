@@ -17,6 +17,9 @@ from ffc.fem.mixedelement import *
 # FFC code generation common modules
 import evaluatebasis
 
+# FFC language modules
+from ffc.compiler.language.tokens import *
+
 # FFC code generation common modules
 from utils import *
 
@@ -316,7 +319,13 @@ def compute_reference_derivatives(element, Indent, format):
     format_array_access     = format["array access"]
     format_add              = format["add"]
     format_multiply         = format["multiply"]
+    format_inv              = format["inverse"]
+    format_det              = format["determinant"]
+    format_group            = format["grouping"]
     format_basisvalue       = format["basisvalue"]
+    format_tmp              = format["tmp declaration"]
+    format_tmp_access       = format["tmp access"]
+
 
     # Get number of components, must change for tensor valued elements
     num_components = element.value_dimension(0)
@@ -395,6 +404,10 @@ def compute_reference_derivatives(element, Indent, format):
     # Compute derivatives on reference element
     code += [Indent.indent(format_comment\
     ("Compute derivatives on reference element as dot product of coefficients and basisvalues"))]
+    mapping = pick_first([element.value_mapping(dim) for dim in range(element.value_dimension(0))])
+    if mapping == Mapping.PIOLA:
+        code += [Indent.indent(format["comment"]("Correct values by the Piola transform"))]
+    value_code = []
     for i in range(num_components):
         if (i == 0):
             name = format_derivatives + format_array_access("deriv_num")
@@ -406,8 +419,18 @@ def compute_reference_derivatives(element, Indent, format):
 
         value = format_add([ format_multiply([format_new_coeff(i) + format_secondary_index(k),\
                              format_basisvalue(k)]) for k in range(poly_dim) ])
-        code += [(Indent.indent(name), value)]
 
+        # Use Piola transform to map basisfunctions back to physical element if needed
+        if mapping == Mapping.PIOLA:
+            value_code.insert(i,(Indent.indent(format_tmp(0, i)), value))
+            basis_col = [format_tmp_access(0, j) for j in range(element.cell_dimension())]
+            jacobian_row = [format["transform"](Transform.J, j, i, None) for j in range(element.cell_dimension())]
+            inner = [format_multiply([jacobian_row[j], basis_col[j]]) for j in range(element.cell_dimension())]
+            sum = format_group(format_add(inner))
+            value = format_multiply([format_inv(format_det(None)), sum])
+
+        value_code += [(Indent.indent(name), value)]
+    code += value_code
     # Decrease indentation
     Indent.decrease()
     code += [Indent.indent(format_block_end)]

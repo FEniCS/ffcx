@@ -424,7 +424,7 @@ def compute_values(element, sum_value_dim, vector, Indent, format):
 
 def compute_scaling(element, Indent, format):
     """Generate the scalings of y and z coordinates. This function is an implementation of
-    the FIAT function make_scalings( etas ) from expasions.py"""
+    the FIAT function make_scalings( etas ) from expansions.py"""
 
     code = []
 

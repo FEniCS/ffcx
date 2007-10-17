@@ -177,7 +177,8 @@ eta_triangle_snippet = """\
 if (std::abs(y - 1.0) < %s)
   x = -1.0;
 else
-  x = 2.0 *x/(1.0 - y) - 1.0;"""
+  x = 2.0 *x/(1.0 - y) - 1.0;
+y = 2.0*y - 1.0;"""
 
 # Code snippet for eta basis on tetrahedra (reproduced from FIAT reference.py)
 eta_tetrahedron_snippet = """\
@@ -188,7 +189,8 @@ else
 if (std::abs(z - 1.0) < %s)
   y = -1.0;
 else
-  y = 2.0 * y/(1.0 - z) - 1.0;"""
+  y = 2.0 * y/(1.0 - z) - 1.0;
+z = 2.0 * z - 1.0;"""
 
 # Map basis function to local basisfunction, used by 'evaluate_basis.py'
 evaluate_basis_dof_map = """\
@@ -223,13 +225,13 @@ const double J_11 = element_coordinates[2][1] - element_coordinates[0][1];
 // Compute determinant of Jacobian
 const double detJ = J_00*J_11 - J_01*J_10;
 
-// Compute constants
-const double C0 = element_coordinates[1][0] + element_coordinates[2][0];
-const double C1 = element_coordinates[1][1] + element_coordinates[2][1];
-
-// Get coordinates and map to the reference (FIAT) element
-double x = (J_01*C1 - J_11*C0 + J_11*coordinates[0] - J_01*coordinates[1]) / detJ;
-double y = (J_10*C0 - J_00*C1 - J_10*coordinates[0] + J_00*coordinates[1]) / detJ;"""
+// Get coordinates and map to the reference (UFC) element
+double x = (element_coordinates[0][1]*element_coordinates[2][0] -\\
+            element_coordinates[0][0]*element_coordinates[2][1] +\\
+            J_11*coordinates[0] - J_01*coordinates[1]) / detJ;
+double y = (element_coordinates[1][1]*element_coordinates[0][0] -\\
+            element_coordinates[1][0]*element_coordinates[0][1] -\\
+            J_10*coordinates[0] + J_00*coordinates[1]) / detJ;"""
 
 # Inverse affine map from physical cell to the UFC reference cell in 3D
 map_coordinates_3D = """\
@@ -264,22 +266,22 @@ const double d22 = J_00*J_11 - J_01*J_10;
 double detJ = J_00*d00 + J_10*d10 + J_20*d20;
 
 // Compute constants
-const double C0 = element_coordinates[3][0] + element_coordinates[2][0] \\
-                + element_coordinates[1][0] - element_coordinates[0][0];
-const double C1 = element_coordinates[3][1] + element_coordinates[2][1] \\
-                + element_coordinates[1][1] - element_coordinates[0][1];
-const double C2 = element_coordinates[3][2] + element_coordinates[2][2] \\
-                + element_coordinates[1][2] - element_coordinates[0][2];
+const double C0 = d00*(element_coordinates[0][0] - element_coordinates[2][0] - element_coordinates[3][0]) \\
+                + d10*(element_coordinates[0][1] - element_coordinates[2][1] - element_coordinates[3][1]) \\
+                + d20*(element_coordinates[0][2] - element_coordinates[2][2] - element_coordinates[3][2]);
+
+const double C1 = d01*(element_coordinates[0][0] - element_coordinates[1][0] - element_coordinates[3][0]) \\
+                + d11*(element_coordinates[0][1] - element_coordinates[1][1] - element_coordinates[3][1]) \\
+                + d21*(element_coordinates[0][2] - element_coordinates[1][2] - element_coordinates[3][2]);
+
+const double C2 = d02*(element_coordinates[0][0] - element_coordinates[1][0] - element_coordinates[2][0]) \\
+                + d12*(element_coordinates[0][1] - element_coordinates[1][1] - element_coordinates[2][1]) \\
+                + d22*(element_coordinates[0][2] - element_coordinates[1][2] - element_coordinates[2][2]);
 
 // Get coordinates and map to the UFC reference element
-double x = coordinates[0];
-double y = coordinates[1];
-double z = coordinates[2];
-
-// meg: Why is this working? Why is x and y updated while calculated?
-x = (d00*x + d10*y + d20*z - d00*C0 - d10*C1 - d20*C2) / detJ;
-y = (d01*x + d11*y + d21*z - d01*C0 - d11*C1 - d21*C2) / detJ;
-z = (d02*x + d12*y + d22*z - d02*C0 - d12*C1 - d22*C2) / detJ;"""
+double x = (C0 + d00*coordinates[0] + d10*coordinates[1] + d20*coordinates[2]) / detJ;
+double y = (C1 + d01*coordinates[0] + d11*coordinates[1] + d21*coordinates[2]) / detJ;
+double z = (C2 + d02*coordinates[0] + d12*coordinates[1] + d22*coordinates[2]) / detJ;"""
 
 
 # Inverse affine map from physical cell to the FIAT reference cell in 2D
