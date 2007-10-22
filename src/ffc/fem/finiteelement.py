@@ -204,7 +204,7 @@ class FiniteElement:
 
         if family == "Nedelec":
             self.__family = "Nedelec"
-            return (Nedelec(degree),
+            return (Nedelec(fiat_shape, degree),
                     Mapping.PIOLA) # ?
 
         # Unknown element
