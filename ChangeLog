@@ -1,3 +1,10 @@
+ - Require FIAT to use UFC reference cells
+ - Fix bug in form simplification
+ - Rename abs --> modulus to avoid conflict with builtin abs
+ - Fix bug in operators invert, abs, sqrt
+ - Fix bug in integral tabulation
+ - Add BDFM and Nedelec elements (nonworking)
+ - Fix bug in JIT compiler
 0.4.2 [2007-08-31]
  - Change license from GPL v2 to GPL v3 or later
  - Add JIT (just-in-time) compiler
