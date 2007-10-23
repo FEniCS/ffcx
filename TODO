@@ -5,6 +5,9 @@ file, it is convenient to install org-mode in Emacs.
 * Fix bug in RT1
   - RT elements work for q = 0, 2, 3 but not for q = 1
 
+* Fix bug in BDFM
+  - Broken after mapping of reference element moved to FIAT
+
 * Write introduction in manual
   - The introduction is currently empty
 
@@ -36,6 +39,8 @@ file, it is convenient to install org-mode in Emacs.
   utils provides a simple way to organize the code in .cpp
   and or .h files, but FFC does not yet use this.
   - Add to man page
+
+* Move arguments language and representation to options dictionary
 
 * Display flop count
   - The flop count for evaluation of the element tensor should
