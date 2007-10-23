@@ -221,8 +221,8 @@ def generate_factor(tensor, a, bgindices, format):
                 op = c.ops[len(c.ops) - 1 - l]
                 if op == Operators.INVERSE:
                     coefficient = format["inverse"](coefficient)
-                elif op == Operators.ABS:
-                    coefficient = format["absolute value"](coefficient)
+                elif op == Operators.MODULUS:
+                    coefficient = format["MODULUSolute value"](coefficient)
                 elif op == Operators.SQRT:
                     coefficient = format["sqrt"](coefficient)
             factors += [coefficient]
@@ -253,7 +253,7 @@ def generate_factor(tensor, a, bgindices, format):
                     op = c.ops[len(c.ops) - 1 - l]
                     if op == Operators.INVERSE:
                         coefficient = format["inverse"](coefficient)
-                    elif op == Operators.ABS:
+                    elif op == Operators.MODULUS:
                         coefficient = format["absolute value"](coefficient)
                     elif op == Operators.SQRT:
                         coefficient = format["sqrt"](coefficient)
@@ -289,7 +289,7 @@ def generate_factor_old(tensor, a, b, format):
                 op = c.ops[len(c.ops) - 1 - l]
                 if op == Operators.INVERSE:
                     coefficient = format["inverse"](coefficient)
-                elif op == Operators.ABS:
+                elif op == Operators.MODULUS:
                     coefficient = format["absolute value"](coefficient)
                 elif op == Operators.SQRT:
                     coefficient = format["sqrt"](coefficient)
@@ -312,7 +312,7 @@ def generate_factor_old(tensor, a, b, format):
                 op = c.ops[len(c.ops) - 1 - l]
                 if op == Operators.INVERSE:
                     coefficient = format["inverse"](coefficient)
-                elif op == Operators.ABS:
+                elif op == Operators.MODULUS:
                     coefficient = format["absolute value"](coefficient)
                 elif op == Operators.SQRT:
                     coefficient = format["sqrt"](coefficient)
@@ -356,7 +356,7 @@ def generate_factor3(tensor, a, bgindices, format):
                 op = c.ops[len(c.ops) - 1 - l]
                 if op == Operators.INVERSE:
                     coefficient = format["inverse"](coefficient)
-                elif op == Operators.ABS:
+                elif op == Operators.MODULUS:
                     coefficient = format["absolute value"](coefficient)
                 elif op == Operators.SQRT:
                     coefficient = format["sqrt"](coefficient)
@@ -391,7 +391,7 @@ def generate_factor3(tensor, a, bgindices, format):
                     op = c.ops[len(c.ops) - 1 - l]
                     if op == Operators.INVERSE:
                         coefficient = format["inverse"](coefficient)
-                    elif op == Operators.ABS:
+                    elif op == Operators.MODULUS:
                         coefficient = format["absolute value"](coefficient)
                     elif op == Operators.SQRT:
                         coefficient = format["sqrt"](coefficient)
