@@ -1,5 +1,5 @@
 _author__ = "Marie Rognes (meg@math.uio.no)"
-__date__ = "2006-10-23 -- 2007-08-30"
+__date__ = "2006-10-23 -- 2007-10-29"
 __copyright__ = "Copyright (C) 2006"
 __license__  = "GNU GPL version 3 or any later version"
 
@@ -35,19 +35,27 @@ def simplify(form):
 
     previous = str(form)
     simplified = ""
-
     while(previous != simplified):
         reassign_indices(form)
         previous = str(form)
         simplify_form(form)
         simplified = str(form)
     reassign_indices(form)
+
     debug("done")
 
 def simplify_form(f):
     # First: contract indices and factorize
-    f.monomials = contract_list(contract_monomials, f.monomials)
-    reassign_indices(f)
+    # Note that we have to contract all indices before we continue!
+    previous = str(f)
+    simplified = ""
+    while(previous != simplified):
+        previous = str(f)
+        f.monomials = contract_list(contract_monomials, f.monomials)
+        reassign_indices(f)
+        simplified = str(f)
+
+    # FIX: This doesn't work because it thinks that a0 + 2 == a0.
     #f.monomials = contract_list(factorize_monomials, f.monomials)
 
     for monomial in f.monomials:
@@ -60,10 +68,8 @@ def simplify_form(f):
         if monomial.determinants:
             monomial.determinants = contract_list(contract_determinants,
                                                   monomial.determinants)
-        
         # Fourth, simplify each monomial with regard to derivatives.
         monomial = simplify_monomial(monomial)
-
         
 def contract_list(contraction, monomials):
     """ Given a list of ..., run contraction on (all) pairs of these,
@@ -249,14 +255,16 @@ def simplify_monomial(monomial):
             therestriction = basis.restriction
             success = 0
             theindex = derivative.index
+            if theindex.type == Index.FIXED: break
             # Now, lets run through the transforms and see whether
             # there are two matching:
             for transform in monomial.transforms:
                 if transform.type == Transform.JINV:
                     if (not cmp(transform.index0, theindex)
                         and transform.restriction == therestriction):
-                        first = transform
-                        break
+                        if not transform.index1.type == Index.FIXED:
+                            first = transform
+                            break
             # If there are no matching JINV-transforms, no hope of success.
             if not first: break
 
@@ -264,10 +272,11 @@ def simplify_monomial(monomial):
                 if transform.type == Transform.J:
                     if (not cmp(transform.index1, first.index1)
                         and transform.restriction == therestriction):
-                        second = transform
-                        success = 1
-                        break
-                        
+                        if not transform.index0.type == Index.FIXED:
+                            second = transform
+                            success = 1
+                            break
+
             if success == 1:
                 # Now, we should first remove the transforms from
                 # the transform list. Second: replace the old
