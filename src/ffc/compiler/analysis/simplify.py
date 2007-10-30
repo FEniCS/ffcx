@@ -1,5 +1,5 @@
 _author__ = "Marie Rognes (meg@math.uio.no)"
-__date__ = "2006-10-23 -- 2007-10-29"
+__date__ = "2006-10-23 -- 2007-10-30"
 __copyright__ = "Copyright (C) 2006"
 __license__  = "GNU GPL version 3 or any later version"
 
@@ -33,43 +33,44 @@ def simplify(form):
     # Change constant restrictions on interior facets before simplifying
     change_constant_restrictions(form)
 
-    previous = str(form)
-    simplified = ""
-    while(previous != simplified):
-        reassign_indices(form)
-        previous = str(form)
-        simplify_form(form)
-        simplified = str(form)
+    # Simplify form by contracting indices and simplifying
+    # derivatives:
+    simplify_form(form)
+
     reassign_indices(form)
 
     debug("done")
 
 def simplify_form(f):
-    # First: contract indices and factorize
-    # Note that we have to contract all indices before we continue!
+    """ Take a Form f and contract indices, factorize, remove zero
+    monomials, contract determinants and simplify derivatives. """
+    
+    # Contract indices. Note that we have to contract all indices
+    # before we continue!
     previous = str(f)
     simplified = ""
     while(previous != simplified):
+        reassign_indices(f)
         previous = str(f)
         f.monomials = contract_list(contract_monomials, f.monomials)
-        reassign_indices(f)
         simplified = str(f)
 
-    # FIX: This doesn't work because it thinks that a0 + 2 == a0.
-    #f.monomials = contract_list(factorize_monomials, f.monomials)
+    # Factorize monomials
+    f.monomials = contract_list(factorize_monomials, f.monomials)
 
-    for monomial in f.monomials:
-        # Second, remove monomials with numeric = 0.0:
+    # Note that we iterate through a copy of the list since we want to
+    # remove things from it while iterating.
+    for monomial in f.monomials[:]:
+        # Remove monomials with numeric = 0.0:
         if monomial.numeric == 0.0:
             f.monomials.remove(monomial)
             continue
-        # Third, contract determinants:
-        # FIX: Should move this.
+        # Contract determinants:
         if monomial.determinants:
             monomial.determinants = contract_list(contract_determinants,
                                                   monomial.determinants)
-        # Fourth, simplify each monomial with regard to derivatives.
-        monomial = simplify_monomial(monomial)
+        # Simplify each monomial with regard to derivatives.
+        simplify_monomial(monomial)
         
 def contract_list(contraction, monomials):
     """ Given a list of ..., run contraction on (all) pairs of these,
@@ -97,13 +98,14 @@ def contract_list(contraction, monomials):
 def factorize_monomials(m, n):
     """ Given a two monomials, factorize any common factors and return
     the new monomials."""
-    # meg: Not quite finished yet.
-    if contraction_likely(m,n):
-        differences = diff(m, n)
-        if is_empty(differences):
-            q = Monomial(m)
-            q.numeric += n.numeric
-            return ([q], True)
+    # meg: Not quite finished yet. Does very simple factorization now.
+    mcopy = Monomial(m)
+    ncopy = Monomial(n)
+    mcopy.numeric = 1.0
+    ncopy.numeric = 1.0
+    if str(mcopy) == str(ncopy):
+        mcopy.numeric = m.numeric + n.numeric
+        return([mcopy], True)
     return ([m, n], False)
     
 def contract_monomials(m, n):
@@ -285,7 +287,6 @@ def simplify_monomial(monomial):
                                                   second.index0)
                 monomial.transforms.remove(first) 
                 monomial.transforms.remove(second)
-    return monomial
 
 def diff(m, n, key = None):
     """ Take two elements and returns the difference between these in
