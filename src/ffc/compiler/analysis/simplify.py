@@ -339,8 +339,10 @@ def diff(m, n, key = None):
                            'derivatives': ddiff})
 
     elif isinstance(m, Index) and isinstance(n, Index):
-        # The difference between two indices
-        if not m == n:
+        # The difference between two indices. Note that we have to be
+        # careful about the comparison here, since we in this case do
+        # not want a0 == a0+2 for instance.
+        if not str(m) == str(n):
             mversion[key] = m
             nversion[key] = n
 
