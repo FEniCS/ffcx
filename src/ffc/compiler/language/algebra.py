@@ -216,10 +216,16 @@ class BasisFunction(Element):
 
     def  __getitem__(self, component):
         "Operator: BasisFunction[component], pick given component."
-        if self.element.value_mapping(component) == Mapping.PIOLA:
-            return self.pick_component_piola(component)
-        else:
+        mapping = self.element.value_mapping(component)
+        if mapping == Mapping.AFFINE:
             return self.pick_component_default(component)
+        elif mapping == Mapping.CONTRAVARIANT_PIOLA:
+            return self.pick_component_contravariant_piola(component)
+        elif mapping == Mapping.COVARIANT_PIOLA:
+            return self.pick_component_covariant_piola(component)
+        else:
+            raise FormError, (self, "Non-existent mapping: " + str(mapping))
+
 
     def __len__(self):
         "Operator: len(BasisFunction)"
@@ -310,15 +316,17 @@ class BasisFunction(Element):
             w.basisfunctions[0].component = [Index(component)]        
         return w
 
-    def pick_component_piola(self, component):
-        "Pick given component of BasisFunction mapped with the Piola transform."
+    def pick_component_contravariant_piola(self, component):
+        """ Pick given component of BasisFunction mapped with the
+        contravariant Piola transform:
+              phi(x) = (det J)^{-1} J Phi(X) 
+        """
         rank = self.element.value_rank()
         if isinstance(component, list):
             if not rank == len(component):
                 raise FormError, (component, "Illegal component index, does not match rank.")
             # The Piola transform for the tensor case requires some thought.
-            print "The Piola transform is not implemented in the tensor case!"
-            return self.pick_component_default(component)
+            raise FormError, (component,  "The Piola transform is not implemented in the tensor case!")
         if not rank == 1:
             raise FormError, (component, "Illegal component index, does not match rank.") 
 
@@ -326,10 +334,33 @@ class BasisFunction(Element):
         w = Monomial(self)
         i = Index(component) - offset
         j = Index("secondary", range(self.element.cell_dimension()));
-        w.transforms = [Transform(self.element, j, i, self.restriction, Transform.J)] 
+        w.transforms += [Transform(self.element, j, i, self.restriction, Transform.J)] 
         w.basisfunctions[0].component = [j + offset]    
         w.determinants += [Determinant(-1, self.restriction)]
         return w
+
+    def pick_component_covariant_piola(self, component):
+        """ Pick given component of BasisFunction mapped with the
+        covariant Piola transform.
+               phi(x) = J^{-T} Phi(X) 
+        """
+        rank = self.element.value_rank()
+        if isinstance(component, list):
+            if not rank == len(component):
+                raise FormError, (component, "Illegal component index, does not match rank.")
+            # The Piola transform for the tensor case requires some thought.
+            raise FormError, (component,  "The Piola transform is not implemented in the tensor case!")
+        if not rank == 1:
+            raise FormError, (component, "Illegal component index, does not match rank.") 
+
+        (sub_element, offset) = self.element.value_offset(component)
+        w = Monomial(self)
+        i = Index(component) - offset
+        j = Index("secondary", range(self.element.cell_dimension()));
+        w.transforms += [Transform(self.element, j, i, self.restriction, Transform.JINV)] 
+        w.basisfunctions[0].component = [j + offset]    
+        return w
+
 
 class Monomial(Element):
     """A Monomial represents a monomial product of factors, including

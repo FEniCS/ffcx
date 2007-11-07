@@ -158,7 +158,9 @@ def __generate_interpolate_vertex_values(element, format):
     # Iterate over sub elements
     offset_dof_values = 0
     offset_vertex_values = 0
-    need_piola = False
+    need_jacobian = False
+    need_inverse_jacobian = False
+
     for sub_element in sub_elements:
 
         # Tabulate basis functions at vertices
@@ -189,12 +191,12 @@ def __generate_interpolate_vertex_values(element, format):
                         value = inner_product(coefficients, dof_values, format)
                         code += [(name, value)]
 
-        elif mapping == Mapping.PIOLA:
+        elif (mapping == Mapping.CONTRAVARIANT_PIOLA or mapping == Mapping.COVARIANT_PIOLA):
 
             code += [format["comment"]("Evaluate at vertices and use Piola mapping")]
 
             # Remember to add code later for Jacobian
-            need_piola = True
+            need_jacobian = True
 
             # Check that dimension matches for Piola transform
             if not sub_element.value_dimension(0) == sub_element.cell_dimension():
@@ -209,14 +211,21 @@ def __generate_interpolate_vertex_values(element, format):
                     for n in range(sub_element.space_dimension()):
                         # Get basis function values at vertices
                         coefficients = [table[j][0][sub_element.cell_dimension()*(0,)][n, v] for j in range(sub_element.value_dimension(0))]
-                        # Get row of Jacobian
-                        jacobian_row = [format["transform"](Transform.J, j, dim, None) for j in range(sub_element.cell_dimension())]
+
+                        if mapping == Mapping.COVARIANT_PIOLA:
+                            # Get row of inverse transpose Jacobian
+                            jacobian_row = [format["transform"](Transform.JINV, j, dim, None) for j in range(sub_element.cell_dimension())]
+                        else:
+                            # mapping == Mapping.CONTRAVARIANT_PIOLA:
+                            # Get row of Jacobian
+                            jacobian_row = [format["transform"](Transform.J, j, dim, None) for j in range(sub_element.cell_dimension())]
+                            
                         # Multiply vector-valued basis function with Jacobian
                         basis_function = inner_product(coefficients, jacobian_row, format)
                         # Add paranthesis if necessary
                         if "+" in basis_function or "-" in basis_function: # Cheating, should use dictionary
                             basis_function = format["grouping"](basis_function)
-                        # Multiply with dof value
+                            # Multiply with dof value
                         factors = [format["dof values"](offset_dof_values + n), basis_function]
                         # Add term
                         if not basis_function == format["floating point"](0):
@@ -226,7 +235,10 @@ def __generate_interpolate_vertex_values(element, format):
                     else:
                         sum = format["add"](terms)
                     name = format["vertex values"](offset_vertex_values + dim*len(vertices) + v)
-                    value = format["multiply"]([format["inverse"](format["determinant"](None)), sum])
+                    if mapping == Mapping.CONTRAVARIANT_PIOLA:
+                        value = format["multiply"]([format["inverse"](format["determinant"](None)), sum])
+                    else: 
+                        value = format["multiply"]([sum])
                     code += [(name, value)]
 
         else:
@@ -236,7 +248,9 @@ def __generate_interpolate_vertex_values(element, format):
         offset_vertex_values += len(vertices)*sub_element.value_dimension(0)
 
     # Insert code for computing quantities needed for Piola mapping
-    if need_piola:
+    if need_jacobian:
+        code.insert(0, format["snippet jacobian"](element.cell_dimension()) % {"restriction": ""})        
+    if need_inverse_jacobian:
         code.insert(0, format["snippet jacobian"](element.cell_dimension()) % {"restriction": ""})        
     
     return code

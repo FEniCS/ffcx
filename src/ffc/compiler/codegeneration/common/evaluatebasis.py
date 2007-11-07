@@ -392,8 +392,10 @@ def compute_values(element, sum_value_dim, vector, Indent, format):
 
     # Check which transform we should use to map the basis functions
     mapping = pick_first([element.value_mapping(dim) for dim in range(element.value_dimension(0))])
-    if mapping == Mapping.PIOLA:
-        code += [Indent.indent(format["comment"]("Using Piola transform to map values back to the physical element"))]
+    if mapping == Mapping.CONTRAVARIANT_PIOLA:
+        code += [Indent.indent(format["comment"]("Using contravariant Piola transform to map values back to the physical element"))]
+    elif mapping == Mapping.COVARIANT_PIOLA:
+        code += [Indent.indent(format["comment"]("Using covariant Piola transform to map values back to the physical element"))]
 
     if (vector or num_components != 1):
 
@@ -404,14 +406,21 @@ def compute_values(element, sum_value_dim, vector, Indent, format):
                     format_basisvalue(j)]) for j in range(poly_dim)])
 
             # Use Piola transform to map basisfunctions back to physical element if needed
-            if mapping == Mapping.PIOLA:
+            if mapping == Mapping.CONTRAVARIANT_PIOLA:
                 code.insert(i+1,(Indent.indent(format_tmp(0, i)), value))
                 basis_col = [format_tmp_access(0, j) for j in range(element.cell_dimension())]
                 jacobian_row = [format["transform"](Transform.J, j, i, None) for j in range(element.cell_dimension())]
                 inner = [format_mult([jacobian_row[j], basis_col[j]]) for j in range(element.cell_dimension())]
                 sum = format_group(format_add(inner))
                 value = format_mult([format_inv(format_det(None)), sum])
-
+            elif mapping == Mapping.COVARIANT_PIOLA:
+                code.insert(i+1,(Indent.indent(format_tmp(0, i)), value))
+                basis_col = [format_tmp_access(0, j) for j in range(element.cell_dimension())]
+                inverse_jacobian_column = [format["transform"](Transform.JINV, j, i, None) for j in range(element.cell_dimension())]
+                inner = [format_mult([inverse_jacobian_column[j], basis_col[j]]) for j in range(element.cell_dimension())]
+                sum = format_group(format_add(inner))
+                value = format_mult([sum])
+                
             code += [(Indent.indent(name), value)]
     else:
          name = format_pointer + format_values

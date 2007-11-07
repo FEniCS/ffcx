@@ -405,8 +405,11 @@ def compute_reference_derivatives(element, Indent, format):
     code += [Indent.indent(format_comment\
     ("Compute derivatives on reference element as dot product of coefficients and basisvalues"))]
     mapping = pick_first([element.value_mapping(dim) for dim in range(element.value_dimension(0))])
-    if mapping == Mapping.PIOLA:
-        code += [Indent.indent(format["comment"]("Correct values by the Piola transform"))]
+    if mapping == Mapping.CONTRAVARIANT_PIOLA:
+        code += [Indent.indent(format["comment"]("Correct values by the contravariant Piola transform"))]
+    elif mapping == Mapping.COVARIANT_PIOLA:
+        code += [Indent.indent(format["comment"]("Correct values by the covariant Piola transform"))]
+
     value_code = []
     for i in range(num_components):
         if (i == 0):
@@ -421,13 +424,20 @@ def compute_reference_derivatives(element, Indent, format):
                              format_basisvalue(k)]) for k in range(poly_dim) ])
 
         # Use Piola transform to map basisfunctions back to physical element if needed
-        if mapping == Mapping.PIOLA:
+        if mapping == Mapping.CONTRAVARIANT_PIOLA:
             value_code.insert(i,(Indent.indent(format_tmp(0, i)), value))
             basis_col = [format_tmp_access(0, j) for j in range(element.cell_dimension())]
             jacobian_row = [format["transform"](Transform.J, j, i, None) for j in range(element.cell_dimension())]
             inner = [format_multiply([jacobian_row[j], basis_col[j]]) for j in range(element.cell_dimension())]
             sum = format_group(format_add(inner))
             value = format_multiply([format_inv(format_det(None)), sum])
+        elif mapping == Mapping.COVARIANT_PIOLA:
+            code.insert(i+1,(Indent.indent(format_tmp(0, i)), value))
+            basis_col = [format_tmp_access(0, j) for j in range(element.cell_dimension())]
+            inverse_jacobian_column = [format["transform"](Transform.JINV, j, i, None) for j in range(element.cell_dimension())]
+            inner = [format_multiply([inverse_jacobian_column[j], basis_col[j]]) for j in range(element.cell_dimension())]
+            sum = format_group(format_add(inner))
+            value = format_multiply([sum])
 
         value_code += [(Indent.indent(name), value)]
     code += value_code

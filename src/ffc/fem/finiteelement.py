@@ -190,22 +190,22 @@ class FiniteElement:
         if family == "Raviart-Thomas" or family == "RT":
             self.__family = "Raviart-Thomas"
             return (RaviartThomas(fiat_shape, degree),
-                    Mapping.PIOLA)
+                    Mapping.CONTRAVARIANT_PIOLA)
 
         if family == "Brezzi-Douglas-Marini" or family == "BDM":
             self.__family = "Brezzi-Douglas-Marini"
             return (BDM(fiat_shape, degree),
-                    Mapping.PIOLA)
+                    Mapping.CONTRAVARIANT_PIOLA)
 
         if family == "Brezzi-Douglas-Fortin-Marini" or family == "BDFM":
             self.__family = "Brezzi-Douglas-Fortin-Marini"
             return (BDFM(fiat_shape, degree),
-                    Mapping.PIOLA)
+                    Mapping.CONTRAVARIANT_PIOLA)
 
         if family == "Nedelec":
             self.__family = "Nedelec"
             return (Nedelec(fiat_shape, degree),
-                    Mapping.PIOLA) # ?
+                    Mapping.COVARIANT_PIOLA)
 
         # Unknown element
         raise RuntimeError, "Unknown finite element: " + str(family)
