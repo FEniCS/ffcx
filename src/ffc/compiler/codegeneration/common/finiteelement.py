@@ -159,7 +159,6 @@ def __generate_interpolate_vertex_values(element, format):
     offset_dof_values = 0
     offset_vertex_values = 0
     need_jacobian = False
-    need_inverse_jacobian = False
 
     for sub_element in sub_elements:
 
