@@ -225,6 +225,12 @@ const double J_11 = element_coordinates[2][1] - element_coordinates[0][1];
 // Compute determinant of Jacobian
 const double detJ = J_00*J_11 - J_01*J_10;
 
+// Compute inverse of Jacobian
+const double Jinv_00 =  J_11 / detJ;
+const double Jinv_01 = -J_01 / detJ;
+const double Jinv_10 = -J_10 / detJ;
+const double Jinv_11 =  J_00 / detJ;
+
 // Get coordinates and map to the reference (UFC) element
 double x = (element_coordinates[0][1]*element_coordinates[2][0] -\\
             element_coordinates[0][0]*element_coordinates[2][1] +\\
@@ -264,6 +270,17 @@ const double d22 = J_00*J_11 - J_01*J_10;
   
 // Compute determinant of Jacobian
 double detJ = J_00*d00 + J_10*d10 + J_20*d20;
+
+// Compute inverse of Jacobian
+const double Jinv_00 = d00 / detJ;
+const double Jinv_01 = d10 / detJ;
+const double Jinv_02 = d20 / detJ;
+const double Jinv_10 = d01 / detJ;
+const double Jinv_11 = d11 / detJ;
+const double Jinv_12 = d21 / detJ;
+const double Jinv_20 = d02 / detJ;
+const double Jinv_21 = d12 / detJ;
+const double Jinv_22 = d22 / detJ;
 
 // Compute constants
 const double C0 = d00*(element_coordinates[0][0] - element_coordinates[2][0] - element_coordinates[3][0]) \\

@@ -250,7 +250,5 @@ def __generate_interpolate_vertex_values(element, format):
     # Insert code for computing quantities needed for Piola mapping
     if need_jacobian:
         code.insert(0, format["snippet jacobian"](element.cell_dimension()) % {"restriction": ""})        
-    if need_inverse_jacobian:
-        code.insert(0, format["snippet jacobian"](element.cell_dimension()) % {"restriction": ""})        
     
     return code
