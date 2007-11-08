@@ -20,8 +20,12 @@ from ffc.fem.mixedelement import *
 # FFC language modules
 from ffc.compiler.language.tokens import *
 
+# FFC format modules
+from ffc.compiler.format.removeunused import *
+
 # FFC code generation common modules
 from utils import *
+
 
 # Python modules
 import math
@@ -95,7 +99,9 @@ def evaluate_basis(element, format):
         # Generate element code, for all sub-elements
         code += mixed_elements(element, Indent, format)
 
-    return code
+    lines = format["generate body"](code)
+    code = remove_unused(lines)
+    return [code]
 
 def generate_map(element, Indent, format):
     """Generates map from physical element to the UFC reference element, and from this element

@@ -23,6 +23,9 @@ from ffc.compiler.language.tokens import *
 # FFC code generation common modules
 from utils import *
 
+# FFC format modules
+from ffc.compiler.format.removeunused import *
+
 # Python modules
 import math
 import numpy
@@ -80,7 +83,9 @@ def evaluate_basis_derivatives(element, format):
 
         code += mixed_elements(element, Indent, format)
 
-    return code
+    lines = format["generate body"](code)
+    code = remove_unused(lines)
+    return [code]
 
 def compute_num_derivatives(element, Indent, format):
     "Computes the number of derivatives of order 'n' as: element.cell_shape()^n."
@@ -432,7 +437,7 @@ def compute_reference_derivatives(element, Indent, format):
             sum = format_group(format_add(inner))
             value = format_multiply([format_inv(format_det(None)), sum])
         elif mapping == Mapping.COVARIANT_PIOLA:
-            code.insert(i+1,(Indent.indent(format_tmp(0, i)), value))
+            value_code.insert(i,(Indent.indent(format_tmp(0, i)), value))
             basis_col = [format_tmp_access(0, j) for j in range(element.cell_dimension())]
             inverse_jacobian_column = [format["transform"](Transform.JINV, j, i, None) for j in range(element.cell_dimension())]
             inner = [format_multiply([inverse_jacobian_column[j], basis_col[j]]) for j in range(element.cell_dimension())]
