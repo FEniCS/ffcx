@@ -1,0 +1,43 @@
+
+Features to consider for inclusion in future versions of UFC:
+
+
+- dof_map::tabulate_vertex_dofs(...)
+  // Like tabulate_facet_dofs, tabulate local dofs related to a facet.
+  // Useful for boundary conditions defined by vertex based MeshFunctions, and for getting connectivity information.
+
+
+- Various functions in class form and/or others, returning std::string's with readable names and descriptions.
+  How much to include can of course be discussed. Missing items can simply return "".
+
+  class form
+  {
+    // Name describing coefficient function i.
+    // (F.ex. "f" for the typical right hand side,
+    //  "mu" and "lambda" for linear elasticity
+    //  and "Re" for Navier-Stokes).
+    std::string coefficient_name(unsigned int i) const = 0;
+
+    // Name of physical unit, if any, for coefficient function i.
+    std::string coefficient_unit(unsigned int i) const = 0;
+
+    // Name of integrals (could also be put in integral classes).
+    std::string cell_integral_name(unsigned int i) const = 0;
+    std::string exterior_facet_integral_name(unsigned int i) const = 0;
+    std::string interior_facet_integral_name(unsigned int i) const = 0;
+    
+    // Name of underlying library or code generation tool.
+    std::string library_name() const = 0;
+
+    // Name of author.
+    std::string author() const = 0;
+
+    // Implementation in UFL, if applicable.
+    std::string ufl() const = 0;
+
+  };
+
+
+- ?
+
+
