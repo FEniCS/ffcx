@@ -2,32 +2,31 @@
 
 %{
 #include "ufc_benchmark.h"
+#include <vector>
 %}
 
-%include "ufc_benchmark.h"
-
 %include stl.i
-%include std_list.i
 %include std_vector.i
 
+%template(vector_double)     std::vector<double>;
+%typedef std::vector<double> vector_double;
 
-%template(list_double) std::list<double>;
-%template(vector_list_double) std::vector< std::list<double> >;
+%template(vector_vector_double)             std::vector< std::vector<double> >;
+%typedef std::vector< std::vector<double> > vector_vector_double;
 
-%typedef std::list<double> list_double;
-%typedef std::vector< std::list<double> > vector_list_double;
+%include "ufc_benchmark.h"
 
 
 %pythoncode{
 
-def benchmark_forms(forms):
+def benchmark_forms(forms, print_tensors):
     import gc
     gc.collect()
     
     times = []
     for f in forms:
-        res = benchmark(f)
-        times.append(res)
+        res = benchmark(f, print_tensors)
+        times.append(tuple(res))
     return times
 
 }

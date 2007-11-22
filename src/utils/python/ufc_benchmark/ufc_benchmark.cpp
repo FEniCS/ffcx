@@ -1,18 +1,24 @@
+// This is utility code for UFC (Unified Form-assembly Code) v. 1.0.
+// This code is released into the public domain.
+//
+// The FEniCS Project (http://www.fenics.org/) 2006-2007.
 
+#include <iostream>
+#include <vector>
+using std::cout;
+using std::endl;
+using std::vector;
 
+#include <ctime>
 #define TMIN 3.0
 #define MMIN 1000
 
-#include <iostream>
-using std::cout;
-using std::endl;
-
-#include <ctime>
-
-#include "ufc_benchmark.h"
+#include "ufc_data.h"
 #include "ufc_reference_cell.h"
+#include "ufc_benchmark.h"
 
 typedef unsigned int uint; 
+
 
 
 clock_t __tic_time;
@@ -51,6 +57,7 @@ double time_tabulate_tensor(ufc::cell_integral& integral, double *A, const doubl
   return 0.0;
 }
 
+
 // Adaptive timing: make sure we run for at least TMIN to get reliable results
 double time_tabulate_tensor(ufc::exterior_facet_integral& integral, double *A, const double * const * w, const ufc::cell & c, unsigned int facet)
 {
@@ -74,100 +81,124 @@ double time_tabulate_tensor(ufc::exterior_facet_integral& integral, double *A, c
 
 
 // Benchmark all integrals of a form.
-std::vector< std::list<double> > benchmark(const ufc::form & form)
+vector< vector<double> > benchmark(const ufc::form & form, bool print_tensor)
 {
-    uint rank  = form.rank();
-    uint num_w = form.num_coefficients();
-
-    // construct dofmaps to get dimensions
-    ufc::dof_map ** dofmaps = new ufc::dof_map*[rank+num_w];
-    for(uint i=0; i<rank+num_w; i++)
-    {
-        dofmaps[i] = form.create_dof_map(i);
-    }
-
-    // allocate A
-    uint A_size = 1;
-    for(uint i=0; i<rank; i++)
-    {
-        A_size *= dofmaps[i]->local_dimension();
-    }
-    double* A = new double[A_size];
-
-    // allocate local coefficient data
-    double ** w = new double*[num_w];
-    for(uint i=0; i<num_w; i++)
-    {
-        uint dim = dofmaps[i+rank]->local_dimension();
-        w[i] = new double[dim];
-        for(uint j=0; j<dim; j++)
-        {
-        	// WARNING: assuming this is valid input data... Could potentially lead to division by zero and such.
-        	w[i][j] = 0.0;
-        }
-    }
+    // construct and allocate some stuff
+    ufc::ufc_data data(form);
 
     // create a reference cell geometry
-    ufc::finite_element * fe = form.create_finite_element(0);
-    ufc::reference_cell c(fe->cell_shape());
-    delete fe;
+    ufc::reference_cell c(data.elements[0]->cell_shape());
 
     // data structures for times
-    std::list<double> cell_times;
-    std::list<double> exterior_facet_times;
-    std::list<double> interior_facet_times;
+    vector<double> cell_times(form.num_cell_integrals());
+    vector<double> exterior_facet_times(form.num_exterior_facet_integrals());
+    vector<double> interior_facet_times(form.num_interior_facet_integrals());
 
     // benchmark all cell integrals
     for(uint i = 0; i < form.num_cell_integrals(); i++)
     {
-        ufc::cell_integral *itg = form.create_cell_integral(i);
-        double t = time_tabulate_tensor(*itg, A, w, c);
-        delete itg;
-        cell_times.push_back(t);
+        cell_times[i] = time_tabulate_tensor(*data.cell_integrals[i], data.A, data.w, c);
+
+        if(print_tensor)
+        {
+          cout << "Cell element tensor " << i << ":" << endl;
+          data.print_tensor();
+          cout << endl;
+        }
     }
 
     // benchmark all exterior facet integrals
     for(uint i = 0; i < form.num_exterior_facet_integrals(); i++)
     {
-        ufc::exterior_facet_integral *itg = form.create_exterior_facet_integral(i);
         unsigned int facet = 0; // TODO: would it be interesting to time all facets?
-        double t = time_tabulate_tensor(*itg, A, w, c, facet);
-        delete itg;
-        exterior_facet_times.push_back(t);
+        exterior_facet_times[i] = time_tabulate_tensor(*data.exterior_facet_integrals[i], data.A, data.w, c, facet);
+
+        if(print_tensor)
+        {
+          cout << "Exterior facet element tensor " << i << ":" << endl;
+          data.print_tensor();
+          cout << endl;
+        }
     }
 
     // benchmark all interior facet integrals
     /* // TODO: If somebody needs this, please implement it! Need two cells, and larger A.
     for(uint i = 0; i < form.num_interior_facet_integrals(); i++)
     {
-        ufc::interior_facet_integral *itg = form.create_interior_facet_integral(i);
-        double t = time_tabulate_tensor(*itg, A, w, c);
-        delete itg;
-        interior_facet_times.push_back(t);
+        unsigned int facet = 0; // TODO: would it be interesting to time all facets?
+        interior_facet_times[i] = time_tabulate_tensor(*data.interior_facet_integrals[i], data.A, data.w, c, facet);
+
+        if(print_tensor)
+        {
+          cout << "Interior facet element tensor " << i << ":" << endl;
+          data.print_tensor();
+          cout << endl;
+        }
     }
     */
 
-    std::vector< std::list<double> > result(3);
+    vector< vector<double> > result(3);
     result[0] = cell_times;
     result[1] = exterior_facet_times;
     result[2] = interior_facet_times;
 
-
-    // clean up
-    delete [] A;
-
-    for(uint i=0; i<num_w; i++)
-    {
-        delete [] w[i];
-    }
-    delete [] w;
-
-    for(uint i=0; i<rank+num_w; i++)
-    {
-        delete dofmaps[i];
-    }
-    delete [] dofmaps;
-
-
     return result;
 }
+
+
+vector< vector<double> > tabulate_cell_tensor(const ufc::form & form, vector< vector<double> > w, int domain)
+{
+  ufc::ufc_data data(form);
+ 
+  // copy w to the appropriate array
+  for(uint i=0; i<data.num_coefficients; i++)
+  {
+    for(uint j=0; j<data.dimensions[data.rank+i]; j++)
+    {
+      data.w[i][j] = w[i][j];
+    }
+  }
+
+  // create a reference cell geometry
+  ufc::reference_cell c(data.elements[0]->cell_shape());
+
+  // tabulate the tensor
+  data.cell_integrals[domain]->tabulate_tensor(data.A, data.w, c);
+
+  // copy element tensor to stl-structure for easy returning to python (should perhaps rather use numpy and some typemaps, but I'm lazy)
+  vector< vector<double> > A;
+  if(data.rank == 2)
+  {
+    A.resize(data.dimensions[0]);
+    for(uint i=0; i<data.dimensions[0]; i++)
+    {
+      A[i].resize(data.dimensions[1]);
+      for(uint j=0; j<data.dimensions[1]; j++)
+      {
+        A[i][j] = data.A[i*data.dimensions[1] + j];
+      }
+    }
+  }
+  else if(data.rank == 1)
+  {
+    A.resize(data.dimensions[0]);
+    for(uint i=0; i<data.dimensions[0]; i++)
+    {
+      A[i].resize(1);
+      A[i][0] = data.A[i];
+    }
+  }
+  else if(data.rank == 0)
+  {
+    A.resize(1);
+    A[0].resize(1);
+    A[0][0] = data.A[0];
+  }
+  else
+  {
+    throw std::runtime_error("rank != 0,1,2 not implemented");
+  }
+
+  return A;
+}
+

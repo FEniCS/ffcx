@@ -27,7 +27,7 @@ $(MODULENAME)_wrap.cxx: $(MODULENAME).i $(MODULENAME).h
 	swig -c++ -python $(MODULENAME).i
 
 # compile module code
-$(MODULENAME).o: $(MODULENAME).h $(MODULENAME).cpp
+$(MODULENAME).o: *.h *.cpp
 	$(CXX) -c -o $(MODULENAME).o $(MODULENAME).cpp
 
 clean:
