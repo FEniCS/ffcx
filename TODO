@@ -2,6 +2,10 @@
 Features to consider for inclusion in future versions of UFC:
 
 
+- unsigned int dof_map::geometric_dimension() const = 0
+  // Needed to derive the size of tabulate_coordinates from a single dof_map object.
+
+
 - dof_map::tabulate_vertex_dofs(...)
   // Like tabulate_facet_dofs, tabulate local dofs related to a facet.
   // Useful for boundary conditions defined by vertex based MeshFunctions, and for getting connectivity information.
