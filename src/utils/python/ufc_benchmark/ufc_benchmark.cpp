@@ -151,8 +151,12 @@ vector< vector<double> > tabulate_cell_tensor(const ufc::form & form, vector< ve
   ufc::ufc_data data(form);
  
   // copy w to the appropriate array
+  if(data.num_coefficients != w.size())
+      throw std::runtime_error("Wrong number of coefficients");
   for(uint i=0; i<data.num_coefficients; i++)
   {
+    if(data.dimensions[data.rank+i] != w[i].size())
+        throw std::runtime_error("Wrong coefficient dimension.");
     for(uint j=0; j<data.dimensions[data.rank+i]; j++)
     {
       data.w[i][j] = w[i][j];
