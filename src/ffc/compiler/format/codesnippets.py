@@ -8,6 +8,20 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Kristian Oelgaard 2007
 # Modified by Marie Rognes 2007
 
+# Code snippet for computing the Jacobian, its inverse and determinant in 1D
+jacobian_1D = """\
+// Extract vertex coordinates
+const double * const * x%(restriction)s = c%(restriction)s.coordinates;
+
+// Compute Jacobian of affine map from reference cell
+const double J%(restriction)s_00 = x%(restriction)s[1][0] - x%(restriction)s[0][0];
+  
+// Compute determinant of Jacobian
+double detJ%(restriction)s = J%(restriction)s_00;
+  
+// Compute inverse of Jacobian
+const double Jinv%(restriction)s_00 =  1.0 / detJ%(restriction)s;"""
+
 # Code snippet for computing the Jacobian, its inverse and determinant in 2D
 jacobian_2D = """\
 // Extract vertex coordinates
@@ -77,6 +91,22 @@ scale_factor = """\
 const double det = std::abs(detJ);
 """
 
+# Code snippet for computing the determinant of the facet mapping in 1D
+facet_determinant_1D = """\
+// Not implemented
+// Vertices on edges
+//static unsigned int edge_vertices[3][2] = {{1, 2}, {0, 2}, {0, 1}};
+
+// Get vertices
+//const unsigned int v0 = edge_vertices[%(facet)s][0];
+//const unsigned int v1 = edge_vertices[%(facet)s][1];
+
+// Compute scale factor (length of edge scaled by length of reference interval)
+//const double dx0 = x%(restriction)s[v1][0] - x%(restriction)s[v0][0];
+//const double dx1 = x%(restriction)s[v1][1] - x%(restriction)s[v0][1];
+//const double det = std::sqrt(dx0*dx0 + dx1*dx1);
+"""
+
 # Code snippet for computing the determinant of the facet mapping in 2D
 facet_determinant_2D = """\
 // Vertices on edges
@@ -111,6 +141,33 @@ const double a2 = (x%(restriction)s[v0][0]*x%(restriction)s[v1][1] + x%(restrict
               - (x%(restriction)s[v2][0]*x%(restriction)s[v1][1] + x%(restriction)s[v2][1]*x%(restriction)s[v0][0] + x%(restriction)s[v1][0]*x%(restriction)s[v0][1]);
 const double det = std::sqrt(a0*a0 + a1*a1 + a2*a2);
 """
+
+# Code snippet for evaluate_dof in 1D
+evaluate_dof_1D = """\
+double values[%d];
+double coordinates[1];
+
+// Nodal coordinates on reference cell
+static double X[%d][1] = %s;
+
+// Components for each dof
+static unsigned int components[%d] = %s;
+
+// Extract vertex coordinates
+const double * const * x = c.coordinates;
+
+// Evaluate basis functions for affine mapping
+const double w0 = 1.0 - X[i][0];
+const double w1 = X[i][0];
+
+// Compute affine mapping x = F(X)
+coordinates[0] = w0*x[0][0] + w1*x[1][0];
+
+// Evaluate function at coordinates
+f.evaluate(values, coordinates, c);
+
+// Pick component for evaluation
+return values[components[i]];"""
 
 # Code snippet for evaluate_dof in 2D
 evaluate_dof_2D = """\
@@ -172,6 +229,10 @@ f.evaluate(values, coordinates, c);
 // Pick component for evaluation
 return values[components[i]];"""
 
+# Code snippet for eta basis on lines (reproduced from FIAT reference.py)
+eta_line_snippet = """\
+x = 2.0*x - 1.0;"""
+
 # Code snippet for eta basis on triangles (reproduced from FIAT reference.py)
 eta_triangle_snippet = """\
 if (std::abs(y - 1.0) < %s)
@@ -210,6 +271,10 @@ for (unsigned int j = 0; j < %d; j++)
 
 }"""
 
+# Inverse affine map from physical cell to UFC reference cell in 1D
+map_coordinates_1D = """\
+/// Inverse affine map from physical cell to UFC reference cell in 1D is not yet supported
+"""
 
 # Inverse affine map from physical cell to UFC reference cell in 2D
 map_coordinates_2D = """\

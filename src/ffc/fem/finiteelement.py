@@ -28,8 +28,8 @@ from mapping import *
 import mixedelement
 
 # Dictionaries of basic element data
-shape_to_string = {LINE: "line", TRIANGLE: "triangle", TETRAHEDRON: "tetrahedron"}
-string_to_shape = {"line": LINE, "triangle": TRIANGLE, "tetrahedron": TETRAHEDRON}
+shape_to_string = {LINE: "interval", TRIANGLE: "triangle", TETRAHEDRON: "tetrahedron"}
+string_to_shape = {"interval": LINE, "triangle": TRIANGLE, "tetrahedron": TETRAHEDRON}
 shape_to_dim = {LINE: 1, TRIANGLE: 2, TETRAHEDRON: 3}
 shape_to_facet = {LINE: None, TRIANGLE: LINE, TETRAHEDRON: TRIANGLE}
 shape_to_num_facets = {LINE: 2, TRIANGLE: 3, TETRAHEDRON: 4}

@@ -72,7 +72,7 @@ format = { "add": lambda v: " + ".join(v),
            "num entities": lambda dim : "m.num_entities[%d]" % dim,
            "offset declaration": "unsigned int offset",
            "offset access": "offset",
-           "cell shape": lambda i: {1: "ufc::line", 2: "ufc::triangle", 3: "ufc::tetrahedron"}[i],
+           "cell shape": lambda i: {1: "ufc::interval", 2: "ufc::triangle", 3: "ufc::tetrahedron"}[i],
 # quadrature, evalutate_basis(), evaluate_basis_derivatives()
 # declarations
            "float declaration": "double ",
@@ -131,7 +131,7 @@ format = { "add": lambda v: " + ".join(v),
            "transform matrix": "transform",
            "transform Jinv": "Jinv",
 # snippets
-           "coordinate map": lambda i: {2:map_coordinates_2D, 3:map_coordinates_3D}[i],
+           "coordinate map": lambda d: eval("map_coordinates_%dD" % d),
            "facet sign": lambda e: "sign_facet%d" % e,
            "snippet facet signs": lambda d: eval("facet_sign_snippet_%dD" % d),
            "snippet dof map": evaluate_basis_dof_map,
@@ -143,7 +143,7 @@ format = { "add": lambda v: " + ".join(v),
            "snippet transform3D": transform3D_snippet,
 #           "snippet inverse 2D": inverse_jacobian_2D,
 #           "snippet inverse 3D": inverse_jacobian_3D,
-           "snippet evaluate_dof": lambda d : {2: evaluate_dof_2D, 3: evaluate_dof_3D}[d],
+           "snippet evaluate_dof": lambda d : eval("evaluate_dof_%dD" % d),
            "get cell vertices" : "const double * const * x = c.coordinates;",
            "generate jacobian": lambda d,i: __generate_jacobian(d,i),
            "generate body": lambda d: __generate_body(d),
@@ -553,7 +553,10 @@ def __generate_jacobian(cell_dimension, integral_type):
     "Generate code for computing jacobian"
 
     # Choose space dimension
-    if cell_dimension == 2:
+    if cell_dimension == 1:
+        jacobian = jacobian_1D
+        facet_determinant = facet_determinant_1D
+    elif cell_dimension == 2:
         jacobian = jacobian_2D
         facet_determinant = facet_determinant_2D
     else:

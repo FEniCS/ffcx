@@ -7,6 +7,9 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian Oelgaard 2007
 
+# FIAT modules
+from FIAT.shapes import LINE
+
 # FFC fem modules
 from ffc.fem.finiteelement import *
 from ffc.fem.vectorelement import *
@@ -39,11 +42,19 @@ def generate_finite_element(element, format):
     # Generate code for value_dimension
     code["value_dimension"] = ["%d" % element.value_dimension(i) for i in range(max(element.value_rank(), 1))]
 
-    # Generate code for evaluate_basis
-    code["evaluate_basis"] = evaluate_basis(element, format)
+    # Evaluate basis (and derivatives) is not supported (yet) for interval elements
+    if element.cell_shape() != LINE:
+        # Generate code for evaluate_basis
+        code["evaluate_basis"] = evaluate_basis(element, format)
 
-    # Generate code for evaluate_basis_derivatives
-    code["evaluate_basis_derivatives"] = evaluate_basis_derivatives(element, format)
+        # Generate code for evaluate_basis_derivatives
+        code["evaluate_basis_derivatives"] = evaluate_basis_derivatives(element, format)
+    else:
+        # Generate code for evaluate_basis
+        code["evaluate_basis"] = format["comment"]("Function is not supported (yet) for interval elements")
+
+        # Generate code for evaluate_basis_derivatives
+        code["evaluate_basis_derivatives"] = format["comment"]("Function is not supported (yet) for interval elements")
 
     # Generate code for evaluate_dof
     code["evaluate_dof"] = __generate_evaluate_dof(element, format)
