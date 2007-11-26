@@ -31,6 +31,7 @@ from ffc.compiler.language.integral import *
 # FFC tensor representation modules
 from multiindex import *
 from pointreordering import *
+from facetmap import *
 
 def integrate(monomial, facet0, facet1):
     """Compute the reference tensor for a given monomial term of a
@@ -74,15 +75,13 @@ def __init_quadrature(basisfunctions, integral_type):
     #debug("Total degree is %d, using %d quadrature point(s) in each dimension" % (q, m), 1)
 
     # Create quadrature rule and get points and weights
-    # FIXME: FIAT ot finiteelement should return shape of facet
     if integral_type == Integral.CELL:
         quadrature = make_quadrature(shape, m)
-    elif integral_type == Integral.EXTERIOR_FACET:
+    elif integral_type == Integral.EXTERIOR_FACET or integral_type == Integral.INTERIOR_FACET:
         quadrature = make_quadrature(facet_shape, m)
-    elif integral_type == Integral.INTERIOR_FACET:
-        quadrature = make_quadrature(facet_shape, m)
+
     points = quadrature.get_points()
-    weights = quadrature.get_weights()
+    weights = quadrature.get_weights()    
 
     return (points, weights)
 
@@ -109,6 +108,9 @@ def __init_table(basisfunctions, integral_type, points, facet0, facet1):
             table[(element, None)] = element.tabulate(order, points)
         elif integral_type == Integral.EXTERIOR_FACET:
             table[(element, None)] = element.tabulate(order, points, facet0)
+
+            map_to_facet(points, facet0)
+        
         elif integral_type == Integral.INTERIOR_FACET:
             table[(element, Restriction.PLUS)]  = element.tabulate(order, points, facet0)
             table[(element, Restriction.MINUS)] = element.tabulate(order, points, facet1)

@@ -1,0 +1,7 @@
+BDM = FiniteElement("BDM", "triangle", 1)
+DG = FiniteElement("Discontinuous Lagrange", "triangle", 0)
+
+v = TestFunction(DG)
+u = TrialFunction(BDM)
+
+a = v*div(u)*dx
