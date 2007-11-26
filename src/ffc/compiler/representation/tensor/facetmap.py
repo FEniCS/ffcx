@@ -15,11 +15,9 @@ def map_to_facet(points, facet):
     if dim == 2:
         facet_vertices = [(1, 2), (0, 2), (0, 1)]
         vertex_coordinates = [(0.0, 0.0), (1.0, 0.0), (0.0, 1.0)]
-        phis = [lambda x: 1 - x[0] - x[1], lambda x: x[0], lambda x: x[1]]
     elif dim == 3:
         facet_vertices = [(1 , 2 , 3), (0, 2, 3), (0, 1, 3), (0, 1, 2)]
         vertex_coordinates = [(0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 0.0, 1,0)]
-        phis = [lambda x: 1 - x[0] - x[1] - x[2], lambda x: x[0], lambda x: x[1], lambda x: x[2]]
     else:
         raise RuntimeError, "Unable to map points to facet for shape of dimension %d" % dim
 

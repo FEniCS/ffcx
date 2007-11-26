@@ -109,7 +109,7 @@ def __init_table(basisfunctions, integral_type, points, facet0, facet1):
         elif integral_type == Integral.EXTERIOR_FACET:
             table[(element, None)] = element.tabulate(order, points, facet0)
 
-            map_to_facet(points, facet0)
+            #map_to_facet(points, facet0)
         
         elif integral_type == Integral.INTERIOR_FACET:
             table[(element, Restriction.PLUS)]  = element.tabulate(order, points, facet0)
