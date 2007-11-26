@@ -1,7 +1,7 @@
 "This module implements efficient integration of monomial forms"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-11-03 -- 2007-05-09"
+__date__ = "2004-11-03 -- 2007-11-26"
 __copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
@@ -107,13 +107,13 @@ def __init_table(basisfunctions, integral_type, points, facet0, facet1):
         if integral_type == Integral.CELL:
             table[(element, None)] = element.tabulate(order, points)
         elif integral_type == Integral.EXTERIOR_FACET:
-            table[(element, None)] = element.tabulate(order, points, facet0)
-
-            #map_to_facet(points, facet0)
-        
+            #table[(element, None)] = element.tabulate(order, points, facet0)
+            table[(element, None)] = element.tabulate(order, map_to_facet(points, facet0))
         elif integral_type == Integral.INTERIOR_FACET:
-            table[(element, Restriction.PLUS)]  = element.tabulate(order, points, facet0)
-            table[(element, Restriction.MINUS)] = element.tabulate(order, points, facet1)
+            #table[(element, Restriction.PLUS)]  = element.tabulate(order, points, facet0)
+            #table[(element, Restriction.MINUS)] = element.tabulate(order, points, facet1)
+            table[(element, Restriction.PLUS)]  = element.tabulate(order, map_to_facet(points, facet0))
+            table[(element, Restriction.MINUS)] = element.tabulate(order, map_to_facet(points, facet1))
 
     return table
 

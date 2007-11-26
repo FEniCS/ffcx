@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-10-04 -- 2007-04-27"
+__date__ = "2004-10-04 -- 2007-11-26"
 __copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
@@ -146,16 +146,10 @@ class FiniteElement:
         "Return dual basis of finite element space"
         return self.__fiat_element.dual_basis()
 
-    def tabulate(self, order, points, facet = None):
+    def tabulate(self, order, points):
         """Return tabulated values of derivatives up to given order of
-        basis functions at given points. If facet is not None, then the
-        values are tabulated on the given facet, with the points given
-        on the corresponding reference facet."""
-        if facet == None:
-            return self.__fiat_element.function_space().tabulate_jet(order, points)
-        else:
-            facet_shape = self.facet_shape()
-            return self.__fiat_element.function_space().trace_tabulate_jet(facet_shape, facet, order, points)
+        basis functions at given points."""
+        return self.__fiat_element.function_space().tabulate_jet(order, points)
 
     def basis_elements(self):
         "Returns a list of all basis elements"

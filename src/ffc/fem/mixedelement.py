@@ -1,5 +1,5 @@
 _author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2005-09-16 -- 2007-03-29"
+__date__ = "2005-09-16 -- 2007-11-26"
 __copyright__ = "Copyright (C) 2005-2007 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
@@ -138,13 +138,13 @@ class MixedElement:
         "Return basis of finite element space"
         raise RuntimeError, "Basis cannot be accessed explicitly for a mixed element."
 
-    def tabulate(self, order, points, facet = None):
+    def tabulate(self, order, points):
         """Tabulate values on mixed element by appropriately reordering
         the tabulated values for the sub elements."""
 
         # Special case: only one element
         if len(self.__elements) == 1:
-            return elements[0].tabulate(order, points, facet)
+            return elements[0].tabulate(order, points)
 
         # Iterate over sub elements and build mixed table from element tables
         mixed_table = []
@@ -152,7 +152,7 @@ class MixedElement:
         for i in range(len(self.__elements)):
             # Get current element and table
             element = self.__elements[i]
-            table = element.tabulate(order, points, facet)
+            table = element.tabulate(order, points)
             # Iterate over the components corresponding to the current element
             if element.value_rank() == 0:
                 component_table = self.__compute_component_table(table, offset)
