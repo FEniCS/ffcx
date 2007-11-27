@@ -8,6 +8,7 @@ __license__  = "GNU GPL version 3 or any later version"
 import unittest
 import sys
 import numpy
+import math
 
 sys.path.append("../..")
 from ffc import *
@@ -156,12 +157,23 @@ class FunctionValueTests(unittest.TestCase):
         
         reference = [lambda x: (-2*x[0] + 4*x[0]**2, -x[1] + 4*x[0]*x[1]),
                      lambda x: (-x[0] + 4*x[0]*x[1], -2*x[1] + 4*x[1]**2),
-                     lambda x: (2 - 6*x[0] - 3*x[1] + 4*x[0]*x[1] + 4*x[0]**2, -3*x[1] + 4*x[0]*x[1] + 4*x[1]**2),
-                     lambda x: (-1 + x[0] +3*x[1] -4*x[0]*x[1] , 2*x[1] -4*x[1]**2),
-                     lambda x: (3*x[0] -4*x[0]*x[1] - 4*x[0]**2, -2 + 3*x[0] +6*x[1] - 4*x[0]*x[1] -4*x[1]**2),
-                     lambda x: (-2*x[0] +4* x[0]**2, 1 -3*x[0] -x[1] + 4*x[0]*x[1]),
-                     lambda x: (16*x[0] - 8*x[0]*x[1] - 16*x[0]**2, 8*x[1] -16*x[0]*x[1] - 8*x[1]**2),
-                     lambda x: (8*x[0] -16*x[0]*x[1] -8*x[0]**2, 16*x[1] - 8*x[0]*x[1] - 16*x[1]**2)]
+                     lambda x: (2 - 6*x[0] - 3*x[1] + 4*x[0]*x[1] + 4*x[0]**2,
+                                -3*x[1] + 4*x[0]*x[1] + 4*x[1]**2),
+                     lambda x: (-1 + x[0] +3*x[1] -4*x[0]*x[1],
+                                2*x[1] -4*x[1]**2),
+                     lambda x: (3*x[0] -4*x[0]*x[1] - 4*x[0]**2,
+                                -2 + 3*x[0] +6*x[1] - 4*x[0]*x[1] -4*x[1]**2),
+                     lambda x: (-2*x[0] +4* x[0]**2,
+                                1 -3*x[0] -x[1] + 4*x[0]*x[1]),
+                     lambda x: (8/math.sqrt(2)*x[0] - 4/math.sqrt(2)*x[0]*x[1]
+                                - 8/math.sqrt(2)*x[0]**2,
+                                4/math.sqrt(2)*x[1] - 8/math.sqrt(2)*x[0]*x[1]
+                                - 4/math.sqrt(2)*x[1]**2),
+                     lambda x: (4/math.sqrt(2)*x[0] -8/math.sqrt(2)*x[0]*x[1]
+                                - 4/math.sqrt(2)*x[0]**2,
+                                8/math.sqrt(2)*x[1] - 4/math.sqrt(2)*x[0]*x[1]
+                                - 8/math.sqrt(2)*x[1]**2)
+                     ]
 
         for i in range(len(basis)):
             for j in range(num_points):
