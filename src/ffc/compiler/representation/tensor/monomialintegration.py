@@ -23,6 +23,9 @@ from FIAT.shapes import *
 from ffc.common.debug import *
 from ffc.common.progress import *
 
+# FFC fem modules
+from ffc.quadrature import *
+
 # FFC language modules
 from ffc.compiler.language.index import *
 from ffc.compiler.language.algebra import *
