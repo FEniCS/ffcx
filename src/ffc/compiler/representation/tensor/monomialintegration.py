@@ -24,7 +24,7 @@ from ffc.common.debug import *
 from ffc.common.progress import *
 
 # FFC fem modules
-from ffc.quadrature import *
+from ffc.fem.quadrature import *
 
 # FFC language modules
 from ffc.compiler.language.index import *
