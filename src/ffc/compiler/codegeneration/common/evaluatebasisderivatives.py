@@ -36,14 +36,19 @@ def evaluate_basis_derivatives(element, format):
     and basisvalues which are dependent on the coordinate and thus have to be computed at
     run time.
 
-    Currently the following elements are supported in 2D and 3D:
+    Currently the following elements are supported in 1D:
 
-    Not supported in 2D or 3D:
+    Lagrange                + mixed/vector valued
+    Discontinuous Lagrange  + mixed/vector valued
+
+    Currently the following elements are supported in 2D and 3D:
 
     Lagrange                + mixed/vector valued
     Discontinuous Lagrange  + mixed/vector valued
     Crouzeix-Raviart        + mixed/vector valued
     Brezzi-Douglas-Marini   + mixed/vector valued
+
+    Not supported in 2D or 3D:
     Raviart-Thomas ? (not tested since it is broken in FFC, but should work)
     Nedelec (broken?)"""
 
@@ -111,10 +116,6 @@ def compute_num_derivatives(element, Indent, format):
     # Decrease indentation
     Indent.decrease()
 
-    # Debug code
-#    code += [Indent.indent(format["comment"]("Debug code"))]
-#    code += [Indent.indent('std::cout << "number of derivatives = " << num_derivatives << std::endl;')]
-
     return code + [""]
 
 def generate_combinations(element, Indent, format):
@@ -128,9 +129,6 @@ def generate_combinations(element, Indent, format):
     code += [Indent.indent(format["snippet combinations"])\
             % {"combinations": format["derivative combinations"], "shape-1": shape,\
                "num_derivatives" : format["num derivatives"], "n": format["argument derivative order"]}]
-
-    # Debug code
-#    code += debug_combinations(element, Indent, format)
     
     return code + [""]
 
@@ -141,23 +139,14 @@ def generate_transform(element, Indent, format):
     code = []
 
     # Generate code to construct the inverse of the Jacobian, use code from codesnippets.py
-    # 2D
-    if (element.cell_shape() == 2):
-        code += [Indent.indent(format["snippet transform2D"])\
-        % {"transform": format["transform matrix"], "num_derivatives" : format["num derivatives"],\
-           "n": format["argument derivative order"], "combinations": format["derivative combinations"],\
-           "Jinv":format["transform Jinv"]}]
-    # 3D
-    elif (element.cell_shape() == 3):
-        code += [Indent.indent(format["snippet transform3D"])\
+    cell_shape = element.cell_shape()
+    if (cell_shape in [LINE, TRIANGLE, TETRAHEDRON]):
+        code += [Indent.indent(format["snippet transform"](cell_shape))\
         % {"transform": format["transform matrix"], "num_derivatives" : format["num derivatives"],\
            "n": format["argument derivative order"], "combinations": format["derivative combinations"],\
            "Jinv":format["transform Jinv"]}]
     else:
         raise RuntimeError, "Cannot generate transform for shape: %d" %(element.cell_shape())
-
-    # Debug code
-#    code += debug_transform(element, Indent, format)
 
     return code + [""]
 
@@ -603,126 +592,3 @@ def delete_pointers(element, Indent, format):
 
     return code
 
-
-def debug_combinations(element, Indent, format):
-
-    code = []
-
-    code += [format["comment"]("Debug code")]
-    # Debug code
-    code += [Indent.indent('std::cout << "%s = " << std::endl;' % format["derivative combinations"])]
-    code += [Indent.indent(format["loop"]("j", 0, format["num derivatives"]))]
-    code += [Indent.indent(format["block begin"])]
-    # Increase indent
-    Indent.increase()
-    code += [Indent.indent(format["loop"]("k", 0, format["argument derivative order"]))]
-    code += [Indent.indent(format["block begin"])]
-    # Increase indent
-    Indent.increase()
-    code += [Indent.indent('std::cout << %s << " ";') % (format["derivative combinations"] + "[j][k]")]
-
-    # Decrease indent
-    Indent.decrease()
-    code += [Indent.indent(format["block end"])]
-    code += [Indent.indent("std::cout << std::endl;")]
-
-    # Decrease indent
-    Indent.decrease()
-    code += [Indent.indent(format["block end"])]
-
-    return code
-
-def debug_transform(element, Indent, format):
-
-    code = []
-
-    cell_shape = element.cell_shape()
-    num_derivatives = format["num derivatives"]
-    Jinv = format["transform Jinv"]
-    transform = format["transform matrix"]
-
-    # Debug code
-    code += [format["comment"]("Debug code")]
-    code += [Indent.indent("std::cout.precision(8);")]
-
-    # Jinv
-    code += [Indent.indent('std::cout << "%s = " << std::endl;' % Jinv)]
-    code += [Indent.indent(format["loop"]("j", 0, cell_shape))]
-    code += [Indent.indent(format["block begin"])]
-    # Increase indent
-    Indent.increase()
-    code += [Indent.indent(format["loop"]("k", 0, cell_shape))]
-    code += [Indent.indent(format["block begin"])]
-    # Increase indent
-    Indent.increase()
-    code += [Indent.indent('std::cout << %s << " ";') % (Jinv + "[j][k]")]
-
-    # Decrease indent
-    Indent.decrease()
-    code += [Indent.indent(format["block end"])]
-    code += [Indent.indent("std::cout << std::endl;")]
-
-    # Decrease indent
-    Indent.decrease()
-    code += [Indent.indent(format["block end"])]
-
-    # Transform matrix
-    code += [Indent.indent('std::cout << "%s = " << std::endl;' % transform)]
-    code += [Indent.indent(format["loop"]("j", 0, num_derivatives))]
-    code += [Indent.indent(format["block begin"])]
-    # Increase indent
-    Indent.increase()
-    code += [Indent.indent(format["loop"]("k", 0, num_derivatives))]
-    code += [Indent.indent(format["block begin"])]
-    # Increase indent
-    Indent.increase()
-    code += [Indent.indent('std::cout << %s << " ";') % (transform + "[j][k]")]
-
-    # Decrease indent
-    Indent.decrease()
-    code += [Indent.indent(format["block end"])]
-    code += [Indent.indent("std::cout << std::endl;")]
-
-    # Decrease indent
-    Indent.decrease()
-    code += [Indent.indent(format["block end"])]
-
-    return code
-
-def debug_reference_derivatives(element, Indent, format):
-
-    # Debug code
-    code = [Indent.indent('std::cout << "%s = " << std::endl;' %format["reference derivatives"])]
-    code += [Indent.indent(format["loop"]("j", 0, format["num derivatives"]))]
-    # Increase indent
-    Indent.increase()
-    code += [Indent.indent('std::cout << %s << " ";') % (format["reference derivatives"] + "[j]")]
-
-    # Decrease indent
-    Indent.decrease()
-    code += [Indent.indent("std::cout << std::endl;")]
-    return code
-
-def debug_():
-    "misc"
-
-    code = []
-
-    # Debug coefficients
-#    value = "std::cout << "
-#    for i in range(num_components):
-#        for j in range(poly_dim):
-#            value += 'new_coeff%d_%d << " " << ' % (i,j)
-#    value += "std::endl;"
-#    code += [value]
-#    code += [""]
-
-            # Debug coefficients
-#            value = "std::cout << "
-#            for i in range(num_components):
-#                for j in range(poly_dim):
-#                    value += 'new_coeff%d_%d << " " << ' % (i,j)
-#            value += "std::endl;"
-#            code += [value]
-
-    return code

@@ -57,6 +57,11 @@ def evaluate_basis(element, format):
     and basisvalues which are dependent on the coordinate and thus have to be computed at
     run time.
 
+    Currently the following elements are supported in 1D:
+
+    Lagrange                + mixed/vector valued
+    Discontinuous Lagrange  + mixed/vector valued
+
     Currently the following elements are supported in 2D and 3D:
 
     Lagrange                + mixed/vector valued
@@ -119,30 +124,25 @@ def generate_map(element, Indent, format):
     # Get coordinates and map to the UFC reference element from codesnippets.py
     code += [Indent.indent(format["coordinate map"](element.cell_shape()))] + [""]
 
-    if (element.cell_shape() == 2):
+    if (element.cell_shape() == LINE):
 
-        # Debug code
-#        code += [Indent.indent("""// Debug code
-#                 std::cout << "coordinates : " << coordinates[0] << " " << coordinates[1] << std::endl;
-#                 std::cout << " mapped coordinates : " << x << " " << y << std::endl;""")]
+        # No mapping needed
+        code += [Indent.indent(format_comment("No mapping needed for 1D."))]
+
+    elif (element.cell_shape() == TRIANGLE):
 
         # Map coordinates to the reference square
         code += [Indent.indent(format_comment("Map coordinates to the reference square"))]
  
-        # Code snippet reproduced from FIAT: reference.py: eta_triangle(xi) & eta_tetrahedron(xi) 
+        # Code snippet reproduced from FIAT: reference.py: eta_triangle(xi)
         code += [Indent.indent(format["snippet eta_triangle"]) %(format_floating_point(format_epsilon))]
 
-    elif (element.cell_shape() == 3):
-
-        # Debug code
-#        code += [Indent.indent("""// Debug code
-#        std::cout << "coordinates : " << coordinates[0] << " " << coordinates[1] << " " << coordinates[2] << std::endl;
-#        std::cout << " mapped coordinates : " << x << " " << y << " " << z << std::endl;""")]
+    elif (element.cell_shape() == TETRAHEDRON):
 
         # Map coordinates to the reference cube
         code += [Indent.indent(format_comment("Map coordinates to the reference cube"))]
 
-        # Code snippet reproduced from FIAT: reference.py: eta_triangle(xi) & eta_tetrahedron(xi)
+        # Code snippet reproduced from FIAT: reference.py: eta_tetrahedron(xi)
         code += [Indent.indent(format["snippet eta_tetrahedron"]) %(format_floating_point(format_epsilon),\
                        format_floating_point(format_epsilon))]
     else:
@@ -265,11 +265,13 @@ def generate_basisvalues(element, Indent, format):
     # Compute scaling of y and z 1/2(1-y)^n and 1/2(1-z)^n
     code += compute_scaling(element, Indent, format)
 
-    # Compute auxilliary functions currently only 2D and 3D is supported
-    if (element.cell_shape() == 2):
+    # Compute auxilliary functions
+    if (element.cell_shape() == LINE):
+        code += compute_psitilde_a(element, Indent, format)
+    elif (element.cell_shape() == TRIANGLE):
         code += compute_psitilde_a(element, Indent, format)
         code += compute_psitilde_b(element, Indent, format)
-    elif (element.cell_shape() == 3):
+    elif (element.cell_shape() == TETRAHEDRON):
         code += compute_psitilde_a(element, Indent, format)
         code += compute_psitilde_b(element, Indent, format)
         code += compute_psitilde_c(element, Indent, format)
@@ -458,20 +460,20 @@ def compute_scaling(element, Indent, format):
     # Get the element shape
     element_shape = element.cell_shape()
 
-    # Currently only 2D and 3D is supported
-    if (element_shape == 2):
+    # For 1D scalings are not needed
+    if (element_shape == LINE):
+        code += [Indent.indent(format["comment"]("Generate scalings not needed for 1D"))]
+        return code + [""]
+    elif (element_shape == TRIANGLE):
         scalings = [format_y]
         # Scale factor, for triangles 1/2*(1-y)^i i being the order of the element
-#        factors = ["(0.5 - 0.5 * y)"]
         factors = [format_grouping(format_subtract(["0.5", format_multiply(["0.5", format_y])]))]
-    elif (element_shape == 3):
+    elif (element_shape == TETRAHEDRON):
         scalings = [format_y, format_z]
-#        factors = ["(0.5 - 0.5 * y)", "(0.5 - 0.5 * z)"]
         factors = [format_grouping(format_subtract(["0.5", format_multiply(["0.5", format_y])])),\
                    format_grouping(format_subtract(["0.5", format_multiply(["0.5", format_z])]))]
-#        factors = ["(0.5 - 0.5 * y)", "(0.5 - 0.5 * z)"]
     else:
-        raise RuntimeError, "Cannot compute scaling for shape: %d" %(elemet_shape)
+        raise RuntimeError, "Cannot compute scaling for shape: %d" %(element_shape)
 
     code += [Indent.indent(format["comment"]("Generate scalings"))]
 
@@ -646,9 +648,27 @@ def compute_basisvalues(element, Indent, format):
     # Get the element shape
     element_shape = element.cell_shape()
 
-    # Currently only 2D and 3D is supported
+    # 1D
+    if (element_shape == LINE):
+        count = 0
+        for i in range(0, element.degree() + 1):
+
+            factor = math.sqrt(1.0*i + 0.5)
+            symbol = format_psitilde_a + format_secondary_index(i)
+
+            # Declare variable
+            name = format_const_float + format_basisvalue(count)
+
+            # Let inner_product handle format of factor
+            value = inner_product([factor],[symbol], format)
+
+            code += [(Indent.indent(name), value)]
+            count += 1
+        if (count != poly_dim):
+            raise RuntimeError, "The number of basis values must be the same as the polynomium dimension of the base"
+
     # 2D
-    if (element_shape == 2):
+    elif (element_shape == TRIANGLE):
         count = 0
         for k in range(0,element.degree() + 1):
             for i in range(0,k + 1):
@@ -665,16 +685,13 @@ def compute_basisvalues(element, Indent, format):
                 # Let inner_product handle format of factor
                 value = inner_product([factor],[symbol], format)
 
-#                var += [format["multiply"](["psitilde_a_%d" % ii, "scalings_y_%d" % ii,\
-#                        "psitilde_bs_%d_%d" %(ii, jj), format["floating point"](factor)])]
-
                 code += [(Indent.indent(name), value)]
                 count += 1
         if (count != poly_dim):
             raise RuntimeError, "The number of basis values must be the same as the polynomium dimension of the base"
 
     # 3D
-    elif (element_shape == 3):
+    elif (element_shape == TETRAHEDRON):
         count = 0
         for k in range(0, element.degree()+1):  # loop over degree
             for i in range(0, k+1):
@@ -683,10 +700,6 @@ def compute_basisvalues(element, Indent, format):
                     jj = j
                     kk = i
                     factor = math.sqrt( (ii+0.5) * (ii+jj+1.0) * (ii+jj+kk+1.5) )
-
-#                    var += [format["multiply"](["psitilde_a_%d" % ii, "scalings_y_%d" % ii,\
-#                        "psitilde_bs_%d_%d" % (ii, jj), "scalings_z_%d" % (ii+jj),\
-#                        "psitilde_cs_%d%d_%d" % (ii, jj, kk), format["floating point"](factor)])]
 
                     symbol = format_multiply([format_psitilde_a + format_secondary_index(ii),\
                              format_scalings(format_y, ii), format_psitilde_bs(ii) + format_secondary_index(jj),\
@@ -705,9 +718,6 @@ def compute_basisvalues(element, Indent, format):
             raise RuntimeError, "The number of basis values must be the same as the polynomium dimension of the base"
     else:
         raise RuntimeError, "Cannot compute basis values for shape: %d" % elemet_shape
-
-    # Debug basis
-#    code += ["std::cout" + "".join([" << basisvalue%d << " % i + '" "' for i in range(poly_dim)]) + " << std::endl;"]
 
     return code + [""]
 

@@ -229,10 +229,6 @@ f.evaluate(values, coordinates, c);
 // Pick component for evaluation
 return values[components[i]];"""
 
-# Code snippet for eta basis on lines (reproduced from FIAT reference.py)
-eta_line_snippet = """\
-x = 2.0*x - 1.0;"""
-
 # Code snippet for eta basis on triangles (reproduced from FIAT reference.py)
 eta_triangle_snippet = """\
 if (std::abs(y - 1.0) < %s)
@@ -273,8 +269,14 @@ for (unsigned int j = 0; j < %d; j++)
 
 # Inverse affine map from physical cell to UFC reference cell in 1D
 map_coordinates_1D = """\
-/// Inverse affine map from physical cell to UFC reference cell in 1D is not yet supported
-"""
+// Extract vertex coordinates
+const double * const * element_coordinates = c.coordinates;
+
+// Compute Jacobian of affine map from reference cell
+const double J_00 = element_coordinates[1][0] - element_coordinates[0][0];
+
+// Get coordinates and map to the reference (UFC) element
+double x = (coordinates[0] - element_coordinates[0][0]) / J_00;"""
 
 # Inverse affine map from physical cell to UFC reference cell in 2D
 map_coordinates_2D = """\
@@ -464,6 +466,32 @@ for (unsigned int row = 1; row < %(num_derivatives)s; row++)
         break;
       }
     }
+  }
+}"""
+
+# Snippet to transform of derivatives of order n
+transform1D_snippet = """\
+// Compute inverse of Jacobian
+const double %(Jinv)s[1][1] =  {{1.0 / J_00}};
+
+// Declare transformation matrix
+// Declare pointer to two dimensional array and initialise
+double **%(transform)s = new double *[%(num_derivatives)s];
+    
+for (unsigned int j = 0; j < %(num_derivatives)s; j++)
+{
+  %(transform)s[j] = new double [%(num_derivatives)s];
+  for (unsigned int k = 0; k < %(num_derivatives)s; k++)
+    %(transform)s[j][k] = 1;
+}
+
+// Construct transformation matrix
+for (unsigned int row = 0; row < %(num_derivatives)s; row++)
+{
+  for (unsigned int col = 0; col < %(num_derivatives)s; col++)
+  {
+    for (unsigned int k = 0; k < %(n)s; k++)
+      %(transform)s[row][col] *= %(Jinv)s[%(combinations)s[col][k]][%(combinations)s[row][k]];
   }
 }"""
 
