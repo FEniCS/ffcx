@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-11-27 -- 2007-11-27"
+__date__ = "2007-11-27 -- 2007-11-29"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
@@ -18,7 +18,8 @@ def make_quadrature(shape, n):
     points = q.get_points()
     weights = q.get_weights()
 
-    print points, weights
+    # FIXME: Temporary until things work
+    return (points, weights)
 
     # Set scaling and transform
     if shape == LINE:
@@ -27,9 +28,11 @@ def make_quadrature(shape, n):
     elif shape == TRIANGLE:
         offset = array((1.0, 1.0))
         scaling = 0.25
-    elif shape == TRIANGLE:
+    elif shape == TETRAHEDRON:
         offset = array((1.0, 1.0, 1.0))
         scaling = 0.125
+    else:
+        raise RuntimeError, "Unknown shape"
     
     # Scale from FIAT reference cell to UFC reference cell    
     for i in range(len(points)):

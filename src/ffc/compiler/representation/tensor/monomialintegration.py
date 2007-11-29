@@ -79,13 +79,10 @@ def __init_quadrature(basisfunctions, integral_type):
 
     # Create quadrature rule and get points and weights
     if integral_type == Integral.CELL:
-        quadrature = make_quadrature(shape, m)
+        (points, weights) = make_quadrature(shape, m)
     elif integral_type == Integral.EXTERIOR_FACET or integral_type == Integral.INTERIOR_FACET:
-        quadrature = make_quadrature(facet_shape, m)
-
-    points = quadrature.get_points()
-    weights = quadrature.get_weights()    
-
+        (points, weights) = make_quadrature(facet_shape, m)
+        
     return (points, weights)
 
 def __init_table(basisfunctions, integral_type, points, facet0, facet1):
