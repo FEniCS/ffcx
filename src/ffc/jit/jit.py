@@ -40,10 +40,11 @@ def jit(form, representation=FFC_REPRESENTATION, language=FFC_LANGUAGE, options=
     filename = "../" + prefix + ".h"
 
     # FIXME: Move this to top when we have added dependence on Instant
-    from instant import create_extension, header_and_libs_from_pkgconfig
+    import instant
+    instant.COPY = 1
 
     # Get include directory for ufc.h (might be better way to do this?)
-    (path, dummy, dummy, dummy) = header_and_libs_from_pkgconfig("ufc-1")
+    (path, dummy, dummy, dummy) = instant.header_and_libs_from_pkgconfig("ufc-1")
 
     if len(path) == 0:
         path = [("/").join(sysconfig.get_python_inc().split("/")[:-2]) + "/include"]
@@ -51,7 +52,7 @@ def jit(form, representation=FFC_REPRESENTATION, language=FFC_LANGUAGE, options=
 
     # Wrap code into a Python module using Instant
     module_name = prefix + "_module"
-    create_extension(wrap_headers=[filename], module=module_name, additional_declarations=ufc_include, include_dirs=path)
+    instant.create_extension(wrap_headers=[filename], module=module_name, additional_declarations=ufc_include, include_dirs=path)
 
     # Get name of form
     rank = form_data[0].rank
