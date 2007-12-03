@@ -28,7 +28,7 @@ def simplify(form):
 
     debug("Simplifying form...")
     # Handle restrictions on exterior facets before simplifying
-    restriction_exterior(form)
+#    restriction_exterior(form)
 
     # Change constant restrictions on interior facets before simplifying
     change_constant_restrictions(form)
@@ -375,45 +375,45 @@ def diff(m, n, key = None):
     else:
         return []
 
-def restriction_exterior(form):
-    """Removing restrictions on exterior facets.
-       If this makes monomial terms equal, all but one monomial term will be deleted."""
+# def restriction_exterior(form):
+#     """Removing restrictions on exterior facets.
+#        If this makes monomial terms equal, all but one monomial term will be deleted."""
 
-    # List of numbers of monomials with removed restrictions on exterior facets
-    removed_restrictions = []
-    for i in range(len(form.monomials)):
-        p = form.monomials[i]
-        for v in p.basisfunctions:
-            type = p.integral.type
-            if type == Integral.EXTERIOR_FACET:
-                if not (v.restriction == None or v.restriction == Restriction.CONSTANT):
-                    # Remove restriction and keep track of the monomial number
-                    v.restriction = None
-                    removed_restrictions += [i]
+#     # List of numbers of monomials with removed restrictions on exterior facets
+#     removed_restrictions = []
+#     for i in range(len(form.monomials)):
+#         p = form.monomials[i]
+#         for v in p.basisfunctions:
+#             type = p.integral.type
+#             if type == Integral.EXTERIOR_FACET:
+#                 if not (v.restriction == None or v.restriction == Restriction.CONSTANT):
+#                     # Remove restriction and keep track of the monomial number
+#                     v.restriction = None
+#                     removed_restrictions += [i]
 
-    # Create a set of the removed restrictions, (remove duplicate numbers) and get monomials
-    removed_restrictions = tuple(set(removed_restrictions))
-    monomials = [form.monomials[r] for r in removed_restrictions]
+#     # Create a set of the removed restrictions, (remove duplicate numbers) and get monomials
+#     removed_restrictions = tuple(set(removed_restrictions))
+#     monomials = [form.monomials[r] for r in removed_restrictions]
 
-    # If any restrictions were moved
-    if monomials:
-        # The first monomial is always unique
-        unique = [monomials[0]]
-        for i in range(1,len(monomials)):
-            p = monomials[i]
-            equals = False
-            # Check if monomial already exists
-            for p0 in unique:
-                if contraction_likely(p,p0):
-                    if not diff(p,p0):
-                        # If there are no differences the monmials are equal
-                        equals = True
+#     # If any restrictions were moved
+#     if monomials:
+#         # The first monomial is always unique
+#         unique = [monomials[0]]
+#         for i in range(1,len(monomials)):
+#             p = monomials[i]
+#             equals = False
+#             # Check if monomial already exists
+#             for p0 in unique:
+#                 if contraction_likely(p,p0):
+#                     if not diff(p,p0):
+#                         # If there are no differences the monmials are equal
+#                         equals = True
 
-            # If monomial is redundant, remove it. Otherwise add it to the list of uniuqe monomials
-            if equals:
-                form.monomials.remove(p)
-            else:
-                unique += [p]
+#             # If monomial is redundant, remove it. Otherwise add it to the list of uniuqe monomials
+#             if equals:
+#                 form.monomials.remove(p)
+#             else:
+#                 unique += [p]
 
 def change_constant_restrictions(form):
     """Change Restriction.CONSTANT to Restriction.PLUS on interior facets"""

@@ -45,8 +45,8 @@ def check_restrictions(form):
                     raise FormError, (p, "Integrand may not be restricted in a cell integral.")
             elif type == Integral.EXTERIOR_FACET:
                 if not (v.restriction == None or v.restriction == Restriction.CONSTANT):
-                    debug("basis function is restricted on exterior facet, this is handled in simplify.py",1)
-#                    raise FormError, (p, "Integrand may not be restricted in an exterior facet integral.")
+#                    debug("basis function is restricted on exterior facet, this is handled in simplify.py",1)
+                    raise FormError, (p, "Integrand may not be restricted in an exterior facet integral.")
             elif type == Integral.INTERIOR_FACET:
                 if v.restriction == None:
                     raise FormError, (p, "Integrand must be restricted ('+') or ('-') in an interior facet integral.")

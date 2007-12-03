@@ -112,6 +112,16 @@ def transp(v):
 
 def mult(v, w):
     "Compute matrix-matrix product of given matrices."
+
+    # Try to convert to vectors, tensors are not supported!
+    # If argument is already a list or array it should be safe to continue.
+    # This was implemented so one can do mult(v, n) instead of mult(v, vec(n))
+    # if v is a scalar and n is a vector valued element of the algebra.
+    if isinstance(v, Element) and value_rank(v) == 1:
+        v = vec(v)
+    if isinstance(w, Element) and value_rank(w) == 1:
+        w = vec(w)
+
     # First, convert to numpy.array (safe for both array and list arguments)
     vv = numpy.array(v)
     ww = numpy.array(w)
