@@ -12,8 +12,12 @@ def map_to_facet(points, facet):
     "Map points to given facet"
 
     dim = len(points[0]) + 1
-    
-    if dim == 2:
+
+    if dim == 1:
+        # Don't need to map coordinates on vertices
+        vertex_coordinates = [(0.0,), (1.0,)]
+        return [vertex_coordinates[facet]]
+    elif dim == 2:
         facet_vertices = [(1, 2), (0, 2), (0, 1)]
         vertex_coordinates = [(0.0, 0.0), (1.0, 0.0), (0.0, 1.0)]
     elif dim == 3:

@@ -13,13 +13,17 @@ def make_quadrature(shape, n):
     with n points in each direction. Quadrature rule is generated
     using FIAT and then transformed and scaled to the UFC element"""
 
-    # Get quadrature from FIAT
-    q = fiat_make_quadrature(shape, n)
-    points = q.get_points()
-    weights = q.get_weights()
+    # FIXME: Quadrature for vertices (shape == None)
+    if shape:
+        # Get quadrature from FIAT
+        q = fiat_make_quadrature(shape, n)
+        points = q.get_points()
+        weights = q.get_weights()
 
-    # FIXME: Temporary until things work
-    return (points, weights)
+        # FIXME: Temporary until things work
+        return (points, weights)
+    else:
+        return ([()], array([1.0,]))
 
     # Set scaling and transform
     if shape == LINE:
