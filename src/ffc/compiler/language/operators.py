@@ -22,6 +22,9 @@ from ffc.common.exceptions import *
 from ffc.fem.finiteelement import *
 from ffc.fem.projection import *
 
+from ffc.fem.quadratureelement import *
+
+
 # FFC compiler.language modules
 from ffc.compiler.language.index import *
 from ffc.compiler.language.algebra import *

@@ -15,6 +15,9 @@ from ffc.compiler.language.algebra import *
 from ffc.compiler.language.integral import *
 from ffc.compiler.language.indexcall import *
 
+# FFC fem modules
+from ffc.fem.quadratureelement import *
+
 def check_form(form):
     "Check that the form is valid"
     debug("Checking validity of form...")
@@ -22,6 +25,7 @@ def check_form(form):
     check_integrals(form)
     check_restrictions(form)
     check_completeness(form)
+    check_quadratureelements(form)
     debug("ok")
 
 def check_type(form):
@@ -60,6 +64,17 @@ def check_completeness(form):
         index_call(m, index_add, [bindices, Index.AUXILIARY])
         if not __check_completeness(aindices) or not __check_completeness(bindices):
             raise FormError, (m, "Index does not appear exactly twice in term.")
+
+def check_quadratureelements(form):
+    """Check if more than one QuadratureElement is present in each term, and if so
+       if they have the same number of quadrature points"""
+    for p in form.monomials:
+        # Get elements
+        elements = [v.element for v in p.basisfunctions if isinstance(v.element, QuadratureElement)]
+        # Check if all elements have the same number of points (compare to first)
+        for element in elements:
+            if not element.num_axis_points() == elements[0].num_axis_points():
+                raise FormError, (p, "All QuadratureElements in a monomial MUST have the same number of quadrature points")
 
 def __check_completeness(indices):
     "Check that each index in the list appear exactly twice"

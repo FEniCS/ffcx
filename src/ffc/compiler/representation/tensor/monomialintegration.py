@@ -26,6 +26,9 @@ from ffc.common.progress import *
 # FFC fem modules
 from ffc.fem.quadrature import *
 
+from ffc.fem.quadratureelement import *
+
+
 # FFC language modules
 from ffc.compiler.language.index import *
 from ffc.compiler.language.algebra import *
@@ -76,6 +79,15 @@ def __init_quadrature(basisfunctions, integral_type):
     q = __compute_degree(basisfunctions)
     m = (q + 1 + 1) / 2 # integer division gives 2m - 1 >= q
     #debug("Total degree is %d, using %d quadrature point(s) in each dimension" % (q, m), 1)
+
+    # Check if any basisfunctions are defined on a quadrature element
+    for v in basisfunctions:
+        if isinstance(v.element, QuadratureElement):
+            # Get number of points
+            m = v.element.num_axis_points()
+            debug("QuadratureElement present. Total degree is %d, using %d quadrature point(s) in each dimension" % (q, m), 1)
+            # All elements have the same number of points (verified in checks.py)
+            break
 
     # Create quadrature rule and get points and weights
     if integral_type == Integral.CELL:

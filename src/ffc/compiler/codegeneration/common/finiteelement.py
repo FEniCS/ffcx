@@ -16,6 +16,8 @@ from ffc.fem.vectorelement import *
 from ffc.fem.projection import *
 from ffc.fem.dofmap import *
 
+from ffc.fem.quadratureelement import *
+
 # FFC code generation common modules
 from evaluatebasis import *
 from evaluatebasisderivatives import *
@@ -42,18 +44,24 @@ def generate_finite_element(element, format):
     # Generate code for value_dimension
     code["value_dimension"] = ["%d" % element.value_dimension(i) for i in range(max(element.value_rank(), 1))]
 
-    # Generate code for evaluate_basis
-    code["evaluate_basis"] = evaluate_basis(element, format)
+    # Disable code generation for unsupported functions of QuadratureElement
+    if not isinstance(element, QuadratureElement):
+        # Generate code for evaluate_basis
+        code["evaluate_basis"] = evaluate_basis(element, format)
 
-    # Generate code for evaluate_basis_derivatives
-    code["evaluate_basis_derivatives"] = evaluate_basis_derivatives(element, format)
+        # Generate code for evaluate_basis_derivatives
+        code["evaluate_basis_derivatives"] = evaluate_basis_derivatives(element, format)
+
+        # Generate code for inperpolate_vertex_values
+        #code["interpolate_vertex_values"] = __generate_interpolate_vertex_values_old(element, format)
+        code["interpolate_vertex_values"] = __generate_interpolate_vertex_values(element, format)
+    else:
+        code["evaluate_basis"] = format["exception"]("evaluate_basis() is not supported for QuadratureElement")
+        code["evaluate_basis_derivatives"] = format["exception"]("evaluate_basis_derivatives() is not supported for QuadratureElement")
+        code["interpolate_vertex_values"] = format["exception"]("interpolate_vertex_values() is not supported for QuadratureElement")
 
     # Generate code for evaluate_dof
     code["evaluate_dof"] = __generate_evaluate_dof(element, format)
-
-    # Generate code for inperpolate_vertex_values
-    #code["interpolate_vertex_values"] = __generate_interpolate_vertex_values_old(element, format)
-    code["interpolate_vertex_values"] = __generate_interpolate_vertex_values(element, format)
 
     # Generate code for num_sub_elements
     code["num_sub_elements"] = "%d" % element.num_sub_elements()
