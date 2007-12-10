@@ -21,7 +21,12 @@ from ffc.compiler.compiler import compile
 # Global counter for numbering forms
 counter = 0
 
-def jit(form, representation=FFC_REPRESENTATION, language=FFC_LANGUAGE, options=FFC_OPTIONS):
+# Options for JIT-compiler, evaluate_basis and evaluate_basis_derivatives turned off
+FFC_OPTIONS_JIT = FFC_OPTIONS.copy()
+FFC_OPTIONS_JIT["no-evaluate_basis"] = True
+FFC_OPTIONS_JIT["no-evaluate_basis_derivatives"] = True
+
+def jit(form, representation=FFC_REPRESENTATION, language=FFC_LANGUAGE, options=FFC_OPTIONS_JIT):
     "Just-in-time compile the given form or element"
 
     # Choose prefix
