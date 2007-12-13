@@ -42,11 +42,11 @@ def jit(form, representation=FFC_REPRESENTATION, language=FFC_LANGUAGE, options=
     (form_data, form_representation) = compile(form, prefix, representation, language, options)
 
     # Filename of code to wrap
-    filename = "../" + prefix + ".h"
+    filename = prefix + ".h"
 
     # FIXME: Move this to top when we have added dependence on Instant
     import instant
-    instant.COPY = 1
+    instant.USE_CACHE = 1
 
     # Get include directory for ufc.h (might be better way to do this?)
     (path, dummy, dummy, dummy) = instant.header_and_libs_from_pkgconfig("ufc-1")
