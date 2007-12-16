@@ -89,5 +89,5 @@ def __variable_in_line(variable_name, line):
         return False
     for character in special_characters:
         line = line.replace(character, "\\" + character)
-    delimiter = "[" + ",".join("\\" + c for c in special_characters) + "]"
+    delimiter = "[" + ",".join(["\\" + c for c in special_characters]) + "]"
     return not re.search(delimiter + variable_name + delimiter, line) == None
