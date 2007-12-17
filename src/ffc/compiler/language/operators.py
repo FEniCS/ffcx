@@ -228,7 +228,10 @@ def jump(v, n = None):
             # v is a possible multidimensional array, call jump() recursively
             return [jump(v[i]) for i in range(len(v))]
     else:
-        if value_rank(v) == 0 and value_rank(n) == 1:
+        if value_rank(v) == 0 and value_rank(n) == 0:
+            # v and n are both scalars
+            return v('+')*n('+') + v('-')*n('-')
+        elif value_rank(v) == 0 and value_rank(n) == 1:
             # v is a scalar and n is a vector
             return [v('+')*n[i]('+') + v('-')*n[i]('-') for i in range(len(n))]
         elif value_rank(v) == 1 and value_rank(n) == 1:

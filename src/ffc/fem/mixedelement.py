@@ -12,6 +12,7 @@ import numpy
 # FFC common modules
 from ffc.common.debug import *
 from ffc.common.utils import *
+from ffc.common.exceptions import *
 
 # FFC language modules
 from ffc.compiler.language.index import Index

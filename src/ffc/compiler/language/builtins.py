@@ -49,7 +49,10 @@ def FacetNormal(shape):
     """This looks like a class but is really a function. It returns a
     vectorDG(0) function which may function as the placeholder for a
     function defining the facet normal."""
-    element = VectorElement("Discontinuous Lagrange", shape, 0)
+    if shape == "interval":
+        element = FiniteElement("Discontinuous Lagrange", shape, 0)
+    else:
+        element = VectorElement("Discontinuous Lagrange", shape, 0)
     n = Function(element)
     n.name = "facet normal"
     return n
