@@ -2,25 +2,53 @@
 Features to consider for inclusion in future versions of UFC:
 
 
-- unsigned int dof_map::geometric_dimension() const = 0
-  // Needed to derive the size of tabulate_coordinates from a single dof_map object.
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// For UFC 1.1:
+
+
+- More efficient evaluation of all local dofs of a function f:
+
+class finite_element
+{
+    /// Evaluate linear functionals for all dofs on the function f
+    virtual void evaluate_dofs(double *values,
+                                 const function& f,
+                                 const cell& c) const
+    { raise std::runtime_exception("Not implemented."); }
+};
+
+
+- Needed to derive the size of tabulate_coordinates from a single dof_map object:
+
+class dof_map
+{
     // Return the geometric dimension of the coordinates this dof map provides
-    virtual unsigned int geometric_dimension() const = 0
+    virtual unsigned int geometric_dimension() const
+    { raise std::runtime_exception("Not implemented."); }
+};
 
-- dof_map::tabulate_vertex_dofs(...)
-  // Like tabulate_facet_dofs, tabulate local dofs related to a facet.
-  // Useful for boundary conditions defined by vertex based MeshFunctions, and for getting connectivity information.
 
-  // Or in general for mesh entities of dimension dim:
+- Like tabulate_facet_dofs, which tabulates local dofs related to a facet, add functions to tabulate dofs related to any mesh entity.
+  Useful for boundary conditions defined by vertex based MeshFunctions in linear Lagrange elements, and for getting all kinds of connectivity information.
 
+class dof_map
+{
     /// Return the number of dofs associated with each cell entity of dimension dim
-    virtual unsigned int num_entity_dofs(unsigned int dim) const = 0;
+    virtual unsigned int num_entity_dofs(unsigned int dim) const
+    { raise std::runtime_exception("Not implemented."); }
 
     /// Tabulate the local-to-local mapping from dofs associated with entity i of dimension dim to cell dofs
     virtual void tabulate_entity_dofs(unsigned int* dofs,
-                                      unsigned int dim, unsigned int i) const = 0;
+                                      unsigned int dim, unsigned int i) const
+    { raise std::runtime_exception("Not implemented."); }
+};
 
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// For later consideration:
 
 - Various functions in class form and/or others, returning std::string's with readable names and descriptions.
   How much to include can of course be discussed. Missing items can simply return "".
