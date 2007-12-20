@@ -266,7 +266,9 @@ def modulus(v):
 
 def __cell_dimension(v):
     "Return shape dimension for given object."
-    if isinstance(v, list):
+    print "checking cell dimension", v
+    print type(v)
+    if isinstance(v, list) or isinstance(v, numpy.ndarray):
         # Check that all components have the same shape dimension
         for i in range(len(v) - 1):
             if not __cell_dimension(v[i]) == __cell_dimension(v[i + 1]):
