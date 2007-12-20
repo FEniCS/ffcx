@@ -2,7 +2,7 @@
 It uses Instant to wrap the generated code into a Python module."""
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-07-20 -- 2007-08-16"
+__date__ = "2007-07-20 -- 2007-12-20"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
@@ -25,6 +25,9 @@ counter = 0
 FFC_OPTIONS_JIT = FFC_OPTIONS.copy()
 FFC_OPTIONS_JIT["no-evaluate_basis"] = True
 FFC_OPTIONS_JIT["no-evaluate_basis_derivatives"] = True
+
+# Compiler options, don't optimize by default (could be added to options)
+CPP_ARGS = "-O0"
 
 def jit(form, representation=FFC_REPRESENTATION, language=FFC_LANGUAGE, options=FFC_OPTIONS_JIT):
     "Just-in-time compile the given form or element"
@@ -57,7 +60,7 @@ def jit(form, representation=FFC_REPRESENTATION, language=FFC_LANGUAGE, options=
 
     # Wrap code into a Python module using Instant
     module_name = prefix + "_module"
-    instant.create_extension(wrap_headers=[filename], module=module_name, additional_declarations=ufc_include, include_dirs=path)
+    instant.create_extension(wrap_headers=[filename], module=module_name, additional_declarations=ufc_include, include_dirs=path, cppargs=CPP_ARGS)
 
     # Get name of form
     rank = form_data[0].rank
