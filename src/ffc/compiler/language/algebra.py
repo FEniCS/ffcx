@@ -36,6 +36,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Python modules
 import sys
 import math
+import operator
 
 # FFC common modules
 from ffc.common.exceptions import *

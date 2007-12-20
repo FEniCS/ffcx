@@ -95,6 +95,7 @@ def dot(v, w):
             for j in range(len(v)):
                 form = form + v[i][j]*w[i][j]
         return form
+    raise FormError, ((v, w), "Don't know how to interpret dot product")
 
 def cross(v, w):
     "Return cross product of given functions."
@@ -175,6 +176,16 @@ def div(v):
             raise FormError, (v, "Cannot take divergence of scalar expression.")
         i = Index()
         return v[i].dx(i)
+    # Special case: divergence of matrix div(A) = dA_{ij}/dx_j
+    if value_rank(v) == 2:
+        form = []
+        for i in range(len(v)):
+            s = D(v[i][0], 0)
+            for j in range(1, len(v[i])):
+                s = s + D(v[i][j], j)
+            form += [s]
+        return form
+        
     # Otherwise, compute the form explicitly
     form = Form()
     for i in range(len(v)):
