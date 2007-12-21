@@ -2,9 +2,6 @@ This file lists TODO items for FFC. As usual, the priority depends
 on the current interests of the various FFC developers. To edit this
 file, it is convenient to install org-mode in Emacs.
 
-* Fix bug in RT1
-  - RT elements work for q = 0, 2, 3 but not for q = 1
-
 * Fix bug in BDFM
   - Broken after mapping of reference element moved to FIAT
 
@@ -14,6 +11,8 @@ file, it is convenient to install org-mode in Emacs.
 * Write about a, L, M in manual
   - Missing in current manual
   - Add example of computing functional
+
+* Write about lhs() and rhs() in manual
 
 * Projections
   - Reimplement (worked before)
@@ -29,10 +28,6 @@ file, it is convenient to install org-mode in Emacs.
   - Implement level 3 BLAS
   - Generate loops for geometry tensor
   - Add to man page
-
-* BDM/RT elements in 3D
-  - Add missing pieces to get BDM and RT elements work
-  in 3D (they mostly work in 2D)
 
 * Optionally generate a pair of .h and .cpp files
   - FFC currently only generates a single .h file. The UFC
