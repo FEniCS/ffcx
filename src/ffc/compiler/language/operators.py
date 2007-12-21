@@ -2,7 +2,7 @@
 based on the basic form algebra operations."""
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2005-09-07 -- 2007-12-20"
+__date__ = "2005-09-07 -- 2007-12-21"
 __copyright__ = "Copyright (C) 2005-2007 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
@@ -264,10 +264,64 @@ def modulus(v):
     "Return the modulus/absolute value (take absolute value of coefficients)"
     return Form(v).modulus()
 
+def lhs(v):
+    "Return the left-hand side (bilinear part) of v"
+
+    # Check that we have a element of the algebra
+    if not(isinstance(v, Element)):
+        raise FormError, (v, "Unable to extract left-hand side, must be a form")
+    v = Form(v)
+
+    # Check for terms with exactly two primary basis functions
+    terms = []
+    for m in v.monomials:
+        num_primary = 0
+        for v in m.basisfunctions:
+            if v.index.type == Index.PRIMARY:
+                num_primary += 1
+        if num_primary == 2:
+            terms += [m]
+        elif not num_primary == 1:
+            raise FormError, (v, "Found term of rank %d which does not belong in either left- or right-hand side" % num_primary)
+
+    # Compute sum of basis functions if any
+    if len(terms) == 0:
+        return 0.0
+    s = terms[0]
+    for i in range(1, len(terms)):
+        s += terms[i]
+    return s
+
+def rhs(v):
+    "Return the right-hand side (linear part) of v"
+
+    # Check that we have a element of the algebra
+    if not(isinstance(v, Element)):
+        raise FormError, (v, "Unable to extract left-hand side, must be a form")
+    v = Form(v)
+
+    # Check for terms with exactly two primary basis functions
+    terms = []
+    for m in v.monomials:
+        num_primary = 0
+        for v in m.basisfunctions:
+            if v.index.type == Index.PRIMARY:
+                num_primary += 1
+        if num_primary == 1:
+            terms += [m]
+        elif not num_primary == 2:
+            raise FormError, (v, "Found term of rank %d which does not belong in either left- or right-hand side" % num_primary)
+
+    # Compute sum of basis functions if any
+    if len(terms) == 0:
+        return 0.0
+    s = terms[0]
+    for i in range(1, len(terms)):
+        s += terms[i]
+    return -s
+
 def __cell_dimension(v):
     "Return shape dimension for given object."
-    print "checking cell dimension", v
-    print type(v)
     if isinstance(v, list) or isinstance(v, numpy.ndarray):
         # Check that all components have the same shape dimension
         for i in range(len(v) - 1):

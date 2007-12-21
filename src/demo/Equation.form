@@ -1,0 +1,37 @@
+# Copyright (C) 2007 Anders Logg (logg@simula.no)
+# Licensed under the GNU GPL version 3 or any later version
+#
+# Specification of a system F(v, u) = 0 and extraction of
+# the bilinear and linear forms a and L for the left- and
+# right-hand sides:
+#
+#   F(v, u) = a(v, u) - L(v) = 0
+#
+# The example below demonstrates the specification of the
+# linear system for a cG(1)/Crank-Nicholson time step for
+# the heat equation.
+#
+# The below formulation is equivalent to writing
+#
+#  a = v*u*dx + 0.5*k*dot(grad(v), grad(u))*dx
+#  L = v*u0*dx - 0.5*k*dot(grad(v), grad(u0))*dx
+#
+# but instead of manually shuffling terms not including
+# the unknown u to the right-hand side, all terms may
+# be listed on one line and left- and right-hand sides
+# extracted by lhs() and rhs().
+#
+# Compile this form with FFC: ffc Equation.form
+
+element = FiniteElement("Lagrange", "triangle", 1)
+
+k = 0.1
+
+v = TestFunction(element)
+u = TrialFunction(element)
+u0 = Function(element)
+
+F = v*(u - u0)*dx + k*dot(grad(v), grad(0.5*(u0 + u)))*dx
+
+a = lhs(F)
+L = rhs(F)
