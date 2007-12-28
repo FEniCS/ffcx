@@ -25,7 +25,7 @@ algebra:
     Unary  ()     (operand must be multi-valued, +/-)"""
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-09-27 -- 2007-03-20"
+__date__ = "2004-09-27 -- 2007-12-29"
 __copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
@@ -441,6 +441,11 @@ class Monomial(Element):
             return w
         elif isinstance(other, Form):
             return Form(self) * Form(other)
+        elif isinstance(other, float):
+            w = Form(self)
+            for m in w.monomials:
+                m.numeric *= other
+            return w
         else:
             # Create two copies
             w0 = Monomial(self)
