@@ -442,10 +442,9 @@ class Monomial(Element):
         elif isinstance(other, Form):
             return Form(self) * Form(other)
         elif isinstance(other, float):
-            w = Form(self)
-            for m in w.monomials:
-                m.numeric *= other
-            return w
+            m = Monomial(self)
+            m.numeric *= other
+            return m
         else:
             # Create two copies
             w0 = Monomial(self)
@@ -634,7 +633,7 @@ class Form(Element):
             return w
         else:
             w = Form()
-            w.monomials = [p*other for p in self.monomials]
+            w.monomials = [m*other for m in self.monomials]
             return w
 
     def __neg__(self):
