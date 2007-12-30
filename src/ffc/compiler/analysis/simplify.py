@@ -28,13 +28,12 @@ def simplify(form):
 
     debug("Simplifying form...")
     # Handle restrictions on exterior facets before simplifying
-#    restriction_exterior(form)
+    #restriction_exterior(form)
 
     # Change constant restrictions on interior facets before simplifying
     change_constant_restrictions(form)
 
-    # Simplify form by contracting indices and simplifying
-    # derivatives:
+    # Simplify form by contracting indices and simplifying derivatives
     simplify_form(form)
 
     reassign_indices(form)

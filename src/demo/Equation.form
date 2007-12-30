@@ -35,3 +35,6 @@ F = v*(u - u0)*dx + k*dot(grad(v), grad(0.5*(u0 + u)))*dx
 
 a = lhs(F)
 L = rhs(F)
+
+#a = v*u*dx + 0.5*k*dot(grad(v), grad(u))*dx
+#L = v*u0*dx - 0.5*k*dot(grad(v), grad(u0))*dx

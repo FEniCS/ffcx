@@ -267,8 +267,6 @@ def modulus(v):
 def lhs(v):
     "Return the left-hand side (bilinear part) of v"
 
-    print "Extracting left-hand side..."
-
     # Check that we have a element of the algebra
     if not(isinstance(v, Element)):
         raise FormError, (v, "Unable to extract left-hand side, must be a form")
@@ -282,7 +280,6 @@ def lhs(v):
         for v in m.basisfunctions:
             if v.index.type == Index.PRIMARY:
                 num_primary += 1
-        print num_primary
         if num_primary == 1:
             num_terms_removed += 1
             form.monomials[i] = None
@@ -294,7 +291,7 @@ def lhs(v):
         return 0.0
     for i in range(num_terms_removed):
         form.monomials.remove(None)
-    return -form
+    return form
 
 def rhs(v):
     "Return the right-hand side (linear part) of v"
