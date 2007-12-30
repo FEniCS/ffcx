@@ -2,7 +2,7 @@
 based on the basic form algebra operations."""
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2005-09-07 -- 2007-12-21"
+__date__ = "2005-09-07 -- 2007-12-30"
 __copyright__ = "Copyright (C) 2005-2007 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
@@ -267,30 +267,34 @@ def modulus(v):
 def lhs(v):
     "Return the left-hand side (bilinear part) of v"
 
+    print "Extracting left-hand side..."
+
     # Check that we have a element of the algebra
     if not(isinstance(v, Element)):
         raise FormError, (v, "Unable to extract left-hand side, must be a form")
-    v = Form(v)
+    form = Form(v)
 
     # Check for terms with exactly two primary basis functions
-    terms = []
-    for m in v.monomials:
+    num_terms_removed = 0
+    for i in range(len(form.monomials)):
+        m = form.monomials[i]
         num_primary = 0
         for v in m.basisfunctions:
             if v.index.type == Index.PRIMARY:
                 num_primary += 1
-        if num_primary == 2:
-            terms += [m]
-        elif not num_primary == 1:
+        print num_primary
+        if num_primary == 1:
+            num_terms_removed += 1
+            form.monomials[i] = None
+        elif not num_primary == 2:
             raise FormError, (v, "Found term of rank %d which does not belong in either left- or right-hand side" % num_primary)
 
-    # Compute sum of basis functions if any
-    if len(terms) == 0:
+    # Extract remaining terms
+    if num_terms_removed == len(form.monomials):
         return 0.0
-    s = terms[0]
-    for i in range(1, len(terms)):
-        s += terms[i]
-    return s
+    for i in range(num_terms_removed):
+        form.monomials.remove(None)
+    return -form
 
 def rhs(v):
     "Return the right-hand side (linear part) of v"
@@ -298,27 +302,28 @@ def rhs(v):
     # Check that we have a element of the algebra
     if not(isinstance(v, Element)):
         raise FormError, (v, "Unable to extract left-hand side, must be a form")
-    v = Form(v)
+    form = Form(v)
 
-    # Check for terms with exactly two primary basis functions
-    terms = []
-    for m in v.monomials:
+    # Check for terms with exactly one primary basis functions
+    num_terms_removed = 0
+    for i in range(len(form.monomials)):
+        m = form.monomials[i]
         num_primary = 0
         for v in m.basisfunctions:
             if v.index.type == Index.PRIMARY:
                 num_primary += 1
-        if num_primary == 1:
-            terms += [m]
-        elif not num_primary == 2:
+        if num_primary == 2:
+            num_terms_removed += 1
+            form.monomials[i] = None
+        elif not num_primary == 1:
             raise FormError, (v, "Found term of rank %d which does not belong in either left- or right-hand side" % num_primary)
 
-    # Compute sum of basis functions if any
-    if len(terms) == 0:
+    # Extract remaining terms
+    if num_terms_removed == len(form.monomials):
         return 0.0
-    s = terms[0]
-    for i in range(1, len(terms)):
-        s += terms[i]
-    return -s
+    for i in range(num_terms_removed):
+        form.monomials.remove(None)
+    return -form
 
 def __cell_dimension(v):
     "Return shape dimension for given object."
