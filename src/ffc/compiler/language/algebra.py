@@ -25,7 +25,7 @@ algebra:
     Unary  ()     (operand must be multi-valued, +/-)"""
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-09-27 -- 2007-12-29"
+__date__ = "2004-09-27 -- 2007-12-31"
 __copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
@@ -593,6 +593,8 @@ class Form(Element):
     
     def __init__(self, other = None):
         "Create Form."
+
+        # Copy terms
         if other == None:
             # Create default Form (zero)
             self.monomials = []
@@ -613,7 +615,11 @@ class Form(Element):
             self.monomials = listcopy(other.monomials)
         else:
             raise FormError, (other, "Unable to create Form from given expression.")
-        return
+
+        # Remove terms with a zero numeric constant
+        for m in self.monomials:
+            if m.numeric == 0.0:
+                self.monomials.remove(m)
 
     def __add__(self, other):
         "Operator: Form + Element"
