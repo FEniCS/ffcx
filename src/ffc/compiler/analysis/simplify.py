@@ -38,6 +38,8 @@ def simplify(form):
 
     reassign_indices(form)
 
+    #print "Form after simplification:", form
+
     debug("done")
 
 def simplify_form(f):

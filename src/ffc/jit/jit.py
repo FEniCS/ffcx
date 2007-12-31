@@ -42,7 +42,9 @@ def jit(form, representation=FFC_REPRESENTATION, language=FFC_LANGUAGE, options=
         raise RuntimeError, "Just-in-time compiler requires a single form (not a list of forms"
 
     # Compile form
+    debug("Calling FFC just-in-time (JIT) compiler, this may take some time...", -1)
     (form_data, form_representation) = compile(form, prefix, representation, language, options)
+    debug("done", -1)
 
     # Filename of code to wrap
     filename = prefix + ".h"
@@ -59,8 +61,10 @@ def jit(form, representation=FFC_REPRESENTATION, language=FFC_LANGUAGE, options=
     ufc_include = '%%include "%s/ufc.h"' % path[0]
 
     # Wrap code into a Python module using Instant
+    debug("Creating Python extension (compiling and linking), this may take some time...", -1)
     module_name = prefix + "_module"
     instant.create_extension(wrap_headers=[filename], module=module_name, additional_declarations=ufc_include, include_dirs=path, cppargs=CPP_ARGS)
+    debug("done", -1)
 
     # Get name of form
     rank = form_data[0].rank
