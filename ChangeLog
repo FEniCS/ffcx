@@ -1,3 +1,4 @@
+ - Implement caching of forms/modules in ~/.ffc/cache for JIT compiler
  - Minor tweaks and fixes for the form language
  - Add operators lhs() and rhs()
  - Bug fixes for Nedelec and BDFM - RT, BDM, BDFM and Nedelec now working in 2D and 3D
