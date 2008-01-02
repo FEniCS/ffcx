@@ -43,7 +43,9 @@ def jit(form, representation=FFC_REPRESENTATION, language=FFC_LANGUAGE, options=
     form_data = analyze.analyze(form)
 
     # Compute md5 checksum of form signature
-    signature = str(form) + " " + ", ".join([element.signature() for element in form_data.elements])
+    signature = " ".join([str(form),
+                          ", ".join([element.signature() for element in form_data.elements]),
+                          representation, language, str(options)])
     md5sum = "form_" + md5.new(signature).hexdigest()
 
     # Make sure cache directory exists
@@ -97,6 +99,7 @@ def build_module(form, representation, language, options, md5sum, form_dir, modu
     # FIXME: Move this to top when we have added dependence on Instant
     import instant
     instant.USE_CACHE = 0
+    instant.VERBOSE = -1
 
     # Get include directory for ufc.h (might be better way to do this?)
     (path, dummy, dummy, dummy) = instant.header_and_libs_from_pkgconfig("ufc-1")
