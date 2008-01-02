@@ -366,6 +366,18 @@ given by evaluation of \texttt{f} at a set of points. Other examples
 of degrees of freedom include weighted integrals over facets or normal
 components on facets.
 
+\subsection{The function \texttt{evaluate\_dofs}}
+Introduced in version 1.1.
+
+\begin{code}
+virtual void evaluate_dofs(double *values,
+                           const function& f,
+                           const cell& c) const;
+\end{code}
+
+Vectorized version of \texttt{evaluate\_dof} for efficiency,
+returning the values of all degrees of freedom in the array \texttt{values}.
+
 \subsection{The function \texttt{interpolate\_vertex\_values}}
 
 \begin{code}
@@ -519,17 +531,43 @@ virtual unsigned int local_dimension() const = 0;
 This function returns the dimension of the local finite element space
 on a single cell.
 
+\subsection{The function \texttt{geometric\_dimension}}
+Introduced in version 1.1.
+
+\begin{code}
+virtual unsigned int geometric_dimension() const;
+\end{code}
+
+This function returns the geometric dimension of the coordinates
+returned by \texttt{tabulate\_coordinates}.
+
 \subsection{The function \texttt{num\_facet\_dofs}}
 
 \begin{code}
 virtual unsigned int num_facet_dofs() const = 0;
 \end{code}
 
-This function returns the number of dofs tied to a single facet of a
+This function returns the number of dofs associated with a single facet of a
 cell. This is the number of dofs that should be set if a Dirichlet
 boundary condition is applied to a single facet. It is assumed that
 all cells of the mesh have the same number of degrees of freedom on
 each of their facets.
+
+\subsection{The function \texttt{num\_entity\_dofs}}
+Introduced in version 1.1.
+
+\begin{code}
+virtual unsigned int num_entity_dofs(unsigned int d) const;
+\end{code}
+
+This function returns the number of degress of freedom associated
+with a single mesh entity of dimension \texttt{d} in a cell, which
+are not associated with any entities of dimension < d.
+It is assumed that all cells of the mesh have the same number
+of degrees of freedom on each mesh entity of the same dimension.
+
+See also \texttt{ufc::finite\_element::tabulate\_entity\_dofs}.
+
 
 \subsection{The function \texttt{tabulate\_dofs}}
 
@@ -551,9 +589,38 @@ tabulate_facet_dofs(unsigned int* dofs,
                     unsigned int facet) const = 0;
 \end{code}
 
-This function tabulates the local dof indices tied to a given local
+This function tabulates the local dof indices associated with a given local
 facet. The size of the output array \texttt{dofs} should be equal to
 the value returned by \texttt{num\_facet\_dofs()}.
+
+This includes dofs that are associated with lower dimensional entities,
+ie the vertices of an edge in 2D and both vertices and edges of a face in 3D.
+The dofs returned by this function should not be used for connectivity information,
+use \texttt{ufc::dof\_map::tabulate\_entity\_dofs} instead for that purpose.
+
+
+\subsection{The function \texttt{tabulate\_entity\_dofs}}
+Introduced in version 1.1.
+
+\begin{code}
+virtual void tabulate_entity_dofs(unsigned int* dofs,
+                                  unsigned int d, unsigned int i) const;
+\end{code}
+
+This function tabulates the local dof indices associated with a given local
+mesh entity \texttt{i} of dimension \texttt{d}, i.e. mesh entity (d, i),
+and not associated with any entities of dimension < d.
+The size of the output array \texttt{dofs} should be equal to
+the value returned by \texttt{num\_entity\_dofs(d)}.
+
+As an example, calling \texttt{tabulate\_entity\_dofs} for a face (d = 2)
+should yield only the dofs associated with the face that are not associated
+with vertices and edges. Thus \texttt{tabulate\_entity\_dofs} can
+be used to build connectivity information.
+
+To retrieve all dofs related to a facet for applying Dirichlet boundary conditions,
+see \texttt{ufc::dof\_map::tabulate\_facet\_dofs}.
+
 
 \subsection{The function \texttt{tabulate\_coordinates}}
 
@@ -578,7 +645,8 @@ non-Lagrangian elements are used.
 The size of the output array \texttt{coordinates} should be equal to
 the value returned by \texttt{local\_dimension()} and the size of each
 subarray \texttt{coordi\-nates[0]}, \texttt{coordinates[1]} etc should
-be equal to the geometric dimension of the mesh.
+be equal to the geometric dimension of the mesh, which can be obtained
+with the function \texttt{dof\_map::geometric\_dimension()}.
 
 \subsection{The function \texttt{num\_sub\_dof\_maps}}
 

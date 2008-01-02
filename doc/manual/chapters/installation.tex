@@ -59,3 +59,11 @@ This installs the \ufc{} header file in the directory
 add \texttt{\~{}/local/lib/python} to the environment variable
 \texttt{PYTHONPATH} and to add \texttt{\~{}/local/lib/pkgconfig} to
 the \texttt{PKG\_CONFIG\_PATH} environment variable.
+
+\section{\ufc{} versions}
+The UFC classes does not have any run time version control, and to upgrade
+all libraries and applications must be recompiled with the new header file \texttt{ufc.h}.
+However, an implementation of UFC version 1.0 can be recompiled with the header file
+from UFC version 1.1 without changes to the source code. The new functions introduced in 1.1
+will then simply throw an informative exception.
+

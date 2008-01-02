@@ -79,6 +79,14 @@ public:
 %(evaluate_dof)s
   }
 
+  /// Evaluate linear functionals for all dofs on the function f
+  virtual void evaluate_dofs(double *values,
+                             const function& f,
+                             const cell& c) const
+  {
+%(evaluate_dofs)s
+  }
+
   /// Interpolate vertex values from dof values
   virtual void interpolate_vertex_values(double* vertex_values,
                                          const double* dof_values,
@@ -147,6 +155,11 @@ public:
   virtual double evaluate_dof(unsigned int i,
                               const ufc::function& f,
                               const ufc::cell& c) const;
+
+  /// Evaluate linear functionals for all dofs on the function f
+  virtual void evaluate_dofs(double *values,
+                             const function& f,
+                             const cell& c) const;
 
   /// Interpolate vertex values from dof values
   virtual void interpolate_vertex_values(double* vertex_values,
@@ -231,6 +244,14 @@ double %(classname)s::evaluate_dof(unsigned int i,
                                    const ufc::cell& c) const
 {
 %(evaluate_dof)s
+}
+
+/// Evaluate linear functionals for all dofs on the function f
+void %(classname)s::evaluate_dofs(double *values,
+                                  const function& f,
+                                  const cell& c) const
+{
+%(evaluate_dofs)s
 }
 
 /// Interpolate vertex values from dof values

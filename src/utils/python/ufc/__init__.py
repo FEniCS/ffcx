@@ -1,4 +1,4 @@
-"""Code generation format strings for UFC (Unified Form-assembly Code) v. 1.0.
+"""Code generation format strings for UFC (Unified Form-assembly Code) v. 1.1.
 
 Three format strings are defined for each of the following UFC classes:
 
@@ -28,12 +28,12 @@ For more information about UFC and the FEniCS project, visit
 
 # -*- coding: utf-8 -*-
 __author__  = "Martin Sandve Alnes, Hans Petter Langtangen, Anders Logg, Kent-Andre Mardal and Ola Skavhaug"
-__date__    = "2007-06-17"
-__version__ = "1.0"
+__date__    = "2008-01-02"
+__version__ = "1.1"
 __license__ = "This code is released into the public domain"
 
 UFC_VERSION_MAJOR = 1
-UFC_VERSION_MINOR = 0
+UFC_VERSION_MINOR = 1
 
 UFC_VERSION = __version__
 
@@ -42,3 +42,4 @@ from finite_element import *
 from dof_map import *
 from integrals import *
 from form import *
+

@@ -7,9 +7,9 @@
 #define __UFC_H
 
 #define UFC_VERSION_MAJOR 1
-#define UFC_VERSION_MINOR 0
+#define UFC_VERSION_MINOR 1
 
-const char UFC_VERSION[] = "1.0";
+const char UFC_VERSION[] = "1.1";
 
 namespace ufc
 {
@@ -135,6 +135,12 @@ namespace ufc
                                 const function& f,
                                 const cell& c) const = 0;
 
+    /// Evaluate linear functionals for all dofs on the function f
+    virtual void evaluate_dofs(double *values,
+                               const function& f,
+                               const cell& c) const
+    { raise std::runtime_exception("Not implemented (introduced in UFCv1.1)."); }
+
     /// Interpolate vertex values from dof values
     virtual void interpolate_vertex_values(double* vertex_values,
                                            const double* dof_values,
@@ -183,8 +189,16 @@ namespace ufc
     /// Return the dimension of the local finite element function space
     virtual unsigned int local_dimension() const = 0;
 
+    // Return the geometric dimension of the coordinates this dof map provides
+    virtual unsigned int geometric_dimension() const
+    { raise std::runtime_exception("Not implemented (introduced in UFCv1.1)."); }
+
     /// Return the number of dofs on each cell facet
     virtual unsigned int num_facet_dofs() const = 0;
+
+    /// Return the number of dofs associated with each cell entity of dimension d
+    virtual unsigned int num_entity_dofs(unsigned int d) const
+    { raise std::runtime_exception("Not implemented (introduced in UFCv1.1)."); }
 
     /// Tabulate the local-to-global mapping of dofs on a cell
     virtual void tabulate_dofs(unsigned int* dofs,
@@ -194,6 +208,11 @@ namespace ufc
     /// Tabulate the local-to-local mapping from facet dofs to cell dofs
     virtual void tabulate_facet_dofs(unsigned int* dofs,
                                      unsigned int facet) const = 0;
+
+    /// Tabulate the local-to-local mapping from dofs associated with mesh entity i of dimension d to cell dofs
+    virtual void tabulate_entity_dofs(unsigned int* dofs,
+                                      unsigned int d, unsigned int i) const
+    { raise std::runtime_exception("Not implemented (introduced in UFCv1.1)."); }
 
     /// Tabulate the coordinates of all dofs on a cell
     virtual void tabulate_coordinates(double** coordinates,

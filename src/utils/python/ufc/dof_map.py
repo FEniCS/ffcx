@@ -66,10 +66,28 @@ public:
 %(local_dimension)s
   }
 
+  // Return the geometric dimension of the coordinates this dof map provides
+  unsigned int %(classname)s::geometric_dimension() const
+  {
+%(geometric_dimension)s
+  }
+
+  // Return the geometric dimension of the coordinates this dof map provides
+  virtual unsigned int geometric_dimension() const
+  {
+%(geometric_dimension)s
+  }
+
   /// Return the number of dofs on each cell facet
   virtual unsigned int num_facet_dofs() const
   {
 %(num_facet_dofs)s
+  }
+
+  /// Return the number of dofs associated with each cell entity of dimension d
+  virtual unsigned int num_entity_dofs(unsigned int d) const
+  {
+%(num_entity_dofs)s
   }
 
   /// Tabulate the local-to-global mapping of dofs on a cell
@@ -85,6 +103,13 @@ public:
                                    unsigned int facet) const
   {
 %(tabulate_facet_dofs)s
+  }
+
+  /// Tabulate the local-to-local mapping from dofs associated with mesh entity i of dimension d to cell dofs
+  virtual void tabulate_entity_dofs(unsigned int* dofs,
+                                    unsigned int d, unsigned int i) const
+  {
+%(tabulate_entity_dofs)s
   }
 
   /// Tabulate the coordinates of all dofs on a cell
@@ -145,8 +170,14 @@ public:
   /// Return the dimension of the local finite element function space
   virtual unsigned int local_dimension() const;
 
+  // Return the geometric dimension of the coordinates this dof map provides
+  virtual unsigned int geometric_dimension() const;
+
   /// Return the number of dofs on each cell facet
   virtual unsigned int num_facet_dofs() const;
+
+  /// Return the number of dofs associated with each cell entity of dimension d
+  virtual unsigned int num_entity_dofs(unsigned int d) const;
 
   /// Tabulate the local-to-global mapping of dofs on a cell
   virtual void tabulate_dofs(unsigned int* dofs,
@@ -156,6 +187,10 @@ public:
   /// Tabulate the local-to-local mapping from facet dofs to cell dofs
   virtual void tabulate_facet_dofs(unsigned int* dofs,
                                    unsigned int facet) const;
+
+  /// Tabulate the local-to-local mapping from dofs associated with mesh entity i of dimension d to cell dofs
+  virtual void tabulate_entity_dofs(unsigned int* dofs,
+                                    unsigned int d, unsigned int i) const;
 
   /// Tabulate the coordinates of all dofs on a cell
   virtual void tabulate_coordinates(double** coordinates,
@@ -226,10 +261,22 @@ unsigned int %(classname)s::local_dimension() const
 %(local_dimension)s
 }
 
+// Return the geometric dimension of the coordinates this dof map provides
+unsigned int %(classname)s::geometric_dimension() const
+{
+%(geometric_dimension)s
+}
+
 /// Return the number of dofs on each cell facet
 unsigned int %(classname)s::num_facet_dofs() const
 {
 %(num_facet_dofs)s
+}
+
+/// Return the number of dofs associated with each cell entity of dimension d
+unsigned int %(classname)s::num_entity_dofs(unsigned int d) const
+{
+%(num_entity_dofs)s
 }
 
 /// Tabulate the local-to-global mapping of dofs on a cell
@@ -245,6 +292,13 @@ void %(classname)s::tabulate_facet_dofs(unsigned int* dofs,
                                         unsigned int facet) const
 {
 %(tabulate_facet_dofs)s
+}
+
+/// Tabulate the local-to-local mapping from dofs associated with mesh entity i of dimension d to cell dofs
+void %(classname)s::tabulate_entity_dofs(unsigned int* dofs,
+                                  unsigned int d, unsigned int i) const
+{
+%(tabulate_entity_dofs)s
 }
 
 /// Tabulate the coordinates of all dofs on a cell
