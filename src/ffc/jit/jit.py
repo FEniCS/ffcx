@@ -2,7 +2,7 @@
 It uses Instant to wrap the generated code into a Python module."""
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-07-20 -- 2008-01-01"
+__date__ = "2007-07-20 -- 2008-01-02"
 __copyright__ = "Copyright (C) 2007-2008 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
@@ -43,7 +43,8 @@ def jit(form, representation=FFC_REPRESENTATION, language=FFC_LANGUAGE, options=
     form_data = analyze.analyze(form)
 
     # Compute md5 checksum of form signature
-    md5sum = "form_" + md5.new(str(form)).hexdigest()
+    signature = str(form) + " " + ", ".join([element.signature() for element in form_data.elements])
+    md5sum = "form_" + md5.new(signature).hexdigest()
 
     # Make sure cache directory exists
     cache_dir = os.path.join((os.environ['HOME']), ".ffc", "cache")
