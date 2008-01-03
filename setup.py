@@ -6,7 +6,7 @@ import sys
 
 # Version number
 major = 1
-minor = 0
+minor = 1
 
 # Set prefix
 try:    prefix = [item for item in sys.argv[1:] if "--prefix=" in item][0].split("=")[1]
