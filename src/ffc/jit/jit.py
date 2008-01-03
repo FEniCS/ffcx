@@ -2,7 +2,7 @@
 It uses Instant to wrap the generated code into a Python module."""
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-07-20 -- 2008-01-02"
+__date__ = "2007-07-20 -- 2008-01-03"
 __copyright__ = "Copyright (C) 2007-2008 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
@@ -40,6 +40,7 @@ def jit(form, representation=FFC_REPRESENTATION, language=FFC_LANGUAGE, options=
         raise RuntimeError, "Just-in-time compiler requires a single form (not a list of forms"
 
     # Analyze and simplify form (to get checksum for simplified form and to get form_data)
+    form = algebra.Form(form)
     form_data = analyze.analyze(form)
 
     # Compute md5 checksum of form signature
