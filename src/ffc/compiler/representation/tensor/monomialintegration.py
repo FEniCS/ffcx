@@ -9,14 +9,14 @@ __license__  = "GNU GPL version 3 or any later version"
 # this implementation is based on.
 
 # Modified by Garth N. Wells 2006
-# Modified by Marie E. Rognes (meg@math.uio.no) 2007
+# Modified by Marie E. Rognes (meg@math.uio.no) 2008
 
 # Python modules
 import numpy
 import time
 
 # FIAT modules
-from FIAT.quadrature import *
+from FIAT.transformedspace import *
 from FIAT.shapes import *
 
 # FFC common modules
@@ -25,9 +25,8 @@ from ffc.common.progress import *
 
 # FFC fem modules
 from ffc.fem.quadrature import *
-
+from ffc.fem.referencecell import *
 from ffc.fem.quadratureelement import *
-
 
 # FFC language modules
 from ffc.compiler.language.index import *
@@ -37,7 +36,6 @@ from ffc.compiler.language.integral import *
 # FFC tensor representation modules
 from multiindex import *
 from pointreordering import *
-from facetmap import *
 
 def integrate(monomial, facet0, facet1):
     """Compute the reference tensor for a given monomial term of a

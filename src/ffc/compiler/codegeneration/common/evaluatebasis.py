@@ -297,7 +297,7 @@ def tabulate_coefficients(element, Indent, format):
     format_const_float        = format["const float declaration"]
 
     # Get coefficients from basis functions, computed by FIAT at compile time
-    coefficients = element.basis().coeffs
+    coefficients = element.basis().get_coeffs()
 
     # Scalar valued basis element [Lagrange, Discontinuous Lagrange, Crouzeix-Raviart]
     if (element.value_rank() == 0):
@@ -314,7 +314,7 @@ def tabulate_coefficients(element, Indent, format):
     num_components = element.value_dimension(0)
 
     # Get polynomial dimension of basis
-    poly_dim = len(element.basis().base.bs)
+    poly_dim = len(element.basis().fspace.base.bs)
 
     # Get the number of dofs from element
     num_dofs = element.space_dimension()
@@ -354,7 +354,7 @@ def relevant_coefficients(element, Indent, format):
     num_components = element.value_dimension(0)
 
     # Get polynomial dimension of basis
-    poly_dim = len(element.basis().base.bs)
+    poly_dim = len(element.basis().fspace.base.bs)
 
     # Extract relevant coefficients and declare as floats
     code += [Indent.indent(format_comment("Extract relevant coefficients"))]
@@ -396,7 +396,7 @@ def compute_values(element, sum_value_dim, vector, Indent, format):
     num_components = element.value_dimension(0)
 
     # Get polynomial dimension of base
-    poly_dim = len(element.basis().base.bs)
+    poly_dim = len(element.basis().fspace.base.bs)
 
     # Check which transform we should use to map the basis functions
     mapping = pick_first([element.value_mapping(dim) for dim in range(element.value_dimension(0))])
@@ -643,7 +643,7 @@ def compute_basisvalues(element, Indent, format):
     code += [Indent.indent(format["comment"]("Compute basisvalues"))]
 
     # Get polynomial dimension of base
-    poly_dim = len(element.basis().base.bs)
+    poly_dim = len(element.basis().fspace.base.bs)
 
     # Get the element shape
     element_shape = element.cell_shape()

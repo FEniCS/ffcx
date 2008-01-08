@@ -155,7 +155,13 @@ class DofMap:
                                     "Nedelec", "Brezzi-Douglas-Fortin-Marini"]:
                 element_points += [None]
             else:
-                element_points += element.dual_basis().pts
+                # We use the pushforward defined by FIATs
+                # transformedspace, to map the points of the dual
+                # basis onto the current reference cell.
+                pushforward  = element.basis().pushforward
+                element_points += (pushforward(p)
+                                   for p in element.dual_basis().pts)
+
         return element_points
 
     def __compute_dof_components(self, element):

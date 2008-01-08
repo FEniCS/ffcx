@@ -4,7 +4,7 @@ __copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Garth N. Wells 2006
-# Modified by Marie E. Rognes 2006
+# Modified by Marie E. Rognes 2008
 # Modified by Andy R Terrel 2007
 
 # Python modules
@@ -12,6 +12,7 @@ import sys
 
 # FIAT modules
 from FIAT.shapes import *
+from FIAT.transformedspace import *
 from FIAT.Lagrange import Lagrange
 from FIAT.DiscontinuousLagrange import DiscontinuousLagrange
 from FIAT.CrouzeixRaviart import CrouzeixRaviart
@@ -26,6 +27,7 @@ from ffc.common.debug import *
 # FFC fem modules
 from mapping import *
 import mixedelement
+import referencecell
 
 # Dictionaries of basic element data
 shape_to_string = {LINE: "interval", TRIANGLE: "triangle", TETRAHEDRON: "tetrahedron"}
@@ -59,6 +61,9 @@ class FiniteElement:
         # Get FIAT element from string
         (self.__fiat_element, self.__mapping) = self.__choose_element(family, shape, degree)
 
+        # Get the transformed (according to mapping) function space:
+        self.__transformed_space = self.__transformed_function_space()
+
         # Get entity dofs from FIAT element
         self.__entity_dofs = [self.__fiat_element.dual_basis().entity_ids]
 
@@ -88,7 +93,9 @@ class FiniteElement:
         if self.value_rank() == 0:
             return 1
         else:
-            return self.basis().tensor_dim()[i]
+            # return self.basis().tensor_dim()[i]
+            # meg: Need tensor_dim in FIAT.transformedspace
+            return self.basis().fspace.tensor_dim()[i]
 
     def num_sub_elements(self):
         "Return the number of sub elements"
@@ -140,7 +147,7 @@ class FiniteElement:
 
     def basis(self):
         "Return basis of finite element space"
-        return self.__fiat_element.function_space()
+        return self.__transformed_space
 
     def dual_basis(self):
         "Return dual basis of finite element space"
@@ -149,7 +156,7 @@ class FiniteElement:
     def tabulate(self, order, points):
         """Return tabulated values of derivatives up to given order of
         basis functions at given points."""
-        return self.__fiat_element.function_space().tabulate_jet(order, points)
+        return self.basis().tabulate_jet(order, points)
 
     def basis_elements(self):
         "Returns a list of all basis elements"
@@ -203,6 +210,24 @@ class FiniteElement:
 
         # Unknown element
         raise RuntimeError, "Unknown finite element: " + str(family)
+
+    def __transformed_function_space(self):
+        """ Transform the function space onto the chosen reference
+        cell according to the given mapping of the finite element."""
+        function_space = self.__fiat_element.function_space()
+        vertices = referencecell.get_vertex_coordinates(self.cell_dimension())
+        if self.__mapping == Mapping.AFFINE:
+            return AffineTransformedFunctionSpace(function_space, vertices)
+        elif self.__mapping == Mapping.CONTRAVARIANT_PIOLA:
+            return PiolaTransformedFunctionSpace(function_space, vertices,
+                                                 "div")
+        elif self.__mapping == Mapping.COVARIANT_PIOLA:
+            return PiolaTransformedFunctionSpace(function_space, vertices,
+                                                 "curl")
+        else:
+            raise FormError, "Unknown transform %s" % str(family)
+
+
 
     def __repr__(self):
         "Pretty print"

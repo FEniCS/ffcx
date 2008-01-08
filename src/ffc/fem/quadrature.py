@@ -14,15 +14,7 @@ def make_quadrature(shape, n):
     using FIAT and then transformed and scaled to the UFC element"""
 
     # FIXME: Quadrature for vertices (shape == None)
-    if shape:
-        # Get quadrature from FIAT
-        q = fiat_make_quadrature(shape, n)
-        points = q.get_points()
-        weights = q.get_weights()
-
-        # FIXME: Temporary until things work
-        return (points, weights)
-    else:
+    if not shape:
         return ([()], array([1.0,]))
 
     # Set scaling and transform
@@ -37,6 +29,11 @@ def make_quadrature(shape, n):
         scaling = 0.125
     else:
         raise RuntimeError, "Unknown shape"
+
+    # Get quadrature from FIAT
+    q = fiat_make_quadrature(shape, n)
+    points = q.get_points()
+    weights = q.get_weights()
     
     # Scale from FIAT reference cell to UFC reference cell    
     for i in range(len(points)):

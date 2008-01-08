@@ -264,7 +264,7 @@ def tabulate_dmats(element, Indent, format):
     format_matrix_access  = format["matrix access"]
 
     # Get derivative matrices (coefficients) of basis functions, computed by FIAT at compile time
-    derivative_matrices = element.basis().base.dmats
+    derivative_matrices = element.basis().get_dmats()
 
     # Get the shape of the element
     cell_shape = element.cell_shape()
@@ -278,7 +278,7 @@ def tabulate_dmats(element, Indent, format):
         matrix = numpy.transpose(derivative_matrices[i])
 
         # Get polynomial dimension of basis
-        poly_dim = len(element.basis().base.bs)
+        poly_dim = len(element.basis().fspace.base.bs)
 
         # Declare varable name for coefficients
         name = format_table + format_dmats(i) + format_matrix_access(poly_dim, poly_dim)
@@ -325,7 +325,7 @@ def compute_reference_derivatives(element, Indent, format):
     num_components = element.value_dimension(0)
 
     # Get polynomial dimension of basis
-    poly_dim = len(element.basis().base.bs)
+    poly_dim = len(element.basis().fspace.base.bs)
 
     # Get element shape
     cell_shape = element.cell_shape()
@@ -465,7 +465,7 @@ def multiply_coeffs(element, Indent, format):
     num_components = element.value_dimension(0)
 
     # Get polynomial dimension of basis
-    poly_dim = len(element.basis().base.bs)
+    poly_dim = len(element.basis().fspace.base.bs)
 
     # Get the shape of the element
     cell_shape = element.cell_shape()
