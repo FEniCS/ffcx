@@ -67,12 +67,6 @@ public:
   }
 
   // Return the geometric dimension of the coordinates this dof map provides
-  unsigned int %(classname)s::geometric_dimension() const
-  {
-%(geometric_dimension)s
-  }
-
-  // Return the geometric dimension of the coordinates this dof map provides
   virtual unsigned int geometric_dimension() const
   {
 %(geometric_dimension)s
