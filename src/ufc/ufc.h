@@ -141,7 +141,7 @@ namespace ufc
     virtual void evaluate_dofs(double *values,
                                const function& f,
                                const cell& c) const
-    { throw std::runtime_error("Not implemented (introduced in UFCv1.1)."); }
+    { throw std::runtime_error("Not implemented (introduced in UFC v1.1)."); }
 
     /// Interpolate vertex values from dof values
     virtual void interpolate_vertex_values(double* vertex_values,
@@ -193,14 +193,14 @@ namespace ufc
 
     // Return the geometric dimension of the coordinates this dof map provides
     virtual unsigned int geometric_dimension() const
-    { throw std::runtime_error("Not implemented (introduced in UFCv1.1)."); }
+    { throw std::runtime_error("Not implemented (introduced in UFC v1.1)."); }
 
     /// Return the number of dofs on each cell facet
     virtual unsigned int num_facet_dofs() const = 0;
 
     /// Return the number of dofs associated with each cell entity of dimension d
     virtual unsigned int num_entity_dofs(unsigned int d) const
-    { throw std::runtime_error("Not implemented (introduced in UFCv1.1)."); }
+    { throw std::runtime_error("Not implemented (introduced in UFC v1.1)."); }
 
     /// Tabulate the local-to-global mapping of dofs on a cell
     virtual void tabulate_dofs(unsigned int* dofs,
@@ -214,7 +214,7 @@ namespace ufc
     /// Tabulate the local-to-local mapping from dofs associated with mesh entity i of dimension d to cell dofs
     virtual void tabulate_entity_dofs(unsigned int* dofs,
                                       unsigned int d, unsigned int i) const
-    { throw std::runtime_error("Not implemented (introduced in UFCv1.1)."); }
+    { throw std::runtime_error("Not implemented (introduced in UFC v1.1)."); }
 
     /// Tabulate the coordinates of all dofs on a cell
     virtual void tabulate_coordinates(double** coordinates,
