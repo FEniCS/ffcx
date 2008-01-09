@@ -321,6 +321,9 @@ def __generate_finite_element(code, form_data, options, prefix, label):
     # Generate code for evaluate_dof
     ufc_code["evaluate_dof"] = __generate_body(code["evaluate_dof"])
 
+    # Generate code for evaluate_dofs (introduced in UFC 1.1)
+    ufc_code["evaluate_dofs"] = format["exception"]("Not implemented (introduced in UFC v1.1).")
+
     # Generate code for inperpolate_vertex_values
     ufc_code["interpolate_vertex_values"] = remove_unused(__generate_body(code["interpolate_vertex_values"]))
 
@@ -373,17 +376,26 @@ def __generate_dof_map(code, form_data, options, prefix, label):
     # Generate code for global_dimension
     ufc_code["global_dimension"] = "return __global_dimension;"
 
-    # Generate code for local dimension
+    # Generate code for local_dimension
     ufc_code["local_dimension"] = "return %s;" % code["local_dimension"]
+
+    # Generate code for geometric_dimension (introduced in UFC 1.1)
+    ufc_code["geometric_dimension"] = format["exception"]("Not implemented (introduced in UFC v1.1).")
 
     # Generate code for num_facet_dofs
     ufc_code["num_facet_dofs"] = "return %s;" % code["num_facet_dofs"]
+
+    # Generate code for num_entity_dofs (introduced in UFC 1.1)
+    ufc_code["num_entity_dofs"] = format["exception"]("Not implemented (introduced in UFC v1.1).")
 
     # Generate code for tabulate_dofs
     ufc_code["tabulate_dofs"] = __generate_body(code["tabulate_dofs"])
 
     # Generate code for tabulate_facet_dofs
     ufc_code["tabulate_facet_dofs"] = __generate_switch("facet", [__generate_body(case) for case in code["tabulate_facet_dofs"]])
+
+    # Generate code for tabulate_entity_dofs (introduced in UFC 1.1)
+    ufc_code["tabulate_entity_dofs"] = format["exception"]("Not implemented (introduced in UFC v1.1).")
 
     # Generate code for tabulate_coordinates
     ufc_code["tabulate_coordinates"] = __generate_body(code["tabulate_coordinates"])
@@ -398,7 +410,6 @@ def __generate_dof_map(code, form_data, options, prefix, label):
     else:
         cases = ["return new %s_%d();" % (ufc_code["classname"], i) for i in range(num_sub_dof_maps)]
         ufc_code["create_sub_dof_map"] = __generate_switch("i", cases, "return 0;")
-
 
     return __generate_code(dof_map_combined, ufc_code, options)
 
