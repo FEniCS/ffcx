@@ -24,6 +24,7 @@ from ffc.compiler.language.restriction import *
 # FFC tensor representation modules
 from ffc.compiler.representation.tensor.multiindex import *
 from ffc.compiler.representation.tensor.pointreordering import *
+from ffc.compiler.representation.tensor.facetmap import *
 
 class Quadrature:
     """This class contains quadrature information
@@ -122,10 +123,10 @@ def __init_table(basisfunctions, integral_type, points, facet0, facet1):
         if integral_type == Integral.CELL:
             table[(element, None)] = element.tabulate(order, points)
         elif integral_type == Integral.EXTERIOR_FACET:
-            table[(element, None)] = element.tabulate(order, points, facet0)
+            table[(element, None)] = element.tabulate(order, map_to_facet(points, facet0))
         elif integral_type == Integral.INTERIOR_FACET:
-            table[(element, Restriction.PLUS)]  = element.tabulate(order, points, facet0)
-            table[(element, Restriction.MINUS)] = element.tabulate(order, points, facet1)
+            table[(element, Restriction.PLUS)]  = element.tabulate(order, map_to_facet(points, facet0))
+            table[(element, Restriction.MINUS)] = element.tabulate(order, map_to_facet(points, facet1))
 
     return table
 
