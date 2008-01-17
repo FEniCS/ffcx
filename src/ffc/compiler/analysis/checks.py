@@ -70,10 +70,12 @@ def check_quadratureelements(form):
        if they have the same number of quadrature points"""
     for p in form.monomials:
         # Get elements
-        elements = [v.element for v in p.basisfunctions if isinstance(v.element, QuadratureElement)]
+        elements = [v.element for v in p.basisfunctions]
+        # Get QuadratureElements
+        QEs = [e for elem in elements for e in elem.basis_elements() if isinstance(e, QuadratureElement)]
         # Check if all elements have the same number of points (compare to first)
-        for element in elements:
-            if not element.num_axis_points() == elements[0].num_axis_points():
+        for qe in QEs:
+            if not qe.num_axis_points() == QEs[0].num_axis_points():
                 raise FormError, (p, "All QuadratureElements in a monomial MUST have the same number of quadrature points")
 
 def __check_completeness(indices):

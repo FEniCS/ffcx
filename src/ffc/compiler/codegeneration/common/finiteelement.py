@@ -44,8 +44,9 @@ def generate_finite_element(element, format):
     # Generate code for value_dimension
     code["value_dimension"] = ["%d" % element.value_dimension(i) for i in range(max(element.value_rank(), 1))]
 
-    # Disable code generation for unsupported functions of QuadratureElement
-    if not isinstance(element, QuadratureElement):
+    # Disable code generation for unsupported functions of QuadratureElement,
+    # (or MixedElements including QuadratureElements)
+    if not True in [isinstance(e, QuadratureElement) for e in element.basis_elements()]:
         # Generate code for evaluate_basis
         code["evaluate_basis"] = evaluate_basis(element, format)
 

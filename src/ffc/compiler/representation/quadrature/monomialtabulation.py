@@ -15,11 +15,16 @@ from FIAT.shapes import *
 
 # FFC common modules
 from ffc.common.debug import *
+from ffc.common.progress import *
+
+# FFC fem modules
+from ffc.fem.quadrature import *
+from ffc.fem.quadratureelement import *
 
 # FFC language modules
 from ffc.compiler.language.index import *
+from ffc.compiler.language.algebra import *
 from ffc.compiler.language.integral import *
-from ffc.compiler.language.restriction import *
 
 # FFC tensor representation modules
 from ffc.compiler.representation.tensor.multiindex import *
@@ -87,16 +92,21 @@ def __init_quadrature(basisfunctions, integral_type, num_quad_points):
     if num_quad_points:
         m = num_quad_points
 
+    # Check if any basisfunctions are defined on a quadrature element
+    for v in basisfunctions:
+        for e in v.element.basis_elements():
+            if isinstance(e, QuadratureElement):
+                # Get number of points
+                m = e.num_axis_points()
+                debug("QuadratureElement present. Total degree is %d, using %d quadrature point(s) in each dimension" % (q, m), 1)
+                # All elements have the same number of points (verified in checks.py)
+                break
+
     # Create quadrature rule and get points and weights
-    # FIXME: FIAT not finiteelement should return shape of facet
     if integral_type == Integral.CELL:
-        quadrature = make_quadrature(shape, m)
-    elif integral_type == Integral.EXTERIOR_FACET:
-        quadrature = make_quadrature(facet_shape, m)
-    elif integral_type == Integral.INTERIOR_FACET:
-        quadrature = make_quadrature(facet_shape, m)
-    points = quadrature.get_points()
-    weights = quadrature.get_weights()
+        (points, weights) = make_quadrature(shape, m)
+    elif integral_type == Integral.EXTERIOR_FACET or integral_type == Integral.INTERIOR_FACET:
+        (points, weights) = make_quadrature(facet_shape, m)
 
     return (points, weights)
 

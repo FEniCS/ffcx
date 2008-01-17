@@ -1,11 +1,12 @@
 __author__ = "Kristian B. Oelgaard (k.b.oelgaard@tudelft.nl)"
-__date__ = "2007-12-10 -- 2007-12-10"
-__copyright__ = "Copyright (C) 2007-2007 Kristian B. Oelgaard"
+__date__ = "2007-12-10 -- 2007-01-16"
+__copyright__ = "Copyright (C) 2007-2008 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
 # FFC fem modules
 from finiteelement import *
 from quadrature import *
+from mapping import *
 
 # We could remove this dummy class as explained later
 class dummy_dual_basis:
@@ -30,6 +31,9 @@ class QuadratureElement(FiniteElement):
 
         # Save element degree (constant)
         self.__degree = 0
+
+        # Set mapping to AFFINE (not important, I think, for this element)
+        self.__mapping = Mapping.AFFINE
 
         # Create quadrature (only interested in points)
         points, weights = make_quadrature(self.__cell_shape, num_points_per_axis)
@@ -99,16 +103,16 @@ class QuadratureElement(FiniteElement):
         "Return degree of polynomial basis"
         return self.__degree
 
-#     def value_mapping(self, component):
-#         """Return the type of mapping associated with the i'th
-#         component of the element"""
-#         return self.__mapping
+    def value_mapping(self, component):
+        """Return the type of mapping associated with the i'th
+        component of the element"""
+        return self.__mapping
 
-#     def space_mapping(self, i):
-#         """Return the type of mapping associated with the i'th basis
-#         function of the element"""
-#         return self.__mapping
-#     
+    def space_mapping(self, i):
+        """Return the type of mapping associated with the i'th basis
+        function of the element"""
+        return self.__mapping
+
 #     def value_offset(self, component):
 #         """Given an absolute component (index), return the associated
 #         subelement and offset of the component""" 
@@ -148,6 +152,10 @@ class QuadratureElement(FiniteElement):
     def tabulate(self, order, points):
         """Return the identity matrix of size (num_quad_points, num_quad_points),
         in a format that monomialintegration and monomialtabulation understands."""
+
+        # Derivatives are not defined on a QuadratureElement
+        if order:
+            raise RuntimeError("Derivatives are not defined on a QuadratureElement")
 
         # Check if incoming points are equal to quadrature points. (If they are,
         # then monomialintegration or monomialtabulation is probably the caller.)
