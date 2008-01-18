@@ -165,14 +165,14 @@ class FunctionValueTests(unittest.TestCase):
                                 -2 + 3*x[0] +6*x[1] - 4*x[0]*x[1] -4*x[1]**2),
                      lambda x: (-2*x[0] +4* x[0]**2,
                                 1 -3*x[0] -x[1] + 4*x[0]*x[1]),
-                     lambda x: (8/math.sqrt(2)*x[0] - 4/math.sqrt(2)*x[0]*x[1]
+                     lambda x: (16/math.sqrt(2)*x[0] - 8/math.sqrt(2)*x[0]*x[1]
+                                - 16/math.sqrt(2)*x[0]**2,
+                                8/math.sqrt(2)*x[1] - 16/math.sqrt(2)*x[0]*x[1]
+                                - 8/math.sqrt(2)*x[1]**2),
+                     lambda x: (8/math.sqrt(2)*x[0] -16/math.sqrt(2)*x[0]*x[1]
                                 - 8/math.sqrt(2)*x[0]**2,
-                                4/math.sqrt(2)*x[1] - 8/math.sqrt(2)*x[0]*x[1]
-                                - 4/math.sqrt(2)*x[1]**2),
-                     lambda x: (4/math.sqrt(2)*x[0] -8/math.sqrt(2)*x[0]*x[1]
-                                - 4/math.sqrt(2)*x[0]**2,
-                                8/math.sqrt(2)*x[1] - 4/math.sqrt(2)*x[0]*x[1]
-                                - 8/math.sqrt(2)*x[1]**2)
+                                16/math.sqrt(2)*x[1] - 8/math.sqrt(2)*x[0]*x[1]
+                                - 16/math.sqrt(2)*x[1]**2)
                      ]
 
         for i in range(len(basis)):
