@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-10-04 -- 2007-11-26"
+__date__ = "2004-10-04 -- 2008-01-18"
 __copyright__ = "Copyright (C) 2004-2007 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
@@ -226,8 +226,6 @@ class FiniteElement:
                                                  "curl")
         else:
             raise FormError, "Unknown transform %s" % str(family)
-
-
 
     def __repr__(self):
         "Pretty print"
