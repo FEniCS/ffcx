@@ -80,12 +80,13 @@ def __init_quadrature(basisfunctions, integral_type):
 
     # Check if any basisfunctions are defined on a quadrature element
     for v in basisfunctions:
-        if isinstance(v.element, QuadratureElement):
-            # Get number of points
-            m = v.element.num_axis_points()
-            debug("QuadratureElement present. Total degree is %d, using %d quadrature point(s) in each dimension" % (q, m), 1)
-            # All elements have the same number of points (verified in checks.py)
-            break
+        for e in v.element.basis_elements():
+            if isinstance(e, QuadratureElement):
+                # Get number of points
+                m = e.num_axis_points()
+                debug("QuadratureElement present. Total degree is %d, using %d quadrature point(s) in each dimension" % (q, m), 1)
+                # All elements have the same number of points (verified in checks.py)
+                break
 
     # Create quadrature rule and get points and weights
     if integral_type == Integral.CELL:
@@ -117,11 +118,8 @@ def __init_table(basisfunctions, integral_type, points, facet0, facet1):
         if integral_type == Integral.CELL:
             table[(element, None)] = element.tabulate(order, points)
         elif integral_type == Integral.EXTERIOR_FACET:
-            #table[(element, None)] = element.tabulate(order, points, facet0)
             table[(element, None)] = element.tabulate(order, map_to_facet(points, facet0))
         elif integral_type == Integral.INTERIOR_FACET:
-            #table[(element, Restriction.PLUS)]  = element.tabulate(order, points, facet0)
-            #table[(element, Restriction.MINUS)] = element.tabulate(order, points, facet1)
             table[(element, Restriction.PLUS)]  = element.tabulate(order, map_to_facet(points, facet0))
             table[(element, Restriction.MINUS)] = element.tabulate(order, map_to_facet(points, facet1))
 
