@@ -2,9 +2,6 @@ This file lists TODO items for FFC. As usual, the priority depends
 on the current interests of the various FFC developers. To edit this
 file, it is convenient to install org-mode in Emacs.
 
-* Fix bug in BDFM
-  - Broken after mapping of reference element moved to FIAT
-
 * Write introduction in manual
   - The introduction is currently empty
 
