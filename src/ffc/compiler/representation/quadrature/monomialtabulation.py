@@ -20,6 +20,7 @@ from ffc.common.progress import *
 # FFC fem modules
 from ffc.fem.quadrature import *
 from ffc.fem.quadratureelement import *
+from ffc.fem.referencecell import *
 
 # FFC language modules
 from ffc.compiler.language.index import *
@@ -29,7 +30,7 @@ from ffc.compiler.language.integral import *
 # FFC tensor representation modules
 from ffc.compiler.representation.tensor.multiindex import *
 from ffc.compiler.representation.tensor.pointreordering import *
-from ffc.compiler.representation.tensor.facetmap import *
+#from ffc.compiler.representation.tensor.facetmap import *
 
 class Quadrature:
     """This class contains quadrature information
