@@ -11,6 +11,7 @@ from ffc.common.utils import *
 
 # FFC fem modules
 from finiteelement import *
+from quadratureelement import *
 from mixedelement import *
 
 class DofMap:
@@ -154,6 +155,8 @@ class DofMap:
             if element.family() in ["Brezzi-Douglas-Marini", "Raviart-Thomas",
                                     "Nedelec", "Brezzi-Douglas-Fortin-Marini"]:
                 element_points += [None]
+            elif isinstance(element, QuadratureElement):
+                element_points += element.dual_basis().pts
             else:
                 # We use the pushforward defined by FIATs
                 # transformedspace, to map the points of the dual
