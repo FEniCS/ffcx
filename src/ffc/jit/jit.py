@@ -2,7 +2,7 @@
 It uses Instant to wrap the generated code into a Python module."""
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-07-20 -- 2008-01-03"
+__date__ = "2007-07-20 -- 2008-01-23"
 __copyright__ = "Copyright (C) 2007-2008 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
@@ -10,7 +10,7 @@ __license__  = "GNU GPL version 3 or any later version"
 from os import system
 from commands import getoutput
 from distutils import sysconfig
-import md5, os, sys
+import md5, os, sys, shutil
 
 # FFC common modules
 from ffc.common.debug import *
@@ -95,7 +95,7 @@ def build_module(form, representation, language, options, md5sum, form_dir, modu
 
     # Move code to cache
     filename = os.path.join(form_dir, prefix + ".h")
-    os.rename(prefix + ".h", filename)
+    shutil.move(prefix + ".h", filename)
 
     # FIXME: Move this to top when we have added dependence on Instant
     import instant
@@ -115,4 +115,4 @@ def build_module(form, representation, language, options, md5sum, form_dir, modu
     debug("done", -1)
 
     # Move module to cache
-    os.rename(module_name, module_dir)
+    shutil.move(module_name, module_dir)
