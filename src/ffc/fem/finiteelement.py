@@ -9,6 +9,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Python modules
 import sys
+import numpy
 
 # FIAT modules
 from FIAT.shapes import *
@@ -28,6 +29,7 @@ from ffc.common.debug import *
 from mapping import *
 import mixedelement
 import referencecell
+from  dofrepresentation import *
 
 # Dictionaries of basic element data
 shape_to_string = {LINE: "interval", TRIANGLE: "triangle", TETRAHEDRON: "tetrahedron"}
@@ -67,6 +69,9 @@ class FiniteElement:
         # Get entity dofs from FIAT element
         self.__entity_dofs = [self.__fiat_element.dual_basis().entity_ids]
 
+        # Get the dof identifiers from FIAT element
+        self.__dof_representations = self.__create_dof_representations(self.__fiat_element.dual_basis().get_dualbasis_types())
+        
     def family(self):
         "Return a string indentifying the finite element family"
         return self.__family
@@ -145,12 +150,17 @@ class FiniteElement:
         "Return the mapping from entities to dofs"
         return self.__entity_dofs
 
+    def dof_representations(self):
+        "Return the representation of the dofs"
+        return self.__dof_representations
+
     def basis(self):
         "Return basis of finite element space"
         return self.__transformed_space
 
     def dual_basis(self):
         "Return dual basis of finite element space"
+        # FIXME meg: Return dof representation instead?
         return self.__fiat_element.dual_basis()
 
     def tabulate(self, order, points):
@@ -227,7 +237,48 @@ class FiniteElement:
         else:
             raise FormError, "Unknown transform %s" % str(family)
 
+    def __create_dof_representations(self, list_of_fiat_dofs):
+        """ Take the FIAT dof representation and convert it to the ffc
+        dof representation including transforming the points from one
+        reference element onto the other."""
 
+        dofs = []
+
+        # In order to convert from the FIAT geometry to the UFC
+        # geometry we need the pushforward and the jacobian of the
+        # geometry mapping. Note that the Jacobian returned by FIAT is
+        # the one of the mapping from the physical to the reference
+        # element. This is the inverse of the nomenclature usually
+        # used in this code.
+        pushforward = self.basis().pushforward
+        fiat_J = self.basis().get_jacobian()
+        if self.__mapping == Mapping.CONTRAVARIANT_PIOLA:
+            J = 1.0/numpy.linalg.det(fiat_J)*numpy.transpose(fiat_J)
+        elif self.__mapping == Mapping.COVARIANT_PIOLA:
+            J = numpy.linalg.inv(fiat_J)
+
+        for fiat_dof_repr in list_of_fiat_dofs:
+            (name, fiat_pts, fiat_dirs, fiat_weights, derivs) = fiat_dof_repr
+            direction = []
+            weights = []
+
+            # The points on the FIAT reference element are pushed onto
+            # the UFC reference element:
+            points = [pushforward(p) for p in fiat_pts]
+            
+            # The direction map according to inverse tranpose of the
+            # mapping of the element space
+            if fiat_dirs:
+                direction = numpy.dot(J, fiat_dirs[0]) 
+
+            # The weights are mapped with the Jacobian
+            if fiat_weights:
+                scaling = numpy.linalg.det(fiat_jacobian)
+                weights = [weight*scaling for weight in fiat_weights]
+
+            dofs += [DofRepresentation(name, points, direction, weights)]
+
+        return dofs
 
     def __repr__(self):
         "Pretty print"

@@ -22,8 +22,9 @@ class DofMap:
     def __init__(self, element):
         "Create dof map from given finite element"
 
-        # Get entity dofs from element
+        # Get entity dofs and dof representation from element
         entity_dofs = element.entity_dofs()
+        self.__dof_reprs = element.dof_representations()
 
         # Generate dof map data
         self.__signature        = "FFC dof map for " + element.signature()
@@ -32,8 +33,6 @@ class DofMap:
         self.__num_dofs_per_dim = self.__compute_num_dofs_per_dim(entity_dofs)
         self.__num_facet_dofs   = self.__compute_num_facet_dofs(entity_dofs, element.cell_shape())
         self.__dof_entities     = self.__compute_dof_entities(entity_dofs)
-        self.__dof_coordinates  = self.__compute_dof_coordinates(element)
-        self.__dof_components   = self.__compute_dof_components(element)
         self.__incidence        = self.__compute_incidence(element.cell_shape())
         self.__dof_maps         = self.__compute_dof_maps(element)
         self.__element          = element
@@ -56,6 +55,17 @@ class DofMap:
         "Return the number of dofs on each cell facet"
         return self.__num_facet_dofs
 
+    def get_num_of_points(self):
+        "Return the number of points associated with each dof"
+        return [len(dof.points) for dof in self.__dof_reprs]
+
+    def dof_coordinates(self):
+        "Return the coordinates associated with each dof"
+        # FIXME meg: Now returns the first coordinate associated with
+        # each dof... for the sake of the codegeneration for
+        # tabulate_coordinates!
+        return [dof.points[0] for dof in self.__dof_reprs]
+
     def num_dofs_per_dim(self, sub_dof_map=None):
         "Return the number of dofs associated with each topological dimension for sub dof map or total"
         if sub_dof_map == None:
@@ -71,18 +81,6 @@ class DofMap:
     def dof_entities(self):
         "Return a list of which entities are associated with each dof"
         return self.__dof_entities
-
-    def dof_coordinates(self):
-        """Return a list of which coordinates are associated with each
-        dof. This only makes sense for Lagrange elements and other
-        elements which have dofs defined by point evaluation."""
-        return self.__dof_coordinates
-
-    def dof_components(self):
-        """Return a list of which components are associated with each
-        dof. This only makes sense for Lagrange elements and other
-        elements which have dofs defined by point evaluation."""
-        return self.__dof_components
 
     def incidence(self):
         "Return a dictionary of which entities are incident with which"
@@ -102,6 +100,10 @@ class DofMap:
     def element(self):
         "Return the finite element associated with the dof map"
         return self.__element
+
+    def dof_representations(self):
+        "Return the dof representations associated with the DofMap"
+        return self.__dof_reprs
 
     def __compute_num_dofs_per_dim(self, entity_dofs):
         "Compute the number of dofs associated with each topological dimension"
@@ -144,56 +146,6 @@ class DofMap:
                         dof_entities[offset + dof] = (dim, entity)
             offset = max(dof_entities) + 1
         return dof_entities
-
-    def __compute_dof_coordinates(self, element):
-        "Compute the coordinates associated with each dof"
-
-        element_points = []
-        elements = element.basis_elements()
-        for element in elements:
-            # Test for non-supported elements
-            if element.family() in ["Brezzi-Douglas-Marini", "Raviart-Thomas",
-                                    "Nedelec", "Brezzi-Douglas-Fortin-Marini"]:
-                element_points += [None]
-            elif isinstance(element, QuadratureElement):
-                element_points += element.dual_basis().pts
-            else:
-                # We use the pushforward defined by FIATs
-                # transformedspace, to map the points of the dual
-                # basis onto the current reference cell.
-                pushforward  = element.basis().pushforward
-                element_points += (pushforward(p)
-                                   for p in element.dual_basis().pts)
-
-        return element_points
-
-    def __compute_dof_components(self, element):
-        "Compute the components associated with each dof"
-
-        components = []
-        elements = element.basis_elements()
-        for e in elements:
-            # Test for non-supported (or tested) elements
-            if e.family() in ["Brezzi-Douglas-Marini", "Raviart-Thomas", "Nedelec", "Brezzi-Douglas-Fortin-Marini"]:
-                return None
-        for i in range(element.value_dimension(0)):
-            components += [i]*elements[i].space_dimension()
-
-        return components
-
-        # We can handle scalar Lagrange elements
-#        if element.family() in ["Lagrange", "Discontinuous Lagrange"]:
-#            return [0 for i in range(element.space_dimension())]
- 
-        # We can handle tensor products of scalar Lagrange elements        
-#        if self.__is_vector_lagrange(element):
-#            components = []
-#            for i in range(element.value_dimension(0)):
-#                components += element.sub_element(0).space_dimension()*[i]
-#            return components
-
-        # Can't handle element
-#        return None
 
     def __compute_incidence(self, cell_shape):
         "Compute which entities are incident with which"
