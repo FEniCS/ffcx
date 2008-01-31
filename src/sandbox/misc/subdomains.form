@@ -1,0 +1,18 @@
+element = FiniteElement("CG", "tetrahedron", 1)
+
+v = TestFunction(element)
+u = TrialFunction(element)
+
+dx0 = Integral("cell", 0)
+dx1 = Integral("cell", 1)
+
+ds0 = Integral("exterior facet", 0)
+ds1 = Integral("exterior facet", 1)
+
+dS0 = Integral("interior facet", 0)
+dS1 = Integral("interior facet", 1)
+
+#a = v*u*dx0 + 10.0*v*u*dx1 + v*u*ds0 + 2*v*u*ds1 + v('+')*u('+')*dS0 + 2*v('+')*u('+')*dS1
+
+#a = v*u*dx
+a = v*u*dx0 + 10.0*v*u*dx1
