@@ -53,8 +53,8 @@ class QuadratureGenerator(CodeGenerator):
         # Object to control the code indentation
         Indent = IndentControl()
 
-        # Extract tensors
-        tensors = form_representation.cell_tensor
+        # Extract terms for sub domain
+        tensors = [term for term in form_representation.cell_tensor if term.monomial.integral.sub_domain == sub_domain]
         if len(tensors) == 0:
             return None
 
@@ -86,8 +86,8 @@ class QuadratureGenerator(CodeGenerator):
         format_block_begin  = format["block begin"]
         format_block_end    = format["block end"]
 
-        # Extract tensors
-        tensors = form_representation.exterior_facet_tensors
+        # Extract terms for sub domain
+        tensors = [[term for term in t if term.monomial.integral.sub_domain == sub_domain] for t in form_representation.exterior_facet_tensors]
         if len(tensors) == 0:
             return None
 
@@ -126,8 +126,8 @@ class QuadratureGenerator(CodeGenerator):
         format_block_begin  = format["block begin"]
         format_block_end    = format["block end"]
 
-        # Extract tensors
-        tensors = form_representation.interior_facet_tensors
+        # Extract terms for sub domain
+        tensors = [[[term for term in t2 if term.monomial.integral.sub_domain == sub_domain] for t2 in t1] for t1 in form_representation.interior_facet_tensors]
         if len(tensors) == 0:
             return None
 
