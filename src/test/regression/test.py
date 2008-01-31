@@ -12,6 +12,7 @@ from difflib import unified_diff
 # Check all in demo directory
 chdir("../../demo")
 form_files = [f for f in listdir(".") if f[-5:] == ".form"]
+form_files.sort()
 num_forms = len(form_files)
 num_forms_ok = 0
 forms_not_ok = []
