@@ -36,8 +36,8 @@ class TensorGenerator(CodeGenerator):
         """Generate dictionary of code for cell integral from the given
         form representation according to the given format"""
 
-        # Extract terms
-        terms = form_representation.cell_tensor
+        # Extract terms for sub domain
+        terms = [term for term in form_representation.cell_tensor if term.monomial.integral.sub_domain == sub_domain]
         if len(terms) == 0:
             return None
 
@@ -69,8 +69,8 @@ class TensorGenerator(CodeGenerator):
         """Generate dictionary of code for exterior facet integral from the given
         form representation according to the given format"""
 
-        # Extract terms
-        terms = form_representation.exterior_facet_tensors
+        # Extract terms for sub domain
+        terms = [[term for term in t if term.monomial.integral.sub_domain == sub_domain] for t in form_representation.exterior_facet_tensors]
         if len(terms) == 0:
             return None
 
@@ -109,8 +109,8 @@ class TensorGenerator(CodeGenerator):
         """Generate dictionary of code for interior facet integral from the given
         form representation according to the given format"""
 
-        # Extract terms
-        terms = form_representation.interior_facet_tensors
+        # Extract terms for sub domain
+        terms = [[[term for term in t2 if term.monomial.integral.sub_domain == sub_domain] for t2 in t1] for t1 in form_representation.interior_facet_tensors]
         if len(terms) == 0:
             return None
 
