@@ -78,65 +78,62 @@ def __generate_evaluate_dof(element, format):
     # Generate code as a list of lines
     code = []
 
-    # Generate dof map and get dof representations
-    dof_map = DofMap(element)
-    dofs = dof_map.dof_representations()
-    num_dofs = len(dofs)
-
     # Get code formats
     block = format["block"]
     separator = format["separator"]
     floating_point = format["floating point"]
     comment = format["comment"]
 
+    # Generate dof map and get dof representations
+    dof_map = DofMap(element)
+    dofs = dof_map.dof_representations()
+    num_dofs = len(dofs)
+ 
+    # For ease in the code generalization, pad the points and weights
+    # with zeros according to the maximal number of points:
+    max_num_points = dof_map.get_max_num_of_points()
+    num_points_per_dof = dof_map.pad_dof_points_and_weights()
+
     # Compute the value dimension of the functions
     num_values = 1
     for i in range(element.value_rank()):
         num_values *= element.value_dimension(i)
-
     # Check that the value dimension is the same for all dofs and that
-    # it matches the dimension of the element
+    # it matches the dimension of the function
     value_dim = pick_first([dof.value_dim() for dof in dofs])
     if value_dim != num_values:
         raise RuntimeError, "Directional component does not match vector \
                              dimension"
 
-    # Construct an array containing the number of points for each dof:
-    num_points_per_dof = dof_map.get_num_of_points()
-    num_points_per_dof_code = block(separator.join([str(n) for n in num_points_per_dof]))
+    # Initialize the points, weights and directions for the dofs:
+    code += [comment("The reference points, direction and weights:")]
+    s = block(separator.join(
+        [block(separator.join([block(separator.join([floating_point(c)
+                                                     for c in point]))
+                               for point in dof.points]))
+         for dof in dofs]))
+    code  += ["const double X[%d][%d][%d] = %s;" % (num_dofs, max_num_points,
+                                                  element.cell_dimension(), s)]
+    s = block(separator.join(
+        [block(separator.join([floating_point(w) for w in dof.weights]))
+         for dof in dofs]))
+    code += ["const double W[%d][%d] = %s;" % (num_dofs, max_num_points, s)]
 
-    # Declare variables for temporary storage
+    s = block(separator.join(
+        [block(separator.join([floating_point(d) for d in dof.direction]))
+         for dof in dofs]))
+    code += ["const double D[%d][%d] = %s;" % (num_dofs, num_values, s)]
+    code += [""]
+
+    # Declare variables possibly used inside loop:
     code += [comment("Intermediate variables for storing:")]
     code += ["double values[%d];" % num_values]
     code += ["double y[%d];" % element.cell_dimension()]
     code += ["double result = 0.0;"]
-
-    # Add initial declarations to code
-    code += [format["snippet declare_representation"]
-             % {"num_dofs": num_dofs,
-                "num_points_per_dof": num_points_per_dof_code,
-                "cell_dimension": element.cell_dimension(),
-                "value_dimension": num_values}]
-
-    # Initialize the points, weights and directions for each dof:
-    cases = []
-    for i in range(len(dofs)):
-        case = []
-        dof = dofs[i]
-        (num_points, value_dim) = (dof.num_of_points(), dof.value_dim())
-        case += [comment("Initialize representation on reference element" )]
-        for j in range(num_points):
-            point = dof.points[j]
-            weight = dof.weights[j]
-            for k in range(len(point)):
-                case += ["X[%d][%d][%d] = %s;" % (i, j, k,
-                                                  floating_point(point[k]))]
-            case += ["W[%d][%d] = %s;" % (i, j, floating_point(weight))]
-        for k in range(len(dof.direction)):
-            case += ["D[%d][%d] = %s;" % (i, k,
-                                          floating_point(dof.direction[k]))]
-        cases += ["\n".join(case)]
-    code += [format["generate switch"]("i", cases)]
+    code += [""]
+    code += [comment("Coefficients for mapping of points:")]
+    code += ["double w%d;"% i for i in range(element.cell_dimension()+1)]
+    code += [""]
 
     # Compute the declarations needed for function mapping and the
     # code for mapping each set of function values:
@@ -150,36 +147,41 @@ def __generate_evaluate_dof(element, format):
     tab = 0
     endloop = ""
 
-    # If there is more than one point, we need to add a loop, add
-    # indentation and add an end brackets
+    # If there is more than one point, we need to add a table of the
+    # number of points per dof, add the loop, add indentation and add
+    # an end brackets
+    # And must declare the coefficients of the affine mapping elsewhere.
     index = "0"
-    if num_points > 1:
+    if max_num_points > 1:
+        num_points_per_dof_code = block(separator.join([str(n) for n in num_points_per_dof]))
+        code += ["const int ns[%d] = %s;"
+                 % (num_dofs, num_points_per_dof_code)]
         code += [format["loop"]("j", "0", "ns[i]")] 
-        (tab, endloop, index) = (2, "\n } // End for", "j")
+        (tab, endloop, index) = (2, "\n} // End for", "j")
 
-    # Map the points
-    code += [format["snippet map_onto_physical"](element.cell_dimension())
-             % {"j": index}]
+    # Map the points from the reference onto the physical element
+    code += [indent(format["snippet map_onto_physical"](element.cell_dimension())
+             % {"j": index}, tab)]
     
     # Evaluate the function at the physical points
     code += [indent(comment("Evaluate function at physical points"), tab)]
     code += [indent("f.evaluate(values, y, c);\n", tab)]
     
-    # Map the function values according to the given mappings
+    # Map the function values according to the given mapping(s)
     code += [indent(comment("Map function values using appropriate mapping"),
                     tab)]
     code += [indent(map_values_code, tab)]
+    code += [""]
 
-    # Map the weights with the Jacobian
-    code += [indent(comment("TODO: Map weights with the Jacobian"), tab)]
+    # Note that we do not map the weights
+    code += [indent(comment("Note that we do not map the weights"), tab)]
 
     # Take the directional components of the function values and
     # multiply by the weights:
-    code += [format["snippet calculate dof"] % (value_dim, index)]
+    code += [indent(format["snippet calculate dof"] % (value_dim, index), tab)]
 
-    # End possible loop and delete the initialized representation
+    # End possible loop 
     code += [endloop]
-    code += [format["snippet delete_representation"] % {"num_dofs": num_dofs}]
     
     # Return the calculated value
     code += [format["return"]("result")]
@@ -234,7 +236,7 @@ def __map_function_values(num_values, element, format):
                   block(separator.join([str(o) for o in value_offsets])))]
         offset = "offset[i] + "
 
-    # Then it just remaings to actually add the different mappings to the code:
+    # Then it just remains to actually add the different mappings to the code:
     n = element.cell_dimension()
     mappings_code = {Mapping.AFFINE: __affine_map(),
                      Mapping.CONTRAVARIANT_PIOLA:
@@ -253,7 +255,7 @@ def __affine_map():
 
 def __contravariant_piola(dim, offset=""):
     code = []
-    code += ["// Make copy of old values:"]
+    code += ["// Copy old values:"]
     for i in range(dim):
         code += ["copyofvalues[%s%d] = values[%s%d];" % (offset, i, offset, i)]
     code += ["// Do the inverse of div piola "]
@@ -265,7 +267,7 @@ def __contravariant_piola(dim, offset=""):
 
 def __covariant_piola(dim, offset=""):
     code = []
-    code += ["// Make copy of old values:"]
+    code += ["// Copy old values:"]
     for i in range(dim):
         code += ["copyofvalues[%s%d] = values[%s%d];" % (offset, i, offset, i)]
     code += ["// Do the inverse of curl piola "]

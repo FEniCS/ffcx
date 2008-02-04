@@ -268,13 +268,13 @@ class FiniteElement:
             
             # The direction map according to inverse tranpose of the
             # mapping of the element space
-            if fiat_dirs:
+            if not fiat_dirs == None:
                 direction = numpy.dot(J, fiat_dirs[0]) 
 
-            # The weights are mapped with the Jacobian
-            if fiat_weights:
-                scaling = numpy.linalg.det(fiat_jacobian)
-                weights = [weight*scaling for weight in fiat_weights]
+            # The integrals are not preserved, so we keep the FIAT
+            # weights.
+            if not fiat_weights == None:
+                weights = [w for w in fiat_weights]
 
             dofs += [DofRepresentation(name, points, direction, weights)]
 

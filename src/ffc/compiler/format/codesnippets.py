@@ -637,17 +637,17 @@ const double Jinv%(restriction)s_22 = d22 / detJ%(restriction)s;"""
 # These are used with the "new" evaluate_dof.
 map_onto_physical_1D = """\
 // Evaluate basis functions for affine mapping
-const double w0 = 1.0 - X[i][%(j)s][0];
-const double w1 = X[i][%(j)s][0];
+w0 = 1.0 - X[i][%(j)s][0];
+w1 = X[i][%(j)s][0];
 
 // Compute affine mapping y = F(X)
 y[0] = w0*x[0][0] + w1*x[1][0];
 """
 map_onto_physical_2D = """\
 // Evaluate basis functions for affine mapping
-const double w0 = 1.0 - X[i][%(j)s][0] - X[i][%(j)s][1];
-const double w1 = X[i][%(j)s][0];
-const double w2 = X[i][%(j)s][1];
+w0 = 1.0 - X[i][%(j)s][0] - X[i][%(j)s][1];
+w1 = X[i][%(j)s][0];
+w2 = X[i][%(j)s][1];
 
 // Compute affine mapping y = F(X)
 y[0] = w0*x[0][0] + w1*x[1][0] + w2*x[2][0];
@@ -655,48 +655,15 @@ y[1] = w0*x[0][1] + w1*x[1][1] + w2*x[2][1];
 """
 map_onto_physical_3D = """\
 // Evaluate basis functions for affine mapping
-const double w0 = 1.0 - X[i][%(j)s][0] - X[i][%(j)s][1] - X[i][%(j)s][2];
-const double w1 = X[i][%(j)s][0];
-const double w2 = X[i][%(j)s][1];
-const double w3 = X[i][%(j)s][2];
+w0 = 1.0 - X[i][%(j)s][0] - X[i][%(j)s][1] - X[i][%(j)s][2];
+w1 = X[i][%(j)s][0];
+w2 = X[i][%(j)s][1];
+w3 = X[i][%(j)s][2];
 
 // Compute affine mapping y = F(X)
 y[0] = w0*x[0][0] + w1*x[1][0] + w2*x[2][0] + w3*x[3][0];
 y[1] = w0*x[0][1] + w1*x[1][1] + w2*x[2][1] + w3*x[3][1];
 y[2] = w0*x[0][2] + w1*x[1][2] + w2*x[2][2] + w3*x[3][2];
-"""
-
-declare_representation = """\
-const int ns[%(num_dofs)s] = %(num_points_per_dof)s; // Number of points for the dofs. 
-
-// Declare container for the points on the reference element
-double ***X = new double** [%(num_dofs)s];
-for (int j = 0; j < %(num_dofs)s; j++) {
-  X[j] = new double *[ns[j]];
-  for (int k = 0; k < ns[j]; j++)
-    X[j][k] = new double[%(cell_dimension)s];
-}
-
-// Declare container for the directions on the reference element
-double D[%(num_dofs)s][%(value_dimension)s] = {{}}; // Dimensions of D known.
-
-// Declare container for the weights on the reference element
-double **W = new double *[%(num_dofs)s];
-for (int j = 0; j < %(num_dofs)s; j++)
-  W[j] = new double[ns[j]];
-"""
-
-delete_representation = """\
-// Delete variables from reference declarations
-for (int j = 0; j < %(num_dofs)s; j++) {
-    for (int k = 0; k < ns[j]; k++) {
-        delete [] X[j][k];
-    }
-    delete [] X[j];
-    delete [] W[j];
-}
-delete [] X;
-delete [] W;
 """
 
 calculate_dof = """\

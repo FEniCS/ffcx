@@ -59,6 +59,18 @@ class DofMap:
         "Return the number of points associated with each dof"
         return [len(dof.points) for dof in self.__dof_reprs]
 
+    def get_max_num_of_points(self):
+        "Return the maximal number of points associated with the dofs"
+        return max(self.get_num_of_points())
+
+    def pad_dof_points_and_weights(self): 
+        """Pad the points and weights of the dofs associated with this
+        dofmap for ease in the code generation. Note that this changes
+        the dof map itself. The original number of points for each dof
+        map is returned"""
+        n = self.get_max_num_of_points()
+        return [dof.pad_points_and_weights(n) for dof in self.__dof_reprs]
+       
     def dof_coordinates(self):
         "Return the coordinates associated with each dof"
         # FIXME meg: Now returns the first coordinate associated with
