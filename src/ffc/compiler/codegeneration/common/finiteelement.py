@@ -203,7 +203,7 @@ def __map_function_values(num_values, element, format):
     # If there is more than one mapping involved, we will need to
     # keep track of them at runtime:
     if len(whichmappings) > 1:
-        precode += ["const int[%d] mappings = %s;" %
+        precode += ["const int mappings[%d] = %s;" %
                     (len(mappings),
                      block(separator.join(([str(m) for m in mappings]))))]
 
@@ -234,7 +234,7 @@ def __map_function_values(num_values, element, format):
         precode += ["const int offsets[%d] = %s;" %
                  (len(value_offsets),
                   block(separator.join([str(o) for o in value_offsets])))]
-        offset = "offset[i] + "
+        offset = "offsets[i] + "
 
     # Then it just remains to actually add the different mappings to the code:
     n = element.cell_dimension()
