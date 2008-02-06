@@ -1,8 +1,8 @@
 "Code generator for quadrature representation"
 
 __author__ = "Kristian B. Oelgaard (k.b.oelgaard@tudelft.nl)"
-__date__ = "2007-03-16 -- 2007-06-19"
-__copyright__ = "Copyright (C) 2007 Kristian B. Oelgaard"
+__date__ = "2007-03-16 -- 2008-02-05"
+__copyright__ = "Copyright (C) 2007-2008 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Anders Logg 2007
@@ -26,8 +26,9 @@ from ffc.compiler.codegeneration.common.utils import *
 # FFC tensor representation modules
 from ffc.compiler.representation.tensor.multiindex import *
 
-# Utility functions for quadraturegenerator
+# Utility and optimisation functions for quadraturegenerator
 from quadraturegenerator_utils import *
+from quadraturegenerator_optimisation import *
 
 # FFC format modules
 from ffc.compiler.format.removeunused import *
@@ -40,7 +41,7 @@ class QuadratureGenerator(CodeGenerator):
 
         # Initialize common code generator
         CodeGenerator.__init__(self)
-        self.optimise_level = 3
+        self.optimise_level = 0
         self.save_tables = False
         self.unique_tables = True
 
@@ -174,6 +175,12 @@ class QuadratureGenerator(CodeGenerator):
         # Group tensors after number of quadrature points, and dimension of primary indices
         # to reduce number of loops
         group_tensors = equal_loops(tensors)
+
+        # Reset QuadratureElement indices if optimisation level is below 5
+        if self.optimise_level <= 4:
+            for t in tensors:
+                t.qei = []
+
         tables = None
         name_map = {}
         # Get dictionary of unique tables, and the name_map
@@ -408,11 +415,17 @@ class QuadratureGenerator(CodeGenerator):
         elif self.optimise_level == 3:
             values, secondary_loop, t_set = values_level_3(indices, vindices, aindices, b0indices,\
                                             bgindices, tensor, tensor_number, weight, format, name_map)
+        elif self.optimise_level == 4:
+            values, secondary_loop, t_set, if_statements = values_level_4(indices, vindices, aindices, b0indices,\
+                                            bgindices, tensor, tensor_number, weight, format, name_map)
+        elif self.optimise_level == 5:
+            values, secondary_loop, t_set, if_statements = values_level_5(indices, vindices, aindices, b0indices,\
+                                            bgindices, tensor, tensor_number, weight, format, name_map)
         else:
             raise RuntimeError, "Optimisation level not implemented!"
 
         value = format_add(values)
-
+        name = ""
         # FIXME: quadrature only support Functionals and Linear and Bilinear forms
         if (irank == 0):
 
@@ -422,13 +435,6 @@ class QuadratureGenerator(CodeGenerator):
             name =  format["element tensor quad"] + format["array access"](entry)
             code += [Indent.indent(format["comment"]\
                     ("Compute value (tensor/monomial term %d)" % (tensor_number,)))]
-
-            # Create boundaries for loop
-            loop_vars = secondary_loop
-            if secondary_loop:
-                code += generate_loop(name, value, loop_vars, Indent, format, format["add equal"])
-            else:
-                code += [format["add equal"](Indent.indent(name), value)]
 
         elif (irank == 1):
             # Generate entry
@@ -445,13 +451,6 @@ class QuadratureGenerator(CodeGenerator):
             name =  format["element tensor quad"] + format["array access"](entry)
             code += [Indent.indent(format["comment"]\
                     ("Compute block entries (tensor/monomial term %d)" % (tensor_number,)))]
-
-            # Create boundaries for loop
-            loop_vars = secondary_loop
-            if secondary_loop:
-                code += generate_loop(name, value, loop_vars, Indent, format, format["add equal"])
-            else:
-                code += [format["add equal"](Indent.indent(name), value)]
 
         elif (irank == 2):
             entry = []
@@ -470,16 +469,31 @@ class QuadratureGenerator(CodeGenerator):
 
             code += [Indent.indent(format["comment"]\
                     ("Compute block entries (tensor/monomial term %d)" % (tensor_number,)))]
-
-            # Create boundaries for loop
-            loop_vars = secondary_loop
-            if secondary_loop:
-                code += generate_loop(name, value, loop_vars, Indent, format, format["add equal"])
-            else:
-                code += [format["add equal"](Indent.indent(name), value)]
-
         else:
             raise RuntimeError, "Quadrature only support Functionals and Linear and Bilinear forms"
+
+        if self.optimise_level >= 4:
+            lines = []
+            if not len(values) == len(if_statements):
+                raise RuntimeError("The number of if statements and values are not equal.")
+            for i in range(len(values)):
+                lines.append(if_statements[i])
+                lines.append(format["add equal"](name, values[i]))
+
+            if secondary_loop:
+                code += generate_loop2(lines, secondary_loop, Indent, format)
+            else:
+                code += lines
+
+#            if secondary_loop:
+#                code += generate_loop(name, value, secondary_loop, Indent, format, format["add equal"])
+#            else:
+#                code += [format["add equal"](Indent.indent(name), value)]
+        else:
+            if secondary_loop:
+                code += generate_loop(name, value, secondary_loop, Indent, format, format["add equal"])
+            else:
+                code += [format["add equal"](Indent.indent(name), value)]
 
         return (code, t_set)
 
