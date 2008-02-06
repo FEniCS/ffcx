@@ -153,7 +153,7 @@ class DofMap:
         for element in elements:
             # Test for non-supported elements
             if element.family() in ["Brezzi-Douglas-Marini", "Raviart-Thomas",
-                                    "Nedelec", "Brezzi-Douglas-Fortin-Marini"]:
+                                    "Nedelec", "Brezzi-Douglas-Fortin-Marini", "Darcy-Stokes"]:
                 element_points += [None]
             elif isinstance(element, QuadratureElement):
                 element_points += element.dual_basis().pts
@@ -174,7 +174,7 @@ class DofMap:
         elements = element.basis_elements()
         for e in elements:
             # Test for non-supported (or tested) elements
-            if e.family() in ["Brezzi-Douglas-Marini", "Raviart-Thomas", "Nedelec", "Brezzi-Douglas-Fortin-Marini"]:
+            if e.family() in ["Brezzi-Douglas-Marini", "Raviart-Thomas", "Nedelec", "Brezzi-Douglas-Fortin-Marini", "Darcy-Stokes"]:
                 return None
         for i in range(element.value_dimension(0)):
             components += [i]*elements[i].space_dimension()
