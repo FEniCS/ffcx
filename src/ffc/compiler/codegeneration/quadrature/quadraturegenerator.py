@@ -41,7 +41,7 @@ class QuadratureGenerator(CodeGenerator):
 
         # Initialize common code generator
         CodeGenerator.__init__(self)
-        self.optimise_level = 0
+        self.optimise_level = 5
         self.save_tables = False
         self.unique_tables = True
 

@@ -577,34 +577,25 @@ def values_level_4(indices, vindices, aindices, b0indices, bgindices, tensor, te
                 g = len(new_ind)
                 old_ind += new_ind
                 m = len(old_ind)
-#            print "new_ind: ", new_ind
-#            print "index: ", index.index
+
             # Pick index and generate information for loop generation
             index_name = old_ind[index.index]
             secondary_loop += [[index_name, 0, len(index.range)]]
 
-#    print "sec_indices: ", sec_indices
     for a in aindices:
         # Change secondary index value to loop indices, for basis function indices
         for i in range(len(sec_indices)):
             a[sec_indices[i].index] = secondary_loop[i][0]
-        r = []
+        ref = []
         for b0 in b0indices:
             entries = [generate_psi_entry(tensor_number, a,\
                   b0, psi_indices, vindices, name_map, format) for psi_indices in indices]
             if_s.append( format_if + format_group(format_and.join([format_abs(e) +\
                                     format_greater + format_float(format_eps) for e in entries])) )
-            r += [format_multiply(entries + weight)]
+            ref += [format_multiply(entries + weight)]
 
-#            r += [format_multiply([generate_psi_entry(tensor_number, a,\
+#            ref += [format_multiply([generate_psi_entry(tensor_number, a,\
 #                  b0, psi_indices, vindices, name_map, format) for psi_indices in indices] + weight)]
-
-#        if 1 < len(r):
-#            ref = format_group(format_add(r))
-#        else:
-#            ref = r[0]
-
-        ref = r
 
         # Get geometry terms from inside sum, and outside sum
         geo_out, geo_in, t_set = generate_factor3(tensor, a, bgindices, format)
@@ -623,7 +614,6 @@ def values_level_4(indices, vindices, aindices, b0indices, bgindices, tensor, te
 
         geo = format_multiply(geo_out + geo_in + d)
 
-#        vals += [format_multiply([ref,geo]) + format_new_line]
         vals += [format_multiply([re,geo]) + format_new_line for re in ref]
 
     # Only use values that are unique
@@ -633,8 +623,6 @@ def values_level_4(indices, vindices, aindices, b0indices, bgindices, tensor, te
         if not val in values:
             values.append(val)
             if_statements.append(if_)
-#    print "\nvalues: ", values
-#    print "\nifs: ", if_statements
 
     return (values, secondary_loop, trans_set, if_statements)
 
@@ -664,12 +652,6 @@ def values_level_5(indices, vindices, aindices, b0indices, bgindices, tensor, te
     trans_set = Set()
     if_statements = []
     if_s = []
-#    print "indices: ", indices
-#    print "vindices: ", vindices
-#    print "aindices: ", aindices
-#    print "b0indices: ", b0indices
-#    print "bgindices: ", bgindices
-#    print "qe indices: ", tensor.qei
 
     for index in vindices:
 #        print "index: ", index
@@ -693,11 +675,6 @@ def values_level_5(indices, vindices, aindices, b0indices, bgindices, tensor, te
             # Pick index and generate information for loop generation
             index_name = old_ind[index.index]
             secondary_loop += [[index_name, 0, len(index.range)]]
-
-#    print "sec_indices: ", sec_indices
-#    for qi in tensor.qei:
-#        print "qi: ", qi
-
 
     for a in aindices:
         # Change secondary index value to loop indices, for basis function indices
@@ -745,9 +722,5 @@ def values_level_5(indices, vindices, aindices, b0indices, bgindices, tensor, te
             values.append(val)
             if_statements.append(if_)
 
-#    print "\nvalues: ", values
-#    print "\nifs: ", if_statements
-
-#    print "\nvals: ", vals
     return (values, secondary_loop, trans_set, if_statements)
 
