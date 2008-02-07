@@ -594,9 +594,6 @@ def values_level_4(indices, vindices, aindices, b0indices, bgindices, tensor, te
                                     format_greater + format_float(format_eps) for e in entries])) )
             ref += [format_multiply(entries + weight)]
 
-#            ref += [format_multiply([generate_psi_entry(tensor_number, a,\
-#                  b0, psi_indices, vindices, name_map, format) for psi_indices in indices] + weight)]
-
         # Get geometry terms from inside sum, and outside sum
         geo_out, geo_in, t_set = generate_factor3(tensor, a, bgindices, format)
         trans_set = trans_set | t_set
@@ -690,6 +687,7 @@ def values_level_5(indices, vindices, aindices, b0indices, bgindices, tensor, te
 
             if_s.append( format_if + format_group(format_and.join([format_abs(e) +\
                                     format_greater + format_float(format_eps) for e in entries if e])) )
+
             if "" in entries:
                 entries.remove("")
 #            ref += [format_multiply(entries + weight)]
