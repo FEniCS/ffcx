@@ -45,6 +45,9 @@ class ElementTensor:
         # Tabulate element tensor
         self.Psis, self.quadrature = tabulate(monomial, facet0, facet1, num_quad_points)
 
+        # Find indices defined on QuadratureElement
+        self.qei = self.__quadrature_elements(monomial.basisfunctions)
+
         # Create primary, secondary and auxiliary multi indices
         self.i = self.__create_multi_index(monomial, Index.PRIMARY)
         self.a = self.__create_multi_index(monomial, Index.SECONDARY)
@@ -64,10 +67,11 @@ class ElementTensor:
         debug("Secondary multi index: " + str(self.a), 1)
         debug("Auxiliary_0 multi index: " + str(self.b0), 1)
         debug("Auxiliary_G multi index: " + str(self.bg), 1)
+        debug("QuadratureElement indices: " + str(self.qei), 1)
 
     def __create_multi_index(self, monomial, index_type):
         "Find dimensions and create multi index"
-        
+
         rank = max([max_index(v, index_type) for v in monomial.basisfunctions] + [-1]) + 1
 
         # Compute all dimensions (for reference tensor)
@@ -147,5 +151,21 @@ class ElementTensor:
                     offsets[c] = choose_map[v.restriction]*len(c.index.range)
                     break
         return offsets
+
+    def __quadrature_elements(self, basisfunctions):
+
+        # Initialise dictionary
+        qei = []
+
+        for v in basisfunctions:
+            for e in v.element.basis_elements():
+                if isinstance(e, QuadratureElement):
+                    qei += [v.index]
+                    break
+        return qei
+
+
+
+
 
 
