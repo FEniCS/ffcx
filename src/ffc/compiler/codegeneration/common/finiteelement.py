@@ -86,11 +86,12 @@ def __generate_evaluate_dof(element, format):
 
     # Generate dof map and get dof representations
     dof_map = DofMap(element)
-    dofs = dof_map.dof_representations()
+    dofs = dof_map.dual_basis()
     num_dofs = len(dofs)
  
-    # For ease in the code generalization, pad the points and weights
-    # with zeros according to the maximal number of points:
+    # For ease in the code generalization, pad the points, directions
+    # and weights with zeros according to the maximal number of
+    # points:
     max_num_points = dof_map.get_max_num_of_points()
     num_points_per_dof = dof_map.pad_dof_points_and_weights()
 
@@ -112,27 +113,23 @@ def __generate_evaluate_dof(element, format):
                                                      for c in point]))
                                for point in dof.points]))
          for dof in dofs]))
-    code  += ["const double X[%d][%d][%d] = %s;" % (num_dofs, max_num_points,
-                                                  element.cell_dimension(), s)]
+    code  += ["%s X[%d][%d][%d] = %s;" % (format["table declaration"],
+                                         num_dofs, max_num_points,
+                                         element.cell_dimension(), s)]
     s = block(separator.join(
         [block(separator.join([floating_point(w) for w in dof.weights]))
          for dof in dofs]))
-    code += ["const double W[%d][%d] = %s;" % (num_dofs, max_num_points, s)]
+    code += ["%sW[%d][%d] = %s;" % (format["table declaration"],
+                                    num_dofs, max_num_points, s)]
 
     s = block(separator.join(
-        [block(separator.join([floating_point(d) for d in dof.direction]))
+        [block(separator.join([block(separator.join([floating_point(dk)
+                                                    for dk in d]))
+                               for d in dof.directions]))
          for dof in dofs]))
-    code += ["const double D[%d][%d] = %s;" % (num_dofs, num_values, s)]
-    code += [""]
-
-    # Declare variables possibly used inside loop:
-    code += [comment("Intermediate variables for storing:")]
-    code += ["double values[%d];" % num_values]
-    code += ["double y[%d];" % element.cell_dimension()]
-    code += ["double result = 0.0;"]
-    code += [""]
-    code += [comment("Coefficients for mapping of points:")]
-    code += ["double w%d;"% i for i in range(element.cell_dimension()+1)]
+    code += ["%sD[%d][%d][%d] = %s;" % (format["table declaration"],
+                                        num_dofs, max_num_points,
+                                        num_values, s)]
     code += [""]
 
     # Compute the declarations needed for function mapping and the
@@ -143,6 +140,7 @@ def __generate_evaluate_dof(element, format):
 
     # Loop over the number of points (if more than one) and evaluate
     # the functional
+    code += ["double result = 0.0;"]
     code += [comment("For dof i: Iterate over points/weights:") ]
     tab = 0
     endloop = ""
@@ -150,7 +148,6 @@ def __generate_evaluate_dof(element, format):
     # If there is more than one point, we need to add a table of the
     # number of points per dof, add the loop, add indentation and add
     # an end brackets
-    # And must declare the coefficients of the affine mapping elsewhere.
     index = "0"
     if max_num_points > 1:
         num_points_per_dof_code = block(separator.join([str(n) for n in num_points_per_dof]))
@@ -161,10 +158,11 @@ def __generate_evaluate_dof(element, format):
 
     # Map the points from the reference onto the physical element
     code += [indent(format["snippet map_onto_physical"](element.cell_dimension())
-             % {"j": index}, tab)]
+                    % {"j": index}, tab)]
     
     # Evaluate the function at the physical points
     code += [indent(comment("Evaluate function at physical points"), tab)]
+    code += [indent("double values[%d];" % num_values, tab)]
     code += [indent("f.evaluate(values, y, c);\n", tab)]
     
     # Map the function values according to the given mapping(s)
@@ -173,13 +171,13 @@ def __generate_evaluate_dof(element, format):
     code += [indent(map_values_code, tab)]
     code += [""]
 
-    # Note that we do not map the weights
-    code += [indent(comment("Note that we do not map the weights"), tab)]
+    # Note that we do not map the weights (yet).
+    code += [indent(comment("Note that we do not map the weights (yet)."),tab)]
 
     # Take the directional components of the function values and
     # multiply by the weights:
-    code += [indent(format["snippet calculate dof"] % (value_dim, index), tab)]
-
+    code += [indent(format["snippet calculate dof"] % {"dim": value_dim,
+                                                       "index": index}, tab)]
     # End possible loop 
     code += [endloop]
     
@@ -207,6 +205,7 @@ def __map_function_values(num_values, element, format):
                     (len(mappings),
                      block(separator.join(([str(m) for m in mappings]))))]
 
+        
     # Check whether we will need a piola
     piola_present = (Mapping.CONTRAVARIANT_PIOLA in whichmappings or
                      Mapping.COVARIANT_PIOLA in whichmappings)
@@ -216,10 +215,9 @@ def __map_function_values(num_values, element, format):
     if piola_present:
         precode += [format["snippet jacobian"](element.cell_dimension())
                  % {"restriction":""}]
-        precode += ["\ndouble copyofvalues[%d] = {};" % num_values]
+        precode += ["\ndouble copyofvalues[%d];" % num_values]
     else:
         precode += [format["get cell vertices"]]
-
     
     # We add offsets to the code if we have a mixed element and a
     # piola present: (meg: FIXME: Optimize further.)
@@ -297,7 +295,6 @@ def __generate_if_block(ifs, cases, default = ""):
         code += "} else if (%s) {\n %s \n" % (ifs[i+1], indent(cases[i+1], 2))
     code += "} else { \n %s \n}" % indent(default,2)
     return code
-
 
 def __generate_interpolate_vertex_values_old(element, format):
     "Generate code for interpolate_vertex_values"

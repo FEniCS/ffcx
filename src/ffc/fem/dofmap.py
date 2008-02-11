@@ -24,7 +24,7 @@ class DofMap:
 
         # Get entity dofs and dof representation from element
         entity_dofs = element.entity_dofs()
-        self.__dof_reprs = element.dof_representations()
+        self.__dofs = element.dual_basis()
 
         # Generate dof map data
         self.__signature        = "FFC dof map for " + element.signature()
@@ -57,7 +57,7 @@ class DofMap:
 
     def get_num_of_points(self):
         "Return the number of points associated with each dof"
-        return [len(dof.points) for dof in self.__dof_reprs]
+        return [len(dof.points) for dof in self.__dofs]
 
     def get_max_num_of_points(self):
         "Return the maximal number of points associated with the dofs"
@@ -69,14 +69,14 @@ class DofMap:
         the dof map itself. The original number of points for each dof
         map is returned"""
         n = self.get_max_num_of_points()
-        return [dof.pad_points_and_weights(n) for dof in self.__dof_reprs]
+        return [dof.pad_points_and_weights(n) for dof in self.__dofs]
        
     def dof_coordinates(self):
         "Return the coordinates associated with each dof"
         # FIXME meg: Now returns the first coordinate associated with
         # each dof... for the sake of the codegeneration for
         # tabulate_coordinates!
-        return [dof.points[0] for dof in self.__dof_reprs]
+        return [dof.points[0] for dof in self.__dofs]
 
     def num_dofs_per_dim(self, sub_dof_map=None):
         "Return the number of dofs associated with each topological dimension for sub dof map or total"
@@ -113,9 +113,9 @@ class DofMap:
         "Return the finite element associated with the dof map"
         return self.__element
 
-    def dof_representations(self):
+    def dual_basis(self):
         "Return the dof representations associated with the DofMap"
-        return self.__dof_reprs
+        return self.__dofs
 
     def __compute_num_dofs_per_dim(self, entity_dofs):
         "Compute the number of dofs associated with each topological dimension"

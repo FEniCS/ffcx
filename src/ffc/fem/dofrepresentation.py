@@ -13,40 +13,41 @@ from ffc.common.utils import *
 # FFC fem modules
 
 class DofRepresentation:
-    """A degree of freedom is represented by its points, direction
-    and weights.
+    """A degree of freedom is represented by its point(s), direction(s)
+    and weight(s).
 
     name            = An explanatory name for the functional
     points          = Points for which the functional is to be evaluated at.
-    direction       = Direction for functional components 
+    directions      = Directions for functional components 
     weights         = Values used for integral moments.
 
     Given a function f, the DofRepresentation represents the value:
 
-       return weights[i]*f[k](points[i])*direction[k] 
+       return weights[i]*f[k](points[i])*directions[i][k] 
 
+    This is intended to cover point values, directional components and
+    integral moments.
     """
 
-    def __init__(self, dof, points=None, direction=None, weights=None):
+    def __init__(self, dof, points=None, directions=None, weights=None):
         "Create DofRepresentation"
-
         # Create dof representation from other dof representation:
         # Copy contents.
         if isinstance(dof, DofRepresentation):
             self.name = dof.name
             self.points = [p for p in dof.points]
-            self.direction = dof.direction
+            self.directions = [d for d in dof.directions]
             self.weights = [w for w in dof.weights]
         else:
             self.name = dof
-            if not points:
-                print "Raise Error: No points"
+            if len(points) < 1:
+                points = []
             else:
                 self.points = points
-            if len(direction) < 1:
-                self.direction = [1]
+            if len(directions) < 1:
+                self.directions = [[1]]*self.num_of_points()
             else:
-                self.direction = direction
+                self.directions = directions
             if len(weights) < 1:
                 self.weights = [1]*self.num_of_points()
             else:
@@ -61,26 +62,35 @@ class DofRepresentation:
         return pick_first([len(pt) for pt in self.points])
 
     def num_of_weights(self):
+        """Return the number of weights. Should match the number of
+        points."""
         return len(self.weights)
 
     def value_dim(self):
-        return len(self.direction)
+        "Return the value dimension of the directions"
+        return pick_first([len(d) for d in self.directions])
 
-    def shift_direction(self, n, shift):
-        """Take the direction, add k zeros at the beginning and ensure
-        that the new direction has length n"""
-        newdirection = [0]*n
-        newdirection[shift:shift+self.value_dim()] = self.direction
-        self.direction = newdirection
+    def shift_directions(self, n, shift):
+        """Take the directions, add k zeros at the beginning and
+        ensure that the new directions has length n"""
+        d = self.value_dim()
+        for i in range(len(self.directions)):
+            newdirection = [0]*n
+            newdirection[shift:shift+d] = self.directions[i]
+            self.directions[i] = newdirection
 
     def pad_points_and_weights(self, n):
-        """ For easy c++ representation, pad points and weights with
-        zeros at the end. Return the original length of the entities"""
+        """ For easy c++ representation, pad points, directions and
+        weights with zeros at the end. Return the original length of
+        the entities"""
         k = self.cell_dimension()
+        d = self.value_dim()
         m = self.num_of_points()
         ptail = [[0]*k]*(n-m)
+        dtail = [[0]*d]*(n-m)
         wtail = [0]*(n-m)
         self.points = self.points + ptail
+        self.directions = self.directions + dtail
         self.weights = self.weights + wtail
         return m
 

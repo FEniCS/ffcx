@@ -70,7 +70,7 @@ class FiniteElement:
         self.__entity_dofs = [self.__fiat_element.dual_basis().entity_ids]
 
         # Get the dof identifiers from FIAT element
-        self.__dof_representations = self.__create_dof_representations(self.__fiat_element.dual_basis().get_dualbasis_types())
+        self.__dual_basis = self.__create_dof_representation(self.__fiat_element.dual_basis().get_dualbasis_types())
         
     def family(self):
         "Return a string indentifying the finite element family"
@@ -150,18 +150,13 @@ class FiniteElement:
         "Return the mapping from entities to dofs"
         return self.__entity_dofs
 
-    def dof_representations(self):
-        "Return the representation of the dofs"
-        return self.__dof_representations
+    def dual_basis(self):
+        "Return the representation dual basis of finite element space"
+        return self.__dual_basis
 
     def basis(self):
         "Return basis of finite element space"
         return self.__transformed_space
-
-    def dual_basis(self):
-        "Return dual basis of finite element space"
-        # FIXME meg: Return dof representation instead?
-        return self.__fiat_element.dual_basis()
 
     def tabulate(self, order, points):
         """Return tabulated values of derivatives up to given order of
@@ -237,7 +232,7 @@ class FiniteElement:
         else:
             raise FormError, "Unknown transform %s" % str(family)
 
-    def __create_dof_representations(self, list_of_fiat_dofs):
+    def __create_dof_representation(self, list_of_fiat_dofs):
         """ Take the FIAT dof representation and convert it to the ffc
         dof representation including transforming the points from one
         reference element onto the other."""
@@ -259,7 +254,7 @@ class FiniteElement:
 
         for fiat_dof_repr in list_of_fiat_dofs:
             (name, fiat_pts, fiat_dirs, fiat_weights, derivs) = fiat_dof_repr
-            direction = []
+            directions = []
             weights = []
 
             # The points on the FIAT reference element are pushed onto
@@ -269,14 +264,14 @@ class FiniteElement:
             # The direction map according to inverse tranpose of the
             # mapping of the element space
             if not fiat_dirs == None:
-                direction = numpy.dot(J, fiat_dirs[0]) 
+                directions = [numpy.dot(J, d) for d in fiat_dirs]
 
             # The integrals are not preserved, so we keep the FIAT
-            # weights.
+            # weights (for now).
             if not fiat_weights == None:
                 weights = [w for w in fiat_weights]
 
-            dofs += [DofRepresentation(name, points, direction, weights)]
+            dofs += [DofRepresentation(name, points, directions, weights)]
 
         return dofs
 

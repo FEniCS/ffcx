@@ -637,40 +637,41 @@ const double Jinv%(restriction)s_22 = d22 / detJ%(restriction)s;"""
 # These are used with the "new" evaluate_dof.
 map_onto_physical_1D = """\
 // Evaluate basis functions for affine mapping
-w0 = 1.0 - X[i][%(j)s][0];
-w1 = X[i][%(j)s][0];
+const double w0 = 1.0 - X[i][%(j)s][0];
+const double w1 = X[i][%(j)s][0];
 
 // Compute affine mapping y = F(X)
+double y[1];
 y[0] = w0*x[0][0] + w1*x[1][0];
 """
 map_onto_physical_2D = """\
 // Evaluate basis functions for affine mapping
-w0 = 1.0 - X[i][%(j)s][0] - X[i][%(j)s][1];
-w1 = X[i][%(j)s][0];
-w2 = X[i][%(j)s][1];
+const double w0 = 1.0 - X[i][%(j)s][0] - X[i][%(j)s][1];
+const double w1 = X[i][%(j)s][0];
+const double w2 = X[i][%(j)s][1];
 
 // Compute affine mapping y = F(X)
+double y[2];
 y[0] = w0*x[0][0] + w1*x[1][0] + w2*x[2][0];
 y[1] = w0*x[0][1] + w1*x[1][1] + w2*x[2][1];
 """
 map_onto_physical_3D = """\
 // Evaluate basis functions for affine mapping
-w0 = 1.0 - X[i][%(j)s][0] - X[i][%(j)s][1] - X[i][%(j)s][2];
-w1 = X[i][%(j)s][0];
-w2 = X[i][%(j)s][1];
-w3 = X[i][%(j)s][2];
+const double w0 = 1.0 - X[i][%(j)s][0] - X[i][%(j)s][1] - X[i][%(j)s][2];
+const double w1 = X[i][%(j)s][0];
+const double w2 = X[i][%(j)s][1];
+const double w3 = X[i][%(j)s][2];
 
 // Compute affine mapping y = F(X)
+double y[3];
 y[0] = w0*x[0][0] + w1*x[1][0] + w2*x[2][0] + w3*x[3][0];
 y[1] = w0*x[0][1] + w1*x[1][1] + w2*x[2][1] + w3*x[3][1];
 y[2] = w0*x[0][2] + w1*x[1][2] + w2*x[2][2] + w3*x[3][2];
 """
 
 calculate_dof = """\
-
 // Take directional components
-for(int k = 0; k < %d; k++)
-  result += values[k]*D[i][k];
+for(int k = 0; k < %(dim)d; k++)
+  result += values[k]*D[i][%(index)s][k];
 // Multiply by weights 
-result *= W[i][%s];
-"""
+result *= W[i][%(index)s];"""

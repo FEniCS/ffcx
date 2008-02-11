@@ -138,7 +138,7 @@ class MixedElement:
         generate just a list of entity dofs for basic elements."""
         return [entity_dofs for element in self.__elements for entity_dofs in element.entity_dofs()]
 
-    def dof_representations(self):
+    def dual_basis(self):
         """Return the representation of the dofs. We unnest the
         possibly nested dof types as for entity_dofs and shift the
         components according to the position of the basic elements."""
@@ -154,9 +154,9 @@ class MixedElement:
         for e in range(len(self.__elements)):
             element = self.__elements[e]
             shift = shifts[e]
-            for d in element.dof_representations():
+            for d in element.dual_basis():
                 dof = DofRepresentation(d)
-                dof.shift_direction(n, shift)
+                dof.shift_directions(n, shift)
                 dofs += [dof]
         return dofs
 
