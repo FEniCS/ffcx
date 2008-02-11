@@ -125,12 +125,25 @@ namespace ufc
                                 const double* coordinates,
                                 const cell& c) const = 0;
 
+    /// Evaluate all basis functions at given point in cell
+    virtual void evaluate_basis(double* values,
+                                const double* coordinates,
+                                const cell& c) const
+    { throw std::runtime_error("Not implemented (introduced in UFC v1.1)."); }
+
     /// Evaluate order n derivatives of basis function i at given point in cell
     virtual void evaluate_basis_derivatives(unsigned int i,
                                             unsigned int n,
                                             double* values,
                                             const double* coordinates,
                                             const ufc::cell& c) const = 0;
+
+    /// Evaluate order n derivatives of all basis functions at given point in cell
+    virtual void evaluate_basis_derivatives(unsigned int n,
+                                            double* values,
+                                            const double* coordinates,
+                                            const ufc::cell& c) const
+    { throw std::runtime_error("Not implemented (introduced in UFC v1.1)."); }
 
     /// Evaluate linear functional for dof i on the function f
     virtual double evaluate_dof(unsigned int i,
