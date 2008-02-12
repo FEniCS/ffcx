@@ -84,16 +84,17 @@ def __generate_evaluate_dof(element, format):
     floating_point = format["floating point"]
     comment = format["comment"]
 
-    # Generate dof map and get dof representations
+    # Generate dof map and get _copy_ of dof representations. 
     dof_map = DofMap(element)
-    dofs = dof_map.dual_basis()
+    dofs = [DofRepresentation(dof) for dof in dof_map.dual_basis()]
     num_dofs = len(dofs)
- 
+
     # For ease in the code generalization, pad the points, directions
     # and weights with zeros according to the maximal number of
-    # points:
+    # points. (Hence, the copy of the dofs above.)
     max_num_points = dof_map.get_max_num_of_points()
-    num_points_per_dof = dof_map.pad_dof_points_and_weights()
+    num_points_per_dof = [dof.pad_points_and_weights(max_num_points)
+                          for dof in dofs]
 
     # Compute the value dimension of the functions
     num_values = 1
@@ -113,7 +114,7 @@ def __generate_evaluate_dof(element, format):
                                                      for c in point]))
                                for point in dof.points]))
          for dof in dofs]))
-    code  += ["%s X[%d][%d][%d] = %s;" % (format["table declaration"],
+    code  += ["%sX[%d][%d][%d] = %s;" % (format["table declaration"],
                                          num_dofs, max_num_points,
                                          element.cell_dimension(), s)]
     s = block(separator.join(
@@ -140,8 +141,8 @@ def __generate_evaluate_dof(element, format):
 
     # Loop over the number of points (if more than one) and evaluate
     # the functional
-    code += ["double result = 0.0;"]
-    code += [comment("For dof i: Iterate over points/weights:") ]
+    code += ["%sresult = 0.0;" % format["float declaration"]]
+    code += [comment("Iterate over the points:") ]
     tab = 0
     endloop = ""
 
@@ -151,8 +152,8 @@ def __generate_evaluate_dof(element, format):
     index = "0"
     if max_num_points > 1:
         num_points_per_dof_code = block(separator.join([str(n) for n in num_points_per_dof]))
-        code += ["const int ns[%d] = %s;"
-                 % (num_dofs, num_points_per_dof_code)]
+        code += ["%sns[%d] = %s;" % (format["static const uint declaration"],
+                                      num_dofs, num_points_per_dof_code)]
         code += [format["loop"]("j", "0", "ns[i]")] 
         (tab, endloop, index) = (2, "\n} // End for", "j")
 
@@ -173,6 +174,7 @@ def __generate_evaluate_dof(element, format):
 
     # Note that we do not map the weights (yet).
     code += [indent(comment("Note that we do not map the weights (yet)."),tab)]
+    code += [""]
 
     # Take the directional components of the function values and
     # multiply by the weights:
@@ -201,10 +203,9 @@ def __map_function_values(num_values, element, format):
     # If there is more than one mapping involved, we will need to
     # keep track of them at runtime:
     if len(whichmappings) > 1:
-        precode += ["const int mappings[%d] = %s;" %
-                    (len(mappings),
+        precode += ["%smappings[%d] = %s;" %
+                    (format["static const uint declaration"], len(mappings),
                      block(separator.join(([str(m) for m in mappings]))))]
-
         
     # Check whether we will need a piola
     piola_present = (Mapping.CONTRAVARIANT_PIOLA in whichmappings or
@@ -219,8 +220,8 @@ def __map_function_values(num_values, element, format):
     else:
         precode += [format["get cell vertices"]]
     
-    # We add offsets to the code if we have a mixed element and a
-    # piola present: (meg: FIXME: Optimize further.)
+    # We have to add offsets to the code if there are mixed
+    # piola-mapped elements with an offset. (Ex: DG0 + RT)
     offset = ""
     if element.num_sub_elements() > 1 and piola_present:
         value_offsets = []
@@ -229,10 +230,17 @@ def __map_function_values(num_values, element, format):
             subelement = element.sub_element(i)
             value_offsets += [adjustment]*subelement.space_dimension()
             adjustment += subelement.value_dimension(0)
-        precode += ["const int offsets[%d] = %s;" %
-                 (len(value_offsets),
-                  block(separator.join([str(o) for o in value_offsets])))]
-        offset = "offsets[i] + "
+
+        # if mapping[i] != Mapping.AFFINE == 0 and value_offset[i] !=
+        # 0 for all i, then need_offsets = True:
+        need_offsets = bool(max([mappings[i] and value_offsets[i]
+                                 for i in range(len(mappings))]))
+        if need_offsets:
+            precode += ["const int offsets[%d] = %s;" %
+                        (len(value_offsets),
+                         block(separator.join([str(o) for o in value_offsets])))]
+            offset = "offsets[i] + "
+
 
     # Then it just remains to actually add the different mappings to the code:
     n = element.cell_dimension()
@@ -244,8 +252,7 @@ def __map_function_values(num_values, element, format):
     ifs = ["mappings[i] == %d" % mapping for mapping in whichmappings]
     cases = [mappings_code[mapping] for mapping in whichmappings]
     code  += [__generate_if_block(ifs, cases,
-                                  comment("Other mappings not implemented"))]
-
+                                  comment("Other mappings not applicable."))]
     return ("\n".join(precode), "\n".join(code))
 
 def __affine_map():

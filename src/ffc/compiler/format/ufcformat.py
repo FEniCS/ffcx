@@ -80,6 +80,7 @@ format = { "add": lambda v: " + ".join(v),
            "static float declaration": "static double ",
            "uint declaration": "unsigned int ",
            "const uint declaration": "const unsigned int ",
+           "static const uint declaration": "static const unsigned int ",
            "static uint declaration": "static unsigned int ",
            "table declaration": "const static double ",
 # access

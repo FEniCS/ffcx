@@ -31,27 +31,30 @@ class DofRepresentation:
 
     def __init__(self, dof, points=None, directions=None, weights=None):
         "Create DofRepresentation"
-        # Create dof representation from other dof representation:
-        # Copy contents.
         if isinstance(dof, DofRepresentation):
             self.name = dof.name
-            self.points = [p for p in dof.points]
-            self.directions = [d for d in dof.directions]
-            self.weights = [w for w in dof.weights]
+            self.points = listcopy(dof.points)
+            self.directions = listcopy(dof.directions)
+            self.weights = listcopy(dof.weights)
         else:
             self.name = dof
             if len(points) < 1:
-                points = []
+                # No points indicates that something is not implemented...
+                self.points = []
             else:
                 self.points = points
             if len(directions) < 1:
-                self.directions = [[1]]*self.num_of_points()
+                self.directions = [(1,)]*len(self.points)
             else:
                 self.directions = directions
             if len(weights) < 1:
-                self.weights = [1]*self.num_of_points()
+                self.weights = [1]*len(self.points)
             else:
                 self.weights = weights
+
+        # Check that the dimensions match:
+        assert len(self.points) == len(self.weights) == len(self.directions), \
+               "Mismatch points/directions/weights"
         return
 
     def num_of_points(self):
@@ -62,8 +65,7 @@ class DofRepresentation:
         return pick_first([len(pt) for pt in self.points])
 
     def num_of_weights(self):
-        """Return the number of weights. Should match the number of
-        points."""
+        """Return the number of weights."""
         return len(self.weights)
 
     def value_dim(self):
@@ -86,12 +88,10 @@ class DofRepresentation:
         k = self.cell_dimension()
         d = self.value_dim()
         m = self.num_of_points()
-        ptail = [[0]*k]*(n-m)
-        dtail = [[0]*d]*(n-m)
-        wtail = [0]*(n-m)
-        self.points = self.points + ptail
-        self.directions = self.directions + dtail
-        self.weights = self.weights + wtail
+        # Add (n-m) number of zero (vectors) at the end
+        self.points = self.points + [tuple([0]*k)]*(n-m)
+        self.directions = self.directions + [tuple([0]*d)]*(n-m) 
+        self.weights = self.weights + [0]*(n-m) 
         return m
 
     def __str__(self):

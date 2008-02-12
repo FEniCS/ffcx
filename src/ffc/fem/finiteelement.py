@@ -259,12 +259,12 @@ class FiniteElement:
 
             # The points on the FIAT reference element are pushed onto
             # the UFC reference element:
-            points = [pushforward(p) for p in fiat_pts]
+            points = [tuple(pushforward(p)) for p in fiat_pts]
             
             # The direction map according to inverse tranpose of the
             # mapping of the element space
             if not fiat_dirs == None:
-                directions = [numpy.dot(J, d) for d in fiat_dirs]
+                directions = [tuple(numpy.dot(J, d)) for d in fiat_dirs]
 
             # The integrals are not preserved, so we keep the FIAT
             # weights (for now).
