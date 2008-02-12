@@ -5,13 +5,9 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # FFC fem modules
 from finiteelement import *
+from dofrepresentation import *
 from quadrature import *
 from mapping import *
-
-# We could remove this dummy class as explained later
-class dummy_dual_basis:
-    def __init__(self, points):
-        self.pts = points
 
 class QuadratureElement(FiniteElement):
     """Write description of QuadratureElement"""
@@ -57,7 +53,7 @@ class QuadratureElement(FiniteElement):
         # elements.
         # Initialise a dummy dual_basis.
         # Used in dofmap.py", line 158, in __compute_dof_coordinates
-        self.__dummy_dual_basis = dummy_dual_basis(points)
+        self.__dual_basis = self.__create_dual_basis(points)
 
     def family(self):
         "Return a string indentifying the finite element family"
@@ -143,11 +139,14 @@ class QuadratureElement(FiniteElement):
 #         "Return basis of finite element space"
 #         return self.__fiat_element.function_space()
 
-    # FIXME: Possibly remove this function
     def dual_basis(self):
         "Return dummy dual basis of finite element space"
-        # This function only makes sense in a call like: element.dual_basis().pts
-        return self.__dummy_dual_basis
+        return self._dual_basis
+
+    def __create_dual_basis(self, points):
+        "Create the ffc dual basis representation of the Quadrature Element"
+        return [DofRepresentation([pt]) for pt in points]
+    
 
     def tabulate(self, order, points):
         """Return the identity matrix of size (num_quad_points, num_quad_points),
@@ -180,7 +179,9 @@ class QuadratureElement(FiniteElement):
 #         "Create mixed element"
 #         return mixedelement.MixedElement([self, other])
 
+
     def __repr__(self):
         "Pretty print"
         return self.signature()
+
 
