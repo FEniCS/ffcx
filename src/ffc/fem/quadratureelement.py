@@ -145,7 +145,7 @@ class QuadratureElement(FiniteElement):
 
     def __create_dual_basis(self, points):
         "Create the ffc dual basis representation of the Quadrature Element"
-        return [DofRepresentation([pt]) for pt in points]
+        return [DofRepresentation("Quadrature", [pt]) for pt in points]
     
 
     def tabulate(self, order, points):
