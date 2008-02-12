@@ -1,9 +1,10 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-11-26 -- 2007-11-26"
-__copyright__ = "Copyright (C) 2007 Anders Logg"
+__date__ = "2007-11-26 -- 2008-02-11"
+__copyright__ = "Copyright (C) 2007-2008 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Marie E. Rognes 2007
+# Modified by Kristian B. Oelgaard 2008
 
 from numpy import array
 
@@ -37,6 +38,10 @@ def map_to_facet(points, facet):
     if dim in [2, 3]:
         facet_vertices = get_facet_vertices(dim)
         vertex_coordinates = get_vertex_coordinates(dim)
+    elif dim == 1:
+        # Don't need to map coordinates on vertices
+        vertex_coordinates = [(0.0,), (1.0,)]
+        return [vertex_coordinates[facet]]
     else:
         raise RuntimeError, "Unable to map points to facet for shape of dimension %d" % dim
 

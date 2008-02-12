@@ -1,6 +1,6 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-10-04 -- 2007-11-26"
-__copyright__ = "Copyright (C) 2004-2007 Anders Logg"
+__date__ = "2004-10-04 -- 2008-02-04"
+__copyright__ = "Copyright (C) 2004-2008 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Garth N. Wells 2006
@@ -21,6 +21,7 @@ from FIAT.RaviartThomas import RaviartThomas
 from FIAT.BDM import BDM
 from FIAT.BDFM import BDFM
 from FIAT.Nedelec import Nedelec
+from FIAT.darcystokes import DarcyStokes
 
 # FFC common modules
 from ffc.common.debug import *
@@ -212,6 +213,13 @@ class FiniteElement:
             self.__family = "Nedelec"
             return (Nedelec(fiat_shape, degree),
                     Mapping.COVARIANT_PIOLA)
+
+        if family == "Darcy-Stokes" or family == "KLMR":
+            if not shape == "triangle":
+                raise RuntimeError, "Sorry, Darcy-Stokes element only available on triangles"
+            self.__family = "Darcy-Stokes"
+            return (DarcyStokes(degree),
+                    Mapping.CONTRAVARIANT_PIOLA)
 
         # Unknown element
         raise RuntimeError, "Unknown finite element: " + str(family)

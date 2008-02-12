@@ -133,6 +133,15 @@ class Index:
             return 0
         return -1 # Ignore self > other
 
+    def strict_comparison(self, other):
+        "Check if Indices are really equal."
+        if not isinstance(other, Index):
+            return -1
+        if (self.index == other.index and self.type == other.type
+            and self.range == other.range):
+            return 0
+        return -1 # Ignore self > other
+    
     def __add__(self, other):
         # Index + int
         if isinstance(other, int):

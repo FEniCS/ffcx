@@ -110,6 +110,7 @@ containing the compiled form, finite elements, dof maps etc (a Python
 wrapper for the complete set of generated code), and
 \texttt{form\_data} is form metadata generated from the input form.
 
-The JIT compiler caches generated modules such that if a Python script
-including a call to the JIT compiler is run twice (in the same
-directory) the Python module is only generated once.
+The JIT compiler caches generated modules in \texttt{\~{}/.ffc/cache/}
+such that if a Python script including a call to the JIT compiler is
+run twice (in the same directory) the Python module is only generated
+once. To clean the cache, run the command \texttt{ffc-clean}.

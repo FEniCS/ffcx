@@ -38,8 +38,6 @@ def simplify(form):
 
     reassign_indices(form)
 
-    #print "Form after simplification:", form
-
     debug("done")
 
 def simplify_form(f):
@@ -50,6 +48,7 @@ def simplify_form(f):
     # before we continue!
     previous = str(f)
     simplified = ""
+
     while(previous != simplified):
         reassign_indices(f)
         previous = str(f)
@@ -104,7 +103,7 @@ def factorize_monomials(m, n):
     ncopy = Monomial(n)
     mcopy.numeric = 1.0
     ncopy.numeric = 1.0
-    if str(mcopy) == str(ncopy):
+    if str(mcopy) == str(ncopy) and same_index_ranges(m, n):
         mcopy.numeric = m.numeric + n.numeric
         return([mcopy], True)
     return ([m, n], False)
@@ -415,6 +414,30 @@ def diff(m, n, key = None):
 #                 form.monomials.remove(p)
 #             else:
 #                 unique += [p]
+
+# meg: FIXME: Needs revisiting:
+
+def same_index_ranges(m, n):
+    """Two monomials can have the same string representation while the
+    index ranges for the basis functions differ. Thus, take two
+    monomials, check whether they have the same index ranges."""
+    # First check that the two monomials have the same string
+    # representation:
+    mcopy = Monomial(m)
+    ncopy = Monomial(n)
+    mcopy.numeric = 1.0
+    ncopy.numeric = 1.0
+    if str(mcopy) != str(ncopy):
+        return False
+    # Then go through the basis functions and their component indices
+    # and check whether the ranges are really the same.
+    for i in range(len(m.basisfunctions)):
+        m_component = m.basisfunctions[i].component
+        n_component = n.basisfunctions[i].component
+        for j in range(len(m_component)):
+            if (m_component[j].range != n_component[j].range):
+                return False
+    return True
 
 def change_constant_restrictions(form):
     """Change Restriction.CONSTANT to Restriction.PLUS on interior facets"""
