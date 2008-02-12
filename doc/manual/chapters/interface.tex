@@ -370,7 +370,7 @@ components on facets.
 Introduced in version 1.1.
 
 \begin{code}
-virtual void evaluate_dofs(double *values,
+virtual void evaluate_dofs(double* values,
                            const function& f,
                            const cell& c) const;
 \end{code}
@@ -568,7 +568,6 @@ dofs associated with incident entities of lower dimension
 It is assumed that all cells of the mesh have the same number
 of degrees of freedom on each mesh entity of the same dimension.
 
-
 \subsection{The function \texttt{tabulate\_dofs}}
 
 \begin{code}
@@ -599,7 +598,8 @@ Introduced in version 1.1.
 
 \begin{code}
 virtual void tabulate_entity_dofs(unsigned int* dofs,
-                                  unsigned int d, unsigned int i) const;
+                                  unsigned int d,
+                                  unsigned int i) const;
 \end{code}
 
 This function tabulates the local dof indices associated with a given local
@@ -607,7 +607,7 @@ mesh entity \texttt{i} of dimension \texttt{d}, i.e. mesh entity (d, i),
 not including dofs associated with incident entities of lower dimension
 (unlike \texttt{tabulate\_facet\_dofs}).
 The size of the output array \texttt{dofs} should equal
-the value returned by \texttt{num\_entity\_dofs(d)}.
+the value returned by the function \texttt{num\_entity\_dofs(d)}.
 
 As an example, calling \texttt{tabulate\_entity\_dofs} for a face (d = 2)
 should yield only the dofs associated with the face that are not associated

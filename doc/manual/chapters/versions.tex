@@ -2,14 +2,16 @@
 \label{app:versions}
 \index{versions}
 
-To keep things simple, the UFC classes does not have any run time version control, and to upgrade
-UFC all libraries and applications must be recompiled with the new header file \texttt{ufc.h}.
+To keep things simple, the UFC classes do not have any run time
+version control. To upgrade to a new UFC version, all libraries and
+applications must therefore be recompiled with the new header file
+\texttt{ufc.h}.
 
 \section{Version 1.0}
 Initial release.
 
 \section{Version 1.1}
-Added new functions
+The following four functions have been added to the interface:
 \begin{itemize}
 \item \texttt{ufc::finite\_element::evaluate\_dofs}
 \item \texttt{ufc::dof\_map::geometric\_dimension}
@@ -17,7 +19,7 @@ Added new functions
 \item \texttt{ufc::dof\_map::tabulate\_entity\_dofs}
 \end{itemize}
 
-An implementation of UFC version 1.0 can be recompiled with the header file from UFC version 1.1
-without changes to the source code. The new functions introduced in 1.1 will then simply throw
-an informative exception.
-
+An implementation of UFC version 1.0 can be recompiled with the header
+file from UFC version 1.1 without changes to the source code. The new
+functions introduced in 1.1 will then simply throw an informative
+exception. (The new functions are virtual but not pure virtual.)
