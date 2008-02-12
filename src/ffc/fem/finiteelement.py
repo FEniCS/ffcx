@@ -253,7 +253,7 @@ class FiniteElement:
             J = numpy.linalg.inv(fiat_J)
 
         for fiat_dof_repr in list_of_fiat_dofs:
-            (name, fiat_pts, fiat_dirs, fiat_weights, derivs) = fiat_dof_repr
+            (name, fiat_pts, fiat_dirs, fiat_weights) = fiat_dof_repr
             directions = []
             weights = []
 
