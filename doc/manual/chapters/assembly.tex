@@ -7,169 +7,85 @@ In this section, we present a general algorithm for assembly of finite
 element variational forms and define the concepts that the UFC
 interface is based on.
 
-\section{An introductory example}
-\index{Poisson's equation}
-\index{variational problem}
-
-As an introduction, consider Poisson's equation,
-\begin{equation}
-  \label{eq:poisson}
-  \begin{split}
-  - \Delta u &= f, \quad \mbox{ in } \Omega, \\
-  u &= 0, \quad \mbox{ on } \partial\Omega.
-  \end{split}
-\end{equation}
-For $v \in \hat{V}$ a test function, we multiply (\ref{eq:poisson}) by
-$v$ and integrate by parts to obtain the variational problem: Find $u
-\in V$ such that
-\begin{equation} \label{eq:poissonvariational}
-  \int_{\Omega} \nabla v \cdot \nabla u \dx = \int_{\Omega} v f \dx
-  \quad \forall v \in \hat{V},
-\end{equation}
-which we may restate as: Find $u \in V$ such that
-\begin{equation}
-  a(v, u) = L(v) \quad \forall v \in \hat{V},
-\end{equation}
-where the \emph{bilinear form} $a : \hat{V} \times V \rightarrow \R$
-is given by
-\begin{equation}
-  a(v, u) = \int_{\Omega} \nabla v \cdot \nabla u \dx,
-\end{equation}
-and the \emph{linear form} $L : \hat{V} \rightarrow \R$ is given by
-\begin{equation}
-  L(v) = \int_{\Omega} v f \dx.
-\end{equation}
-
-\index{test space} \index{trial space} By replacing the test space
-$\hat{V}$ and the trial space $V$ with a pair of discrete test and
-trial spaces $\hat{V}_h \subset \hat{V}$ and $V_h \subset{V}$, we
-obtain the discrete variational problem: Find $u_h \in V_h$ such that
-\begin{equation}
-  a(v, u_h) = L(v) \quad \forall v \in \hat{V}_h.
-\end{equation}
-To obtain the discrete solution $u_h \in V_h$, we make an ansatz
- for $u_h$ to be expressed as a linear combination of a
-suitable set of basis functions $\{\phi_j\}_{j=1}^N$ for $V_h$,
-\begin{equation}
-  u_h(x) = \sum_{j=1}^N U_j \phi_j(x),
-\end{equation}
-and take $v = \hat \phi_i$ for $i = 1,2,\ldots,N$ with
-$\{\hat{\phi}_i\}_{i=1}^N$ a set of basis functions for the test space
-$V_h$. We thus obtain the linear system
-\begin{equation}
-  a(\hat{\phi}_i, \sum_{j=1}^N U_j \phi_j) = L(\hat{\phi}_i), \quad i = 1,2,\ldots,N,
-\end{equation}
-or, since $a$ is bilinear,
-\begin{equation}
-  A U = b,
-\end{equation}
-where
-\begin{eqnarray}
-  A_{ij} &=& a(\hat{\phi}_i, \phi_j), \quad i = 1,2,\ldots,N, j = 1,2,\ldots,N, \\
-  b_i &=& L(\hat{\phi}_i), \quad i = 1,2,\ldots,N.
-\end{eqnarray}
-
-\section{Discretization of variational forms}
+\section{Finite Element Discretization}
+\label{sec:fem}
 
 \subsection{The Finite Element}
 \index{finite element}
 
-A finite element is mathematically defined as a triplet consisting
-of a polygon, a function space, and a set of linear functionals. 
-Given that the dimension of the function space and the number of
-the (linearly independent) linear functionals are equal, the
-finite element is uniquely defined. 
-With this definition of a finite element, the basis functions
-are implicitly defined as the solution of a linear system.
-
-We take our starting point in the standard Ciarlet
-definition~\cite{Cia78}, but consider a finite element with a fixed
-set of basis functions.  These basis functions are pre-computed from
-the triplet introduced above. Hence, we will refer to a finite
-element as a collection of
+A finite element is mathematically defined as a triplet consisting of
+a polygon, a polynomial function space, and a set of linear
+functionals, see~\cite{Cia78}. Given that the dimension of the
+function space and the number of the (linearly independent) linear
+functionals are equal, the finite element is uniquely defined. Hence,
+we will refer to a finite element as a collection of
 \begin{itemize}
 \item a polygon $K$,
-\item a set of basis functions $\{\phi_i\}_{i=1}^n$ spanning
-$\mathcal{P}_K$ and the derivatives of those basis functions,
-\item the degrees of freedom, which are linear functionals, $L_i : V
-\rightarrow \R, i = 1, 2, \ldots, n$, where $V =
-\mathrm{span}\{\phi_i\}_{i=1}^n$. Usually, $L_i$ may be extended from
-$V$ to an appropriate Sobolev space.
+\item a polynomial space $\mathcal{P}_K$ on $K$,
+\item a set of linearly independent linear functionals, the
+\emph{degrees of freedom}, $L_i : \mathcal{P}_K \rightarrow \R, \, i =
+1, 2, \ldots, n$.
 \end{itemize}
-In addition, our finite element will contain functionality
-for interpolation. 
 
-\subsection{Variational forms}
+\subsection{Variational Forms}
 \index{variational form}
 
-In general, we shall be concerned with the discretization of general
-variational forms of arity~$r > 0$,
+Consider the weighted Poisson problem $- \nabla \cdot (w \nabla u) =
+f$ with Dirichlet boundary conditions on a domain $\Omega \subset
+\R^d$.  Multiplying by a test function $v \in V_h$ and integrating by
+parts, one obtains the variational problem
+\begin{equation} \label{eq:weightedpoisson}
+  \int_{\Omega} w \nabla v \cdot \nabla u \dx = \int_{\Omega} v f \dx
+  \quad \forall v \in V_h,
+\end{equation}
+for $u \in V_h$. If $w, f \in W_h$ for some discrete finite element space
+$W_h$ (which may be different from $V_h$), we may thus
+write~(\ref{eq:weightedpoisson}) as
+\begin{equation}
+  a(v, u; w) = L(v; f) \quad \forall v \in V_h,
+\end{equation}
+where the trilinear form $a : V_h \times V_h \times W_h \rightarrow \R$ is given by
+\begin{equation}
+  a(v, u; w) = \int_{\Omega} w \nabla v \cdot \nabla u \dx
+\end{equation}
+and the bilinear form $L : V_h \times W_h \rightarrow R$ is given by
+\begin{equation}
+  L(v; f) = \int_{\Omega} v f \dx.
+\end{equation}
+Note here that $a$ is \emph{bilinear} for any given fixed $w \in W_h$
+and $L$ is \emph{linear} for any given fixed $f \in W_h$.
+
+In general, we shall be concerned with the discretization of
+finite element variational forms of general arity~$r + n > 0$,
 \begin{equation} \label{eq:variationalform}
   a : V_h^1 \times V_h^2 \times \cdots \times V_h^r \times
-  W_h^1 \times W_h^2 \times \cdots \times W_h^n \rightarrow \R.
+  W_h^1 \times W_h^2 \times \cdots \times W_h^n \rightarrow \R,
 \end{equation}
 defined on the product space $V_h^1 \times V_h^2 \times \cdots \times
-V_h^r \times W_h^1 \times W_h^2 \times \cdots \times W_h^n$ of two sets
-$\{V_h^j\}_{j=1}^r, \{W_h^j\}_{j=1}^n$ of discrete function spaces on
-a triangulation $\mathcal{T}$ of a domain $\Omega \subset \R^d$. 
-We also often write this as 
+V_h^r \times W_h^1 \times W_h^2 \times \cdots \times W_h^n$ of two
+sets $\{V_h^j\}_{j=1}^r, \{W_h^j\}_{j=1}^n$ of discrete finite element
+function spaces on $\Omega$. We refer to
+$(v_1, v_2, \ldots, v_r) \in V_h^1 \times V_h^2 \times \cdots \times V_h^r$
+as \emph{primary arguments},
+and to
+$(w_1, w_2, \ldots, w_n) \in W_h^1 \times W_h^2 \times \cdots \times W_h^n$
+as \emph{coefficients} and write
 \begin{equation}
-a = a(v_1, \ldots, v_r; w_1, \ldots, w_n), 
+a = a(v_1, \ldots, v_r; w_1, \ldots, w_n).
+\label{eq:gen_form}
 \end{equation}
-where ';' is used to separate the $V_h$ spaces from the $W_h$ spaces.
-The distinction between the spaces $\{V_h^j\}_{j=1}^r$ and
-$\{W_h^j\}_{j=1}^n$ lies in how each set of spaces is
-discretized. This will be explained in the following.
-
 In the simplest case, all function spaces are equal but there are many
-important examples, such as mixed methods, where it is important to
-consider arguments coming from different function spaces.
+important examples, such as mixed methods, where the
+arguments come from different function spaces.
 
-Let $\mathcal{T} = \{K\}$ be a set of disjoint \emph{cells} (a
-triangulation) partitioning a domain $\cup_{K\in\mathcal{T}} K =
-\Omega \subset \R^d$. Further, let $\partial_e \mathcal{T}$ denote the
-set of \emph{exterior facets} (the set of cell facets incident with
-the boundary $\partial \Omega$), and let $\partial_i \mathcal{T}$
-denote the set of $\emph{interior facets}$ (the set of cell facets
-non-incident with the boundary $\partial \Omega$).
+\subsection{Discretization}
+\label{sec:Discretization}
 
-We shall assume that the variational form~(\ref{eq:variationalform})
-may be expressed as a sum of integrals over the cells~$\mathcal{T}$,
-the exterior facets~$\partial_e \mathcal{T}$ and the interior
-facets~$\partial_i \mathcal{T}$. We shall allow integrals expressed on
-disjoint subsets $\{\mathcal{T}_k\}_{k=1}^{n_c}$, $\{\partial_e
-\mathcal{T}_k\}_{k=1}^{n_e}$ and $\{\partial_i
-\mathcal{T}_k\}_{k=1}^{n_i}$ of $\mathcal{T}$, $\partial_e
-\mathcal{T}$ and $\partial_i \mathcal{T}$ respectively.
-
-We thus assume that the form $a$ is given by
-\begin{equation}
-  \begin{split}
-    a(v_1, \ldots, v_r; w_1, \ldots,  w_n)
-    &=
-    \sum_{k=1}^{n_c} \sum_{K\in\mathcal{T}_k} \int_{K}
-    I^c_k(v_1, \ldots, v_r; w_1, \ldots w_n) \dx \\
-    &+
-    \sum_{k=1}^{n_e} \sum_{S\in\partial_e\mathcal{T}_k} \int_{S}
-    I^e_k(v_1, \ldots, v_r; w_1, \ldots,  w_n) \ds \\
-    &+
-    \sum_{k=1}^{n_i} \sum_{S\in\partial_i\mathcal{T}_k} \int_{S}
-    I^i_k(v_1, \ldots, v_r; w_1, \ldots, w_n) \ds.
-  \end{split} \label{eq:form_integrals}
-\end{equation}
-We refer to an integral over a cell~$K$ as a \emph{cell integral},
-an integral over an exterior facet~$S$ as an \emph{exterior facet integral},
-and to an integral over an interior facet~$S$ as an \emph{interior facet integral}.
-
-%\subsection{Discretization}
-%\label{sec:Discretization}
-\index{discretization}
-
-To discretize the form $a$, we let
+To discretize the form $a$, we introduce bases
 $\{\phi_i^1\}_{i=1}^{N^1},
  \{\phi_i^2\}_{i=1}^{N^2}, \ldots,
  \{\phi_i^r\}_{i=1}^{N^r}$
-be bases of $V_h^1, V_h^2, \ldots, V_h^r$ respectively and let $i =
+for the function spaces $V_h^1, V_h^2, \ldots, V_h^r$ respectively and let $i =
 (i_1, i_2, \ldots, i_r)$ be a multiindex of length $|i| = r$. The
 form $a$ then defines a rank~$r$ tensor given by
 \begin{equation} \label{eq:tensor}
@@ -178,58 +94,59 @@ form $a$ then defines a rank~$r$ tensor given by
 \end{equation}
 where $\mathcal{I}$ is the index set
 \begin{equation}
-  \mathcal{I} = 
-  \prod_{j=1}^r[1,|V^j_h|] = \{(1,1,\ldots,1), (1,1,\ldots,2), \ldots,
+  \begin{split}
+  & \mathcal{I} =  \prod_{j=1}^r[1,|V^j_h|] =  \\
+  & \{(1,1,\ldots,1), (1,1,\ldots,2), \ldots,
   (N^1,N^2,\ldots,N^r)\}.
+  \end{split}
 \end{equation}
-For any given form of arity~$r$, the tensor~$A$ is a
-(typically sparse) tensor of rank~$r$ and dimension
-$|V_h^1| \times |V_h^2| \times \ldots \times |V_h^r|
-= N^1 \times N^2 \times \ldots \times N^r$.
+We refer to the tensor~$A$ as the \emph{discrete operator} generated
+by the form~$a$ and the particular choice of basis functions.  For any
+given form of arity~$r + n$, the tensor~$A$ is a (typically sparse)
+tensor of rank~$r$ and dimension $|V_h^1| \times |V_h^2| \times \ldots
+\times |V_h^r| = N^1 \times N^2 \times \ldots \times N^r$.
 \index{global tensor}
 
-Typically, the arity of the form~$a$ is $r = 0$, $r = 1$
-or $r = 2$. When $r = 0$, the corresponding (rank zero) tensor is a
-scalar, when $r = 1$, the corresponding (rank one) tensor is a vector
-(the ``load vector'') and when $r = 2$, the corresponding (rank two)
-tensor is a matrix (the ``stiffness matrix'').
-Forms of higher arity also appear, though they are rarely assembled as
-a higher-dimensional sparse tensor.
+Typically, the rank $r$ is 0, 1, or 2. When $r = 0$, the
+tensor $A$ is a scalar (a tensor of rank zero), when $r = 1$, the
+tensor $A$ is a vector (the ``load vector'') and when $r = 2$, the
+tensor $A$ is a matrix (the ``stiffness matrix''). Forms of higher
+arity also appear, though they are rarely assembled as a
+higher-dimensional sparse tensor.
 
 Note here that we consider the functions $w_1, w_2, \ldots, w_n$ as
-fixed in the sense that the discrete operator is computed for a given
-set of functions, which we refer to as \emph{coefficients}. As an
-example, consider again the variational
-problem~(\ref{eq:poissonvariational}) for Poisson's equation. For the
-bilinear form~$a$, the arity (rank) is $r = 2$ and the number of
-coefficients is $n = 0$, while for the linear form~$L$, the arity is
-$r = 1$ and the number of coefficients is $n = 1$. We may also choose
-to directly compute the \emph{action} of the bilinear form $a$
-obtained by assembling a vector from the form
+fixed in the sense that the discrete operator~$A$ is computed for a
+given set of functions, which we refer to as \emph{coefficients}. As
+an example, consider again the variational
+problem~(\ref{eq:weightedpoisson}) for the weighted Poisson's
+equation. For the trilinear form~$a$, the rank is $r = 2$ and
+the number of coefficients is $n = 1$, while for the linear form~$L$,
+the rank is $r = 1$ and the number of coefficients is $n = 1$. We may
+also choose to directly compute the \emph{action} of the form
+$a$ obtained by assembling a vector from the form
 \begin{equation}
-  a(v_1; w_1) = \int_{\Omega} \nabla v_1 \cdot \nabla w_1 \dx,
+  a(v_1; w_1, w2) = \int_{\Omega} w_1 \nabla v_1 \cdot \nabla w_2 \dx,
 \end{equation}
-where now $r = 1$ and $n = 1$.
+where now $r = 1$ and $n = 2$.
 
 We list below a few other examples to illustrate the notation.
 
 \begin{example}
 \label{example:div}
 Our first example is related
-to the divergence constraint in fluid flow. Let $a$ be given by
+to the divergence constraint in fluid flow. Let the form~$a$ be given by
 \begin{equation}
 a(q, u) = \int_{\Omega} q \nabla \cdot u \dx, \quad q\in V_h^1, \quad u\in V_h^2, 
 \end{equation}
-where $V_h^1$ is a space of scalar-valued functions and
-where $V_h^2$ is a space of vector-valued functions.
-The form $a : V_h^1 \times V_h^2  \rightarrow \R$ is bilinear and
-thus $r = 2$. Furthermore, the form does not depend on any
-coefficients and thus $n=0$.   
+where $V_h^1$ is a space of scalar-valued functions and where $V_h^2$
+is a space of vector-valued functions.  The form $a : V_h^1 \times
+V_h^2 \rightarrow \R$ has two primary arguments and thus $r = 2$.
+Furthermore, the form does not depend on any coefficients and thus $n=0$.
 \end{example}
 
 \begin{example}
-\label{example:nonlinearconv}
-Another common form in fluid flow (with variable density) is: 
+\label{example:linearconv}
+Another common form in fluid flow (with variable density) is
 \begin{equation}
 a(v,u;w,\varrho) = \int_{\Omega} v \, \varrho \, w \cdot \nabla  u \dx. 
 \end{equation}
@@ -245,23 +162,9 @@ Hence, $r=2$ and $n=2$.
 \end{example}
 
 \begin{example}
-\label{example:rhs}
-The form corresponding to the right-hand side (of, e.g., Poisson's equation)
-is given by
+The $H^1(\Omega)$ norm of the error $e = u - u_h$ squared is
 \begin{equation}
-a(v; f) = \int_{\Omega} v f \dx.
-\end{equation}
-The form takes two arguments and one of them is a coefficient,
-\begin{equation}
-a : V_h^1 \times  W_h^1 \rightarrow \R.
-\end{equation}
-Hence, $r = 1$ and $n = 1$.
-\end{example}
-
-\begin{example}
-The $H^1(\Omega)$ norm of the error $e = u_h - u$ squared is: 
-\begin{equation}
-a(u_h, u) = \int_{\Omega} (u_h - u)^2 + |\nabla (u_h - u)|^2 \dx.
+a(;u, u_h) = \int_{\Omega} (u - u_h)^2 + |\nabla (u - u_h)|^2 \dx.
 \end{equation}
 The form takes two arguments and both are coefficients,
 \begin{equation}
@@ -270,38 +173,90 @@ a : W_h^1 \times  W_h^2 \rightarrow \R.
 Hence, $r=0$ and $n=2$. 
 \end{example}
 
-\section{Assembling the discrete operator}
+\section{Finite Element Assembly}
 \index{assembly}
 
-The standard algorithm~\cite{ZieTay67,Hug87,Lan99} for computing the
-global tensor~$A$ is known as \emph{assembly}; $A$ is computed by
-iterating over the cells $\mathcal{T}$, the exterior facets
-$\partial_e\mathcal{T}$ and interior facets $\partial_i\mathcal{T}$,
-and adding from each the local contributions.
+The standard algorithm for computing the global sparse tensor~$A$ is
+known as \emph{assembly}, see~\cite{ZieTay67,Hug87}. By this
+algorithm, the tensor~$A$ may be computed by assembling (summing) the
+contributions from the local entities of a finite element mesh.  To
+express this algorithm for assembly of the global sparse tensor~$A$ for
+a general finite element variational form of arity~$r$, we introduce
+the following notation and assumptions.
 
-For illustration purposes, consider the assembly of the global sparse
-tensor~$A$ corresponding to a form~$a$ given by a single integral over
-all cells $\mathcal{T}$,
+Let $\mathcal{T} = \{K\}$ be a set of disjoint \emph{cells} (a
+triangulation) partitioning the domain $\Omega =
+\cup_{K\in\mathcal{T}} K$. Further, let $\partial_e \mathcal{T}$
+denote the set of \emph{exterior facets} (the set of cell facets
+incident with the boundary $\partial \Omega$), and let $\partial_i
+\mathcal{T}$ denote the set of $\emph{interior facets}$ (the set of
+cell facets non-incident with the boundary $\partial \Omega$).  For
+each discrete function space $V_h^j, \, j=1,2,\ldots,r$, we assume
+that the global basis~$\{\phi_i^j\}_{i=1}^{N^j}$ is obtained by
+patching together local function spaces $\mathcal{P}_K^j$ on each
+cell~$K$ as determined by a local-to-global mapping.
+
+We shall further assume that the variational
+form~(\ref{eq:variationalform}) may be expressed as a sum of integrals
+over the cells~$\mathcal{T}$, the exterior facets~$\partial_e
+\mathcal{T}$ and the interior facets~$\partial_i \mathcal{T}$. We
+shall allow integrals expressed on disjoint subsets
+$\mathcal{T} = \cup_{k=1}^{n_c} \mathcal{T}_k$,
+$\partial_e \mathcal{T} = \cup_{k=1}^{n_e} \partial_e \mathcal{T}_k$
+and
+$\partial_i \mathcal{T} = \cup_{k=1}^{n_i} \partial_i \mathcal{T}_k$
+respectively.
+
+We thus assume that the form $a$ is given by
 \begin{equation}
-  a(v_1, \ldots, v_r; w_1, \ldots, w_n) =
-  \sum_{K\in\mathcal{T}} \int_K
-  I^c(v_1, \ldots, v_r; w_1, \ldots, w_n) \dx.
+  \begin{split}
+    & a(v_1, \ldots, v_r; w_1, \ldots,  w_n) =  \\
+    &\ \ \   \sum_{k=1}^{n_c} \sum_{K\in\mathcal{T}_k} \int_{K}
+    I^c_k(v_1, \ldots, v_r; w_1, \ldots w_n) \dx \\
+    &+
+    \sum_{k=1}^{n_e} \sum_{S\in\partial_e\mathcal{T}_k} \int_{S}
+    I^e_k(v_1, \ldots, v_r; w_1, \ldots,  w_n) \ds \\
+    &+
+    \sum_{k=1}^{n_i} \sum_{S\in\partial_i\mathcal{T}_k} \int_{S}
+    I^i_k(v_1, \ldots, v_r; w_1, \ldots, w_n) \ds.
+  \end{split} \label{eq:form_integrals}
 \end{equation}
-The global sparse tensor~$A$ is then given by
+We refer to an integral over a cell~$K$ as a \emph{cell integral},
+an integral over an exterior facet~$S$ as an \emph{exterior facet integral}
+(typically used to implement Neumann and Robin type boundary conditions),
+and to an integral over an interior facet~$S$ as an \emph{interior facet integral} (typically used in discontinuous Galerkin methods).
+
+For simplicity, we consider here initially assembly of the global
+sparse tensor~$A$ corresponding to a form~$a$ given by a single
+integral over all cells $\mathcal{T}$, and later extend to the general
+case where we must also account for contributions from several cell
+integrals, interior facet integrals and exterior facet integrals.
+
+We thus consider the form
+\begin{equation}
+  \begin{split}
+    &a(v_1, \ldots, v_r; w_1, \ldots, w_n) = \\
+    & \ \ \ \sum_{K\in\mathcal{T}} \int_K
+    I^c(v_1, \ldots, v_r; w_1, \ldots, w_n) \dx,
+  \end{split}
+\end{equation}
+for which the global sparse tensor~$A$ is given by
 \begin{equation}
   A_i = \sum_{K\in\mathcal{T}} \int_K
   I^c(\phi^1_{i_1}, \ldots, \phi^r_{i_r}; w_1, \ldots, w_n) \dx.
 \end{equation}
-
 To see how to compute the tensor $A$ by summing the local
-contributions from each cell~$K$, we let $n^j_K = |\mathcal{P}_K|$
-denote the dimension of the local finite
-element space on $K$. Furthermore, let
+contributions from each cell~$K$, we let $n^j_K = |\mathcal{P}^j_K|$
+denote the dimension of the local finite element space on $K$ for the
+$j$th primary argument $v_j \in V_h^j$ for $j = 1,2,\ldots,r$. Furthermore, let
 \begin{equation}
   \iota_K^j : [1,n_K^j] \rightarrow [1,N^j] \label{eq:iota_K}
 \end{equation}
-denote the local-to-global mapping for each discrete
-function space $V_h^j$, $j=1,2,\ldots,r$, and define for each $K \in
+denote the local-to-global mapping for~$V_h^j$, that is, on any given
+$K\in\mathcal{T}$, the mapping $\iota_K^j$ maps the number of a local
+degree of freedom (or, equivalently, local basis function) to the
+number of the corresponding global degree of freedom (or,
+equivalently, global basis function). We then define for each $K \in
 \mathcal{T}$ the collective local-to-global mapping $\iota_K :
 \mathcal{I}_K \rightarrow \mathcal{I}$ by
 \begin{equation}
@@ -311,34 +266,45 @@ function space $V_h^j$, $j=1,2,\ldots,r$, and define for each $K \in
 \end{equation}
 where $\mathcal{I}_K$ is the index set
 \begin{equation}
-  \mathcal{I}_K = 
-  \prod_{j=1}^r[1,|\mathcal{P}_K^j|] = \{(1,1,\ldots,1), (1,1,\ldots,2), \ldots,
+\begin{split}
+  & \mathcal{I}_K = \prod_{j=1}^r[1,|\mathcal{P}_K^j|] \\ 
+  & = \{(1,1,\ldots,1), (1,1,\ldots,2), \ldots,
   (n_K^1,n_K^2,\ldots,n_K^r)\}.
+\end{split}
 \end{equation}
 Furthermore, for each $V_h^j$ we let $\{\phi^{K,j}_i\}_{i=1}^{n_K^j}$
 denote the restriction to an element $K$ of the subset of the basis
-$\{\phi_i^j\}_{i=1}^{N^j}$ of $V_h^j$ supported on $K$.
+$\{\phi_i^j\}_{i=1}^{N^j} \subset \mathcal{P}_K^j$ of $V_h^j$ supported on $K$.
 
 We may now compute~$A$ by summing the contributions from
-each local cell~$K$,
+the local cells,
 \begin{equation}
   \begin{split}
-  A_{\iota_K(i)}
+  A_i
   &=
-  \sum_{K\in\mathcal{T}} \int_K
-  I^c(\phi_{\iota_K(i_1)}^1, \ldots, \phi_{\iota_K(i_r)}^r; w_1, \ldots, w_n) \dx \\
+  \sum_{K\in\mathcal{T}_i} \int_K
+  I^c(\phi_{i_1}^1, \ldots, \phi_{i_r}^r; w_1, \ldots, w_n) \dx \\
   &=
-  \sum_{K\in\mathcal{T}} \int_K
-  I^c(\phi_{i_1}^{K,1},
+  \sum_{K\in\mathcal{T}_i} \int_K
+  I^c(\phi_{(\iota_K^1)^{-1}(i_1)}^{K,1},
       \ldots,
-      \phi_{i_r}^{K,r}; w_1, \ldots, w_n) \dx
-  =
-  \sum_{K\in\mathcal{T}}
-  A^K_i,
+      \phi_{(\iota_K^r)^{-1}(i_r)}^{K,r}; w_1, \ldots, w_n) \dx \\
+  &=
+  \sum_{K\in\mathcal{T}_i}
+  A^K_{\iota_K^{-1}(i)},
   \end{split}
 \end{equation}
 where $A^K$ is the local \emph{cell tensor} on cell $K$ (the ``element
-stiffness matrix''). Similarly, we may sum the local contributions
+stiffness matrix''), given by
+\begin{equation}
+  A^K_i = \int_K
+  I^c(\phi_{i_1}^{K,1},
+  \ldots,
+  \phi_{i_r}^{K,r}; w_1, \ldots, w_n) \dx, \\
+\end{equation}
+and where $\mathcal{T}_i$ denotes the set of cells on which all basis
+functions $\phi_{i_1}^1, \phi_{i_2}^2, \ldots, \phi_{i_r}^r$ are supported.
+Similarly, we may sum the local contributions
 from the exterior and interior facets in the form of local
 \emph{exterior facet tensors} and \emph{interior facet tensors}.
 \index{cell tensor}
@@ -368,51 +334,64 @@ from the exterior and interior facets in the form of local
 
 In Algorithm~\ref{alg:assembly}, we present a general algorithm for
 assembling the contributions from the local cell, exterior facet and
-interior facet tensors into a global sparse tensor. In
-Appendix~\ref{app:assembly}, we present a sketch of the corresponding
-implementation in C++ based on UFC. In both cases, we iterate over the
-local cells, exterior and interior facets. On each local entity, we
-compute the local tensor and add it to the global tensor as
-illustrated in Figure~\ref{fig:insertion}.
+interior facet tensors into a global sparse tensor.  In all cases, we
+iterate over all entities (cells, exterior or interior facets),
+compute the local cell tensor $A^K$ (or exterior/interior facet tensor
+$A^S$) and add it to the global sparse tensor as determined by the
+local-to-global mapping, see~Figure~\ref{fig:insertion}.
+
 
 \begin{algorithm}
+\footnotesize
 $A = 0$ \\
-\\
-\emph{Assemble contributions from all cells} \\
+(i) \emph{Assemble contributions from all cells} \\
 \textbf{for each} $K \in \mathcal{T}$ \\
 \\
 \tab \textbf{for} $j = 1,2,\ldots,r$: \\
 \tab\tab Tabulate the local-to-global mapping $\iota_K^j$ \\
 \\
-\tab Let $K \in \mathcal{T}_k$ \\
-\tab Tabulate the cell tensor $A^K$ for $I^c_k$ \\
-\tab Add $A^K_i$ to $A_{\iota_K^1(i_1), \iota_K^2(i_2), \ldots, \iota_K^r(i_r)}$ for all $i\in I_K$ \\
+\tab \textbf{for} $j = 1,2,\ldots,n$: \\
+\tab\tab Extract the values of $w_j$ on $K$
 \\
-\emph{Assemble contributions from all exterior facets} \\
+\\
+\tab Take $0 \leq k \leq n_c$ such that $K \in \mathcal{T}_k$ \\
+\tab Tabulate the cell tensor $A^K$ for $I^c_k$ \\
+\tab Add $A^K_i$ to $A_{\iota_K^1(i_1), \iota_K^2(i_2), \ldots, \iota_K^r(i_r)}$ for $i\in I_K$ \\
+\\
+(ii) \emph{Assemble contributions from all exterior facets} \\
 \textbf{for each} $S \in \partial_e\mathcal{T}$ \\
 \\
 \tab \textbf{for} $j = 1,2,\ldots,r$: \\
-\tab\tab Tabulate the local-to-global mapping $\iota_K^j$ \\
+\tab\tab Tabulate the local-to-global mapping $\iota_{K(S)}^j$ \\
 \\
-\tab Let $S \in \partial_e\mathcal{T}_k$ \\
+\tab \textbf{for} $j = 1,2,\ldots,n$: \\
+\tab\tab Extract the values of $w_j$ on $K(S)$
+\\
+\\
+\tab Take $0 \leq k \leq n_e$ such that $S \in \partial_e \mathcal{T}_k$ \\
 \tab Tabulate the exterior facet tensor $A^S$ for $I^e_k$ \\
-\tab Add $A^S_i$ to $A_{\iota_K^1(i_1), \iota_K^2(i_2), \ldots, \iota_K^r(i_r)}$ for all $i\in I_K$ \\
+\tab Add $A^S_i$ to $A_{\iota_{K(S)}^1(i_1), \iota_{K(S)}^2(i_2), \ldots, \iota_{K(S)}^r(i_r)}$ for $i\in I_{K(S)}$ \\
 \\
 \\
-\emph{Assemble contributions from all interior facets} \\
+(iii) \emph{Assemble contributions from all interior facets} \\
 \textbf{for each} $S \in \partial_i\mathcal{T}$ \\
 \\
 \tab \textbf{for} $j = 1,2,\ldots,r$: \\
-\tab\tab Tabulate the local-to-global mapping $\iota_K^j$ \\
+\tab\tab Tabulate the local-to-global mapping $\iota_{K(S)}^j$ \\
 \\
-\tab Let $S \in \partial_i\mathcal{T}_k$ \\
+\tab \textbf{for} $j = 1,2,\ldots,n$: \\
+\tab\tab Extract the values of $w_j$ on $K(S)$
+\\
+\\
+\tab Take $0 \leq k \leq n_i$ such that $S \in \partial_i \mathcal{T}_k$ \\
 \tab Tabulate the interior facet tensor $A^S$ for $I^i_k$ \\
-\tab Add $A^S_i$ to $A_{\iota_K^1(i_1), \iota_K^2(i_2), \ldots, \iota_K^r(i_r)}$ for all $i\in I_K$ \\
+\tab Add $A^S_i$ to $A_{\iota_{K(S)}^1(i_1), \iota_{K(S)}^2(i_2), \ldots, \iota_{K(S)}^r(i_r)}$ for $i\in I_{K(S)}$ \\
 \caption{Assembling the global tensor~$A$ from the local contributions
   on all cells, exterior and interior facets. For assembly over
-  exterior facets, $K$ refers to the cell $K\in\mathcal{T}$ incident
+  exterior facets, $K(S)$ refers to the cell $K\in\mathcal{T}$ incident
   to the exterior facet~$S$, and for assembly over interior facets,
-  $K$ refers to the ``macro cell'' consisting of the pair of cells
+  $K(S)$ refers to the ``macro cell'' consisting of the pair of cells
   $K^+$ and $K^-$ incident to the interior facet~$S$.}
 \label{alg:assembly}
 \end{algorithm}
+\normalsize
