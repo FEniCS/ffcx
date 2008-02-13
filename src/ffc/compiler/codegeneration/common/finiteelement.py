@@ -53,12 +53,25 @@ def generate_finite_element(element, format):
         # Generate code for evaluate_basis_derivatives
         code["evaluate_basis_derivatives"] = evaluate_basis_derivatives(element, format)
 
+        # Generate vectorised version of evaluate functions
+        code["evaluate_basis_all"] =\
+        format["exception"]("The vectorised version of evaluate_basis() is not yet implemented.")
+        code["evaluate_basis_derivatives_all"] =\
+        format["exception"]("The vectorised version of evaluate_basis_derivatives() is not yet implemented.")
+
         # Generate code for inperpolate_vertex_values
         #code["interpolate_vertex_values"] = __generate_interpolate_vertex_values_old(element, format)
         code["interpolate_vertex_values"] = __generate_interpolate_vertex_values(element, format)
     else:
         code["evaluate_basis"] = format["exception"]("evaluate_basis() is not supported for QuadratureElement")
         code["evaluate_basis_derivatives"] = format["exception"]("evaluate_basis_derivatives() is not supported for QuadratureElement")
+
+        # Generate vectorised version of evaluate functions
+        code["evaluate_basis_all"] =\
+        format["exception"]("evaluate_basis_all() is not supported for QuadratureElement.")
+        code["evaluate_basis_derivatives_all"] =\
+        format["exception"]("evaluate_basis_derivatives_all() is not supported for QuadratureElement.")
+
         code["interpolate_vertex_values"] = format["exception"]("interpolate_vertex_values() is not supported for QuadratureElement")
 
     # Generate code for evaluate_dof

@@ -320,11 +320,13 @@ def __generate_finite_element(code, form_data, options, prefix, label):
     cases = ["return %s;" % case for case in code["value_dimension"]]
     ufc_code["value_dimension"] = __generate_switch("i", cases, "return 0;")
 
-    # Generate code for evaluate_basis
+    # Generate code for evaluate_basis (and vectorised counterpart)
     ufc_code["evaluate_basis"] = __generate_body(code["evaluate_basis"])
+    ufc_code["evaluate_basis_all"] = __generate_body(code["evaluate_basis_all"])
 
-    # Generate code for evaluate_basis
+    # Generate code for evaluate_basis_derivatives (and vectorised counterpart)
     ufc_code["evaluate_basis_derivatives"] = __generate_body(code["evaluate_basis_derivatives"])
+    ufc_code["evaluate_basis_derivatives_all"] = __generate_body(code["evaluate_basis_derivatives_all"])
 
     # Generate code for evaluate_dof
     ufc_code["evaluate_dof"] = __generate_body(code["evaluate_dof"])
