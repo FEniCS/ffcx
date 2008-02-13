@@ -1,13 +1,15 @@
-// This is UFC (Unified Form-assembly Code) v. 1.0.
+// This is UFC (Unified Form-assembly Code) v. 1.1.
 // This code is released into the public domain.
 //
-// The FEniCS Project (http://www.fenics.org/) 2006-2007.
+// The FEniCS Project (http://www.fenics.org/) 2006-2008.
 
 #ifndef __UFC_H
 #define __UFC_H
 
 #define UFC_VERSION_MAJOR 1
 #define UFC_VERSION_MINOR 1
+
+#include <stdexcept>
 
 const char UFC_VERSION[] = "1.1";
 
@@ -123,12 +125,25 @@ namespace ufc
                                 const double* coordinates,
                                 const cell& c) const = 0;
 
+    /// Evaluate all basis functions at given point in cell
+    virtual void evaluate_basis_all(double* values,
+                                    const double* coordinates,
+                                    const cell& c) const
+    { throw std::runtime_error("Not implemented (introduced in UFC v1.1)."); }
+
     /// Evaluate order n derivatives of basis function i at given point in cell
     virtual void evaluate_basis_derivatives(unsigned int i,
                                             unsigned int n,
                                             double* values,
                                             const double* coordinates,
-                                            const ufc::cell& c) const = 0;
+                                            const cell& c) const = 0;
+
+    /// Evaluate order n derivatives of all basis functions at given point in cell
+    virtual void evaluate_basis_derivatives_all(unsigned int n,
+                                                double* values,
+                                                const double* coordinates,
+                                                const cell& c) const
+    { throw std::runtime_error("Not implemented (introduced in UFC v1.1)."); }
 
     /// Evaluate linear functional for dof i on the function f
     virtual double evaluate_dof(unsigned int i,
@@ -139,7 +154,7 @@ namespace ufc
     virtual void evaluate_dofs(double *values,
                                const function& f,
                                const cell& c) const
-    { raise std::runtime_exception("Not implemented (introduced in UFCv1.1)."); }
+    { throw std::runtime_error("Not implemented (introduced in UFC v1.1)."); }
 
     /// Interpolate vertex values from dof values
     virtual void interpolate_vertex_values(double* vertex_values,
@@ -191,14 +206,14 @@ namespace ufc
 
     // Return the geometric dimension of the coordinates this dof map provides
     virtual unsigned int geometric_dimension() const
-    { raise std::runtime_exception("Not implemented (introduced in UFCv1.1)."); }
+    { throw std::runtime_error("Not implemented (introduced in UFC v1.1)."); }
 
     /// Return the number of dofs on each cell facet
     virtual unsigned int num_facet_dofs() const = 0;
 
     /// Return the number of dofs associated with each cell entity of dimension d
     virtual unsigned int num_entity_dofs(unsigned int d) const
-    { raise std::runtime_exception("Not implemented (introduced in UFCv1.1)."); }
+    { throw std::runtime_error("Not implemented (introduced in UFC v1.1)."); }
 
     /// Tabulate the local-to-global mapping of dofs on a cell
     virtual void tabulate_dofs(unsigned int* dofs,
@@ -212,7 +227,7 @@ namespace ufc
     /// Tabulate the local-to-local mapping from dofs associated with mesh entity i of dimension d to cell dofs
     virtual void tabulate_entity_dofs(unsigned int* dofs,
                                       unsigned int d, unsigned int i) const
-    { raise std::runtime_exception("Not implemented (introduced in UFCv1.1)."); }
+    { throw std::runtime_error("Not implemented (introduced in UFC v1.1)."); }
 
     /// Tabulate the coordinates of all dofs on a cell
     virtual void tabulate_coordinates(double** coordinates,

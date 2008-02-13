@@ -317,6 +317,22 @@ values in the array \texttt{values}. The size of the output array
 should be equal to size of the value space (see
 \texttt{value\_dimension} above).
 
+\subsection{The function \texttt{evaluate\_basis\_all}}
+Introduced in version 1.1.
+
+\begin{code}
+virtual void evaluate_basis_all(double* values,
+                                const double* coordinates,
+                                const cell& c) const = 0;
+\end{code}
+
+As \texttt{evaluate\_basis}, but evaluates all basis functions at
+once, which can be implemented much more effectively than multiple
+calls to \texttt{evaluate\_basis}. The size of the output array
+should be equal to size of the value space times the number of
+basis functions. The computed values for a single basis function
+are placed continuously in the array.
+
 \subsection{The function \texttt{evaluate\_basis\_derivatives}}
 
 \begin{code}
@@ -325,7 +341,7 @@ evaluate_basis_derivatives(unsigned int i,
                            unsigned int n,
                            double* values,
                            const double* coordinates,
-                           const ufc::cell& c) const = 0;
+                           const cell& c) const = 0;
 \end{code}
 
 This function evaluates all order \texttt{n} derivatives of basis
@@ -348,6 +364,25 @@ spatial dimensions.
 For tensor-valued basis functions, the ordering of derivatives is
 row-major based on the value space dimensions followed by the
 derivative spatial dimensions.
+
+\subsection{The function \texttt{evaluate\_basis\_derivatives\_all}}
+Introduced in version 1.1.
+
+\begin{code}
+virtual void
+evaluate_basis_derivatives_all(unsigned int n,
+                               double* values,
+                               const double* coordinates,
+                               const cell& c) const = 0;
+\end{code}
+
+As \texttt{evaluate\_basis\_derivatives}, but evaluated for all
+basis functions at once, which can be implemented much more
+effectively than multiple calls to \texttt{evaluate\_basis\_derivatives}.
+The size of the output array should be equal to the corresponding size 
+defined for \texttt{evaluate\_basis\_derivatives} times the number of
+basis functions. The computed values for a single basis function
+are placed continuously in the array.
 
 \subsection{The function \texttt{evaluate\_dof}}
 
