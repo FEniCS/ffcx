@@ -151,7 +151,7 @@ namespace ufc
                                 const cell& c) const = 0;
 
     /// Evaluate linear functionals for all dofs on the function f
-    virtual void evaluate_dofs(double *values,
+    virtual void evaluate_dofs(double* values,
                                const function& f,
                                const cell& c) const
     { throw std::runtime_error("Not implemented (introduced in UFC v1.1)."); }
@@ -224,7 +224,7 @@ namespace ufc
     virtual void tabulate_facet_dofs(unsigned int* dofs,
                                      unsigned int facet) const = 0;
 
-    /// Tabulate the local-to-local mapping from dofs associated with mesh entity i of dimension d to cell dofs
+    /// Tabulate the local-to-local mapping of dofs on entity (d, i)
     virtual void tabulate_entity_dofs(unsigned int* dofs,
                                       unsigned int d, unsigned int i) const
     { throw std::runtime_error("Not implemented (introduced in UFC v1.1)."); }

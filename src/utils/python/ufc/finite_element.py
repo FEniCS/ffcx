@@ -1,7 +1,7 @@
-# Code generation format strings for UFC (Unified Form-assembly Code) v. 1.0.
+# Code generation format strings for UFC (Unified Form-assembly Code) v. 1.1.
 # This code is released into the public domain.
 #
-# The FEniCS Project (http://www.fenics.org/) 2006-2007.
+# The FEniCS Project (http://www.fenics.org/) 2006-2008.
 
 finite_element_combined = """\
 /// This class defines the interface for a finite element.
@@ -97,7 +97,7 @@ public:
   }
 
   /// Evaluate linear functionals for all dofs on the function f
-  virtual void evaluate_dofs(double *values,
+  virtual void evaluate_dofs(double* values,
                              const ufc::function& f,
                              const ufc::cell& c) const
   {
@@ -185,7 +185,7 @@ public:
                               const ufc::cell& c) const;
 
   /// Evaluate linear functionals for all dofs on the function f
-  virtual void evaluate_dofs(double *values,
+  virtual void evaluate_dofs(double* values,
                              const ufc::function& f,
                              const ufc::cell& c) const;
 
@@ -292,7 +292,7 @@ double %(classname)s::evaluate_dof(unsigned int i,
 }
 
 /// Evaluate linear functionals for all dofs on the function f
-void %(classname)s::evaluate_dofs(double *values,
+void %(classname)s::evaluate_dofs(double* values,
                                   const ufc::function& f,
                                   const ufc::cell& c) const
 {

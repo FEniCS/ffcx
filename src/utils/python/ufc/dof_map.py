@@ -1,7 +1,7 @@
-# Code generation format strings for UFC (Unified Form-assembly Code) v. 1.0.
+# Code generation format strings for UFC (Unified Form-assembly Code) v. 1.1.
 # This code is released into the public domain.
 #
-# The FEniCS Project (http://www.fenics.org/) 2006-2007.
+# The FEniCS Project (http://www.fenics.org/) 2006-2008.
 
 dof_map_combined = """\
 /// This class defines the interface for a local-to-global mapping of
@@ -99,7 +99,7 @@ public:
 %(tabulate_facet_dofs)s
   }
 
-  /// Tabulate the local-to-local mapping from dofs associated with mesh entity i of dimension d to cell dofs
+  /// Tabulate the local-to-local mapping of dofs on entity (d, i)
   virtual void tabulate_entity_dofs(unsigned int* dofs,
                                     unsigned int d, unsigned int i) const
   {
@@ -182,7 +182,7 @@ public:
   virtual void tabulate_facet_dofs(unsigned int* dofs,
                                    unsigned int facet) const;
 
-  /// Tabulate the local-to-local mapping from dofs associated with mesh entity i of dimension d to cell dofs
+  /// Tabulate the local-to-local mapping of dofs on entity (d, i)
   virtual void tabulate_entity_dofs(unsigned int* dofs,
                                     unsigned int d, unsigned int i) const;
 
@@ -288,7 +288,7 @@ void %(classname)s::tabulate_facet_dofs(unsigned int* dofs,
 %(tabulate_facet_dofs)s
 }
 
-/// Tabulate the local-to-local mapping from dofs associated with mesh entity i of dimension d to cell dofs
+/// Tabulate the local-to-local mapping of dofs on entity (d, i)
 void %(classname)s::tabulate_entity_dofs(unsigned int* dofs,
                                   unsigned int d, unsigned int i) const
 {

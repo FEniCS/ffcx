@@ -331,7 +331,7 @@ once, which can be implemented much more effectively than multiple
 calls to \texttt{evaluate\_basis}. The size of the output array
 should be equal to size of the value space times the number of
 basis functions. The computed values for a single basis function
-are placed continuously in the array.
+are placed contiguously in the array.
 
 \subsection{The function \texttt{evaluate\_basis\_derivatives}}
 
@@ -382,7 +382,7 @@ effectively than multiple calls to \texttt{evaluate\_basis\_derivatives}.
 The size of the output array should be equal to the corresponding size 
 defined for \texttt{evaluate\_basis\_derivatives} times the number of
 basis functions. The computed values for a single basis function
-are placed continuously in the array.
+are placed contiguously in the array.
 
 \subsection{The function \texttt{evaluate\_dof}}
 

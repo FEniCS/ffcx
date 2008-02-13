@@ -27,8 +27,8 @@ For more information about UFC and the FEniCS project, visit
 """
 
 # -*- coding: utf-8 -*-
-__author__  = "Martin Sandve Alnes, Hans Petter Langtangen, Anders Logg, Kent-Andre Mardal and Ola Skavhaug"
-__date__    = "2008-01-02"
+__author__  = "Martin Sandve Alnaes, Anders Logg, Kent-Andre Mardal, Ola Skavhaug, and Hans Petter Langtangen"
+__date__    = "2008-02-13"
 __version__ = "1.1"
 __license__ = "This code is released into the public domain"
 
