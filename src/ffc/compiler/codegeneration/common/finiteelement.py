@@ -167,7 +167,7 @@ def __generate_evaluate_dof(element, format):
         num_points_per_dof_code = block(separator.join([str(n) for n in num_points_per_dof]))
         code += ["%sns[%d] = %s;" % (format["static const uint declaration"],
                                       num_dofs, num_points_per_dof_code)]
-        code += [format["loop"]("j", "0", "ns[i]")] 
+        code += ["%s%s" % (format["loop"]("j", "0", "ns[i]"), " {")]  
         (tab, endloop, index) = (2, "\n} // End for", "j")
 
     # Map the points from the reference onto the physical element
