@@ -9,8 +9,8 @@
  - New operators lhs() and rhs()
  - Bug fixes in simplify
  - Bug fixes for Nedelec and BDFM
- - Fix but in mult()
- - Fix bug with restrictions on interior facet integrals
+ - Fix bug in mult()
+ - Fix bug with restrictions on exterior facet integrals
  - Fix bug in grad() for vectors
  - Add divergence operator for matrices
 0.4.3 [2007-10-23]
