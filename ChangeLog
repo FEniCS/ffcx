@@ -10,7 +10,7 @@
  - Bug fixes in simplify
  - Bug fixes for Nedelec and BDFM
  - Fix but in mult()
- - Fix but in with restrictions on interior facet integrals
+ - Fix bug with restrictions on interior facet integrals
  - Fix bug in grad() for vectors
  - Add divergence operator for matrices
 0.4.3 [2007-10-23]
