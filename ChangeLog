@@ -1,7 +1,18 @@
+ - RT, BDM, BDFM and Nedelec now working in 2D and 3D
+ - New element type QuadratureElement
+ - Add support for 1D elements
+ - Add experimental support for new Darcy-Stokes element
+ - Use FIAT transformed spaces instead of mapping in FFC
+ - Updates for UFC 1.1
  - Implement caching of forms/modules in ~/.ffc/cache for JIT compiler
- - Minor tweaks and fixes for the form language
- - Add operators lhs() and rhs()
- - Bug fixes for Nedelec and BDFM - RT, BDM, BDFM and Nedelec now working in 2D and 3D
+ - Add script ffc-clean
+ - New operators lhs() and rhs()
+ - Bug fixes in simplify
+ - Bug fixes for Nedelec and BDFM
+ - Fix but in mult()
+ - Fix but in with restrictions on interior facet integrals
+ - Fix bug in grad() for vectors
+ - Add divergence operator for matrices
 0.4.3 [2007-10-23]
  - Require FIAT to use UFC reference cells
  - Fix bug in form simplification
