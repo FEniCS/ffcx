@@ -9,6 +9,9 @@ __license__  = "GNU GPL version 3 or any later version"
 # Python modules
 import numpy
 
+# FFC fem modules
+from dofrepresentation import *
+
 # FFC common modules
 from ffc.common.debug import *
 from ffc.common.utils import *
@@ -134,6 +137,28 @@ class MixedElement:
         unnest the possibly recursively nested entity_dofs here to
         generate just a list of entity dofs for basic elements."""
         return [entity_dofs for element in self.__elements for entity_dofs in element.entity_dofs()]
+
+    def dual_basis(self):
+        """Return the representation of the dofs. We unnest the
+        possibly nested dof types as for entity_dofs and shift the
+        components according to the position of the basic elements."""
+
+        # Calculate the shifts in components caused by the positioning
+        # of the elements:
+        dims = [element.value_dimension(0) for element in self.__elements]
+        shifts = [sum(dims[:i]) for i in range(len(dims))]
+        n = sum(dims)
+
+        # Shift the components for the separate dofs
+        dofs = []
+        for e in range(len(self.__elements)):
+            element = self.__elements[e]
+            shift = shifts[e]
+            for d in element.dual_basis():
+                dof = DofRepresentation(d)
+                dof.shift_directions(n, shift)
+                dofs += [dof]
+        return dofs
 
     def basis(self):
         "Return basis of finite element space"

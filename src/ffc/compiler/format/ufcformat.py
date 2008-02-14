@@ -72,6 +72,7 @@ format = {
            "static float declaration": "static double ",
            "uint declaration": "unsigned int ",
            "const uint declaration": "const unsigned int ",
+           "static const uint declaration": "static const unsigned int ",
            "static uint declaration": "static unsigned int ",
            "table declaration": "const static double ",
 # variable names
@@ -154,6 +155,10 @@ format = {
 #           "snippet inverse 2D": inverse_jacobian_2D,
 #           "snippet inverse 3D": inverse_jacobian_3D,
            "snippet evaluate_dof": lambda d : eval("evaluate_dof_%dD" % d),
+           "snippet map_onto_physical": lambda d : eval("map_onto_physical_%dD" % d),
+#           "snippet declare_representation": declare_representation,
+#           "snippet delete_representation": delete_representation,
+           "snippet calculate dof": calculate_dof,
            "get cell vertices" : "const double * const * x = c.coordinates;",
            "generate jacobian": lambda d,i: __generate_jacobian(d,i),
            "generate body": lambda d: __generate_body(d),

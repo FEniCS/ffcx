@@ -6,6 +6,9 @@ __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian Oelgaard 2007
+# Modified by Marie Rognes 2008
+
+from sets import Set
 
 # FIAT modules
 from FIAT.shapes import LINE
@@ -88,35 +91,229 @@ def __generate_evaluate_dof(element, format):
     # Generate code as a list of lines
     code = []
 
-    # Generate dof map
-    dof_map = DofMap(element)
-    # Check if evaluate_dof is supported
-#    if dof_map.dof_coordinates() == None or dof_map.dof_components() == None:
-    if None in dof_map.dof_coordinates() or dof_map.dof_components() == None:
-        code += [format["exception"]("evaluate_dof not implemented for this type of element")]
-        return code
-
     # Get code formats
     block = format["block"]
     separator = format["separator"]
     floating_point = format["floating point"]
+    comment = format["comment"]
 
-    # Get dof coordinates
-    cs = dof_map.dof_coordinates()
-    X = block(separator.join([block(separator.join([floating_point(x) for x in c])) for c in cs]))
+    # Generate dof map and get _copy_ of dof representations. 
+    dof_map = DofMap(element)
+    dofs = [DofRepresentation(dof) for dof in dof_map.dual_basis()]
+    num_dofs = len(dofs)
 
-    # Get dof components
-    cs = dof_map.dof_components()
-    components = block(separator.join(["%d" % c for c in cs]))
+    # For ease in the code generalization, pad the points, directions
+    # and weights with zeros according to the maximal number of
+    # points. (Hence, the copy of the dofs above.)
+    max_num_points = dof_map.get_max_num_of_points()
+    num_points_per_dof = [dof.pad_points_and_weights(max_num_points)
+                          for dof in dofs]
 
-    # Compute number of values
+    # Compute the value dimension of the functions
     num_values = 1
     for i in range(element.value_rank()):
         num_values *= element.value_dimension(i)
+    # Check that the value dimension is the same for all dofs and that
+    # it matches the dimension of the function
+    value_dim = pick_first([dof.value_dim() for dof in dofs])
+    if value_dim != num_values:
+        raise RuntimeError, "Directional component does not match vector \
+                             dimension"
 
-    code += [format["snippet evaluate_dof"](element.cell_dimension()) % \
-             (num_values, dof_map.local_dimension(), X, dof_map.local_dimension(), components)]
+    # Initialize the points, weights and directions for the dofs:
+    code += [comment("The reference points, direction and weights:")]
+    s = block(separator.join(
+        [block(separator.join([block(separator.join([floating_point(c)
+                                                     for c in point]))
+                               for point in dof.points]))
+         for dof in dofs]))
+    code  += ["%sX[%d][%d][%d] = %s;" % (format["table declaration"],
+                                         num_dofs, max_num_points,
+                                         element.cell_dimension(), s)]
+    s = block(separator.join(
+        [block(separator.join([floating_point(w) for w in dof.weights]))
+         for dof in dofs]))
+    code += ["%sW[%d][%d] = %s;" % (format["table declaration"],
+                                    num_dofs, max_num_points, s)]
+
+    s = block(separator.join(
+        [block(separator.join([block(separator.join([floating_point(dk)
+                                                    for dk in d]))
+                               for d in dof.directions]))
+         for dof in dofs]))
+    code += ["%sD[%d][%d][%d] = %s;" % (format["table declaration"],
+                                        num_dofs, max_num_points,
+                                        num_values, s)]
+    code += [""]
+
+    # Compute the declarations needed for function mapping and the
+    # code for mapping each set of function values:
+    (map_declarations, map_values_code) = \
+                       __map_function_values(num_values, element, format)
+    code += [map_declarations]
+
+    # Loop over the number of points (if more than one) and evaluate
+    # the functional
+    code += ["%sresult = 0.0;" % format["float declaration"]]
+    code += [comment("Iterate over the points:") ]
+    tab = 0
+    endloop = ""
+
+    # If there is more than one point, we need to add a table of the
+    # number of points per dof, add the loop, add indentation and add
+    # an end brackets
+    index = "0"
+    if max_num_points > 1:
+        num_points_per_dof_code = block(separator.join([str(n) for n in num_points_per_dof]))
+        code += ["%sns[%d] = %s;" % (format["static const uint declaration"],
+                                      num_dofs, num_points_per_dof_code)]
+        code += [format["loop"]("j", "0", "ns[i]")] 
+        (tab, endloop, index) = (2, "\n} // End for", "j")
+
+    # Map the points from the reference onto the physical element
+    code += [indent(format["snippet map_onto_physical"](element.cell_dimension())
+                    % {"j": index}, tab)]
     
+    # Evaluate the function at the physical points
+    code += [indent(comment("Evaluate function at physical points"), tab)]
+    code += [indent("double values[%d];" % num_values, tab)]
+    code += [indent("f.evaluate(values, y, c);\n", tab)]
+    
+    # Map the function values according to the given mapping(s)
+    code += [indent(comment("Map function values using appropriate mapping"),
+                    tab)]
+    code += [indent(map_values_code, tab)]
+    code += [""]
+
+    # Note that we do not map the weights (yet).
+    code += [indent(comment("Note that we do not map the weights (yet)."),tab)]
+    code += [""]
+
+    # Take the directional components of the function values and
+    # multiply by the weights:
+    code += [indent(format["snippet calculate dof"] % {"dim": value_dim,
+                                                       "index": index}, tab)]
+    # End possible loop 
+    code += [endloop]
+    
+    # Return the calculated value
+    code += [format["return"]("result")]
+    return code
+
+def __map_function_values(num_values, element, format):
+
+    block = format["block"]
+    separator = format["separator"]
+    comment = format["comment"]
+    precode = []
+    code = []
+
+    # Compute the mapping associated with each dof:
+    mappings = [element.space_mapping(i)
+                for i in range(element.space_dimension())]
+    whichmappings = Set(mappings)
+
+    # If there is more than one mapping involved, we will need to
+    # keep track of them at runtime:
+    if len(whichmappings) > 1:
+        precode += ["%smappings[%d] = %s;" %
+                    (format["static const uint declaration"], len(mappings),
+                     block(separator.join(([str(m) for m in mappings]))))]
+        
+    # Check whether we will need a piola
+    piola_present = (Mapping.CONTRAVARIANT_PIOLA in whichmappings or
+                     Mapping.COVARIANT_PIOLA in whichmappings)
+
+    # Add code for the jacobian if we need it for the
+    # mappings. Otherwise, just add code for the vertex coordinates
+    if piola_present:
+        precode += [format["snippet jacobian"](element.cell_dimension())
+                 % {"restriction":""}]
+        precode += ["\ndouble copyofvalues[%d];" % num_values]
+    else:
+        precode += [format["get cell vertices"]]
+    
+    # We have to add offsets to the code if there are mixed
+    # piola-mapped elements with an offset. (Ex: DG0 + RT)
+    offset = ""
+    if element.num_sub_elements() > 1 and piola_present:
+        value_offsets = []
+        adjustment = 0
+        for i in range(element.num_sub_elements()):
+            subelement = element.sub_element(i)
+            value_offsets += [adjustment]*subelement.space_dimension()
+            adjustment += subelement.value_dimension(0)
+
+        # if mapping[i] != Mapping.AFFINE == 0 and value_offset[i] !=
+        # 0 for all i, then need_offsets = True:
+        need_offsets = bool(max([mappings[i] and value_offsets[i]
+                                 for i in range(len(mappings))]))
+        if need_offsets:
+            precode += ["const int offsets[%d] = %s;" %
+                        (len(value_offsets),
+                         block(separator.join([str(o) for o in value_offsets])))]
+            offset = "offsets[i] + "
+
+
+    # Then it just remains to actually add the different mappings to the code:
+    n = element.cell_dimension()
+    mappings_code = {Mapping.AFFINE: __affine_map(),
+                     Mapping.CONTRAVARIANT_PIOLA:
+                     __contravariant_piola(n, offset),
+                     Mapping.COVARIANT_PIOLA: __covariant_piola(n, offset)}
+
+    ifs = ["mappings[i] == %d" % mapping for mapping in whichmappings]
+    cases = [mappings_code[mapping] for mapping in whichmappings]
+    code  += [__generate_if_block(ifs, cases,
+                                  comment("Other mappings not applicable."))]
+    return ("\n".join(precode), "\n".join(code))
+
+def __affine_map():
+    return "// Affine map: Do nothing"
+
+def __contravariant_piola(dim, offset=""):
+    code = []
+    code += ["// Copy old values:"]
+    for i in range(dim):
+        code += ["copyofvalues[%s%d] = values[%s%d];" % (offset, i, offset, i)]
+    code += ["// Do the inverse of div piola "]
+    for i in range(dim):
+        terms = ["Jinv_%d%d*copyofvalues[%s%d]" % (i, j, offset, j)
+                 for j in range(dim)]
+        code += ["values[%s%d] = detJ*(%s);" % (offset, i, "+".join(terms))]
+    return "\n".join(code)
+
+def __covariant_piola(dim, offset=""):
+    code = []
+    code += ["// Copy old values:"]
+    for i in range(dim):
+        code += ["copyofvalues[%s%d] = values[%s%d];" % (offset, i, offset, i)]
+    code += ["// Do the inverse of curl piola "]
+    for i in range(dim):
+        terms = ["J_%d%d*copyofvalues[%s%d]" % (j, i, offset, j)
+                 for j in range(dim)]
+        code += ["values[%s%d] = %s;" % (offset, i, "+".join(terms))]
+    return  "\n".join(code)
+
+def __generate_if_block(ifs, cases, default = ""):
+    "Generate if block from given ifs and cases"
+    if len(ifs) != len(cases):
+        raise RuntimeError, "Mismatch of dimensions ifs and cases"  
+
+    # Special case: no cases
+    if len(ifs) == 0:
+        return default
+
+    # Special case: one case
+    if len(ifs) == 1:
+        return cases[0]
+
+    # Create ifs
+    code = "if (%s) { \n" % ifs[0]
+    code += "%s\n" % indent(cases[0], 2)
+    for i in range(len(ifs)-1):
+        code += "} else if (%s) {\n %s \n" % (ifs[i+1], indent(cases[i+1], 2))
+    code += "} else { \n %s \n}" % indent(default,2)
     return code
 
 def __generate_interpolate_vertex_values_old(element, format):
