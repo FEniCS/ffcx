@@ -156,16 +156,16 @@ class QuadratureElement(FiniteElement):
         if order:
             raise RuntimeError("Derivatives are not defined on a QuadratureElement")
 
-        # Check if incoming points are equal to quadrature points. (If they are,
-        # then monomialintegration or monomialtabulation is probably the caller.)
-        # This 'direct' check is very dangerous, a small change in the values
-        # from make_quadrature() will result in disaster!!
-        if points == self.dual_basis().pts:
-            values = numpy.identity(self.__num_quad_points, float)
-            table = [{(0,)*self.__cell_shape: values}]
-            return table
-        else:
-            raise RuntimeError("points must be equal to coordinates of quadrature points \n %s \n %s" %(points, self.dual_basis().pts))
+        # Check if (the number of ) incoming points are equal to
+        # quadrature points... 
+        if not len(points) == self.__num_quad_points:
+            raise RuntimeError("Points must be equal to coordinates of quadrature points")
+            
+        # Return the identity matrix of size __num_quad_points in a
+        # suitable format for monomialintegration.
+        values = numpy.identity(self.__num_quad_points, float)
+        table = [{(0,)*self.__cell_shape: values}]
+        return table
 
 #     def basis_elements(self):
 #         "Returns a list of all basis elements"

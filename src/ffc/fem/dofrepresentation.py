@@ -38,16 +38,16 @@ class DofRepresentation:
             self.weights = listcopy(dof.weights)
         else:
             self.name = dof
-            if len(points) < 1:
+            if points == None:
                 # No points indicates that something is not implemented...
                 self.points = []
             else:
                 self.points = points
-            if len(directions) < 1:
+            if directions == None:
                 self.directions = [(1,)]*len(self.points)
             else:
                 self.directions = directions
-            if len(weights) < 1:
+            if weights == None:
                 self.weights = [1]*len(self.points)
             else:
                 self.weights = weights
