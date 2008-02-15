@@ -43,11 +43,11 @@ class DofRepresentation:
                 self.points = []
             else:
                 self.points = points
-            if directions == None:
+            if directions == None or directions == []:
                 self.directions = [(1,)]*len(self.points)
             else:
                 self.directions = directions
-            if weights == None:
+            if weights == None or weights == []:
                 self.weights = [1]*len(self.points)
             else:
                 self.weights = weights
