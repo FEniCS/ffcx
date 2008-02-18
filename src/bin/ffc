@@ -138,7 +138,7 @@ the FFC man page which may invoked by 'man ffc' (if installed).
 def version():
     "Display version number."
     print("This is FFC, the FEniCS Form Compiler, version %s." % FFC_VERSION)
-    print("For further information, go to http://www/fenics.org/ffc/.\n")
+    print("For further information, go to http://www.fenics.org/ffc/.\n")
     return
 
 def __make_module(filename, representation, language, options):
