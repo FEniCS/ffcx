@@ -1,0 +1,86 @@
+#!/bin/bash
+#
+# Copyright (C) Anders Logg 2004-2008
+# Licensed under the GNU GPL version 3 or any later version
+#
+# This script creates a new release of UFC
+
+# Make sure we have the current version
+echo '--- Synchronizing repository'
+sleep 1
+hg pull http://www.fenics.org/hg/ufc
+hg update
+hg commit
+hg push ssh://ufc@fenics.org/hg/ufc
+echo '--- Repository synchronized, press return to continue'
+read
+
+# Update version numbers in files
+FILES="ChangeLog \
+      README \
+      src/ufc/ufc.h \
+      src/utils/python/ufc_benchmark/ufc_benchmark.cpp \
+      src/utils/python/ufc_benchmark/ufc_benchmark.h \
+      src/utils/python/ufc_benchmark/ufc_data.h \
+      src/utils/python/ufc_benchmark/ufc_reference_cell.h \
+      src/utils/python/ufc/dof_map.py \
+      src/utils/python/ufc/finite_element.py \
+      src/utils/python/ufc/form.py \
+      src/utils/python/ufc/function.py \
+      src/utils/python/ufc/__init__.py \
+      src/utils/python/ufc/integrals.py \
+      ufc-1.pc"
+
+for f in $FILES; do
+    emacs -nw $f
+done
+
+# Get the version number
+MAJOR=`grep MAJOR src/ufc/ufc.h | awk '{print $3}'`
+MINOR=`grep MINOR src/ufc/ufc.h | awk '{print $3}'`
+VERSION=$MAJOR.$MINOR
+echo "--- Version number is $VERSION"
+sleep 1
+
+# Commit changes to hg
+echo '--- Pushing changes to parent repository'
+hg commit
+hg push ssh://ufc@fenics.org/hg/ufc
+echo '--- Changes pushed, press return to continue'
+read
+
+# Write a message
+echo "--- Creating release $VERSION of UFC"
+
+# Create the directory
+DISTDIR=ufc-$VERSION
+echo "--- Creating directory release/$DISTDIR"
+mkdir -p release
+cd release
+rm -rf $DISTDIR
+hg clone .. $DISTDIR
+rm -rf $DISTDIR/.hg
+rm -f $DISTDIR/.hgignore
+
+# Create the archive
+TARBALL="ufc-$VERSION.tar.gz"
+echo "--- Creating arhive $TARBALL"
+tar zcf $TARBALL $DISTDIR
+cd ..
+
+# Copy archive and files to web page
+echo '--- Copying files to web server'
+scp release/$TARBALL fenics@fenics.org:www.fenics.org/pub/software/ufc/v1.0
+scp ChangeLog fenics@fenics.org:www.fenics.org/pub/software/ufc/
+scp TODO fenics@fenics.org:www.fenics.org/pub/software/ufc/
+
+# Update on web server
+echo '--- Update web pages'
+echo '1. Update UFC page'
+echo '2. Update download page'
+ssh -t fenics@fenics.org '/home/fenics/local/bin/news'
+
+# Notify ufc-dev of the new version
+echo '--- Notifying mailing list'
+SUBJECT="Version "$VERSION" of UFC released"
+cat ChangeLog | mail -s "$SUBJECT" ufc-dev@fenics.org

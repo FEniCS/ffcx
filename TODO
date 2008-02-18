@@ -1,10 +1,6 @@
-
-
 Features to consider for inclusion in future versions of UFC:
 
-
 - Adding dimensions to ufc::function for consistency checks?
-
 
 - Support for true constants (now handled as piecewise constants),
   to avoid overhead in tabulate_dof_map and filling of w[][] when there are many constant coefficients.
@@ -12,11 +8,9 @@ Features to consider for inclusion in future versions of UFC:
 - Different number of coefficients for each integral,
   to avoid overhead in tabulate_dof_map and filling of w[][] when there are many separate coefficients.
 
-
 - Support for mixed cell meshes and different elements on cells (p-adaptivity)?
 
 - High order geometry support in cell (does this require more than "simply" defining high order reference cells?)
-
 
 - Various functions in class form and/or others, returning std::string's with readable names and descriptions.
   How much to include can of course be discussed. Missing items can simply return "".
@@ -47,5 +41,3 @@ Features to consider for inclusion in future versions of UFC:
     std::string ufl() const = 0;
 
   };
-
-
