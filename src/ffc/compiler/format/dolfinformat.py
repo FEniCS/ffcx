@@ -93,7 +93,7 @@ def __generate_dolfin_wrappers(generated_forms, prefix, options):
     output = """\
 // DOLFIN wrappers
 
-#include <dolfin/Form.h>
+#include <dolfin/fem/Form.h>
 
 """
 

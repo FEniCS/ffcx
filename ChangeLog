@@ -1,3 +1,4 @@
+ - Update DOLFIN format for new location of include files
 0.4.4 [2008-02-18]
  - RT, BDM, BDFM and Nedelec now working in 2D and 3D
  - New element type QuadratureElement
