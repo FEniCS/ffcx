@@ -645,7 +645,7 @@ def __generate_code(format_string, code, options):
     # Fix indentation
     for key in code:
         if "no-" + key in options:
-            code[key] = "// Not generated (compiled with -fno-" + key + ")"
+            code[key] = format["exception"]("// Function %s not generated (compiled with -fno-%s)" % (key, key))
         if not key in ["classname", "members"]:
             code[key] = indent(code[key], 4)
 
