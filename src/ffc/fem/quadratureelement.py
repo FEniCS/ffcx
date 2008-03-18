@@ -141,7 +141,7 @@ class QuadratureElement(FiniteElement):
 
     def dual_basis(self):
         "Return dummy dual basis of finite element space"
-        return self._dual_basis
+        return self.__dual_basis
 
     def __create_dual_basis(self, points):
         "Create the ffc dual basis representation of the Quadrature Element"
