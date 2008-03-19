@@ -3,8 +3,8 @@ products. Signatures are used to uniquely identify reference
 tensors that may be common to a group of terms."""
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2005-09-06 -- 2007-01-11"
-__copyright__ = "Copyright (C) 2005-2006 Anders Logg"
+__date__ = "2005-09-06 -- 2008-03-19"
+__copyright__ = "Copyright (C) 2005-2008 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian Oelgaard 2006
@@ -15,6 +15,12 @@ from re import sub
 # FFC modules
 from algebra import *
 from tokens import *
+
+def __index_signature(index):
+    "Return unique signature for index, including range"
+    if isinstance(index, Index):
+        return str(index) + ", " + str(index.range)
+    return str(index)
 
 def compute_hard_signature(product):
     "Compute hard (unique) signature."
@@ -27,8 +33,8 @@ def compute_hard_signature(product):
     for v in product.basisfunctions:
         factors += ["{%s;%s;%s;%s;%s}" % \
                     (str(v.element),     \
-                     str(v.index),       \
-                     "[" + ", ".join([str(c) for c in v.component]) + "]",
+                     __index_signature(v.index), \
+                     "[" + ", ".join([__index_signature(c) for c in v.component]) + "]",
                      "[" + ", ".join([str(d) for d in v.derivatives]) + "]",
                      str(v.restriction))]
 
