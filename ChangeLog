@@ -1,3 +1,4 @@
+ - Add index ranges to form printing
  - Throw runtime error in functions not generated
  - Update DOLFIN format for new location of include files
 0.4.4 [2008-02-18]

@@ -1,6 +1,6 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-09-29 -- 2007-05-06"
-__copyright__ = "Copyright (C) 2004-2007 Anders Logg"
+__date__ = "2004-09-29 -- 2008-03-25"
+__copyright__ = "Copyright (C) 2004-2008 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Marie Rognes 2007
@@ -191,17 +191,16 @@ class Index:
 
     def __repr__(self):
         "Print nicely formatted representation of Index."
-        # If self.range[0] > 0, we print "index + self.range[0]"
-        offset = "" 
-        if self.range and self.range[0]:
-            offset = " + " + str(self.range[0])
+        r = "" 
+        if self.range:
+            r = str(self.range)
 
         if self.type == self.FIXED:
             return str(self.index)
         elif self.type == self.PRIMARY:
-            return "i" + str(self.index) + offset
+            return "i" + str(self.index) + r
         elif self.type == self.SECONDARY:
-            return "a" + str(self.index) + offset
+            return "a" + str(self.index) + r
         elif self.type == self.FUNCTION:
             return str(self.index) 
         elif self.type == self.PROJECTION:
@@ -209,7 +208,7 @@ class Index:
         elif self.type == self.CONSTANT:
             return str(self.index) 
         else:
-            return "b" + str(self.index) + offset
+            return "b" + str(self.index) + r
 
 next_index_0 = 0 # Next available primary index
 next_index_1 = 0 # Next available secondary index
