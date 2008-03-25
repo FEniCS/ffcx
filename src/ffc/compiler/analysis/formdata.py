@@ -156,7 +156,7 @@ class FormData:
         if len(sub_domains) == 0:
             return 0
         if not (max(sub_domains) + 1 == len(sub_domains) and min(sub_domains) == 0):
-            raise FormError, "Sub domains must be numbered from 0 to n - 1"
+            raise FormError, (integrals, "Sub domains must be numbered from 0 to n - 1")
         return len(sub_domains)
 
     def __repr__(self):

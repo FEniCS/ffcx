@@ -238,7 +238,7 @@ class FiniteElement:
             return PiolaTransformedFunctionSpace(function_space, vertices,
                                                  "curl")
         else:
-            raise FormError, "Unknown transform %s" % str(family)
+            raise FormError, (family, "Unknown transform")
 
     def __create_dof_representation(self, list_of_fiat_dofs):
         """ Take the FIAT dof representation and convert it to the ffc

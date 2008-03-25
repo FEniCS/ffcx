@@ -31,7 +31,7 @@ class MixedElement:
 
         # Make sure we get a list of elements
         if not isinstance(elements, list) or not len(elements) > 1:
-            raise FormError, "Mixed finite element must be created from a list of at least two elements."
+            raise FormError, (elements, "Mixed finite element must be created from a list of at least two elements.")
 
         # Save list of elements
         self.__elements = elements

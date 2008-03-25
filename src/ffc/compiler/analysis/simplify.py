@@ -1,4 +1,4 @@
-_author__ = "Marie Rognes (meg@math.uio.no)"
+__author__ = "Marie Rognes (meg@math.uio.no)"
 __date__ = "2006-10-23 -- 2007-10-30"
 __copyright__ = "Copyright (C) 2006"
 __license__  = "GNU GPL version 3 or any later version"
@@ -24,7 +24,7 @@ def simplify(form):
     """ Simplification of a form"""
 
     if not isinstance(form, Form):
-        raise FormError, "simplify assumes a Form as input."
+        raise FormError, (form, "simplify assumes a Form as input.")
 
     debug("Simplifying form...")
     # Handle restrictions on exterior facets before simplifying
@@ -110,7 +110,7 @@ def factorize_monomials(m, n):
     
 def contract_monomials(m, n):
     if not (isinstance(m, Monomial) and isinstance(n, Monomial)):
-        raise FormError, "contract_monomials can only contract monomials"
+        raise FormError, ((m, n), "contract_monomials can only contract monomials")
     # First, check to see if it is at all likely that these monomials
     # are contractable
     if not contraction_likely(m, n):
@@ -120,7 +120,7 @@ def contract_monomials(m, n):
 
 def contract_determinants(d0, d1):
     if not (isinstance(d0, Determinant) and isinstance(d1, Determinant)):
-        raise FormError,"contract_determinants can only contract determinants!"
+        raise FormError, ((d0, d1), "contract_determinants can only contract determinants!")
     # Determinants are contracted by trying to multiply them:
     d = d0*d1
     if d: return ([d], True)
@@ -368,7 +368,7 @@ def diff(m, n, key = None):
             nversion[key + ".index"] = n.index
         
     else:
-        raise FormError, "Diff is not implemented between such elements"
+        raise FormError, ((m, n), "Diff is not implemented between such elements")
 
     if mversion:
         return [mversion, nversion]
