@@ -18,7 +18,6 @@ try:
 except:
     print "*** Warning: Unable to use UFC reference element. You need to patch or update your"
     print "*** Warning: installation of FIAT. Variable reference_element is missing."
-    
 
 # Import finite elements and dof map
 from ffc.fem.finiteelement import FiniteElement
