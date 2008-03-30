@@ -22,10 +22,11 @@ except:
 
 # Import finite elements and dof map
 from ffc.fem.finiteelement import FiniteElement
-from ffc.fem.vectorelement import *
+from ffc.fem.vectorelement import VectorElement, VectorQuadratureElement
 from ffc.fem.mixedelement import MixedElement
 from ffc.fem.mixedfunctions import TestFunctions, TrialFunctions, Functions
 from ffc.fem.dofmap import DofMap
+from ffc.fem.projection import Projection
 
 # Import compiler
 from ffc.compiler.compiler import compile
@@ -39,4 +40,4 @@ from ffc.compiler.language.operators import *
 from ffc.compiler.language.builtins import *
 
 # Import constants
-from ffc.common.constants import *
+#from ffc.common.constants import *

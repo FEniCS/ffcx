@@ -6,6 +6,10 @@ __date__ = "2005-09-07 -- 2007-12-30"
 __copyright__ = "Copyright (C) 2005-2007 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
+__all__ = ['Identity', 'value_rank', 'vec', 'dot', 'cross', 'trace', 'transp',
+           'mult', 'outer', 'D', 'grad', 'div', 'rot', 'curl', 'mean', 'avg',
+           'jump', 'sqrt', 'modulus', 'lhs', 'rhs']
+
 # Modified by Ola Skavhaug, 2005
 # Modified by Dag Lindbo, 2006
 # Modified by Garth N. Wells 2006, 2007
