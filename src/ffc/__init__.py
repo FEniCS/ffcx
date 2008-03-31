@@ -24,6 +24,7 @@ from ffc.fem.finiteelement import FiniteElement
 from ffc.fem.vectorelement import VectorElement, VectorQuadratureElement
 from ffc.fem.mixedelement import MixedElement
 from ffc.fem.mixedfunctions import TestFunctions, TrialFunctions, Functions
+from ffc.fem.quadratureelement import QuadratureElement
 from ffc.fem.dofmap import DofMap
 from ffc.fem.projection import Projection
 
