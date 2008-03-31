@@ -2,7 +2,7 @@
 It uses Instant to wrap the generated code into a Python module."""
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-07-20 -- 2008-02-04"
+__date__ = "2007-07-20 -- 2008-03-31"
 __copyright__ = "Copyright (C) 2007-2008 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
@@ -26,7 +26,7 @@ counter = 0
 
 # Options for JIT-compiler, evaluate_basis and evaluate_basis_derivatives turned off
 FFC_OPTIONS_JIT = FFC_OPTIONS.copy()
-FFC_OPTIONS_JIT["no-evaluate_basis"] = True
+#FFC_OPTIONS_JIT["no-evaluate_basis"] = True
 FFC_OPTIONS_JIT["no-evaluate_basis_derivatives"] = True
 
 # Compiler options, don't optimize by default (could be added to options)
