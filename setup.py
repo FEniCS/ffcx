@@ -29,5 +29,5 @@ setup(name = "UFC",
       url = "http://www.fenics.org/ufc/",
       packages = ["ufc"],
       package_dir = {"ufc": "src/utils/python/ufc/"},
-      data_files = [("%s/include" % prefix, ["src/ufc/ufc.h"]),
-                    ("%s/lib/pkgconfig" % prefix, ["ufc-%d.pc" % major])])
+      data_files = [("include", ["src/ufc/ufc.h"]),
+                    ("lib/pkgconfig", ["ufc-%d.pc" % major])])
