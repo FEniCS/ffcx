@@ -1,8 +1,8 @@
 "Form analysis and extraction of form data"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-04-26 -- 2007-04-26"
-__copyright__ = "Copyright (C) 2007 Anders Logg"
+__date__ = "2007-04-26 -- 2008-04-10"
+__copyright__ = "Copyright (C) 2007-2008 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 # FFC common modules
@@ -18,7 +18,7 @@ from elementdata import *
 from simplify import *
 from ranges import *
 
-def analyze(form):
+def analyze(form, simplify_form=True):
     "Analyze form and extract form data"
 
     raw_form = str(form)
@@ -34,7 +34,8 @@ def analyze(form):
     check_form(form)
 
     # Simplify form
-    simplify(form)
+    if simplify_form:
+        simplify(form)
     simplified_form = str(form)
 
     # Check validity of form again
@@ -43,6 +44,7 @@ def analyze(form):
     # Determine range of indices:
     determine_index_ranges(form)
 
+    # Check validity of form again
     check_form(form)
 
     # Extract form data
@@ -55,12 +57,12 @@ def analyze(form):
     debug("    " + reassigned_form, 1)
     debug("\nAfter simplification:\n", 1)
     debug("    " + simplified_form, 1)
-    
+
     # Print a short summary
     debug("")
     debug("Rank of form: %d" % form_data.rank)
     debug("Coefficients: %d" % form_data.num_coefficients)
     debug("Arguments:    %d" % form_data.num_arguments)
     debug("Terms:        %d" % form_data.num_terms)
-    
+
     return form_data

@@ -41,7 +41,7 @@ def jit(form, representation=FFC_REPRESENTATION, language=FFC_LANGUAGE, options=
 
     # Analyze and simplify form (to get checksum for simplified form and to get form_data)
     form = algebra.Form(form)
-    form_data = analyze.analyze(form)
+    form_data = analyze.analyze(form, simplify_form=False)
 
     # Compute md5 checksum of form signature
     signature = " ".join([str(form),
@@ -76,7 +76,7 @@ def jit(form, representation=FFC_REPRESENTATION, language=FFC_LANGUAGE, options=
     form_dir = os.path.join(cache_dir, md5sum)
     module_dir = os.path.join(form_dir, md5sum + "_module")
     if os.path.isdir(form_dir):
-        debug("Found form in cache, reusing previously built module (checksum %s)" % md5sum[5:], -1)
+        debug("Found form in cache, reusing previously built module (checksum %s)" % md5sum[5:], 1)
         sys.path.append(form_dir)
         try:
             exec("import %s as compiled_module" % (md5sum + "_module"))
@@ -93,6 +93,7 @@ def jit(form, representation=FFC_REPRESENTATION, language=FFC_LANGUAGE, options=
     sys.path.append(form_dir)
     exec("import %s as compiled_module" % (md5sum + "_module"))
     exec("compiled_form = compiled_module.%s()" % form_name)
+    
     return (compiled_form, compiled_module, form_data)
 
 def build_module(form, representation, language, options, md5sum, form_dir, module_dir, prefix):
