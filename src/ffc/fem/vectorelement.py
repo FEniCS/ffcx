@@ -1,7 +1,7 @@
 "Factory function for generating vector elements (and vector QuadratureElements) as mixed elements"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-03-20 -- 2008-01-16"
+__date__ = "2007-03-20 -- 2008-04-14"
 __copyright__ = "Copyright (C) 2007 - 2008 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
@@ -18,6 +18,10 @@ def VectorElement(family, shape, degree, num_sub_elements=None):
     if not num_sub_elements:
         num_sub_elements = shape_to_dim[string_to_shape[shape]]
 
+    # Check dimension
+    if not num_sub_elements > 1:
+        raise RuntimeError, "A vector-valued element must have 2 or more components."
+
     # Create mixed element by repeating the "scalar" element
     return MixedElement([FiniteElement(family, shape, degree) for i in range(num_sub_elements)])
 
@@ -28,6 +32,9 @@ def VectorQuadratureElement(shape, degree, num_sub_elements=None):
     if not num_sub_elements:
         num_sub_elements = shape_to_dim[string_to_shape[shape]]
 
+    # Check dimension
+    if not num_sub_elements > 1:
+        raise RuntimeError, "A vector-valued element must have 2 or more components."
+
     # Create mixed element by repeating the "scalar" element
     return MixedElement([QuadratureElement(shape, degree) for i in range(num_sub_elements)])
-
