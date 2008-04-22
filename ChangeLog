@@ -1,3 +1,4 @@
+ - Bug fix for order of values in interpolate_vertex_values, now according to UFC
  - Speed up JIT compiler
  - Add index ranges to form printing
  - Throw runtime error in functions not generated

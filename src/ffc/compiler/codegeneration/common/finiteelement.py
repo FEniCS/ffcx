@@ -1,8 +1,8 @@
 "Code generation for finite element"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-01-23 -- 2007-05-18"
-__copyright__ = "Copyright (C) 2007 Anders Logg"
+__date__ = "2007-01-23 -- 2008-04-22"
+__copyright__ = "Copyright (C) 2007-2008 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian Oelgaard 2007
@@ -63,7 +63,6 @@ def generate_finite_element(element, format):
         format["exception"]("The vectorised version of evaluate_basis_derivatives() is not yet implemented.")
 
         # Generate code for inperpolate_vertex_values
-        #code["interpolate_vertex_values"] = __generate_interpolate_vertex_values_old(element, format)
         code["interpolate_vertex_values"] = __generate_interpolate_vertex_values(element, format)
     else:
         code["evaluate_basis"] = format["exception"]("evaluate_basis() is not supported for QuadratureElement")
@@ -382,6 +381,11 @@ def __generate_interpolate_vertex_values(element, format):
     offset_vertex_values = 0
     need_jacobian = False
 
+    # Compute data size
+    size = 0
+    for sub_element in sub_elements:
+        size += sub_element.value_dimension(0)
+
     for sub_element in sub_elements:
 
         # Tabulate basis functions at vertices
@@ -400,7 +404,7 @@ def __generate_interpolate_vertex_values(element, format):
                 for v in range(len(vertices)):
                     coefficients = table[0][sub_element.cell_dimension()*(0,)][:, v]
                     dof_values = [format["dof values"](offset_dof_values + n) for n in range(len(coefficients))]
-                    name = format["vertex values"](offset_vertex_values + v)
+                    name = format["vertex values"](size*v + offset_vertex_values)
                     value = inner_product(coefficients, dof_values, format)
                     code += [(name, value)]
             else:
@@ -408,7 +412,7 @@ def __generate_interpolate_vertex_values(element, format):
                     for v in range(len(vertices)):
                         coefficients = table[dim][0][sub_element.cell_dimension()*(0,)][:, v]
                         dof_values = [format["dof values"](offset_dof_values + n) for n in range(len(coefficients))]
-                        name = format["vertex values"](offset_vertex_values + dim*len(vertices) + v)
+                        name = format["vertex values"](size*v + offset_vertex_values + dim)
                         value = inner_product(coefficients, dof_values, format)
                         code += [(name, value)]
 
@@ -455,7 +459,7 @@ def __generate_interpolate_vertex_values(element, format):
                         sum = format["grouping"](format["add"](terms))
                     else:
                         sum = format["add"](terms)
-                    name = format["vertex values"](offset_vertex_values + dim*len(vertices) + v)
+                    name = format["vertex values"](size*v + offset_vertex_values + dim)
                     if mapping == Mapping.CONTRAVARIANT_PIOLA:
                         value = format["multiply"]([format["inverse"](format["determinant"](None)), sum])
                     else: 
@@ -466,7 +470,7 @@ def __generate_interpolate_vertex_values(element, format):
             raise RuntimeError, "Unknown mapping: " + str(mapping)
 
         offset_dof_values    += sub_element.space_dimension()
-        offset_vertex_values += len(vertices)*sub_element.value_dimension(0)
+        offset_vertex_values += sub_element.value_dimension(0)
 
     # Insert code for computing quantities needed for Piola mapping
     if need_jacobian:
