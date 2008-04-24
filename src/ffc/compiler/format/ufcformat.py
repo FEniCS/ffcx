@@ -83,7 +83,8 @@ format = {
            "free secondary indices":["r","s","t","u"],
            "derivatives": lambda i,j,k,l: "dNdx%d_%d[%s][%s]" % (i,j,k,l),
            "element coordinates": lambda i,j: "x[%s][%s]" % (i,j),
-           "weights": lambda i,j: "W%d[%s]" % (i,j),
+           "weight": lambda i: "W%d" % (i),
+           "weights": lambda i,j: format["weight"](i) + "[%s]" % (j),
            "psis": "P",
            "argument coordinates": "coordinates",
            "argument values": "values",
@@ -132,6 +133,7 @@ format = {
            "num entities": lambda dim : "m.num_entities[%d]" % dim,
            "offset declaration": "unsigned int offset",
            "offset access": "offset",
+           "nonzero columns": lambda i: "nzc%d" % i,
 # access
            "array access": lambda i: "[%s]" %(i),
            "matrix access": lambda i,j: "[%s][%s]" %(i,j),
