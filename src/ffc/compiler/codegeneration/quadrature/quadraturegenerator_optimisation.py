@@ -940,11 +940,6 @@ def generate_terms(prim_dic, tensors, format, psi_name_map, weight_name_map, non
 
                     trans_set.add(d[0])
                     geo = format_multiply(geo_out + geo_in + d)
-                    # Only generate geo terms if optimisation level is 8 or higher
-                    if opt_level >= 8:
-                        if len(geo.split(format_multiply(["",""]))) > 1 and not geo in geo_terms:
-                            geo_terms[geo] = "G%d" % geo_num
-                            geo_num += 1
 
                     val = ""
                     if R:

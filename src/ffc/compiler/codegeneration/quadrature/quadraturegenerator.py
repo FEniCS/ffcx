@@ -42,7 +42,7 @@ class QuadratureGenerator(CodeGenerator):
 
         # Initialize common code generator
         CodeGenerator.__init__(self)
-        self.optimise_level = 6
+        self.optimise_level = 9
         self.save_tables = False
         self.unique_tables = True
 
@@ -657,7 +657,13 @@ class QuadratureGenerator(CodeGenerator):
                         # Reduce operatoins is optimisation level is 7 or higher 
                         if self.optimise_level >= 7:
                             val = reduce_operations.expand_operations(val, format)
-                            val = reduce_operations.reduce_operations(val, format)
+                            if self.optimise_level == 7:
+                                val = reduce_operations.reduce_operations(val, format)
+                            if self.optimise_level == 8:
+                                val = reduce_operations.get_geo_terms(val, geo_terms, format)
+                            if self.optimise_level == 9:
+                                val = reduce_operations.get_geo_terms(val, geo_terms, format)
+                                val = reduce_operations.reduce_operations(val, format)
                         ops_count = reduce_operations.operation_count(val, format)
                         comment = format_comment\
                         ("Number of operations to compute entry = %d" %(ops_count))
@@ -703,7 +709,11 @@ class QuadratureGenerator(CodeGenerator):
 #        print "geo_terms: ", geo_terms
         # Tabulate goe code
         geo_code = []
-        for key in geo_terms:
+        items = geo_terms.items()
+#        items = [(v, k) for (k, v) in items]
+#        items.sort()
+#        items = [(k, v) for (v, k) in items]
+        for key, val in items:
             geo_code += [(format["const float declaration"] + geo_terms[key], key)]
 
         element_code = [format_comment\

@@ -42,6 +42,7 @@ format = {
            "add": lambda v: " + ".join(v),
            "subtract": lambda v: " - ".join(v),
            "multiply": lambda v: "*".join(v),
+           "division": "/",
            "power": lambda base, exp: power_options[exp >= 0](format["multiply"]([str(base)]*abs(exp))),
 # bool operators
            "logical and": " && ",
