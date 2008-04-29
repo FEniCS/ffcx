@@ -1,13 +1,19 @@
 "Regression tests for FFC"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-03-05 -- 2007-05-07"
-__copyright__ = "Copyright (C) 2007 Anders Logg"
+__date__ = "2007-03-05 -- 2008-04-29"
+__copyright__ = "Copyright (C) 2007-2008 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 import sys
 from os import chdir, listdir, system
 from difflib import unified_diff
+
+# Check arguments, -nw specifices that we run in terminal mode
+if len(sys.argv) == 2 and sys.argv[1] == "-nw":
+    nw = True
+else:
+    nw = False
 
 # Check all in demo directory
 chdir("../../demo")
@@ -59,7 +65,10 @@ else:
     file.write("#!/bin/sh\n\n")
     for form_file in forms_not_ok:
         code_file = form_file.split(".")[0] + ".h"
-        file.write("meld reference/%s ../../demo/%s\n" % (code_file, code_file))
+        if nw:
+            file.write("diff reference/%s ../../demo/%s\n" % (code_file, code_file))
+        else:
+            file.write("meld reference/%s ../../demo/%s\n" % (code_file, code_file))
     file.close()
     print "\nTo view diffs with meld, run the script viewdiff.sh"
 
