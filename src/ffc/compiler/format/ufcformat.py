@@ -176,8 +176,14 @@ def init(options):
     "Initialize code generation for given options"
 
     # Set number of digits for floating point and machine precision
-    format_string = "%%.%de" % eval(options["precision="])
-    format["floating point"] = lambda v : format_string % v
+    f1 = "%%.%dg" % eval(options["precision="])
+    f2 = "%%.%de" % eval(options["precision="])
+    def floating_point(v):
+        if abs(v) < 100.0:
+            return f1 % v
+        else:
+            return f2 % v
+    format["floating point"] = floating_point
     format["epsilon"] = 10.0*eval("1e-%s" % options["precision="])
 
 def write(generated_forms, prefix, options):
