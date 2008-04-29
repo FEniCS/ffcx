@@ -23,7 +23,7 @@ for form_file in form_files:
     print "Compiling and verifying form %s..." % form_file
 
     # Compile form
-    if system("../bin/ffc -fprecision=10 -s %s" % form_file) == 0:
+    if system("../bin/ffc -fprecision=9 -s %s" % form_file) == 0:
 
         # Compare against reference
         code_file = form_file.split(".")[0] + ".h"
