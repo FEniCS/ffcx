@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright (C) Anders Logg 2004-2007
+# Copyright (C) Anders Logg 2004-2008
 # Licensed under the GNU GPL version 3 or any later version
 #
 # This script creates a new release of FFC
@@ -12,24 +12,20 @@ ffc-uninstall
 # Make sure we have the current version
 echo '--- Synchronizing repository'
 sleep 1
-hg pull http://www.fenics.org/hg/ffc
-hg update
 hg commit
+hg pull http://www.fenics.org/hg/ffc
+hg merge
+hg commit
+hg update
 hg push ssh://ffc@fenics.org/hg/ffc
-echo '--- Repository synchronized, press return to continue'
-read
 
-# Update version number in ChangeLog
+# Update version numbers
 echo '--- Update version number in ChangeLog'
 sleep 1
 emacs -nw ChangeLog
-
-# Update version number in constants.py
 echo '--- Update version number in constants.py'
 sleep 1
 emacs -nw src/ffc/common/constants.py
-
-# Update version number in setup.py
 echo '--- Update version number in setup.py'
 sleep 1
 emacs -nw setup.py
@@ -37,7 +33,6 @@ emacs -nw setup.py
 # Get the version number
 VERSION=`grep 'FFC_VERSION' src/ffc/common/constants.py | cut -d'"' -f2`
 echo "--- Version number is $VERSION"
-sleep 1
 
 # Run tests
 echo '--- Running tests'
@@ -59,45 +54,25 @@ cd ../../
 
 # Commit changes to hg
 echo '--- Pushing changes to parent repository'
+sleep 1
 hg commit
 hg push ssh://ffc@fenics.org/hg/ffc
-echo '--- Changes pushed, press return to continue'
-read
 
-# Write a message
-echo "--- Creating release $VERSION of FFC"
+# Create archive
+hg archive -t tgz ffc-$VERSION.tar.gz
 
-# Create the directory
-DISTDIR=ffc-$VERSION
-echo "--- Creating directory release/$DISTDIR"
-mkdir -p release
-cd release
-rm -rf $DISTDIR
-hg clone .. $DISTDIR
-rm -rf $DISTDIR/.hg
-rm -f $DISTDIR/.hgignore
-
-# Create the archive
-TARBALL="ffc-$VERSION.tar.gz"
-echo "--- Creating arhive $TARBALL"
-tar zcf $TARBALL $DISTDIR
-cd ..
-
-# Copy archive and files to web page
+# Copy files to web page
 echo '--- Copying files to web server'
-scp release/$TARBALL fenics@fenics.org:www.fenics.org/pub/software/ffc/v0.4
+scp ffc-$VERSION.tar.gz fenics@fenics.org:www.fenics.org/pub/software/ffc/v0.4
 scp ChangeLog fenics@fenics.org:www.fenics.org/pub/software/ffc/
 scp TODO fenics@fenics.org:www.fenics.org/pub/software/ffc/
-
-# Update on web server
-echo '--- Update web pages'
-echo '1. Update FFC page'
-echo '2. Update download page'
-#ssh -t fenics@fenics.org 'emacs -nw www.fenics.org/ffc/index.cpp'
-#ssh -t fenics@fenics.org 'emacs -nw www.fenics.org/download/index.cpp'
-ssh -t fenics@fenics.org '/home/fenics/local/bin/news'
 
 # Notify ffc-dev of the new version
 echo '--- Notifying mailing list'
 SUBJECT="Version "$VERSION" of FFC released"
 cat ChangeLog | mail -s "$SUBJECT" ffc-dev@fenics.org
+
+# Edit web pages
+echo '--- Edit web pages'
+ssh -t fenics@fenics.org '/home/fenics/local/bin/news'
+firefox http://www.fenics.org/wiki/Download
