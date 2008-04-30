@@ -5,7 +5,7 @@ from os import chdir
 from os.path import join
 
 setup(name = "FFC",
-      version = "0.4.4",
+      version = "0.4.5",
       description = "The FEniCS Form Compiler",
       author = "Anders Logg",
       author_email = "logg@simula.no",

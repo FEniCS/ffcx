@@ -1,3 +1,5 @@
+0.4.5 [2008-04-30]
+ - Optimizations in generated quadrature code
  - Change formatting of floats from %g to %e, fixes problem with too long integers
  - Bug fix for order of values in interpolate_vertex_values, now according to UFC
  - Speed up JIT compiler
