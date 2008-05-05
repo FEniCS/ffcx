@@ -174,14 +174,20 @@ def grad(v):
 
 def div(v):
     "Return divergence of given function."
+
     # Use index notation if possible
     if isinstance(v, Element):
         if not v.value_rank() == 1:
             raise FormError, (v, "Cannot take divergence of scalar expression.")
         i = Index()
-        return v[i].dx(i)
+        d = v[i].dx(i)
+        if len(d.monomials) == 0:
+            return 0.0
+        else:
+            return d
     # Special case: divergence of matrix div(A) = dA_{ij}/dx_j
     if value_rank(v) == 2:
+        
         form = []
         for i in range(len(v)):
             s = D(v[i][0], 0)
