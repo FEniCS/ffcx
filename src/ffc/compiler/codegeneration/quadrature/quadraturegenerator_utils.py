@@ -487,8 +487,10 @@ def unique_psi_tables(tensors, optimisation_level, format):
 
             # If we only have one row (IP) we just need the nonzero columns
             if numpy.shape(vals)[0] == 1:
-                non_zero_columns[name] = (i, non_zeros)
-                i += 1
+                if list(non_zeros):
+                    non_zeros.sort()
+                    non_zero_columns[name] = (i, non_zeros)
+                    i += 1
             # Check if the remaining rows are nonzero in the same positions
             else:
 #                print "more than one row"
@@ -509,10 +511,10 @@ def unique_psi_tables(tensors, optimisation_level, format):
 #                        print vals
 #                        break
 #                # Only add nonzeros if all rows were identical
-#                if list(non_zeros):
-                non_zeros.sort()
-                non_zero_columns[name] = (i, non_zeros)
-                i += 1
+                if list(non_zeros):
+                    non_zeros.sort()
+                    non_zero_columns[name] = (i, non_zeros)
+                    i += 1
         return (inverse_name_map, tables, non_zero_columns)
 
 def unique_weight_tables(tensors, format):
