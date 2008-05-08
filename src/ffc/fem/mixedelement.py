@@ -52,6 +52,10 @@ class MixedElement:
         "Return the dimension of the finite element function space"
         return sum([element.space_dimension() for element in self.__elements])
 
+    def geometric_dimension(self):
+        "Return the geometric dimension of the finite element domain"
+        return pick_first([element.geometric_dimension() for element in self.__elements])
+
     def value_rank(self):
         "Return the rank of the value space"
         return 1

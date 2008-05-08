@@ -90,6 +90,10 @@ class FiniteElement:
         "Return the dimension of the finite element function space"
         return len(self.basis())
 
+    def geometric_dimension(self):
+        "Return the geometric dimension of the finite element domain"
+        return shape_to_dim[self.cell_shape()]
+
     def value_rank(self):
         "Return the rank of the value space"
         return self.basis().rank()

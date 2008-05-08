@@ -1,8 +1,8 @@
 "Code generation for dof map"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-01-24 -- 2007-05-08"
-__copyright__ = "Copyright (C) 2007 Anders Logg"
+__date__ = "2007-01-24 -- 2008-05-08"
+__copyright__ = "Copyright (C) 2007-2008 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian Oelgaard 2007
@@ -33,6 +33,9 @@ def generate_dof_map(dof_map, format):
 
     # Generate code for local_dimension
     code["local_dimension"] = "%d" % dof_map.local_dimension() 
+
+    # Generate code for geometric_dimension
+    code["geometric_dimension"] = "%d" % dof_map.geometric_dimension()
 
     # Generate code for num_facet_dofs
     code["num_facet_dofs"] = "%d" % dof_map.num_facet_dofs()

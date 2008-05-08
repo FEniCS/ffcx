@@ -1,7 +1,7 @@
 "Code generation for the UFC 1.0 format"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-01-08 -- 2008-04-28"
+__date__ = "2007-01-08 -- 2008-05-08"
 __copyright__ = "Copyright (C) 2007-2008 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
@@ -403,8 +403,8 @@ def __generate_dof_map(code, form_data, options, prefix, label):
     # Generate code for local_dimension
     ufc_code["local_dimension"] = "return %s;" % code["local_dimension"]
 
-    # Generate code for geometric_dimension (introduced in UFC 1.1)
-    ufc_code["geometric_dimension"] = format["exception"]("Not implemented (introduced in UFC v1.1).")
+    # Generate code for geometric_dimension
+    ufc_code["geometric_dimension"] = "return %s;" % code["geometric_dimension"]
 
     # Generate code for num_facet_dofs
     ufc_code["num_facet_dofs"] = "return %s;" % code["num_facet_dofs"]

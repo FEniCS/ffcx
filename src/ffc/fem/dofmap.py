@@ -1,6 +1,6 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-01-24 -- 2007-05-09"
-__copyright__ = "Copyright (C) 2007 Anders Logg"
+__date__ = "2007-01-24 -- 2008-05-08"
+__copyright__ = "Copyright (C) 2007-2008 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Marie E. Rognes (meg@math.uio.no), 2007
@@ -26,15 +26,16 @@ class DofMap:
         entity_dofs = element.entity_dofs()
 
         # Generate dof map data
-        self.__signature        = "FFC dof map for " + element.signature()
-        self.__local_dimension  = element.space_dimension()
-        self.__entity_dofs      = entity_dofs
-        self.__num_dofs_per_dim = self.__compute_num_dofs_per_dim(entity_dofs)
-        self.__num_facet_dofs   = self.__compute_num_facet_dofs(entity_dofs, element.cell_shape())
-        self.__dof_entities     = self.__compute_dof_entities(entity_dofs)
-        self.__incidence        = self.__compute_incidence(element.cell_shape())
-        self.__dof_maps         = self.__compute_dof_maps(element)
-        self.__element          = element
+        self.__signature           = "FFC dof map for " + element.signature()
+        self.__local_dimension     = element.space_dimension()
+        self.__geometric_dimension = element.geometric_dimension()
+        self.__entity_dofs         = entity_dofs
+        self.__num_dofs_per_dim    = self.__compute_num_dofs_per_dim(entity_dofs)
+        self.__num_facet_dofs      = self.__compute_num_facet_dofs(entity_dofs, element.cell_shape())
+        self.__dof_entities        = self.__compute_dof_entities(entity_dofs)
+        self.__incidence           = self.__compute_incidence(element.cell_shape())
+        self.__dof_maps            = self.__compute_dof_maps(element)
+        self.__element             = element
 
     def signature(self):
         "Return a string identifying the dof map"
@@ -43,6 +44,10 @@ class DofMap:
     def local_dimension(self):
         "Return the dimension of the local finite element function space"
         return self.__local_dimension
+
+    def geometric_dimension(self):
+        "Return the geometric dimension of the finite element domain"
+        return self.__geometric_dimension
 
     def entity_dofs(self):
         """Return a dictionary mapping the mesh entities of the
