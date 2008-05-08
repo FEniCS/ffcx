@@ -6,17 +6,31 @@ This gives convenient expand/collapse of bullets by pressing TAB.
 -----------------------------------------------------------------------
 
 * Suggestions for UFC 1.2
-** Add dof_map::topological_dimension()
 ** Add foo_integral::tabulate_tensors()
+** Add dof_map::topological_dimension()
+** Add finite_element::topological_dimension()
+** Add finite_element::geometric_dimension()
+** Add function::rank() and function::dim(i) and function::geometric_dimension()
 
 * Features to possibly include in future versions
-** Adding dimensions to ufc::function for consistency checks?
 ** Support for true constants (now handled as piecewise constants),
    to avoid overhead in tabulate_dof_map and filling of w[][] when
    there are many constant coefficients.
+   Comment from Martin: This is not necessary, the assembler never
+   needs to call tabulate_dof more than once for each unique element,
+   and doesn't have to fill w inside the loop if it knows the coefficient
+   is a constant.
 ** Different number of coefficients for each integral,
    to avoid overhead in tabulate_dof_map and filling of w[][] when
-   there are many separate coefficients.
+   there are many separate coefficients. Can quickly grow complicated though.
+   Alternative:
+     class *_integral
+     {
+       virtual bool needs_coefficient(uint i) const = 0;
+     }
+   This can return true for all coefficients it uses, such that when
+   assembling a set of integrals the coefficients neither of them needs
+   can be skipped.
 ** Support for mixed cell meshes and different elements on cells (p-adaptivity)?
 ** High order geometry support in cell (does this require more than "simply" defining high order reference cells?)
 ** Various functions in class form and/or others, returning std::string's with readable names and descriptions.
