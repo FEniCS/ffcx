@@ -42,7 +42,7 @@ class QuadratureGenerator(CodeGenerator):
 
         # Initialize common code generator
         CodeGenerator.__init__(self)
-        self.optimise_level = 9
+        self.optimise_level = 11
         self.save_tables = False
         self.unique_tables = True
 
@@ -660,9 +660,15 @@ class QuadratureGenerator(CodeGenerator):
                             if self.optimise_level == 7:
                                 val = reduce_operations.reduce_operations(val, format)
                             if self.optimise_level == 8:
-                                val = reduce_operations.get_geo_terms(val, geo_terms, format)
+                                val = reduce_operations.get_geo_terms(val, geo_terms, self.optimise_level, format)
                             if self.optimise_level == 9:
-                                val = reduce_operations.get_geo_terms(val, geo_terms, format)
+                                val = reduce_operations.get_geo_terms(val, geo_terms, self.optimise_level, format)
+                                val = reduce_operations.reduce_operations(val, format)
+                            if self.optimise_level == 10:
+                                val = reduce_operations.get_geo_terms(val, geo_terms, self.optimise_level, format)
+                                val = reduce_operations.reduce_operations(val, format)
+                            if self.optimise_level == 11:
+                                val = reduce_operations.get_geo_terms(val, geo_terms, self.optimise_level, format)
                                 val = reduce_operations.reduce_operations(val, format)
                         ops_count = reduce_operations.operation_count(val, format)
                         comment = format_comment\
@@ -674,9 +680,12 @@ class QuadratureGenerator(CodeGenerator):
                             entry =  format_tensor + format_array_access(name)
                             inner_loops[sec_loop] += [comment, format_add_equal(entry, val), ""]
 
-                        # Update ops count for each of the primary loop indices
+                        # Update ops count for each of the primary and secondary loop indices
                         for dim in prim_loop[0]:
                             ops_count *= dim
+                        for dim in sec_loop[0]:
+                            ops_count *= dim
+#                        print "sec_loop: ", sec_loop
                         ip_ops_count += ops_count
 #                print inner_loops
                 lines = []

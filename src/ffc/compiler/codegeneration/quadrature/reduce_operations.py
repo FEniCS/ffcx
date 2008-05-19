@@ -7,7 +7,59 @@ def operation_count(expression, format):
     adds = len(get_products(expression, format, add)) - 1
     return expression.count(mult) + adds
 
-def get_geo_terms(expression, geo_terms, format):
+def is_constant(variable, format):
+    access = format["array access"]("")
+    group = format["grouping"]("")
+    l = access[0]
+    r = access[1]
+    if not variable.count(l) == variable.count(r):
+        raise RuntimeError, "Something wrong with variable"
+
+    if not l in variable:
+        return variable
+    elif variable.count(l) == 1:
+#        print "variable: ", variable
+        try:
+            int(variable.split(l)[-1].split(r)[0])
+        except:
+            return ""
+        return variable
+    elif variable.count(l) > 1:
+        nested = 0
+        for c in variable:
+            if c == l:
+                nested += 1
+            if c == r:
+                nested -= 1
+            if nested > 1:
+                break
+        # If we have any nested array access it is not possible (at this stage
+        # of the code generation) to determine if it is a constant
+        if nested:
+#            print "nested"
+            return ""
+        else:
+#            print "not nested (matrix entry)"
+#            print variable
+            if not variable.count(l) == 2:
+                raise RuntimeError, "Not matrix access variable, not implemented"
+            int0 = variable.split(r)[0].split(l)[-1]
+            int1 = variable.split(l)[-1].split(r)[0]
+#            print "int0: ", int0
+#            print "int1: ", int1
+            try:
+                # Try to convert first and second indices to integers
+                int(variable.split(r)[0].split(l)[-1])
+                int(variable.split(l)[-1].split(r)[0])
+#                print "success"
+            except:
+                return ""
+            return variable
+    else:
+        return variable
+
+
+def get_geo_terms(expression, geo_terms, optimise_level, format):
     # Cheat to get character for add and multiply
     add   = format["add"](["", ""])
     mult  = format["multiply"](["", ""])
@@ -25,7 +77,17 @@ def get_geo_terms(expression, geo_terms, format):
     for p in prods:
 #        print "\np: ", p
         vrs = get_products(p, format, mult)
-        geos = [v for v in vrs if v and not l in v and not r in v]
+        geos = []
+        # Generate geo code for constant coefficients e.g., w[0][5]
+        if optimise_level >= 11:
+            for v in vrs:
+                constant = is_constant(v, format)
+#            print "constant: ", constant
+                if constant:
+                    geos.append(constant)
+        else:
+            geos = [v for v in vrs if v and not l in v and not r in v]
+
         geos.sort()
         geo = mult.join(geos)
 #        print "geo: ", geo

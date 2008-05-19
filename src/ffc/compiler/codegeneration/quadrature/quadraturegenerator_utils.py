@@ -162,6 +162,8 @@ def generate_psi_entry2(tensor_number, aindices, bindices, psi_indices, vindices
             entry = name + format_matrix_access(format_ip, dof_num)
         else:
             entry = name + format_matrix_access(format_ip, loop_dof)
+            if not name:
+                entry = name
     else:
         dof_num = loop_dof
         entry = name
@@ -454,6 +456,39 @@ def unique_psi_tables(tensors, optimisation_level, format):
             m_strip = m.split()[-1].split("[")[0]
             inverse_name_map[m_strip] = name_strip
             del tables[m]
+
+    # If we have all ones we don't need this table
+    if optimisation_level >= 10:
+        ones = []
+        for name in tables:
+            vals = tables[name]
+            one = True
+            for r in range(numpy.shape(vals)[0]):
+                for c in range(numpy.shape(vals)[1]):
+                    if not vals[r][c] == 1.0:
+                        one = False
+            if one:
+                ones.append(name)
+        for one in ones:
+              o_strip = one.split()[-1].split("[")[0]
+              del tables[one]
+#              print "one: "
+#              print one
+#              print name_map
+              maps = name_map[one]
+#              print "maps: ", maps
+              inverse_name_map[o_strip] = ""
+              for m in maps:
+                  m_strip = m.split()[-1].split("[")[0]
+                  inverse_name_map[m_strip] = ""
+#              if not maps:
+#                  inverse_name_map[o_strip] = ""
+#              else:
+#                  for m in maps:
+#                      m_strip = m.split()[-1].split("[")[0]
+#                      inverse_name_map[m_strip] = ""
+
+#    print "inverse name map: ", inverse_name_map
 
     if optimisation_level <= 5:
         return (inverse_name_map, tables, non_zero_columns)
