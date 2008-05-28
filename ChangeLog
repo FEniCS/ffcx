@@ -1,3 +1,5 @@
+ - Allow subdomain integrals without needing full range of integrals
+ - Allow simple subdomain integral specification dx(0), dx(1), ds(0) etc
 0.4.5 [2008-04-30]
  - Optimizations in generated quadrature code
  - Change formatting of floats from %g to %e, fixes problem with too long integers

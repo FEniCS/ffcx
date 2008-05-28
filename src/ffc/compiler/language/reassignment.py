@@ -3,8 +3,8 @@ way that each unique index is given a number from 0 to n - 1 where n
 is the number of indices."""
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-10-13 -- 2007-02-26"
-__copyright__ = "Copyright (C) 2004-2007 Anders Logg"
+__date__ = "2004-10-13 -- 2008-05-28"
+__copyright__ = "Copyright (C) 2004-2008 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Python modules
@@ -23,7 +23,7 @@ def reassign_indices(form):
     modify secondary indices not appearing in both the reference and
     geometry tensors to auxiliary indices"""
 
-    debug("Reassigning form indices...")
+    debug("Reassigning form indices...", 1)
 
     # Modify secondary indices to auxiliary indices
     [__create_auxiliary(m) for m in form.monomials]
@@ -49,7 +49,7 @@ def reassign_indices(form):
     # Reassign geometry tensor auxiliary indices (global for each Monomial)
     [__reassign(p, Index.AUXILIARY_G) for p in form.monomials]
 
-    debug("done")
+    debug("done", 1)
 
 def reassign_complete(monomial, type):
     """Reassign complete secondary and auxiliary index pairs of given

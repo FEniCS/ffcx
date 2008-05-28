@@ -1,8 +1,8 @@
 "Code generator for tensor representation"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-11-03 -- 2007-06-11"
-__copyright__ = "Copyright (C) 2004-2007 Anders Logg"
+__date__ = "2004-11-03 -- 2008-05-28"
+__copyright__ = "Copyright (C) 2004-2008 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian B. Oelgaard 2007
@@ -71,7 +71,7 @@ class TensorGenerator(CodeGenerator):
 
         # Extract terms for sub domain
         terms = [[term for term in t if term.monomial.integral.sub_domain == sub_domain] for t in form_representation.exterior_facet_tensors]
-        if len(terms) == 0:
+        if all([len(t) == 0 for t in terms]):
             return None
 
         num_facets = len(terms)
@@ -111,7 +111,7 @@ class TensorGenerator(CodeGenerator):
 
         # Extract terms for sub domain
         terms = [[[term for term in t2 if term.monomial.integral.sub_domain == sub_domain] for t2 in t1] for t1 in form_representation.interior_facet_tensors]
-        if len(terms) == 0:
+        if all([len(t) == 0 for t in terms]):
             return None
 
         num_facets = len(terms)

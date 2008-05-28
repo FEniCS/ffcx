@@ -1,6 +1,6 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-09-29 -- 2007-03-05"
-__copyright__ = "Copyright (C) 2004-2007 Anders Logg"
+__date__ = "2004-09-29 -- 2008-05-28"
+__copyright__ = "Copyright (C) 2004-2008 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 class Integral:
@@ -29,6 +29,20 @@ class Integral:
             raise RuntimeError, "Unknown integral type " + str(type) + "."
         return
 
+    def __cmp__(self, other):
+        "Check if integrals are equal."
+        if not isinstance(other, Integral):
+            return -1
+        if self.type == other.type and self.sub_domain == other.sub_domain:
+            return 0
+        return -1 # Ignore self > other
+
+    def __call__(self, sub_domain):
+        "Return integral of same type on given sub domain."
+        d = Integral(self)
+        d.sub_domain = sub_domain
+        return  d
+
     def __repr__(self):
         "Print nicely formatted representation of Integral."
         if self.type == self.CELL:
@@ -37,12 +51,3 @@ class Integral:
             return "ds(%d)" % self.sub_domain
         elif self.type == self.INTERIOR_FACET:
             return "dS(%d)" % self.sub_domain
-
-    def __cmp__(self, other):
-        "Check if integrals are equal."
-        if not isinstance(other, Integral):
-            return -1
-        if self.type == other.type and self.sub_domain == other.sub_domain:
-            return 0
-        return -1 # Ignore self > other
-        
