@@ -153,8 +153,20 @@ class QuadratureElement(FiniteElement):
         in a format that monomialintegration and monomialtabulation understands."""
 
         # Derivatives are not defined on a QuadratureElement
+        # FIXME: currently this check results in a warning (should be RuntimeError)
+        # because otherwise some forms fails if QuadratureElement is used in a
+        # mixed element e.g.,
+        # element = CG + QuadratureElement
+        # (v, w) = BasisFunctions(element)
+        # grad(w): this is in error and should result in a runtime error
+        # grad(v): this should be OK, but currently will raise a warning because
+        # derivatives are tabulated for ALL elements in the mixed element.
+        # This issue should be fixed in UFL and then we can switch on the
+        # RuntimeError again.
         if order:
-            raise RuntimeError("Derivatives are not defined on a QuadratureElement")
+#            raise RuntimeError("Derivatives are not defined on a QuadratureElement")
+            print "\n*** WARNING: Derivatives are not defined on a QuadratureElement,"
+            print   "             returning values of basisfunction.\n"
 
         # Check if (the number of ) incoming points are equal to
         # quadrature points... 
