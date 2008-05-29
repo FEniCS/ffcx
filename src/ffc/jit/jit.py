@@ -10,6 +10,7 @@ __license__  = "GNU GPL version 3 or any later version"
 from os import system
 from commands import getoutput
 from distutils import sysconfig
+from time import time
 import md5, os, sys, shutil
 
 # FFC common modules
@@ -24,6 +25,9 @@ from ffc.compiler.analysis import simplify, analyze
 # Global counter for numbering forms
 counter = 0
 
+# In-memory form cache
+form_cache = {}
+
 # Options for JIT-compiler, evaluate_basis and evaluate_basis_derivatives turned off
 FFC_OPTIONS_JIT = FFC_OPTIONS.copy()
 #FFC_OPTIONS_JIT["no-evaluate_basis"] = True
@@ -32,15 +36,19 @@ FFC_OPTIONS_JIT["no-evaluate_basis_derivatives"] = True
 # Compiler options, don't optimize by default (could be added to options)
 CPP_ARGS = "-O0"
 
-def jit(form, representation=FFC_REPRESENTATION, language=FFC_LANGUAGE, options=FFC_OPTIONS_JIT):
+def jit(input_form, representation=FFC_REPRESENTATION, language=FFC_LANGUAGE, options=FFC_OPTIONS_JIT):
     "Just-in-time compile the given form or element"
 
+    # Check in-memory form cache
+    if input_form in form_cache:
+        return form_cache[input_form]
+
     # Check that we don't get a list
-    if isinstance(form, list):
+    if isinstance(input_form, list):
         raise RuntimeError, "Just-in-time compiler requires a single form (not a list of forms"
 
     # Analyze and simplify form (to get checksum for simplified form and to get form_data)
-    form = algebra.Form(form)
+    form = algebra.Form(input_form)
     form_data = analyze.analyze(form, simplify_form=False)
 
     # Compute md5 checksum of form signature
@@ -75,24 +83,32 @@ def jit(form, representation=FFC_REPRESENTATION, language=FFC_LANGUAGE, options=
     # Check if we can reuse form from cache
     form_dir = os.path.join(cache_dir, md5sum)
     module_dir = os.path.join(form_dir, md5sum + "_module")
+    compiled_form = None
+    compiled_module = None
     if os.path.isdir(form_dir):
         debug("Found form in cache, reusing previously built module (checksum %s)" % md5sum[5:], 1)
         sys.path.append(form_dir)
         try:
             exec("import %s as compiled_module" % (md5sum + "_module"))
             exec("compiled_form = compiled_module.%s()" % form_name)
-            return (compiled_form, compiled_module, form_data)
         except:
             debug("Form module in cache seems to be broken, need to rebuild module", -1)
             shutil.rmtree(form_dir, form_dir + "_broken")
 
-    # Build form module
-    build_module(form, representation, language, options, md5sum, form_dir, module_dir, prefix)
+    # Need to rebuild and import module
+    if compiled_form is None:
+        
+        # Build form module
+        build_module(form, representation, language, options, md5sum, form_dir, module_dir, prefix)
 
-    # Return the form, module and form data
-    sys.path.append(form_dir)
-    exec("import %s as compiled_module" % (md5sum + "_module"))
-    exec("compiled_form = compiled_module.%s()" % form_name)
+        # Import form module
+        sys.path.append(form_dir)
+        exec("import %s as compiled_module" % (md5sum + "_module"))
+        exec("compiled_form = compiled_module.%s()" % form_name)
+
+    # Add to form cache
+    if not input_form in form_cache:
+        form_cache[input_form] = (compiled_form, compiled_module, form_data)
     
     return (compiled_form, compiled_module, form_data)
 

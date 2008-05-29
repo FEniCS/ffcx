@@ -1,3 +1,4 @@
+ - Add in-memory cache to speed up JIT compiler for repeated assembly
  - Allow subdomain integrals without needing full range of integrals
  - Allow simple subdomain integral specification dx(0), dx(1), ds(0) etc
 0.4.5 [2008-04-30]
