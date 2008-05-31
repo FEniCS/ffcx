@@ -33,11 +33,14 @@ FFC_OPTIONS_JIT = FFC_OPTIONS.copy()
 #FFC_OPTIONS_JIT["no-evaluate_basis"] = True
 FFC_OPTIONS_JIT["no-evaluate_basis_derivatives"] = True
 
-# Compiler options, don't optimize by default (could be added to options)
-CPP_ARGS = "-O0"
-
-def jit(input_form, representation=FFC_REPRESENTATION, language=FFC_LANGUAGE, options=FFC_OPTIONS_JIT):
+def jit(input_form, representation=FFC_REPRESENTATION, language=FFC_LANGUAGE, options=FFC_OPTIONS_JIT, optimize=False):
     "Just-in-time compile the given form or element"
+
+    # Set C++ compiler options
+    if optimize:
+        cpp_args = "-O2"
+    else:
+        cpp_args = "-O0"
 
     # Check in-memory form cache
     if input_form in form_cache:
@@ -54,7 +57,7 @@ def jit(input_form, representation=FFC_REPRESENTATION, language=FFC_LANGUAGE, op
     # Compute md5 checksum of form signature
     signature = " ".join([str(form),
                           ", ".join([element.signature() for element in form_data.elements]),
-                          representation, language, str(options)])
+                          representation, language, str(options), cpp_args])
     md5sum = "form_" + md5.new(signature).hexdigest()
 
     # Get name of form
@@ -99,7 +102,7 @@ def jit(input_form, representation=FFC_REPRESENTATION, language=FFC_LANGUAGE, op
     if compiled_form is None:
         
         # Build form module
-        build_module(form, representation, language, options, md5sum, form_dir, module_dir, prefix)
+        build_module(form, representation, language, options, md5sum, form_dir, module_dir, prefix, cpp_args)
 
         # Import form module
         sys.path.append(form_dir)
@@ -112,7 +115,7 @@ def jit(input_form, representation=FFC_REPRESENTATION, language=FFC_LANGUAGE, op
     
     return (compiled_form, compiled_module, form_data)
 
-def build_module(form, representation, language, options, md5sum, form_dir, module_dir, prefix):
+def build_module(form, representation, language, options, md5sum, form_dir, module_dir, prefix, cpp_args):
     "Build module"
 
     # Make sure form directory exists
@@ -142,7 +145,7 @@ def build_module(form, representation, language, options, md5sum, form_dir, modu
     # Wrap code into a Python module using Instant
     debug("Creating Python extension (compiling and linking), this may take some time...", -1)
     module_name = prefix + "_module"
-    instant.create_extension(wrap_headers=[filename], module=module_name, additional_declarations=ufc_include, include_dirs=path, cppargs=CPP_ARGS)
+    instant.create_extension(wrap_headers=[filename], module=module_name, additional_declarations=ufc_include, include_dirs=path, cppargs=cpp_args)
     debug("done", -1)
 
     # Move module to cache
