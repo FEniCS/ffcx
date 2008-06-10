@@ -1,7 +1,7 @@
 "Code generator for tensor representation"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-11-03 -- 2008-05-28"
+__date__ = "2004-11-03 -- 2008-06-10"
 __copyright__ = "Copyright (C) 2004-2008 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
@@ -38,8 +38,11 @@ class TensorGenerator(CodeGenerator):
 
         # Extract terms for sub domain
         terms = [term for term in form_representation.cell_tensor if term.monomial.integral.sub_domain == sub_domain]
+
+        # Special case: zero contribution
         if len(terms) == 0:
-            return None
+            element_code = self.__generate_zero_element_tensor(form_representation.cell_tensor, format)
+            return {"tabulate_tensor": element_code, "members": ""}
 
         # Generate element code + set of used geometry terms
         element_code, geo_set = self.__generate_element_tensor(terms, format)
@@ -63,7 +66,7 @@ class TensorGenerator(CodeGenerator):
         code += [""] + [format["comment"]("Compute element tensor")]
         code += element_code
 
-        return {"tabulate_tensor": code, "members":""}
+        return {"tabulate_tensor": code, "members": ""}
 
     def generate_exterior_facet_integral(self, form_data, form_representation, sub_domain, format):
         """Generate dictionary of code for exterior facet integral from the given
@@ -71,8 +74,11 @@ class TensorGenerator(CodeGenerator):
 
         # Extract terms for sub domain
         terms = [[term for term in t if term.monomial.integral.sub_domain == sub_domain] for t in form_representation.exterior_facet_tensors]
+
+        # Special case: zero contribution
         if all([len(t) == 0 for t in terms]):
-            return None
+            element_code = self.__generate_zero_element_tensor(form_representation.exterior_facet_tensors[0], format)
+            return {"tabulate_tensor": (element_code, []), "members": ""}
 
         num_facets = len(terms)
         cases = [None for i in range(num_facets)]
@@ -103,7 +109,7 @@ class TensorGenerator(CodeGenerator):
         # Add element code
         code += [""] + [format["comment"]("Compute element tensor for all facets")]
 
-        return {"tabulate_tensor": (code, cases), "members":""}
+        return {"tabulate_tensor": (code, cases), "members": ""}
     
     def generate_interior_facet_integral(self, form_data, form_representation, sub_domain, format):
         """Generate dictionary of code for interior facet integral from the given
@@ -111,8 +117,11 @@ class TensorGenerator(CodeGenerator):
 
         # Extract terms for sub domain
         terms = [[[term for term in t2 if term.monomial.integral.sub_domain == sub_domain] for t2 in t1] for t1 in form_representation.interior_facet_tensors]
+
+        # Special case: zero contribution
         if all([len(t) == 0 for t in terms]):
-            return None
+            element_code = self.__generate_zero_element_tensor(form_representation.interior_facet_tensors[0], format)
+            return {"tabulate_tensor": (element_code, []), "members": ""}
 
         num_facets = len(terms)
         cases = [[None for j in range(num_facets)] for i in range(num_facets)]
@@ -144,7 +153,7 @@ class TensorGenerator(CodeGenerator):
         # Add element code
         code += [""] + [format["comment"]("Compute element tensor for all facet-facet combinations")]
 
-        return {"tabulate_tensor": (code, cases), "members":""}
+        return {"tabulate_tensor": (code, cases), "members": ""}
 
     def __generate_coefficients(self, terms, coeff_set, format):
         "Generate code for manipulating coefficients"
@@ -261,10 +270,10 @@ class TensorGenerator(CodeGenerator):
         return (code, coeff_set, trans_set)
 
     def __generate_element_tensor(self, terms, format):
-        "Generate list of declaration for computation of element tensor"
+        "Generate list of declarations for computation of element tensor"
 
         # Generate code as a list of declarations
-        code = []    
+        code = []
     
         # Get list of primary indices (should be the same so pick first)
         iindices = terms[0].A0.i.indices
@@ -312,6 +321,27 @@ class TensorGenerator(CodeGenerator):
             k += 1
 
         return (code, geo_set)
+
+    def __generate_zero_element_tensor(self, A, format):
+        "Generate list of declarations for zero element tensor"
+
+        # Generate code as a list of declarations
+        code = []    
+    
+        # Get indices (check first term)
+        indices = A[0].A0.i.indices
+
+        # Prefetch formats to speed up code generation
+        format_element_tensor  = format["element tensor"]
+        format_floating_point  = format["floating point"]
+
+        # Set entries to zero
+        for k in range(len(indices)):
+            name = format_element_tensor(indices[k], k)
+            value = format_floating_point(0.0)
+            code += [(name, value)]
+
+        return code
 
     def __generate_entry(self, G, a, i, format):
         "Generate code for the value of entry a of geometry tensor G"

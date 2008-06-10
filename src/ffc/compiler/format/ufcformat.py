@@ -1,7 +1,7 @@
 "Code generation for the UFC 1.0 format"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-01-08 -- 2008-05-08"
+__date__ = "2007-01-08 -- 2008-06-10"
 __copyright__ = "Copyright (C) 2007-2008 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
@@ -451,26 +451,15 @@ def __generate_cell_integral(code, form_data, options, prefix, i):
     # Generate code for destructor
     ufc_code["destructor"] = "// Do nothing"
 
-    # Check if we should not generate any code, may happen for empty sub integrals (see SubDomain.form demo)
-    if code is None:
-
-        # Generate code for members
-        ufc_code["members"] = ""
-
-        # Generate code for tabulate_tensor
-        ufc_code["tabulate_tensor"] = "// Do nothing, integral is zero"
-
-    else:
-
-        # Generate code for members
-        ufc_code["members"] = __generate_body(code["members"])
-
-        # Generate code for tabulate_tensor
-        #    body  = __generate_jacobian(form_data.cell_dimension, Integral.CELL)
-        #    body += "\n"
-        body = __generate_body(code["tabulate_tensor"])
-        #    ufc_code["tabulate_tensor"] = remove_unused(body)
-        ufc_code["tabulate_tensor"] = body
+    # Generate code for members
+    ufc_code["members"] = __generate_body(code["members"])
+    
+    # Generate code for tabulate_tensor
+    #    body  = __generate_jacobian(form_data.cell_dimension, Integral.CELL)
+    #    body += "\n"
+    body = __generate_body(code["tabulate_tensor"])
+    #    ufc_code["tabulate_tensor"] = remove_unused(body)
+    ufc_code["tabulate_tensor"] = body
 
     return __generate_code(cell_integral_combined, ufc_code, options)
 
@@ -488,29 +477,18 @@ def __generate_exterior_facet_integral(code, form_data, options, prefix, i):
     # Generate code for destructor
     ufc_code["destructor"] = "// Do nothing"
 
-    # Check if we should not generate any code, may happen for empty sub integrals (see SubDomain.form demo)
-    if code is None:
-
-        # Generate code for members
-        ufc_code["members"] = ""
-
-        # Generate code for tabulate_tensor
-        ufc_code["tabulate_tensor"] = "// Do nothing, integral is zero"
-
-    else:
-
-        # Generate code for members
-        ufc_code["members"] = __generate_body(code["members"])
-
-        # Generate code for tabulate_tensor
-        switch = __generate_switch("facet", [__generate_body(case) for case in code["tabulate_tensor"][1]])
-        #    body  = __generate_jacobian(form_data.cell_dimension, Integral.EXTERIOR_FACET)
-        #    body += "\n"
-        body = __generate_body(code["tabulate_tensor"][0])
-        body += "\n"
-        body += switch
-        #    ufc_code["tabulate_tensor"] = remove_unused(body)
-        ufc_code["tabulate_tensor"] = body
+    # Generate code for members
+    ufc_code["members"] = __generate_body(code["members"])
+    
+    # Generate code for tabulate_tensor
+    switch = __generate_switch("facet", [__generate_body(case) for case in code["tabulate_tensor"][1]])
+    #    body  = __generate_jacobian(form_data.cell_dimension, Integral.EXTERIOR_FACET)
+    #    body += "\n"
+    body = __generate_body(code["tabulate_tensor"][0])
+    body += "\n"
+    body += switch
+    #    ufc_code["tabulate_tensor"] = remove_unused(body)
+    ufc_code["tabulate_tensor"] = body
 
     return __generate_code(exterior_facet_integral_combined, ufc_code, options)
 
@@ -528,29 +506,18 @@ def __generate_interior_facet_integral(code, form_data, options, prefix, i):
     # Generate code for destructor
     ufc_code["destructor"] = "// Do nothing"
 
-    # Check if we should not generate any code, may happen for empty sub integrals (see SubDomain.form demo)
-    if code is None:
+    # Generate code for members
+    ufc_code["members"] = __generate_body(code["members"])
 
-        # Generate code for members
-        ufc_code["members"] = ""
-
-        # Generate code for tabulate_tensor
-        ufc_code["tabulate_tensor"] = "// Do nothing, integral is zero"
-
-    else:
-
-        # Generate code for members
-        ufc_code["members"] = __generate_body(code["members"])
-
-        # Generate code for tabulate_tensor, impressive line of Python code follows
-        switch = __generate_switch("facet0", [__generate_switch("facet1", [__generate_body(case) for case in cases]) for cases in code["tabulate_tensor"][1]])
-        #    body  = __generate_jacobian(form_data.cell_dimension, Integral.INTERIOR_FACET)
-        #    body += "\n"
-        body = __generate_body(code["tabulate_tensor"][0])
-        body += "\n"
-        body += switch
-        #    ufc_code["tabulate_tensor"] = remove_unused(body)
-        ufc_code["tabulate_tensor"] = body
+    # Generate code for tabulate_tensor, impressive line of Python code follows
+    switch = __generate_switch("facet0", [__generate_switch("facet1", [__generate_body(case) for case in cases]) for cases in code["tabulate_tensor"][1]])
+    #    body  = __generate_jacobian(form_data.cell_dimension, Integral.INTERIOR_FACET)
+    #    body += "\n"
+    body = __generate_body(code["tabulate_tensor"][0])
+    body += "\n"
+    body += switch
+    #    ufc_code["tabulate_tensor"] = remove_unused(body)
+    ufc_code["tabulate_tensor"] = body
 
     return __generate_code(interior_facet_integral_combined, ufc_code, options)
 
