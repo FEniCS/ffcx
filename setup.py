@@ -2,6 +2,7 @@
 
 from distutils.core import setup
 from distutils import sysconfig
+from os.path import join as pjoin
 import sys
 
 # Version number
@@ -10,7 +11,7 @@ minor = 1
 
 # Set prefix
 try:    prefix = [item for item in sys.argv[1:] if "--prefix=" in item][0].split("=")[1]
-except: prefix = ("/").join(sysconfig.get_python_inc().split("/")[:-2])
+except: prefix = sys.prefix
 print "Installing UFC under %s..." % prefix
 
 # Generate pkgconfig file
@@ -18,7 +19,8 @@ file = open("ufc-%d.pc" % major, "w")
 file.write("Name: UFC\n")
 file.write("Version: %d.%d\n" % (major, minor))
 file.write("Description: Unified Form-assembly Code\n")
-file.write("Cflags: -I%s/include\n" % prefix)
+file.write("Cflags: -I%s\n" % repr(pjoin(prefix,"include"))[1:-1])
+# FIXME: better way for this? ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 file.close()
 
 setup(name = "UFC",
@@ -28,6 +30,6 @@ setup(name = "UFC",
       author_email = "ufc@fenics.org",
       url = "http://www.fenics.org/ufc/",
       packages = ["ufc"],
-      package_dir = {"ufc": "src/utils/python/ufc/"},
-      data_files = [("include", ["src/ufc/ufc.h"]),
-                    ("lib/pkgconfig", ["ufc-%d.pc" % major])])
+      package_dir = {"ufc": pjoin("src","utils","python","ufc")},
+      data_files = [("include", [pjoin("src","ufc","ufc.h")]),
+                    (pjoin("lib","pkgconfig"), ["ufc-%d.pc" % major])])
