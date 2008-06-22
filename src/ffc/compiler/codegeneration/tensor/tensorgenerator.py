@@ -1,7 +1,7 @@
 "Code generator for tensor representation"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-11-03 -- 2008-06-10"
+__date__ = "2004-11-03 -- 2008-06-12"
 __copyright__ = "Copyright (C) 2004-2008 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
@@ -119,8 +119,8 @@ class TensorGenerator(CodeGenerator):
         terms = [[[term for term in t2 if term.monomial.integral.sub_domain == sub_domain] for t2 in t1] for t1 in form_representation.interior_facet_tensors]
 
         # Special case: zero contribution
-        if all([len(t) == 0 for t in terms]):
-            element_code = self.__generate_zero_element_tensor(form_representation.interior_facet_tensors[0], format)
+        if all([len(t) == 0 for tt in terms for t in tt]):
+            element_code = self.__generate_zero_element_tensor(form_representation.interior_facet_tensors[0][0], format)
             return {"tabulate_tensor": (element_code, []), "members": ""}
 
         num_facets = len(terms)
