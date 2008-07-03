@@ -33,11 +33,36 @@ FFC_OPTIONS_JIT = FFC_OPTIONS.copy()
 #FFC_OPTIONS_JIT["no-evaluate_basis"] = True
 FFC_OPTIONS_JIT["no-evaluate_basis_derivatives"] = True
 
-def jit(input_form, representation=FFC_REPRESENTATION, language=FFC_LANGUAGE, options=FFC_OPTIONS_JIT, optimize=False):
-    "Just-in-time compile the given form or element"
+def jit(input_form, options = None):
+    """ Just-in-time compile the given form or element
+    
+    Parameters:
+    input_form : The form
+    options    : An option dict. 
+    """
 
+    # Collect options
+    _options = FFC_OPTIONS_JIT.copy()
+    if options is None:
+        # Default options
+        cpp_optimize   = False
+        representation = FFC_REPRESENTATION
+        language       = FFC_LANGUAGE
+    elif isinstance(options,dict):
+        cpp_optimize   = options.pop("cpp optimize",False)
+        representation = options.pop("representation",FFC_REPRESENTATION)
+        language       = options.pop("language",FFC_LANGUAGE)
+        for key, value in options.iteritems():
+            if _options.has_key(key):
+                _options[key] = value
+            else:
+                # FIXME: Warn that options is not set?
+                pass
+    else:
+        raise RuntimeError, "options must be a dict"
+        
     # Set C++ compiler options
-    if optimize:
+    if cpp_optimize: 
         cpp_args = "-O2"
     else:
         cpp_args = "-O0"
@@ -57,7 +82,7 @@ def jit(input_form, representation=FFC_REPRESENTATION, language=FFC_LANGUAGE, op
     # Compute md5 checksum of form signature
     signature = " ".join([str(form),
                           ", ".join([element.signature() for element in form_data.elements]),
-                          representation, language, str(options), cpp_args])
+                          representation, language, str(_options), cpp_args])
     md5sum = "form_" + md5.new(signature).hexdigest()
 
     # Get name of form
@@ -102,7 +127,7 @@ def jit(input_form, representation=FFC_REPRESENTATION, language=FFC_LANGUAGE, op
     if compiled_form is None:
         
         # Build form module
-        build_module(form, representation, language, options, md5sum, form_dir, module_dir, prefix, cpp_args)
+        build_module(form, representation, language, _options, md5sum, form_dir, module_dir, prefix, cpp_args)
 
         # Import form module
         sys.path.append(form_dir)
