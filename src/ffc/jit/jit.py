@@ -2,9 +2,11 @@
 It uses Instant to wrap the generated code into a Python module."""
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-07-20 -- 2008-03-31"
+__date__ = "2007-07-20 -- 2008-07-07"
 __copyright__ = "Copyright (C) 2007-2008 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
+
+# Modified by Johan Hake, 2008
 
 # Python modules
 from os import system
@@ -33,12 +35,13 @@ FFC_OPTIONS_JIT = FFC_OPTIONS.copy()
 #FFC_OPTIONS_JIT["no-evaluate_basis"] = True
 FFC_OPTIONS_JIT["no-evaluate_basis_derivatives"] = True
 
-def jit(input_form, options = None):
-    """ Just-in-time compile the given form or element
+def jit(input_form, options=None):
+    """Just-in-time compile the given form or element
     
     Parameters:
-    input_form : The form
-    options    : An option dict. 
+    
+      input_form : The form
+      options    : An option dictionary
     """
 
     # Collect options
@@ -48,18 +51,17 @@ def jit(input_form, options = None):
         cpp_optimize   = False
         representation = FFC_REPRESENTATION
         language       = FFC_LANGUAGE
-    elif isinstance(options,dict):
-        cpp_optimize   = options.pop("cpp optimize",False)
-        representation = options.pop("representation",FFC_REPRESENTATION)
-        language       = options.pop("language",FFC_LANGUAGE)
+    elif isinstance(options, dict):
+        cpp_optimize   = options.pop("cpp optimize", False)
+        representation = options.pop("representation", FFC_REPRESENTATION)
+        language       = options.pop("language", FFC_LANGUAGE)
         for key, value in options.iteritems():
             if _options.has_key(key):
                 _options[key] = value
             else:
-                # FIXME: Warn that options is not set?
-                pass
+                warning('Unknown option "%s" for JIT compiler, ignoring.' % key)
     else:
-        raise RuntimeError, "options must be a dict"
+        raise error("JIT compiler options must be a dictionary.")
         
     # Set C++ compiler options
     if cpp_optimize: 
