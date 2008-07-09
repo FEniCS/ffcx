@@ -3,8 +3,8 @@ debug level lower than or equal to the current debug level will be
 printed. To see more messages, raise the debug level."""
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2005-02-04 -- 2007-02-26"
-__copyright__ = "Copyright (C) 2005-2007 Anders Logg"
+__date__ = "2005-02-04 -- 2008-07-09"
+__copyright__ = "Copyright (C) 2005-2008 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 import sys
@@ -16,7 +16,7 @@ __indent = 0
 __continuation = False
 __continuation_level = 0
 
-def debug(string, debuglevel = 0):
+def debug(string, debuglevel=0):
     "Print given string at given debug level"
 
     global __level, __indent, __continuation, __continuation_level
@@ -42,7 +42,7 @@ def debug(string, debuglevel = 0):
     # Flush buffer so messages are printed *now*
     sys.stdout.flush()
 
-def debug_indent(increment = 1):
+def debug_indent(increment=1):
     "Set indentation of debug messages"
     global __indent
     __indent += increment
@@ -67,3 +67,7 @@ def setlevel(newlevel):
 def getlevel():
     "Get debug level"
     return __level
+
+def warning(string, debuglevel=0):
+    "Print a warning"
+    debug("Warning: " + string, debuglevel)

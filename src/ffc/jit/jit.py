@@ -2,7 +2,7 @@
 It uses Instant to wrap the generated code into a Python module."""
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-07-20 -- 2008-07-07"
+__date__ = "2007-07-20 -- 2008-07-09"
 __copyright__ = "Copyright (C) 2007-2008 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
@@ -61,7 +61,7 @@ def jit(input_form, options=None):
             else:
                 warning('Unknown option "%s" for JIT compiler, ignoring.' % key)
     else:
-        raise error("JIT compiler options must be a dictionary.")
+        raise RuntimeError, "JIT compiler options must be a dictionary."
         
     # Set C++ compiler options
     if cpp_optimize: 
