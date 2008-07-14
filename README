@@ -37,7 +37,13 @@ To install UFC, simply run
     sudo python setup.py install
 
 This installs the header file ufc.h and a small set of Python
-utils (templates) for generating UFC code.
+utilities (templates) for generating UFC code. Files will be installed
+under the default prefix (as determined by Python Distutils), most
+likely under /usr.
+
+The installation prefix may be optionally specified, for example
+
+    python setup.py install --prefix=~/local
 
 Alternatively, just copy the single header file src/ufc/ufc.h
 into a suitable include directory.
