@@ -2,7 +2,7 @@
 It uses Instant to wrap the generated code into a Python module."""
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-07-20 -- 2008-07-09"
+__date__ = "2007-07-20 -- 2008-07-16"
 __copyright__ = "Copyright (C) 2007-2008 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
@@ -46,21 +46,19 @@ def jit(input_form, options=None):
 
     # Collect options
     _options = FFC_OPTIONS_JIT.copy()
-    if options is None:
-        # Default options
-        cpp_optimize   = False
-        representation = FFC_REPRESENTATION
-        language       = FFC_LANGUAGE
-    elif isinstance(options, dict):
-        cpp_optimize   = options.pop("cpp optimize", False)
-        representation = options.pop("representation", FFC_REPRESENTATION)
-        language       = options.pop("language", FFC_LANGUAGE)
+    cpp_optimize   = False
+    representation = FFC_REPRESENTATION
+    language       = FFC_LANGUAGE
+    if isinstance(options, dict):
+        if "cpp optimize"   in options: cpp_optimize   = options["cpp optimize"]
+        if "representation" in options: representation = options["representation"]
+        if "language"       in options: language       = options["language"]
         for key, value in options.iteritems():
             if _options.has_key(key):
                 _options[key] = value
             else:
                 warning('Unknown option "%s" for JIT compiler, ignoring.' % key)
-    else:
+    elif not options is None:
         raise RuntimeError, "JIT compiler options must be a dictionary."
         
     # Set C++ compiler options
