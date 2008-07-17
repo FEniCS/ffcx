@@ -59,7 +59,7 @@ class QuadratureGenerator(CodeGenerator):
         tensors = [term for term in form_representation.cell_tensor if term.monomial.integral.sub_domain == sub_domain]
         if len(tensors) == 0:
             element_code = self.__reset_element_tensor(form_representation.cell_tensor[0], Indent, format)
-            return {"tabulate_tensor": (element_code, []), "members": ""}
+            return {"tabulate_tensor": element_code, "members": ""}
 
 
         # Generate element code + set of used geometry terms
