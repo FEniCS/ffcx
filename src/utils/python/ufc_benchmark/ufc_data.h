@@ -69,7 +69,13 @@ namespace ufc
 
       // allocate space for element tensor A
       A = new double[A_size];
-   
+
+      // Initialize local tensor for macro element
+      A_size = 1;
+      for (uint i = 0; i < form.rank(); i++)
+        A_size *= 2*dimensions[i];
+      macro_A = new double[A_size];
+
       // allocate space for local coefficient data
       w = new double*[num_coefficients];
       for(uint i=0; i<num_coefficients; i++)
@@ -77,6 +83,15 @@ namespace ufc
         uint dim = dimensions[i+rank];
         w[i] = new double[dim];
         memset(w[i], 0, sizeof(double)*dim);
+      }
+
+      // allocate space for local macro coefficient data
+      macro_w = new double*[num_coefficients];
+      for(uint i=0; i<num_coefficients; i++)
+      {
+        uint dim = 2*dimensions[i+rank];
+        macro_w[i] = new double[dim];
+        memset(macro_w[i], 0, sizeof(double)*dim);
       }
     }
 
@@ -102,8 +117,13 @@ namespace ufc
       for(uint i=0; i<num_coefficients; i++)
         delete [] w[i];
       delete [] w;
+
+      for(uint i=0; i<num_coefficients; i++)
+        delete [] macro_w[i];
+      delete [] macro_w;
       
       delete [] A;
+      delete [] macro_A;
     }
 
     const ufc::form & form;
@@ -122,7 +142,9 @@ namespace ufc
 
     uint   *  dimensions;
     double *  A;
+    double *  macro_A;
     double ** w;
+    double ** macro_w;
 
 
     void print_tensor()

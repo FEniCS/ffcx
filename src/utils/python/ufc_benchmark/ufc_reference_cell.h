@@ -13,12 +13,12 @@ namespace ufc
 {
 
     /// Description of a reference cell, for debugging and testing UFC code.
-    class reference_cell: public cell
+    class reference_cell: public ufc::cell
     {
     public:
 
         /// Constructor
-        reference_cell(shape s)
+        reference_cell(ufc::shape s)
         {
             cell_shape = s;
 
@@ -171,14 +171,73 @@ namespace ufc
 
     };
 
-
-    /// Consistent data for a mesh consisting of a single reference cell, for debugging and testing UFC code.
-    class reference_mesh: public mesh
+    /// Description of a reference cell, for debugging and testing UFC code.
+    class Cell: public ufc::cell
     {
     public:
 
         /// Constructor
-        reference_mesh(shape s):
+        Cell(unsigned int top, unsigned int geo, std::vector< std::vector< unsigned int> > coords, std::vector< unsigned int> num_ents): ufc::cell(), num_entities(num_ents)
+        {
+            topological_dimension = top;
+            geometric_dimension   = geo;
+            num_entities[0] = coords.size();
+
+            // Fill global indices
+//            entity_indices = new unsigned int*[topological_dimension+1];
+//            for(unsigned int i = 0; i <= topological_dimension; i++)
+//            {
+//                entity_indices[i] = new unsigned int[num_entities[i]];
+//                for(unsigned int j = 0; j < num_entities[i]; j++)
+//                {
+//                    entity_indices[i][j] = j;
+//                }
+//            }
+
+            for(unsigned int i = 0; i < num_ents.size(); i++)
+              num_entities[i] = num_ents[i];
+
+            // Allocate an empty array of vertex coordinates.
+            coordinates = new double*[coords.size()];
+            for(unsigned int i = 0; i < coords.size(); i++)
+            {
+                coordinates[i] = new double[geometric_dimension];
+                for(unsigned int j = 0; j < geometric_dimension; j++)
+                {
+                    coordinates[i][j] = coords[i][j];
+                }
+            }
+
+        }
+
+        /// Destructor
+        virtual ~Cell()
+        {
+//            for(unsigned int i = 0; i <= topological_dimension; i++)
+//            {
+//                delete [] entity_indices[i];
+//            }
+//            delete [] entity_indices;
+
+            for(unsigned int i = 0; i < num_entities[0]; i++)
+            {
+                delete [] coordinates[i];
+            }
+            delete [] coordinates;
+        }
+
+        /// The number of entities of a particular dimension
+        std::vector<unsigned int> num_entities;
+    };
+
+
+    /// Consistent data for a mesh consisting of a single reference cell, for debugging and testing UFC code.
+    class reference_mesh: public ufc::mesh
+    {
+    public:
+
+        /// Constructor
+        reference_mesh(ufc::shape s):
             c(s)
         {
             topological_dimension = c.topological_dimension;
@@ -203,6 +262,31 @@ namespace ufc
 
     };
 
+    /// Consistent data for a mesh consisting of a single reference cell, for debugging and testing UFC code.
+    class Mesh: public ufc::mesh
+    {
+    public:
+
+        /// Constructor
+        Mesh(unsigned int top, unsigned int geo, std::vector<unsigned int> ents)//: ufc::mesh()
+        {
+            topological_dimension = top;
+            geometric_dimension   = geo;
+
+            // Set global number of entities of each topological dimension to that of a single cell.
+            num_entities = new unsigned int[topological_dimension+1];
+            for(unsigned int i = 0; i <= topological_dimension; i++)
+            {
+                num_entities[i] = ents[i];
+            }
+        }
+
+        /// Destructor
+        virtual ~Mesh()
+        {
+            delete [] num_entities;
+        }
+    };
 
 }
 

@@ -5,7 +5,7 @@ import os
 
 # the buggy swig-support in distutils doesn't manage to invoke g++, uses gcc...
 os.system("make ufc_benchmark_wrap.cxx")
-extension = Extension('_ufc_benchmark', ['ufc_benchmark.cpp', 'ufc_benchmark_wrap.cxx'], language="c++")
+extension = Extension('_ufc_benchmark', ['ufc_benchmark.cpp', 'ufc_benchmark_wrap.cxx'], language="c++", include_dirs=["../../../ufc"])
 
 setup(### metadata:
       name              = 'ufc_benchmark',

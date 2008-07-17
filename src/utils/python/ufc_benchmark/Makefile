@@ -6,6 +6,8 @@ MODULENAME=ufc_benchmark
 
 CXX=g++
 
+ufcinclude=-I../../../ufc
+
 # Python location and version
 PYTHONROOT:=$(shell python -c 'import sys; print sys.prefix')
 PYTHONVER:=$(shell python -c 'import sys; print sys.version[:3]')
@@ -24,7 +26,7 @@ $(MODULENAME)_wrap.o: $(MODULENAME)_wrap.cxx
 
 # generate wrapper
 $(MODULENAME)_wrap.cxx: $(MODULENAME).i $(MODULENAME).h
-	swig -c++ -python $(MODULENAME).i
+	swig -c++ -python $(ufcinclude) $(MODULENAME).i
 
 # compile module code
 $(MODULENAME).o: *.h *.cpp

@@ -6,7 +6,7 @@
 #ifndef __UFC_BENCHMARK_H__
 #define __UFC_BENCHMARK_H__
 
-#include <ufc.h>
+#include "ufc.h"
 #include <vector>
 
 /*
@@ -19,6 +19,11 @@ std::vector< std::vector<double> > benchmark(const ufc::form & form, bool print_
  * Compute one element tensor on the reference cell with the given coefficients.
  */
 std::vector< std::vector<double> > tabulate_cell_tensor(const ufc::form & form, std::vector< std::vector<double> > w, int domain);
+
+std::vector< std::vector<double> > tabulate_cell_integral(const ufc::form& form, std::vector< std::vector<double> > w, ufc::cell cell, int domain);
+std::vector< std::vector<double> > tabulate_exterior_facet_integral(const ufc::form& form, std::vector< std::vector<double> > w, ufc::cell& cell, int facet, int domain);
+std::vector< std::vector<double> > tabulate_interior_facet_integral(const ufc::form& form, std::vector< std::vector<double> > macro_w,\
+                                                                    ufc::cell& cell0, ufc::cell& cell1, int facet0, int facet1, int domain);
 
 #endif
 

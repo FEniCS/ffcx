@@ -206,3 +206,184 @@ vector< vector<double> > tabulate_cell_tensor(const ufc::form & form, vector< ve
   return A;
 }
 
+std::vector< std::vector<double> > tabulate_cell_integral(const ufc::form& form, std::vector< std::vector<double> > w, ufc::cell cell, int domain)
+{
+  ufc::ufc_data data(form);
+
+  // copy w to the appropriate array
+  if(data.num_coefficients != w.size())
+      throw std::runtime_error("Wrong number of coefficients");
+  for(uint i=0; i<data.num_coefficients; i++)
+  {
+    if(data.dimensions[data.rank+i] != w[i].size())
+        throw std::runtime_error("Wrong coefficient dimension.");
+    for(uint j=0; j<data.dimensions[data.rank+i]; j++)
+    {
+      data.w[i][j] = w[i][j];
+    }
+  }
+
+  // tabulate the tensor
+  data.cell_integrals[domain]->tabulate_tensor(data.A, data.w, cell);
+
+  // copy element tensor to stl-structure for easy returning to python (should perhaps rather use numpy and some typemaps, but I'm lazy)
+  vector< vector<double> > A;
+  if(data.rank == 2)
+  {
+    A.resize(data.dimensions[0]);
+    for(uint i=0; i<data.dimensions[0]; i++)
+    {
+      A[i].resize(data.dimensions[1]);
+      for(uint j=0; j<data.dimensions[1]; j++)
+      {
+        A[i][j] = data.A[i*data.dimensions[1] + j];
+      }
+    }
+  }
+  else if(data.rank == 1)
+  {
+    A.resize(data.dimensions[0]);
+    for(uint i=0; i<data.dimensions[0]; i++)
+    {
+      A[i].resize(1);
+      A[i][0] = data.A[i];
+    }
+  }
+  else if(data.rank == 0)
+  {
+    A.resize(1);
+    A[0].resize(1);
+    A[0][0] = data.A[0];
+  }
+  else
+  {
+    throw std::runtime_error("rank != 0,1,2 not implemented");
+  }
+
+  return A;
+}
+
+std::vector< std::vector<double> > tabulate_exterior_facet_integral(const ufc::form& form, std::vector< std::vector<double> > w, ufc::cell& cell, int facet, int domain)
+{
+  ufc::ufc_data data(form);
+
+  // copy w to the appropriate array
+  if(data.num_coefficients != w.size())
+      throw std::runtime_error("Wrong number of coefficients");
+  for(uint i=0; i<data.num_coefficients; i++)
+  {
+    if(data.dimensions[data.rank+i] != w[i].size())
+        throw std::runtime_error("Wrong coefficient dimension.");
+    for(uint j=0; j<data.dimensions[data.rank+i]; j++)
+    {
+      data.w[i][j] = w[i][j];
+    }
+  }
+
+  // tabulate the tensor
+  data.exterior_facet_integrals[domain]->tabulate_tensor(data.A, data.w, cell, facet);
+
+  // copy element tensor to stl-structure for easy returning to python (should perhaps rather use numpy and some typemaps, but I'm lazy)
+  vector< vector<double> > A;
+  if(data.rank == 2)
+  {
+    A.resize(data.dimensions[0]);
+    for(uint i=0; i<data.dimensions[0]; i++)
+    {
+      A[i].resize(data.dimensions[1]);
+      for(uint j=0; j<data.dimensions[1]; j++)
+      {
+        A[i][j] = data.A[i*data.dimensions[1] + j];
+      }
+    }
+  }
+  else if(data.rank == 1)
+  {
+    A.resize(data.dimensions[0]);
+    for(uint i=0; i<data.dimensions[0]; i++)
+    {
+      A[i].resize(1);
+      A[i][0] = data.A[i];
+    }
+  }
+  else if(data.rank == 0)
+  {
+    A.resize(1);
+    A[0].resize(1);
+    A[0][0] = data.A[0];
+  }
+  else
+  {
+    throw std::runtime_error("rank != 0,1,2 not implemented");
+  }
+
+  return A;
+}
+
+std::vector< std::vector<double> > tabulate_interior_facet_integral(const ufc::form& form, std::vector< std::vector<double> > macro_w,\
+                                                                    ufc::cell& cell0, ufc::cell& cell1, int facet0, int facet1, int domain)
+{
+  ufc::ufc_data data(form);
+
+  // copy w to the appropriate array
+  if(data.num_coefficients != macro_w.size())
+      throw std::runtime_error("Wrong number of coefficients");
+  for(uint i=0; i<data.num_coefficients; i++)
+  {
+    if(2*data.dimensions[data.rank+i] != macro_w[i].size())
+        throw std::runtime_error("Wrong coefficient dimension.");
+    for(uint j=0; j<2*data.dimensions[data.rank+i]; j++)
+    {
+      data.macro_w[i][j] = macro_w[i][j];
+    }
+  }
+
+  // tabulate the tensor
+  data.interior_facet_integrals[domain]->tabulate_tensor(data.macro_A, data.macro_w, cell0, cell1, facet0, facet1);
+
+  // copy element tensor to stl-structure for easy returning to python (should perhaps rather use numpy and some typemaps, but I'm lazy)
+  vector< vector<double> > A;
+  if(data.rank == 2)
+  {
+    A.resize(2*data.dimensions[0]);
+    for(uint i=0; i<2*data.dimensions[0]; i++)
+    {
+      A[i].resize(2*data.dimensions[1]);
+      for(uint j=0; j<2*data.dimensions[1]; j++)
+      {
+        A[i][j] = data.macro_A[i*2*data.dimensions[1] + j];
+      }
+    }
+  }
+  else if(data.rank == 1)
+  {
+    A.resize(2*data.dimensions[0]);
+    for(uint i=0; i<2*data.dimensions[0]; i++)
+    {
+      A[i].resize(1);
+      A[i][0] = data.macro_A[i];
+    }
+  }
+  else if(data.rank == 0)
+  {
+    A.resize(1);
+    A[0].resize(1);
+    A[0][0] = data.macro_A[0];
+  }
+  else
+  {
+    throw std::runtime_error("rank != 0,1,2 not implemented");
+  }
+
+  return A;
+}
+
+
+
+
+
+
+
+
+
+
