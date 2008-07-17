@@ -58,7 +58,8 @@ class QuadratureGenerator(CodeGenerator):
         # Extract terms for sub domain
         tensors = [term for term in form_representation.cell_tensor if term.monomial.integral.sub_domain == sub_domain]
         if len(tensors) == 0:
-            return None
+            element_code = self.__reset_element_tensor(form_representation.cell_tensor[0], Indent, format)
+            return {"tabulate_tensor": (element_code, []), "members": ""}
 
 
         # Generate element code + set of used geometry terms
@@ -90,8 +91,9 @@ class QuadratureGenerator(CodeGenerator):
 
         # Extract terms for sub domain
         tensors = [[term for term in t if term.monomial.integral.sub_domain == sub_domain] for t in form_representation.exterior_facet_tensors]
-        if len(tensors) == 0:
-            return None
+        if all([len(t) == 0 for t in tensors]):
+            element_code = self.__reset_element_tensor(form_representation.exterior_facet_tensors[0][0], Indent, format)
+            return {"tabulate_tensor": (element_code, []), "members": ""}
 
         num_facets = len(tensors)
         cases = [None for i in range(num_facets)]
@@ -130,8 +132,9 @@ class QuadratureGenerator(CodeGenerator):
 
         # Extract terms for sub domain
         tensors = [[[term for term in t2 if term.monomial.integral.sub_domain == sub_domain] for t2 in t1] for t1 in form_representation.interior_facet_tensors]
-        if len(tensors) == 0:
-            return None
+        if all([len(t) == 0 for tt in tensors for t in tt]):
+            element_code = self.__reset_element_tensor(form_representation.interior_facet_tensors[0][0][0], Indent, format)
+            return {"tabulate_tensor": (element_code, []), "members": ""}
 
         num_facets = len(tensors)
         cases = [[None for j in range(num_facets)] for i in range(num_facets)]
