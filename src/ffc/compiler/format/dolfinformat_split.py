@@ -5,7 +5,6 @@ __date__ = "2007-03-24 -- 2007-06-11"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Modified by Kristian B. Oelgaard 2007
 # Modified by Dag Lindbo, 2008
 
 # UFC code templates
@@ -34,13 +33,15 @@ def write(generated_forms, prefix, options):
     "Generate UFC 1.0 code with DOLFIN wrappers for a given list of pregenerated forms"
     debug("Generating code for UFC 1.0 with DOLFIN wrappers")
 
+    # UFC declarations and DOLFIN wrappers ----------------------------------------------
+
     # Generate code for header
     output = ""
     output += generate_header(prefix, options)
     output += "\n"
 
     # Generate UFC code
-    output += ufcformat.generate_ufc(generated_forms, "UFC_" + prefix, options, "combined")
+    output += ufcformat.generate_ufc(generated_forms, "UFC_" + prefix, options, "header")
 
     # Generate code for DOLFIN wrappers
     output += __generate_dolfin_wrappers(generated_forms, prefix, options)
@@ -50,6 +51,20 @@ def write(generated_forms, prefix, options):
 
     # Write file
     filename = "%s.h" % prefix
+    file = open(filename, "w")
+    file.write(output)
+    file.close()
+    debug("Output written to " + filename)
+
+    # UFC implementations ------------------------------------------------------------------
+    output = ""
+    output += "#include \"%s.h\""%prefix
+
+    # Generate UFC code
+    output += ufcformat.generate_ufc(generated_forms, "UFC_" + prefix, options, "implementation")
+
+    # Write file
+    filename = "%s.cpp" % prefix
     file = open(filename, "w")
     file.write(output)
     file.close()
