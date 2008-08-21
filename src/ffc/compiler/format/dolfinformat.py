@@ -32,28 +32,68 @@ def init(options):
 
 def write(generated_forms, prefix, options):
     "Generate UFC 1.0 code with DOLFIN wrappers for a given list of pregenerated forms"
-    debug("Generating code for UFC 1.0 with DOLFIN wrappers")
 
+    
     # Generate code for header
     output = ""
     output += generate_header(prefix, options)
     output += "\n"
 
-    # Generate UFC code
-    output += ufcformat.generate_ufc(generated_forms, "UFC_" + prefix, options, "combined")
+    if options["combined_header"]:
 
-    # Generate code for DOLFIN wrappers
-    output += __generate_dolfin_wrappers(generated_forms, prefix, options)
+        debug("Generating code for UFC 1.0 with DOLFIN wrappers")
 
-    # Generate code for footer
-    output += generate_footer(prefix, options)
+        # Generate UFC code
+        output += ufcformat.generate_ufc(generated_forms, "UFC_" + prefix, options, "combined")
 
-    # Write file
-    filename = "%s.h" % prefix
-    file = open(filename, "w")
-    file.write(output)
-    file.close()
-    debug("Output written to " + filename)
+        # Generate code for DOLFIN wrappers
+        output += __generate_dolfin_wrappers(generated_forms, prefix, options)
+
+        # Generate code for footer
+        output += generate_footer(prefix, options)
+
+        # Write file
+        filename = "%s.h" % prefix
+        file = open(filename, "w")
+        file.write(output)
+        file.close()
+        debug("Output written to " + filename)
+
+    else:
+        
+        debug("Generating code for UFC 1.0 with DOLFIN wrappers, split header and implementation")
+
+        # UFC declarations and DOLFIN wrappers ---------------------------------
+
+        # Generate UFC code
+        output += ufcformat.generate_ufc(generated_forms, "UFC_" + prefix, options, "header")
+
+        # Generate code for DOLFIN wrappers
+        output += __generate_dolfin_wrappers(generated_forms, prefix, options)
+
+        # Generate code for footer
+        output += generate_footer(prefix, options)
+
+        # Write file
+        filename = "%s.h" % prefix
+        file = open(filename, "w")
+        file.write(output)
+        file.close()
+        debug("Output written to " + filename)
+
+        # UFC implementations --------------------------------------------------
+        output = ""
+        output += "#include \"%s.h\""%prefix
+
+        # Generate UFC code
+        output += ufcformat.generate_ufc(generated_forms, "UFC_" + prefix, options, "implementation")
+
+        # Write file
+        filename = "%s.cpp" % prefix
+        file = open(filename, "w")
+        file.write(output)
+        file.close()
+        debug("Output written to " + filename)
 
 def generate_header(prefix, options):
     "Generate file header"

@@ -190,24 +190,54 @@ def init(options):
 def write(generated_forms, prefix, options):
     "Generate UFC 1.0 code for a given list of pregenerated forms"
     debug("Generating code for UFC 1.0")
-
+            
     # Generate code for header
     output = ""
     output += generate_header(prefix, options)
     output += "\n"
 
-    # Generate UFC code
-    output += generate_ufc(generated_forms, prefix, options, "combined")
+    if options["combined_header"]:
+        
+        # Generate UFC code
+        output += generate_ufc(generated_forms, prefix, options, "combined")
+        
+        # Generate code for footer
+        output += generate_footer(prefix, options)
 
-    # Generate code for footer
-    output += generate_footer(prefix, options)
+        # Write file
+        filename = "%s.h" % prefix
+        file = open(filename, "w")
+        file.write(output)
+        file.close()
+        debug("Output written to " + filename)
 
-    # Write file
-    filename = "%s.h" % prefix
-    file = open(filename, "w")
-    file.write(output)
-    file.close()
-    debug("Output written to " + filename)
+    else:
+        
+        # Generate UFC header code
+        output += generate_ufc(generated_forms, prefix, options, "header")
+        
+        # Generate code for footer
+        output += generate_footer(prefix, options)
+
+        # Write file
+        filename = "%s.h" % prefix
+        file = open(filename, "w")
+        file.write(output)
+        file.close()
+        debug("Output written to " + filename)
+
+        output = ""
+        
+        # Generate UFC implementation code
+        output += generate_ufc(generated_forms, prefix, options, "implementation")
+        output += "#include \"%s.h\""%prefix
+
+        # Write file
+        filename = "%s.cpp" % prefix
+        file = open(filename, "w")
+        file.write(output)
+        file.close()
+        debug("Output written to " + filename)
 
 def generate_header(prefix, options):
     "Generate code for header"
