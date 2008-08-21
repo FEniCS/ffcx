@@ -8,12 +8,13 @@ __license__  = "GNU GPL version 3 or any later version"
 
 __all__ = ['Identity', 'value_rank', 'vec', 'dot', 'cross', 'trace', 'transp',
            'mult', 'outer', 'D', 'grad', 'div', 'rot', 'curl', 'mean', 'avg',
-           'jump', 'sqrt', 'modulus', 'lhs', 'rhs']
+           'jump', 'sqrt', 'modulus', 'lhs', 'rhs', 'curl_t']
 
 # Modified by Ola Skavhaug, 2005
 # Modified by Dag Lindbo, 2006
 # Modified by Garth N. Wells 2006, 2007
 # Modified by Kristian Oelgaard 2006, 2007
+# Modified by Evan Lezar 2008
 
 # Python modules
 import sys
@@ -213,6 +214,15 @@ def rot(v):
 def curl(v):
     "Alternative name for rot."
     return rot(v)
+
+def curl_t(v):
+    "Return the transverse curl of a vector in the xy-plane ie.  A 2D vector"
+    # Check dimensions
+    if not len(v) == __cell_dimension(v) == 2:
+        raise FormError, (v, "Transverse Curl only defined for v : R^2 --> R^3")
+    
+    # Compute the transverse curl
+    return [0, 0, D(v[1], 0) - D(v[0], 1)]
 
 def mean(v):
     "Return mean value of given Function (projection onto piecewise constants)."
