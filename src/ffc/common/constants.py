@@ -9,5 +9,6 @@ FFC_DEBUG_LEVEL    = 0
 FFC_OPTIONS        = {"optimize": False,
                       "blas": False,
                       "precision=": "15",
-                      "quadrature_points=": False}
+                      "quadrature_points=": False,
+                      "combined_header": True}
 FFC_REPRESENTATION = "tensor"

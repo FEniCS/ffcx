@@ -6,6 +6,7 @@ __copyright__ = "Copyright (C) 2007-2008 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian B. Oelgaard 2007
+# Modified by Dag Lindbo, 2008
 
 # UFC code templates
 from ufc import *
@@ -189,24 +190,54 @@ def init(options):
 def write(generated_forms, prefix, options):
     "Generate UFC 1.0 code for a given list of pregenerated forms"
     debug("Generating code for UFC 1.0")
-
+            
     # Generate code for header
     output = ""
     output += generate_header(prefix, options)
     output += "\n"
 
-    # Generate UFC code
-    output += generate_ufc(generated_forms, prefix, options)
+    if options["combined_header"]:
+        
+        # Generate UFC code
+        output += generate_ufc(generated_forms, prefix, options, "combined")
+        
+        # Generate code for footer
+        output += generate_footer(prefix, options)
 
-    # Generate code for footer
-    output += generate_footer(prefix, options)
+        # Write file
+        filename = "%s.h" % prefix
+        file = open(filename, "w")
+        file.write(output)
+        file.close()
+        debug("Output written to " + filename)
 
-    # Write file
-    filename = "%s.h" % prefix
-    file = open(filename, "w")
-    file.write(output)
-    file.close()
-    debug("Output written to " + filename)
+    else:
+        
+        # Generate UFC header code
+        output += generate_ufc(generated_forms, prefix, options, "header")
+        
+        # Generate code for footer
+        output += generate_footer(prefix, options)
+
+        # Write file
+        filename = "%s.h" % prefix
+        file = open(filename, "w")
+        file.write(output)
+        file.close()
+        debug("Output written to " + filename)
+
+        output = ""
+        
+        # Generate UFC implementation code
+        output += generate_ufc(generated_forms, prefix, options, "implementation")
+        output += "#include \"%s.h\""%prefix
+
+        # Write file
+        filename = "%s.cpp" % prefix
+        file = open(filename, "w")
+        file.write(output)
+        file.close()
+        debug("Output written to " + filename)
 
 def generate_header(prefix, options):
     "Generate code for header"
@@ -237,7 +268,7 @@ def generate_footer(prefix, options):
 #endif
 """
 
-def generate_ufc(generated_forms, prefix, options):
+def generate_ufc(generated_forms, prefix, options, code_section):
     "Generate code for body"
 
     output = ""
@@ -251,32 +282,32 @@ def generate_ufc(generated_forms, prefix, options):
 
         # Generate code for ufc::finite_element(s)
         for (label, sub_element) in form_code["finite_elements"]:
-            output += __generate_finite_element(sub_element, form_data, options, form_prefix, label)
+            output += __generate_finite_element(sub_element, form_data, options, form_prefix, label, code_section)
             output += "\n"
 
         # Generate code for ufc::dof_map(s)
         for (label, sub_dof_map) in form_code["dof_maps"]:
-            output += __generate_dof_map(sub_dof_map, form_data, options, form_prefix, label)
+            output += __generate_dof_map(sub_dof_map, form_data, options, form_prefix, label, code_section)
             output += "\n"
 
         # Generate code for ufc::cell_integral
         for j in range(form_data.num_cell_integrals):
-            output += __generate_cell_integral(form_code[("cell_integral", j)], form_data, options, form_prefix, j)
+            output += __generate_cell_integral(form_code[("cell_integral", j)], form_data, options, form_prefix, j, code_section)
             output += "\n"
 
         # Generate code for ufc::exterior_facet_integral
         for j in range(form_data.num_exterior_facet_integrals):
-            output += __generate_exterior_facet_integral(form_code[("exterior_facet_integral", j)], form_data, options, form_prefix, j)
+            output += __generate_exterior_facet_integral(form_code[("exterior_facet_integral", j)], form_data, options, form_prefix, j, code_section)
             output += "\n"
     
         # Generate code for ufc::interior_facet_integral
         for j in range(form_data.num_interior_facet_integrals):
-            output += __generate_interior_facet_integral(form_code[("interior_facet_integral", j)], form_data, options, form_prefix, j)
+            output += __generate_interior_facet_integral(form_code[("interior_facet_integral", j)], form_data, options, form_prefix, j, code_section)
             output += "\n"
 
         # Generate code for ufc::form
         if "form" in form_code:
-            output += __generate_form(form_code["form"], form_data, options, form_prefix)
+            output += __generate_form(form_code["form"], form_data, options, form_prefix, code_section)
             output += "\n"
 
     return output
@@ -301,7 +332,7 @@ def compute_prefix(prefix, generated_forms, i):
     # Else, just return prefix
     return prefix
 
-def __generate_finite_element(code, form_data, options, prefix, label):
+def __generate_finite_element(code, form_data, options, prefix, label, code_section):
     "Generate code for ufc::finite_element"
 
     ufc_code = {}
@@ -361,10 +392,15 @@ def __generate_finite_element(code, form_data, options, prefix, label):
     else:
         cases = ["return new %s_%d();" % (ufc_code["classname"], i) for i in range(num_sub_elements)]
         ufc_code["create_sub_element"] = __generate_switch("i", cases, "return 0;")
+    
+    if code_section == "combined":
+        return __generate_code(finite_element_combined, ufc_code, options)
+    elif code_section == "header":
+        return __generate_code(finite_element_header, ufc_code, options)
+    elif code_section == "implementation":
+        return __generate_code(finite_element_implementation, ufc_code, options)
 
-    return __generate_code(finite_element_combined, ufc_code, options)
-
-def __generate_dof_map(code, form_data, options, prefix, label):
+def __generate_dof_map(code, form_data, options, prefix, label, code_section):
     "Generate code for ufc::dof_map"
 
     ufc_code = {}
@@ -435,9 +471,14 @@ def __generate_dof_map(code, form_data, options, prefix, label):
         cases = ["return new %s_%d();" % (ufc_code["classname"], i) for i in range(num_sub_dof_maps)]
         ufc_code["create_sub_dof_map"] = __generate_switch("i", cases, "return 0;")
 
-    return __generate_code(dof_map_combined, ufc_code, options)
+    if code_section == "combined":
+        return __generate_code(dof_map_combined, ufc_code, options)
+    elif code_section == "header":
+        return __generate_code(dof_map_header, ufc_code, options)
+    elif code_section == "implementation":
+        return __generate_code(dof_map_implementation, ufc_code, options)
 
-def __generate_cell_integral(code, form_data, options, prefix, i):
+def __generate_cell_integral(code, form_data, options, prefix, i, code_section):
     "Generate code for ufc::cell_integral"
 
     ufc_code = {}
@@ -461,9 +502,14 @@ def __generate_cell_integral(code, form_data, options, prefix, i):
     #    ufc_code["tabulate_tensor"] = remove_unused(body)
     ufc_code["tabulate_tensor"] = body
 
-    return __generate_code(cell_integral_combined, ufc_code, options)
+    if code_section == "combined":
+        return __generate_code(cell_integral_combined, ufc_code, options)
+    elif code_section == "header":
+        return __generate_code(cell_integral_header, ufc_code, options)
+    elif code_section == "implementation":
+        return __generate_code(cell_integral_implementation, ufc_code, options)
 
-def __generate_exterior_facet_integral(code, form_data, options, prefix, i):
+def __generate_exterior_facet_integral(code, form_data, options, prefix, i, code_section):
     "Generate code for ufc::exterior_facet_integral"
 
     ufc_code = {}
@@ -490,9 +536,14 @@ def __generate_exterior_facet_integral(code, form_data, options, prefix, i):
     #    ufc_code["tabulate_tensor"] = remove_unused(body)
     ufc_code["tabulate_tensor"] = body
 
-    return __generate_code(exterior_facet_integral_combined, ufc_code, options)
+    if code_section == "combined":
+        return __generate_code(exterior_facet_integral_combined, ufc_code, options)
+    elif code_section == "header":
+        return __generate_code(exterior_facet_integral_header, ufc_code, options)
+    elif code_section == "implementation":
+        return __generate_code(exterior_facet_integral_implementation, ufc_code, options)
 
-def __generate_interior_facet_integral(code, form_data, options, prefix, i):
+def __generate_interior_facet_integral(code, form_data, options, prefix, i, code_section):
     "Generate code for ufc::interior_facet_integral"
 
     ufc_code = {}
@@ -519,9 +570,14 @@ def __generate_interior_facet_integral(code, form_data, options, prefix, i):
     #    ufc_code["tabulate_tensor"] = remove_unused(body)
     ufc_code["tabulate_tensor"] = body
 
-    return __generate_code(interior_facet_integral_combined, ufc_code, options)
+    if code_section == "combined":
+        return __generate_code(interior_facet_integral_combined, ufc_code, options)
+    elif code_section == "header":
+        return __generate_code(interior_facet_integral_header, ufc_code, options)
+    elif code_section == "implementation":
+        return __generate_code(interior_facet_integral_implementation, ufc_code, options)
 
-def __generate_form(code, form_data, options, prefix):
+def __generate_form(code, form_data, options, prefix, code_section):
     "Generate code for ufc::form"
 
     ufc_code = {}
@@ -581,7 +637,12 @@ def __generate_form(code, form_data, options, prefix):
     cases = ["return new %s_interior_facet_integral_%d();" % (prefix, i) for i in range(num_cases)]
     ufc_code["create_interior_facet_integral"] = __generate_switch("i", cases, "return 0;")
 
-    return __generate_code(form_combined, ufc_code, options)
+    if code_section == "combined":
+        return __generate_code(form_combined, ufc_code, options)
+    elif code_section == "header":
+        return __generate_code(form_header, ufc_code, options)
+    elif code_section == "implementation":
+        return __generate_code(form_implementation, ufc_code, options)
 
 def __generate_jacobian(cell_dimension, integral_type):
     "Generate code for computing jacobian"
