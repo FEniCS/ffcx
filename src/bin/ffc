@@ -81,7 +81,7 @@ def main(argv):
             elif arg[:3] == "no-":
                 options[arg] = True
             elif arg in "split_implementation":
-                options["combined_header"] = False
+                options["split_implementation"] = True
             else:
                 usage()
                 return 2

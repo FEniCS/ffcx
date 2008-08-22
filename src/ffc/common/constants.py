@@ -10,5 +10,5 @@ FFC_OPTIONS        = {"optimize": False,
                       "blas": False,
                       "precision=": "15",
                       "quadrature_points=": False,
-                      "combined_header": True}
+                      "split_implementation": False}
 FFC_REPRESENTATION = "tensor"
