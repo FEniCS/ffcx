@@ -196,7 +196,7 @@ def write(generated_forms, prefix, options):
     output += generate_header(prefix, options)
     output += "\n"
 
-    if options["combined_header"]:
+    if not options["split_implementation"]:
         
         # Generate UFC code
         output += generate_ufc(generated_forms, prefix, options, "combined")

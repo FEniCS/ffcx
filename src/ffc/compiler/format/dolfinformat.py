@@ -39,7 +39,7 @@ def write(generated_forms, prefix, options):
     output += generate_header(prefix, options)
     output += "\n"
 
-    if options["combined_header"]:
+    if not options["split_implementation"]:
 
         debug("Generating code for UFC 1.0 with DOLFIN wrappers")
 
