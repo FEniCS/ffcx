@@ -229,8 +229,8 @@ def write(generated_forms, prefix, options):
         output = ""
         
         # Generate UFC implementation code
+        output += "#include \"%s.h\"\n" % prefix
         output += generate_ufc(generated_forms, prefix, options, "implementation")
-        output += "#include \"%s.h\""%prefix
 
         # Write file
         filename = "%s.cpp" % prefix
