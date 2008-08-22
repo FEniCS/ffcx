@@ -12,6 +12,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Johan Jansson 2005
 # Modified by Ola Skavhaug 2006
 # Modified by Kristian B. Oelgaard 2007
+# Modified by Dag Lindbo, 2008
 
 # Python modules
 import sys
@@ -79,6 +80,8 @@ def main(argv):
                 options[arg] = True
             elif arg[:3] == "no-":
                 options[arg] = True
+            elif arg in "split_implementation":
+                options["combined_header"] = False
             else:
                 usage()
                 return 2

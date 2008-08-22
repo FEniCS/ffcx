@@ -17,6 +17,7 @@ __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian B. Oelgaard 2007
+# Modified by Dag Lindbo, 2008
 
 # FFC common modules
 from ffc.common.debug import *
@@ -47,6 +48,7 @@ from codegeneration.common.dofmap import *
 # FFC format modules
 from format import ufcformat
 from format import dolfinformat
+from format import dolfinformat_split
 
 def compile(forms, prefix="Form", representation=FFC_REPRESENTATION, language=FFC_LANGUAGE, options=FFC_OPTIONS):
     "Compile the given forms and/or elements"
@@ -238,6 +240,8 @@ def __choose_format(language):
         return ufcformat
     elif language.lower() == "dolfin":
         return dolfinformat
+    elif language.lower() == "dolfin_split":
+        return dolfinformat_split
     else:
         raise RuntimeError, "Don't know how to compile code for language \"%s\"." % language
 
