@@ -62,7 +62,7 @@ def generate_finite_element(element, format):
         code["evaluate_basis_derivatives_all"] =\
         format["exception"]("The vectorised version of evaluate_basis_derivatives() is not yet implemented.")
 
-        # Generate code for inperpolate_vertex_values
+        # Generate code for interpolate_vertex_values
         code["interpolate_vertex_values"] = __generate_interpolate_vertex_values(element, format)
     else:
         code["evaluate_basis"] = format["exception"]("evaluate_basis() is not supported for QuadratureElement")
@@ -220,13 +220,20 @@ def __map_function_values(num_values, element, format):
                      block(separator.join(([str(m) for m in mappings]))))]
         
     # Check whether we will need a piola
-    piola_present = (Mapping.CONTRAVARIANT_PIOLA in whichmappings or
-                     Mapping.COVARIANT_PIOLA in whichmappings)
+    contrapiola_present = Mapping.CONTRAVARIANT_PIOLA in whichmappings
+    copiola_present = Mapping.COVARIANT_PIOLA in whichmappings
+    piola_present = contrapiola_present or copiola_present
 
     # Add code for the jacobian if we need it for the
     # mappings. Otherwise, just add code for the vertex coordinates
-    if piola_present:
+    if contrapiola_present:
+        # If contravariant piola: Will need J, det J and J^{-1}
         precode += [format["snippet jacobian"](element.cell_dimension())
+                 % {"restriction":""}]
+        precode += ["\ndouble copyofvalues[%d];" % num_values]
+    elif copiola_present:
+        # If covariant piola: Will need J only
+        precode += [format["snippet only jacobian"](element.cell_dimension())
                  % {"restriction":""}]
         precode += ["\ndouble copyofvalues[%d];" % num_values]
     else:

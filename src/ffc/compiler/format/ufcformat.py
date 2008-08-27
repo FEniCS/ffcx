@@ -154,6 +154,8 @@ format = {
            "snippet eta_triangle": eta_triangle_snippet,
            "snippet eta_tetrahedron": eta_tetrahedron_snippet,
            "snippet jacobian": lambda d: eval("jacobian_%dD" % d),
+           "snippet only jacobian": lambda d: eval("only_jacobian_%dD" % d),
+
            "snippet combinations": combinations_snippet,
            "snippet transform": lambda d: eval("transform%dD_snippet" % d),
 #           "snippet inverse 2D": inverse_jacobian_2D,
