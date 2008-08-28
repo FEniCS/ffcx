@@ -168,7 +168,7 @@ def build_module(form, representation, language, options, md5sum, form_dir, modu
     # Wrap code into a Python module using Instant
     debug("Creating Python extension (compiling and linking), this may take some time...", -1)
     module_name = prefix + "_module"
-    instant.create_extension(wrap_headers=[filename], module=module_name, additional_declarations=ufc_include, include_dirs=path, cppargs=cpp_args, use_cache=module_dir)
+    instant.create_extension(wrap_headers=[filename], module=module_name, additional_declarations=ufc_include, include_dirs=path, cppargs=cpp_args, use_cache=form_dir)
     debug("done", -1)
 
     # Move module to cache
