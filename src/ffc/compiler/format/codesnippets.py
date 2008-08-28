@@ -6,7 +6,7 @@ __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian Oelgaard 2007
-# Modified by Marie Rognes 2007
+# Modified by Marie Rognes 2007, 2008
 
 # Code snippet for computing the Jacobian, its inverse and determinant in 1D
 jacobian_1D = """\
@@ -675,3 +675,38 @@ for(int k = 0; k < %(dim)d; k++)
   result += values[k]*D[i][%(index)s][k];
 // Multiply by weights 
 result *= W[i][%(index)s];"""
+
+
+# Aug 26th 2008: These are used in the code generation for evaluate_dof:
+# Code snippets for computing the Jacobian only
+only_jacobian_1D = """\
+// Extract vertex coordinates
+const double * const * x%(restriction)s = c%(restriction)s.coordinates;
+
+// Compute Jacobian of affine map from reference cell
+const double J%(restriction)s_00 = x%(restriction)s[1][0] - x%(restriction)s[0][0];"""
+
+only_jacobian_2D = """\
+// Extract vertex coordinates
+const double * const * x%(restriction)s = c%(restriction)s.coordinates;
+
+// Compute Jacobian of affine map from reference cell
+const double J%(restriction)s_00 = x%(restriction)s[1][0] - x%(restriction)s[0][0];
+const double J%(restriction)s_01 = x%(restriction)s[2][0] - x%(restriction)s[0][0];
+const double J%(restriction)s_10 = x%(restriction)s[1][1] - x%(restriction)s[0][1];
+const double J%(restriction)s_11 = x%(restriction)s[2][1] - x%(restriction)s[0][1];"""
+
+only_jacobian_3D = """\
+// Extract vertex coordinates
+const double * const * x%(restriction)s = c%(restriction)s.coordinates;
+
+// Compute Jacobian of affine map from reference cell
+const double J%(restriction)s_00 = x%(restriction)s[1][0] - x%(restriction)s[0][0];
+const double J%(restriction)s_01 = x%(restriction)s[2][0] - x%(restriction)s[0][0];
+const double J%(restriction)s_02 = x%(restriction)s[3][0] - x%(restriction)s[0][0];
+const double J%(restriction)s_10 = x%(restriction)s[1][1] - x%(restriction)s[0][1];
+const double J%(restriction)s_11 = x%(restriction)s[2][1] - x%(restriction)s[0][1];
+const double J%(restriction)s_12 = x%(restriction)s[3][1] - x%(restriction)s[0][1];
+const double J%(restriction)s_20 = x%(restriction)s[1][2] - x%(restriction)s[0][2];
+const double J%(restriction)s_21 = x%(restriction)s[2][2] - x%(restriction)s[0][2];
+const double J%(restriction)s_22 = x%(restriction)s[3][2] - x%(restriction)s[0][2];"""

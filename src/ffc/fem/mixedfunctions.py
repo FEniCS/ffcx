@@ -21,7 +21,6 @@ def BasisFunctions(element, functiontype = BasisFunction):
     basisfunctions = tabulate_components(element, functiontype)
     return basisfunctions
 
-
 def TestFunctions(element):
     "Create tuple of TestFunctions from given MixedElement"
     return BasisFunctions(element, TestFunction)
