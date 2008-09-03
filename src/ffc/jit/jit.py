@@ -157,7 +157,6 @@ def build_module(form, representation, language, options, md5sum, form_dir, modu
 
     # FIXME: Move this to top when we have added dependence on Instant
     import instant
-    instant.VERBOSE = 0
 
     # Get include directory for ufc.h (might be better way to do this?)
     (path, dummy, dummy, dummy) = instant.header_and_libs_from_pkgconfig("ufc-1")
@@ -168,7 +167,7 @@ def build_module(form, representation, language, options, md5sum, form_dir, modu
     # Wrap code into a Python module using Instant
     debug("Creating Python extension (compiling and linking), this may take some time...", -1)
     module_name = prefix + "_module"
-    instant.create_extension(wrap_headers=[filename], module=module_name, additional_declarations=ufc_include, include_dirs=path, cppargs=cpp_args, use_cache=form_dir)
+    instant.build_module(module_name, wrap_headers=[filename], additional_declarations=ufc_include, include_dirs=path, cppargs=cpp_args, cache_dir=form_dir)
     debug("done", -1)
 
     # Move module to cache
