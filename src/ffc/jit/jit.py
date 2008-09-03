@@ -7,6 +7,7 @@ __copyright__ = "Copyright (C) 2007-2008 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Johan Hake, 2008
+# Mofified by Ilmar Wilbers, 2008
 
 # Python modules
 from os import system
@@ -23,6 +24,9 @@ from ffc.common.constants import *
 from ffc.compiler.compiler import compile
 from ffc.compiler.language import algebra
 from ffc.compiler.analysis import simplify, analyze
+
+# Import Instant
+import instant
 
 # Global counter for numbering forms
 counter = 0
@@ -97,42 +101,26 @@ def jit(input_form, options=None):
     else:
         form_name = prefix
 
-    # Make sure cache directory exists
-    cache_dir = os.path.join((os.environ['HOME']), ".ffc", "cache")
-    if not os.path.isdir(cache_dir):
-        debug("Creating FFC form cache %s" % cache_dir, -1)
-        os.makedirs(cache_dir)
-
-    # Make sure any previous module from current director (to not confuse Instant)
-    local_dir = prefix + "_module"
-    if os.path.isdir(local_dir):
-        shutil.rmtree(local_dir)
-
     # Check if we can reuse form from cache
-    form_dir = os.path.join(cache_dir, md5sum)
-    module_dir = os.path.join(form_dir, md5sum + "_module")
     compiled_form = None
-    compiled_module = None
-    if os.path.isdir(form_dir):
-        debug("Found form in cache, reusing previously built module (checksum %s)" % md5sum[5:], 1)
-        sys.path.append(form_dir)
+    compiled_module = instant.import_module(md5sum)
+    if compiled_module:
+        debug("Found form in cache, reusing previously built module (checksum %s)" % md5sum[5:], -1)
         try:
-            exec("import %s as compiled_module" % (md5sum + "_module"))
-            exec("compiled_form = compiled_module.%s()" % form_name)
+            exec("compiled_form = compiled_module.%s()" %form_name)
         except:
             debug("Form module in cache seems to be broken, need to rebuild module", -1)
-            shutil.rmtree(form_dir, form_dir + "_broken")
+            compiled_module = False
 
     # Need to rebuild and import module
-    if compiled_form is None:
+    if compiled_module is None:
         
         # Build form module
-        build_module(form, representation, language, _options, md5sum, form_dir, module_dir, prefix, cpp_args)
-
-        # Import form module
-        sys.path.append(form_dir)
-        exec("import %s as compiled_module" % (md5sum + "_module"))
-        exec("compiled_form = compiled_module.%s()" % form_name)
+        compiled_module = build_module(form, representation, language, _options, md5sum, prefix, cpp_args)
+        try: 
+            exec("compiled_form = compiled_module.%s()" %form_name)
+        except:
+            debug("Cannot find function %s after loading module, should never happen" %form_name, 1)
 
     # Add to form cache
     if not input_form in form_cache:
@@ -140,23 +128,16 @@ def jit(input_form, options=None):
     
     return (compiled_form, compiled_module, form_data)
 
-def build_module(form, representation, language, options, md5sum, form_dir, module_dir, prefix, cpp_args):
+def build_module(form, representation, language, options, md5sum, prefix, cpp_args):
     "Build module"
-
-    # Make sure form directory exists
-    os.makedirs(form_dir)
 
     # Compile form
     debug("Calling FFC just-in-time (JIT) compiler, this may take some time...", -1)
     compile(form, prefix, representation, language, options)
     debug("done", -1)
 
-    # Move code to cache
-    filename = os.path.join(form_dir, prefix + ".h")
-    shutil.move(prefix + ".h", filename)
-
-    # FIXME: Move this to top when we have added dependence on Instant
-    import instant
+    # Header file
+    filename = prefix + ".h"
 
     # Get include directory for ufc.h (might be better way to do this?)
     (path, dummy, dummy, dummy) = instant.header_and_libs_from_pkgconfig("ufc-1")
@@ -166,9 +147,6 @@ def build_module(form, representation, language, options, md5sum, form_dir, modu
 
     # Wrap code into a Python module using Instant
     debug("Creating Python extension (compiling and linking), this may take some time...", -1)
-    module_name = prefix + "_module"
-    instant.build_module(module_name, wrap_headers=[filename], additional_declarations=ufc_include, include_dirs=path, cppargs=cpp_args, cache_dir=form_dir)
+    module = instant.build_module(wrap_headers=[filename], additional_declarations=ufc_include, include_dirs=path, cppargs=cpp_args, signature=md5sum)
     debug("done", -1)
-
-    # Move module to cache
-    # Done by argument use_cache in create_extension
+    return module

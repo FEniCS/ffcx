@@ -27,5 +27,5 @@ setup(name = "FFC",
                   "ffc.compiler.analysis",
                   "ffc.jit"],
       package_dir={"ffc": join("src", "ffc")},
-      scripts = [join("src", "bin", "ffc"), join("src", "bin", "ffc-clean")],
+      scripts = [join("src", "bin", "ffc"),],
       data_files = [(join("share", "man", "man1"), [join("doc", "man", "man1", "ffc.1.gz")])])
