@@ -3,27 +3,11 @@
 # This script cleans the FFC JIT cache
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2008-01-02 -- 2008-01-02"
+__date__ = "2008-01-02 -- 2008-09-03"
 __copyright__ = "Copyright (C) 2008 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
-import os, sys, shutil
+import sys
 
-cache_dir = os.path.join((os.environ['HOME']), ".ffc", "cache")
-
-# Check if directory exists
-if not os.path.isdir(cache_dir):
-    print "FFC form cache does not exist"
-    sys.exit(0)
-
-# Get list of cached forms
-forms = os.listdir(cache_dir)
-if len(forms) == 0:
-    print "FFC form cache is empty"
-    sys.exit(0)
-
-# Remove cached forms
-print "Removing %d forms from FFC form cache..." % len(forms)
-for form in forms:
-    directory = os.path.join(cache_dir, form)
-    shutil.rmtree(directory)
+print "ffc-clean is deprecated, use instant-clean instead."
+sys.exit(1)
