@@ -53,9 +53,42 @@ def jit(input_form, options=None):
     # Check options
     options = check_options(input_form, options)
 
-    # Testing new design
-    #return new_jit(input_form, options)
-    return old_jit(input_form, options)
+    # Check in-memory form cache
+    if input_form in form_cache:
+        return form_cache[input_form]
+
+    # Wrap input
+    jit_object = wrap(input_form, options)
+
+    # Check cache
+    module = instant.import_module(jit_object)
+    print module
+
+    # Compile form
+    debug("Calling FFC just-in-time (JIT) compiler, this may take some time...", -1)
+    compile(input_form, jit_object.signature(), options)
+    debug("done", -1)
+
+    # Wrap code into a Python module using Instant
+    debug("Creating Python extension (compiling and linking), this may take some time...", -1)
+    signature = jit_object.signature()
+    filename = signature + ".h"
+    (cppargs, path, ufc_include) = extract_instant_flags(options)
+    module = instant.build_module(wrap_headers=[filename],
+                                  additional_declarations=ufc_include,
+                                  include_dirs=path,
+                                  cppargs=cppargs,
+                                  signature=signature)
+    debug("done", -1)
+
+    # Extract form
+    exec("compiled_form = module.%s()" % signature)
+
+    # Add to form cache
+    if not input_form in form_cache:
+        form_cache[input_form] = (compiled_form, module, jit_object.form_data)
+
+    return (compiled_form, module, jit_object.form_data)
 
 def check_options(form, options):
     "Check options and add any missing options"
@@ -99,85 +132,3 @@ def extract_instant_flags(options):
     ufc_include = '%%include "%s/ufc.h"' % path[0]
 
     return (cppargs, path, ufc_include)
-
-def old_jit(input_form, options):
-
-    # Analyze and simplify form (to get checksum for simplified form and to get form_data)
-    form = algebra.Form(input_form)
-    form_data = analyze.analyze(form, simplify_form=False)
-
-    (cppargs, path, ufc_include) = extract_instant_flags(options)
-
-    # Compute md5 checksum of form signature
-    signature = " ".join([str(form),
-                          ", ".join([element.signature() for element in form_data.elements]),
-                          options["representation"], options["language"], str(options), cppargs])
-    md5sum = "form_" + md5.new(signature).hexdigest()
-
-    # Get name of form
-    prefix = md5sum
-
-    # Check if we can reuse form from cache
-    compiled_form = None
-    compiled_module = instant.import_module(md5sum)
-
-    # Need to rebuild and import module
-    if compiled_module is None:
-        
-        # Build form module
-        compile(form, prefix, options)
-
-   
-        # Wrap code into a Python module using Instant
-        filename = prefix + ".h"
-        compiled_module = instant.build_module(wrap_headers=[filename], additional_declarations=ufc_include, include_dirs=path, cppargs=cppargs, signature=md5sum)
-        
-        try: 
-            exec("compiled_form = compiled_module.%s()" % prefix)
-        except:
-            debug("Cannot find function %s after loading module, should never happen" % prefix, 1)
-
-    # Add to form cache
-    if not input_form in form_cache:
-        form_cache[input_form] = (compiled_form, compiled_module, form_data)
-    
-    return (compiled_form, compiled_module, form_data)
-
-def new_jit(input_form, options):
-
-    # Check in-memory form cache
-    if input_form in form_cache:
-        return form_cache[input_form]
-
-    # Wrap input
-    jit_object = wrap(input_form, options)
-
-    # Check cache
-    module = instant.import_module(jit_object)
-    print module
-
-    # Compile form
-    debug("Calling FFC just-in-time (JIT) compiler, this may take some time...", -1)
-    compile(input_form, jit_object.signature(), options)
-    debug("done", -1)
-
-    # Wrap code into a Python module using Instant
-    debug("Creating Python extension (compiling and linking), this may take some time...", -1)
-    signature = jit_object.signature()
-    filename = signature + ".h"
-    (cppargs, path, ufc_include) = extract_instant_flags(options)
-    module = instant.build_module(wrap_headers=[filename],
-                                  additional_declarations=ufc_include,
-                                  include_dirs=path,
-                                  cppargs=cppargs,
-                                  signature=signature)
-    debug("done", -1)
-
-    # Extract form
-    exec("compiled_form = module.%s()" % signature)
-
-    # Add to form cache
-    if not input_form in form_cache:
-        form_cache[input_form] = (compiled_form, module, jit_object.form_data)
-
-    return (compiled_form, module, jit_object.form_data)
