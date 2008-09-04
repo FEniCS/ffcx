@@ -2,7 +2,7 @@
 It uses Instant to wrap the generated code into a Python module."""
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-07-20 -- 2008-07-16"
+__date__ = "2007-07-20 -- 2008-09-04"
 __copyright__ = "Copyright (C) 2007-2008 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
@@ -24,6 +24,9 @@ from ffc.compiler.compiler import compile
 from ffc.compiler.language import algebra
 from ffc.compiler.analysis import simplify, analyze
 
+# FFC jit modules
+from jitobject import wrap
+
 # Import Instant
 import instant
 
@@ -32,6 +35,9 @@ counter = 0
 
 # In-memory form cache
 form_cache = {}
+
+# JIT objects (used for caching)
+_jit_objects = {}
 
 # Options for JIT-compiler, evaluate_basis and evaluate_basis_derivatives turned off
 FFC_OPTIONS_JIT = FFC_OPTIONS.copy()
@@ -47,28 +53,17 @@ def jit(input_form, options=None):
       options    : An option dictionary
     """
 
-    # Collect options
-    _options = FFC_OPTIONS_JIT.copy()
-    cpp_optimize   = False
-    representation = FFC_REPRESENTATION
-    language       = FFC_LANGUAGE
-    if isinstance(options, dict):
-        if "cpp optimize"   in options: cpp_optimize   = options["cpp optimize"]
-        if "representation" in options: representation = options["representation"]
-        if "language"       in options: language       = options["language"]
-        for key, value in options.iteritems():
-            if _options.has_key(key):
-                _options[key] = value
-            else:
-                warning('Unknown option "%s" for JIT compiler, ignoring.' % key)
-    elif not options is None:
-        raise RuntimeError, "JIT compiler options must be a dictionary."
-        
+    # Check options
+    _options = check_options(options)
+     
     # Set C++ compiler options
-    if cpp_optimize: 
-        cpp_args = "-O2"
+    if _options["optimize"]:
+        cppargs = "-O2"
     else:
-        cpp_args = "-O0"
+        cppargs = "-O0"
+
+    # Wrap input
+    jit_object = wrap(input_form, _options)
 
     # Check in-memory form cache
     if input_form in form_cache:
@@ -85,7 +80,7 @@ def jit(input_form, options=None):
     # Compute md5 checksum of form signature
     signature = " ".join([str(form),
                           ", ".join([element.signature() for element in form_data.elements]),
-                          representation, language, str(_options), cpp_args])
+                          _options["representation"], _options["language"], str(_options), cppargs])
     md5sum = "form_" + md5.new(signature).hexdigest()
 
     # Get name of form
@@ -115,7 +110,7 @@ def jit(input_form, options=None):
     if compiled_module is None:
         
         # Build form module
-        compiled_module = build_module(form, representation, language, _options, md5sum, prefix, cpp_args)
+        compiled_module = build_module(form, _options, md5sum, prefix, cppargs)
         try: 
             exec("compiled_form = compiled_module.%s()" %form_name)
         except:
@@ -127,12 +122,23 @@ def jit(input_form, options=None):
     
     return (compiled_form, compiled_module, form_data)
 
-def build_module(form, representation, language, options, md5sum, prefix, cpp_args):
+def check_options(options):
+    "Check options and add any missing options"
+    _options = options.copy()
+    for key in options:
+        if not key in FFC_OPTIONS:
+            warning('Unknown option "%s" for JIT compiler, ignoring.' % key)
+    for key in FFC_OPTIONS:
+        if not key in options:
+            _options[key] = FFC_OPTIONS[key]
+    return _options
+
+def build_module(form, options, md5sum, prefix, cppargs):
     "Build module"
 
     # Compile form
     debug("Calling FFC just-in-time (JIT) compiler, this may take some time...", -1)
-    compile(form, prefix, representation, language, options)
+    compile(form, prefix, options)
     debug("done", -1)
 
     # Header file
@@ -146,6 +152,6 @@ def build_module(form, representation, language, options, md5sum, prefix, cpp_ar
 
     # Wrap code into a Python module using Instant
     debug("Creating Python extension (compiling and linking), this may take some time...", -1)
-    module = instant.build_module(wrap_headers=[filename], additional_declarations=ufc_include, include_dirs=path, cppargs=cpp_args, signature=md5sum)
+    module = instant.build_module(wrap_headers=[filename], additional_declarations=ufc_include, include_dirs=path, cppargs=cppargs, signature=md5sum)
     debug("done", -1)
     return module
