@@ -5,8 +5,8 @@
 # Python module which is then executed.
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-10-14 -- 2007-06-03"
-__copyright__ = "Copyright (C) 2004-2007 Anders Logg"
+__date__ = "2004-10-14 -- 2008-09-04"
+__copyright__ = "Copyright (C) 2004-2008 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Johan Jansson 2005
@@ -48,12 +48,10 @@ def main(argv):
         return 2
 
     # Set default arguments
-    representation = FFC_REPRESENTATION
-    language = FFC_LANGUAGE
     debuglevel = FFC_DEBUG_LEVEL
-    options = FFC_OPTIONS
+    options = FFC_OPTIONS.copy()
 
-    # Get options
+    # Parse command-line options
     for opt, arg in opts:
         if opt in ("-h", "--help"):
             usage()
@@ -66,22 +64,16 @@ def main(argv):
         elif opt in ("-s", "--silent"):
             debuglevel = -1
         elif opt in  ("-l", "--language"):
-            language = arg
+            options["language"] = arg
         elif opt in  ("-r", "--representation"):
-            if arg in (FFC_REPRESENTATION, "quadrature"):
-                representation = arg
-            else:
-                usage()
-                return 2
+            options["representation"] = arg
         elif opt in  ("-f"):
-            if "=" in arg and arg.split("=")[0] + "=" in options:
-                options[arg.split("=")[0] + "="] = arg.split("=")[1]
-            elif arg in options:
+            if len(arg.split("=")) == 2:
+                (key, value) = arg.split("=")
+                options[key] = value
+            elif len(arg.split("==")) == 1:
+                key = arg.split("=")[0]
                 options[arg] = True
-            elif arg[:3] == "no-":
-                options[arg] = True
-            elif arg in "split_implementation":
-                options["split_implementation"] = True
             else:
                 usage()
                 return 2
@@ -102,7 +94,7 @@ def main(argv):
     # call parser and compiler for each file
     for filename in args:
         # parse current file
-        outname = __make_module(filename, representation, language, options)
+        outname = __make_module(filename, options)
         # compile generated file (also provide a namespace)
         ns = {}
         # catch exceptions only if debug level is non-negative
@@ -144,7 +136,7 @@ def version():
     print("For further information, go to http://www.fenics.org/ffc/.\n")
     return
 
-def __make_module(filename, representation, language, options):
+def __make_module(filename, options):
     "Create Python module from given .form file and return name of module file"
 
     # Get prefix of file name and generate Python script file name
@@ -168,8 +160,8 @@ from ffc import *
 element = None
 
 %s
-compile([a, L, M, element], \"%s\", \"%s\", \"%s\", %s)
-""" % (input, prefix, representation, language, options)
+compile([a, L, M, element], \"%s\", %s)
+""" % (input, prefix, options)
 
     # Write output
     outfile = open(outname, "w")

@@ -12,8 +12,8 @@ each represented by a separate module:
 """
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-02-05 -- 2007-07-22"
-__copyright__ = "Copyright (C) 2007 Anders Logg"
+__date__ = "2007-02-05 -- 2008-09-04"
+__copyright__ = "Copyright (C) 2007-2008 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian B. Oelgaard 2007
@@ -49,11 +49,11 @@ from codegeneration.common.dofmap import *
 from format import ufcformat
 from format import dolfinformat
 
-def compile(forms, prefix="Form", representation=FFC_REPRESENTATION, language=FFC_LANGUAGE, options=FFC_OPTIONS):
+def compile(forms, prefix="Form", options=FFC_OPTIONS):
     "Compile the given forms and/or elements"
 
     # Check options
-    check_options(representation, language, options)
+    check_options(options)
 
     # Check input
     (forms, elements) = preprocess_forms(forms)
@@ -65,15 +65,15 @@ def compile(forms, prefix="Form", representation=FFC_REPRESENTATION, language=FF
     form_data = None
     form_representation = None
     if len(forms) > 0:
-        (form_data, form_representation) = __compile_forms(forms, prefix, representation, language, options)
+        (form_data, form_representation) = __compile_forms(forms, prefix, options)
 
     # Compile elements, but only if there are no forms
     if len(elements) > 0 and len(forms) == 0:
-        r1 = __compile_elements(elements, prefix, representation, language, options)
+        r1 = __compile_elements(elements, prefix, options)
 
     return (form_data, form_representation)
 
-def __compile_forms(forms, prefix="Form", representation=FFC_REPRESENTATION, language=FFC_LANGUAGE, options=FFC_OPTIONS):
+def __compile_forms(forms, prefix="Form", options=FFC_OPTIONS):
     "Compile the given forms"
 
     # Check form input
@@ -82,7 +82,7 @@ def __compile_forms(forms, prefix="Form", representation=FFC_REPRESENTATION, lan
         return
 
     # Choose format
-    format = __choose_format(language)
+    format = __choose_format(options["language"])
     format.init(options)
 
     # Iterate over forms for stages 1 - 4
@@ -96,14 +96,14 @@ def __compile_forms(forms, prefix="Form", representation=FFC_REPRESENTATION, lan
         form_datas += [form_data]
 
         # Compiler phase 2: compute form representation
-        form_representation = compute_form_representation(form_data, representation, int(options["quadrature_points="]))
+        form_representation = compute_form_representation(form_data, options)
         form_representations += [form_representation]
 
         # Compiler phase 3: optimize form representation
         optimize_form_representation(form)
 
         # Compiler phase 4: generate form code
-        form_code = generate_form_code(form_data, form_representation, representation, format.format)
+        form_code = generate_form_code(form_data, form_representation, options["representation"], format.format)
 
         # Add to list of codes
         generated_forms += [(form_code, form_data)]
@@ -113,7 +113,7 @@ def __compile_forms(forms, prefix="Form", representation=FFC_REPRESENTATION, lan
 
     return (form_datas, form_representations)
 
-def __compile_elements(elements, prefix="Element", representation=FFC_REPRESENTATION, language=FFC_LANGUAGE, options=FFC_OPTIONS):
+def __compile_elements(elements, prefix="Element", options=FFC_OPTIONS):
     "Compile the given elements for the given language"
 
     # Check element input
@@ -133,11 +133,11 @@ def __compile_elements(elements, prefix="Element", representation=FFC_REPRESENTA
     debug_begin("Compiler phase 4: Generating code")
 
     # Choose format
-    format = __choose_format(language)
+    format = __choose_format(options["language"])
     format.init(options)
 
     # Choose code generator
-    CodeGenerator = __choose_code_generator(representation)
+    CodeGenerator = __choose_code_generator(options["representation"])
     code_generator = CodeGenerator()
 
     # Generate code
@@ -149,7 +149,7 @@ def __compile_elements(elements, prefix="Element", representation=FFC_REPRESENTA
     format.write([(element_code, element_data)], prefix, options)
     debug_end()
     
-def check_options(representation, language, options):
+def check_options(options):
     "Check that options are valid"
     # FIXME: We could do more tests here
     if options["optimize"]:
@@ -189,15 +189,15 @@ def analyze_form(form):
     debug_end()
     return form_data
 
-def compute_form_representation(form_data, representation, num_quadrature_points):
+def compute_form_representation(form_data, options):
     "Compiler phase 2: compute form representation"
     debug_begin("Compiler phase 2: Computing form representation")
 
     # Choose representation
-    Representation = __choose_representation(representation)
+    Representation = __choose_representation(options["representation"])
 
     # Compute form representation
-    form_representation = Representation(form_data, num_quadrature_points)
+    form_representation = Representation(form_data, int(options["quadrature_points"]))
 
     debug_end()
     return form_representation

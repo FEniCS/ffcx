@@ -13,7 +13,6 @@ __license__  = "GNU GPL version 3 or any later version"
 from os import system
 from commands import getoutput
 from distutils import sysconfig
-from time import time
 import md5, os, sys, shutil
 
 # FFC common modules

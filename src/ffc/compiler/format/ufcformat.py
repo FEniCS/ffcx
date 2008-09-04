@@ -1,7 +1,7 @@
 "Code generation for the UFC 1.0 format"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-01-08 -- 2008-06-10"
+__date__ = "2007-01-08 -- 2008-09-04"
 __copyright__ = "Copyright (C) 2007-2008 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
@@ -179,15 +179,16 @@ def init(options):
     "Initialize code generation for given options"
 
     # Set number of digits for floating point and machine precision
-    f1 = "%%.%dg" % eval(options["precision="])
-    f2 = "%%.%de" % eval(options["precision="])
+    precision = int(options["precision"])
+    f1 = "%%.%dg" % precision
+    f2 = "%%.%de" % precision
     def floating_point(v):
         if abs(v) < 100.0:
             return f1 % v
         else:
             return f2 % v
     format["floating point"] = floating_point
-    format["epsilon"] = 10.0*eval("1e-%s" % options["precision="])
+    format["epsilon"] = 10.0*eval("1e-%s" % precision)
 
 def write(generated_forms, prefix, options):
     "Generate UFC 1.0 code for a given list of pregenerated forms"
