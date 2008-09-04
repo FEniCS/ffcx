@@ -13,4 +13,5 @@ FFC_OPTIONS = {"representation": "tensor",
                "blas": False,
                "precision": "15",
                "quadrature_points": False,
-               "split_implementation": False}
+               "split_implementation": False,
+               "form_postfix": True}

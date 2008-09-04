@@ -281,7 +281,7 @@ def generate_ufc(generated_forms, prefix, options, code_section):
 
         # Get pregenerated code, form data and prefix
         (form_code, form_data) = generated_forms[i]
-        form_prefix = compute_prefix(prefix, generated_forms, i)
+        form_prefix = compute_prefix(prefix, generated_forms, i, options)
 
         # Generate code for ufc::finite_element(s)
         for (label, sub_element) in form_code["finite_elements"]:
@@ -315,7 +315,7 @@ def generate_ufc(generated_forms, prefix, options, code_section):
 
     return output
 
-def compute_prefix(prefix, generated_forms, i):
+def compute_prefix(prefix, generated_forms, i, options):
     "Compute prefix for form i"
 
     # Get form ranks
@@ -324,7 +324,7 @@ def compute_prefix(prefix, generated_forms, i):
     # Return prefixFunctional, prefixLinearForm or prefixBilinearForm
     # when we have exactly one form of ranks 0, 1 or 2
     count = [ranks.count(0), ranks.count(1), ranks.count(2)]
-    if len(ranks) <= 3 and sum(count) > 0 and min(count) >= 0 and max(count) <= 1:
+    if len(ranks) <= 3 and sum(count) > 0 and min(count) >= 0 and max(count) <= 1 and options["form_postfix"]:
         postfixes = ["Functional", "LinearForm", "BilinearForm"]
         return "%s%s" % (prefix, postfixes[ranks[i]])
 
