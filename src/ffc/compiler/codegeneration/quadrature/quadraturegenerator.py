@@ -46,7 +46,7 @@ class QuadratureGenerator(CodeGenerator):
 
         # Initialize common code generator
         CodeGenerator.__init__(self)
-        self.optimise_level = 0
+        self.optimise_level = 1
 
     def generate_cell_integral(self, form_data, form_representation, sub_domain, format):
         """Generate dictionary of code for cell integral from the given

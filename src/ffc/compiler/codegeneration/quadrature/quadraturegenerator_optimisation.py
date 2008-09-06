@@ -139,6 +139,8 @@ def generate_code(raw_terms, geo_terms, optimise_level, Indent, format):
 
             # Create value and count number of operations
             val = format_add(v)
+            print "val: ", val
+
             num_ops = count_ops(val, format)
             entry_ops += num_ops
 

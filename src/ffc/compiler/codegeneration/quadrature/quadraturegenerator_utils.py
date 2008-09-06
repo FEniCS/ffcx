@@ -382,9 +382,9 @@ def contains_zeros(tables, format_epsilon):
                     break
 
         if zero:
-            debug("\nWarning: this table only contains zeros. This is not critical,")
-            debug("but it will slow down the runtime performance of your code!")
-            debug("Do you take derivatives of a constant?")
+            debug("\n\n*** Warning: this table only contains zeros. This is not critical,")
+            debug("but it might slow down the runtime performance of your code!")
+            debug("Do you take derivatives of a constant?\n")
 
 def unique_psi_tables(tensors, optimisation_level, format):
     "Determine if some tensors have the same tables (and same names)"
@@ -501,6 +501,10 @@ def unique_psi_tables(tensors, optimisation_level, format):
 #    for name, val in inverse_name_map.items():
 #        print name, val
 
+    # Check if we have some zeros in the tables
+    # FIXME: this shouldn't be necessary once UFL has removed all zero terms
+    contains_zeros(tables, format["epsilon"])
+
     # If we found non zero columns we might be able to reduce number of tables
     # further if optimise level is higher than 0
     if non_zero_columns:
@@ -554,10 +558,6 @@ def unique_psi_tables(tensors, optimisation_level, format):
                 inverse_name_map[name][0] = ""
 #            tables[name] = array([[]])
             tables[name] = None
-
-        # Check if we have some zeros in the tables
-        # FIXME: this shouldn't be necessary once UFL has removed all zero terms
-        contains_zeros(tables, format["epsilon"])
 
 #        print "remove ones T, again: ", time.clock() - t
 
