@@ -46,7 +46,7 @@ class QuadratureGenerator(CodeGenerator):
 
         # Initialize common code generator
         CodeGenerator.__init__(self)
-        self.optimise_level = 1
+        self.optimise_level = 2
 
     def generate_cell_integral(self, form_data, form_representation, sub_domain, format):
         """Generate dictionary of code for cell integral from the given
@@ -173,7 +173,6 @@ class QuadratureGenerator(CodeGenerator):
         format_nzcolumns  = format["nonzero columns"]
         exp_ops   = reduce_operations.expand_operations
         red_ops   = reduce_operations.reduce_operations
-        ops_count = reduce_operations.operation_count
 
         # Generate load_table.h if tables should be saved. (Not reimplemented)
         members_code = ""
@@ -221,26 +220,11 @@ class QuadratureGenerator(CodeGenerator):
             trans_set = trans_set | t_set
 
             # Generate code for all terms according to optimisation level
-            terms_code, num_ops, ip_terms = generate_code(terms, geo_terms, self.optimise_level, Indent, format)
-
-            # Tabulate IP const declarations, sort according to number, compute
-            # number of operations and add to total count
-            const_ip_code = []
-            items = ip_terms.items()
-            items = [(int(v.replace(format_G + format_ip, "")), red_ops(k, format)) for (k, v) in items]
-            items.sort()
-            items = [(k, format_G + format_ip + str(v)) for (v, k) in items]
-            count_ip_ops = 0
-            for key, val in items:
-                const_ip_code += [(format["const float declaration"] + val, red_ops(exp_ops(key, format), format))]
-                count_ip_ops += ops_count(key, format)
-            const_ip_code.append("")
-            if count_ip_ops:
-                const_ip_code = [format_comment("Number of operations to compute declarations = %d" %count_ip_ops)] + const_ip_code
+            terms_code, num_ops = generate_code(terms, geo_terms, self.optimise_level, Indent, format)
 
             # Get number of operations to compute entries for all terms when
             # looping over all IPs and update tensor count
-            num_operations = (num_ops + count_ip_ops)*points
+            num_operations = num_ops*points
             tensor_ops_count += num_operations
 
             ip_code.append(format_comment\
@@ -248,7 +232,7 @@ class QuadratureGenerator(CodeGenerator):
 
             # Loop code over all IPs
             if points > 1:
-                ip_code += generate_loop(const_ip_code + terms_code, [(format_ip, 0, points)], Indent, format)
+                ip_code += generate_loop(terms_code, [(format_ip, 0, points)], Indent, format)
             else:
                 ip_code.append(format_comment("Only 1 integration point, omitting IP loop."))
                 ip_code += terms_code

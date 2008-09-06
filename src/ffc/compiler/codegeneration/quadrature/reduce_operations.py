@@ -517,7 +517,7 @@ def get_geo_terms(expression, geo_terms, offset, format):
 
     return add.join(new_prods + consts)
 
-def get_constants(expression, const_terms, offset, format, constants = []):
+def get_constants(expression, const_terms, format, constants = []):
     """This function returns a new expression where all geometry terms have
     been substituted with geometry declarations, these declarations are added
     to the const_terms dictionary. """
@@ -535,7 +535,7 @@ def get_constants(expression, const_terms, offset, format, constants = []):
     r = access[1]
 
     # Get the number of geometry declaration, possibly offset value
-    num_geo = offset + len(const_terms)
+    num_geo = len(const_terms)
     new_prods = []
 
     # Split the expression into products
@@ -552,19 +552,22 @@ def get_constants(expression, const_terms, offset, format, constants = []):
         for v in vrs:
 
             # If variable is a group, get the geometry terms and update geo number
-            if v[0] == gl and v[-1] == gr:
-                v = get_constants(v[1:-1], const_terms, offset, format, constants)
-                num_geo = offset + len(const_terms)
-
+#            if v[0] == gl and v[-1] == gr:
+#                new_consts = {}
+#                v = get_constants(v[1:-1], new_consts, 0, format, constants)
+#                print "V: ", v
+#                print new_consts
+#                num_geo = offset + len(const_terms)
+                
                 # If we still have a sum, regroup
-                if len(v.split(add)) > 1: v = grouping(v)
-
-            # Append to new variables
-            new_vrs.append(v)
+#                if len(v.split(add)) > 1: v = grouping(v)
 
             # If variable is constants, add to geo terms
             constant = is_constant(v, format, constants)
-            if constant: geos.append(v)
+            if constant:
+                geos.append(v)
+            # Append to new variables
+            new_vrs.append(v)
 
         # Update variable list
         vrs = new_vrs; vrs.sort()
@@ -574,13 +577,13 @@ def get_constants(expression, const_terms, offset, format, constants = []):
         geo = mult.join(geos)
         if geo:
             if geos != vrs:
-                if len(geos) > 1:
-                    for g in geos:
-                        vrs.remove(g)
-                    if not geo in const_terms:
-                        const_terms[geo] = format_G + str(num_geo)
-                        num_geo += 1
-                    vrs.append(const_terms[geo])
+#                if len(geos) > 1:
+                for g in geos:
+                    vrs.remove(g)
+                if not geo in const_terms:
+                    const_terms[geo] = format_G + str(num_geo)
+                    num_geo += 1
+                vrs.append(const_terms[geo])
                 new_prods.append(mult.join(vrs))
             else:
                 consts.append(mult.join(vrs))

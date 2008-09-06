@@ -32,16 +32,15 @@ def generate_code(raw_terms, geo_terms, optimise_level, Indent, format):
     format_F            = format["function value"]
     format_float        = format["floating point"]
     format_float_decl   = format["float declaration"]
+    format_const_float  = format["const float declaration"]
+    format_ip           = format["integration points"]
 
     exp_ops       = reduce_operations.expand_operations
     get_geo_terms = reduce_operations.get_geo_terms
     red_ops       = reduce_operations.reduce_operations
     count_ops     = reduce_operations.operation_count
-    get_vars      = reduce_operations.get_variables
-
-    terms_code = []
-    total_num_ops = 0
-    ip_terms = {}
+    get_variables = reduce_operations.get_variables
+    get_constants = reduce_operations.get_constants
 
     # A new dictionary for primary loop and entries
     terms = {}
@@ -74,7 +73,7 @@ def generate_code(raw_terms, geo_terms, optimise_level, Indent, format):
             # Get any functions that we might have
             for sec in sec_loops:
 #                    print "      Generating functions for sec_loop: ", sec
-                val, used_vars = get_vars(val, functions, format, [sec[0]])
+                val, used_vars = get_variables(val, functions, format, [sec[0]])
 #                    print "\nUsed vars: ", used_vars
                 if not sec in secondary_loops:
                     secondary_loops[sec] = Set(used_vars)
@@ -94,7 +93,10 @@ def generate_code(raw_terms, geo_terms, optimise_level, Indent, format):
 
 #        print "functions: ", functions
 #        print "secondary_loops: ", secondary_loops
-    
+
+    # Total number of operations to compute tensor
+    total_num_ops = 0
+
     # Create list to declare function values
     function_declarations = []
     compute_functions = []
@@ -127,6 +129,8 @@ def generate_code(raw_terms, geo_terms, optimise_level, Indent, format):
 
     # Generate code for primary indices
     prim_lines = ["", format_comment("Loop primary indices.")]
+    # Dictionary of terms that are constant withing a given IP loop
+    ip_terms = {}
 
     # Get primary loops and entries dictionary
     for prim_loops, entries in terms.items():
@@ -139,7 +143,12 @@ def generate_code(raw_terms, geo_terms, optimise_level, Indent, format):
 
             # Create value and count number of operations
             val = format_add(v)
-            print "val: ", val
+            if optimise_level >= 2:
+#                print "\nval: ", val
+                val = red_ops(val, format)
+#                print "val: ", val
+                val = get_constants(val, ip_terms, format, [format_ip])
+#                print "val: ", val
 
             num_ops = count_ops(val, format)
             entry_ops += num_ops
@@ -159,10 +168,28 @@ def generate_code(raw_terms, geo_terms, optimise_level, Indent, format):
         prim_lines += generate_loop(entry_lines, prim_loops, Indent, format)
         prim_lines.append("")
 
-    # Add blocks of code
-    terms_code += function_declarations + compute_functions + prim_lines
 
-    return (terms_code, total_num_ops, ip_terms)
+    # Tabulate IP const declarations, sort according to number, compute
+    # number of operations and add to total count
+    const_ip_code = []
+    items = ip_terms.items()
+    items = [(int(v.replace(format_G + format_ip, "")), red_ops(k, format)) for (k, v) in items]
+    items.sort()
+    items = [(k, format_G + format_ip + str(v)) for (v, k) in items]
+    count_ip_ops = 0
+    for key, val in items:
+        const_ip_code += [(format_const_float + val, red_ops(exp_ops(key, format), format))]
+        count_ip_ops += count_ops(key, format)
+
+    if count_ip_ops:
+        const_ip_code = ["", format_comment("Number of operations to compute declarations = %d" %count_ip_ops)] + const_ip_code
+
+    total_num_ops += count_ip_ops
+
+    # Add blocks of code
+    terms_code = function_declarations + compute_functions + const_ip_code + prim_lines
+
+    return (terms_code, total_num_ops)
 
 class Term:
 
