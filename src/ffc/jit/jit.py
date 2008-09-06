@@ -50,28 +50,31 @@ def jit(input_form, options=None):
       options    : An option dictionary
     """
 
+    print ""
+    print "--- Calling FFC JIT compiler ---"
+
     # Check options
     options = check_options(input_form, options)
 
     # Check in-memory form cache
-    if input_form in form_cache:
-        return form_cache[input_form]
+    #if input_form in form_cache:
+    #    return form_cache[input_form]
 
     # Wrap input
     jit_object = wrap(input_form, options)
 
     # Check cache
     module = instant.import_module(jit_object)
-    print module
+    print "Module returned by import_module: ", module
 
     # Compile form
     debug("Calling FFC just-in-time (JIT) compiler, this may take some time...", -1)
-    compile(input_form, jit_object.signature(), options)
+    signature = jit_object.signature()
+    compile(input_form, signature, options)
     debug("done", -1)
 
     # Wrap code into a Python module using Instant
     debug("Creating Python extension (compiling and linking), this may take some time...", -1)
-    signature = jit_object.signature()
     filename = signature + ".h"
     (cppargs, path, ufc_include) = extract_instant_flags(options)
     module = instant.build_module(wrap_headers=[filename],
