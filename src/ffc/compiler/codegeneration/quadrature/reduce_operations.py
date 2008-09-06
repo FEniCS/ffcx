@@ -1,539 +1,6 @@
 #!/usr/bin/env python
 
-def operation_count(expression, format):
-    # Cheat to get character for add and multiply
-    add   = format["add"](["", ""])
-    mult  = format["multiply"](["", ""])
-    adds = len(get_products(expression, format, add)) - 1
-    return expression.count(mult) + adds
-
-def is_constant(variable, format):
-    access = format["array access"]("")
-    group = format["grouping"]("")
-    l = access[0]
-    r = access[1]
-    if not variable.count(l) == variable.count(r):
-        raise RuntimeError, "Something wrong with variable"
-
-    if not l in variable:
-        return variable
-    elif variable.count(l) == 1:
-#        print "variable: ", variable
-        try:
-            int(variable.split(l)[-1].split(r)[0])
-        except:
-            return ""
-        return variable
-    elif variable.count(l) > 1:
-        nested = 0
-        for c in variable:
-            if c == l:
-                nested += 1
-            if c == r:
-                nested -= 1
-            if nested > 1:
-                break
-        # If we have any nested array access it is not possible (at this stage
-        # of the code generation) to determine if it is a constant
-        if nested:
-#            print "nested"
-            return ""
-        else:
-#            print "not nested (matrix entry)"
-#            print variable
-            if not variable.count(l) == 2:
-                raise RuntimeError, "Not matrix access variable, not implemented"
-            int0 = variable.split(r)[0].split(l)[-1]
-            int1 = variable.split(l)[-1].split(r)[0]
-#            print "int0: ", int0
-#            print "int1: ", int1
-            try:
-                # Try to convert first and second indices to integers
-                int(variable.split(r)[0].split(l)[-1])
-                int(variable.split(l)[-1].split(r)[0])
-#                print "success"
-            except:
-                return ""
-            return variable
-    else:
-        return variable
-
-
-def get_geo_terms(expression, geo_terms, optimise_level, format):
-    # Cheat to get character for add and multiply
-    add   = format["add"](["", ""])
-    mult  = format["multiply"](["", ""])
-    access = format["array access"]("")
-    group = format["grouping"]("")
-    l = access[0]
-    r = access[1]
-    num_geo = len(geo_terms)
-    prods = get_products(expression, format, add)
-    new_prods = []
-
-    G = "G"
-#    print "\ngeo_terms: ", geo_terms
-#    print "\nexpr: ", expression
-    for p in prods:
-#        print "\np: ", p
-        vrs = get_products(p, format, mult)
-        geos = []
-        # Generate geo code for constant coefficients e.g., w[0][5]
-        if optimise_level >= 11:
-            for v in vrs:
-                constant = is_constant(v, format)
-#            print "constant: ", constant
-                if constant:
-                    geos.append(constant)
-        else:
-            geos = [v for v in vrs if v and not l in v and not r in v]
-
-        geos.sort()
-        geo = mult.join(geos)
-#        print "geo: ", geo
-#        print "vrs: ", vrs
-        if geo:
-            for g in geos:
-                vrs.remove(g)
-#                print "g: ", g
-#                print "vrs: ", vrs
-            if not geo in geo_terms:
-                geo_terms[geo] = G + str(num_geo)
-                num_geo += 1
-            vrs.append(geo_terms[geo])
-        new_prods.append(mult.join(vrs))
-
-#    print "geo_terms: ", geo_terms
-
-    return add.join(new_prods)
-
-def get_products(expression, format, operator):
-
-    access = format["array access"]("")
-    group = format["grouping"]("")
-    la = access[0]
-    ra = access[1]
-    lg = group[0]
-    rg = group[1]
-
-    prods = expression.split(operator)
-    new_prods = [prods[0]]
-    prods.pop(0)
-    while prods:
-        p = prods[0]
-#        print "p: ", p
-        if not new_prods[-1].count(la) == new_prods[-1].count(ra):
-            new_prods[-1] = operator.join([new_prods[-1], p])
-        elif not new_prods[-1].count(lg) == new_prods[-1].count(rg):
-            new_prods[-1] = operator.join([new_prods[-1], p])
-        else:
-            new_prods.append(p)
-        prods.remove(p)
-    if expression == operator.join(new_prods):
-#        print new_prods
-        return new_prods
-    else:
-        raise RuntimeError, "Something wrong with expression"
-
-def remove_vars(expr, vrs, format):
-    mult  = format["multiply"](["", ""])
-
-    mults = get_products(expr, format, mult)
-    if not isinstance(vrs, list):
-        vrs = [vrs]
-    for v in vrs:
-        mults.remove(v)
-#    print "Rem mults: ", mults
-    if not mults:
-#        mults.append(str(1))
-        return str(1.0)
-#    print "join mults: ", mult.join(mults)
-    collect = ""
-    try:
-        collect = str(eval(mult.join(mults)))
-    except:
-        collect = collect_floats(mult.join(mults), format)
-   
-    return collect
-
-def get_all_variables(expression, format):
-    add   = format["add"](["", ""])
-    sub   = format["subtract"](["", ""])
-    mult  = format["multiply"](["", ""])
-    group = format["grouping"]("")
-
-    prods = get_products(expression, format, add)
-    prods = [p for p in prods if p]
-#    print "sums: ", sums
-    variables = []
-    for i in range(len(prods)):
-        p = prods[i]
-        # only extract unique variables
-        vrs = get_products(p, format, mult)
-        for v in vrs:
-            try:
-                float(v)
-            except:
-                variables.append(v)
-    return (prods, variables)
-
-def collect_floats(expression, format):
-    add   = format["add"](["", ""])
-    mult  = format["multiply"](["", ""])
-    div  = format["division"]
-    group = format["grouping"]("")
-    l = group[0]
-    r = group[1]
-
-    if div in expression:
-        return expression
-    if l in expression or r in expression:
-        raise RuntimeError, "Illegal expression for collect floats"
-
-    floats = 0.0
-    new_prods = []
-    for p in get_products(expression, format, add):
-#        print "p: ", p
-        new_mults = []
-        mults = [m for m in get_products(p, format, mult) if m]
-        fact = 1.0
-        for m in mults:
-            try:
-#                print "m: ", m
-                fact *= float(m)
-            except:
-                new_mults.append(m)
-        new_mults.sort()
-#        print "\nnew_mults: ", new_mults
-        if not fact == 1.0:
-            new_mults = [str(fact)] + new_mults
-        p = mult.join(new_mults)
-#        print "p: ", p
-        try:
-            floats += float(eval(p))
-        except:
-            new_prods.append(p)
-    if floats:
-        new_prods.append(str(floats))
-    return add.join(new_prods)
-
-def group_vars(expr, format):
-    add   = format["add"](["", ""])
-    sub   = format["subtract"](["", ""])
-    mult  = format["multiply"](["", ""])
-    div  = format["division"]
-    group = format["grouping"]("")
-    l = group[0]
-    r = group[1]
-    ab   = format["absolute value"]("").split(l)[0]
-    sq   = format["sqrt"]("").split(l)[0]
-
-#    print ab, sq
-
-    if div in expr or sq in expr or ab in expr:
-        return expr
-    if l in expr or r in expr:
-        raise RuntimeError, "Illegal expression for group_vars"
-    if not expr:
-        return expr
-    new_prods = {}
-    prods = get_products(expr, format, add)
-#    print "PRODS: ", prods
-    for p in prods:
-        vrs = get_all_variables(p, format)
-#        print "vrs: ", vrs
-        var = [v for v in vrs[1] if v]
-        var.sort()
-        factor = remove_vars(p, var, format)
-#        print "factor: ", factor
-        var = mult.join(var)
-#        print "var: ", var
-        if var in new_prods:
-            new_prods[var] += [factor]
-        else:
-            new_prods[var] = [factor]
-    
-    prods = []
-#    print "new t: ", new_prods
-    for p in new_prods:
-#        print "p: ", p
-#        f = collect_floats(add.join(new_prods[p]), format)
-        f = str(eval(add.join(new_prods[p])))
-        if eval(f) == 1.0:
-            f = ""
-#        print "f: ", f
-        if f and p:
-            prods.append(mult.join([f,p]))
-        elif f:
-            prods.append(f)
-        elif p:
-            prods.append(p)
-
-#        print "terms: ", terms
-    return add.join(prods)
-
-
-def get_variables(expression, format):
-    add   = format["add"](["", ""])
-    mult  = format["multiply"](["", ""])
-    group = format["grouping"]("")
-
-    prods = get_products(expression, format, add)
-    prods = [p for p in prods if p]
-#    new_prods = []
-#    for p in prods:
-#        new_prods += get_products(p, format, mult)
-
-#    print "prods: ", prods
-#    print "new_prods: ", new_prods
-
-    variables = {}
-    for i in range(len(prods)):
-        p = prods[i]
-        # only extract unique variables
-#        print "get rpds: ", get_products(p, format, mult)
-        vrs = list(set( get_products(p, format, mult) ))
-#        vrs = list(set( p.split(mult) ))
-        for v in vrs:
-            if v in variables:
-                variables[v][0] += 1
-                variables[v][1].append(i)
-            else:
-                variables[v] = [1, [i]]
-
-    return (prods, variables)
-
-def reduction_possible(variables):
-    max_val = 1
-    max_var = ""
-    max_vars = []
-    for key in variables:
-        if max_val < variables[key][0]:
-            max_val = variables[key][0]
-            max_var = key
-
-    # If we found a variable that appears in products multiple times, check if
-    # other variables appear in the exact same products
-    if max_var:
-        for key in variables:
-            # Check if we have more variables in the same products
-            if max_val == variables[key][0] and variables[max_var][1] == variables[key][1]:
-                max_vars.append(key)
-#    print "max_val: ", max_val
-#    print "max_var: ", max_var
-    return max_vars
-
-def reduce_operations(expression, format):
-
-    # Cheat to get character for add and multiply
-    add   = format["add"](["", ""])
-    mult  = format["multiply"](["", ""])
-    group = format["grouping"]("")
-
-#    print expression
-    expression = expand_operations(expression, format)
-#    print expression
-
-    prods, variables = get_variables(expression, format)
-#    print "vars: ", variables
-#    print "prods: ", prods
-
-    max_vars = reduction_possible(variables)
-    new_prods = []
-    no_mult = []
-#    print "max_vars: ", max_vars
-    if max_vars:
-        for p in prods:
-#            li = p.split(mult)
-            li = get_products(p, format, mult)
-            try:
-                # See if we can find all variables in current product
-                indices = [li.index(i) for i in max_vars]
-            except:
-                no_mult.append(p)
-                continue
-            for v in max_vars:
-                li.remove(v)
-            # If we've removed the last variable add 1.0
-            if not li:
-                li.append(str(1))
-            p = mult.join(li)
-            new_prods.append(p)
-    else:
-        # No reduction possible
-        return expression
-#    print "new_prods: ", new_prods
-    new_prods = group_vars(add.join(new_prods), format)
-    len_new_prods = len(get_products(new_prods, format, add))
-#    print "new_prods: ", new_prods
-
-#    l = mult.join([group % new_sum, max_var])
-#    print l
-#    no_mult += [l]
-#    print no_mult
-#    return "hej"
-    # Recursively reduce sums with and without reduced variable
-
-    if new_prods:
-        # only pick the new string
-        new_prods = reduce_operations(new_prods, format)
-    if no_mult:
-        # only pick the new string
-        no_mult = [reduce_operations(add.join(no_mult), format)]
-
-    g = new_prods
-    if len_new_prods > 1:
-        g = format["grouping"](new_prods)
-
-    new_expression = add.join(no_mult + [mult.join([g, mult.join(max_vars)])])
-
-    return new_expression
-
-def expand_operations(expression, format):
-    add   = format["add"](["", ""])
-    mult  = format["multiply"](["", ""])
-    div  = format["division"]
-    group = format["grouping"]("")
-    access = format["array access"]("")
-    l = group[0]
-    r = group[1]
-#    print l
-#    print r
-    count = 0
-#    print "\nexpr: ", expression
-    # Check that we have the same number of left/right parenthesis in expression
-    if not expression.count(l) == expression.count(r):
-        raise RuntimeError, "Number of left/right parenthesis do not match"
-
-    if expression.count(l) == 0:
-        return group_vars(expression, format)
-
-    prods = get_products(expression, format, add)
-#    print "prods: ", prods
-    new_prods = []
-    if len(prods) > 1:
-        for p in prods:
-            new_prods.append(expand_operations(p, format))
-        return group_vars(add.join(new_prods), format)
-
-    if not len(prods) == 1:
-        raise RuntimeError, "too many products"
-
-    split_prods = get_products(prods[0], format, mult)
-#    if not len(split_prods) > 1:
-#        return group_vars(prods[0], format)
-
-#    print "split prods: ", split_prods
-    if len(split_prods) > 1:
-        new_split = []
-        for p in split_prods:
-            if not l in p:
-                new_split.append(p)
-                split_prods.remove(p)
-        if not split_prods:
-            return group_vars(mult.join(new_split), format)
-        else:
-            fac = group_vars(mult.join(new_split), format)
-#            print "fac: ", fac
-            left = get_products(expand_operations(split_prods[0], format), format, add)
-            right = get_products(expand_operations(mult.join(split_prods[1:]), format), format, add)
-#            print "left: ", left
-#            print "right: ", right
-            new_mults = []
-            for lp in left:
-                for rp in right:
-                    ent = [fac, lp, rp]
-                    ent = [e for e in ent if e]
-                    if ent:
-                        new_mults.append(mult.join(ent))
-#            print "new_mults: ", new_mults
-            return group_vars(add.join(new_mults), format)
-
-    if expression.count(l) > 1:
-        nested = 0
-        for c in expression:
-            if c == l:
-                nested += 1
-            if c == r:
-                nested -= 1
-            if nested > 1:
-                break
-        if nested:
-#            print "nested"
-            new_expr = ""
-            posr = 0
-            count = 0
-            par = False
-            for c in expression:
-                if c == l:
-                    par = True
-                    count += 1
-                if c == r:
-                    count -= 1
-                if count == 0 and par:
-                    break
-                posr += 1
-            posl = expression.index(l)
-            inner = expression[posl+1:posr]
-#            print "inner: ", inner
-            new_inner = expand_operations(inner, format)
-#            if len(get_products(new_inner, format, add)) == 1:
-#                new_inner = new_inner[1:-1]
-#            print "new_inner: ", new_inner
-            # If nothing happened return same
-            if inner == new_inner:
-                return expression
-            else:
-                new_expr = expand_operations(expression.replace(inner, new_inner, 1), format)
-                return group_vars(new_expr, format)
-
-#    return expression
-    if split_prods[0][0] == l and split_prods[0][-1] == r: 
-        inner = split_prods[0][1:-1]
-    else:
-        inner = split_prods[0]
-#    print "INNER: ", inner
-    return inner
-#    new_prods = []
-#    ml = mult.join(["", l])
-#    rm = mult.join([r,""])
-#    for p in prods:
-#        if r and l in p:
-#            fac = []
-#            if ml in p:
-#                l_fac = get_products(p.split(ml)[0], format, add)
-#                if len(l_fac) > 1:
-#                    raise RuntimeError, "too many products"
-#                fac += l_fac
-##                print "l_fac: ", l_fac
-#            if rm in p:
-#                r_fac = get_products(p.split(rm)[-1], format, add)
-#                if len(r_fac) > 1:
-#                    raise RuntimeError, "too many products"
-#                fac += r_fac
-##                print "r_fac: ", r_fac
-#            inner = get_products(p.split(r)[0].split(l)[-1], format, add)
-##            print inner
-#            new_p = add.join(inner)
-#            print "fac: ", fac
-#            if fac:
-#                new_p = add.join([mult.join(fac + [i]) for i in inner])
-#            new_prods.append(new_p)
-#            print "new_p: ", new_p
-#        else:
-#            new_prods.append(p)
-#    print "new_prods: ", new_prods
-##    print "new_prods: ", add.join(new_prods)
-##    print "new_prods: ", group_vars(add.join(new_prods), format)
-#    new_expr = group_vars(add.join(new_prods), format)
-
-##    new_expr = add.join(new_prods)
-
-#    return new_expr
-
-if __name__ == "__main__":
-
-    simple_format = {
+simple_format = {
         "add": lambda v: " + ".join(v),
         "subtract": lambda v: " - ".join(v),
         "multiply": lambda v: "*".join(v),
@@ -543,112 +10,712 @@ if __name__ == "__main__":
         "sqrt": lambda v: "std::sqrt(%s)" % v,
         "array access": lambda i: "[%s]" %(i)}
 
-    expr0 = "(x*2) + y*x + x*x"     # should become:   (2 + y + x)*x     (5 --> 3)
-    expr1 = "x + y*x + x*x"       # should become:   x + (y + x)*x     (4 --> 3)
-    expr2 = "2*x*y + y*x*z + x*x" # should become:   ((2 + z)*y + x)*x (7 --> 4)
-    expr3 = "2*x*y + y*x*3 + x*x" # should become:   (5*y + x)*x (7 --> 3)
-    expr4 = "x*y + y*x + x*x"     # should become:   (2*y + x)*x (7 --> 3)
-    expr5 = "y*x + x*y + x*y*z"  # should become:   (2 + z)*x*y (6 --> 3)
-    expr6 = "P_t2_p0_s0_s0[ip][ind00[q]]*P_t2_p0_s0_s0[ip][ind00[w]]*W0[ip]*G_0 + P_t2_p0_s0_s0[ip][ind00[q]]*P_t2_p0_s0_s0[ip][ind00[w]]*W1[ip]*G_0000 + P_t2_p0_s0_s0[ip][ind00[q]]*P_t2_p0_s0_s0[ip][ind00[w]]*W2[ip]*G_0000"
-    expr7 = "(2 + (7.0*(x + z)*y*y + 3.0)*z*y + (5) + x)*x" # should become:   2*x + x*x*y*z + 3*z*x + x*x (6 --> 10)
-    expr8 = "P_t8_p1_s0[ip][nzc1[j]]*P_t11_p0_s1[ip][nzc0[k]]*W0[ip]*w[0][4 + ip]*Jinv_00*Jinv_11*det + P_t8_p1_s0[ip][nzc1[j]]*P_t11_p0_s1[ip][nzc0[k]]*W0[ip]*w[0][8 + ip]*Jinv_00*Jinv_10*det + P_t8_p1_s0[ip][nzc1[j]]*P_t11_p0_s1[ip][nzc0[k]]*W0[ip]*w[0][28 + ip]*Jinv_01*Jinv_11*det + P_t8_p1_s0[ip][nzc1[j]]*P_t11_p0_s1[ip][nzc0[k]]*W0[ip]*w[0][32 + ip]*Jinv_01*Jinv_10*det"
-    expr9 = "P_t2_p1[ip][nzc1[j]]*P_t2_s0_a0[ip][nzc2[0]]*P_t2_p1[ip][nzc1[k]]*P_t2_s0_a0[ip][nzc2[0]]*W0[ip]*w[0][nzc2[0] + 3]*w[0][nzc2[0]]*det + P_t2_p1[ip][nzc1[j]]*P_t0_s1_a1[ip][nzc0[0]]*P_t2_p1[ip][nzc1[k]]*P_t0_s1_a1[ip][nzc0[0]]*W0[ip]*w[0][nzc0[0] + 3]*w[0][nzc0[0]]*det"
+def split_expression(expression, format, operator, allow_split = False):
+    """Split the expression at the given operator, return list.
+    Do not split () or [] unless told to split (). This is to enable easy count
+    of double operations which can be in (), but in [] we only have integer operations."""
 
-    expr10 = "P_t0_p1_s0_s0[ip][j]*P_t0_p1_s1_s0[ip][nzc0[k]]*W0[ip]*(J_00*Jinv_00*J_01*Jinv_00 + J_10*Jinv_00*J_11*Jinv_00 + J_00*Jinv_01*J_01*Jinv_01 + J_10*Jinv_01*J_11*Jinv_01)*det*1.0/(detJ*detJ)"# + P_t0_p1_s1_s1[ip][j]*P_t0_p1_s1_s0[ip][nzc0[k]]*W0[ip]*(J_01*Jinv_10*J_01*Jinv_00 + J_11*Jinv_10*J_11*Jinv_00 + J_01*Jinv_11*J_01*Jinv_01 + #J_11*Jinv_11*J_11*Jinv_01)*det*1.0/(detJ*detJ)"
-    expr11 = "3*x + 3*(x + y)*(x + y)*(3)" # 3x + 9xx + 18xy + 9yy
-#    expr12 = "3 + 2*(y + z)"# + 5*(x + y)*3 + 4" # 6x + 3y
-#    expr12 = "y + z"# + 5*(x + y)*3 + 4" # 6x + 3y
-#    expr12 = "2*((y + z) + 5) + 4" # 6x + 3y
-#    expr12 = "2*x*y + 4*y*x + 5" # 6x + 3y
-#    expr12 = "((x + y))*1.0/(4*y*x + 5)" # 6x + 3y
-#    expr12 = "q*(2*x + (x + y)*(4*y + 5))" # 6x + 3y
-#    expr12 = "(z + y)*1.0/(2*y + 5)" # 6x + 3y
-#    expr12 = "w[i + 1]*1.0/(2*z + y) + 1.0/(2*y + 5)*w[2*i + 6]" # 6x + 3y
-#    expr12 = "z*x + y + y" # 6x + 3y
-#    expr12 = "(((y + z) + 5)) + 4" # 6x + 3y
-#    expr12 = "P_t0_s0[ip][r]*P_t0_s0[ip][s]*P_t0_p0_s0[ip][nzc1[j]]*P_t0_p0_s0[ip][nzc1[k]]*W0[ip]*std::sqrt((1.0/std::abs((1.0/w[0][r]))))*std::sqrt(w[1][s])*(Jinv_00*Jinv_00 + Jinv_01*Jinv_01)*det"
+    # Get formats
+    access = format["array access"]("")
+    group = format["grouping"]("")
+    la = access[0]
+    ra = access[1]
+    lg = group[0]
+    rg = group[1]
 
-    expr12 = "P_t0_p1_a0_s2[ip][nzc8[j]]*P_t2_p1_s1_s1[ip][nzc2[k]]*W1[ip]*Jinv_21*Jinv_10*det + P_t0_p1_a0_s2[ip][nzc8[j]]*P_t2_p1_s1_s1[ip][nzc2[k]]*W1[ip]*Jinv_21*Jinv_10*det"
-#    expr12 = "((1.0/w[0][r]))"
-#    print
-#    print "reduce_operations(%s) --> (2 + y + x)*x" %expr0
-#    res = reduce_operations(expr0, simple_format)
-#    print "output:\n%d operations --> %d operations\nnew expression: %s" %\
-#    (operation_count(expr0, simple_format), operation_count(res, simple_format), res)
-#    print
-#    print "reduce_operations(%s) --> x + (y + x)*x" %expr1
-#    res = reduce_operations(expr1, simple_format)
-#    print "output:\n%d operations --> %d operations\nnew expression: %s" %\
-#    (operation_count(expr1, simple_format), operation_count(res, simple_format), res)
-#    print
-#    print "reduce_operations(%s) --> ((2 + z)*y + x)*x" %expr2
-#    res = reduce_operations(expr2, simple_format)
-#    print "output:\n%d operations --> %d operations\nnew expression: %s" %\
-#    (operation_count(expr2, simple_format), operation_count(res, simple_format), res)
-#    print
-#    print "reduce_operations(%s) --> (5*y + x)*x" %expr3
-#    res = reduce_operations(expr3, simple_format)
-#    print "output:\n%d operations --> %d operations\nnew expression: %s" %\
-#    (operation_count(expr3, simple_format), operation_count(res, simple_format), res)
-#    print
-#    print "reduce_operations(%s) --> (2*y + x)*x" %expr4
-#    res = reduce_operations(expr4, simple_format)
-#    print "output:\n%d operations --> %d operations\nnew expression: %s" %\
-#    (operation_count(expr4, simple_format), operation_count(res, simple_format), res)
-#    print
-#    print "reduce_operations(%s) --> (2 + z)*y*x" %expr5
-#    res = reduce_operations(expr5, simple_format)
-#    print "output:\n%d operations --> %d operations\nnew expression: %s" %\
-#    (operation_count(expr5, simple_format), operation_count(res, simple_format), res)
-#    print
-#    print "reduce_operations(%s) --> manual verification" %expr6
-#    res = reduce_operations(expr6, simple_format)
-#    print "output:\n%d operations --> %d operations\nnew expression: %s" %\
-#    (operation_count(expr6, simple_format), operation_count(res, simple_format), res)
-#    print
-#    print expr7
-#    print operation_count(expr7, simple_format)
-#    print 
-#    res_e = expand_operations(expr7, simple_format)
-#    print res_e
-#    print operation_count(res_e, simple_format)
-#    print get_products("(2 + y)*(2 + 5 + 9 + 7)", simple_format, "*")
-#    print get_products("x*y*1.0/(z + 5)", simple_format, "()")
-#
-#    print get_all_variables("x*y*1.0/(z + 5)", simple_format)
+    # Split with given operator
+    prods = expression.split(operator)
+    new_prods = [prods.pop(0)]
 
-#    res_r = reduce_operations(res_e, simple_format)
-#    print res_r
-#    print operation_count(res_r, simple_format)
-#    print 
-#    print "reduce_operations(%s) --> manual verification" %expr8
-#    res = reduce_operations(expr8, simple_format)
-#    print "output:\n%d operations --> %d operations\nnew expression: %s" %\
-#    (operation_count(expr8, simple_format), operation_count(res, simple_format), res)
-#    print
+    while prods:
+        # Continue while we still have list of potential products
+        # p is the first string in the product
+        p = prods.pop(0)
+        # If the number of "[" and "]" doesn't add up in the last entry of the
+        # new_prods list, add p and see if it helps for next iteration
+        if new_prods[-1].count(la) != new_prods[-1].count(ra):
+            new_prods[-1] = operator.join([new_prods[-1], p])
+        # If the number of "(" and ")" doesn't add up (and we didn't allow a split)
+        # in the last entry of the new_prods list, add p and see if it helps for next iteration
+        elif new_prods[-1].count(lg) != new_prods[-1].count(rg) and not allow_split:
+            new_prods[-1] = operator.join([new_prods[-1], p])
+        # If everything was fine, we can start a new entry in the new_prods list
+        else: new_prods.append(p)
 
-    print expr12
-    print
-    expr12 = expand_operations(expr12, simple_format)
-    print "expr12: ", expr12
-    print
-#    print group_vars("x + 1*x", simple_format)
-    print reduce_operations(expr12, simple_format)
-#    geo = {}
-#    print get_geo_terms(expr8, geo, simple_format)
-#    print geo
+    return new_prods
 
-#    print collect_floats("2*4.0*x + 5*x", simple_format)
-#    print reduce_operations("2*4.0*x + 5*x", simple_format)
-#    res_r = reduce_operations(expr7, simple_format)
-#    print res_r
-#    print "expand_operations(%s) --> %s" %(res_r, expr0)
-#    print "ops reduced: %s is %d" %(res_r, operation_count(res_r, simple_format))
-#    print "ops expanded: %s is %d" %(res_e, operation_count(res_e, simple_format))
-#    res = reduce_operations(expr0, simple_format)
-#    print "output:\n%d operations --> %d operations\nnew expression: %s" %\
-#    (operation_count(expr0, simple_format), operation_count(res, simple_format), res)
-    print
+#    # Just a sanity check
+#    if expression == operator.join(new_prods):
+#        return new_prods
+#    else:
+#        raise RuntimeError, "Something wrong with expression"
+
+def operation_count(expression, format):
+    """This function returns the number of double operations in an expression.
+    We do split () but not [] as we only have unsigned integer operations in []."""
+
+    # Note we do not subtract 1 for the additions, because there is also an
+    # assignment involved
+    adds = len(split_expression(expression, format, format["add"](["", ""]), True)) - 1
+    mults = len(split_expression(expression, format, format["multiply"](["", ""]), True)) - 1
+    return mults + adds
+
+def find_G(expression, G):
+    ints = "0123456789"
+#    print "expr: ", expression
+    splits = expression.split(G)
+#    print splits
+    new = [splits[0]]
+    for i in range(len(splits) - 1):
+        nums = splits[i+1]
+        num_geo = ""
+        m = 0
+        for n in nums:
+            if not n in ints:
+                break
+            m += 1
+            num_geo += n
+        new.append(G + num_geo)
+        new.append(splits[i+1][m:])
+    return new
+
+def get_simple_variables(expression, format):
+    """This function takes as argument an expression (preferably expanded):
+      expression = "x*x + y*x + x*y*z"
+    returns a list of products and a dictionary:
+      prods = ["x*x", "y*x", "x*y*z"]
+      variables = {variable: [num_occurences, [pos_in_prods]]}
+      variables = {"x":[3, [0,1,2]], "y":[2, [1,2]], "z":[1, [2]]}"""
+
+    # Get formats
+    add           = format["add"](["", ""])
+    mult          = format["multiply"](["", ""])
+    group         = format["grouping"]("")
+    format_float  = format["floating point"]
+
+    prods = split_expression(expression, format, add)
+    prods = [p for p in prods if p]
+
+    variables = {}
+    for i, p in enumerate(prods):
+        # Only extract unique variables
+        vrs = list(set( split_expression(p, format, mult) ))
+        for v in vrs:
+            # Try to convert variable to floats and back (so '2' == '2.0' etc.)
+            try: v = format_float(float(v))
+            except: pass
+            if v in variables:
+                variables[v][0] += 1
+                variables[v][1].append(i)
+            else:
+                variables[v] = [1, [i]]
+    return (prods, variables)
+
+def group_vars(expr, format):
+    """Group variables in an expression, such that:
+    "x + y + z + 2*y + 6*z" = "x + 3*y + 7*z"
+    "x*x + x*x + 2*x + 3*x + 5" = "2.0*x*x + 5.0*x + 5"
+    "x*y + y*x + 2*x*y + 3*x + 0*x + 5" = "5.0*x*y + 3.0*x + 5"
+    "(y + z)*x + 5*(y + z)*x" = "6.0*(y + z)*x"
+    "1/(x*x) + 2*1/(x*x) + std::sqrt(x) + 6*std::sqrt(x)" = "3*1/(x*x) + 7*std::sqrt(x)"
+    """
+
+    # Get formats
+    format_float = format["floating point"]
+    add   = format["add"](["", ""])
+    mult  = format["multiply"](["", ""])
+
+    new_prods = {}
+
+    # Get list of products
+    prods = split_expression(expr, format, add)
+
+    # Loop products and collect factors
+    for p in prods:
+        # Get list of variables, and do a basic sort
+        vrs = split_expression(p, format, mult)
+        factor = 1
+        new_var = []
+
+        # Try to multiply factor with variable, else variable must be multiplied by factor later
+        # If we don't have a variable, set factor to zero and break
+        for v in vrs:
+            if v:
+                try: f = float(v); factor *= f
+                except: new_var.append(v)
+            else: factor = 0; break
+
+        # Create new variable that must be multiplied with factor. Add this
+        # variable to dictionary, if it already exists add factor to other factors
+        new_var.sort()
+        new_var = mult.join(new_var)
+        if new_var in new_prods: new_prods[new_var] += factor
+        else: new_prods[new_var] = factor
+
+    # Reset products
+    prods = []
+    for prod, f in new_prods.items():
+        # If we have a product append mult of both
+        if prod:
+            # If factor is 1.0 we don't need it
+            if f == 1.0:
+                prods.append(prod)
+            else:
+                prods.append(mult.join([format_float(f), prod]))
+        # If we just have a factor
+        elif f: prods.append(format_float(f))
+
+    prods.sort()
+    return add.join(prods)
+
+
+def reduction_possible(variables):
+    """Find the variable that occurs in the most products, if more variables
+    occur the same number of times and in the same products add them to list."""
+
+    # Find the variable that appears in the most products
+    max_val = 1
+    max_var = ""
+    max_vars = []
+    for key, val in variables.items():
+        if max_val < val[0]:
+            max_val = val[0]
+            max_var = key
+
+    # If we found a variable that appears in products multiple times, check if
+    # other variables appear in the exact same products
+    if max_var:
+        for key, val in variables.items():
+            # Check if we have more variables in the same products
+            if max_val == val[0] and variables[max_var][1] == val[1]:
+                max_vars.append(key)
+    return max_vars
+
+def is_constant(variable, format, constants = [], from_is_constant = False):
+    """Determine if a variable is constant or not.
+    The function accepts an optional list of variables (loop indices) that will
+    be regarded as constants for the given variable. If none are supplied it is
+    assumed that all array accesses will result in a non-constant variable.
+
+    v = 2.0,          is constant
+    v = Jinv_00*det,  is constant
+    v = w[0][1],      is constant
+    v = 2*w[0][1],    is constant
+    v = W0[ip],       is constant if constants = ['ip'] else not
+    v = P_t0[ip][j],  is constant if constants = ['j','ip'] else not"""
+
+    # Get formats
+    access    = format["array access"]("")
+    add       = format["add"](["", ""])
+    mult      = format["multiply"](["", ""])
+
+    l = access[0]
+    r = access[1]
+
+    if not variable.count(l) == variable.count(r):
+        print "variable: ", variable
+        raise RuntimeError, "Something wrong with variable"
+
+    # Be sure that we don't have a compound
+    variable = expand_operations(variable, format)
+
+    prods = split_expression(variable, format, add)
+    new_prods = []
+
+    # Loop all products and variables and check if they're constant
+    for p in prods:
+        vrs = split_expression(p, format, mult)
+        for v in vrs:
+            # Check if each variable is constant, if just one fails the entire
+            # variable is considered not to be constant
+            const_var = False
+
+            # If variable is in constants, well....
+            if v in constants: const_var = True; continue
+
+            # If we don't have any '[' or ']' we have a constant
+            # (unless we're dealing with a call from this funtions)
+            elif not v.count(l) and not from_is_constant: const_var = True; continue
+
+            # If we have an array access variable, see if the index is regarded a constant
+            elif v.count(l):
+
+                # Check if access is OK ('[' is before ']')
+                if not v.index(l) < v.index(r):
+                    print "variable: ", v
+                    raise RuntimeError, "Something is wrong with the array access"
+
+                # Auxiliary variables
+                index = ""; left = 0; inside = False; indices = []
+
+                # Loop all characters in variable and find indices
+                for c in v:
+
+                    # If character is ']' reduce left count
+                    if c == r: left -= 1
+
+                    # If the '[' count has returned to zero, we have a complete index
+                    if left == 0 and inside:
+                        const_index = False # Aux. var
+                        if index in constants:  const_index = True
+
+                        try: int(index); const_index = True
+                        except:
+                            # Last resort, call recursively
+                            if is_constant(index, format, constants, True):
+                                const_index = True
+                            pass
+
+                        # Append index and reset values
+                        if const_index:
+                            indices.append(const_index)
+                        else:
+                            indices = [False]
+                            break
+                        index = ""
+                        inside = False
+
+                    # If we're inside an access, add character to index
+                    if inside: index += c
+
+                    # If character is '[' increase the count, and we're inside an access
+                    if c == l: inside = True; left += 1
+
+                # If all indices were constant, the variable is constant
+                if all(indices): const_var = True; continue
+
+            else:
+                # If it is a float, it is also constant
+                try: float(v); const_var = True; continue
+                except: pass
+
+            # I no tests resulted in a constant variable, there is no need to continue
+            if not const_var:
+                return False
+
+    # If all variables were constant return True
+    return True
+
+def expand_operations(expression, format):
+    """This function expands an expression and returns the value. E.g.,
+    ((x + y))             --> x + y
+    2*(x + y)             --> 2*x + 2*y
+    (x + y)*(x + y)       --> x*x + y*y + 2*x*y
+    z*(x*(y + 3) + 2) + 1 --> 1 + 2*z + x*y*z + x*z*3
+    z*((y + 3)*x + 2) + 1 --> 1 + 2*z + x*y*z + x*z*3"""
+
+    # Get formats
+    add   = format["add"](["", ""])
+    mult  = format["multiply"](["", ""])
+    group = format["grouping"]("")
+    l = group[0]
+    r = group[1]
+
+    # Check that we have the same number of left/right parenthesis in expression
+    if not expression.count(l) == expression.count(r):
+        raise RuntimeError, "Number of left/right parenthesis do not match"
+
+    # If we don't have any parenthesis, group variables and return
+    if expression.count(l) == 0:
+        return group_vars(expression, format)
+
+    # Get list of additions
+    adds = split_expression(expression, format, add)
+    new_adds = []
+
+    # Loop additions and get products
+    for a in adds:
+        prods = split_expression(a, format, mult)
+        prods.sort()
+        new_prods = []
+        expanded = []
+        for i, p in enumerate(prods):
+            # If we have a group, expand inner expression
+            if p[0] == l and p[-1] == r:
+                # Add remaining products to new products and multiply with all
+                # terms from expanded variable
+                expanded_var = expand_operations(p[1:-1], format)
+                expanded.append( split_expression(expanded_var, format, add) )
+
+            # Else, just add variable to list of new products
+            else: new_prods.append(p)
+
+        if expanded:
+            # Combine all expanded variables and multiply by factor
+            while len(expanded) > 1:
+                first = expanded.pop(0)
+                second = expanded.pop(0)
+                expanded = [[mult.join([i] + [j]) for i in first for j in second]] + expanded
+            new_adds += [mult.join(new_prods + [e]) for e in expanded[0]]
+        else:
+            # Else, just multiply products and add to list of products
+            new_adds.append( mult.join(new_prods) )
+
+    # Group variables and return
+    return group_vars(add.join(new_adds), format)
+
+def reduce_operations(expression, format):
+    """This function reduces the number of opertions needed to compute a given
+    expression. It looks for the variable that appears the most and groups terms
+    containing this variable inside parenthesis. The function is called recursively
+    until no further reductions are possible.
+
+    "x + y + x" = 2*x + y
+    "x*x + 2.0*x*y + y*y" = y*y + (2.0*y + x)*x, not (x + y)*(x + y) as it should be!!
+    z*x*y + z*x*3 + 2*z + 1" = z*(x*(y + 3) + 2) + 1"""
+
+    # Get formats
+    add   = format["add"](["", ""])
+    mult  = format["multiply"](["", ""])
+    group = format["grouping"]("")
+
+    # Be sure that we have an expanded expression
+    expression = expand_operations(expression, format)
+
+    # Group variables to possibly reduce complexity
+    expression = group_vars(expression, format)
+
+    # Get variables and products
+    prods, variables = get_simple_variables(expression, format)
+
+    # Get the variables for which we can reduce the expression
+    max_vars = reduction_possible(variables)
+    new_prods = []
+    no_mult = []
+    max_vars.sort()
+
+    # If we have variables that can be moved outside 
+    if max_vars:
+        for p in prods:
+            # Get the list of variables in current product
+            li = split_expression(p, format, mult)
+            li.sort()
+
+            # If the list of products is the same as what we intend of moving
+            # outside the parenthesis, leave it
+            # (because x + x*x + x*y should be x + (x + y)*x NOT (1.0 + x + y)*x)
+            if li == max_vars: no_mult.append(p); continue
+            else:
+                # Get list of all variables from max_vars that are in li
+                indices = [i for i in max_vars if i in li]
+                # If not all were present add to list of terms that shouldn't be
+                # multiplied with variables and continue
+                if indices != max_vars: no_mult.append(p); continue
+
+            # Remove variables that we are moving outside
+            for v in max_vars: li.remove(v)
+
+            # Add to list of products
+            p = mult.join(li)
+            new_prods.append(p)
+
+        # Sort lists
+        no_mult.sort()
+        new_prods.sort()
+    else:
+        # No reduction possible
+        return expression
+
+    # Recursively reduce sums with and without reduced variable
+    new_prods = add.join(new_prods)
+    if new_prods:
+        new_prods = reduce_operations(new_prods, format)
+    if no_mult:
+        no_mult = [reduce_operations(add.join(no_mult), format)]
+
+    # Group new products if we have a sum
+    g = new_prods
+    len_new_prods = len(split_expression(new_prods, format, add))
+    if len_new_prods > 1:
+        g = format["grouping"](new_prods)
+
+    # The new expression is the sum of terms that couldn't be reduced and terms
+    # that could be reduced multiplied by the reduction e.g.,
+    # expr = z + (x + y)*x
+    new_expression = add.join(no_mult + [mult.join([g, mult.join(max_vars)])])
+
+    return new_expression
+
+def get_geo_terms(expression, geo_terms, offset, format):
+    """This function returns a new expression where all geometry terms have
+    been substituted with geometry declarations, these declarations are added
+    to the geo_terms dictionary. """
+
+    # Get formats
+    add       = format["add"](["", ""])
+    mult      = format["multiply"](["", ""])
+    access    = format["array access"]("")
+    grouping  = format["grouping"]
+    group     = grouping("")
+    format_G  = format["geometry tensor"]
+    gl = group[0]
+    gr = group[1]
+    l = access[0]
+    r = access[1]
+
+    # Get the number of geometry declaration, possibly offset value
+    num_geo = offset + len(geo_terms)
+    new_prods = []
+
+    # Split the expression into products
+    prods = split_expression(expression, format, add)
+    consts = []
+
+    # Loop products and check if the variables are constant
+    for p in prods:
+        vrs = split_expression(p, format, mult)
+        geos = []
+
+        # Generate geo code for constant coefficients e.g., w[0][5]
+        new_vrs = []
+        for v in vrs:
+
+            # If variable is a group, get the geometry terms and update geo number
+            if v[0] == gl and v[-1] == gr:
+                v = get_geo_terms(v[1:-1], geo_terms, offset, format)
+                num_geo = offset + len(geo_terms)
+
+                # If we still have a sum, regroup
+                if len(v.split(add)) > 1: v = grouping(v)
+
+            # Append to new variables
+            new_vrs.append(v)
+
+            # If variable is constants, add to geo terms
+            constant = is_constant(v, format)
+            if constant: geos.append(v)
+
+        # Update variable list
+        vrs = new_vrs; vrs.sort()
+
+        # Sort geo and create geometry term
+        geos.sort()
+        geo = mult.join(geos)
+
+        if geo:
+            if geos != vrs:
+                if len(geos) > 1:
+                    for g in geos:
+                        vrs.remove(g)
+                    if not geo in geo_terms:
+                        geo_terms[geo] = format_G + str(num_geo)
+                        num_geo += 1
+                    vrs.append(geo_terms[geo])
+                new_prods.append(mult.join(vrs))
+            else:
+                consts.append(mult.join(vrs))
+        else:
+            new_prods.append(mult.join(vrs))
+
+    if consts:
+        if len(consts) > 1: c = grouping(add.join(consts))
+        else: c = add.join(consts)
+        if not c in geo_terms:
+            geo_terms[c] = format_G + str(num_geo)
+            num_geo += 1
+        consts = [geo_terms[c]]
+
+    return add.join(new_prods + consts)
+
+def get_constants(expression, const_terms, offset, format, constants = []):
+    """This function returns a new expression where all geometry terms have
+    been substituted with geometry declarations, these declarations are added
+    to the const_terms dictionary. """
+
+    # Get formats
+    add       = format["add"](["", ""])
+    mult      = format["multiply"](["", ""])
+    access    = format["array access"]("")
+    grouping  = format["grouping"]
+    group     = grouping("")
+    format_G  = format["geometry tensor"] + "".join(constants) #format["geometry tensor"]
+    gl = group[0]
+    gr = group[1]
+    l = access[0]
+    r = access[1]
+
+    # Get the number of geometry declaration, possibly offset value
+    num_geo = offset + len(const_terms)
+    new_prods = []
+
+    # Split the expression into products
+    prods = split_expression(expression, format, add)
+    consts = []
+
+    # Loop products and check if the variables are constant
+    for p in prods:
+        vrs = split_expression(p, format, mult)
+        geos = []
+
+        # Generate geo code for constant coefficients e.g., w[0][5]
+        new_vrs = []
+        for v in vrs:
+
+            # If variable is a group, get the geometry terms and update geo number
+            if v[0] == gl and v[-1] == gr:
+                v = get_constants(v[1:-1], const_terms, offset, format, constants)
+                num_geo = offset + len(const_terms)
+
+                # If we still have a sum, regroup
+                if len(v.split(add)) > 1: v = grouping(v)
+
+            # Append to new variables
+            new_vrs.append(v)
+
+            # If variable is constants, add to geo terms
+            constant = is_constant(v, format, constants)
+            if constant: geos.append(v)
+
+        # Update variable list
+        vrs = new_vrs; vrs.sort()
+
+        # Sort geo and create geometry term
+        geos.sort()
+        geo = mult.join(geos)
+        if geo:
+            if geos != vrs:
+                if len(geos) > 1:
+                    for g in geos:
+                        vrs.remove(g)
+                    if not geo in const_terms:
+                        const_terms[geo] = format_G + str(num_geo)
+                        num_geo += 1
+                    vrs.append(const_terms[geo])
+                new_prods.append(mult.join(vrs))
+            else:
+                consts.append(mult.join(vrs))
+        else:
+            new_prods.append(mult.join(vrs))
+
+    if consts:
+        if len(consts) > 1: c = grouping(add.join(consts))
+        else: c = add.join(consts)
+        if not c in const_terms:
+            const_terms[c] = format_G + str(num_geo)
+            num_geo += 1
+        consts = [const_terms[c]]
+
+    return add.join(new_prods + consts)
+
+def get_variables(expression, variables, format, constants = []):
+    """This function returns a new expression where all geometry terms have
+    been substituted with geometry declarations, these declarations are added
+    to the const_terms dictionary. """
+
+    # Get formats
+    add           = format["add"](["", ""])
+    mult          = format["multiply"](["", ""])
+    format_access = format["array access"]
+    access        = format_access("")
+    grouping      = format["grouping"]
+    group         = grouping("")
+    format_F      = format["function value"]
+    gl = group[0]
+    gr = group[1]
+    l = access[0]
+    r = access[1]
+
+    # Make sure we have expanded the expression
+#    expression = expand_operations(expression, format)
+
+    # If we don't have any access operators in expression,
+    # we don't have any variables
+    if expression.count(l) == 0:
+        return expression
+
+    # Get the number of geometry declaration, possibly offset value
+    num_var = len(variables)
+    new_prods = []
+    used_vars = []
+
+    # Split the expression into products
+    prods = split_expression(expression, format, add)
+    consts = []
+
+    # Loop products and check if the variables are constant
+    for p in prods:
+        vrs = split_expression(p, format, mult)
+        # Variables with respect to the constants in list
+        variables_of_interest = []
+
+        # Generate geo code for constant coefficients e.g., w[0][5]
+        new_vrs = []
+        for v in vrs:
+
+            # If we don't have any access operators, we don't have a variable
+            if v.count(l) == 0:
+                new_vrs.append(v)
+                continue
+
+            # Check if we have a variable that depends on one of the constants
+            # First check the easy way
+            is_var = False
+            for c in constants:
+                if format_access(c) in v:
+                    is_var = True
+            if is_var:
+                variables_of_interest.append(v)
+                continue
+
+            # Then check the hard way
+            # Auxiliary variables
+            index = ""; left = 0; inside = False; indices = []
+            # Loop all characters in variable and find indices
+            for c in v:
+                # No need to continue if we have found a variable
+                if is_var:
+                    break
+                # If character is ']' reduce left count
+                if c == r: left -= 1
+
+                # If the '[' count has returned to zero, we have a complete index
+                if left == 0 and inside:
+                    # FIXME: Is this a safe and general check?
+                    for c in constants:
+                        if c in index:
+                            variables_of_interest.append(v)
+                            is_var = True
+                            break
+                    index = ""
+                    inside = False
+
+                # If we're inside an access, add character to index
+                if inside:
+                    index += c
+
+                # If character is '[' increase the count, and we're inside an access
+                if c == l:
+                    inside = True
+                    left += 1
+
+            # If we do not have a variable, add to other vars
+            if not is_var:
+                new_vrs.append(v)
+
+        variables_of_interest.sort()
+        variables_of_interest = mult.join(variables_of_interest)
+
+        # If we have some variables, declare new variable if needed and add
+        # to list of variables
+        if variables_of_interest:
+            # If we didn't already declare this variable do so
+            if not variables_of_interest in variables:
+                variables[variables_of_interest] = format_F + str(num_var)
+                num_var += 1
+
+            # Get mapped variable
+            mv = variables[variables_of_interest]
+            new_vrs.append(mv)
+            if not mv in used_vars:
+                used_vars.append(mv)
+
+        # Sort variables and add to list of products
+        new_vrs.sort()
+        new_prods.append(mult.join(new_vrs))
+
+    # Sort list of products and return the sum
+    new_prods.sort()
+    return (add.join(new_prods), used_vars)
 
 
 
