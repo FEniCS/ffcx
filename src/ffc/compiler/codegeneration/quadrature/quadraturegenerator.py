@@ -75,7 +75,7 @@ class QuadratureGenerator(CodeGenerator):
         code = self.__remove_unused(jacobi_code, trans_set, format)
 
         # Add element code
-        code += [""] + [format["comment"]("Compute element tensor (using quadrature representation, optimisation level %d)" %self.optimise_level)]
+        code += ["", format["comment"]("Compute element tensor (using quadrature representation, optimisation level %d)" %self.optimise_level), format["comment"]("Total number of operations to compute element tensor (from this point): %d" %num_ops)]
         code += element_code
         debug("Number of operations to compute tensor: %d" % num_ops)
 
@@ -108,7 +108,7 @@ class QuadratureGenerator(CodeGenerator):
 
             # Assuming all tables have same dimensions for all facets (members_code)
             c, members_code, t_set, num_ops = self.__generate_element_tensor(tensors[i], i, None, Indent, format)
-            case += c
+            case += [format["comment"]("Total number of operations to compute element tensor (from this point): %d" %num_ops)] + c
             case += [format_block_end]
             cases[i] = case
             trans_set = trans_set | t_set
@@ -122,7 +122,7 @@ class QuadratureGenerator(CodeGenerator):
         common = self.__remove_unused(jacobi_code, trans_set, format)
 
         # Add element code
-        common += [""] + [format["comment"]("Compute element tensor for all facets (using quadrature representation, optimisation level %d)" %self.optimise_level)]
+        common += ["", format["comment"]("Compute element tensor for all facets (using quadrature representation, optimisation level %d)" %self.optimise_level)]
 
         return {"tabulate_tensor": (common, cases), "constructor":"// Do nothing", "members":members_code}
     
@@ -154,7 +154,7 @@ class QuadratureGenerator(CodeGenerator):
 
                 # Assuming all tables have same dimensions for all facet-facet combinations (members_code)
                 c, members_code, t_set, num_ops = self.__generate_element_tensor(tensors[i][j], i, j, Indent, format)
-                case += c
+                case += [format["comment"]("Total number of operations to compute element tensor (from this point): %d" %num_ops)] + c
                 case += [format_block_end]
                 cases[i][j] = case
                 trans_set = trans_set | t_set
@@ -167,7 +167,7 @@ class QuadratureGenerator(CodeGenerator):
         common = self.__remove_unused(jacobi_code, trans_set, format)
 
         # Add element code
-        common += [""] + [format["comment"]("Compute element tensor for all facets (using quadrature representation, optimisation level %d)" %self.optimise_level)]
+        common += ["", format["comment"]("Compute element tensor for all facets (using quadrature representation, optimisation level %d)" %self.optimise_level)]
 
         return {"tabulate_tensor": (common, cases), "constructor":"// Do nothing", "members":members_code}
 
@@ -181,6 +181,7 @@ class QuadratureGenerator(CodeGenerator):
         format_nzcolumns  = format["nonzero columns"]
         exp_ops   = reduce_operations.expand_operations
         red_ops   = reduce_operations.reduce_operations
+        count_ops = reduce_operations.operation_count
 
         # Generate load_table.h if tables should be saved. (Not reimplemented)
         members_code = ""
@@ -249,17 +250,23 @@ class QuadratureGenerator(CodeGenerator):
             element_code += ip_code
 
         # Tabulate geo code, sort according to number
-        geo_code = [""]
+        geo_code = []
         items = geo_terms.items()
         items = [(int(v.replace(format_G, "")), k) for (k, v) in items]
         items.sort()
         items = [(k, format_G + str(v)) for (v, k) in items]
+        geo_ops = 0
         for key, val in items:
-            geo_code += [(format["const float declaration"] + val, red_ops(exp_ops(key, format), format))]
+            declaration = red_ops(exp_ops(key, format), format)
+            geo_ops += count_ops(declaration, format)
+            geo_code += [(format["const float declaration"] + val, declaration)]
         geo_code.append("")
+        if geo_ops:
+            geo_code = ["", format_comment("Number of operations to compute geometry constants = %d" % geo_ops)] + geo_code
+        else:
+            geo_code = [""] + geo_code
 
-        element_code = [format_comment\
-        ("Total number of operations to compute element tensor for all IP loops = %d" %(tensor_ops_count) )] + element_code
+        tensor_ops_count += geo_ops
 
         element_code = geo_code + element_code
 
