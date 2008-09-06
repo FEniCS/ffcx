@@ -382,7 +382,7 @@ def contains_zeros(tables, format_epsilon):
                     break
 
         if zero:
-            debug("\n\n*** Warning: this table only contains zeros. This is not critical,")
+            debug("\n*** Warning: this table only contains zeros. This is not critical,")
             debug("but it might slow down the runtime performance of your code!")
             debug("Do you take derivatives of a constant?\n")
 

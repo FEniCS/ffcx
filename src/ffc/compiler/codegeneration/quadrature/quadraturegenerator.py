@@ -63,6 +63,7 @@ class QuadratureGenerator(CodeGenerator):
             element_code = self.__reset_element_tensor(form_representation.cell_tensor[0], Indent, format)
             return {"tabulate_tensor": element_code, "members": ""}
 
+        debug("")
         # Generate element code + set of used geometry terms
         element_code, members_code, trans_set, num_ops = self.__generate_element_tensor\
                                                      (tensors, None, None, Indent, format)
@@ -76,8 +77,7 @@ class QuadratureGenerator(CodeGenerator):
         # Add element code
         code += [""] + [format["comment"]("Compute element tensor (using quadrature representation, optimisation level %d)" %self.optimise_level)]
         code += element_code
-
-        debug("\n  Num. operations to compute tensor: %d" % num_ops)
+        debug("Number of operations to compute tensor: %d" % num_ops)
 
         return {"tabulate_tensor": code, "members":members_code}
 
@@ -112,7 +112,7 @@ class QuadratureGenerator(CodeGenerator):
             case += [format_block_end]
             cases[i] = case
             trans_set = trans_set | t_set
-            debug("Num. operations to compute tensor for facet %d: %d" % (i, num_ops))
+            debug("Number of operations to compute tensor for facet %d: %d" % (i, num_ops))
 
 
         # Get Jacobian snippet
@@ -158,7 +158,7 @@ class QuadratureGenerator(CodeGenerator):
                 case += [format_block_end]
                 cases[i][j] = case
                 trans_set = trans_set | t_set
-                debug("Num. operations to compute tensor for facets (%d, %d): %d" % (i, j, num_ops))
+                debug("Number of operations to compute tensor for facets (%d, %d): %d" % (i, j, num_ops))
 
         # Get Jacobian snippet
         jacobi_code = [format["generate jacobian"](form_data.cell_dimension, Integral.INTERIOR_FACET)]
