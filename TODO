@@ -10,7 +10,7 @@ file, it is convenient to install org-mode in Emacs.
 
 * Write about lhs() and rhs() in manual
 
-* Write about -f split_implementation in man page and manual
+* Write about -f split_implementation in manual
 
 * Projections
   - Reimplement (worked before)
@@ -25,12 +25,6 @@ file, it is convenient to install org-mode in Emacs.
   - Reimplement level 2 BLAS (worked before)
   - Implement level 3 BLAS
   - Generate loops for geometry tensor
-  - Add to man page
-
-* Optionally generate a pair of .h and .cpp files
-  - FFC currently only generates a single .h file. The UFC
-  utils provides a simple way to organize the code in .cpp
-  and or .h files, but FFC does not yet use this.
   - Add to man page
 
 * Move arguments language and representation to options dictionary
