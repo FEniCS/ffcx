@@ -1,3 +1,4 @@
+ - Add arguments language and representation to options dictionary
  - Fix installation on Windows
  - Add option -f split_implementation for separate .h and .cpp files
 0.5.0 [2008-06-23]

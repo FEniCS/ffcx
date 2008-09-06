@@ -27,8 +27,6 @@ file, it is convenient to install org-mode in Emacs.
   - Generate loops for geometry tensor
   - Add to man page
 
-* Move arguments language and representation to options dictionary
-
 * Display flop count
   - The flop count for evaluation of the element tensor should
   be printed during compilation
