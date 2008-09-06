@@ -64,7 +64,7 @@ class QuadratureGenerator(CodeGenerator):
             return {"tabulate_tensor": element_code, "members": ""}
 
         # Generate element code + set of used geometry terms
-        element_code, members_code, trans_set = self.__generate_element_tensor\
+        element_code, members_code, trans_set, num_ops = self.__generate_element_tensor\
                                                      (tensors, None, None, Indent, format)
 
         # Get Jacobian snippet
@@ -76,6 +76,8 @@ class QuadratureGenerator(CodeGenerator):
         # Add element code
         code += [""] + [format["comment"]("Compute element tensor (using quadrature representation, optimisation level %d)" %self.optimise_level)]
         code += element_code
+
+        debug("\n  Num. operations to compute tensor: %d" % num_ops)
 
         return {"tabulate_tensor": code, "members":members_code}
 
@@ -99,15 +101,19 @@ class QuadratureGenerator(CodeGenerator):
         num_facets = len(tensors)
         cases = [None for i in range(num_facets)]
         trans_set = Set()
+
+        debug("")
         for i in range(num_facets):
             case = [format_block_begin]
 
             # Assuming all tables have same dimensions for all facets (members_code)
-            c, members_code, t_set = self.__generate_element_tensor(tensors[i], i, None, Indent, format)
+            c, members_code, t_set, num_ops = self.__generate_element_tensor(tensors[i], i, None, Indent, format)
             case += c
             case += [format_block_end]
             cases[i] = case
             trans_set = trans_set | t_set
+            debug("Num. operations to compute tensor for facet %d: %d" % (i, num_ops))
+
 
         # Get Jacobian snippet
         jacobi_code = [format["generate jacobian"](form_data.cell_dimension, Integral.EXTERIOR_FACET)]
@@ -141,16 +147,18 @@ class QuadratureGenerator(CodeGenerator):
         cases = [[None for j in range(num_facets)] for i in range(num_facets)]
         trans_set = Set()
 
+        debug("")
         for i in range(num_facets):
             for j in range(num_facets):
                 case = [format_block_begin]
 
                 # Assuming all tables have same dimensions for all facet-facet combinations (members_code)
-                c, members_code, t_set = self.__generate_element_tensor(tensors[i][j], i, j, Indent, format)
+                c, members_code, t_set, num_ops = self.__generate_element_tensor(tensors[i][j], i, j, Indent, format)
                 case += c
                 case += [format_block_end]
                 cases[i][j] = case
                 trans_set = trans_set | t_set
+                debug("Num. operations to compute tensor for facets (%d, %d): %d" % (i, j, num_ops))
 
         # Get Jacobian snippet
         jacobi_code = [format["generate jacobian"](form_data.cell_dimension, Integral.INTERIOR_FACET)]
@@ -255,7 +263,7 @@ class QuadratureGenerator(CodeGenerator):
 
         element_code = geo_code + element_code
 
-        return (tabulate_code + element_code, members_code, trans_set)
+        return (tabulate_code + element_code, members_code, trans_set, tensor_ops_count)
 
 
     def __tabulate_weights(self, tables, name_map, Indent, format):
