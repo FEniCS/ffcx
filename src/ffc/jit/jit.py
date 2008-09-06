@@ -2,7 +2,7 @@
 It uses Instant to wrap the generated code into a Python module."""
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-07-20 -- 2008-09-04"
+__date__ = "2007-07-20 -- 2008-09-06"
 __copyright__ = "Copyright (C) 2007-2008 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
@@ -85,7 +85,7 @@ def jit(input_form, options=None):
     debug("done", -1)
 
     # Extract form
-    exec("compiled_form = module.%s()" % signature)
+    compiled_form = getattr(module, signature)()
 
     # Add to form cache
     if not input_form in form_cache:
