@@ -44,11 +44,13 @@ class TensorGenerator(CodeGenerator):
             element_code = self.__generate_zero_element_tensor(form_representation.cell_tensor, format)
             return {"tabulate_tensor": element_code, "members": ""}
 
+        debug("")
         # Generate element code + set of used geometry terms
-        element_code, geo_set = self.__generate_element_tensor(terms, format)
+        element_code, geo_set, tensor_ops = self.__generate_element_tensor(terms, format)
 
         # Generate geometry code + set of used coefficients + set of jacobi terms
-        geo_code, coeff_set, trans_set = self.__generate_geometry_tensors(terms, geo_set, format)
+        geo_code, coeff_set, trans_set, geo_ops = self.__generate_geometry_tensors(terms, geo_set, format)
+        total_ops = tensor_ops + geo_ops
 
         # Generate code for manipulating coefficients
         coeff_code = self.__generate_coefficients(terms, coeff_set, format) 
@@ -60,11 +62,14 @@ class TensorGenerator(CodeGenerator):
         code = self.__remove_unused(jacobi_code, trans_set, format)
 
         # Add coefficient and geometry tensor declarations
+        code.append(format["comment"]("Number of operations to compute element tensor = %d" % total_ops))
         code += coeff_code + geo_code
 
         # Add element code
         code += [""] + [format["comment"]("Compute element tensor")]
         code += element_code
+
+        debug("Number of operations to compute tensor: %d" % total_ops)
 
         return {"tabulate_tensor": code, "members": ""}
 
@@ -85,14 +90,19 @@ class TensorGenerator(CodeGenerator):
 
         # Generate element code + set of used geometry terms
         geo_set = Set()
+        debug("")
+        tensor_ops = 0
         for i in range(num_facets):
-            case, g_set = self.__generate_element_tensor(terms[i], format)
+            case, g_set, tensor_ops = self.__generate_element_tensor(terms[i], format)
             cases[i] = case
             geo_set = geo_set | g_set
+            debug("Number of operations to compute element tensor for facet %d: %d"% (i, tensor_ops))
 
         # Generate code for geometry tensor (should be the same so pick first)
         # Generate set of used coefficients + set of jacobi terms
-        geo_code, coeff_set, trans_set = self.__generate_geometry_tensors(terms[0], geo_set, format)
+        geo_code, coeff_set, trans_set, geo_ops = self.__generate_geometry_tensors(terms[0], geo_set, format)
+        debug("Number of operations to compute geometry terms (should be added): %d" % geo_ops)
+        total_ops = tensor_ops + geo_ops
 
         # Generate code for manipulating coefficients (should be the same so pick first)
         coeff_code = self.__generate_coefficients(terms[0], coeff_set, format)
@@ -102,6 +112,8 @@ class TensorGenerator(CodeGenerator):
 
         # Remove unused declarations
         code = self.__remove_unused(jacobi_code, trans_set, format)
+
+        code.append(format["comment"]("Number of operations to compute element tensor = %d" % total_ops))
 
         # Add coefficient and geometry tensor declarations
         code += coeff_code + geo_code
@@ -128,15 +140,20 @@ class TensorGenerator(CodeGenerator):
 
         # Generate element code + set of used geometry terms
         geo_set = Set()
+        debug("")
+        tensor_ops = 0
         for i in range(num_facets):
             for j in range(num_facets):
-                case, g_set = self.__generate_element_tensor(terms[i][j], format)
+                case, g_set, tensor_ops = self.__generate_element_tensor(terms[i][j], format)
                 cases[i][j] = case
                 geo_set = geo_set | g_set
+                debug("Number of operations to compute element tensor for facets (%d, %d): %d" % (i, j, tensor_ops))
 
         # Generate code for geometry tensor (should be the same so pick first)
         # Generate set of used coefficients + set of jacobi terms
-        geo_code, coeff_set, trans_set = self.__generate_geometry_tensors(terms[0][0], geo_set, format)
+        geo_code, coeff_set, trans_set, geo_ops = self.__generate_geometry_tensors(terms[0][0], geo_set, format)
+        debug("Number of operations to compute geometry terms (should be added): %d" % geo_ops)
+        total_ops = tensor_ops + geo_ops
 
         # Generate code for manipulating coefficients (should be the same so pick first)
         coeff_code = self.__generate_coefficients(terms[0][0], coeff_set, format)
@@ -146,6 +163,8 @@ class TensorGenerator(CodeGenerator):
 
         # Remove unused declarations
         code = self.__remove_unused(jacobi_code, trans_set, format)
+
+        code.append(format["comment"]("Number of operations to compute element tensor = %d" % total_ops))
 
         # Add coefficient and geometry tensor declarations
         code += coeff_code + geo_code
@@ -212,14 +231,12 @@ class TensorGenerator(CodeGenerator):
 
         # Generate code as a list of declarations
         code = []    
-        
-        # Add comment
-        code += [format["comment"]("Compute geometry tensors")]
 
         # Iterate over all terms
         j = 0
         coeff_set = Set()
         trans_set = Set()
+        num_ops = 0
         for i in range(len(terms)):
 
             term = terms[i]
@@ -238,13 +255,16 @@ class TensorGenerator(CodeGenerator):
                 values = []
                 jj = j
                 for G in term.G:
-                    val, c_set, t_set = self.__generate_entry(G, a, jj, format)
+                    val, c_set, t_set, entry_ops = self.__generate_entry(G, a, jj, format)
                     values += [val]
+                    num_ops += entry_ops
                     coeff_set = coeff_set | c_set
                     trans_set = trans_set | t_set
                     jj += 1
 
                 # Sum factorized values
+                if values:
+                    num_ops += len(values) - 1
                 name = format["geometry tensor declaration"](i, a)
                 value = format["add"](values)
 
@@ -252,6 +272,7 @@ class TensorGenerator(CodeGenerator):
                 # FIXME: dets = pick_first([G.determinants for G in term.G])
                 dets = term.G[0].determinants
                 value = self.__multiply_value_by_det(value, dets, format, len(values) > 1)
+                num_ops += 1
 
                 # Add determinant to transformation set
                 if dets:
@@ -264,10 +285,13 @@ class TensorGenerator(CodeGenerator):
 
             j += len(term.G)
 
+        # Add comments
+        code = [format["comment"]("Compute geometry tensors"), format["comment"]("Number of operations to compute decalrations = %d" %num_ops)] + code
+
         # Add scale factor
         trans_set.add(format["scale factor"])
 
-        return (code, coeff_set, trans_set)
+        return (code, coeff_set, trans_set, num_ops)
 
     def __generate_element_tensor(self, terms, format):
         "Generate list of declarations for computation of element tensor"
@@ -307,9 +331,11 @@ class TensorGenerator(CodeGenerator):
                         if value and a0 < 0.0:
                             value = format_subtract([value, format_multiply([format_floating_point(-a0), gk])])
                             geo_set.add(gk)
+                            num_ops += 1
                         elif value:
                             value = format_add([value, format_multiply([format_floating_point(a0), gk])])
                             geo_set.add(gk)
+                            num_ops += 1
                         else:
                             value = format_multiply([format_floating_point(a0), gk])
                             geo_set.add(gk)
@@ -320,7 +346,8 @@ class TensorGenerator(CodeGenerator):
             code += [(name, value)]
             k += 1
 
-        return (code, geo_set)
+        code = [format["comment"]("Number of operations to compute tensor = %d" %num_ops)] + code
+        return (code, geo_set, num_ops)
 
     def __generate_zero_element_tensor(self, A, format):
         "Generate list of declarations for zero element tensor"
@@ -351,6 +378,7 @@ class TensorGenerator(CodeGenerator):
 
         # Compute product of factors outside sum
         factors = []
+        num_ops = 0
         for j in range(len(G.coefficients)):
             c = G.coefficients[j]
             if not c.index.type == Index.AUXILIARY_G:
@@ -365,6 +393,8 @@ class TensorGenerator(CodeGenerator):
                                                         t.restriction)
                 factors += [trans]
                 trans_set.add(trans)
+        if factors:
+            num_ops += len(factors) - 1
 
         monomial = format["multiply"](factors)
         if monomial: f0 = [monomial]
@@ -387,7 +417,12 @@ class TensorGenerator(CodeGenerator):
                                                             t.restriction)
                     factors += [trans]
                     trans_set.add(trans)
+            if factors:
+                num_ops += len(factors) - 1
             terms += [format["multiply"](factors)]
+
+        if terms:
+            num_ops += len(terms) - 1
 
         sum = format["add"](terms)
         if sum: sum = format["grouping"](sum)
@@ -396,9 +431,11 @@ class TensorGenerator(CodeGenerator):
 
         fs = f0 + f1
         if not fs: fs = ["1.0"]
+        else:
+            num_ops += len(fs) - 1
 
         # Compute product of all factors
-        return (format["multiply"](fs), coeff_set, trans_set)
+        return (format["multiply"](fs), coeff_set, trans_set, num_ops)
 
     def __multiply_value_by_det(self, value, dets, format, is_sum):
         if dets:
