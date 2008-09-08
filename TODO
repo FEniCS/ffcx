@@ -27,10 +27,6 @@ file, it is convenient to install org-mode in Emacs.
   - Generate loops for geometry tensor
   - Add to man page
 
-* Display flop count
-  - The flop count for evaluation of the element tensor should
-  be printed during compilation
-
 * Generate loops for geometry tensor in BLAS mode
   - It should be possible to reduce the size of the generated code
   for complicated forms by generating loops for the computation of
