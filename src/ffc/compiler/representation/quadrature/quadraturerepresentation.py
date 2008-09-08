@@ -169,7 +169,10 @@ class QuadratureRepresentation:
             if not m.integral.type == integral_type:
                 continue
 
+            # Compute element tensor
+            self.__debug(i, facet0, facet1)
             tensors[i] = ElementTensor(m, facet0, facet1, self.num_user_specified_quad_points)
+            debug("done")
 
         return tensors
 
