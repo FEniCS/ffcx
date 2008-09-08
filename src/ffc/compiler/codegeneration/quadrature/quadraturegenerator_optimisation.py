@@ -1,7 +1,7 @@
-"Optimisation functions for quadrature representation"
+"Code generating functions for quadrature representation"
 
 __author__ = "Kristian B. Oelgaard (k.b.oelgaard@tudelft.nl)"
-__date__ = "2008-02-05 -- 2008-02-05"
+__date__ = "2008-02-05 -- 2008-09-08"
 __copyright__ = "Copyright (C) 2008 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
@@ -22,6 +22,8 @@ from quadraturegenerator_utils import *
 import reduce_operations
 
 def generate_code(raw_terms, geo_terms, optimise_level, Indent, format):
+    """Generate code from a dictionary of terms created by generate_terms()
+    This function implements the different optimisation strategies."""
 
     format_comment      = format["comment"]
     format_add          = format["add"]
@@ -52,34 +54,30 @@ def generate_code(raw_terms, geo_terms, optimise_level, Indent, format):
 
     # Get loops and entries dictionary
     for loops, entry_dict in raw_terms.items():
-#            print "\nLoops: ", loops
         p_loops, s_loops = loops
+
         # Create primary and secondary loops
         prim_loops = tuple([(p_loops[1][i], 0, p_loops[0][i]) for i in range(len(p_loops[0]))])
-#            print "  prim_loops: ", prim_loops
         sec_loops = [(s_loops[1][i], 0, s_loops[0][i]) for i in range(len(s_loops[0]))]
-#            print "  sec_loops: ", sec_loops
 
         # Loop entries and generate values
         for e, v in entry_dict.items():
-#                print "\n    entry: ", e
             val = format_add(v)
 
             # Extract any constant terms, including geometry terms
             val = exp_ops(val, format)
             val = get_geo_terms(val, geo_terms, 0, format)
 
-#                print "    val: ", val
             # Get any functions that we might have
             for sec in sec_loops:
-#                    print "      Generating functions for sec_loop: ", sec
                 val, used_vars = get_variables(val, functions, format, [sec[0]])
-#                    print "\nUsed vars: ", used_vars
+
+                # Up date the dictionary of variables dependent on the current
+                # secondary loop
                 if not sec in secondary_loops:
                     secondary_loops[sec] = Set(used_vars)
                 else:
                     secondary_loops[sec] = secondary_loops[sec] | Set(used_vars)
-#                    print "val: ", val
 
             # Add code to primary dictionary
             if prim_loops in terms:
@@ -90,9 +88,6 @@ def generate_code(raw_terms, geo_terms, optimise_level, Indent, format):
             else:
                 terms[prim_loops] = {}
                 terms[prim_loops][e] = [val]
-
-#        print "functions: ", functions
-#        print "secondary_loops: ", secondary_loops
 
     # Total number of operations to compute tensor
     total_num_ops = 0
@@ -112,10 +107,10 @@ def generate_code(raw_terms, geo_terms, optimise_level, Indent, format):
         compute_functions = ["", format_comment("Compute function values.")]
 
         for sec, funcs in secondary_loops.items():
-#                print "Funcs: ", funcs
             lines = []
             func_ops = 0
             for f in funcs:
+                # Count operations needed to compute value of functions
                 val = red_ops(inv_functions[f], format)
                 func_ops += count_ops(val, format)
                 lines.append(format_add_equal(f, val))
@@ -143,12 +138,11 @@ def generate_code(raw_terms, geo_terms, optimise_level, Indent, format):
 
             # Create value and count number of operations
             val = format_add(v)
+            # Here we group all constants, so we can declare them outside
+            # the primary loop
             if optimise_level >= 2:
-#                print "\nval: ", val
                 val = red_ops(val, format)
-#                print "val: ", val
                 val = get_constants(val, ip_terms, format, [format_ip])
-#                print "val: ", val
 
             num_ops = count_ops(val, format)
             entry_ops += num_ops
@@ -192,7 +186,7 @@ def generate_code(raw_terms, geo_terms, optimise_level, Indent, format):
     return (terms_code, total_num_ops)
 
 class Term:
-
+    "A convenience class to generate information about the term we're generating code for."
     def __init__(self, tensor, list_indices):
 
         self.indices = [psi[1] for psi in tensor.Psis]
@@ -217,7 +211,6 @@ class Term:
 
         # Generate information for loop generation
         self.secondary_loops = [[old_ind[i], 0, len(sec_indices[i].range)] for i in range(len(sec_indices))]
-#        print "secondary loops: ", self.secondary_loops
 
         irank = tensor.i.rank
         self.prim_dims = [0,]*irank
@@ -226,29 +219,24 @@ class Term:
 
         # Reduce aindices according to secondary loops
         aindices = tensor.a.indices
-#        print "aindices: ", aindices
-#        print "b0indices: ", b0indices
-        # Reduce multi indices a and b0 (number of pertubations) according to current psi
         a_reduced = [[0],]*len(aindices[0])
-#        print "a_reduced: ", a_reduced
         indices = []
         for i in self.indices: indices += i
         for index in indices:
             if index.type == Index.SECONDARY and not index in self.vindices:
                 a_reduced[index.index] = range(len(index.range))
-#                a_reduced[index.index] = index.range
         a_reduced = MultiIndex(a_reduced).indices
-#        print "a_reduced: ", a_reduced
         self.reduced_aindices = a_reduced
 
 def generate_factor(num_ips, tensor, a, mapped_a, bgindices, b0, format, opt_level):
-    "Generate factor"
+    """Generate factor, geometry terms and coefficients. Works just like the
+    tensor equivalent generte_entry."""
 
     if not mapped_a:
         mapped_a = [index for index in a]
 
-    format_multiply = format["multiply"]
     format_add      = format["add"]
+    format_multiply = format["multiply"]
     format_ip       = format["integration points"]
 
     # If the number of integrations points is 1
@@ -270,7 +258,6 @@ def generate_factor(num_ips, tensor, a, mapped_a, bgindices, b0, format, opt_lev
                 num_comp = v.element.num_sub_elements()
                 for i in range(num_comp):
                     elem = v.element.sub_element(i)
-#                    print i
                     dim = elem.space_dimension()
                     if not i:
                         qe_access[i] = format_ip
@@ -288,26 +275,14 @@ def generate_factor(num_ips, tensor, a, mapped_a, bgindices, b0, format, opt_lev
                         else:
                             raise RuntimeError("Unexpected space_dimension!!")
 
-
-#    print "qe_access: ", qe_access
-#    print "b0indices: ", b0
-
     for j in range(len(tensor.coefficients)):
         c = tensor.coefficients[j]
-#        print "c: ", c
-#        print "c.index: ", c.index
-#        print "c.n0.index: ", c.n0.index
-#        print "c.n1.index: ", c.n1.index
-#        print "c.e0: ", c.e0
-#        print "c.e1: ", c.e1
-
         if not c.index.type == Index.AUXILIARY_G:
             offset = tensor.coefficient_offsets[c]
             access = str(c.index([], mapped_a, [], []))
             if c.index in tensor.qei:
                 for v in tensor.monomial.basisfunctions:
                     if v.index == c.index:
-#                        print "v.component: ", v.component
                         if v.component:
                             if len(v.component) == 1:
                                 access = qe_access[v.component[0]([], mapped_a, b0, [])]
@@ -315,9 +290,6 @@ def generate_factor(num_ips, tensor, a, mapped_a, bgindices, b0, format, opt_lev
                                 raise RuntimeError("Error, more than one component index!!")
                         else:
                             access = qe_access[0]
-
-#                            raise RuntimeError("Error!!")
-
             if offset:
                 acs = format["add"]([access, str(offset)])
                 try: acs = "%d" % eval(acs)
@@ -343,9 +315,6 @@ def generate_factor(num_ips, tensor, a, mapped_a, bgindices, b0, format, opt_lev
             trans_set.add(trans)
 
     monomial = format["multiply"](factors)
-#    coeff_qe = format["multiply"](factors_qe)
-#    if coeff_qe: coeff_qe = [coeff_qe]
-#    else: coeff_qe = []
 
     if monomial:
         f_out = [monomial]
@@ -378,10 +347,6 @@ def generate_factor(num_ips, tensor, a, mapped_a, bgindices, b0, format, opt_lev
                 factors += [coefficient]
         for t in tensor.transforms:
             if t.index0.type == Index.AUXILIARY_G or t.index1.type == Index.AUXILIARY_G:
-#                print "t.type: ", t.type
-#                print "t.restriction: ", t.restriction
-#                print "t.index0: ", t.index0([],a,[],b)
-#                print "t.index1: ", t.index1([],a,[],b)
                 trans = format["transform"](t.type, t.index0([], a, [], b), \
                                                 t.index1([], a, [], b), t.restriction)
                 factors += [trans]
@@ -390,24 +355,31 @@ def generate_factor(num_ips, tensor, a, mapped_a, bgindices, b0, format, opt_lev
         terms += [format["multiply"](factors)]
 
     f_in = format["add"](terms)
-    if f_in: f_in = [format["grouping"](f_in)]
-    else: f_in = []
+    if f_in:
+        f_in = [format["grouping"](f_in)]
+    else:
+        f_in = []
 
     return (f_out, f_in, trans_set)
 
 def generate_terms(num_ips, tensor_numbers, tensors, format, psi_name_map, weight_name_map, opt_level):
-    " Generate terms, returns a dictionary and the set of transformations used"
+    "Generate terms, returns a dictionary and the set of transformations used"
 
-    list_indices    = format["free secondary indices"]
-    primary_indices = [format["first free index"], format["second free index"]]
-    format_multiply = format["multiply"]
-    format_group    = format["grouping"]
-    format_add      = format["add"]
-    format_new_line = format["new line"]
+    # Get formats
+    list_indices        = format["free secondary indices"]
+    primary_indices     = [format["first free index"], format["second free index"]]
+    format_add          = format["add"]
+    format_multiply     = format["multiply"]
+    format_group        = format["grouping"]
+    format_weight       = format["weight"]
+    format_array_access = format["array access"]
+    format_ip           = format["integration points"]
+    format_power        = format["power"]
+    format_det          = format["determinant"]
+    format_scale_factor = format["scale factor"]
+
 
     terms = {}
-
-#    geo_num = len(geo_terms.keys()) + 1
     trans_set = Set()
 
     inv_w_name_map = {}
@@ -420,7 +392,6 @@ def generate_terms(num_ips, tensor_numbers, tensors, format, psi_name_map, weigh
 
     # Loop tensors and generate terms
     for tensor_number in tensor_numbers:
-#            print "tensor number: ", tensor_number
         tensor = tensors[tensor_number]
 
         term = Term(tensor, list_indices)
@@ -440,11 +411,11 @@ def generate_terms(num_ips, tensor_numbers, tensors, format, psi_name_map, weigh
         aindices, b0indices, bgindices = term.reduced_aindices, tensor.b0.indices, tensor.bg.indices
 
         # Get weight, take into account that we might only have 1 IP
-        weight = format["weight"](tensor_number)
+        weight = format_weight(tensor_number)
         if tensor_number in inv_w_name_map:
-            weight = format["weight"](inv_w_name_map[tensor_number])
+            weight = format_weight(inv_w_name_map[tensor_number])
         if num_ips > 1:
-            weight += format["array access"](format["integration points"])
+            weight += format_array_access(format_ip)
 
         prim_dims = term.prim_dims
         prim_vars = term.prim_vars
@@ -462,21 +433,15 @@ def generate_terms(num_ips, tensor_numbers, tensors, format, psi_name_map, weigh
                 sec_loop = [[],[]]
                 R = []
                 for psi_indices in indices:
-#                        print "a: ", a
-#                        print "psi indices: ", psi_indices
+                    # Generate the psi entry
                     dof_map, dof_range, entry = generate_psi_entry2(num_ips, tensor_number, a,\
                       b0, psi_indices, vindices, psi_name_map, opt_level, format, tensor.qei)
 
-#                    print "dof_map: ", dof_map
-#                    print "dof_range: ", dof_range
-#                    print "entry: ", entry
-
-                    # If entry is '0' then the value is zero always
                     if entry:
                         R.append(entry)
                     if dof_map[0] in primary_indices:
-#                            print "prim index: ", primary_indices.index(dof_map[0])
                         index_num = primary_indices.index(dof_map[0])
+
                         # All non-zero dofs
                         if dof_range == -1:
                             prim_dims[index_num] = idims[index_num]
@@ -486,10 +451,11 @@ def generate_terms(num_ips, tensor_numbers, tensors, format, psi_name_map, weigh
                         prim_dofs[index_num] = dof_map[1]
                     else:
                         for li in term.secondary_loops:
+
                             # Do not add if dof_range == 1
                             if dof_map[0] == li[0]:
+
                                 # All non-zero dofs
-#                                    print "dof_map: ", dof_map
                                 if dof_range == -1:
                                     sec_loop[0] += [li[2]]
                                     sec_loop[1] += [dof_map[0]]
@@ -501,8 +467,6 @@ def generate_terms(num_ips, tensor_numbers, tensors, format, psi_name_map, weigh
                         a_map[dof_map[0]] = dof_map[1]
                     elif not a_map[dof_map[0]] == dof_map[1]:
                         raise RuntimeError, "Something is very wrong with secondary index map"
-
-#                    print "dofs: ", prim_dofs
 
                 # Generate entry name  for element tensor
                 # FIXME: quadrature only support Functionals and Linear and Bilinear forms
@@ -533,27 +497,23 @@ def generate_terms(num_ips, tensor_numbers, tensors, format, psi_name_map, weigh
                         for v in monomial.basisfunctions:
                             if v.index.type == Index.PRIMARY and v.index.index == i:
                                 if v.restriction == Restriction.MINUS:
-                                    entry += [format["grouping"](format_add([prim_dofs[i], str(idims[i])]))]
+                                    entry += [format_group(format_add([prim_dofs[i], str(idims[i])]))]
                                 else:
                                     entry += [prim_dofs[i]]
                                 break
-#                        print "entry: ", entry
                     entry[0] = format_multiply([entry[0], str(macro_idims[1])])
                     name =  format_add(entry)
                 else:
                     raise RuntimeError, "Quadrature only support Functionals and Linear and Bilinear forms"
-#                    p_dof = tuple(prim_dofs)
-#                print "name: ", name
 
                 mapped_a = [index for index in a]
-#                print "mapped_a: ", mapped_a
-#                print "a_map: ", a_map
+
                 # Map secondary indices to non-zero mapped indices
                 for i in range(len(mapped_a)):
                     a_index = mapped_a[i]
                     if a_index in a_map:
                         mapped_a[i] = a_map[a_index]
-#                print "a: ", mapped_a
+
                 # Get geometry terms from inside sum, and outside sum
                 geo_out, geo_in, t_set = generate_factor(num_ips, tensor, a, mapped_a, bgindices, b0, format, opt_level)
 
@@ -561,12 +521,14 @@ def generate_terms(num_ips, tensor_numbers, tensors, format, psi_name_map, weigh
                     geo_in = [format_group(format_add(geo_in))]
 
                 d = ""
+
+                # Create determinant
                 if tensor.determinants:
-                    d0 = [format["power"](format["determinant"](det.restriction),
+                    d0 = [format_power(format_det(det.restriction),
                                       det.power) for det in tensor.determinants]
-                    d = [format["multiply"]([format["scale factor"]] + d0)]
+                    d = [format_multiply([format_scale_factor] + d0)]
                 else:
-                    d = [format["scale factor"]]
+                    d = [format_scale_factor]
 
                 geo = format_multiply(geo_out + geo_in + d)
 
@@ -592,9 +554,6 @@ def generate_terms(num_ips, tensor_numbers, tensors, format, psi_name_map, weigh
                         terms[(prim_loop, sec_loop)][name] = [format_multiply([val, geo])]
                     else:
                         terms[(prim_loop, sec_loop)][name].append( format_multiply([val, geo]) )
-
-#            print non_zero_columns, cols_name_map
-#            print inv_w_name_map
 
     return (terms, trans_set)
 

@@ -1,14 +1,9 @@
-#!/usr/bin/env python
+"Some simple functions for manipulating expressions symbolically"
 
-simple_format = {
-        "add": lambda v: " + ".join(v),
-        "subtract": lambda v: " - ".join(v),
-        "multiply": lambda v: "*".join(v),
-        "division": "/",
-        "grouping": lambda v: "(%s)" % v,
-        "absolute value": lambda v: "std::abs(%s)" % v,
-        "sqrt": lambda v: "std::sqrt(%s)" % v,
-        "array access": lambda i: "[%s]" %(i)}
+__author__ = "Kristian B. Oelgaard (k.b.oelgaard@tudelft.nl)"
+__date__ = "2008-04-24 -- 2008-09-08"
+__copyright__ = "Copyright (C) 2008 Kristian B. Oelgaard"
+__license__  = "GNU GPL version 3 or any later version"
 
 def split_expression(expression, format, operator, allow_split = False):
     """Split the expression at the given operator, return list.
@@ -44,40 +39,15 @@ def split_expression(expression, format, operator, allow_split = False):
 
     return new_prods
 
-#    # Just a sanity check
-#    if expression == operator.join(new_prods):
-#        return new_prods
-#    else:
-#        raise RuntimeError, "Something wrong with expression"
-
 def operation_count(expression, format):
     """This function returns the number of double operations in an expression.
     We do split () but not [] as we only have unsigned integer operations in []."""
 
     # Note we do not subtract 1 for the additions, because there is also an
     # assignment involved
-    adds = len(split_expression(expression, format, format["add"](["", ""]), True)) - 1
+    adds = len(split_expression(expression, format, format["add"](["", ""]), True))
     mults = len(split_expression(expression, format, format["multiply"](["", ""]), True)) - 1
     return mults + adds
-
-def find_G(expression, G):
-    ints = "0123456789"
-#    print "expr: ", expression
-    splits = expression.split(G)
-#    print splits
-    new = [splits[0]]
-    for i in range(len(splits) - 1):
-        nums = splits[i+1]
-        num_geo = ""
-        m = 0
-        for n in nums:
-            if not n in ints:
-                break
-            m += 1
-            num_geo += n
-        new.append(G + num_geo)
-        new.append(splits[i+1][m:])
-    return new
 
 def get_simple_variables(expression, format):
     """This function takes as argument an expression (preferably expanded):
@@ -102,8 +72,10 @@ def get_simple_variables(expression, format):
         vrs = list(set( split_expression(p, format, mult) ))
         for v in vrs:
             # Try to convert variable to floats and back (so '2' == '2.0' etc.)
-            try: v = format_float(float(v))
-            except: pass
+            try:
+                v = format_float(float(v))
+            except:
+                pass
             if v in variables:
                 variables[v][0] += 1
                 variables[v][1].append(i)
@@ -141,16 +113,23 @@ def group_vars(expr, format):
         # If we don't have a variable, set factor to zero and break
         for v in vrs:
             if v:
-                try: f = float(v); factor *= f
-                except: new_var.append(v)
-            else: factor = 0; break
+                try:
+                    f = float(v)
+                    factor *= f
+                except:
+                    new_var.append(v)
+            else:
+                factor = 0
+                break
 
         # Create new variable that must be multiplied with factor. Add this
         # variable to dictionary, if it already exists add factor to other factors
         new_var.sort()
         new_var = mult.join(new_var)
-        if new_var in new_prods: new_prods[new_var] += factor
-        else: new_prods[new_var] = factor
+        if new_var in new_prods:
+            new_prods[new_var] += factor
+        else:
+            new_prods[new_var] = factor
 
     # Reset products
     prods = []
@@ -163,7 +142,8 @@ def group_vars(expr, format):
             else:
                 prods.append(mult.join([format_float(f), prod]))
         # If we just have a factor
-        elif f: prods.append(format_float(f))
+        elif f:
+            prods.append(format_float(f))
 
     prods.sort()
     return add.join(prods)
@@ -231,11 +211,15 @@ def is_constant(variable, format, constants = [], from_is_constant = False):
             const_var = False
 
             # If variable is in constants, well....
-            if v in constants: const_var = True; continue
+            if v in constants:
+                const_var = True
+                continue
 
             # If we don't have any '[' or ']' we have a constant
             # (unless we're dealing with a call from this funtions)
-            elif not v.count(l) and not from_is_constant: const_var = True; continue
+            elif not v.count(l) and not from_is_constant:
+                const_var = True
+                continue
 
             # If we have an array access variable, see if the index is regarded a constant
             elif v.count(l):
@@ -257,9 +241,12 @@ def is_constant(variable, format, constants = [], from_is_constant = False):
                     # If the '[' count has returned to zero, we have a complete index
                     if left == 0 and inside:
                         const_index = False # Aux. var
-                        if index in constants:  const_index = True
+                        if index in constants:
+                            const_index = True
 
-                        try: int(index); const_index = True
+                        try:
+                            int(index)
+                            const_index = True
                         except:
                             # Last resort, call recursively
                             if is_constant(index, format, constants, True):
@@ -276,18 +263,27 @@ def is_constant(variable, format, constants = [], from_is_constant = False):
                         inside = False
 
                     # If we're inside an access, add character to index
-                    if inside: index += c
+                    if inside:
+                        index += c
 
                     # If character is '[' increase the count, and we're inside an access
-                    if c == l: inside = True; left += 1
+                    if c == l:
+                        inside = True
+                        left += 1
 
                 # If all indices were constant, the variable is constant
-                if all(indices): const_var = True; continue
+                if all(indices):
+                    const_var = True
+                    continue
 
             else:
                 # If it is a float, it is also constant
-                try: float(v); const_var = True; continue
-                except: pass
+                try:
+                    float(v)
+                    const_var = True
+                    continue
+                except:
+                    pass
 
             # I no tests resulted in a constant variable, there is no need to continue
             if not const_var:
@@ -338,7 +334,8 @@ def expand_operations(expression, format):
                 expanded.append( split_expression(expanded_var, format, add) )
 
             # Else, just add variable to list of new products
-            else: new_prods.append(p)
+            else:
+                new_prods.append(p)
 
         if expanded:
             # Combine all expanded variables and multiply by factor
@@ -394,16 +391,21 @@ def reduce_operations(expression, format):
             # If the list of products is the same as what we intend of moving
             # outside the parenthesis, leave it
             # (because x + x*x + x*y should be x + (x + y)*x NOT (1.0 + x + y)*x)
-            if li == max_vars: no_mult.append(p); continue
+            if li == max_vars:
+                no_mult.append(p)
+                continue
             else:
                 # Get list of all variables from max_vars that are in li
                 indices = [i for i in max_vars if i in li]
                 # If not all were present add to list of terms that shouldn't be
                 # multiplied with variables and continue
-                if indices != max_vars: no_mult.append(p); continue
+                if indices != max_vars:
+                    no_mult.append(p)
+                    continue
 
             # Remove variables that we are moving outside
-            for v in max_vars: li.remove(v)
+            for v in max_vars:
+                li.remove(v)
 
             # Add to list of products
             p = mult.join(li)
@@ -476,14 +478,16 @@ def get_geo_terms(expression, geo_terms, offset, format):
                 num_geo = offset + len(geo_terms)
 
                 # If we still have a sum, regroup
-                if len(v.split(add)) > 1: v = grouping(v)
+                if len(v.split(add)) > 1:
+                    v = grouping(v)
 
             # Append to new variables
             new_vrs.append(v)
 
             # If variable is constants, add to geo terms
             constant = is_constant(v, format)
-            if constant: geos.append(v)
+            if constant:
+                geos.append(v)
 
         # Update variable list
         vrs = new_vrs; vrs.sort()
@@ -492,6 +496,7 @@ def get_geo_terms(expression, geo_terms, offset, format):
         geos.sort()
         geo = mult.join(geos)
 
+        # Handle geometry term appropriately
         if geo:
             if geos != vrs:
                 if len(geos) > 1:
@@ -508,8 +513,10 @@ def get_geo_terms(expression, geo_terms, offset, format):
             new_prods.append(mult.join(vrs))
 
     if consts:
-        if len(consts) > 1: c = grouping(add.join(consts))
-        else: c = add.join(consts)
+        if len(consts) > 1:
+            c = grouping(add.join(consts))
+        else:
+            c = add.join(consts)
         if not c in geo_terms:
             geo_terms[c] = format_G + str(num_geo)
             num_geo += 1
@@ -551,17 +558,6 @@ def get_constants(expression, const_terms, format, constants = []):
         new_vrs = []
         for v in vrs:
 
-            # If variable is a group, get the geometry terms and update geo number
-#            if v[0] == gl and v[-1] == gr:
-#                new_consts = {}
-#                v = get_constants(v[1:-1], new_consts, 0, format, constants)
-#                print "V: ", v
-#                print new_consts
-#                num_geo = offset + len(const_terms)
-                
-                # If we still have a sum, regroup
-#                if len(v.split(add)) > 1: v = grouping(v)
-
             # If variable is constants, add to geo terms
             constant = is_constant(v, format, constants)
             if constant:
@@ -577,7 +573,6 @@ def get_constants(expression, const_terms, format, constants = []):
         geo = mult.join(geos)
         if geo:
             if geos != vrs:
-#                if len(geos) > 1:
                 for g in geos:
                     vrs.remove(g)
                 if not geo in const_terms:
@@ -591,8 +586,10 @@ def get_constants(expression, const_terms, format, constants = []):
             new_prods.append(mult.join(vrs))
 
     if consts:
-        if len(consts) > 1: c = grouping(add.join(consts))
-        else: c = add.join(consts)
+        if len(consts) > 1:
+            c = grouping(add.join(consts))
+        else:
+            c = add.join(consts)
         if not c in const_terms:
             const_terms[c] = format_G + str(num_geo)
             num_geo += 1
@@ -617,9 +614,6 @@ def get_variables(expression, variables, format, constants = []):
     gr = group[1]
     l = access[0]
     r = access[1]
-
-    # Make sure we have expanded the expression
-#    expression = expand_operations(expression, format)
 
     # If we don't have any access operators in expression,
     # we don't have any variables
@@ -669,7 +663,8 @@ def get_variables(expression, variables, format, constants = []):
                 if is_var:
                     break
                 # If character is ']' reduce left count
-                if c == r: left -= 1
+                if c == r:
+                    left -= 1
 
                 # If the '[' count has returned to zero, we have a complete index
                 if left == 0 and inside:
@@ -719,12 +714,6 @@ def get_variables(expression, variables, format, constants = []):
     # Sort list of products and return the sum
     new_prods.sort()
     return (add.join(new_prods), used_vars)
-
-
-
-
-
-
 
 
 

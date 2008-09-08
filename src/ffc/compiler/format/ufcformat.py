@@ -175,7 +175,11 @@ format = {
            "pointer": "*",
            "new": "new ",
            "delete": "delete ",
-           "cell shape": lambda i: {1: "ufc::interval", 2: "ufc::triangle", 3: "ufc::tetrahedron"}[i]}
+           "cell shape": lambda i: {1: "ufc::interval", 2: "ufc::triangle", 3: "ufc::tetrahedron"}[i],
+           "psi index names": {0: lambda i: "f%s" %(i), 1: lambda i: "p%s" %(i),\
+                               2: lambda i: "s%s" %(i), 4: lambda i: "fu%s" %(i),\
+                               5: lambda i: "pj%s" %(i), 6: lambda i: "c%s" %(i),\
+                               7: lambda i: "a%s" %(i)}}
 
 def init(options):
     "Initialize code generation for given options"

@@ -1,7 +1,7 @@
 "Code generator for quadrature representation"
 
 __author__ = "Kristian B. Oelgaard (k.b.oelgaard@tudelft.nl)"
-__date__ = "2007-03-16 -- 2008-08-26"
+__date__ = "2007-03-16 -- 2008-09-08"
 __copyright__ = "Copyright (C) 2007-2008 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
@@ -34,9 +34,6 @@ import reduce_operations
 
 # FFC format modules
 from ffc.compiler.format.removeunused import *
-
-# AUX
-import time
 
 class QuadratureGenerator(CodeGenerator):
     "Code generator for quadrature representation"
@@ -75,7 +72,8 @@ class QuadratureGenerator(CodeGenerator):
         code = self.__remove_unused(jacobi_code, trans_set, format)
 
         # Add element code
-        code += ["", format["comment"]("Compute element tensor (using quadrature representation, optimisation level %d)" %self.optimise_level), format["comment"]("Total number of operations to compute element tensor (from this point): %d" %num_ops)]
+        code += ["", format["comment"]("Compute element tensor (using quadrature representation, optimisation level %d)" % self.optimise_level),\
+                 format["comment"]("Total number of operations to compute element tensor (from this point): %d" %num_ops)]
         code += element_code
         debug("Number of operations to compute tensor: %d" % num_ops)
 
@@ -89,11 +87,13 @@ class QuadratureGenerator(CodeGenerator):
         Indent = IndentControl()
 
         # Prefetch formats to speed up code generation
+        format_comment      = format["comment"]
         format_block_begin  = format["block begin"]
         format_block_end    = format["block end"]
 
         # Extract terms for sub domain
-        tensors = [[term for term in t if term.monomial.integral.sub_domain == sub_domain] for t in form_representation.exterior_facet_tensors]
+        tensors = [[term for term in t if term.monomial.integral.sub_domain == sub_domain]\
+                    for t in form_representation.exterior_facet_tensors]
         if all([len(t) == 0 for t in tensors]):
             element_code = self.__reset_element_tensor(form_representation.exterior_facet_tensors[0][0], Indent, format)
             return {"tabulate_tensor": (element_code, []), "members": ""}
@@ -108,7 +108,7 @@ class QuadratureGenerator(CodeGenerator):
 
             # Assuming all tables have same dimensions for all facets (members_code)
             c, members_code, t_set, num_ops = self.__generate_element_tensor(tensors[i], i, None, Indent, format)
-            case += [format["comment"]("Total number of operations to compute element tensor (from this point): %d" %num_ops)] + c
+            case += [format_comment("Total number of operations to compute element tensor (from this point): %d" %num_ops)] + c
             case += [format_block_end]
             cases[i] = case
             trans_set = trans_set | t_set
@@ -122,7 +122,7 @@ class QuadratureGenerator(CodeGenerator):
         common = self.__remove_unused(jacobi_code, trans_set, format)
 
         # Add element code
-        common += ["", format["comment"]("Compute element tensor for all facets (using quadrature representation, optimisation level %d)" %self.optimise_level)]
+        common += ["", format_comment("Compute element tensor for all facets (using quadrature representation, optimisation level %d)" %self.optimise_level)]
 
         return {"tabulate_tensor": (common, cases), "constructor":"// Do nothing", "members":members_code}
     
@@ -134,6 +134,7 @@ class QuadratureGenerator(CodeGenerator):
         Indent = IndentControl()
 
         # Prefetch formats to speed up code generation
+        format_comment      = format["comment"]
         format_block_begin  = format["block begin"]
         format_block_end    = format["block end"]
 
@@ -154,7 +155,7 @@ class QuadratureGenerator(CodeGenerator):
 
                 # Assuming all tables have same dimensions for all facet-facet combinations (members_code)
                 c, members_code, t_set, num_ops = self.__generate_element_tensor(tensors[i][j], i, j, Indent, format)
-                case += [format["comment"]("Total number of operations to compute element tensor (from this point): %d" %num_ops)] + c
+                case += [format_comment("Total number of operations to compute element tensor (from this point): %d" %num_ops)] + c
                 case += [format_block_end]
                 cases[i][j] = case
                 trans_set = trans_set | t_set
@@ -167,7 +168,7 @@ class QuadratureGenerator(CodeGenerator):
         common = self.__remove_unused(jacobi_code, trans_set, format)
 
         # Add element code
-        common += ["", format["comment"]("Compute element tensor for all facets (using quadrature representation, optimisation level %d)" %self.optimise_level)]
+        common += ["", format_comment("Compute element tensor for all facets (using quadrature representation, optimisation level %d)" %self.optimise_level)]
 
         return {"tabulate_tensor": (common, cases), "constructor":"// Do nothing", "members":members_code}
 
@@ -175,10 +176,10 @@ class QuadratureGenerator(CodeGenerator):
         "Construct quadrature code for element tensors"
 
         # Prefetch formats to speed up code generation
-        format_comment    = format["comment"]
-        format_ip         = format["integration points"]
-        format_G          = format["geometry tensor"]
-        format_nzcolumns  = format["nonzero columns"]
+        format_comment      = format["comment"]
+        format_ip           = format["integration points"]
+        format_G            = format["geometry tensor"]
+        format_const_float  = format["const float declaration"]
         exp_ops   = reduce_operations.expand_operations
         red_ops   = reduce_operations.reduce_operations
         count_ops = reduce_operations.operation_count
@@ -186,7 +187,8 @@ class QuadratureGenerator(CodeGenerator):
         # Generate load_table.h if tables should be saved. (Not reimplemented)
         members_code = ""
 
-        # Reset values of the element tensor (FIXME: assuming same dimensions for all tensors)
+        # Reset values of the element tensor
+        # FIXME: assuming same dimensions for all tensors
         tabulate_code = []
         tabulate_code += self.__reset_element_tensor(tensors[0], Indent, format)
 
@@ -214,9 +216,9 @@ class QuadratureGenerator(CodeGenerator):
         tensor_ops_count = 0
 
         # Generate code to evaluate tensor
+        # Loop all quadrature points
         for points in group_tensors:
 
-            # Loop all quadrature points
             # Create list of tensors for comment
             ts = group_tensors[points]
             ip_code = [Indent.indent(format_comment\
@@ -249,7 +251,7 @@ class QuadratureGenerator(CodeGenerator):
             # Add integration point code element code
             element_code += ip_code
 
-        # Tabulate geo code, sort according to number
+        # Tabulate geometry code, sort according to number
         geo_code = []
         items = geo_terms.items()
         items = [(int(v.replace(format_G, "")), k) for (k, v) in items]
@@ -258,19 +260,22 @@ class QuadratureGenerator(CodeGenerator):
         geo_ops = 0
         for key, val in items:
             declaration = red_ops(exp_ops(key, format), format)
+            # Get number of operations needed to compute geometry declaration
             geo_ops += count_ops(declaration, format)
-            geo_code += [(format["const float declaration"] + val, declaration)]
+            geo_code += [(format_const_float + val, declaration)]
         geo_code.append("")
         if geo_ops:
             geo_code = ["", format_comment("Number of operations to compute geometry constants = %d" % geo_ops)] + geo_code
         else:
             geo_code = [""] + geo_code
 
+        # Add operation count
         tensor_ops_count += geo_ops
 
         element_code = geo_code + element_code
 
-        return (tabulate_code + element_code, members_code, trans_set, tensor_ops_count)
+        return (tabulate_code + element_code, members_code,\
+                trans_set, tensor_ops_count)
 
 
     def __tabulate_weights(self, tables, name_map, Indent, format):
@@ -319,7 +324,6 @@ class QuadratureGenerator(CodeGenerator):
 
         # Prefetch formats to speed up code generation
         format_comment    = format["comment"]
-        format_psis       = format["psis"]
         format_float      = format["floating point"]
         format_block      = format["block"]
         format_table      = format["table declaration"]

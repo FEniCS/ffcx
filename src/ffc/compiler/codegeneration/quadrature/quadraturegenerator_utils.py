@@ -1,7 +1,7 @@
 "Utility functions for quadrature representation"
 
 __author__ = "Kristian B. Oelgaard (k.b.oelgaard@tudelft.nl)"
-__date__ = "2007-03-16 -- 2008-02-05"
+__date__ = "2007-03-16 -- 2008-09-08"
 __copyright__ = "Copyright (C) 2007-2008 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
@@ -19,14 +19,7 @@ from ffc.compiler.representation.tensor.multiindex import *
 # FFC code generation modules
 from ffc.compiler.codegeneration.common.codegenerator import *
 
-# AUX
-import time
-
 from numpy import shape, array
-
-# FIXME: This should be in dictionary!!
-index_names = {0: lambda i: "f%s" %(i), 1: lambda i: "p%s" %(i), 2: lambda i: "s%s" %(i),\
-               4: lambda i: "fu%s" %(i), 5: lambda i: "pj%s" %(i), 6: lambda i: "c%s" %(i), 7: lambda i: "a%s" %(i)}
 
 def compute_macro_idims(monomial, idims, irank):
     "Compute macro dimensions in case of restricted basisfunctions"
@@ -44,10 +37,11 @@ def compute_macro_idims(monomial, idims, irank):
 
 def generate_psi_name(tensor_number, psi_indices, vindex, aindices, bindices,\
                       format, qeindices = []):
+    "Generate the name of a Psi table, but not the access to the matrix."
 
     # Prefetch formats to speed up code generation
     format_secondary_index  = format["secondary index"]
-    format_psis             = format["psis"]
+    index_names             = format["psi index names"]
     multi_index = []
 
     indices = ""
@@ -55,23 +49,25 @@ def generate_psi_name(tensor_number, psi_indices, vindex, aindices, bindices,\
         # We only need QE psi tables if they're primary indices
         if index in qeindices and not index.type == Index.PRIMARY:
             return None
+        # If we have a vindex we move it in front of the name
         if index == vindex:
             indices = format_secondary_index(index_names[index.type](index.index)) + indices
         else:
             indices += format_secondary_index(index_names[index.type](index([], aindices, bindices, [])))
 
-    name = format_psis + format_secondary_index("t%d" %tensor_number) + indices
+    name = format["psis"] + format_secondary_index("t%d" %tensor_number) + indices
 
     return name
 
-def generate_psi_entry2(num_ips, tensor_number, aindices, bindices, psi_indices, vindices, name_map, optimise_level, format, qeindices = []):
+def generate_psi_entry2(num_ips, tensor_number, aindices, bindices, psi_indices,\
+                        vindices, name_map, optimise_level, format, qeindices = []):
+    "Generate both name and matrix access for a given Psi."
 
     # Prefetch formats to speed up code generation
     primary_indices         = [format["first free index"], format["second free index"]]
     format_secondary_index  = format["secondary index"]
-    format_psis             = format["psis"]
-    format_matrix_access    = format["matrix access"]
     format_ip               = format["integration points"]
+    index_names             = format["psi index names"]
 
     # If we only have 1 IP, pick first
     # FIXME: this is language dependent, other languages might use '1' as first
@@ -84,29 +80,23 @@ def generate_psi_entry2(num_ips, tensor_number, aindices, bindices, psi_indices,
     dof_range = -1
     loop_dof = 0
     df_range = 0
+    # Create indices (for name) and information to generate loop
     for index in psi_indices:
-#        if index in qeindices:
-#            return (["P", "F"], dof_range, "")
         if index in vindices:
             indices = format_secondary_index(index_names[index.type](index.index)) + indices
             loop_dof = index(primary_indices, aindices, bindices, [])
             df_range = len(index.range)
         else:
             indices += format_secondary_index(index_names[index.type](index([], aindices, bindices, [])))
-#    print "loop dof: ", loop_dof
-    name = format_psis + format_secondary_index("t%d" %tensor_number) + indices
 
-#    print "name: ", name
-#    for k, v in name_map.items():
-#        print k, v
-#    print "name_map: ", name_map
+    name = format["psis"] + format_secondary_index("t%d" %tensor_number) + indices
+
     # For QE, we only need a psi entry if we do have a primary index
     for index in psi_indices:
-#        print "index: ", index
-#        print "qeindices: ", qeindices
         if index in qeindices and not index.type == Index.PRIMARY:
             name = ""
 
+    # If we have a name and a name map, m
     if name and name in name_map:
         dof_num = loop_dof
         if name_map[name][1]:
@@ -115,33 +105,28 @@ def generate_psi_entry2(num_ips, tensor_number, aindices, bindices, psi_indices,
             name = name_map[name][0]
             dof_range = len(cols)
             if dof_range == 1:
-#                dof_num = format["nonzero columns"](i) + format["array access"]("0")
                 # Direct lookup
                 dof_num = "%d" % cols[0]
-                entry = name + format_matrix_access(format_ip, dof_num)
+                entry = name + format["matrix access"](format_ip, dof_num)
             else:
                 dof_num = format["nonzero columns"](i) + format["array access"](loop_dof)
-                entry = name + format_matrix_access(format_ip, loop_dof)
+                entry = name + format["matrix access"](format_ip, loop_dof)
             if not name:
                 entry = name
         else:
             name = name_map[name][0]
             if name:
-                entry = name + format_matrix_access(format_ip, loop_dof)
+                entry = name + format["matrix access"](format_ip, loop_dof)
             else:
                 entry = name
     else:
         dof_num = loop_dof
         entry = ""
 
+    # If optimise level is 0, we loop the entire range of the dof
     if optimise_level == 0:
         dof_num = loop_dof
         dof_range = -1
-
-#    print "entry: ", entry
-#    print "dof_num: ", dof_num
-#    print "loop_dof: ", loop_dof
-#    print "dof_range: ", dof_range
 
     return ([loop_dof, dof_num], dof_range, entry)
 
@@ -188,31 +173,6 @@ def generate_loop(lines, loop_vars, Indent, format):
 
     return code
 
-def generate_loop1(lines, loop_vars, Indent, format):
-    "This function generates a loop over a vector or matrix."
-
-    # Get primary and secondary loop info
-    range_indices, indices = loop_vars
-#    print "prim[0]: ", prim[0]
-#    print "sec[0]: ", sec[0]
-#    print "prim: ", prim
-#    print "sec: ", sec
-    # Test validity
-    if not len(range_indices) == len(indices):
-        print "loop: ", loop_vars
-        raise RuntimeError, "Something is very wrong with this loop!!"
-
-    new_loops = []
-    for i in range(len(indices)):
-        index = indices[i]
-        upper = range_indices[i]
-        new_loops += [(index, 0, upper)]
-
-    if new_loops:
-        return generate_loop(lines, new_loops, Indent, format)
-    else:
-        return lines
-
 def equal_loops(tensors):
     "Group tensor with an equal number of quadrature points and primary indices"
 
@@ -235,11 +195,9 @@ def get_names_tables(tensor, tensor_number, format):
 
     # Loop psis
     for psi in tensor.Psis:
-#        print "PSI:\n", psi
+
         # Get values of psi, list of indices and index of basisfunction for psi
         values, indices, vindex = psi[0], psi[1], psi[2]
-#        print "shape values: ", shape(values)
-#        print "values: ", values
 
         # Create list of secondary indices
         sec_indices = [index for index in indices if not index == vindex]
@@ -251,31 +209,23 @@ def get_names_tables(tensor, tensor_number, format):
         # Get lists of secondary indices and auxiliary_0 indices (global)
         aindices = tensor.a.indices
         b0indices = tensor.b0.indices
-#        print "aindices: ", aindices
-#        print "b0indices: ", b0indices
-        # Reduce multi indices a and b0 (number of pertubations) according to current psi
+
+        # Reduce multi indices a and b0 (number of pertubations)
+        # according to current psi
         a_reduced = [[0],]*len(aindices[0])
-#        print "a_reduced start: ", a_reduced
         for index in indices:
-#            print "Index: ", index
             if index.type == Index.SECONDARY and index != vindex:
                 a_reduced[index.index] = range(len(index.range))
-#                a_reduced[index.index] = index.range
-#        print "a_reduced before MultiIndex: ", a_reduced
         a_reduced = MultiIndex(a_reduced).indices
 
         b0_reduced = [[0],]*len(b0indices[0])
-#        print "b0_reduced start: ", b0_reduced
         for index in indices:
-#            print "Index: ", index
             if index.type == Index.AUXILIARY_0 and index != vindex:
                 b0_reduced[index.index] = range(len(index.range))
-#                b0_reduced[index.index] = index.range
-#        print "b0_reduced before MultiIndex: ", b0_reduced
         b0_reduced = MultiIndex(b0_reduced).indices
-#        print "a_reduced: ", a_reduced
-#        print "b0_reduced: ", b0_reduced
-        # Loop secondary and auxiliary indices to generate names and entries in the psi table
+
+        # Loop secondary and auxiliary indices to generate names and entries
+        # in the psi table
         for a in a_reduced:
             for b in b0_reduced:
                 # Generate name
@@ -286,9 +236,9 @@ def get_names_tables(tensor, tensor_number, format):
                     for index in sec_indices:
                         multi_index.append(index([], a, b, []))
 
-#                    print "mult index: ", multi_index
                     # Get values from psi tensor, should have format values[dofs][quad_points]
                     vals = values[tuple(multi_index)]
+
                     # Check if the values have the correct dimensions, otherwise quadrature is not correctly
                     # implemented for the given form!!
                     if numpy.shape(vals) != (num_dofs, num_quadrature_points):
@@ -297,8 +247,7 @@ def get_names_tables(tensor, tensor_number, format):
                     # Generate values (FIAT returns [dof, quad_points] transpose to [quad_points, dof])
                     value = numpy.transpose(vals)
                     tables[name] = value
-  
-#    print tables
+
     return tables
 
 def unique_tables(tables, format_epsilon):
@@ -315,27 +264,24 @@ def unique_tables(tables, format_epsilon):
     inverse_name_map = {}
     names = [name for name in tables]
     mapped = []
+
     # Loop all tables to see if some are redundant
     for i in range(len(names)):
         name0 = names[i]
         if name0 in mapped:
             continue
         val0 = array(tables[name0])
-#        print "val0: ", val0
+
         for j in range(i+1, len(names)):
             name1 = names[j]
             if name1 in mapped:
                 continue
             val1 = array(tables[name1])
-#            print "val1: ", val1
+
             # Check if dimensions match
             if shape(val0) == shape(val1):
                 # Check if values are the same
-                # Old check
-#                if (val0 == val1).all():
-                # New check
                 if sqrt(((val0 - val1)*(val0 - val1)).sum()) < format_epsilon:
-#                    print "true"
                     mapped.append(name1)
                     del tables[name1]
                     if name0 in name_map:
@@ -389,34 +335,20 @@ def contains_zeros(tables, format_epsilon):
 def unique_psi_tables(tensors, optimisation_level, format):
     "Determine if some tensors have the same tables (and same names)"
 
+    # Get formats
+    format_epsilon = format["epsilon"]
+
     tables = {}
 
-#    t = time.clock()
-    # Loop tensors and get all tables
-#    tensor_number = 0
-#    remove_tensors = []
+    # Get the complete dictionary of tables
     for tensor_number, tensor in enumerate(tensors):
         tables.update(get_names_tables(tensor, tensor_number, format))
 
-#        table = get_names_tables(tensor, tensor_number, format)
-#        if table:
-#            tables.update(table)
-#            tensor_number += 1
-#        else:
-#            remove_tensors.append(i)
-
-#    print "tables T: ", time.clock() - t
-
-#    t = time.clock()
     # Get unique tables
-    name_map, inverse_name_map = unique_tables(tables, format["epsilon"])
-#    print "redundant tables T: ", time.clock() - t
-#    print "tables 1: ", tables
+    name_map, inverse_name_map = unique_tables(tables, format_epsilon)
 
-#    t = time.clock()
     # Exclude tables with all ones
-    names = get_ones(tables, format["epsilon"])
-#    print "names 0: ", names
+    names = get_ones(tables, format_epsilon)
     for name in names:
         del tables[name]
         if name in name_map:
@@ -424,8 +356,6 @@ def unique_psi_tables(tensors, optimisation_level, format):
             for m in maps:
                 del inverse_name_map[m]
         del inverse_name_map[name]
-#    print "tables 2: ", tables
-#    print "remove ones T: ", time.clock() - t
 
     # Set values to zero if they are lower than threshold
     for name in tables:
@@ -433,18 +363,19 @@ def unique_psi_tables(tensors, optimisation_level, format):
         vals = tables[name]
         for r in range(numpy.shape(vals)[0]):
             for c in range(numpy.shape(vals)[1]):
-                if abs(vals[r][c]) < format["epsilon"]:
+                if abs(vals[r][c]) < format_epsilon:
                     vals[r][c] = 0
         tables[name] = vals
 
-#    t = time.clock()
-    # Extract the column numbers that are non-zero (only for optimisations higher than 0)
+    # Extract the column numbers that are non-zero
+    # (only for optimisations higher than 0)
     i = 0
     non_zero_columns = {}
     if optimisation_level > 0:
         for name in tables:
             # Get values
             vals = tables[name]
+
             # Use the first row as reference
             non_zeros = list(vals[0].nonzero()[0])
 
@@ -486,8 +417,6 @@ def unique_psi_tables(tensors, optimisation_level, format):
                     # Compress values
                     tables[name] = vals[:, non_zeros]
                     i += 1
-#    print "tables 2: ", tables
-#    print "non zeros T: ", time.clock() - t
 
     # Add non-zero column info to inverse_name_map
     # (so we only need to pass around one name_map to code generating functions)
@@ -497,13 +426,10 @@ def unique_psi_tables(tensors, optimisation_level, format):
             inverse_name_map[name] = [inverse_name_map[name], nzc]
         else:
             inverse_name_map[name] = [inverse_name_map[name], ()]
-#    print "inverse_name_map: "
-#    for name, val in inverse_name_map.items():
-#        print name, val
 
     # Check if we have some zeros in the tables
     # FIXME: this shouldn't be necessary once UFL has removed all zero terms
-    contains_zeros(tables, format["epsilon"])
+    contains_zeros(tables, format_epsilon)
 
     # If we found non zero columns we might be able to reduce number of tables
     # further if optimise level is higher than 0
@@ -511,13 +437,8 @@ def unique_psi_tables(tensors, optimisation_level, format):
 
         # Try reducing the tables. This is possible if some tables have become
         # identical as a consequence of compressing the tables
-        nm, inv_nm = unique_tables(tables, format["epsilon"])
+        nm, inv_nm = unique_tables(tables, format_epsilon)
 
-#        print "nm: ", nm
-#        print "inv_nm: ",inv_nm
-#        print "name_map: "
-#        for k,v in name_map.items():
-#            print k,v
         # Update name maps
         for name in inverse_name_map:
             if inverse_name_map[name][0] in inv_nm:
@@ -533,22 +454,12 @@ def unique_psi_tables(tensors, optimisation_level, format):
                 else:
                     name_map[name].append(m)
 
-#        print "name_map: "
-#        for k,v in name_map.items():
-#            print k,v
-
-#        t = time.clock()
         # Exclude tables with all ones
-        names = get_ones(tables, format["epsilon"])
+        names = get_ones(tables, format_epsilon)
         # Because these tables now contain ones as a consequence of compression
         # we still need to consider the non-zero columns when looking up values
         # in coefficient arrays. The psi entries can however we neglected and we
         # don't need to tabulate the values
-#        print "names: ", names
-#        print "name_map: "
-#        for k,v in name_map.items():
-#            print k,v
-#        print "nm: ", nm
         for name in names:
             if name in name_map:
                 maps = name_map[name]
@@ -556,17 +467,11 @@ def unique_psi_tables(tensors, optimisation_level, format):
                     inverse_name_map[m][0] = ""
             if name in inverse_name_map:
                 inverse_name_map[name][0] = ""
-#            tables[name] = array([[]])
             tables[name] = None
-
-#        print "remove ones T, again: ", time.clock() - t
 
     # Write protect info
     for name in inverse_name_map:
         inverse_name_map[name] = tuple(inverse_name_map[name])
-#    print "inverse_name_map: "
-#    for name, val in inverse_name_map.items():
-#        print name, val
 
     return (inverse_name_map, tables)
 
