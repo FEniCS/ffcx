@@ -241,7 +241,7 @@ class Term:
 #        print "a_reduced: ", a_reduced
         self.reduced_aindices = a_reduced
 
-def generate_factor(tensor, a, mapped_a, bgindices, b0, format, opt_level):
+def generate_factor(num_ips, tensor, a, mapped_a, bgindices, b0, format, opt_level):
     "Generate factor"
 
     if not mapped_a:
@@ -250,7 +250,12 @@ def generate_factor(tensor, a, mapped_a, bgindices, b0, format, opt_level):
     format_multiply = format["multiply"]
     format_add      = format["add"]
     format_ip       = format["integration points"]
-        # Compute product of factors outside sum
+
+    # If the number of integrations points is 1
+    if num_ips == 1:
+        format_ip = "0"
+
+    # Compute product of factors outside sum
     trans_set = Set()
     factors = []
     factors_qe = []
@@ -271,9 +276,15 @@ def generate_factor(tensor, a, mapped_a, bgindices, b0, format, opt_level):
                         qe_access[i] = format_ip
                     else:
                         if dim > 1:
-                            qe_access[i] = format_add([ "%d" %(dim*i), format_ip])
+                            access = format_add([ "%d" %(dim*i), format_ip])
+                            try: access = "%d" % eval(access)
+                            except: pass
+                            qe_access[i] = access
                         elif dim == 1:
-                            qe_access[i] = format_add([ "%d" %i, format_ip])
+                            access = format_add([ "%d" %i, format_ip])
+                            try: access = "%d" % eval(access)
+                            except: pass
+                            qe_access[i] = access
                         else:
                             raise RuntimeError("Unexpected space_dimension!!")
 
@@ -304,6 +315,7 @@ def generate_factor(tensor, a, mapped_a, bgindices, b0, format, opt_level):
                                 raise RuntimeError("Error, more than one component index!!")
                         else:
                             access = qe_access[0]
+
 #                            raise RuntimeError("Error!!")
 
             if offset:
@@ -543,7 +555,7 @@ def generate_terms(num_ips, tensor_numbers, tensors, format, psi_name_map, weigh
                         mapped_a[i] = a_map[a_index]
 #                print "a: ", mapped_a
                 # Get geometry terms from inside sum, and outside sum
-                geo_out, geo_in, t_set = generate_factor(tensor, a, mapped_a, bgindices, b0, format, opt_level)
+                geo_out, geo_in, t_set = generate_factor(num_ips, tensor, a, mapped_a, bgindices, b0, format, opt_level)
 
                 if 1 < len(geo_in):
                     geo_in = [format_group(format_add(geo_in))]
