@@ -597,6 +597,60 @@ def get_constants(expression, const_terms, format, constants = []):
 
     return add.join(new_prods + consts)
 
+def get_indices(variable, format, from_get_indices = False):
+    """This function returns the indices of a given variable. E.g.,
+    P[0][j],            returns ['j']
+    P[ip][k],           returns ['ip','k']
+    P[ip][nzc0[j] + 3], returns ['ip','j']"""
+
+    add           = format["add"](["", ""])
+    mult          = format["multiply"](["", ""])
+    format_access = format["array access"]
+    access        = format_access("")
+
+    l = access[0]
+    r = access[1]
+
+    indices = []
+    # If there are no '[' in variable and self is the caller
+    if not variable.count(l) and from_get_indices:
+        adds = split_expression(variable, format, add)
+        for a in adds:
+            mults = split_expression(a, format, mult)
+            for m in mults:
+                try:
+                    eval(m)
+                except:
+                    if not m in indices:
+                        indices.append(m)
+    else:
+        index = ""; left = 0; inside = False;
+        # Loop all characters in variable and find indices
+        for c in variable:
+            # If character is ']' reduce left count
+            if c == r:
+                left -= 1
+
+            # If the '[' count has returned to zero, we have a complete index
+            if left == 0 and inside:
+                try:
+                    eval(index)
+                except:
+                    indices += get_indices(index, format, True)
+                index = ""
+                inside = False
+
+            # If we're inside an access, add character to index
+            if inside:
+                index += c
+
+            # If character is '[' increase the count, and we're inside an access
+            if c == l:
+                inside = True
+                left += 1
+
+    return indices
+
 def get_variables(expression, variables, format, constants = []):
     """This function returns a new expression where all geometry terms have
     been substituted with geometry declarations, these declarations are added
@@ -610,6 +664,8 @@ def get_variables(expression, variables, format, constants = []):
     grouping      = format["grouping"]
     group         = grouping("")
     format_F      = format["function value"]
+    format_ip     = format["integration points"]
+
     gl = group[0]
     gr = group[1]
     l = access[0]
@@ -650,44 +706,18 @@ def get_variables(expression, variables, format, constants = []):
             for c in constants:
                 if format_access(c) in v:
                     is_var = True
+                    break
             if is_var:
                 variables_of_interest.append(v)
                 continue
 
             # Then check the hard way
-            # Auxiliary variables
-            index = ""; left = 0; inside = False; indices = []
-            # Loop all characters in variable and find indices
-            for c in v:
-                # No need to continue if we have found a variable
-                if is_var:
-                    break
-                # If character is ']' reduce left count
-                if c == r:
-                    left -= 1
-
-                # If the '[' count has returned to zero, we have a complete index
-                if left == 0 and inside:
-                    # FIXME: Is this a safe and general check?
-                    for c in constants:
-                        if c in index:
-                            variables_of_interest.append(v)
-                            is_var = True
-                            break
-                    index = ""
-                    inside = False
-
-                # If we're inside an access, add character to index
-                if inside:
-                    index += c
-
-                # If character is '[' increase the count, and we're inside an access
-                if c == l:
-                    inside = True
-                    left += 1
-
-            # If we do not have a variable, add to other vars
-            if not is_var:
+            # Get list of indices
+            indices = get_indices(v, format)
+            depends = [True for c in constants if c in indices]
+            if any(depends):
+                variables_of_interest.append(v)
+            else:
                 new_vrs.append(v)
 
         variables_of_interest.sort()
