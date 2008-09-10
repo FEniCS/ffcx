@@ -177,7 +177,7 @@ namespace ufc
     public:
 
         /// Constructor
-        Cell(unsigned int top, unsigned int geo, std::vector< std::vector< unsigned int> > coords, std::vector< unsigned int> num_ents): ufc::cell(), num_entities(num_ents)
+        Cell(unsigned int top, unsigned int geo, std::vector< std::vector<double> > coords, std::vector< unsigned int> num_ents): ufc::cell(), num_entities(num_ents)
         {
             topological_dimension = top;
             geometric_dimension   = geo;
