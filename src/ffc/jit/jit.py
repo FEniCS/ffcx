@@ -64,7 +64,10 @@ def jit(input_form, options=None):
     jit_object = wrap(input_form, options)
 
     # Check cache
-    module = instant.import_module(jit_object)
+    cache_dir = None
+    if "cache_dir" in options:
+        cache_dir = options["cache_dir"]
+    module = instant.import_module(jit_object, cache_dir=cache_dir)
     print "Module returned by import_module: ", module
 
     # Compile form
@@ -81,7 +84,8 @@ def jit(input_form, options=None):
                                   additional_declarations=ufc_include,
                                   include_dirs=path,
                                   cppargs=cppargs,
-                                  signature=signature)
+                                  signature=signature,
+                                  cache_dir=cache_dir)
     debug("done", -1)
 
     # Extract form
