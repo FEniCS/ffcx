@@ -64,9 +64,7 @@ def jit(input_form, options=None):
     jit_object = wrap(input_form, options)
 
     # Check cache
-    cache_dir = None
-    if "cache_dir" in options:
-        cache_dir = options["cache_dir"]
+    cache_dir = options["cache_dir"]
     module = instant.import_module(jit_object, cache_dir=cache_dir)
     print "Module returned by import_module: ", module
 
