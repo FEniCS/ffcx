@@ -2,7 +2,7 @@
 It uses Instant to wrap the generated code into a Python module."""
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-07-20 -- 2008-09-06"
+__date__ = "2007-07-20 -- 2008-09-11"
 __copyright__ = "Copyright (C) 2007-2008 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
@@ -10,10 +10,8 @@ __license__  = "GNU GPL version 3 or any later version"
 # Mofified by Ilmar Wilbers, 2008
 
 # Python modules
-from os import system
-from commands import getoutput
+import instant
 from distutils import sysconfig
-import md5, os, sys, shutil
 
 # FFC common modules
 from ffc.common.debug import *
@@ -21,14 +19,9 @@ from ffc.common.constants import *
 
 # FFC compiler modules
 from ffc.compiler.compiler import compile
-from ffc.compiler.language import algebra
-from ffc.compiler.analysis import simplify, analyze
 
 # FFC jit modules
 from jitobject import JITObject
-
-# Import Instant
-import instant
 
 # In-memory form cache
 form_cache = {}
@@ -36,7 +29,7 @@ form_cache = {}
 # FIXME: Change here for testing
 use_ffc_cache = True
 
-# Options for JIT-compiler, evaluate_basis and evaluate_basis_derivatives turned off
+# Special Options for JIT-compilation
 FFC_OPTIONS_JIT = FFC_OPTIONS.copy()
 FFC_OPTIONS_JIT["no-evaluate_basis_derivatives"] = True
 

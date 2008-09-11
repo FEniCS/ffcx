@@ -38,6 +38,10 @@ class JITObject:
         
         return number
 
+    def __eq__(self, other):
+        "Check for equality"
+        return hash(self) == hash(other)
+
     def signature(self):
         "Return unique string for form expression + options"
 
