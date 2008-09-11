@@ -23,15 +23,12 @@ from ffc.compiler.compiler import compile
 # FFC jit modules
 from jitobject import JITObject
 
-# In-memory form cache
-form_cache = {}
-
-# FIXME: Change here for testing
-use_ffc_cache = True
-
 # Special Options for JIT-compilation
 FFC_OPTIONS_JIT = FFC_OPTIONS.copy()
 FFC_OPTIONS_JIT["no-evaluate_basis_derivatives"] = True
+
+# Set debug level for Instant
+instant.set_logging_level("warning")
 
 def jit(form, options=None):
     """Just-in-time compile the given form or element
@@ -42,21 +39,15 @@ def jit(form, options=None):
       options : An option dictionary
     """
 
-    print ""
-    print "--- Calling FFC JIT compiler ---"
-
     # Check options
     options = check_options(form, options)
 
     # Wrap input
     jit_object = JITObject(form, options)
-
-    # Check in-memory form cache
-    if use_ffc_cache and form in form_cache: return form_cache[form]
     
     # Check cache
     module = instant.import_module(jit_object, cache_dir=options["cache_dir"])
-    if module: return extract_form(form, module, jit_object)
+    if module: return extract_form(form, module)
 
     # Generate code
     debug("Calling FFC just-in-time (JIT) compiler, this may take some time...", -1)
@@ -76,7 +67,7 @@ def jit(form, options=None):
                                   cache_dir=options["cache_dir"])
     debug("done", -1)
 
-    return extract_form(form, module, jit_object)
+    return extract_form(form, module)
 
 def check_options(form, options):
     "Check options and add any missing options"
@@ -105,13 +96,9 @@ def check_options(form, options):
 
     return options
 
-def extract_form(form, module, jit_object):
+def extract_form(form, module):
     "Extract form from module"
-    signature = jit_object.signature()
-    compiled_form = getattr(module, signature)()
-    form_data = jit_object.form_data
-    if use_ffc_cache: form_cache[form] = (compiled_form, module, form_data)
-    return (compiled_form, module, form_data)
+    return (getattr(module, module.__name__)(), module, form.form_data)
 
 def extract_instant_flags(options):
     "Extract flags for Instant"

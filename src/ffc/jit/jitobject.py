@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2008-09-04 -- 2008-09-04"
+__date__ = "2008-09-04 -- 2008-09-11"
 __copyright__ = "Copyright (C) 2008 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
@@ -56,5 +56,8 @@ class JITObject:
         options_signature = str(self.options)
         string = ";".join([form_signature, element_signature, options_signature])
         self._signature = "form_" + sha1(string).hexdigest()
+
+        # Store form data and signature in form for later reuse
+        self.form.form_data = self.form_data
         
         return self._signature
