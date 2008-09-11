@@ -31,10 +31,10 @@ class JITObject:
         if not self._hash is None:
             return self._hash
 
-        # Compute hash (use a hack to convert hexdigest to int)
+        # Compute hash
         string = str(id(self.form)) + str(self.options)
         hexdigest = sha1(string).hexdigest()
-        number = int("".join([c for c in hexdigest if c.isdigit()]))
+        number = int(hexdigest, 16)
         
         return number
 
