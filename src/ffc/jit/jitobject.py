@@ -9,24 +9,37 @@ from hashlib import sha1
 from ffc.compiler.language import algebra
 from ffc.compiler.analysis import simplify, analyze
 
-# Used for caching
-_jit_objects = {}
-
 class JITObject:
-    """This class is a wrapper for compiled objects in the context of
-    specific compiler options. JITObjects with the same signature are
-    considered to be identical and may be mapped to the same code.
-    This allows code and modules to be reused from cache."""
+    """This class is a wrapper for a compiled object in the context of
+    specific compiler options. A JITObject is identified either by its
+    hash value or by its signature. The hash value is valid only in a
+    single instance of an application (at runtime). The signature is
+    persistent and may be used for caching modules on disk."""
 
     def __init__(self, form, options):
         "Create JITObject for given form and options"
         self.form = form
         self.options = options
         self._form_data = None
+        self._hash = None
         self._signature = None
 
+    def __hash__(self):
+        "Return unique integer for form + options"
+
+        # Check if we have computed the hash before
+        if not self._hash is None:
+            return self._hash
+
+        # Compute hash (use a hack to convert hexdigest to int)
+        string = str(id(self.form)) + str(self.options)
+        hexdigest = sha1(string).hexdigest()
+        number = int("".join([c for c in hexdigest if c.isdigit()]))
+        
+        return number
+
     def signature(self):
-        "Return signature"
+        "Return unique string for form expression + options"
 
         # Check if we have computed the signature before
         if not self._signature is None:
@@ -37,17 +50,7 @@ class JITObject:
         form_signature = str(self.form)
         element_signature = ";".join([element.signature() for element in self.form_data.elements])
         options_signature = str(self.options)
-        s = ";".join([form_signature, element_signature, options_signature])
-        self._signature = "form_" + sha1(s).hexdigest()
+        string = ";".join([form_signature, element_signature, options_signature])
+        self._signature = "form_" + sha1(string).hexdigest()
         
         return self._signature
-
-def wrap(form, options):
-    "Wrap form into a JITObject"
-    key = (form, str(options))
-    if key in _jit_objects:
-        jit_object = _jit_objects[key]
-    else:
-        jit_object = JITObject(form, options)
-        _jit_objects[key] = jit_object
-    return jit_object

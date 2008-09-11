@@ -25,53 +25,50 @@ from ffc.compiler.language import algebra
 from ffc.compiler.analysis import simplify, analyze
 
 # FFC jit modules
-from jitobject import wrap
+from jitobject import JITObject
 
 # Import Instant
 import instant
 
-# Global counter for numbering forms
-counter = 0
-
 # In-memory form cache
 form_cache = {}
 
+# FIXME: Change here for testing
+use_ffc_cache = True
+
 # Options for JIT-compiler, evaluate_basis and evaluate_basis_derivatives turned off
 FFC_OPTIONS_JIT = FFC_OPTIONS.copy()
-#FFC_OPTIONS_JIT["no-evaluate_basis"] = True
 FFC_OPTIONS_JIT["no-evaluate_basis_derivatives"] = True
 
-def jit(input_form, options=None):
+def jit(form, options=None):
     """Just-in-time compile the given form or element
     
     Parameters:
     
-      input_form : The form
-      options    : An option dictionary
+      form    : The form
+      options : An option dictionary
     """
 
     print ""
     print "--- Calling FFC JIT compiler ---"
 
     # Check options
-    options = check_options(input_form, options)
-
-    # Check in-memory form cache
-    #if input_form in form_cache:
-    #    return form_cache[input_form]
+    options = check_options(form, options)
 
     # Wrap input
-    jit_object = wrap(input_form, options)
+    jit_object = JITObject(form, options)
 
+    # Check in-memory form cache
+    if use_ffc_cache and form in form_cache: return form_cache[form]
+    
     # Check cache
-    cache_dir = options["cache_dir"]
-    module = instant.import_module(jit_object, cache_dir=cache_dir)
-    print "Module returned by import_module: ", module
+    module = instant.import_module(jit_object, cache_dir=options["cache_dir"])
+    if module: return extract_form(form, module, jit_object)
 
-    # Compile form
+    # Generate code
     debug("Calling FFC just-in-time (JIT) compiler, this may take some time...", -1)
     signature = jit_object.signature()
-    compile(input_form, signature, options)
+    compile(form, signature, options)
     debug("done", -1)
 
     # Wrap code into a Python module using Instant
@@ -83,17 +80,10 @@ def jit(input_form, options=None):
                                   include_dirs=path,
                                   cppargs=cppargs,
                                   signature=signature,
-                                  cache_dir=cache_dir)
+                                  cache_dir=options["cache_dir"])
     debug("done", -1)
 
-    # Extract form
-    compiled_form = getattr(module, signature)()
-
-    # Add to form cache
-    if not input_form in form_cache:
-        form_cache[input_form] = (compiled_form, module, jit_object.form_data)
-
-    return (compiled_form, module, jit_object.form_data)
+    return extract_form(form, module, jit_object)
 
 def check_options(form, options):
     "Check options and add any missing options"
@@ -107,13 +97,13 @@ def check_options(form, options):
 
     # Check for invalid options
     for key in options:
-        if not key in FFC_OPTIONS:
+        if not key in FFC_OPTIONS_JIT:
             warning('Unknown option "%s" for JIT compiler, ignoring.' % key)
 
     # Add defaults for missing options
-    for key in FFC_OPTIONS:
+    for key in FFC_OPTIONS_JIT:
         if not key in options:
-            options[key] = FFC_OPTIONS[key]
+            options[key] = FFC_OPTIONS_JIT[key]
 
     # Don't postfix form names
     if "form_postfix" in options and options["form_postfix"]:
@@ -122,14 +112,20 @@ def check_options(form, options):
 
     return options
 
+def extract_form(form, module, jit_object):
+    "Extract form from module"
+    signature = jit_object.signature()
+    compiled_form = getattr(module, signature)()
+    form_data = jit_object.form_data
+    if use_ffc_cache: form_cache[form] = (compiled_form, module, form_data)
+    return (compiled_form, module, form_data)
+
 def extract_instant_flags(options):
     "Extract flags for Instant"
 
     # Get C++ compiler options
-    if options["optimize"]:
-        cppargs = "-O2"
-    else:
-        cppargs = "-O0"
+    if options["optimize"]: cppargs = "-O2"
+    else: cppargs = "-O0"
 
     # Get include directory for ufc.h (might be better way to do this?)
     (path, dummy, dummy, dummy) = instant.header_and_libs_from_pkgconfig("ufc-1")
