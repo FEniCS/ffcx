@@ -77,7 +77,10 @@ def check_options(form, options):
         raise RuntimeError, "JIT compiler requires a single form (not a list of forms)."
 
     # Copy options
-    options = options.copy()
+    if options is None:
+        options = {}
+    else:
+        options = options.copy()
 
     # Check for invalid options
     for key in options:
