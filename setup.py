@@ -19,7 +19,7 @@ if platform.system() == "Windows" or "bdist_wininst" in sys.argv:
     else:
         # We are running bdist_wininst on a non-Windows platform
         pymajor, pyminor = sysconfig.get_python_version().split(".")
-        prefix = "C:\\Python%s%s" % (major, pyminor)
+        prefix = "C:\\Python%s%s" % (pymajor, pyminor)
 
     # If --prefix is specified we use this instead of the default:
     for arg in sys.argv:
