@@ -2,7 +2,7 @@
 It uses Instant to wrap the generated code into a Python module."""
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-07-20 -- 2008-09-11"
+__date__ = "2007-07-20 -- 2008-09-16"
 __copyright__ = "Copyright (C) 2007-2008 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
@@ -11,7 +11,8 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Python modules
 import instant
-from distutils import sysconfig
+import distutils
+import os
 
 # FFC common modules
 from ffc.common.debug import *
@@ -65,6 +66,7 @@ def jit(form, options=None):
                                   cppargs=cppargs,
                                   signature=signature,
                                   cache_dir=options["cache_dir"])
+    os.unlink(filename)
     debug("done", -1)
 
     return extract_form(form, module)
@@ -112,7 +114,7 @@ def extract_instant_flags(options):
 
     # Get include directory for ufc.h (might be better way to do this?)
     (path, dummy, dummy, dummy) = instant.header_and_libs_from_pkgconfig("ufc-1")
-    if len(path) == 0: path = [("/").join(sysconfig.get_python_inc().split("/")[:-2]) + "/include"]
+    if len(path) == 0: path = [("/").join(distutils.sysconfig.get_python_inc().split("/")[:-2]) + "/include"]
     ufc_include = '%%include "%s/ufc.h"' % path[0]
 
     return (cppargs, path, ufc_include)
