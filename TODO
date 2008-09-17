@@ -11,6 +11,7 @@ This gives convenient expand/collapse of bullets by pressing TAB.
 ** Add finite_element::topological_dimension()
 ** Add finite_element::geometric_dimension()
 ** Add function::rank() and function::dim(i) and function::geometric_dimension()
+** Add "std::string *::ufl() const" for all relevant classes, returning the matching UFL representation string.
 
 * Features to possibly include in future versions
 ** Obtaining local sparsity pattern from form and/or *_integral.
