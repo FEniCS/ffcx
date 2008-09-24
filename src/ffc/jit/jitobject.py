@@ -6,7 +6,6 @@ __license__  = "GNU GPL version 3 or any later version"
 from hashlib import sha1
 
 # FFC compiler modules
-from ffc.compiler.language import algebra
 from ffc.compiler.analysis import simplify, analyze
 
 class JITObject:
@@ -50,7 +49,7 @@ class JITObject:
             return self._signature
 
         # Compute signature
-        self.form_data = analyze.analyze(algebra.Form(self.form), simplify_form=False)
+        self.form_data = analyze.analyze(self.form, simplify_form=True)
         form_signature = str(self.form)
         element_signature = ";".join([element.signature() for element in self.form_data.elements])
         options_signature = str(self.options)

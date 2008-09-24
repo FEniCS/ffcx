@@ -20,6 +20,7 @@ from ffc.common.constants import *
 
 # FFC compiler modules
 from ffc.compiler.compiler import compile
+from ffc.compiler.language.algebra import Form
 
 # FFC jit modules
 from jitobject import JITObject
@@ -40,12 +41,16 @@ def jit(form, options=None):
       options : An option dictionary
     """
 
+    # Make sure that we get a form
+    if not isinstance(form, Form):
+        form = Form(form)
+
     # Check options
     options = check_options(form, options)
 
     # Wrap input
     jit_object = JITObject(form, options)
-    
+
     # Check cache
     module = instant.import_module(jit_object, cache_dir=options["cache_dir"])
     if module: return extract_form(form, module)
