@@ -5,7 +5,7 @@ from distutils.core import setup
 from os import chdir
 from os.path import join, splitext
 
-scripts = [join("src", "bin", "ffc"), join("src", "bin", "ffc-clean")]
+scripts = [join("scripts", "ffc"), join("scripts", "ffc-clean")]
 
 if platform.system() == "Windows" or "bdist_wininst" in sys.argv:
 
@@ -56,6 +56,6 @@ setup(name = "FFC",
                   "ffc.compiler.language",
                   "ffc.compiler.analysis",
                   "ffc.jit"],
-      package_dir={"ffc": join("src", "ffc")},
+      package_dir={"ffc": "ffc"},
       scripts = scripts,
       data_files = [(join("share", "man", "man1"), [join("doc", "man", "man1", "ffc.1.gz")])])

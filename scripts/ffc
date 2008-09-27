@@ -21,7 +21,6 @@ import os.path
 
 # Enable ffc from within demo and sandbox without installation
 sys.path.append("../")
-sys.path.append("../../")
 
 # FFC modules
 from ffc.common.debug import *
