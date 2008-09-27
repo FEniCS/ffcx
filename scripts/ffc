@@ -5,12 +5,12 @@
 # Python module which is then executed.
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-10-14 -- 2008-09-04"
+__date__ = "2004-10-14 -- 2008-09-27"
 __copyright__ = "Copyright (C) 2004-2008 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Modified by Johan Jansson 2005
-# Modified by Ola Skavhaug 2006
+# Modified by Johan Jansson, 2005
+# Modified by Ola Skavhaug, 2006
 # Modified by Kristian B. Oelgaard 2007
 # Modified by Dag Lindbo, 2008
 
@@ -23,7 +23,7 @@ import os.path
 sys.path.append("../")
 
 # FFC modules
-from ffc.common.debug import *
+from ffc.common.debug import warning, error, debug, setlevel
 from ffc.common.constants import *
 from ffc.common.exceptions import *
 
@@ -35,30 +35,32 @@ def main(argv):
         opts, args = getopt.getopt(argv, "hvd:sl:r:f:O", \
         ["help", "version", "debug=", "silent", "language=", "representation=", "optimize"])
     except getopt.GetoptError:
-        usage()
+        error("Illegal command-line arguments")
+        print_usage()
         return 2
 
-    # Check that we got a filename
-    if opts == [("-v", "")] or opts == [("--version", "")]:
-        version()
-        sys.exit(0)
-    elif not args:
-        usage()
-        return 2
+    # Check for -h
+    if len(argv) == 1 and argv[0] in ("-h", "--help"):
+        print_usage()
+        return 0
 
+    # Check for -v
+    if len(argv) == 1 and argv[0] in ("-v", "--version"):
+        print_version()
+        return 0
+
+    # Check that we get at least one file
+    if len(args) == 0:
+        error("Missing file")
+        return 2
+    
     # Set default arguments
     debuglevel = FFC_DEBUG_LEVEL
     options = FFC_OPTIONS.copy()
 
     # Parse command-line options
     for opt, arg in opts:
-        if opt in ("-h", "--help"):
-            usage()
-            return 0
-        elif opt in ("-v", "--version"):
-            version()
-            return 0
-        elif opt in  ("-d", "--debug"):
+        if opt in  ("-d", "--debug"):
             debuglevel = int(arg)
         elif opt in ("-s", "--silent"):
             debuglevel = -1
@@ -74,7 +76,7 @@ def main(argv):
                 key = arg.split("=")[0]
                 options[arg] = True
             else:
-                usage()
+                print_usage()
                 return 2
         elif opt in ("-O", "--optimize"):
             options["optimize"] = True
@@ -84,24 +86,20 @@ def main(argv):
 
     # Print a nice message
     if debuglevel > -1:
-        version()
+        print_version()
 
-    # Silly warning
-    if not os.path.join("foo", "bar") == "foo/bar":
-        debug("*** Warning: Please consider using another operating system ;-)")
-
-    # call parser and compiler for each file
+    # Call parser and compiler for each file
     for filename in args:
-        # parse current file
+
+        # Parse current file
         outname = __make_module(filename, options)
-        # compile generated file (also provide a namespace)
-        ns = {}
-        # catch exceptions only if debug level is non-negative
+
+        # Catch exceptions only if debug level is non-negative
         if debuglevel >= 1:
-            execfile(outname, ns)
+            execfile(outname, {})
         else:
             try:
-                execfile(outname, ns)
+                execfile(outname, {})
             except FormError, exception:
                 print ""
                 print "*** Error at " + str(exception.expression)
@@ -119,9 +117,9 @@ def main(argv):
 
     return 0
 
-def usage():
-    "Display usage info."
-    version()
+def print_usage():
+    "Print usage info"
+    print_version()
     print """Usage: ffc [OPTION]... input.form
 
 For information about the FFC command-line interface, refer to
@@ -129,8 +127,8 @@ the FFC man page which may invoked by 'man ffc' (if installed).
 """
     return
 
-def version():
-    "Display version number."
+def print_version():
+    "Print version number"
     print("This is FFC, the FEniCS Form Compiler, version %s." % FFC_VERSION)
     print("For further information, go to http://www.fenics.org/ffc/.\n")
     return
