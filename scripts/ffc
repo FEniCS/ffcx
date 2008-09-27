@@ -94,6 +94,8 @@ def main(argv):
         # Parse current file
         outname = __make_module(filename, options)
 
+
+
         # Catch exceptions only if debug level is non-negative
         if debuglevel >= 1:
             execfile(outname, {})
