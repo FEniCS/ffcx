@@ -1,12 +1,15 @@
 "Code generation for the UFC 1.0 format with DOLFIN"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-03-24 -- 2007-06-11"
+__date__ = "2007-03-24 -- 2008-09-26"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian B. Oelgaard 2007
 # Modified by Dag Lindbo, 2008
+
+# Python modules
+import os
 
 # UFC code templates
 from ufc import *
@@ -33,6 +36,9 @@ def init(options):
 def write(generated_forms, prefix, options):
     "Generate UFC 1.0 code with DOLFIN wrappers for a given list of pregenerated forms"
 
+    # Strip directory names from prefix
+    full_prefix = prefix
+    prefix = prefix.split(os.path.join(' ',' ').split()[0])[-1]
     
     # Generate code for header
     output = ""
@@ -53,7 +59,7 @@ def write(generated_forms, prefix, options):
         output += generate_footer(prefix, options)
 
         # Write file
-        filename = "%s.h" % prefix
+        filename = "%s.h" % full_prefix
         file = open(filename, "w")
         file.write(output)
         file.close()
@@ -75,7 +81,7 @@ def write(generated_forms, prefix, options):
         output += generate_footer(prefix, options)
 
         # Write file
-        filename = "%s.h" % prefix
+        filename = "%s.h" % full_prefix
         file = open(filename, "w")
         file.write(output)
         file.close()
@@ -89,7 +95,7 @@ def write(generated_forms, prefix, options):
         output += ufcformat.generate_ufc(generated_forms, "UFC_" + prefix, options, "implementation")
 
         # Write file
-        filename = "%s.cpp" % prefix
+        filename = "%s.cpp" % full_prefix
         file = open(filename, "w")
         file.write(output)
         file.close()
