@@ -91,17 +91,21 @@ def main(argv):
     # Call parser and compiler for each file
     for filename in args:
 
-        # Parse current file
-        outname = __make_module(filename, options)
+        # Get filename suffix
+        suffix = filename.split(".")[-1]
 
-
+        # Check file suffix and parse file/generate module
+        if suffix == "ufl":
+            script = _make_script_ufl(filename, options)
+        elif suffix == "form":
+            script = _make_script_form(filename, options)
 
         # Catch exceptions only if debug level is non-negative
         if debuglevel >= 1:
-            execfile(outname, {})
+            execfile(script, {})
         else:
             try:
-                execfile(outname, {})
+                execfile(script, {})
             except FormError, exception:
                 print ""
                 print "*** Error at " + str(exception.expression)
@@ -135,13 +139,14 @@ def print_version():
     print("For further information, go to http://www.fenics.org/ffc/.\n")
     return
 
-def __make_module(filename, options):
-    "Create Python module from given .form file and return name of module file"
+# New version for .ufl files
+def _make_script_ufl(filename, options):
+    "Create Python script from given .ufl file and return name of script"
 
     # Get prefix of file name and generate Python script file name
-    prefix = filename.replace(".form", "")
-    outname = prefix + ".py"
-    debug("Preprocessing form file: %s --> %s\n" % (filename, outname))
+    prefix = "".join(filename.split(".")[:-1])
+    script = prefix + ".py"
+    debug("Preprocessing form file: %s --> %s\n" % (filename, script))
 
     # Read input
     infile = open(filename, "r")
@@ -163,12 +168,48 @@ compile([a, L, M, element], \"%s\", %s)
 """ % (input, prefix, options)
 
     # Write output
-    outfile = open(outname, "w")
+    outfile = open(script, "w")
     outfile.write(output)
     outfile.close()
 
-    # Return output file name
-    return outname
+    # Return script filename
+    return script
+
+# Old version for .form files
+def _make_script_form(filename, options):
+    "Create Python module from given .form file and return name of module file"
+
+    # Get prefix of file name and generate Python script file name
+    prefix = "".join(filename.split(".")[:-1])
+    script = prefix + ".py"
+    debug("Preprocessing form file: %s --> %s\n" % (filename, script))
+
+    # Read input
+    infile = open(filename, "r")
+    input = infile.read()
+    infile.close()
+
+    # Generate output
+    output = """\
+from ffc import *
+
+# Reserved variables for forms
+(a, L, M) = (None, None, None)
+
+# Reserved variable for element
+element = None
+
+%s
+compile([a, L, M, element], \"%s\", %s)
+""" % (input, prefix, options)
+
+    # Write output
+    outfile = open(script, "w")
+    outfile.write(output)
+    outfile.close()
+
+    # Return script filename
+    return script
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv[1:]))
