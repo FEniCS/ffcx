@@ -30,6 +30,7 @@ from ffc.fem.projection import Projection
 
 # Import compiler
 from ffc.compiler.compiler import compile
+from ffc.compiler.uflcompiler import compile as compile_ufl
 
 # Import JIT compiler
 from ffc.jit.jit import jit
@@ -38,6 +39,3 @@ from ffc.jit.jit import jit
 from ffc.compiler.language.algebra import BasisFunction, TestFunction, TrialFunction, Function
 from ffc.compiler.language.operators import *
 from ffc.compiler.language.builtins import *
-
-# Import constants
-#from ffc.common.constants import *

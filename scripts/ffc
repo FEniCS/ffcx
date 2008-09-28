@@ -155,7 +155,8 @@ def _make_script_ufl(filename, options):
 
     # Generate output
     output = """\
-from ffc import *
+from ufl import *
+from ffc import compile_ufl
 
 # Reserved variables for forms
 (a, L, M) = (None, None, None)
@@ -164,7 +165,7 @@ from ffc import *
 element = None
 
 %s
-compile([a, L, M, element], \"%s\", %s)
+compile_ufl([a, L, M, element], \"%s\", %s)
 """ % (input, prefix, options)
 
     # Write output
