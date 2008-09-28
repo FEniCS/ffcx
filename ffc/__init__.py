@@ -30,7 +30,8 @@ from ffc.fem.projection import Projection
 
 # Import compiler
 from ffc.compiler.compiler import compile
-from ffc.compiler.uflcompiler import compile as compile_ufl
+try:
+    from ffc.compiler.uflcompiler import compile as compile_ufl
 
 # Import JIT compiler
 from ffc.jit.jit import jit
