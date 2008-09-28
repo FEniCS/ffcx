@@ -100,8 +100,8 @@ def check_options(form, options):
             options[key] = FFC_OPTIONS_JIT[key]
 
     # Don't postfix form names
-    if "form_postfix" in options and options["form_postfix"]:
-        warning("Forms cannot be postfixed when the JIT compiler is used.")
+    #if "form_postfix" in options and options["form_postfix"]:
+    #    warning("Forms cannot be postfixed when the JIT compiler is used.")
     options["form_postfix"] = False
 
     return options
@@ -114,7 +114,7 @@ def extract_instant_flags(options):
     "Extract flags for Instant"
 
     # Get C++ compiler options
-    if options["optimize"]: cppargs = "-O2"
+    if options["cpp optimize"]: cppargs = "-O2"
     else: cppargs = "-O0"
 
     # Get include directory for ufc.h (might be better way to do this?)
