@@ -32,6 +32,8 @@ from ffc.fem.projection import Projection
 from ffc.compiler.compiler import compile
 try:
     from ffc.compiler.uflcompiler import compile as compile_ufl
+except:
+    pass
 
 # Import JIT compiler
 from ffc.jit.jit import jit
