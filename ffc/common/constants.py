@@ -16,4 +16,5 @@ FFC_OPTIONS = {"representation": "tensor",
                "quadrature_points": False,
                "split_implementation": False,
                "form_postfix": True,
-               "cache_dir": None}
+               "cache_dir": None,
+               "output_dir": "."}

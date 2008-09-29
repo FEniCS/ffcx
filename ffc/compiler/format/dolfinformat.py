@@ -1,11 +1,11 @@
 "Code generation for the UFC 1.0 format with DOLFIN"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-03-24 -- 2008-09-26"
+__date__ = "2007-03-24 -- 2008-09-29"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Modified by Kristian B. Oelgaard 2007
+# Modified by Kristian B. Oelgaard 2008
 # Modified by Dag Lindbo, 2008
 
 # Python modules
@@ -36,9 +36,9 @@ def init(options):
 def write(generated_forms, prefix, options):
     "Generate UFC 1.0 code with DOLFIN wrappers for a given list of pregenerated forms"
 
-    # Strip directory names from prefix
-    full_prefix = prefix
+    # Strip directory names from prefix and add output directory
     prefix = prefix.split(os.path.join(' ',' ').split()[0])[-1]
+    full_prefix = os.path.join(options["output_dir"], prefix)
     
     # Generate code for header
     output = ""

@@ -11,7 +11,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Johan Jansson, 2005
 # Modified by Ola Skavhaug, 2006
-# Modified by Kristian B. Oelgaard 2007
+# Modified by Kristian B. Oelgaard 2008
 # Modified by Dag Lindbo, 2008
 
 # Python modules
@@ -32,8 +32,8 @@ def main(argv):
 
     # Get command-line arguments
     try:
-        opts, args = getopt.getopt(argv, "hvd:sl:r:f:O", \
-        ["help", "version", "debug=", "silent", "language=", "representation=", "optimize"])
+        opts, args = getopt.getopt(argv, "hvd:sl:r:f:Oo:", \
+        ["help", "version", "debug=", "silent", "language=", "representation=", "optimize", "output-directory="])
     except getopt.GetoptError:
         error("Illegal command-line arguments")
         print_usage()
@@ -80,6 +80,8 @@ def main(argv):
                 return 2
         elif opt in ("-O", "--optimize"):
             options["optimize"] = True
+        elif opt in ("-o", "--output-directory"):
+            options["output_dir"] = arg
 
     # Set debug level
     setlevel(debuglevel)
@@ -144,7 +146,7 @@ def _make_script_ufl(filename, options):
     "Create Python script from given .ufl file and return name of script"
 
     # Get prefix of file name and generate Python script file name
-    prefix = "".join(filename.split(".")[:-1])
+    prefix = ".".join(filename.split(".")[:-1])
     script = prefix + ".py"
     debug("Preprocessing form file: %s --> %s\n" % (filename, script))
 
@@ -181,7 +183,7 @@ def _make_script_form(filename, options):
     "Create Python module from given .form file and return name of module file"
 
     # Get prefix of file name and generate Python script file name
-    prefix = "".join(filename.split(".")[:-1])
+    prefix = ".".join(filename.split(".")[:-1])
     script = prefix + ".py"
     debug("Preprocessing form file: %s --> %s\n" % (filename, script))
 
