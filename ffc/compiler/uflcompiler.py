@@ -20,7 +20,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Dag Lindbo, 2008
 
 # UFL modules
-from ufl import Form, FiniteElementBase
+from ufl.classes import Form, FiniteElementBase
 from ufl.algorithms import FormData, is_multilinear
 
 # FFC common modules
