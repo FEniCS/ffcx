@@ -10,8 +10,6 @@ file, it is convenient to install org-mode in Emacs.
 
 * Write about lhs() and rhs() in manual
 
-* Write about -f split_implementation in manual
-
 * Projections
   - Reimplement (worked before)
   - Add to manual
