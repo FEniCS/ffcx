@@ -3,8 +3,8 @@ NAME
 
 
 SYNOPSIS
-       ffc  [-h]  [-v]  [-d debuglevel] [-s] [-l language] [-r representation]
-       [-f option] [-O] ... input.form ...
+       ffc [-h] [-v] [-d debuglevel] [-s] [-l language] [-r representation]
+       [-f option] [-O] [-o output-directory] ... input.form ...
 
 
 DESCRIPTION
@@ -85,16 +85,15 @@ OPTIONS
               may be very costly  (at  compile-time)  for  other  than  simple
               forms.
 
-
+       -o directory, --output-directory directory
+              Specify the directory where the generated files should be written
+              to. The default output directory is the current ('.') directory.
 
        BUGS
 
        Send comments, questions, bug reports etc. to ffc-dev@fenics.org.
 
-
 AUTHOR
        Anders Logg (logg@simula.no)
-
-
 
                                                                         FFC(1)
