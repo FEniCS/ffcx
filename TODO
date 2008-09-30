@@ -34,6 +34,13 @@ file, it is convenient to install org-mode in Emacs.
   - Extend FFC form language
   - Differentiation of forms
 
+* UFC, Implement missing functions
+  - evaluate_basis_all()
+  - evaluate_basis_derivatives_all()
+  - evaluate_dofs()
+  - num_entity_dofs()
+  - tabulate_entity_dofs()
+
 * Time derivatives
   - Dt(u)
 
