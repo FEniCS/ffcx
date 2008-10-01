@@ -61,9 +61,10 @@ def simplify_form(f):
     # Note that we iterate through a copy of the list since we want to
     # remove things from it while iterating.
     for monomial in f.monomials[:]:
-        # Remove monomials with numeric = 0.0:
+        # Remove monomials with numeric = 0.0 unless it is the only one:
         if monomial.numeric == 0.0:
-            f.monomials.remove(monomial)
+            if len(f.monomials) > 1:
+                f.monomials.remove(monomial) 
             continue
         # Contract determinants:
         if monomial.determinants:
