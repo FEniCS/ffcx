@@ -218,7 +218,9 @@ class QuadratureGenerator(CodeGenerator):
         # Generate code to evaluate tensor
         # Loop all quadrature points
         for points in group_tensors:
-
+            # Continue if we don't have any quadrature points
+            if not points:
+                continue
             # Create list of tensors for comment
             ts = group_tensors[points]
             ip_code = [Indent.indent(format_comment\
@@ -294,6 +296,10 @@ class QuadratureGenerator(CodeGenerator):
 
         # Loop tables of weights and create code
         for tensor_number, weights in tables.items():
+
+            # Continue if we don't have any weights
+            if not weights.any():
+                continue
 
             # Create name and value
             name = format_table + format_weight(tensor_number)
