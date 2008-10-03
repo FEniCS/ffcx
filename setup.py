@@ -58,4 +58,6 @@ setup(name = "FFC",
                   "ffc.jit"],
       package_dir={"ffc": "ffc"},
       scripts = scripts,
-      data_files = [(join("share", "man", "man1"), [join("doc", "man", "man1", "ffc.1.gz")])])
+      data_files = [(join("share", "man", "man1"),
+                     [join("doc", "man", "man1", "ffc.1.gz"),
+                      join("doc", "man", "man1", "ffc-clean.1.gz")])])
