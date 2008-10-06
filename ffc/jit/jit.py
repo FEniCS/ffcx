@@ -18,9 +18,14 @@ import os
 from ffc.common.debug import *
 from ffc.common.constants import *
 
+# FFC fem modules
+from ffc.fem.finiteelement import FiniteElement
+from ffc.fem.mixedelement import MixedElement
+
 # FFC compiler modules
 from ffc.compiler.compiler import compile
-from ffc.compiler.language.algebra import Form
+from ffc.compiler.language.algebra import Form, TestFunction
+from ffc.compiler.language.builtins import dx
 
 # FFC jit modules
 from jitobject import JITObject
@@ -32,14 +37,23 @@ FFC_OPTIONS_JIT["no-evaluate_basis_derivatives"] = True
 # Set debug level for Instant
 instant.set_logging_level("warning")
 
-def jit(form, options=None):
+def jit(object, options=None):
     """Just-in-time compile the given form or element
     
     Parameters:
     
-      form    : The form
+      object  : The object to be compiled
       options : An option dictionary
     """
+
+    # Check if we get an element or a form
+    if isinstance(object, FiniteElement) or isinstance(object, MixedElement):
+        return jit_element(object)
+    else:
+        return jit_form(object)
+
+def jit_form(form, options=None):
+    "Just-in-time compile the given form"
 
     # Make sure that we get a form
     if not isinstance(form, Form):
@@ -76,6 +90,25 @@ def jit(form, options=None):
 
     return extract_form(form, module)
 
+def jit_element(element, options=None):
+    "Just-in-time compile the given element"
+    
+    # Check that we get an element
+    if not isinstance(element, FiniteElement) or isinstance(element, MixedElement):
+        raise RuntimeError, "Expecting a finite element."
+
+    # Create simplest possible dummy form
+    if element.value_dimension(0) > 1:
+        form = TestFunction(element)[0]*dx
+    else:
+        form = TestFunction(element)*dx
+
+    # Compile form
+    (compiled_form, module, form_data) = jit_form(form, options)
+
+    # Extract element and dofmap
+    return extract_element_and_dofmap(module)
+
 def check_options(form, options):
     "Check options and add any missing options"
 
@@ -100,8 +133,6 @@ def check_options(form, options):
             options[key] = FFC_OPTIONS_JIT[key]
 
     # Don't postfix form names
-    #if "form_postfix" in options and options["form_postfix"]:
-    #    warning("Forms cannot be postfixed when the JIT compiler is used.")
     options["form_postfix"] = False
 
     return options
@@ -109,6 +140,13 @@ def check_options(form, options):
 def extract_form(form, module):
     "Extract form from module"
     return (getattr(module, module.__name__)(), module, form.form_data)
+
+def extract_element_and_dofmap(module):
+    "Extract element and dofmap from module"
+    name = module.__name__
+    element = getattr(module, name + "_finite_element_0")()
+    dofmap  = getattr(module, name + "_dof_map_0")()
+    return (element, dofmap)
 
 def extract_instant_flags(options):
     "Extract flags for Instant"
