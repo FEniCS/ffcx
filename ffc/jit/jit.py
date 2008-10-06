@@ -94,7 +94,7 @@ def jit_element(element, options=None):
     "Just-in-time compile the given element"
     
     # Check that we get an element
-    if not isinstance(element, FiniteElement) or isinstance(element, MixedElement):
+    if not (isinstance(element, FiniteElement) or isinstance(element, MixedElement)):
         raise RuntimeError, "Expecting a finite element."
 
     # Create simplest possible dummy form
