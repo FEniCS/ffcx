@@ -48,9 +48,9 @@ def jit(object, options=None):
 
     # Check if we get an element or a form
     if isinstance(object, FiniteElement) or isinstance(object, MixedElement):
-        return jit_element(object)
+        return jit_element(object, options)
     else:
-        return jit_form(object)
+        return jit_form(object, options)
 
 def jit_form(form, options=None):
     "Just-in-time compile the given form"

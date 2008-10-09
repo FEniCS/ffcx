@@ -45,7 +45,7 @@ def operation_count(expression, format):
 
     # Note we do not subtract 1 for the additions, because there is also an
     # assignment involved
-    adds = len(split_expression(expression, format, format["add"](["", ""]), True))
+    adds = len(split_expression(expression, format, format["add"](["", ""]), True)) - 1
     mults = len(split_expression(expression, format, format["multiply"](["", ""]), True)) - 1
     return mults + adds
 

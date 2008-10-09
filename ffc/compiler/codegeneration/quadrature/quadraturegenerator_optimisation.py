@@ -112,7 +112,7 @@ def generate_code(raw_terms, geo_terms, optimise_level, Indent, format):
             for f in funcs:
                 # Count operations needed to compute value of functions
                 val = red_ops(inv_functions[f], format)
-                func_ops += count_ops(val, format)
+                func_ops += count_ops(val, format) + 1 # Add 1 for '+=' operator
                 lines.append(format_add_equal(f, val))
 
             # Compute count and add to global count
@@ -144,7 +144,7 @@ def generate_code(raw_terms, geo_terms, optimise_level, Indent, format):
                 val = red_ops(val, format)
                 val = get_constants(val, ip_terms, format, [format_ip])
 
-            num_ops = count_ops(val, format)
+            num_ops = count_ops(val, format) + 1 # Add 1 for '+=' operator
             entry_ops += num_ops
 
             # Generate comment, element tensor entry and add to lines
