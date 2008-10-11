@@ -11,7 +11,8 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Python modules
 import instant
-import distutils
+#import distutils
+from distutils import sysconfig
 import os
 
 # FFC common modules
@@ -157,7 +158,7 @@ def extract_instant_flags(options):
 
     # Get include directory for ufc.h (might be better way to do this?)
     (path, dummy, dummy, dummy) = instant.header_and_libs_from_pkgconfig("ufc-1")
-    if len(path) == 0: path = [("/").join(distutils.sysconfig.get_python_inc().split("/")[:-2]) + "/include"]
+    if len(path) == 0: path = [("/").join(sysconfig.get_python_inc().split("/")[:-2]) + "/include"]
     ufc_include = '%%include "%s/ufc.h"' % path[0]
 
     return (cppargs, path, ufc_include)
