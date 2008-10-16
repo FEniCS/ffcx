@@ -8,13 +8,14 @@ __license__  = "GNU GPL version 3 or any later version"
 
 __all__ = ['Identity', 'value_rank', 'vec', 'dot', 'cross', 'trace', 'transp',
            'mult', 'outer', 'D', 'grad', 'div', 'rot', 'curl', 'mean', 'avg',
-           'jump', 'sqrt', 'modulus', 'lhs', 'rhs', 'curl_t']
+           'jump', 'sqrt', 'modulus', 'lhs', 'rhs', 'curl_t', 'skew']
 
 # Modified by Ola Skavhaug, 2005
 # Modified by Dag Lindbo, 2006
 # Modified by Garth N. Wells 2006, 2007
 # Modified by Kristian Oelgaard 2006, 2007
 # Modified by Evan Lezar 2008
+# Modified by Marie Rognes 2008
 
 # Python modules
 import sys
@@ -118,6 +119,19 @@ def transp(v):
     "Return transpose of given matrix."
     # Let numpy handle the transpose."
     return numpy.transpose(v)
+
+def skew(v):
+    """Skew-component of given matrix. skew(v) = v - v^T.  If v is 2x2
+    - skew(v) reduces to the scalar component v[1][0] -
+    v[0][1]. Otherwise returns the full skew matrix.""" 
+    if not value_rank(v) == 2:
+        raise FormError, (v, "skew only defined for matrices")
+    n = len(v)
+    if n == 2:
+        return 0.5*(v[1][0] - v[0][1])
+    else:
+        return [[0.5*(v[i][j] - v[j][i])
+                 for j in range(n)] for i in range(n)]
 
 def mult(v, w):
     "Compute matrix-matrix product of given matrices."
