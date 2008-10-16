@@ -1,3 +1,4 @@
+ - New operator skew()
  - Allow JIT compilation of elements and dof maps
  - Rewrite JIT compiler to rely on Instant for caching
  - Display flop count for evaluating the element tensor during compilation
