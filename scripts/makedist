@@ -25,7 +25,7 @@ sleep 1
 emacs -nw ChangeLog
 echo '--- Update version number in constants.py'
 sleep 1
-emacs -nw ffc/ffc/common/constants.py
+emacs -nw ffc/common/constants.py
 echo '--- Update version number in setup.py'
 sleep 1
 emacs -nw setup.py
