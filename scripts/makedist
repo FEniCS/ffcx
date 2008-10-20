@@ -25,7 +25,7 @@ sleep 1
 emacs -nw ChangeLog
 echo '--- Update version number in constants.py'
 sleep 1
-emacs -nw src/ffc/common/constants.py
+emacs -nw ffc/ffc/common/constants.py
 echo '--- Update version number in setup.py'
 sleep 1
 emacs -nw setup.py
@@ -41,16 +41,16 @@ python test.py
 echo '--- Only version numbers should differ, press return to continue'
 read
 cd ../..
-cp src/demo/*.h src/test/regression/reference
+cp demo/*.h test/regression/reference
 
 # Run benchmark problem
 echo '--- Running benchmark problem'
-cd src/bench
+cd bench
 echo "FFC version $VERSION" >> bench.log
 date >> bench.log
 echo "" >> bench.log
 ./bench >> bench.log
-cd ../../
+cd ../
 
 # Commit changes to hg
 echo '--- Pushing changes to parent repository'
