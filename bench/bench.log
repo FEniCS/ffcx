@@ -199,3 +199,12 @@ Stabilization: too much
 remove_unused() is *very* slow but this
 will be fixed in a future release
 -----------------------------------
+FFC version 
+Mon Oct 20 22:09:28 BST 2008
+
+Navier-Stokes: 0.003 seconds
+Stabilization: too much
+
+remove_unused() is *very* slow but this
+will be fixed in a future release
+-----------------------------------
