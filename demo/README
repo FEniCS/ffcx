@@ -1,12 +1,13 @@
 To compile a form in this directory, just type
 
-    ffc <prefix>.form
+   ffc <prefix>.form
 
 for example
 
-    ffc Poisson.form
+  ffc Poisson.form
 
-If you have not installed FFC system-wide, you need
-to supply the full path to ffc:
+To run these demos from within the source tree without needing to
+install FFC system-wide, update your paths according to
 
-    ../bin/ffc <prefix>.form
+  export PATH="../scripts:$PATH"
+  export PYTHONPATH="..:$PYTHONPATH"
