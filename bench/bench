@@ -8,7 +8,7 @@ from commands import *
 
 # Run benchmark
 t = time()
-getoutput("../bin/ffc NavierStokes.form")
+getoutput("../scripts/ffc NavierStokes.form")
 t1 = time() - t
 
 # Run benchmark
