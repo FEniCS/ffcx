@@ -52,6 +52,9 @@ echo "" >> bench.log
 ./bench >> bench.log
 cd ../
 
+# Tag repository
+hg tag $VERSION
+
 # Commit changes to hg
 echo '--- Pushing changes to parent repository'
 sleep 1
