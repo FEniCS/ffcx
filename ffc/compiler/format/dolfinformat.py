@@ -1,8 +1,8 @@
 "Code generation for the UFC 1.0 format with DOLFIN"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-03-24 -- 2008-09-29"
-__copyright__ = "Copyright (C) 2007 Anders Logg"
+__date__ = "2007-03-24 -- 2008-10-23"
+__copyright__ = "Copyright (C) 2007-2008 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian B. Oelgaard 2008
@@ -140,17 +140,54 @@ def __generate_dolfin_wrappers(generated_forms, prefix, options):
     output = """\
 // DOLFIN wrappers
 
+namespace dolfin
+{
+  class FunctionSpace;
+  class Function;
+}
+
 #include <dolfin/fem/Form.h>
 
 """
+    
+    # We generate two versions of all constructors, one using references (_r)
+    # and one using shared pointers (_s)
+
+    add_function_space_r = """\
+    std::tr1::shared_ptr<dolfin::FunctionSpace> _V%d(&V%d, dolfin::NoDeleter<dolfin::FunctionSpace>());
+    function_spaces.push_back(_V%d);"""
+
+    add_function_space_s = """\
+    function_spaces.push_back(V%d);"""
+
+    add_coefficient_r =  """\
+    std::tr1::shared_ptr<dolfin::Function> _v%d(&v%d, dolfin::NoDeleter<dolfin::Function>());
+    coefficients.push_back(_v%d);"""
+
+    add_coefficient_s =  """\
+    coefficients.push_back(v%d);"""
 
     for i in range(len(generated_forms)):
         (form_code, form_data) = generated_forms[i]
         form_prefix = ufcformat.compute_prefix(prefix, generated_forms, i, options)
-        constructor_args = ", ".join(["dolfin::Function& w%d" % i for i in range(form_data.num_coefficients)])
-        constructor_body = "\n".join(["    __coefficients.push_back(&w%d);" % i for i in range(form_data.num_coefficients)])
-        if constructor_body == "":
-            constructor_body = "    // Do nothing"
+        constructor_args_r  = ", ".join(["dolfin::FunctionSpace& V%d" % i for i in range(form_data.rank)] +
+                                        ["dolfin::Function& v%d" % i for i in range(form_data.num_coefficients)])
+        constructor_args_s  = ", ".join(["std::tr1::shared_ptr<dolfin::FunctionSpace> V%d" % i for i in range(form_data.rank)] +
+                                        ["std::tr1::shared_ptr<dolfin::Function> v%d" % i for i in range(form_data.num_coefficients)])
+        constructor_body_r  = "\n".join([add_function_space_r % (i, i, i) for i in range(form_data.rank)])
+        constructor_body_s  = "\n".join([add_function_space_s % i for i in range(form_data.rank)])
+        if form_data.rank > 0:
+            constructor_body_r += "\n\n"
+            constructor_body_s += "\n\n"
+        constructor_body_r += "\n".join([add_coefficient_r % (i, i, i) for i in range(form_data.num_coefficients)])
+        constructor_body_s += "\n".join([add_coefficient_s % i for i in range(form_data.num_coefficients)])
+        if form_data.num_coefficients > 0:
+            constructor_body_r += "\n\n"
+            constructor_body_s += "\n\n"
+        constructor_body_r += "    _ufc_form = new UFC_%s();\n\n" % form_prefix
+        constructor_body_s += "    _ufc_form = new UFC_%s();\n\n" % form_prefix
+        constructor_body_r += "    check();"
+        constructor_body_s += "    check();"
         output += """\
 class %s : public dolfin::Form
 {
@@ -161,28 +198,15 @@ public:
 %s
   }
 
-  /// Return UFC form
-  virtual const ufc::form& form() const
+  %s(%s) : dolfin::Form()
   {
-    return __form;
+%s
   }
-  
-  /// Return array of coefficients
-  virtual const dolfin::Array<dolfin::Function*>& coefficients() const
-  {
-    return __coefficients;
-  }
-
-private:
-
-  // UFC form
-  UFC_%s __form;
-
-  /// Array of coefficients
-  dolfin::Array<dolfin::Function*> __coefficients;
 
 };
 
-""" % (form_prefix, form_prefix, constructor_args, constructor_body, form_prefix)
-    
+""" % (form_prefix,
+       form_prefix, constructor_args_r, constructor_body_r,
+       form_prefix, constructor_args_s, constructor_body_s)
+
     return output
