@@ -155,17 +155,17 @@ namespace dolfin
 
     add_function_space_r = """\
     std::tr1::shared_ptr<dolfin::FunctionSpace> _V%d(&V%d, dolfin::NoDeleter<dolfin::FunctionSpace>());
-    function_spaces.push_back(_V%d);"""
+    _function_spaces.push_back(_V%d);"""
 
     add_function_space_s = """\
-    function_spaces.push_back(V%d);"""
+    _function_spaces.push_back(V%d);"""
 
     add_coefficient_r =  """\
     std::tr1::shared_ptr<dolfin::Function> _v%d(&v%d, dolfin::NoDeleter<dolfin::Function>());
-    coefficients.push_back(_v%d);"""
+    _coefficients.push_back(_v%d);"""
 
     add_coefficient_s =  """\
-    coefficients.push_back(v%d);"""
+    _coefficients.push_back(v%d);"""
 
     for i in range(len(generated_forms)):
         (form_code, form_data) = generated_forms[i]
