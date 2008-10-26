@@ -12,11 +12,11 @@ each represented by a separate module:
 """
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-02-05 -- 2008-09-28"
+__date__ = "2007-02-05 -- 2008-10-21"
 __copyright__ = "Copyright (C) 2007-2008 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Modified by Kristian B. Oelgaard 2007
+# Modified by Kristian B. Oelgaard, 2007
 # Modified by Dag Lindbo, 2008
 
 # UFL modules
@@ -40,7 +40,7 @@ from ffc.common.constants import FFC_OPTIONS
 #from analysis.analyze import *
 
 # FFC form representation modules
-from representation.tensor import TensorRepresentation
+from representation.tensor import UFLTensorRepresentation
 from representation.quadrature import QuadratureRepresentation
 
 # FFC code generation modules
@@ -71,7 +71,7 @@ def compile(objects, prefix="Form", options=FFC_OPTIONS):
     (form_data, form_representation) = _compile_forms(forms, prefix, options)
 
     # Compile elements
-    _compile_elements(elements, prefix, options)
+    #_compile_elements(elements, prefix, options)
 
     return (form_data, form_representation)
 
@@ -102,16 +102,16 @@ def _compile_forms(forms, prefix, options):
         form_representations += [form_representation]
 
         # Compiler phase 3: optimize form representation
-        optimize_form_representation(form)
+        #optimize_form_representation(form)
 
         # Compiler phase 4: generate form code
-        form_code = generate_form_code(form_data, form_representation, options["representation"], format.format)
+        #form_code = generate_form_code(form_data, form_representation, options["representation"], format.format)
 
         # Add to list of codes
-        generated_forms += [(form_code, form_data)]
+        #generated_forms += [(form_code, form_data)]
 
     # Compiler phase 5: format code
-    _format_code(generated_forms, prefix, format, options)
+    #_format_code(generated_forms, prefix, format, options)
 
     return (form_datas, form_representations)
 
@@ -255,9 +255,12 @@ def _choose_representation(form, options):
     if option == "tensor":
 
         # Check if form is multilinear
+        debug("Checking if form is multilinear...")
         if is_multilinear(form):
-            return TensorRepresentation
+            debug("yes\n")
+            return UFLTensorRepresentation
         else:
+            debug("no\n")
             warning("Form is is not multilinear, using quadrature representation")
             return QuadratureRepresentation
         
