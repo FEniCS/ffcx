@@ -144,6 +144,7 @@ namespace dolfin
 {
   class FunctionSpace;
   class Function;
+  class Mesh;
 }
 
 #include <dolfin/fem/Form.h>
@@ -167,9 +168,66 @@ namespace dolfin
     add_coefficient_s =  """\
     _coefficients.push_back(v%d);"""
 
+    function_space_class = """\
+class %s : public dolfin::FunctionSpace
+{
+public:
+
+  %s(const dolfin::Mesh& mesh)
+    : dolfin::FunctionSpace(std::tr1::shared_ptr<const dolfin::Mesh>(&mesh, dolfin::NoDeleter<const dolfin::Mesh>()),
+                            std::tr1::shared_ptr<const dolfin::FiniteElement>(new dolfin::FiniteElement(std::tr1::shared_ptr<ufc::finite_element>(new %s()))),
+                            std::tr1::shared_ptr<const dolfin::DofMap>(new dolfin::DofMap(std::tr1::shared_ptr<ufc::dof_map>(new %s()), mesh)))
+  {
+    // Do nothing
+  }
+
+};
+"""
+
+    # Extract common test space if any
+    test_element = None
+    test_elements = [form_data.elements[0] for (form_code, form_data) in generated_forms if form_data.rank >= 1]
+    if len(test_elements) > 0 and test_elements[1:] == test_elements[:-1]:
+        test_element = test_elements[0]
+    elif len(test_elements) > 0:
+        raise RuntimeError, "Unable to extract test space (not uniquely defined)."
+
+    # Extract common trial element if any
+    trial_element = None
+    trial_elements = [form_data.elements[0] for (form_code, form_data) in generated_forms if form_data.rank >= 1]
+    if len(trial_elements) > 0 and trial_elements[1:] == trial_elements[:-1]:
+        trial_element = trial_elements[0]
+    elif len(trial_elements) > 0:
+        raise RuntimeError, "Unable to extract trial space (not uniquely defined)."
+
+    # Extract common coefficient element if any
+    coefficient_element = None
+    coefficients = [c for (form_code, form_data) in generated_forms for c in form_data.coefficients]
+    coefficient_elements = []
+    for c in coefficients:
+        coefficient_elements.append(c.e0)
+    if len(coefficient_elements) > 0 and coefficient_elements[1:] == coefficient_elements[:-1]:
+        coefficient_element = coefficient_elements[0]
+
+    # Extract common element if any
+    common_element = None
+    elements = test_elements + trial_elements + coefficient_elements
+    if len(elements) > 0 and elements[1:] == elements[:-1]:
+        common_element = elements[-1]
+
+    # Build map from elements to forms
+    element_map = {}    
     for i in range(len(generated_forms)):
         (form_code, form_data) = generated_forms[i]
         form_prefix = ufcformat.compute_prefix(prefix, generated_forms, i, options)
+
+    # Generate wrappers for all forms
+    element_map = {}
+    for i in range(len(generated_forms)):
+        (form_code, form_data) = generated_forms[i]
+        form_prefix = ufcformat.compute_prefix(prefix, generated_forms, i, options)
+        for j in range(len(form_data.elements)):
+            element_map[form_data.elements[j]] = (form_prefix, j)
         constructor_args_r  = ", ".join(["dolfin::FunctionSpace& V%d" % i for i in range(form_data.rank)] +
                                         ["dolfin::Function& v%d" % i for i in range(form_data.num_coefficients)])
         constructor_args_s  = ", ".join(["std::tr1::shared_ptr<dolfin::FunctionSpace> V%d" % i for i in range(form_data.rank)] +
@@ -208,5 +266,20 @@ public:
 """ % (form_prefix,
        form_prefix, constructor_args_r, constructor_body_r,
        form_prefix, constructor_args_s, constructor_body_s)
+
+    # Generate code for function spaces
+    def function_space_code(element, name):
+        (form_prefix, element_number) = element_map[element]
+        element_class = "UFC_%s_finite_element_%d" % (form_prefix, element_number)
+        dofmap_class = "UFC_%s_dof_map_%d" % (form_prefix, element_number)
+        classname = prefix + name
+        return function_space_class % (classname, classname, element_class, dofmap_class)
+
+    if not test_element is None:
+        output += function_space_code(test_element, "TestSpace") + "\n"
+    if not trial_element is None:
+        output += function_space_code(test_element, "TrialSpace") + "\n"
+    if not common_element is None:
+        output += function_space_code(test_element, "FunctionSpace") + "\n"
 
     return output
