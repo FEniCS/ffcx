@@ -268,18 +268,25 @@ public:
        form_prefix, constructor_args_s, constructor_body_s)
 
     # Generate code for function spaces
-    def function_space_code(element, name):
+    def function_space_code(element, classname):
         (form_prefix, element_number) = element_map[element]
         element_class = "UFC_%s_finite_element_%d" % (form_prefix, element_number)
         dofmap_class = "UFC_%s_dof_map_%d" % (form_prefix, element_number)
-        classname = prefix + name
         return function_space_class % (classname, classname, element_class, dofmap_class)
 
+    for i in range(len(generated_forms)):
+        (form_code, form_data) = generated_forms[i]
+        form_prefix = ufcformat.compute_prefix(prefix, generated_forms, i, options)
+        for j in range(form_data.rank):
+            output += function_space_code(form_data.elements[j], "%sArgumentSpace%d" % (form_prefix, j)) + "\n"
+        for j in range(form_data.num_coefficients):
+            output += function_space_code(form_data.elements[form_data.rank + j], "%sCoefficientSpace%d" % (form_prefix, j)) + "\n"
+
     if not test_element is None:
-        output += function_space_code(test_element, "TestSpace") + "\n"
+        output += function_space_code(test_element, prefix + "TestSpace") + "\n"
     if not trial_element is None:
-        output += function_space_code(test_element, "TrialSpace") + "\n"
+        output += function_space_code(test_element, prefix + "TrialSpace") + "\n"
     if not common_element is None:
-        output += function_space_code(test_element, "FunctionSpace") + "\n"
+        output += function_space_code(test_element, prefix + "FunctionSpace") + "\n"
 
     return output
