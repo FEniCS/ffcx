@@ -143,6 +143,7 @@ def _generate_dolfin_wrappers(generated_forms, prefix, options):
 
 namespace dolfin
 {
+  // Forward declarations
   class FunctionSpace;
   class Function;
   class Mesh;
@@ -164,11 +165,10 @@ namespace dolfin
     _function_spaces.push_back(V%d);"""
 
     add_coefficient_r =  """\
-    std::tr1::shared_ptr<dolfin::Function> _v%d(&v%d, dolfin::NoDeleter<dolfin::Function>());
-    _coefficients.push_back(_v%d);"""
+    _coefficients.push_back(std::tr1::shared_ptr<dolfin::Function>(static_cast<dolfin::Function*>(0)));"""
 
     add_coefficient_s =  """\
-    _coefficients.push_back(v%d);"""
+    _coefficients.push_back(std::tr1::shared_ptr<dolfin::Function>(static_cast<dolfin::Function*>(0)));"""
 
     # Extract common test space if any
     test_element = None
@@ -246,7 +246,7 @@ namespace dolfin
         if n == 0:
             coefficient_members = ""
         else:
-            coefficient_members = "\n" + "\n".join(["  %s %s;" % (coefficient_classes[j], coefficient_names[j]) for j in range(n)]) + "\n"
+            coefficient_members = "\n  //Coefficients\n" + "\n".join(["  %s %s;" % (coefficient_classes[j], coefficient_names[j]) for j in range(n)]) + "\n"
 
         # Generate code for initialization of coefficients
         if n == 0:
@@ -261,14 +261,23 @@ class %s : public dolfin::Coefficient
 {
 public:
 
+  // Constructor
   %s(dolfin::Form& form) : dolfin::Coefficient(form) {}
 
+  // Destructor  
   ~%s() {}
+
+  // Attach function to coefficient
+  const %s& operator= (dolfin::Function& v)
+  {
+    attach(v);
+    return *this;
+  }
 
   /// Create function space for coefficient
   const dolfin::FunctionSpace* create_function_space() const
   {
-    return new %sCoefficientSpace%d(mesh);
+    return new %sCoefficientSpace%d(form.mesh());
   }
   
   /// Return coefficient number
@@ -285,49 +294,50 @@ public:
   
 };
 
-""" % (coefficient_classes[j], coefficient_classes[j], coefficient_classes[j],
+""" % (coefficient_classes[j], coefficient_classes[j], coefficient_classes[j], coefficient_classes[j],
        form_prefix, j, j, coefficient_names[j])
 
         # Generate constructors
-        constructor_args_r  = ", ".join(["dolfin::FunctionSpace& V%d" % k for k in range(form_data.rank)] +
-                                        ["dolfin::Function& v%d" % k for k in range(form_data.num_coefficients)])
-        constructor_args_s  = ", ".join(["std::tr1::shared_ptr<dolfin::FunctionSpace> V%d" % k for k in range(form_data.rank)] +
-                                        ["std::tr1::shared_ptr<dolfin::Function> v%d" % k for k in range(form_data.num_coefficients)])
+        constructor_args_r  = ", ".join(["dolfin::FunctionSpace& V%d" % k for k in range(form_data.rank)])
+        constructor_args_s  = ", ".join(["std::tr1::shared_ptr<dolfin::FunctionSpace> V%d" % k for k in range(form_data.rank)])
         constructor_body_r  = "\n".join([add_function_space_r % (k, k, k) for k in range(form_data.rank)])
         constructor_body_s  = "\n".join([add_function_space_s % k for k in range(form_data.rank)])
         if form_data.rank > 0:
             constructor_body_r += "\n\n"
             constructor_body_s += "\n\n"
-        constructor_body_r += "\n".join([add_coefficient_r % (k, k, k) for k in range(form_data.num_coefficients)])
-        constructor_body_s += "\n".join([add_coefficient_s % k for k in range(form_data.num_coefficients)])
+        constructor_body_r += "\n".join([add_coefficient_r for k in range(form_data.num_coefficients)])
+        constructor_body_s += "\n".join([add_coefficient_s for k in range(form_data.num_coefficients)])
         if form_data.num_coefficients > 0:
             constructor_body_r += "\n\n"
             constructor_body_s += "\n\n"
         constructor_body_r += "    _ufc_form = new UFC_%s();\n\n" % form_prefix
         constructor_body_s += "    _ufc_form = new UFC_%s();\n\n" % form_prefix
-        constructor_body_r += "    check();"
-        constructor_body_s += "    check();"
         output += """\
 class %s : public dolfin::Form
 {
 public:
 
+  // Constructor
   %s(%s) : dolfin::Form()%s
   {
 %s
   }
 
+  // Constructor
   %s(%s) : dolfin::Form()%s
   {
 %s
   }
+
+  // Destructor
+  ~%s() {}
 %s
 };
 
 """ % (form_prefix,
        form_prefix, constructor_args_r, coefficient_init, constructor_body_r,
        form_prefix, constructor_args_s, coefficient_init, constructor_body_s,
-       coefficient_members)
+       form_prefix, coefficient_members)
 
     return output
 
