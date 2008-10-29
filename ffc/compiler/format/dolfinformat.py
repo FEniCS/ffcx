@@ -22,6 +22,7 @@ from ffc.common.constants import *
 # FFC language modules
 from ffc.compiler.language.restriction import *
 from ffc.compiler.language.integral import *
+from ffc.compiler.language.algebra import *
 
 # FFC format modules
 import ufcformat
@@ -53,7 +54,7 @@ def write(generated_forms, prefix, options):
         output += ufcformat.generate_ufc(generated_forms, "UFC_" + prefix, options, "combined")
 
         # Generate code for DOLFIN wrappers
-        output += __generate_dolfin_wrappers(generated_forms, prefix, options)
+        output += _generate_dolfin_wrappers(generated_forms, prefix, options)
 
         # Generate code for footer
         output += generate_footer(prefix, options)
@@ -75,7 +76,7 @@ def write(generated_forms, prefix, options):
         output += ufcformat.generate_ufc(generated_forms, "UFC_" + prefix, options, "header")
 
         # Generate code for DOLFIN wrappers
-        output += __generate_dolfin_wrappers(generated_forms, prefix, options)
+        output += _generate_dolfin_wrappers(generated_forms, prefix, options)
 
         # Generate code for footer
         output += generate_footer(prefix, options)
@@ -134,7 +135,7 @@ def generate_footer(prefix, options):
 #endif
 """
 
-def __generate_dolfin_wrappers(generated_forms, prefix, options):
+def _generate_dolfin_wrappers(generated_forms, prefix, options):
     "Generate code for DOLFIN wrappers"
 
     output = """\
@@ -167,22 +168,6 @@ namespace dolfin
 
     add_coefficient_s =  """\
     _coefficients.push_back(v%d);"""
-
-    function_space_class = """\
-class %s : public dolfin::FunctionSpace
-{
-public:
-
-  %s(const dolfin::Mesh& mesh)
-    : dolfin::FunctionSpace(std::tr1::shared_ptr<const dolfin::Mesh>(&mesh, dolfin::NoDeleter<const dolfin::Mesh>()),
-                            std::tr1::shared_ptr<const dolfin::FiniteElement>(new dolfin::FiniteElement(std::tr1::shared_ptr<ufc::finite_element>(new %s()))),
-                            std::tr1::shared_ptr<const dolfin::DofMap>(new dolfin::DofMap(std::tr1::shared_ptr<ufc::dof_map>(new %s()), mesh)))
-  {
-    // Do nothing
-  }
-
-};
-"""
 
     # Extract common test space if any
     test_element = None
@@ -225,6 +210,9 @@ public:
     element_map = {}
     for i in range(len(generated_forms)):
         (form_code, form_data) = generated_forms[i]
+
+
+        
         form_prefix = ufcformat.compute_prefix(prefix, generated_forms, i, options)
         for j in range(len(form_data.elements)):
             element_map[form_data.elements[j]] = (form_prefix, j)
@@ -268,25 +256,50 @@ public:
        form_prefix, constructor_args_s, constructor_body_s)
 
     # Generate code for function spaces
-    def function_space_code(element, classname):
-        (form_prefix, element_number) = element_map[element]
-        element_class = "UFC_%s_finite_element_%d" % (form_prefix, element_number)
-        dofmap_class = "UFC_%s_dof_map_%d" % (form_prefix, element_number)
-        return function_space_class % (classname, classname, element_class, dofmap_class)
-
     for i in range(len(generated_forms)):
         (form_code, form_data) = generated_forms[i]
         form_prefix = ufcformat.compute_prefix(prefix, generated_forms, i, options)
         for j in range(form_data.rank):
-            output += function_space_code(form_data.elements[j], "%sArgumentSpace%d" % (form_prefix, j)) + "\n"
+            output += _generate_function_space(form_data.elements[j],
+                                               "%sArgumentSpace%d" % (form_prefix, j),
+                                               element_map)
+            output += "\n"
         for j in range(form_data.num_coefficients):
-            output += function_space_code(form_data.elements[form_data.rank + j], "%sCoefficientSpace%d" % (form_prefix, j)) + "\n"
+            output += _generate_function_space(form_data.elements[form_data.rank + j],
+                                               "%sCoefficientSpace%d" % (form_prefix, j),
+                                               element_map)
+            output += "\n"
 
+    # Generate code for special function spaces
     if not test_element is None:
-        output += function_space_code(test_element, prefix + "TestSpace") + "\n"
+        output += _generate_function_space(test_element, prefix + "TestSpace", element_map) + "\n"
     if not trial_element is None:
-        output += function_space_code(test_element, prefix + "TrialSpace") + "\n"
+        output += _generate_function_space(trial_element, prefix + "TrialSpace", element_map) + "\n"
     if not common_element is None:
-        output += function_space_code(test_element, prefix + "FunctionSpace") + "\n"
+        output += _generate_function_space(common_element, prefix + "FunctionSpace", element_map) + "\n"
 
     return output
+
+def _generate_function_space(element, classname, element_map):
+    "Generate code for function space"
+
+    function_space_class = """\
+class %s : public dolfin::FunctionSpace
+{
+public:
+
+  %s(const dolfin::Mesh& mesh)
+    : dolfin::FunctionSpace(std::tr1::shared_ptr<const dolfin::Mesh>(&mesh, dolfin::NoDeleter<const dolfin::Mesh>()),
+                            std::tr1::shared_ptr<const dolfin::FiniteElement>(new dolfin::FiniteElement(std::tr1::shared_ptr<ufc::finite_element>(new %s()))),
+                            std::tr1::shared_ptr<const dolfin::DofMap>(new dolfin::DofMap(std::tr1::shared_ptr<ufc::dof_map>(new %s()), mesh)))
+  {
+    // Do nothing
+  }
+
+};
+"""
+    
+    (form_prefix, element_number) = element_map[element]
+    element_class = "UFC_%s_finite_element_%d" % (form_prefix, element_number)
+    dofmap_class = "UFC_%s_dof_map_%d" % (form_prefix, element_number)
+    return function_space_class % (classname, classname, element_class, dofmap_class)

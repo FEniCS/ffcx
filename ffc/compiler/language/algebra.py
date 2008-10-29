@@ -140,11 +140,12 @@ class Function(Element):
 
     Attributes:
 
-        n0 - a unique Index identifying the original function
-        n1 - a unique Index identifying the projected function
-        e0 - a Finite Element defining the original space
-        e1 - a Finite Element defining the projection space
-        P  - the projection matrix from e0 to e1
+        n0   - a unique Index identifying the original function
+        n1   - a unique Index identifying the projected function
+        e0   - a Finite Element defining the original space
+        e1   - a Finite Element defining the projection space
+        P    - the projection matrix from e0 to e1
+        name - the name of the function (if defined)
 
     If projection is not None, then the coefficients of the expansion
     of the function in the current basis should be obtained by applying
@@ -156,21 +157,22 @@ class Function(Element):
         "Create Function."
         if isinstance(element, Function):
             # Create Function from Function (copy constructor)
-            self.n0  = Index(element.n0)
-            self.n1  = Index(element.n1)
-            self.e0  = element.e0
-            self.e1  = element.e1
-            self.P   = element.P
-            self.ops = [op for of in element.ops]
-
+            self.n0   = Index(element.n0)
+            self.n1   = Index(element.n1)
+            self.e0   = element.e0
+            self.e1   = element.e1
+            self.P    = element.P
+            self.name = None
+            self.ops  = [op for of in element.ops]
         else:
             # Create Function for given FiniteElement
-            self.n0  = Index("function")
-            self.n1  = Index("projection")
-            self.e0  = element
-            self.e1  = element
-            self.P   = None
-            self.ops = []
+            self.n0   = Index("function")
+            self.n1   = Index("projection")
+            self.e0   = element
+            self.e1   = element
+            self.P    = None
+            self.name = None
+            self.ops  = []
         return
 
     def __repr__(self):

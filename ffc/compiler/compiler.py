@@ -48,9 +48,12 @@ from codegeneration.common.dofmap import *
 # FFC format modules
 from format import ufcformat
 from format import dolfinformat
+from format.naming import assign_coefficient_names
 
-def compile(forms, prefix="Form", options=FFC_OPTIONS):
+def compile(forms, prefix="Form", options=FFC_OPTIONS, global_variables=None):
     "Compile the given forms and/or elements"
+
+    debug_begin("Compiler phase 0: preprocessing input data")
 
     # Check options
     check_options(options)
@@ -59,7 +62,14 @@ def compile(forms, prefix="Form", options=FFC_OPTIONS):
     (forms, elements) = preprocess_forms(forms)
     if len(forms) == 0 and len(elements) == 0:
         debug("No forms or elements specified, nothing to do.")
+        debug_end()
         return
+
+    # Assign coefficient names
+    if not global_variables is None:
+        assign_coefficient_names(global_variables)
+
+    debug_end()
 
     # Compile forms
     form_data = None
@@ -73,7 +83,7 @@ def compile(forms, prefix="Form", options=FFC_OPTIONS):
 
     return (form_data, form_representation)
 
-def __compile_forms(forms, prefix="Form", options=FFC_OPTIONS):
+def __compile_forms(forms, prefix, options):
     "Compile the given forms"
 
     # Check form input
@@ -113,7 +123,7 @@ def __compile_forms(forms, prefix="Form", options=FFC_OPTIONS):
 
     return (form_datas, form_representations)
 
-def __compile_elements(elements, prefix="Element", options=FFC_OPTIONS):
+def __compile_elements(elements, prefix, options):
     "Compile the given elements for the given language"
 
     # Check element input
@@ -181,7 +191,7 @@ def preprocess_forms(forms):
 
 def analyze_form(form):
     "Compiler phase 1: analyze form"
-    debug_begin("Phase 1: Analyzing form")
+    debug_begin("Compiler phase 1: Analyzing form")
 
     # Analyze form and extract form data
     form_data = analyze(form)
@@ -220,7 +230,7 @@ def generate_form_code(form_data, form_representation, representation, format):
     # Generate code
     code_generator = CodeGenerator()
     code = code_generator.generate_form_code(form_data, form_representation, format)
-        
+    
     debug_end()
     return code
 

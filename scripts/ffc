@@ -200,7 +200,7 @@ from ffc import *
 element = None
 
 %s
-compile([a, L, M, element], \"%s\", %s)
+compile([a, L, M, element], \"%s\", options=%s, global_variables=globals())
 """ % (input, prefix, options)
 
     # Write output
