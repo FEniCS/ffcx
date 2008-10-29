@@ -48,16 +48,13 @@ from codegeneration.common.dofmap import *
 # FFC format modules
 from format import ufcformat
 from format import dolfinformat
-from format.naming import assign_coefficient_names
 
 def compile(forms, prefix="Form", options=FFC_OPTIONS, global_variables=None):
     "Compile the given forms and/or elements"
 
-    debug_begin("Compiler phase 0: preprocessing input data")
-
     # Check options
     check_options(options)
-
+    
     # Check input
     (forms, elements) = preprocess_forms(forms)
     if len(forms) == 0 and len(elements) == 0:
@@ -65,17 +62,11 @@ def compile(forms, prefix="Form", options=FFC_OPTIONS, global_variables=None):
         debug_end()
         return
 
-    # Assign coefficient names
-    if not global_variables is None:
-        assign_coefficient_names(global_variables)
-
-    debug_end()
-
     # Compile forms
     form_data = None
     form_representation = None
     if len(forms) > 0:
-        (form_data, form_representation) = __compile_forms(forms, prefix, options)
+        (form_data, form_representation) = __compile_forms(forms, prefix, options, global_variables)
 
     # Compile elements, but only if there are no forms
     if len(elements) > 0 and len(forms) == 0:
@@ -83,7 +74,7 @@ def compile(forms, prefix="Form", options=FFC_OPTIONS, global_variables=None):
 
     return (form_data, form_representation)
 
-def __compile_forms(forms, prefix, options):
+def __compile_forms(forms, prefix, options, global_variables):
     "Compile the given forms"
 
     # Check form input
@@ -102,7 +93,7 @@ def __compile_forms(forms, prefix, options):
     for form in forms:
 
         # Compiler phase 1: analyze form
-        form_data = analyze_form(form)
+        form_data = analyze_form(form, global_variables)
         form_datas += [form_data]
 
         # Compiler phase 2: compute form representation
@@ -189,12 +180,12 @@ def preprocess_forms(forms):
 
     return (preprocessed_forms, preprocessed_elements)
 
-def analyze_form(form):
+def analyze_form(form, global_variables):
     "Compiler phase 1: analyze form"
     debug_begin("Compiler phase 1: Analyzing form")
 
     # Analyze form and extract form data
-    form_data = analyze(form)
+    form_data = analyze(form, global_variables=global_variables)
 
     debug_end()
     return form_data

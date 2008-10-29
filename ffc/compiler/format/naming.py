@@ -11,20 +11,23 @@ from ffc.common.debug import debug
 # FFC language modules
 from ffc.compiler.language.algebra import Function
 
-def assign_coefficient_names(global_variables):
+def extract_coefficient_names(global_variables):
     "Assign names (attribute .name) to all coefficients found in global_variables"
 
-    debug("Assigning function names...")
+    debug("Extracting coefficient names...")
 
     # Assign coefficient names
-    coefficients = []
+    coefficient_names = {}
+    d = {}
     for name in global_variables:
         variable = global_variables[name]
         if isinstance(variable, Function):
-            variable.name = name
-            coefficients.append(name)
+            coefficient_names[variable.n0.index] = str(name)
+    coefficient_names = [coefficient_names[i] for i in range(len(coefficient_names))]
 
     debug("done")
 
     # Print coefficient names
-    debug("Coefficients: " + ", ".join(coefficients))
+    debug("Coefficients: " + ", ".join(coefficient_names))
+
+    return coefficient_names

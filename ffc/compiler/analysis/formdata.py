@@ -21,6 +21,7 @@ from ffc.fem.dofmap import *
 from ffc.compiler.language.integral import *
 from ffc.compiler.language.reassignment import max_index
 from ffc.compiler.language.index import Index
+from ffc.compiler.language.algebra import Function
 
 class FormData:
     """This class holds meta data for a form. The following attributes
@@ -43,7 +44,7 @@ class FormData:
     It is assumed that the indices of the given form have been reassigned.
     """
 
-    def __init__(self, form):
+    def __init__(self, form, global_variables=None):
         "Create form data for form"
 
         debug("Extracting form data...")
@@ -59,7 +60,7 @@ class FormData:
         self.num_interior_facet_integrals = self.__extract_num_interior_facet_integrals(form)
         self.elements                     = self.__extract_elements(form, self.rank, self.num_coefficients)
         self.dof_maps                     = self.__extract_dof_maps(self.elements)
-        self.coefficients                 = self.__extract_coefficients(form, self.num_coefficients)
+        self.coefficients                 = self.__extract_coefficients(form, self.num_coefficients, global_variables)
         self.cell_dimension               = self.__extract_cell_dimension(self.elements)
 
         debug("done")
@@ -131,9 +132,10 @@ class FormData:
         "Extract (generate) dof maps for all elements"
         return [DofMap(element) for element in elements]
 
-    def __extract_coefficients(self, form, num_coefficients):
+    def __extract_coefficients(self, form, num_coefficients, global_variables):
         "Extract all coefficients associated with form"
 
+        # Extract coefficients for form
         coefficients = []
         for i in range(num_coefficients):
             for m in form.monomials:
@@ -143,6 +145,19 @@ class FormData:
 
         if not len(coefficients) == num_coefficients:
             raise RuntimeError, (form, "Unable to extract all coefficients")
+
+        # Extract names of all coefficients
+        coefficient_names = {}
+        if not global_variables is None:
+            for name in global_variables:
+                variable = global_variables[name]
+                if isinstance(variable, Function):
+                    coefficient_names[variable.n0.index] = str(name)
+
+        # Set names for coefficients
+        for i in range(len(coefficients)):
+            if i in coefficient_names:
+                coefficients[i].set_name(coefficient_names[i])
 
         return coefficients
 

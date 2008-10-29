@@ -46,6 +46,7 @@ class Coefficient:
             self.e0 = function.e0
             self.e1 = function.e1
             self.P  = function.P
+            self._name = function._name
             self.index = Index(function.index)
             self.ops = [op for op in function.ops]
         else:
@@ -55,18 +56,30 @@ class Coefficient:
             self.e0 = function.e0
             self.e1 = function.e1
             self.P  = function.P
+            self._name = function.name
             self.index = Index(index)
             self.ops = []
         return
+
+    def name(self):
+        "Return name of coefficient"
+        if self._name == None:
+            return "w" + str(self.n1)
+        else:
+            return self._name
+
+    def set_name(self, s):
+        "Set name of coefficient"
+        self._name = s
 
     def __repr__(self):
         "Print nicely formatted representation of Coefficient."
         operator_to_string = {Operators.INVERSE: "inv", Operators.MODULUS: "abs", Operators.SQRT: "sqrt"}
         operators = ", ".join([operator_to_string[op] for op in self.ops])
         if not operators == "":
-            return "([" + operators + "]" + "w" + str(self.n1) + "_" + str(self.index) + ")"
+            return "([" + operators + "]" + self.name() + "_" + str(self.index) + ")"
         else:
-            return "w" + str(self.n1) + "_" + str(self.index)
+            return self.name() + "_" + str(self.index)
 
 class Derivative:
     """A Derivative represents a derivative on the reference cell in

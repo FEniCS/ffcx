@@ -18,7 +18,7 @@ from elementdata import *
 from simplify import *
 from ranges import *
 
-def analyze(form, simplify_form=True):
+def analyze(form, simplify_form=True, global_variables=None):
     "Analyze form and extract form data"
 
     raw_form = str(form)
@@ -48,7 +48,7 @@ def analyze(form, simplify_form=True):
     check_form(form)
 
     # Extract form data
-    form_data = FormData(form)
+    form_data = FormData(form, global_variables)
 
     # Print form before and after reassignment and simplification
     debug("\nRaw input form:\n", 1)
