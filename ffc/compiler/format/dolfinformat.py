@@ -141,16 +141,12 @@ def _generate_dolfin_wrappers(generated_forms, prefix, options):
     output = """\
 // DOLFIN wrappers
 
-namespace dolfin
-{
-  // Forward declarations
-  class FunctionSpace;
-  class Function;
-  class Mesh;
-}
-
 #include <dolfin/fem/Form.h>
+#include <dolfin/fem/FiniteElement.h>
+#include <dolfin/fem/DofMap.h>
 #include <dolfin/function/Coefficient.h>
+#include <dolfin/function/Function.h>
+#include <dolfin/function/FunctionSpace.h>
 
 """
     
