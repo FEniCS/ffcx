@@ -193,7 +193,7 @@ def _generate_dolfin_wrappers(generated_forms, prefix, options):
 
     # Extract common element if any
     common_element = None
-    elements = test_elements + trial_elements + coefficient_elements
+    elements = test_elements + trial_elements # + coefficient_elements
     if len(elements) > 0 and elements[1:] == elements[:-1]:
         common_element = elements[-1]
 
@@ -211,7 +211,7 @@ def _generate_dolfin_wrappers(generated_forms, prefix, options):
         form_prefix = ufcformat.compute_prefix(prefix, generated_forms, i, options)
         for j in range(form_data.rank):
             output += _generate_function_space(form_data.elements[j],
-                                               "%sArgumentSpace%d" % (form_prefix, j),
+                                               "%sFunctionSpace%d" % (form_prefix, j),
                                                element_map)
             output += "\n"
         for j in range(form_data.num_coefficients):
@@ -225,6 +225,8 @@ def _generate_dolfin_wrappers(generated_forms, prefix, options):
         output += _generate_function_space(test_element, prefix + "TestSpace", element_map) + "\n"
     if not trial_element is None:
         output += _generate_function_space(trial_element, prefix + "TrialSpace", element_map) + "\n"
+    if not coefficient_element is None:
+        output += _generate_function_space(coefficient_element, prefix + "CoefficientSpace", element_map) + "\n"
     if not common_element is None:
         output += _generate_function_space(common_element, prefix + "FunctionSpace", element_map) + "\n"
 
