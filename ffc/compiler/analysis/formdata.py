@@ -158,8 +158,8 @@ class FormData:
         for coefficient in coefficients:
             if coefficient_names.has_key(coefficient.f):
                 coefficient.set_name(coefficient_names[coefficient.f])
-            else:
-                raise RuntimeError, (coefficient, "Unable to extract coefficient name")
+            #else:
+            #    raise RuntimeError, (coefficient, "Unable to extract coefficient name")
 
         return coefficients
 
