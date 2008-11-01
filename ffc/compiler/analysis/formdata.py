@@ -3,7 +3,7 @@ __date__ = "2005-03-15 -- 2007-08-16"
 __copyright__ = "Copyright (C) 2005-2007 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Modified by Garth N. Wells 2006
+# Modified by Garth N. Wells 2006, 2008
 
 # Python modules
 import numpy
@@ -152,12 +152,14 @@ class FormData:
             for name in global_variables:
                 variable = global_variables[name]
                 if isinstance(variable, Function):
-                    coefficient_names[variable.n0.index] = str(name)
+                    coefficient_names[variable] = str(name)
 
         # Set names for coefficients
-        for i in range(len(coefficients)):
-            if i in coefficient_names:
-                coefficients[i].set_name(coefficient_names[i])
+        for coefficient in coefficients:
+            if coefficient_names.has_key(coefficient.f):
+                coefficient.set_name(coefficient_names[coefficient.f])
+            else:
+                raise RuntimeError, (coefficient, "Unable to extract coefficient name")
 
         return coefficients
 
