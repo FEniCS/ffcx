@@ -40,6 +40,7 @@ class FormData:
         dof_maps                     - the dof maps associated with the form
         coefficients                 - the coefficients associated with the form
         cell_dimension               - the dimension of the cell
+        basisfunction_data           - user-defined data for basis functions
 
     It is assumed that the indices of the given form have been reassigned.
     """
@@ -62,6 +63,7 @@ class FormData:
         self.dof_maps                     = self.__extract_dof_maps(self.elements)
         self.coefficients                 = self.__extract_coefficients(form, self.num_coefficients, global_variables)
         self.cell_dimension               = self.__extract_cell_dimension(self.elements)
+        self.basisfunction_data           = self.__extract_basisfunction_data(form, self.rank)
 
         debug("done")
 
@@ -166,6 +168,18 @@ class FormData:
     def __extract_cell_dimension(self, elements):
         "Extract cell dimension"
         return pick_first([element.cell_dimension() for element in elements])
+
+    def __extract_basisfunction_data(self, form, rank):
+        "Extract user-defined data for basis functions"
+
+        # Only look at first term
+        monomial = form.monomials[0]
+        data = []
+        for i in range(rank):
+            for v in monomial.basisfunctions:
+                if v.index.type == Index.PRIMARY and v.index.index == i:
+                    data += [v.data]
+        return data
 
     def __extract_num_sub_domains(self, integrals):
         "Extract number of sub domains from list of integrals"
