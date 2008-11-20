@@ -190,6 +190,7 @@ class BasisFunction(Element):
         component   - a list of component Indices
         restriction - a flag indicating restriction of a multi-valued function
         derivatives - a list of Derivatives
+        data        - arbitrary user-defined data
     """
 
     def __init__(self, element, index = None):
@@ -201,6 +202,7 @@ class BasisFunction(Element):
             self.component = listcopy(element.component)
             self.restriction = element.restriction
             self.derivatives = listcopy(element.derivatives)
+            self.data = element.data
         elif index == None:
             # Create BasisFunction with primary Index (default)
             self.element = element
@@ -208,6 +210,7 @@ class BasisFunction(Element):
             self.component = []
             self.restriction = None
             self.derivatives = []
+            self.data = None
         else:
             # Create BasisFunction with specified Index
             self.element = element
@@ -215,6 +218,7 @@ class BasisFunction(Element):
             self.component = []
             self.restriction = None
             self.derivatives = []
+            self.data = None
         return
 
     def  __getitem__(self, component):
