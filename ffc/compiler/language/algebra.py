@@ -53,7 +53,7 @@ from integral import *
 from restriction import *
 from reassignment import *
 
-class Element:
+class Element(object):
     "Base class for elements of the algebra."
 
     def __add__(self, other):
