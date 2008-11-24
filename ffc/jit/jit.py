@@ -2,12 +2,12 @@
 It uses Instant to wrap the generated code into a Python module."""
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-07-20 -- 2008-09-16"
+__date__ = "2007-07-20 -- 2008-11-24"
 __copyright__ = "Copyright (C) 2007-2008 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Johan Hake, 2008
-# Mofified by Ilmar Wilbers, 2008
+# Modified by Ilmar Wilbers, 2008
 
 # Python modules
 import instant
@@ -80,8 +80,15 @@ def jit_form(form, options=None):
     debug("Creating Python extension (compiling and linking), this may take some time...", -1)
     filename = signature + ".h"
     (cppargs, path, ufc_include) = extract_instant_flags(options)
+
+    # Extract information for producing shared_ptr wrapper code.
+    shared_ptr_definitions, shared_ptr_declarations = \
+                            extract_shared_ptr_information(filename,options)
+    
     module = instant.build_module(wrap_headers=[filename],
-                                  additional_declarations=ufc_include,
+                                  additional_definitions  = shared_ptr_definitions,
+                                  additional_declarations = shared_ptr_declarations + \
+                                                            ufc_include,
                                   include_dirs=path,
                                   cppargs=cppargs,
                                   signature=signature,
@@ -162,3 +169,39 @@ def extract_instant_flags(options):
     ufc_include = '%%include "%s/ufc.h"' % path[0]
 
     return (cppargs, path, ufc_include)
+
+def extract_shared_ptr_information(filename,options):
+    "Extract information for shared_ptr"
+    if not options["shared_ptr"]:
+        return  "",""
+
+    import re
+
+    # Read the code
+    code = open(filename).read()
+    
+    # Extract the class names
+    derived_classes   = re.findall(r"class[ ]+([\w]+)[ ]*: public",code)
+    ufc_classes       = re.findall(r"public[ ]+(ufc::[\w]+).*",code)
+    ufc_proxy_classes = [c.replace("ufc::","") for c in ufc_classes]
+
+    shared_ptr_declarations =  """
+//Uncomment these to produce code for std::tr1::shared_ptr
+//#define SWIG_SHARED_PTR_NAMESPACE std
+//#define SWIG_SHARED_PTR_SUBNAMESPACE tr1
+%include <boost_shared_ptr.i>
+"""
+    shared_ptr_format = """
+SWIG_SHARED_PTR(%(ufc_proxy)s,%(ufc_c)s)
+SWIG_SHARED_PTR_DERIVED(%(der_c)s,%(ufc_c)s,%(der_c)s)"""
+    
+    shared_ptr_declarations += "\n".join(\
+        shared_ptr_format%{"ufc_c":c[0],"ufc_proxy":c[1],"der_c":c[2]}\
+        for c in zip(ufc_classes,ufc_proxy_classes,shared_ptr_classes)\
+        )
+    
+    shared_ptr_definitions  = """
+#include "boost/shared_ptr.hpp"
+//#include <tr1/memory>
+"""
+    return shared_ptr_definitions, shared_ptr_declarations

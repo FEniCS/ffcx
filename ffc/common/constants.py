@@ -17,4 +17,5 @@ FFC_OPTIONS = {"representation": "tensor",
                "split_implementation": False,
                "form_postfix": True,
                "cache_dir": None,
-               "output_dir": "."}
+               "output_dir": ".",
+               "shared_ptr":False}
