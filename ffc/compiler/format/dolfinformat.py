@@ -268,10 +268,10 @@ def _generate_dolfin_wrappers(generated_forms, prefix, options):
             constructor_body_sc += "\n\n"
         constructor_body_rc += assign_coefficients
         constructor_body_sc += assign_coefficients
-        constructor_body_r  += "    _ufc_form = new UFC_%s();" % form_prefix
-        constructor_body_rc += "    _ufc_form = new UFC_%s();" % form_prefix
-        constructor_body_s  += "    _ufc_form = new UFC_%s();" % form_prefix
-        constructor_body_sc += "    _ufc_form = new UFC_%s();" % form_prefix
+        constructor_body_r  += "    _ufc_form = std::tr1::shared_ptr<const ufc::form>(new UFC_%s());" % form_prefix
+        constructor_body_rc += "    _ufc_form = std::tr1::shared_ptr<const ufc::form>(new UFC_%s());" % form_prefix
+        constructor_body_s  += "    _ufc_form = std::tr1::shared_ptr<const ufc::form>(new UFC_%s());" % form_prefix
+        constructor_body_sc += "    _ufc_form = std::tr1::shared_ptr<const ufc::form>(new UFC_%s());" % form_prefix
 
         # Generate class in different ways depending on the situation
         if form_data.rank > 0:
