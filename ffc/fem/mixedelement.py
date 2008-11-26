@@ -11,6 +11,7 @@ import numpy
 
 # FFC fem modules
 from dofrepresentation import *
+from finiteelementbase import *
 
 # FFC common modules
 from ffc.common.debug import *
@@ -20,7 +21,7 @@ from ffc.common.exceptions import *
 # FFC language modules
 from ffc.compiler.language.index import Index
 
-class MixedElement:
+class MixedElement(FiniteElementBase):
     """A MixedElement represents a finite element defined as a tensor
     product of finite elements. It is represented as a list of finite
     elements (mixed or simple) and may thus be recursively defined in

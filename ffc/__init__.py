@@ -20,6 +20,7 @@ except:
     print "*** Warning: installation of FIAT. Variable reference_element is missing."
 
 # Import finite elements and dof map
+from ffc.fem.finiteelementbase import FiniteElementBase
 from ffc.fem.finiteelement import FiniteElement
 from ffc.fem.vectorelement import VectorElement, VectorQuadratureElement
 from ffc.fem.mixedelement import MixedElement

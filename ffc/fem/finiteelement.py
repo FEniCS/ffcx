@@ -31,6 +31,7 @@ from mapping import *
 import mixedelement
 import referencecell
 from  dofrepresentation import *
+from finiteelementbase import *
 
 # Dictionaries of basic element data
 shape_to_string = {LINE: "interval", TRIANGLE: "triangle", TETRAHEDRON: "tetrahedron"}
@@ -39,7 +40,7 @@ shape_to_dim = {LINE: 1, TRIANGLE: 2, TETRAHEDRON: 3}
 shape_to_facet = {LINE: None, TRIANGLE: LINE, TETRAHEDRON: TRIANGLE}
 shape_to_num_facets = {LINE: 2, TRIANGLE: 3, TETRAHEDRON: 4}
 
-class FiniteElement:
+class FiniteElement(FiniteElementBase):
     """A FiniteElement represents a finite element in the classical
     sense as defined by Ciarlet. The actual work is done by FIAT and
     this class serves as the interface to FIAT finite elements from
