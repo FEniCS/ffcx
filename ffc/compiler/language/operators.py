@@ -12,7 +12,7 @@ __all__ = ['Identity', 'value_rank', 'vec', 'dot', 'cross', 'trace', 'transp',
 
 # Modified by Ola Skavhaug, 2005
 # Modified by Dag Lindbo, 2006
-# Modified by Garth N. Wells 2006, 2007
+# Modified by Garth N. Wells 2006, 2007, 2008
 # Modified by Kristian Oelgaard 2006, 2007
 # Modified by Evan Lezar 2008
 # Modified by Marie Rognes 2008
@@ -90,15 +90,17 @@ def dot(v, w):
             return v[i]*w[i]
         # Otherwise, use numpy.inner
         return numpy.inner(vec(v), vec(w))
-    elif value_rank(v) == value_rank(w) == 2:
-        
+    elif value_rank(v) == value_rank(w) == 2:        
         # Check dimensions
         if not len(v) == len(w):
             raise FormError, ((v, w), "Dimensions don't match for scalar product.")
+        for i in range(len(v)):
+            if not len(v[i]) == len(w[i]):
+                raise FormError, ((v, w), "Dimensions don't match for scalar product.")
         # Compute dot product (:) of matrices
         form = Form()
         for i in range(len(v)):
-            for j in range(len(v)):
+            for j in range(len(v[i])):
                 form = form + v[i][j]*w[i][j]
         return form
     raise FormError, ((v, w), "Don't know how to interpret dot product")
