@@ -193,7 +193,7 @@ class BasisFunction(Element):
         data        - arbitrary user-defined data
     """
 
-    def __init__(self, element, index = None):
+    def __init__(self, element, index=None):
         "Create BasisFunction."
         if index == None and isinstance(element, BasisFunction):
             # Create BasisFunction from BasisFunction (copy constructor)
@@ -368,6 +368,9 @@ class BasisFunction(Element):
         w.basisfunctions[0].component = [j + offset]    
         return w
 
+    def attach(self, data):
+        "Attach data"
+        self.data = data
 
 class Monomial(Element):
     """A Monomial represents a monomial product of factors, including
@@ -479,7 +482,11 @@ class Monomial(Element):
                 w.integral = Integral(w1.integral)
             else:
                 w.integral = None;
-
+            # Reattach data
+            for (i, v) in enumerate(w0.basisfunctions):
+                w.basisfunctions[i].data = v.data
+            for (i, v) in enumerate(w1.basisfunctions):
+                w.basisfunctions[len(w0.basisfunctions) + i].data = v.data
             return w
 
     def __neg__(self):
@@ -586,7 +593,12 @@ class Monomial(Element):
                 if not v.value_rank() == 0:
                     raise FormError, (self, "Illegal rank for BasisFunction of Monomial (non-scalar).")
         return self.basisfunctions[0].value_rank()
-            
+
+    def attach(self, data):
+        "Attach data"
+        for (i, v) in enumerate(self.basisfunctions):
+            self.basisfunctions[i].attach(data)
+        
 class Form(Element):
     """A Form represents a sum of Monomials. Each Monomial will be
     compiled separately, since different Monomials are probably of
@@ -717,6 +729,11 @@ class Form(Element):
             if not self.monomials[j].value_rank() == self.monomials[j + 1].value_rank():
                 raise FormError, (self, "Terms have different rank.")
         return self.monomials[0].value_rank()
+
+    def attach(self, data):
+        "Attach data"
+        for (i, m) in enumerate(self.monomials):
+            self.monomials[i].attach(data)
   
 class TestFunction(BasisFunction):
     """A TestFunction is the BasisFunction with the lowest primary
