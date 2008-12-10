@@ -9,6 +9,7 @@
 #include <ufc.h>
 #include <vector>
 #include <stdexcept>
+#include <cstring>
 
 namespace ufc
 {
@@ -28,9 +29,9 @@ namespace ufc
       // construct all dofmaps and elements
       dofmaps.resize(num_arguments);
       elements.resize(num_arguments);
-      dimensions = new uint[num_arguments];
+      dimensions = new unsigned[num_arguments];
 
-      for(uint i=0; i<num_arguments; i++)
+      for(unsigned i=0; i<num_arguments; i++)
       {
         dofmaps[i]    = form.create_dof_map(i);
         elements[i]   = form.create_finite_element(i);
@@ -45,24 +46,24 @@ namespace ufc
 
       // construct all integral objects
       cell_integrals.resize(form.num_cell_integrals());
-      for(uint i=0; i<form.num_cell_integrals(); i++)
+      for(unsigned i=0; i<form.num_cell_integrals(); i++)
       {
         cell_integrals[i] = form.create_cell_integral(i);
       }
       exterior_facet_integrals.resize(form.num_exterior_facet_integrals());
-      for(uint i=0; i<form.num_exterior_facet_integrals(); i++)
+      for(unsigned i=0; i<form.num_exterior_facet_integrals(); i++)
       {
         exterior_facet_integrals[i] = form.create_exterior_facet_integral(i);
       }
       interior_facet_integrals.resize(form.num_interior_facet_integrals());
-      for(uint i=0; i<form.num_interior_facet_integrals(); i++)
+      for(unsigned i=0; i<form.num_interior_facet_integrals(); i++)
       {
         interior_facet_integrals[i] = form.create_interior_facet_integral(i);
       }
 
       // compute size of element tensor A
       A_size = 1;
-      for(uint i=0; i<rank; i++)
+      for(unsigned i=0; i<rank; i++)
       {
         A_size *= dimensions[i];
       }
@@ -72,24 +73,24 @@ namespace ufc
 
       // Initialize local tensor for macro element
       A_size = 1;
-      for (uint i = 0; i < form.rank(); i++)
+      for (unsigned i = 0; i < form.rank(); i++)
         A_size *= 2*dimensions[i];
       macro_A = new double[A_size];
 
       // allocate space for local coefficient data
       w = new double*[num_coefficients];
-      for(uint i=0; i<num_coefficients; i++)
+      for(unsigned i=0; i<num_coefficients; i++)
       {
-        uint dim = dimensions[i+rank];
+        unsigned dim = dimensions[i+rank];
         w[i] = new double[dim];
         memset(w[i], 0, sizeof(double)*dim);
       }
 
       // allocate space for local macro coefficient data
       macro_w = new double*[num_coefficients];
-      for(uint i=0; i<num_coefficients; i++)
+      for(unsigned i=0; i<num_coefficients; i++)
       {
-        uint dim = 2*dimensions[i+rank];
+        unsigned dim = 2*dimensions[i+rank];
         macro_w[i] = new double[dim];
         memset(macro_w[i], 0, sizeof(double)*dim);
       }
@@ -97,28 +98,28 @@ namespace ufc
 
     ~ufc_data()
     {
-      for(uint i=0; i<num_arguments; i++)
+      for(unsigned i=0; i<num_arguments; i++)
         delete dofmaps[i];
 
-      for(uint i=0; i<num_arguments; i++)
+      for(unsigned i=0; i<num_arguments; i++)
         delete elements[i];
       
       delete [] dimensions;
 
-      for(uint i=0; i<form.num_cell_integrals(); i++)
+      for(unsigned i=0; i<form.num_cell_integrals(); i++)
         delete cell_integrals[i];
       
-      for(uint i=0; i<form.num_exterior_facet_integrals(); i++)
+      for(unsigned i=0; i<form.num_exterior_facet_integrals(); i++)
         delete exterior_facet_integrals[i];
       
-      for(uint i=0; i<form.num_interior_facet_integrals(); i++)
+      for(unsigned i=0; i<form.num_interior_facet_integrals(); i++)
         delete interior_facet_integrals[i];
 
-      for(uint i=0; i<num_coefficients; i++)
+      for(unsigned i=0; i<num_coefficients; i++)
         delete [] w[i];
       delete [] w;
 
-      for(uint i=0; i<num_coefficients; i++)
+      for(unsigned i=0; i<num_coefficients; i++)
         delete [] macro_w[i];
       delete [] macro_w;
       
@@ -135,12 +136,12 @@ namespace ufc
     vector< ufc::exterior_facet_integral *>   exterior_facet_integrals;
     vector< ufc::interior_facet_integral *>   interior_facet_integrals;
 
-    uint rank;
-    uint num_coefficients;
-    uint num_arguments;
-    uint A_size;
+    unsigned rank;
+    unsigned num_coefficients;
+    unsigned num_arguments;
+    unsigned A_size;
 
-    uint   *  dimensions;
+    unsigned   *  dimensions;
     double *  A;
     double *  macro_A;
     double ** w;
