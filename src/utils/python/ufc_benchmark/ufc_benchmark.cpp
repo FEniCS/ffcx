@@ -17,9 +17,6 @@ using std::vector;
 #include "ufc_reference_cell.h"
 #include "ufc_benchmark.h"
 
-typedef unsigned int uint; 
-
-
 
 clock_t __tic_time;
 
@@ -95,7 +92,7 @@ vector< vector<double> > benchmark(const ufc::form & form, bool print_tensor)
     vector<double> interior_facet_times(form.num_interior_facet_integrals());
 
     // benchmark all cell integrals
-    for(uint i = 0; i < form.num_cell_integrals(); i++)
+    for(unsigned i = 0; i < form.num_cell_integrals(); i++)
     {
         cell_times[i] = time_tabulate_tensor(*data.cell_integrals[i], data.A, data.w, c);
 
@@ -108,7 +105,7 @@ vector< vector<double> > benchmark(const ufc::form & form, bool print_tensor)
     }
 
     // benchmark all exterior facet integrals
-    for(uint i = 0; i < form.num_exterior_facet_integrals(); i++)
+    for(unsigned i = 0; i < form.num_exterior_facet_integrals(); i++)
     {
         unsigned int facet = 0; // TODO: would it be interesting to time all facets?
         exterior_facet_times[i] = time_tabulate_tensor(*data.exterior_facet_integrals[i], data.A, data.w, c, facet);
@@ -123,7 +120,7 @@ vector< vector<double> > benchmark(const ufc::form & form, bool print_tensor)
 
     // benchmark all interior facet integrals
     /* // TODO: If somebody needs this, please implement it! Need two cells, and larger A.
-    for(uint i = 0; i < form.num_interior_facet_integrals(); i++)
+    for(unsigned i = 0; i < form.num_interior_facet_integrals(); i++)
     {
         unsigned int facet = 0; // TODO: would it be interesting to time all facets?
         interior_facet_times[i] = time_tabulate_tensor(*data.interior_facet_integrals[i], data.A, data.w, c, facet);
@@ -153,11 +150,11 @@ vector< vector<double> > tabulate_cell_tensor(const ufc::form & form, vector< ve
   // copy w to the appropriate array
   if(data.num_coefficients != w.size())
       throw std::runtime_error("Wrong number of coefficients");
-  for(uint i=0; i<data.num_coefficients; i++)
+  for(unsigned i=0; i<data.num_coefficients; i++)
   {
     if(data.dimensions[data.rank+i] != w[i].size())
         throw std::runtime_error("Wrong coefficient dimension.");
-    for(uint j=0; j<data.dimensions[data.rank+i]; j++)
+    for(unsigned j=0; j<data.dimensions[data.rank+i]; j++)
     {
       data.w[i][j] = w[i][j];
     }
@@ -174,10 +171,10 @@ vector< vector<double> > tabulate_cell_tensor(const ufc::form & form, vector< ve
   if(data.rank == 2)
   {
     A.resize(data.dimensions[0]);
-    for(uint i=0; i<data.dimensions[0]; i++)
+    for(unsigned i=0; i<data.dimensions[0]; i++)
     {
       A[i].resize(data.dimensions[1]);
-      for(uint j=0; j<data.dimensions[1]; j++)
+      for(unsigned j=0; j<data.dimensions[1]; j++)
       {
         A[i][j] = data.A[i*data.dimensions[1] + j];
       }
@@ -186,7 +183,7 @@ vector< vector<double> > tabulate_cell_tensor(const ufc::form & form, vector< ve
   else if(data.rank == 1)
   {
     A.resize(data.dimensions[0]);
-    for(uint i=0; i<data.dimensions[0]; i++)
+    for(unsigned i=0; i<data.dimensions[0]; i++)
     {
       A[i].resize(1);
       A[i][0] = data.A[i];
@@ -213,11 +210,11 @@ std::vector< std::vector<double> > tabulate_cell_integral(const ufc::form& form,
   // copy w to the appropriate array
   if(data.num_coefficients != w.size())
       throw std::runtime_error("Wrong number of coefficients");
-  for(uint i=0; i<data.num_coefficients; i++)
+  for(unsigned i=0; i<data.num_coefficients; i++)
   {
     if(data.dimensions[data.rank+i] != w[i].size())
         throw std::runtime_error("Wrong coefficient dimension.");
-    for(uint j=0; j<data.dimensions[data.rank+i]; j++)
+    for(unsigned j=0; j<data.dimensions[data.rank+i]; j++)
     {
       data.w[i][j] = w[i][j];
     }
@@ -231,10 +228,10 @@ std::vector< std::vector<double> > tabulate_cell_integral(const ufc::form& form,
   if(data.rank == 2)
   {
     A.resize(data.dimensions[0]);
-    for(uint i=0; i<data.dimensions[0]; i++)
+    for(unsigned i=0; i<data.dimensions[0]; i++)
     {
       A[i].resize(data.dimensions[1]);
-      for(uint j=0; j<data.dimensions[1]; j++)
+      for(unsigned j=0; j<data.dimensions[1]; j++)
       {
         A[i][j] = data.A[i*data.dimensions[1] + j];
       }
@@ -243,7 +240,7 @@ std::vector< std::vector<double> > tabulate_cell_integral(const ufc::form& form,
   else if(data.rank == 1)
   {
     A.resize(data.dimensions[0]);
-    for(uint i=0; i<data.dimensions[0]; i++)
+    for(unsigned i=0; i<data.dimensions[0]; i++)
     {
       A[i].resize(1);
       A[i][0] = data.A[i];
@@ -270,11 +267,11 @@ std::vector< std::vector<double> > tabulate_exterior_facet_integral(const ufc::f
   // copy w to the appropriate array
   if(data.num_coefficients != w.size())
       throw std::runtime_error("Wrong number of coefficients");
-  for(uint i=0; i<data.num_coefficients; i++)
+  for(unsigned i=0; i<data.num_coefficients; i++)
   {
     if(data.dimensions[data.rank+i] != w[i].size())
         throw std::runtime_error("Wrong coefficient dimension.");
-    for(uint j=0; j<data.dimensions[data.rank+i]; j++)
+    for(unsigned j=0; j<data.dimensions[data.rank+i]; j++)
     {
       data.w[i][j] = w[i][j];
     }
@@ -288,10 +285,10 @@ std::vector< std::vector<double> > tabulate_exterior_facet_integral(const ufc::f
   if(data.rank == 2)
   {
     A.resize(data.dimensions[0]);
-    for(uint i=0; i<data.dimensions[0]; i++)
+    for(unsigned i=0; i<data.dimensions[0]; i++)
     {
       A[i].resize(data.dimensions[1]);
-      for(uint j=0; j<data.dimensions[1]; j++)
+      for(unsigned j=0; j<data.dimensions[1]; j++)
       {
         A[i][j] = data.A[i*data.dimensions[1] + j];
       }
@@ -300,7 +297,7 @@ std::vector< std::vector<double> > tabulate_exterior_facet_integral(const ufc::f
   else if(data.rank == 1)
   {
     A.resize(data.dimensions[0]);
-    for(uint i=0; i<data.dimensions[0]; i++)
+    for(unsigned i=0; i<data.dimensions[0]; i++)
     {
       A[i].resize(1);
       A[i][0] = data.A[i];
@@ -328,11 +325,11 @@ std::vector< std::vector<double> > tabulate_interior_facet_integral(const ufc::f
   // copy w to the appropriate array
   if(data.num_coefficients != macro_w.size())
       throw std::runtime_error("Wrong number of coefficients");
-  for(uint i=0; i<data.num_coefficients; i++)
+  for(unsigned i=0; i<data.num_coefficients; i++)
   {
     if(2*data.dimensions[data.rank+i] != macro_w[i].size())
         throw std::runtime_error("Wrong coefficient dimension.");
-    for(uint j=0; j<2*data.dimensions[data.rank+i]; j++)
+    for(unsigned j=0; j<2*data.dimensions[data.rank+i]; j++)
     {
       data.macro_w[i][j] = macro_w[i][j];
     }
@@ -346,10 +343,10 @@ std::vector< std::vector<double> > tabulate_interior_facet_integral(const ufc::f
   if(data.rank == 2)
   {
     A.resize(2*data.dimensions[0]);
-    for(uint i=0; i<2*data.dimensions[0]; i++)
+    for(unsigned i=0; i<2*data.dimensions[0]; i++)
     {
       A[i].resize(2*data.dimensions[1]);
-      for(uint j=0; j<2*data.dimensions[1]; j++)
+      for(unsigned j=0; j<2*data.dimensions[1]; j++)
       {
         A[i][j] = data.macro_A[i*2*data.dimensions[1] + j];
       }
@@ -358,7 +355,7 @@ std::vector< std::vector<double> > tabulate_interior_facet_integral(const ufc::f
   else if(data.rank == 1)
   {
     A.resize(2*data.dimensions[0]);
-    for(uint i=0; i<2*data.dimensions[0]; i++)
+    for(unsigned i=0; i<2*data.dimensions[0]; i++)
     {
       A[i].resize(1);
       A[i][0] = data.macro_A[i];
