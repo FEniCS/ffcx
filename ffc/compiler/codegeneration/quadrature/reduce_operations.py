@@ -601,7 +601,8 @@ def get_indices(variable, format, from_get_indices = False):
     """This function returns the indices of a given variable. E.g.,
     P[0][j],            returns ['j']
     P[ip][k],           returns ['ip','k']
-    P[ip][nzc0[j] + 3], returns ['ip','j']"""
+    P[ip][nzc0[j] + 3], returns ['ip','j']
+    w[0][j + 2]         , returns [j]"""
 
     add           = format["add"](["", ""])
     mult          = format["multiply"](["", ""])
@@ -612,6 +613,7 @@ def get_indices(variable, format, from_get_indices = False):
     r = access[1]
 
     indices = []
+
     # If there are no '[' in variable and self is the caller
     if not variable.count(l) and from_get_indices:
         adds = split_expression(variable, format, add)
@@ -619,7 +621,7 @@ def get_indices(variable, format, from_get_indices = False):
             mults = split_expression(a, format, mult)
             for m in mults:
                 try:
-                    eval(m)
+                    float(m)
                 except:
                     if not m in indices:
                         indices.append(m)
@@ -694,7 +696,6 @@ def get_variables(expression, variables, format, constants = []):
         # Generate geo code for constant coefficients e.g., w[0][5]
         new_vrs = []
         for v in vrs:
-
             # If we don't have any access operators, we don't have a variable
             if v.count(l) == 0:
                 new_vrs.append(v)
