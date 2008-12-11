@@ -43,7 +43,7 @@ class MixedElement(FiniteElementBase):
 
     def signature(self):
         "Return a string identifying the finite element"
-        return "Mixed finite element: [%s]" % ", ".join([element.signature() for element in self.__elements])
+        return "MixedElement([%s])" % ", ".join([element.signature() for element in self.__elements])
 
     def cell_shape(self):
         "Return the cell shape"

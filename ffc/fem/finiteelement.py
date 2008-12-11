@@ -56,7 +56,7 @@ class FiniteElement(FiniteElementBase):
     The shape and degree must match the chosen family of finite element.
     """
 
-    def __init__(self, family, shape, degree = None):
+    def __init__(self, family, shape, degree=None):
         "Create FiniteElement"
 
         # Save element family
@@ -80,8 +80,8 @@ class FiniteElement(FiniteElementBase):
 
     def signature(self):
         "Return a string identifying the finite element"
-        return "%s finite element of degree %d on a %s" % \
-               (self.__family, self.degree(), shape_to_string[self.cell_shape()])
+        return "FiniteElement('%s', '%s', %d)" % \
+               (self.__family, shape_to_string[self.cell_shape()], self.degree())
 
     def cell_shape(self):
         "Return the cell shape"
