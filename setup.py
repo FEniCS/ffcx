@@ -10,8 +10,14 @@ major = 1
 minor = 1
 
 # Set prefix
-try:    prefix = [item for item in sys.argv[1:] if "--prefix=" in item][0].split("=")[1]
-except: prefix = sys.prefix
+try:
+    prefix = [item for item in sys.argv[1:] \
+              if "--prefix=" in item][0].split("=")[1]
+except:
+    try:
+        prefix = sys.argv[sys.argv.index('--prefix')+1]
+    except:
+        prefix = sys.prefix
 print "Installing UFC under %s..." % prefix
 
 # Generate pkgconfig file
