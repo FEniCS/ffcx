@@ -6,14 +6,18 @@ This gives convenient expand/collapse of bullets by pressing TAB.
 -----------------------------------------------------------------------
 
 * Suggestions for UFC 1.2
-** Add foo_integral::tabulate_tensors()
 ** Add dof_map::topological_dimension()
 ** Add finite_element::topological_dimension()
 ** Add finite_element::geometric_dimension()
-** Add function::rank() and function::dim(i) and function::geometric_dimension()
+** Add finite_element::value_size()
+** Add function::value_rank()   // == dolfin::Function::rank
+** Add function::value_shape(i) // == dolfin::Function::dim
+** Add function::value_size()
+** Add function::geometric_dimension()
 ** Add "std::string *::ufl() const" for all relevant classes, returning the matching UFL representation string.
 
 * Features to possibly include in future versions
+** Add foo_integral::tabulate_tensors()
 ** Obtaining local sparsity pattern from form and/or *_integral.
    The sparsity pattern of a form can be the combined sparsity patterns
    of the integrals, i.e. a worst-case-scenario, while letting each integral
