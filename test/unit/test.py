@@ -9,8 +9,9 @@ import unittest
 import sys
 import numpy
 import math
+import os
 
-sys.path.append("../..")
+sys.path.append(os.path.join(os.pardir, os.pardir))
 from ffc import *
 
 triangle = [(0, 0), (1, 0), (0, 1)]

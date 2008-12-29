@@ -6,7 +6,7 @@ __copyright__ = "Copyright (C) 2007-2008 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 import sys
-from os import chdir, listdir, system
+from os import chdir, listdir, system, path, pardir, curdir
 from difflib import unified_diff
 
 # Check arguments, -nw specifices that we run in terminal mode
@@ -16,8 +16,8 @@ else:
     nw = False
 
 # Check all in demo directory
-chdir("../../demo")
-form_files = [f for f in listdir(".") if f[-5:] == ".form"]
+chdir(path.join(pardir, pardir, "demo"))
+form_files = [f for f in listdir(curdir) if f[-5:] == ".form"]
 form_files.sort()
 num_forms = len(form_files)
 num_forms_ok = 0
@@ -29,11 +29,11 @@ for form_file in form_files:
     print "Compiling and verifying form %s..." % form_file
 
     # Compile form
-    if system("../scripts/ffc -fprecision=9 -s %s" % form_file) == 0:
+    if system("python %s -fprecision=9 -s %s" % (path.join(pardir, "scripts", "ffc"), form_file)) == 0:
 
         # Compare against reference
         code_file = form_file.split(".")[0] + ".h"
-        f0 = open("../test/regression/reference/%s" % code_file, "r")
+        f0 = open(path.join(pardir, "test", "regression", "reference", code_file), "r")
         f1 = open(code_file, "r")
         c0 = f0.read().split("\n")
         c1 = f1.read().split("\n")

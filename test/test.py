@@ -5,9 +5,10 @@ __date__ = "2007-06-09 -- 2007-06-09"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
-from os import system
-from commands import getoutput
+import os
 import re
+
+pwd = os.path.dirname(os.path.abspath(__file__))
 
 # Tests to run
 tests = ["unit", "regression"]
@@ -16,5 +17,6 @@ tests = ["unit", "regression"]
 for test in tests:
     print "Running tests: %s" % test
     print "----------------------------------------------------------------------"
-    system("cd %s; python test.py" % test)
+    os.chdir(os.path.join(pwd, test))
+    os.system("python test.py")
     print ""
