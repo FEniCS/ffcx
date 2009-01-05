@@ -1,3 +1,8 @@
+ - Update DOLFIN output format (-l dolfin) for DOLFIN 0.9.0
+ - Cross-platform fixes for test scripts
+ - Minor bug fix for quadrature code generation (forms affected by this bug would not be able to compile
+ - Fix bug with output of *.py.
+ - Permit dot product bewteen rectangular matrices (Frobenius norm)
 0.5.1 [2008-10-20]
  - New operator skew()
  - Allow JIT compilation of elements and dof maps
