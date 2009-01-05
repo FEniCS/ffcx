@@ -31,7 +31,7 @@ sleep 1
 emacs -nw setup.py
 
 # Get the version number
-VERSION=`grep 'FFC_VERSION' src/ffc/common/constants.py | cut -d'"' -f2`
+VERSION=`grep 'FFC_VERSION' ffc/common/constants.py | cut -d'"' -f2`
 echo "--- Version number is $VERSION"
 
 # Run tests
