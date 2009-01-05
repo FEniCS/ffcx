@@ -66,7 +66,7 @@ hg archive -t tgz ffc-$VERSION.tar.gz
 
 # Copy files to web page
 echo '--- Copying files to web server'
-scp ffc-$VERSION.tar.gz fenics@fenics.org:www.fenics.org/pub/software/ffc/v0.5
+scp ffc-$VERSION.tar.gz fenics@fenics.org:www.fenics.org/pub/software/ffc/v0.6
 scp ChangeLog fenics@fenics.org:www.fenics.org/pub/software/ffc/
 scp TODO fenics@fenics.org:www.fenics.org/pub/software/ffc/
 
