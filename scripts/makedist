@@ -5,9 +5,9 @@
 #
 # This script creates a new release of FFC
 
-# Make sure FFC is not installed
+# Make sure FFC is installed (so we may run unit tests)
 echo '--- Uninstalling FFC'
-ffc-uninstall
+sudo python setup.py install
 
 # Make sure we have the current version
 echo '--- Synchronizing repository'

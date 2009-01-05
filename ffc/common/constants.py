@@ -1,9 +1,9 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2005-05-20 -- 2008-09-28"
-__copyright__ = "Copyright (C) 2005-2008 Anders Logg"
+__date__ = "2005-05-20 -- 2009-01-05"
+__copyright__ = "Copyright (C) 2005-2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
-FFC_VERSION = "0.5.1"
+FFC_VERSION = "0.6.0"
 
 FFC_DEBUG_LEVEL = 0
 
