@@ -41,7 +41,7 @@ from ffc.common.constants import FFC_OPTIONS
 
 # FFC form representation modules
 from representation.tensor import UFLTensorRepresentation
-from representation.quadrature import QuadratureRepresentation
+from representation.quadrature import UFLQuadratureRepresentation
 
 # FFC code generation modules
 #from codegeneration.tensor import *
@@ -262,10 +262,10 @@ def _choose_representation(form, options):
         else:
             debug("no\n")
             warning("Form is is not multilinear, using quadrature representation")
-            return QuadratureRepresentation
+            return UFLQuadratureRepresentation
         
     elif option == "quadrature":
-        return QuadratureRepresentation
+        return UFLQuadratureRepresentation
 
     else:
         raise RuntimeError, 'Unknown form representation: "%s"' % option
