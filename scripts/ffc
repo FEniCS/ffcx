@@ -158,7 +158,7 @@ def _make_script_ufl(filename, options):
     # Generate output
     output = """\
 from ufl import *
-from ffc import compile_ufl
+from ffc.compiler.uflcompiler import compile as compile_ufl
 
 # Reserved variables for forms
 (a, L, M) = (None, None, None)
