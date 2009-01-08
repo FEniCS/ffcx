@@ -12,11 +12,11 @@ each represented by a separate module:
 """
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-02-05 -- 2008-10-21"
-__copyright__ = "Copyright (C) 2007-2008 Anders Logg"
+__date__ = "2007-02-05 -- 2009-01-08"
+__copyright__ = "Copyright (C) 2007-2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Modified by Kristian B. Oelgaard, 2007
+# Modified by Kristian B. Oelgaard, 2009
 # Modified by Dag Lindbo, 2008
 
 # UFL modules
@@ -68,12 +68,13 @@ def compile(objects, prefix="Form", options=FFC_OPTIONS):
         return
 
     # Compile forms
-    (form_data, form_representation) = _compile_forms(forms, prefix, options)
+#    (form_data, form_representation) = _compile_forms(forms, prefix, options)
+    _compile_forms(forms, prefix, options)
 
     # Compile elements
     #_compile_elements(elements, prefix, options)
-
-    return (form_data, form_representation)
+    return
+#    return (form_data, form_representation)
 
 def _compile_forms(forms, prefix, options):
     "Compile the given forms"
@@ -88,18 +89,43 @@ def _compile_forms(forms, prefix, options):
 
     # Iterate over forms for stages 1 - 4
     generated_forms = []
-    form_datas = []
-    form_representations = []
+#    form_datas = []
+#    form_representations = []
     for form in forms:
 
         # Compiler phase 1: analyze form
         print "1"
         form_data = analyze_form(form)
-        form_datas += [form_data]
+#        form_datas += [form_data]
+
+        # Representations on subdomains
+        # FIXME: We can support different representations on individual
+        # subdomains. The representation can be specified by the user on the
+        # command line (global represetation for all forms in the ufl file);
+        # extracted as meta data from the integrals in the ufl file (user
+        # specified for individual subdomain integrals); or the representation
+        # can be selected automatically by a module yet to be implemented.
+        # Key thing to note is that each subdomain uses the same representation
+        # for ALL terms, otherwise we will get into all kinds of troubles with
+        # with respect to the codegenerators.
+        # Check if specified representation is legal.
+        domain_representations = {}
+        # Simple generator for now
+        for i in range(len(form_data.form.cell_integrals())):
+            domain_representations[("cell", i)] = options["representation"]
+        for i in range(len(form_data.form.exterior_facet_integrals())):
+            domain_representations[("exterior_facet", i)] = options["representation"]
+        for i in range(len(form_data.form.interior_facet_integrals())):
+            domain_representations[("interior_facet", i)] = options["representation"]
+
+        print "domain_representations:\n", domain_representations
 
         # Compiler phase 2: compute form representation
-        form_representation = compute_form_representation(form_data, options)
-        form_representations += [form_representation]
+        tensor_representation, quadrature_representation =\
+            compute_form_representation(form_data, domain_representations, options)
+
+#        form_representation = compute_form_representation(form_data, options)
+#        form_representations += [form_representation]
 
         # Compiler phase 3: optimize form representation
         #optimize_form_representation(form)
@@ -113,7 +139,8 @@ def _compile_forms(forms, prefix, options):
     # Compiler phase 5: format code
     #_format_code(generated_forms, prefix, format, options)
 
-    return (form_datas, form_representations)
+    return
+#    return (form_datas, form_representations)
 
 def __compile_elements(elements, prefix="Element", options=FFC_OPTIONS):
     "Compile the given elements for the given language"
@@ -161,18 +188,22 @@ def analyze_form(form):
     debug_end()
     return form_data
 
-def compute_form_representation(form_data, options):
+def compute_form_representation(form_data, domain_representations, options):
     "Compiler phase 2: compute form representation"
     debug_begin("Compiler phase 2: Computing form representation")
 
     # Choose representation
-    Representation = _choose_representation(form_data.form, options)
+#    Representation = _choose_representation(form_data.form, options)
 
     # Compute form representation
-    form_representation = Representation(form_data, int(options["quadrature_points"]))
+    # FIXME: The representations should of course only be generated for the
+    # relevant subdomains
+#    tensor = UFLTensorRepresentation(form_data, int(options["quadrature_points"]))
+    quadrature = UFLQuadratureRepresentation(form_data, int(options["quadrature_points"]))
 
     debug_end()
-    return form_representation
+    return (quadrature, quadrature)
+#    return (tensor, quadrature)
     
 def optimize_form_representation(form):
     "Compiler phase 3: optimize form representation"

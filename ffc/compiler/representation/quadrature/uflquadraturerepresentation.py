@@ -45,7 +45,7 @@ class QuadratureRepresentation:
         # Set number of specified quadrature points
         self.num_user_specified_quad_points = num_quadrature_points
 
-        print "QR: form", form
+        print "QR, form:\n", form
 
         # Compute representation of cell tensor
 #        self.cell_tensor = self.__compute_cell_tensor(form)
