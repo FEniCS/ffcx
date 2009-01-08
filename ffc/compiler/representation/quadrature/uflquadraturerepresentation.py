@@ -1,7 +1,7 @@
 "Quadrature representation class"
 
 __author__ = "Kristian B. Oelgaard (k.b.oelgaard@tudelft.nl)"
-__date__ = "2009-01-07 -- 2009-01-07"
+__date__ = "2009-01-07 -- 2009-01-08"
 __copyright__ = "Copyright (C) 2009 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
@@ -9,13 +9,15 @@ __license__  = "GNU GPL version 3 or any later version"
 from ffc.common.debug import *
 
 # FFC language modules
-from ffc.compiler.language.integral import *
+#from ffc.compiler.language.integral import *
 
 # FFC quadrature representation modules
-from elementtensor import *
+#from elementtensor import *
 
 #from factorization import *
 #from tensorreordering import *
+
+from ufl.algorithms.analysis import *
 
 class QuadratureRepresentation:
     """This class uses quadrature to represent a given multilinear form.
@@ -33,7 +35,7 @@ class QuadratureRepresentation:
 
     """
 
-    def __init__(self, form_data, num_quadrature_points):
+    def __init__(self, form_data, domain_representations, num_quadrature_points):
         "Create tensor representation for given form"
 
         # Extract form
@@ -46,6 +48,11 @@ class QuadratureRepresentation:
         self.num_user_specified_quad_points = num_quadrature_points
 
         print "QR, form:\n", form
+
+        # Get relevant integrals
+        cell_integrals = [i for i in form.cell_integrals() if\
+            domain_representations[(i.domain_type(), i.domain_id())] == "quadrature"]
+        print "QR, cell_integrals:\n", cell_integrals
 
         # Compute representation of cell tensor
 #        self.cell_tensor = self.__compute_cell_tensor(form)

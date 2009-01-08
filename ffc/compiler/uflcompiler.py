@@ -111,12 +111,12 @@ def _compile_forms(forms, prefix, options):
         # Check if specified representation is legal.
         domain_representations = {}
         # Simple generator for now
-        for i in range(len(form_data.form.cell_integrals())):
-            domain_representations[("cell", i)] = options["representation"]
-        for i in range(len(form_data.form.exterior_facet_integrals())):
-            domain_representations[("exterior_facet", i)] = options["representation"]
-        for i in range(len(form_data.form.interior_facet_integrals())):
-            domain_representations[("interior_facet", i)] = options["representation"]
+        for integral in form_data.form.cell_integrals():
+            domain_representations[(integral.domain_type(), integral.domain_id())] = options["representation"]
+        for integral in form_data.form.exterior_facet_integrals():
+            domain_representations[(integral.domain_type(), integral.domain_id())] = options["representation"]
+        for integral in form_data.form.interior_facet_integrals():
+            domain_representations[(integral.domain_type(), integral.domain_id())] = options["representation"]
 
         print "domain_representations:\n", domain_representations
 
@@ -199,7 +199,7 @@ def compute_form_representation(form_data, domain_representations, options):
     # FIXME: The representations should of course only be generated for the
     # relevant subdomains
 #    tensor = UFLTensorRepresentation(form_data, int(options["quadrature_points"]))
-    quadrature = UFLQuadratureRepresentation(form_data, int(options["quadrature_points"]))
+    quadrature = UFLQuadratureRepresentation(form_data, domain_representations, int(options["quadrature_points"]))
 
     debug_end()
     return (quadrature, quadrature)
