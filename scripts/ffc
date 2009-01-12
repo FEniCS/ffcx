@@ -135,7 +135,7 @@ the FFC man page which may invoked by 'man ffc' (if installed).
 def print_version():
     "Print version number"
     print("This is FFC, the FEniCS Form Compiler, version %s." % FFC_VERSION)
-    print("For further information, go to http://www.fenics.org/ffc/.\n")
+    print("For further information, visit http://www.fenics.org/wiki/FFC/.\n")
     return
 
 # New version for .ufl files

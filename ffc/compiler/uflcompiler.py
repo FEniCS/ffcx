@@ -1,30 +1,30 @@
 """This is the compiler, acting as the main interface for compilation
-of forms and breaking the compilation into several sequential phases,
-each represented by a separate module:
+of forms and breaking the compilation into several sequential phases:
 
-   0. language        -  expressing the form in the form language
-   1. analysis        -  simplifying and preprocessing the form
-   2. representation  -  computing a representation of the form
-   3. optimization    -  optimizing the form representation
-   4. codegeneration  -  generating code according to a format
-   5. format          -  writing the generated code to file
+   0. language        -  expressing the form in the form language (UFL)
+   1. analysis        -  simplifying and preprocessing the form (UFL)
+   2. representation  -  computing a representation of the form (FIAT/FFC)
+   3. optimization    -  optimizing the form representation (FErari)
+   4. codegeneration  -  generating code according to a format (FFC)
+   5. format          -  writing the generated code to file (FFC -> UFC)
 
 """
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-02-05 -- 2009-01-08"
+__date__ = "2007-02-05 -- 2009-01-12"
 __copyright__ = "Copyright (C) 2007-2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Modified by Kristian B. Oelgaard, 2009
-# Modified by Dag Lindbo, 2008
+# Modified by Kristian B. Oelgaard, 2009.
+# Modified by Dag Lindbo, 2008.
 
 # UFL modules
 from ufl.classes import Form, FiniteElementBase
 from ufl.algorithms import FormData, is_multilinear
+from ufl.output import set_loglevel as ufl_loglevel
 
 # FFC common modules
-from ffc.common.debug import debug, warning, debug_begin, debug_end
+from ffc.common.log import debug, info, warning, begin, end, set_level, INFO
 from ffc.common.constants import FFC_OPTIONS
 
 # FFC fem modules
@@ -56,7 +56,10 @@ from format import dolfinformat
 def compile(objects, prefix="Form", options=FFC_OPTIONS):
     "Compile the given forms and/or elements"
 
-    warning("UFL compiler is experimental. In particular, it doesn't work yet.")
+    #warning("UFL compiler is experimental. In particular, it doesn't work yet.")
+
+    # Set log level
+    set_level(INFO)
 
     # Check options
     _check_options(options)
@@ -64,12 +67,14 @@ def compile(objects, prefix="Form", options=FFC_OPTIONS):
     # Extract forms and elements
     (forms, elements) = _extract_objects(objects)
     if len(forms) == 0 and len(elements) == 0:
-        debug("No forms or elements specified, nothing to do.")
+        info("No forms or elements specified, nothing to do.")
         return
 
     # Compile forms
 #    (form_data, form_representation) = _compile_forms(forms, prefix, options)
     _compile_forms(forms, prefix, options)
+
+
 
     # Compile elements
     #_compile_elements(elements, prefix, options)
@@ -94,7 +99,7 @@ def _compile_forms(forms, prefix, options):
     for form in forms:
 
         # Compiler phase 1: analyze form
-        print "1"
+        #print "1"
         form_data = analyze_form(form)
 #        form_datas += [form_data]
 
@@ -149,16 +154,17 @@ def __compile_elements(elements, prefix="Element", options=FFC_OPTIONS):
     if len(forms) == 0:
         return
 
+    
+
     # Compiler phase 1: analyze form
-    debug_begin("Compiler phase 1: Analyzing elements")
+    begin("Compiler phase 1: Analyzing elements")
     element_data = ElementData(elements)
-    debug_end()
+    end()
 
     # Go directly to phase 4, code generation
-    debug_begin("Compiler phase 2-3: Nothing to do")
-    debug("-")
-    debug_end()
-    debug_begin("Compiler phase 4: Generating code")
+    begin("Compiler phase 2-3: Nothing to do")
+    end()
+    begin("Compiler phase 4: Generating code")
 
     # Choose format
     format = __choose_format(options["language"])
@@ -172,25 +178,29 @@ def __compile_elements(elements, prefix="Element", options=FFC_OPTIONS):
     element_code = code_generator.generate_element_code(element_data, format.format)
 
     # Compiler phase 5: format code
-    debug_end()
-    debug_begin("Compiler phase 5: Formatting code")
+    end()
+    begin("Compiler phase 5: Formatting code")
     format.write([(element_code, element_data)], prefix, options)
-    debug_end()
+    end()
     
 def analyze_form(form):
     "Compiler phase 1: analyze form"
-    debug_begin("Phase 1: Analyzing form")
+    begin("Phase 1: Analyzing form")
+
+    info("testing")
+    info("checking...")
+    info("yes")
 
     # Analyze form and extract form data
     form_data = FormData(form)
     debug(str(form_data))
 
-    debug_end()
+    end()
     return form_data
 
 def compute_form_representation(form_data, domain_representations, options):
     "Compiler phase 2: compute form representation"
-    debug_begin("Compiler phase 2: Computing form representation")
+    begin("Compiler phase 2: Computing form representation")
 
     # Choose representation
 #    Representation = _choose_representation(form_data.form, options)
@@ -201,21 +211,21 @@ def compute_form_representation(form_data, domain_representations, options):
 #    tensor = UFLTensorRepresentation(form_data, int(options["quadrature_points"]))
     quadrature = UFLQuadratureRepresentation(form_data, domain_representations, int(options["quadrature_points"]))
 
-    debug_end()
+    end()
     return (quadrature, quadrature)
 #    return (tensor, quadrature)
     
 def optimize_form_representation(form):
     "Compiler phase 3: optimize form representation"
-    debug_begin("Compiler phase 3: Computing optimization")
+    begin("Compiler phase 3: Computing optimization")
 
-    debug("Not implemented")
+    info("Optimization currently broken (to be fixed).")
 
-    debug_end()
+    end()
 
 def generate_form_code(form_data, form_representation, representation, format):
     "Compiler phase 4: generate code"
-    debug_begin("Compiler phase 4: Generating code")
+    begin("Compiler phase 4: Generating code")
 
     # Choose code generator
     CodeGenerator = __choose_code_generator(representation)
@@ -224,24 +234,23 @@ def generate_form_code(form_data, form_representation, representation, format):
     code_generator = CodeGenerator()
     code = code_generator.generate_form_code(form_data, form_representation, format)
         
-    debug_end()
+    end()
     return code
 
 def format_code(generated_forms, prefix, format, options):
     "Compiler phase 5: format code"
-    debug_begin("Compiler phase 5: Formatting code")
+    begin("Compiler phase 5: Formatting code")
 
     format.write(generated_forms, prefix, options)
 
-    debug_end()
+    end()
 
 def _check_options(options):
     "Check that options are valid"
-    # FIXME: We could do more tests here
     if options["optimize"]:
-        debug("*** Warning: " + "Optimization unavailable (will return in a future version)")
+        warning("Optimization unavailable (will return in a future version).")
     if options["blas"]:
-        debug("*** Warning: " + "BLAS mode unavailable (will return in a future version)")
+        warning("BLAS mode unavailable (will return in a future version).")
 
 def _extract_objects(objects):
     "Extract forms and elements from list of objects"
@@ -286,12 +295,12 @@ def _choose_representation(form, options):
     if option == "tensor":
 
         # Check if form is multilinear
-        debug("Checking if form is multilinear...")
+        info("Checking if form is multilinear...")
         if is_multilinear(form):
-            debug("yes\n")
+            info("yes\n")
             return UFLTensorRepresentation
         else:
-            debug("no\n")
+            info("no\n")
             warning("Form is is not multilinear, using quadrature representation")
             return UFLQuadratureRepresentation
         
