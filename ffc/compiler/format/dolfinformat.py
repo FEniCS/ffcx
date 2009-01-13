@@ -1,18 +1,19 @@
 "Code generation for the UFC 1.0 format with DOLFIN"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-03-24 -- 2008-10-23"
-__copyright__ = "Copyright (C) 2007-2008 Anders Logg"
+__date__ = "2007-03-24 -- 2009-01-12"
+__copyright__ = "Copyright (C) 2007-2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian B. Oelgaard 2008
 # Modified by Dag Lindbo, 2008
+# Modified by Johan Hake, 2009
 
 # Python modules
 import os
 
 # UFC code templates
-from ufc import *
+from ufc_utils import *
 
 # FFC common modules
 from ffc.common.utils import *
@@ -245,8 +246,8 @@ def _generate_dolfin_wrappers(generated_forms, prefix, options):
         constructor_args_r  = ", ".join(["const dolfin::FunctionSpace& V%d" % k for k in range(form_data.rank)])
         constructor_args_rc = ", ".join(["const dolfin::FunctionSpace& V%d" % k for k in range(form_data.rank)] +
                                         ["dolfin::Function& w%d" % k for k in range(form_data.num_coefficients)])
-        constructor_args_s  = ", ".join(["std::tr1::shared_ptr<const dolfin::FunctionSpace> V%d" % k for k in range(form_data.rank)])
-        constructor_args_sc  = ", ".join(["std::tr1::shared_ptr<const dolfin::FunctionSpace> V%d" % k for k in range(form_data.rank)] +
+        constructor_args_s  = ", ".join(["boost::shared_ptr<const dolfin::FunctionSpace> V%d" % k for k in range(form_data.rank)])
+        constructor_args_sc  = ", ".join(["boost::shared_ptr<const dolfin::FunctionSpace> V%d" % k for k in range(form_data.rank)] +
                                          ["dolfin::Function& w%d" % k for k in range(form_data.num_coefficients)])
         constructor_body_r  = "\n".join([add_function_space_r % (k, k, k) for k in range(form_data.rank)])
         constructor_body_rc = "\n".join([add_function_space_r % (k, k, k) for k in range(form_data.rank)])
@@ -268,10 +269,10 @@ def _generate_dolfin_wrappers(generated_forms, prefix, options):
             constructor_body_sc += "\n\n"
         constructor_body_rc += assign_coefficients
         constructor_body_sc += assign_coefficients
-        constructor_body_r  += "    _ufc_form = std::tr1::shared_ptr<const ufc::form>(new UFC_%s());" % form_prefix
-        constructor_body_rc += "    _ufc_form = std::tr1::shared_ptr<const ufc::form>(new UFC_%s());" % form_prefix
-        constructor_body_s  += "    _ufc_form = std::tr1::shared_ptr<const ufc::form>(new UFC_%s());" % form_prefix
-        constructor_body_sc += "    _ufc_form = std::tr1::shared_ptr<const ufc::form>(new UFC_%s());" % form_prefix
+        constructor_body_r  += "    _ufc_form = boost::shared_ptr<const ufc::form>(new UFC_%s());" % form_prefix
+        constructor_body_rc += "    _ufc_form = boost::shared_ptr<const ufc::form>(new UFC_%s());" % form_prefix
+        constructor_body_s  += "    _ufc_form = boost::shared_ptr<const ufc::form>(new UFC_%s());" % form_prefix
+        constructor_body_sc += "    _ufc_form = boost::shared_ptr<const ufc::form>(new UFC_%s());" % form_prefix
 
         # Generate class in different ways depending on the situation
         if form_data.rank > 0:
@@ -309,9 +310,9 @@ class %s : public dolfin::FunctionSpace
 public:
 
   %s(const dolfin::Mesh& mesh)
-    : dolfin::FunctionSpace(std::tr1::shared_ptr<const dolfin::Mesh>(&mesh, dolfin::NoDeleter<const dolfin::Mesh>()),
-                            std::tr1::shared_ptr<const dolfin::FiniteElement>(new dolfin::FiniteElement(std::tr1::shared_ptr<ufc::finite_element>(new %s()))),
-                            std::tr1::shared_ptr<const dolfin::DofMap>(new dolfin::DofMap(std::tr1::shared_ptr<ufc::dof_map>(new %s()), mesh)))
+    : dolfin::FunctionSpace(boost::shared_ptr<const dolfin::Mesh>(&mesh, dolfin::NoDeleter<const dolfin::Mesh>()),
+                            boost::shared_ptr<const dolfin::FiniteElement>(new dolfin::FiniteElement(boost::shared_ptr<ufc::finite_element>(new %s()))),
+                            boost::shared_ptr<const dolfin::DofMap>(new dolfin::DofMap(boost::shared_ptr<ufc::dof_map>(new %s()), mesh)))
   {
     // Do nothing
   }

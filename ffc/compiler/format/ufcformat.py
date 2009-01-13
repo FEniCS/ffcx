@@ -1,18 +1,18 @@
 "Code generation for the UFC 1.0 format"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-01-08 -- 2008-09-29"
+__date__ = "2007-01-08 -- 2009-01-08"
 __copyright__ = "Copyright (C) 2007-2008 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian B. Oelgaard 2008
 # Modified by Dag Lindbo, 2008
-
+# Modified by Johan hake, 2009
 # Python modules
 import os
 
 # UFC code templates
-from ufc import *
+from ufc_utils import *
 
 # FFC common modules
 from ffc.common.utils import *

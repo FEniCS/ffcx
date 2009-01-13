@@ -2,11 +2,11 @@
 It uses Instant to wrap the generated code into a Python module."""
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-07-20 -- 2008-11-24"
-__copyright__ = "Copyright (C) 2007-2008 Anders Logg"
+__date__ = "2007-07-20 -- 2009-01-12"
+__copyright__ = "Copyright (C) 2007-2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Modified by Johan Hake, 2008
+# Modified by Johan Hake, 2008 - 2009
 # Modified by Ilmar Wilbers, 2008
 
 # Python modules
@@ -55,41 +55,45 @@ def jit(object, options=None):
 
 def jit_form(form, options=None):
     "Just-in-time compile the given form"
-
+    
     # Make sure that we get a form
     if not isinstance(form, Form):
         form = Form(form)
-
+    
     # Check options
     options = check_options(form, options)
-
+    
     # Wrap input
     jit_object = JITObject(form, options)
-
+    
     # Check cache
     module = instant.import_module(jit_object, cache_dir=options["cache_dir"])
     if module: return extract_form(form, module)
-
+    
     # Generate code
     debug("Calling FFC just-in-time (JIT) compiler, this may take some time...", -1)
     signature = jit_object.signature()
     compile(form, signature, options)
     debug("done", -1)
-
+    
     # Wrap code into a Python module using Instant
     debug("Creating Python extension (compiling and linking), this may take some time...", -1)
     filename = signature + ".h"
-    (cppargs, path, ufc_include) = extract_instant_flags(options)
 
-    # Extract information for producing shared_ptr wrapper code.
-    shared_ptr_definitions, shared_ptr_declarations = \
-                            extract_shared_ptr_information(filename,options)
+    # Swig declarations
+    declarations = '\n%import "swig/ufc.i"\n'
+
+    # Extract any shared_ptr information
+    declarations += extract_shared_ptr_information(filename, options)
+    
+    (cppargs, path) = extract_instant_flags(options)
     
     module = instant.build_module(wrap_headers=[filename],
-                                  additional_definitions  = shared_ptr_definitions,
-                                  additional_declarations = shared_ptr_declarations + \
-                                                            ufc_include,
+                                  additional_declarations = declarations,
+                                  #system_headers=["tr1/memory"],
+                                  system_headers=["boost/shared_ptr.hpp"],
                                   include_dirs=path,
+                                  swig_include_dirs=path,
                                   cppargs=cppargs,
                                   signature=signature,
                                   cache_dir=options["cache_dir"])
@@ -114,7 +118,6 @@ def jit_element(element, options=None):
     # Compile form
     (compiled_form, module, form_data) = jit_form(form, options)
 
-    # Extract element and dofmap
     return extract_element_and_dofmap(module)
 
 def check_options(form, options):
@@ -152,9 +155,8 @@ def extract_form(form, module):
 def extract_element_and_dofmap(module):
     "Extract element and dofmap from module"
     name = module.__name__
-    element = getattr(module, name + "_finite_element_0")()
-    dofmap  = getattr(module, name + "_dof_map_0")()
-    return (element, dofmap)
+    return (getattr(module, name + "_finite_element_0")(),
+            getattr(module, name + "_dof_map_0")())
 
 def extract_instant_flags(options):
     "Extract flags for Instant"
@@ -165,15 +167,14 @@ def extract_instant_flags(options):
 
     # Get include directory for ufc.h (might be better way to do this?)
     (path, dummy, dummy, dummy) = instant.header_and_libs_from_pkgconfig("ufc-1")
-    if len(path) == 0: path = [("/").join(sysconfig.get_python_inc().split("/")[:-2]) + "/include"]
-    ufc_include = '%%include "%s/ufc.h"' % path[0]
+    if len(path) == 0: path = [(os.sep).join(sysconfig.get_python_inc().split(os.sep)[:-2]) + os.sep + "include"]
 
-    return (cppargs, path, ufc_include)
+    return (cppargs, path)
 
 def extract_shared_ptr_information(filename,options):
     "Extract information for shared_ptr"
     if not options["shared_ptr"]:
-        return  "",""
+        return  ''
 
     import re
 
@@ -183,25 +184,35 @@ def extract_shared_ptr_information(filename,options):
     # Extract the class names
     derived_classes   = re.findall(r"class[ ]+([\w]+)[ ]*: public",code)
     ufc_classes       = re.findall(r"public[ ]+(ufc::[\w]+).*",code)
-    ufc_proxy_classes = [c.replace("ufc::","") for c in ufc_classes]
+    ufc_proxy_classes = [s.replace("ufc::","") for s in ufc_classes]
 
-    shared_ptr_declarations =  """
+    shared_ptr_declarations =  '''
+#if SWIG_VERSION >= 0x010334
 //Uncomment these to produce code for std::tr1::shared_ptr
 //#define SWIG_SHARED_PTR_NAMESPACE std
 //#define SWIG_SHARED_PTR_SUBNAMESPACE tr1
 %include <boost_shared_ptr.i>
-"""
-    shared_ptr_format = """
-SWIG_SHARED_PTR(%(ufc_proxy)s,%(ufc_c)s)
-SWIG_SHARED_PTR_DERIVED(%(der_c)s,%(ufc_c)s,%(der_c)s)"""
-    
+'''
+
+    shared_ptr_format = "SWIG_SHARED_PTR_DERIVED(%(der_class)s,%(ufc_class)s,%(der_class)s)"
     shared_ptr_declarations += "\n".join(\
-        shared_ptr_format%{"ufc_c":c[0],"ufc_proxy":c[1],"der_c":c[2]}\
-        for c in zip(ufc_classes,ufc_proxy_classes,shared_ptr_classes)\
+        shared_ptr_format%{"ufc_proxy_class":c[0],"ufc_class":c[1],"der_class":c[2]}\
+        for c in zip(ufc_proxy_classes, ufc_classes, derived_classes)\
         )
+
+    # Register new objects created by a .create_foo function
+    # FIXME: Add any created sub_elements and sub_dofmaps too.
+    new_objects = []
+    for ufc_class in ufc_classes:
+        stripped = ufc_class.replace("ufc::","")
+        if stripped not in new_objects:
+            new_objects.append(stripped)
     
-    shared_ptr_definitions  = """
-#include "boost/shared_ptr.hpp"
-//#include <tr1/memory>
-"""
-    return shared_ptr_definitions, shared_ptr_declarations
+    new_object_str = "%%newobject %s::create_"%filename.replace(".h","")
+    shared_ptr_declarations += "\n".join(new_object_str + new_object + ";" \
+                                         for new_object in new_objects)
+    
+    shared_ptr_declarations += "\n#endif\n"
+
+    return shared_ptr_declarations
+

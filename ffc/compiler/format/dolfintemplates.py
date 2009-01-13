@@ -19,7 +19,7 @@ dolfin_includes = """\
 
 # Code for adding function space (reference version)
 add_function_space_r = """\
-    std::tr1::shared_ptr<const dolfin::FunctionSpace> _V%d(&V%d, dolfin::NoDeleter<const dolfin::FunctionSpace>());
+    boost::shared_ptr<const dolfin::FunctionSpace> _V%d(&V%d, dolfin::NoDeleter<const dolfin::FunctionSpace>());
     _function_spaces.push_back(_V%d);"""
 
 # Code for adding function space (shared pointer version)
@@ -28,11 +28,11 @@ add_function_space_s = """\
 
 # Code for adding coefficient (reference version)
 add_coefficient_r =  """\
-    _coefficients.push_back(std::tr1::shared_ptr<const dolfin::Function>(static_cast<const dolfin::Function*>(0)));"""
+    _coefficients.push_back(boost::shared_ptr<const dolfin::Function>(static_cast<const dolfin::Function*>(0)));"""
 
 # Code for adding coefficient (shared pointer version)
 add_coefficient_s =  """\
-    _coefficients.push_back(std::tr1::shared_ptr<const dolfin::Function>(static_cast<const dolfin::Function*>(0)));"""
+    _coefficients.push_back(boost::shared_ptr<const dolfin::Function>(static_cast<const dolfin::Function*>(0)));"""
 
 # Code for coefficient class
 coefficient_class = """\
