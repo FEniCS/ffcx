@@ -11,7 +11,7 @@ of forms and breaking the compilation into several sequential phases:
 """
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-02-05 -- 2009-01-12"
+__date__ = "2007-02-05 -- 2009-01-13"
 __copyright__ = "Copyright (C) 2007-2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
@@ -24,7 +24,7 @@ from ufl.algorithms import FormData, is_multilinear
 from ufl.output import set_loglevel as ufl_loglevel
 
 # FFC common modules
-from ffc.common.log import debug, info, warning, begin, end, set_level, INFO
+from ffc.common.log import debug, info, warning, error, begin, end, set_level, INFO
 from ffc.common.constants import FFC_OPTIONS
 
 # FFC fem modules
@@ -54,9 +54,7 @@ from format import ufcformat
 from format import dolfinformat
 
 def compile(objects, prefix="Form", options=FFC_OPTIONS):
-    "Compile the given forms and/or elements"
-
-    #warning("UFL compiler is experimental. In particular, it doesn't work yet.")
+    "Compile the given forms and/or elements."
 
     # Set log level
     set_level(INFO)
@@ -66,30 +64,25 @@ def compile(objects, prefix="Form", options=FFC_OPTIONS):
 
     # Extract forms and elements
     (forms, elements) = _extract_objects(objects)
-    if len(forms) == 0 and len(elements) == 0:
+    if len(forms + elements) == 0:
         info("No forms or elements specified, nothing to do.")
         return
 
     # Compile forms
-#    (form_data, form_representation) = _compile_forms(forms, prefix, options)
-    _compile_forms(forms, prefix, options)
-
-
+    #(form_data, form_representation) = _compile_forms(forms, prefix, options)
+    if len(forms) > 0:
+        _compile_forms(forms, prefix, options)
 
     # Compile elements
     #_compile_elements(elements, prefix, options)
-    return
+    #_compile_elements(elements, prefix, options)
 #    return (form_data, form_representation)
 
 def _compile_forms(forms, prefix, options):
-    "Compile the given forms"
-
-    # Check input
-    if len(forms) == 0:
-        return (None, None)
+    "Compile the given forms."
 
     # Choose format
-    format = _choose_format(options["language"])
+    format = _choose_format(options)
     format.init(options)
 
     # Iterate over forms for stages 1 - 4
@@ -99,7 +92,6 @@ def _compile_forms(forms, prefix, options):
     for form in forms:
 
         # Compiler phase 1: analyze form
-        #print "1"
         form_data = analyze_form(form)
 #        form_datas += [form_data]
 
@@ -167,7 +159,7 @@ def __compile_elements(elements, prefix="Element", options=FFC_OPTIONS):
     begin("Compiler phase 4: Generating code")
 
     # Choose format
-    format = __choose_format(options["language"])
+    format = __choose_format(options)
     format.init(options)
 
     # Choose code generator
@@ -186,15 +178,8 @@ def __compile_elements(elements, prefix="Element", options=FFC_OPTIONS):
 def analyze_form(form):
     "Compiler phase 1: analyze form"
     begin("Phase 1: Analyzing form")
-
-    info("testing")
-    info("checking...")
-    info("yes")
-
-    # Analyze form and extract form data
     form_data = FormData(form)
-    debug(str(form_data))
-
+    info(str(form_data))
     end()
     return form_data
 
@@ -253,7 +238,7 @@ def _check_options(options):
         warning("BLAS mode unavailable (will return in a future version).")
 
 def _extract_objects(objects):
-    "Extract forms and elements from list of objects"
+    "Extract forms and elements from list of objects."
 
     # Check that we get a list
     if not isinstance(objects, list):
@@ -268,19 +253,20 @@ def _extract_objects(objects):
         elif isinstance(object, FiniteElementBase):
             elements.append(object)
         elif not object is None:
-            raise RuntimeError, "Not a form: " + str(form)
+            error("Not a form: " + str(form))
 
     # Only compile element(s) when there are no forms
-    if len(forms) > 0:
+    if len(forms) > 0 and len(elements) > 0:
         elements = []
 
     return (forms, elements)
 
-def _choose_format(language):
-    "Choose format from specified language"
+def _choose_format(options):
+    "Choose output format."
 
     # FIXME: Make format a class (since we call init())
 
+    language = options["language"]
     if language.lower() == "ufc":
         return ufcformat
     elif language.lower() == "dolfin":
