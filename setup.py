@@ -31,13 +31,6 @@ file.write("Cflags: -I%s\n" % repr(pjoin(prefix,"include"))[1:-1])
 # FIXME: better way for this? ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 file.close()
 
-# Create ufc.i file
-#ufc_i_file = open(pjoin("src","ufc","ufc.i.in"),"r").read()%{"ufc_path":pjoin(prefix,"include","")}
-#file = open(pjoin("src","ufc","ufc.i"),"w")
-#file.write(ufc_i_file)
-#file.close()
-
-
 # Run swig on the ufc.i file
 # FIXME: Add a way to set NO_SHARED_PTR in swig command
 os.chdir(pjoin("src","ufc"))
