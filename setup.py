@@ -4,7 +4,7 @@ from distutils.core import setup, Extension
 from distutils import sysconfig
 from os.path import join as pjoin
 from os.path import pardir
-import sys, os
+import sys, os, re
 
 # Taken from http://ivory.idyll.org/blog/mar-07/replacing-commands-with-subprocess
 from subprocess import Popen, PIPE, STDOUT
@@ -40,35 +40,64 @@ file.write("Cflags: -I%s\n" % repr(pjoin(prefix,"include"))[1:-1])
 # FIXME: better way for this? ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 file.close()
 
-# Checking for boost installation uses pkg-config
-# If no boost installation is found compiled the ufc extension module
-# without shared_ptr support
+# Check for swig installation
+result, output = get_status_output("swig -version")
+if result == 1:
+    raise OSError, "Could not find swig installation. Please install swig version 1.3.35 or higher"
 
-# Set pkg-config to always include system flags
-env = os.environ.copy()
-try:
-    assert env["PKG_CONFIG_ALLOW_SYSTEM_CFLAGS"] == "0"
-except:
-    env["PKG_CONFIG_ALLOW_SYSTEM_CFLAGS"] = "1"
+# Check swig version
+swig_version = re.findall(r"SWIG Version ([0-9.]+)",output)[0]
+swig_enough = True
+swig_correct_version = [1,3,35]
+for i, v in enumerate([int(v) for v in swig_version.split(".")]):
+    if swig_correct_version[i] < v:
+        break
+    elif swig_correct_version[i] == v:
+        continue
+    else:
+        swig_enough = False
+        print """*** Warning: Your swig version need to be 1.3.35 or higher.
+Python extension module will be compiled without shared_ptr support"""
+    
+# Set a default swig command and boost include directory
+swig_cmd = "swig -python -c++ -O -I. -DNO_SHARED_PTR ufc.i"
+boost_include_dir = []
 
-# Check if pkg-config is installed
-result, output = get_status_output("pkg-config --version ")
-if result != 0: 
-    raise OSError("The pkg-config package is not installed on the system.")
+# If swig version 1.3.35 or higher we check for boost installation
+if swig_enough:
+    # Set a default directory for the boost installation
+    if sys.platform == "darwin":
+        # use fink as default
+        default = os.path.join(os.path.sep,"sw")
+    else:
+        default = os.path.join(os.path.sep,"usr")
+    
+    # If BOOST_DIR is not set use default directory
+    boost_dir = os.getenv("BOOST_DIR", default)
+    boost_is_found = False
+    for inc_dir in ["", "include"]:
+        if os.path.isfile(pjoin(boost_dir, inc_dir, "boost", "version.hpp")):
+            boost_include_dir = [pjoin(boost_dir, inc_dir)]
+            boost_is_found = True
+            break
+    
+    if boost_is_found:
+        print "Using Boost installation in: %s"%boost_include_dir[0]
+        swig_cmd = "swig -python -c++ -O -I. ufc.i"
+    else:
+        # If no boost installation is found compile the ufc extension module
+        # without shared_ptr support
+        print """*** Warning: Boost was not found.
+--------------------------------------------------------------    
+Python extension module compiled without shared_ptr support
 
-# Check if boost is installed
-result, output = get_status_output("pkg-config --exists boost")
-if result == 0:
-    boost_include_dir = [get_status_output("pkg-config --cflags-only-I boost",env=env)[1][2:]]
-    swig_cmd = "swig -python -c++ -fcompact -O -I. -small ufc.i"
-else:
-    print "*** Warning: Boost was not found. Python extension module compiled without shared_ptr support"
-    boost_include_dir = []
-    swig_cmd = "swig -python -c++ -fcompact -O -I. -DNO_SHARED_PTR -small ufc.i"
+If boost is installed on your system you can specify the path
+by setting the environment variable BOOST_DIR.
+--------------------------------------------------------------"""
     
 # Run swig on the ufc.i file
 os.chdir(pjoin("src","ufc"))
-print "Running swig command"
+print "running swig command"
 print swig_cmd
 os.system(swig_cmd)
 os.chdir(os.pardir); os.chdir(os.pardir)
