@@ -126,8 +126,11 @@ def generate_map(element, Indent, format):
 
     if (element.cell_shape() == LINE):
 
-        # No mapping needed
-        code += [Indent.indent(format_comment("No mapping needed for 1D."))]
+        # Map coordinates to the reference interval
+        code += [Indent.indent(format_comment("Map coordinates to the reference interval"))]
+
+        # Code snippet reproduced from FIAT: reference.py: eta_line(xi)
+        code += [Indent.indent(format["snippet eta_interval"])]
 
     elif (element.cell_shape() == TRIANGLE):
 

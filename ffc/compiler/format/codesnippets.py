@@ -219,6 +219,11 @@ f.evaluate(values, coordinates, c);
 // Pick component for evaluation
 return values[components[i]];"""
 
+# Code snippet for eta basis on intervals (reproduced from FIAT reference.py)
+eta_interval_snippet = """\
+x = 2.0*x - 1.0;
+"""
+
 # Code snippet for eta basis on triangles (reproduced from FIAT reference.py)
 eta_triangle_snippet = """\
 if (std::abs(y - 1.0) < %s)

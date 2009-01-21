@@ -156,6 +156,7 @@ format = {
            "facet sign": lambda e: "sign_facet%d" % e,
            "snippet facet signs": lambda d: eval("facet_sign_snippet_%dD" % d),
            "snippet dof map": evaluate_basis_dof_map,
+           "snippet eta_interval": eta_interval_snippet,
            "snippet eta_triangle": eta_triangle_snippet,
            "snippet eta_tetrahedron": eta_tetrahedron_snippet,
            "snippet jacobian": lambda d: eval("jacobian_%dD" % d),
