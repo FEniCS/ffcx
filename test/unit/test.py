@@ -14,6 +14,7 @@ import os
 sys.path.append(os.path.join(os.pardir, os.pardir))
 from ffc import *
 
+interval = [(0,), (1,)]
 triangle = [(0, 0), (1, 0), (0, 1)]
 tetrahedron = [(0, 0, 0), (1, 0, 0), (0, 1, 0), (0, 0, 1)]
 num_points = 5
@@ -53,6 +54,20 @@ class SpaceDimensionTests(unittest.TestCase):
 
 class FunctionValueTests(unittest.TestCase):
 
+    def testContinuousLagrange1D(self):
+        "Test values of continuous Lagrange functions in 1D"
+
+        element = FiniteElement("Lagrange", "interval", 1)
+        basis = element.basis()
+        
+        reference = [lambda x: 1 - x[0],
+                     lambda x: x[0]]
+
+        for i in range(len(basis)):
+            for j in range(num_points):
+                x = random_point(interval)
+                self.assertAlmostEqual(basis[i](x), reference[i](x))
+
     def testContinuousLagrange2D(self):
         "Test values of continuous Lagrange functions in 2D"
 
@@ -82,6 +97,20 @@ class FunctionValueTests(unittest.TestCase):
         for i in range(len(basis)):
             for j in range(num_points):
                 x = random_point(tetrahedron)
+                self.assertAlmostEqual(basis[i](x), reference[i](x))
+
+    def testDiscontinuousLagrange1D(self):
+        "Test values of discontinuous Lagrange functions in 1D"
+
+        element = FiniteElement("Discontinuous Lagrange", "interval", 1)
+        basis = element.basis()
+        
+        reference = [lambda x: 1 - x[0],
+                     lambda x: x[0]]
+
+        for i in range(len(basis)):
+            for j in range(num_points):
+                x = random_point(interval)
                 self.assertAlmostEqual(basis[i](x), reference[i](x))
 
     def testDiscontinuousLagrange2D(self):
