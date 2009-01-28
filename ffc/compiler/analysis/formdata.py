@@ -26,7 +26,10 @@ from ffc.compiler.language.reassignment import max_index
 from ffc.compiler.language.index import Index
 from ffc.compiler.language.algebra import Function
 
-from ufl.classes import FiniteElement, MixedElement, VectorElement
+try:
+    from ufl.classes import FiniteElement, MixedElement, VectorElement
+except:
+    pass
 
 class FormData:
     """This class holds meta data for a form. The following attributes
