@@ -16,12 +16,17 @@ from ffc.common.utils import *
 
 # FFC fem modules
 from ffc.fem.dofmap import *
+from ffc.fem.finiteelement import FiniteElement as FIATFiniteElement
+from ffc.fem.vectorelement import VectorElement as FIATVectorElement
+from ffc.fem.mixedelement import MixedElement as FIATMixedElement
 
 # FFC language modules
 from ffc.compiler.language.integral import *
 from ffc.compiler.language.reassignment import max_index
 from ffc.compiler.language.index import Index
 from ffc.compiler.language.algebra import Function
+
+from ufl.classes import FiniteElement, MixedElement, VectorElement
 
 class FormData:
     """This class holds meta data for a form. The following attributes
@@ -45,32 +50,65 @@ class FormData:
     It is assumed that the indices of the given form have been reassigned.
     """
 
-    def __init__(self, form, global_variables=None):
+    def __init__(self, form, global_variables=None, ufl_form_data=None):
         "Create form data for form"
 
         debug("Extracting form data...")
 
-        self.form                         = form
-        self.signature                    = self.__extract_signature(form)
-        self.rank                         = self.__extract_rank(form)
-        self.num_coefficients             = self.__extract_num_coefficients(form)
-        self.num_arguments                = self.rank + self.num_coefficients
-        self.num_terms                    = self.__extract_num_terms(form)
-        self.num_cell_integrals           = self.__extract_num_cell_integrals(form)
-        self.num_exterior_facet_integrals = self.__extract_num_exterior_facet_integrals(form)
-        self.num_interior_facet_integrals = self.__extract_num_interior_facet_integrals(form)
-        self.elements                     = self.__extract_elements(form, self.rank, self.num_coefficients)
-        self.dof_maps                     = self.__extract_dof_maps(self.elements)
-        self.coefficients                 = self.__extract_coefficients(form, self.num_coefficients, global_variables)
-        self.cell_dimension               = self.__extract_cell_dimension(self.elements)
-        self.basisfunction_data           = self.__extract_basisfunction_data(form, self.rank)
+        if ufl_form_data == None:
+            self.form                         = form
+            self.signature                    = self.__extract_signature(form)
+            self.rank                         = self.__extract_rank(form)
+            self.num_coefficients             = self.__extract_num_coefficients(form)
+            self.num_arguments                = self.rank + self.num_coefficients
+            self.num_terms                    = self.__extract_num_terms(form)
+            self.num_cell_integrals           = self.__extract_num_cell_integrals(form)
+            self.num_exterior_facet_integrals = self.__extract_num_exterior_facet_integrals(form)
+            self.num_interior_facet_integrals = self.__extract_num_interior_facet_integrals(form)
+            self.elements                     = self.__extract_elements(form, self.rank, self.num_coefficients)
+            self.dof_maps                     = self.__extract_dof_maps(self.elements)
+            self.coefficients                 = self.__extract_coefficients(form, self.num_coefficients, global_variables)
+            self.cell_dimension               = self.__extract_cell_dimension(self.elements)
+            self.basisfunction_data           = self.__extract_basisfunction_data(form, self.rank)
+        else:
+            self.form                         = ufl_form_data.form
+            self.signature                    = self.__extract_signature(self.form)
+            self.rank                         = ufl_form_data.rank
+            self.num_coefficients             = ufl_form_data.num_coefficients
 
+            # FIXME: need to take into account the ufl_form.(basisfunction/coefficient)_renumbering when generating the code
+            self.num_arguments                = self.rank + self.num_coefficients
+
+#            self.num_terms                    = self.__extract_num_terms(form)
+            self.num_cell_integrals           = len(self.form.cell_integrals())
+            self.num_exterior_facet_integrals = len(self.form.exterior_facet_integrals())
+            self.num_interior_facet_integrals = len(self.form.interior_facet_integrals())
+            self.elements                     = [self.__create_fiat_elements(e) for e in ufl_form_data.elements]
+            self.dof_maps                     = self.__extract_dof_maps(self.elements)
+#            self.coefficients                 = self.__extract_coefficients(form, self.num_coefficients, global_variables)
+#            self.cell_dimension               = self.__extract_cell_dimension(self.elements)
+#            self.basisfunction_data           = self.__extract_basisfunction_data(form, self.rank)
         debug("done")
 
         for i in range(len(self.dof_maps)):
             debug("dof map %d:" % i, 2)
             debug("  entity_dofs:  " + str(self.dof_maps[i].entity_dofs()), 2)
             debug("  dof_entities: " + str(self.dof_maps[i].dof_entities()), 2)
+
+    def __create_fiat_elements(self, ufl_e):
+
+        if isinstance(ufl_e, VectorElement):
+            print "Vector"
+            return FIATVectorElement(ufl_e.family(), ufl_e.cell().domain(), ufl_e.degree(), len(ufl_e.sub_elements()))
+        elif isinstance(ufl_e, MixedElement):
+            print "Mixed"
+            sub_elems = [self.__create_fiat_elements(e) for e in ufl_e.sub_elements()]
+            return FIATMixedElement(sub_elems)
+        elif isinstance(ufl_e, FiniteElement):
+            print "Finite"
+            return FIATFiniteElement(ufl_e.family(), ufl_e.cell().domain(), ufl_e.degree())
+
+        return FIATFiniteElement(ufl_e.family(), ufl_e.cell().domain(), ufl_e.degree())
 
     def __extract_signature(self, form):
         "Extract the signature"

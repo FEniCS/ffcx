@@ -32,7 +32,7 @@ class TensorGenerator(CodeGenerator):
         # Initialize common code generator
         CodeGenerator.__init__(self)
 
-    def generate_cell_integral(self, form_data, form_representation, sub_domain, format):
+    def generate_cell_integral(self, form_representation, sub_domain, format):
         """Generate dictionary of code for cell integral from the given
         form representation according to the given format"""
 
@@ -56,7 +56,7 @@ class TensorGenerator(CodeGenerator):
         coeff_code = self.__generate_coefficients(terms, coeff_set, format) 
 
         # Get Jacobian snippet
-        jacobi_code = [format["generate jacobian"](form_data.cell_dimension, Integral.CELL)]
+        jacobi_code = [format["generate jacobian"](form_representation.cell_dimension, Integral.CELL)]
 
         # Remove unused declarations
         code = self.__remove_unused(jacobi_code, trans_set, format)
@@ -73,7 +73,7 @@ class TensorGenerator(CodeGenerator):
 
         return {"tabulate_tensor": code, "members": ""}
 
-    def generate_exterior_facet_integral(self, form_data, form_representation, sub_domain, format):
+    def generate_exterior_facet_integral(self, form_representation, sub_domain, format):
         """Generate dictionary of code for exterior facet integral from the given
         form representation according to the given format"""
 
@@ -108,7 +108,7 @@ class TensorGenerator(CodeGenerator):
         coeff_code = self.__generate_coefficients(terms[0], coeff_set, format)
 
         # Get Jacobian snippet
-        jacobi_code = [format["generate jacobian"](form_data.cell_dimension, Integral.EXTERIOR_FACET)]
+        jacobi_code = [format["generate jacobian"](form_representation.cell_dimension, Integral.EXTERIOR_FACET)]
 
         # Remove unused declarations
         code = self.__remove_unused(jacobi_code, trans_set, format)
@@ -123,7 +123,7 @@ class TensorGenerator(CodeGenerator):
 
         return {"tabulate_tensor": (code, cases), "members": ""}
     
-    def generate_interior_facet_integral(self, form_data, form_representation, sub_domain, format):
+    def generate_interior_facet_integral(self, form_representation, sub_domain, format):
         """Generate dictionary of code for interior facet integral from the given
         form representation according to the given format"""
 
@@ -159,7 +159,7 @@ class TensorGenerator(CodeGenerator):
         coeff_code = self.__generate_coefficients(terms[0][0], coeff_set, format)
 
         # Get Jacobian snippet
-        jacobi_code = [format["generate jacobian"](form_data.cell_dimension, Integral.INTERIOR_FACET)]
+        jacobi_code = [format["generate jacobian"](form_representation.cell_dimension, Integral.INTERIOR_FACET)]
 
         # Remove unused declarations
         code = self.__remove_unused(jacobi_code, trans_set, format)

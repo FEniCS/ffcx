@@ -30,7 +30,7 @@ class QuadratureRepresentation:
                                           one for each facet-facet combination
         num_user_specified_quad_points  - the number of desired quadrature points specified
                                           by the user. Will be used for ALL terms
-
+        cell_dimension                  - the dimension of the cell
     """
 
     def __init__(self, form_data, num_quadrature_points):
@@ -53,6 +53,9 @@ class QuadratureRepresentation:
 
         # Compute representation of interior facet tensors
         self.interior_facet_tensors = self.__compute_interior_facet_tensors(form)
+
+        # Extract cell_dimension
+        self.cell_dimension = form_data.cell_dimension
         
     def __compute_cell_tensor(self, form):
         "Compute representation of cell tensor"

@@ -13,27 +13,27 @@ from numpy import shape
 from sets import Set
 
 # FFC common modules
-from ffc.common.constants import *
-from ffc.common.utils import *
+#from ffc.common.constants import *
+#from ffc.common.utils import *
 
 # FFC language modules
-from ffc.compiler.language.index import *
-from ffc.compiler.language.restriction import *
+#from ffc.compiler.language.index import *
+#from ffc.compiler.language.restriction import *
 
 # FFC code generation modules
 from ffc.compiler.codegeneration.common.codegenerator import *
 from ffc.compiler.codegeneration.common.utils import *
 
 # FFC tensor representation modules
-from ffc.compiler.representation.tensor.multiindex import *
+#from ffc.compiler.representation.tensor.multiindex import *
 
 # Utility and optimisation functions for quadraturegenerator
-from quadraturegenerator_utils import *
-from quadraturegenerator_optimisation import *
-import reduce_operations
+#from quadraturegenerator_utils import *
+#from quadraturegenerator_optimisation import *
+#import reduce_operations
 
 # FFC format modules
-from ffc.compiler.format.removeunused import *
+#from ffc.compiler.format.removeunused import *
 
 class QuadratureGenerator(CodeGenerator):
     "Code generator for quadrature representation"
@@ -49,128 +49,131 @@ class QuadratureGenerator(CodeGenerator):
         """Generate dictionary of code for cell integral from the given
         form representation according to the given format"""
 
-        code = []
+#        code = []
 
         # Object to control the code indentation
-        Indent = IndentControl()
+#        Indent = IndentControl()
 
-        # Extract terms for sub domain
-        tensors = [term for term in form_representation.cell_tensor if term.monomial.integral.sub_domain == sub_domain]
-        if len(tensors) == 0:
-            element_code = self.__reset_element_tensor(form_representation.cell_tensor[0], Indent, format)
-            return {"tabulate_tensor": element_code, "members": ""}
+#        # Extract terms for sub domain
+#        tensors = [term for term in form_representation.cell_tensor if term.monomial.integral.sub_domain == sub_domain]
+#        if len(tensors) == 0:
+#            element_code = self.__reset_element_tensor(form_representation.cell_tensor[0], Indent, format)
+#            return {"tabulate_tensor": element_code, "members": ""}
 
-        debug("")
-        # Generate element code + set of used geometry terms
-        element_code, members_code, trans_set, num_ops = self.__generate_element_tensor\
-                                                     (tensors, None, None, Indent, format)
+#        debug("")
+#        # Generate element code + set of used geometry terms
+#        element_code, members_code, trans_set, num_ops = self.__generate_element_tensor\
+#                                                     (tensors, None, None, Indent, format)
 
-        # Get Jacobian snippet
-        jacobi_code = [format["generate jacobian"](form_representation.cell_dimension, Integral.CELL)]
+#        # Get Jacobian snippet
+#        jacobi_code = [format["generate jacobian"](form_representation.cell_dimension, Integral.CELL)]
 
-        # Remove unused declarations
-        code = self.__remove_unused(jacobi_code, trans_set, format)
+#        # Remove unused declarations
+#        code = self.__remove_unused(jacobi_code, trans_set, format)
 
-        # Add element code
-        code += ["", format["comment"]("Compute element tensor (using quadrature representation, optimisation level %d)" % self.optimise_level),\
-                 format["comment"]("Total number of operations to compute element tensor (from this point): %d" %num_ops)]
-        code += element_code
-        debug("Number of operations to compute tensor: %d" % num_ops)
+#        # Add element code
+#        code += ["", format["comment"]("Compute element tensor (using quadrature representation, optimisation level %d)" % self.optimise_level),\
+#                 format["comment"]("Total number of operations to compute element tensor (from this point): %d" %num_ops)]
+#        code += element_code
+#        debug("Number of operations to compute tensor: %d" % num_ops)
 
-        return {"tabulate_tensor": code, "members":members_code}
+#        return {"tabulate_tensor": code, "members":members_code}
+        return {"tabulate_tensor": [], "members":[]}
 
     def generate_exterior_facet_integral(self, form_representation, sub_domain, format):
         """Generate dictionary of code for exterior facet integral from the given
         form representation according to the given format"""
 
-        # Object to control the code indentation
-        Indent = IndentControl()
+#        # Object to control the code indentation
+#        Indent = IndentControl()
 
-        # Prefetch formats to speed up code generation
-        format_comment      = format["comment"]
-        format_block_begin  = format["block begin"]
-        format_block_end    = format["block end"]
+#        # Prefetch formats to speed up code generation
+#        format_comment      = format["comment"]
+#        format_block_begin  = format["block begin"]
+#        format_block_end    = format["block end"]
 
-        # Extract terms for sub domain
-        tensors = [[term for term in t if term.monomial.integral.sub_domain == sub_domain]\
-                    for t in form_representation.exterior_facet_tensors]
-        if all([len(t) == 0 for t in tensors]):
-            element_code = self.__reset_element_tensor(form_representation.exterior_facet_tensors[0][0], Indent, format)
-            return {"tabulate_tensor": (element_code, []), "members": ""}
+#        # Extract terms for sub domain
+#        tensors = [[term for term in t if term.monomial.integral.sub_domain == sub_domain]\
+#                    for t in form_representation.exterior_facet_tensors]
+#        if all([len(t) == 0 for t in tensors]):
+#            element_code = self.__reset_element_tensor(form_representation.exterior_facet_tensors[0][0], Indent, format)
+#            return {"tabulate_tensor": (element_code, []), "members": ""}
 
-        num_facets = len(tensors)
-        cases = [None for i in range(num_facets)]
-        trans_set = Set()
+#        num_facets = len(tensors)
+#        cases = [None for i in range(num_facets)]
+#        trans_set = Set()
 
-        debug("")
-        for i in range(num_facets):
-            case = [format_block_begin]
+#        debug("")
+#        for i in range(num_facets):
+#            case = [format_block_begin]
 
-            # Assuming all tables have same dimensions for all facets (members_code)
-            c, members_code, t_set, num_ops = self.__generate_element_tensor(tensors[i], i, None, Indent, format)
-            case += [format_comment("Total number of operations to compute element tensor (from this point): %d" %num_ops)] + c
-            case += [format_block_end]
-            cases[i] = case
-            trans_set = trans_set | t_set
-            debug("Number of operations to compute tensor for facet %d: %d" % (i, num_ops))
+#            # Assuming all tables have same dimensions for all facets (members_code)
+#            c, members_code, t_set, num_ops = self.__generate_element_tensor(tensors[i], i, None, Indent, format)
+#            case += [format_comment("Total number of operations to compute element tensor (from this point): %d" %num_ops)] + c
+#            case += [format_block_end]
+#            cases[i] = case
+#            trans_set = trans_set | t_set
+#            debug("Number of operations to compute tensor for facet %d: %d" % (i, num_ops))
 
 
-        # Get Jacobian snippet
-        jacobi_code = [format["generate jacobian"](form_representation.cell_dimension, Integral.EXTERIOR_FACET)]
+#        # Get Jacobian snippet
+#        jacobi_code = [format["generate jacobian"](form_representation.cell_dimension, Integral.EXTERIOR_FACET)]
 
-        # Remove unused declarations
-        common = self.__remove_unused(jacobi_code, trans_set, format)
+#        # Remove unused declarations
+#        common = self.__remove_unused(jacobi_code, trans_set, format)
 
-        # Add element code
-        common += ["", format_comment("Compute element tensor for all facets (using quadrature representation, optimisation level %d)" %self.optimise_level)]
+#        # Add element code
+#        common += ["", format_comment("Compute element tensor for all facets (using quadrature representation, optimisation level %d)" %self.optimise_level)]
 
-        return {"tabulate_tensor": (common, cases), "constructor":"// Do nothing", "members":members_code}
+#        return {"tabulate_tensor": (common, cases), "constructor":"// Do nothing", "members":members_code}
+        return {"tabulate_tensor": ([], []), "constructor":"// Do nothing", "members":[]}
     
     def generate_interior_facet_integral(self, form_representation, sub_domain, format):
         """Generate dictionary of code for interior facet integral from the given
         form representation according to the given format"""
 
-        # Object to control the code indentation
-        Indent = IndentControl()
+#        # Object to control the code indentation
+#        Indent = IndentControl()
 
-        # Prefetch formats to speed up code generation
-        format_comment      = format["comment"]
-        format_block_begin  = format["block begin"]
-        format_block_end    = format["block end"]
+#        # Prefetch formats to speed up code generation
+#        format_comment      = format["comment"]
+#        format_block_begin  = format["block begin"]
+#        format_block_end    = format["block end"]
 
-        # Extract terms for sub domain
-        tensors = [[[term for term in t2 if term.monomial.integral.sub_domain == sub_domain] for t2 in t1] for t1 in form_representation.interior_facet_tensors]
-        if all([len(t) == 0 for tt in tensors for t in tt]):
-            element_code = self.__reset_element_tensor(form_representation.interior_facet_tensors[0][0][0], Indent, format)
-            return {"tabulate_tensor": (element_code, []), "members": ""}
+#        # Extract terms for sub domain
+#        tensors = [[[term for term in t2 if term.monomial.integral.sub_domain == sub_domain] for t2 in t1] for t1 in form_representation.interior_facet_tensors]
+#        if all([len(t) == 0 for tt in tensors for t in tt]):
+#            element_code = self.__reset_element_tensor(form_representation.interior_facet_tensors[0][0][0], Indent, format)
+#            return {"tabulate_tensor": (element_code, []), "members": ""}
 
-        num_facets = len(tensors)
-        cases = [[None for j in range(num_facets)] for i in range(num_facets)]
-        trans_set = Set()
+#        num_facets = len(tensors)
+#        cases = [[None for j in range(num_facets)] for i in range(num_facets)]
+#        trans_set = Set()
 
-        debug("")
-        for i in range(num_facets):
-            for j in range(num_facets):
-                case = [format_block_begin]
+#        debug("")
+#        for i in range(num_facets):
+#            for j in range(num_facets):
+#                case = [format_block_begin]
 
-                # Assuming all tables have same dimensions for all facet-facet combinations (members_code)
-                c, members_code, t_set, num_ops = self.__generate_element_tensor(tensors[i][j], i, j, Indent, format)
-                case += [format_comment("Total number of operations to compute element tensor (from this point): %d" %num_ops)] + c
-                case += [format_block_end]
-                cases[i][j] = case
-                trans_set = trans_set | t_set
-                debug("Number of operations to compute tensor for facets (%d, %d): %d" % (i, j, num_ops))
+#                # Assuming all tables have same dimensions for all facet-facet combinations (members_code)
+#                c, members_code, t_set, num_ops = self.__generate_element_tensor(tensors[i][j], i, j, Indent, format)
+#                case += [format_comment("Total number of operations to compute element tensor (from this point): %d" %num_ops)] + c
+#                case += [format_block_end]
+#                cases[i][j] = case
+#                trans_set = trans_set | t_set
+#                debug("Number of operations to compute tensor for facets (%d, %d): %d" % (i, j, num_ops))
 
-        # Get Jacobian snippet
-        jacobi_code = [format["generate jacobian"](form_representation.cell_dimension, Integral.INTERIOR_FACET)]
+#        # Get Jacobian snippet
+#        jacobi_code = [format["generate jacobian"](form_representation.cell_dimension, Integral.INTERIOR_FACET)]
 
-        # Remove unused declarations
-        common = self.__remove_unused(jacobi_code, trans_set, format)
+#        # Remove unused declarations
+#        common = self.__remove_unused(jacobi_code, trans_set, format)
 
-        # Add element code
-        common += ["", format_comment("Compute element tensor for all facets (using quadrature representation, optimisation level %d)" %self.optimise_level)]
+#        # Add element code
+#        common += ["", format_comment("Compute element tensor for all facets (using quadrature representation, optimisation level %d)" %self.optimise_level)]
 
-        return {"tabulate_tensor": (common, cases), "constructor":"// Do nothing", "members":members_code}
+#        return {"tabulate_tensor": (common, cases), "constructor":"// Do nothing", "members":members_code}
+        return {"tabulate_tensor": ([], []), "constructor":"// Do nothing", "members":[]}
 
     def __generate_element_tensor(self, tensors, facet0, facet1, Indent, format):
         "Construct quadrature code for element tensors"

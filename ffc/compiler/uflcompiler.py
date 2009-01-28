@@ -38,6 +38,7 @@ from ffc.common.constants import FFC_OPTIONS
 
 # FFC analysis modules
 #from analysis.analyze import *
+from analysis.formdata import FormData as FFCFormData
 
 # FFC form representation modules
 from representation.tensor import UFLTensorRepresentation
@@ -46,8 +47,10 @@ from representation.quadrature import UFLQuadratureRepresentation
 # FFC code generation modules
 #from codegeneration.tensor import *
 #from codegeneration.quadrature import *
+from codegeneration.quadrature import UFLQuadratureGenerator
 #from codegeneration.common.finiteelement import *
 #from codegeneration.common.dofmap import *
+#from codegeneration.common.codegenerator import CodeGenerator
 
 # FFC format modules
 from format import ufcformat
@@ -129,12 +132,14 @@ def _compile_forms(forms, prefix, options):
 
         # Compiler phase 4: generate form code
         #form_code = generate_form_code(form_data, form_representation, options["representation"], format.format)
+        ffc_form_data = FFCFormData(None, ufl_form_data=form_data)
+        form_code = generate_form_code(ffc_form_data, quadrature_representation, options["representation"], format.format)
 
         # Add to list of codes
-        #generated_forms += [(form_code, form_data)]
+        generated_forms += [(form_code, ffc_form_data)]
 
     # Compiler phase 5: format code
-    #_format_code(generated_forms, prefix, format, options)
+    format_code(generated_forms, prefix, format, options)
 
     return
 #    return (form_datas, form_representations)
@@ -302,4 +307,4 @@ def __choose_code_generator(form_representation):
     if form_representation == "tensor":
         return TensorGenerator
     else:
-        return QuadratureGenerator
+        return UFLQuadratureGenerator

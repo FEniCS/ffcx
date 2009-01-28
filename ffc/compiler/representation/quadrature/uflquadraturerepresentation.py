@@ -11,6 +11,9 @@ from ffc.common.debug import *
 # FFC language modules
 #from ffc.compiler.language.integral import *
 
+# FFC fem modules
+from ffc.fem.finiteelement import *
+
 # FFC quadrature representation modules
 #from elementtensor import *
 
@@ -18,6 +21,7 @@ from ffc.common.debug import *
 #from tensorreordering import *
 
 from ufl.algorithms.analysis import *
+from ufl.differentiation import SpatialDerivative
 
 class QuadratureRepresentation:
     """This class uses quadrature to represent a given multilinear form.
@@ -47,12 +51,55 @@ class QuadratureRepresentation:
         # Set number of specified quadrature points
         self.num_user_specified_quad_points = num_quadrature_points
 
-        print "QR, form:\n", form
+        print "\nQR, form:\n", form
 
-        # Get relevant integrals
+        # Get relevant cell integrals
         cell_integrals = [i for i in form.cell_integrals() if\
             domain_representations[(i.domain_type(), i.domain_id())] == "quadrature"]
-        print "QR, cell_integrals:\n", cell_integrals
+        print "\nQR, cell_integrals:\n", cell_integrals
+
+        integrand = cell_integrals[0].integrand()
+        print "\nQR, cell_integrals[0].integrand()\n", integrand
+
+        print "\nQR, integrand.free_indices():\n", integrand.free_indices()
+        print "\nQR, integrand.repeated_indices():\n", integrand.repeated_indices()
+        print "\nQR, integrand.index_dimensions():\n", integrand.index_dimensions()
+
+        operands = integrand.operands()
+        print "\nQR, integrand.operands():\n", operands
+        for op in operands:
+            print "op: ", op
+            print "op.free_indices(): ", op.free_indices()
+            print "op.repeated_indices(): ", op.repeated_indices()
+            print "op.index_dimensions(): ", op.index_dimensions()
+
+        basisfunctions = extract_basisfunctions(integrand)
+        print "\nQR, basisfunctions:\n", basisfunctions
+
+        coefficients = extract_coefficients(integrand)
+        print "\nQR, coefficients:\n", coefficients
+
+        elements = extract_unique_elements(form)
+        print "\nQR, unique elements:\n", elements
+        element = elements.pop()
+        print "\nQR, ufl element:\n", element
+        print "\nQR, ufl element.value shape:\n", element.value_shape()
+#        fem = FiniteElement(element.family(), element.cell().domain(), element.degree())
+#        print "\nQR, ffc element:\n", fem
+
+
+#        derivs = sorted(extract_type(integrand, Derivative), cmp=cmp_counted)
+        derivs = extract_type(integrand, SpatialDerivative)
+        print "\nQR, derivs:\n", derivs
+        for d in derivs:
+            print d.operands()[1]
+            print len(d.operands()[1])
+            print d.operands()[1][0]
+
+        print "QR, form_data.quad_order: ", form_data.quad_order
+        print "QR, count_nodes(integrand): ", count_nodes(integrand)
+        print "QR, extract_duplications(integrand): ", extract_duplications(integrand)
+
 
         # Compute representation of cell tensor
 #        self.cell_tensor = self.__compute_cell_tensor(form)
