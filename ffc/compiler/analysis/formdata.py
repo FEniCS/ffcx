@@ -110,8 +110,10 @@ class FormData:
         elif isinstance(ufl_e, FiniteElement):
             print "Finite"
             return FIATFiniteElement(ufl_e.family(), ufl_e.cell().domain(), ufl_e.degree())
-
-        return FIATFiniteElement(ufl_e.family(), ufl_e.cell().domain(), ufl_e.degree())
+        # Element type not supported (yet?) TensorElement will trigger this.
+        else:
+            raise RuntimeError(ufl_e, "Unable to create equivalent FIAT element.")
+        return
 
     def __extract_signature(self, form):
         "Extract the signature"

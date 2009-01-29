@@ -45,6 +45,36 @@ class QuadratureGenerator(CodeGenerator):
         CodeGenerator.__init__(self)
         self.optimise_level = 2
 
+    def generate_cell_integrals(self, form_representation, format):
+        code = {}
+        # Generate code for cell integral
+        debug("Generating code for cell integrals using quadrature representation...")
+        for integral in form_representation.cell_integrals:
+            code[("cell_integral", integral.domain_id())] =\
+                 self.generate_cell_integral(form_representation, integral.domain_id(), format)
+        debug("done")
+        return code
+
+    def generate_exterior_facet_integrals(self, form_representation, format):
+        code = {}
+        # Generate code for cell integral
+        debug("Generating code for cell integrals using quadrature representation...")
+        for integral in form_representation.exterior_facet_integrals:
+            code[("cell_integral", integral.domain_id())] =\
+                 self.generate_exterior_facet_integral(form_representation, integral.domain_id(), format)
+        debug("done")
+        return code
+
+    def generate_interior_facet_integrals(self, form_representation, format):
+        code = {}
+        # Generate code for cell integral
+        debug("Generating code for cell integrals using quadrature representation...")
+        for integral in form_representation.interior_facet_integrals:
+            code[("cell_integral", integral.domain_id())] =\
+                 self.generate_interior_facet_integral(form_representation, integral.domain_id(), format)
+        debug("done")
+        return code
+
     def generate_cell_integral(self, form_representation, sub_domain, format):
         """Generate dictionary of code for cell integral from the given
         form representation according to the given format"""

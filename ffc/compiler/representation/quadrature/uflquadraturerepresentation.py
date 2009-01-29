@@ -12,7 +12,12 @@ from ffc.common.debug import *
 #from ffc.compiler.language.integral import *
 
 # FFC fem modules
-from ffc.fem.finiteelement import *
+from ffc.fem.quadrature import *
+from ffc.fem.finiteelement import FiniteElement as FIATFiniteElement
+from ffc.fem.vectorelement import VectorElement as FIATVectorElement
+from ffc.fem.mixedelement import MixedElement as FIATMixedElement
+from ffc.fem.referencecell import *
+#from ffc.fem.quadratureelement import *
 
 # FFC quadrature representation modules
 #from elementtensor import *
@@ -20,8 +25,16 @@ from ffc.fem.finiteelement import *
 #from factorization import *
 #from tensorreordering import *
 
-from ufl.algorithms.analysis import *
-from ufl.differentiation import SpatialDerivative
+try:
+    from ufl.classes import FiniteElement, MixedElement, VectorElement, FiniteElementBase
+    from ufl.algorithms.analysis import *
+    from ufl.algorithms.graph import *
+    from ufl.algorithms.transformations import *
+    from ufl.differentiation import SpatialDerivative
+
+    from ufl.integral import Integral as UFLIntegral
+except:
+    pass
 
 class QuadratureRepresentation:
     """This class uses quadrature to represent a given multilinear form.
@@ -51,56 +64,74 @@ class QuadratureRepresentation:
         # Set number of specified quadrature points
         self.num_user_specified_quad_points = num_quadrature_points
 
+        # Initialise tables
+        self.psi_tables = {}
+        self.quadrature_weights = {}
+
         print "\nQR, form:\n", form
 
         # Get relevant cell integrals
         cell_integrals = [i for i in form.cell_integrals() if\
             domain_representations[(i.domain_type(), i.domain_id())] == "quadrature"]
-        print "\nQR, cell_integrals:\n", cell_integrals
 
-        integrand = cell_integrals[0].integrand()
-        print "\nQR, cell_integrals[0].integrand()\n", integrand
+        # Attach integrals
+        self.cell_integrals = cell_integrals
+        self.exterior_facet_integrals = []
+        self.interior_facet_integrals = []
 
-        print "\nQR, integrand.free_indices():\n", integrand.free_indices()
-        print "\nQR, integrand.repeated_indices():\n", integrand.repeated_indices()
-        print "\nQR, integrand.index_dimensions():\n", integrand.index_dimensions()
 
-        operands = integrand.operands()
-        print "\nQR, integrand.operands():\n", operands
-        for op in operands:
-            print "op: ", op
-            print "op.free_indices(): ", op.free_indices()
-            print "op.repeated_indices(): ", op.repeated_indices()
-            print "op.index_dimensions(): ", op.index_dimensions()
+#        print "\nQR, cell_integrals:\n", cell_integrals
 
-        basisfunctions = extract_basisfunctions(integrand)
-        print "\nQR, basisfunctions:\n", basisfunctions
+#        integrand = cell_integrals[0].integrand()
+#        print integrand.__doc__
+#        print "\nQR, cell_integrals[0].integrand()\n", integrand
 
-        coefficients = extract_coefficients(integrand)
-        print "\nQR, coefficients:\n", coefficients
+#        print "\nQR, integrand.free_indices():\n", integrand.free_indices()
+#        print "\nQR, integrand.repeated_indices():\n", integrand.repeated_indices()
+#        print "\nQR, integrand.index_dimensions():\n", integrand.index_dimensions()
 
-        elements = extract_unique_elements(form)
-        print "\nQR, unique elements:\n", elements
-        element = elements.pop()
-        print "\nQR, ufl element:\n", element
-        print "\nQR, ufl element.value shape:\n", element.value_shape()
+#        operands = integrand.operands()
+#        print "\nQR, integrand.operands():\n", operands
+#        for op in operands:
+#            print "op: ", op
+#            print "op.free_indices(): ", op.free_indices()
+#            print "op.repeated_indices(): ", op.repeated_indices()
+#            print "op.index_dimensions(): ", op.index_dimensions()
+
+#        basisfunctions = extract_basisfunctions(integrand)
+#        print "\nQR, basisfunctions:\n", basisfunctions
+
+#        coefficients = extract_coefficients(integrand)
+#        print "\nQR, coefficients:\n", coefficients
+
+#        elements = extract_unique_elements(form)
+#        print "\nQR, unique elements:\n", elements
+#        element = elements.pop()
+#        print "\nQR, ufl element:\n", element
+#        print "\nQR, ufl element.value shape:\n", element.value_shape()
 #        fem = FiniteElement(element.family(), element.cell().domain(), element.degree())
 #        print "\nQR, ffc element:\n", fem
 
 
 #        derivs = sorted(extract_type(integrand, Derivative), cmp=cmp_counted)
-        derivs = extract_type(integrand, SpatialDerivative)
-        print "\nQR, derivs:\n", derivs
-        for d in derivs:
-            print d.operands()[1]
-            print len(d.operands()[1])
-            print d.operands()[1][0]
+#        derivs = extract_type(integrand, SpatialDerivative)
+#        print "\nQR, derivs:\n", derivs
+#        for d in derivs:
+#            print d.operands()[1]
+#            print len(d.operands()[1])
+#            print d.operands()[1][0]
 
-        print "QR, form_data.quad_order: ", form_data.quad_order
-        print "QR, count_nodes(integrand): ", count_nodes(integrand)
-        print "QR, extract_duplications(integrand): ", extract_duplications(integrand)
+#        print "QR, form_data.quad_order: ", form_data.quad_order
+#        print "QR, count_nodes(integrand): ", count_nodes(integrand)
+#        print "QR, extract_duplications(integrand): ", extract_duplications(integrand)
 
+#        print "compound expansion of integrand"
+#        print expand_compounds(integrand)
 
+        # FIXME: The quad_order from form_data is very wrong
+        self.__tabulate(cell_integrals, form_data.quad_order)
+        print "\npsi_tables:", self.psi_tables
+        print "\nquadrature_weights:", self.quadrature_weights
         # Compute representation of cell tensor
 #        self.cell_tensor = self.__compute_cell_tensor(form)
         
@@ -109,7 +140,91 @@ class QuadratureRepresentation:
 
         # Compute representation of interior facet tensors
 #        self.interior_facet_tensors = self.__compute_interior_facet_tensors(form)
-        
+
+    def __tabulate(self, integrals, order):
+        "Tabulate the basisfunctions and derivatives."
+
+        # FIXME: Get polynomial order for each term, not just one value for
+        # entire form, take into account derivatives
+        num_points = (order + 1 + 1) / 2 # integer division gives 2m - 1 >= q
+        if self.num_user_specified_quad_points:
+            num_points = self.num_user_specified_quad_points
+
+        # The integral type is the same for ALL integrals
+        integral_type = integrals[0].domain_type()
+        print "QR, tabulate, integral_type: ", integral_type
+
+        # Get all unique elements in integrals and convert to list
+        elements = set()
+        for i in integrals:
+            elements = elements | extract_unique_elements(i)
+        elements = list(elements)
+        print "\nQR, unique elements:\n", elements
+        fiat_elements = [self.__create_fiat_elements(e) for e in elements]
+        print "\nQR, unique fiat elements:\n", fiat_elements
+
+        # Get shape (check first one, all should be the same)
+        # FIXME: Does this still hold true? At least implement check
+        shape = fiat_elements[0].cell_shape()
+        facet_shape = fiat_elements[0].facet_shape()
+        print "shape: ", shape
+        print "facet_shape: ", facet_shape
+        # Make quadrature rule
+        # FIXME: need to make different rules for different terms, depending
+        # on order
+        # Create quadrature rule and get points and weights
+        if integral_type == UFLIntegral.CELL:
+            (points, weights) = make_quadrature(shape, num_points)
+        elif integral_type == UFLIntegral.EXTERIOR_FACET or integral_type == UFLIntegral.INTERIOR_FACET:
+            (points, weights) = make_quadrature(facet_shape, num_points)
+
+        print "\npoints: ", points
+        print "\nweights: ", weights
+        # Add rules to dict
+        self.quadrature_weights[integral_type] = {len(weights): weights}
+
+        # FIXME: This is most likely not the best way to get the highest
+        # derivative of an element
+        num_derivatives = {}
+        derivs =  set()
+        for i in integrals:
+            derivs = derivs | extract_type(i, SpatialDerivative)
+        for d in list(derivs):
+            num_deriv = len(extract_type(d, SpatialDerivative))
+            elem = extract_elements(d.operands()[0])
+            # FIXME: there should be only one element?!
+            if not len(elem) == 1:
+                raise RuntimeError
+            elem = elem[0]
+            if elem in num_derivatives:
+                num_derivatives[elem] = max(num_derivatives[elem], num_deriv)
+            else:
+                num_derivatives[elem] = num_deriv
+
+        for i, element in enumerate(fiat_elements):
+            # The order in the two lists should be the same
+            deriv_order = num_derivatives[elements[i]]
+            # Tabulate for different integral types
+            if integral_type == Integral.CELL:
+                self.psi_tables[(element, None)] = element.tabulate(deriv_order, points)
+
+        return
+
+    def __create_fiat_elements(self, ufl_e):
+
+        if isinstance(ufl_e, VectorElement):
+            print "Vector"
+            return FIATVectorElement(ufl_e.family(), ufl_e.cell().domain(), ufl_e.degree(), len(ufl_e.sub_elements()))
+        elif isinstance(ufl_e, MixedElement):
+            print "Mixed"
+            sub_elems = [self.__create_fiat_elements(e) for e in ufl_e.sub_elements()]
+            return FIATMixedElement(sub_elems)
+        elif isinstance(ufl_e, FiniteElement):
+            print "Finite"
+            return FIATFiniteElement(ufl_e.family(), ufl_e.cell().domain(), ufl_e.degree())
+
+        return FIATFiniteElement(ufl_e.family(), ufl_e.cell().domain(), ufl_e.degree())
+
     def __compute_cell_tensor(self, form):
         "Compute representation of cell tensor"
         debug_begin("Computing cell tensor")

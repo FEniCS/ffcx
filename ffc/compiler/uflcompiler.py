@@ -47,10 +47,10 @@ from representation.quadrature import UFLQuadratureRepresentation
 # FFC code generation modules
 #from codegeneration.tensor import *
 #from codegeneration.quadrature import *
+from codegeneration.common.codegenerator import CodeGenerator
 from codegeneration.quadrature import UFLQuadratureGenerator
 #from codegeneration.common.finiteelement import *
 #from codegeneration.common.dofmap import *
-#from codegeneration.common.codegenerator import CodeGenerator
 
 # FFC format modules
 from format import ufcformat
@@ -133,7 +133,8 @@ def _compile_forms(forms, prefix, options):
         # Compiler phase 4: generate form code
         #form_code = generate_form_code(form_data, form_representation, options["representation"], format.format)
         ffc_form_data = FFCFormData(None, ufl_form_data=form_data)
-        form_code = generate_form_code(ffc_form_data, quadrature_representation, options["representation"], format.format)
+        form_code = generate_form_code(ffc_form_data, tensor_representation,\
+                          quadrature_representation, domain_representations, format.format)
 
         # Add to list of codes
         generated_forms += [(form_code, ffc_form_data)]
@@ -213,16 +214,40 @@ def optimize_form_representation(form):
 
     end()
 
-def generate_form_code(form_data, form_representation, representation, format):
+def generate_form_code(form_data, tensor_representation, quadrature_representation, domain_representations, format):
     "Compiler phase 4: generate code"
     begin("Compiler phase 4: Generating code")
 
-    # Choose code generator
-    CodeGenerator = __choose_code_generator(representation)
+    tensor_generator = None
+    quadrature_generator = None
+    # Only create generators if they are used. Initialise a generator with
+    # the form representation and format.
+    for key, val in domain_representations.items():
+        if val == "tensor" and not tensor_generator:
+            tensor_generator = UFLTensorGenerator()
+        if val == "quadrature" and not quadrature_generator:
+            quadrature_generator = UFLQuadratureGenerator()
+        # Break if both generators have been initialised
+        if tensor_generator and quadrature_generator:
+            break
 
-    # Generate code
-    code_generator = CodeGenerator()
-    code = code_generator.generate_form_code(form_data, form_representation, format)
+    # Generate common code
+    common_generator = CodeGenerator()
+    code = common_generator.generate_form_code(form_data, None, format, ufl_code=True)
+
+    # FIXME: This is just a suggestion. Calling the generate_*_integrals() method
+    # should create code for all subdomains for a given representation. It is
+    # safe to use code.update() since no integrals are redundant
+    # Generate code for integrals
+    if quadrature_generator:
+        # Generate code for cell integrals
+        code.update(quadrature_generator.generate_cell_integrals(quadrature_representation, format))
+
+        # Generate code for exterior facet integrals
+        code.update(quadrature_generator.generate_exterior_facet_integrals(quadrature_representation, format))
+
+        # Generate code for interior facet integrals
+        code.update(quadrature_generator.generate_interior_facet_integrals(quadrature_representation, format))
         
     end()
     return code
