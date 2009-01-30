@@ -196,7 +196,7 @@ class FiniteElement(FiniteElementBase):
 
         if family == "Crouzeix-Raviart" or family == "CR":
             self.__family = "Crouzeix-Raviart"
-            return (CrouzeixRaviart(fiat_shape),
+            return (CrouzeixRaviart(fiat_shape, degree),
                     Mapping.AFFINE)
 
         if family == "Raviart-Thomas" or family == "RT":
