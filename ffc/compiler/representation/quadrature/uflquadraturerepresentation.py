@@ -61,6 +61,9 @@ class QuadratureRepresentation:
         # Save form
         self.form = form
 
+        # Save useful constants
+        self.geometric_dimension = form_data.geometric_dimension
+
         # Set number of specified quadrature points
         self.num_user_specified_quad_points = num_quadrature_points
 
@@ -203,7 +206,9 @@ class QuadratureRepresentation:
 
         for i, element in enumerate(fiat_elements):
             # The order in the two lists should be the same
-            deriv_order = num_derivatives[elements[i]]
+            deriv_order = 0
+            if num_derivatives:
+                deriv_order = num_derivatives[elements[i]]
             # Tabulate for different integral types
             if integral_type == Integral.CELL:
                 self.psi_tables[(element, None)] = element.tabulate(deriv_order, points)
@@ -222,8 +227,10 @@ class QuadratureRepresentation:
         elif isinstance(ufl_e, FiniteElement):
             print "Finite"
             return FIATFiniteElement(ufl_e.family(), ufl_e.cell().domain(), ufl_e.degree())
-
-        return FIATFiniteElement(ufl_e.family(), ufl_e.cell().domain(), ufl_e.degree())
+        # Element type not supported (yet?) TensorElement will trigger this.
+        else:
+            raise RuntimeError(ufl_e, "Unable to create equivalent FIAT element.")
+        return
 
     def __compute_cell_tensor(self, form):
         "Compute representation of cell tensor"

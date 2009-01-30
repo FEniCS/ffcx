@@ -15,88 +15,107 @@ from sets import Set
 # FFC common modules
 #from ffc.common.constants import *
 #from ffc.common.utils import *
+from ffc.common.debug import *
+
+# FFC fem modules
+from ffc.fem.finiteelement import FiniteElement as FIATFiniteElement
+from ffc.fem.vectorelement import VectorElement as FIATVectorElement
+from ffc.fem.mixedelement import MixedElement as FIATMixedElement
 
 # FFC language modules
+from ffc.compiler.language.integral import Integral as FFCIntegral
 #from ffc.compiler.language.index import *
 #from ffc.compiler.language.restriction import *
 
 # FFC code generation modules
-from ffc.compiler.codegeneration.common.codegenerator import *
+#from ffc.compiler.codegeneration.common.codegenerator import *
 from ffc.compiler.codegeneration.common.utils import *
+from ffc.compiler.codegeneration.common.evaluatebasis import IndentControl
 
 # FFC tensor representation modules
 #from ffc.compiler.representation.tensor.multiindex import *
 
 # Utility and optimisation functions for quadraturegenerator
-#from quadraturegenerator_utils import *
+from quadraturegenerator_utils import *
 #from quadraturegenerator_optimisation import *
 #import reduce_operations
 
 # FFC format modules
 #from ffc.compiler.format.removeunused import *
 
-class QuadratureGenerator(CodeGenerator):
+# UFL modules
+from ufl.classes import FiniteElement, MixedElement, VectorElement, FiniteElementBase
+from ufl.algorithms.analysis import *
+
+#class QuadratureGenerator(CodeGenerator):
+class QuadratureGenerator:
     "Code generator for quadrature representation"
 
     def __init__(self):
         "Constructor"
 
         # Initialize common code generator
-        CodeGenerator.__init__(self)
+#        CodeGenerator.__init__(self)
         self.optimise_level = 2
 
     def generate_cell_integrals(self, form_representation, format):
         code = {}
+        if not form_representation.cell_integrals:
+            return code
         # Generate code for cell integral
         debug("Generating code for cell integrals using quadrature representation...")
         for integral in form_representation.cell_integrals:
             code[("cell_integral", integral.domain_id())] =\
-                 self.generate_cell_integral(form_representation, integral.domain_id(), format)
+                 self.generate_cell_integral(form_representation, integral, format)
         debug("done")
         return code
 
     def generate_exterior_facet_integrals(self, form_representation, format):
         code = {}
+        if not form_representation.exterior_facet_integrals:
+            return code
         # Generate code for cell integral
-        debug("Generating code for cell integrals using quadrature representation...")
+        debug("Generating code for exterior facet integrals using quadrature representation...")
         for integral in form_representation.exterior_facet_integrals:
             code[("cell_integral", integral.domain_id())] =\
-                 self.generate_exterior_facet_integral(form_representation, integral.domain_id(), format)
+                 self.generate_exterior_facet_integral(form_representation, integral, format)
         debug("done")
         return code
 
     def generate_interior_facet_integrals(self, form_representation, format):
         code = {}
+        if not form_representation.interior_facet_integrals:
+            return code
         # Generate code for cell integral
-        debug("Generating code for cell integrals using quadrature representation...")
+        debug("Generating code for interior facet integrals using quadrature representation...")
         for integral in form_representation.interior_facet_integrals:
             code[("cell_integral", integral.domain_id())] =\
-                 self.generate_interior_facet_integral(form_representation, integral.domain_id(), format)
+                 self.generate_interior_facet_integral(form_representation, integral, format)
         debug("done")
         return code
 
-    def generate_cell_integral(self, form_representation, sub_domain, format):
+    def generate_cell_integral(self, form_representation, integral, format):
         """Generate dictionary of code for cell integral from the given
         form representation according to the given format"""
 
-#        code = []
+        code = []
+
 
         # Object to control the code indentation
-#        Indent = IndentControl()
+        Indent = IndentControl()
 
-#        # Extract terms for sub domain
-#        tensors = [term for term in form_representation.cell_tensor if term.monomial.integral.sub_domain == sub_domain]
-#        if len(tensors) == 0:
-#            element_code = self.__reset_element_tensor(form_representation.cell_tensor[0], Indent, format)
-#            return {"tabulate_tensor": element_code, "members": ""}
+        debug("")
+        code += self.__reset_element_tensor(integral, Indent, format)
+        print "integral: ", integral
 
-#        debug("")
 #        # Generate element code + set of used geometry terms
 #        element_code, members_code, trans_set, num_ops = self.__generate_element_tensor\
 #                                                     (tensors, None, None, Indent, format)
 
-#        # Get Jacobian snippet
-#        jacobi_code = [format["generate jacobian"](form_representation.cell_dimension, Integral.CELL)]
+        # Get Jacobian snippet
+        # FIXME: This will most likely have to change if we support e.g., 2D elements in 3D space
+        jacobi_code = [format["generate jacobian"](form_representation.geometric_dimension, FFCIntegral.CELL)]
+        code += jacobi_code
 
 #        # Remove unused declarations
 #        code = self.__remove_unused(jacobi_code, trans_set, format)
@@ -105,10 +124,10 @@ class QuadratureGenerator(CodeGenerator):
 #        code += ["", format["comment"]("Compute element tensor (using quadrature representation, optimisation level %d)" % self.optimise_level),\
 #                 format["comment"]("Total number of operations to compute element tensor (from this point): %d" %num_ops)]
 #        code += element_code
-#        debug("Number of operations to compute tensor: %d" % num_ops)
+        debug("Number of operations to compute tensor: ")
 
 #        return {"tabulate_tensor": code, "members":members_code}
-        return {"tabulate_tensor": [], "members":[]}
+        return {"tabulate_tensor": code, "members":[]}
 
     def generate_exterior_facet_integral(self, form_representation, sub_domain, format):
         """Generate dictionary of code for exterior facet integral from the given
@@ -428,63 +447,56 @@ class QuadratureGenerator(CodeGenerator):
 
         return code
 
-    def __reset_element_tensor(self, tensor, Indent, format):
+    def __reset_element_tensor(self, integral, Indent, format):
         "Reset the entries of the local element tensor"
 
         code = [""]
 
-        # Get rank and dims of primary indices
-        irank = tensor.i.rank
-        idims = tensor.i.dims
+        # Comment
+        code.append(Indent.indent(format["comment"]\
+                ("Reset values of the element tensor block")))
 
-        # Get monomial and compute macro dimensions
-        # in case of restricted basisfunctions
-        monomial = tensor.monomial
-        macro_idims = compute_macro_idims(monomial, idims, irank)
+        # Get basisfunctions
+        basis = extract_basisfunctions(integral)
 
-        # Generate value
+        # Create FIAT elements for each basisfunction. There should be one and
+        # only one element per basisfunction so it is OK to pick first.
+        elements = [self.__create_fiat_elements(extract_elements(b)[0]) for b in basis]
+
+        # Create the index range for resetting the element tensor by
+        # multiplying the element space dimensions
+        index_range = 1
+        for element in elements:
+            index_range *= element.space_dimension()
+
+        # Create loop
+        # FIXME: It is general to create a loop, however, for a functional it
+        # is not strictly needed. On the other hand, it is not expected to have
+        # any influence on the runtime performance.
         value = format["floating point"](0.0)
+        name =  format["element tensor quad"] + format["array access"](format["first free index"])
+        lines = [(name, value)]
+        code += generate_loop(lines, [(format["first free index"], 0, index_range)], Indent, format)
+        code.append("")
 
-        code += [Indent.indent(format["comment"]\
-                ("Reset values of the element tensor block"))]
+        return code
 
-        loop_vars = []
-        entry = ""
-        # FIXME: quadrature only support Functionals and Linear and Bilinear forms
-        if (irank == 0):
-            entry = "0"
-        elif (irank == 1):
-            # Generate entry
-            entry = format["first free index"]
+    def __create_fiat_elements(self, ufl_e):
 
-            # Create boundaries for loop
-            boundaries = [0, macro_idims[0]]
-            loop_vars = [[format["first free index"]] + boundaries]
-
-        elif (irank == 2):
-            # Generate entry
-            entry = format["add"]([format["multiply"]([format["first free index"],\
-                                                      "%d" %macro_idims[1]]),\
-                                   format["second free index"]])
-            # Create boundaries for loop
-            boundaries = [[0, macro_idims[0]], [0, macro_idims[1]]]
-            loop_vars = [[format["first free index"]] + boundaries[0],\
-                         [format["second free index"]] + boundaries[1]]
-
+        if isinstance(ufl_e, VectorElement):
+            print "Vector"
+            return FIATVectorElement(ufl_e.family(), ufl_e.cell().domain(), ufl_e.degree(), len(ufl_e.sub_elements()))
+        elif isinstance(ufl_e, MixedElement):
+            print "Mixed"
+            sub_elems = [self.__create_fiat_elements(e) for e in ufl_e.sub_elements()]
+            return FIATMixedElement(sub_elems)
+        elif isinstance(ufl_e, FiniteElement):
+            print "Finite"
+            return FIATFiniteElement(ufl_e.family(), ufl_e.cell().domain(), ufl_e.degree())
+        # Element type not supported (yet?) TensorElement will trigger this.
         else:
-            raise RuntimeError, "Quadrature only support Functionals and Linear and Bilinear forms"
-
-        # Generate name
-        name =  format["element tensor quad"] + format["array access"](entry)
-
-        # If the form is linear or bilinear we need a loop to reset the tensor
-        if loop_vars:
-            lines = [(name, value)]
-            code += generate_loop(lines, loop_vars, Indent, format)
-        else:
-            code += [(Indent.indent(name),value)]
-
-        return code + [""]
+            raise RuntimeError(ufl_e, "Unable to create equivalent FIAT element.")
+        return
 
     def __remove_unused(self, code, set, format):
         "Remove unused variables so that the compiler will not complain"

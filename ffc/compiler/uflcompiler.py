@@ -220,8 +220,7 @@ def generate_form_code(form_data, tensor_representation, quadrature_representati
 
     tensor_generator = None
     quadrature_generator = None
-    # Only create generators if they are used. Initialise a generator with
-    # the form representation and format.
+    # Only create generators if they are used.
     for key, val in domain_representations.items():
         if val == "tensor" and not tensor_generator:
             tensor_generator = UFLTensorGenerator()

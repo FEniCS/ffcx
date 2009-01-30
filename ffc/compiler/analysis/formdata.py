@@ -101,14 +101,11 @@ class FormData:
     def __create_fiat_elements(self, ufl_e):
 
         if isinstance(ufl_e, VectorElement):
-            print "Vector"
             return FIATVectorElement(ufl_e.family(), ufl_e.cell().domain(), ufl_e.degree(), len(ufl_e.sub_elements()))
         elif isinstance(ufl_e, MixedElement):
-            print "Mixed"
             sub_elems = [self.__create_fiat_elements(e) for e in ufl_e.sub_elements()]
             return FIATMixedElement(sub_elems)
         elif isinstance(ufl_e, FiniteElement):
-            print "Finite"
             return FIATFiniteElement(ufl_e.family(), ufl_e.cell().domain(), ufl_e.degree())
         # Element type not supported (yet?) TensorElement will trigger this.
         else:

@@ -13,7 +13,9 @@ from ffc.common.exceptions import *
 # FFC language modules
 from ffc.compiler.language.algebra import *
 from ffc.compiler.language.integral import *
-from ffc.compiler.language.indexcall import *
+#from ffc.compiler.language.indexcall import *
+from ffc.compiler.language.index import Index
+from ffc.compiler.language.reassignment import max_index
 
 # FFC fem modules
 from ffc.fem.quadratureelement import *
@@ -23,6 +25,7 @@ def check_form(form):
     debug("Checking validity of form...")
     check_type(form)
     check_integrals(form)
+    check_rank(form)
     check_restrictions(form)
     check_completeness(form)
     check_quadratureelements(form)
@@ -38,6 +41,19 @@ def check_integrals(form):
     for p in form.monomials:
         if not p.integral:
             raise FormError, (p, "Missing integral in term.")
+
+def check_rank(form):
+    "Check that all monomial have the same rank."
+
+    ranks = []
+    # Get ranks of all monomials
+    for m in form.monomials:
+        ranks.append(len([b for b in m.basisfunctions if b.index.type == Index.PRIMARY]))
+    # Check that the ranks are all equal
+    first = ranks.pop()
+    for r in ranks:
+        if not first == r:
+            raise FormError, (form, "All monomials in a form must have the same rank.")
 
 def check_restrictions(form):
     "Check that all terms are restricted correctly"
