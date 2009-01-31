@@ -21,7 +21,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # UFL modules
 from ufl.classes import Form, FiniteElementBase
 from ufl.algorithms import FormData, is_multilinear
-from ufl.output import set_loglevel as ufl_loglevel
+from ufl.log import set_level as ufl_loglevel
 
 # FFC common modules
 from ffc.common.log import debug, info, warning, error, begin, end, set_level, INFO
