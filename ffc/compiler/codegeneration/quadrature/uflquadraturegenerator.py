@@ -107,6 +107,8 @@ class QuadratureGenerator:
         debug("")
         code += self.__reset_element_tensor(integral, Indent, format)
         print "integral: ", integral
+        print "integral: ", integral.__repr__()
+        print extract_basisfunctions(integral)
 
 #        # Generate element code + set of used geometry terms
 #        element_code, members_code, trans_set, num_ops = self.__generate_element_tensor\
