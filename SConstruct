@@ -22,21 +22,24 @@ elif env["PLATFORM"] == "darwin":
 else:
     default_prefix = join(sep,"usr","local")
 
-default_python_dir = sysconfig.get_python_lib(prefix="$prefix",plat_specific=True)
+if env["PLATFORM"].startswith("win"):
+    default_python_dir = os.path.join("$prefix", "Lib", "site-packages")
+else:
+    default_python_dir = sysconfig.get_python_lib(prefix="$prefix",plat_specific=True)
 
 options = [
     # configurable options for installation:
-    PathOption("prefix", "Installation prefix", default_prefix),
+    PathOption("prefix", "Installation prefix", default_prefix, PathOption.PathIsDirCreate),
     PathOption("includeDir", "ufc.h installation directory",
-               join("$prefix","include")),
+               join("$prefix","include"), PathOption.PathIsDirCreate),
     PathOption("pythonModuleDir", "Python module installation directory", 
-               default_python_dir),
+               default_python_dir, PathOption.PathIsDirCreate),
     BoolOption("enablePyUFC", "Compile and install the python extension module", "Yes"),
     PathOption("pythonExtDir", "Python extension module installation directory",
-               default_python_dir),
+               default_python_dir, PathOption.PathIsDirCreate),
     PathOption("boostDir", "Specify path to Boost", None),
     PathOption("pkgConfDir", "Directory for installation of pkg-config files",
-               join("$prefix","lib","pkgconfig")),
+               join("$prefix","lib","pkgconfig"), PathOption.PathIsDirCreate),
     BoolOption("cleanOldUFC", "Clean any old installed UFC modules", "No"),
     BoolOption("cacheOptions", "Cache command-line options for later invocations", "Yes")]
 
