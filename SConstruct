@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 import os, sys, glob
-from os.path     import join, isfile, isdir, getsize, sep, normpath
+from os.path     import join, isfile, isdir, getsize, sep, normpath, dirname
 from distutils   import sysconfig
 from swig_config import configure_swig_env, get_status_output
 
 # Make sure that we have a good scons-version
-EnsureSConsVersion(0, 98)
+EnsureSConsVersion(0, 96)
 
 # Create a SCons Environment based on the main os environment
 env = Environment(ENV=os.environ)
@@ -112,9 +112,12 @@ if env["enablePyUFC"]:
     end_message += message
     if swig_env["enablePyUFC"]:
         ufc_wrap, ufc_py = swig_env.CXXFile(target=ufc_basename,
-                                           source=[ufc_basename+".i"])
+                                            source=[ufc_basename+".i"])
         ufc_so = swig_env.SharedLibrary(target=ufc_basename, source=ufc_wrap)[0]
         
+        # A SCons bug workaround. Fixed in newer SCons versions
+        ufc_py = File(join(dirname(ufc_basename),str(ufc_py)))
+
         # Set up installation targets
         env.Install(join(env["includeDir"], "swig"),File(ufc_basename+".i"))
         env.Install(env["pythonExtDir"],[ufc_py,ufc_so])
