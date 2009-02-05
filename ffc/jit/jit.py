@@ -82,23 +82,8 @@ def jit_form(form, options=None):
     # Check system requirements
     (cppargs, cpp_path, swig_path) = configure_instant(options)
 
-    # Swig declarations
-    declarations =r"""
-%pythoncode %{
-import ufc
-'''
-A hack to get passed a bug in swig.
-This is fixed in swig version 1.3.37
-%}
-%import "swig/ufc.i"
-%pythoncode %{
-'''
-%}
-
-"""
-
-    #'\n%import "swig/ufc.i"\n'
-    declarations += extract_shared_ptr_declarations(filename)
+    # Add shared_ptr declarations
+    declarations = extract_declarations(filename)
     
     # Set system headers
     system_headers = ["boost/shared_ptr.hpp"]
@@ -239,7 +224,7 @@ set the environment variable BOOST_DIR.
     cpp_path += boost_include_dir
     return cppargs, cpp_path, swig_path
 
-def extract_shared_ptr_declarations(filename):
+def extract_declarations(filename):
     "Extract information for shared_ptr"
 
     # Read the code
@@ -249,16 +234,27 @@ def extract_shared_ptr_declarations(filename):
     derived_classes   = re.findall(r"class[ ]+([\w]+)[ ]*: public",code)
     ufc_classes       = re.findall(r"public[ ]+(ufc::[\w]+).*",code)
     ufc_proxy_classes = [s.replace("ufc::","") for s in ufc_classes]
-
-    shared_ptr_declarations =  '''
+    
+    # Swig declarations
+    declarations =r"""
+%pythoncode %{
+import ufc
+'''
+A hack to get passed a bug in swig.
+This is fixed in swig version 1.3.37
+%}
+%import "swig/ufc.i"
+%pythoncode %{
+'''
+%}
 //Uncomment these to produce code for std::tr1::shared_ptr
 //#define SWIG_SHARED_PTR_NAMESPACE std
 //#define SWIG_SHARED_PTR_SUBNAMESPACE tr1
 %include <boost_shared_ptr.i>
-'''
+"""
 
     shared_ptr_format = "SWIG_SHARED_PTR_DERIVED(%(der_class)s,%(ufc_class)s,%(der_class)s)"
-    shared_ptr_declarations += "\n".join(\
+    declarations += "\n".join(\
         shared_ptr_format%{"ufc_proxy_class":c[0],"ufc_class":c[1],"der_class":c[2]}\
         for c in zip(ufc_proxy_classes, ufc_classes, derived_classes)\
         )
@@ -272,8 +268,8 @@ def extract_shared_ptr_declarations(filename):
             new_objects.append(stripped)
     
     new_object_str = "%%newobject %s::create_"%filename.replace(".h","")
-    shared_ptr_declarations += "\n".join(new_object_str + new_object + ";" \
+    declarations += "\n".join(new_object_str + new_object + ";" \
                                          for new_object in new_objects)
     
-    return shared_ptr_declarations
+    return declarations
 
