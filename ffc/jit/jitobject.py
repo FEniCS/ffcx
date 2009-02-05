@@ -4,9 +4,11 @@ __copyright__ = "Copyright (C) 2008 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 from hashlib import sha1
+from instant import get_swig_version
 
 # FFC compiler modules
 from ffc.compiler.analysis import simplify, analyze
+from ffc.common.constants  import FFC_VERSION
 
 class JITObject:
     """This class is a wrapper for a compiled object in the context of
@@ -40,20 +42,22 @@ class JITObject:
     def __eq__(self, other):
         "Check for equality"
         return hash(self) == hash(other)
-
+    
     def signature(self):
         "Return unique string for form expression + options"
-
+        
         # Check if we have computed the signature before
         if not self._signature is None:
             return self._signature
-
+        
         # Compute signature
         self.form_data = analyze.analyze(self.form, simplify_form=True)
         form_signature = str(self.form)
         element_signature = ";".join([element.signature() for element in self.form_data.elements])
+        swig_version = get_swig_version()
         options_signature = str(self.options)
-        string = ";".join([form_signature, element_signature, options_signature])
+        string = ";".join([form_signature, element_signature, swig_version, \
+                           options_signature, FFC_VERSION])
         self._signature = "form_" + sha1(string).hexdigest()
 
         # Store form data and signature in form for later reuse

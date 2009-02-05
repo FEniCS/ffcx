@@ -78,24 +78,37 @@ def jit_form(form, options=None):
     # Wrap code into a Python module using Instant
     debug("Creating Python extension (compiling and linking), this may take some time...", -1)
     filename = signature + ".h"
-
-    # Get flags and paths
-    (cppargs, cpp_path, swig_path, use_shared_ptr) = extract_instant_flags(options)
+    
+    # Check system requirements
+    (cppargs, cpp_path, swig_path) = configure_instant(options)
 
     # Swig declarations
-    declarations = '\n%import "swig/ufc.i"\n'
-    if use_shared_ptr:
-        declarations += extract_shared_ptr_declarations(filename)
-        #system_headers=["tr1/memory"]
-        system_headers = ["boost/shared_ptr.hpp"]
-    else:
-        system_headers = []
+    declarations =r"""
+%pythoncode %{
+import ufc
+'''
+A hack to get passed a bug in swig.
+This is fixed in swig version 1.3.37
+%}
+%import "swig/ufc.i"
+%pythoncode %{
+'''
+%}
 
+"""
+
+    #'\n%import "swig/ufc.i"\n'
+    declarations += extract_shared_ptr_declarations(filename)
+    
+    # Set system headers
+    system_headers = ["boost/shared_ptr.hpp"]
+    
     # Call instant
     module = instant.build_module(wrap_headers=[filename],
                                   additional_declarations = declarations,
                                   system_headers=system_headers,
                                   include_dirs=cpp_path,
+                                  swigargs=['-c++','-I.'],
                                   swig_include_dirs=swig_path,
                                   cppargs=cppargs,
                                   signature=signature,
@@ -161,8 +174,8 @@ def extract_element_and_dofmap(module):
     return (getattr(module, name + "_finite_element_0")(),
             getattr(module, name + "_dof_map_0")())
 
-def extract_instant_flags(options):
-    "Extract flags for Instant"
+def configure_instant(options):
+    "Check system requirements"
 
     # Get C++ compiler options
     if options["cpp optimize"]: cppargs = "-O2"
@@ -171,65 +184,60 @@ def extract_instant_flags(options):
     # Get include directory for ufc.h (might be better way to do this?)
     (path, dummy, dummy, dummy) = instant.header_and_libs_from_pkgconfig("ufc-1")
     if len(path) == 0: path = [(os.sep).join(sysconfig.get_python_inc().split(os.sep)[:-2]) + os.sep + "include"]
-
+    
     # Register the paths
     cpp_path, swig_path = [path[0]], [path[0]]
     
     # Check for swig installation
     result, output = instant.get_status_output("swig -version")
     if result == 1:
-        raise OSError, "Could not find swig installation. Please install swig version 1.3.35 or higher"
+        raise OSError, "Could not find swig installation. Please install swig version 1.3.35 or higher.\n"
 
-    # If not compiling with shared_ptr return
-    if not options["shared_ptr"]:
-        return cppargs, cpp_path, swig_path, False
-    
     # Check swig version for shared_ptr
-    swig_version = re.findall(r"SWIG Version ([0-9.]+)",output)[0]
-    swig_enough = True
-    swig_correct_version = [1,3,35]
-    use_shared_ptr = True
-    for i, v in enumerate([int(v) for v in swig_version.split(".")]):
-        if swig_correct_version[i] < v:
-            break
-        elif swig_correct_version[i] == v:
-            continue
-        else:
-            use_shared_ptr = False
-            warning("""Your swig version need to be 1.3.35 or higher.
-Python extension module will be compiled without shared_ptr support""")
+    if not instant.check_swig_version("1.3.35"):
+        raise OSError, "Your current swig version is %s, it needs to be 1.3.35 or higher.\n"%swig_version
+
+    # Check if UFC is importable and what version of swig was used to
+    # create the UFC extension module
+    try: import ufc
+    except: raise OSError, "Please install the python extenstion module of UFC on your system.\n"
+    
+    # Check that the form compiler will use the same swig version 
+    # that UFC was compiled with
+    if not instant.check_swig_version(ufc.__swigversion__,same=True):
+        raise OSError, """The python extension module of UFC was not compiled with the present version of swig.
+Install swig version %s or recompiled UFC with present swig
+"""%ufc.__swigversion__
     
     # Set a default swig command and boost include directory
     boost_include_dir = []
     
-    # If swig version 1.3.35 or higher we check for boost installation
-    if use_shared_ptr:
-        # Set a default directory for the boost installation
-        if sys.platform == "darwin":
-            # use fink as default
-            default = os.path.join(os.path.sep,"sw")
-        else:
-            default = os.path.join(os.path.sep,"usr")
+    # Check for boost installation
+    # Set a default directory for the boost installation
+    if sys.platform == "darwin":
+        # use fink as default
+        default = os.path.join(os.path.sep,"sw")
+    else:
+        default = os.path.join(os.path.sep,"usr")
         
-        # If BOOST_DIR is not set use default directory
-        boost_dir = os.getenv("BOOST_DIR", default)
-        boost_is_found = False
-        for inc_dir in ["", "include"]:
-            if os.path.isfile(os.path.join(boost_dir, inc_dir, "boost", "version.hpp")):
-                boost_include_dir = [os.path.join(boost_dir, inc_dir)]
-                boost_is_found = True
-                break
+    # If BOOST_DIR is not set use default directory
+    boost_dir = os.getenv("BOOST_DIR", default)
+    boost_is_found = False
+    for inc_dir in ["", "include"]:
+        if os.path.isfile(os.path.join(boost_dir, inc_dir, "boost", "version.hpp")):
+            boost_include_dir = [os.path.join(boost_dir, inc_dir)]
+            boost_is_found = True
+            break
         
-        if not boost_is_found:
-            # If no boost installation is found compile the ufc extension module
-            # without shared_ptr support
-            use_shared_ptr = False
-            warning("""Boost was not found.
-Python extension module will be compiled without shared_ptr support""")
+    if not boost_is_found:
+        raise OSError, """The Boost library was not found.
+If Boost is installed in a nonstandard location,
+set the environment variable BOOST_DIR.
+"""
 
     # Add the boost_include_dir
     cpp_path += boost_include_dir
-    return cppargs, cpp_path, swig_path, use_shared_ptr
+    return cppargs, cpp_path, swig_path
 
 def extract_shared_ptr_declarations(filename):
     "Extract information for shared_ptr"
