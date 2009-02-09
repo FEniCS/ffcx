@@ -16,7 +16,7 @@ minor = 1
 
 # Build the commandline options for SCons:
 if env["PLATFORM"].startswith("win"):
-    default_prefix = join("c:","local")
+    default_prefix = r"c:\local"
 elif env["PLATFORM"] == "darwin":
     default_prefix = join(sep,"sw")
 else:
@@ -29,17 +29,17 @@ else:
 
 options = [
     # configurable options for installation:
-    PathOption("prefix", "Installation prefix", default_prefix, PathOption.PathIsDirCreate),
+    PathOption("prefix", "Installation prefix", default_prefix, PathOption.PathAccept),
     PathOption("includeDir", "ufc.h installation directory",
-               join("$prefix","include"), PathOption.PathIsDirCreate),
+               join("$prefix","include"), PathOption.PathAccept),
     PathOption("pythonModuleDir", "Python module installation directory", 
-               default_python_dir, PathOption.PathIsDirCreate),
+               default_python_dir, PathOption.PathAccept),
     BoolOption("enablePyUFC", "Compile and install the python extension module", "Yes"),
     PathOption("pythonExtDir", "Python extension module installation directory",
-               default_python_dir, PathOption.PathIsDirCreate),
+               default_python_dir, PathOption.PathAccept),
     PathOption("boostDir", "Specify path to Boost", None),
     PathOption("pkgConfDir", "Directory for installation of pkg-config files",
-               join("$prefix","lib","pkgconfig"), PathOption.PathIsDirCreate),
+               join("$prefix","lib","pkgconfig"), PathOption.PathAccept),
     BoolOption("cleanOldUFC", "Clean any old installed UFC modules", "No"),
     BoolOption("cacheOptions", "Cache command-line options for later invocations", "Yes")]
 
@@ -125,6 +125,12 @@ if env["enablePyUFC"]:
 
 # Set the alias for install
 env.Alias("install", targets)
+
+# Create installation target folders if they don't exists:
+if 'install' in COMMAND_LINE_TARGETS:
+    for target_dir in [env.subst(d) for d in targets]:
+        if not os.path.isdir(target_dir):
+            os.makedirs(target_dir)
 
 # If the user are cleaning remove any old ufc python modules
 #if env.GetOption("clean") and isdir(join(env.subst(env["pythonModuleDir"]),"ufc")):

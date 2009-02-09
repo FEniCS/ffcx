@@ -72,15 +72,20 @@ def checkPython(context):
     python_version = "%s.%s" % (sys.version_info[0],sys.version_info[1])
     context.env["PYTHON_VERSION"] = python_version
     if context.env["PLATFORM"].startswith("win"):
-        python_dir = os.path.join(sys.prefix,"include")
+        python_inc_dir = os.path.join(sys.prefix,"include")
+        python_lib_dir = os.path.join(sys.prefix,"libs")
+        python_lib = "python%s%s" % (sys.version_info[0],sys.version_info[1])
     else:
-        python_dir = os.path.join(sys.prefix,"include","python"+python_version)
+        python_inc_dir = os.path.join(sys.prefix,"include","python"+python_version)
 
-    python_is_found = os.path.isfile(os.path.join(python_dir, "Python.h"))
+    python_is_found = os.path.isfile(os.path.join(python_inc_dir, "Python.h"))
     
     # Add path to python if found
     if python_is_found:
-        context.env.Append(CPPPATH = [python_dir])
+        context.env.Append(CPPPATH=[python_inc_dir])
+        if context.env["PLATFORM"].startswith("win"):
+            context.env.Append(LIBPATH=[python_lib_dir])
+            context.env.Append(LIBS=[python_lib])
     context.Result(python_is_found)
     return python_is_found
 
@@ -88,13 +93,15 @@ def checkPython(context):
 def checkBoost(context):
     context.Message("Checking for Boost...")
     # Set a default directory for the boost installation
-    if sys.platform == "darwin":
+    if context.env["PLATFORM"] == "darwin":
         # use fink as default
         default = os.path.join(os.path.sep,"sw")
+    elif context.env["PLATFORM"].startswith("win"):
+        default = r'C:\local'
     else:
         default = os.path.join(os.path.sep,"usr")
             
-    boost_dir = context.env.get("boostDir",context.env.get("BOOST_DIR",default))
+    boost_dir = context.env.get("boostDir",os.getenv("BOOST_DIR",default))
     boost_is_found = False
     
     for inc_dir in ["", "include"]:
