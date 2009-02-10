@@ -332,17 +332,11 @@ def contains_zeros(tables, format_epsilon):
             debug("but it might slow down the runtime performance of your code!")
             debug("Do you take derivatives of a constant?\n")
 
-def unique_psi_tables(tensors, optimisation_level, format):
+def unique_psi_tables(tables, optimisation_level, format):
     "Determine if some tensors have the same tables (and same names)"
 
     # Get formats
     format_epsilon = format["epsilon"]
-
-    tables = {}
-
-    # Get the complete dictionary of tables
-    for tensor_number, tensor in enumerate(tensors):
-        tables.update(get_names_tables(tensor, tensor_number, format))
 
     # Get unique tables
     name_map, inverse_name_map = unique_tables(tables, format_epsilon)

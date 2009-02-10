@@ -1,6 +1,6 @@
 
-#element = FiniteElement("Lagrange", triangle, 1)
-element = VectorElement("Lagrange", triangle, 1)
+element = FiniteElement("Lagrange", triangle, 1)
+#element = VectorElement("Lagrange", triangle, 1)
 #element1 = FiniteElement("Lagrange", "triangle", 2)
 element1 = VectorElement("Lagrange", triangle, 1)
 
@@ -15,7 +15,7 @@ g = Function(element1)
 
 #a = v[0]*u[1]*dx
 
-a = dot(v,u)*dx# + f*v*dx
+#a = dot(v, u)*dx# + f*v*dx
 #a = inner(grad(v), f*grad(u))*dx
 #a = grad(v)[0]*u*dx
 #a = b*dx
@@ -25,7 +25,7 @@ a = dot(v,u)*dx# + f*v*dx
 
 #a = v*2*u*dx# + inner(grad(f), grad(v))*u*dx
 #a = inner(v, u)*dx# + inner(grad(f), grad(v))*u*dx
-#a = v*u*dx + f*v*u*dx# + f*inner(grad(v), grad(u))*dx
+a = v*u*dx + f*v*u*dx# + f*inner(grad(v), grad(u))*dx
 #a = (g + f)*v*u*dx# + f*inner(grad(v), grad(u))*dx
 #a = 0.5*v*u*dx - 0.5*v*u*dx
 #a = inner(v, u)*dx

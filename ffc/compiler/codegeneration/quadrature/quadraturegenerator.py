@@ -199,8 +199,12 @@ class QuadratureGenerator(CodeGenerator):
                                                  Indent, format)
 
         # Tabulate values of basis functions and their derivatives at
-        # quadrature points, get dictionary of unique tables, and the name_map
-        psi_name_map, psi_tables = unique_psi_tables(tensors,\
+        # quadrature points: Get the complete dictionary of tables,
+        # get dictionary of unique tables, and the name_map
+        tables = {}
+        for tensor_number, tensor in enumerate(tensors):
+            tables.update(get_names_tables(tensor, tensor_number, format))
+        psi_name_map, psi_tables = unique_psi_tables(tables,\
                                                      self.optimise_level, format)
         tabulate_code += self.__tabulate_psis(psi_tables, psi_name_map,\
                                               Indent, format)

@@ -64,14 +64,20 @@ class QuadratureRepresentation:
         # Save useful constants
         self.geometric_dimension = form_data.geometric_dimension
 
-        # Set number of specified quadrature points
-        self.num_user_specified_quad_points = num_quadrature_points
+        # Set number of specified quadrature points. This value can be set from
+        # the command line and is valid for ALL forms in the form file. Default
+        # value is zero. It might be obsolete given UFL's capability of
+        # specifying the number of points as meta-data of the integral in the
+        # forms.
+        self.num_quad_points = num_quadrature_points
 
         # Initialise tables
-        self.psi_tables = {}
+        self.psi_tables = {UFLIntegral.CELL:{},
+                           UFLIntegral.EXTERIOR_FACET: {},
+                           UFLIntegral.INTERIOR_FACET: {}}
         self.quadrature_weights = {}
 
-        print "\nQR, form:\n", form
+        print "\nQR, init, form:\n", form
 
         # Get relevant cell integrals
         cell_integrals = [i for i in form.cell_integrals() if\
@@ -131,10 +137,11 @@ class QuadratureRepresentation:
 #        print "compound expansion of integrand"
 #        print expand_compounds(integrand)
 
-        # FIXME: The quad_order from form_data is very wrong
+        # FIXME: The quad_order from form_data is very wrong. The number of
+        # quadrature points should be determined for each individual integral.
         self.__tabulate(cell_integrals, form_data.quad_order)
-        print "\npsi_tables:", self.psi_tables
-        print "\nquadrature_weights:", self.quadrature_weights
+        print "\nQR, init, psi_tables:\n", self.psi_tables
+        print "\nQR, init, quadrature_weights:\n", self.quadrature_weights
         # Compute representation of cell tensor
 #        self.cell_tensor = self.__compute_cell_tensor(form)
         
@@ -150,28 +157,29 @@ class QuadratureRepresentation:
         # FIXME: Get polynomial order for each term, not just one value for
         # entire form, take into account derivatives
         num_points = (order + 1 + 1) / 2 # integer division gives 2m - 1 >= q
-        if self.num_user_specified_quad_points:
-            num_points = self.num_user_specified_quad_points
+        if self.num_quad_points:
+            num_points = self.num_quad_points
+        self.num_quad_points = num_points
 
         # The integral type is the same for ALL integrals
         integral_type = integrals[0].domain_type()
-        print "QR, tabulate, integral_type: ", integral_type
+        print "\nQR, tabulate, integral_type:\n", integral_type
 
         # Get all unique elements in integrals and convert to list
         elements = set()
         for i in integrals:
             elements = elements | extract_unique_elements(i)
         elements = list(elements)
-        print "\nQR, unique elements:\n", elements
+        print "\nQR, tabulate, unique elements:\n", elements
         fiat_elements = [self.__create_fiat_elements(e) for e in elements]
-        print "\nQR, unique fiat elements:\n", fiat_elements
+        print "\nQR, tabulate, unique fiat elements:\n", fiat_elements
 
         # Get shape (check first one, all should be the same)
         # FIXME: Does this still hold true? At least implement check
         shape = fiat_elements[0].cell_shape()
         facet_shape = fiat_elements[0].facet_shape()
-        print "shape: ", shape
-        print "facet_shape: ", facet_shape
+#        print "shape: ", shape
+#        print "facet_shape: ", facet_shape
         # Make quadrature rule
         # FIXME: need to make different rules for different terms, depending
         # on order
@@ -181,10 +189,15 @@ class QuadratureRepresentation:
         elif integral_type == UFLIntegral.EXTERIOR_FACET or integral_type == UFLIntegral.INTERIOR_FACET:
             (points, weights) = make_quadrature(facet_shape, num_points)
 
-        print "\npoints: ", points
-        print "\nweights: ", weights
+#        print "\npoints: ", points
+#        print "\nweights: ", weights
         # Add rules to dict
-        self.quadrature_weights[integral_type] = {len(weights): weights}
+        len_weights = len(weights)
+        self.quadrature_weights[integral_type] = {len_weights: weights}
+
+        # Add the number of points to the psi tables dictionary
+        self.psi_tables[integral_type] = {len_weights: {}}
+
 
         # FIXME: This is most likely not the best way to get the highest
         # derivative of an element
@@ -211,21 +224,19 @@ class QuadratureRepresentation:
                 deriv_order = num_derivatives[elements[i]]
             # Tabulate for different integral types
             if integral_type == Integral.CELL:
-                self.psi_tables[(element, None)] = element.tabulate(deriv_order, points)
+                self.psi_tables[integral_type][len_weights][(element, None)] =\
+                                          element.tabulate(deriv_order, points)
 
         return
 
     def __create_fiat_elements(self, ufl_e):
 
         if isinstance(ufl_e, VectorElement):
-            print "Vector"
             return FIATVectorElement(ufl_e.family(), ufl_e.cell().domain(), ufl_e.degree(), len(ufl_e.sub_elements()))
         elif isinstance(ufl_e, MixedElement):
-            print "Mixed"
             sub_elems = [self.__create_fiat_elements(e) for e in ufl_e.sub_elements()]
             return FIATMixedElement(sub_elems)
         elif isinstance(ufl_e, FiniteElement):
-            print "Finite"
             return FIATFiniteElement(ufl_e.family(), ufl_e.cell().domain(), ufl_e.degree())
         # Element type not supported (yet?) TensorElement will trigger this.
         else:
