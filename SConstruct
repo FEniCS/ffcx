@@ -94,7 +94,8 @@ file = open(pkg_config_file, "w")
 file.write("Name: UFC\n")
 file.write("Version: %d.%d\n" % (major, minor))
 file.write("Description: Unified Form-assembly Code\n")
-file.write("Cflags: -I%s\n" % normpath(env.subst(env["includeDir"])))
+file.write("Cflags: -I%s\n" % \
+           repr(normpath(env.subst(env["includeDir"])))[1:-1])
 file.close()
 
 # Set up installation targets
