@@ -154,8 +154,8 @@ class QuadratureRepresentation:
     def __tabulate(self, integrals, order):
         "Tabulate the basisfunctions and derivatives."
 
-        # FIXME: Get polynomial order for each term, not just one value for
-        # entire form, take into account derivatives
+        # FIXME: Get polynomial order for each term and integral, not just one
+        # value for entire form, take into account derivatives
         num_points = (order + 1 + 1) / 2 # integer division gives 2m - 1 >= q
         if self.num_quad_points:
             num_points = self.num_quad_points

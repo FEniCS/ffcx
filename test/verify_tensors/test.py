@@ -25,8 +25,8 @@ def main(argv):
 
     # Get command-line arguments
     try:
-        opts, args = getopt.getopt(argv, "hnr:t:", \
-        ["help", "new_references", "representation=", "tolerance="])
+        opts, args = getopt.getopt(argv, "hnr:t:T:", \
+        ["help", "new_references", "representation=", "tolerance=", "type="])
     except getopt.GetoptError:
         usage()
         return 2
@@ -37,7 +37,8 @@ def main(argv):
     # Default options
     tolerance = 1e-14
     new_references = False
-    form_files = []
+    form_types = ["form", "ufl", "all"]
+    form_type = "form"
 
     # Get options
     for opt, arg in opts:
@@ -57,6 +58,12 @@ def main(argv):
             try:
                 tolerance = float(arg)
             except: usage()
+        elif opt in  ("-T", "--type"):
+            if arg in form_types:
+                form_type = arg
+            else:
+                usage()
+                return 2
         else:
             usage()
             return 2
@@ -69,7 +76,8 @@ def main(argv):
     print "Done"
     print "\n====================================================================\n"
 
-    test_options = {"tolerance":tolerance, "new_references":new_references, "form_files":args}
+    test_options = {"tolerance":tolerance, "new_references":new_references,
+                    "form_files":args, "form_type": form_type}
     # Run tests and get summary
     summary = {}
     for representation in representations:
@@ -103,7 +111,12 @@ def run_tests(test_options):
     # Get form files from user and demo directory
     form_files = test_options["form_files"]
     chdir("../../demo")
-    demo_files = [f for f in listdir(".") if f[-5:] == ".form"]
+    form_type = test_options["form_type"]
+    demo_files = []
+    if form_type == "form" or form_type == "all":
+        demo_files += [f for f in listdir(".") if f[-5:] == ".form"]
+    if form_type == "ufl" or form_type == "all":
+        demo_files += [f for f in listdir(".") if f[-4:] == ".ufl"]
     chdir("../test/verify_tensors")
 
     # If not form files are specified, check all in demo directory
@@ -283,18 +296,18 @@ def verify_form(form_file, form_type, form, forms_not_compiled_ok, forms_not_com
         pass
 
     norm = 1.0
-    try:
+#    try:
         # Compute norm of tensor compared to reference and compare to tolerance
-        norm = compute_norm(compiled_form, form_data, form_file.replace(".form", "") + "_" + form_type, test_options)
-        print "\nNorm for %s, %s: " %(form_file, form_type) , norm
-        if norm > test_options["tolerance"]:
-            forms_not_compared_ok.append((form_file + ", " + form_type + ":", norm))
-            norm_ok = False
-    except:
+    norm = compute_norm(compiled_form, form_data, form_file.replace(".form", "") + "_" + form_type, test_options)
+    print "\nNorm for %s, %s: " %(form_file, form_type) , norm
+    if norm > test_options["tolerance"]:
+        forms_not_compared_ok.append((form_file + ", " + form_type + ":", norm))
         norm_ok = False
-        forms_not_compared_ok.append((form_file, norm))
-        print "An error occured while computing norm"
-        pass
+#    except:
+#        norm_ok = False
+#        forms_not_compared_ok.append((form_file, norm))
+#        print "An error occured while computing norm"
+#        pass
 
     return (ok_compile, norm_ok)
 
@@ -339,11 +352,13 @@ def compute_norm(compiled_form, form_data, file_name, test_options):
         dof_maps[i] = compiled_form.create_dof_map(i)
         dof_maps[i].init_mesh(mesh)
 
+    print "HERE2"
     # Get number of integrals for given form
     num_cell_integrals = compiled_form.num_cell_integrals()
     num_exterior_facet_integrals = compiled_form.num_exterior_facet_integrals()
     num_interior_facet_integrals = compiled_form.num_interior_facet_integrals()
 
+    print "HERE3"
     # Simple coefficient generator
     w = [0]*form_data.num_coefficients
     for i in range(form_data.num_coefficients):
@@ -356,17 +371,19 @@ def compute_norm(compiled_form, form_data, file_name, test_options):
         for j in range(2*dof_maps[rank+i].local_dimension()):
             macro_w[i][j] = 1.111 + (i + j)/1.111
 
+    print "HERE1"
     A = numpy.array([0.0])
     # Add contributions from ALL domains from cell integrals
     if num_cell_integrals:
         domain = 0
         # Get shape of A and reset values
-        try:
-            A = numpy.array(ufc_benchmark.tabulate_cell_integral(compiled_form, w, cell, domain))
-            A = numpy.zeros(numpy.shape(A))
-            for domain in range(num_cell_integrals):
-                A += ufc_benchmark.tabulate_cell_integral(compiled_form, w, cell, domain)
-        except: print "*** An error occured while calling tabulate_foo_integral(), returning norm = 1.0"; return 1.0
+#        try:
+        print "compiled form: ", compiled_form
+        A = numpy.array(ufc_benchmark.tabulate_cell_integral(compiled_form, w, cell, domain))
+        A = numpy.zeros(numpy.shape(A))
+        for domain in range(num_cell_integrals):
+            A += ufc_benchmark.tabulate_cell_integral(compiled_form, w, cell, domain)
+#        except: print "*** An error occured while calling tabulate_foo_integral(), returning norm = 1.0"; return 1.0
 
     # Add contributions from ALL domains and facets from exterior integrals
     if num_exterior_facet_integrals:
@@ -380,6 +397,7 @@ def compute_norm(compiled_form, form_data, file_name, test_options):
                     A += ufc_benchmark.tabulate_exterior_facet_integral(compiled_form, w, cell, facet, domain)
         except: print "*** An error occured while calling tabulate_foo_integral(), returning norm = 1.0"; return 1.0
 
+    print "HERE1"
     # Add contributions from ALL domains and facets from interior integrals
     # FIXME: this currently makes no sense (integrating interior facets on 1 cell)
     #        but it should be OK since we just compare numbers.
@@ -404,6 +422,7 @@ def compute_norm(compiled_form, form_data, file_name, test_options):
             for j in range(dims[1]):
                 macro_A[i][j] += A[i][j]
 
+    print "HERE1"
 #    A = ufc_benchmark.tabulate_cell_tensor(compiled_form, w, 0)
 #    print "A = \n" + "\n".join(("  ".join("%15.8e" % aa for aa in a) for a in macro_A)) + "\n"
 
@@ -435,6 +454,7 @@ def compute_norm(compiled_form, form_data, file_name, test_options):
             print "*** Warning: reference tensor only contains zeros!"
         pickle.dump(macro_A, f)
         f.close()
+    print "HERE1"
 
     return norm
 
@@ -494,6 +514,11 @@ def usage():
                              the norm between tensor being computed and those
                              in the ./references directory
 
+  -T, --type              specify which type of forms to test. Can be either
+                          the 'native' FFC i.e. 'form' (default), UFL i.e.
+                          'ufl' or both types i.e. 'all'. E.g.,
+
+                          ./test.py -T ufl
 """
     return
 

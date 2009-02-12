@@ -106,7 +106,6 @@ class QuadratureGenerator:
         """Generate dictionary of code for cell integral from the given
         form representation according to the given format"""
 
-        return {"tabulate_tensor": [], "members": []}
         # Object to control the code indentation
         Indent = IndentControl()
 
@@ -118,7 +117,7 @@ class QuadratureGenerator:
 
         # Generate element code + set of used geometry terms
         element_code, members_code, trans_set, num_ops =\
-          self.__generate_element_tensor(form_representation, integral, None,\
+          self.__generate_element_tensor(form_representation, psi_tables, integral, None,\
                                          None, Indent, format)
 
         # Get Jacobian snippet
@@ -235,7 +234,7 @@ class QuadratureGenerator:
 #        return {"tabulate_tensor": (common, cases), "constructor":"// Do nothing", "members":members_code}
         return {"tabulate_tensor": ([], []), "constructor":"// Do nothing", "members":[]}
 
-    def __generate_element_tensor(self, form_representation, integral, facet0,\
+    def __generate_element_tensor(self, form_representation, psi_tables, integral, facet0,\
                                         facet1, Indent, format):
         "Construct quadrature code for element tensors"
 
@@ -256,7 +255,6 @@ class QuadratureGenerator:
         element_code     = []
         trans_set        = set()
         tensor_ops_count = 0
-
 
         # Since the form_representation holds common tables for all integrals,
         # I need to keep track of which tables are actually used and then only
@@ -287,6 +285,11 @@ class QuadratureGenerator:
         print "\nQG, generate_element_tensor, expand_compounds(integral):\n",
         expand_compounds(integral.integrand()).__repr__()
 
+        # FIXME: The weights will be different once we determinen them for each
+        # subdomain (and possibly terms on this subdomain). For now, we just
+        # have one table per integral type, so tabulate it.
+        weight_tables = form_representation.quadrature_weights[integral.domain_type()]
+        weights_used = [points]
 
 
         # Generate all terms for the given number of quadrature points
@@ -332,8 +335,8 @@ class QuadratureGenerator:
 #        # Tabulate weights at quadrature points, get name-map if some tables
 #        # are redundant
 #        weight_name_map, weight_tables = unique_weight_tables(tensors, format)
-#        tabulate_code += self.__tabulate_weights(weight_tables, weight_name_map,\
-#                                                 Indent, format)
+        tabulate_code += self.__tabulate_weights(weight_tables, weights_used,\
+                                                 Indent, format)
 
 #        # Tabulate values of basis functions and their derivatives at
 #        # quadrature points, get dictionary of unique tables, and the name_map
@@ -370,9 +373,9 @@ class QuadratureGenerator:
                 trans_set, tensor_ops_count)
 
 
-    def __tabulate_weights(self, tables, name_map, Indent, format):
+    def __tabulate_weights(self, weight_tables, weights_used, Indent, format):
         "Generate table of quadrature weights"
-        
+
         # Prefetch formats to speed up code generation
         format_comment  = format["comment"]
         format_float    = format["floating point"]
@@ -382,35 +385,24 @@ class QuadratureGenerator:
         format_weight   = format["weight"]
         format_array    = format["array access"]
 
-        code = []
+        code = [Indent.indent(format_comment("Array of quadrature weights"))]
 
         # Loop tables of weights and create code
-        for tensor_number, weights in tables.items():
+        for points in weights_used:
+            weights = weight_tables[points]
 
-            # Continue if we don't have any weights
+            # For now, raise error if we don't have weights. We might want to
+            # change this later
             if not weights.any():
-                continue
+                raise RuntimeError(weights, "No weights")
 
             # Create name and value
-            name = format_table + format_weight(tensor_number)
+            name = format_table + format_weight(points)
             value = format_float(weights[0])
             if len(weights) > 1:
-                name += format_array(str(len(weights)))
+                name += format_array(str(points))
                 value = format_block(format_sep.join([format_float(w)\
                                                       for w in weights]))
-
-            if tensor_number in name_map:
-                # Get the list of tensors that this weight is valid for
-                tw = [tensor_number] + name_map[tensor_number]
-                tw.sort()
-                code += [Indent.indent(format_comment\
-                    ("Array of quadrature weights (tensor/monomial terms %s)"\
-                      %(str(tuple(tw)))))]
-            else:
-                code += [Indent.indent(format_comment\
-                    ("Array of quadrature weights (tensor/monomial term %d)"\
-                      %(tensor_number,) ))]
-
             code += [(Indent.indent(name), value)]
 
         return code
