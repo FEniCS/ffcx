@@ -1,5 +1,5 @@
 """This is the compiler, acting as the main interface for compilation
-of forms and breaking the compilation into several sequential phases:
+of forms and breaking the compilation into several sequential stage:
 
    0. language        -  expressing the form in the form language (UFL)
    1. analysis        -  simplifying and preprocessing the form (UFL)
@@ -20,8 +20,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # UFL modules
 from ufl.classes import Form, FiniteElementBase
-from ufl.algorithms import FormData, is_multilinear, validate_form
-from ufl.log import set_level as ufl_loglevel
+from ufl.algorithms import FormData, is_multilinear
 
 # FFC common modules
 from ffc.common.log import debug, info, warning, error, begin, end, set_level, INFO
@@ -33,11 +32,7 @@ from ffc.common.constants import FFC_OPTIONS
 #from ffc.fem.mixedelement import *
 #from ffc.fem.mixedfunctions import *
 
-# FFC language modules
-#from language.algebra import *
-
-# FFC analysis modules
-#from analysis.analyze import *
+# FIXME: Remove this
 from analysis.formdata import FormData as FFCFormData
 
 # FFC form representation modules
@@ -67,22 +62,24 @@ def compile(objects, prefix="Form", options=FFC_OPTIONS):
 
     # Extract forms and elements
     (forms, elements) = _extract_objects(objects)
-    if len(forms + elements) == 0:
+    if len(forms) + len(elements) == 0:
         info("No forms or elements specified, nothing to do.")
         return
 
     # Compile forms
     #(form_data, form_representation) = _compile_forms(forms, prefix, options)
     if len(forms) > 0:
-        _compile_forms(forms, prefix, options)
+        compile_forms(forms, prefix, options)
 
     # Compile elements
-    #_compile_elements(elements, prefix, options)
-    #_compile_elements(elements, prefix, options)
-#    return (form_data, form_representation)
+    #if len(elements) > 0:
+    #    compile_elements(elements, prefix, options)
 
-def _compile_forms(forms, prefix, options):
+    #    return (form_data, form_representation)
+
+def compile_forms(forms, prefix, options):
     "Compile the given forms."
+    # FIXME: Make format a class
 
     # Choose format
     format = _choose_format(options)
@@ -94,9 +91,9 @@ def _compile_forms(forms, prefix, options):
 #    form_representations = []
     for form in forms:
 
-        # Compiler phase 1: analyze form
+        # Compiler stage 1: analyze form
         form_data = analyze_form(form)
-#        form_datas += [form_data]
+        #form_datas += [form_data]
 
         # Representations on subdomains
         # FIXME: We can support different representations on individual
@@ -120,17 +117,17 @@ def _compile_forms(forms, prefix, options):
 
         print "domain_representations:\n", domain_representations
 
-        # Compiler phase 2: compute form representation
+        # Compiler stage 2: compute form representation
         tensor_representation, quadrature_representation =\
             compute_form_representation(form_data, domain_representations, options)
 
 #        form_representation = compute_form_representation(form_data, options)
 #        form_representations += [form_representation]
 
-        # Compiler phase 3: optimize form representation
+        # Compiler stage 3: optimize form representation
         #optimize_form_representation(form)
 
-        # Compiler phase 4: generate form code
+        # Compiler stage 4: generate form code
         #form_code = generate_form_code(form_data, form_representation, options["representation"], format.format)
         ffc_form_data = FFCFormData(None, ufl_form_data=form_data)
         form_code = generate_form_code(ffc_form_data, tensor_representation,\
@@ -139,30 +136,28 @@ def _compile_forms(forms, prefix, options):
         # Add to list of codes
         generated_forms += [(form_code, ffc_form_data)]
 
-    # Compiler phase 5: format code
+    # Compiler stage 5: format code
     format_code(generated_forms, prefix, format, options)
 
     return
 #    return (form_datas, form_representations)
 
-def __compile_elements(elements, prefix="Element", options=FFC_OPTIONS):
+def compile_elements(elements, prefix="Element", options=FFC_OPTIONS):
     "Compile the given elements for the given language"
 
     # Check input
     if len(forms) == 0:
         return
 
-    
-
-    # Compiler phase 1: analyze form
-    begin("Compiler phase 1: Analyzing elements")
+    # Compiler stage 1: analyze form
+    begin("Compiler stage 1: Analyzing elements")
     element_data = ElementData(elements)
     end()
 
-    # Go directly to phase 4, code generation
-    begin("Compiler phase 2-3: Nothing to do")
+    # Go directly to stage 4, code generation
+    begin("Compiler stage 2-3: Nothing to do")
     end()
-    begin("Compiler phase 4: Generating code")
+    begin("Compiler stage 4: Generating code")
 
     # Choose format
     format = __choose_format(options)
@@ -175,26 +170,23 @@ def __compile_elements(elements, prefix="Element", options=FFC_OPTIONS):
     # Generate code
     element_code = code_generator.generate_element_code(element_data, format.format)
 
-    # Compiler phase 5: format code
+    # Compiler stage 5: format code
     end()
-    begin("Compiler phase 5: Formatting code")
+    begin("Compiler stage 5: Formatting code")
     format.write([(element_code, element_data)], prefix, options)
     end()
     
 def analyze_form(form):
-    "Compiler phase 1: analyze form"
-    begin("Phase 1: Analyzing form")
-    print "Form: ", form
-    validate_form(form)
-    print "Finished validating"
+    "Analyze form (compiler stage 1)."
+    begin("Stage 1: Analyzing form")
     form_data = FormData(form)
     info(str(form_data))
     end()
     return form_data
 
 def compute_form_representation(form_data, domain_representations, options):
-    "Compiler phase 2: compute form representation"
-    begin("Compiler phase 2: Computing form representation")
+    "Compute form representation (compilerstage 2)."
+    begin("Compiler stage 2: Computing form representation")
 
     # Choose representation
 #    Representation = _choose_representation(form_data.form, options)
@@ -210,16 +202,16 @@ def compute_form_representation(form_data, domain_representations, options):
 #    return (tensor, quadrature)
     
 def optimize_form_representation(form):
-    "Compiler phase 3: optimize form representation"
-    begin("Compiler phase 3: Computing optimization")
+    "Optimize form representation (compiler stage 3)."
+    begin("Compiler stage 3: Computing optimization")
 
     info("Optimization currently broken (to be fixed).")
 
     end()
 
 def generate_form_code(form_data, tensor_representation, quadrature_representation, domain_representations, format):
-    "Compiler phase 4: generate code"
-    begin("Compiler phase 4: Generating code")
+    "Generate form code (compiler stage 4)."
+    begin("Compiler stage 4: Generating code")
 
     tensor_generator = None
     quadrature_generator = None
@@ -255,8 +247,8 @@ def generate_form_code(form_data, tensor_representation, quadrature_representati
     return code
 
 def format_code(generated_forms, prefix, format, options):
-    "Compiler phase 5: format code"
-    begin("Compiler phase 5: Formatting code")
+    "Format code (compiler stage 5)."
+    begin("Compiler stage 5: Formatting code")
 
     format.write(generated_forms, prefix, options)
 
@@ -329,6 +321,12 @@ def _choose_representation(form, options):
         raise RuntimeError, 'Unknown form representation: "%s"' % option
 
 def __choose_code_generator(form_representation):
+    "Choose code generator"
+
+    if form_representation == "tensor":
+        return TensorGenerator
+    else:
+        return UFLQuadratureGenerator
     "Choose code generator"
 
     if form_representation == "tensor":
