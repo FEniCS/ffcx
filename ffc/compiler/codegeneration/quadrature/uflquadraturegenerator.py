@@ -35,7 +35,7 @@ from ffc.compiler.codegeneration.common.evaluatebasis import IndentControl
 
 # Utility and optimisation functions for quadraturegenerator
 from quadraturegenerator_utils import generate_loop
-from uflquadraturegenerator_utils import generate_code, create_psi_tables
+from uflquadraturegenerator_utils import generate_code, BasisTables
 #from quadraturegenerator_optimisation import *
 #import reduce_operations
 
@@ -58,6 +58,7 @@ class QuadratureGenerator:
         # Initialize common code generator
 #        CodeGenerator.__init__(self)
         self.optimise_level = 0
+        self.basis_tables = BasisTables()
 
     def generate_cell_integrals(self, form_representation, format):
         code = {}
@@ -65,16 +66,14 @@ class QuadratureGenerator:
             return code
 
         # Pre-process the psi tables to get the unique tables and a name map.
-        name_map, psi_tables = create_psi_tables(form_representation.psi_tables[UFLIntegral.CELL],\
+        self.basis_tables.update(form_representation.psi_tables[UFLIntegral.CELL],\
                                                  self.optimise_level, format)
-        print "\nQG, generate_cell_integral, psi_tables:\n", psi_tables
-        print "\nQG, generate_cell_integral, name_map:\n", name_map
 
         # Generate code for cell integral
         debug("Generating code for cell integrals using quadrature representation...")
         for integral in form_representation.cell_integrals:
             code[("cell_integral", integral.domain_id())] =\
-                 self.generate_cell_integral(form_representation, integral, psi_tables, format)
+                 self.generate_cell_integral(form_representation, integral, format)
         debug("done")
         return code
 
@@ -102,7 +101,7 @@ class QuadratureGenerator:
         debug("done")
         return code
 
-    def generate_cell_integral(self, form_representation, integral, psi_tables, format):
+    def generate_cell_integral(self, form_representation, integral, format):
         """Generate dictionary of code for cell integral from the given
         form representation according to the given format"""
 
@@ -117,7 +116,7 @@ class QuadratureGenerator:
 
         # Generate element code + set of used geometry terms
         element_code, members_code, trans_set, num_ops =\
-          self.__generate_element_tensor(form_representation, psi_tables, integral, None,\
+          self.__generate_element_tensor(form_representation, integral, None,\
                                          None, Indent, format)
 
         # Get Jacobian snippet
@@ -234,7 +233,7 @@ class QuadratureGenerator:
 #        return {"tabulate_tensor": (common, cases), "constructor":"// Do nothing", "members":members_code}
         return {"tabulate_tensor": ([], []), "constructor":"// Do nothing", "members":[]}
 
-    def __generate_element_tensor(self, form_representation, psi_tables, integral, facet0,\
+    def __generate_element_tensor(self, form_representation, integral, facet0,\
                                         facet1, Indent, format):
         "Construct quadrature code for element tensors"
 
@@ -243,6 +242,8 @@ class QuadratureGenerator:
         format_ip           = format["integration points"]
         format_G            = format["geometry tensor"]
         format_const_float  = format["const float declaration"]
+        format_weight       = format["weight"]
+        format_scale_factor = format["scale factor"]
 
         # Initialise return values.
         # FIXME: The members_code was used when I generated the load_table.h
@@ -253,8 +254,12 @@ class QuadratureGenerator:
         members_code     = ""
         tabulate_code    = []
         element_code     = []
+        weights_set      = set()
         trans_set        = set()
         tensor_ops_count = 0
+
+        # Extract table information
+#        element_map, name_map, psi_tables = table_info
 
         # Since the form_representation holds common tables for all integrals,
         # I need to keep track of which tables are actually used and then only
@@ -274,23 +279,19 @@ class QuadratureGenerator:
         # Generate code to evaluate tensor
         # FIXME: Get the number of points from the integral itself, see note
         # in the representation (__tabulate()). For now, just multiply the
-        # number of points with the axis dimension of the basisfunction
-        # (although I think they should be the same for all elements in an
-        # integral).
-        axis = extract_elements(extract_basisfunctions(integral.integrand())[0])[0].cell().dim()
-        points = form_representation.num_quad_points*axis
-        ip_code = [Indent.indent(format_comment\
+        # number of points with the axis dimension of the first element of the
+        # integral (which I think should be the same).
+        axis = extract_elements(integral.integrand())[0].cell().d
+        points = form_representation.num_quad_points**axis
+        ip_code = ["", Indent.indent(format_comment\
             ("Loop quadrature points for integral: %s" % str(integral)))]
-
-        print "\nQG, generate_element_tensor, expand_compounds(integral):\n",
-        expand_compounds(integral.integrand()).__repr__()
 
         # FIXME: The weights will be different once we determinen them for each
         # subdomain (and possibly terms on this subdomain). For now, we just
         # have one table per integral type, so tabulate it.
         weight_tables = form_representation.quadrature_weights[integral.domain_type()]
         weights_used = [points]
-
+        print "weight tables: ", weight_tables
 
         # Generate all terms for the given number of quadrature points
 #            terms, t_set = generate_terms(points, group_tensors[points], tensors, format, psi_name_map,
@@ -299,9 +300,12 @@ class QuadratureGenerator:
 #            trans_set = trans_set | t_set
 
         # Generate code for all terms according to optimisation level
-        terms_code, num_ops = generate_code({}, {}, self.optimise_level, Indent, format)
-        num_ops = 0
-        integral_code = []
+        integral_code, num_ops, w_set, t_set =\
+            generate_code(integral.integrand(), self.basis_tables, points,\
+                          self.optimise_level, Indent, format)
+
+        weights_set.update(w_set)
+        trans_set.update(t_set)
 
         # Get number of operations to compute entries for all terms when
         # looping over all IPs and update tensor count
@@ -335,15 +339,13 @@ class QuadratureGenerator:
 #        # Tabulate weights at quadrature points, get name-map if some tables
 #        # are redundant
 #        weight_name_map, weight_tables = unique_weight_tables(tensors, format)
-        tabulate_code += self.__tabulate_weights(weight_tables, weights_used,\
+        tabulate_code += self.__tabulate_weights(weight_tables, weights_set,\
                                                  Indent, format)
 
-#        # Tabulate values of basis functions and their derivatives at
-#        # quadrature points, get dictionary of unique tables, and the name_map
-#        psi_name_map, psi_tables = unique_psi_tables(tensors,\
-#                                                     self.optimise_level, format)
-#        tabulate_code += self.__tabulate_psis(psi_tables, psi_name_map,\
-#                                              Indent, format)
+        # Tabulate values of basis functions and their derivatives.
+        # Use the meta class BasisTables to only tabulate those basis that are
+        # actually used
+        tabulate_code += self.__tabulate_psis(Indent, format)
 
 
 #        # Tabulate geometry code, sort according to number
@@ -373,11 +375,10 @@ class QuadratureGenerator:
                 trans_set, tensor_ops_count)
 
 
-    def __tabulate_weights(self, weight_tables, weights_used, Indent, format):
+    def __tabulate_weights(self, weight_tables, used_weights, Indent, format):
         "Generate table of quadrature weights"
 
         # Prefetch formats to speed up code generation
-        format_comment  = format["comment"]
         format_float    = format["floating point"]
         format_table    = format["table declaration"]
         format_block    = format["block"]
@@ -385,14 +386,14 @@ class QuadratureGenerator:
         format_weight   = format["weight"]
         format_array    = format["array access"]
 
-        code = [Indent.indent(format_comment("Array of quadrature weights"))]
+        code = ["", Indent.indent(format["comment"]("Array of quadrature weights"))]
 
         # Loop tables of weights and create code
-        for points in weights_used:
+        for points in used_weights:
             weights = weight_tables[points]
 
-            # For now, raise error if we don't have weights. We might want to
-            # change this later
+            # FIXME: For now, raise error if we don't have weights.
+            # We might want to change this later
             if not weights.any():
                 raise RuntimeError(weights, "No weights")
 
@@ -403,11 +404,11 @@ class QuadratureGenerator:
                 name += format_array(str(points))
                 value = format_block(format_sep.join([format_float(w)\
                                                       for w in weights]))
-            code += [(Indent.indent(name), value)]
+            code += [(Indent.indent(name), value), ""]
 
         return code
 
-    def __tabulate_psis(self, tables, inv_name_map, Indent, format):
+    def __tabulate_psis(self, Indent, format):
         "Tabulate values of basis functions and their derivatives at quadrature points"
 
         # Prefetch formats to speed up code generation
@@ -422,6 +423,10 @@ class QuadratureGenerator:
         format_sep        = format["separator"]
 
         code = []
+        # FIXME: Check if we can simplify the tabulation
+
+        inv_name_map = self.basis_tables.name_map
+        tables = self.basis_tables.unique_tables
 
         # Get list of non zero columns with more than 1 column
         nzcs = [val[1] for key, val in inv_name_map.items()\
@@ -442,8 +447,10 @@ class QuadratureGenerator:
                     name_map[inv_name_map[name][0]] = [name]
 
         # Loop items in table and tabulate 
-        for name, vals in tables.items():
+#        for name, vals in tables.items():
+        for name in self.basis_tables.used_tables:
             # Only proceed if values are still used (if they're not remapped)
+            vals = tables[name]
             if not vals == None:
                 # Add declaration to name
                 ip, dofs = shape(vals)
@@ -492,7 +499,7 @@ class QuadratureGenerator:
         # Create FIAT elements for each basisfunction. There should be one and
         # only one element per basisfunction so it is OK to pick first.
         elements = [self.__create_fiat_elements(extract_elements(b)[0]) for b in basis]
-        print "\nQG, reset_element_tensor, Elements:\n", elements
+        #print "\nQG, reset_element_tensor, Elements:\n", elements
 
         # Create the index range for resetting the element tensor by
         # multiplying the element space dimensions

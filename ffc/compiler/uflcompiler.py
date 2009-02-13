@@ -20,7 +20,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # UFL modules
 from ufl.classes import Form, FiniteElementBase
-from ufl.algorithms import FormData, is_multilinear
+from ufl.algorithms import FormData, is_multilinear, validate_form
 
 # FFC common modules
 from ffc.common.log import debug, info, warning, error, begin, end, set_level, INFO
@@ -179,6 +179,7 @@ def compile_elements(elements, prefix="Element", options=FFC_OPTIONS):
 def analyze_form(form):
     "Analyze form (compiler stage 1)."
     begin("Stage 1: Analyzing form")
+    validate_form(form)
     form_data = FormData(form)
     info(str(form_data))
     end()

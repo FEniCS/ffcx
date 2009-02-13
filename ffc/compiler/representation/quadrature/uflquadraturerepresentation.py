@@ -78,6 +78,7 @@ class QuadratureRepresentation:
         self.quadrature_weights = {}
 
         print "\nQR, init, form:\n", form
+        print "\nQR, init, form.__repr__():\n", form.__repr__()
 
         # Get relevant cell integrals
         cell_integrals = [i for i in form.cell_integrals() if\
@@ -173,6 +174,9 @@ class QuadratureRepresentation:
         print "\nQR, tabulate, unique elements:\n", elements
         fiat_elements = [self.__create_fiat_elements(e) for e in elements]
         print "\nQR, tabulate, unique fiat elements:\n", fiat_elements
+        print "\nQR, tabulate, unique elements[0].value_shape():\n", elements[0].value_shape()
+        print "\nQR, tabulate, unique fiat_elements[0].rank():\n", fiat_elements[0].value_rank()
+
 
         # Get shape (check first one, all should be the same)
         # FIXME: Does this still hold true? At least implement check
@@ -224,7 +228,10 @@ class QuadratureRepresentation:
                 deriv_order = num_derivatives[elements[i]]
             # Tabulate for different integral types
             if integral_type == Integral.CELL:
-                self.psi_tables[integral_type][len_weights][(element, None)] =\
+#                self.psi_tables[integral_type][len_weights][(element, None)] =\
+#                                          element.tabulate(deriv_order, points)
+                # Create dictionary based on UFL elements
+                self.psi_tables[integral_type][len_weights][(elements[i], None)] =\
                                           element.tabulate(deriv_order, points)
 
         return
