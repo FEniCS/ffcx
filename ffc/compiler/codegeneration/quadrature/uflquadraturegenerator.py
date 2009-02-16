@@ -46,7 +46,7 @@ from ffc.compiler.format.removeunused import remove_unused
 from ufl.classes import FiniteElement, MixedElement, VectorElement, FiniteElementBase
 from ufl.algorithms.analysis import *
 from ufl.algorithms.transformations import *
-from ufl.integral import Integral as UFLIntegral
+from ufl.integral import Measure
 
 #class QuadratureGenerator(CodeGenerator):
 class QuadratureGenerator:
@@ -66,13 +66,13 @@ class QuadratureGenerator:
             return code
 
         # Pre-process the psi tables to get the unique tables and a name map.
-        self.basis_tables.update(form_representation.psi_tables[UFLIntegral.CELL],\
+        self.basis_tables.update(form_representation.psi_tables[Measure.CELL],\
                                                  self.optimise_level, format)
 
         # Generate code for cell integral
         debug("Generating code for cell integrals using quadrature representation...")
         for integral in form_representation.cell_integrals:
-            code[("cell_integral", integral.domain_id())] =\
+            code[("cell_integral", integral.measure().domain_id())] =\
                  self.generate_cell_integral(form_representation, integral, format)
         debug("done")
         return code
@@ -289,7 +289,7 @@ class QuadratureGenerator:
         # FIXME: The weights will be different once we determinen them for each
         # subdomain (and possibly terms on this subdomain). For now, we just
         # have one table per integral type, so tabulate it.
-        weight_tables = form_representation.quadrature_weights[integral.domain_type()]
+        weight_tables = form_representation.quadrature_weights[integral.measure().domain_type()]
         weights_used = [points]
         print "weight tables: ", weight_tables
 

@@ -109,11 +109,11 @@ def compile_forms(forms, prefix, options):
         domain_representations = {}
         # Simple generator for now
         for integral in form_data.form.cell_integrals():
-            domain_representations[(integral.domain_type(), integral.domain_id())] = options["representation"]
+            domain_representations[(integral.measure().domain_type(), integral.measure().domain_id())] = options["representation"]
         for integral in form_data.form.exterior_facet_integrals():
-            domain_representations[(integral.domain_type(), integral.domain_id())] = options["representation"]
+            domain_representations[(integral.measure().domain_type(), integral.measure().domain_id())] = options["representation"]
         for integral in form_data.form.interior_facet_integrals():
-            domain_representations[(integral.domain_type(), integral.domain_id())] = options["representation"]
+            domain_representations[(integral.measure().domain_type(), integral.measure().domain_id())] = options["representation"]
 
         print "domain_representations:\n", domain_representations
 
@@ -278,7 +278,7 @@ def _extract_objects(objects):
         elif isinstance(object, FiniteElementBase):
             elements.append(object)
         elif not object is None:
-            error("Not a form: " + str(form))
+            error("Not a form: " + str(object))
 
     # Only compile element(s) when there are no forms
     if len(forms) > 0 and len(elements) > 0:

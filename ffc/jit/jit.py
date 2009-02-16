@@ -24,6 +24,14 @@ from ffc.fem.mixedelement import MixedElement
 
 # FFC compiler modules
 from ffc.compiler.compiler import compile
+
+try:
+    from ffc.compiler.uflcompiler import compile as uflcompile
+    from ufl.classes import Form as UFLForm
+    from ufl.classes import FiniteElementBase
+except:
+    pass
+
 from ffc.compiler.language.algebra import Form, TestFunction
 from ffc.compiler.language.builtins import dx
 
@@ -33,6 +41,7 @@ from jitobject import JITObject
 # Special Options for JIT-compilation
 FFC_OPTIONS_JIT = FFC_OPTIONS.copy()
 FFC_OPTIONS_JIT["no-evaluate_basis_derivatives"] = True
+FFC_OPTIONS_JIT["compiler"] = "ffc"
 
 # Set debug level for Instant
 instant.set_logging_level("warning")
@@ -52,13 +61,20 @@ def jit(object, options=None):
     else:
         return jit_form(object, options)
 
+
 def jit_form(form, options=None):
     "Just-in-time compile the given form"
-    
-    # Make sure that we get a form
-    if not isinstance(form, Form):
-        form = Form(form)
-    
+
+    if options["compiler"] == "ffc":
+        # Make sure that we get a form
+        if not isinstance(form, Form):
+            form = Form(form)
+    elif options["compiler"] == "ufl":
+        if not isinstance(form, UFLForm):
+            form = UFLForm(form)
+    else:
+        raise RuntimeError("Unknown compiler.")
+
     # Check options
     options = check_options(form, options)
     
@@ -67,12 +83,19 @@ def jit_form(form, options=None):
     
     # Check cache
     module = instant.import_module(jit_object, cache_dir=options["cache_dir"])
-    if module: return extract_form(form, module)
+    if module: return extract_form(jit_object, module)
     
     # Generate code
     debug("Calling FFC just-in-time (JIT) compiler, this may take some time...", -1)
     signature = jit_object.signature()
-    compile(form, signature, options)
+
+    if options["compiler"] == "ffc":
+        compile(form, signature, options)
+    elif options["compiler"] == "ufl":
+        uflcompile(form, signature, options)
+    else:
+        raise RuntimeError(options["compiler"], "Unknown compiler.")
+
     debug("done", -1)
     
     # Wrap code into a Python module using Instant
@@ -101,7 +124,7 @@ def jit_form(form, options=None):
     os.unlink(filename)
     debug("done", -1)
 
-    return extract_form(form, module)
+    return extract_form(jit_object, module)
 
 def jit_element(element, options=None):
     "Just-in-time compile the given element"
@@ -149,9 +172,9 @@ def check_options(form, options):
 
     return options
 
-def extract_form(form, module):
+def extract_form(jit_object, module):
     "Extract form from module"
-    return (getattr(module, module.__name__)(), module, form.form_data)
+    return (getattr(module, module.__name__)(), module, jit_object.form_data)
 
 def extract_element_and_dofmap(module):
     "Extract element and dofmap from module"

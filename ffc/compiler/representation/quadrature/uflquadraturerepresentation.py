@@ -32,7 +32,7 @@ try:
     from ufl.algorithms.transformations import *
     from ufl.differentiation import SpatialDerivative
 
-    from ufl.integral import Integral as UFLIntegral
+    from ufl.integral import Measure
 except:
     pass
 
@@ -72,9 +72,9 @@ class QuadratureRepresentation:
         self.num_quad_points = num_quadrature_points
 
         # Initialise tables
-        self.psi_tables = {UFLIntegral.CELL:{},
-                           UFLIntegral.EXTERIOR_FACET: {},
-                           UFLIntegral.INTERIOR_FACET: {}}
+        self.psi_tables = {Measure.CELL:{},
+                           Measure.EXTERIOR_FACET: {},
+                           Measure.INTERIOR_FACET: {}}
         self.quadrature_weights = {}
 
         print "\nQR, init, form:\n", form
@@ -82,7 +82,7 @@ class QuadratureRepresentation:
 
         # Get relevant cell integrals
         cell_integrals = [i for i in form.cell_integrals() if\
-            domain_representations[(i.domain_type(), i.domain_id())] == "quadrature"]
+            domain_representations[(i.measure().domain_type(), i.measure().domain_id())] == "quadrature"]
 
         # Attach integrals
         self.cell_integrals = cell_integrals
@@ -163,7 +163,7 @@ class QuadratureRepresentation:
         self.num_quad_points = num_points
 
         # The integral type is the same for ALL integrals
-        integral_type = integrals[0].domain_type()
+        integral_type = integrals[0].measure().domain_type()
         print "\nQR, tabulate, integral_type:\n", integral_type
 
         # Get all unique elements in integrals and convert to list
@@ -188,9 +188,9 @@ class QuadratureRepresentation:
         # FIXME: need to make different rules for different terms, depending
         # on order
         # Create quadrature rule and get points and weights
-        if integral_type == UFLIntegral.CELL:
+        if integral_type == Measure.CELL:
             (points, weights) = make_quadrature(shape, num_points)
-        elif integral_type == UFLIntegral.EXTERIOR_FACET or integral_type == UFLIntegral.INTERIOR_FACET:
+        elif integral_type == Measure.EXTERIOR_FACET or integral_type == Measure.INTERIOR_FACET:
             (points, weights) = make_quadrature(facet_shape, num_points)
 
 #        print "\npoints: ", points
@@ -227,7 +227,7 @@ class QuadratureRepresentation:
             if num_derivatives:
                 deriv_order = num_derivatives[elements[i]]
             # Tabulate for different integral types
-            if integral_type == Integral.CELL:
+            if integral_type == Measure.CELL:
 #                self.psi_tables[integral_type][len_weights][(element, None)] =\
 #                                          element.tabulate(deriv_order, points)
                 # Create dictionary based on UFL elements

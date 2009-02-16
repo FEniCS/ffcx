@@ -16,9 +16,10 @@ import pickle
 import math
 import time
 
+from ffc.jit.jit import jit
 # Enable ffc without installation
-sys.path.append("../../")
-from ffc import *
+#sys.path.append("../../")
+#from ffc import *
 
 def main(argv):
     "Main function, handle arguments and run tests accordingly"
@@ -78,11 +79,20 @@ def main(argv):
 
     test_options = {"tolerance":tolerance, "new_references":new_references,
                     "form_files":args, "form_type": form_type}
+
+    # Print test options
+    print "\nThe following test options will be used"
+    print "====================================================================\n"
+    for o in test_options.items():
+        print o
+    print "representations: ", representations
+    print "\n====================================================================\n"
+
     # Run tests and get summary
     summary = {}
     for representation in representations:
         test_options["representation"] = representation
-        t = time.clock()
+#        t = time.clock()
         summary[representation] = run_tests(test_options)
 
     # Print summary for each test
@@ -161,6 +171,13 @@ def run_tests(test_options):
 
     # Iterate over form files
     for form_file in form_files:
+
+        # Get suffix and set compiler type
+        suffix = form_file.split(".")[-1]
+        if suffix == "ufl":
+            test_options["compiler"] = "ufl"
+        elif suffix == "form":
+            test_options["compiler"] = "ffc"
 
         print ""
         if not new_references:
@@ -244,18 +261,29 @@ def run_tests(test_options):
 def read_forms(demo_dir, form_file):
     "Read/construct forms in form file"
 
+    # Create the correct type of script
+    # Get filename suffix
+    suffix = form_file.split(".")[-1]
+    form_file = form_file.split(".")[0]
+    script = ""
+    # Check file suffix and parse file/generate module
+    if suffix == "ufl":
+        script = _make_script_ufl(path.join(demo_dir, form_file))
+    elif suffix == "form":
+        script = _make_script_form(path.join(demo_dir, form_file))
+
     # Initialise bilinear and linear forms
     a, L, M = (0, 0, 0)
     forms = {}
     read_ok = 0
-
     try:
         # FIXME: there must be a cleverer way of doing this....
         global_dict = globals()
         global_dict['a']= a
         global_dict['L']= L
         global_dict['M']= M
-        execfile(path.join(demo_dir, form_file), global_dict)
+        print ""
+        execfile(script, global_dict)
         for f in ['a','L','M']:
             if global_dict[f] != 0:
                 forms[f] = global_dict[f]
@@ -267,6 +295,57 @@ def read_forms(demo_dir, form_file):
         pass
 
     return (forms, read_ok)
+
+# New version for .ufl files
+def _make_script_ufl(filename):
+    "Create Python script from given .ufl file and return name of script"
+
+    print "Generating Python script for ", filename + ".ufl"
+    # Read input
+    infile = open(filename + ".ufl", "r")
+    input = infile.read()
+    infile.close()
+
+    script = filename + ".py"
+
+    # Generate output
+    output = """from ufl import *
+%s
+""" % input
+
+    # Write output
+    outfile = open(script, "w")
+    outfile.write(output)
+    outfile.close()
+
+    # Return script filename
+    return script
+
+# New version for .ufl files
+def _make_script_form(filename):
+    "Create Python script from given .ufl file and return name of script"
+
+    print "Generating Python script for ", filename + ".form"
+    # Read input
+    infile = open(filename + ".form", "r")
+    input = infile.read()
+    infile.close()
+
+    script = filename + ".py"
+
+    # Generate output
+    output = """from ffc import *
+%s
+""" % input
+
+    # Write output
+    outfile = open(script, "w")
+    outfile.write(output)
+    outfile.close()
+    print "script: ", script
+
+    # Return script filename
+    return script
 
 def verify_forms(form_file, forms, forms_not_compiled_ok, forms_not_compared_ok, test_options):
 
@@ -288,7 +367,7 @@ def verify_form(form_file, form_type, form, forms_not_compiled_ok, forms_not_com
 
     try:
         # Compile the form with jit
-        opt = {"representation":test_options["representation"], "cache_dir":"test_cache"}
+        opt = {"representation":test_options["representation"], "cache_dir":"test_cache", "compiler": test_options["compiler"]}
         (compiled_form, module, form_data) = jit(form, opt)
     except:
         ok_compile = False
@@ -318,9 +397,16 @@ def compute_norm(compiled_form, form_data, file_name, test_options):
 
     # Initialise variables
     norm = 0.0
-    rank = form_data.rank
-    cell_shape = form_data.cell_dimension
-    mesh, cell = (0, 0)
+    num_arguments, rank, cell_shape, mesh, cell = (0, 0, 0, 0, 0)
+
+    if test_options["compiler"] == "ffc":
+        rank = form_data.rank
+        cell_shape = form_data.cell_dimension
+        num_arguments = form_data.num_arguments
+    else:
+        rank = form_data.rank
+        cell_shape = form_data.geometric_dimension
+        num_arguments = form_data.num_coefficients + rank
 
     # FIXME: Can only handle, interval, triangle, tetrahedron
     # Random cells were generated by:
@@ -350,8 +436,8 @@ def compute_norm(compiled_form, form_data, file_name, test_options):
         return 1.0
 
     # Initialise dofmaps
-    dof_maps = [0]*form_data.num_arguments
-    for i in range(form_data.num_arguments):
+    dof_maps = [0]*num_arguments
+    for i in range(num_arguments):
         dof_maps[i] = compiled_form.create_dof_map(i)
         dof_maps[i].init_mesh(mesh)
 
