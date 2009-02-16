@@ -203,9 +203,9 @@ vector< vector<double> > tabulate_cell_tensor(const ufc::form & form, vector< ve
   return A;
 }
 
-std::vector< std::vector<double> > tabulate_cell_integral(const ufc::form& form, std::vector< std::vector<double> > w, ufc::cell cell, int domain)
+std::vector< std::vector<double> > tabulate_cell_integral(const boost::shared_ptr<ufc::form> form, std::vector< std::vector<double> > w, ufc::cell cell, int domain)
 {
-  ufc::ufc_data data(form);
+  ufc::ufc_data data(*form);
 
   // copy w to the appropriate array
   if(data.num_coefficients != w.size())
@@ -260,9 +260,9 @@ std::vector< std::vector<double> > tabulate_cell_integral(const ufc::form& form,
   return A;
 }
 
-std::vector< std::vector<double> > tabulate_exterior_facet_integral(const ufc::form& form, std::vector< std::vector<double> > w, ufc::cell& cell, int facet, int domain)
+std::vector< std::vector<double> > tabulate_exterior_facet_integral(const boost::shared_ptr<ufc::form> form, std::vector< std::vector<double> > w, ufc::cell& cell, int facet, int domain)
 {
-  ufc::ufc_data data(form);
+  ufc::ufc_data data(*form);
 
   // copy w to the appropriate array
   if(data.num_coefficients != w.size())
@@ -317,10 +317,10 @@ std::vector< std::vector<double> > tabulate_exterior_facet_integral(const ufc::f
   return A;
 }
 
-std::vector< std::vector<double> > tabulate_interior_facet_integral(const ufc::form& form, std::vector< std::vector<double> > macro_w,\
+std::vector< std::vector<double> > tabulate_interior_facet_integral(const boost::shared_ptr<ufc::form> form, std::vector< std::vector<double> > macro_w,\
                                                                     ufc::cell& cell0, ufc::cell& cell1, int facet0, int facet1, int domain)
 {
-  ufc::ufc_data data(form);
+  ufc::ufc_data data(*form);
 
   // copy w to the appropriate array
   if(data.num_coefficients != macro_w.size())
