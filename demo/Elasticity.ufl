@@ -14,9 +14,7 @@ v = TestFunction(element)
 u = TrialFunction(element)
 
 def eps(v):
-    # FFC notation: return grad(v) + transp(grad(v))
     return grad(v) + (grad(v)).T
 
-# FFC notation: a = 0.25*dot(eps(v), eps(u))*dx
 a = 0.25*inner(eps(v), eps(u))*dx
 

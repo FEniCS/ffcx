@@ -17,23 +17,12 @@ u = TrialFunction(element)
 f = Function(element)
 
 n = triangle.n
-
-# FFC notation: h = MeshSize("triangle"), not supported by UFL
 h = Constant(triangle)
 
 gN = Function(element)
 
 alpha = 4.0
 gamma = 8.0
-
-# FFC notation
-#a = dot(grad(v), grad(u))*dx \
-#    - dot(avg(grad(v)), jump(u, n))*dS \
-#    - dot(jump(v, n), avg(grad(u)))*dS \
-#    + alpha/h('+')*dot(jump(v, n), jump(u, n))*dS \
-#    - dot(grad(v), mult(u,n))*ds \
-#    - dot(mult(v,n), grad(u))*ds \
-#    + gamma/h*v*u*ds
 
 a = inner(grad(v), grad(u))*dx \
     - inner(avg(grad(v)), jump(u))*dS \

@@ -11,10 +11,6 @@
 
 element = FiniteElement("Lagrange", "triangle", 2)
 
-# FFC notation:
-#QE = QuadratureElement("triangle", 3)
-#sig = VectorQuadratureElement("triangle", 3)
-
 QE = FiniteElement("Quadrature", "triangle", 3)
 sig = VectorElement("Quadrature", "triangle", 3)
 

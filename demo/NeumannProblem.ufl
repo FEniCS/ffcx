@@ -13,9 +13,6 @@ u = TrialFunction(element)
 f = Function(element)
 g = Function(element)
 
-# FFC notation: a = dot(grad(v), grad(u))*dx
 a = inner(grad(v), grad(u))*dx
-
-# FFC notation: L = dot(v, f)*dx + dot(v, g)*ds
 L = inner(v, f)*dx + inner(v, g)*ds
 

@@ -13,10 +13,7 @@ def HodgeLaplaceGradCurl(element, felement):
     (sigma, u) = TrialFunctions(element)
     f = Function(felement)
 
-    # FFC notation: a = (dot(tau, sigma) - dot(grad(tau), u) + dot(v, grad(sigma)) + dot(curl(v), curl(u)))*dx
     a = (inner(tau, sigma) - inner(grad(tau), u) + inner(v, grad(sigma)) + inner(curl(v), curl(u)))*dx
-
-    # FFC notation: L = dot(v, f)*dx
     L = inner(v, f)*dx
     
     return [a, L]
@@ -25,8 +22,6 @@ shape = "tetrahedron"
 order = 1
 
 GRAD = FiniteElement("Lagrange", shape, order)
-
-# FFC notation: CURL = FiniteElement("Nedelec", shape, order-1)
 CURL = FiniteElement("N1curl", shape, order-1)
 
 VectorLagrange = VectorElement("Lagrange", shape, order+1)

@@ -16,9 +16,3 @@ P2 = FiniteElement("Lagrange", "triangle", 2)
 v = TestFunction(P1)
 f = Function(P1)
 
-#pi0 = Projection(P0)
-#pi1 = Projection(P1)
-#pi2 = Projection(P2)
-#
-#a = v*(pi0(f) + pi1(f) + pi2(f))*dx
-

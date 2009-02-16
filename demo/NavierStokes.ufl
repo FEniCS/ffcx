@@ -13,6 +13,5 @@ u = TrialFunction(element)
 
 w = Function(element)
 
-# FFC notation: a = v[i]*w[j]*D(u[i], j)*dx
 a = v[i]*w[j]*Dx(u[i], j)*dx
 

@@ -15,7 +15,5 @@ c = Constant("triangle")
 d = VectorConstant("triangle")
 
 a = c*dot(grad(v), grad(u))*dx
-
-# FFC notation: L = dot(d, grad(v))*dx
 L = inner(d, grad(v))*dx
 

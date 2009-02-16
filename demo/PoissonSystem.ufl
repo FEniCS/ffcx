@@ -12,9 +12,6 @@ v = TestFunction(element)
 u = TrialFunction(element)
 f = Function(element)
 
-# FFC notation: a = dot(grad(v), grad(u))*dx
 a = inner(grad(v), grad(u))*dx
-
-# FFC notation: L = dot(v, f)*dx
 L = inner(v, f)*dx
 
