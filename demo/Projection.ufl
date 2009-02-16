@@ -1,0 +1,24 @@
+# Copyright (C) 2005-2007 Anders Logg (logg@simula.no)
+# Licensed under the GNU GPL version 3 or any later version
+#
+# This example demonstrates the use of projections.
+#
+# Compile this form with FFC: ffc Projection.ufl
+
+# Projections are not supported by UFL and have been broken
+# in FFC for a while. For DOLFIN, the current (global) L^2
+# projection can be extended to handle also local projections.
+
+P0 = FiniteElement("Discontinuous Lagrange", "triangle", 0)
+P1 = FiniteElement("Lagrange", "triangle", 1)
+P2 = FiniteElement("Lagrange", "triangle", 2)
+
+v = TestFunction(P1)
+f = Function(P1)
+
+#pi0 = Projection(P0)
+#pi1 = Projection(P1)
+#pi2 = Projection(P2)
+#
+#a = v*(pi0(f) + pi1(f) + pi2(f))*dx
+

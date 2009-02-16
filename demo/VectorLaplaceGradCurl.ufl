@@ -1,0 +1,35 @@
+# Copyright (C) 2007 Marie Rognes (meg@math.uio.no)
+# Licensed under the GNU GPL version 3 or any later version
+#
+# The bilinear form a(v, u) and linear form L(v) for the Hodge Laplace
+# problem using 0- and 1-forms. Intended to demonstrate use of Nedelec
+# elements. 
+
+# Compile this form with FFC: ffc VectorLaplaceGradCurl.ufl
+
+
+def HodgeLaplaceGradCurl(element, felement):
+    (tau, v) = TestFunctions(element)
+    (sigma, u) = TrialFunctions(element)
+    f = Function(felement)
+
+    # FFC notation: a = (dot(tau, sigma) - dot(grad(tau), u) + dot(v, grad(sigma)) + dot(curl(v), curl(u)))*dx
+    a = (inner(tau, sigma) - inner(grad(tau), u) + inner(v, grad(sigma)) + inner(curl(v), curl(u)))*dx
+
+    # FFC notation: L = dot(v, f)*dx
+    L = inner(v, f)*dx
+    
+    return [a, L]
+
+shape = "tetrahedron"
+order = 1
+
+GRAD = FiniteElement("Lagrange", shape, order)
+
+# FFC notation: CURL = FiniteElement("Nedelec", shape, order-1)
+CURL = FiniteElement("N1curl", shape, order-1)
+
+VectorLagrange = VectorElement("Lagrange", shape, order+1)
+
+[a, L] = HodgeLaplaceGradCurl(GRAD + CURL, VectorLagrange)
+

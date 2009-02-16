@@ -3,7 +3,7 @@
 #
 # Test form for operators on Functions.
 #
-# Compile this form with FFC: ffc FunctionOperators.form
+# Compile this form with FFC: ffc FunctionOperators.ufl
 
 element = FiniteElement("Lagrange", "triangle", 1)
 
@@ -12,4 +12,6 @@ u = TrialFunction(element)
 f = Function(element)
 g = Function(element)
 
-a = sqrt(1/modulus(1/f))*sqrt(g)*dot(grad(v), grad(u))*dx + v*u*sqrt(f*g)*g*dx
+# FFC notation: a = sqrt(1/modulus(1/f))*sqrt(g)*dot(grad(v), grad(u))*dx + v*u*sqrt(f*g)*g*dx
+a = sqrt(1/abs(1/f))*sqrt(g)*dot(grad(v), grad(u))*dx + v*u*sqrt(f*g)*g*dx
+

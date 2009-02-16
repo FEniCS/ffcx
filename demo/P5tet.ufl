@@ -1,0 +1,8 @@
+# Copyright (C) 2006-2007 Anders Logg (logg@simula.no)
+# Licensed under the GNU GPL version 3 or any later version
+#
+# A fifth degree Lagrange finite element on a tetrahedron
+#
+# Compile this form with FFC: ffc P5tet.ufl
+
+element = FiniteElement("Lagrange", "tetrahedron", 5)

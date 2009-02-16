@@ -5,6 +5,7 @@
 # problem using 0- and 1-forms. Intended to demonstrate use of Nedelec
 # elements. 
 
+# Compile this form with FFC: ffc VectorLaplaceGradCurl.form
 
 def HodgeLaplaceGradCurl(element, felement):
     """This is a formulation of the Hodge Laplacian using k=1 and n=3,

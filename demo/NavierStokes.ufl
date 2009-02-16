@@ -1,0 +1,18 @@
+# Copyright (C) 2004-2007 Anders Logg (logg@simula.no)
+# Licensed under the GNU GPL version 3 or any later version
+#
+# The bilinear form for the nonlinear term in the
+# Navier-Stokes equations with fixed convective velocity.
+#
+# Compile this form with FFC: ffc NavierStokes.ufl
+
+element = VectorElement("Lagrange", "tetrahedron", 1)
+
+v = TestFunction(element)
+u = TrialFunction(element)
+
+w = Function(element)
+
+# FFC notation: a = v[i]*w[j]*D(u[i], j)*dx
+a = v[i]*w[j]*Dx(u[i], j)*dx
+

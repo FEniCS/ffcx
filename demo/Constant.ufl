@@ -3,7 +3,7 @@
 #
 # Test form for scalar and vector constants.
 #
-# Compile this form with FFC: ffc Constant.form
+# Compile this form with FFC: ffc Constant.ufl
 
 element = FiniteElement("Lagrange", "triangle", 1)
 
@@ -15,4 +15,7 @@ c = Constant("triangle")
 d = VectorConstant("triangle")
 
 a = c*dot(grad(v), grad(u))*dx
-L = dot(d, grad(v))*dx
+
+# FFC notation: L = dot(d, grad(v))*dx
+L = inner(d, grad(v))*dx
+

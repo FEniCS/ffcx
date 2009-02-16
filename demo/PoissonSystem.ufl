@@ -1,0 +1,20 @@
+# Copyright (C) 2005-2007 Anders Logg (logg@simula.no)
+# Licensed under the GNU GPL version 3 or any later version
+#
+# The bilinear form a(v, u) and linear form L(v) for
+# Poisson's equation in system form (vector-valued).
+#
+# Compile this form with FFC: ffc PoissonSystem.ufl
+
+element = VectorElement("Lagrange", "triangle", 1)
+
+v = TestFunction(element)
+u = TrialFunction(element)
+f = Function(element)
+
+# FFC notation: a = dot(grad(v), grad(u))*dx
+a = inner(grad(v), grad(u))*dx
+
+# FFC notation: L = dot(v, f)*dx
+L = inner(v, f)*dx
+

@@ -1,0 +1,21 @@
+# Copyright (C) 2006-2007 Anders Logg (logg@simula.no)
+# Licensed under the GNU GPL version 3 or any later version
+#
+# The bilinear form a(v, u) and linear form L(v) for
+# Poisson's equation with Neumann boundary conditions.
+#
+# Compile this form with FFC: ffc NeumannProblem.ufl
+
+element = VectorElement("Lagrange", "triangle", 1)
+
+v = TestFunction(element)
+u = TrialFunction(element)
+f = Function(element)
+g = Function(element)
+
+# FFC notation: a = dot(grad(v), grad(u))*dx
+a = inner(grad(v), grad(u))*dx
+
+# FFC notation: L = dot(v, f)*dx + dot(v, g)*ds
+L = inner(v, f)*dx + inner(v, g)*ds
+

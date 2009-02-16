@@ -1,0 +1,22 @@
+# Copyright (C) 2005 Johan Jansson
+# Licensed under the GNU GPL version 3 or any later version
+#
+# Modified by Anders Logg 2005-2007
+#
+# The bilinear form e(v) : e(u) for linear
+# elasticity with e(v) = 1/2 (grad(v) + grad(v)^T)
+#
+# Compile this form with FFC: ffc Elasticity.ufl
+
+element = VectorElement("Lagrange", "tetrahedron", 1)
+
+v = TestFunction(element)
+u = TrialFunction(element)
+
+def eps(v):
+    # FFC notation: return grad(v) + transp(grad(v))
+    return grad(v) + (grad(v)).T
+
+# FFC notation: a = 0.25*dot(eps(v), eps(u))*dx
+a = 0.25*inner(eps(v), eps(u))*dx
+

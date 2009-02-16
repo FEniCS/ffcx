@@ -4,7 +4,7 @@
 # The bilinear form a(v, u) and linear form L(v) for
 # Poisson's equation.
 #
-# Compile this form with FFC: ffc -O Optimization.form
+# Compile this form with FFC: ffc -O Optimization.ufl
 
 element = FiniteElement("Lagrange", "triangle", 3)
 
@@ -14,3 +14,4 @@ f = Function(element)
 
 a = dot(grad(v), grad(u))*dx
 L = v*f*dx
+
