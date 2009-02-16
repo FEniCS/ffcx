@@ -285,6 +285,7 @@ def verify_forms(form_file, forms, forms_not_compiled_ok, forms_not_compared_ok,
 def verify_form(form_file, form_type, form, forms_not_compiled_ok, forms_not_compared_ok, ok_compile, norm_ok, test_options):
 
     compiled_form, module, form_data = (0, 0, 0)
+
     try:
         # Compile the form with jit
         opt = {"representation":test_options["representation"], "cache_dir":"test_cache"}
