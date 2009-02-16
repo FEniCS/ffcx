@@ -65,15 +65,13 @@ def jit(object, options=None):
 def jit_form(form, options=None):
     "Just-in-time compile the given form"
 
-    if options["compiler"] == "ffc":
-        # Make sure that we get a form
-        if not isinstance(form, Form):
-            form = Form(form)
-    elif options["compiler"] == "ufl":
+    # FIXME: Remove this test later
+    if "compiler" in options and options["compiler"] == "ufl":
         if not isinstance(form, UFLForm):
             form = UFLForm(form)
     else:
-        raise RuntimeError("Unknown compiler.")
+        if not isinstance(form, Form):
+            form = Form(form)
 
     # Check options
     options = check_options(form, options)
