@@ -32,9 +32,10 @@ int ufc_swigversion() { return SWIGVERSION; }
 int ufc_swigversion();
 
 %pythoncode %{
-"""Preliminary code for adding swig version to cpp module. Someone (tm) finish
-this.
-"""
+__version__ = UFC_VERSION
+del UFC_VERSION, UFC_VERSION_MAJOR, UFC_VERSION_MINOR
+
+"""Code for adding swig version to ufc extension module."""
 tmp = hex(ufc_swigversion())
 __swigversion__ = ".".join([tmp[-5],tmp[-3],tmp[-2:]])
 
