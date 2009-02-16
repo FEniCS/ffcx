@@ -12,6 +12,7 @@ from numpy import shape, transpose
 #from ufl.classes import AlgebraOperator, FormArgument
 from ufl.classes import *
 from ufl.algorithms.analysis import *
+from ufl.algorithms.transformations import *
 
 # Utility and optimisation functions for quadraturegenerator
 from quadraturegenerator_utils import unique_psi_tables, generate_loop
@@ -328,7 +329,7 @@ def expand_operations(expr, basis_tables, points, optimise_level, Indent, format
 
     print "\nQG-utils, expand_operations, expr.__repr__():\n", expr.__repr__()
 
-    code = ""
+    code = {}
     if isinstance(expr, AlgebraOperator):
         print "Algebra: ", expr
         code = apply_algebra(expr, basis_tables, points, optimise_level, Indent, format)
@@ -336,27 +337,31 @@ def expand_operations(expr, basis_tables, points, optimise_level, Indent, format
         print "FormArgument: ", expr
         code = format_argument(expr, basis_tables, points, optimise_level, Indent, format)
 
+    # FIXME: Make sure that WrapperType only covers containers
+    if isinstance(expr, WrapperType):
+        print "WrapperType: ", expr
+        code = apply_wrapper(expr, basis_tables, points, optimise_level, Indent, format)
+
     return code
 
 def apply_algebra(expr, basis_tables, points, optimise_level, Indent, format):
 
-    format_mult = format["multiply"]
-
     code = {}
 
     if isinstance(expr, Product):
+        format_mult = format["multiply"]
 #        print "product: ", expr
 #        print "operands: ", expr.operands()
         permute = []
         not_permute = []
         for o in expr.operands():
-#            print "O: ", o
+            print "O: ", o
             expanded = expand_operations(o, basis_tables, points, optimise_level, Indent, format)
-#            print "expanded: ", expanded
+            print "expanded: ", expanded
 
             if len(expanded) > 1 or (expanded and expanded.keys()[0] != ()):
                 permute.append(expanded)
-            else:
+            elif expanded:
                 not_permute.append(expanded[()])
 
 #        print "permute: ", permute
@@ -370,6 +375,94 @@ def apply_algebra(expr, basis_tables, points, optimise_level, Indent, format):
                 code[key] = format_mult(permutations[key] + not_permute)
         else:
             code[()] = format_mult(not_permute)
+
+    if isinstance(expr, Sum):
+        format_add = format["add"]
+        format_group = format["grouping"]
+
+        print "sum: ", expr
+#        print "operands: ", expr.operands()
+#        permute = []
+#        not_permute = []
+        for o in expr.operands():
+            print "O: ", o
+            expanded = expand_operations(o, basis_tables, points, optimise_level, Indent, format)
+            print "expanded: ", expanded
+
+            if not expanded:
+                raise RuntimeError("I didn't expect this")
+
+            # Loop the expanded values and if some entries are the same they
+            # can be added, otherwise just dump them in the element tensor
+            for key, val in expanded.items():
+                if key in code:
+                    code[key].append(val)
+                else:
+                    code[key] = [val]
+
+        # Add sums and group if necessary
+        for key, val in code.items():
+            if len(val) > 1:
+                code[key] = format_group(format_add(val))
+
+    if isinstance(expr, IndexSum):
+        format_add = format["add"]
+        format_group = format["grouping"]
+
+#        print "index sum: ", expr
+#        print "dir(index_sum): ", dir(expr)
+        summand, index = expr.operands()
+#        print "summand.__repr__(): ", summand.__repr__()
+#        print "index.__repr__(): ", index.__repr__()
+#        print "index_dims: ", expr.index_dimensions()
+#        print "free indices: ", expr.free_indices()
+#        print "dir(index): ", dir(index)
+#        print "summand.index_dims: ", summand.index_dimensions()
+#        print "summand.free indices: ", summand.free_indices()
+        # Get index range
+        # TODO: What is the #$#%$^%#%^ MultiIndex good for????!!
+        # Find better way of getting the index range
+        index_range = summand.index_dimensions()[index[0]]
+        print "index_range: ", index_range
+        new = replace(summand, {index: 0})
+        print "NEW: ", new
+
+
+        # TODO: Does indices always start from 0?
+        # This is most likely not the best way of creating code for the
+        # IndexSum, but otherwise I'll lose information for the recursive
+        # stages such that implicit assumptions must be made.
+        # Alternatively, code should be generated for each free index and the
+        # sum should just pick the correct indices.
+        for i in range(index_range):
+            print "I: ", i
+
+        # Just testing to see what this will give me
+        test = expand_operations(summand, basis_tables, points, optimise_level, Indent, format)
+        print "TEST: ", test
+
+#        permute = []
+#        not_permute = []
+#        for o in expr.operands():
+#            print "O: ", o
+#            expanded = expand_operations(o, basis_tables, points, optimise_level, Indent, format)
+#            print "expanded: ", expanded
+
+#            if not expanded:
+#                raise RuntimeError("I didn't expect this")
+
+#            # Loop the expanded values and if some entries are the same they
+#            # can be added, otherwise just dump them in the element tensor
+#            for key, val in expanded.items():
+#                if key in code:
+#                    code[key].append(val)
+#                else:
+#                    code[key] = [val]
+
+#        # Add sums and group if necessary
+#        for key, val in code.items():
+#            if len(val) > 1:
+#                code[key] = format_group(format_add(val))
 
     return code
 
@@ -436,7 +529,26 @@ def format_argument(expr, basis_tables, points, optimise_level, Indent, format):
 
     return {entry_mapping: code}
 
+def apply_wrapper(expr, basis_tables, points, optimise_level, Indent, format):
 
+    code = {}
+    print "\nwrap, dir(expr): ", dir(expr)
+    print "wrap, expr.operands(): ", expr.operands()
+
+    # TODO: Is this correct?
+    indexed_expr, index = expr.operands()
+
+    print "wrap, indexed_expr: ", indexed_expr
+    print "wrap, index: ", index
+    print "wrap, expr.free_indices(): ", expr.free_indices()
+    print "wrap, expr.index_dimensions(): ", expr.index_dimensions()
+
+    # Get code
+    code = expand_operations(indexed_expr, basis_tables, points, optimise_level, Indent, format)
+
+    # Do something to code according to index
+
+    return code
 
 
 
