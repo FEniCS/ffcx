@@ -7,16 +7,23 @@ __license__  = "GNU GPL version 3 or any later version"
 
 import os
 import re
+import sys
 
 pwd = os.path.dirname(os.path.abspath(__file__))
 
 # Tests to run
 tests = ["unit", "regression"]
 
+failed = []
+
 # Run tests
 for test in tests:
     print "Running tests: %s" % test
     print "----------------------------------------------------------------------"
     os.chdir(os.path.join(pwd, test))
-    os.system("python test.py")
+    failure = os.system("python test.py")
+    if failure:
+        failed.append(test)
     print ""
+
+sys.exit(len(failed))
