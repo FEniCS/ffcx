@@ -10,6 +10,9 @@ from instant import get_swig_version
 from ffc.compiler.analysis import simplify, analyze
 from ffc.common.constants  import FFC_VERSION
 
+# Import ufc version
+from ufc import __version__ as ufc_version
+
 class JITObject:
     """This class is a wrapper for a compiled object in the context of
     specific compiler options. A JITObject is identified either by its
@@ -57,7 +60,7 @@ class JITObject:
         swig_version = get_swig_version()
         options_signature = str(self.options)
         string = ";".join([form_signature, element_signature, swig_version, \
-                           options_signature, FFC_VERSION])
+                           options_signature, FFC_VERSION, ufc_version])
         self._signature = "form_" + sha1(string).hexdigest()
 
         # Store form data and signature in form for later reuse

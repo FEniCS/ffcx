@@ -69,6 +69,11 @@ def jit_form(form, options=None):
     module = instant.import_module(jit_object, cache_dir=options["cache_dir"])
     if module: return extract_form(form, module)
     
+    # Check system requirements
+    # NOTE: This need to be done before signature creation as we here check for 
+    # both UFC installation and SWIG excistence which is needed in the signature
+    (cppargs, cpp_path, swig_path) = configure_instant(options)
+
     # Generate code
     debug("Calling FFC just-in-time (JIT) compiler, this may take some time...", -1)
     signature = jit_object.signature()
@@ -79,9 +84,6 @@ def jit_form(form, options=None):
     debug("Creating Python extension (compiling and linking), this may take some time...", -1)
     filename = signature + ".h"
     
-    # Check system requirements
-    (cppargs, cpp_path, swig_path) = configure_instant(options)
-
     # Add shared_ptr declarations
     declarations = extract_declarations(filename)
     

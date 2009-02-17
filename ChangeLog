@@ -2,6 +2,9 @@
  - Initial work on UFL transition
  - Minor bug fixes
  - Add support for shared_ptr in generated code
+ - The version of ufc and swig is included in the form signature
+ - Better system configuration for JIT compiled forms
+ - The JIT compiled python extension module use shared_ptr for all classes
 0.6.0 [2009-01-05]
  - Update DOLFIN output format (-l dolfin) for DOLFIN 0.9.0
  - Cross-platform fixes for test scripts
