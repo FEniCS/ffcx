@@ -1,3 +1,7 @@
+0.6.1 [2009-02-18]
+ - Initial work on UFL transition
+ - Minor bug fixes
+ - Add support for shared_ptr in generated code
 0.6.0 [2009-01-05]
  - Update DOLFIN output format (-l dolfin) for DOLFIN 0.9.0
  - Cross-platform fixes for test scripts
