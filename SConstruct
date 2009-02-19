@@ -24,6 +24,8 @@ else:
 
 if env["PLATFORM"].startswith("win"):
     default_python_dir = os.path.join("$prefix", "Lib", "site-packages")
+elif env["PLATFORM"] == "darwin":
+    default_python_dir = os.path.join("$prefix", "lib", "python" + sysconfig.get_python_version(),"site-packages")
 else:
     default_python_dir = sysconfig.get_python_lib(prefix="$prefix",plat_specific=True)
 
