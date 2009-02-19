@@ -41,7 +41,10 @@ options = [
     PathOption("pkgConfDir", "Directory for installation of pkg-config files",
                join("$prefix","lib","pkgconfig"), PathOption.PathAccept),
     BoolOption("cleanOldUFC", "Clean any old installed UFC modules", "No"),
-    BoolOption("cacheOptions", "Cache command-line options for later invocations", "Yes")]
+    BoolOption("cacheOptions", "Cache command-line options for later invocations", "Yes"),
+    PathOption("DESTDIR", "Prepend DESTDIR to each installed target file",
+               None, PathOption.PathAccept),
+    ]
 
 # Set the options using any cached options
 cache_file = "options.cache"
@@ -49,11 +52,16 @@ opts = Options(cache_file, args=ARGUMENTS.copy())
 opts.AddOptions(*options)
 opts.Update(env)
 cache_options = env.get("cacheOptions", False)
+DESTDIR = env.get("DESTDIR")
 if cache_options:
     del env["cacheOptions"] # Don't store this value
+    if DESTDIR:
+        del env["DESTDIR"]
     opts.Save(cache_file, env)
     # Restore cacheOptions
     env["cacheOptions"] = cache_options
+    if DESTDIR:
+        env["DESTDIR"] = DESTDIR
 
 env.Help(opts.GenerateHelpText(env))
 
@@ -97,6 +105,12 @@ file.write("Description: Unified Form-assembly Code\n")
 file.write("Cflags: -I%s\n" % \
            repr(normpath(env.subst(env["includeDir"])))[1:-1])
 file.close()
+
+if env.get("DESTDIR"):
+    install_prefix = os.path.join("$DESTDIR", "$prefix")
+    tgts_dir = ["includeDir", "pythonModuleDir", "pythonExtDir", "pkgConfDir"]
+    for tgt_dir in tgts_dir:
+        env[tgt_dir] = env[tgt_dir].replace("$prefix", install_prefix)
 
 # Set up installation targets
 ufc_basename = join("src", "ufc", "ufc")
