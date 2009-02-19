@@ -1,7 +1,6 @@
 0.6.1 [2009-02-18]
  - Initial work on UFL transition
  - Minor bug fixes
- - Add support for shared_ptr in generated code
  - The version of ufc and swig is included in the form signature
  - Better system configuration for JIT compiled forms
  - The JIT compiled python extension module use shared_ptr for all classes
