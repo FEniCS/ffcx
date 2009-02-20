@@ -34,11 +34,12 @@ in this source tree.
 
 To install UFC, simply run
 
-    scons install
+    scons
+    sudo scons install
 
 This installs the header file ufc.h and a small set of Python utilities 
 (templates) for generating UFC code. Files will be installed under the default 
-prefix. Note that you may have to be root. 
+prefix.
 
 The installation prefix may be optionally specified, for example
 
@@ -47,10 +48,11 @@ The installation prefix may be optionally specified, for example
 Alternatively, just copy the single header file src/ufc/ufc.h
 into a suitable include directory.
 
-If you do not want to build and install the python extenstion module of ufc, 
+If you do not want to build and install the python extenstion module of UFC,
 needed by, e.g., PyDOLFIN, you can write
 
-    sudo scons install enablePyUFC=No
+    scons enablePyUFC=No
+    sudo scons install
 
 Help with available options and default arguments can be viewed by
 
@@ -70,4 +72,4 @@ Feedback, comments and suggestions should be sent to
     ufc-dev@fenics.org
 
 -------------------------------------------------------------------------------
-Oslo, February 2008
+Oslo, February 2009

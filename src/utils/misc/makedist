@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright (C) Anders Logg 2004-2008
+# Copyright (C) Anders Logg 2004-2009
 # Licensed under the GNU GPL version 3 or any later version
 #
 # This script creates a new release of UFC
@@ -42,6 +42,9 @@ VERSION=$MAJOR.$MINOR
 echo "--- Version number is $VERSION"
 sleep 1
 
+# Tag repository
+hg tag $VERSION
+
 # Commit changes to hg
 echo '--- Pushing changes to parent repository'
 hg commit
@@ -70,7 +73,7 @@ cd ..
 
 # Copy archive and files to web page
 echo '--- Copying files to web server'
-scp release/$TARBALL fenics@fenics.org:www.fenics.org/pub/software/ufc/v1.0
+scp release/$TARBALL fenics@fenics.org:www.fenics.org/pub/software/ufc/v1.1
 scp ChangeLog fenics@fenics.org:www.fenics.org/pub/software/ufc/
 scp TODO fenics@fenics.org:www.fenics.org/pub/software/ufc/
 
