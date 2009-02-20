@@ -38,7 +38,8 @@ done
 # Get the version number
 MAJOR=`grep MAJOR src/ufc/ufc.h | awk '{print $3}'`
 MINOR=`grep MINOR src/ufc/ufc.h | awk '{print $3}'`
-VERSION=$MAJOR.$MINOR
+MAINTENANCE=`grep MAINTENANCE src/ufc/ufc.h | awk '{print $3}'`
+VERSION=$MAJOR.$MINOR.$MAINTENANCE
 echo "--- Version number is $VERSION"
 sleep 1
 
