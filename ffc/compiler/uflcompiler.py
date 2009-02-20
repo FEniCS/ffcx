@@ -1,5 +1,5 @@
 """This is the compiler, acting as the main interface for compilation
-of forms and breaking the compilation into several sequential stage:
+of forms and breaking the compilation into several sequential stages:
 
    0. language        -  expressing the form in the form language (UFL)
    1. analysis        -  simplifying and preprocessing the form (UFL)
@@ -20,7 +20,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # UFL modules
 from ufl.classes import Form, FiniteElementBase
-from ufl.algorithms import FormData, is_multilinear, validate_form
+from ufl.algorithms import FormData, is_multilinear, validate_form, extract_monomials
 
 # FFC common modules
 from ffc.common.log import debug, info, warning, error, begin, end, set_level, INFO
@@ -177,8 +177,8 @@ def compile_elements(elements, prefix="Element", options=FFC_OPTIONS):
     end()
     
 def analyze_form(form):
-    "Analyze form (compiler stage 1)."
-    begin("Stage 1: Analyzing form")
+    "Compiler stage 1: analyze form"
+    begin("Compiler stage 1: Analyzing form")
     validate_form(form)
     form_data = FormData(form)
     info(str(form_data))
@@ -186,11 +186,18 @@ def analyze_form(form):
     return form_data
 
 def compute_form_representation(form_data, domain_representations, options):
-    "Compute form representation (compilerstage 2)."
+    "Compiler stage 2: Compute form representation"
     begin("Compiler stage 2: Computing form representation")
 
     # Choose representation
 #    Representation = _choose_representation(form_data.form, options)
+
+    # Testing monomial extraction
+    print form_data.form
+    monomial = extract_monomials(form_data.form)
+
+    import sys
+    sys.exit(0)
 
     # Compute form representation
     # FIXME: The representations should of course only be generated for the
@@ -198,22 +205,22 @@ def compute_form_representation(form_data, domain_representations, options):
 #    tensor = UFLTensorRepresentation(form_data, int(options["quadrature_points"]))
     quadrature = UFLQuadratureRepresentation(form_data, domain_representations, int(options["quadrature_points"]))
 
+
+
+
     end()
     return (quadrature, quadrature)
 #    return (tensor, quadrature)
     
 def optimize_form_representation(form):
-    "Optimize form representation (compiler stage 3)."
+    "Compiler stage 3: Compute optimization"
     begin("Compiler stage 3: Computing optimization")
-
     info("Optimization currently broken (to be fixed).")
-
     end()
 
 def generate_form_code(form_data, tensor_representation, quadrature_representation, domain_representations, format):
-    "Generate form code (compiler stage 4)."
+    "Compiler stage 4: Generate code"
     begin("Compiler stage 4: Generating code")
-
     tensor_generator = None
     quadrature_generator = None
     # Only create generators if they are used.
@@ -248,11 +255,9 @@ def generate_form_code(form_data, tensor_representation, quadrature_representati
     return code
 
 def format_code(generated_forms, prefix, format, options):
-    "Format code (compiler stage 5)."
+    "Compiler stage 5: Format code"
     begin("Compiler stage 5: Formatting code")
-
     format.write(generated_forms, prefix, options)
-
     end()
 
 def _check_options(options):
