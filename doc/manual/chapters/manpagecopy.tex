@@ -59,12 +59,21 @@ OPTIONS
               Set the number of significant digits to n in the generated code.
               The default value of n is 15.
 
+       -f quadrature_order=n
+              Will generate a quadrature rule accurate up to order n regardless
+              of the polynomial order of the form. This option is only valid
+              for UFL forms and the specified order will apply to ALL terms of
+              the given form for which no order has been specified through
+              metadata! As default FFC will determine the order automatically
+              from the form.
+
        -f quadrature_points=n
               Will generate n quadrature points in each spatial direction
-              regardless of the polynomial order of the form. The specified
-              number  of  points  will apply to ALL terms of the given form!
-              As default FFC will determine the number of quadrature points
-              needed for exact representation of the form.
+              regardless of the polynomial order of the form. This option is
+              only valid for the standard FFC forms i.e., *.form files, not
+              UFL forms. The specified number of points will apply to ALL terms
+              of the given form! As default FFC will determine the number of
+              quadrature points needed for exact representation of the form.
 
        -f split_implementation
               Generate separate files for declarations and the implementation.
