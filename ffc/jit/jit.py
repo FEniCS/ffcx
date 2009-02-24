@@ -45,6 +45,9 @@ FFC_OPTIONS_JIT["no-evaluate_basis_derivatives"] = True
 # Set debug level for Instant
 instant.set_logging_level("warning")
 
+# FIXME: Allow attaching form data to UFL forms
+form_data_cache = {}
+
 def jit(object, options=None):
     """Just-in-time compile the given form or element
     
@@ -59,7 +62,6 @@ def jit(object, options=None):
         return jit_element(object, options)
     else:
         return jit_form(object, options)
-
 
 def jit_form(form, options=None):
     "Just-in-time compile the given form"
@@ -76,12 +78,14 @@ def jit_form(form, options=None):
     options = check_options(form, options)
     
     # Wrap input
-    jit_object = JITObject(form, options)
+    jit_object = JITObject(form, options, form_data_cache)
     
     # Check cache
-#    signature = jit_object.signature()
+    #    signature = jit_object.signature()
     module = instant.import_module(jit_object, cache_dir=options["cache_dir"])
-    if module: return extract_form(form, module)
+    if module:
+        compiled_form = getattr(module, module.__name__)()        
+        return (compiled_form, module, form_data_cache[form])
     
     # Generate code
     debug("Calling FFC just-in-time (JIT) compiler, this may take some time...", -1)
@@ -122,7 +126,10 @@ def jit_form(form, options=None):
     os.unlink(filename)
     debug("done", -1)
 
-    return extract_form(form, module)
+    # Extract compiled form
+    compiled_form = getattr(module, module.__name__)()
+
+    return compiled_form, module, form_data_cache[form]
 
 def jit_element(element, options=None):
     "Just-in-time compile the given element"
@@ -169,10 +176,6 @@ def check_options(form, options):
     options["form_postfix"] = False
 
     return options
-
-def extract_form(form, module):
-    "Extract form from module"
-    return (getattr(module, module.__name__)(), module, form.form_data)
 
 def extract_element_and_dofmap(module):
     "Extract element and dofmap from module"
