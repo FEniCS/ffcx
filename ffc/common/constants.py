@@ -18,4 +18,5 @@ FFC_OPTIONS = {"representation": "tensor",
                "form_postfix": True,
                "cache_dir": None,
                "output_dir": ".",
-               "external_signature":None}
+               "external_signature":None,
+               "compiler":"ffc"}

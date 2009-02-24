@@ -83,8 +83,11 @@ def main(argv):
     # Print test options
     print "\nThe following test options will be used"
     print "====================================================================\n"
-    for o in test_options.items():
-        print o
+    for key, val in test_options.items():
+        if key == "form_files" and not val:
+            print (key, "all")
+        else:
+            print (key, val)
     print "representations: ", representations
     print "\n====================================================================\n"
 
@@ -288,10 +291,11 @@ def read_forms(demo_dir, form_file):
             if global_dict[f] != 0:
                 forms[f] = global_dict[f]
         read_ok = 1
-    except:
+    except Exception, what:
         print "*** An error occured while reading form file"
         # Reset forms
         forms = {}
+        print "What: ", what
         pass
 
     return (forms, read_ok)
@@ -369,10 +373,11 @@ def verify_form(form_file, form_type, form, forms_not_compiled_ok, forms_not_com
         # Compile the form with jit
         opt = {"representation":test_options["representation"], "cache_dir":"test_cache", "compiler": test_options["compiler"]}
         (compiled_form, module, form_data) = jit(form, opt)
-    except:
+    except Exception, what:
         ok_compile = False
         forms_not_compiled_ok.append(form_file)
         print "\n*** An error occured while compiling form"
+        print "What: ", what
         pass
 
     norm = 1.0
@@ -385,10 +390,11 @@ def verify_form(form_file, form_type, form, forms_not_compiled_ok, forms_not_com
         if norm > test_options["tolerance"]:
             forms_not_compared_ok.append((form_file + ", " + form_type + ":", norm))
             norm_ok = False
-    except:
+    except Exception, what:
         norm_ok = False
         forms_not_compared_ok.append((form_file, norm))
         print "An error occured while computing norm"
+        print "What: ", what
         pass
 
     return (ok_compile, norm_ok)
@@ -468,7 +474,10 @@ def compute_norm(compiled_form, form_data, file_name, test_options):
             A = numpy.zeros(numpy.shape(A))
             for domain in range(num_cell_integrals):
                 A += ufc_benchmark.tabulate_cell_integral(compiled_form, w, cell, domain)
-        except: print "*** An error occured while calling tabulate_foo_integral(), returning norm = 1.0"; return 1.0
+        except Exception, what:
+            print "*** An error occured while calling tabulate_foo_integral(), returning norm = 1.0"
+            print "What: ", what
+            return 1.0
 
     # Add contributions from ALL domains and facets from exterior integrals
     if num_exterior_facet_integrals:
@@ -480,7 +489,10 @@ def compute_norm(compiled_form, form_data, file_name, test_options):
             for domain in range(num_exterior_facet_integrals):
                 for facet in range(cell.num_entities[cell_shape - 1]):
                     A += ufc_benchmark.tabulate_exterior_facet_integral(compiled_form, w, cell, facet, domain)
-        except: print "*** An error occured while calling tabulate_foo_integral(), returning norm = 1.0"; return 1.0
+        except Exception, what:
+            print "*** An error occured while calling tabulate_foo_integral(), returning norm = 1.0"
+            print "What: ", what
+            return 1.0
 
     # Add contributions from ALL domains and facets from interior integrals
     # FIXME: this currently makes no sense (integrating interior facets on 1 cell)
@@ -494,7 +506,10 @@ def compute_norm(compiled_form, form_data, file_name, test_options):
             for domain in range(num_interior_facet_integrals):
                 for facet in range(cell.num_entities[cell_shape - 1]):
                     macro_A += ufc_benchmark.tabulate_interior_facet_integral(compiled_form, macro_w, cell, cell, facet0, facet1, domain)
-        except: print "*** An error occured while calling tabulate_foo_integral(), returning norm = 1.0"; return 1.0
+        except Exception, what:
+            print "*** An error occured while calling tabulate_foo_integral(), returning norm = 1.0"
+            print "What: ", what
+            return 1.0
 
     # Add A to the upper left quadrant of macro_A, it makes no sense,
     # but the numbers should be OK
@@ -513,9 +528,10 @@ def compute_norm(compiled_form, form_data, file_name, test_options):
             f = open(path.join("references", file_name), "r")
             A_ref = pickle.load(f)
             f.close()
-        except:
+        except Exception, what:
             print "*** An error occured while trying to load reference value: %s" % path.join("references", file_name)
             print "*** Maybe you need to generate the reference? Returning norm = 1.0"
+            print "What: ", what
             return 1.0
 
         # Compute norm
