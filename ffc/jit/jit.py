@@ -65,7 +65,7 @@ def jit_form(form, options=None):
     "Just-in-time compile the given form"
 
     # FIXME: Remove this test later
-    if "compiler" in options and options["compiler"] == "ufl":
+    if not options is None and "compiler" in options and options["compiler"] == "ufl":
         if not isinstance(form, UFLForm):
             form = UFLForm(form)
     else:
