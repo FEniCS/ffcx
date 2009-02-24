@@ -193,11 +193,12 @@ def compute_form_representation(form_data, domain_representations, options):
 #    Representation = _choose_representation(form_data.form, options)
 
     # Testing monomial extraction
-    print form_data.form
-    monomial = extract_monomials(form_data.form)
+#    print form_data.form
+#    monomial = extract_monomials(form_data.form)
+#    print monomial
 
-    import sys
-    sys.exit(0)
+#    import sys
+#    sys.exit(0)
 
     # Compute form representation
     # FIXME: The representations should of course only be generated for the

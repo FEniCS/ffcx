@@ -66,7 +66,8 @@ class QuadratureRepresentation:
 
         # Set number of specified quadrature points. This value can be set from
         # the command line and is valid for ALL forms in the form file. Default
-        # value is zero. It might be obsolete given UFL's capability of
+        # value is zero.
+        # TODO: It might be obsolete given UFL's capability of
         # specifying the number of points as meta-data of the integral in the
         # forms.
         self.num_quad_points = num_quadrature_points
@@ -202,24 +203,21 @@ class QuadratureRepresentation:
         # Add the number of points to the psi tables dictionary
         self.psi_tables[integral_type] = {len_weights: {}}
 
-
-        # FIXME: This is most likely not the best way to get the highest
+        # TODO: This is most likely not the best way to get the highest
         # derivative of an element
-        num_derivatives = {}
+        # Initialise dictionary of elements and the number of derivatives
+        num_derivatives = dict([(e,0) for e in elements])
         derivs =  set()
         for i in integrals:
             derivs = derivs | extract_type(i, SpatialDerivative)
         for d in list(derivs):
             num_deriv = len(extract_type(d, SpatialDerivative))
             elem = extract_elements(d.operands()[0])
-            # FIXME: there should be only one element?!
+            # TODO: there should be only one element?!
             if not len(elem) == 1:
                 raise RuntimeError
             elem = elem[0]
-            if elem in num_derivatives:
-                num_derivatives[elem] = max(num_derivatives[elem], num_deriv)
-            else:
-                num_derivatives[elem] = num_deriv
+            num_derivatives[elem] = max(num_derivatives[elem], num_deriv)
 
         for i, element in enumerate(fiat_elements):
             # The order in the two lists should be the same
@@ -233,7 +231,6 @@ class QuadratureRepresentation:
                 # Create dictionary based on UFL elements
                 self.psi_tables[integral_type][len_weights][(elements[i], None)] =\
                                           element.tabulate(deriv_order, points)
-
         return
 
     def __create_fiat_elements(self, ufl_e):

@@ -35,7 +35,7 @@ from ffc.compiler.codegeneration.common.evaluatebasis import IndentControl
 
 # Utility and optimisation functions for quadraturegenerator
 from quadraturegenerator_utils import generate_loop
-from uflquadraturegenerator_utils import generate_code, BasisTables
+from uflquadraturegenerator_utils import generate_code, QuadratureTransformer
 #from quadraturegenerator_optimisation import *
 #import reduce_operations
 
@@ -43,10 +43,10 @@ from uflquadraturegenerator_utils import generate_code, BasisTables
 from ffc.compiler.format.removeunused import remove_unused
 
 # UFL modules
-from ufl.classes import FiniteElement, MixedElement, VectorElement, FiniteElementBase
-from ufl.algorithms.analysis import *
-from ufl.algorithms.transformations import *
-from ufl.integral import Measure
+from ufl.classes import FiniteElement, MixedElement, VectorElement, FiniteElementBase, Measure
+from ufl.algorithms import *
+#from ufl.algorithms.analysis import *
+#from ufl.algorithms.transformations import *
 
 #class QuadratureGenerator(CodeGenerator):
 class QuadratureGenerator:
@@ -58,22 +58,22 @@ class QuadratureGenerator:
         # Initialize common code generator
 #        CodeGenerator.__init__(self)
         self.optimise_level = 0
-        self.basis_tables = BasisTables()
+#        self.basis_tables = BasisTables()
 
     def generate_cell_integrals(self, form_representation, format):
         code = {}
         if not form_representation.cell_integrals:
             return code
 
-        # Pre-process the psi tables to get the unique tables and a name map.
-        self.basis_tables.update(form_representation.psi_tables[Measure.CELL],\
-                                                 self.optimise_level, format)
+        # Create transformer
+        transformer = QuadratureTransformer(form_representation.psi_tables[Measure.CELL],\
+                                            self.optimise_level, format)
 
         # Generate code for cell integral
         debug("Generating code for cell integrals using quadrature representation...")
         for integral in form_representation.cell_integrals:
             code[("cell_integral", integral.measure().domain_id())] =\
-                 self.generate_cell_integral(form_representation, integral, format)
+                 self.generate_cell_integral(form_representation, transformer, integral, format)
         debug("done")
         return code
 
@@ -101,7 +101,7 @@ class QuadratureGenerator:
         debug("done")
         return code
 
-    def generate_cell_integral(self, form_representation, integral, format):
+    def generate_cell_integral(self, form_representation, transformer, integral, format):
         """Generate dictionary of code for cell integral from the given
         form representation according to the given format"""
 
@@ -110,13 +110,14 @@ class QuadratureGenerator:
 
         debug("")
         print "\nQG, cell_integral, integral:\n", integral
+        print "\nQG, cell_integral, tree_format(integral):\n", tree_format(integral)
         print "\nQG, cell_integral, integral.__repr__():\n", integral.__repr__()
         print "\nQG, cell_integral, integral.integrand().__repr__():\n", integral.integrand().__repr__()
         print "\nQG, cell_integral, basisfunctions:\n", extract_basisfunctions(integral)
 
         # Generate element code + set of used geometry terms
         element_code, members_code, trans_set, num_ops =\
-          self.__generate_element_tensor(form_representation, integral, None,\
+          self.__generate_element_tensor(form_representation, transformer, integral, None,\
                                          None, Indent, format)
 
         # Get Jacobian snippet
@@ -233,7 +234,7 @@ class QuadratureGenerator:
 #        return {"tabulate_tensor": (common, cases), "constructor":"// Do nothing", "members":members_code}
         return {"tabulate_tensor": ([], []), "constructor":"// Do nothing", "members":[]}
 
-    def __generate_element_tensor(self, form_representation, integral, facet0,\
+    def __generate_element_tensor(self, form_representation, transformer, integral, facet0,\
                                         facet1, Indent, format):
         "Construct quadrature code for element tensors"
 
@@ -301,7 +302,7 @@ class QuadratureGenerator:
 
         # Generate code for all terms according to optimisation level
         integral_code, num_ops, w_set, t_set =\
-            generate_code(integral.integrand(), self.basis_tables, points,\
+            generate_code(integral.integrand(), transformer, points,\
                           self.optimise_level, Indent, format)
 
         weights_set.update(w_set)
@@ -345,7 +346,7 @@ class QuadratureGenerator:
         # Tabulate values of basis functions and their derivatives.
         # Use the meta class BasisTables to only tabulate those basis that are
         # actually used
-        tabulate_code += self.__tabulate_psis(Indent, format)
+        tabulate_code += self.__tabulate_psis(transformer, Indent, format)
 
 
 #        # Tabulate geometry code, sort according to number
@@ -408,7 +409,7 @@ class QuadratureGenerator:
 
         return code
 
-    def __tabulate_psis(self, Indent, format):
+    def __tabulate_psis(self, transformer, Indent, format):
         "Tabulate values of basis functions and their derivatives at quadrature points"
 
         # Prefetch formats to speed up code generation
@@ -425,8 +426,8 @@ class QuadratureGenerator:
         code = []
         # FIXME: Check if we can simplify the tabulation
 
-        inv_name_map = self.basis_tables.name_map
-        tables = self.basis_tables.unique_tables
+        inv_name_map = transformer.name_map
+        tables = transformer.unique_tables
 
         # Get list of non zero columns with more than 1 column
         nzcs = [val[1] for key, val in inv_name_map.items()\
@@ -448,7 +449,7 @@ class QuadratureGenerator:
 
         # Loop items in table and tabulate 
 #        for name, vals in tables.items():
-        for name in self.basis_tables.used_tables:
+        for name in transformer.used_tables:
             # Only proceed if values are still used (if they're not remapped)
             vals = tables[name]
             if not vals == None:

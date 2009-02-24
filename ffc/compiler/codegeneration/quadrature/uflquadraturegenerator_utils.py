@@ -11,113 +11,495 @@ from numpy import shape, transpose
 # UFL modules
 #from ufl.classes import AlgebraOperator, FormArgument
 from ufl.classes import *
-from ufl.algorithms.analysis import *
+from ufl.common import *
+from ufl.algorithms import *
+from ufl.algorithms.ad import *
+#from ufl.algorithms.analysis import *
 from ufl.algorithms.transformations import *
+
+from ffc.compiler.representation.tensor.multiindex import MultiIndex as FFCMultiIndex
+from ffc.compiler.language.tokens import Transform
 
 # Utility and optimisation functions for quadraturegenerator
 from quadraturegenerator_utils import unique_psi_tables, generate_loop
 
-class BasisTables:
-    """This class keeps track of all basis functions, which ones are used and
-    it generates the names and tabulates their values."""
+class QuadratureTransformer(Transformer):
+    "Transform UFL representation to quadrature code"
 
-    def __init__(self):
-        "Initialise class"
+    def __init__(self, tables, optimise_level, format):
 
-        self.element_map = {}
-        self.name_map = {}
-        self.unique_tables = {}
+        Transformer.__init__(self)
+
+        # Save format and optimise_level
+        self.format = format
+        self.optimise_level = optimise_level
+
+        # Create containers and variables
         self.used_tables = set()
         self.primary_loops = []
         self.functions = {}
+        self.points = 0
 
-    def update(self, tables, optimise_level, format):
-        "Update tables"
+        # Stacks
+        self._derivatives = []
+        self._index_values = StackDict()
+        self._components = StackDict()
+        self.trans_set = set()
+
         self.element_map, self.name_map, self.unique_tables =\
         self.__create_psi_tables(tables, optimise_level, format)
-#        self.disp()
 
-    def create_basis_function(self, ufl_basis_function, points, optimise_level, format):
+    def reset(self, points):
+        # Reset containers
+        self.used_tables = set()
+        self.primary_loops = []
+        self.functions = {}
+        self.points = points
+        if self._index_values:
+            raise RuntimeError("This dictionary is supposed to be empty")
+        if self._components:
+            raise RuntimeError("This list is supposed to be empty")
+        # It should be zero but clear just to be sure
+        self._index_values.clear()
+        self._components = []
+
+    # Handle the basics just in case, probably not needed?
+    def expr(self, o, *operands):
+        print "\nVisiting basic Expr:", o.__repr__(), "with operands:"
+        print ", ".join(map(str,operands))
+        return o
+
+    # Handle the basics just in case, probably not needed?
+    def terminal(self, o, *operands):
+        print "\nVisiting basic Terminal:", o.__repr__(), "with operands:"
+        print ", ".join(map(str,operands))
+        return o
+
+    # Algebra
+    def sum(self, o, *operands):
+        print "\nVisiting Sum:", o.__repr__(), "with operands:"
+        print ", ".join(map(str,operands))
+
+        format_group  = self.format["grouping"]
+        format_add    = self.format["add"]
+
+        code = {}
+        # Loop operands that has to be summend
+        for o in operands:
+            # If entries does already exist we can add the code, otherwise just
+            # dump them in the element tensor
+            for key, val in o.items():
+                if key in code:
+                    code[key].append(val)
+                else:
+                    code[key] = [val]
+
+        # Add sums and group if necessary
+        for key, val in code.items():
+            if len(val) > 1:
+                code[key] = format_group(format_add(val))
+            else:
+                code[key] = val[0]
+
+        return code
+
+    def product(self, o, *operands):
+        print "\nVisiting Product:", o.__repr__(), "with operands:"
+        print ", ".join(map(str,operands))
+
+        format_mult = self.format["multiply"]
+        permute = []
+        not_permute = []
+        # Sort operands in objects that needs permutation and objects that
+        # does not
+        for op in operands:
+            if len(op) > 1 or (op and op.keys()[0] != ()):
+                permute.append(op)
+            elif op:
+                not_permute.append(op[()])
+        # Create permutations
+        permutations = create_permutations(permute)
+
+#        print "permute: ", permute
+#        print "not_permute: ", not_permute
+#        print "permutations: ", permutations
+
+        # Create code
+        code ={}
+        if permutations:
+            for key in permutations:
+                code[key] = format_mult(permutations[key] + not_permute)
+        else:
+            code[()] = format_mult(not_permute)
+
+        return code
+
+    def index_sum(self, o):
+        print "\nVisiting IndexSum:", o.__repr__(),
+
+        summand, index = o.operands()
+        print "\nindex.__repr__(): ", index.__repr__()
+        print "\nindex[0].__repr__(): ", index[0].__repr__()
+        # Just a few safety checks
+        if not isinstance(index, MultiIndex) and len(index) == 1:
+            raise RuntimeError(index, "Expecting 1 MultiIndex")
+
+        format_group = self.format["grouping"]
+        format_add = self.format["add"]
+        tmp = 0
+        code = {}
+        for i in range(o.dimension()):
+            self._index_values.push(index[0], i)
+            tmp = self.visit(summand)
+#            print "index_sum, tmp: ", tmp
+            self._index_values.pop()
+
+            # FIXME: remove this?
+            if not tmp:
+                raise RuntimeError("I didn't expect this")
+
+            # If entries does already exist we can add the code, otherwise just
+            # dump them in the element tensor
+            for key, val in tmp.items():
+                if key in code:
+                    code[key].append(val)
+                else:
+                    code[key] = [val]
+
+        # Add sums and group if necessary
+        for key, val in code.items():
+            if len(val) > 1:
+                code[key] = format_group(format_add(val))
+            else:
+                code[key] = val
+
+        return code
+
+    def indexed(self, o):
+        print "\nVisiting Indexed:", o.__repr__(),
+
+        indexed_expr, index = o.operands()
+        print "wrap, indexed_expr: ", indexed_expr
+        print "wrap, index.__repr__(): ", index.__repr__()
+
+        # Loop multi indices and create components
+        for indx in index:
+            self._components.append(indx)
+            # If index is not present in index_values, create it.
+            # (It means that it is a Fixed index??!)
+            if not indx in self._index_values:
+                if not isinstance(indx, FixedIndex):
+                    raise RuntimeError(indx, "Index must be Fixed for Indexed to add it to index_values")
+                self._index_values.push(indx, indx._value)
+
+        # Visit expression subtrees and generate code
+        code = self.visit(indexed_expr)
+
+        # Loop multi indices and delete components
+        for indx in index:
+            self._components.pop()
+            if isinstance(indx, FixedIndex):
+
+                self._index_values.pop()
+
+        return code
+
+    def component_tensor(self, o):
+        print "\nVisiting ComponentTensor:", o.__repr__(),
+
+        indexed_expr, index = o.operands()
+        print "wrap, indexed_expr: ", indexed_expr
+        print "wrap, index.__repr__(): ", index.__repr__()
+
+        if not len(self._components) == len(index):
+            raise RuntimeError("The number of known components must be equal to the number of components of the ComponentTensor for this to work.")
+
+        # Save copy of components to let parent delete them again
+        old_components = self._components[:]
+        self._components = []
+
+        # Loop multi indices and map index values
+        for i, indx in enumerate(index):
+            self._index_values.push(indx, self._index_values[old_components[i]])
+
+        # Visit expression subtrees and generate code
+        code = self.visit(indexed_expr)
+
+        # Loop multi indices and delete index values
+        for indx in index:
+            self._index_values.pop()
+
+        # Set components equal to old components
+        self._components = old_components[:]
+
+        return code
+
+    def spatial_derivative(self, o):
+        print "\nVisiting SpatialDerivative:", o.__repr__(),
+
+        indexed_expr, index = o.operands()
+        print "wrap, indexed_expr: ", indexed_expr
+        print "wrap, index: ", index.__repr__()
+        if not isinstance(index, MultiIndex) and len(index) == 1:
+            raise RuntimeError(index, "Expecting 1 MultiIndex")
+
+        # Get the direction that we need the derivative for
+        direction = None
+        if isinstance(index[0], FixedIndex):
+            direction = index[0]._value
+        else:
+            direction = self._index_values[index[0]]
+
+        # Append the derivative
+        self._derivatives.append(direction)
+
+        # Visit children
+        code = self.visit(indexed_expr)
+        print "spatial_derivative, code: ", code
+
+        return code
+
+    # FormArguments
+#    def basis_function(self, o, *operands, component=[]):
+    def basis_function(self, o, *operands):
+        print "\nVisiting BasisFunction:", o.__repr__()
+
+        # Just checking that we don't get any operands
+        if operands:
+            raise RuntimeError(operands, "Didn't expect any operands for BasisFunction")
+
+#        print "self._components: ", self._components
+        if len(self._components) > 1:
+            raise RuntimeError(self._components, "Currently only supports 1 component value (tensor valued basis not supported)")
+
+#        print "self._derivatives: ", self._derivatives
+        # Create aux. info
+        # FIXME: restriction not handled yet
+        restriction = None
+        component = None
+        derivatives = ()
+        # Handle derivatives and components
+        if self._derivatives:
+            derivatives = self._derivatives[:]
+        if self._components:
+            component = self._index_values[self._components[0]]
+
+        print "\nDerivatives: ", derivatives
+
+        # Create mapping and code for basis function
+        basis = self.create_basis_function(o, restriction, component, derivatives)
+
+        # Reset spatial derivatives
+        # FIXME: (should this be handled by SpatialDerivative)
+        self._derivatives = []
+
+        return basis
+
+    def function(self, o, *operands):
+        print "\nVisiting Function:", o.__repr__()
+
+        # Just checking that we don't get any operands
+        if operands:
+            raise RuntimeError(operands, "Didn't expect any operands for BasisFunction")
+
+#        print "self._components: ", self._components
+        if len(self._components) > 1:
+            raise RuntimeError(self._components, "Currently only supports 1 component value (tensor valued basis not supported)")
+
+#        print "self._derivatives: ", self._derivatives
+        # Create aux. info
+        # FIXME: restriction not handled yet
+        restriction = None
+        component = None
+        derivatives = ()
+        # Handle derivatives and components
+        if self._derivatives:
+            derivatives = self._derivatives[:]
+        if self._components:
+            component = self._index_values[self._components[0]]
+
+        print "\nDerivatives: ", derivatives
+
+        # Create code for basis function
+        code = self.create_function(o, restriction, component, derivatives)
+
+        # Reset spatial derivatives
+        # FIXME: (should this be handled by SpatialDerivative)
+        self._derivatives = []
+
+        return {(): code}
+
+
+    def create_basis_function(self, ufl_basis_function, restriction, component, derivatives):
         "Create code for basis functions, and update relevant tables of used basis"
 
-        # FIXME: this needs a lot of work, and it might not even be the best
-        # way of doing it
-        # Only support test and trial
-        indices = {-2: format["first free index"], -1: format["second free index"]}
+        format_ip            = self.format["integration points"]
+        format_matrix_access = self.format["matrix access"]
+        format_group         = self.format["grouping"]
+        format_add           = self.format["add"]
+        format_mult          = self.format["multiply"]
+        format_transform     = self.format["transform"]
 
-        element_counter = self.element_map[points][(ufl_basis_function.element(), None)]
+        # Only support test and trial functions
+        # TODO: Verify that test and trial functions will ALWAYS be rearranged to 0 and 1
+        indices = {-2: self.format["first free index"],
+                   -1: self.format["second free index"],
+                    0: self.format["first free index"],
+                    1: self.format["second free index"]}
+
+        element_counter = self.element_map[self.points][(ufl_basis_function.element(), restriction)]
+        if not ufl_basis_function.count() in indices:
+            raise RuntimeError(ufl_basis_function, "Currently, BasisFunction index must be either -2, -1, 0 or 1")
+
         loop_index = indices[ufl_basis_function.count()]
 #        print "counter: ", counter
 #        print "index: ", index
-        name = self.__generate_psi_name(element_counter, None, None, ())
-        name, non_zeros = self.name_map[name]
-        loop_index_range = shape(self.unique_tables[name])[1]
-#        print "name: ", name
-        # Append the name to the set of used tables
-        self.used_tables.add(name)
 
-        # Change mapping
-        mapping = (ufl_basis_function.count(), loop_index, loop_index_range)
+        code = {}
+        # Generate FFC multi index for derivatives
+#        print "dims: ", [range(ufl_basis_function.element().cell().d)]*sum(derivatives)
+        geo_dim = ufl_basis_function.element().cell().d
+        multiindices = FFCMultiIndex([range(geo_dim)]*len(derivatives)).indices
+#        print "multiindices: ", multiindices
+        # Loop derivatives and get multi indices
+        for multi in multiindices:
+            deriv = [multi.count(i) for i in range(geo_dim)]
+            print "multi: ", multi
+            if not any(deriv):
+                deriv = []
+            print "deriv: ", deriv
 
-        # Create matrix access of basis
-        format_ip = format["integration points"]
-        if points == 1:
-            format_ip = "0"
+            name = self.__generate_psi_name(element_counter, restriction, component, deriv)
+#        print "name_map: ", self.name_map
+            name, non_zeros = self.name_map[name]
+            loop_index_range = shape(self.unique_tables[name])[1]
+##        print "name: ", name
+            # Append the name to the set of used tables
+            self.used_tables.add(name)
 
-        return (mapping, name + format["matrix access"](format_ip, loop_index))
+            # Change mapping
+            mapping = ((ufl_basis_function.count(), loop_index, loop_index_range),)
 
-    def create_function(self, ufl_function, points, optimise_level, format):
+            # Create matrix access of basis
+            if self.points == 1:
+                format_ip = "0"
+            basis = name + format_matrix_access(format_ip, loop_index)
+
+            # Add transformation if supported and needed
+            transforms = []
+            for i, direction in enumerate(derivatives):
+                ref = multi[i]
+                if ufl_basis_function.element().family() != "Lagrange":
+                    raise RuntimeError(ufl_basis_function.element().family(), "Only derivatives of Lagrange elements is currently supported")
+                t = format_transform(Transform.JINV, ref, direction, restriction)
+                self.trans_set.add(t)
+                transforms.append(t)
+
+            if mapping in code:
+                code[mapping].append(format_mult(transforms + [basis]))
+            else:
+                code[mapping] = [format_mult(transforms + [basis])]
+
+        # Add sums and group if necessary
+        for key, val in code.items():
+            if len(val) > 1:
+                code[key] = format_group(format_add(val))
+            else:
+                code[key] = val[0]
+
+        return code
+
+    def create_function(self, ufl_function, restriction, component, derivatives):
         "Create code for basis functions, and update relevant tables of used basis"
+
+        format_ip            = self.format["integration points"]
+        format_matrix_access = self.format["matrix access"]
+        format_group         = self.format["grouping"]
+        format_add           = self.format["add"]
+        format_mult          = self.format["multiply"]
+        format_transform     = self.format["transform"]
+        format_coeff         = self.format["coeff"]
+        format_F             = self.format["function value"]
 
         # FIXME: this needs a lot of work, and it might not even be the best
         # way of doing it
         # Pick first free index of secondary type
         # (could use primary indices, but it's better to avoid confusion)
-        loop_index = format["free secondary indices"][0]
+        loop_index = self.format["free secondary indices"][0]
 
         # Get basis name and range
-        element_counter = self.element_map[points][(ufl_function.element(), None)]
+        element_counter = self.element_map[self.points][(ufl_function.element(), restriction)]
 #        print "counter: ", element_counter
 #        print "loop_index: ", loop_index
-        basis_name = self.__generate_psi_name(element_counter, None, None, ())
-        basis_name, non_zeros = self.name_map[basis_name]
-        loop_index_range = shape(self.unique_tables[basis_name])[1]
-#        print "basis_name: ", basis_name
-        # Add basis name to set of used tables
-        self.used_tables.add(basis_name)
 
-        # Add matrix access to basis_name such that we create a unique entry
-        # for the expression to compute the function value
-        # Create matrix access of basis
-        format_ip = format["integration points"]
-        if points == 1:
-            format_ip = "0"
-        basis_name += format["matrix access"](format_ip, loop_index)
+        code = []
 
-        # FIXME: Need to take non-zero mappings, components, restricted and QE elements into account
-        coefficient = format["coeff"] + format["matrix access"](str(ufl_function.count()), loop_index)
-#        print "basis_name: ", basis_name
-#        print "coeff: ", coefficient
-        function_expr = format["multiply"]([basis_name, coefficient])
+        # Generate FFC multi index for derivatives
+#        print "dims: ", [range(ufl_basis_function.element().cell().d)]*sum(derivatives)
+        geo_dim = ufl_function.element().cell().d
+        multiindices = FFCMultiIndex([range(geo_dim)]*len(derivatives)).indices
 
-        # Check if the expression to compute the function value is already in
-        # the dictionary of used function. If not, generate a new name and add
-        function_name = format["function value"] + str(len(self.functions))
-        if not function_expr in self.functions:
-            self.functions[function_expr] = (function_name, loop_index_range)
+        for multi in multiindices:
+            deriv = [multi.count(i) for i in range(geo_dim)]
+            print "multi: ", multi
+            if not any(deriv):
+                deriv = []
+            print "deriv: ", deriv
+
+            basis_name = self.__generate_psi_name(element_counter, restriction, component, deriv)
+            basis_name, non_zeros = self.name_map[basis_name]
+            loop_index_range = shape(self.unique_tables[basis_name])[1]
+            print "basis_name: ", basis_name
+            # Add basis name to set of used tables
+            self.used_tables.add(basis_name)
+
+            # Add matrix access to basis_name such that we create a unique entry
+            # for the expression to compute the function value
+            # Create matrix access of basis
+            if self.points == 1:
+                format_ip = "0"
+            basis_name += format_matrix_access(format_ip, loop_index)
+
+            # FIXME: Need to take non-zero mappings, components, restricted and QE elements into account
+            coefficient = format_coeff + format_matrix_access(str(ufl_function.count()), loop_index)
+
+            function_expr = format_mult([basis_name, coefficient])
+
+            # Add transformation if supported and needed
+            transforms = []
+            for i, direction in enumerate(derivatives):
+                ref = multi[i]
+                if ufl_function.element().family() != "Lagrange":
+                    raise RuntimeError(ufl_function.element().family(), "Only derivatives of Lagrange elements is currently supported")
+                t = format_transform(Transform.JINV, ref, direction, restriction)
+                self.trans_set.add(t)
+                transforms.append(t)
+            function_expr = format_mult(transforms + [function_expr])
+
+            # Check if the expression to compute the function value is already in
+            # the dictionary of used function. If not, generate a new name and add
+            function_name = format_F + str(len(self.functions))
+            if not function_expr in self.functions:
+                self.functions[function_expr] = (function_name, loop_index_range)
+            else:
+                function_name, index_r = self.functions[function_expr]
+                # Check just to make sure
+                if not index_r == loop_index_range:
+                    raise RuntimeError("Index ranges does not match")
+            code.append(function_name)
+
+        if len(code) > 1:
+            code = format_group(format_add(code))
         else:
-            function_name, index_r = self.functions[function_expr]
-            # Check just to make sure
-            if not index_r == loop_index_range:
-                raise RuntimeError("Index ranges does not match")
+            code = code[0]
 
-        return function_name
+        return code
 
     def disp(self):
-        print "\nBasisTables, element_map:\n", self.element_map
-        print "\nBasisTables, name_map:\n", self.name_map
-        print "\nBasisTables, unique_tables:\n", self.unique_tables
-        print "\nBasisTables, used_tables:\n", self.used_tables
+        print "\nQuadratureTransformer, element_map:\n", self.element_map
+        print "\nQuadratureTransformer, name_map:\n", self.name_map
+        print "\nQuadratureTransformer, unique_tables:\n", self.unique_tables
+        print "\nQuadratureTransformer, used_tables:\n", self.used_tables
 
     def __create_psi_tables(self, tables, optimise_level, format):
         "Create names and maps for tables and non-zero entries if appropriate."
@@ -219,7 +601,7 @@ class BasisTables:
 
         return name
 
-def generate_code(integrand, basis_tables, points, optimise_level, Indent, format):
+def generate_code(integrand, transformer, points, optimise_level, Indent, format):
     """Generate code from a UFL integral type.
     This function implements the different optimisation strategies."""
 
@@ -240,16 +622,24 @@ def generate_code(integrand, basis_tables, points, optimise_level, Indent, forma
     weights_set = set()
     trans_set = set()
 
-    # We currently only support rank 0, 1 and 2 tensors
-    indices = {-2: format["first free index"], -1: format["second free index"]}
+    print "\nQG, Using Transformer"
+    # Expand all derivatives
+    print "Integrand: ", integrand
+    print "Integrand: ", expand_derivatives(integrand)
+
+    transformer.reset(points)
+    loop_code = transformer.visit(integrand)
+    trans_set = transformer.trans_set
+    print "loop_code: ", loop_code
+
+    # TODO: Verify that test and trial functions will ALWAYS be rearranged to 0 and 1
+    indices = {-2: format["first free index"], -1: format["second free index"],
+                0: format["first free index"],  1: format["second free index"]}
 
     print "\nQG-utils, generate_code, integrand.__repr__():\n", integrand.__repr__()
 
-    loop_code = expand_operations(integrand, basis_tables, points, optimise_level, Indent, format)
-    print "loop code: ", loop_code
-
     # Create code for computing function values, sort after loop ranges first
-    functions = basis_tables.functions
+    functions = transformer.functions
     print "FUNC: ", functions
     function_list = {}
     for key, val in functions.items():
@@ -280,7 +670,7 @@ def generate_code(integrand, basis_tables, points, optimise_level, Indent, forma
     for key, val in loop_code.items():
         print "Key: ", key
 
-        # Multiply by weight and determinate
+        # Multiply by weight and determinant
         # FIXME: This definitely needs a fix
         value = format["multiply"]([val, weight, format_scale_factor])
         weights_set.add(points)
@@ -293,8 +683,9 @@ def generate_code(integrand, basis_tables, points, optimise_level, Indent, forma
             entry = "0"
         elif len(key) == 1:
             key = key[0]
-            # Checking if the basis is was a test function
-            if key[0] != -2:
+            # Checking if the basis was a test function
+            # TODO: Make sure test function indices are always rearranged to 0
+            if key[0] != -2 and key[0] != 0:
                 raise RuntimeError("Linear forms must be defined using test functions only")
             # FIXME: Need to consider interior facet integrals
             entry = key[1]
@@ -304,8 +695,8 @@ def generate_code(integrand, basis_tables, points, optimise_level, Indent, forma
             key0, key1 = (0, 0)
             for k in key:
                 if not k[0] in indices:
-                    raise RuntimeError(k, "Bilinear forms must be defined using test and trial functions (index -2, -1)")
-                if k[0] == -2:
+                    raise RuntimeError(k, "Bilinear forms must be defined using test and trial functions (index -2, -1, 0, 1)")
+                if k[0] == -2 or k[0] == 0:
                     key0 = k
                 else:
                     key1 = k
@@ -324,147 +715,6 @@ def generate_code(integrand, basis_tables, points, optimise_level, Indent, forma
         code += generate_loop(lines, loop, Indent, format)
 
     return (code, num_ops, weights_set, trans_set)
-
-def expand_operations(expr, basis_tables, points, optimise_level, Indent, format):
-
-    print "\nQG-utils, expand_operations, expr.__repr__():\n", expr.__repr__()
-
-    code = {}
-    if isinstance(expr, AlgebraOperator):
-        print "Algebra: ", expr
-        code = apply_algebra(expr, basis_tables, points, optimise_level, Indent, format)
-    if isinstance(expr, FormArgument):
-        print "FormArgument: ", expr
-        code = format_argument(expr, basis_tables, points, optimise_level, Indent, format)
-
-    # FIXME: Make sure that WrapperType only covers containers
-    if isinstance(expr, WrapperType):
-        print "WrapperType: ", expr
-        code = apply_wrapper(expr, basis_tables, points, optimise_level, Indent, format)
-
-    return code
-
-def apply_algebra(expr, basis_tables, points, optimise_level, Indent, format):
-
-    code = {}
-
-    if isinstance(expr, Product):
-        format_mult = format["multiply"]
-#        print "product: ", expr
-#        print "operands: ", expr.operands()
-        permute = []
-        not_permute = []
-        for o in expr.operands():
-            print "O: ", o
-            expanded = expand_operations(o, basis_tables, points, optimise_level, Indent, format)
-            print "expanded: ", expanded
-
-            if len(expanded) > 1 or (expanded and expanded.keys()[0] != ()):
-                permute.append(expanded)
-            elif expanded:
-                not_permute.append(expanded[()])
-
-#        print "permute: ", permute
-#        print "not_permute: ", not_permute
-
-        permutations = create_permutations(permute)
-#        print "permutations: ", permutations
-
-        if permutations:
-            for key in permutations:
-                code[key] = format_mult(permutations[key] + not_permute)
-        else:
-            code[()] = format_mult(not_permute)
-
-    if isinstance(expr, Sum):
-        format_add = format["add"]
-        format_group = format["grouping"]
-
-        print "sum: ", expr
-#        print "operands: ", expr.operands()
-#        permute = []
-#        not_permute = []
-        for o in expr.operands():
-            print "O: ", o
-            expanded = expand_operations(o, basis_tables, points, optimise_level, Indent, format)
-            print "expanded: ", expanded
-
-            if not expanded:
-                raise RuntimeError("I didn't expect this")
-
-            # Loop the expanded values and if some entries are the same they
-            # can be added, otherwise just dump them in the element tensor
-            for key, val in expanded.items():
-                if key in code:
-                    code[key].append(val)
-                else:
-                    code[key] = [val]
-
-        # Add sums and group if necessary
-        for key, val in code.items():
-            if len(val) > 1:
-                code[key] = format_group(format_add(val))
-
-    if isinstance(expr, IndexSum):
-        format_add = format["add"]
-        format_group = format["grouping"]
-
-#        print "index sum: ", expr
-#        print "dir(index_sum): ", dir(expr)
-        summand, index = expr.operands()
-#        print "summand.__repr__(): ", summand.__repr__()
-#        print "index.__repr__(): ", index.__repr__()
-#        print "index_dims: ", expr.index_dimensions()
-#        print "free indices: ", expr.free_indices()
-#        print "dir(index): ", dir(index)
-#        print "summand.index_dims: ", summand.index_dimensions()
-#        print "summand.free indices: ", summand.free_indices()
-        # Get index range
-        # TODO: What is the #$#%$^%#%^ MultiIndex good for????!!
-        # Find better way of getting the index range
-        index_range = summand.index_dimensions()[index[0]]
-        print "index_range: ", index_range
-        new = replace(summand, {index: 0})
-        print "NEW: ", new
-
-
-        # TODO: Does indices always start from 0?
-        # This is most likely not the best way of creating code for the
-        # IndexSum, but otherwise I'll lose information for the recursive
-        # stages such that implicit assumptions must be made.
-        # Alternatively, code should be generated for each free index and the
-        # sum should just pick the correct indices.
-        for i in range(index_range):
-            print "I: ", i
-
-        # Just testing to see what this will give me
-        test = expand_operations(summand, basis_tables, points, optimise_level, Indent, format)
-        print "TEST: ", test
-
-#        permute = []
-#        not_permute = []
-#        for o in expr.operands():
-#            print "O: ", o
-#            expanded = expand_operations(o, basis_tables, points, optimise_level, Indent, format)
-#            print "expanded: ", expanded
-
-#            if not expanded:
-#                raise RuntimeError("I didn't expect this")
-
-#            # Loop the expanded values and if some entries are the same they
-#            # can be added, otherwise just dump them in the element tensor
-#            for key, val in expanded.items():
-#                if key in code:
-#                    code[key].append(val)
-#                else:
-#                    code[key] = [val]
-
-#        # Add sums and group if necessary
-#        for key, val in code.items():
-#            if len(val) > 1:
-#                code[key] = format_group(format_add(val))
-
-    return code
 
 def create_permutations(expr):
 
@@ -513,47 +763,6 @@ def create_permutations(expr):
     if len(expr) > 2:
         new = permutations(expr[0:2])
         return permutations(new + expr[2:])
-
-def format_argument(expr, basis_tables, points, optimise_level, Indent, format):
-
-    code = ""
-    entry_mapping = ()
-    if isinstance(expr, Function):
-        print "function: ", expr
-#        code = str(expr)
-        code = basis_tables.create_function(expr, points, optimise_level, format)
-
-    if isinstance(expr, BasisFunction):
-        print "basis function: ", expr
-        entry_mapping, code = basis_tables.create_basis_function(expr, points, optimise_level, format)
-
-    return {entry_mapping: code}
-
-def apply_wrapper(expr, basis_tables, points, optimise_level, Indent, format):
-
-    code = {}
-    print "\nwrap, dir(expr): ", dir(expr)
-    print "wrap, expr.operands(): ", expr.operands()
-
-    # TODO: Is this correct?
-    indexed_expr, index = expr.operands()
-
-    print "wrap, indexed_expr: ", indexed_expr
-    print "wrap, index: ", index
-    print "wrap, expr.free_indices(): ", expr.free_indices()
-    print "wrap, expr.index_dimensions(): ", expr.index_dimensions()
-
-    # Get code
-    code = expand_operations(indexed_expr, basis_tables, points, optimise_level, Indent, format)
-
-    # Do something to code according to index
-
-    return code
-
-
-
-
-
 
 
 
