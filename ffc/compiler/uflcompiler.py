@@ -267,6 +267,8 @@ def _check_options(options):
         warning("Optimization unavailable (will return in a future version).")
     if options["blas"]:
         warning("BLAS mode unavailable (will return in a future version).")
+    if options["quadrature_points"]:
+        warning("The option 'quadrature_points' is only available for standard FFC forms (not UFL forms), will be ignored.")
 
 def _extract_objects(objects):
     "Extract forms and elements from list of objects."

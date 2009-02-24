@@ -24,6 +24,14 @@ from ffc.fem.mixedelement import MixedElement
 
 # FFC compiler modules
 from ffc.compiler.compiler import compile
+
+try:
+    from ffc.compiler.uflcompiler import compile as uflcompile
+    from ufl.classes import Form as UFLForm
+    from ufl.classes import FiniteElementBase
+except:
+    pass
+
 from ffc.compiler.language.algebra import Form, TestFunction
 from ffc.compiler.language.builtins import dx
 
@@ -52,13 +60,18 @@ def jit(object, options=None):
     else:
         return jit_form(object, options)
 
+
 def jit_form(form, options=None):
     "Just-in-time compile the given form"
-    
-    # Make sure that we get a form
-    if not isinstance(form, Form):
-        form = Form(form)
-    
+
+    # FIXME: Remove this test later
+    if "compiler" in options and options["compiler"] == "ufl":
+        if not isinstance(form, UFLForm):
+            form = UFLForm(form)
+    else:
+        if not isinstance(form, Form):
+            form = Form(form)
+
     # Check options
     options = check_options(form, options)
     
@@ -66,24 +79,30 @@ def jit_form(form, options=None):
     jit_object = JITObject(form, options)
     
     # Check cache
+    signature = jit_object.signature()
     module = instant.import_module(jit_object, cache_dir=options["cache_dir"])
-    if module: return extract_form(form, module)
+    if module: return extract_form(jit_object, module)
     
-    # Check system requirements
-    # NOTE: This need to be done before signature creation as we here check for 
-    # both UFC installation and SWIG excistence which is needed in the signature
-    (cppargs, cpp_path, swig_path) = configure_instant(options)
-
     # Generate code
     debug("Calling FFC just-in-time (JIT) compiler, this may take some time...", -1)
-    signature = jit_object.signature()
-    compile(form, signature, options)
+#    signature = jit_object.signature()
+
+    if options["compiler"] == "ffc":
+        compile(form, signature, options)
+    elif options["compiler"] == "ufl":
+        uflcompile(form, signature, options)
+    else:
+        raise RuntimeError(options["compiler"], "Unknown compiler.")
+
     debug("done", -1)
     
     # Wrap code into a Python module using Instant
     debug("Creating Python extension (compiling and linking), this may take some time...", -1)
     filename = signature + ".h"
     
+    # Check system requirements
+    (cppargs, cpp_path, swig_path) = configure_instant(options)
+
     # Add shared_ptr declarations
     declarations = extract_declarations(filename)
     
@@ -103,7 +122,7 @@ def jit_form(form, options=None):
     os.unlink(filename)
     debug("done", -1)
 
-    return extract_form(form, module)
+    return extract_form(jit_object, module)
 
 def jit_element(element, options=None):
     "Just-in-time compile the given element"
@@ -151,9 +170,9 @@ def check_options(form, options):
 
     return options
 
-def extract_form(form, module):
+def extract_form(jit_object, module):
     "Extract form from module"
-    return (getattr(module, module.__name__)(), module, form.form_data)
+    return (getattr(module, module.__name__)(), module, jit_object.form_data)
 
 def extract_element_and_dofmap(module):
     "Extract element and dofmap from module"
