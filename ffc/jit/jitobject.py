@@ -73,6 +73,6 @@ class JITObject:
         self._signature = "form_" + sha1(string).hexdigest()
 
         # Store form data and signature in form for later reuse
-#        self._form_data = self.form_data
+        self.form.form_data = self.form_data
 
         return self._signature

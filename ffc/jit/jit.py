@@ -79,13 +79,13 @@ def jit_form(form, options=None):
     jit_object = JITObject(form, options)
     
     # Check cache
-    signature = jit_object.signature()
+#    signature = jit_object.signature()
     module = instant.import_module(jit_object, cache_dir=options["cache_dir"])
-    if module: return extract_form(jit_object, module)
+    if module: return extract_form(form, module)
     
     # Generate code
     debug("Calling FFC just-in-time (JIT) compiler, this may take some time...", -1)
-#    signature = jit_object.signature()
+    signature = jit_object.signature()
 
     if options["compiler"] == "ffc":
         compile(form, signature, options)
@@ -122,7 +122,7 @@ def jit_form(form, options=None):
     os.unlink(filename)
     debug("done", -1)
 
-    return extract_form(jit_object, module)
+    return extract_form(form, module)
 
 def jit_element(element, options=None):
     "Just-in-time compile the given element"
@@ -170,9 +170,9 @@ def check_options(form, options):
 
     return options
 
-def extract_form(jit_object, module):
+def extract_form(form, module):
     "Extract form from module"
-    return (getattr(module, module.__name__)(), module, jit_object.form_data)
+    return (getattr(module, module.__name__)(), module, form.form_data)
 
 def extract_element_and_dofmap(module):
     "Extract element and dofmap from module"
