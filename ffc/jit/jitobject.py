@@ -22,14 +22,14 @@ class JITObject:
     single instance of an application (at runtime). The signature is
     persistent and may be used for caching modules on disk."""
 
-    def __init__(self, form, options, form_data_cache):
+    def __init__(self, form, options, use_ufl):
         "Create JITObject for given form and options"
         self.form = form
         self.options = options
         self._form_data = None
         self._hash = None
         self._signature = None
-        self.form_data_cache = form_data_cache
+        self.use_ufl = use_ufl
 
     def __hash__(self):
         "Return unique integer for form + options"
@@ -78,7 +78,7 @@ class JITObject:
 
         # FIXME: Temporary fix
         # Store form data and signature in form for later reuse
-        #self.form.form_data = self.form_data
-        self.form_data_cache[self.form] = self.form_data
+        if not self.use_ufl:
+            self.form.form_data = self.form_data
 
         return self._signature

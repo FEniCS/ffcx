@@ -45,9 +45,6 @@ FFC_OPTIONS_JIT["no-evaluate_basis_derivatives"] = True
 # Set debug level for Instant
 instant.set_logging_level("warning")
 
-# FIXME: Allow attaching form data to UFL forms
-form_data_cache = {}
-
 def jit(object, options=None):
     """Just-in-time compile the given form or element
     
@@ -67,36 +64,38 @@ def jit_form(form, options=None):
     "Just-in-time compile the given form"
 
     # FIXME: Remove this test later
-    if not options is None and "compiler" in options and options["compiler"] == "ufl":
+    use_ufl = not options is None and "compiler" in options and options["compiler"] == "ufl"
+    if use_ufl:
         if not isinstance(form, UFLForm):
             form = UFLForm(form)
     else:
         if not isinstance(form, Form):
             form = Form(form)
-
+        
     # Check options
     options = check_options(form, options)
     
     # Wrap input
-    jit_object = JITObject(form, options, form_data_cache)
+    jit_object = JITObject(form, options, use_ufl)
     
     # Check cache
     #    signature = jit_object.signature()
     module = instant.import_module(jit_object, cache_dir=options["cache_dir"])
     if module:
-        compiled_form = getattr(module, module.__name__)()        
-        return (compiled_form, module, form_data_cache[form])
+        compiled_form = getattr(module, module.__name__)()
+        if use_ufl:
+            return (compiled_form, module, form.form_data())
+        else:
+            return (compiled_form, module, form.form_data)
     
     # Generate code
     debug("Calling FFC just-in-time (JIT) compiler, this may take some time...", -1)
     signature = jit_object.signature()
 
-    if options["compiler"] == "ffc":
-        compile(form, signature, options)
-    elif options["compiler"] == "ufl":
+    if use_ufl:
         uflcompile(form, signature, options)
     else:
-        raise RuntimeError(options["compiler"], "Unknown compiler.")
+        compile(form, signature, options)
 
     debug("done", -1)
     
@@ -129,7 +128,10 @@ def jit_form(form, options=None):
     # Extract compiled form
     compiled_form = getattr(module, module.__name__)()
 
-    return compiled_form, module, form_data_cache[form]
+    if use_ufl:
+        return compiled_form, module, form.form_data()
+    else:
+        return compiled_form, module, form.form_data
 
 def jit_element(element, options=None):
     "Just-in-time compile the given element"
