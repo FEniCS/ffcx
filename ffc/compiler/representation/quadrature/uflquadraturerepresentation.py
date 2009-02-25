@@ -52,7 +52,7 @@ class QuadratureRepresentation:
 
     """
 
-    def __init__(self, form_data, domain_representations, num_quadrature_points):
+    def __init__(self, form_data):
         "Create tensor representation for given form"
 
         # Extract form
@@ -64,14 +64,6 @@ class QuadratureRepresentation:
         # Save useful constants
         self.geometric_dimension = form_data.geometric_dimension
 
-        # Set number of specified quadrature points. This value can be set from
-        # the command line and is valid for ALL forms in the form file. Default
-        # value is zero.
-        # TODO: It might be obsolete given UFL's capability of
-        # specifying the number of points as meta-data of the integral in the
-        # forms.
-        self.num_quad_points = num_quadrature_points
-
         # Initialise tables
         self.psi_tables = {Measure.CELL:{},
                            Measure.EXTERIOR_FACET: {},
@@ -81,87 +73,37 @@ class QuadratureRepresentation:
         print "\nQR, init, form:\n", form
         print "\nQR, init, form.__repr__():\n", form.__repr__()
 
-        # Get relevant cell integrals
-        cell_integrals = [i for i in form.cell_integrals() if\
-            domain_representations[(i.measure().domain_type(), i.measure().domain_id())] == "quadrature"]
+        # Get relevant integrals of all types and attach
+        self.cell_integrals = self.__extract_integrals(form.cell_integrals())
+        self.exterior_facet_integrals =\
+                    self.__extract_integrals(form.exterior_facet_integrals())
+        self.interior_facet_integrals =\
+                    self.__extract_integrals(form.interior_facet_integrals())
 
-        # Attach integrals
-        self.cell_integrals = cell_integrals
-        self.exterior_facet_integrals = []
-        self.interior_facet_integrals = []
+        # Tabulate basis values
+        print "cell_integrals: ", self.cell_integrals
+        self.__tabulate(self.cell_integrals)
+#        self.__tabulate(self.exterior_facet_integrals)
+#        self.__tabulate(self.interior_facet_integrals)
 
-
-#        print "\nQR, cell_integrals:\n", cell_integrals
-
-#        integrand = cell_integrals[0].integrand()
-#        print integrand.__doc__
-#        print "\nQR, cell_integrals[0].integrand()\n", integrand
-
-#        print "\nQR, integrand.free_indices():\n", integrand.free_indices()
-#        print "\nQR, integrand.repeated_indices():\n", integrand.repeated_indices()
-#        print "\nQR, integrand.index_dimensions():\n", integrand.index_dimensions()
-
-#        operands = integrand.operands()
-#        print "\nQR, integrand.operands():\n", operands
-#        for op in operands:
-#            print "op: ", op
-#            print "op.free_indices(): ", op.free_indices()
-#            print "op.repeated_indices(): ", op.repeated_indices()
-#            print "op.index_dimensions(): ", op.index_dimensions()
-
-#        basisfunctions = extract_basisfunctions(integrand)
-#        print "\nQR, basisfunctions:\n", basisfunctions
-
-#        coefficients = extract_coefficients(integrand)
-#        print "\nQR, coefficients:\n", coefficients
-
-#        elements = extract_unique_elements(form)
-#        print "\nQR, unique elements:\n", elements
-#        element = elements.pop()
-#        print "\nQR, ufl element:\n", element
-#        print "\nQR, ufl element.value shape:\n", element.value_shape()
-#        fem = FiniteElement(element.family(), element.cell().domain(), element.degree())
-#        print "\nQR, ffc element:\n", fem
-
-
-#        derivs = sorted(extract_type(integrand, Derivative), cmp=cmp_counted)
-#        derivs = extract_type(integrand, SpatialDerivative)
-#        print "\nQR, derivs:\n", derivs
-#        for d in derivs:
-#            print d.operands()[1]
-#            print len(d.operands()[1])
-#            print d.operands()[1][0]
-
-#        print "QR, form_data.quad_order: ", form_data.quad_order
-#        print "QR, count_nodes(integrand): ", count_nodes(integrand)
-#        print "QR, extract_duplications(integrand): ", extract_duplications(integrand)
-
-#        print "compound expansion of integrand"
-#        print expand_compounds(integrand)
-
-        # FIXME: The quad_order from form_data is very wrong. The number of
-        # quadrature points should be determined for each individual integral.
-        self.__tabulate(cell_integrals, form_data.quad_order)
         print "\nQR, init, psi_tables:\n", self.psi_tables
         print "\nQR, init, quadrature_weights:\n", self.quadrature_weights
         # Compute representation of cell tensor
-#        self.cell_tensor = self.__compute_cell_tensor(form)
-        
-        # Compute representation of exterior facet tensors
-#        self.exterior_facet_tensors = self.__compute_exterior_facet_tensors(form)
 
-        # Compute representation of interior facet tensors
-#        self.interior_facet_tensors = self.__compute_interior_facet_tensors(form)
+    def __extract_integrals(self, integrals):
+        "Extract relevant integrals for the QuadratureGenerator."
+        print "I: ", integrals
+        return [i for i in integrals if\
+               i.measure().metadata()["ffc"]["representation"] == "quadrature"]
 
-    def __tabulate(self, integrals, order):
+    def __tabulate(self, integrals):
         "Tabulate the basisfunctions and derivatives."
 
         # FIXME: Get polynomial order for each term and integral, not just one
         # value for entire form, take into account derivatives
+        order = integrals[0].measure().metadata()["quadrature_order"]
+
         num_points = (order + 1 + 1) / 2 # integer division gives 2m - 1 >= q
-        if self.num_quad_points:
-            num_points = self.num_quad_points
-        self.num_quad_points = num_points
 
         # The integral type is the same for ALL integrals
         integral_type = integrals[0].measure().domain_type()
@@ -247,104 +189,6 @@ class QuadratureRepresentation:
             raise RuntimeError(ufl_e, "Unable to create equivalent FIAT element.")
         return
 
-    def __compute_cell_tensor(self, form):
-        "Compute representation of cell tensor"
-        debug_begin("Computing cell tensor")
-
-        # Extract monomials
-        monomials = self.__extract_monomials(form, Integral.CELL)
-        if len(monomials) == 0:
-            debug_end()
-            return []
-
-        # Compute factorization
-        #FIXME: this will mean something else for quadrature
-        factorization = self.__compute_factorization(monomials)
-
-        # Compute sum of tensor representations
-        tensors = self.__compute_tensors(monomials, factorization, Integral.CELL, None, None)
-
-        debug_end()
-        return tensors
-
-    def __compute_exterior_facet_tensors(self, form):
-        "Compute representation of exterior facet tensors"
-        debug_begin("Computing exterior facet tensors")
-
-        # Extract monomials
-        monomials = self.__extract_monomials(form, Integral.EXTERIOR_FACET)
-        if len(monomials) == 0:
-            debug_end()
-            return []
-
-        # Compute factorization
-        #FIXME: this will mean something else for quadrature
-        factorization = self.__compute_factorization(monomials)
-
-        # Get the number of facets
-        num_facets = form.monomials[0].basisfunctions[0].element.num_facets()
-
-        debug("Number of facets to consider: %d" % num_facets)
-        
-        # Compute sum of tensor representations for each facet
-        tensors = [None for i in range(num_facets)]
-        for i in range(num_facets):
-            tensors[i] = self.__compute_tensors(monomials, factorization, Integral.EXTERIOR_FACET, i, None)
-
-        debug_end()
-        return tensors
-
-    def __compute_interior_facet_tensors(self, form):
-        "Compute representation of interior facet tensors"
-        debug_begin("Computing interior facet tensors")
-
-        # Extract monomials
-        monomials = self.__extract_monomials(form, Integral.INTERIOR_FACET)
-        if len(monomials) == 0:
-            debug_end()
-            return []
-
-        # Compute factorization
-        #FIXME: this will mean something else for quadrature
-        factorization = self.__compute_factorization(monomials)
-
-        # Get the number of facets
-        num_facets = form.monomials[0].basisfunctions[0].element.num_facets()
-
-        debug("Number of facets to consider: %d x %d" % (num_facets, num_facets))
-        
-        # Compute sum of tensor representations for each facet-facet combination
-        tensors = [[None for j in range(num_facets)] for i in range(num_facets)]
-        for i in range(num_facets):
-            for j in range(num_facets):
-                tensors[i][j] = self.__compute_tensors(monomials, factorization, Integral.INTERIOR_FACET, i, j)
-#                reorder_entries(terms[i][j])
-
-        debug_end()
-        return tensors
-
-    def __extract_monomials(self, form, integral_type):
-        "Extract monomials"
-
-        # Extract monomials of given type
-        monomials = [m for m in form.monomials if m.integral.type == integral_type]
-        if len(monomials) > 0:
-            debug("Number of terms to consider: %d" % len(monomials))
-        else:
-            debug("No terms")
-
-        return monomials
-
-    #FIXME: this will mean something else for quadrature, returns None
-    def __compute_factorization(self, monomials):
-        "Compute factorization"
-
-        factorization = [None for i in range(len(monomials))]
-
-        num_terms = sum([1 for m in factorization if m == None])
-        debug("Number of terms to compute: %d" % num_terms)
-
-        return factorization
 
     def __compute_tensors(self, monomials, factorization, integral_type, facet0, facet1):
         "Compute terms and factorize common reference tensors"

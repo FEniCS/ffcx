@@ -19,8 +19,9 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Dag Lindbo, 2008.
 
 # UFL modules
-from ufl.classes import Form, FiniteElementBase
-from ufl.algorithms import FormData, is_multilinear, validate_form, extract_monomials
+from ufl.classes import Form, FiniteElementBase, Measure, Integral
+from ufl.algorithms import FormData, is_multilinear, validate_form, extract_monomials, extract_quadrature_order, estimate_quadrature_order
+
 
 # FFC common modules
 from ffc.common.log import debug, info, warning, error, begin, end, set_level, INFO
@@ -91,35 +92,20 @@ def compile_forms(forms, prefix, options):
 #    form_representations = []
     for form in forms:
 
+        # Handle all metadata of integrals
+        # TODO: Improve algorithm in UFL that returns the quad_order of
+        # an integral. As a result of handling the metadata, some measures
+        # might become equal which means that integrals can be grouped.
+        # This should therefore happen before analyze_form() like it is now.
+        form = handle_metadatas(form, options)
+
         # Compiler stage 1: analyze form
         form_data = analyze_form(form)
         #form_datas += [form_data]
 
-        # Representations on subdomains
-        # FIXME: We can support different representations on individual
-        # subdomains. The representation can be specified by the user on the
-        # command line (global represetation for all forms in the ufl file);
-        # extracted as meta data from the integrals in the ufl file (user
-        # specified for individual subdomain integrals); or the representation
-        # can be selected automatically by a module yet to be implemented.
-        # Key thing to note is that each subdomain uses the same representation
-        # for ALL terms, otherwise we will get into all kinds of troubles with
-        # with respect to the codegenerators.
-        # Check if specified representation is legal.
-        domain_representations = {}
-        # Simple generator for now
-        for integral in form_data.form.cell_integrals():
-            domain_representations[(integral.measure().domain_type(), integral.measure().domain_id())] = options["representation"]
-        for integral in form_data.form.exterior_facet_integrals():
-            domain_representations[(integral.measure().domain_type(), integral.measure().domain_id())] = options["representation"]
-        for integral in form_data.form.interior_facet_integrals():
-            domain_representations[(integral.measure().domain_type(), integral.measure().domain_id())] = options["representation"]
-
-        print "domain_representations:\n", domain_representations
-
         # Compiler stage 2: compute form representation
         tensor_representation, quadrature_representation =\
-            compute_form_representation(form_data, domain_representations, options)
+            compute_form_representation(form_data, options)
 
 #        form_representation = compute_form_representation(form_data, options)
 #        form_representations += [form_representation]
@@ -131,7 +117,7 @@ def compile_forms(forms, prefix, options):
         #form_code = generate_form_code(form_data, form_representation, options["representation"], format.format)
         ffc_form_data = FFCFormData(None, ufl_form_data=form_data)
         form_code = generate_form_code(ffc_form_data, tensor_representation,\
-                          quadrature_representation, domain_representations, format.format)
+                          quadrature_representation, format.format)
 
         # Add to list of codes
         generated_forms += [(form_code, ffc_form_data)]
@@ -175,7 +161,79 @@ def compile_elements(elements, prefix="Element", options=FFC_OPTIONS):
     begin("Compiler stage 5: Formatting code")
     format.write([(element_code, element_data)], prefix, options)
     end()
-    
+
+def handle_metadatas(form, options):
+    "Handle metadata of all integrals"
+
+    # TODO: Is this the best way of doing this?
+    # Create new and empty Form
+    form_new = Form([])
+
+    # Loop all integrals and create new forms. Add these forms such that
+    # integrals which might have become equal (due to metadata handling)
+    # are grouped.
+    for integral in form.cell_integrals():
+        form_new += Form([handle_metadata(integral, options)])
+    for integral in form.exterior_facet_integrals():
+        form_new += Form([handle_metadata(integral, options)])
+    for integral in form.interior_facet_integrals():
+        form_new += Form([handle_metadata(integral, options)])
+#    print "new form: ", form_new
+
+    return form_new
+
+def handle_metadata(integral, options):
+    "Handle metadata of one integral"
+
+    # Get the old metadata
+    metadata_old = integral.measure().metadata()
+
+    # Set default values for representation and quadrature_order
+    representation = options["representation"]
+    quadrature_order = options["quadrature_order"]
+
+    # If we have a metadata loop options
+    if metadata_old:
+        for k, v in metadata_old.items():
+            if k == "ffc":
+                if "representation" in v:
+                    # Get representation and check that it is valid
+                    representation = v.pop("representation")
+                    if not representation in ["tensor", "quadrature", "automatic"]:
+                        error("Unrecognized representation '%s', must be one of: ['tensor', 'quadrature', 'automatic']" % representation)
+                    # If we still have some options, display a warning
+                    if v:
+                        warning("Following options are not supported: " + ", ".join([str(o) for o in v]))
+            elif k == "quadrature_order":
+                quadrature_order = v
+            else:
+                warning("Unrecognized option %s for metadata" % k)
+
+    # Automatically select representation based on operation estimate
+    if representation == "automatic":
+        representation = auto_select_representation(integral)
+
+    # TODO: If quadrature_order can't be converted to an int it will fail
+    if quadrature_order != None:
+        quadrature_order = int(quadrature_order)
+    else:
+        # TODO: Improve algorithm in UFL
+        quadrature_order = max(extract_quadrature_order(integral),\
+                               estimate_quadrature_order(integral))
+
+    # Create the new consistent metadata and Measure
+    metadata_new = {"quadrature_order":quadrature_order, "ffc":{"representation":representation}}
+    measure_new = integral.measure().reconstruct(metadata=metadata_new)
+
+    # Create and return new Integral
+    return Integral(integral.integrand(), measure_new)
+
+def auto_select_representation(integral):
+    "Automatically select the best representation"
+
+    # FIXME: Implement this
+    return "quadrature"
+
 def analyze_form(form):
     "Compiler stage 1: analyze form"
     begin("Compiler stage 1: Analyzing form")
@@ -185,7 +243,7 @@ def analyze_form(form):
     end()
     return form_data
 
-def compute_form_representation(form_data, domain_representations, options):
+def compute_form_representation(form_data, options):
     "Compiler stage 2: Compute form representation"
     begin("Compiler stage 2: Computing form representation")
 
@@ -204,10 +262,7 @@ def compute_form_representation(form_data, domain_representations, options):
     # FIXME: The representations should of course only be generated for the
     # relevant subdomains
 #    tensor = UFLTensorRepresentation(form_data, int(options["quadrature_points"]))
-    quadrature = UFLQuadratureRepresentation(form_data, domain_representations, int(options["quadrature_points"]))
-
-
-
+    quadrature = UFLQuadratureRepresentation(form_data)
 
     end()
     return (quadrature, quadrature)
@@ -219,38 +274,27 @@ def optimize_form_representation(form):
     info("Optimization currently broken (to be fixed).")
     end()
 
-def generate_form_code(form_data, tensor_representation, quadrature_representation, domain_representations, format):
+def generate_form_code(form_data, tensor_representation, quadrature_representation, format):
     "Compiler stage 4: Generate code"
     begin("Compiler stage 4: Generating code")
-    tensor_generator = None
-    quadrature_generator = None
-    # Only create generators if they are used.
-    for key, val in domain_representations.items():
-        if val == "tensor" and not tensor_generator:
-            tensor_generator = UFLTensorGenerator()
-        if val == "quadrature" and not quadrature_generator:
-            quadrature_generator = UFLQuadratureGenerator()
-        # Break if both generators have been initialised
-        if tensor_generator and quadrature_generator:
-            break
+
+    # We need both genrators
+#    tensor_generator = UFLTensorGenerator()
+    quadrature_generator = UFLQuadratureGenerator()
 
     # Generate common code
     common_generator = CodeGenerator()
     code = common_generator.generate_form_code(form_data, None, format, ufl_code=True)
 
-    # FIXME: This is just a suggestion. Calling the generate_*_integrals() method
-    # should create code for all subdomains for a given representation. It is
-    # safe to use code.update() since no integrals are redundant
-    # Generate code for integrals
-    if quadrature_generator:
-        # Generate code for cell integrals
-        code.update(quadrature_generator.generate_cell_integrals(quadrature_representation, format))
+    # Generate code for integrals using quadrature
+    # Generate code for cell integrals
+    code.update(quadrature_generator.generate_cell_integrals(quadrature_representation, format))
 
-        # Generate code for exterior facet integrals
-        code.update(quadrature_generator.generate_exterior_facet_integrals(quadrature_representation, format))
+    # Generate code for exterior facet integrals
+    code.update(quadrature_generator.generate_exterior_facet_integrals(quadrature_representation, format))
 
-        # Generate code for interior facet integrals
-        code.update(quadrature_generator.generate_interior_facet_integrals(quadrature_representation, format))
+    # Generate code for interior facet integrals
+    code.update(quadrature_generator.generate_interior_facet_integrals(quadrature_representation, format))
         
     end()
     return code

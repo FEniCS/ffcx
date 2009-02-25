@@ -113,7 +113,7 @@ class QuadratureGenerator:
         print "\nQG, cell_integral, tree_format(integral):\n", tree_format(integral)
         print "\nQG, cell_integral, integral.__repr__():\n", integral.__repr__()
         print "\nQG, cell_integral, integral.integrand().__repr__():\n", integral.integrand().__repr__()
-        print "\nQG, cell_integral, basisfunctions:\n", extract_basisfunctions(integral)
+        print "\nQG, cell_integral, basisfunctions:\n", extract_basis_functions(integral)
 
         # Generate element code + set of used geometry terms
         element_code, members_code, trans_set, num_ops =\
@@ -283,7 +283,10 @@ class QuadratureGenerator:
         # number of points with the axis dimension of the first element of the
         # integral (which I think should be the same).
         axis = extract_elements(integral.integrand())[0].cell().d
-        points = form_representation.num_quad_points**axis
+        # FIXME: Make sure this is correct from are integrals grouped from UFL?
+        order = integral.measure().metadata()["quadrature_order"]
+        num_points = (order + 1 + 1) / 2 # integer division gives 2m - 1 >= q
+        points = num_points**axis
         ip_code = ["", Indent.indent(format_comment\
             ("Loop quadrature points for integral: %s" % str(integral)))]
 
@@ -495,7 +498,7 @@ class QuadratureGenerator:
                 ("Reset values of the element tensor block")))
 
         # Get basisfunctions
-        basis = extract_basisfunctions(integral)
+        basis = extract_basis_functions(integral)
 
         # Create FIAT elements for each basisfunction. There should be one and
         # only one element per basisfunction so it is OK to pick first.
