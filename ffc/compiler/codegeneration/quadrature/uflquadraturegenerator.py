@@ -57,6 +57,8 @@ class QuadratureGenerator:
 
         # TODO: Set this throuhg OPTIONS
         self.optimise_level = 0
+        self.reset_code = ""
+        self.reset_code_restricted = ""
 
     def generate_cell_integrals(self, form_representation, format):
         code = {}
@@ -136,7 +138,8 @@ class QuadratureGenerator:
         # Add the code to reset the element tensor
         # FIXME: It should be OK to pick first?
         # TODO: Let new common class handle this
-        code += self.__reset_element_tensor(integrals.items()[0][1], Indent, format)
+        if not self.reset_code:
+            self.reset_code = self.__reset_element_tensor(integrals.items()[0][1], Indent, format)
 
         # After we have generated the element code we know which psi tables and
         # weights will be used so we can tabulate them.

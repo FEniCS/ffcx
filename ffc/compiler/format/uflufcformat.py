@@ -35,6 +35,60 @@ transform_options = {Transform.JINV: lambda m, j, k: "Jinv%s_%d%d" % (m, j, k),
 # Options for the printing q or 1.0/(q) for q string:
 power_options = {True: lambda q: q, False: lambda q: "1.0/(%s)" % q}
 
+# Test snippets from UFC
+cell_integral_combined_two_representations = """\
+/// This class defines the interface for the tabulation of the cell
+/// tensor corresponding to the local contribution to a form from
+/// the integral over a cell.
+
+class %(classname)s: public ufc::cell_integral
+{%(members)s
+public:
+
+  /// Constructor
+  %(classname)s() : ufc::cell_integral()
+  {
+%(constructor)s
+  }
+
+  /// Destructor
+  virtual ~%(classname)s()
+  {
+%(destructor)s
+  }
+
+  /// Tabulate the tensor for the contribution from a local cell
+  virtual void tabulate_tensor_tensor(double* A,
+                               const double * const * w,
+                               const ufc::cell& c) const
+  {
+%(tabulate_tensor_tensor)s
+  }
+
+  /// Tabulate the tensor for the contribution from a local cell
+  virtual void tabulate_tensor_quadrature(double* A,
+                               const double * const * w,
+                               const ufc::cell& c) const
+  {
+%(tabulate_tensor_quadrature)s
+  }
+
+  /// Tabulate the tensor for the contribution from a local cell
+  virtual void tabulate_tensor(double* A,
+                               const double * const * w,
+                               const ufc::cell& c) const
+  {
+%(reset_tensor)s
+
+    tabulate_tensor_tensor(A, w, c);
+    tabulate_tensor_quadrature(A, w, c);
+  }
+
+};
+"""
+
+
+
 # Specify formatting for code generation
 format = {
 # operators
@@ -509,22 +563,48 @@ def __generate_cell_integral(code, form_data, options, prefix, i, code_section):
     # Generate code for destructor
     ufc_code["destructor"] = "// Do nothing"
 
-    # Generate code for members
-    ufc_code["members"] = __generate_body(code["members"])
-    
-    # Generate code for tabulate_tensor
-    #    body  = __generate_jacobian(form_data.cell_dimension, Integral.CELL)
-    #    body += "\n"
-    body = __generate_body(code["tabulate_tensor"])
-    #    ufc_code["tabulate_tensor"] = remove_unused(body)
-    ufc_code["tabulate_tensor"] = body
+    if not "cell_integral_tensor" in code:
 
-    if code_section == "combined":
-        return __generate_code(cell_integral_combined, ufc_code, options)
-    elif code_section == "header":
-        return __generate_code(cell_integral_header, ufc_code, options)
-    elif code_section == "implementation":
-        return __generate_code(cell_integral_implementation, ufc_code, options)
+        # Generate code for members
+        ufc_code["members"] = __generate_body(code["members"])
+        
+        # Generate code for tabulate_tensor
+        #    body  = __generate_jacobian(form_data.cell_dimension, Integral.CELL)
+        #    body += "\n"
+        body = __generate_body(code["tabulate_tensor"])
+        #    ufc_code["tabulate_tensor"] = remove_unused(body)
+        ufc_code["tabulate_tensor"] = body
+
+        if code_section == "combined":
+            return __generate_code(cell_integral_combined, ufc_code, options)
+        elif code_section == "header":
+            return __generate_code(cell_integral_header, ufc_code, options)
+        elif code_section == "implementation":
+            return __generate_code(cell_integral_implementation, ufc_code, options)
+    else:
+
+        # Generate code for members
+        ufc_code["members"] = __generate_body(code["cell_integral_tensor"]["members"]) +\
+                              __generate_body(code["cell_integral_quadrature"]["members"])
+
+        # Generate code for reset tensor
+        ufc_code["reset_tensor"] = __generate_body(code["reset_tensor"])
+        
+        # Generate code for tabulate_tensor for both representations
+        tensor_body = __generate_body(code["cell_integral_tensor"]["tabulate_tensor"])
+        quadrature_body = __generate_body(code["cell_integral_quadrature"]["tabulate_tensor"])
+        #    ufc_code["tabulate_tensor"] = remove_unused(body)
+
+        ufc_code["tabulate_tensor_tensor"] = tensor_body
+        ufc_code["tabulate_tensor_quadrature"] = quadrature_body
+
+        if code_section == "combined":
+            return __generate_code(cell_integral_combined_two_representations, ufc_code, options)
+#        elif code_section == "header":
+#            return __generate_code(cell_integral_header, ufc_code, options)
+#        elif code_section == "implementation":
+#            return __generate_code(cell_integral_implementation, ufc_code, options)
+
 
 def __generate_exterior_facet_integral(code, form_data, options, prefix, i, code_section):
     "Generate code for ufc::exterior_facet_integral"

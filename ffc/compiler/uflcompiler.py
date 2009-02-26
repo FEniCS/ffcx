@@ -49,8 +49,8 @@ from codegeneration.quadrature import UFLQuadratureGenerator
 #from codegeneration.common.dofmap import *
 
 # FFC format modules
-from format import ufcformat
-from format import dolfinformat
+from format import uflufcformat
+#from format import dolfinformat
 
 def compile(objects, prefix="Form", options=FFC_OPTIONS):
     "Compile the given forms and/or elements."
@@ -84,7 +84,7 @@ def compile_forms(forms, prefix, options):
     # FIXME: Make format a class
 
     # Choose format
-    format = _choose_format(options)
+    format = uflufcformat
     format.init(options)
 
     # Iterate over forms for stages 1 - 4
@@ -285,6 +285,7 @@ def generate_form_code(form_data, tensor_representation, quadrature_representati
 
     # We need both genrators
 #    tensor_generator = UFLTensorGenerator()
+    tensor_generator = UFLQuadratureGenerator()
     quadrature_generator = UFLQuadratureGenerator()
 
     # Generate code for integrals using quadrature
@@ -292,10 +293,63 @@ def generate_form_code(form_data, tensor_representation, quadrature_representati
     quadrature_code.update(quadrature_generator.generate_exterior_facet_integrals(quadrature_representation, format))
     quadrature_code.update(quadrature_generator.generate_interior_facet_integrals(quadrature_representation, format))
 
-    code.update(quadrature_code)
+    # Mock tensor code
+    tensor_code = {}
+    tensor_code.update(tensor_generator.generate_cell_integrals(quadrature_representation, format))
+    tensor_code.update(tensor_generator.generate_exterior_facet_integrals(quadrature_representation, format))
+    tensor_code.update(tensor_generator.generate_interior_facet_integrals(quadrature_representation, format))
+
+#    code["quadrature"].update(quadrature_code)
+#    code.update(quadrature_code)
+
+    ## A first try at combining code from the two generators
+    ## Could probably be moved somewhere else
+
+    # Get any kind of code for reseting the element tensor, it just needs to be
+    # generated once by the codegenerators
+    reset_code = (quadrature_generator.reset_code or tensor_generator.reset_code)
+    reset_code_restricted = (quadrature_generator.reset_code_restricted or tensor_generator.reset_code_restricted)
+
+    # Loop all subdomains of integral types and combine code
+    # TODO: Only cell_integrals are handled in uflufcformat.py and split_implementation
+    # is not handled
+    for i in range(form_data.num_cell_integrals):
+        combine_code(code, tensor_code, quadrature_code, ("cell_integral", i), reset_code)
+    for i in range(form_data.num_exterior_facet_integrals):
+        combine_code(code, tensor_code, quadrature_code, ("exterior_facet_integral", i), reset_code)
+    for i in range(form_data.num_exterior_facet_integrals):
+        combine_code(code, tensor_code, quadrature_code, ("interior_facet_integral", i), reset_code_restricted)
 
     end()
     return code
+
+def combine_code(code, tensor_code, quadrature_code, key, reset_code):
+    "Combine the code from the two code generators"
+
+    # If subdomain has both representations then combine them
+    if key in tensor_code and key in quadrature_code:
+        code[key] = {("cell_integral_tensor"):tensor_code[key],
+                     ("cell_integral_quadrature"):quadrature_code[key],
+                     "reset_tensor": reset_code}
+
+    # Handle code from tensor generator
+    elif key in tensor_code:
+        # Add reset code to tabulate_tensor code
+        tensor_code[key]["tabulate_tensor"] = reset_code + tensor_code[key]["tabulate_tensor"]
+        code[key] = tensor_code[key]
+
+    # Handle code from quadrature generator
+    elif key in quadrature_code:
+        # Add reset code to tabulate_tensor code
+        quadrature_code[key]["tabulate_tensor"] = reset_code + quadrature_code[key]["tabulate_tensor"]
+        code[key] = quadrature_code[key]
+
+    # If we reach this level it means that no code has been generated
+    # for the given subdomain so we need to add the reset code
+    # NOTE: If we were sure that all assemblers would reset the local
+    # tensor before calling tabulate_tensor this wouldn't be needed
+    else:
+        code[key] = {"tabulate_tensor": reset_code, "members": []}
 
 def format_code(generated_forms, prefix, format, options):
     "Compiler stage 5: Format code"
