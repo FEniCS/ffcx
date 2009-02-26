@@ -366,7 +366,8 @@ class QuadratureTransformer(Transformer):
                     0: self.format["first free index"],
                     1: self.format["second free index"]}
 
-        element_counter = self.element_map[self.points][(ufl_basis_function.element(), restriction)]
+        # FIXME: Handle restriction
+        element_counter = self.element_map[self.points][(ufl_basis_function.element(), self.facet0)]
         if not ufl_basis_function.count() in indices:
             raise RuntimeError(ufl_basis_function, "Currently, BasisFunction index must be either -2, -1, 0 or 1")
 
@@ -397,7 +398,8 @@ class QuadratureTransformer(Transformer):
                 deriv = []
             print "deriv: ", deriv
 
-            name = self.__generate_psi_name(element_counter, restriction, component, deriv)
+            # FIXME: Handle restriction
+            name = self.__generate_psi_name(element_counter, self.facet0, component, deriv)
 #        print "name_map: ", self.name_map
             name, non_zeros = self.name_map[name]
             loop_index_range = shape(self.unique_tables[name])[1]
@@ -419,6 +421,7 @@ class QuadratureTransformer(Transformer):
                 ref = multi[i]
                 if ufl_basis_function.element().family() != "Lagrange":
                     raise RuntimeError(ufl_basis_function.element().family(), "Only derivatives of Lagrange elements is currently supported")
+                # FIXME: Handle restriction
                 t = format_transform(Transform.JINV, ref, direction, restriction)
                 self.trans_set.add(t)
                 transforms.append(t)
@@ -456,7 +459,8 @@ class QuadratureTransformer(Transformer):
         loop_index = self.format["free secondary indices"][0]
 
         # Get basis name and range
-        element_counter = self.element_map[self.points][(ufl_function.element(), restriction)]
+        # FIXME: Handle restriction
+        element_counter = self.element_map[self.points][(ufl_function.element(), self.facet0)]
 #        print "counter: ", element_counter
 #        print "loop_index: ", loop_index
 
@@ -475,7 +479,8 @@ class QuadratureTransformer(Transformer):
                 deriv = []
             print "deriv: ", deriv
 
-            basis_name = self.__generate_psi_name(element_counter, restriction, component, deriv)
+            # FIXME: Handle restriction
+            basis_name = self.__generate_psi_name(element_counter, self.facet0, component, deriv)
             basis_name, non_zeros = self.name_map[basis_name]
             loop_index_range = shape(self.unique_tables[basis_name])[1]
             print "basis_name: ", basis_name
@@ -500,6 +505,7 @@ class QuadratureTransformer(Transformer):
                 ref = multi[i]
                 if ufl_function.element().family() != "Lagrange":
                     raise RuntimeError(ufl_function.element().family(), "Only derivatives of Lagrange elements is currently supported")
+                # FIXME: Handle restriction
                 t = format_transform(Transform.JINV, ref, direction, restriction)
                 self.trans_set.add(t)
                 transforms.append(t)

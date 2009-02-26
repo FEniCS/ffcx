@@ -295,9 +295,9 @@ def generate_form_code(form_data, tensor_representation, quadrature_representati
 
     # Mock tensor code
     tensor_code = {}
-    tensor_code.update(tensor_generator.generate_cell_integrals(quadrature_representation, format))
-    tensor_code.update(tensor_generator.generate_exterior_facet_integrals(quadrature_representation, format))
-    tensor_code.update(tensor_generator.generate_interior_facet_integrals(quadrature_representation, format))
+#    tensor_code.update(tensor_generator.generate_cell_integrals(quadrature_representation, format))
+#    tensor_code.update(tensor_generator.generate_exterior_facet_integrals(quadrature_representation, format))
+#    tensor_code.update(tensor_generator.generate_interior_facet_integrals(quadrature_representation, format))
 
 #    code["quadrature"].update(quadrature_code)
 #    code.update(quadrature_code)
@@ -314,34 +314,46 @@ def generate_form_code(form_data, tensor_representation, quadrature_representati
     # TODO: Only cell_integrals are handled in uflufcformat.py and split_implementation
     # is not handled
     for i in range(form_data.num_cell_integrals):
-        combine_code(code, tensor_code, quadrature_code, ("cell_integral", i), reset_code)
+        combine_code(code, tensor_code, quadrature_code, ("cell_integral", i), reset_code, False)
     for i in range(form_data.num_exterior_facet_integrals):
-        combine_code(code, tensor_code, quadrature_code, ("exterior_facet_integral", i), reset_code)
+        combine_code(code, tensor_code, quadrature_code, ("exterior_facet_integral", i), reset_code, True)
     for i in range(form_data.num_exterior_facet_integrals):
-        combine_code(code, tensor_code, quadrature_code, ("interior_facet_integral", i), reset_code_restricted)
+        combine_code(code, tensor_code, quadrature_code, ("interior_facet_integral", i), reset_code_restricted, True)
 
     end()
     return code
 
-def combine_code(code, tensor_code, quadrature_code, key, reset_code):
+def combine_code(code, tensor_code, quadrature_code, key, reset_code, facet_integral):
     "Combine the code from the two code generators"
 
     # If subdomain has both representations then combine them
     if key in tensor_code and key in quadrature_code:
-        code[key] = {("cell_integral_tensor"):tensor_code[key],
-                     ("cell_integral_quadrature"):quadrature_code[key],
+        code[key] = {("tabulate_tensor_tensor"):tensor_code[key],
+                     ("tabulate_tensor_quadrature"):quadrature_code[key],
                      "reset_tensor": reset_code}
 
     # Handle code from tensor generator
     elif key in tensor_code:
         # Add reset code to tabulate_tensor code
-        tensor_code[key]["tabulate_tensor"] = reset_code + tensor_code[key]["tabulate_tensor"]
+        val = tensor_code[key]["tabulate_tensor"]
+        # Check if we have a tuple (common, cases) for facet integrals
+        if facet_integral:
+            val = (reset_code + val[0], val[1])
+        else:
+            val = reset_code + val
+        tensor_code[key]["tabulate_tensor"] = val
         code[key] = tensor_code[key]
 
     # Handle code from quadrature generator
     elif key in quadrature_code:
         # Add reset code to tabulate_tensor code
-        quadrature_code[key]["tabulate_tensor"] = reset_code + quadrature_code[key]["tabulate_tensor"]
+        val = quadrature_code[key]["tabulate_tensor"]
+        # Check if we have a tuple (common, cases) for facet integrals
+        if facet_integral:
+            val = (reset_code + val[0], val[1])
+        else:
+            val = reset_code + val
+        quadrature_code[key]["tabulate_tensor"] = val
         code[key] = quadrature_code[key]
 
     # If we reach this level it means that no code has been generated
@@ -349,7 +361,11 @@ def combine_code(code, tensor_code, quadrature_code, key, reset_code):
     # NOTE: If we were sure that all assemblers would reset the local
     # tensor before calling tabulate_tensor this wouldn't be needed
     else:
-        code[key] = {"tabulate_tensor": reset_code, "members": []}
+        if facet_integral:
+            code[key] = {"tabulate_tensor": (reset_code, []), "members": []}
+        else:
+            code[key] = {"tabulate_tensor": reset_code, "members": []}
+
 
 def format_code(generated_forms, prefix, format, options):
     "Compiler stage 5: Format code"

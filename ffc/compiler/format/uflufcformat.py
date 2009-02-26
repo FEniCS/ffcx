@@ -563,7 +563,7 @@ def __generate_cell_integral(code, form_data, options, prefix, i, code_section):
     # Generate code for destructor
     ufc_code["destructor"] = "// Do nothing"
 
-    if not "cell_integral_tensor" in code:
+    if not "tabulate_tensor_tensor" in code:
 
         # Generate code for members
         ufc_code["members"] = __generate_body(code["members"])
@@ -584,15 +584,15 @@ def __generate_cell_integral(code, form_data, options, prefix, i, code_section):
     else:
 
         # Generate code for members
-        ufc_code["members"] = __generate_body(code["cell_integral_tensor"]["members"]) +\
-                              __generate_body(code["cell_integral_quadrature"]["members"])
+        ufc_code["members"] = __generate_body(code["tabulate_tensor_tensor"]["members"]) +\
+                              __generate_body(code["tabulate_tensor_quadrature"]["members"])
 
         # Generate code for reset tensor
         ufc_code["reset_tensor"] = __generate_body(code["reset_tensor"])
         
         # Generate code for tabulate_tensor for both representations
-        tensor_body = __generate_body(code["cell_integral_tensor"]["tabulate_tensor"])
-        quadrature_body = __generate_body(code["cell_integral_quadrature"]["tabulate_tensor"])
+        tensor_body = __generate_body(code["tabulate_tensor_tensor"]["tabulate_tensor"])
+        quadrature_body = __generate_body(code["tabulate_tensor_quadrature"]["tabulate_tensor"])
         #    ufc_code["tabulate_tensor"] = remove_unused(body)
 
         ufc_code["tabulate_tensor_tensor"] = tensor_body
