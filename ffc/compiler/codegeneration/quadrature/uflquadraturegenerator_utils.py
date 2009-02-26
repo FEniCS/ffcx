@@ -153,6 +153,33 @@ class QuadratureTransformer(Transformer):
 
         return code
 
+    def positive_restricted(self, o):
+        print "\nVisiting PositiveRestricted:", o.__repr__(),
+
+        restricted_expr = o.operands()
+#        print "\noperands", restricted_expr
+        if len(restricted_expr) != 1:
+            raise RuntimeError(restricted_expr, "Only expected one operand for restriction")
+ 
+       # Just visit the first operand, there should only be one
+        # FIXME: Need to handle restriction
+        code = self.visit(restricted_expr[0])
+        return code
+
+    def negative_restricted(self, o):
+        print "\nVisiting NegativeRestricted:", o.__repr__(),
+
+        # Just get the first operand, there should only be one
+        restricted_expr = o.operands()
+#        print "\noperands", restricted_expr
+        if len(restricted_expr) != 1:
+            raise RuntimeError(restricted_expr, "Only expected one operand for restriction")
+ 
+       # Just visit the first operand, there should only be one
+        # FIXME: Need to handle restriction
+        code = self.visit(restricted_expr[0])
+        return code
+
     def index_sum(self, o):
         print "\nVisiting IndexSum:", o.__repr__(),
 

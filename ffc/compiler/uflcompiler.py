@@ -317,7 +317,7 @@ def generate_form_code(form_data, tensor_representation, quadrature_representati
         combine_code(code, tensor_code, quadrature_code, ("cell_integral", i), reset_code, False)
     for i in range(form_data.num_exterior_facet_integrals):
         combine_code(code, tensor_code, quadrature_code, ("exterior_facet_integral", i), reset_code, True)
-    for i in range(form_data.num_exterior_facet_integrals):
+    for i in range(form_data.num_interior_facet_integrals):
         combine_code(code, tensor_code, quadrature_code, ("interior_facet_integral", i), reset_code_restricted, True)
 
     end()
@@ -331,7 +331,6 @@ def combine_code(code, tensor_code, quadrature_code, key, reset_code, facet_inte
         code[key] = {("tabulate_tensor_tensor"):tensor_code[key],
                      ("tabulate_tensor_quadrature"):quadrature_code[key],
                      "reset_tensor": reset_code}
-
     # Handle code from tensor generator
     elif key in tensor_code:
         # Add reset code to tabulate_tensor code
