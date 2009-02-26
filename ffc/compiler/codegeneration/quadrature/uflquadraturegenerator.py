@@ -55,10 +55,8 @@ class QuadratureGenerator:
     def __init__(self):
         "Constructor"
 
-        # Initialize common code generator
-#        CodeGenerator.__init__(self)
+        # TODO: Set this throuhg OPTIONS
         self.optimise_level = 0
-#        self.basis_tables = BasisTables()
 
     def generate_cell_integrals(self, form_representation, format):
         code = {}
@@ -66,14 +64,16 @@ class QuadratureGenerator:
             return code
 
         # Create transformer
-        transformer = QuadratureTransformer(form_representation.psi_tables[Measure.CELL],\
+        transformer = QuadratureTransformer(form_representation, Measure.CELL,\
                                             self.optimise_level, format)
 
         # Generate code for cell integral
         debug("Generating code for cell integrals using quadrature representation...")
-        for integral in form_representation.cell_integrals:
-            code[("cell_integral", integral.measure().domain_id())] =\
-                 self.generate_cell_integral(form_representation, transformer, integral, format)
+        for subdomain, integrals in form_representation.cell_integrals.items():
+            # Reset transformer
+            transformer.reset()
+            code[("cell_integral", subdomain)] =\
+                 self.generate_cell_integral(form_representation, transformer, integrals, format)
         debug("done")
         return code
 
@@ -81,11 +81,16 @@ class QuadratureGenerator:
         code = {}
         if not form_representation.exterior_facet_integrals:
             return code
+
+        # Create transformer
+        transformer = QuadratureTransformer(form_representation, Measure.EXTERIOR_FACET,\
+                                            self.optimise_level, format)
+
         # Generate code for cell integral
         debug("Generating code for exterior facet integrals using quadrature representation...")
-        for integral in form_representation.exterior_facet_integrals:
-            code[("cell_integral", integral.domain_id())] =\
-                 self.generate_exterior_facet_integral(form_representation, integral, format)
+        for subdomain, integrals in form_representation.exterior_facet_integrals.items():
+            code[("cell_integral", subdomain)] =\
+                 self.generate_exterior_facet_integral(form_representation, transformer, integrals, format)
         debug("done")
         return code
 
@@ -93,42 +98,54 @@ class QuadratureGenerator:
         code = {}
         if not form_representation.interior_facet_integrals:
             return code
+
         # Generate code for cell integral
         debug("Generating code for interior facet integrals using quadrature representation...")
-        for integral in form_representation.interior_facet_integrals:
-            code[("cell_integral", integral.domain_id())] =\
-                 self.generate_interior_facet_integral(form_representation, integral, format)
+        for subdomain, integrals in form_representation.interior_facet_integrals.items():
+            code[("cell_integral", subdomain)] =\
+                 self.generate_interior_facet_integral(form_representation, integrals, format)
         debug("done")
         return code
 
-    def generate_cell_integral(self, form_representation, transformer, integral, format):
-        """Generate dictionary of code for cell integral from the given
-        form representation according to the given format"""
+    def generate_cell_integral(self, form_representation, transformer, integrals, format):
+        """Generate dictionary of code for cell integrals on a given subdomain
+        from the given form representation according to the given format."""
 
         # Object to control the code indentation
         Indent = IndentControl()
 
         debug("")
-        print "\nQG, cell_integral, integral:\n", integral
-        print "\nQG, cell_integral, tree_format(integral):\n", tree_format(integral)
-        print "\nQG, cell_integral, integral.__repr__():\n", integral.__repr__()
-        print "\nQG, cell_integral, integral.integrand().__repr__():\n", integral.integrand().__repr__()
-        print "\nQG, cell_integral, basisfunctions:\n", extract_basis_functions(integral)
+        print "\nQG, cell_integral, integrals:\n", integrals
+
+        # FIXME: Get one of the elements, they should all be defined on the same Cell?
+        # TODO: Is it faster/better to just generate it on the fly?
+#        fiat_element = form_representation.fiat_elements_map[list(extract_unique_elements(integrals[0]))[0]]
 
         # Generate element code + set of used geometry terms
-        element_code, members_code, trans_set, num_ops =\
-          self.__generate_element_tensor(form_representation, transformer, integral, None,\
-                                         None, Indent, format)
+        element_code, members_code, num_ops =\
+          self.__generate_element_tensor(form_representation, transformer,\
+                                         integrals, None, None, Indent, format)
 
         # Get Jacobian snippet
         # FIXME: This will most likely have to change if we support e.g., 2D elements in 3D space
-        jacobi_code = [format["generate jacobian"](form_representation.geometric_dimension, FFCIntegral.CELL)]
+        jacobi_code = [format["generate jacobian"](transformer.geo_dim, FFCIntegral.CELL)]
 
         # Remove unused declarations
-        code = self.__remove_unused(jacobi_code, trans_set, format)
+        code = self.__remove_unused(jacobi_code, transformer.trans_set, format)
 
         # Add the code to reset the element tensor
-        code += self.__reset_element_tensor(integral, Indent, format)
+        # FIXME: It should be OK to pick first?
+        # TODO: Let new common class handle this
+        code += self.__reset_element_tensor(integrals.items()[0][1], Indent, format)
+
+        # After we have generated the element code we know which psi tables and
+        # weights will be used so we can tabulate them.
+
+        # Tabulate weights at quadrature points
+        code += self.__tabulate_weights(transformer, Indent, format)
+
+        # Tabulate values of basis functions and their derivatives.
+        code += self.__tabulate_psis(transformer, Indent, format)
 
         # Add element code
         code += ["", format["comment"]("Compute element tensor (using UFL quadrature representation, optimisation level %d)" % self.optimise_level),\
@@ -139,53 +156,53 @@ class QuadratureGenerator:
         return {"tabulate_tensor": code, "members": members_code}
 
 
-    def generate_exterior_facet_integral(self, form_representation, sub_domain, format):
+    def generate_exterior_facet_integral(self, form_representation, transformer, integrals, format):
         """Generate dictionary of code for exterior facet integral from the given
         form representation according to the given format"""
 
-#        # Object to control the code indentation
-#        Indent = IndentControl()
+        # Object to control the code indentation
+        Indent = IndentControl()
 
-#        # Prefetch formats to speed up code generation
-#        format_comment      = format["comment"]
-#        format_block_begin  = format["block begin"]
-#        format_block_end    = format["block end"]
+        print "\nQG, exterior_facet_integral, integral:\n", integrals
 
-#        # Extract terms for sub domain
-#        tensors = [[term for term in t if term.monomial.integral.sub_domain == sub_domain]\
-#                    for t in form_representation.exterior_facet_tensors]
-#        if all([len(t) == 0 for t in tensors]):
-#            element_code = self.__reset_element_tensor(form_representation.exterior_facet_tensors[0][0], Indent, format)
-#            return {"tabulate_tensor": (element_code, []), "members": ""}
+        # Prefetch formats to speed up code generation
+        format_comment      = format["comment"]
+        format_block_begin  = format["block begin"]
+        format_block_end    = format["block end"]
 
-#        num_facets = len(tensors)
-#        cases = [None for i in range(num_facets)]
-#        trans_set = Set()
+        # FIXME: Get one of the elements, they should all be defined on the same Cell?
+        fiat_element = form_representation.fiat_elements_map[list(extract_unique_elements(integrals.items()[0][1]))[0]]
+        num_facets = fiat_element.num_facets()
+        cases = [None for i in range(num_facets)]
+        trans_set = set()
 
-#        debug("")
-#        for i in range(num_facets):
-#            case = [format_block_begin]
+        debug("")
+        for i in range(num_facets):
+            case = [format_block_begin]
 
-#            # Assuming all tables have same dimensions for all facets (members_code)
-#            c, members_code, t_set, num_ops = self.__generate_element_tensor(tensors[i], i, None, Indent, format)
-#            case += [format_comment("Total number of operations to compute element tensor (from this point): %d" %num_ops)] + c
-#            case += [format_block_end]
-#            cases[i] = case
-#            trans_set = trans_set | t_set
-#            debug("Number of operations to compute tensor for facet %d: %d" % (i, num_ops))
+            # Assuming all tables have same dimensions for all facets (members_code)
+            c, members_code, t_set, num_ops =\
+                self.__generate_element_tensor(form_representation, transformer,\
+                                               integral, i, None, Indent, format)
+            case += [format_comment("Total number of operations to compute element tensor (from this point): %d" %num_ops)] + c
+            case += [format_block_end]
+            cases[i] = case
+            trans_set.update(t_set)
+            debug("Number of operations to compute tensor for facet %d: %d" % (i, num_ops))
 
 
 #        # Get Jacobian snippet
-#        jacobi_code = [format["generate jacobian"](form_representation.cell_dimension, Integral.EXTERIOR_FACET)]
+        jacobi_code = [format["generate jacobian"](fiat_element.geometric_dimension(), FFCIntegral.EXTERIOR_FACET)]
 
 #        # Remove unused declarations
-#        common = self.__remove_unused(jacobi_code, trans_set, format)
+        common = self.__remove_unused(jacobi_code, trans_set, format)
 
 #        # Add element code
+#        common += ["", format["comment"]("Compute element tensor (using UFL quadrature representation, optimisation level %d)" % self.optimise_level),\
 #        common += ["", format_comment("Compute element tensor for all facets (using quadrature representation, optimisation level %d)" %self.optimise_level)]
 
-#        return {"tabulate_tensor": (common, cases), "constructor":"// Do nothing", "members":members_code}
-        return {"tabulate_tensor": ([], []), "constructor":"// Do nothing", "members":[]}
+        return {"tabulate_tensor": (common, cases), "members": members_code}
+#        return {"tabulate_tensor": ([], []), "constructor":"// Do nothing", "members":[]}
     
     def generate_interior_facet_integral(self, form_representation, sub_domain, format):
         """Generate dictionary of code for interior facet integral from the given
@@ -234,7 +251,7 @@ class QuadratureGenerator:
 #        return {"tabulate_tensor": (common, cases), "constructor":"// Do nothing", "members":members_code}
         return {"tabulate_tensor": ([], []), "constructor":"// Do nothing", "members":[]}
 
-    def __generate_element_tensor(self, form_representation, transformer, integral, facet0,\
+    def __generate_element_tensor(self, form_representation, transformer, integrals, facet0,\
                                         facet1, Indent, format):
         "Construct quadrature code for element tensors"
 
@@ -250,107 +267,50 @@ class QuadratureGenerator:
         # FIXME: The members_code was used when I generated the load_table.h
         # file which could load tables of basisfunction. This feature has not
         # been reimplemented. However, with the new design where we only
-        # tabulate unique tables (and only non-zero entries) it doen's seem to
+        # tabulate unique tables (and only non-zero entries) it doesn't seem to
         # be necessary.
         members_code     = ""
-        tabulate_code    = []
         element_code     = []
-        weights_set      = set()
-        trans_set        = set()
         tensor_ops_count = 0
 
-        # Extract table information
-#        element_map, name_map, psi_tables = table_info
-
         # Since the form_representation holds common tables for all integrals,
-        # I need to keep track of which tables are actually used and then only
-        # tabulate those.
+        # I need to keep track of which tables are actually used for the current
+        # subdomain and then only tabulate those.
         # The same holds true for the quadrature weights.
         # I therefore need to generate the actual code to compute the element
         # tensors first, and then create the auxiliary code.
 
+        # We receive a dictionary {num_points: integral,}
+        # Loop points and integrals
+        for points, integral in integrals.items():
 
-        # Generate code to evaluate the element tensor
-        # FIXME: We currently use the same number of quadrature points for the
-        # entire integral. It might not always result in fewer operations to
-        # split in multiple loops over quadrature points, but I need to come up
-        # with a rule for that (determine from loop ranges a priori which is
-        # faster should be possible)
+            ip_code = ["", Indent.indent(format_comment\
+                ("Loop quadrature points for integral: %s" % str(integral)))]
 
-        # Generate code to evaluate tensor
-        # FIXME: Get the number of points from the integral itself, see note
-        # in the representation (__tabulate()). For now, just multiply the
-        # number of points with the axis dimension of the first element of the
-        # integral (which I think should be the same).
-        axis = extract_elements(integral.integrand())[0].cell().d
-        # FIXME: Make sure this is correct from are integrals grouped from UFL?
-        order = integral.measure().metadata()["quadrature_order"]
-        num_points = (order + 1 + 1) / 2 # integer division gives 2m - 1 >= q
-        points = num_points**axis
-        ip_code = ["", Indent.indent(format_comment\
-            ("Loop quadrature points for integral: %s" % str(integral)))]
+            # Update transformer
+            transformer.update(points, facet0, facet1)
 
-        # FIXME: The weights will be different once we determinen them for each
-        # subdomain (and possibly terms on this subdomain). For now, we just
-        # have one table per integral type, so tabulate it.
-        weight_tables = form_representation.quadrature_weights[integral.measure().domain_type()]
-        weights_used = [points]
-        print "weight tables: ", weight_tables
+            # Generate code for all terms according to optimisation level
+            integral_code, num_ops =\
+                generate_code(integral.integrand(), transformer, Indent, format)
 
-        # Generate all terms for the given number of quadrature points
-#            terms, t_set = generate_terms(points, group_tensors[points], tensors, format, psi_name_map,
-#                                          weight_name_map, self.optimise_level)
-        # Update transformation set
-#            trans_set = trans_set | t_set
+            # Get number of operations to compute entries for all terms when
+            # looping over all IPs and update tensor count
+            num_operations = num_ops*points
+            tensor_ops_count += num_operations
 
-        # Generate code for all terms according to optimisation level
-        integral_code, num_ops, w_set, t_set =\
-            generate_code(integral.integrand(), transformer, points,\
-                          self.optimise_level, Indent, format)
+            ip_code.append(format_comment\
+                ("Number of operations to compute element tensor for following IP loop = %d" %(num_operations)) )
 
-        weights_set.update(w_set)
-        trans_set.update(t_set)
+            # Loop code over all IPs
+            if points > 1:
+                ip_code += generate_loop(integral_code, [(format_ip, 0, points)], Indent, format)
+            else:
+                ip_code.append(format_comment("Only 1 integration point, omitting IP loop."))
+                ip_code += integral_code
 
-        # Get number of operations to compute entries for all terms when
-        # looping over all IPs and update tensor count
-        num_operations = num_ops*points
-        tensor_ops_count += num_operations
-
-        ip_code.append(format_comment\
-            ("Number of operations to compute element tensor for following IP loop = %d" %(num_operations)) )
-
-        # Loop code over all IPs
-        if points > 1:
-            ip_code += generate_loop(integral_code, [(format_ip, 0, points)], Indent, format)
-        else:
-            ip_code.append(format_comment("Only 1 integration point, omitting IP loop."))
-            ip_code += integral_code
-
-        # Add integration point code element code
-        element_code += ip_code
-
-        # Generate code to compute function values
-
-        # Generate code for the geometry terms, and optimise
-
-        # Tabulate weights at quadrature points, get name-map if some tables
-        # are redundant
-
-        # Tabulate values of basis functions and their derivatives at
-        # quadrature points, get dictionary of unique tables, and the name_map
-
-
-#        # Tabulate weights at quadrature points, get name-map if some tables
-#        # are redundant
-#        weight_name_map, weight_tables = unique_weight_tables(tensors, format)
-        tabulate_code += self.__tabulate_weights(weight_tables, weights_set,\
-                                                 Indent, format)
-
-        # Tabulate values of basis functions and their derivatives.
-        # Use the meta class BasisTables to only tabulate those basis that are
-        # actually used
-        tabulate_code += self.__tabulate_psis(transformer, Indent, format)
-
+            # Add integration point code element code
+            element_code += ip_code
 
 #        # Tabulate geometry code, sort according to number
 #        geo_code = []
@@ -375,11 +335,11 @@ class QuadratureGenerator:
 
 #        element_code = geo_code + element_code
 
-        return (tabulate_code + element_code, members_code,\
-                trans_set, tensor_ops_count)
+#        return (tabulate_code + element_code, members_code, tensor_ops_count)
+        return (element_code, members_code, tensor_ops_count)
 
 
-    def __tabulate_weights(self, weight_tables, used_weights, Indent, format):
+    def __tabulate_weights(self, transformer, Indent, format):
         "Generate table of quadrature weights"
 
         # Prefetch formats to speed up code generation
@@ -393,8 +353,8 @@ class QuadratureGenerator:
         code = ["", Indent.indent(format["comment"]("Array of quadrature weights"))]
 
         # Loop tables of weights and create code
-        for points in used_weights:
-            weights = weight_tables[points]
+        for points in transformer.used_weights:
+            weights = transformer.quadrature_weights[points]
 
             # FIXME: For now, raise error if we don't have weights.
             # We might want to change this later
@@ -452,7 +412,7 @@ class QuadratureGenerator:
 
         # Loop items in table and tabulate 
 #        for name, vals in tables.items():
-        for name in transformer.used_tables:
+        for name in transformer.used_psi_tables:
             # Only proceed if values are still used (if they're not remapped)
             vals = tables[name]
             if not vals == None:

@@ -26,19 +26,25 @@ from quadraturegenerator_utils import unique_psi_tables, generate_loop
 class QuadratureTransformer(Transformer):
     "Transform UFL representation to quadrature code"
 
-    def __init__(self, tables, optimise_level, format):
+    def __init__(self, form_representation, domain_type, optimise_level, format):
 
         Transformer.__init__(self)
 
-        # Save format and optimise_level
+        # Save format, optimise_level and weights
         self.format = format
         self.optimise_level = optimise_level
+        self.quadrature_weights = form_representation.quadrature_weights[domain_type]
 
         # Create containers and variables
-        self.used_tables = set()
-        self.primary_loops = []
+        self.used_psi_tables = set()
+        self.used_weights = set()
+        self.trans_set = set()
         self.functions = {}
+        self.function_count = 0
+        self.geo_dim = 0
         self.points = 0
+        self.facet0 = None
+        self.facet1 = None
 
         # Stacks
         self._derivatives = []
@@ -47,14 +53,27 @@ class QuadratureTransformer(Transformer):
         self.trans_set = set()
 
         self.element_map, self.name_map, self.unique_tables =\
-        self.__create_psi_tables(tables, optimise_level, format)
+        self.__create_psi_tables(form_representation.psi_tables[domain_type])
 
-    def reset(self, points):
-        # Reset containers
-        self.used_tables = set()
-        self.primary_loops = []
-        self.functions = {}
+    def update(self, points, facet0, facet1):
         self.points = points
+        self.facet0 = facet0
+        self.facet1 = facet1
+        # Reset functions everytime we move to a new quadrature loop
+        # But not the functions count.
+        self.functions = {}
+
+    def reset(self):
+        # Reset containers
+        self.used_psi_tables = set()
+        self.used_weights = set()
+        self.trans_set = set()
+        self.functions = {}
+        self.function_count = 0
+        self.geo_dim = 0
+        self.points = 0
+        self.facet0 = None
+        self.facet1 = None
         if self._index_values:
             raise RuntimeError("This dictionary is supposed to be empty")
         if self._components:
@@ -358,7 +377,16 @@ class QuadratureTransformer(Transformer):
         code = {}
         # Generate FFC multi index for derivatives
 #        print "dims: ", [range(ufl_basis_function.element().cell().d)]*sum(derivatives)
+
+        # Set geo_dim
+        # TODO: All terms REALLY have to be defined on cell with the same
+        # geometrical dimension so only do this once and exclude the check?
         geo_dim = ufl_basis_function.element().cell().d
+        if self.geo_dim:
+            if geo_dim != self.geo_dim:
+                raise RuntimeError(geo_dim, "All terms must be defined on cells with the same geometrical dimension")
+        else:
+            self.geo_dim = geo_dim
         multiindices = FFCMultiIndex([range(geo_dim)]*len(derivatives)).indices
 #        print "multiindices: ", multiindices
         # Loop derivatives and get multi indices
@@ -375,7 +403,7 @@ class QuadratureTransformer(Transformer):
             loop_index_range = shape(self.unique_tables[name])[1]
 ##        print "name: ", name
             # Append the name to the set of used tables
-            self.used_tables.add(name)
+            self.used_psi_tables.add(name)
 
             # Change mapping
             mapping = ((ufl_basis_function.count(), loop_index, loop_index_range),)
@@ -436,6 +464,7 @@ class QuadratureTransformer(Transformer):
 
         # Generate FFC multi index for derivatives
 #        print "dims: ", [range(ufl_basis_function.element().cell().d)]*sum(derivatives)
+        # FIXME: This doesn't work for facet integrals?
         geo_dim = ufl_function.element().cell().d
         multiindices = FFCMultiIndex([range(geo_dim)]*len(derivatives)).indices
 
@@ -451,7 +480,7 @@ class QuadratureTransformer(Transformer):
             loop_index_range = shape(self.unique_tables[basis_name])[1]
             print "basis_name: ", basis_name
             # Add basis name to set of used tables
-            self.used_tables.add(basis_name)
+            self.used_psi_tables.add(basis_name)
 
             # Add matrix access to basis_name such that we create a unique entry
             # for the expression to compute the function value
@@ -478,9 +507,11 @@ class QuadratureTransformer(Transformer):
 
             # Check if the expression to compute the function value is already in
             # the dictionary of used function. If not, generate a new name and add
-            function_name = format_F + str(len(self.functions))
+            function_name = format_F + str(self.function_count)
             if not function_expr in self.functions:
                 self.functions[function_expr] = (function_name, loop_index_range)
+                # Increase count
+                self.function_count += 1
             else:
                 function_name, index_r = self.functions[function_expr]
                 # Check just to make sure
@@ -501,7 +532,7 @@ class QuadratureTransformer(Transformer):
         print "\nQuadratureTransformer, unique_tables:\n", self.unique_tables
         print "\nQuadratureTransformer, used_tables:\n", self.used_tables
 
-    def __create_psi_tables(self, tables, optimise_level, format):
+    def __create_psi_tables(self, tables):
         "Create names and maps for tables and non-zero entries if appropriate."
 
 #        print "\nQG-utils, psi_tables:\n", tables
@@ -510,7 +541,7 @@ class QuadratureTransformer(Transformer):
     #    print "\nQG-utils, psi_tables, flat_tables:\n", flat_tables
 
         # Outsource call to old function from quadrature_utils
-        name_map, unique_tables = unique_psi_tables(flat_tables, optimise_level, format)
+        name_map, unique_tables = unique_psi_tables(flat_tables, self.optimise_level, self.format)
     #    name_map, new_tables = unique_psi_tables(flat_tables, 1, format)
 
     #    print "\nQG-utils, psi_tables, unique_tables:\n", unique_tables
@@ -535,7 +566,6 @@ class QuadratureTransformer(Transformer):
             # Loop all elements and get all their tables
             for elem, elem_tables in elem_dict.items():
 #                print "\nQG-utils, flatten_tables, elem:\n", elem
-    #            print "\nQG-utils, flatten_tables, elem[0].value_rank():\n", elem[0].value_rank()
     #            print "\nQG-utils, flatten_tables, elem_tables:\n", elem_tables
                 # If the element value rank != 0, we must loop the components
                 # before the derivatives
@@ -576,14 +606,14 @@ class QuadratureTransformer(Transformer):
 
         return (element_map, flat_tables)
 
-    def __generate_psi_name(self, counter, restriction, component, derivatives):
+    def __generate_psi_name(self, counter, facet, component, derivatives):
         """Generate a name for the psi table of the form:
-        FE#_R#_C#_D###, where '#' will be an integer value.
+        FE#_f#_C#_D###, where '#' will be an integer value.
 
         FE  - is a simple counter to distinguish the various basis, it will be
               assigned in an arbitrary fashion.
 
-        R   - denotes restrictions if applicable, 0 or 1.
+        f   - denotes facets if applicable, range(element.num_facets()).
 
         C   - is the component number if any (this does not yet take into account
               tensor valued functions)
@@ -592,8 +622,8 @@ class QuadratureTransformer(Transformer):
               element is defined in 3D, then D012 means d^3(*)/dydz^2."""
 
         name = "FE%d" %counter
-        if restriction:
-            name += "_R%d" % restriction
+        if facet != None:
+            name += "_f%d" % facet
         if component != None:
             name += "_C%d" % component
         if any(derivatives):
@@ -601,7 +631,7 @@ class QuadratureTransformer(Transformer):
 
         return name
 
-def generate_code(integrand, transformer, points, optimise_level, Indent, format):
+def generate_code(integrand, transformer, Indent, format):
     """Generate code from a UFL integral type.
     This function implements the different optimisation strategies."""
 
@@ -619,17 +649,13 @@ def generate_code(integrand, transformer, points, optimise_level, Indent, format
     # Initialise return values
     code = []
     num_ops = 0
-    weights_set = set()
-    trans_set = set()
 
     print "\nQG, Using Transformer"
     # Expand all derivatives
     print "Integrand: ", integrand
     print "Integrand: ", expand_derivatives(integrand)
 
-    transformer.reset(points)
     loop_code = transformer.visit(integrand)
-    trans_set = transformer.trans_set
     print "loop_code: ", loop_code
 
     # TODO: Verify that test and trial functions will ALWAYS be rearranged to 0 and 1
@@ -661,8 +687,8 @@ def generate_code(integrand, transformer, points, optimise_level, Indent, format
 
     # Create weight
     # FIXME: This definitely needs a fix
-    weight = format_weight(points)
-    if points > 1:
+    weight = format_weight(transformer.points)
+    if transformer.points > 1:
         weight += format["array access"](format["integration points"])
 
     # Generate entries, multiply by weights and sort after primary loops
@@ -673,8 +699,8 @@ def generate_code(integrand, transformer, points, optimise_level, Indent, format
         # Multiply by weight and determinant
         # FIXME: This definitely needs a fix
         value = format["multiply"]([val, weight, format_scale_factor])
-        weights_set.add(points)
-        trans_set.add(format_scale_factor)
+        transformer.used_weights.add(transformer.points)
+        transformer.trans_set.add(format_scale_factor)
 
         # FIXME: We only support rank 0, 1 and 2
         entry = ""
@@ -714,7 +740,7 @@ def generate_code(integrand, transformer, points, optimise_level, Indent, format
     for loop, lines in loops.items():
         code += generate_loop(lines, loop, Indent, format)
 
-    return (code, num_ops, weights_set, trans_set)
+    return (code, num_ops)
 
 def create_permutations(expr):
 

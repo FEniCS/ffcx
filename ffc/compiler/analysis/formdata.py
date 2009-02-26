@@ -77,15 +77,14 @@ class FormData:
             self.form                         = ufl_form_data.form
             self.signature                    = self.__extract_signature(self.form)
             self.rank                         = ufl_form_data.rank
-            self.num_coefficients             = ufl_form_data.num_coefficients
+            self.num_coefficients             = ufl_form_data.num_functions
 
             # FIXME: need to take into account the ufl_form.(basisfunction/coefficient)_renumbering when generating the code
             self.num_arguments                = self.rank + self.num_coefficients
-
 #            self.num_terms                    = self.__extract_num_terms(form)
-            self.num_cell_integrals           = len(self.form.cell_integrals())
-            self.num_exterior_facet_integrals = len(self.form.exterior_facet_integrals())
-            self.num_interior_facet_integrals = len(self.form.interior_facet_integrals())
+            self.num_cell_integrals           = self.__extract_max_ufl_subdomain(self.form.cell_integrals())
+            self.num_exterior_facet_integrals = self.__extract_max_ufl_subdomain(self.form.exterior_facet_integrals())
+            self.num_interior_facet_integrals = self.__extract_max_ufl_subdomain(self.form.interior_facet_integrals())
             self.elements                     = [self.__create_fiat_elements(e) for e in ufl_form_data.elements]
             self.dof_maps                     = self.__extract_dof_maps(self.elements)
 #            self.coefficients                 = self.__extract_coefficients(form, self.num_coefficients, global_variables)
@@ -224,6 +223,16 @@ class FormData:
     def __extract_num_sub_domains(self, integrals):
         "Extract number of sub domains from list of integrals"
         sub_domains = sets.Set([integral.sub_domain for integral in integrals])
+        if len(sub_domains) == 0:
+            return 0
+        #if not (max(sub_domains) + 1 == len(sub_domains) and min(sub_domains) == 0):
+        #    raise FormError, (integrals, "Sub domains must be numbered from 0 to n - 1")
+        #return len(sub_domains)
+        return max(sub_domains) + 1
+
+    def __extract_max_ufl_subdomain(self, integrals):
+        "Extract highest subdomain label from list of integrals"
+        sub_domains = set([integral.measure().domain_id() for integral in integrals])
         if len(sub_domains) == 0:
             return 0
         #if not (max(sub_domains) + 1 == len(sub_domains) and min(sub_domains) == 0):
