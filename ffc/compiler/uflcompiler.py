@@ -73,6 +73,7 @@ def compile(objects, prefix="Form", options=FFC_OPTIONS):
         compile_forms(forms, prefix, options)
 
     # Compile elements
+    # FIXME/TODO: Do we still need this?
     #if len(elements) > 0:
     #    compile_elements(elements, prefix, options)
 
@@ -94,9 +95,11 @@ def compile_forms(forms, prefix, options):
 
         # Handle all metadata of integrals
         # TODO: Improve algorithm in UFL that returns the quad_order of
-        # an integral. As a result of handling the metadata, some measures
+        # an integral.
+        # NOTE: As a result of handling the metadata, some measures
         # might become equal which means that integrals can be grouped.
-        # This should therefore happen before analyze_form() like it is now.
+        # The handle_metadatas() must therefore be called before analyze_form()
+        # like it is now.
         form = handle_metadatas(form, options)
 
         # Compiler stage 1: analyze form
@@ -107,10 +110,9 @@ def compile_forms(forms, prefix, options):
         tensor_representation, quadrature_representation =\
             compute_form_representation(form_data, options)
 
-#        form_representation = compute_form_representation(form_data, options)
-#        form_representations += [form_representation]
-
         # Compiler stage 3: optimize form representation
+        # TODO: Switch this back on? I guess the argument should only be the
+        # tensor_representation since it only applies to this.
         #optimize_form_representation(form)
 
         # Compiler stage 4: generate form code
@@ -258,10 +260,9 @@ def compute_form_representation(form_data, options):
 #    import sys
 #    sys.exit(0)
 
-    # Compute form representation
-    # FIXME: The representations should of course only be generated for the
-    # relevant subdomains
-#    tensor = UFLTensorRepresentation(form_data, int(options["quadrature_points"]))
+    # Compute form representation for both representations
+    # TODO: Switch on tensor
+#    tensor = UFLTensorRepresentation(form_data)
     quadrature = UFLQuadratureRepresentation(form_data)
 
     end()
@@ -278,24 +279,21 @@ def generate_form_code(form_data, tensor_representation, quadrature_representati
     "Compiler stage 4: Generate code"
     begin("Compiler stage 4: Generating code")
 
+    # Generate common code like finite elements, dof map etc.
+    common_generator = CodeGenerator()
+    code = common_generator.generate_form_code(form_data, None, format, ufl_code=True)
+
     # We need both genrators
 #    tensor_generator = UFLTensorGenerator()
     quadrature_generator = UFLQuadratureGenerator()
 
-    # Generate common code
-    common_generator = CodeGenerator()
-    code = common_generator.generate_form_code(form_data, None, format, ufl_code=True)
-
     # Generate code for integrals using quadrature
-    # Generate code for cell integrals
-    code.update(quadrature_generator.generate_cell_integrals(quadrature_representation, format))
+    quadrature_code = quadrature_generator.generate_cell_integrals(quadrature_representation, format)
+    quadrature_code.update(quadrature_generator.generate_exterior_facet_integrals(quadrature_representation, format))
+    quadrature_code.update(quadrature_generator.generate_interior_facet_integrals(quadrature_representation, format))
 
-    # Generate code for exterior facet integrals
-    code.update(quadrature_generator.generate_exterior_facet_integrals(quadrature_representation, format))
+    code.update(quadrature_code)
 
-    # Generate code for interior facet integrals
-    code.update(quadrature_generator.generate_interior_facet_integrals(quadrature_representation, format))
-        
     end()
     return code
 
