@@ -34,5 +34,6 @@ class ElementData:
         self.elements                     = elements
         self.dof_maps                     = [DofMap(element) for element in elements]
         self.cell_dimension               = pick_first([element.cell_dimension() for element in elements])
+        self.coefficients                 = []
 
         debug("done")

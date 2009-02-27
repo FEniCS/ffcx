@@ -49,7 +49,7 @@ from codegeneration.quadrature import UFLQuadratureGenerator
 #from codegeneration.common.dofmap import *
 
 # FFC format modules
-from format import uflufcformat
+from format.uflufcformat import Format
 #from format import dolfinformat
 
 def compile(objects, prefix="Form", options=FFC_OPTIONS):
@@ -84,8 +84,7 @@ def compile_forms(forms, prefix, options):
     # FIXME: Make format a class
 
     # Choose format
-    format = uflufcformat
-    format.init(options)
+    format = Format(options)
 
     # Iterate over forms for stages 1 - 4
     generated_forms = []
