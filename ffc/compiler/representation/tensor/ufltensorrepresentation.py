@@ -4,10 +4,10 @@ __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 # UFL modules
-from ufl.algorithms import extract_monomials
+from ufl.algorithms import extract_monomials, print_monomials
 
 # FFC common modules
-from ffc.common.debug import *
+from ffc.common.log import info
 
 # FFC language modules
 from ffc.compiler.language.integral import *
@@ -43,7 +43,7 @@ class TensorRepresentation:
                                  one for each facet-facet combination
     """
 
-    def __init__(self, form_data, num_quadrature_points):
+    def __init__(self, form_data):
         "Create tensor representation for given form"
 
         print "in constructor"
@@ -52,22 +52,23 @@ class TensorRepresentation:
         form = form_data.form
 
         print form
-
-        # Convert to monomial representation
+        
+        # Extract monomial representation
         monomials = extract_monomials(form)
 
-        print monomials
-
-        return
+        # Print monomial representation
+        info("")
+        print_monomials(monomials)
+        info("")
 
         # Compute representation of cell tensor
-        self.cell_tensor = self.__compute_cell_tensor(form)
+        #self.cell_tensor = self.__compute_cell_tensor(form)
         
         # Compute representation of exterior facet tensors
-        self.exterior_facet_tensors = self.__compute_exterior_facet_tensors(form)
+        #self.exterior_facet_tensors = self.__compute_exterior_facet_tensors(form)
 
         # Compute representation of interior facet tensors
-        self.interior_facet_tensors = self.__compute_interior_facet_tensors(form)
+        #self.interior_facet_tensors = self.__compute_interior_facet_tensors(form)
         
     def __compute_cell_tensor(self, form):
         "Compute representation of cell tensor"

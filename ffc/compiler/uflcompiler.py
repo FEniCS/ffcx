@@ -112,6 +112,9 @@ def compile_forms(forms, prefix, options):
         # Compiler stage 3: optimize form representation
         # TODO: Switch this back on? I guess the argument should only be the
         # tensor_representation since it only applies to this.
+        # Anders: There should be a check whether or not the form can be optimized
+        # so for now it only applies to tensor representation (unless there is some
+        # optimization that can be done for quadrature that is not done by default)
         #optimize_form_representation(form)
 
         # Compiler stage 4: generate form code
@@ -248,25 +251,19 @@ def compute_form_representation(form_data, options):
     "Compiler stage 2: Compute form representation"
     begin("Compiler stage 2: Computing form representation")
 
-    # Choose representation
-#    Representation = _choose_representation(form_data.form, options)
+    # Compute quadrature representation
+    quadrature_representation = UFLQuadratureRepresentation(form_data)
 
-    # Testing monomial extraction
-#    print form_data.form
-#    monomial = extract_monomials(form_data.form)
-#    print monomial
-
-#    import sys
-#    sys.exit(0)
-
-    # Compute form representation for both representations
-    # TODO: Switch on tensor
-#    tensor = UFLTensorRepresentation(form_data)
-    quadrature = UFLQuadratureRepresentation(form_data)
+    # Compute tensor representation
+    try:
+        tensor_representation = UFLTensorRepresentation(form_data)
+    except Exception, exception:
+        warning("Tensor representation failed. " + exception.message)
+        info("Falling back to quadrature.")
+        tensor_representation = quadrature_representation
 
     end()
-    return (quadrature, quadrature)
-#    return (tensor, quadrature)
+    return tensor_representation, quadrature_representation
     
 def optimize_form_representation(form):
     "Compiler stage 3: Compute optimization"
