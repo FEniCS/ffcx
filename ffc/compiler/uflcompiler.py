@@ -294,9 +294,9 @@ def generate_form_code(form_data, tensor_representation, quadrature_representati
 
     # Mock tensor code
     tensor_code = {}
-#    tensor_code.update(tensor_generator.generate_cell_integrals(quadrature_representation, format))
-#    tensor_code.update(tensor_generator.generate_exterior_facet_integrals(quadrature_representation, format))
-#    tensor_code.update(tensor_generator.generate_interior_facet_integrals(quadrature_representation, format))
+    tensor_code.update(tensor_generator.generate_cell_integrals(quadrature_representation, format))
+    tensor_code.update(tensor_generator.generate_exterior_facet_integrals(quadrature_representation, format))
+    tensor_code.update(tensor_generator.generate_interior_facet_integrals(quadrature_representation, format))
 
 #    code["quadrature"].update(quadrature_code)
 #    code.update(quadrature_code)

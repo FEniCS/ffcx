@@ -715,3 +715,27 @@ const double J%(restriction)s_12 = x%(restriction)s[3][1] - x%(restriction)s[0][
 const double J%(restriction)s_20 = x%(restriction)s[1][2] - x%(restriction)s[0][2];
 const double J%(restriction)s_21 = x%(restriction)s[2][2] - x%(restriction)s[0][2];
 const double J%(restriction)s_22 = x%(restriction)s[3][2] - x%(restriction)s[0][2];"""
+
+# UFC snippets, must be updated according to UFC. Latest update 2009-02-27
+# Test snippets from UFC
+cell_integral_call_combined =\
+"""%(reset_tensor)s
+
+tabulate_tensor_tensor(A, w, c);
+tabulate_tensor_quadrature(A, w, c);"""
+
+cell_integral_private_combined =\
+"""
+/// Tabulate the tensor for the contribution from a local cell
+void %(function_name)s(double* A,
+                               const double * const * w,
+                               const ufc::cell& c) const
+{
+%(tabulate_tensor)s
+}
+"""
+
+
+
+
+
