@@ -84,9 +84,9 @@ def __compile_forms(forms, prefix, options, global_variables):
         return
 
     # Choose format
-    format = __choose_format(options["language"])
-    format.init(options)
-#    format = Format(options)
+#    format = __choose_format(options["language"])
+#    format.init(options)
+    format = Format(options)
 
     # Iterate over forms for stages 1 - 4
     generated_forms = []

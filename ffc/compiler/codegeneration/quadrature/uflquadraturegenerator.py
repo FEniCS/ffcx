@@ -72,7 +72,6 @@ class QuadratureGenerator:
         # Generate code for cell integral
         debug("Generating code for cell integrals using quadrature representation...")
         for subdomain, integrals in form_representation.cell_integrals.items():
-            # Reset transformer
             transformer.reset()
             code[("cell_integral", subdomain)] =\
                  self.generate_cell_integral(form_representation, transformer, integrals, format)
@@ -91,7 +90,6 @@ class QuadratureGenerator:
         # Generate code for cell integral
         debug("Generating code for exterior facet integrals using quadrature representation...")
         for subdomain, integrals in form_representation.exterior_facet_integrals.items():
-            # Reset transformer
             transformer.reset()
             code[("exterior_facet_integral", subdomain)] =\
                  self.generate_exterior_facet_integral(form_representation, transformer, integrals, format)
@@ -111,7 +109,6 @@ class QuadratureGenerator:
         # Generate code for cell integral
         debug("Generating code for interior facet integrals using quadrature representation...")
         for subdomain, integrals in form_representation.interior_facet_integrals.items():
-            # Reset transformer
             transformer.reset()
             code[("interior_facet_integral", subdomain)] =\
                  self.generate_interior_facet_integral(form_representation, transformer, integrals, format)
@@ -145,11 +142,6 @@ class QuadratureGenerator:
         # Remove unused declarations
         code = self.__remove_unused(jacobi_code, transformer.trans_set, format)
 
-        # If needed, compute the code to reset the element tensor
-        # FIXME: It should be OK to pick first?
-        if not self.reset_code:
-            self.reset_code = self.__reset_element_tensor(integrals.items()[0][1], Indent, format, False)
-
         # After we have generated the element code we know which psi tables and
         # weights will be used so we can tabulate them.
 
@@ -158,6 +150,11 @@ class QuadratureGenerator:
 
         # Tabulate values of basis functions and their derivatives.
         code += self.__tabulate_psis(transformer, Indent, format)
+
+        # If needed, compute the code to reset the element tensor
+        # FIXME: It should be OK to pick first?
+        if not self.reset_code:
+            self.reset_code = self.__reset_element_tensor(integrals.items()[0][1], Indent, format, False)
 
         # Add element code
         code += ["", format["comment"]("Compute element tensor (using UFL quadrature representation, optimisation level %d)" % self.optimise_level),\
@@ -204,11 +201,6 @@ class QuadratureGenerator:
         # Remove unused declarations
         common = self.__remove_unused(jacobi_code, transformer.trans_set, format)
 
-        # If needed, compute the code to reset the element tensor
-        # FIXME: It should be OK to pick first?
-        if not self.reset_code:
-            self.reset_code = self.__reset_element_tensor(integrals.items()[0][1], Indent, format, False)
-
         # After we have generated the element code we know which psi tables and
         # weights will be used so we can tabulate them.
 
@@ -217,6 +209,11 @@ class QuadratureGenerator:
 
         # Tabulate values of basis functions and their derivatives.
         common += self.__tabulate_psis(transformer, Indent, format)
+
+        # If needed, compute the code to reset the element tensor
+        # FIXME: It should be OK to pick first?
+        if not self.reset_code:
+            self.reset_code = self.__reset_element_tensor(integrals.items()[0][1], Indent, format, False)
 
         # Add element code
         common += ["", format["comment"]("Compute element tensor (using UFL quadrature representation, optimisation level %d)" % self.optimise_level)]
@@ -254,24 +251,21 @@ class QuadratureGenerator:
                 debug("Number of operations to compute tensor for facets (%d, %d): %d" % (i, j, num_ops))
 
         # Get Jacobian snippet
-        jacobi_code = [format["generate jacobian"](transformer.geo_dim, FFCIntegral.EXTERIOR_FACET)]
+        jacobi_code = [format["generate jacobian"](transformer.geo_dim, FFCIntegral.INTERIOR_FACET)]
 
         # Remove unused declarations
         common = self.__remove_unused(jacobi_code, transformer.trans_set, format)
-
-        # If needed, compute the code to reset the element tensor
-        # FIXME: It should be OK to pick first?
-        if not self.reset_code_restricted:
-            self.reset_code_restricted = self.__reset_element_tensor(integrals.items()[0][1], Indent, format, True)
-
-        # After we have generated the element code we know which psi tables and
-        # weights will be used so we can tabulate them.
 
         # Tabulate weights at quadrature points
         common += self.__tabulate_weights(transformer, Indent, format)
 
         # Tabulate values of basis functions and their derivatives.
         common += self.__tabulate_psis(transformer, Indent, format)
+
+        # If needed, compute the code to reset the element tensor
+        # FIXME: It should be OK to pick first?
+        if not self.reset_code_restricted:
+            self.reset_code_restricted = self.__reset_element_tensor(integrals.items()[0][1], Indent, format, True)
 
         # Add element code
         common += ["", format_comment("Compute element tensor for all facets (using quadrature representation, optimisation level %d)" %self.optimise_level)]
@@ -306,6 +300,8 @@ class QuadratureGenerator:
         # The same holds true for the quadrature weights.
         # I therefore need to generate the actual code to compute the element
         # tensors first, and then create the auxiliary code.
+
+        transformer.disp()
 
         # We receive a dictionary {num_points: integral,}
         # Loop points and integrals

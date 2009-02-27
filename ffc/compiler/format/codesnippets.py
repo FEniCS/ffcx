@@ -718,13 +718,26 @@ const double J%(restriction)s_22 = x%(restriction)s[3][2] - x%(restriction)s[0][
 
 # UFC snippets, must be updated according to UFC. Latest update 2009-02-27
 # Test snippets from UFC
-cell_integral_call_combined =\
+cell_integral_call =\
 """%(reset_tensor)s
 
 tabulate_tensor_tensor(A, w, c);
 tabulate_tensor_quadrature(A, w, c);"""
 
-cell_integral_private_combined =\
+exterior_facet_integral_call =\
+"""%(reset_tensor)s
+
+tabulate_tensor_tensor(A, w, c, facet);
+tabulate_tensor_quadrature(A, w, c, facet);"""
+
+interior_facet_integral_call =\
+"""%(reset_tensor)s
+
+tabulate_tensor_tensor(A, w, c0, c1, facet0, facet1);
+tabulate_tensor_quadrature(A, w, c0, c1, facet0, facet1);"""
+
+private_declarations = \
+{"cell_integral_combined":\
 """
 /// Tabulate the tensor for the contribution from a local cell
 void %(function_name)s(double* A,
@@ -733,9 +746,89 @@ void %(function_name)s(double* A,
 {
 %(tabulate_tensor)s
 }
+""",
+"cell_integral_header":\
 """
-
-
-
+/// Tabulate the tensor for the contribution from a local cell
+void %(function_name)s(double* A,
+                               const double * const * w,
+                               const ufc::cell& c) const;
+""",
+"cell_integral_implementation":\
+"""
+/// Tabulate the tensor for the contribution from a local cell
+void %(classname)s::%(function_name)s(double* A,
+                               const double * const * w,
+                               const ufc::cell& c) const
+{
+%(tabulate_tensor)s
+}
+""",
+"exterior_facet_integral_combined":\
+"""
+/// Tabulate the tensor for the contribution from a local exterior facet
+void %(function_name)s(double* A,
+                               const double * const * w,
+                               const ufc::cell& c,
+                               unsigned int facet) const
+{
+%(tabulate_tensor)s
+}
+""",
+"exterior_facet_integral_header":\
+"""
+/// Tabulate the tensor for the contribution from a local exterior facet
+void %(function_name)s(double* A,
+                               const double * const * w,
+                               const ufc::cell& c,
+                               unsigned int facet) const;
+""",
+"exterior_facet_integral_implementation":\
+"""
+/// Tabulate the tensor for the contribution from a local exterior facet
+void %(classname)s::%(function_name)s(double* A,
+                               const double * const * w,
+                               const ufc::cell& c,
+                               unsigned int facet) const
+{
+%(tabulate_tensor)s
+}
+""",
+"interior_facet_integral_combined":\
+"""
+/// Tabulate the tensor for the contribution from a local interior facet
+void %(function_name)s(double* A,
+                               const double * const * w,
+                               const ufc::cell& c0,
+                               const ufc::cell& c1,
+                               unsigned int facet0,
+                               unsigned int facet1) const
+{
+%(tabulate_tensor)s
+}
+""",
+"interior_facet_integral_header":\
+"""
+/// Tabulate the tensor for the contribution from a local interior facet
+void %(function_name)s(double* A,
+                               const double * const * w,
+                               const ufc::cell& c0,
+                               const ufc::cell& c1,
+                               unsigned int facet0,
+                               unsigned int facet1) const;
+""",
+"interior_facet_integral_implementation":\
+"""
+/// Tabulate the tensor for the contribution from a local interior facet
+void %(classname)s::%(function_name)s(double* A,
+                               const double * const * w,
+                               const ufc::cell& c0,
+                               const ufc::cell& c1,
+                               unsigned int facet0,
+                               unsigned int facet1) const
+{
+%(tabulate_tensor)s
+}
+"""}
 
 

@@ -579,6 +579,7 @@ class Format:
         # Generate code for private declarations
         ufc_code["private_declarations"] = "// No private members declared"
 
+        # If we only have one representation for this subdomain proceed as usual
         if not "tabulate_tensor_tensor" in code:
 
             # Generate code for members
@@ -590,36 +591,32 @@ class Format:
             body = self.__generate_body(code["tabulate_tensor"])
             #    ufc_code["tabulate_tensor"] = remove_unused(body)
             ufc_code["tabulate_tensor"] = body
-
-            if code_section == "combined":
-                return self.__generate_code(cell_integral_combined, ufc_code, options)
-            elif code_section == "header":
-                return self.__generate_code(cell_integral_header, ufc_code, options)
-            elif code_section == "implementation":
-                return self.__generate_code(cell_integral_implementation, ufc_code, options)
         else:
 
-            # Generate code for members
+            # Generate code for members (add contributions)
+            # TODO: The two generators might define overlapping members!
             ufc_code["members"] = self.__generate_body(code["tabulate_tensor_tensor"]["members"]) +\
                                   self.__generate_body(code["tabulate_tensor_quadrature"]["members"])
 
             # Generate code for function call
-            ufc_code["tabulate_tensor"] = cell_integral_call_combined % {"reset_tensor": self.__generate_body(code["reset_tensor"])}
+            ufc_code["tabulate_tensor"] = cell_integral_call % {"reset_tensor": self.__generate_body(code["reset_tensor"])}
 
-            # Generate code for tabulate_tensor for both representations
+            # Get correct format string and generate code for tabulate_tensor
+            # for both representations
+            format_string = private_declarations["cell_integral_" + code_section]
             private = ""
             for function_name in ["tabulate_tensor_tensor", "tabulate_tensor_quadrature"]:
-                private += cell_integral_private_combined % {"function_name": function_name,
-                             "tabulate_tensor": self.__generate_body(code[function_name]["tabulate_tensor"])}
-
+                private += format_string % {"function_name": function_name,
+                              "tabulate_tensor": self.__generate_body(code[function_name]["tabulate_tensor"]),
+                              "classname": ufc_code["classname"]}
             ufc_code["private_declarations"] = private
 
-            if code_section == "combined":
-                return self.__generate_code(cell_integral_combined, ufc_code, options)
-    #        elif code_section == "header":
-    #            return __generate_code(cell_integral_header, ufc_code, options)
-    #        elif code_section == "implementation":
-    #            return __generate_code(cell_integral_implementation, ufc_code, options)
+        if code_section == "combined":
+            return self.__generate_code(cell_integral_combined, ufc_code, options)
+        elif code_section == "header":
+            return self.__generate_code(cell_integral_header, ufc_code, options)
+        elif code_section == "implementation":
+            return self.__generate_code(cell_integral_implementation, ufc_code, options)
 
 
     def __generate_exterior_facet_integral(self, code, form_data, options, prefix, i, code_section):
@@ -636,18 +633,48 @@ class Format:
         # Generate code for destructor
         ufc_code["destructor"] = "// Do nothing"
 
-        # Generate code for members
-        ufc_code["members"] = self.__generate_body(code["members"])
-        
-        # Generate code for tabulate_tensor
-        switch = self.__generate_switch("facet", [self.__generate_body(case) for case in code["tabulate_tensor"][1]])
-        #    body  = __generate_jacobian(form_data.cell_dimension, Integral.EXTERIOR_FACET)
-        #    body += "\n"
-        body = self.__generate_body(code["tabulate_tensor"][0])
-        body += "\n"
-        body += switch
-        #    ufc_code["tabulate_tensor"] = remove_unused(body)
-        ufc_code["tabulate_tensor"] = body
+        # Generate code for private declarations
+        ufc_code["private_declarations"] = "// No private members declared"
+
+        # If we only have one representation for this subdomain proceed as usual
+        if not "tabulate_tensor_tensor" in code:
+
+            # Generate code for members
+            ufc_code["members"] = self.__generate_body(code["members"])
+            
+            # Generate code for tabulate_tensor
+            switch = self.__generate_switch("facet", [self.__generate_body(case) for case in code["tabulate_tensor"][1]])
+            #    body  = __generate_jacobian(form_data.cell_dimension, Integral.EXTERIOR_FACET)
+            #    body += "\n"
+            body = self.__generate_body(code["tabulate_tensor"][0])
+            body += "\n"
+            body += switch
+            #    ufc_code["tabulate_tensor"] = remove_unused(body)
+            ufc_code["tabulate_tensor"] = body
+
+        else:
+            # Generate code for members (add contributions)
+            # TODO: The two generators might define overlapping members!
+            ufc_code["members"] = self.__generate_body(code["tabulate_tensor_tensor"]["members"]) +\
+                                  self.__generate_body(code["tabulate_tensor_quadrature"]["members"])
+
+            # Generate code for function call
+            ufc_code["tabulate_tensor"] = exterior_facet_integral_call % {"reset_tensor": self.__generate_body(code["reset_tensor"])}
+
+            # Get correct format string and generate code for tabulate_tensor
+            # for both representations
+            format_string = private_declarations["exterior_facet_integral_" + code_section]
+            private = ""
+            for function_name in ["tabulate_tensor_tensor", "tabulate_tensor_quadrature"]:
+
+                switch = self.__generate_switch("facet", [self.__generate_body(case) for case in code[function_name]["tabulate_tensor"][1]])
+
+                body = self.__generate_body(code[function_name]["tabulate_tensor"][0])
+                body += "\n"
+                body += switch
+                private += format_string % {"function_name": function_name, "tabulate_tensor": body, "classname":ufc_code["classname"]}
+
+            ufc_code["private_declarations"] = private
 
         if code_section == "combined":
             return self.__generate_code(exterior_facet_integral_combined, ufc_code, options)
@@ -670,18 +697,52 @@ class Format:
         # Generate code for destructor
         ufc_code["destructor"] = "// Do nothing"
 
-        # Generate code for members
-        ufc_code["members"] = self.__generate_body(code["members"])
+        # Generate code for private declarations
+        ufc_code["private_declarations"] = "// No private members declared"
 
-        # Generate code for tabulate_tensor, impressive line of Python code follows
-        switch = self.__generate_switch("facet0", [self.__generate_switch("facet1", [self.__generate_body(case) for case in cases]) for cases in code["tabulate_tensor"][1]])
-        #    body  = __generate_jacobian(form_data.cell_dimension, Integral.INTERIOR_FACET)
-        #    body += "\n"
-        body = self.__generate_body(code["tabulate_tensor"][0])
-        body += "\n"
-        body += switch
-        #    ufc_code["tabulate_tensor"] = remove_unused(body)
-        ufc_code["tabulate_tensor"] = body
+        # If we only have one representation for this subdomain proceed as usual
+        if not "tabulate_tensor_tensor" in code:
+
+            # Generate code for members
+            ufc_code["members"] = self.__generate_body(code["members"])
+
+            # Generate code for tabulate_tensor, impressive line of Python code follows
+            switch = self.__generate_switch("facet0", [self.__generate_switch("facet1", [self.__generate_body(case) for case in cases]) for cases in code["tabulate_tensor"][1]])
+            #    body  = __generate_jacobian(form_data.cell_dimension, Integral.INTERIOR_FACET)
+            #    body += "\n"
+            body = self.__generate_body(code["tabulate_tensor"][0])
+            body += "\n"
+            body += switch
+            #    ufc_code["tabulate_tensor"] = remove_unused(body)
+            ufc_code["tabulate_tensor"] = body
+        else:
+            # Generate code for members (add contributions)
+            # TODO: The two generators might define overlapping members!
+            ufc_code["members"] = self.__generate_body(code["tabulate_tensor_tensor"]["members"]) +\
+                                  self.__generate_body(code["tabulate_tensor_quadrature"]["members"])
+
+            # Generate code for function call
+            ufc_code["tabulate_tensor"] = interior_facet_integral_call % {"reset_tensor": self.__generate_body(code["reset_tensor"])}
+
+            # Get correct format string and generate code for tabulate_tensor
+            # for both representations
+            format_string = private_declarations["interior_facet_integral_" + code_section]
+            private = ""
+            for function_name in ["tabulate_tensor_tensor", "tabulate_tensor_quadrature"]:
+                # Generate code for tabulate_tensor, impressive line of Python code follows
+                switch = self.__generate_switch("facet0",\
+                             [self.__generate_switch("facet1",\
+                                  [self.__generate_body(case) for case in cases])\
+                                        for cases in code[function_name]["tabulate_tensor"][1]])
+                #    body  = __generate_jacobian(form_data.cell_dimension, Integral.INTERIOR_FACET)
+                #    body += "\n"
+                body = self.__generate_body(code[function_name]["tabulate_tensor"][0])
+                body += "\n"
+                body += switch
+                private += format_string % {"function_name": function_name, "tabulate_tensor": body, "classname":ufc_code["classname"]}
+
+            ufc_code["private_declarations"] = private
+
 
         if code_section == "combined":
             return self.__generate_code(interior_facet_integral_combined, ufc_code, options)

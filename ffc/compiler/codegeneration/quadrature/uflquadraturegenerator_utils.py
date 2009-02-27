@@ -51,7 +51,7 @@ class QuadratureTransformer(Transformer):
         self._index_values = StackDict()
         self._components = StackDict()
         self.trans_set = set()
-
+        print form_representation.psi_tables[domain_type]
         self.element_map, self.name_map, self.unique_tables =\
         self.__create_psi_tables(form_representation.psi_tables[domain_type])
 
@@ -82,17 +82,36 @@ class QuadratureTransformer(Transformer):
         self._index_values.clear()
         self._components = []
 
+    def disp(self):
+        print "\nQuadratureTransformer, element_map:\n", self.element_map
+        print "\nQuadratureTransformer, name_map:\n", self.name_map
+        print "\nQuadratureTransformer, unique_tables:\n", self.unique_tables
+        print "\nQuadratureTransformer, used_psi_tables:\n", self.used_psi_tables
+        print "\nQuadratureTransformer, used_weights:\n", self.used_weights
+
     # Handle the basics just in case, probably not needed?
     def expr(self, o, *operands):
         print "\nVisiting basic Expr:", o.__repr__(), "with operands:"
         print ", ".join(map(str,operands))
-        return o
+        return {}
+        # FIXME: unsafe switch back on
+#        return o
 
     # Handle the basics just in case, probably not needed?
     def terminal(self, o, *operands):
         print "\nVisiting basic Terminal:", o.__repr__(), "with operands:"
         print ", ".join(map(str,operands))
-        return o
+        return {}
+        # FIXME: unsafe switch back on
+#        return o
+
+    def float_value(self, o, *operands):
+        print "\nVisiting FloatValue:", o.__repr__()
+
+        if operands:
+            raise RuntimeError((o, operands), "Did not expect any operands for FloatValue")
+
+        return {():self.format["floating point"](o.value())}
 
     # Algebra
     def sum(self, o, *operands):
@@ -508,23 +527,39 @@ class QuadratureTransformer(Transformer):
 
             # FIXME: Handle restriction
             basis_name = self.__generate_psi_name(element_counter, self.facet0, component, deriv)
-            basis_name, non_zeros = self.name_map[basis_name]
-            loop_index_range = shape(self.unique_tables[basis_name])[1]
+            # If the basis name is not in the name map, or if the basis name is
+            # '' it is because the basis values were all ones (a constant)
+            constant = False
+            if basis_name in self.name_map and self.name_map[basis_name][0]:
+                basis_name, non_zeros = self.name_map[basis_name]
+                loop_index_range = shape(self.unique_tables[basis_name])[1]
+
+                # Add basis name to set of used tables
+                self.used_psi_tables.add(basis_name)
+
+                # Add matrix access to basis_name such that we create a unique entry
+                # for the expression to compute the function value
+                # Create matrix access of basis
+                if self.points == 1:
+                    format_ip = "0"
+                basis_name += format_matrix_access(format_ip, loop_index)
+
+                # FIXME: Need to take non-zero mappings, components, restricted and QE elements into account
+                coefficient = format_coeff + format_matrix_access(str(ufl_function.count()), loop_index)
+                function_expr = format_mult([basis_name, coefficient])
+            else:
+                constant = True
+                basis_name = None
+                loop_index_range = 0
+                # FIXME: Need to take non-zero mappings, components, restricted and QE elements into account
+                if component == None:
+                    coefficient = format_coeff + format_matrix_access(str(ufl_function.count()), 0)
+                else:
+                    coefficient = format_coeff + format_matrix_access(str(ufl_function.count()), component)
+                function_expr = coefficient
+
             print "basis_name: ", basis_name
-            # Add basis name to set of used tables
-            self.used_psi_tables.add(basis_name)
 
-            # Add matrix access to basis_name such that we create a unique entry
-            # for the expression to compute the function value
-            # Create matrix access of basis
-            if self.points == 1:
-                format_ip = "0"
-            basis_name += format_matrix_access(format_ip, loop_index)
-
-            # FIXME: Need to take non-zero mappings, components, restricted and QE elements into account
-            coefficient = format_coeff + format_matrix_access(str(ufl_function.count()), loop_index)
-
-            function_expr = format_mult([basis_name, coefficient])
 
             # Add transformation if supported and needed
             transforms = []
@@ -541,10 +576,12 @@ class QuadratureTransformer(Transformer):
             # Check if the expression to compute the function value is already in
             # the dictionary of used function. If not, generate a new name and add
             function_name = format_F + str(self.function_count)
-            if not function_expr in self.functions:
+            if not function_expr in self.functions and not constant:
                 self.functions[function_expr] = (function_name, loop_index_range)
                 # Increase count
                 self.function_count += 1
+            elif constant:
+                function_name = function_expr
             else:
                 function_name, index_r = self.functions[function_expr]
                 # Check just to make sure
@@ -558,12 +595,6 @@ class QuadratureTransformer(Transformer):
             code = code[0]
 
         return code
-
-    def disp(self):
-        print "\nQuadratureTransformer, element_map:\n", self.element_map
-        print "\nQuadratureTransformer, name_map:\n", self.name_map
-        print "\nQuadratureTransformer, unique_tables:\n", self.unique_tables
-        print "\nQuadratureTransformer, used_tables:\n", self.used_tables
 
     def __create_psi_tables(self, tables):
         "Create names and maps for tables and non-zero entries if appropriate."
