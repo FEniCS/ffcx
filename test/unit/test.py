@@ -224,13 +224,20 @@ class JITTests(unittest.TestCase):
         a0 = dot(grad(v), grad(u))*dx
         a1 = dot(grad(v), grad(u))*dx
 
-        # Compile a0 once so it will be in the cache (both in-memory and disk)
+        # Note! We need to compile a0 twice before timing since the form
+        # will be simplified the first time and thus change its signature.
+        # This will/might change with UFL so it's enough to compile it once.
+
+        # Compile a0 twice so it will be in the cache (both in-memory and disk)
+        jit(a0)
         jit(a0)
 
         # Compile a0 again (should be really fast, using in-memory cache)
         t = time()
         jit(a0)
         dt0 = time() - t
+
+        print ""
 
         # Compile a1 (should be fairly, using disk cache)
         t = time()
