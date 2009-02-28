@@ -32,8 +32,6 @@ public:
 %(tabulate_tensor)s
   }
 
-private:
-%(private_declarations)s
 };
 """
 
@@ -57,8 +55,6 @@ public:
                                const double * const * w,
                                const ufc::cell& c) const;
 
-private:
-%(private_declarations)s
 };
 """
 
@@ -82,8 +78,6 @@ void %(classname)s::tabulate_tensor(double* A,
 {
 %(tabulate_tensor)s
 }
-
-%(private_declarations)s
 """
 
 exterior_facet_integral_combined = """\
@@ -116,8 +110,6 @@ public:
 %(tabulate_tensor)s
   }
 
-private:
-%(private_declarations)s
 };
 """
 
@@ -142,8 +134,6 @@ public:
                                const ufc::cell& c,
                                unsigned int facet) const;
 
-private:
-%(private_declarations)s
 };
 """
 
@@ -168,8 +158,6 @@ void %(classname)s::tabulate_tensor(double* A,
 {
 %(tabulate_tensor)s
 }
-
-%(private_declarations)s
 """
 
 interior_facet_integral_combined = """\
@@ -204,8 +192,6 @@ public:
 %(tabulate_tensor)s
   }
 
-private:
-%(private_declarations)s
 };
 """
 
@@ -232,8 +218,6 @@ public:
                                unsigned int facet0,
                                unsigned int facet1) const;
 
-private:
-%(private_declarations)s
 };
 """
 
@@ -260,6 +244,4 @@ void %(classname)s::tabulate_tensor(double* A,
 {
 %(tabulate_tensor)s
 }
-
-%(private_declarations)s
 """
