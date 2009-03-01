@@ -266,7 +266,7 @@ def compute_form_representation(form_data, options):
         tensor_representation = quadrature_representation
 
     # FIXME: Temporary while testing
-    #sys.exit(0)
+    sys.exit(0)
 
     end()
     return tensor_representation, quadrature_representation
