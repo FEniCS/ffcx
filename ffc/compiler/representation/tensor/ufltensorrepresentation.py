@@ -4,7 +4,7 @@ __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 # UFL modules
-from ufl.algorithms import extract_monomials, print_monomials
+from ufl.algorithms import extract_monomials
 
 # FFC common modules
 from ffc.common.log import info
@@ -58,8 +58,7 @@ class TensorRepresentation:
 
         # Print monomial representation
         info("")
-        print_monomials(monomials)
-        info("")
+        info(str(monomials))
 
         # Compute representation of cell tensor
         #self.cell_tensor = self.__compute_cell_tensor(form)

@@ -18,10 +18,13 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Kristian B. Oelgaard, 2009.
 # Modified by Dag Lindbo, 2008.
 
+# FIXME: Temporary while testing
+import sys
+
 # UFL modules
 from ufl.classes import Form, FiniteElementBase, Measure, Integral
-from ufl.algorithms import FormData, is_multilinear, validate_form, extract_monomials, extract_quadrature_order, estimate_quadrature_order
-
+from ufl.algorithms import FormData, is_multilinear, validate_form, extract_quadrature_order, estimate_quadrature_order
+from ufl.algorithms import MonomialException
 
 # FFC common modules
 from ffc.common.log import debug, info, warning, error, begin, end, set_level, INFO
@@ -257,10 +260,13 @@ def compute_form_representation(form_data, options):
     # Compute tensor representation
     try:
         tensor_representation = UFLTensorRepresentation(form_data)
-    except Exception, exception:
+    except MonomialException, exception:
         warning("Tensor representation failed. " + exception.message)
         info("Falling back to quadrature.")
         tensor_representation = quadrature_representation
+
+    # FIXME: Temporary while testing
+    #sys.exit(0)
 
     end()
     return tensor_representation, quadrature_representation
