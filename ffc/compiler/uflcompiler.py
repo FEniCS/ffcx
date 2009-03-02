@@ -258,15 +258,15 @@ def compute_form_representation(form_data, options):
     quadrature_representation = UFLQuadratureRepresentation(form_data)
 
     # Compute tensor representation
-    try:
-        tensor_representation = UFLTensorRepresentation(form_data)
-    except MonomialException, exception:
-        warning("Tensor representation failed. " + exception.message)
-        info("Falling back to quadrature.")
-        tensor_representation = quadrature_representation
+#    try:
+#        tensor_representation = UFLTensorRepresentation(form_data)
+#    except MonomialException, exception:
+#        warning("Tensor representation failed. " + exception.message)
+#        info("Falling back to quadrature.")
+    tensor_representation = quadrature_representation
 
     # FIXME: Temporary while testing
-    sys.exit(0)
+#    sys.exit(0)
 
     end()
     return tensor_representation, quadrature_representation
@@ -297,9 +297,9 @@ def generate_form_code(form_data, tensor_representation, quadrature_representati
 
     # Mock tensor code
     tensor_code = {}
-    tensor_code.update(tensor_generator.generate_cell_integrals(quadrature_representation, format))
-    tensor_code.update(tensor_generator.generate_exterior_facet_integrals(quadrature_representation, format))
-    tensor_code.update(tensor_generator.generate_interior_facet_integrals(quadrature_representation, format))
+#    tensor_code.update(tensor_generator.generate_cell_integrals(quadrature_representation, format))
+#    tensor_code.update(tensor_generator.generate_exterior_facet_integrals(quadrature_representation, format))
+#    tensor_code.update(tensor_generator.generate_interior_facet_integrals(quadrature_representation, format))
 
 #    code["quadrature"].update(quadrature_code)
 #    code.update(quadrature_code)

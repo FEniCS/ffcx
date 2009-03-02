@@ -12,6 +12,6 @@ v = TestFunction(element)
 u = TrialFunction(element)
 f = Function(element)
 
-a = dot(grad(v), grad(u))*dx
-L = v*f*dx
+a = dot(grad(v), grad(u))*dx(0, {"quadrature_order":4})
+L = v*f*dx(0, {"quadrature_order":6})
 

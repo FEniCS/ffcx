@@ -9,5 +9,5 @@
 element = FiniteElement("Lagrange", "tetrahedron", 1)
 
 v = Function(element)
-a = (v*v + dot(grad(v), grad(v)))*dx
+a = (v*v + dot(grad(v), grad(v)))*dx(0, {"quadrature_order":2})
 

@@ -95,8 +95,8 @@ class QuadratureRepresentation:
         self.exterior_facet_integrals = self.__tabulate(exterior_facet_integrals)
         self.interior_facet_integrals = self.__tabulate(interior_facet_integrals)
 
-        print "\nQR, init, psi_tables:\n", self.psi_tables
-        print "\nQR, init, quadrature_weights:\n", self.quadrature_weights
+#        print "\nQR, init, psi_tables:\n", self.psi_tables
+#        print "\nQR, init, quadrature_weights:\n", self.quadrature_weights
 
     def __extract_integrals(self, integrals):
         "Extract relevant integrals for the QuadratureGenerator."

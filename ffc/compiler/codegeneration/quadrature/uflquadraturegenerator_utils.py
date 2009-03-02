@@ -51,7 +51,6 @@ class QuadratureTransformer(Transformer):
         self._index_values = StackDict()
         self._components = StackDict()
         self.trans_set = set()
-        print form_representation.psi_tables[domain_type]
         self.element_map, self.name_map, self.unique_tables =\
         self.__create_psi_tables(form_representation.psi_tables[domain_type])
 
@@ -105,15 +104,34 @@ class QuadratureTransformer(Transformer):
         # FIXME: unsafe switch back on
 #        return o
 
+    # -------------------------------------------------------------------------
+    # Constant values (constantvalue.py)
+    # -------------------------------------------------------------------------
     def float_value(self, o, *operands):
         print "\nVisiting FloatValue:", o.__repr__()
 
+        # FIXME: Might be needed because it can be IndexAnnotated?
         if operands:
             raise RuntimeError((o, operands), "Did not expect any operands for FloatValue")
 
+        # TODO: Handle value < 0
+
         return {():self.format["floating point"](o.value())}
 
-    # Algebra
+    def int_value(self, o, *operands):
+        print "\nVisiting IntValue:", o.__repr__()
+
+        # FIXME: Might be needed because it can be IndexAnnotated?
+        if operands:
+            raise RuntimeError((o, operands), "Did not expect any operands for IntValue")
+
+        # TODO: Handle value < 0
+
+        return {():self.format["floating point"](o.value())}
+
+    # -------------------------------------------------------------------------
+    # Algebra (algebra.py)
+    # -------------------------------------------------------------------------
     def sum(self, o, *operands):
         print "\nVisiting Sum:", o.__repr__(), "with operands:"
         print ", ".join(map(str,operands))
@@ -166,12 +184,38 @@ class QuadratureTransformer(Transformer):
         code ={}
         if permutations:
             for key in permutations:
-                code[key] = format_mult(permutations[key] + not_permute)
+                # Sort key in order to create a unique key
+                l = list(key)
+                l.sort()
+                code[tuple(l)] = format_mult(permutations[key] + not_permute)
         else:
             code[()] = format_mult(not_permute)
 
         return code
 
+    def power(self, o,):
+        print "\nVisiting Power:", o.__repr__()
+
+        # Get base and exponent
+        base, expo = o.operands()
+#        print "expo: ", expo
+
+        # Visit base
+        base_code = self.visit(base)
+#        print "base: ", base_code
+
+        # TODO: Are these safety checks needed?
+        if not () in base_code and len(base_code) != 1:
+            raise RuntimeError(base_code, "Only support function type base")
+
+        val = base_code.pop(())
+
+        # Multiply val by self expo number of times
+        return {(): self.format["multiply"]([val]*expo.value())}
+
+    # -------------------------------------------------------------------------
+    # Retriction (restriction.py)
+    # -------------------------------------------------------------------------
     def positive_restricted(self, o):
         print "\nVisiting PositiveRestricted:", o.__repr__(),
 
@@ -199,12 +243,15 @@ class QuadratureTransformer(Transformer):
         code = self.visit(restricted_expr[0])
         return code
 
+    # -------------------------------------------------------------------------
+    # From indexed.py, indexsum.py and tensors.py
+    # -------------------------------------------------------------------------
     def index_sum(self, o):
-        print "\nVisiting IndexSum:", o.__repr__(),
+#        print "\nVisiting IndexSum:", o.__repr__(),
 
         summand, index = o.operands()
-        print "\nindex.__repr__(): ", index.__repr__()
-        print "\nindex[0].__repr__(): ", index[0].__repr__()
+#        print "\nindex.__repr__(): ", index.__repr__()
+#        print "\nindex[0].__repr__(): ", index[0].__repr__()
         # Just a few safety checks
         if not isinstance(index, MultiIndex) and len(index) == 1:
             raise RuntimeError(index, "Expecting 1 MultiIndex")
@@ -241,11 +288,11 @@ class QuadratureTransformer(Transformer):
         return code
 
     def indexed(self, o):
-        print "\nVisiting Indexed:", o.__repr__(),
+#        print "\nVisiting Indexed:", o.__repr__(),
 
         indexed_expr, index = o.operands()
-        print "wrap, indexed_expr: ", indexed_expr
-        print "wrap, index.__repr__(): ", index.__repr__()
+#        print "wrap, indexed_expr: ", indexed_expr
+#        print "wrap, index.__repr__(): ", index.__repr__()
 
         # Loop multi indices and create components
         for indx in index:
@@ -270,11 +317,11 @@ class QuadratureTransformer(Transformer):
         return code
 
     def component_tensor(self, o):
-        print "\nVisiting ComponentTensor:", o.__repr__(),
+#        print "\nVisiting ComponentTensor:", o.__repr__(),
 
         indexed_expr, index = o.operands()
-        print "wrap, indexed_expr: ", indexed_expr
-        print "wrap, index.__repr__(): ", index.__repr__()
+#        print "wrap, indexed_expr: ", indexed_expr
+#        print "wrap, index.__repr__(): ", index.__repr__()
 
         if not len(self._components) == len(index):
             raise RuntimeError("The number of known components must be equal to the number of components of the ComponentTensor for this to work.")
@@ -299,12 +346,15 @@ class QuadratureTransformer(Transformer):
 
         return code
 
+    # -------------------------------------------------------------------------
+    # Derivatives (differentiation.py)
+    # -------------------------------------------------------------------------
     def spatial_derivative(self, o):
-        print "\nVisiting SpatialDerivative:", o.__repr__(),
+#        print "\nVisiting SpatialDerivative:", o.__repr__(),
 
         indexed_expr, index = o.operands()
-        print "wrap, indexed_expr: ", indexed_expr
-        print "wrap, index: ", index.__repr__()
+#        print "wrap, indexed_expr: ", indexed_expr
+#        print "wrap, index: ", index.__repr__()
         if not isinstance(index, MultiIndex) and len(index) == 1:
             raise RuntimeError(index, "Expecting 1 MultiIndex")
 
@@ -320,14 +370,15 @@ class QuadratureTransformer(Transformer):
 
         # Visit children
         code = self.visit(indexed_expr)
-        print "spatial_derivative, code: ", code
+#        print "spatial_derivative, code: ", code
 
         return code
 
-    # FormArguments
-#    def basis_function(self, o, *operands, component=[]):
+    # -------------------------------------------------------------------------
+    # BasisFunction, Function and Constants (basisfunction.py, function.py)
+    # -------------------------------------------------------------------------
     def basis_function(self, o, *operands):
-        print "\nVisiting BasisFunction:", o.__repr__()
+#        print "\nVisiting BasisFunction:", o.__repr__()
 
         # Just checking that we don't get any operands
         if operands:
@@ -349,7 +400,7 @@ class QuadratureTransformer(Transformer):
         if self._components:
             component = self._index_values[self._components[0]]
 
-        print "\nDerivatives: ", derivatives
+#        print "\nDerivatives: ", derivatives
 
         # Create mapping and code for basis function
         basis = self.create_basis_function(o, restriction, component, derivatives)
@@ -360,16 +411,47 @@ class QuadratureTransformer(Transformer):
 
         return basis
 
+    def constant(self, o, *operands):
+#        print "\nVisiting Constant:", o.__repr__()
+        # Just checking that we don't get any operands
+        if operands:
+            raise RuntimeError(operands, "Didn't expect any operands for Constant")
+
+        if len(self._components) > 0:
+            raise RuntimeError(self._components, "Constant does not expect components")
+
+        # FIXME: restriction not handled yet
+        restriction = None
+        coefficient = self.format["coeff"] + self.format["matrix access"](str(o.count()), 0)
+        return {():coefficient}
+
+    def vector_constant(self, o, *operands):
+#        print "\nVisiting VectorConstant:", o.__repr__()
+        # Just checking that we don't get any operands
+        if operands:
+            raise RuntimeError(operands, "Didn't expect any operands for VectorConstant")
+
+        if len(self._components) != 1:
+            raise RuntimeError(self._components, "VectorConstant only expext 1 component")
+
+        # FIXME: restriction not handled yet
+        restriction = None
+
+        # We get one component
+        component = self._index_values[self._components[0]]
+        coefficient = self.format["coeff"] + self.format["matrix access"](str(o.count()), component)
+        return {():coefficient}
+
     def function(self, o, *operands):
-        print "\nVisiting Function:", o.__repr__()
+#        print "\nVisiting Function:", o.__repr__()
 
         # Just checking that we don't get any operands
         if operands:
-            raise RuntimeError(operands, "Didn't expect any operands for BasisFunction")
+            raise RuntimeError(operands, "Didn't expect any operands for Function")
 
 #        print "self._components: ", self._components
         if len(self._components) > 1:
-            raise RuntimeError(self._components, "Currently only supports 1 component value (tensor valued basis not supported)")
+            raise RuntimeError(self._components, "Currently only supports 1 component value (tensor valued functions not supported)")
 
 #        print "self._derivatives: ", self._derivatives
         # Create aux. info
@@ -383,7 +465,7 @@ class QuadratureTransformer(Transformer):
         if self._components:
             component = self._index_values[self._components[0]]
 
-        print "\nDerivatives: ", derivatives
+#        print "\nDerivatives: ", derivatives
 
         # Create code for basis function
         code = self.create_function(o, restriction, component, derivatives)
@@ -394,7 +476,9 @@ class QuadratureTransformer(Transformer):
 
         return {(): code}
 
-
+    # -------------------------------------------------------------------------
+    # Helper functions for BasisFunction and Function)
+    # -------------------------------------------------------------------------
     def create_basis_function(self, ufl_basis_function, restriction, component, derivatives):
         "Create code for basis functions, and update relevant tables of used basis"
 
@@ -439,10 +523,10 @@ class QuadratureTransformer(Transformer):
         # Loop derivatives and get multi indices
         for multi in multiindices:
             deriv = [multi.count(i) for i in range(geo_dim)]
-            print "multi: ", multi
+#            print "multi: ", multi
             if not any(deriv):
                 deriv = []
-            print "deriv: ", deriv
+#            print "deriv: ", deriv
 
             # FIXME: Handle restriction
             name = self.__generate_psi_name(element_counter, self.facet0, component, deriv)
@@ -520,10 +604,10 @@ class QuadratureTransformer(Transformer):
 
         for multi in multiindices:
             deriv = [multi.count(i) for i in range(geo_dim)]
-            print "multi: ", multi
+#            print "multi: ", multi
             if not any(deriv):
                 deriv = []
-            print "deriv: ", deriv
+#            print "deriv: ", deriv
 
             # FIXME: Handle restriction
             basis_name = self.__generate_psi_name(element_counter, self.facet0, component, deriv)
@@ -558,7 +642,7 @@ class QuadratureTransformer(Transformer):
                     coefficient = format_coeff + format_matrix_access(str(ufl_function.count()), component)
                 function_expr = coefficient
 
-            print "basis_name: ", basis_name
+#            print "basis_name: ", basis_name
 
 
             # Add transformation if supported and needed
@@ -714,30 +798,30 @@ def generate_code(integrand, transformer, Indent, format):
     code = []
     num_ops = 0
 
-    print "\nQG, Using Transformer"
+#    print "\nQG, Using Transformer"
     # Expand all derivatives
-    print "Integrand: ", integrand
-    print "Integrand: ", expand_derivatives(integrand)
+#    print "Integrand: ", integrand
+#    print "Integrand: ", expand_derivatives(integrand)
 
     loop_code = transformer.visit(integrand)
-    print "loop_code: ", loop_code
+#    print "loop_code: ", loop_code
 
     # TODO: Verify that test and trial functions will ALWAYS be rearranged to 0 and 1
     indices = {-2: format["first free index"], -1: format["second free index"],
                 0: format["first free index"],  1: format["second free index"]}
 
-    print "\nQG-utils, generate_code, integrand.__repr__():\n", integrand.__repr__()
+#    print "\nQG-utils, generate_code, integrand.__repr__():\n", integrand.__repr__()
 
     # Create code for computing function values, sort after loop ranges first
     functions = transformer.functions
-    print "FUNC: ", functions
+#    print "FUNC: ", functions
     function_list = {}
     for key, val in functions.items():
         if val[1] in function_list:
             function_list[val[1]].append(key)
         else:
             function_list[val[1]] = [key]
-    print "function_list: ", function_list
+#    print "function_list: ", function_list
     # Loop ranges and get list of functions
     for r, func in function_list.items():
         decl = []
@@ -758,7 +842,7 @@ def generate_code(integrand, transformer, Indent, format):
     # Generate entries, multiply by weights and sort after primary loops
     loops = {}
     for key, val in loop_code.items():
-        print "Key: ", key
+#        print "Key: ", key
 
         # Multiply by weight and determinant
         # FIXME: This definitely needs a fix

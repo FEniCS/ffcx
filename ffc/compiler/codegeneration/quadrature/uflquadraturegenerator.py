@@ -124,7 +124,7 @@ class QuadratureGenerator:
         Indent = IndentControl()
 
         debug("")
-        print "\nQG, cell_integral, integrals:\n", integrals
+#        print "\nQG, cell_integral, integrals:\n", integrals
 
         # FIXME: Get one of the elements, they should all be defined on the same Cell?
         # TODO: Is it faster/better to just generate it on the fly?
@@ -173,7 +173,7 @@ class QuadratureGenerator:
         Indent = IndentControl()
 
         debug("")
-        print "\nQG, exterior_facet_integral, integral:\n", integrals
+#        print "\nQG, exterior_facet_integral, integral:\n", integrals
 
         # Prefetch formats to speed up code generation
         format_comment      = format["comment"]
@@ -228,7 +228,7 @@ class QuadratureGenerator:
         Indent = IndentControl()
 
         debug("")
-        print "\nQG, exterior_facet_integral, integral:\n", integrals
+#        print "\nQG, exterior_facet_integral, integral:\n", integrals
 
         # Prefetch formats to speed up code generation
         format_comment      = format["comment"]
@@ -301,12 +301,13 @@ class QuadratureGenerator:
         # I therefore need to generate the actual code to compute the element
         # tensors first, and then create the auxiliary code.
 
-        transformer.disp()
+#        transformer.disp()
 
         # We receive a dictionary {num_points: integral,}
         # Loop points and integrals
         for points, integral in integrals.items():
 
+            print "\nIntegral: ", integral
             print "\nIntegral tree_format: ", tree_format(integral)
 
             ip_code = ["", Indent.indent(format_comment\

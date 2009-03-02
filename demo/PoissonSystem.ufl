@@ -12,6 +12,6 @@ v = TestFunction(element)
 u = TrialFunction(element)
 f = Function(element)
 
-a = inner(grad(v), grad(u))*dx
-L = inner(v, f)*dx
+a = inner(grad(v), grad(u))*dx(0, {"quadrature_order":0})
+L = inner(v, f)*dx(0, {"quadrature_order":2})
 

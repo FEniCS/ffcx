@@ -576,10 +576,13 @@ class Format:
         # Generate code for destructor
         ufc_code["destructor"] = "// Do nothing"
 
+        members = ""
         # If we only have one representation for this subdomain proceed as usual
         if not "tabulate_tensor_tensor" in code:
 
             # Generate code for members
+            # FIXME: These members doesn't define the classname for the
+            # implementation code
             ufc_code["members"] = self.__generate_body(code["members"])
             
             # Generate code for tabulate_tensor
@@ -592,8 +595,10 @@ class Format:
 
             # Generate code for members (add contributions)
             # TODO: The two generators might define overlapping members!
-            members = self.__generate_body(code["tabulate_tensor_tensor"]["members"]) +\
-                      self.__generate_body(code["tabulate_tensor_quadrature"]["members"])
+            # FIXME: These members doesn't define the classname for the
+            # implementation code
+            ufc_code["members"] = self.__generate_body(code["tabulate_tensor_tensor"]["members"]) +\
+                                  self.__generate_body(code["tabulate_tensor_quadrature"]["members"])
 
             # Generate code for function call
             ufc_code["tabulate_tensor"] = cell_integral_call % {"reset_tensor": self.__generate_body(code["reset_tensor"])}
@@ -605,15 +610,14 @@ class Format:
                 members += format_string % {"function_name": function_name,
                               "tabulate_tensor": self.__generate_body(code[function_name]["tabulate_tensor"]),
                               "classname": ufc_code["classname"]}
-            ufc_code["members"] = members
+            ufc_code["members"] += members
 
         if code_section == "combined":
             return self.__generate_code(cell_integral_combined, ufc_code, options)
         elif code_section == "header":
             return self.__generate_code(cell_integral_header, ufc_code, options)
         elif code_section == "implementation":
-            return self.__generate_code(cell_integral_implementation, ufc_code, options)
-
+            return members + self.__generate_code(cell_integral_implementation, ufc_code, options)
 
     def __generate_exterior_facet_integral(self, code, form_data, options, prefix, i, code_section):
         "Generate code for ufc::exterior_facet_integral"
@@ -629,10 +633,13 @@ class Format:
         # Generate code for destructor
         ufc_code["destructor"] = "// Do nothing"
 
+        members = ""
         # If we only have one representation for this subdomain proceed as usual
         if not "tabulate_tensor_tensor" in code:
 
             # Generate code for members
+            # FIXME: These members doesn't define the classname for the
+            # implementation code
             ufc_code["members"] = self.__generate_body(code["members"])
             
             # Generate code for tabulate_tensor
@@ -648,8 +655,10 @@ class Format:
         else:
             # Generate code for members (add contributions)
             # TODO: The two generators might define overlapping members!
-            members = self.__generate_body(code["tabulate_tensor_tensor"]["members"]) +\
-                      self.__generate_body(code["tabulate_tensor_quadrature"]["members"])
+            # FIXME: These members doesn't define the classname for the
+            # implementation code
+            ufc_code["members"] = self.__generate_body(code["tabulate_tensor_tensor"]["members"]) +\
+                                  self.__generate_body(code["tabulate_tensor_quadrature"]["members"])
 
             # Generate code for function call
             ufc_code["tabulate_tensor"] = exterior_facet_integral_call % {"reset_tensor": self.__generate_body(code["reset_tensor"])}
@@ -666,14 +675,14 @@ class Format:
                 body += switch
                 members += format_string % {"function_name": function_name, "tabulate_tensor": body, "classname":ufc_code["classname"]}
 
-            ufc_code["members"] = members
+            ufc_code["members"] += members
 
         if code_section == "combined":
             return self.__generate_code(exterior_facet_integral_combined, ufc_code, options)
         elif code_section == "header":
             return self.__generate_code(exterior_facet_integral_header, ufc_code, options)
         elif code_section == "implementation":
-            return self.__generate_code(exterior_facet_integral_implementation, ufc_code, options)
+            return members + self.__generate_code(exterior_facet_integral_implementation, ufc_code, options)
 
     def __generate_interior_facet_integral(self, code, form_data, options, prefix, i, code_section):
         "Generate code for ufc::interior_facet_integral"
@@ -689,10 +698,13 @@ class Format:
         # Generate code for destructor
         ufc_code["destructor"] = "// Do nothing"
 
+        members = ""
         # If we only have one representation for this subdomain proceed as usual
         if not "tabulate_tensor_tensor" in code:
 
             # Generate code for members
+            # FIXME: These members doesn't define the classname for the
+            # implementation code
             ufc_code["members"] = self.__generate_body(code["members"])
 
             # Generate code for tabulate_tensor, impressive line of Python code follows
@@ -707,8 +719,10 @@ class Format:
         else:
             # Generate code for members (add contributions)
             # TODO: The two generators might define overlapping members!
-            members = self.__generate_body(code["tabulate_tensor_tensor"]["members"]) +\
-                      self.__generate_body(code["tabulate_tensor_quadrature"]["members"])
+            # FIXME: These members doesn't define the classname for the
+            # implementation code
+            ufc_code["members"] = self.__generate_body(code["tabulate_tensor_tensor"]["members"]) +\
+                                  self.__generate_body(code["tabulate_tensor_quadrature"]["members"])
 
             # Generate code for function call
             ufc_code["tabulate_tensor"] = interior_facet_integral_call % {"reset_tensor": self.__generate_body(code["reset_tensor"])}
@@ -729,7 +743,7 @@ class Format:
                 body += switch
                 members += format_string % {"function_name": function_name, "tabulate_tensor": body, "classname":ufc_code["classname"]}
 
-            ufc_code["members"] = members
+            ufc_code["members"] += members
 
 
         if code_section == "combined":
@@ -737,7 +751,7 @@ class Format:
         elif code_section == "header":
             return self.__generate_code(interior_facet_integral_header, ufc_code, options)
         elif code_section == "implementation":
-            return self.__generate_code(interior_facet_integral_implementation, ufc_code, options)
+            return members + self.__generate_code(interior_facet_integral_implementation, ufc_code, options)
 
     def __generate_form(self, code, form_data, options, prefix, code_section):
         "Generate code for ufc::form"

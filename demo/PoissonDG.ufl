@@ -29,7 +29,7 @@ a = inner(grad(v), grad(u))*dx \
     - inner(jump(v), avg(grad(u)))*dS \
     + alpha/h('+')*dot(jump(v), jump(u))*dS \
     - inner(grad(v), u*n)*ds \
-    - inner(u*n, grad(u))*ds \
+    - inner(v*n, grad(u))*ds \
     + gamma/h*v*u*ds
 
 L = v*f*dx + v*gN*ds
