@@ -31,10 +31,11 @@ class QuadratureTransformer(Transformer):
 
         Transformer.__init__(self)
 
-        # Save format, optimise_level and weights
+        # Save format, optimise_level, weights and fiat_elements_map
         self.format = format
         self.optimise_level = optimise_level
         self.quadrature_weights = form_representation.quadrature_weights[domain_type]
+        self.fiat_elements_map = form_representation.fiat_elements_map
 
         # Create containers and variables
         self.used_psi_tables = set()
@@ -89,6 +90,7 @@ class QuadratureTransformer(Transformer):
         self._components = []
 
     def disp(self):
+        print "\n\n **** Displaying QuadratureTransformer ****"
         print "\nQuadratureTransformer, element_map:\n", self.element_map
         print "\nQuadratureTransformer, name_map:\n", self.name_map
         print "\nQuadratureTransformer, unique_tables:\n", self.unique_tables
@@ -523,8 +525,6 @@ class QuadratureTransformer(Transformer):
 
 #        print "self._derivatives: ", self._derivatives
         # Create aux. info
-        # FIXME: restriction not handled yet
-        restriction = None
         component = None
         derivatives = ()
         # Handle derivatives and components
@@ -536,7 +536,7 @@ class QuadratureTransformer(Transformer):
 #        print "\nDerivatives: ", derivatives
 
         # Create mapping and code for basis function
-        basis = self.create_basis_function(o, restriction, component, derivatives)
+        basis = self.create_basis_function(o, component, derivatives)
 
         # Reset spatial derivatives
         # FIXME: (should this be handled by SpatialDerivative)
@@ -610,7 +610,7 @@ class QuadratureTransformer(Transformer):
     # -------------------------------------------------------------------------
     # Helper functions for BasisFunction and Function)
     # -------------------------------------------------------------------------
-    def create_basis_function(self, ufl_basis_function, restriction, component, derivatives):
+    def create_basis_function(self, ufl_basis_function, component, derivatives):
         "Create code for basis functions, and update relevant tables of used basis"
 
         format_ip            = self.format["integration points"]
@@ -627,18 +627,39 @@ class QuadratureTransformer(Transformer):
                     0: self.format["first free index"],
                     1: self.format["second free index"]}
 
-        # FIXME: Handle restriction
-        element_counter = self.element_map[self.points][(ufl_basis_function.element(), self.facet0)]
+        # Check that we have a basis function
         if not ufl_basis_function.count() in indices:
             raise RuntimeError(ufl_basis_function, "Currently, BasisFunction index must be either -2, -1, 0 or 1")
 
+        # Handle restriction through facet
+        facet = {Restriction.PLUS: self.facet0, Restriction.MINUS: self.facet1, None: self.facet0}[self.restriction]
+
+        # Get element counter and loop index
+        element_counter = self.element_map[self.points][ufl_basis_function.element()]
         loop_index = indices[ufl_basis_function.count()]
+
+        # Create basis access, we never need to map the entry in the basis
+        # table since we will either loop the entire space dimension or the
+        # non-zeros
+        if self.points == 1:
+            format_ip = "0"
+        basis_access = format_matrix_access(format_ip, loop_index)
+
+
+        # Get the FIAT element and offset by element space dimension in case of
+        # negative restriction
+        fiat_element = self.fiat_elements_map[ufl_basis_function.element()]
+        space_dim = fiat_element.space_dimension()
+        offset = {Restriction.PLUS: "", Restriction.MINUS: str(space_dim), None: ""}[self.restriction]
+        # If we have a restricted function multiply space_dim by two
+        if self.restriction == Restriction.PLUS or self.restriction == Restriction.MINUS:
+            space_dim *= 2
+
 #        print "counter: ", counter
 #        print "index: ", index
 
         code = {}
         # Generate FFC multi index for derivatives
-#        print "dims: ", [range(ufl_basis_function.element().cell().d)]*sum(derivatives)
 
         # Set geo_dim
         # TODO: All terms REALLY have to be defined on cell with the same
@@ -649,8 +670,11 @@ class QuadratureTransformer(Transformer):
                 raise RuntimeError(geo_dim, "All terms must be defined on cells with the same geometrical dimension")
         else:
             self.geo_dim = geo_dim
+
+        # Generate FFC multi index for derivatives
         multiindices = FFCMultiIndex([range(geo_dim)]*len(derivatives)).indices
 #        print "multiindices: ", multiindices
+
         # Loop derivatives and get multi indices
         for multi in multiindices:
             deriv = [multi.count(i) for i in range(geo_dim)]
@@ -659,31 +683,37 @@ class QuadratureTransformer(Transformer):
                 deriv = []
 #            print "deriv: ", deriv
 
-            # FIXME: Handle restriction
-            name = self.__generate_psi_name(element_counter, self.facet0, component, deriv)
-#        print "name_map: ", self.name_map
+            # TODO: Will there be a problem if a table that contained only ones
+            # has been removed?
+            name = self.__generate_psi_name(element_counter, facet, component, deriv)
             name, non_zeros = self.name_map[name]
             loop_index_range = shape(self.unique_tables[name])[1]
-##        print "name: ", name
-            # Append the name to the set of used tables
+
+            # Append the name to the set of used tables and create matrix access
             self.used_psi_tables.add(name)
+            basis = name + basis_access
 
-            # Change mapping
-            mapping = ((ufl_basis_function.count(), loop_index, loop_index_range),)
+            # FIXME: Need to take non-zero mappings, and QE elements into account
+            # Create the correct mapping of the basis function into the local
+            # element tensor
+            basis_map = loop_index
+            if offset:
+                basis_map = format_group(format_add([loop_index, offset]))
 
-            # Create matrix access of basis
-            if self.points == 1:
-                format_ip = "0"
-            basis = name + format_matrix_access(format_ip, loop_index)
+            # Create mapping (index, map, loop_range, space_dim)
+            # Example dx and ds: (0, j, 3, 3)
+            # Example dS: (0, (j + 3), 3, 6), 6=2*space_dim
+            # Example dS optimised: (0, (nz2[j] + 3), 2, 6), 6=2*space_dim
+            mapping = ((ufl_basis_function.count(), basis_map, loop_index_range, space_dim),)
 
             # Add transformation if supported and needed
             transforms = []
             for i, direction in enumerate(derivatives):
                 ref = multi[i]
+                # FIXME: Handle other element types too
                 if ufl_basis_function.element().family() != "Lagrange":
                     raise RuntimeError(ufl_basis_function.element().family(), "Only derivatives of Lagrange elements is currently supported")
-                # FIXME: Handle restriction
-                t = format_transform(Transform.JINV, ref, direction, restriction)
+                t = format_transform(Transform.JINV, ref, direction, self.restriction)
                 self.trans_set.add(t)
                 transforms.append(t)
 
@@ -713,25 +743,43 @@ class QuadratureTransformer(Transformer):
         format_coeff         = self.format["coeff"]
         format_F             = self.format["function value"]
 
-        # FIXME: this needs a lot of work, and it might not even be the best
-        # way of doing it
         # Pick first free index of secondary type
         # (could use primary indices, but it's better to avoid confusion)
         loop_index = self.format["free secondary indices"][0]
 
-        # Get basis name and range
-        # FIXME: Handle restriction
-        element_counter = self.element_map[self.points][(ufl_function.element(), self.facet0)]
-#        print "counter: ", element_counter
-#        print "loop_index: ", loop_index
+        # Create basis access, we never need to map the entry in the basis
+        # table since we will either loop the entire space dimension or the
+        # non-zeros
+        if self.points == 1:
+            format_ip = "0"
+        basis_access = format_matrix_access(format_ip, loop_index)
+
+        # Handle restriction through facet
+        facet = {Restriction.PLUS: self.facet0, Restriction.MINUS: self.facet1, None: self.facet0}[self.restriction]
+
+        # Get the element counter
+        element_counter = self.element_map[self.points][ufl_function.element()]
+
+        # Get the FIAT element and offset by element space dimension in case of
+        # negative restriction
+        fiat_element = self.fiat_elements_map[ufl_function.element()]
+        offset = {Restriction.PLUS: "", Restriction.MINUS: str(fiat_element.space_dimension()), None: ""}[self.restriction]
 
         code = []
 
-        # Generate FFC multi index for derivatives
 #        print "dims: ", [range(ufl_basis_function.element().cell().d)]*sum(derivatives)
+        # Set geo_dim
+        # TODO: All terms REALLY have to be defined on cell with the same
+        # geometrical dimension so only do this once and exclude the check?
         geo_dim = ufl_function.element().cell().d
-        multiindices = FFCMultiIndex([range(geo_dim)]*len(derivatives)).indices
+        if self.geo_dim:
+            if geo_dim != self.geo_dim:
+                raise RuntimeError(geo_dim, "All terms must be defined on cells with the same geometrical dimension")
+        else:
+            self.geo_dim = geo_dim
 
+        # Generate FFC multi index for derivatives
+        multiindices = FFCMultiIndex([range(geo_dim)]*len(derivatives)).indices
         for multi in multiindices:
             deriv = [multi.count(i) for i in range(geo_dim)]
 #            print "multi: ", multi
@@ -739,40 +787,39 @@ class QuadratureTransformer(Transformer):
                 deriv = []
 #            print "deriv: ", deriv
 
-            # FIXME: Handle restriction
-            basis_name = self.__generate_psi_name(element_counter, self.facet0, component, deriv)
-            # If the basis name is not in the name map, or if the basis name is
-            # '' it is because the basis values were all ones (a constant)
+            # TODO: Will there be a problem if a table that contained only ones
+            # has been removed?
+            basis_name = self.__generate_psi_name(element_counter, facet, component, deriv)
             basis_name, non_zeros = self.name_map[basis_name]
             loop_index_range = shape(self.unique_tables[basis_name])[1]
 
-            # Add basis name to set of used tables
+            # Add basis name to set of used tables and add matrix access
             self.used_psi_tables.add(basis_name)
+            basis_name += basis_access
 
-            # Add matrix access to basis_name such that we create a unique entry
-            # for the expression to compute the function value
-            # Create matrix access of basis
-            if self.points == 1:
-                format_ip = "0"
-            basis_name += format_matrix_access(format_ip, loop_index)
+            # FIXME: Need to take non-zero mappings, and QE elements into account
+            # Create coefficient access
+            coefficient_access = loop_index
+            if offset:
+                coefficient_access = format_add([loop_index, offset])
 
-            # FIXME: Need to take non-zero mappings, components, restricted and QE elements into account
-            coefficient = format_coeff + format_matrix_access(str(ufl_function.count()), loop_index)
+            coefficient = format_coeff + format_matrix_access(str(ufl_function.count()), coefficient_access)
             function_expr = format_mult([basis_name, coefficient])
-
-#            print "basis_name: ", basis_name
-
 
             # Add transformation if supported and needed
             transforms = []
             for i, direction in enumerate(derivatives):
                 ref = multi[i]
+                # FIXME: Handle other element types too
                 if ufl_function.element().family() != "Lagrange":
                     raise RuntimeError(ufl_function.element().family(), "Only derivatives of Lagrange elements is currently supported")
-                # FIXME: Handle restriction
+                # Create transform and add to set of used transformations
                 t = format_transform(Transform.JINV, ref, direction, self.restriction)
                 self.trans_set.add(t)
                 transforms.append(t)
+
+            # Multiply transformations to the function expression
+            # FIXME: Move this to after computing the basis function value
             function_expr = format_mult(transforms + [function_expr])
 
             # Check if the expression to compute the function value is already in
@@ -824,48 +871,48 @@ class QuadratureTransformer(Transformer):
         # Loop quadrature points and get element dictionary {elem: {tables}}
         for point, elem_dict in tables.items():
             element_map[point] = {}
-    #        print "\nQG-utils, flatten_tables, points:\n", point
-    #        print "\nQG-utils, flatten_tables, elem_dict:\n", elem_dict
+#            print "\nQG-utils, flatten_tables, points:\n", point
+#            print "\nQG-utils, flatten_tables, elem_dict:\n", elem_dict
 
             # Loop all elements and get all their tables
-            for elem, elem_tables in elem_dict.items():
+            for elem, facet_tables in elem_dict.items():
 #                print "\nQG-utils, flatten_tables, elem:\n", elem
-    #            print "\nQG-utils, flatten_tables, elem_tables:\n", elem_tables
+#                print "\nQG-utils, flatten_tables, facet_tables:\n", facet_tables
                 # If the element value rank != 0, we must loop the components
                 # before the derivatives
                 # (len(UFLelement.value_shape() == FIATelement.value_rank())
-    #            if elem[0].value_rank() != 0:
                 element_map[point][elem] = counter
-                if len(elem[0].value_shape()) != 0:
-                    for num_comp, comp in enumerate(elem_tables):
-                        for num_deriv in comp:
+                for facet, elem_tables in facet_tables.items():
+                    if len(elem.value_shape()) != 0:
+                        for num_comp, comp in enumerate(elem_tables):
+                            for num_deriv in comp:
+                                for derivs, psi_table in num_deriv.items():
+#                                    print "\nQG-utils, flatten_tables, derivs:\n", derivs
+#                                    print "\nQG-utils, flatten_tables, psi_table:\n", psi_table
+                                    # Verify shape of basis (can be omitted for speed
+                                    # if needed I think)
+                                    if shape(psi_table) != 2 and shape(psi_table)[1] != point:
+                                        raise RuntimeError(psi_table, "Something is wrong with this table")
+
+                                    name = self.__generate_psi_name(counter, facet, num_comp, derivs)
+#                                    print "Name: ", name
+                                    if name in flat_tables:
+                                        raise RuntimeError(name, "Name is not unique, something is wrong")
+                                    flat_tables[name] = transpose(psi_table)
+                    else:
+                        for num_deriv in elem_tables:
                             for derivs, psi_table in num_deriv.items():
-    #                            print "\nQG-utils, flatten_tables, derivs:\n", derivs
-    #                            print "\nQG-utils, flatten_tables, psi_table:\n", psi_table
+#                                print "\nQG-utils, flatten_tables, derivs:\n", derivs
+#                                print "\nQG-utils, flatten_tables, psi_table:\n", psi_table
                                 # Verify shape of basis (can be omitted for speed
                                 # if needed I think)
                                 if shape(psi_table) != 2 and shape(psi_table)[1] != point:
                                     raise RuntimeError(psi_table, "Something is wrong with this table")
-
-                                name = self.__generate_psi_name(counter, elem[1], num_comp, derivs)
-    #                            print "Name: ", name
+                                name = self.__generate_psi_name(counter, facet, None, derivs)
+#                                print "Name: ", name
                                 if name in flat_tables:
                                     raise RuntimeError(name, "Name is not unique, something is wrong")
                                 flat_tables[name] = transpose(psi_table)
-                else:
-                    for num_deriv in elem_tables:
-                        for derivs, psi_table in num_deriv.items():
-    #                        print "\nQG-utils, flatten_tables, derivs:\n", derivs
-    #                        print "\nQG-utils, flatten_tables, psi_table:\n", psi_table
-                            # Verify shape of basis (can be omitted for speed
-                            # if needed I think)
-                            if shape(psi_table) != 2 and shape(psi_table)[1] != point:
-                                raise RuntimeError(psi_table, "Something is wrong with this table")
-                            name = self.__generate_psi_name(counter, elem[1], None, derivs)
-    #                        print "Name: ", name
-                            if name in flat_tables:
-                                raise RuntimeError(name, "Name is not unique, something is wrong")
-                            flat_tables[name] = transpose(psi_table)
                 counter += 1
 
         return (element_map, flat_tables)
@@ -977,9 +1024,9 @@ def generate_code(integrand, transformer, Indent, format):
             # TODO: Make sure test function indices are always rearranged to 0
             if key[0] != -2 and key[0] != 0:
                 raise RuntimeError("Linear forms must be defined using test functions only")
-            # FIXME: Need to consider interior facet integrals
-            entry = key[1]
-            loop = ((indices[key[0]], 0, key[2]),)
+
+            index_j, entry, range_j, space_dim_j = key
+            loop = ((indices[index_j], 0, range_j),)
         elif len(key) == 2:
             # Extract test and trial loops in correct order and check if for is legal
             key0, key1 = (0, 0)
@@ -990,9 +1037,11 @@ def generate_code(integrand, transformer, Indent, format):
                     key0 = k
                 else:
                     key1 = k
-            # FIXME: Need to consider interior facet integrals
-            entry = format_add([format_mult([key0[1], str(key1[2])]), key1[1]])
-            loop = ((indices[key0[0]], 0, key0[2]), (indices[key1[0]], 0, key1[2]))
+            index_j, entry_j, range_j, space_dim_j = key0
+            index_k, entry_k, range_k, space_dim_k = key1
+
+            entry = format_add([format_mult([entry_j, str(space_dim_k)]), entry_k])
+            loop = ((indices[index_j], 0, range_j), (indices[index_k], 0, range_k))
         else:
             raise RuntimeError(key, "Only rank 0, 1 and 2 tensors are currently supported")
 

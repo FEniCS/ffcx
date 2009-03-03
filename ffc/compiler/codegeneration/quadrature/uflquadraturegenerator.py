@@ -310,7 +310,7 @@ class QuadratureGenerator:
         # I therefore need to generate the actual code to compute the element
         # tensors first, and then create the auxiliary code.
 
-#        transformer.disp()
+        transformer.disp()
 
         # We receive a dictionary {num_points: integral,}
         # Loop points and integrals
@@ -506,10 +506,11 @@ class QuadratureGenerator:
         # facet integrals are handled correctly yet. Should multiply by 2
         # somewhere.
         index_range = 1
+        restrict_range = 1
         if interior_integrals:
-            index_range = 2
+            restrict_range = 2
         for element in elements:
-            index_range *= element.space_dimension()
+            index_range *= restrict_range*element.space_dimension()
 
         # Create loop
         # FIXME: It is general to create a loop, however, for a functional it

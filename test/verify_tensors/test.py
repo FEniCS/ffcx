@@ -142,7 +142,7 @@ def run_tests(test_options):
     # that are known to break the test
     do_not_compile = ["Projection.form", "MixedPoisson.ufl",\
                       "VectorLaplaceGradCurl.ufl", "PoissonDG.ufl", "QuadratureElement.ufl", "Stokes.ufl",
-                      "SubDomains.ufl", "TensorWeightedPoisson.ufl", "VectorLaplaceGradCurl.ufl"]
+                      "TensorWeightedPoisson.ufl", "VectorLaplaceGradCurl.ufl"]
 
     working_forms = ["Constant.ufl", "Elasticity.ufl", "EnergyNorm.ufl", "Equation.ufl", "FunctionOperators.ufl",
                      "Heat.ufl", "Mass.ufl", "NavierStokes.ufl", "NeumannProblem.ufl", "Optimization.ufl",
