@@ -101,17 +101,24 @@ class QuadratureTransformer(Transformer):
     def expr(self, o, *operands):
         print "\nVisiting basic Expr:", o.__repr__(), "with operands:"
         print ", ".join(map(str,operands))
-        return {}
+#        return {}
         # FIXME: unsafe switch back on
-#        return o
+        return o
 
     # Handle the basics just in case, probably not needed?
     def terminal(self, o, *operands):
         print "\nVisiting basic Terminal:", o.__repr__(), "with operands:"
         print ", ".join(map(str,operands))
-        return {}
+#        return {}
         # FIXME: unsafe switch back on
-#        return o
+        return o
+
+    # -------------------------------------------------------------------------
+    # Things which are not supported (geometry.py)
+    # -------------------------------------------------------------------------
+    def facet_normal(self, o):
+        print "\nVisiting FacetNormal:", o.__repr__()
+        raise RuntimeError("FacetNormal is not supported (yet), use a VectorElement(Discontinuous Lagrange, 'cell_type', 0) instead.")
 
     # -------------------------------------------------------------------------
     # Constant values (constantvalue.py)
@@ -711,7 +718,7 @@ class QuadratureTransformer(Transformer):
             for i, direction in enumerate(derivatives):
                 ref = multi[i]
                 # FIXME: Handle other element types too
-                if ufl_basis_function.element().family() != "Lagrange":
+                if ufl_basis_function.element().family() not in ["Lagrange", "Discontinuous Lagrange"]:
                     raise RuntimeError(ufl_basis_function.element().family(), "Only derivatives of Lagrange elements is currently supported")
                 t = format_transform(Transform.JINV, ref, direction, self.restriction)
                 self.trans_set.add(t)

@@ -11,12 +11,13 @@
 # Compile this form with FFC: ffc PoissonDG.ufl
 
 element = FiniteElement("Discontinuous Lagrange", triangle, 1)
+N       = VectorElement("Discontinuous Lagrange", triangle, 0)
 
 v = TestFunction(element)
 u = TrialFunction(element)
 f = Function(element)
 
-n = triangle.n
+n = Function(N)
 h = Constant(triangle)
 
 gN = Function(element)
@@ -25,12 +26,12 @@ alpha = 4.0
 gamma = 8.0
 
 a = inner(grad(v), grad(u))*dx \
-    - inner(avg(grad(v)), jump(u))*dS \
-    - inner(jump(v), avg(grad(u)))*dS \
-    + alpha/h('+')*dot(jump(v), jump(u))*dS \
+    - inner(avg(grad(v)), jump(u, n))*dS \
+    - inner(jump(v, n), avg(grad(u)))*dS \
+    + alpha/h('+')*dot(jump(v, n), jump(u, n))*dS \
     - inner(grad(v), u*n)*ds \
     - inner(v*n, grad(u))*ds \
     + gamma/h*v*u*ds
 
-L = v*f*dx + v*gN*ds
+L = v*f*dx(0, {"quadrature_order":2}) + v*gN*ds(0, {"quadrature_order":2})
 

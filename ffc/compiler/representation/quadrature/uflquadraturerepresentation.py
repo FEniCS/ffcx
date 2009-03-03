@@ -161,6 +161,8 @@ class QuadratureRepresentation:
                 elements.update(extract_unique_elements(i))
             elements = list(elements)
 
+            print "\nElements: ", elements
+
             # Create a list of equivalent FIAT elements
             fiat_elements = [self.__create_fiat_elements(e) for e in elements]
 
@@ -269,14 +271,20 @@ class QuadratureRepresentation:
 
     def __create_fiat_elements(self, ufl_e):
 
-        if isinstance(ufl_e, VectorElement):
+        if isinstance(ufl_e, TensorElement):
+#            print "tensor: "
+            raise RuntimeError(ufl_e, "Tensor element not supported yet.")
+        elif isinstance(ufl_e, VectorElement):
+#            print "vector: "
             return FIATVectorElement(ufl_e.family(), ufl_e.cell().domain(), ufl_e.degree(), len(ufl_e.sub_elements()))
         elif isinstance(ufl_e, MixedElement):
+#            print "mixed: "
             sub_elems = [self.__create_fiat_elements(e) for e in ufl_e.sub_elements()]
             return FIATMixedElement(sub_elems)
         elif isinstance(ufl_e, FiniteElement):
+#            print "finite: "
             return FIATFiniteElement(ufl_e.family(), ufl_e.cell().domain(), ufl_e.degree())
-        # Element type not supported (yet?) TensorElement will trigger this.
+        # Element type not supported (yet?).
         else:
             raise RuntimeError(ufl_e, "Unable to create equivalent FIAT element.")
         return

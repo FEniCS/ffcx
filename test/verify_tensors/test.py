@@ -140,13 +140,13 @@ def run_tests(test_options):
 
     # Check that all form files are present in demo directory and remove forms
     # that are known to break the test
-    do_not_compile = ["Projection.form", "MixedPoisson.ufl",\
-                      "VectorLaplaceGradCurl.ufl", "PoissonDG.ufl", "QuadratureElement.ufl", "Stokes.ufl",
-                      "TensorWeightedPoisson.ufl", "VectorLaplaceGradCurl.ufl"]
+    do_not_compile = ["Projection.form", "TensorWeightedPoisson.ufl", "MixedPoisson.ufl",\
+                      "VectorLaplaceGradCurl.ufl", "QuadratureElement.ufl", "Stokes.ufl"]
 
     working_forms = ["Constant.ufl", "Elasticity.ufl", "EnergyNorm.ufl", "Equation.ufl", "FunctionOperators.ufl",
                      "Heat.ufl", "Mass.ufl", "NavierStokes.ufl", "NeumannProblem.ufl", "Optimization.ufl",
-                     "Poisson.ufl", "PoissonSystem.ufl", "SubDomain.ufl"]
+                     "Poisson.ufl", "PoissonSystem.ufl", "SubDomain.ufl", "SubDomains.ufl",
+                     "PoissonDG.ufl"]
 
     all_forms = ["Constant.ufl", "Mass.ufl", "P5tet.ufl", "QuadratureElement.ufl",
                  "Elasticity.ufl", "MixedMixedElement.ufl", "P5tri.ufl", "Stokes.ufl",
