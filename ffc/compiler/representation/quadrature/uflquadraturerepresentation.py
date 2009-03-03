@@ -26,7 +26,7 @@ from ffc.fem.referencecell import *
 #from tensorreordering import *
 
 try:
-    from ufl.classes import FiniteElement, MixedElement, VectorElement, FiniteElementBase
+    from ufl.classes import FiniteElement, MixedElement, VectorElement, FiniteElementBase, Form, Integral
     from ufl.algorithms.analysis import *
     from ufl.algorithms.graph import *
     from ufl.algorithms.transformations import *
@@ -89,6 +89,9 @@ class QuadratureRepresentation:
         exterior_facet_integrals = self.__extract_integrals(form.exterior_facet_integrals())
         interior_facet_integrals = self.__extract_integrals(form.interior_facet_integrals())
 
+        for c in cell_integrals:
+            print c.__repr__()
+
         # Tabulate basis values
         self.cell_integrals = self.__tabulate(cell_integrals)
         # FIXME: Tabulate all facet integrals at the same time?
@@ -116,10 +119,18 @@ class QuadratureRepresentation:
         # subdomain and representation
         for integral in integrals:
             order = integral.measure().metadata()["quadrature_order"]
-            if not order in sorted_integrals:
-                sorted_integrals[order] = [integral]
+
+            # Compute the required number of points for each axis (exact integration)
+            num_points_per_axis = (order + 1 + 1) / 2 # integer division gives 2m - 1 >= q
+
+            # FIXME: This could take place somewhere else. In uflcompiler.py
+            # we might want to sort according to number of points rather than
+            # order?
+            if not num_points_per_axis in sorted_integrals:
+                sorted_integrals[num_points_per_axis] = Form([Integral(integral.integrand(), integral.measure().reconstruct(metadata={}))])
             else:
-                sorted_integrals[order].append(integral)
+                sorted_integrals[num_points_per_axis] += Form([Integral(integral.integrand(), integral.measure().reconstruct(metadata={}))])
+
         return sorted_integrals
 
     def __tabulate(self, unsorted_integrals):
@@ -131,21 +142,22 @@ class QuadratureRepresentation:
         if not unsorted_integrals:
             return None
 
-        # Sort the integrals according quadrature order
+        # Sort the integrals according number of points needed per axis to
+        # integrate the quadrature order exactly
         sorted_integrals = self.__sort_integrals_quadrature_order(unsorted_integrals)
 
         # The integral type IS the same for ALL integrals
         integral_type = unsorted_integrals[0].measure().domain_type()
 
         # Loop the quadrature order and tabulate the basis values
-        for order, integrals in sorted_integrals.items():
+        for num_points_per_axis, form in sorted_integrals.items():
 
-            # Compute the required number of points for each axis (exact integration)
-            num_points_per_axis = (order + 1 + 1) / 2 # integer division gives 2m - 1 >= q
+#            if len(form.integrals()) != 1:
+#                raise RuntimeError(form, "There should be only one integral at this stage")
 
             # Get all unique elements in integrals and convert to list
             elements = set()
-            for i in integrals:
+            for i in form.integrals():
                 elements.update(extract_unique_elements(i))
             elements = list(elements)
 
@@ -171,24 +183,27 @@ class QuadratureRepresentation:
             # Add rules to dictionary
             len_weights = len(weights) # The TOTAL number of weights/points
             # TODO: This check should not be needed, remove later
-            if len_weights in self.psi_tables[integral_type]:
+            # Figure out what should happen if two different orders require
+            # same number of points (e.g., 2nd and 3rd order both require 4 points (2x2))
+            if len_weights in self.quadrature_weights[integral_type]:
                 raise RuntimeError(len_weights, "This number of points is already present in the table")
             self.quadrature_weights[integral_type][len_weights] = weights
 
             # Add the number of points to the psi tables dictionary
             # TODO: This check should not be needed, remove later
+            # Figure out what should happen if two different orders require
+            # same number of points (e.g., 2nd and 3rd order both require 4 points (2x2))
             if len_weights in self.psi_tables[integral_type]:
                 raise RuntimeError(len_weights, "This number of points is already present in the table")
             self.psi_tables[integral_type][len_weights] = {}
 
             # Sort the integrals according to subdomain and add to the return
             # dictionary
-            for i in integrals:
+            for i in form.integrals():
                 subdomain = i.measure().domain_id()
                 if subdomain in return_integrals:
                     if len_weights in return_integrals[subdomain]:
                         raise RuntimeError("There should only be one integral for each number of quadrature points on any given subdomain")
-#                        return_integrals[subdomain].append(i)
                     else:
                         return_integrals[subdomain][len_weights] = i
                 else:
@@ -198,13 +213,16 @@ class QuadratureRepresentation:
             # derivative of an element
             # Initialise dictionary of elements and the number of derivatives
             num_derivatives = dict([(e, 0) for e in elements])
-            derivatives =  set()
-            for i in integrals:
-                # Extract the derivatives from the integral
+
+            # Extract the derivatives from all integrals
+            derivatives = set()
+            for i in form.integrals():
                 derivatives.update(extract_type(i, SpatialDerivative))
+
+            # Loop derivatives and extract multiple derivatives
             for d in list(derivatives):
-                # For extract multiple derivatives
                 num_deriv = len(extract_type(d, SpatialDerivative))
+
                 # TODO: Safety check, SpatialDerivative only has one operand,
                 # and there should be only one element?!
                 elem = extract_elements(d.operands()[0])

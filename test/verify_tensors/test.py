@@ -9,7 +9,8 @@ __license__  = "GNU GPL version 3 or any later version"
 
 import sys
 import getopt
-from os import chdir, listdir, getcwd, path, system
+from glob import glob
+from os import chdir, getcwd, path, system
 import ufc_benchmark
 import numpy
 import pickle
@@ -127,9 +128,9 @@ def run_tests(test_options):
     form_type = test_options["form_type"]
     demo_files = []
     if form_type == "form" or form_type == "all":
-        demo_files += [f for f in listdir(".") if f[-5:] == ".form"]
+        demo_files += glob("*.form")
     if form_type == "ufl" or form_type == "all":
-        demo_files += [f for f in listdir(".") if f[-4:] == ".ufl"]
+        demo_files += glob("*.ufl")
     chdir("../test/verify_tensors")
 
     # If not form files are specified, check all in demo directory
@@ -139,9 +140,21 @@ def run_tests(test_options):
 
     # Check that all form files are present in demo directory and remove forms
     # that are known to break the test
-    do_not_compile = ["Projection.form", "FunctionOperators.ufl", "MixedPoisson.ufl",\
+    do_not_compile = ["Projection.form", "MixedPoisson.ufl",\
                       "VectorLaplaceGradCurl.ufl", "PoissonDG.ufl", "QuadratureElement.ufl", "Stokes.ufl",
-                      "SubDomains.ufl", "SubDomain.ufl", "TensorWeightedPoisson.ufl", "VectorLaplaceGradCurl.ufl"]
+                      "SubDomains.ufl", "TensorWeightedPoisson.ufl", "VectorLaplaceGradCurl.ufl"]
+
+    working_forms = ["Constant.ufl", "Elasticity.ufl", "EnergyNorm.ufl", "Equation.ufl", "FunctionOperators.ufl",
+                     "Heat.ufl", "Mass.ufl", "NavierStokes.ufl", "NeumannProblem.ufl", "Optimization.ufl",
+                     "Poisson.ufl", "PoissonSystem.ufl", "SubDomain.ufl"]
+
+    all_forms = ["Constant.ufl", "Mass.ufl", "P5tet.ufl", "QuadratureElement.ufl",
+                 "Elasticity.ufl", "MixedMixedElement.ufl", "P5tri.ufl", "Stokes.ufl",
+                 "EnergyNorm.ufl", "MixedPoisson.ufl", "PoissonDG.ufl", "SubDomains.ufl",
+                 "Equation.ufl", "NavierStokes.ufl", "PoissonSystem.ufl", "SubDomain.ufl",
+                 "FunctionOperators.ufl", "NeumannProblem.ufl", "Poisson.ufl", "TensorWeightedPoisson.ufl",
+                 "Heat.ufl", "Optimization.ufl", "Projection.ufl", "VectorLaplaceGradCurl.ufl"]
+
     new_files = []
     for form_file in form_files:
         if form_file in demo_files and form_file not in new_files:
@@ -196,18 +209,17 @@ def run_tests(test_options):
         (forms, read_ok) = read_forms("../../demo", form_file)
         if not read_ok:
             forms_not_read_ok.append(form_file)
-
-        # Verify correctness of forms
-        (ok_compile, norm_ok) = verify_forms(form_file, forms, forms_not_compiled_ok, forms_not_compared_ok, test_options)
-
-        # No forms were present, reduce number of tensor forms
-        if not forms:
-            print "\nThis form does not specify any integral, omitting from test."
-            num_tensor_forms -= 1
-
-        # Increase number of correct forms if all tests were OK
-        if norm_ok and forms and ok_compile:
-            num_forms_ok += 1
+        else:
+            # No forms were present, reduce number of tensor forms
+            if not forms:
+                print "\nThis form does not specify any integral, omitting from test."
+                num_tensor_forms -= 1
+            else:
+                # Verify correctness of forms
+                (ok_compile, norm_ok) = verify_forms(form_file, forms, forms_not_compiled_ok, forms_not_compared_ok, test_options)
+                # Increase number of correct forms if all tests were OK
+                if norm_ok and ok_compile:
+                    num_forms_ok += 1
 
     print "\n\nFinished tests for %s representation" % test_options["representation"]
     print "\n====================================================================\n"
@@ -222,10 +234,9 @@ def run_tests(test_options):
     # Print list of forms that we're omitted from the tests
     if do_not_compile:
         summary += "The following forms were not included in the test either because they are"
-        summary += "\nknown the break the test or they are not present in the ../../demo directory:\n"
-        for form in do_not_compile:
-            summary += form + "\n"
-        summary += "\n"
+        summary += "\nknown to break the test or they are not present in the ../../demo directory:\n"
+        summary += "\n".join(do_not_compile)
+        summary += "\n\n"
 
     # If all tests succeded there's no need to add detailed info
     if num_forms_ok == num_tensor_forms:
@@ -240,16 +251,15 @@ def run_tests(test_options):
         # but it's a good test if this module is used elsewhere
         if forms_not_read_ok:
             summary += "The following forms do not have correct FFC syntax:\n"
-            for form in forms_not_read_ok:
-                summary += form + "\n"
-            summary += "\n"
+            summary += "\n".join(forms_not_read_ok)
+            summary += "\n\n"
+
         # If some forms could not be compiled by FFC report them. This is
         # particullary relevant for quadrature representation
         if forms_not_compiled_ok:
             summary += "The following forms could not be compiled by FFC:\n"
-            for form in forms_not_compiled_ok:
-                summary += form + "\n"
-            summary += "\n"
+            summary += "\n".join(forms_not_compiled_ok)
+            summary += "\n\n"
 
         # If some forms resulted in too large differences compared to the reference
         # solutions, report.
@@ -353,18 +363,13 @@ def _make_script_form(filename):
     return script
 
 def verify_forms(form_file, forms, forms_not_compiled_ok, forms_not_compared_ok, test_options):
-
     # Some flags that indicates success/failure
     ok_compile = True
     norm_ok = True
-    # If there's nothing to do
-    if not forms:
-        return (ok_compile, norm_ok)
-    else:
-        for form_type, form in forms.items():
-            (ok_compile, norm_ok) = verify_form(form_file, form_type, form,\
-             forms_not_compiled_ok, forms_not_compared_ok, ok_compile, norm_ok, test_options)
-        return (ok_compile, norm_ok)
+    for form_type, form in forms.items():
+        (ok_compile, norm_ok) = verify_form(form_file, form_type, form,\
+          forms_not_compiled_ok, forms_not_compared_ok, ok_compile, norm_ok, test_options)
+    return (ok_compile, norm_ok)
 
 def verify_form(form_file, form_type, form, forms_not_compiled_ok, forms_not_compared_ok, ok_compile, norm_ok, test_options):
 
@@ -384,8 +389,7 @@ def verify_form(form_file, form_type, form, forms_not_compiled_ok, forms_not_com
     norm = 1.0
     try:
         # Compute norm of tensor compared to reference and compare to tolerance
-        # FIXME: What if filename contains more '.'?
-        ref_file = form_file.split(".")[0] + "_" + form_type
+        ref_file = path.splitext(form_file)[0] + "_" + form_type
         norm = compute_norm(compiled_form, form_data, ref_file, test_options)
         print "\nNorm for %s, %s: " %(form_file, form_type) , norm
         if norm > test_options["tolerance"]:
@@ -537,6 +541,8 @@ def compute_norm(compiled_form, form_data, file_name, test_options):
 
         # Compute norm
         # Compute difference
+#        print "macro_A: ", macro_A
+#        print "A_ref: ", A_ref
         C = macro_A - A_ref
 
         # Normalise differences with reference values, sum tensor and take

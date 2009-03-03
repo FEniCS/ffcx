@@ -63,6 +63,10 @@ class Format:
            "multiply": lambda v: "*".join(v),
            "division": "/",
            "power": lambda base, exp: power_options[exp >= 0](self.format["multiply"]([str(base)]*abs(exp))),
+           "exp": lambda v: "std::exp(%s)" % v,
+           "ln": lambda v: "std::log(%s)" % v,
+           "cos": lambda v: "std::cos(%s)" % v,
+           "sin": lambda v: "std::sin(%s)" % v,
 # bool operators
            "logical and": " && ",
            "logical or": " || ",

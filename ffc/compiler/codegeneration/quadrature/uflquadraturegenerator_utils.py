@@ -19,6 +19,7 @@ from ufl.algorithms.transformations import *
 
 from ffc.compiler.representation.tensor.multiindex import MultiIndex as FFCMultiIndex
 from ffc.compiler.language.tokens import Transform
+from ffc.compiler.language.restriction import *
 
 # Utility and optimisation functions for quadraturegenerator
 from quadraturegenerator_utils import unique_psi_tables, generate_loop
@@ -45,6 +46,7 @@ class QuadratureTransformer(Transformer):
         self.points = 0
         self.facet0 = None
         self.facet1 = None
+        self.restriction = None
 
         # Stacks
         self._derivatives = []
@@ -54,10 +56,15 @@ class QuadratureTransformer(Transformer):
         self.element_map, self.name_map, self.unique_tables =\
         self.__create_psi_tables(form_representation.psi_tables[domain_type])
 
-    def update(self, points, facet0, facet1):
-        self.points = points
+    def update_facets(self, facet0, facet1):
         self.facet0 = facet0
         self.facet1 = facet1
+        # Reset functions and count everytime we generate a new case of facets
+        self.functions = {}
+        self.function_count = 0
+
+    def update_points(self, points):
+        self.points = points
         # Reset functions everytime we move to a new quadrature loop
         # But not the functions count.
         self.functions = {}
@@ -193,7 +200,32 @@ class QuadratureTransformer(Transformer):
 
         return code
 
-    def power(self, o,):
+    def division(self, o, *operands):
+        print "\nVisiting Division:", o.__repr__(), "with operands:"
+        print ", ".join(map(str,operands))
+
+        format_div = self.format["division"]
+
+        if len(operands) != 2:
+            raise RuntimeError(operands, "Expected exactly two operands (numerator and denominator) ")
+
+        numerator_code, denominator_code = operands
+        print "numerator: ", numerator_code
+        print "denominator: ", denominator_code
+
+        # TODO: Are these safety checks needed?
+        if not () in denominator_code and len(denominator_code) != 1:
+            raise RuntimeError(denominator_code, "Only support function type denominator")
+
+        denominator = denominator_code.pop(())
+
+        for key, val in numerator_code.items():
+            numerator_code[key] = val + format_div + denominator
+
+        return numerator_code
+
+
+    def power(self, o):
         print "\nVisiting Power:", o.__repr__()
 
         # Get base and exponent
@@ -211,7 +243,100 @@ class QuadratureTransformer(Transformer):
         val = base_code.pop(())
 
         # Multiply val by self expo number of times
-        return {(): self.format["multiply"]([val]*expo.value())}
+        return {(): self.format["power"](val, expo.value())}
+
+    def abs(self, o, *operands):
+        print "\nVisiting Abs:", o.__repr__(), "with operands:"
+        print ", ".join(map(str,operands))
+
+        # TODO: Are these safety checks needed?
+        if len(operands) != 1 and not () in operands[0] and len(operands[0]) != 1:
+            raise RuntimeError(operands, "Abs expects one operand of function type")
+
+        # Take absolute value of operand
+        operand = operands[0]
+        for key, val in operand.items():
+            operand[key] = self.format["absolute value"](val)
+
+        return operand
+
+    # -------------------------------------------------------------------------
+    # MathFunctions (mathfunctions.py)
+    # -------------------------------------------------------------------------
+    def sqrt(self, o, *operands):
+        print "\nVisiting Sqrt:", o.__repr__(), "with operands:"
+        print ", ".join(map(str,operands))
+
+        # TODO: Are these safety checks needed?
+        if len(operands) != 1 and not () in operands[0] and len(operands[0]) != 1:
+            raise RuntimeError(operands, "Sqrt expects one operand of function type")
+
+        # Take absolute value of operand
+        operand = operands[0]
+        for key, val in operand.items():
+            operand[key] = self.format["sqrt"](val)
+
+        return operand
+
+    def exp(self, o, *operands):
+        print "\nVisiting Exp:", o.__repr__(), "with operands:"
+        print ", ".join(map(str,operands))
+
+        # TODO: Are these safety checks needed?
+        if len(operands) != 1 and not () in operands[0] and len(operands[0]) != 1:
+            raise RuntimeError(operands, "Exp expects one operand of function type")
+
+        # Take absolute value of operand
+        operand = operands[0]
+        for key, val in operand.items():
+            operand[key] = self.format["exp"](val)
+
+        return operand
+
+    def ln(self, o, *operands):
+        print "\nVisiting Ln:", o.__repr__(), "with operands:"
+        print ", ".join(map(str,operands))
+
+        # TODO: Are these safety checks needed?
+        if len(operands) != 1 and not () in operands[0] and len(operands[0]) != 1:
+            raise RuntimeError(operands, "Ln expects one operand of function type")
+
+        # Take absolute value of operand
+        operand = operands[0]
+        for key, val in operand.items():
+            operand[key] = self.format["ln"](val)
+
+        return operand
+
+    def cos(self, o, *operands):
+        print "\nVisiting Cos:", o.__repr__(), "with operands:"
+        print ", ".join(map(str,operands))
+
+        # TODO: Are these safety checks needed?
+        if len(operands) != 1 and not () in operands[0] and len(operands[0]) != 1:
+            raise RuntimeError(operands, "Cos expects one operand of function type")
+
+        # Take absolute value of operand
+        operand = operands[0]
+        for key, val in operand.items():
+            operand[key] = self.format["cos"](val)
+
+        return operand
+
+    def sin(self, o, *operands):
+        print "\nVisiting Sin:", o.__repr__(), "with operands:"
+        print ", ".join(map(str,operands))
+
+        # TODO: Are these safety checks needed?
+        if len(operands) != 1 and not () in operands[0] and len(operands[0]) != 1:
+            raise RuntimeError(operands, "Sin expects one operand of function type")
+
+        # Take absolute value of operand
+        operand = operands[0]
+        for key, val in operand.items():
+            operand[key] = self.format["sin"](val)
+
+        return operand
 
     # -------------------------------------------------------------------------
     # Retriction (restriction.py)
@@ -224,9 +349,13 @@ class QuadratureTransformer(Transformer):
         if len(restricted_expr) != 1:
             raise RuntimeError(restricted_expr, "Only expected one operand for restriction")
  
-       # Just visit the first operand, there should only be one
+        # Just visit the first operand, there should only be one
         # FIXME: Need to handle restriction
+        self.restriction = Restriction.PLUS
         code = self.visit(restricted_expr[0])
+        # Reset restriction
+        # TODO: Is this really necessary?
+        self.restriction = None
         return code
 
     def negative_restricted(self, o):
@@ -238,9 +367,13 @@ class QuadratureTransformer(Transformer):
         if len(restricted_expr) != 1:
             raise RuntimeError(restricted_expr, "Only expected one operand for restriction")
  
-       # Just visit the first operand, there should only be one
+        # Just visit the first operand, there should only be one
         # FIXME: Need to handle restriction
+        self.restriction = Restriction.MINUS
         code = self.visit(restricted_expr[0])
+        # Reset restriction
+        # TODO: Is this really necessary?
+        self.restriction = None
         return code
 
     # -------------------------------------------------------------------------
@@ -455,8 +588,6 @@ class QuadratureTransformer(Transformer):
 
 #        print "self._derivatives: ", self._derivatives
         # Create aux. info
-        # FIXME: restriction not handled yet
-        restriction = None
         component = None
         derivatives = ()
         # Handle derivatives and components
@@ -468,7 +599,7 @@ class QuadratureTransformer(Transformer):
 #        print "\nDerivatives: ", derivatives
 
         # Create code for basis function
-        code = self.create_function(o, restriction, component, derivatives)
+        code = self.create_function(o, component, derivatives)
 
         # Reset spatial derivatives
         # FIXME: (should this be handled by SpatialDerivative)
@@ -570,7 +701,7 @@ class QuadratureTransformer(Transformer):
 
         return code
 
-    def create_function(self, ufl_function, restriction, component, derivatives):
+    def create_function(self, ufl_function, component, derivatives):
         "Create code for basis functions, and update relevant tables of used basis"
 
         format_ip            = self.format["integration points"]
@@ -598,7 +729,6 @@ class QuadratureTransformer(Transformer):
 
         # Generate FFC multi index for derivatives
 #        print "dims: ", [range(ufl_basis_function.element().cell().d)]*sum(derivatives)
-        # FIXME: This doesn't work for facet integrals?
         geo_dim = ufl_function.element().cell().d
         multiindices = FFCMultiIndex([range(geo_dim)]*len(derivatives)).indices
 
@@ -613,34 +743,22 @@ class QuadratureTransformer(Transformer):
             basis_name = self.__generate_psi_name(element_counter, self.facet0, component, deriv)
             # If the basis name is not in the name map, or if the basis name is
             # '' it is because the basis values were all ones (a constant)
-            constant = False
-            if basis_name in self.name_map and self.name_map[basis_name][0]:
-                basis_name, non_zeros = self.name_map[basis_name]
-                loop_index_range = shape(self.unique_tables[basis_name])[1]
+            basis_name, non_zeros = self.name_map[basis_name]
+            loop_index_range = shape(self.unique_tables[basis_name])[1]
 
-                # Add basis name to set of used tables
-                self.used_psi_tables.add(basis_name)
+            # Add basis name to set of used tables
+            self.used_psi_tables.add(basis_name)
 
-                # Add matrix access to basis_name such that we create a unique entry
-                # for the expression to compute the function value
-                # Create matrix access of basis
-                if self.points == 1:
-                    format_ip = "0"
-                basis_name += format_matrix_access(format_ip, loop_index)
+            # Add matrix access to basis_name such that we create a unique entry
+            # for the expression to compute the function value
+            # Create matrix access of basis
+            if self.points == 1:
+                format_ip = "0"
+            basis_name += format_matrix_access(format_ip, loop_index)
 
-                # FIXME: Need to take non-zero mappings, components, restricted and QE elements into account
-                coefficient = format_coeff + format_matrix_access(str(ufl_function.count()), loop_index)
-                function_expr = format_mult([basis_name, coefficient])
-            else:
-                constant = True
-                basis_name = None
-                loop_index_range = 0
-                # FIXME: Need to take non-zero mappings, components, restricted and QE elements into account
-                if component == None:
-                    coefficient = format_coeff + format_matrix_access(str(ufl_function.count()), 0)
-                else:
-                    coefficient = format_coeff + format_matrix_access(str(ufl_function.count()), component)
-                function_expr = coefficient
+            # FIXME: Need to take non-zero mappings, components, restricted and QE elements into account
+            coefficient = format_coeff + format_matrix_access(str(ufl_function.count()), loop_index)
+            function_expr = format_mult([basis_name, coefficient])
 
 #            print "basis_name: ", basis_name
 
@@ -652,7 +770,7 @@ class QuadratureTransformer(Transformer):
                 if ufl_function.element().family() != "Lagrange":
                     raise RuntimeError(ufl_function.element().family(), "Only derivatives of Lagrange elements is currently supported")
                 # FIXME: Handle restriction
-                t = format_transform(Transform.JINV, ref, direction, restriction)
+                t = format_transform(Transform.JINV, ref, direction, self.restriction)
                 self.trans_set.add(t)
                 transforms.append(t)
             function_expr = format_mult(transforms + [function_expr])
@@ -660,12 +778,10 @@ class QuadratureTransformer(Transformer):
             # Check if the expression to compute the function value is already in
             # the dictionary of used function. If not, generate a new name and add
             function_name = format_F + str(self.function_count)
-            if not function_expr in self.functions and not constant:
+            if not function_expr in self.functions:
                 self.functions[function_expr] = (function_name, loop_index_range)
                 # Increase count
                 self.function_count += 1
-            elif constant:
-                function_name = function_expr
             else:
                 function_name, index_r = self.functions[function_expr]
                 # Check just to make sure

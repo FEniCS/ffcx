@@ -34,5 +34,5 @@ u0 = Function(element)
 F = v*(u - u0)*dx(0, {"quadrature_order":2}) + k*dot(grad(v), grad(0.5*(u0 + u)))*dx(0, {"quadrature_order":2})
 
 a = lhs(F)
-L = -rhs(F)
+L = rhs(F)
 

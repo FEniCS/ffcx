@@ -130,10 +130,13 @@ class QuadratureGenerator:
         # TODO: Is it faster/better to just generate it on the fly?
 #        fiat_element = form_representation.fiat_elements_map[list(extract_unique_elements(integrals[0]))[0]]
 
+        # Update treansformer with facets
+        transformer.update_facets(None, None)
+
         # Generate element code + set of used geometry terms
         element_code, members_code, num_ops =\
           self.__generate_element_tensor(form_representation, transformer,\
-                                         integrals, None, None, Indent, format)
+                                         integrals, Indent, format)
 
         # Get Jacobian snippet
         # FIXME: This will most likely have to change if we support e.g., 2D elements in 3D space
@@ -185,10 +188,14 @@ class QuadratureGenerator:
         num_facets = fiat_element.num_facets()
         cases = [None for i in range(num_facets)]
         for i in range(num_facets):
+
+            # Update treansformer with facets
+            transformer.update_facets(i, None)
+            
             case = [format_block_begin]
             c, members_code, num_ops =\
                 self.__generate_element_tensor(form_representation, transformer,\
-                                               integrals, i, None, Indent, format)
+                                               integrals, Indent, format)
 
             case += [format_comment("Total number of operations to compute element tensor (from this point): %d" %num_ops)] + c
             case += [format_block_end]
@@ -241,10 +248,13 @@ class QuadratureGenerator:
         cases = [[None for j in range(num_facets)] for i in range(num_facets)]
         for i in range(num_facets):
             for j in range(num_facets):
+                # Update treansformer with facets
+                transformer.update_facets(i, j)
+
                 case = [format_block_begin]
                 c, members_code, num_ops =\
                     self.__generate_element_tensor(form_representation, transformer,\
-                                                   integrals, i, j, Indent, format)
+                                                   integrals, Indent, format)
                 case += [format_comment("Total number of operations to compute element tensor (from this point): %d" %num_ops)] + c
                 case += [format_block_end]
                 cases[i][j] = case
@@ -272,8 +282,7 @@ class QuadratureGenerator:
 
         return {"tabulate_tensor": (common, cases), "constructor":"// Do nothing", "members":members_code}
 
-    def __generate_element_tensor(self, form_representation, transformer, integrals, facet0,\
-                                        facet1, Indent, format):
+    def __generate_element_tensor(self, form_representation, transformer, integrals, Indent, format):
         "Construct quadrature code for element tensors"
 
         # Prefetch formats to speed up code generation
@@ -313,8 +322,8 @@ class QuadratureGenerator:
             ip_code = ["", Indent.indent(format_comment\
                 ("Loop quadrature points for integral: %s" % str(integral)))]
 
-            # Update transformer
-            transformer.update(points, facet0, facet1)
+            # Update transformer to the current number of quadrature points
+            transformer.update_points(points)
 
             # Generate code for all terms according to optimisation level
             integral_code, num_ops =\
