@@ -27,6 +27,13 @@
 %include "ufc_benchmark.h"
 %include "ufc_reference_cell.h"
 
+%{
+class NoDeleter { public: void operator()(ufc::form *) {} };
+boost::shared_ptr<ufc::form> form_ptr(ufc::form * form) { return boost::shared_ptr<ufc::form>(form, NoDeleter()); }
+%}
+class NoDeleter { public: void operator()(ufc::form *) {} };
+boost::shared_ptr<ufc::form> form_ptr(ufc::form * form) { return boost::shared_ptr<ufc::form>(form, NoDeleter()); }
+
 %pythoncode{
 
 def benchmark_forms(forms, print_tensors):
