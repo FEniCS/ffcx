@@ -22,7 +22,7 @@ from ffc.compiler.language.tokens import Transform
 from ffc.compiler.language.restriction import *
 
 # Utility and optimisation functions for quadraturegenerator
-from quadraturegenerator_utils import unique_psi_tables, generate_loop
+from quadraturegenerator_utils import generate_loop, unique_tables, get_ones, contains_zeros
 
 class QuadratureTransformer(Transformer):
     "Transform UFL representation to quadrature code"
@@ -128,7 +128,7 @@ class QuadratureTransformer(Transformer):
     # Constant values (constantvalue.py)
     # -------------------------------------------------------------------------
     def float_value(self, o, *operands):
-        print "\n\nVisiting FloatValue:", o.__repr__()
+#        print "\n\nVisiting FloatValue:", o.__repr__()
 
         # FIXME: Might be needed because it can be IndexAnnotated?
         if operands:
@@ -139,7 +139,7 @@ class QuadratureTransformer(Transformer):
         return {():self.format["floating point"](o.value())}
 
     def int_value(self, o, *operands):
-        print "\n\nVisiting IntValue:", o.__repr__()
+#        print "\n\nVisiting IntValue:", o.__repr__()
 
         # FIXME: Might be needed because it can be IndexAnnotated?
         if operands:
@@ -149,12 +149,15 @@ class QuadratureTransformer(Transformer):
 
         return {():self.format["floating point"](o.value())}
 
+    def identity(self, o, *operands):
+        print "\n\nVisiting Identity:", o.__repr__()
+        raise RuntimeError("Identity should have been expanded!!")
+
     # -------------------------------------------------------------------------
     # Algebra (algebra.py)
     # -------------------------------------------------------------------------
     def sum(self, o, *operands):
-        print "\n\nVisiting Sum:", o.__repr__(), "with operands:"
-        print ", ".join(map(str,operands))
+        debug("Visiting Sum: " + o.__repr__() + "\noperands: " + "\n".join(map(str, operands)))
 
         format_group  = self.format["grouping"]
         format_add    = self.format["add"]
@@ -180,8 +183,8 @@ class QuadratureTransformer(Transformer):
         return code
 
     def product(self, o, *operands):
-        print "\n\nVisiting Product:", o.__repr__(), "with operands:"
-        print ", ".join(map(str,operands))
+#        print "\n\nVisiting Product:", o.__repr__(), "with operands:"
+#        print ", ".join(map(str,operands))
 
         format_mult = self.format["multiply"]
         permute = []
@@ -214,8 +217,8 @@ class QuadratureTransformer(Transformer):
         return code
 
     def division(self, o, *operands):
-        print "\n\nVisiting Division:", o.__repr__(), "with operands:"
-        print ", ".join(map(str,operands))
+#        print "\n\nVisiting Division:", o.__repr__(), "with operands:"
+#        print ", ".join(map(str,operands))
 
         format_div = self.format["division"]
 
@@ -223,8 +226,8 @@ class QuadratureTransformer(Transformer):
             raise RuntimeError(operands, "Expected exactly two operands (numerator and denominator) ")
 
         numerator_code, denominator_code = operands
-        print "numerator: ", numerator_code
-        print "denominator: ", denominator_code
+#        print "numerator: ", numerator_code
+#        print "denominator: ", denominator_code
 
         # TODO: Are these safety checks needed?
         if not () in denominator_code and len(denominator_code) != 1:
@@ -239,7 +242,7 @@ class QuadratureTransformer(Transformer):
 
 
     def power(self, o):
-        print "\n\nVisiting Power:", o.__repr__()
+#        print "\n\nVisiting Power:", o.__repr__()
 
         # Get base and exponent
         base, expo = o.operands()
@@ -355,7 +358,7 @@ class QuadratureTransformer(Transformer):
     # Retriction (restriction.py)
     # -------------------------------------------------------------------------
     def positive_restricted(self, o):
-        print "\n\nVisiting PositiveRestricted:", o.__repr__(),
+#        print "\n\nVisiting PositiveRestricted:", o.__repr__(),
 
         restricted_expr = o.operands()
 #        print "\noperands", restricted_expr
@@ -372,7 +375,7 @@ class QuadratureTransformer(Transformer):
         return code
 
     def negative_restricted(self, o):
-        print "\n\nVisiting NegativeRestricted:", o.__repr__(),
+#        print "\n\nVisiting NegativeRestricted:", o.__repr__(),
 
         # Just get the first operand, there should only be one
         restricted_expr = o.operands()
@@ -393,8 +396,9 @@ class QuadratureTransformer(Transformer):
     # From indexed.py, indexsum.py and tensors.py
     # -------------------------------------------------------------------------
     def index_sum(self, o):
-        print "\n\nVisiting IndexSum:", o.__repr__(),
+        debug("\n\nVisiting IndexSum:" + o.__repr__())
 
+        raise RuntimeError("IndexSum should have been expanded")
         summand, index = o.operands()
 #        print "\nindex.__repr__(): ", index.__repr__()
 #        print "\nindex[0].__repr__(): ", index[0].__repr__()
@@ -434,12 +438,12 @@ class QuadratureTransformer(Transformer):
         return code
 
     def indexed(self, o):
-        print "\n\nVisiting Indexed:", o.__repr__(),
+        debug("\n\nVisiting Indexed:" + o.__repr__())
 
         indexed_expr, index = o.operands()
-        print "\nwrap, indexed_expr: ", indexed_expr.__repr__()
-        print "\nwrap, index.__repr__(): ", index.__repr__()
-        print tree_format(indexed_expr)
+
+#        print "\nwrap, indexed_expr: ", indexed_expr.__repr__()
+#        print "\nwrap, index.__repr__(): ", index.__repr__()
 
         # Save copy of components to let parent delete them again
         old_components = self._components[:]
@@ -455,8 +459,8 @@ class QuadratureTransformer(Transformer):
                     raise RuntimeError(indx, "Index must be Fixed for Indexed to add it to index_values")
                 self._index_values.push(indx, indx._value)
 
-        print "\ncomponents: ", self._components
-        print "\nindex_values: ", self._index_values
+#        print "\ncomponents: ", self._components
+#        print "\nindex_values: ", self._index_values
 
         # Visit expression subtrees and generate code
         code = self.visit(indexed_expr)
@@ -473,7 +477,7 @@ class QuadratureTransformer(Transformer):
         return code
 
     def component_tensor(self, o):
-        print "\n\nVisiting ComponentTensor:", o.__repr__(),
+        debug("\n\nVisiting ComponentTensor:" + o.__repr__())
 
         indexed_expr, index = o.operands()
 #        print "wrap, indexed_expr: ", indexed_expr
@@ -490,8 +494,8 @@ class QuadratureTransformer(Transformer):
         for i, indx in enumerate(index):
             self._index_values.push(indx, self._index_values[old_components[i]])
 
-        print "\nCTcomponents: ", self._components
-        print "\nCTindex_values: ", self._index_values
+#        print "\nCTcomponents: ", self._components
+#        print "\nCTindex_values: ", self._index_values
 
         # Visit expression subtrees and generate code
         code = self.visit(indexed_expr)
@@ -508,6 +512,7 @@ class QuadratureTransformer(Transformer):
     def list_tensor(self, o):
         print "\n\nVisiting ListTensor:", o.__repr__(),
 
+        raise RuntimeError("ListTensors should have been expanded!")
         print "\nLTcomponents: ", self._components
         print "\nLTindex_values: ", self._index_values
 
@@ -517,14 +522,13 @@ class QuadratureTransformer(Transformer):
 
         expr = o.operands()[self._index_values[self._components[0]]]
 
-#        raise RuntimeError
         return self.visit(expr)
 
     # -------------------------------------------------------------------------
     # Derivatives (differentiation.py)
     # -------------------------------------------------------------------------
     def spatial_derivative(self, o):
-        print "\n\nVisiting SpatialDerivative:", o.__repr__(),
+#        print "\n\nVisiting SpatialDerivative:", o.__repr__(),
 
         indexed_expr, index = o.operands()
 #        print "wrap, indexed_expr: ", indexed_expr
@@ -552,7 +556,7 @@ class QuadratureTransformer(Transformer):
     # BasisFunction, Function and Constants (basisfunction.py, function.py)
     # -------------------------------------------------------------------------
     def basis_function(self, o, *operands):
-        print "\n\nVisiting BasisFunction:", o.__repr__()
+#        print "\n\nVisiting BasisFunction:", o.__repr__()
 
         # Just checking that we don't get any operands
         if operands:
@@ -584,7 +588,7 @@ class QuadratureTransformer(Transformer):
         return basis
 
     def constant(self, o, *operands):
-        print "\n\nVisiting Constant:", o.__repr__()
+#        print "\n\nVisiting Constant:", o.__repr__()
         # Just checking that we don't get any operands
         if operands:
             raise RuntimeError(operands, "Didn't expect any operands for Constant")
@@ -598,7 +602,7 @@ class QuadratureTransformer(Transformer):
         return {():coefficient}
 
     def vector_constant(self, o, *operands):
-        print "\n\nVisiting VectorConstant:", o.__repr__()
+#        print "\n\nVisiting VectorConstant:", o.__repr__()
         # Just checking that we don't get any operands
         if operands:
             raise RuntimeError(operands, "Didn't expect any operands for VectorConstant")
@@ -615,7 +619,7 @@ class QuadratureTransformer(Transformer):
         return {():coefficient}
 
     def function(self, o, *operands):
-        print "\n\nVisiting Function:", o.__repr__()
+#        print "\n\nVisiting Function:", o.__repr__()
 
         # Just checking that we don't get any operands
         if operands:
@@ -729,10 +733,13 @@ class QuadratureTransformer(Transformer):
                 deriv = []
 #            print "deriv: ", deriv
 
-            # TODO: Will there be a problem if a table that contained only ones
-            # has been removed?
+            # TODO: Handle non_zeros, zeros and ones info
             name = self.__generate_psi_name(element_counter, facet, component, deriv)
-            name, non_zeros = self.name_map[name]
+            name, non_zeros, zeros, ones = self.name_map[name]
+#            print "\nbasis_name: ", basis_name
+#            print "\nnon_zeros: ", non_zeros
+#            print "\nzeros: ", zeros
+#            print "\nones: ", ones
             loop_index_range = shape(self.unique_tables[name])[1]
 
             # Append the name to the set of used tables and create matrix access
@@ -847,10 +854,13 @@ class QuadratureTransformer(Transformer):
                 deriv = []
 #            print "deriv: ", deriv
 
-            # TODO: Will there be a problem if a table that contained only ones
-            # has been removed?
+            # TODO: Handle non_zeros, zeros and ones info
             basis_name = self.__generate_psi_name(element_counter, facet, component, deriv)
-            basis_name, non_zeros = self.name_map[basis_name]
+            basis_name, non_zeros, zeros, ones = self.name_map[basis_name]
+#            print "\nbasis_name: ", basis_name
+#            print "\nnon_zeros: ", non_zeros
+#            print "\nzeros: ", zeros
+#            print "\nones: ", ones
             loop_index_range = shape(self.unique_tables[basis_name])[1]
 
             # Add basis name to set of used tables and add matrix access
@@ -871,8 +881,15 @@ class QuadratureTransformer(Transformer):
             for i, direction in enumerate(derivatives):
                 ref = multi[i]
                 # FIXME: Handle other element types too
-                if ufl_function.element().family() != "Lagrange":
-                    raise RuntimeError(ufl_function.element().family(), "Only derivatives of Lagrange elements is currently supported")
+                if ufl_function.element().family() not in ["Lagrange", "Discontinuous Lagrange"]:
+                    if ufl_function.element().family() == "Mixed":
+                        # Check that current sub components only contain supported elements
+#                        print "Component: ", component
+#                        print "basis: ", basis
+                        if not all(e.family() in ["Lagrange", "Discontinuous Lagrange", "Mixed"] for e in extract_sub_elements(ufl_function.element())):
+                            raise RuntimeError(ufl_function.element().family(), "Only derivatives of Lagrange elements is currently supported")
+                    else:
+                        raise RuntimeError(ufl_function.element().family(), "Only derivatives of Lagrange elements is currently supported")
                 # Create transform and add to set of used transformations
                 t = format_transform(Transform.JINV, ref, direction, self.restriction)
                 self.trans_set.add(t)
@@ -912,11 +929,11 @@ class QuadratureTransformer(Transformer):
     #    print "\nQG-utils, psi_tables, flat_tables:\n", flat_tables
 
         # Outsource call to old function from quadrature_utils
-        name_map, unique_tables = unique_psi_tables(flat_tables, self.optimise_level, self.format)
+        name_map, unique_tables = self.__unique_psi_tables(flat_tables)
     #    name_map, new_tables = unique_psi_tables(flat_tables, 1, format)
 
-    #    print "\nQG-utils, psi_tables, unique_tables:\n", unique_tables
-    #    print "\nQG-utils, psi_tables, name_map:\n", name_map
+#        print "\nQG-utils, psi_tables, unique_tables:\n", unique_tables
+#        print "\nQG-utils, psi_tables, name_map:\n", name_map
 
         return (element_map, name_map, unique_tables)
 
@@ -931,13 +948,13 @@ class QuadratureTransformer(Transformer):
         # Loop quadrature points and get element dictionary {elem: {tables}}
         for point, elem_dict in tables.items():
             element_map[point] = {}
-            print "\nQG-utils, flatten_tables, points:\n", point
-            print "\nQG-utils, flatten_tables, elem_dict:\n", elem_dict
+#            print "\nQG-utils, flatten_tables, points:\n", point
+#            print "\nQG-utils, flatten_tables, elem_dict:\n", elem_dict
 
             # Loop all elements and get all their tables
             for elem, facet_tables in elem_dict.items():
-                print "\nQG-utils, flatten_tables, elem:\n", elem
-                print "\nQG-utils, flatten_tables, facet_tables:\n", facet_tables
+#                print "\nQG-utils, flatten_tables, elem:\n", elem
+#                print "\nQG-utils, flatten_tables, facet_tables:\n", facet_tables
                 # If the element value rank != 0, we must loop the components
                 # before the derivatives
                 # (len(UFLelement.value_shape() == FIATelement.value_rank())
@@ -947,8 +964,8 @@ class QuadratureTransformer(Transformer):
                         for num_comp, comp in enumerate(elem_tables):
                             for num_deriv in comp:
                                 for derivs, psi_table in num_deriv.items():
-                                    print "\nQG-utils, flatten_tables, derivs:\n", derivs
-                                    print "\nQG-utils, flatten_tables, psi_table:\n", psi_table
+#                                    print "\nQG-utils, flatten_tables, derivs:\n", derivs
+#                                    print "\nQG-utils, flatten_tables, psi_table:\n", psi_table
                                     # Verify shape of basis (can be omitted for speed
                                     # if needed I think)
                                     if shape(psi_table) != 2 and shape(psi_table)[1] != point:
@@ -1002,6 +1019,148 @@ class QuadratureTransformer(Transformer):
 
         return name
 
+    def __unique_psi_tables(self, tables):
+        "Determine if some tensors have the same tables (and same names)"
+
+        # Get formats
+        format_epsilon = self.format["epsilon"]
+
+        # Get unique tables
+        name_map, inverse_name_map = unique_tables(tables, format_epsilon)
+
+#        print "\nname_map: ", name_map
+#        print "\ninv_name_map: ", inverse_name_map
+
+        # Get names of tables with all ones
+        names_ones = get_ones(tables, format_epsilon)
+
+        # Set values to zero if they are lower than threshold
+        for name in tables:
+            # Get values
+            vals = tables[name]
+            for r in range(shape(vals)[0]):
+                for c in range(shape(vals)[1]):
+                    if abs(vals[r][c]) < format_epsilon:
+                        vals[r][c] = 0
+            tables[name] = vals
+
+        # Extract the column numbers that are non-zero
+        # (only for optimisations higher than 0)
+        i = 0
+        non_zero_columns = {}
+        if self.optimise_level > 0:
+            for name in tables:
+                # Get values
+                vals = tables[name]
+
+                # Use the first row as reference
+                non_zeros = list(vals[0].nonzero()[0])
+
+                # If all columns in the first row are non zero, there's no point
+                # in continuing
+                if len(non_zeros) == shape(vals)[1]:
+                    continue
+
+                # If we only have one row (IP) we just need the nonzero columns
+                if shape(vals)[0] == 1:
+                    if list(non_zeros):
+                        non_zeros.sort()
+                        non_zero_columns[name] = (i, non_zeros)
+
+                        # Possibly compress values
+                        if optimisation_level == 0:
+                            tables[name] = vals
+                        else:
+                            tables[name] = vals[:, non_zeros]
+                        i += 1
+
+                # Check if the remaining rows are nonzero in the same positions, else expand
+                else:
+                    for j in range(shape(vals)[0] - 1):
+                        # All rows must have the same non-zero columns
+                        # for the optimization to work (at this stage)
+                        new_non_zeros = list(vals[j+1].nonzero()[0])
+                        if non_zeros != new_non_zeros:
+                            non_zeros = non_zeros + [c for c in new_non_zeros if not c in non_zeros]
+                            # If this results in all columns being non-zero, continue.
+                            if len(non_zeros) == shape(vals)[1]:
+                                continue
+
+                    # Only add nonzeros if it implies a reduction of columns
+                    if len(non_zeros) != shape(vals)[1]:
+                        non_zeros.sort()
+                        non_zero_columns[name] = (i, non_zeros)
+
+                        # Compress values
+                        tables[name] = vals[:, non_zeros]
+                        i += 1
+
+        # Check if we have some zeros in the tables
+        names_zeros = contains_zeros(tables, format_epsilon)
+
+        # Add non-zero column info to inverse_name_map
+        # (so we only need to pass around one name_map to code generating functions)
+        for name in inverse_name_map:
+            if inverse_name_map[name] in non_zero_columns:
+                nzc = non_zero_columns[inverse_name_map[name]]
+                zero = inverse_name_map[name] in names_zeros
+                ones = inverse_name_map[name] in names_ones
+#                print "zero: ", zero
+#                print "ones: ", ones
+                inverse_name_map[name] = [inverse_name_map[name], nzc, zero, ones]
+            else:
+                zero = inverse_name_map[name] in names_zeros
+                ones = inverse_name_map[name] in names_ones
+#                print "zero: ", zero
+#                print "ones: ", ones
+                inverse_name_map[name] = [inverse_name_map[name], (), zero, ones]
+
+        # If we found non zero columns we might be able to reduce number of tables
+        # further if optimise level is higher than 0
+        if non_zero_columns:
+
+            # Try reducing the tables. This is possible if some tables have become
+            # identical as a consequence of compressing the tables
+            nm, inv_nm = unique_tables(tables, format_epsilon)
+
+            # Update name maps
+            for name in inverse_name_map:
+                if inverse_name_map[name][0] in inv_nm:
+                    inverse_name_map[name][0] = inv_nm[inverse_name_map[name][0]]
+            for name in nm:
+                maps = nm[name]
+                for m in maps:
+                    if not name in name_map:
+                        name_map[name] = []
+                    if m in name_map:
+                        name_map[name] += name_map[m] + [m]
+                        del name_map[m]
+                    else:
+                        name_map[name].append(m)
+
+            # Exclude tables with all ones
+            names = get_ones(tables, format_epsilon)
+            # Because these tables now contain ones as a consequence of compression
+            # we still need to consider the non-zero columns when looking up values
+            # in coefficient arrays. The psi entries can however we neglected and we
+            # don't need to tabulate the values
+            for name in names:
+                if name in name_map:
+                    maps = name_map[name]
+                    for m in maps:
+#                        inverse_name_map[m][0] = ""
+                        inverse_name_map[m][3] = True
+                if name in inverse_name_map:
+                        inverse_name_map[m][3] = True
+#                    inverse_name_map[name][0] = ""
+#                tables[name] = None
+
+        # Write protect info
+        for name in inverse_name_map:
+            inverse_name_map[name] = tuple(inverse_name_map[name])
+
+        return (inverse_name_map, tables)
+
 def generate_code(integrand, transformer, Indent, format):
     """Generate code from a UFL integral type.
     This function implements the different optimisation strategies."""
@@ -1022,11 +1181,18 @@ def generate_code(integrand, transformer, Indent, format):
     num_ops = 0
 
 #    print "\nQG, Using Transformer"
-    # Expand all derivatives
+    # Apply basic expansions
+    # TODO: Figure out if there is a 'correct' order of doing this
 #    print "Integrand: ", integrand
-#    print "Integrand: ", expand_derivatives(integrand)
+    new_integrand = expand_indices(integrand)
+#    print "Integrand: ", new_integrand
+    new_integrand = expand_derivatives(new_integrand)
+#    print "Integrand: ", new_integrand
+    new_integrand = purge_list_tensors(new_integrand)
+#    print "Integrand: ", new_integrand
+#    print "Expanded integrand\n", tree_format(new_integrand)
 
-    loop_code = transformer.visit(integrand)
+    loop_code = transformer.visit(new_integrand)
 #    print "loop_code: ", loop_code
 
     # TODO: Verify that test and trial functions will ALWAYS be rearranged to 0 and 1

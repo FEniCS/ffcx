@@ -75,7 +75,8 @@ class FormData:
             self.basisfunction_data           = self.__extract_basisfunction_data(form, self.rank)
         else:
             self.form                         = ufl_form_data.form
-            self.signature                    = self.__extract_signature(self.form)
+                                                # Use repr because ListTensor
+            self.signature                    = self.form.__repr__()
             self.rank                         = ufl_form_data.rank
             self.num_coefficients             = ufl_form_data.num_functions
 
