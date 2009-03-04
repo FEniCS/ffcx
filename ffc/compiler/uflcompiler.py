@@ -24,7 +24,7 @@ import sys
 # UFL modules
 from ufl.classes import Form, FiniteElementBase, Measure, Integral
 from ufl.algorithms import FormData, is_multilinear, validate_form, extract_quadrature_order, estimate_quadrature_order
-from ufl.algorithms import MonomialException
+from ufl.algorithms import MonomialException, extract_unique_elements
 
 # FFC common modules
 from ffc.common.log import debug, info, warning, error, begin, end, set_level, INFO
@@ -224,9 +224,13 @@ def handle_metadata(integral, options):
     if quadrature_order != None:
         quadrature_order = int(quadrature_order)
     else:
-        # TODO: Improve algorithm in UFL
-        quadrature_order = max(extract_quadrature_order(integral),\
-                               estimate_quadrature_order(integral))
+        # TODO: Improve algorithms in UFL. In the mean time this is a dirty hack
+        # to take into account Quadrature elements
+        if any(e.family() == "Quadrature" for e in extract_unique_elements(integral)):
+            quadrature_order = extract_quadrature_order(integral)
+        else:
+            quadrature_order = max(extract_quadrature_order(integral),\
+                                   estimate_quadrature_order(integral))
 
     # Create the new consistent metadata and Measure
     metadata_new = {"quadrature_order":quadrature_order, "ffc":{"representation":representation}}

@@ -670,6 +670,13 @@ class QuadratureTransformer(Transformer):
         if not ufl_basis_function.count() in indices:
             raise RuntimeError(ufl_basis_function, "Currently, BasisFunction index must be either -2, -1, 0 or 1")
 
+        # Check that we don't take derivatives of QuadratureElements
+        # FIXME: We just raise an exception now, but should we just return 0?
+        # UFL will apply Dx(f_e*f_qe, 0) which should result in f_e.dx(0)*f_qe*dx
+        # instead of an error?
+        if derivatives and any(e.family() == "Quadrature" for e in extract_sub_elements(ufl_basis_function.element())):
+            raise RuntimeError(ufl_basis_function, "Derivatives of Quadrature elements are not supported")
+
         # Handle restriction through facet
         facet = {Restriction.PLUS: self.facet0, Restriction.MINUS: self.facet1, None: self.facet0}[self.restriction]
 
@@ -753,11 +760,10 @@ class QuadratureTransformer(Transformer):
                 if ufl_basis_function.element().family() not in ["Lagrange", "Discontinuous Lagrange"]:
                     if ufl_basis_function.element().family() == "Mixed":
                         # Check that current sub components only contain supported elements
-                        print "Component: ", component
-                        print "basis: ", basis
-                        for e in extract_sub_elements(ufl_basis_function.element()):
-                            if e.family() not in ["Lagrange", "Discontinuous Lagrange", "Mixed"]:
-                                raise RuntimeError(ufl_basis_function.element().family(), "Only derivatives of Lagrange elements is currently supported")
+#                        print "Component: ", component
+#                        print "basis: ", basis
+                        if not all(e.family() in ["Lagrange", "Discontinuous Lagrange", "Mixed"] for e in extract_sub_elements(ufl_basis_function.element())):
+                            raise RuntimeError(ufl_basis_function.element().family(), "Only derivatives of Lagrange elements is currently supported")
                     else:
                         raise RuntimeError(ufl_basis_function.element().family(), "Only derivatives of Lagrange elements is currently supported")
                 t = format_transform(Transform.JINV, ref, direction, self.restriction)
@@ -789,6 +795,13 @@ class QuadratureTransformer(Transformer):
         format_transform     = self.format["transform"]
         format_coeff         = self.format["coeff"]
         format_F             = self.format["function value"]
+
+        # Check that we don't take derivatives of QuadratureElements
+        # FIXME: We just raise an exception now, but should we just return 0?
+        # UFL will apply Dx(f_e*f_qe, 0) which should result in f_e.dx(0)*f_qe*dx
+        # instead of an error?
+        if derivatives and any(e.family() == "Quadrature" for e in extract_sub_elements(ufl_function.element())):
+            raise RuntimeError(ufl_function, "Derivatives of Quadrature elements are not supported")
 
         # Pick first free index of secondary type
         # (could use primary indices, but it's better to avoid confusion)

@@ -157,7 +157,7 @@ class QuadratureGenerator:
         # If needed, compute the code to reset the element tensor
         # FIXME: It should be OK to pick first?
         if not self.reset_code:
-            self.reset_code = self.__reset_element_tensor(integrals.items()[0][1], Indent, format, False)
+            self.reset_code = self.__reset_element_tensor(integrals.items()[0][1], transformer, Indent, format, False)
 
         # Add element code
         code += ["", format["comment"]("Compute element tensor (using UFL quadrature representation, optimisation level %d)" % self.optimise_level),\
@@ -220,7 +220,7 @@ class QuadratureGenerator:
         # If needed, compute the code to reset the element tensor
         # FIXME: It should be OK to pick first?
         if not self.reset_code:
-            self.reset_code = self.__reset_element_tensor(integrals.items()[0][1], Indent, format, False)
+            self.reset_code = self.__reset_element_tensor(integrals.items()[0][1], transformer, Indent, format, False)
 
         # Add element code
         common += ["", format["comment"]("Compute element tensor (using UFL quadrature representation, optimisation level %d)" % self.optimise_level)]
@@ -275,7 +275,7 @@ class QuadratureGenerator:
         # If needed, compute the code to reset the element tensor
         # FIXME: It should be OK to pick first?
         if not self.reset_code_restricted:
-            self.reset_code_restricted = self.__reset_element_tensor(integrals.items()[0][1], Indent, format, True)
+            self.reset_code_restricted = self.__reset_element_tensor(integrals.items()[0][1], transformer, Indent, format, True)
 
         # Add element code
         common += ["", format_comment("Compute element tensor for all facets (using quadrature representation, optimisation level %d)" %self.optimise_level)]
@@ -483,7 +483,7 @@ class QuadratureGenerator:
 
         return code
 
-    def __reset_element_tensor(self, integral, Indent, format, interior_integrals):
+    def __reset_element_tensor(self, integral, transformer, Indent, format, interior_integrals):
         "Reset the entries of the local element tensor"
 
         code = [""]
@@ -497,7 +497,7 @@ class QuadratureGenerator:
 
         # Create FIAT elements for each basisfunction. There should be one and
         # only one element per basisfunction so it is OK to pick first.
-        elements = [self.__create_fiat_elements(extract_elements(b)[0]) for b in basis]
+        elements = [transformer.fiat_elements_map[extract_elements(b)[0]] for b in basis]
         #print "\nQG, reset_element_tensor, Elements:\n", elements
 
         # Create the index range for resetting the element tensor by
@@ -523,20 +523,6 @@ class QuadratureGenerator:
         code.append("")
 
         return code
-
-    def __create_fiat_elements(self, ufl_e):
-
-        if isinstance(ufl_e, VectorElement):
-            return FIATVectorElement(ufl_e.family(), ufl_e.cell().domain(), ufl_e.degree(), len(ufl_e.sub_elements()))
-        elif isinstance(ufl_e, MixedElement):
-            sub_elems = [self.__create_fiat_elements(e) for e in ufl_e.sub_elements()]
-            return FIATMixedElement(sub_elems)
-        elif isinstance(ufl_e, FiniteElement):
-            return FIATFiniteElement(ufl_e.family(), ufl_e.cell().domain(), ufl_e.degree())
-        # Element type not supported (yet?) TensorElement will trigger this.
-        else:
-            raise RuntimeError(ufl_e, "Unable to create equivalent FIAT element.")
-        return
 
     def __remove_unused(self, code, trans_set, format):
         "Remove unused variables so that the compiler will not complain"

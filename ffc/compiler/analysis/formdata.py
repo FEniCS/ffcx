@@ -27,7 +27,7 @@ from ffc.compiler.language.index import Index
 from ffc.compiler.language.algebra import Function
 
 try:
-    from ufl.classes import FiniteElement, MixedElement, VectorElement
+    from ffc.compiler.representation.quadrature.uflquadraturerepresentation import create_fiat_element
 except:
     pass
 
@@ -85,7 +85,7 @@ class FormData:
             self.num_cell_integrals           = self.__extract_max_ufl_subdomain(self.form.cell_integrals())
             self.num_exterior_facet_integrals = self.__extract_max_ufl_subdomain(self.form.exterior_facet_integrals())
             self.num_interior_facet_integrals = self.__extract_max_ufl_subdomain(self.form.interior_facet_integrals())
-            self.elements                     = [self.__create_fiat_elements(e) for e in ufl_form_data.elements]
+            self.elements                     = [create_fiat_element(e) for e in ufl_form_data.elements]
             self.dof_maps                     = self.__extract_dof_maps(self.elements)
 #            self.coefficients                 = self.__extract_coefficients(form, self.num_coefficients, global_variables)
 #            self.cell_dimension               = self.__extract_cell_dimension(self.elements)
@@ -96,20 +96,6 @@ class FormData:
             debug("dof map %d:" % i, 2)
             debug("  entity_dofs:  " + str(self.dof_maps[i].entity_dofs()), 2)
             debug("  dof_entities: " + str(self.dof_maps[i].dof_entities()), 2)
-
-    def __create_fiat_elements(self, ufl_e):
-
-        if isinstance(ufl_e, VectorElement):
-            return FIATVectorElement(ufl_e.family(), ufl_e.cell().domain(), ufl_e.degree(), len(ufl_e.sub_elements()))
-        elif isinstance(ufl_e, MixedElement):
-            sub_elems = [self.__create_fiat_elements(e) for e in ufl_e.sub_elements()]
-            return FIATMixedElement(sub_elems)
-        elif isinstance(ufl_e, FiniteElement):
-            return FIATFiniteElement(ufl_e.family(), ufl_e.cell().domain(), ufl_e.degree())
-        # Element type not supported (yet?) TensorElement will trigger this.
-        else:
-            raise RuntimeError(ufl_e, "Unable to create equivalent FIAT element.")
-        return
 
     def __extract_signature(self, form):
         "Extract the signature"

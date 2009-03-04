@@ -14,7 +14,9 @@ from ffc.common.debug import *
 # FFC fem modules
 from ffc.fem.quadrature import *
 from ffc.fem.finiteelement import FiniteElement as FIATFiniteElement
+from ffc.fem.quadratureelement import QuadratureElement
 from ffc.fem.vectorelement import VectorElement as FIATVectorElement
+from ffc.fem.vectorelement import VectorQuadratureElement
 from ffc.fem.mixedelement import MixedElement as FIATMixedElement
 from ffc.fem.referencecell import *
 #from ffc.fem.quadratureelement import *
@@ -35,6 +37,39 @@ try:
     from ufl.integral import Measure
 except:
     pass
+
+def create_fiat_element(ufl_e):
+
+    if isinstance(ufl_e, TensorElement):
+#            print "tensor: "
+        raise RuntimeError(ufl_e, "Tensor element not supported yet.")
+    elif isinstance(ufl_e, VectorElement):
+#            print "vector: "
+        # Handle QuadratureElement separately
+        if ufl_e.family() == "Quadrature":
+            num_points_per_axis = (ufl_e.degree() + 1 + 1) / 2 # integer division gives 2m - 1 >= q
+            return VectorQuadratureElement(ufl_e.cell().domain(), num_points_per_axis, len(ufl_e.sub_elements()))
+        return FIATVectorElement(ufl_e.family(), ufl_e.cell().domain(), ufl_e.degree(), len(ufl_e.sub_elements()))
+    elif isinstance(ufl_e, MixedElement):
+#            print "mixed: "
+        sub_elems = [create_fiat_element(e) for e in ufl_e.sub_elements()]
+        return FIATMixedElement(sub_elems)
+    elif isinstance(ufl_e, FiniteElement):
+#        print "finite: "
+        # Handle QuadratureElement separately
+        if ufl_e.family() == "Quadrature":
+            # UFL Quadrature element set the degree that the element must be able
+            # to integrate where the FFC QuadratureElement sets the number of
+            # points per axis so we need to compute this number
+            num_points_per_axis = (ufl_e.degree() + 1 + 1) / 2 # integer division gives 2m - 1 >= q
+#            print "num_points_per_axis: ", num_points_per_axis
+            return QuadratureElement(ufl_e.cell().domain(), num_points_per_axis)
+        # Default return
+        return FIATFiniteElement(ufl_e.family(), ufl_e.cell().domain(), ufl_e.degree())
+    # Element type not supported (yet?).
+    else:
+        raise RuntimeError(ufl_e, "Unable to create equivalent FIAT element.")
+    return
 
 class QuadratureRepresentation:
     """This class initialises some data structures that are used by the
@@ -164,7 +199,7 @@ class QuadratureRepresentation:
             print "\nElements: ", elements
 
             # Create a list of equivalent FIAT elements
-            fiat_elements = [self.__create_fiat_elements(e) for e in elements]
+            fiat_elements = [create_fiat_element(e) for e in elements]
 
             # Get shape and facet shape.
             shape = fiat_elements[0].cell_shape()
@@ -268,26 +303,6 @@ class QuadratureRepresentation:
                                element.tabulate(deriv_order, map_to_facet(points, facet))
 
         return return_integrals
-
-    def __create_fiat_elements(self, ufl_e):
-
-        if isinstance(ufl_e, TensorElement):
-#            print "tensor: "
-            raise RuntimeError(ufl_e, "Tensor element not supported yet.")
-        elif isinstance(ufl_e, VectorElement):
-#            print "vector: "
-            return FIATVectorElement(ufl_e.family(), ufl_e.cell().domain(), ufl_e.degree(), len(ufl_e.sub_elements()))
-        elif isinstance(ufl_e, MixedElement):
-#            print "mixed: "
-            sub_elems = [self.__create_fiat_elements(e) for e in ufl_e.sub_elements()]
-            return FIATMixedElement(sub_elems)
-        elif isinstance(ufl_e, FiniteElement):
-#            print "finite: "
-            return FIATFiniteElement(ufl_e.family(), ufl_e.cell().domain(), ufl_e.degree())
-        # Element type not supported (yet?).
-        else:
-            raise RuntimeError(ufl_e, "Unable to create equivalent FIAT element.")
-        return
 
     def __debug(self, i, facet0, facet1):
         "Fancy printing of progress"
