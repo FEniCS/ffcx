@@ -20,6 +20,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # FIXME: Temporary while testing
 import sys
+import os
 
 # UFL modules
 from ufl.classes import Form, FiniteElementBase, Measure, Integral
@@ -258,19 +259,20 @@ def compute_form_representation(form_data, options):
     "Compiler stage 2: Compute form representation"
     begin("Compiler stage 2: Computing form representation")
 
-    # Compute quadrature representation
-    quadrature_representation = UFLQuadratureRepresentation(form_data)
+    # FIXME: Temporary while debugging tensor representation
+    if os.environ["USER"] == "logg":
 
-    # Compute tensor representation
-#    try:
-#        tensor_representation = UFLTensorRepresentation(form_data)
-#    except MonomialException, exception:
-#        warning("Tensor representation failed. " + exception.message)
-#        info("Falling back to quadrature.")
-    tensor_representation = quadrature_representation
-
-    # FIXME: Temporary while testing
-#    sys.exit(0)
+        try:
+            tensor_representation = UFLTensorRepresentation(form_data)
+        except MonomialException, exception:
+            warning("Tensor representation failed. " + exception.message)
+            info("Falling back to quadrature.")
+        sys.exit(1)
+            
+    else:
+        # Compute quadrature representation
+        quadrature_representation = UFLQuadratureRepresentation(form_data)
+        tensor_representation = quadrature_representation
 
     end()
     return tensor_representation, quadrature_representation
