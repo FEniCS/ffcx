@@ -310,17 +310,17 @@ class QuadratureGenerator:
         # I therefore need to generate the actual code to compute the element
         # tensors first, and then create the auxiliary code.
 
-        transformer.disp()
+#        transformer.disp()
 
         # We receive a dictionary {num_points: integral,}
         # Loop points and integrals
         for points, integral in integrals.items():
 
-            print "\nIntegral: ", integral
-            print "\nIntegral tree_format: ", tree_format(integral)
+#            print "\nIntegral: ", integral
+#            print "\nIntegral tree_format: ", tree_format(integral)
 
             ip_code = ["", Indent.indent(format_comment\
-                ("Loop quadrature points for integral: %s" % str(integral)))]
+                ("Loop quadrature points for integral: %s" % integral.__repr__()))]
 
             # Update transformer to the current number of quadrature points
             transformer.update_points(points)

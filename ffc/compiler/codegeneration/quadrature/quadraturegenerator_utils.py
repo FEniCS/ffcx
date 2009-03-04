@@ -315,6 +315,7 @@ def get_ones(tables, format_epsilon):
 def contains_zeros(tables, format_epsilon):
     "Checks if any tables contains all zeros"
 
+    names = []
     for name in tables:
         vals = tables[name]
         zero = True
@@ -331,6 +332,8 @@ def contains_zeros(tables, format_epsilon):
             debug("\n*** Warning: this table only contains zeros. This is not critical,")
             debug("but it might slow down the runtime performance of your code!")
             debug("Do you take derivatives of a constant?\n")
+            names.append(name)
+    return names
 
 def unique_psi_tables(tables, optimisation_level, format):
     "Determine if some tensors have the same tables (and same names)"
