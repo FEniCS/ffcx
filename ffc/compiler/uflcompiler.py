@@ -113,6 +113,10 @@ def compile_forms(forms, prefix, options):
         tensor_representation, quadrature_representation =\
             compute_form_representation(form_data, options)
 
+        # FIXME: Temporary while debugging tensor representation
+        if os.environ["USER"] == "logg":
+            continue
+
         # Compiler stage 3: optimize form representation
         # TODO: Switch this back on? I guess the argument should only be the
         # tensor_representation since it only applies to this.
@@ -129,6 +133,9 @@ def compile_forms(forms, prefix, options):
 
         # Add to list of codes
         generated_forms += [(form_code, ffc_form_data)]
+
+    if os.environ["USER"] == "logg":
+        return
 
     # Compiler stage 5: format code
     format_code(generated_forms, prefix, format, options)
@@ -267,8 +274,10 @@ def compute_form_representation(form_data, options):
         except MonomialException, exception:
             warning("Tensor representation failed. " + exception.message)
             info("Falling back to quadrature.")
-        sys.exit(1)
-            
+            sys.exit(1)
+
+        return (tensor_representation, tensor_representation)
+
     else:
         # Compute quadrature representation
         quadrature_representation = UFLQuadratureRepresentation(form_data)

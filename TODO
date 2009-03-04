@@ -30,10 +30,6 @@ file, it is convenient to install org-mode in Emacs.
   for complicated forms by generating loops for the computation of
   the entries of the geometry tensor
 
-* UFL
-  - Extend FFC form language
-  - Differentiation of forms
-
 * UFC, Implement missing functions
   - evaluate_basis_all()
   - evaluate_basis_derivatives_all()
@@ -51,3 +47,39 @@ file, it is convenient to install org-mode in Emacs.
 
 * Fix all FIXMEs
   - There are a few of these: find src/ffc -name '*.py' | xargs grep FIXME
+
+* Conversion to UFL
+
+  ?  = Unknown
+  -  = Shouldn't work
+  x  = Does not compile
+  c  = Compiles
+  C  = Compiles and looks ok
+  OK = Works perfectly
+
+                      |  Tensor  |  Quadr. |
+--------------------------------------------
+Constant              |    C     |    ?    |
+Elasticity            |    C     |    ?    |
+EnergyNorm            |    x     |    ?    |
+Equation              |    c     |    ?    |
+FunctionOperators     |    c     |    ?    |
+Heat                  |    c     |    ?    |
+Mass                  |    c     |    ?    |
+MixedMixedElement     |    c     |    ?    |
+MixedPoisson          |    c     |    ?    |
+NavierStokes          |    c     |    ?    |
+NeumannProblem        |    c     |    ?    |
+Optimization          |    c     |    ?    |
+P5tet                 |    c     |    ?    |
+P5tri                 |    c     |    ?    |
+PoissonDG             |    c     |    ?    |
+PoissonSystem         |    c     |    ?    |
+Poisson               |    C     |    ?    |
+Projection            |    c     |    ?    |
+QuadratureElement     |    c     |    ?    |
+Stokes                |    c     |    ?    |
+SubDomains            |    c     |    ?    |
+SubDomain             |    c     |    ?    |
+TensorWeightedPoisson |    c     |    ?    |
+VectorLaplaceGradCurl |    c     |    ?    |

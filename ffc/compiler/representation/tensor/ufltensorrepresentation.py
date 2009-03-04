@@ -46,19 +46,18 @@ class TensorRepresentation:
     def __init__(self, form_data):
         "Create tensor representation for given form"
 
-        print "in constructor"
-
         # Extract form
         form = form_data.form
-
-        print form
         
         # Extract monomial representation
         monomials = extract_monomials(form)
 
         # Print monomial representation
-        info("")
-        info(str(monomials))
+        print ""
+        print "Monomial representation"
+        print "-----------------------"
+        print monomials
+        print ""
 
         # Compute representation of cell tensor
         #self.cell_tensor = self.__compute_cell_tensor(form)
