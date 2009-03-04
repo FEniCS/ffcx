@@ -251,7 +251,7 @@ class JITTests(unittest.TestCase):
         
         # Check times
         self.assertTrue(dt0 < 0.001)
-        self.assertTrue(dt1 < 0.1)
+        self.assertTrue(dt1 < 0.5)
         
 if __name__ == "__main__":
     unittest.main()
