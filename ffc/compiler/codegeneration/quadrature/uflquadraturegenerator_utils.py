@@ -14,7 +14,7 @@ from ufl.classes import *
 from ufl.common import *
 from ufl.algorithms import *
 from ufl.algorithms.ad import *
-#from ufl.algorithms.analysis import *
+from ufl.algorithms.analysis import extract_sub_elements
 from ufl.algorithms.transformations import *
 
 from ffc.compiler.representation.tensor.multiindex import MultiIndex as FFCMultiIndex
@@ -99,7 +99,7 @@ class QuadratureTransformer(Transformer):
 
     # Handle the basics just in case, probably not needed?
     def expr(self, o, *operands):
-        print "\nVisiting basic Expr:", o.__repr__(), "with operands:"
+        print "\n\nVisiting basic Expr:", o.__repr__(), "with operands:"
         print ", ".join(map(str,operands))
 #        return {}
         # FIXME: unsafe switch back on
@@ -107,24 +107,28 @@ class QuadratureTransformer(Transformer):
 
     # Handle the basics just in case, probably not needed?
     def terminal(self, o, *operands):
-        print "\nVisiting basic Terminal:", o.__repr__(), "with operands:"
+        print "\n\nVisiting basic Terminal:", o.__repr__(), "with operands:"
         print ", ".join(map(str,operands))
 #        return {}
         # FIXME: unsafe switch back on
         return o
 
     # -------------------------------------------------------------------------
-    # Things which are not supported (geometry.py)
+    # Things which are not supported (geometry.py, expr)
     # -------------------------------------------------------------------------
     def facet_normal(self, o):
-        print "\nVisiting FacetNormal:", o.__repr__()
+        print "\n\nVisiting FacetNormal:", o.__repr__()
         raise RuntimeError("FacetNormal is not supported (yet), use a VectorElement(Discontinuous Lagrange, 'cell_type', 0) instead.")
+
+    def wrapper_type(self, o):
+        print "\n\nVisiting WrapperType:", o.__repr__()
+        raise RuntimeError(o.__repr__(), "This WrapperType is not supported (yet).")
 
     # -------------------------------------------------------------------------
     # Constant values (constantvalue.py)
     # -------------------------------------------------------------------------
     def float_value(self, o, *operands):
-        print "\nVisiting FloatValue:", o.__repr__()
+        print "\n\nVisiting FloatValue:", o.__repr__()
 
         # FIXME: Might be needed because it can be IndexAnnotated?
         if operands:
@@ -135,7 +139,7 @@ class QuadratureTransformer(Transformer):
         return {():self.format["floating point"](o.value())}
 
     def int_value(self, o, *operands):
-        print "\nVisiting IntValue:", o.__repr__()
+        print "\n\nVisiting IntValue:", o.__repr__()
 
         # FIXME: Might be needed because it can be IndexAnnotated?
         if operands:
@@ -149,7 +153,7 @@ class QuadratureTransformer(Transformer):
     # Algebra (algebra.py)
     # -------------------------------------------------------------------------
     def sum(self, o, *operands):
-        print "\nVisiting Sum:", o.__repr__(), "with operands:"
+        print "\n\nVisiting Sum:", o.__repr__(), "with operands:"
         print ", ".join(map(str,operands))
 
         format_group  = self.format["grouping"]
@@ -176,7 +180,7 @@ class QuadratureTransformer(Transformer):
         return code
 
     def product(self, o, *operands):
-        print "\nVisiting Product:", o.__repr__(), "with operands:"
+        print "\n\nVisiting Product:", o.__repr__(), "with operands:"
         print ", ".join(map(str,operands))
 
         format_mult = self.format["multiply"]
@@ -210,7 +214,7 @@ class QuadratureTransformer(Transformer):
         return code
 
     def division(self, o, *operands):
-        print "\nVisiting Division:", o.__repr__(), "with operands:"
+        print "\n\nVisiting Division:", o.__repr__(), "with operands:"
         print ", ".join(map(str,operands))
 
         format_div = self.format["division"]
@@ -235,7 +239,7 @@ class QuadratureTransformer(Transformer):
 
 
     def power(self, o):
-        print "\nVisiting Power:", o.__repr__()
+        print "\n\nVisiting Power:", o.__repr__()
 
         # Get base and exponent
         base, expo = o.operands()
@@ -255,7 +259,7 @@ class QuadratureTransformer(Transformer):
         return {(): self.format["power"](val, expo.value())}
 
     def abs(self, o, *operands):
-        print "\nVisiting Abs:", o.__repr__(), "with operands:"
+        print "\n\nVisiting Abs:", o.__repr__(), "with operands:"
         print ", ".join(map(str,operands))
 
         # TODO: Are these safety checks needed?
@@ -273,7 +277,7 @@ class QuadratureTransformer(Transformer):
     # MathFunctions (mathfunctions.py)
     # -------------------------------------------------------------------------
     def sqrt(self, o, *operands):
-        print "\nVisiting Sqrt:", o.__repr__(), "with operands:"
+        print "\n\nVisiting Sqrt:", o.__repr__(), "with operands:"
         print ", ".join(map(str,operands))
 
         # TODO: Are these safety checks needed?
@@ -288,7 +292,7 @@ class QuadratureTransformer(Transformer):
         return operand
 
     def exp(self, o, *operands):
-        print "\nVisiting Exp:", o.__repr__(), "with operands:"
+        print "\n\nVisiting Exp:", o.__repr__(), "with operands:"
         print ", ".join(map(str,operands))
 
         # TODO: Are these safety checks needed?
@@ -303,7 +307,7 @@ class QuadratureTransformer(Transformer):
         return operand
 
     def ln(self, o, *operands):
-        print "\nVisiting Ln:", o.__repr__(), "with operands:"
+        print "\n\nVisiting Ln:", o.__repr__(), "with operands:"
         print ", ".join(map(str,operands))
 
         # TODO: Are these safety checks needed?
@@ -318,7 +322,7 @@ class QuadratureTransformer(Transformer):
         return operand
 
     def cos(self, o, *operands):
-        print "\nVisiting Cos:", o.__repr__(), "with operands:"
+        print "\n\nVisiting Cos:", o.__repr__(), "with operands:"
         print ", ".join(map(str,operands))
 
         # TODO: Are these safety checks needed?
@@ -333,7 +337,7 @@ class QuadratureTransformer(Transformer):
         return operand
 
     def sin(self, o, *operands):
-        print "\nVisiting Sin:", o.__repr__(), "with operands:"
+        print "\n\nVisiting Sin:", o.__repr__(), "with operands:"
         print ", ".join(map(str,operands))
 
         # TODO: Are these safety checks needed?
@@ -351,7 +355,7 @@ class QuadratureTransformer(Transformer):
     # Retriction (restriction.py)
     # -------------------------------------------------------------------------
     def positive_restricted(self, o):
-        print "\nVisiting PositiveRestricted:", o.__repr__(),
+        print "\n\nVisiting PositiveRestricted:", o.__repr__(),
 
         restricted_expr = o.operands()
 #        print "\noperands", restricted_expr
@@ -368,7 +372,7 @@ class QuadratureTransformer(Transformer):
         return code
 
     def negative_restricted(self, o):
-        print "\nVisiting NegativeRestricted:", o.__repr__(),
+        print "\n\nVisiting NegativeRestricted:", o.__repr__(),
 
         # Just get the first operand, there should only be one
         restricted_expr = o.operands()
@@ -389,7 +393,7 @@ class QuadratureTransformer(Transformer):
     # From indexed.py, indexsum.py and tensors.py
     # -------------------------------------------------------------------------
     def index_sum(self, o):
-#        print "\nVisiting IndexSum:", o.__repr__(),
+        print "\n\nVisiting IndexSum:", o.__repr__(),
 
         summand, index = o.operands()
 #        print "\nindex.__repr__(): ", index.__repr__()
@@ -430,11 +434,16 @@ class QuadratureTransformer(Transformer):
         return code
 
     def indexed(self, o):
-#        print "\nVisiting Indexed:", o.__repr__(),
+        print "\n\nVisiting Indexed:", o.__repr__(),
 
         indexed_expr, index = o.operands()
-#        print "wrap, indexed_expr: ", indexed_expr
-#        print "wrap, index.__repr__(): ", index.__repr__()
+        print "\nwrap, indexed_expr: ", indexed_expr.__repr__()
+        print "\nwrap, index.__repr__(): ", index.__repr__()
+        print tree_format(indexed_expr)
+
+        # Save copy of components to let parent delete them again
+        old_components = self._components[:]
+        self._components = []
 
         # Loop multi indices and create components
         for indx in index:
@@ -446,20 +455,25 @@ class QuadratureTransformer(Transformer):
                     raise RuntimeError(indx, "Index must be Fixed for Indexed to add it to index_values")
                 self._index_values.push(indx, indx._value)
 
+        print "\ncomponents: ", self._components
+        print "\nindex_values: ", self._index_values
+
         # Visit expression subtrees and generate code
         code = self.visit(indexed_expr)
 
         # Loop multi indices and delete components
         for indx in index:
-            self._components.pop()
+#            self._components.pop()
             if isinstance(indx, FixedIndex):
-
                 self._index_values.pop()
+
+        # Set components equal to old components
+        self._components = old_components[:]
 
         return code
 
     def component_tensor(self, o):
-#        print "\nVisiting ComponentTensor:", o.__repr__(),
+        print "\n\nVisiting ComponentTensor:", o.__repr__(),
 
         indexed_expr, index = o.operands()
 #        print "wrap, indexed_expr: ", indexed_expr
@@ -476,6 +490,9 @@ class QuadratureTransformer(Transformer):
         for i, indx in enumerate(index):
             self._index_values.push(indx, self._index_values[old_components[i]])
 
+        print "\nCTcomponents: ", self._components
+        print "\nCTindex_values: ", self._index_values
+
         # Visit expression subtrees and generate code
         code = self.visit(indexed_expr)
 
@@ -488,11 +505,26 @@ class QuadratureTransformer(Transformer):
 
         return code
 
+    def list_tensor(self, o):
+        print "\n\nVisiting ListTensor:", o.__repr__(),
+
+        print "\nLTcomponents: ", self._components
+        print "\nLTindex_values: ", self._index_values
+
+        # A list tensor only has one component
+        if len(self._components) != 1:
+            raise RuntimeError(self._components, "ListTensor can only have one component")
+
+        expr = o.operands()[self._index_values[self._components[0]]]
+
+#        raise RuntimeError
+        return self.visit(expr)
+
     # -------------------------------------------------------------------------
     # Derivatives (differentiation.py)
     # -------------------------------------------------------------------------
     def spatial_derivative(self, o):
-#        print "\nVisiting SpatialDerivative:", o.__repr__(),
+        print "\n\nVisiting SpatialDerivative:", o.__repr__(),
 
         indexed_expr, index = o.operands()
 #        print "wrap, indexed_expr: ", indexed_expr
@@ -520,7 +552,7 @@ class QuadratureTransformer(Transformer):
     # BasisFunction, Function and Constants (basisfunction.py, function.py)
     # -------------------------------------------------------------------------
     def basis_function(self, o, *operands):
-#        print "\nVisiting BasisFunction:", o.__repr__()
+        print "\n\nVisiting BasisFunction:", o.__repr__()
 
         # Just checking that we don't get any operands
         if operands:
@@ -552,7 +584,7 @@ class QuadratureTransformer(Transformer):
         return basis
 
     def constant(self, o, *operands):
-#        print "\nVisiting Constant:", o.__repr__()
+        print "\n\nVisiting Constant:", o.__repr__()
         # Just checking that we don't get any operands
         if operands:
             raise RuntimeError(operands, "Didn't expect any operands for Constant")
@@ -566,7 +598,7 @@ class QuadratureTransformer(Transformer):
         return {():coefficient}
 
     def vector_constant(self, o, *operands):
-#        print "\nVisiting VectorConstant:", o.__repr__()
+        print "\n\nVisiting VectorConstant:", o.__repr__()
         # Just checking that we don't get any operands
         if operands:
             raise RuntimeError(operands, "Didn't expect any operands for VectorConstant")
@@ -583,7 +615,7 @@ class QuadratureTransformer(Transformer):
         return {():coefficient}
 
     def function(self, o, *operands):
-#        print "\nVisiting Function:", o.__repr__()
+        print "\n\nVisiting Function:", o.__repr__()
 
         # Just checking that we don't get any operands
         if operands:
@@ -719,7 +751,15 @@ class QuadratureTransformer(Transformer):
                 ref = multi[i]
                 # FIXME: Handle other element types too
                 if ufl_basis_function.element().family() not in ["Lagrange", "Discontinuous Lagrange"]:
-                    raise RuntimeError(ufl_basis_function.element().family(), "Only derivatives of Lagrange elements is currently supported")
+                    if ufl_basis_function.element().family() == "Mixed":
+                        # Check that current sub components only contain supported elements
+                        print "Component: ", component
+                        print "basis: ", basis
+                        for e in extract_sub_elements(ufl_basis_function.element()):
+                            if e.family() not in ["Lagrange", "Discontinuous Lagrange", "Mixed"]:
+                                raise RuntimeError(ufl_basis_function.element().family(), "Only derivatives of Lagrange elements is currently supported")
+                    else:
+                        raise RuntimeError(ufl_basis_function.element().family(), "Only derivatives of Lagrange elements is currently supported")
                 t = format_transform(Transform.JINV, ref, direction, self.restriction)
                 self.trans_set.add(t)
                 transforms.append(t)
@@ -878,13 +918,13 @@ class QuadratureTransformer(Transformer):
         # Loop quadrature points and get element dictionary {elem: {tables}}
         for point, elem_dict in tables.items():
             element_map[point] = {}
-#            print "\nQG-utils, flatten_tables, points:\n", point
-#            print "\nQG-utils, flatten_tables, elem_dict:\n", elem_dict
+            print "\nQG-utils, flatten_tables, points:\n", point
+            print "\nQG-utils, flatten_tables, elem_dict:\n", elem_dict
 
             # Loop all elements and get all their tables
             for elem, facet_tables in elem_dict.items():
-#                print "\nQG-utils, flatten_tables, elem:\n", elem
-#                print "\nQG-utils, flatten_tables, facet_tables:\n", facet_tables
+                print "\nQG-utils, flatten_tables, elem:\n", elem
+                print "\nQG-utils, flatten_tables, facet_tables:\n", facet_tables
                 # If the element value rank != 0, we must loop the components
                 # before the derivatives
                 # (len(UFLelement.value_shape() == FIATelement.value_rank())
@@ -894,8 +934,8 @@ class QuadratureTransformer(Transformer):
                         for num_comp, comp in enumerate(elem_tables):
                             for num_deriv in comp:
                                 for derivs, psi_table in num_deriv.items():
-#                                    print "\nQG-utils, flatten_tables, derivs:\n", derivs
-#                                    print "\nQG-utils, flatten_tables, psi_table:\n", psi_table
+                                    print "\nQG-utils, flatten_tables, derivs:\n", derivs
+                                    print "\nQG-utils, flatten_tables, psi_table:\n", psi_table
                                     # Verify shape of basis (can be omitted for speed
                                     # if needed I think)
                                     if shape(psi_table) != 2 and shape(psi_table)[1] != point:
@@ -921,7 +961,7 @@ class QuadratureTransformer(Transformer):
                                     raise RuntimeError(name, "Name is not unique, something is wrong")
                                 flat_tables[name] = transpose(psi_table)
                 counter += 1
-
+#        raise RuntimeError
         return (element_map, flat_tables)
 
     def __generate_psi_name(self, counter, facet, component, derivatives):
