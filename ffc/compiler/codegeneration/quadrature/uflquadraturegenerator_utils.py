@@ -873,7 +873,7 @@ class QuadratureTransformer(Transformer):
             self.used_psi_tables.add(basis_name)
             basis_name += basis_access
 
-            # FIXME: Need to take, and QE elements into account
+            # FIXME: Need to take QE elements into account
             # Create coefficient access
             coefficient_access = loop_index
             if non_zeros:
@@ -903,10 +903,6 @@ class QuadratureTransformer(Transformer):
                 self.trans_set.add(t)
                 transforms.append(t)
 
-            # Multiply transformations to the function expression
-            # FIXME: Move this to after computing the basis function value
-            function_expr = format_mult(transforms + [function_expr])
-
             # Check if the expression to compute the function value is already in
             # the dictionary of used function. If not, generate a new name and add
             function_name = format_F + str(self.function_count)
@@ -919,7 +915,9 @@ class QuadratureTransformer(Transformer):
                 # Check just to make sure
                 if not index_r == loop_index_range:
                     raise RuntimeError("Index ranges does not match")
-            code.append(function_name)
+
+            # Multiply function value by the transformations and add to code
+            code.append(format_mult(transforms + [function_name]))
 
         if len(code) > 1:
             code = format_group(format_add(code))
