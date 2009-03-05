@@ -92,4 +92,4 @@ OK - Code is not very efficient
      operators the norm when comparing two tensors is around 1.3e-1
 ?  - Projection.ufl is not the same as Projection.form (BTW, when did this
      start working again?)
-
+     Anders: It doesn't work and should be removed.
