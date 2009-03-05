@@ -63,11 +63,11 @@ def compile(forms, prefix="Form", options=FFC_OPTIONS):
     # Set log level
     set_level(INFO)
 
-    # Check forms
-    forms = _check_forms(forms)
-
     # Check options
     options = _check_options(options)
+
+    # Check forms
+    forms = _check_forms(forms, options)
 
     # Check that we have at least one form
     if len(forms) == 0:
@@ -124,9 +124,6 @@ def analyze_form(form, options):
     
     begin("Compiler stage 1: Analyzing form")
 
-    # Handle form metadata
-    form = _handle_metadatas(form, options)
-        
     # Validate form
     validate_form(form)
 
@@ -266,28 +263,62 @@ def format_code(generated_forms, prefix, format, options):
     format.write(generated_forms, prefix, options)
     end()
 
-def _handle_metadatas(form, options):
-    "Handle metadata of all integrals"
+def _auto_select_representation(integral):
+    "Automatically select the best representation for integral."
 
-    # TODO: Is this the best way of doing this?
-    # Create new and empty Form
-    form_new = Form([])
+    # FIXME: Implement this
+    return "quadrature"
 
-    # Loop all integrals and create new forms. Add these forms such that
-    # integrals which might have become equal (due to metadata handling)
-    # are grouped.
-    for integral in form.cell_integrals():
-        print "cell integral:", integral
-        form_new += Form([_handle_metadata(integral, options)])
-    for integral in form.exterior_facet_integrals():
-        form_new += Form([_handle_metadata(integral, options)])
-    for integral in form.interior_facet_integrals():
-        form_new += Form([_handle_metadata(integral, options)])
-        #    print "new form: ", form_new
+def _auto_select_quadrature_order(integral):
+    "Automatically select the appropriate quadrature order for integral."
 
-    return form_new
+    # FIXME: Improve algorithms in UFL. In the mean time this is a dirty hack
+    # FIXME: to take into account Quadrature elements
+    if any(e.family() == "Quadrature" for e in extract_unique_elements(integral)):
+        quadrature_order = extract_quadrature_order(integral)
+    else:
+        quadrature_order = max(extract_quadrature_order(integral),\
+                               estimate_quadrature_order(integral))
 
-def _handle_metadata(integral, options):
+    return quadrature_order
+
+def _check_options(options):
+    "Initial check of options."
+    
+    if options["optimize"]:
+        warning("Optimization unavailable (will return in a future version).")
+    if options["blas"]:
+        warning("BLAS mode unavailable (will return in a future version).")
+    if options["quadrature_points"]:
+        warning("Option 'quadrature_points' has been replaced by 'quadrature_order'.")
+
+    return options
+
+def _check_forms(forms, options):
+    "Initial check of forms."
+
+    # Check that we get a list
+    if not (isinstance(forms, list) or isinstance(forms, tuple)):
+        forms = [forms]
+
+    # Ignore None
+    forms = [form for form in forms if not form is None]
+    
+    # Check that all arguments are UFL forms and ignore None
+    for form in forms:
+        if not isinstance(form, Form):
+            error("Unable to compile, object is not a UFL form: " + str(form))
+
+    # Check form metadata
+    for (i, form) in enumerate(forms):
+        new_form = Form([])
+        for integral in form.integrals():
+            new_form += Form([_check_metadata(integral, options)])
+        forms[i] = new_form
+
+    return forms
+
+def _check_metadata(integral, options):
     "Check metadata for integral and return new integral with proper metadata."
 
     # Set default values for metadata
@@ -324,54 +355,6 @@ def _handle_metadata(integral, options):
     measure = integral.measure().reconstruct(metadata=metadata)
 
     return Integral(integral.integrand(), measure)
-
-def _auto_select_representation(integral):
-    "Automatically select the best representation for integral."
-
-    # FIXME: Implement this
-    return "quadrature"
-
-def _auto_select_quadrature_order(integral):
-    "Automatically select the appropriate quadrature order for integral."
-
-    # FIXME: Improve algorithms in UFL. In the mean time this is a dirty hack
-    # FIXME: to take into account Quadrature elements
-    if any(e.family() == "Quadrature" for e in extract_unique_elements(integral)):
-        quadrature_order = extract_quadrature_order(integral)
-    else:
-        quadrature_order = max(extract_quadrature_order(integral),\
-                               estimate_quadrature_order(integral))
-
-    return quadrature_order
-
-def _check_options(options):
-    "Initial check of options."
-    
-    if options["optimize"]:
-        warning("Optimization unavailable (will return in a future version).")
-    if options["blas"]:
-        warning("BLAS mode unavailable (will return in a future version).")
-    if options["quadrature_points"]:
-        warning("Option 'quadrature_points' has been replaced by 'quadrature_order'.")
-
-    return options
-
-def _check_forms(forms):
-    "Initial check of forms."
-
-    # Check that we get a list
-    if not (isinstance(forms, list) or isinstance(forms, tuple)):
-        forms = [forms]
-
-    # Ignore None
-    forms = [form for form in forms if not form is None]
-    
-    # Check that all arguments are UFL forms and ignore None
-    for form in forms:
-        if not isinstance(form, Form):
-            error("Unable to compile, object is not a UFL form: " + str(form))
-
-    return forms
 
 def _extract_objects(objects):
     "Extract forms and elements from list of objects."
