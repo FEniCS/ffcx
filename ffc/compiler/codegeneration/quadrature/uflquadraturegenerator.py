@@ -317,10 +317,12 @@ class QuadratureGenerator:
         for points, integral in integrals.items():
 
 #            print "\nIntegral: ", integral
+#            print "\nIntegral: ", str(integral)
 #            print "\nIntegral tree_format: ", tree_format(integral)
 
             ip_code = ["", Indent.indent(format_comment\
-                ("Loop quadrature points for integral: %s" % integral.__repr__()))]
+                ("Loop quadrature points for integral: %s" % str(integral)))]
+#                ("Loop quadrature points for integral: %s" % integral.__repr__()))]
 
             # Update transformer to the current number of quadrature points
             transformer.update_points(points)

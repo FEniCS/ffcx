@@ -23,6 +23,7 @@ from ffc.compiler.language.restriction import *
 
 # Utility and optimisation functions for quadraturegenerator
 from quadraturegenerator_utils import generate_loop, unique_tables, get_ones, contains_zeros
+from reduce_operations import operation_count
 
 class QuadratureTransformer(Transformer):
     "Transform UFL representation to quadrature code"
@@ -658,10 +659,12 @@ class QuadratureTransformer(Transformer):
 
         format_ip            = self.format["integration points"]
         format_matrix_access = self.format["matrix access"]
+        format_array_access  = self.format["array access"]
         format_group         = self.format["grouping"]
         format_add           = self.format["add"]
         format_mult          = self.format["multiply"]
         format_transform     = self.format["transform"]
+        format_nzc           = self.format["nonzero columns"]
 
         # Only support test and trial functions
         # TODO: Verify that test and trial functions will ALWAYS be rearranged to 0 and 1
@@ -733,10 +736,10 @@ class QuadratureTransformer(Transformer):
                 deriv = []
 #            print "deriv: ", deriv
 
-            # TODO: Handle non_zeros, zeros and ones info
+            # TODO: Handle zeros and ones info
             name = self.__generate_psi_name(element_counter, facet, component, deriv)
             name, non_zeros, zeros, ones = self.name_map[name]
-#            print "\nbasis_name: ", basis_name
+#            print "\nname: ", name
 #            print "\nnon_zeros: ", non_zeros
 #            print "\nzeros: ", zeros
 #            print "\nones: ", ones
@@ -746,12 +749,13 @@ class QuadratureTransformer(Transformer):
             self.used_psi_tables.add(name)
             basis = name + basis_access
 
-            # FIXME: Need to take non-zero mappings, and QE elements into account
             # Create the correct mapping of the basis function into the local
             # element tensor
             basis_map = loop_index
+            if non_zeros:
+                basis_map = format_nzc(non_zeros[0]) + format_array_access(basis_map)
             if offset:
-                basis_map = format_group(format_add([loop_index, offset]))
+                basis_map = format_group(format_add([basis_map, offset]))
 
             # Create mapping (index, map, loop_range, space_dim)
             # Example dx and ds: (0, j, 3, 3)
@@ -796,12 +800,14 @@ class QuadratureTransformer(Transformer):
 
         format_ip            = self.format["integration points"]
         format_matrix_access = self.format["matrix access"]
+        format_array_access = self.format["array access"]
         format_group         = self.format["grouping"]
         format_add           = self.format["add"]
         format_mult          = self.format["multiply"]
         format_transform     = self.format["transform"]
         format_coeff         = self.format["coeff"]
         format_F             = self.format["function value"]
+        format_nzc           = self.format["nonzero columns"]
 
         # Check that we don't take derivatives of QuadratureElements
         # FIXME: We just raise an exception now, but should we just return 0?
@@ -854,7 +860,7 @@ class QuadratureTransformer(Transformer):
                 deriv = []
 #            print "deriv: ", deriv
 
-            # TODO: Handle non_zeros, zeros and ones info
+            # TODO: Handle zeros and ones info
             basis_name = self.__generate_psi_name(element_counter, facet, component, deriv)
             basis_name, non_zeros, zeros, ones = self.name_map[basis_name]
 #            print "\nbasis_name: ", basis_name
@@ -867,11 +873,13 @@ class QuadratureTransformer(Transformer):
             self.used_psi_tables.add(basis_name)
             basis_name += basis_access
 
-            # FIXME: Need to take non-zero mappings, and QE elements into account
+            # FIXME: Need to take, and QE elements into account
             # Create coefficient access
             coefficient_access = loop_index
+            if non_zeros:
+                coefficient_access = format_nzc(non_zeros[0]) + format_array_access(coefficient_access)
             if offset:
-                coefficient_access = format_add([loop_index, offset])
+                coefficient_access = format_add([coefficient_access, offset])
 
             coefficient = format_coeff + format_matrix_access(str(ufl_function.count()), coefficient_access)
             function_expr = format_mult([basis_name, coefficient])
@@ -1175,6 +1183,8 @@ def generate_code(integrand, transformer, Indent, format):
     format_float        = format["floating point"]
     format_float_decl   = format["float declaration"]
     format_r            = format["free secondary indices"][0]
+    format_comment      = format["comment"]
+    format_F            = format["function value"]
 
     # Initialise return values
     code = []
@@ -1203,7 +1213,6 @@ def generate_code(integrand, transformer, Indent, format):
 
     # Create code for computing function values, sort after loop ranges first
     functions = transformer.functions
-#    print "FUNC: ", functions
     function_list = {}
     for key, val in functions.items():
         if val[1] in function_list:
@@ -1211,16 +1220,46 @@ def generate_code(integrand, transformer, Indent, format):
         else:
             function_list[val[1]] = [key]
 #    print "function_list: ", function_list
+
+    # Create the function declarations, we know that the code generator numbers
+    # functions from 0 to n.
+    code += ["", format_comment("Function declarations")]
+    for function_number in range(transformer.function_count):
+        code.append((format_float_decl + format_F + str(function_number), format_float(0)))
+
     # Loop ranges and get list of functions
-    for r, func in function_list.items():
-        decl = []
-        compute = []
+    for loop_range, list_of_functions in function_list.items():
+        function_expr = {}
+        function_numbers = []
+        func_ops = 0
         # Loop functions
-        for f in func:
-            name = functions[f][0]
-            decl.append((format_float_decl + name, format_float(0)))
-            compute.append(format_add_equal(name, f))
-        code += decl + generate_loop(compute, [(format_r, 0, r)], Indent, format)
+        for function in list_of_functions:
+            # Get name and number
+            name = functions[function][0]
+            number = int(name.strip(format_F))
+            # TODO: This check can be removed for speed later
+            if number in function_numbers:
+                raise RuntimeError("This is definitely not supposed to happen!")
+            function_numbers.append(number)
+            # Get number of operations to compute entry and add to function
+            # operations count
+            f_ops = operation_count(function, format) + 1
+            func_ops += f_ops
+            function_expr[number] = format_add_equal(name, function)
+
+        # Multiply number of operations by the range of the loop index and add
+        # number of operations to compute function values to total count
+        func_ops *= loop_range
+        func_ops_comment = ["", format_comment("Total number of operations to compute function values = %d" % func_ops)]
+        num_ops += func_ops
+
+        # Sort the functions according to name and create loop to compute the
+        # function values
+        function_numbers.sort()
+        lines = []
+        for number in function_numbers:
+            lines.append(function_expr[number])
+        code += func_ops_comment + generate_loop(lines, [(format_r, 0, loop_range)], Indent, format)
 
     # Create weight
     # FIXME: This definitely needs a fix
@@ -1239,6 +1278,12 @@ def generate_code(integrand, transformer, Indent, format):
         transformer.used_weights.add(transformer.points)
         transformer.trans_set.add(format_scale_factor)
 
+        # Compute number of operations to compute entry and create comment
+        # (add 1 because of += in assignment)
+        entry_ops = operation_count(value, format) + 1
+        entry_ops_comment = format_comment("Number of operations to compute entry = %d" % entry_ops)
+        prim_ops = entry_ops
+
         # FIXME: We only support rank 0, 1 and 2
         entry = ""
         loop = ()
@@ -1253,6 +1298,8 @@ def generate_code(integrand, transformer, Indent, format):
 
             index_j, entry, range_j, space_dim_j = key
             loop = ((indices[index_j], 0, range_j),)
+            # Multiply number of operations to compute entries by range of loop
+            prim_ops *= range_j
         elif len(key) == 2:
             # Extract test and trial loops in correct order and check if for is legal
             key0, key1 = (0, 0)
@@ -1268,15 +1315,26 @@ def generate_code(integrand, transformer, Indent, format):
 
             entry = format_add([format_mult([entry_j, str(space_dim_k)]), entry_k])
             loop = ((indices[index_j], 0, range_j), (indices[index_k], 0, range_k))
+
+            # Multiply number of operations to compute entries by range of loops
+            prim_ops *= range_j*range_k
         else:
             raise RuntimeError(key, "Only rank 0, 1 and 2 tensors are currently supported")
 
-        if loop not in loops:
-            loops[loop] = [ format_add_equal( format_tensor + format_array_access(entry), value) ]
-        else:
-            loops[loop].append(format_add_equal( format_tensor + format_array_access(entry), value))
+        # Generate the code line for the entry
+        entry_code = format_add_equal( format_tensor + format_array_access(entry), value)
 
-    for loop, lines in loops.items():
+        if loop not in loops:
+            loops[loop] = [prim_ops, [entry_ops_comment, entry_code]]
+        else:
+            loops[loop][0] += prim_ops
+            loops[loop][1] += [entry_ops_comment, entry_code]
+
+    for loop, ops_lines in loops.items():
+        ops, lines = ops_lines
+        # Add number of operations for current loop to total count
+        num_ops += ops
+        code += ["", format_comment("Number of operations for primary indices = %d" % ops)]
         code += generate_loop(lines, loop, Indent, format)
 
     return (code, num_ops)

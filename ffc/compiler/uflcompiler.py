@@ -310,17 +310,11 @@ def generate_form_code(form_data, tensor_representation, quadrature_representati
     quadrature_code.update(quadrature_generator.generate_exterior_facet_integrals(quadrature_representation, format))
     quadrature_code.update(quadrature_generator.generate_interior_facet_integrals(quadrature_representation, format))
 
-    # Mock tensor code
+    # Mock tensor code (remove when tensor representation generates code)
     tensor_code = {}
 #    tensor_code.update(tensor_generator.generate_cell_integrals(quadrature_representation, format))
 #    tensor_code.update(tensor_generator.generate_exterior_facet_integrals(quadrature_representation, format))
 #    tensor_code.update(tensor_generator.generate_interior_facet_integrals(quadrature_representation, format))
-
-#    code["quadrature"].update(quadrature_code)
-#    code.update(quadrature_code)
-
-    ## A first try at combining code from the two generators
-    ## Could probably be moved somewhere else
 
     # Get any kind of code for reseting the element tensor, it just needs to be
     # generated once by the codegenerators
@@ -328,8 +322,6 @@ def generate_form_code(form_data, tensor_representation, quadrature_representati
     reset_code_restricted = (quadrature_generator.reset_code_restricted or tensor_generator.reset_code_restricted)
 
     # Loop all subdomains of integral types and combine code
-    # TODO: Only cell_integrals are handled in uflufcformat.py and split_implementation
-    # is not handled
     for i in range(form_data.num_cell_integrals):
         combine_code(code, tensor_code, quadrature_code, ("cell_integral", i), reset_code, False)
     for i in range(form_data.num_exterior_facet_integrals):
