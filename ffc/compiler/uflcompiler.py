@@ -11,12 +11,14 @@ of forms and breaking the compilation into several sequential stages:
 """
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-02-05 -- 2009-01-13"
+__date__ = "2007-02-05 -- 2009-03-05"
 __copyright__ = "Copyright (C) 2007-2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian B. Oelgaard, 2009.
 # Modified by Dag Lindbo, 2008.
+
+__all__ = ["compile"]
 
 # FIXME: Temporary while testing
 import sys
@@ -31,13 +33,7 @@ from ufl.algorithms import MonomialException, extract_unique_elements
 from ffc.common.log import debug, info, warning, error, begin, end, set_level, INFO
 from ffc.common.constants import FFC_OPTIONS
 
-# FFC fem modules
-#from ffc.fem.finiteelement import *
-#from ffc.fem.vectorelement import *
-#from ffc.fem.mixedelement import *
-#from ffc.fem.mixedfunctions import *
-
-# FIXME: Remove this
+# FIXME: Remove this?
 from analysis.formdata import FormData as FFCFormData
 
 # FFC form representation modules
@@ -54,59 +50,39 @@ from codegeneration.quadrature import UFLQuadratureGenerator
 
 # FFC format modules
 from format.uflufcformat import Format
-#from format import dolfinformat
 
-def compile(objects, prefix="Form", options=FFC_OPTIONS):
-    "Compile the given forms and/or elements."
+def compile(forms, prefix="Form", options=FFC_OPTIONS):
+    """This is the main interface to FFC. The input argument must be
+    either a single UFL Form object or a list of UFL Form objects.
+    For each form, FFC generates C++ code conforming to the UFC
+    interface. The generated code is collected in a single C++ header
+    file or, optionally, a pair of C++ header and implementation
+    files. For detailed documentation of available options, refer to
+    the FFC user manual."""
 
     # Set log level
     set_level(INFO)
 
+    # Check forms
+    forms = _check_forms(forms)
+
     # Check options
-    _check_options(options)
+    options = _check_options(options)
 
-    # Extract forms and elements
-    (forms, elements) = _extract_objects(objects)
-    if len(forms) + len(elements) == 0:
-        info("No forms or elements specified, nothing to do.")
+    # Check that we have at least one form
+    if len(forms) == 0:
+        info("No forms specified, nothing to do.")
         return
-
-    # Compile forms
-    #(form_data, form_representation) = _compile_forms(forms, prefix, options)
-    if len(forms) > 0:
-        compile_forms(forms, prefix, options)
-
-    # Compile elements
-    # FIXME/TODO: Do we still need this?
-    #if len(elements) > 0:
-    #    compile_elements(elements, prefix, options)
-
-    #    return (form_data, form_representation)
-
-def compile_forms(forms, prefix, options):
-    "Compile the given forms."
-    # FIXME: Make format a class
 
     # Choose format
     format = Format(options)
 
-    # Iterate over forms for stages 1 - 4
+    # Compile all forms
     generated_forms = []
-#    form_datas = []
-#    form_representations = []
     for form in forms:
 
-        # Handle all metadata of integrals
-        # TODO: Improve algorithm in UFL that returns the quad_order of
-        # an integral.
-        # NOTE: As a result of handling the metadata, some measures
-        # might become equal which means that integrals can be grouped.
-        # The handle_metadatas() must therefore be called before analyze_form()
-        # like it is now.
-        form = handle_metadatas(form, options)
-
         # Compiler stage 1: analyze form
-        form_data = analyze_form(form)
+        form_data = analyze_form(form, options)
         #form_datas += [form_data]
 
         # Compiler stage 2: compute form representation
@@ -143,127 +119,27 @@ def compile_forms(forms, prefix, options):
     return
 #    return (form_datas, form_representations)
 
-def compile_elements(elements, prefix="Element", options=FFC_OPTIONS):
-    "Compile the given elements for the given language"
-
-    # Check input
-    if len(forms) == 0:
-        return
-
-    # Compiler stage 1: analyze form
-    begin("Compiler stage 1: Analyzing elements")
-    element_data = ElementData(elements)
-    end()
-
-    # Go directly to stage 4, code generation
-    begin("Compiler stage 2-3: Nothing to do")
-    end()
-    begin("Compiler stage 4: Generating code")
-
-    # Choose format
-    format = __choose_format(options)
-    format.init(options)
-
-    # Choose code generator
-    CodeGenerator = __choose_code_generator(options["representation"])
-    code_generator = CodeGenerator()
-
-    # Generate code
-    element_code = code_generator.generate_element_code(element_data, format.format)
-
-    # Compiler stage 5: format code
-    end()
-    begin("Compiler stage 5: Formatting code")
-    format.write([(element_code, element_data)], prefix, options)
-    end()
-
-def handle_metadatas(form, options):
-    "Handle metadata of all integrals"
-
-    # TODO: Is this the best way of doing this?
-    # Create new and empty Form
-    form_new = Form([])
-
-    # Loop all integrals and create new forms. Add these forms such that
-    # integrals which might have become equal (due to metadata handling)
-    # are grouped.
-    for integral in form.cell_integrals():
-        form_new += Form([handle_metadata(integral, options)])
-    for integral in form.exterior_facet_integrals():
-        form_new += Form([handle_metadata(integral, options)])
-    for integral in form.interior_facet_integrals():
-        form_new += Form([handle_metadata(integral, options)])
-#    print "new form: ", form_new
-
-    return form_new
-
-def handle_metadata(integral, options):
-    "Handle metadata of one integral"
-
-    # Get the old metadata
-    metadata_old = integral.measure().metadata()
-
-    # Set default values for representation and quadrature_order
-    representation = options["representation"]
-    quadrature_order = options["quadrature_order"]
-
-    # If we have a metadata loop options
-    if metadata_old:
-        for k, v in metadata_old.items():
-            if k == "ffc":
-                if "representation" in v:
-                    # Get representation and check that it is valid
-                    representation = v.pop("representation")
-                    if not representation in ["tensor", "quadrature", "automatic"]:
-                        error("Unrecognized representation '%s', must be one of: ['tensor', 'quadrature', 'automatic']" % representation)
-                    # If we still have some options, display a warning
-                    if v:
-                        warning("Following options are not supported: " + ", ".join([str(o) for o in v]))
-            elif k == "quadrature_order":
-                quadrature_order = v
-            else:
-                warning("Unrecognized option %s for metadata" % k)
-
-    # Automatically select representation based on operation estimate
-    if representation == "automatic":
-        representation = auto_select_representation(integral)
-
-    # TODO: If quadrature_order can't be converted to an int it will fail
-    if quadrature_order != None:
-        quadrature_order = int(quadrature_order)
-    else:
-        # TODO: Improve algorithms in UFL. In the mean time this is a dirty hack
-        # to take into account Quadrature elements
-        if any(e.family() == "Quadrature" for e in extract_unique_elements(integral)):
-            quadrature_order = extract_quadrature_order(integral)
-        else:
-            quadrature_order = max(extract_quadrature_order(integral),\
-                                   estimate_quadrature_order(integral))
-
-    # Create the new consistent metadata and Measure
-    metadata_new = {"quadrature_order":quadrature_order, "ffc":{"representation":representation}}
-    measure_new = integral.measure().reconstruct(metadata=metadata_new)
-
-    # Create and return new Integral
-    return Integral(integral.integrand(), measure_new)
-
-def auto_select_representation(integral):
-    "Automatically select the best representation"
-
-    # FIXME: Implement this
-    return "quadrature"
-
-def analyze_form(form):
-    "Compiler stage 1: analyze form"
+def analyze_form(form, options):
+    "Compiler stage 1."
+    
     begin("Compiler stage 1: Analyzing form")
+
+    # Handle form metadata
+    form = _handle_metadatas(form, options)
+        
+    # Validate form
     validate_form(form)
+
+    # Extract form data
     form_data = FormData(form)
     info(str(form_data))
+
     end()
     return form_data
 
 def compute_form_representation(form_data, options):
-    "Compiler stage 2: Compute form representation"
+    "Compiler stage 2."
+    
     begin("Compiler stage 2: Computing form representation")
 
     # FIXME: Temporary while debugging tensor representation
@@ -287,13 +163,15 @@ def compute_form_representation(form_data, options):
     return tensor_representation, quadrature_representation
     
 def optimize_form_representation(form):
-    "Compiler stage 3: Compute optimization"
-    begin("Compiler stage 3: Computing optimization")
+    "Compiler stage 3."
+    
+    begin("Compiler stage 3: Optimizing form representation")
     info("Optimization currently broken (to be fixed).")
     end()
 
 def generate_form_code(form_data, tensor_representation, quadrature_representation, format):
-    "Compiler stage 4: Generate code"
+    "Compiler stage 4."
+    
     begin("Compiler stage 4: Generating code")
 
     # Generate common code like finite elements, dof map etc.
@@ -382,28 +260,122 @@ def combine_code(code, tensor_code, quadrature_code, key, reset_code, facet_inte
         else:
             code[key] = {"tabulate_tensor": reset_code, "members": []}
 
-
 def format_code(generated_forms, prefix, format, options):
     "Compiler stage 5: Format code"
     begin("Compiler stage 5: Formatting code")
     format.write(generated_forms, prefix, options)
     end()
 
+def _handle_metadatas(form, options):
+    "Handle metadata of all integrals"
+
+    # TODO: Is this the best way of doing this?
+    # Create new and empty Form
+    form_new = Form([])
+
+    # Loop all integrals and create new forms. Add these forms such that
+    # integrals which might have become equal (due to metadata handling)
+    # are grouped.
+    for integral in form.cell_integrals():
+        print "cell integral:", integral
+        form_new += Form([_handle_metadata(integral, options)])
+    for integral in form.exterior_facet_integrals():
+        form_new += Form([_handle_metadata(integral, options)])
+    for integral in form.interior_facet_integrals():
+        form_new += Form([_handle_metadata(integral, options)])
+        #    print "new form: ", form_new
+
+    return form_new
+
+def _handle_metadata(integral, options):
+    "Check metadata for integral and return new integral with proper metadata."
+
+    # Set default values for metadata
+    representation = options["representation"]
+    quadrature_order = options["quadrature_order"]
+
+    # Get metadata for integral (if any)
+    metadata = integral.measure().metadata() or {}
+    for (key, value) in metadata.iteritems():
+        if key == "ffc_representation":
+            representation = metadata["representation"]
+        elif key == "quadrature_order":
+            quadrature_order = metadata["quadrature_order"]
+        else:
+            warning("Unrecognized option '%s' for integral metadata." % key)
+
+    # Check metadata
+    valid_representations = ["tensor", "quadrature", "automatic"]
+    if not representation in valid_representations:
+        error("Unrecognized form representation '%s', must be one of %s.",
+              representation, ", ".join('%s' % r for r in valid_representations))
+    if not ((isinstance(quadrature_order, int) and quadrature_order >= 0) or quadrature_order == "automatic"):
+        error("Illegal quadrature order %s for integral, must be a nonnegative integer or 'automatic'.",
+              str(quadrature_order))
+
+    # Automatically select metadata if "automatic" is selected
+    if representation == "automatic":
+        representation = _auto_select_representation(integral)
+    if quadrature_order == "automatic":
+        quadrature_order = _auto_select_quadrature_order(integral)
+
+    # Create new measure with updated metadata
+    metadata = {"quadrature_order": quadrature_order, "ffc_representation": representation}
+    measure = integral.measure().reconstruct(metadata=metadata)
+
+    return Integral(integral.integrand(), measure)
+
+def _auto_select_representation(integral):
+    "Automatically select the best representation for integral."
+
+    # FIXME: Implement this
+    return "quadrature"
+
+def _auto_select_quadrature_order(integral):
+    "Automatically select the appropriate quadrature order for integral."
+
+    # FIXME: Improve algorithms in UFL. In the mean time this is a dirty hack
+    # FIXME: to take into account Quadrature elements
+    if any(e.family() == "Quadrature" for e in extract_unique_elements(integral)):
+        quadrature_order = extract_quadrature_order(integral)
+    else:
+        quadrature_order = max(extract_quadrature_order(integral),\
+                               estimate_quadrature_order(integral))
+
+    return quadrature_order
+
 def _check_options(options):
-    "Check that options are valid"
+    "Initial check of options."
+    
     if options["optimize"]:
         warning("Optimization unavailable (will return in a future version).")
     if options["blas"]:
         warning("BLAS mode unavailable (will return in a future version).")
     if options["quadrature_points"]:
-        warning("The option 'quadrature_points' is only available for standard FFC forms (not UFL forms), will be ignored.")
+        warning("Option 'quadrature_points' has been replaced by 'quadrature_order'.")
+
+    return options
+
+def _check_forms(forms):
+    "Initial check of forms."
+
+    # Check that we get a list
+    if not (isinstance(forms, list) or isinstance(forms, tuple)):
+        forms = [forms]
+
+    # Ignore None
+    forms = [form for form in forms if not form is None]
+    
+    # Check that all arguments are UFL forms and ignore None
+    for form in forms:
+        if not isinstance(form, Form):
+            error("Unable to compile, object is not a UFL form: " + str(form))
+
+    return forms
 
 def _extract_objects(objects):
     "Extract forms and elements from list of objects."
 
-    # Check that we get a list
-    if not isinstance(objects, list):
-        objects = [objects]
 
     # Check each object
     forms = []

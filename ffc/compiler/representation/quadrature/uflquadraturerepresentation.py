@@ -136,7 +136,7 @@ class QuadratureRepresentation:
     def __extract_integrals(self, integrals):
         "Extract relevant integrals for the QuadratureGenerator."
         return [i for i in integrals\
-            if i.measure().metadata()["ffc"]["representation"] == "quadrature"]
+            if i.measure().metadata()["ffc_representation"] == "quadrature"]
 
     def __sort_integrals_quadrature_order(self, integrals):
         "Sort integrals according to the quadrature order"
