@@ -76,7 +76,6 @@ P5tri                 |    c     |    OK   |
 PoissonDG             |    c     |    OK   |
 PoissonSystem         |    c     |    OK   |
 Poisson               |    C     |    OK   |
-Projection            |    c     |    ?    |
 QuadratureElement     |    c     |    OK   |
 Stokes                |    c     |    OK   |
 SubDomains            |    c     |    OK   |
@@ -90,6 +89,4 @@ x  - Only Lagrange, Discontinuous Lagrange and Quadrature elements are supported
 OK - Code is not very efficient
 ** - Due to the difference in how tensor and quadrature applies function
      operators the norm when comparing two tensors is around 1.3e-1
-?  - Projection.ufl is not the same as Projection.form (BTW, when did this
-     start working again?)
-     Anders: It doesn't work and should be removed.
+
