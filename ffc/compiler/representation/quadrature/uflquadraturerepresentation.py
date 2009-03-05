@@ -124,9 +124,6 @@ class QuadratureRepresentation:
         exterior_facet_integrals = self.__extract_integrals(form.exterior_facet_integrals())
         interior_facet_integrals = self.__extract_integrals(form.interior_facet_integrals())
 
-        for c in cell_integrals:
-            print c.__repr__()
-
         # Tabulate basis values
         self.cell_integrals = self.__tabulate(cell_integrals)
         # FIXME: Tabulate all facet integrals at the same time?
@@ -195,8 +192,6 @@ class QuadratureRepresentation:
             for i in form.integrals():
                 elements.update(extract_unique_elements(i))
             elements = list(elements)
-
-            print "\nElements: ", elements
 
             # Create a list of equivalent FIAT elements
             fiat_elements = [create_fiat_element(e) for e in elements]

@@ -59,27 +59,37 @@ file, it is convenient to install org-mode in Emacs.
 
                       |  Tensor  |  Quadr. |
 --------------------------------------------
-Constant              |    C     |    ?    |
-Elasticity            |    C     |    ?    |
-EnergyNorm            |    x     |    ?    |
-Equation              |    c     |    ?    |
-FunctionOperators     |    c     |    ?    |
-Heat                  |    c     |    ?    |
-Mass                  |    c     |    ?    |
-MixedMixedElement     |    c     |    ?    |
-MixedPoisson          |    c     |    ?    |
-NavierStokes          |    c     |    ?    |
-NeumannProblem        |    c     |    ?    |
-Optimization          |    c     |    ?    |
-P5tet                 |    c     |    ?    |
-P5tri                 |    c     |    ?    |
-PoissonDG             |    c     |    ?    |
-PoissonSystem         |    c     |    ?    |
-Poisson               |    C     |    ?    |
+Constant              |    C     |    OK   |
+Elasticity            |    C     |    OK   |
+EnergyNorm            |    x     |    OK   |
+Equation              |    c     |    OK   |
+FunctionOperators     |    c     |    OK** |
+Heat                  |    c     |    OK   |
+Mass                  |    c     |    OK   |
+MixedMixedElement     |    c     |    OK   |
+MixedPoisson          |    c     |    x    |
+NavierStokes          |    c     |    OK   |
+NeumannProblem        |    c     |    OK   |
+Optimization          |    c     |    OK   |
+P5tet                 |    c     |    OK   |
+P5tri                 |    c     |    OK   |
+PoissonDG             |    c     |    OK   |
+PoissonSystem         |    c     |    OK   |
+Poisson               |    C     |    OK   |
 Projection            |    c     |    ?    |
-QuadratureElement     |    c     |    ?    |
-Stokes                |    c     |    ?    |
-SubDomains            |    c     |    ?    |
-SubDomain             |    c     |    ?    |
-TensorWeightedPoisson |    c     |    ?    |
-VectorLaplaceGradCurl |    c     |    ?    |
+QuadratureElement     |    c     |    OK   |
+Stokes                |    c     |    OK   |
+SubDomains            |    c     |    OK   |
+SubDomain             |    c     |    OK   |
+TensorWeightedPoisson |    c     |    x    |
+VectorLaplaceGradCurl |    c     |    x    |
+
+Notes Quadr:
+x  - Only Lagrange, Discontinuous Lagrange and Quadrature elements are supported
+     for now
+OK - Code is not very efficient
+** - Due to the difference in how tensor and quadrature applies function
+     operators the norm when comparing two tensors is around 1.3e-1
+?  - Projection.ufl is not the same as Projection.form (BTW, when did this
+     start working again?)
+
