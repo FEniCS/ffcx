@@ -43,12 +43,9 @@ class TensorRepresentation:
                                  one for each facet-facet combination
     """
 
-    def __init__(self, form_data):
-        "Create tensor representation for given form"
+    def __init__(self, form):
+        "Create tensor representation for given form."
 
-        # Extract form
-        form = form_data.form
-        
         # Extract monomial representation
         monomials = extract_monomials(form)
 

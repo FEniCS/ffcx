@@ -41,8 +41,11 @@ class TensorRepresentation:
         cell_dimension         - the dimension of the cell
     """
 
-    def __init__(self, form,num_quadrature_points):
+    def __init__(self, form_data, num_quadrature_points):
         "Create tensor representation for given form"
+
+        # Extract form
+        form = form_data.form
 
         # Compute representation of cell tensor
         self.cell_tensor = self.__compute_cell_tensor(form)
