@@ -56,7 +56,7 @@ class QuadratureGenerator:
         "Constructor"
 
         # TODO: Set this throuhg OPTIONS
-        self.optimise_level = 0
+        self.optimise_level = 1
         self.reset_code = ""
         self.reset_code_restricted = ""
 

@@ -813,7 +813,10 @@ class QuadratureTransformer(Transformer):
         # FIXME: We just raise an exception now, but should we just return 0?
         # UFL will apply Dx(f_e*f_qe, 0) which should result in f_e.dx(0)*f_qe*dx
         # instead of an error?
-        if derivatives and any(e.family() == "Quadrature" for e in extract_sub_elements(ufl_function.element())):
+        # Is this even correct? What if we just want the first component of a
+        # mixed element which is not a quadrature element?
+        quad_element = any(e.family() == "Quadrature" for e in extract_sub_elements(ufl_function.element()))
+        if derivatives and quad_element:
             raise RuntimeError(ufl_function, "Derivatives of Quadrature elements are not supported")
 
         # Pick first free index of secondary type
@@ -873,9 +876,10 @@ class QuadratureTransformer(Transformer):
             self.used_psi_tables.add(basis_name)
             basis_name += basis_access
 
-            # FIXME: Need to take QE elements into account
             # Create coefficient access
             coefficient_access = loop_index
+            if quad_element:
+                coefficient_access = format_ip
             if non_zeros:
                 coefficient_access = format_nzc(non_zeros[0]) + format_array_access(coefficient_access)
             if offset:
@@ -903,18 +907,22 @@ class QuadratureTransformer(Transformer):
                 self.trans_set.add(t)
                 transforms.append(t)
 
-            # Check if the expression to compute the function value is already in
-            # the dictionary of used function. If not, generate a new name and add
-            function_name = format_F + str(self.function_count)
-            if not function_expr in self.functions:
-                self.functions[function_expr] = (function_name, loop_index_range)
-                # Increase count
-                self.function_count += 1
+            # If we have a quadrature element we don't need the basis
+            if quad_element and self.optimise_level > 0:
+                function_name = coefficient
             else:
-                function_name, index_r = self.functions[function_expr]
-                # Check just to make sure
-                if not index_r == loop_index_range:
-                    raise RuntimeError("Index ranges does not match")
+                # Check if the expression to compute the function value is already in
+                # the dictionary of used function. If not, generate a new name and add
+                function_name = format_F + str(self.function_count)
+                if not function_expr in self.functions:
+                    self.functions[function_expr] = (function_name, loop_index_range)
+                    # Increase count
+                    self.function_count += 1
+                else:
+                    function_name, index_r = self.functions[function_expr]
+                    # Check just to make sure
+                    if not index_r == loop_index_range:
+                        raise RuntimeError("Index ranges does not match")
 
             # Multiply function value by the transformations and add to code
             code.append(format_mult(transforms + [function_name]))
@@ -1221,7 +1229,8 @@ def generate_code(integrand, transformer, Indent, format):
 
     # Create the function declarations, we know that the code generator numbers
     # functions from 0 to n.
-    code += ["", format_comment("Function declarations")]
+    if transformer.function_count:
+        code += ["", format_comment("Function declarations")]
     for function_number in range(transformer.function_count):
         code.append((format_float_decl + format_F + str(function_number), format_float(0)))
 
