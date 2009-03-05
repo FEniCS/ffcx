@@ -23,7 +23,7 @@ from ffc.compiler.language.restriction import *
 
 # Utility and optimisation functions for quadraturegenerator
 from quadraturegenerator_utils import generate_loop, unique_tables, get_ones, contains_zeros
-from reduce_operations import operation_count
+from reduce_operations import operation_count, expand_operations, reduce_operations
 
 class QuadratureTransformer(Transformer):
     "Transform UFL representation to quadrature code"
@@ -870,23 +870,43 @@ class QuadratureTransformer(Transformer):
 #            print "\nnon_zeros: ", non_zeros
 #            print "\nzeros: ", zeros
 #            print "\nones: ", ones
+            # Get the index range of the loop index
             loop_index_range = shape(self.unique_tables[basis_name])[1]
+#            print "\nloop index range: ", loop_index_range
 
-            # Add basis name to set of used tables and add matrix access
-            self.used_psi_tables.add(basis_name)
-            basis_name += basis_access
-
-            # Create coefficient access
+            # Set default coefficient access
             coefficient_access = loop_index
+
+            # If the loop index range is one we don't the basis and we can look
+            # up the first component in the coefficient array
+            if self.optimise_level > 0 and loop_index_range == 1 and ones:
+                basis_name = ""
+                coefficient_access = "0"
+            else:
+                # Add basis name to set of used tables and add matrix access
+                self.used_psi_tables.add(basis_name)
+                basis_name += basis_access
+
             if quad_element:
                 coefficient_access = format_ip
-            if non_zeros:
+            # If we have non zero column mapping but only one value just pick it
+            if non_zeros and coefficient_access == "0":
+                coefficient_access = str(non_zeros[1][0])
+            elif non_zeros:
                 coefficient_access = format_nzc(non_zeros[0]) + format_array_access(coefficient_access)
             if offset:
                 coefficient_access = format_add([coefficient_access, offset])
 
+            # Try to evaluate coefficient access ("3 + 2" --> "5")
+            try:
+                coefficient_access = str(eval(coefficient_access))
+            except:
+                pass
+
             coefficient = format_coeff + format_matrix_access(str(ufl_function.count()), coefficient_access)
-            function_expr = format_mult([basis_name, coefficient])
+            function_expr = coefficient
+            if basis_name:
+                function_expr = format_mult([basis_name, coefficient])
 
             # Add transformation if supported and needed
             transforms = []
@@ -907,8 +927,9 @@ class QuadratureTransformer(Transformer):
                 self.trans_set.add(t)
                 transforms.append(t)
 
-            # If we have a quadrature element we don't need the basis
-            if quad_element and self.optimise_level > 0:
+            # If we have a quadrature element (or if basis was deleted) we
+            # don't need the basis
+            if (quad_element or not basis_name) and self.optimise_level > 0:
                 function_name = coefficient
             else:
                 # Check if the expression to compute the function value is already in
@@ -1081,11 +1102,8 @@ class QuadratureTransformer(Transformer):
                         non_zeros.sort()
                         non_zero_columns[name] = (i, non_zeros)
 
-                        # Possibly compress values
-                        if optimisation_level == 0:
-                            tables[name] = vals
-                        else:
-                            tables[name] = vals[:, non_zeros]
+                        # Compress values
+                        tables[name] = vals[:, non_zeros]
                         i += 1
 
                 # Check if the remaining rows are nonzero in the same positions, else expand
@@ -1162,12 +1180,9 @@ class QuadratureTransformer(Transformer):
                 if name in name_map:
                     maps = name_map[name]
                     for m in maps:
-#                        inverse_name_map[m][0] = ""
                         inverse_name_map[m][3] = True
                 if name in inverse_name_map:
-                        inverse_name_map[m][3] = True
-#                    inverse_name_map[name][0] = ""
-#                tables[name] = None
+                        inverse_name_map[name][3] = True
 
         # Write protect info
         for name in inverse_name_map:
@@ -1284,6 +1299,11 @@ def generate_code(integrand, transformer, Indent, format):
         value = format["multiply"]([val, weight, format_scale_factor])
         transformer.used_weights.add(transformer.points)
         transformer.trans_set.add(format_scale_factor)
+
+        # Use old operation reduction
+        if transformer.optimise_level == 2:
+            value = expand_operations(value, format)
+            value = reduce_operations(value, format)
 
         # Compute number of operations to compute entry and create comment
         # (add 1 because of += in assignment)

@@ -432,6 +432,8 @@ class QuadratureGenerator:
         # Get list of non zero columns with more than 1 column
         nzcs = [val[1] for key, val in inv_name_map.items()\
                                        if val[1] and len(val[1][1]) > 1]
+
+        # TODO: Do we get arrays that are not unique?
         new_nzcs = []
         for nz in nzcs:
             # Only get unique arrays
