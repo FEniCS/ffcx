@@ -1,6 +1,6 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-02-05 -- 2007-03-09"
-__copyright__ = "Copyright (C) 2007 Anders Logg"
+__date__ = "2007-02-05 -- 2009-03-05"
+__copyright__ = "Copyright (C) 2007-2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 # UFL modules
@@ -23,7 +23,7 @@ class Term:
     of a reference tensor A0 and a sum of geometry tensors G0, G1, ..."""
 
     def __init__(self, monomial, A0, G):
-        "Create term A0 : (G0 + G1 + ...)"
+        "Create term A0 : (G0 + G1 + ...)."
         self.monomial = monomial
         self.A0 = A0
         self.G  = G

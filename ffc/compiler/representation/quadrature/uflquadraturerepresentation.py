@@ -90,11 +90,8 @@ class QuadratureRepresentation:
         fiat_elements_map        - a dictionary, {ufl_element:fiat_element}
     """
 
-    def __init__(self, form_data):
+    def __init__(self, form):
         "Create tensor representation for given form"
-
-        # Extract form
-        form = form_data.form
 
         # Save form
         # TODO: Is this still used? should it be?

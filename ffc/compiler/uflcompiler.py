@@ -26,7 +26,7 @@ import os
 
 # UFL modules
 from ufl.classes import Form, FiniteElementBase, Measure, Integral
-from ufl.algorithms import FormData, is_multilinear, validate_form, extract_quadrature_order, estimate_quadrature_order
+from ufl.algorithms import validate_form, extract_quadrature_order, estimate_quadrature_order
 from ufl.algorithms import MonomialException, extract_unique_elements
 
 # FFC common modules
@@ -87,7 +87,7 @@ def compile(forms, prefix="Form", options=FFC_OPTIONS):
 
         # Compiler stage 2: compute form representation
         tensor_representation, quadrature_representation =\
-            compute_form_representation(form_data, options)
+            compute_form_representation(form, options)
 
         # FIXME: Temporary while debugging tensor representation
         if os.environ["USER"] == "logg":
@@ -128,13 +128,13 @@ def analyze_form(form, options):
     validate_form(form)
 
     # Extract form data
-    form_data = FormData(form)
+    form_data = form.form_data()
     info(str(form_data))
 
     end()
     return form_data
 
-def compute_form_representation(form_data, options):
+def compute_form_representation(form, options):
     "Compiler stage 2."
     
     begin("Compiler stage 2: Computing form representation")
@@ -143,7 +143,7 @@ def compute_form_representation(form_data, options):
     if os.environ["USER"] == "logg":
 
         try:
-            tensor_representation = UFLTensorRepresentation(form_data)
+            tensor_representation = UFLTensorRepresentation(form)
         except MonomialException, exception:
             warning("Tensor representation failed. " + exception.message)
             info("Falling back to quadrature.")
@@ -153,7 +153,7 @@ def compute_form_representation(form_data, options):
 
     else:
         # Compute quadrature representation
-        quadrature_representation = UFLQuadratureRepresentation(form_data)
+        quadrature_representation = UFLQuadratureRepresentation(form)
         tensor_representation = quadrature_representation
 
     end()
@@ -175,7 +175,7 @@ def generate_form_code(form_data, tensor_representation, quadrature_representati
     common_generator = CodeGenerator()
     code = common_generator.generate_form_code(form_data, None, format, ufl_code=True)
 
-    # We need both genrators
+    # We need both generators
 #    tensor_generator = UFLTensorGenerator()
     tensor_generator = UFLQuadratureGenerator()
     quadrature_generator = UFLQuadratureGenerator()
@@ -206,16 +206,16 @@ def generate_form_code(form_data, tensor_representation, quadrature_representati
     # TODO: Only cell_integrals are handled in uflufcformat.py and split_implementation
     # is not handled
     for i in range(form_data.num_cell_integrals):
-        combine_code(code, tensor_code, quadrature_code, ("cell_integral", i), reset_code, False)
+        _combine_code(code, tensor_code, quadrature_code, ("cell_integral", i), reset_code, False)
     for i in range(form_data.num_exterior_facet_integrals):
-        combine_code(code, tensor_code, quadrature_code, ("exterior_facet_integral", i), reset_code, True)
+        _combine_code(code, tensor_code, quadrature_code, ("exterior_facet_integral", i), reset_code, True)
     for i in range(form_data.num_interior_facet_integrals):
-        combine_code(code, tensor_code, quadrature_code, ("interior_facet_integral", i), reset_code_restricted, True)
+        _combine_code(code, tensor_code, quadrature_code, ("interior_facet_integral", i), reset_code_restricted, True)
 
     end()
     return code
 
-def combine_code(code, tensor_code, quadrature_code, key, reset_code, facet_integral):
+def _combine_code(code, tensor_code, quadrature_code, key, reset_code, facet_integral):
     "Combine the code from the two code generators"
 
     # If subdomain has both representations then combine them
