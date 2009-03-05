@@ -53,11 +53,13 @@ class TensorRepresentation:
         print ""
         print "Monomial representation"
         print "-----------------------"
-        print monomials
+        for (integrand, measure) in monomials:
+            print "Integrand: " + str(integrand)
+            print "Measure:   " + str(measure)
         print ""
 
         # Compute representation of cell tensor
-        #self.cell_tensor = self.__compute_cell_tensor(form)
+        #self.cell_tensor = self.__compute_cell_tensor(monomials)
         
         # Compute representation of exterior facet tensors
         #self.exterior_facet_tensors = self.__compute_exterior_facet_tensors(form)
@@ -65,12 +67,13 @@ class TensorRepresentation:
         # Compute representation of interior facet tensors
         #self.interior_facet_tensors = self.__compute_interior_facet_tensors(form)
         
-    def __compute_cell_tensor(self, form):
-        "Compute representation of cell tensor"
+    def __compute_cell_tensor(self, monomials):
+        "Compute representation of cell tensor."
+        
         debug_begin("Computing cell tensor")
 
         # Extract monomials
-        monomials = self.__extract_monomials(form, Integral.CELL)
+        monomials = self.__extract_monomials(form, Measure.CELL)
         if len(monomials) == 0:
             debug_end()
             return []
@@ -82,6 +85,7 @@ class TensorRepresentation:
         terms = self.__compute_terms(monomials, factorization, Integral.CELL, None, None)
         
         debug_end()
+        
         return terms
 
     def __compute_exterior_facet_tensors(self, form):
