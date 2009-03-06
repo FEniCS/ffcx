@@ -28,13 +28,13 @@ from reduce_operations import operation_count, expand_operations, reduce_operati
 class QuadratureTransformer(Transformer):
     "Transform UFL representation to quadrature code"
 
-    def __init__(self, form_representation, domain_type, optimise_level, format):
+    def __init__(self, form_representation, domain_type, optimise_options, format):
 
         Transformer.__init__(self)
 
         # Save format, optimise_level, weights and fiat_elements_map
         self.format = format
-        self.optimise_level = optimise_level
+        self.optimise_options = optimise_options
         self.quadrature_weights = form_representation.quadrature_weights[domain_type]
         self.fiat_elements_map = form_representation.fiat_elements_map
 
@@ -207,11 +207,11 @@ class QuadratureTransformer(Transformer):
         # Create code
         code ={}
         if permutations:
-            for key in permutations:
+            for key, val in permutations.items():
                 # Sort key in order to create a unique key
                 l = list(key)
                 l.sort()
-                code[tuple(l)] = format_mult(permutations[key] + not_permute)
+                code[tuple(l)] = format_mult(val + not_permute)
         else:
             code[()] = format_mult(not_permute)
 
@@ -745,9 +745,14 @@ class QuadratureTransformer(Transformer):
 #            print "\nones: ", ones
             loop_index_range = shape(self.unique_tables[name])[1]
 
-            # Append the name to the set of used tables and create matrix access
-            self.used_psi_tables.add(name)
-            basis = name + basis_access
+            # Append the name to the set of used tables and create
+            # matrix access
+            # TODO: Handle this more elegantly such that all terms involving this
+            # zero factor is removed
+            basis = "0"
+            if not (zeros and self.optimise_options["ignore zero tables"] == 1):
+                self.used_psi_tables.add(name)
+                basis = name + basis_access
 
             # Create the correct mapping of the basis function into the local
             # element tensor
@@ -863,13 +868,19 @@ class QuadratureTransformer(Transformer):
                 deriv = []
 #            print "deriv: ", deriv
 
-            # TODO: Handle zeros and ones info
+            # TODO: Handle zeros info
             basis_name = self.__generate_psi_name(element_counter, facet, component, deriv)
             basis_name, non_zeros, zeros, ones = self.name_map[basis_name]
 #            print "\nbasis_name: ", basis_name
 #            print "\nnon_zeros: ", non_zeros
 #            print "\nzeros: ", zeros
 #            print "\nones: ", ones
+            # If all basis are zero we just return "0"
+            # TODO: Handle this more elegantly such that all terms involving this
+            # zero factor is removed
+            if zeros and self.optimise_level == 1:
+                continue
+
             # Get the index range of the loop index
             loop_index_range = shape(self.unique_tables[basis_name])[1]
 #            print "\nloop index range: ", loop_index_range
@@ -877,13 +888,14 @@ class QuadratureTransformer(Transformer):
             # Set default coefficient access
             coefficient_access = loop_index
 
-            # If the loop index range is one we don't the basis and we can look
-            # up the first component in the coefficient array
-            if self.optimise_level > 0 and loop_index_range == 1 and ones:
-                basis_name = ""
+            # If the loop index range is one we can look up the first component
+            # in the coefficient array. If we only have ones we don't need the basis
+            if self.optimise_options["ignore ones"] > 0 and loop_index_range == 1 and ones:
                 coefficient_access = "0"
+                basis_name = ""
             else:
-                # Add basis name to set of used tables and add matrix access
+                # Add basis name to set of used tables and add
+                # matrix access
                 self.used_psi_tables.add(basis_name)
                 basis_name += basis_access
 
@@ -948,7 +960,9 @@ class QuadratureTransformer(Transformer):
             # Multiply function value by the transformations and add to code
             code.append(format_mult(transforms + [function_name]))
 
-        if len(code) > 1:
+        if not code:
+            return "0"
+        elif len(code) > 1:
             code = format_group(format_add(code))
         else:
             code = code[0]
@@ -1065,6 +1079,7 @@ class QuadratureTransformer(Transformer):
 
 #        print "\nname_map: ", name_map
 #        print "\ninv_name_map: ", inverse_name_map
+#        print "\ntables: ", tables
 
         # Get names of tables with all ones
         names_ones = get_ones(tables, format_epsilon)
@@ -1083,7 +1098,7 @@ class QuadratureTransformer(Transformer):
         # (only for optimisations higher than 0)
         i = 0
         non_zero_columns = {}
-        if self.optimise_level > 0:
+        if self.optimise_options["non zero columns"]:
             for name in tables:
                 # Get values
                 vals = tables[name]
@@ -1120,15 +1135,16 @@ class QuadratureTransformer(Transformer):
 
                     # Only add nonzeros if it implies a reduction of columns
                     if len(non_zeros) != shape(vals)[1]:
-                        non_zeros.sort()
-                        non_zero_columns[name] = (i, non_zeros)
+                        if list(non_zeros):
+                            non_zeros.sort()
+                            non_zero_columns[name] = (i, non_zeros)
 
-                        # Compress values
-                        tables[name] = vals[:, non_zeros]
-                        i += 1
+                            # Compress values
+                            tables[name] = vals[:, non_zeros]
+                            i += 1
 
         # Check if we have some zeros in the tables
-        names_zeros = contains_zeros(tables, format_epsilon)
+        names_zeros = self.__contains_zeros(tables, format_epsilon)
 
         # Add non-zero column info to inverse_name_map
         # (so we only need to pass around one name_map to code generating functions)
@@ -1189,6 +1205,31 @@ class QuadratureTransformer(Transformer):
             inverse_name_map[name] = tuple(inverse_name_map[name])
 
         return (inverse_name_map, tables)
+
+    def __contains_zeros(self, tables, format_epsilon):
+        "Checks if any tables contains all zeros"
+
+        names = []
+        for name in tables:
+            vals = tables[name]
+            zero = True
+            for r in range(shape(vals)[0]):
+                if not zero:
+                    break
+                for c in range(shape(vals)[1]):
+                    # If just one value is different from zero, break loops
+                    if abs(vals[r][c]) > format_epsilon:
+                        zero = False
+                        break
+
+#            if zero and self.optimise_level == 0:
+            if zero:
+                print "\n*** Warning: this table only contains zeros. This is not critical,"
+                print "but it might slow down the runtime performance of your code!"
+                print "Do you take derivatives of a constant?"
+#                print "Increase the 'self.optimise_level' value in uflquadraturegenerator.py > 0\n"
+                names.append(name)
+        return names
 
 def generate_code(integrand, transformer, Indent, format):
     """Generate code from a UFL integral type.
@@ -1294,14 +1335,17 @@ def generate_code(integrand, transformer, Indent, format):
     for key, val in loop_code.items():
 #        print "Key: ", key
 
+        # If value was zero continue
+        if val == None:
+            continue
         # Multiply by weight and determinant
         # FIXME: This definitely needs a fix
-        value = format["multiply"]([val, weight, format_scale_factor])
+        value = format_mult([val, weight, format_scale_factor])
         transformer.used_weights.add(transformer.points)
         transformer.trans_set.add(format_scale_factor)
 
         # Use old operation reduction
-        if transformer.optimise_level == 2:
+        if transformer.optimise_options["simplify expressions"] == 2:
             value = expand_operations(value, format)
             value = reduce_operations(value, format)
 
@@ -1318,10 +1362,11 @@ def generate_code(integrand, transformer, Indent, format):
             entry = "0"
         elif len(key) == 1:
             key = key[0]
+            print "Key: ", key
             # Checking if the basis was a test function
             # TODO: Make sure test function indices are always rearranged to 0
             if key[0] != -2 and key[0] != 0:
-                raise RuntimeError("Linear forms must be defined using test functions only")
+                raise RuntimeError(key, "Linear forms must be defined using test functions only")
 
             index_j, entry, range_j, space_dim_j = key
             loop = ((indices[index_j], 0, range_j),)
