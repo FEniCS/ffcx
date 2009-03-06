@@ -142,6 +142,8 @@ def print_version():
 def _make_script_ufl(filename, options):
     "Create Python script from given .ufl file and return name of script"
 
+    # FIXME: Use load_forms() from UFL here instead
+
     # Strip directories from filename for output file
     filename_out = filename.split(os.path.sep)[-1]
 
