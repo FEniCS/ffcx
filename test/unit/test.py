@@ -217,6 +217,8 @@ class JITTests(unittest.TestCase):
     def testPoisson(self):
         "Test that JIT compiler is fast enough."
 
+        # FIXME: Use local cache: cache_dir argument to instant.build_module
+
         # Define two forms with the same signatures
         element = FiniteElement("Lagrange", "triangle", 1)
         v = TestFunction(element)

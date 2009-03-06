@@ -4,30 +4,28 @@ __copyright__ = "Copyright (C) 2007-2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 # UFL modules
-from ufl.algorithms import extract_monomial_form
+from ufl.algorithms import extract_monomial_form, MonomialForm
 from ufl.integral import Measure
 
 # FFC common modules
-#from ffc.common.log import info
+from ffc.common.log import debug, info, warning, error, begin, end, set_level, INFO
 
 # FFC language modules
 #from ffc.compiler.language.integral import *
 
 # FFC tensor representation modules
-#from factorization import *
-#from referencetensor import *
+from uflreferencetensor import ReferenceTensor
 #from geometrytensor import *
 #from tensorreordering import *
 
-class Term:
-    """This class represents a tensor contraction A0 : (G0 + G1 + ...)
-    of a reference tensor A0 and a sum of geometry tensors G0, G1, ..."""
+class TensorContraction:
+    "This class represents a tensor contraction A^K = A^0 : G_K."
 
-    def __init__(self, monomial, A0, G):
-        "Create term A0 : (G0 + G1 + ...)."
+    def __init__(self, monomial, domain_type, facet0=None, facet1=None):
+        "Create tensor contraction for given monomial."
         self.monomial = monomial
-        self.A0 = A0
-        self.G  = G
+        self.A0 = ReferenceTensor(monomial, domain_type, facet0, facet1)
+        self.GK = GeometryTensor(monomial)
 
 class TensorRepresentation:
     """This class represents a given multilinear form as a tensor
@@ -63,23 +61,15 @@ class TensorRepresentation:
     def __compute_cell_tensor(self, monomial_form):
         "Compute representation of cell tensor."
         
-        debug_begin("Computing cell tensor")
+        begin("Computing cell tensor")
 
         # Extract all cell integrals
         monomial_form = _extract_integrals(monomial_form, Measure.CELL)
-        if len(monomials) == 0:
-            debug_end()
-            return []
-
-        print monomial_form
-
-        # Compute factorization
-        factorization = self.__compute_factorization(monomials)
 
         # Compute sum of tensor representations
-        terms = self.__compute_terms(monomials, factorization, Integral.CELL, None, None)
+        terms = _compute_terms(monomial_form, Measure.CELL, None, None)
         
-        debug_end()
+        end()
         
         return terms
 
@@ -157,40 +147,6 @@ class TensorRepresentation:
         debug("Number of terms to compute: %d" % num_terms)
         return factorization
 
-    def __compute_terms(self, monomials, factorization, integral_type, facet0, facet1):
-        "Compute terms and factorize common reference tensors"
-
-        # Compute terms
-        terms = [None for i in range(len(monomials))]
-        for i in range(len(monomials)):
-
-            # Get monomial
-            m = monomials[i]
-
-            # Only consider monomials of given integral type
-            if not m.integral.type == integral_type:
-                continue
-            
-            # Compute geometry tensor for current monomial
-            G = GeometryTensor(m)
-            
-            # Compute reference tensor if not factorized
-            self.__debug(i, facet0, facet1)
-            if factorization[i] == None:
-                # Compute new reference tensor
-                A0 = ReferenceTensor(m, facet0, facet1)
-                terms[i] = Term(m, A0, [G])
-                debug("done")
-            else:
-                # Add geometry tensor to previous term
-                terms[factorization[i]].G += [G]
-                debug("factorized")
-
-        # Remove terms not computed (factorized)
-        [terms.remove(None) for i in range(len(terms)) if None in terms]
-
-        return terms
-
     def __debug(self, i, facet0, facet1):
         "Fancy printing of progress"
         if facet0 == facet1 == None:
@@ -200,10 +156,27 @@ class TensorRepresentation:
         else:
             debug("Computing tensor representation for facets (%d, %d), term %d..." % (facet0, facet1, i))
 
-def _extract_integrals(self, monomial_form, domain_type):
+def _extract_integrals(monomial_form, domain_type):
     "Extract subset of form matching given domain type."
     new_form = MonomialForm()
     for (integrand, measure) in monomial_form:
         if measure.domain_type() == domain_type:
             new_form.append(integrand, measure)
-    return measure
+    return new_form
+
+def _compute_terms(monomial_form, domain_type, facet0, facet1):
+    "Compute list of tensor contraction terms for monomial form."
+
+    # Compute terms
+    terms = []
+    for (integrand, measure) in monomial_form:
+
+        # Only consider monomials of given integral type
+        if not measure.domain_type() == domain_type:
+            continue
+
+        # Iterate over monomials of integrand
+        for monomial in integrand.monomials:
+            terms.append(TensorContraction(monomial, domain_type, facet0, facet1))
+
+    return terms

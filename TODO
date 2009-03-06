@@ -49,6 +49,11 @@ file, it is convenient to install org-mode in Emacs.
   - There are a few of these: find src/ffc -name '*.py' | xargs grep FIXME
 
 * Conversion to UFL
+  - Skipping factorization in tensor representation, does it matter?
+    Check speed against old FFC.
+  - Estimation of quadrature_order not correct in UFL
+
+* Conversion status
 
   ?  = Unknown
   -  = Shouldn't work
@@ -89,4 +94,3 @@ x  - Only Lagrange, Discontinuous Lagrange and Quadrature elements are supported
 OK - Code is not very efficient
 ** - Due to the difference in how tensor and quadrature applies function
      operators the norm when comparing two tensors is around 1.3e-1
-
