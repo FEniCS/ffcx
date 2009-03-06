@@ -51,7 +51,7 @@ from codegeneration.quadrature import UFLQuadratureGenerator
 # FFC format modules
 from format.uflufcformat import Format
 
-def compile(forms, prefix="Form", options=FFC_OPTIONS):
+def compile(forms, prefix="Form", options=FFC_OPTIONS, global_variables=None):
     """This is the main interface to FFC. The input argument must be
     either a single UFL Form object or a list of UFL Form objects.
     For each form, FFC generates C++ code conforming to the UFC
@@ -103,7 +103,7 @@ def compile(forms, prefix="Form", options=FFC_OPTIONS):
 
         # Compiler stage 4: generate form code
         #form_code = generate_form_code(form_data, form_representation, options["representation"], format.format)
-        ffc_form_data = FFCFormData(None, ufl_form_data=form_data)
+        ffc_form_data = FFCFormData(None, global_variables, ufl_form_data=form_data)
         form_code = generate_form_code(ffc_form_data, tensor_representation,\
                           quadrature_representation, format.format)
 
