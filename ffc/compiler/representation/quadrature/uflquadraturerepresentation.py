@@ -28,9 +28,11 @@ from ffc.fem.referencecell import *
 #from tensorreordering import *
 
 try:
-    from ufl.classes import FiniteElement, MixedElement, VectorElement, FiniteElementBase, Form, Integral
-    from ufl.algorithms.analysis import *
-    from ufl.algorithms.graph import *
+    from ufl.classes import FiniteElement, MixedElement, VectorElement, TensorElement, FiniteElementBase, Form, Integral
+    from ufl.algorithms.analysis import extract_elements, extract_unique_elements, extract_type
+#    from ufl.algorithms.ad import expand_derivatives
+#    from ufl.algorithms.graph import *
+    from ufl.algorithms.printing import tree_format
     from ufl.algorithms.transformations import *
     from ufl.differentiation import SpatialDerivative
 
@@ -95,7 +97,7 @@ class QuadratureRepresentation:
 
         # Save form
         # TODO: Is this still used? should it be?
-        self.form = form
+        self.form = form.form_data().form
 
         # Save useful constants
         # TODO: Is this still used? should it be? The fiat_elements_map can be
@@ -113,13 +115,14 @@ class QuadratureRepresentation:
         # Is this still used?
         self.fiat_elements_map = {}
 
-#        print "\nQR, init, form:\n", form
-#        print "\nQR, init, form.__repr__():\n", form.__repr__()
+        print "\nQR, init, form:\n", self.form
+        print "\nQR, init, form.__repr__():\n", self.form.__repr__()
+        print "\nQR, init, tree_format(form):\n", tree_format(self.form)
 
         # Get relevant integrals of all types
-        cell_integrals = self.__extract_integrals(form.cell_integrals())
-        exterior_facet_integrals = self.__extract_integrals(form.exterior_facet_integrals())
-        interior_facet_integrals = self.__extract_integrals(form.interior_facet_integrals())
+        cell_integrals = self.__extract_integrals(self.form.cell_integrals())
+        exterior_facet_integrals = self.__extract_integrals(self.form.exterior_facet_integrals())
+        interior_facet_integrals = self.__extract_integrals(self.form.interior_facet_integrals())
 
         # Tabulate basis values
         self.cell_integrals = self.__tabulate(cell_integrals)

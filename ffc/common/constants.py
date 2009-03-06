@@ -20,4 +20,4 @@ FFC_OPTIONS = {"representation": "tensor",
                "output_dir": ".",
                "external_signature": None,
                "compiler": "ffc",
-               "quadrature_order": None}
+               "quadrature_order": "automatic"}

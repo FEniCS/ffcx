@@ -44,9 +44,10 @@ from ffc.compiler.format.removeunused import remove_unused
 
 # UFL modules
 from ufl.classes import FiniteElement, MixedElement, VectorElement, FiniteElementBase, Measure
-from ufl.algorithms import *
-#from ufl.algorithms.analysis import *
+#from ufl.algorithms import *
+from ufl.algorithms.analysis import extract_basis_functions, extract_elements, extract_unique_elements
 #from ufl.algorithms.transformations import *
+from ufl.algorithms.printing import tree_format
 
 #class QuadratureGenerator(CodeGenerator):
 class QuadratureGenerator:

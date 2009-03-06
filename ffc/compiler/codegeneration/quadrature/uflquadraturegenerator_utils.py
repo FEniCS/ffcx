@@ -12,10 +12,11 @@ from numpy import shape, transpose
 #from ufl.classes import AlgebraOperator, FormArgument
 from ufl.classes import *
 from ufl.common import *
-from ufl.algorithms import *
-from ufl.algorithms.ad import *
+#from ufl.algorithms import *
+#from ufl.algorithms.ad import expand_derivatives
 from ufl.algorithms.analysis import extract_sub_elements
 from ufl.algorithms.transformations import *
+from ufl.algorithms.printing import tree_format
 
 from ffc.compiler.representation.tensor.multiindex import MultiIndex as FFCMultiIndex
 from ffc.compiler.language.tokens import Transform
@@ -32,7 +33,7 @@ class QuadratureTransformer(Transformer):
 
         Transformer.__init__(self)
 
-        # Save format, optimise_level, weights and fiat_elements_map
+        # Save format, optimise_options, weights and fiat_elements_map
         self.format = format
         self.optimise_options = optimise_options
         self.quadrature_weights = form_representation.quadrature_weights[domain_type]
@@ -878,7 +879,7 @@ class QuadratureTransformer(Transformer):
             # If all basis are zero we just return "0"
             # TODO: Handle this more elegantly such that all terms involving this
             # zero factor is removed
-            if zeros and self.optimise_level == 1:
+            if zeros and self.optimise_options["ignore zero tables"]:
                 continue
 
             # Get the index range of the loop index
@@ -899,8 +900,17 @@ class QuadratureTransformer(Transformer):
                 self.used_psi_tables.add(basis_name)
                 basis_name += basis_access
 
+            # If we have a quadrature element we can use the ip number to look
+            # up the value directly. Need to add offset in case of components
             if quad_element:
-                coefficient_access = format_ip
+                quad_offset = 0
+                if component:
+                    for i in range(component):
+                        quad_offset += fiat_element.sub_element(i).space_dimension()
+                if quad_offset:
+                    coefficient_access = format_add([format_ip, str(quad_offset)])
+                else:
+                    coefficient_access = format_ip
             # If we have non zero column mapping but only one value just pick it
             if non_zeros and coefficient_access == "0":
                 coefficient_access = str(non_zeros[1][0])
@@ -941,7 +951,7 @@ class QuadratureTransformer(Transformer):
 
             # If we have a quadrature element (or if basis was deleted) we
             # don't need the basis
-            if (quad_element or not basis_name) and self.optimise_level > 0:
+            if quad_element or not basis_name:
                 function_name = coefficient
             else:
                 # Check if the expression to compute the function value is already in
@@ -1222,12 +1232,10 @@ class QuadratureTransformer(Transformer):
                         zero = False
                         break
 
-#            if zero and self.optimise_level == 0:
             if zero:
                 print "\n*** Warning: this table only contains zeros. This is not critical,"
                 print "but it might slow down the runtime performance of your code!"
                 print "Do you take derivatives of a constant?"
-#                print "Increase the 'self.optimise_level' value in uflquadraturegenerator.py > 0\n"
                 names.append(name)
         return names
 
@@ -1255,14 +1263,15 @@ def generate_code(integrand, transformer, Indent, format):
 #    print "\nQG, Using Transformer"
     # Apply basic expansions
     # TODO: Figure out if there is a 'correct' order of doing this
+    # In form.form_data().form, which we should be using, coefficients have
+    # been mapped and derivatives expande. So it should be enough to just
+    # expand_indices and purge_list_tensors
 #    print "Integrand: ", integrand
     new_integrand = expand_indices(integrand)
 #    print "Integrand: ", new_integrand
-    new_integrand = expand_derivatives(new_integrand)
-#    print "Integrand: ", new_integrand
     new_integrand = purge_list_tensors(new_integrand)
 #    print "Integrand: ", new_integrand
-#    print "Expanded integrand\n", tree_format(new_integrand)
+    print "Expanded integrand\n", tree_format(new_integrand)
 
     loop_code = transformer.visit(new_integrand)
 #    print "loop_code: ", loop_code
@@ -1362,7 +1371,6 @@ def generate_code(integrand, transformer, Indent, format):
             entry = "0"
         elif len(key) == 1:
             key = key[0]
-            print "Key: ", key
             # Checking if the basis was a test function
             # TODO: Make sure test function indices are always rearranged to 0
             if key[0] != -2 and key[0] != 0:
