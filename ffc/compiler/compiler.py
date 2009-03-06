@@ -36,8 +36,8 @@ from language.algebra import *
 from analysis.analyze import *
 
 # FFC form representation modules
-from representation.tensor import *
-from representation.quadrature import *
+from representation.tensor.tensorrepresentation import *
+from representation.quadrature.quadraturerepresentation import *
 
 # FFC code generation modules
 from codegeneration.tensor import *

@@ -5,7 +5,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # UFL modules
 from ufl.algorithms import extract_monomial_form
-from ufl import Measure
+from ufl.integral import Measure
 
 # FFC common modules
 #from ffc.common.log import info
