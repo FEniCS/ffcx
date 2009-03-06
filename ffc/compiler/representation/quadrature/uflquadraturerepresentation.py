@@ -115,9 +115,9 @@ class QuadratureRepresentation:
         # Is this still used?
         self.fiat_elements_map = {}
 
-        print "\nQR, init, form:\n", self.form
-        print "\nQR, init, form.__repr__():\n", self.form.__repr__()
-        print "\nQR, init, tree_format(form):\n", tree_format(self.form)
+#        print "\nQR, init, form:\n", self.form
+#        print "\nQR, init, form.__repr__():\n", self.form.__repr__()
+#        print "\nQR, init, tree_format(form):\n", tree_format(self.form)
 
         # Get relevant integrals of all types
         cell_integrals = self.__extract_integrals(self.form.cell_integrals())

@@ -90,9 +90,6 @@ class FormData:
             self.elements                     = [create_fiat_element(e) for e in ufl_form_data.elements]
             self.dof_maps                     = self.__extract_dof_maps(self.elements)
             self.coefficients                 = self.__create_ffc_functions(ufl_form_data.original_functions, global_variables)
-            print "\nUFL: ", self.coefficients
-
-#            self.coefficients                 = self.__extract_coefficients(form, self.num_coefficients, global_variables)
 #            self.cell_dimension               = self.__extract_cell_dimension(self.elements)
 #            self.basisfunction_data           = self.__extract_basisfunction_data(form, self.rank)
         debug("done")
@@ -112,15 +109,14 @@ class FormData:
                 variable = global_variables[name]
                 if isinstance(variable, UFLFunction):
                     coefficient_names[variable] = str(name)
-        print "coeff names: ", coefficient_names
-
-        print "funcs: ", ufl_functions
+        # Create Coefficients and set name
         ffc_functions = []
         for function in ufl_functions:
             f = Function(create_fiat_element(function.element()))
             f.n0 = function.count()
             c = Coefficient(f)
-            c.set_name(coefficient_names[function])
+            if coefficient_names.has_key(function):
+                c.set_name(coefficient_names[function])
             ffc_functions.append(c)
 
         return ffc_functions

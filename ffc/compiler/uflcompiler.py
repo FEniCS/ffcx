@@ -153,7 +153,7 @@ def compute_form_representation(form, options):
 
     else:
         # Compute quadrature representation
-        quadrature_representation = UFLQuadratureRepresentation(form)
+        quadrature_representation = QuadratureRepresentation(form)
         tensor_representation = quadrature_representation
 
     end()

@@ -1271,7 +1271,7 @@ def generate_code(integrand, transformer, Indent, format):
 #    print "Integrand: ", new_integrand
     new_integrand = purge_list_tensors(new_integrand)
 #    print "Integrand: ", new_integrand
-    print "Expanded integrand\n", tree_format(new_integrand)
+#    print "Expanded integrand\n", tree_format(new_integrand)
 
     loop_code = transformer.visit(new_integrand)
 #    print "loop_code: ", loop_code
