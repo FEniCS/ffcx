@@ -159,7 +159,7 @@ def check_options(options):
         debug("*** Warning: " + "Optimization unavailable (will return in a future version)")
     if options["blas"]:
         debug("*** Warning: " + "BLAS mode unavailable (will return in a future version)")
-    if options["quadrature_order"]:
+    if options["quadrature_order"] != "automatic":
         debug("*** Warning: " + "The option 'quadrature_order' is only available for UFL forms, will be ignored")
 
 def preprocess_forms(forms):

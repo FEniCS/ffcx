@@ -44,9 +44,10 @@ from ffc.compiler.format.removeunused import remove_unused
 
 # UFL modules
 from ufl.classes import FiniteElement, MixedElement, VectorElement, FiniteElementBase, Measure
-from ufl.algorithms import *
-#from ufl.algorithms.analysis import *
+#from ufl.algorithms import *
+from ufl.algorithms.analysis import extract_basis_functions, extract_elements, extract_unique_elements
 #from ufl.algorithms.transformations import *
+from ufl.algorithms.printing import tree_format
 
 #class QuadratureGenerator(CodeGenerator):
 class QuadratureGenerator:
@@ -56,7 +57,13 @@ class QuadratureGenerator:
         "Constructor"
 
         # TODO: Set this throuhg OPTIONS
-        self.optimise_level = 0
+        self.optimise_options =\
+        {"non zero columns": False,
+         "ignore ones": False,
+         "remove zero terms": False,
+         "simplify expressions": False,
+         "ignore zero tables":False}
+
         self.reset_code = ""
         self.reset_code_restricted = ""
 
@@ -67,7 +74,7 @@ class QuadratureGenerator:
 
         # Create transformer
         transformer = QuadratureTransformer(form_representation, Measure.CELL,\
-                                            self.optimise_level, format)
+                                            self.optimise_options, format)
 
         # Generate code for cell integral
         debug("Generating code for cell integrals using quadrature representation...")
@@ -85,7 +92,7 @@ class QuadratureGenerator:
 
         # Create transformer
         transformer = QuadratureTransformer(form_representation, Measure.EXTERIOR_FACET,\
-                                            self.optimise_level, format)
+                                            self.optimise_options, format)
 
         # Generate code for cell integral
         debug("Generating code for exterior facet integrals using quadrature representation...")
@@ -104,7 +111,7 @@ class QuadratureGenerator:
 
         # Create transformer
         transformer = QuadratureTransformer(form_representation, Measure.INTERIOR_FACET,\
-                                            self.optimise_level, format)
+                                            self.optimise_options, format)
 
         # Generate code for cell integral
         debug("Generating code for interior facet integrals using quadrature representation...")
@@ -160,7 +167,8 @@ class QuadratureGenerator:
             self.reset_code = self.__reset_element_tensor(integrals.items()[0][1], transformer, Indent, format, False)
 
         # Add element code
-        code += ["", format["comment"]("Compute element tensor (using UFL quadrature representation, optimisation level %d)" % self.optimise_level),\
+        code += ["", format["comment"]("Compute element tensor using UFL quadrature representation"),\
+                 format["comment"]("Optimisations: %s" % ", ".join([str(i) for i in self.optimise_options.items()])),\
                  format["comment"]("Total number of operations to compute element tensor (from this point): %d" %num_ops)]
         code += element_code
         debug("Number of operations to compute tensor: %d" % num_ops)
@@ -223,7 +231,8 @@ class QuadratureGenerator:
             self.reset_code = self.__reset_element_tensor(integrals.items()[0][1], transformer, Indent, format, False)
 
         # Add element code
-        common += ["", format["comment"]("Compute element tensor (using UFL quadrature representation, optimisation level %d)" % self.optimise_level)]
+        common += ["", format["comment"]("Compute element tensor using UFL quadrature representation"),\
+                 format["comment"]("Optimisations: %s" % ", ".join([str(i) for i in self.optimise_options.items()]))]
 
         return {"tabulate_tensor": (common, cases), "members": members_code}
     
@@ -278,7 +287,8 @@ class QuadratureGenerator:
             self.reset_code_restricted = self.__reset_element_tensor(integrals.items()[0][1], transformer, Indent, format, True)
 
         # Add element code
-        common += ["", format_comment("Compute element tensor for all facets (using quadrature representation, optimisation level %d)" %self.optimise_level)]
+        common += ["", format["comment"]("Compute element tensor using UFL quadrature representation"),\
+                 format["comment"]("Optimisations: %s" % ", ".join([str(i) for i in self.optimise_options.items()]))]
 
         return {"tabulate_tensor": (common, cases), "constructor":"// Do nothing", "members":members_code}
 
@@ -317,10 +327,12 @@ class QuadratureGenerator:
         for points, integral in integrals.items():
 
 #            print "\nIntegral: ", integral
+#            print "\nIntegral: ", str(integral)
 #            print "\nIntegral tree_format: ", tree_format(integral)
 
             ip_code = ["", Indent.indent(format_comment\
-                ("Loop quadrature points for integral: %s" % integral.__repr__()))]
+                ("Loop quadrature points for integral: %s" % str(integral)))]
+#                ("Loop quadrature points for integral: %s" % integral.__repr__()))]
 
             # Update transformer to the current number of quadrature points
             transformer.update_points(points)
@@ -430,6 +442,8 @@ class QuadratureGenerator:
         # Get list of non zero columns with more than 1 column
         nzcs = [val[1] for key, val in inv_name_map.items()\
                                        if val[1] and len(val[1][1]) > 1]
+
+        # TODO: Do we get arrays that are not unique?
         new_nzcs = []
         for nz in nzcs:
             # Only get unique arrays
@@ -460,7 +474,7 @@ class QuadratureGenerator:
                 code += ["", (Indent.indent(decl_name), Indent.indent(value))]
 
             # Tabulate non-zero indices
-            if self.optimise_level >= 1:
+            if self.optimise_options["non zero columns"]:
                 if name in name_map:
                     for n in name_map[name]:
                         if inv_name_map[n][1] and inv_name_map[n][1] in new_nzcs:
@@ -474,7 +488,7 @@ class QuadratureGenerator:
 
         # Tabulate remaining non-zero columns for tables that might have been deleted
         new_nzcs = [nz for nz in new_nzcs if nz and len(nz[1]) > 1]
-        if self.optimise_level >= 1 and new_nzcs:
+        if self.optimise_options["non zero columns"] and new_nzcs:
             code += [Indent.indent(format_comment("Array of non-zero columns for arrays that might have been deleted (on purpose)") )]
             for i, cols in new_nzcs:
                 value = format_block(format_sep.join(["%d" %c for c in list(cols)]))

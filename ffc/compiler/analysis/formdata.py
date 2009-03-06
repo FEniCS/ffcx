@@ -25,9 +25,11 @@ from ffc.compiler.language.integral import *
 from ffc.compiler.language.reassignment import max_index
 from ffc.compiler.language.index import Index
 from ffc.compiler.language.algebra import Function
+from ffc.compiler.language.tokens import Coefficient
 
 try:
     from ffc.compiler.representation.quadrature.uflquadraturerepresentation import create_fiat_element
+    from ufl.function import Function as UFLFunction
 except:
     pass
 
@@ -75,8 +77,7 @@ class FormData:
             self.basisfunction_data           = self.__extract_basisfunction_data(form, self.rank)
         else:
             self.form                         = ufl_form_data.form
-                                                # Use repr because ListTensor
-            self.signature                    = self.form.__repr__()
+            self.signature                    = self.__extract_signature(form)
             self.rank                         = ufl_form_data.rank
             self.num_coefficients             = ufl_form_data.num_functions
 
@@ -88,6 +89,9 @@ class FormData:
             self.num_interior_facet_integrals = self.__extract_max_ufl_subdomain(self.form.interior_facet_integrals())
             self.elements                     = [create_fiat_element(e) for e in ufl_form_data.elements]
             self.dof_maps                     = self.__extract_dof_maps(self.elements)
+            self.coefficients                 = self.__create_ffc_functions(ufl_form_data.original_functions, global_variables)
+            print "\nUFL: ", self.coefficients
+
 #            self.coefficients                 = self.__extract_coefficients(form, self.num_coefficients, global_variables)
 #            self.cell_dimension               = self.__extract_cell_dimension(self.elements)
 #            self.basisfunction_data           = self.__extract_basisfunction_data(form, self.rank)
@@ -97,6 +101,29 @@ class FormData:
             debug("dof map %d:" % i, 2)
             debug("  entity_dofs:  " + str(self.dof_maps[i].entity_dofs()), 2)
             debug("  dof_entities: " + str(self.dof_maps[i].dof_entities()), 2)
+
+    def __create_ffc_functions(self, ufl_functions, global_variables):
+        "Try to convert UFL functions to FFC Coefficients"
+
+        # Extract names of all coefficients
+        coefficient_names = {}
+        if not global_variables is None:
+            for name in global_variables:
+                variable = global_variables[name]
+                if isinstance(variable, UFLFunction):
+                    coefficient_names[variable] = str(name)
+        print "coeff names: ", coefficient_names
+
+        print "funcs: ", ufl_functions
+        ffc_functions = []
+        for function in ufl_functions:
+            f = Function(create_fiat_element(function.element()))
+            f.n0 = function.count()
+            c = Coefficient(f)
+            c.set_name(coefficient_names[function])
+            ffc_functions.append(c)
+
+        return ffc_functions
 
     def __extract_signature(self, form):
         "Extract the signature"

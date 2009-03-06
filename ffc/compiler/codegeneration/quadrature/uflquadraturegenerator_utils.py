@@ -12,10 +12,11 @@ from numpy import shape, transpose
 #from ufl.classes import AlgebraOperator, FormArgument
 from ufl.classes import *
 from ufl.common import *
-from ufl.algorithms import *
-from ufl.algorithms.ad import *
+#from ufl.algorithms import *
+#from ufl.algorithms.ad import expand_derivatives
 from ufl.algorithms.analysis import extract_sub_elements
 from ufl.algorithms.transformations import *
+from ufl.algorithms.printing import tree_format
 
 from ffc.compiler.representation.tensor.multiindex import MultiIndex as FFCMultiIndex
 from ffc.compiler.language.tokens import Transform
@@ -23,17 +24,18 @@ from ffc.compiler.language.restriction import *
 
 # Utility and optimisation functions for quadraturegenerator
 from quadraturegenerator_utils import generate_loop, unique_tables, get_ones, contains_zeros
+from reduce_operations import operation_count, expand_operations, reduce_operations
 
 class QuadratureTransformer(Transformer):
     "Transform UFL representation to quadrature code"
 
-    def __init__(self, form_representation, domain_type, optimise_level, format):
+    def __init__(self, form_representation, domain_type, optimise_options, format):
 
         Transformer.__init__(self)
 
-        # Save format, optimise_level, weights and fiat_elements_map
+        # Save format, optimise_options, weights and fiat_elements_map
         self.format = format
-        self.optimise_level = optimise_level
+        self.optimise_options = optimise_options
         self.quadrature_weights = form_representation.quadrature_weights[domain_type]
         self.fiat_elements_map = form_representation.fiat_elements_map
 
@@ -206,11 +208,11 @@ class QuadratureTransformer(Transformer):
         # Create code
         code ={}
         if permutations:
-            for key in permutations:
+            for key, val in permutations.items():
                 # Sort key in order to create a unique key
                 l = list(key)
                 l.sort()
-                code[tuple(l)] = format_mult(permutations[key] + not_permute)
+                code[tuple(l)] = format_mult(val + not_permute)
         else:
             code[()] = format_mult(not_permute)
 
@@ -658,10 +660,12 @@ class QuadratureTransformer(Transformer):
 
         format_ip            = self.format["integration points"]
         format_matrix_access = self.format["matrix access"]
+        format_array_access  = self.format["array access"]
         format_group         = self.format["grouping"]
         format_add           = self.format["add"]
         format_mult          = self.format["multiply"]
         format_transform     = self.format["transform"]
+        format_nzc           = self.format["nonzero columns"]
 
         # Only support test and trial functions
         # TODO: Verify that test and trial functions will ALWAYS be rearranged to 0 and 1
@@ -733,25 +737,31 @@ class QuadratureTransformer(Transformer):
                 deriv = []
 #            print "deriv: ", deriv
 
-            # TODO: Handle non_zeros, zeros and ones info
+            # TODO: Handle zeros and ones info
             name = self.__generate_psi_name(element_counter, facet, component, deriv)
             name, non_zeros, zeros, ones = self.name_map[name]
-#            print "\nbasis_name: ", basis_name
+#            print "\nname: ", name
 #            print "\nnon_zeros: ", non_zeros
 #            print "\nzeros: ", zeros
 #            print "\nones: ", ones
             loop_index_range = shape(self.unique_tables[name])[1]
 
-            # Append the name to the set of used tables and create matrix access
-            self.used_psi_tables.add(name)
-            basis = name + basis_access
+            # Append the name to the set of used tables and create
+            # matrix access
+            # TODO: Handle this more elegantly such that all terms involving this
+            # zero factor is removed
+            basis = "0"
+            if not (zeros and self.optimise_options["ignore zero tables"] == 1):
+                self.used_psi_tables.add(name)
+                basis = name + basis_access
 
-            # FIXME: Need to take non-zero mappings, and QE elements into account
             # Create the correct mapping of the basis function into the local
             # element tensor
             basis_map = loop_index
+            if non_zeros:
+                basis_map = format_nzc(non_zeros[0]) + format_array_access(basis_map)
             if offset:
-                basis_map = format_group(format_add([loop_index, offset]))
+                basis_map = format_group(format_add([basis_map, offset]))
 
             # Create mapping (index, map, loop_range, space_dim)
             # Example dx and ds: (0, j, 3, 3)
@@ -796,18 +806,23 @@ class QuadratureTransformer(Transformer):
 
         format_ip            = self.format["integration points"]
         format_matrix_access = self.format["matrix access"]
+        format_array_access = self.format["array access"]
         format_group         = self.format["grouping"]
         format_add           = self.format["add"]
         format_mult          = self.format["multiply"]
         format_transform     = self.format["transform"]
         format_coeff         = self.format["coeff"]
         format_F             = self.format["function value"]
+        format_nzc           = self.format["nonzero columns"]
 
         # Check that we don't take derivatives of QuadratureElements
         # FIXME: We just raise an exception now, but should we just return 0?
         # UFL will apply Dx(f_e*f_qe, 0) which should result in f_e.dx(0)*f_qe*dx
         # instead of an error?
-        if derivatives and any(e.family() == "Quadrature" for e in extract_sub_elements(ufl_function.element())):
+        # Is this even correct? What if we just want the first component of a
+        # mixed element which is not a quadrature element?
+        quad_element = any(e.family() == "Quadrature" for e in extract_sub_elements(ufl_function.element()))
+        if derivatives and quad_element:
             raise RuntimeError(ufl_function, "Derivatives of Quadrature elements are not supported")
 
         # Pick first free index of secondary type
@@ -854,27 +869,66 @@ class QuadratureTransformer(Transformer):
                 deriv = []
 #            print "deriv: ", deriv
 
-            # TODO: Handle non_zeros, zeros and ones info
+            # TODO: Handle zeros info
             basis_name = self.__generate_psi_name(element_counter, facet, component, deriv)
             basis_name, non_zeros, zeros, ones = self.name_map[basis_name]
 #            print "\nbasis_name: ", basis_name
 #            print "\nnon_zeros: ", non_zeros
 #            print "\nzeros: ", zeros
 #            print "\nones: ", ones
+            # If all basis are zero we just return "0"
+            # TODO: Handle this more elegantly such that all terms involving this
+            # zero factor is removed
+            if zeros and self.optimise_options["ignore zero tables"]:
+                continue
+
+            # Get the index range of the loop index
             loop_index_range = shape(self.unique_tables[basis_name])[1]
+#            print "\nloop index range: ", loop_index_range
 
-            # Add basis name to set of used tables and add matrix access
-            self.used_psi_tables.add(basis_name)
-            basis_name += basis_access
-
-            # FIXME: Need to take non-zero mappings, and QE elements into account
-            # Create coefficient access
+            # Set default coefficient access
             coefficient_access = loop_index
+
+            # If the loop index range is one we can look up the first component
+            # in the coefficient array. If we only have ones we don't need the basis
+            if self.optimise_options["ignore ones"] > 0 and loop_index_range == 1 and ones:
+                coefficient_access = "0"
+                basis_name = ""
+            else:
+                # Add basis name to set of used tables and add
+                # matrix access
+                self.used_psi_tables.add(basis_name)
+                basis_name += basis_access
+
+            # If we have a quadrature element we can use the ip number to look
+            # up the value directly. Need to add offset in case of components
+            if quad_element:
+                quad_offset = 0
+                if component:
+                    for i in range(component):
+                        quad_offset += fiat_element.sub_element(i).space_dimension()
+                if quad_offset:
+                    coefficient_access = format_add([format_ip, str(quad_offset)])
+                else:
+                    coefficient_access = format_ip
+            # If we have non zero column mapping but only one value just pick it
+            if non_zeros and coefficient_access == "0":
+                coefficient_access = str(non_zeros[1][0])
+            elif non_zeros:
+                coefficient_access = format_nzc(non_zeros[0]) + format_array_access(coefficient_access)
             if offset:
-                coefficient_access = format_add([loop_index, offset])
+                coefficient_access = format_add([coefficient_access, offset])
+
+            # Try to evaluate coefficient access ("3 + 2" --> "5")
+            try:
+                coefficient_access = str(eval(coefficient_access))
+            except:
+                pass
 
             coefficient = format_coeff + format_matrix_access(str(ufl_function.count()), coefficient_access)
-            function_expr = format_mult([basis_name, coefficient])
+            function_expr = coefficient
+            if basis_name:
+                function_expr = format_mult([basis_name, coefficient])
 
             # Add transformation if supported and needed
             transforms = []
@@ -895,25 +949,30 @@ class QuadratureTransformer(Transformer):
                 self.trans_set.add(t)
                 transforms.append(t)
 
-            # Multiply transformations to the function expression
-            # FIXME: Move this to after computing the basis function value
-            function_expr = format_mult(transforms + [function_expr])
-
-            # Check if the expression to compute the function value is already in
-            # the dictionary of used function. If not, generate a new name and add
-            function_name = format_F + str(self.function_count)
-            if not function_expr in self.functions:
-                self.functions[function_expr] = (function_name, loop_index_range)
-                # Increase count
-                self.function_count += 1
+            # If we have a quadrature element (or if basis was deleted) we
+            # don't need the basis
+            if quad_element or not basis_name:
+                function_name = coefficient
             else:
-                function_name, index_r = self.functions[function_expr]
-                # Check just to make sure
-                if not index_r == loop_index_range:
-                    raise RuntimeError("Index ranges does not match")
-            code.append(function_name)
+                # Check if the expression to compute the function value is already in
+                # the dictionary of used function. If not, generate a new name and add
+                function_name = format_F + str(self.function_count)
+                if not function_expr in self.functions:
+                    self.functions[function_expr] = (function_name, loop_index_range)
+                    # Increase count
+                    self.function_count += 1
+                else:
+                    function_name, index_r = self.functions[function_expr]
+                    # Check just to make sure
+                    if not index_r == loop_index_range:
+                        raise RuntimeError("Index ranges does not match")
 
-        if len(code) > 1:
+            # Multiply function value by the transformations and add to code
+            code.append(format_mult(transforms + [function_name]))
+
+        if not code:
+            return "0"
+        elif len(code) > 1:
             code = format_group(format_add(code))
         else:
             code = code[0]
@@ -1030,6 +1089,7 @@ class QuadratureTransformer(Transformer):
 
 #        print "\nname_map: ", name_map
 #        print "\ninv_name_map: ", inverse_name_map
+#        print "\ntables: ", tables
 
         # Get names of tables with all ones
         names_ones = get_ones(tables, format_epsilon)
@@ -1048,7 +1108,7 @@ class QuadratureTransformer(Transformer):
         # (only for optimisations higher than 0)
         i = 0
         non_zero_columns = {}
-        if self.optimise_level > 0:
+        if self.optimise_options["non zero columns"]:
             for name in tables:
                 # Get values
                 vals = tables[name]
@@ -1067,11 +1127,8 @@ class QuadratureTransformer(Transformer):
                         non_zeros.sort()
                         non_zero_columns[name] = (i, non_zeros)
 
-                        # Possibly compress values
-                        if optimisation_level == 0:
-                            tables[name] = vals
-                        else:
-                            tables[name] = vals[:, non_zeros]
+                        # Compress values
+                        tables[name] = vals[:, non_zeros]
                         i += 1
 
                 # Check if the remaining rows are nonzero in the same positions, else expand
@@ -1088,15 +1145,16 @@ class QuadratureTransformer(Transformer):
 
                     # Only add nonzeros if it implies a reduction of columns
                     if len(non_zeros) != shape(vals)[1]:
-                        non_zeros.sort()
-                        non_zero_columns[name] = (i, non_zeros)
+                        if list(non_zeros):
+                            non_zeros.sort()
+                            non_zero_columns[name] = (i, non_zeros)
 
-                        # Compress values
-                        tables[name] = vals[:, non_zeros]
-                        i += 1
+                            # Compress values
+                            tables[name] = vals[:, non_zeros]
+                            i += 1
 
         # Check if we have some zeros in the tables
-        names_zeros = contains_zeros(tables, format_epsilon)
+        names_zeros = self.__contains_zeros(tables, format_epsilon)
 
         # Add non-zero column info to inverse_name_map
         # (so we only need to pass around one name_map to code generating functions)
@@ -1148,18 +1206,38 @@ class QuadratureTransformer(Transformer):
                 if name in name_map:
                     maps = name_map[name]
                     for m in maps:
-#                        inverse_name_map[m][0] = ""
                         inverse_name_map[m][3] = True
                 if name in inverse_name_map:
-                        inverse_name_map[m][3] = True
-#                    inverse_name_map[name][0] = ""
-#                tables[name] = None
+                        inverse_name_map[name][3] = True
 
         # Write protect info
         for name in inverse_name_map:
             inverse_name_map[name] = tuple(inverse_name_map[name])
 
         return (inverse_name_map, tables)
+
+    def __contains_zeros(self, tables, format_epsilon):
+        "Checks if any tables contains all zeros"
+
+        names = []
+        for name in tables:
+            vals = tables[name]
+            zero = True
+            for r in range(shape(vals)[0]):
+                if not zero:
+                    break
+                for c in range(shape(vals)[1]):
+                    # If just one value is different from zero, break loops
+                    if abs(vals[r][c]) > format_epsilon:
+                        zero = False
+                        break
+
+            if zero:
+                print "\n*** Warning: this table only contains zeros. This is not critical,"
+                print "but it might slow down the runtime performance of your code!"
+                print "Do you take derivatives of a constant?"
+                names.append(name)
+        return names
 
 def generate_code(integrand, transformer, Indent, format):
     """Generate code from a UFL integral type.
@@ -1175,6 +1253,8 @@ def generate_code(integrand, transformer, Indent, format):
     format_float        = format["floating point"]
     format_float_decl   = format["float declaration"]
     format_r            = format["free secondary indices"][0]
+    format_comment      = format["comment"]
+    format_F            = format["function value"]
 
     # Initialise return values
     code = []
@@ -1183,14 +1263,15 @@ def generate_code(integrand, transformer, Indent, format):
 #    print "\nQG, Using Transformer"
     # Apply basic expansions
     # TODO: Figure out if there is a 'correct' order of doing this
+    # In form.form_data().form, which we should be using, coefficients have
+    # been mapped and derivatives expande. So it should be enough to just
+    # expand_indices and purge_list_tensors
 #    print "Integrand: ", integrand
     new_integrand = expand_indices(integrand)
 #    print "Integrand: ", new_integrand
-    new_integrand = expand_derivatives(new_integrand)
-#    print "Integrand: ", new_integrand
     new_integrand = purge_list_tensors(new_integrand)
 #    print "Integrand: ", new_integrand
-#    print "Expanded integrand\n", tree_format(new_integrand)
+    print "Expanded integrand\n", tree_format(new_integrand)
 
     loop_code = transformer.visit(new_integrand)
 #    print "loop_code: ", loop_code
@@ -1203,7 +1284,6 @@ def generate_code(integrand, transformer, Indent, format):
 
     # Create code for computing function values, sort after loop ranges first
     functions = transformer.functions
-#    print "FUNC: ", functions
     function_list = {}
     for key, val in functions.items():
         if val[1] in function_list:
@@ -1211,16 +1291,47 @@ def generate_code(integrand, transformer, Indent, format):
         else:
             function_list[val[1]] = [key]
 #    print "function_list: ", function_list
+
+    # Create the function declarations, we know that the code generator numbers
+    # functions from 0 to n.
+    if transformer.function_count:
+        code += ["", format_comment("Function declarations")]
+    for function_number in range(transformer.function_count):
+        code.append((format_float_decl + format_F + str(function_number), format_float(0)))
+
     # Loop ranges and get list of functions
-    for r, func in function_list.items():
-        decl = []
-        compute = []
+    for loop_range, list_of_functions in function_list.items():
+        function_expr = {}
+        function_numbers = []
+        func_ops = 0
         # Loop functions
-        for f in func:
-            name = functions[f][0]
-            decl.append((format_float_decl + name, format_float(0)))
-            compute.append(format_add_equal(name, f))
-        code += decl + generate_loop(compute, [(format_r, 0, r)], Indent, format)
+        for function in list_of_functions:
+            # Get name and number
+            name = functions[function][0]
+            number = int(name.strip(format_F))
+            # TODO: This check can be removed for speed later
+            if number in function_numbers:
+                raise RuntimeError("This is definitely not supposed to happen!")
+            function_numbers.append(number)
+            # Get number of operations to compute entry and add to function
+            # operations count
+            f_ops = operation_count(function, format) + 1
+            func_ops += f_ops
+            function_expr[number] = format_add_equal(name, function)
+
+        # Multiply number of operations by the range of the loop index and add
+        # number of operations to compute function values to total count
+        func_ops *= loop_range
+        func_ops_comment = ["", format_comment("Total number of operations to compute function values = %d" % func_ops)]
+        num_ops += func_ops
+
+        # Sort the functions according to name and create loop to compute the
+        # function values
+        function_numbers.sort()
+        lines = []
+        for number in function_numbers:
+            lines.append(function_expr[number])
+        code += func_ops_comment + generate_loop(lines, [(format_r, 0, loop_range)], Indent, format)
 
     # Create weight
     # FIXME: This definitely needs a fix
@@ -1233,11 +1344,25 @@ def generate_code(integrand, transformer, Indent, format):
     for key, val in loop_code.items():
 #        print "Key: ", key
 
+        # If value was zero continue
+        if val == None:
+            continue
         # Multiply by weight and determinant
         # FIXME: This definitely needs a fix
-        value = format["multiply"]([val, weight, format_scale_factor])
+        value = format_mult([val, weight, format_scale_factor])
         transformer.used_weights.add(transformer.points)
         transformer.trans_set.add(format_scale_factor)
+
+        # Use old operation reduction
+        if transformer.optimise_options["simplify expressions"] == 2:
+            value = expand_operations(value, format)
+            value = reduce_operations(value, format)
+
+        # Compute number of operations to compute entry and create comment
+        # (add 1 because of += in assignment)
+        entry_ops = operation_count(value, format) + 1
+        entry_ops_comment = format_comment("Number of operations to compute entry = %d" % entry_ops)
+        prim_ops = entry_ops
 
         # FIXME: We only support rank 0, 1 and 2
         entry = ""
@@ -1249,10 +1374,12 @@ def generate_code(integrand, transformer, Indent, format):
             # Checking if the basis was a test function
             # TODO: Make sure test function indices are always rearranged to 0
             if key[0] != -2 and key[0] != 0:
-                raise RuntimeError("Linear forms must be defined using test functions only")
+                raise RuntimeError(key, "Linear forms must be defined using test functions only")
 
             index_j, entry, range_j, space_dim_j = key
             loop = ((indices[index_j], 0, range_j),)
+            # Multiply number of operations to compute entries by range of loop
+            prim_ops *= range_j
         elif len(key) == 2:
             # Extract test and trial loops in correct order and check if for is legal
             key0, key1 = (0, 0)
@@ -1268,15 +1395,26 @@ def generate_code(integrand, transformer, Indent, format):
 
             entry = format_add([format_mult([entry_j, str(space_dim_k)]), entry_k])
             loop = ((indices[index_j], 0, range_j), (indices[index_k], 0, range_k))
+
+            # Multiply number of operations to compute entries by range of loops
+            prim_ops *= range_j*range_k
         else:
             raise RuntimeError(key, "Only rank 0, 1 and 2 tensors are currently supported")
 
-        if loop not in loops:
-            loops[loop] = [ format_add_equal( format_tensor + format_array_access(entry), value) ]
-        else:
-            loops[loop].append(format_add_equal( format_tensor + format_array_access(entry), value))
+        # Generate the code line for the entry
+        entry_code = format_add_equal( format_tensor + format_array_access(entry), value)
 
-    for loop, lines in loops.items():
+        if loop not in loops:
+            loops[loop] = [prim_ops, [entry_ops_comment, entry_code]]
+        else:
+            loops[loop][0] += prim_ops
+            loops[loop][1] += [entry_ops_comment, entry_code]
+
+    for loop, ops_lines in loops.items():
+        ops, lines = ops_lines
+        # Add number of operations for current loop to total count
+        num_ops += ops
+        code += ["", format_comment("Number of operations for primary indices = %d" % ops)]
         code += generate_loop(lines, loop, Indent, format)
 
     return (code, num_ops)

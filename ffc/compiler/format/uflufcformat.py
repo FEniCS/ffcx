@@ -834,16 +834,29 @@ class Format:
         
         # Extract common test space if any
         test_element = None
-        test_elements = [form_data.elements[0] for (form_code, form_data) in generated_forms if form_data.rank >= 1]
+        elements_string_map = {}
+        test_elements = []
+#        test_elements = [form_data.elements[0] for (form_code, form_data) in generated_forms if form_data.rank >= 1]
+        for (form_code, form_data) in generated_forms:
+            if form_data.rank >= 1:
+                test_elements.append(form_data.elements[0].__repr__())
+                elements_string_map[form_data.elements[0].__repr__()] = form_data.elements[0]
         if len(test_elements) > 0 and test_elements[1:] == test_elements[:-1]:
             test_element = test_elements[0]
+#            test_element = elements_string_map[test_elements[0]]
         elif len(test_elements) > 0:
             raise RuntimeError, "Unable to extract test space (not uniquely defined)."
 
         # Extract common trial element if any
         trial_element = None
-        trial_elements = [form_data.elements[0] for (form_code, form_data) in generated_forms if form_data.rank >= 1]
+        trial_elements = []
+#        trial_elements = [form_data.elements[0] for (form_code, form_data) in generated_forms if form_data.rank >= 1]
+        for (form_code, form_data) in generated_forms:
+            if form_data.rank >= 1:
+                trial_elements.append(form_data.elements[0].__repr__())
+                elements_string_map[form_data.elements[0].__repr__()] = form_data.elements[0]
         if len(trial_elements) > 0 and trial_elements[1:] == trial_elements[:-1]:
+#            trial_element = elements_string_map[trial_elements[0]]
             trial_element = trial_elements[0]
         elif len(trial_elements) > 0:
             raise RuntimeError, "Unable to extract trial space (not uniquely defined)."
@@ -853,14 +866,18 @@ class Format:
         coefficients = [c for (form_code, form_data) in generated_forms for c in form_data.coefficients]
         coefficient_elements = []
         for c in coefficients:
-            coefficient_elements.append(c.e0)
+#            coefficient_elements.append(c.e0)
+            coefficient_elements.append(c.e0.__repr__())
+            elements_string_map[c.e0.__repr__()] = c.e0
         if len(coefficient_elements) > 0 and coefficient_elements[1:] == coefficient_elements[:-1]:
+#            coefficient_element = elements_string_map[coefficient_elements[0]]
             coefficient_element = coefficient_elements[0]
 
         # Extract common element if any
         common_element = None
         elements = test_elements + trial_elements # + coefficient_elements
         if len(elements) > 0 and elements[1:] == elements[:-1]:
+#            common_element = elements_string_map[elements[-1]]
             common_element = elements[-1]
 
         # Build map from elements to forms
@@ -869,19 +886,22 @@ class Format:
             (form_code, form_data) = generated_forms[i]
             form_prefix = self.compute_prefix(prefix, generated_forms, i, options)
             for j in range(len(form_data.elements)):
-                element_map[form_data.elements[j]] = (form_prefix, j)
+#                element_map[form_data.elements[j]] = (form_prefix, j)
+                element_map[form_data.elements[j].__repr__()] = (form_prefix, j)
 
         # Generate code for function spaces
         for i in range(len(generated_forms)):
             (form_code, form_data) = generated_forms[i]
             form_prefix = self.compute_prefix(prefix, generated_forms, i, options)
             for j in range(form_data.rank):
-                output += self._generate_function_space(form_data.elements[j],
+#                output += self._generate_function_space(form_data.elements[j],
+                output += self._generate_function_space(form_data.elements[j].__repr__(),
                                                    "%sFunctionSpace%d" % (form_prefix, j),
                                                    element_map)
                 output += "\n"
             for j in range(form_data.num_coefficients):
-                output += self._generate_function_space(form_data.elements[form_data.rank + j],
+#                output += self._generate_function_space(form_data.elements[form_data.rank + j],
+                output += self._generate_function_space(form_data.elements[form_data.rank + j].__repr__(),
                                                    "%sCoefficientSpace%d" % (form_prefix, j),
                                                    element_map)
                 output += "\n"
