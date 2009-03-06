@@ -27,7 +27,7 @@ import os
 # UFL modules
 from ufl.classes import Form, FiniteElementBase, Measure, Integral
 from ufl.algorithms import validate_form, extract_quadrature_order, estimate_quadrature_order
-from ufl.algorithms import MonomialException, extract_unique_elements
+from ufl.algorithms import extract_unique_elements
 
 # FFC common modules
 from ffc.common.log import debug, info, warning, error, begin, end, set_level, INFO
@@ -37,6 +37,7 @@ from ffc.common.constants import FFC_OPTIONS
 from analysis.formdata import FormData as FFCFormData
 
 # FFC form representation modules
+from representation.tensor.monomials import MonomialException
 from representation.tensor.ufltensorrepresentation import TensorRepresentation
 from representation.quadrature.uflquadraturerepresentation import QuadratureRepresentation
 

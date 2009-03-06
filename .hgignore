@@ -1,4 +1,8 @@
+syntax: glob
 (^|/)CVS($|/)
 (^|/)\.hg($|/)
 ./*~
 ./*.pyc
+./build/*
+./demo/*.py
+./demo/*.h

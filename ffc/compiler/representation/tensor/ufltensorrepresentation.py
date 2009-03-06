@@ -4,7 +4,6 @@ __copyright__ = "Copyright (C) 2007-2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 # UFL modules
-from ufl.algorithms import extract_monomial_form, MonomialForm
 from ufl.integral import Measure
 
 # FFC common modules
@@ -14,6 +13,8 @@ from ffc.common.log import debug, info, warning, error, begin, end, set_level, I
 #from ffc.compiler.language.integral import *
 
 # FFC tensor representation modules
+from monomialextraction import extract_monomial_form, MonomialForm
+from monomialtransformation import transform_monomial_form
 from uflreferencetensor import ReferenceTensor
 #from geometrytensor import *
 #from tensorreordering import *
@@ -47,7 +48,15 @@ class TensorRepresentation:
 
         # Extract monomial representation
         monomial_form = extract_monomial_form(form)
-        print "\n" + str(monomial_form)
+        print ""
+        print monomial_form
+
+        # Transform monomial form to reference element
+        transform_monomial_form(monomial_form)
+        print monomial_form
+
+        import sys
+        sys.exit(1)
 
         # Compute representation of cell tensor
         self.cell_tensor = self.__compute_cell_tensor(monomial_form)
