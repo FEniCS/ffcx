@@ -4,19 +4,20 @@ __copyright__ = "Copyright (C) 2007-2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 # UFL modules
-from ufl.algorithms import extract_monomials
+from ufl.algorithms import extract_monomial_form
+from ufl import Measure
 
 # FFC common modules
-from ffc.common.log import info
+#from ffc.common.log import info
 
 # FFC language modules
-from ffc.compiler.language.integral import *
+#from ffc.compiler.language.integral import *
 
 # FFC tensor representation modules
-from factorization import *
-from referencetensor import *
-from geometrytensor import *
-from tensorreordering import *
+#from factorization import *
+#from referencetensor import *
+#from geometrytensor import *
+#from tensorreordering import *
 
 class Term:
     """This class represents a tensor contraction A0 : (G0 + G1 + ...)
@@ -47,19 +48,11 @@ class TensorRepresentation:
         "Create tensor representation for given form."
 
         # Extract monomial representation
-        monomials = extract_monomials(form)
-
-        # Print monomial representation
-        print ""
-        print "Monomial representation"
-        print "-----------------------"
-        for (integrand, measure) in monomials:
-            print "Integrand: " + str(integrand)
-            print "Measure:   " + str(measure)
-        print ""
+        monomial_form = extract_monomial_form(form)
+        print "\n" + str(monomial_form)
 
         # Compute representation of cell tensor
-        #self.cell_tensor = self.__compute_cell_tensor(monomials)
+        self.cell_tensor = self.__compute_cell_tensor(monomial_form)
         
         # Compute representation of exterior facet tensors
         #self.exterior_facet_tensors = self.__compute_exterior_facet_tensors(form)
@@ -67,16 +60,18 @@ class TensorRepresentation:
         # Compute representation of interior facet tensors
         #self.interior_facet_tensors = self.__compute_interior_facet_tensors(form)
         
-    def __compute_cell_tensor(self, monomials):
+    def __compute_cell_tensor(self, monomial_form):
         "Compute representation of cell tensor."
         
         debug_begin("Computing cell tensor")
 
-        # Extract monomials
-        monomials = self.__extract_monomials(form, Measure.CELL)
+        # Extract all cell integrals
+        monomial_form = _extract_integrals(monomial_form, Measure.CELL)
         if len(monomials) == 0:
             debug_end()
             return []
+
+        print monomial_form
 
         # Compute factorization
         factorization = self.__compute_factorization(monomials)
@@ -204,3 +199,11 @@ class TensorRepresentation:
             debug("Computing tensor representation for facet %d, term %d..." % (facet0, i))
         else:
             debug("Computing tensor representation for facets (%d, %d), term %d..." % (facet0, facet1, i))
+
+def _extract_integrals(self, monomial_form, domain_type):
+    "Extract subset of form matching given domain type."
+    new_form = MonomialForm()
+    for (integrand, measure) in monomial_form:
+        if measure.domain_type() == domain_type:
+            new_form.append(integrand, measure)
+    return measure
