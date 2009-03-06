@@ -23,7 +23,7 @@ def create_element(ufl_element):
 
     # Check cache
     if ufl_element in _element_cache:
-        debug("Found element in cache:", ufl_element)
+        debug("Found element in cache: " + str(ufl_element))
         return _element_cache[ufl_element]
 
     # Special handling for quadrature elements
