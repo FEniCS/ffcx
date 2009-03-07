@@ -1014,10 +1014,10 @@ class Format:
                                               form_prefix, constructor_args_r,  coefficient_init, constructor_body_r,
                                               form_prefix, constructor_args_rc, coefficient_init, constructor_body_rc,
                                               form_prefix, coefficient_members)
-                else:
-                    output += form_class % (form_prefix,
-                                            form_prefix, constructor_args_r,  coefficient_init, constructor_body_r,
-                                            form_prefix, coefficient_members)
+#                else:
+#                    output += form_class % (form_prefix,
+#                                            form_prefix, constructor_args_r,  coefficient_init, constructor_body_r,
+#                                            form_prefix, coefficient_members)
 
         return output
 
