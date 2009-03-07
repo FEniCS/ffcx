@@ -1025,21 +1025,20 @@ class Format:
         "Generate code for function space"
 
         function_space_class = """\
-    class %s : public dolfin::FunctionSpace
-    {
-    public:
+class %s : public dolfin::FunctionSpace
+{
+public:
 
-      %s(const dolfin::Mesh& mesh)
-        : dolfin::FunctionSpace(boost::shared_ptr<const dolfin::Mesh>(&mesh, dolfin::NoDeleter<const dolfin::Mesh>()),
-                                boost::shared_ptr<const dolfin::FiniteElement>(new dolfin::FiniteElement(boost::shared_ptr<ufc::finite_element>(new %s()))),
-                                boost::shared_ptr<const dolfin::DofMap>(new dolfin::DofMap(boost::shared_ptr<ufc::dof_map>(new %s()), mesh)))
-      {
-        // Do nothing
-      }
+  %s(const dolfin::Mesh& mesh)
+    : dolfin::FunctionSpace(boost::shared_ptr<const dolfin::Mesh>(&mesh, dolfin::NoDeleter<const dolfin::Mesh>()),
+                            boost::shared_ptr<const dolfin::FiniteElement>(new dolfin::FiniteElement(boost::shared_ptr<ufc::finite_element>(new %s()))),
+                            boost::shared_ptr<const dolfin::DofMap>(new dolfin::DofMap(boost::shared_ptr<ufc::dof_map>(new %s()), mesh)))
+  {
+    // Do nothing
+  }
 
-    };
-    """
-        
+};
+"""
         (form_prefix, element_number) = element_map[element]
         element_class = "UFC_%s_finite_element_%d" % (form_prefix, element_number)
         dofmap_class = "UFC_%s_dof_map_%d" % (form_prefix, element_number)

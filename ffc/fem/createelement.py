@@ -26,12 +26,11 @@ def create_element(ufl_element):
         debug("Found element in cache: " + str(ufl_element))
         return _element_cache[ufl_element]
 
-    # Special handling for quadrature elements
-    if ufl_element.family() == "Quadrature":
-        return create_quadrature_element(ufl_element)
-
     # Create equivalent FFC element
     if isinstance(ufl_element, UFLFiniteElement):
+        # Special handling for quadrature elements
+        if ufl_element.family() == "Quadrature":
+            return create_quadrature_element(ufl_element)
         ffc_element = FFCFiniteElement(ufl_element.family(), ufl_element.cell().domain(), ufl_element.degree())
     elif isinstance(ufl_element, UFLMixedElement):
         sub_elements = [create_element(e) for e in ufl_element.sub_elements()]
@@ -46,8 +45,9 @@ def create_element(ufl_element):
 
 def create_quadrature_element(ufl_element):
     "Create FFC quadrature element from UFL quadrature element."
+    # Compute the needed number of points to integrate the polynomial degree
+    # integer division gives 2*(num_points) - 1 >= polynomial_degree
+    num_points_per_axis = (ufl_element.degree() + 1 + 1) / 2
+    ffc_element = FFCQuadratureElement(ufl_element.cell().domain(), num_points_per_axis)
+    return ffc_element
 
-    num_points_per_axis = (ufl_element.degree() + 1 + 1) / 2 # integer division gives 2m - 1 >= q
-
-
-    raise NotImplementedError
