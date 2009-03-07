@@ -37,43 +37,46 @@ class MonomialFactor:
     def __init__(self, arg=None):
         if isinstance(arg, MonomialFactor):
             self.function = arg.function
-            self.component = arg.component
-            self.derivative = arg.derivative
+            self.components = arg.components
+            self.derivatives = arg.derivatives
         elif isinstance(arg, (BasisFunction, Function)):
             self.function = arg
-            self.component = []
-            self.derivative = []
+            self.components = []
+            self.derivatives = []
         elif arg is None:
             self.function = None
-            self.component = []
-            self.derivative = []
+            self.components = []
+            self.derivatives = []
         else:
             raise MonomialException, ("Unable to create monomial from expression: " + str(arg))
 
     def element(self):
         return self.function.element()
 
+    def count(self):
+        return self.function.count()
+
     def apply_derivative(self, indices):
-        self.derivative += indices
+        self.derivatives += indices
 
     def replace_indices(self, old_indices, new_indices):
         if old_indices is None:
-            self.component = new_indices
+            self.components = new_indices
         else:
-            _replace_indices(self.component, old_indices, new_indices)
-            _replace_indices(self.derivative, old_indices, new_indices)
+            _replace_indices(self.components, old_indices, new_indices)
+            _replace_indices(self.derivatives, old_indices, new_indices)
 
     def __str__(self):
         c = ""
-        if len(self.component) == 0:
+        if len(self.components) == 0:
             c = ""
         else:
-            c = "[%s]" % ", ".join(str(c) for c in self.component)
-        if len(self.derivative) == 0:
+            c = "[%s]" % ", ".join(str(c) for c in self.components)
+        if len(self.derivatives) == 0:
             d0 = ""
             d1 = ""
         else:
-            d0 = "(" + " ".join("d/dx_%s" % str(d) for d in self.derivative) + " "
+            d0 = "(" + " ".join("d/dx_%s" % str(d) for d in self.derivatives) + " "
             d1 = ")"
         return d0 + str(self.function) + c + d1
 
