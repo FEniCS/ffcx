@@ -16,9 +16,10 @@ from ffc.common.utils import *
 
 # FFC fem modules
 from ffc.fem.dofmap import *
-from ffc.fem.finiteelement import FiniteElement as FIATFiniteElement
-from ffc.fem.vectorelement import VectorElement as FIATVectorElement
-from ffc.fem.mixedelement import MixedElement as FIATMixedElement
+#from ffc.fem.finiteelement import FiniteElement as FIATFiniteElement
+#from ffc.fem.vectorelement import VectorElement as FIATVectorElement
+#from ffc.fem.mixedelement import MixedElement as FIATMixedElement
+from ffc.fem.createelement import create_element
 
 # FFC language modules
 from ffc.compiler.language.integral import *
@@ -28,7 +29,6 @@ from ffc.compiler.language.algebra import Function
 from ffc.compiler.language.tokens import Coefficient
 
 try:
-    from ffc.compiler.representation.quadrature.uflquadraturerepresentation import create_fiat_element
     from ufl.function import Function as UFLFunction
 except:
     pass
@@ -87,7 +87,7 @@ class FormData:
             self.num_cell_integrals           = self.__extract_max_ufl_subdomain(self.form.cell_integrals())
             self.num_exterior_facet_integrals = self.__extract_max_ufl_subdomain(self.form.exterior_facet_integrals())
             self.num_interior_facet_integrals = self.__extract_max_ufl_subdomain(self.form.interior_facet_integrals())
-            self.elements                     = [create_fiat_element(e) for e in ufl_form_data.elements]
+            self.elements                     = [create_element(e) for e in ufl_form_data.elements]
             self.dof_maps                     = self.__extract_dof_maps(self.elements)
             self.coefficients                 = self.__create_ffc_functions(ufl_form_data.original_functions, global_variables)
 #            self.cell_dimension               = self.__extract_cell_dimension(self.elements)
@@ -112,7 +112,7 @@ class FormData:
         # Create Coefficients and set name
         ffc_functions = []
         for function in ufl_functions:
-            f = Function(create_fiat_element(function.element()))
+            f = Function(create_element(function.element()))
             f.n0 = function.count()
             c = Coefficient(f)
             if coefficient_names.has_key(function):

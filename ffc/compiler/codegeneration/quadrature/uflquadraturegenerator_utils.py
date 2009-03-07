@@ -22,6 +22,8 @@ from ffc.compiler.representation.tensor.multiindex import MultiIndex as FFCMulti
 from ffc.compiler.language.tokens import Transform
 from ffc.compiler.language.restriction import *
 
+from ffc.fem.createelement import create_element
+
 # Utility and optimisation functions for quadraturegenerator
 from quadraturegenerator_utils import generate_loop, unique_tables, get_ones, contains_zeros
 from reduce_operations import operation_count, expand_operations, reduce_operations
@@ -37,7 +39,7 @@ class QuadratureTransformer(Transformer):
         self.format = format
         self.optimise_options = optimise_options
         self.quadrature_weights = form_representation.quadrature_weights[domain_type]
-        self.fiat_elements_map = form_representation.fiat_elements_map
+#        self.fiat_elements_map = form_representation.fiat_elements_map
 
         # Create containers and variables
         self.used_psi_tables = set()
@@ -702,8 +704,8 @@ class QuadratureTransformer(Transformer):
 
         # Get the FIAT element and offset by element space dimension in case of
         # negative restriction
-        fiat_element = self.fiat_elements_map[ufl_basis_function.element()]
-        space_dim = fiat_element.space_dimension()
+        ffc_element = create_element(ufl_basis_function.element())
+        space_dim = ffc_element.space_dimension()
         offset = {Restriction.PLUS: "", Restriction.MINUS: str(space_dim), None: ""}[self.restriction]
         # If we have a restricted function multiply space_dim by two
         if self.restriction == Restriction.PLUS or self.restriction == Restriction.MINUS:
@@ -844,8 +846,8 @@ class QuadratureTransformer(Transformer):
 
         # Get the FIAT element and offset by element space dimension in case of
         # negative restriction
-        fiat_element = self.fiat_elements_map[ufl_function.element()]
-        offset = {Restriction.PLUS: "", Restriction.MINUS: str(fiat_element.space_dimension()), None: ""}[self.restriction]
+        ffc_element = create_element(ufl_function.element())
+        offset = {Restriction.PLUS: "", Restriction.MINUS: str(ffc_element.space_dimension()), None: ""}[self.restriction]
 
         code = []
 
@@ -906,7 +908,7 @@ class QuadratureTransformer(Transformer):
                 quad_offset = 0
                 if component:
                     for i in range(component):
-                        quad_offset += fiat_element.sub_element(i).space_dimension()
+                        quad_offset += ffc_element.sub_element(i).space_dimension()
                 if quad_offset:
                     coefficient_access = format_add([format_ip, str(quad_offset)])
                 else:

@@ -1,5 +1,5 @@
 __author__ = "Kristian B. Oelgaard (k.b.oelgaard@tudelft.nl) and Anders Logg (logg@simula.no)"
-__date__ = "2009-03-06 -- 2009-03-06"
+__date__ = "2009-03-06 -- 2009-03-07"
 __copyright__ = "Copyright (C) 2009 Kristian B. Oelgaard and Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 

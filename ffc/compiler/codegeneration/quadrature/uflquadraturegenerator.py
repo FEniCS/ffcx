@@ -30,6 +30,8 @@ from ffc.compiler.language.integral import Integral as FFCIntegral
 from ffc.compiler.codegeneration.common.utils import *
 from ffc.compiler.codegeneration.common.evaluatebasis import IndentControl
 
+from ffc.fem.createelement import create_element
+
 # FFC tensor representation modules
 #from ffc.compiler.representation.tensor.multiindex import *
 
@@ -192,8 +194,8 @@ class QuadratureGenerator:
         format_block_end    = format["block end"]
 
         # FIXME: Get one of the elements, they should all be defined on the same Cell?
-        fiat_element = form_representation.fiat_elements_map[list(extract_unique_elements(integrals.items()[0][1]))[0]]
-        num_facets = fiat_element.num_facets()
+        ffc_element = create_element(list(extract_unique_elements(integrals.items()[0][1]))[0])
+        num_facets = ffc_element.num_facets()
         cases = [None for i in range(num_facets)]
         for i in range(num_facets):
 
@@ -252,8 +254,8 @@ class QuadratureGenerator:
         format_block_end    = format["block end"]
 
         # FIXME: Get one of the elements, they should all be defined on the same Cell?
-        fiat_element = form_representation.fiat_elements_map[list(extract_unique_elements(integrals.items()[0][1]))[0]]
-        num_facets = fiat_element.num_facets()
+        ffc_element = create_element(list(extract_unique_elements(integrals.items()[0][1]))[0])
+        num_facets = ffc_element.num_facets()
         cases = [[None for j in range(num_facets)] for i in range(num_facets)]
         for i in range(num_facets):
             for j in range(num_facets):
@@ -511,7 +513,7 @@ class QuadratureGenerator:
 
         # Create FIAT elements for each basisfunction. There should be one and
         # only one element per basisfunction so it is OK to pick first.
-        elements = [transformer.fiat_elements_map[extract_elements(b)[0]] for b in basis]
+        elements = [create_element(extract_elements(b)[0]) for b in basis]
         #print "\nQG, reset_element_tensor, Elements:\n", elements
 
         # Create the index range for resetting the element tensor by
