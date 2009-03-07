@@ -46,4 +46,8 @@ def create_element(ufl_element):
 
 def create_quadrature_element(ufl_element):
     "Create FFC quadrature element from UFL quadrature element."
+
+    num_points_per_axis = (ufl_element.degree() + 1 + 1) / 2 # integer division gives 2m - 1 >= q
+
+
     raise NotImplementedError

@@ -136,8 +136,7 @@ def __compile_elements(elements, prefix, options):
     debug_begin("Compiler phase 4: Generating code")
 
     # Choose format
-    format = __choose_format(options["language"])
-    format.init(options)
+    format = Format(options)
 
     # Choose code generator
     CodeGenerator = __choose_code_generator(options["representation"])

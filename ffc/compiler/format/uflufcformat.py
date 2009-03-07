@@ -831,7 +831,7 @@ class Format:
         # and one using shared pointers (_s)
 
         output = dolfin_includes
-        
+
         # Extract common test space if any
         test_element = None
         elements_string_map = {}
@@ -846,6 +846,7 @@ class Format:
 #            test_element = elements_string_map[test_elements[0]]
         elif len(test_elements) > 0:
             raise RuntimeError, "Unable to extract test space (not uniquely defined)."
+#        print "test: ", test_element
 
         # Extract common trial element if any
         trial_element = None
@@ -860,6 +861,7 @@ class Format:
             trial_element = trial_elements[0]
         elif len(trial_elements) > 0:
             raise RuntimeError, "Unable to extract trial space (not uniquely defined)."
+#        print "trial: ", trial_element
 
         # Extract common coefficient element if any
         coefficient_element = None
@@ -872,6 +874,7 @@ class Format:
         if len(coefficient_elements) > 0 and coefficient_elements[1:] == coefficient_elements[:-1]:
 #            coefficient_element = elements_string_map[coefficient_elements[0]]
             coefficient_element = coefficient_elements[0]
+#        print "coeff: ", coefficient_element
 
         # Extract common element if any
         common_element = None
@@ -879,6 +882,7 @@ class Format:
         if len(elements) > 0 and elements[1:] == elements[:-1]:
 #            common_element = elements_string_map[elements[-1]]
             common_element = elements[-1]
+#        print "common: ", common_element
 
         # Build map from elements to forms
         element_map = {}    
@@ -904,6 +908,15 @@ class Format:
                 output += self._generate_function_space(form_data.elements[form_data.rank + j].__repr__(),
                                                    "%sCoefficientSpace%d" % (form_prefix, j),
                                                    element_map)
+                output += "\n"
+#            print "form_rank: ", form_data.rank
+            # If we compiled just one element
+            if form_data.rank < 0:
+                if not len(form_data.elements) == 1:
+                    raise RuntimeError("Expected just one element")
+                output += self._generate_function_space(form_data.elements[0].__repr__(),
+                                                       "%sFunctionSpace" % (form_prefix),
+                                                       element_map)
                 output += "\n"
 
         # Generate code for special function spaces
