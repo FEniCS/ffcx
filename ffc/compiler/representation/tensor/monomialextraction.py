@@ -24,14 +24,6 @@ class MonomialException(Exception):
     def __init__(self, *args, **kwargs):
         Exception.__init__(self, *args, **kwargs)
 
-class MonomialIndex:
-    pass
-
-class MonomialTransform:
-
-    def __init__(self):
-        pass
-
 class MonomialFactor:
 
     def __init__(self, arg=None):
@@ -322,7 +314,6 @@ def extract_monomial_form(form):
         monomial_form.append(integrand, measure)
 
     return monomial_form
-
 
 def _replace_indices(indices, old_indices, new_indices):
     "Handle replacement of subsets of multi indices."

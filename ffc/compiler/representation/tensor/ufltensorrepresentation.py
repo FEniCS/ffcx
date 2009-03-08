@@ -16,7 +16,7 @@ from ffc.common.log import debug, info, warning, error, begin, end, set_level, I
 from monomialextraction import extract_monomial_form, MonomialForm
 from monomialtransformation import transform_monomial_form
 from uflreferencetensor import ReferenceTensor
-from geometrytensor import GeometryTensor
+from uflgeometrytensor import GeometryTensor
 #from tensorreordering import *
 
 class TensorContraction:

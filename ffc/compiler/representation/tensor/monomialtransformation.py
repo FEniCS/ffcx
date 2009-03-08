@@ -54,6 +54,9 @@ class MonomialIndex:
         self.index_range = index_range
         self.index_id = index_id
 
+    def __lt__(self, other):
+        return self.index_id < other.index_id
+
     def __str__(self):
         if self.index_type == MonomialIndex.PRIMARY:
             return "i_" + str(self.index_id)
@@ -154,7 +157,7 @@ class TransformedMonomial:
             if isinstance(f.function, BasisFunction):
                 vindex = MonomialIndex(MonomialIndex.PRIMARY, range(vdim), f.function.count())
             elif isinstance(f.function, Function):
-                vindex = MonomialIndex(MonomialIndex.SECONDARY, range(gdim))
+                vindex = MonomialIndex(MonomialIndex.SECONDARY, range(vdim))
                 coefficient = MonomialCoefficient(vindex)
                 self.coefficients.append(coefficient)
 
@@ -190,6 +193,13 @@ class TransformedMonomial:
             # Create basis function
             v = MonomialBasisFunction(element, vindex, components, derivatives)
             self.basis_functions.append(v)
+
+    def indices(self):
+        "Return all indices for monomial."
+        return [c.index for c in self.coefficients] + \
+               [t.index0 for t in self.transforms] + \
+               [t.index1 for t in self.transforms] + \
+               [v.index for v in self.basis_functions]
 
     def __str__(self):
         factors = []

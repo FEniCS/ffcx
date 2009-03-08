@@ -65,8 +65,6 @@ def integrate(monomial, facet0, facet1):
     debug("Shape of reference tensor: " + str(numpy.shape(A0)), 1)
 
     #print A0
-    #import sys
-    #sys.exit(1)
 
     return A0
 
@@ -149,6 +147,7 @@ def __compute_psi(v, table, num_points, integral_type):
     # corresponding to quadrature points and auxiliary Indices are removed
     # later when we sum over these dimensions.
 
+    #print ""
     #print "v =", v
 
     # Get cell dimension

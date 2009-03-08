@@ -146,6 +146,7 @@ def _compute_psi(v, table, num_points, domain_type):
     # corresponding to quadrature points and auxiliary Indices are removed
     # later when we sum over these dimensions.
 
+    print ""
     print "v =", v
 
     # Get cell dimension
@@ -170,9 +171,15 @@ def _compute_psi(v, table, num_points, domain_type):
     vindex = [v.index]
     vshape = [len(v.index.index_range)]
 
+    print "v:", v.index.index_id, v.index.index_range
+
     # Create list of indices that label the dimensions of the tensor Psi
     indices = cindex + dindex + vindex
     shapes = cshape + dshape + vshape + [num_points]
+
+    print cshape, dshape, vshape
+
+    print "shapes =", shapes
 
     # Initialize tensor Psi: component, derivatives, basis function, points
     Psi = numpy.zeros(shapes, dtype = numpy.float)
@@ -201,6 +208,8 @@ def _compute_psi(v, table, num_points, domain_type):
             # Translate derivative multiindex to lookup tuple
             dtuple = _multiindex_to_tuple(dlist, cell_dimension)
             # Get values from table
+            print "dtuple =", dtuple
+            
             Psi[tuple(dlist)] = etable[dtuple]
 
     # Rearrange Indices as (fixed, auxiliary, primary, secondary)
