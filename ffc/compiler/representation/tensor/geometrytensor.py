@@ -22,10 +22,11 @@ class GeometryTensor:
     def __init__(self, monomial):
         "Create geometry tensor for given monomial"
 
-        # Save monomial data
-        self.determinant = monomial.determinant
+        # Save constants, coefficients and transforms
+        self.constants = monomial.constants
         self.coefficients = monomial.coefficients
         self.transforms = monomial.transforms
+        self.determinants = monomial.determinants
 
         # Create secondary and auxiliary multi indices
         self.a = self.__create_multi_index(monomial, Index.SECONDARY)
