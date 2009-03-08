@@ -58,13 +58,12 @@ class QuadratureGenerator:
     def __init__(self):
         "Constructor"
 
-        # TODO: Set this throuhg OPTIONS
-        self.optimise_options =\
-        {"non zero columns": False,
-         "ignore ones": False,
-         "remove zero terms": False,
-         "simplify expressions": False,
-         "ignore zero tables":False}
+        # TODO: Set this through OPTIONS
+        self.optimise_options = {"non zero columns": False,
+                                 "ignore ones": False,
+                                 "remove zero terms": False,
+                                 "simplify expressions": False,
+                                 "ignore zero tables": False}
 
         self.reset_code = ""
         self.reset_code_restricted = ""
@@ -567,5 +566,3 @@ class QuadratureGenerator:
             return [code]
         else:
             return code
-
-

@@ -18,7 +18,7 @@ def generate_form(form_data, format):
     code["rank"] = "%d" % form_data.rank
 
     # Generate code for num_coefficients
-    code["num_coefficients"] = "%d" % form_data.num_functions
+    code["num_coefficients"] = "%d" % form_data.num_coefficients
 
     # Generate code for num_cell_integrals
     code["num_cell_integrals"] = "%d" % form_data.num_cell_integrals

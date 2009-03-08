@@ -46,7 +46,9 @@ from representation.quadrature.uflquadraturerepresentation import QuadratureRepr
 #from codegeneration.tensor import *
 #from codegeneration.quadrature import *
 from codegeneration.common.uflcodegenerator import CodeGenerator
+from codegeneration.tensor import ufltensorgenerator
 from codegeneration.quadrature import UFLQuadratureGenerator
+
 #from codegeneration.common.finiteelement import *
 #from codegeneration.common.dofmap import *
 
@@ -92,21 +94,17 @@ def compile(forms, prefix="Form", options=FFC_OPTIONS, global_variables=None):
             compute_form_representation(form, options)
 
         # FIXME: Temporary while debugging tensor representation
-        if os.environ["USER"] == "logg":
-            continue
+        #if os.environ["USER"] == "logg":
+        #    continue
 
         # Compiler stage 3: optimize form representation
-        # TODO: Switch this back on? I guess the argument should only be the
-        # tensor_representation since it only applies to this.
-        # Anders: There should be a check whether or not the form can be optimized
-        # so for now it only applies to tensor representation (unless there is some
-        # optimization that can be done for quadrature that is not done by default)
-        #optimize_form_representation(form)
+        optimize_form_representation(form)
 
         # Compiler stage 4: generate form code
-        #form_code = generate_form_code(form_data, form_representation, options["representation"], format.format)
-        form_code = generate_form_code(form_data, tensor_representation,\
-                                       quadrature_representation, format.format)
+        form_code = generate_form_code(form_data,
+                                       tensor_representation,
+                                       quadrature_representation,
+                                       format.format)
 
         # Add to list of codes
         generated_forms += [(form_code, form_data)]
@@ -138,6 +136,7 @@ def analyze_form(form, options):
 
     # FIXME: Consider adding the following to ufl.FormData
     # FIXME: Also change num_functions --> num_coefficients to match UFC
+    form_data.num_coefficients = form_data.num_functions
 
     # Attach number of integrals for convenience
     form_data.num_cell_integrals = len(form_data.form.cell_integrals())
@@ -165,7 +164,9 @@ def compute_form_representation(form, options):
             info("Falling back to quadrature.")
             sys.exit(1)
 
-        return (tensor_representation, tensor_representation)
+        quadrature_representation = QuadratureRepresentation(form)
+
+        return (tensor_representation, quadrature_representation)
 
     else:
         # Compute quadrature representation
@@ -187,25 +188,30 @@ def generate_form_code(form_data, tensor_representation, quadrature_representati
     
     begin("Compiler stage 4: Generating code")
 
-    # Generate common code like finite elements, dof map etc.
-    common_generator = CodeGenerator()
-    code = common_generator.generate_form_code(form_data, None, format)
-
-    # We need both generators
-#    tensor_generator = UFLTensorGenerator()
-    tensor_generator = UFLQuadratureGenerator()
+    # Create code generators
+    common_generator = CodeGenerator()    
+    #tensor_generator = UFLTensorGenerator()
     quadrature_generator = UFLQuadratureGenerator()
 
+    if os.environ["USER"] == "logg":
+        tensor_generator = ufltensorgenerator
+    else:
+        tensor_generator = quadrature_generator
+    
+    # Generate common code like finite elements, dof map etc.
+    code = common_generator.generate_form_code(form_data, format)
+
     # Generate code for integrals using quadrature
-    quadrature_code = quadrature_generator.generate_cell_integrals(quadrature_representation, format)
+    quadrature_code = {}
+    quadrature_code.update(quadrature_generator.generate_cell_integrals(quadrature_representation, format))
     quadrature_code.update(quadrature_generator.generate_exterior_facet_integrals(quadrature_representation, format))
     quadrature_code.update(quadrature_generator.generate_interior_facet_integrals(quadrature_representation, format))
 
     # Mock tensor code (remove when tensor representation generates code)
     tensor_code = {}
-#    tensor_code.update(tensor_generator.generate_cell_integrals(quadrature_representation, format))
-#    tensor_code.update(tensor_generator.generate_exterior_facet_integrals(quadrature_representation, format))
-#    tensor_code.update(tensor_generator.generate_interior_facet_integrals(quadrature_representation, format))
+    tensor_code.update(tensor_generator.generate_cell_integrals(tensor_representation, format))
+    tensor_code.update(tensor_generator.generate_exterior_facet_integrals(tensor_representation, format))
+    tensor_code.update(tensor_generator.generate_interior_facet_integrals(tensor_representation, format))
 
     # Get any kind of code for reseting the element tensor, it just needs to be
     # generated once by the codegenerators

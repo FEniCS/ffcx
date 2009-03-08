@@ -19,8 +19,8 @@ class CodeGenerator:
         self.generate_finite_element = generate_finite_element
         self.generate_form = generate_form
 
-    def generate_form_code(self, form_data, form_representation, format):
-        "Generator form code according to given format"
+    def generate_form_code(self, form_data, format):
+        "Generator form code according to given format."
 
         code = {}
 

@@ -793,12 +793,12 @@ class Format:
         ufc_code["num_interior_facet_integrals"] = "return %s;" % code["num_interior_facet_integrals"]
 
         # Generate code for create_finite_element
-        num_cases = form_data.rank + form_data.num_functions
+        num_cases = form_data.rank + form_data.num_coefficients
         cases = ["return new %s_finite_element_%d();" % (prefix, i) for i in range(num_cases)]
         ufc_code["create_finite_element"] = self.__generate_switch("i", cases, "return 0;")
 
         # Generate code for create_dof_map
-        num_cases = form_data.rank + form_data.num_functions
+        num_cases = form_data.rank + form_data.num_coefficients
         cases = ["return new %s_dof_map_%d();" % (prefix, i) for i in range(num_cases)]
         ufc_code["create_dof_map"] = self.__generate_switch("i", cases, "return 0;")
 
