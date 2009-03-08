@@ -64,6 +64,10 @@ def integrate(monomial, facet0, facet1):
     debug("%d entries computed in %.3g seconds" % (num_entries, toc), 1)
     debug("Shape of reference tensor: " + str(numpy.shape(A0)), 1)
 
+    #print A0
+    #import sys
+    #sys.exit(1)
+
     return A0
 
 def __init_quadrature(basisfunctions, integral_type):
@@ -123,6 +127,8 @@ def __init_table(basisfunctions, integral_type, points, facet0, facet1):
             table[(element, Restriction.PLUS)]  = element.tabulate(order, map_to_facet(points, facet0))
             table[(element, Restriction.MINUS)] = element.tabulate(order, map_to_facet(points, facet1))
 
+    #print table
+
     return table
 
 def __compute_psi(v, table, num_points, integral_type):
@@ -142,6 +148,8 @@ def __compute_psi(v, table, num_points, integral_type):
     # All fixed Indices are removed here. The first set of dimensions
     # corresponding to quadrature points and auxiliary Indices are removed
     # later when we sum over these dimensions.
+
+    #print "v =", v
 
     # Get cell dimension
     cell_dimension = v.element.cell_dimension()

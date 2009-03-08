@@ -16,7 +16,7 @@ from ffc.common.log import debug, info, warning, error, begin, end, set_level, I
 from monomialextraction import extract_monomial_form, MonomialForm
 from monomialtransformation import transform_monomial_form
 from uflreferencetensor import ReferenceTensor
-#from geometrytensor import *
+from geometrytensor import GeometryTensor
 #from tensorreordering import *
 
 class TensorContraction:
@@ -54,9 +54,6 @@ class TensorRepresentation:
         # Transform monomial form to reference element
         transform_monomial_form(monomial_form)
         print monomial_form
-
-        import sys
-        sys.exit(1)
 
         # Compute representation of cell tensor
         self.cell_tensor = self.__compute_cell_tensor(monomial_form)

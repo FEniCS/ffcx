@@ -43,24 +43,32 @@ class MonomialIndex:
     PRIMARY = "primary"
     SECONDARY = "secondary"
     AUXILIARY = "auxiliary"
+    FIXED = "fixed"
 
-    def __init__(self, type, index=None):
-        if type == MonomialIndex.SECONDARY and index is None:
-            index = next_secondary_index()
-        elif type == MonomialIndex.AUXILIARY and index is None:
-            index = next_auxiliary_index()
-        self.type = type
-        self.index = index
+    def __init__(self, index_type, index_range, index_id=None):
+        if index_type == MonomialIndex.SECONDARY and index_id is None:
+            index_id = next_secondary_index()
+        elif index_type == MonomialIndex.AUXILIARY and index_id is None:
+            index_id = next_auxiliary_index()
+        self.index_type = index_type
+        self.index_range = index_range
+        self.index_id = index_id
 
     def __str__(self):
-        if self.type == MonomialIndex.PRIMARY:
-            return "i_" + str(self.index)
-        elif self.type == MonomialIndex.SECONDARY:
-            return "a_" + str(self.index)
-        elif self.type == MonomialIndex.AUXILIARY:
-            return "b_" + str(self.index)
-        elif self.type == MonomialIndex.FIXED:
-            return str(self.index)
+        if self.index_type == MonomialIndex.PRIMARY:
+            return "i_" + str(self.index_id)
+        elif self.index_type == MonomialIndex.SECONDARY:
+            return "a_" + str(self.index_id)
+        elif self.index_type == MonomialIndex.AUXILIARY:
+            return "b_" + str(self.index_id)
+        elif self.index_type == MonomialIndex.FIXED:
+            return str(self.index_id)
+
+class MonomialRestriction:
+
+    PLUS = "plus"
+    MINUS = "minus"
+    CONSTANT = "constant"
 
 class MonomialDeterminant:
 
@@ -98,6 +106,9 @@ class MonomialBasisFunction:
         self.components = components
         self.derivatives = derivatives
 
+        # FIXME: Handle restriction
+        self.restriction = None
+
     def __str__(self):
         c = ""
         if len(self.components) == 0:
@@ -133,13 +144,18 @@ class TransformedMonomial:
         # Iterate over factors
         for f in monomial.factors:
 
+            # Extract element and dimensions
+            element = create_element(f.element())
+            vdim = element.space_dimension()
+            gdim = element.geometric_dimension()
+            cdim = element.num_sub_elements()
+
             # Extract basis function index and coefficients
             if isinstance(f.function, BasisFunction):
-                vindex = f.function.count()
+                vindex = MonomialIndex(MonomialIndex.PRIMARY, range(vdim), f.function.count())
             elif isinstance(f.function, Function):
-                index = MonomialIndex(MonomialIndex.SECONDARY)
-                coefficient = MonomialCoefficient(index)
-                vindex = index
+                vindex = MonomialIndex(MonomialIndex.SECONDARY, range(gdim))
+                coefficient = MonomialCoefficient(vindex)
                 self.coefficients.append(coefficient)
 
             # Extract components
@@ -148,29 +164,28 @@ class TransformedMonomial:
                 if c in index_map:
                     index = index_map[c]
                 elif isinstance(c, FixedIndex):
-                    index = MonomialIndex(type=MonomialIndex.FIXED, value=c.count())
+                    index = MonomialIndex(MonomialIndex.FIXED, [int(c)], int(c))
                 else:
-                    index = MonomialIndex(MonomialIndex.AUXILIARY)
+                    index = MonomialIndex(MonomialIndex.AUXILIARY, range(cdim))
                 index_map[c] = index
                 components.append(index)
 
             # Extract derivatives / transforms
             derivatives = []
             for d in f.derivatives:
-                index0 = MonomialIndex(MonomialIndex.SECONDARY)
+                index0 = MonomialIndex(MonomialIndex.SECONDARY, range(gdim))
                 if d in index_map:
                     index1 = index_map[d]
                 elif isinstance(d, FixedIndex):
-                    index1 = MonomialIndex(type=MonomialIndex.FIXED, value=d.count())
+                    index1 = MonomialIndex(MonomialIndex.FIXED, [int(d)], int(d))
                 else:
-                    index1 = MonomialIndex(MonomialIndex.AUXILIARY)
+                    index1 = MonomialIndex(MonomialIndex.AUXILIARY, range(gdim))
                 index_map[d] = index1
                 transform = MonomialTransform(index0, index1)
-                self.transforms.append(transform)                
+                self.transforms.append(transform)
                 derivatives.append(index0)
 
-            # Extract element
-            element = create_element(f.element())
+            print "derivatives =", derivatives
 
             # Create basis function
             v = MonomialBasisFunction(element, vindex, components, derivatives)
