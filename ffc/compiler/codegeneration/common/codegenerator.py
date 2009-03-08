@@ -20,7 +20,7 @@ class CodeGenerator:
         self.generate_finite_element = generate_finite_element
         self.generate_form = generate_form
 
-    def generate_form_code(self, form_data, form_representation, format, ufl_code=False):
+    def generate_form_code(self, form_data, form_representation, format):
         "Generator form code according to given format"
 
         code = {}
@@ -31,26 +31,25 @@ class CodeGenerator:
         # Generate code for dof maps
         code["dof_maps"] = self.__generate_dof_maps(form_data.dof_maps, format)
 
-        if not ufl_code:
-            # Generate code for cell integral
-            debug("Generating code for cell integrals...")
-            for i in range(form_data.num_cell_integrals):
-                code[("cell_integral", i)] = self.generate_cell_integral(form_representation, i, format)
-            debug("done")
+        # Generate code for cell integral
+        debug("Generating code for cell integrals...")
+        for i in range(form_data.num_cell_integrals):
+            code[("cell_integral", i)] = self.generate_cell_integral(form_representation, i, format)
+        debug("done")
 
-            # Generate code for exterior facet integral
-            debug("Generating code for exterior facet integrals...")
-            for i in range(form_data.num_exterior_facet_integrals):
-                code[("exterior_facet_integral", i)] = self.generate_exterior_facet_integral(\
+        # Generate code for exterior facet integral
+        debug("Generating code for exterior facet integrals...")
+        for i in range(form_data.num_exterior_facet_integrals):
+            code[("exterior_facet_integral", i)] = self.generate_exterior_facet_integral(\
                                                        form_representation, i, format)
-            debug("done")
+        debug("done")
 
-            # Generate code for interior facet integral
-            debug("Generating code for interior facet integrals...")
-            for i in range(form_data.num_interior_facet_integrals):
-                code[("interior_facet_integral", i)] = self.generate_interior_facet_integral(\
+        # Generate code for interior facet integral
+        debug("Generating code for interior facet integrals...")
+        for i in range(form_data.num_interior_facet_integrals):
+            code[("interior_facet_integral", i)] = self.generate_interior_facet_integral(\
                                                        form_representation, i, format)
-            debug("done")
+        debug("done")
 
         # Generate code for form
         debug("Generating code for form...")

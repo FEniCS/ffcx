@@ -33,8 +33,9 @@ from ufl.algorithms import extract_unique_elements
 from ffc.common.log import debug, info, warning, error, begin, end, set_level, INFO
 from ffc.common.constants import FFC_OPTIONS
 
-# FIXME: Remove this?
-from analysis.formdata import FormData as FFCFormData
+# FFC fem modules
+from ffc.fem import create_element
+from ffc.fem import create_dof_map
 
 # FFC form representation modules
 from representation.tensor.monomials import MonomialException
@@ -44,7 +45,7 @@ from representation.quadrature.uflquadraturerepresentation import QuadratureRepr
 # FFC code generation modules
 #from codegeneration.tensor import *
 #from codegeneration.quadrature import *
-from codegeneration.common.codegenerator import CodeGenerator
+from codegeneration.common.uflcodegenerator import CodeGenerator
 from codegeneration.quadrature import UFLQuadratureGenerator
 #from codegeneration.common.finiteelement import *
 #from codegeneration.common.dofmap import *
@@ -104,12 +105,11 @@ def compile(forms, prefix="Form", options=FFC_OPTIONS, global_variables=None):
 
         # Compiler stage 4: generate form code
         #form_code = generate_form_code(form_data, form_representation, options["representation"], format.format)
-        ffc_form_data = FFCFormData(None, global_variables, ufl_form_data=form_data)
-        form_code = generate_form_code(ffc_form_data, tensor_representation,\
-                          quadrature_representation, format.format)
+        form_code = generate_form_code(form_data, tensor_representation,\
+                                       quadrature_representation, format.format)
 
         # Add to list of codes
-        generated_forms += [(form_code, ffc_form_data)]
+        generated_forms += [(form_code, form_data)]
 
     if os.environ["USER"] == "logg":
         return
@@ -131,6 +131,21 @@ def analyze_form(form, options):
     # Extract form data
     form_data = form.form_data()
     info(str(form_data))
+
+    # Attach FFC elements and dofmaps
+    form_data.ffc_elements = [create_element(element) for element in form_data.elements]
+    form_data.ffc_dof_maps = [create_dof_map(element) for element in form_data.elements]
+
+    # FIXME: Consider adding the following to ufl.FormData
+    # FIXME: Also change num_functions --> num_coefficients to match UFC
+
+    # Attach number of integrals for convenience
+    form_data.num_cell_integrals = len(form_data.form.cell_integrals())
+    form_data.num_exterior_facet_integrals = len(form_data.form.exterior_facet_integrals())
+    form_data.num_interior_facet_integrals = len(form_data.form.interior_facet_integrals())
+
+    # Attach signature for convenience and reuse
+    form_data.signature = form_data.form.signature()
 
     end()
     return form_data
@@ -174,7 +189,7 @@ def generate_form_code(form_data, tensor_representation, quadrature_representati
 
     # Generate common code like finite elements, dof map etc.
     common_generator = CodeGenerator()
-    code = common_generator.generate_form_code(form_data, None, format, ufl_code=True)
+    code = common_generator.generate_form_code(form_data, None, format)
 
     # We need both generators
 #    tensor_generator = UFLTensorGenerator()
@@ -216,6 +231,7 @@ def _combine_code(code, tensor_code, quadrature_code, key, reset_code, facet_int
         code[key] = {("tabulate_tensor_tensor"):tensor_code[key],
                      ("tabulate_tensor_quadrature"):quadrature_code[key],
                      "reset_tensor": reset_code}
+
     # Handle code from tensor generator
     elif key in tensor_code:
         # Add reset code to tabulate_tensor code

@@ -1,8 +1,8 @@
 "Code generation for the UFC 1.0 format"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-01-08 -- 2009-01-08"
-__copyright__ = "Copyright (C) 2007-2008 Anders Logg"
+__date__ = "2007-01-08 -- 2009-03-08"
+__copyright__ = "Copyright (C) 2007-2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian B. Oelgaard 2008
@@ -793,12 +793,12 @@ class Format:
         ufc_code["num_interior_facet_integrals"] = "return %s;" % code["num_interior_facet_integrals"]
 
         # Generate code for create_finite_element
-        num_cases = form_data.num_arguments
+        num_cases = form_data.rank + form_data.num_functions
         cases = ["return new %s_finite_element_%d();" % (prefix, i) for i in range(num_cases)]
         ufc_code["create_finite_element"] = self.__generate_switch("i", cases, "return 0;")
 
         # Generate code for create_dof_map
-        num_cases = form_data.num_arguments
+        num_cases = form_data.rank + form_data.num_functions
         cases = ["return new %s_dof_map_%d();" % (prefix, i) for i in range(num_cases)]
         ufc_code["create_dof_map"] = self.__generate_switch("i", cases, "return 0;")
 

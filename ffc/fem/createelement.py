@@ -1,5 +1,5 @@
 __author__ = "Kristian B. Oelgaard (k.b.oelgaard@tudelft.nl) and Anders Logg (logg@simula.no)"
-__date__ = "2009-03-06 -- 2009-03-07"
+__date__ = "2009-03-06 -- 2009-03-08"
 __copyright__ = "Copyright (C) 2009 Kristian B. Oelgaard and Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
@@ -16,15 +16,15 @@ from mixedelement import MixedElement as FFCMixedElement
 from quadratureelement import QuadratureElement as FFCQuadratureElement
 
 # Cache for computed elements
-_element_cache = {}
+_cache = {}
 
 def create_element(ufl_element):
     "Create FFC element (wrapper for FIAT element) from UFL element."
 
     # Check cache
-    if ufl_element in _element_cache:
-        debug("Found element in cache: " + str(ufl_element))
-        return _element_cache[ufl_element]
+    if ufl_element in _cache:
+        debug("Found element in element cache: " + str(ufl_element))
+        return _cache[ufl_element]
 
     # Create equivalent FFC element
     if isinstance(ufl_element, UFLFiniteElement):
@@ -39,7 +39,7 @@ def create_element(ufl_element):
         raise RuntimeError, ("Unable to create equivalent FIAT element: %s" % str(ufl_element))
 
     # Add element to cache
-    _element_cache[ufl_element] = ffc_element
+    _cache[ufl_element] = ffc_element
 
     return ffc_element
 
@@ -50,4 +50,3 @@ def create_quadrature_element(ufl_element):
     num_points_per_axis = (ufl_element.degree() + 1 + 1) / 2
     ffc_element = FFCQuadratureElement(ufl_element.cell().domain(), num_points_per_axis)
     return ffc_element
-
