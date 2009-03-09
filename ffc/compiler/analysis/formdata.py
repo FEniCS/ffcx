@@ -33,6 +33,30 @@ try:
 except:
     pass
 
+def create_ffc_coefficients(ufl_functions, global_variables):
+    "Try to convert UFL functions to FFC Coefficients"
+
+    # Extract names of all coefficients
+    coefficient_names = {}
+    if not global_variables is None:
+        for name in global_variables:
+            variable = global_variables[name]
+            if isinstance(variable, UFLFunction):
+                coefficient_names[variable] = str(name)
+
+    # FIXME: Check that this is correct
+    # Create Coefficients and set name
+    ffc_coefficients = []
+    for function in ufl_functions:
+        f = Function(create_element(function.element()))
+        f.n0 = function.count()
+        c = Coefficient(f)
+        if coefficient_names.has_key(function):
+            c.set_name(coefficient_names[function])
+        ffc_coefficients.append(c)
+
+    return ffc_coefficients
+
 class FormData:
     """This class holds meta data for a form. The following attributes
     are extracted and stored for a given form:
@@ -55,71 +79,31 @@ class FormData:
     It is assumed that the indices of the given form have been reassigned.
     """
 
-    def __init__(self, form, global_variables=None, ufl_form_data=None):
+    def __init__(self, form, global_variables=None):
         "Create form data for form"
 
         debug("Extracting form data...")
 
-        if ufl_form_data == None:
-            self.form                         = form
-            self.signature                    = self.__extract_signature(form)
-            self.rank                         = self.__extract_rank(form)
-            self.num_coefficients             = self.__extract_num_coefficients(form)
-            self.num_arguments                = self.rank + self.num_coefficients
-            self.num_terms                    = self.__extract_num_terms(form)
-            self.num_cell_integrals           = self.__extract_num_cell_integrals(form)
-            self.num_exterior_facet_integrals = self.__extract_num_exterior_facet_integrals(form)
-            self.num_interior_facet_integrals = self.__extract_num_interior_facet_integrals(form)
-            self.elements                     = self.__extract_elements(form, self.rank, self.num_coefficients)
-            self.dof_maps                     = self.__extract_dof_maps(self.elements)
-            self.coefficients                 = self.__extract_coefficients(form, self.num_coefficients, global_variables)
-            self.cell_dimension               = self.__extract_cell_dimension(self.elements)
-            self.basisfunction_data           = self.__extract_basisfunction_data(form, self.rank)
-        else:
-            self.form                         = ufl_form_data.form
-            self.signature                    = self.__extract_signature(form)
-            self.rank                         = ufl_form_data.rank
-            self.num_coefficients             = ufl_form_data.num_functions
-
-            # FIXME: need to take into account the ufl_form.(basisfunction/coefficient)_renumbering when generating the code
-            self.num_arguments                = self.rank + self.num_coefficients
-#            self.num_terms                    = self.__extract_num_terms(form)
-            self.num_cell_integrals           = self.__extract_max_ufl_subdomain(self.form.cell_integrals())
-            self.num_exterior_facet_integrals = self.__extract_max_ufl_subdomain(self.form.exterior_facet_integrals())
-            self.num_interior_facet_integrals = self.__extract_max_ufl_subdomain(self.form.interior_facet_integrals())
-            self.elements                     = [create_element(e) for e in ufl_form_data.elements]
-            self.dof_maps                     = self.__extract_dof_maps(self.elements)
-            self.coefficients                 = self.__create_ffc_functions(ufl_form_data.original_functions, global_variables)
-#            self.cell_dimension               = self.__extract_cell_dimension(self.elements)
-#            self.basisfunction_data           = self.__extract_basisfunction_data(form, self.rank)
+        self.form                         = form
+        self.signature                    = self.__extract_signature(form)
+        self.rank                         = self.__extract_rank(form)
+        self.num_coefficients             = self.__extract_num_coefficients(form)
+        self.num_arguments                = self.rank + self.num_coefficients
+        self.num_terms                    = self.__extract_num_terms(form)
+        self.num_cell_integrals           = self.__extract_num_cell_integrals(form)
+        self.num_exterior_facet_integrals = self.__extract_num_exterior_facet_integrals(form)
+        self.num_interior_facet_integrals = self.__extract_num_interior_facet_integrals(form)
+        self.elements                     = self.__extract_elements(form, self.rank, self.num_coefficients)
+        self.dof_maps                     = self.__extract_dof_maps(self.elements)
+        self.coefficients                 = self.__extract_coefficients(form, self.num_coefficients, global_variables)
+        self.cell_dimension               = self.__extract_cell_dimension(self.elements)
+        self.basisfunction_data           = self.__extract_basisfunction_data(form, self.rank)
         debug("done")
 
         for i in range(len(self.dof_maps)):
             debug("dof map %d:" % i, 2)
             debug("  entity_dofs:  " + str(self.dof_maps[i].entity_dofs()), 2)
             debug("  dof_entities: " + str(self.dof_maps[i].dof_entities()), 2)
-
-    def __create_ffc_functions(self, ufl_functions, global_variables):
-        "Try to convert UFL functions to FFC Coefficients"
-
-        # Extract names of all coefficients
-        coefficient_names = {}
-        if not global_variables is None:
-            for name in global_variables:
-                variable = global_variables[name]
-                if isinstance(variable, UFLFunction):
-                    coefficient_names[variable] = str(name)
-        # Create Coefficients and set name
-        ffc_functions = []
-        for function in ufl_functions:
-            f = Function(create_element(function.element()))
-            f.n0 = function.count()
-            c = Coefficient(f)
-            if coefficient_names.has_key(function):
-                c.set_name(coefficient_names[function])
-            ffc_functions.append(c)
-
-        return ffc_functions
 
     def __extract_signature(self, form):
         "Extract the signature"
