@@ -43,7 +43,11 @@ def generate_combined_code(codes, form_data, prefix, format):
                 contributions.append(postfix)
 
         # Add common code to sum up all contributions
-        code = _generate_total_integral("cell_integral", contributions, prefix, format)
+        code = _generate_total_integral("cell_integral",
+                                        contributions,
+                                        form_data.num_entries,
+                                        prefix,
+                                        format)
         combined_code["cell_integrals"].append(("%d" % i, code))
 
     # Generate code for exterior facet integrals
@@ -59,7 +63,11 @@ def generate_combined_code(codes, form_data, prefix, format):
                 contributions.append(postfix)
 
         # Add common code to sum up all contributions
-        code = _generate_total_integral("exterior_facet_integral", contributions, prefix, format)
+        code = _generate_total_integral("exterior_facet_integral",
+                                        contributions,
+                                        form_data.num_entries,
+                                        prefix,
+                                        format)
         combined_code["cell_integrals"].append(("%d" % i, code))
 
     # Generate code for interior facet integrals
@@ -75,12 +83,16 @@ def generate_combined_code(codes, form_data, prefix, format):
                 contributions.append(postfix)
 
         # Add common code to sum up all contributions
-        code = _generate_total_integral("interior_facet_integral", contributions, prefix, format)
+        code = _generate_total_integral("interior_facet_integral",
+                                        contributions,
+                                        form_data.num_entries,
+                                        prefix,
+                                        format)
         combined_code["interior_facet_integral"].append(("%d" % i, code))
        
     return combined_code
 
-def _generate_total_integral(integral_type, contributions, prefix, format):
+def _generate_total_integral(integral_type, contributions, num_entries, prefix, format):
     "Generate code for total tensor, summing contributions."
 
     code = {}
@@ -90,9 +102,6 @@ def _generate_total_integral(integral_type, contributions, prefix, format):
     for postfix in contributions:
         code["members"].append("  <form prefix>_%s_%s integral_%s;" % (integral_type, postfix, postfix))
     code["members"].append("")
-
-    # FIXME: Get correct number of entries
-    num_entries = 10
 
     # FIXME: Possible optimization here not to reset entries if not needed
 

@@ -43,7 +43,6 @@ class TensorRepresentation:
         cell_integrals         - list of list of terms for sub domains
         exterior_facet_tensors - list of list of list of terms for sub domains and facets
         interior_facet_tensors - list of list of list of list of terms for sub domains and facet combinations
-        num_entries            - number of entries in element tensor
 
     Each term is represented as a TensorContraction.
     """
@@ -69,9 +68,6 @@ class TensorRepresentation:
 
         # Compute representation of interior facet tensors
         #self.interior_facet_tensors = self.__compute_interior_facet_tensors(form)
-
-        # Extract number of entries in element tensor
-        self.num_entries = _compute_num_entries(form_data.form)
 
     def _extract_primary_multiindex(self):
         "Extract primary multiindex (need to search all terms)."
@@ -155,19 +151,6 @@ def __compute_interior_facet_tensors(self, form):
     debug_end()
     
     return terms
-
-def _compute_num_entries(form):
-    "Compute number of entries of element tensor."
-    
-    # Get elements
-    elements = [create_element(v.element()) for v in extract_basis_functions(form)]
-
-    # Compute number of entries in element tensor
-    num_entries = 1
-    for element in elements:
-        num_entries *= element.space_dimension()
-
-    return num_entries
 
 def __extract_monomials(self, form, integral_type):
     "Extract monomials and factorize."

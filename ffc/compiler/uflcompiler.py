@@ -27,10 +27,11 @@ import os
 # UFL modules
 from ufl.classes import Form, FiniteElementBase, Measure, Integral
 from ufl.algorithms import validate_form, extract_quadrature_order, estimate_quadrature_order
-from ufl.algorithms import extract_unique_elements
+from ufl.algorithms import extract_unique_elements, extract_basis_functions
 
 # FFC common modules
 from ffc.common.log import debug, info, warning, error, begin, end, set_level, INFO
+from ffc.common.utils import product
 from ffc.common.constants import FFC_OPTIONS
 
 # FFC fem modules
@@ -150,6 +151,10 @@ def analyze_form(form, options, global_variables):
 
     # Attach signature for convenience and reuse
     form_data.signature = form_data.form.signature()
+
+    # Attach number of entries in element tensor
+    dims = [create_element(v.element()).space_dimension() for v in extract_basis_functions(form)]
+    form_data.num_entries = product(dims)
 
     end()
     return form_data

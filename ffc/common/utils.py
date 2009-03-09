@@ -1,7 +1,14 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2005-02-04 -- 2007-04-10"
-__copyright__ = "Copyright (C) 2005-2007 Anders Logg"
+__date__ = "2005-02-04 -- 2009-03-09"
+__copyright__ = "Copyright (C) 2005-2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
+
+import operator
+
+def product(sequence):
+    "Return the product of all elements in a sequence."
+    # Copied from UFL
+    return reduce(operator.__mul__, sequence, 1)
 
 def pick_first(values):
     "Check that all values are equal and return the value"
