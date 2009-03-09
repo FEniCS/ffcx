@@ -58,7 +58,7 @@ def generate_cell_integrals(form_representation, format):
         print terms
         if len(terms) == 0:
             print "---------------------"
-            #code[("cell_integral", sub_domain)] = generate_reset_tensor(form_representation.form, format)
+            code[("cell_integral", sub_domain)] = generate_reset_tensor(form_representation.num_entries, format)
         else:
             code[("cell_integral", sub_domain)] = _generate_cell_integral(terms, format)
     debug("done")

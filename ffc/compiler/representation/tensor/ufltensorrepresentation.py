@@ -5,9 +5,13 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # UFL modules
 from ufl.integral import Measure
+from ufl.algorithms import extract_basis_functions
 
 # FFC common modules
 from ffc.common.log import debug, info, warning, error, begin, end, set_level, INFO
+
+# FFC fem modules
+from ffc.fem import create_element 
 
 # FFC language modules
 #from ffc.compiler.language.integral import *
@@ -39,7 +43,7 @@ class TensorRepresentation:
         cell_integrals         - list of list of terms for sub domains
         exterior_facet_tensors - list of list of list of terms for sub domains and facets
         interior_facet_tensors - list of list of list of list of terms for sub domains and facet combinations
-        primary_multiindex     - primary multiindex (i)
+        num_entries            - number of entries in element tensor
 
     Each term is represented as a TensorContraction.
     """
@@ -66,8 +70,8 @@ class TensorRepresentation:
         # Compute representation of interior facet tensors
         #self.interior_facet_tensors = self.__compute_interior_facet_tensors(form)
 
-        # Extract primary multiindex (pick first available)
-        self.primary_multiindex = self._extract_primary_multiindex()
+        # Extract number of entries in element tensor
+        self.num_entries = _compute_num_entries(form_data.form)
 
     def _extract_primary_multiindex(self):
         "Extract primary multiindex (need to search all terms)."
@@ -151,6 +155,19 @@ def __compute_interior_facet_tensors(self, form):
     debug_end()
     
     return terms
+
+def _compute_num_entries(form):
+    "Compute number of entries of element tensor."
+    
+    # Get elements
+    elements = [create_element(v.element()) for v in extract_basis_functions(form)]
+
+    # Compute number of entries in element tensor
+    num_entries = 1
+    for element in elements:
+        num_entries *= element.space_dimension()
+
+    return num_entries
 
 def __extract_monomials(self, form, integral_type):
     "Extract monomials and factorize."
