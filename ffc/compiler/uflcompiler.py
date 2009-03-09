@@ -37,6 +37,9 @@ from ffc.common.constants import FFC_OPTIONS
 from ffc.fem import create_element
 from ffc.fem import create_dof_map
 
+# FFC analysis modules
+from ffc.compiler.analysis.formdata import create_ffc_coefficients
+
 # FFC form representation modules
 from representation.tensor.monomials import MonomialException
 from representation.tensor.ufltensorrepresentation import TensorRepresentation
@@ -86,7 +89,7 @@ def compile(forms, prefix="Form", options=FFC_OPTIONS, global_variables=None):
     for form in forms:
 
         # Compiler stage 1: analyze form
-        form_data = analyze_form(form, options)
+        form_data = analyze_form(form, options, global_variables)
         #form_datas += [form_data]
 
         # Compiler stage 2: compute form representation
@@ -118,7 +121,7 @@ def compile(forms, prefix="Form", options=FFC_OPTIONS, global_variables=None):
     return
 #    return (form_datas, form_representations)
 
-def analyze_form(form, options):
+def analyze_form(form, options, global_variables):
     "Compiler stage 1."
     
     begin("Compiler stage 1: Analyzing form")
@@ -133,6 +136,9 @@ def analyze_form(form, options):
     # Attach FFC elements and dofmaps
     form_data.ffc_elements = [create_element(element) for element in form_data.elements]
     form_data.ffc_dof_maps = [create_dof_map(element) for element in form_data.elements]
+
+    # Attach FFC coefficients
+    form_data.coefficients = create_ffc_coefficients(form_data.original_functions, global_variables)
 
     # FIXME: Consider adding the following to ufl.FormData
     # FIXME: Also change num_functions --> num_coefficients to match UFC
@@ -209,9 +215,9 @@ def generate_form_code(form_data, tensor_representation, quadrature_representati
 
     # Mock tensor code (remove when tensor representation generates code)
     tensor_code = {}
-    tensor_code.update(tensor_generator.generate_cell_integrals(tensor_representation, format))
-    tensor_code.update(tensor_generator.generate_exterior_facet_integrals(tensor_representation, format))
-    tensor_code.update(tensor_generator.generate_interior_facet_integrals(tensor_representation, format))
+#    tensor_code.update(tensor_generator.generate_cell_integrals(tensor_representation, format))
+#    tensor_code.update(tensor_generator.generate_exterior_facet_integrals(tensor_representation, format))
+#    tensor_code.update(tensor_generator.generate_interior_facet_integrals(tensor_representation, format))
 
     # Get any kind of code for reseting the element tensor, it just needs to be
     # generated once by the codegenerators

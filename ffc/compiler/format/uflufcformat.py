@@ -612,9 +612,9 @@ class Format:
             format_string = private_declarations["cell_integral_" + code_section]
             for function_name in ["tabulate_tensor_tensor", "tabulate_tensor_quadrature"]:
                 members += format_string % {"function_name": function_name,
-                              "tabulate_tensor": self.__generate_body(code[function_name]["tabulate_tensor"]),
+                              "tabulate_tensor": indent(self.__generate_body(code[function_name]["tabulate_tensor"]), 2),
                               "classname": ufc_code["classname"]}
-            ufc_code["members"] += members
+            ufc_code["members"] += indent(members, 2)
 
         if code_section == "combined":
             return self.__generate_code(cell_integral_combined, ufc_code, options)
@@ -672,14 +672,14 @@ class Format:
             format_string = private_declarations["exterior_facet_integral_" + code_section]
             for function_name in ["tabulate_tensor_tensor", "tabulate_tensor_quadrature"]:
 
-                switch = self.__generate_switch("facet", [self.__generate_body(case) for case in code[function_name]["tabulate_tensor"][1]])
+                switch = self.__generate_switch("facet", [indent(self.__generate_body(case), 2) for case in code[function_name]["tabulate_tensor"][1]])
 
                 body = self.__generate_body(code[function_name]["tabulate_tensor"][0])
                 body += "\n"
                 body += switch
                 members += format_string % {"function_name": function_name, "tabulate_tensor": body, "classname":ufc_code["classname"]}
 
-            ufc_code["members"] += members
+            ufc_code["members"] += indent(members, 2)
 
         if code_section == "combined":
             return self.__generate_code(exterior_facet_integral_combined, ufc_code, options)
@@ -738,7 +738,7 @@ class Format:
                 # Generate code for tabulate_tensor, impressive line of Python code follows
                 switch = self.__generate_switch("facet0",\
                              [self.__generate_switch("facet1",\
-                                  [self.__generate_body(case) for case in cases])\
+                                  [indent(self.__generate_body(case), 2) for case in cases])\
                                         for cases in code[function_name]["tabulate_tensor"][1]])
                 #    body  = __generate_jacobian(form_data.cell_dimension, Integral.INTERIOR_FACET)
                 #    body += "\n"
@@ -747,7 +747,7 @@ class Format:
                 body += switch
                 members += format_string % {"function_name": function_name, "tabulate_tensor": body, "classname":ufc_code["classname"]}
 
-            ufc_code["members"] += members
+            ufc_code["members"] += indent(members, 2)
 
 
         if code_section == "combined":
@@ -839,8 +839,8 @@ class Format:
 #        test_elements = [form_data.elements[0] for (form_code, form_data) in generated_forms if form_data.rank >= 1]
         for (form_code, form_data) in generated_forms:
             if form_data.rank >= 1:
-                test_elements.append(form_data.elements[0].__repr__())
-                elements_string_map[form_data.elements[0].__repr__()] = form_data.elements[0]
+                test_elements.append(form_data.ffc_elements[0].__repr__())
+                elements_string_map[form_data.ffc_elements[0].__repr__()] = form_data.ffc_elements[0]
         if len(test_elements) > 0 and test_elements[1:] == test_elements[:-1]:
             test_element = test_elements[0]
 #            test_element = elements_string_map[test_elements[0]]
@@ -854,8 +854,8 @@ class Format:
 #        trial_elements = [form_data.elements[0] for (form_code, form_data) in generated_forms if form_data.rank >= 1]
         for (form_code, form_data) in generated_forms:
             if form_data.rank >= 1:
-                trial_elements.append(form_data.elements[0].__repr__())
-                elements_string_map[form_data.elements[0].__repr__()] = form_data.elements[0]
+                trial_elements.append(form_data.ffc_elements[0].__repr__())
+                elements_string_map[form_data.ffc_elements[0].__repr__()] = form_data.ffc_elements[0]
         if len(trial_elements) > 0 and trial_elements[1:] == trial_elements[:-1]:
 #            trial_element = elements_string_map[trial_elements[0]]
             trial_element = trial_elements[0]
@@ -889,9 +889,9 @@ class Format:
         for i in range(len(generated_forms)):
             (form_code, form_data) = generated_forms[i]
             form_prefix = self.compute_prefix(prefix, generated_forms, i, options)
-            for j in range(len(form_data.elements)):
+            for j in range(len(form_data.ffc_elements)):
 #                element_map[form_data.elements[j]] = (form_prefix, j)
-                element_map[form_data.elements[j].__repr__()] = (form_prefix, j)
+                element_map[form_data.ffc_elements[j].__repr__()] = (form_prefix, j)
 
         # Generate code for function spaces
         for i in range(len(generated_forms)):
@@ -899,22 +899,22 @@ class Format:
             form_prefix = self.compute_prefix(prefix, generated_forms, i, options)
             for j in range(form_data.rank):
 #                output += self._generate_function_space(form_data.elements[j],
-                output += self._generate_function_space(form_data.elements[j].__repr__(),
+                output += self._generate_function_space(form_data.ffc_elements[j].__repr__(),
                                                    "%sFunctionSpace%d" % (form_prefix, j),
                                                    element_map)
                 output += "\n"
             for j in range(form_data.num_coefficients):
 #                output += self._generate_function_space(form_data.elements[form_data.rank + j],
-                output += self._generate_function_space(form_data.elements[form_data.rank + j].__repr__(),
+                output += self._generate_function_space(form_data.ffc_elements[form_data.rank + j].__repr__(),
                                                    "%sCoefficientSpace%d" % (form_prefix, j),
                                                    element_map)
                 output += "\n"
 #            print "form_rank: ", form_data.rank
             # If we compiled just one element
             if form_data.rank < 0:
-                if not len(form_data.elements) == 1:
+                if not len(form_data.ffc_elements) == 1:
                     raise RuntimeError("Expected just one element")
-                output += self._generate_function_space(form_data.elements[0].__repr__(),
+                output += self._generate_function_space(form_data.ffc_elements[0].__repr__(),
                                                        "%sFunctionSpace" % (form_prefix),
                                                        element_map)
                 output += "\n"

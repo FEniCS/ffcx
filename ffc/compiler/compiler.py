@@ -48,7 +48,7 @@ from codegeneration.common.dofmap import *
 # FFC format modules
 from format import ufcformat
 from format import dolfinformat
-from format.uflufcformat import Format
+#from format.uflufcformat import Format
 
 def compile(forms, prefix="Form", options=FFC_OPTIONS, global_variables=None):
     "Compile the given forms and/or elements"
@@ -84,9 +84,9 @@ def __compile_forms(forms, prefix, options, global_variables):
         return
 
     # Choose format
-#    format = __choose_format(options["language"])
-#    format.init(options)
-    format = Format(options)
+    format = __choose_format(options["language"])
+    format.init(options)
+#    format = Format(options)
 
     # Iterate over forms for stages 1 - 4
     generated_forms = []
@@ -136,7 +136,9 @@ def __compile_elements(elements, prefix, options):
     debug_begin("Compiler phase 4: Generating code")
 
     # Choose format
-    format = Format(options)
+    format = __choose_format(options["language"])
+    format.init(options)
+#    format = Format(options)
 
     # Choose code generator
     CodeGenerator = __choose_code_generator(options["representation"])
