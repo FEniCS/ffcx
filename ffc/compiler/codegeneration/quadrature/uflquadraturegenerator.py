@@ -68,6 +68,22 @@ class QuadratureGenerator:
         self.reset_code = ""
         self.reset_code_restricted = ""
 
+    def generate_integrals(self, form_representation, format):
+        "Generate code for all integrals."
+
+        code = {}
+
+        # Generate code for cell integrals
+        code.update(self.generate_cell_integrals(form_representation, format))
+
+        # Generate code for exterior facet integrals
+        code.update(self.generate_exterior_facet_integrals(form_representation, format))
+        
+        # Generate code for interior facet integrals
+        code.update(self.generate_interior_facet_integrals(form_representation, format))
+
+        return code
+
     def generate_cell_integrals(self, form_representation, format):
         code = {}
         if not form_representation.cell_integrals:

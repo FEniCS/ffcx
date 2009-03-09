@@ -208,16 +208,13 @@ def generate_form_code(form_data, tensor_representation, quadrature_representati
     code = generate_common_code(form_data, format)
 
     # Generate code for integrals using quadrature
-    quadrature_code = {}
-    quadrature_code.update(quadrature_generator.generate_cell_integrals(quadrature_representation, format))
-    quadrature_code.update(quadrature_generator.generate_exterior_facet_integrals(quadrature_representation, format))
-    quadrature_code.update(quadrature_generator.generate_interior_facet_integrals(quadrature_representation, format))
+    quadrature_code = quadrature_generator.generate_integrals(quadrature_representation, format)
 
-    # Mock tensor code (remove when tensor representation generates code)
-    tensor_code = {}
-#    tensor_code.update(tensor_generator.generate_cell_integrals(tensor_representation, format))
-#    tensor_code.update(tensor_generator.generate_exterior_facet_integrals(tensor_representation, format))
-#    tensor_code.update(tensor_generator.generate_interior_facet_integrals(tensor_representation, format))
+    # Generate code for integrals using tensor representation
+    if os.environ["USER"] == "logg":
+        tensor_code = tensor_generator.generate_integrals(tensor_representation, format)        
+    else:
+        tensor_code = quadrature_code
 
     # Get any kind of code for reseting the element tensor, it just needs to be
     # generated once by the codegenerators

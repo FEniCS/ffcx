@@ -18,10 +18,30 @@ from ffc.common.constants import *
 from ffc.compiler.language.index import *
 
 # FFC code generation common modules
-from ffc.compiler.codegeneration.common.codegenerator import *
+from ffc.compiler.codegeneration.common.resettensor import generate_reset_tensor
 
 # FFC format modules
 from ffc.compiler.format.removeunused import *
+
+# FIXME: Remove
+reset_code = None
+reset_code_restricted = None
+
+def generate_integrals(form_representation, format):
+    "Generate code for all integrals."
+
+    code = {}
+
+    # Generate code for cell integrals
+    code.update(generate_cell_integrals(form_representation, format))
+
+    # Generate code for exterior facet integrals
+    code.update(generate_exterior_facet_integrals(form_representation, format))
+
+    # Generate code for interior facet integrals
+    code.update(generate_interior_facet_integrals(form_representation, format))
+
+    return code
 
 def generate_cell_integrals(form_representation, format):
     "Generate code for cell integrals."
@@ -34,9 +54,11 @@ def generate_cell_integrals(form_representation, format):
 
     # Generate code for all sub domains
     debug("Generating code for cell integrals using tensor representation...")
-    for (sub_domain, terms) in enumerate(form_representation.cell_integrals): 
+    for (sub_domain, terms) in enumerate(form_representation.cell_integrals):
+        print terms
         if len(terms) == 0:
-            code[("cell_integral", sub_domain)] = _generate_zero_element_tensor(form_representation, format)
+            print "---------------------"
+            #code[("cell_integral", sub_domain)] = generate_reset_tensor(form_representation.form, format)
         else:
             code[("cell_integral", sub_domain)] = _generate_cell_integral(terms, format)
     debug("done")
@@ -410,24 +432,6 @@ def _generate_element_tensor(terms, format):
 
     code = [format["comment"]("Number of operations to compute tensor = %d" %num_ops)] + code
     return (code, geo_set, num_ops)
-
-def _generate_zero_element_tensor(form_representation, format):
-    "Generate list of declarations for zero element tensor."
-
-    # Generate code as a list of declarations
-    code = []    
-
-    # Prefetch formats to speed up code generation
-    format_element_tensor = format["element tensor"]
-    format_floating_point = format["floating point"]
-
-    # Set entries to zero
-    for (k, index) in enumerate(form_representation.primary_multiindex.indices):
-        name = format_element_tensor(index, k)
-        value = format_floating_point(0.0)
-        code += [(name, value)]
-
-    return code
 
 def _generate_entry(GK, a, i, format):
     "Generate code for the value of entry a of geometry tensor G"

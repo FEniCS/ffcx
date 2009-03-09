@@ -148,7 +148,7 @@ class Format:
            "geometry tensor declaration": lambda j, a: "const double " + self.format["geometry tensor access"](j, a),
            "geometry tensor access": lambda j, a: "G%d_%s" % (j, "_".join(["%d" % index for index in a])),
            "geometry tensor": "G",
-           "element tensor": lambda i, k: "A[%d]" % k,
+           "element tensor": lambda i, k: "A[%d]" % k, # FIXME: Remove argument i, not used
            "sign tensor": lambda type, i, k: "S%s%s_%d" % (type, i, k),
            "sign tensor declaration": lambda s: "const int " + s,
            "signs": "S",
