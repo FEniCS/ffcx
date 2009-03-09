@@ -95,9 +95,13 @@ class MonomialCoefficient:
 
 class MonomialTransform:
 
+    J = "J"
+    JINV = "JINV"
+
     def __init__(self, index0, index1):
         self.index0 = index0
         self.index1 = index1
+        self.transform_type = MonomialTransform.JINV
 
     def __str__(self):
         return "dX_%s/dx_%s" % (str(self.index0), str(self.index1))

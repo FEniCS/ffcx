@@ -17,33 +17,28 @@ from ffc.common.constants import *
 # FFC language modules
 from ffc.compiler.language.index import *
 
-# FFC code generation common modules
-from ffc.compiler.codegeneration.common.integrals import generate_reset_tensor
-
 # FFC format modules
 from ffc.compiler.format.removeunused import *
 
-# FIXME: Remove
-reset_code = None
-reset_code_restricted = None
+class UFLTensorGenerator:
+    
+    def generate_integrals(self, form_representation, format):
+        "Generate code for all integrals."
 
-def generate_integrals(form_representation, format):
-    "Generate code for all integrals."
+        code = {}
 
-    code = {}
+        # Generate code for cell integrals
+        code.update(_generate_cell_integrals(form_representation, format))
 
-    # Generate code for cell integrals
-    code.update(generate_cell_integrals(form_representation, format))
+        # Generate code for exterior facet integrals
+        code.update(_generate_exterior_facet_integrals(form_representation, format))
 
-    # Generate code for exterior facet integrals
-    code.update(generate_exterior_facet_integrals(form_representation, format))
+        # Generate code for interior facet integrals
+        code.update(_generate_interior_facet_integrals(form_representation, format))
 
-    # Generate code for interior facet integrals
-    code.update(generate_interior_facet_integrals(form_representation, format))
+        return code
 
-    return code
-
-def generate_cell_integrals(form_representation, format):
+def _generate_cell_integrals(form_representation, format):
     "Generate code for cell integrals."
 
     code = {}
@@ -55,17 +50,13 @@ def generate_cell_integrals(form_representation, format):
     # Generate code for all sub domains
     debug("Generating code for cell integrals using tensor representation...")
     for (sub_domain, terms) in enumerate(form_representation.cell_integrals):
-        print terms
-        if len(terms) == 0:
-            print "---------------------"
-            code[("cell_integral", sub_domain)] = generate_reset_tensor(form_representation.num_entries, format)
-        else:
+        if len(terms) > 0:
             code[("cell_integral", sub_domain)] = _generate_cell_integral(terms, format)
     debug("done")
 
     return code
 
-def generate_exterior_facet_integrals(form_representation, format):
+def _generate_exterior_facet_integrals(form_representation, format):
     "Generate code for exterior facet integrals."
 
     # FIXME: Not implemented
@@ -83,7 +74,7 @@ def generate_exterior_facet_integrals(form_representation, format):
 
     return code
 
-def generate_interior_facet_integrals(form_representation, format):
+def _generate_interior_facet_integrals(form_representation, format):
     "Generate code for interior facet integrals."
 
     # FIXME: Not implemented
@@ -375,14 +366,6 @@ def _generate_element_tensor(terms, format):
     # Generate code as a list of declarations
     code = []
 
-    print ""
-    print "hej"
-    print terms
-
-    #print terms[0]
-    print ""
-    
-
     # Get list of primary indices (should be the same so pick first)
     iindices = terms[0].A0.i.indices
 
@@ -449,13 +432,13 @@ def _generate_entry(GK, a, i, format):
         #!    coeff_set.add(coefficient)
         #!    factors += [coefficient]
         
-    for t in GK.transforms:
-        if not (t.index0.type == Index.AUXILIARY_G or  t.index1.type == Index.AUXILIARY_G):
-            trans = format["transform"](t.type, t.index0([], a, [], []), \
-                                                    t.index1([], a, [], []), \
-                                                    t.restriction)
-            factors += [trans]
-            trans_set.add(trans)
+    #!for t in GK.transforms:
+    #!    if not (t.index0.index_type == Index.AUXILIARY_G or  t.index1.index_type == Index.AUXILIARY_G):
+    #!        trans = format["transform"](t.transform_type, t.index0([], a, [], []), \
+    #!                                    t.index1([], a, [], []), \
+    #!                                    t.restriction)
+    #!       factors += [trans]
+    #!        trans_set.add(trans)
     if factors:
         num_ops += len(factors) - 1
 
@@ -474,10 +457,10 @@ def _generate_entry(GK, a, i, format):
                 coeff_set.add(coefficient)
                 factors += [coefficient]
         for t in GK.transforms:
-            if t.index0.type == Index.AUXILIARY_G or t.index1.type == Index.AUXILIARY_G:
-                trans = format["transform"](t.type, t.index0([], a, [], b), \
-                                                        t.index1([], a, [], b), \
-                                                        t.restriction)
+            if t.index0.index_type == Index.AUXILIARY_G or t.index1.index_type == Index.AUXILIARY_G:
+                trans = format["transform"](t.transform_type, t.index0([], a, [], b), \
+                                            t.index1([], a, [], b), \
+                                            t.restriction)
                 factors += [trans]
                 trans_set.add(trans)
         if factors:

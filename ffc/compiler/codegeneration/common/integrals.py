@@ -6,8 +6,6 @@ __license__  = "GNU GPL version 3 or any later version"
 def generate_reset_tensor(num_entries, format):
     "Generate code for resetting the entries of the local element tensor."
 
-    print "HEJ"
-
     # Generate code as a list of declarations
     code = []    
 
@@ -26,51 +24,81 @@ def generate_reset_tensor(num_entries, format):
 
     return code
 
-def combine_tensors(code, quadrature_code, tensor_code, key, reset_code, facet_integral):
-    "Combine code for tabulate_tensor for the two different code generators."
+def generate_combined_code(codes, form_data, prefix, format):
+    "Generate combined codes for tabulation of integrals."
 
-    # Note: This could be simplified if the assembler would reset
-    # the tensor before calling tabulate_tensor
+    combined_code = {}
 
-    # If subdomain has both representations then combine them
-    if key in tensor_code and key in quadrature_code:
-        code[key] = {("tabulate_tensor_quadrature"): quadrature_code[key],
-                     ("tabulate_tensor_tensor"): tensor_code[key],
-                     "reset_tensor": reset_code}
+    # Generate code for cell integrals
+    combined_code["cell_integrals"] = []
+    for i in range(form_data.num_cell_integrals):
 
-    # Only quadrature code generated
-    elif key in quadrature_code:
-        
-        # Add reset code to tabulate_tensor code
-        value = quadrature_code[key]["tabulate_tensor"]
-        
-        # Handle facet integral cases
-        if facet_integral:
-            value = (reset_code + value[0], value[1])
-        else:
-            value = reset_code + value
+        # Add code for all representations
+        contributions = []
+        for (j, code) in enumerate(codes):
+            key = ("cell_integral", i)
+            if key in code:
+                combined_code["cell_integrals"].append(("%d_%d" % (i, j), code[key]))
+                contributions.append(j)
 
-        quadrature_code[key]["tabulate_tensor"] = value
-        code[key] = quadrature_code[key]
+        # Add common code to sum up all contributions
+        code = _generate_total_integral("cell_integral", contributions, prefix, format)
+        combined_code["cell_integrals"].append(("%d" % i, code))
 
-    # Only tensor code generated
-    elif key in tensor_code:
-        
-        # Add reset code to tabulate_tensor code
-        value = tensor_code[key]["tabulate_tensor"]
+    # Generate code for exterior facet integrals
+    combined_code["exterior_facet_integrals_integrals"] = []
+    for i in range(form_data.num_exterior_facet_integrals):
 
-        # Handle facet integral cases
-        if facet_integral:
-            value = (reset_code + value[0], value[1])
-        else:
-            value = reset_code + value
-            
-        tensor_code[key]["tabulate_tensor"] = value
-        code[key] = tensor_code[key]
+        # Add code for all representations
+        for (j, code) in enumerate(codes):
+            key = ("exterior_facet_integral", i)
+            if key in code:
+                combined_code["exterior_facet_integrals"].append(("_%d_%d" % (i, j), code[key]))
 
-    # No code generated
-    else:
-        if facet_integral:
-            code[key] = {"tabulate_tensor": (reset_code, []), "members": []}
-        else:
-            code[key] = {"tabulate_tensor": reset_code, "members": []}
+        # Add common code to sum up all contributions
+        code = _generate_total_integral("exterior_facet_integral", contributions, prefix, format)
+        combined_code["cell_integrals"].append(("%d" % i, code))
+
+    # Generate code for interior facet integrals
+    combined_code["interior_facet_integrals_integrals"] = []
+    for i in range(form_data.num_interior_facet_integrals):
+
+        # Add code for all representations
+        for (j, code) in enumerate(codes):
+            key = ("interior_facet_integral", i)
+            if key in code:
+                combined_code["interior_facet_integrals"].append(("_%d_%d" % (i, j), code[key]))
+
+        # Add common code to sum up all contributions
+        code = _generate_total_integral("interior_facet_integral", contributions, prefix, format)
+        combined_code["interior_facet_integral"].append(("%d" % i, code))
+       
+    return combined_code
+
+def _generate_total_integral(integral_type, contributions, prefix, format):
+    "Generate code for total tensor, summing contributions."
+
+    code = {}
+
+    # Add members
+    code["members"] = ["\nprivate:\n"]
+    for i in contributions:
+        code["members"].append("  %s_%s_%d integral_%d;" % (prefix, integral_type, i, i))
+    code["members"].append("")
+
+    # FIXME: Get correct number of entries
+    num_entries = 10
+
+    # FIXME: Possible optimization here not to reset entries if not needed
+
+    # Reset all entries
+    code["tabulate_tensor"] = []
+    code["tabulate_tensor"] += generate_reset_tensor(num_entries, format)
+
+    # Sum contributions
+    code["tabulate_tensor"].append("")
+    code["tabulate_tensor"].append(format["comment"]("Add all contributions to element tensor"))
+    for i in contributions:
+        code["tabulate_tensor"] += ["integral_%d.tabulate_tensor(A)" % i]
+
+    return code

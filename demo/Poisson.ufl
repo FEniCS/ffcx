@@ -11,6 +11,8 @@ v = TestFunction(element)
 u = TrialFunction(element)
 f = Function(element)
 
-a = dot(grad(v), grad(u))*dx(0, {"quadrature_order":1})
-L = v*f*dx(0, {"quadrature_order":2})
+dx0 = dx(0, {"ffc_representation": "quadrature", "quadrature_order": 1})
+dx1 = dx(0, {"ffc_representation": "tensor"})
 
+a = dot(grad(v), grad(u))*dx0 + v*u*dx1
+L = v*f*dx(0, {"quadrature_order": 2})

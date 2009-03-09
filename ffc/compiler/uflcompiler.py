@@ -49,16 +49,23 @@ from representation.quadrature.uflquadraturerepresentation import QuadratureRepr
 #from codegeneration.tensor import *
 #from codegeneration.quadrature import *
 from codegeneration.common.uflcodegenerator import generate_common_code
-from codegeneration.common.integrals import combine_tensors
-from codegeneration.tensor import ufltensorgenerator
+from codegeneration.common.integrals import generate_combined_code
+from codegeneration.tensor import UFLTensorGenerator
 from codegeneration.quadrature import UFLQuadratureGenerator
-
 
 #from codegeneration.common.finiteelement import *
 #from codegeneration.common.dofmap import *
 
 # FFC format modules
 from format.uflufcformat import Format
+
+# Form representations and code generators
+if os.environ["USER"] == "logg":
+    Representations = (QuadratureRepresentation, TensorRepresentation)
+    CodeGenerators  = (UFLQuadratureGenerator, UFLTensorGenerator)
+else:
+    Representations = (QuadratureRepresentation, QuadratureRepresentation)
+    CodeGenerators  = (UFLQuadratureGenerator, UFLQuadratureRepresentation)
 
 def compile(forms, prefix="Form", options=FFC_OPTIONS, global_variables=None):
     """This is the main interface to FFC. The input argument must be
@@ -94,28 +101,17 @@ def compile(forms, prefix="Form", options=FFC_OPTIONS, global_variables=None):
         form_data = analyze_form(form, options, global_variables)
         #form_datas += [form_data]
 
-        # Compiler stage 2: compute form representation
-        tensor_representation, quadrature_representation =\
-            compute_form_representation(form_data, options)
-
-        # FIXME: Temporary while debugging tensor representation
-        #if os.environ["USER"] == "logg":
-        #    continue
+        # Compiler stage 2: compute form representations
+        representations = compute_form_representations(form_data, options)
 
         # Compiler stage 3: optimize form representation
         optimize_form_representation(form_data)
 
         # Compiler stage 4: generate form code
-        form_code = generate_form_code(form_data,
-                                       tensor_representation,
-                                       quadrature_representation,
-                                       format.format)
+        form_code = generate_form_code(form_data, representations, prefix, format.format)
 
         # Add to list of codes
         generated_forms += [(form_code, form_data)]
-
-    if os.environ["USER"] == "logg":
-        return
 
     # Compiler stage 5: format code
     format_code(generated_forms, prefix, format, options)
@@ -158,32 +154,12 @@ def analyze_form(form, options, global_variables):
     end()
     return form_data
 
-def compute_form_representation(form_data, options):
+def compute_form_representations(form_data, options):
     "Compiler stage 2."
-    
-    begin("Compiler stage 2: Computing form representation")
-
-    # FIXME: Temporary while debugging tensor representation
-    if os.environ["USER"] == "logg":
-
-        try:
-            tensor_representation = TensorRepresentation(form_data)
-        except MonomialException, exception:
-            warning("Tensor representation failed. " + exception.message)
-            info("Falling back to quadrature.")
-            sys.exit(1)
-
-        quadrature_representation = QuadratureRepresentation(form_data)
-
-        return (tensor_representation, quadrature_representation)
-
-    else:
-        # Compute quadrature representation
-        quadrature_representation = QuadratureRepresentation(form_data)
-        tensor_representation = quadrature_representation
-
+    begin("Compiler stage 2: Computing form representation(s)")
+    representations = [Representation(form_data) for Representation in Representations]
     end()
-    return tensor_representation, quadrature_representation
+    return representations
     
 def optimize_form_representation(form_data):
     "Compiler stage 3."
@@ -192,44 +168,27 @@ def optimize_form_representation(form_data):
     info("Optimization currently broken (to be fixed).")
     end()
 
-def generate_form_code(form_data, tensor_representation, quadrature_representation, format):
+def generate_form_code(form_data, representations, prefix, format):
     "Compiler stage 4."
     
     begin("Compiler stage 4: Generating code")
 
-    # Create code generators
-    #tensor_generator = UFLTensorGenerator()
-    quadrature_generator = UFLQuadratureGenerator()
-
-    if os.environ["USER"] == "logg":
-        tensor_generator = ufltensorgenerator
-    else:
-        tensor_generator = quadrature_generator
-    
     # Generate common code like finite elements, dof map etc.
-    code = generate_common_code(form_data, format)
+    common_code = generate_common_code(form_data, format)
 
     # Generate code for integrals using quadrature
-    quadrature_code = quadrature_generator.generate_integrals(quadrature_representation, format)
-
-    # Generate code for integrals using tensor representation
-    if os.environ["USER"] == "logg":
-        tensor_code = tensor_generator.generate_integrals(tensor_representation, format)        
-    else:
-        tensor_code = quadrature_code
-
-    # Get any kind of code for reseting the element tensor, it just needs to be
-    # generated once by the codegenerators
-    reset_code = (quadrature_generator.reset_code or tensor_generator.reset_code)
-    reset_code_restricted = (quadrature_generator.reset_code_restricted or tensor_generator.reset_code_restricted)
+    codes = []
+    for (i, CodeGenerator) in enumerate(CodeGenerators):
+        code_generator = CodeGenerator()
+        codes.append(code_generator.generate_integrals(representations[i], format))
 
     # Loop all subdomains of integral types and combine code
-    for i in range(form_data.num_cell_integrals):
-        combine_tensors(code, quadrature_code, tensor_code, ("cell_integral", i), reset_code, False)
-    for i in range(form_data.num_exterior_facet_integrals):
-        combine_tensors(code, quadrature_code, tensor_code, ("exterior_facet_integral", i), reset_code, True)
-    for i in range(form_data.num_interior_facet_integrals):
-        combine_tensors(code, quadrature_code, tensor_code, ("interior_facet_integral", i), reset_code_restricted, True)
+    combined_code = generate_combined_code(codes, form_data, prefix, format)
+
+    # Collect generated code
+    code = {}
+    code.update(common_code)
+    code.update(combined_code)
 
     end()
     return code
@@ -306,7 +265,7 @@ def _check_metadata(integral, options):
     metadata = integral.measure().metadata() or {}
     for (key, value) in metadata.iteritems():
         if key == "ffc_representation":
-            representation = metadata["representation"]
+            representation = metadata["ffc_representation"]
         elif key == "quadrature_order":
             quadrature_order = metadata["quadrature_order"]
         else:
@@ -316,7 +275,7 @@ def _check_metadata(integral, options):
     valid_representations = ["tensor", "quadrature", "automatic"]
     if not representation in valid_representations:
         error("Unrecognized form representation '%s', must be one of %s.",
-              representation, ", ".join('%s' % r for r in valid_representations))
+              representation, ", ".join("'%s'" % r for r in valid_representations))
     if not ((isinstance(quadrature_order, int) and quadrature_order >= 0) or quadrature_order == "automatic"):
         error("Illegal quadrature order %s for integral, must be a nonnegative integer or 'automatic'.",
               str(quadrature_order))

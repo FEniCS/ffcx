@@ -219,7 +219,7 @@ class Format:
     def write(self, generated_forms, prefix, options):
         "Generate UFC 1.0 code for a given list of pregenerated forms"
         debug("Generating code for UFC 1.0")
-                
+          
         # Strip directory names from prefix and add output directory
         prefix = prefix.split(os.path.join(' ',' ').split()[0])[-1]
         full_prefix = os.path.join(options["output_dir"], prefix)
@@ -379,8 +379,8 @@ class Format:
                 output += "\n"
 
             # Generate code for ufc::cell_integral
-            for j in range(form_data.num_cell_integrals):
-                output += self.__generate_cell_integral(form_code[("cell_integral", j)], form_data, options, form_prefix, j, code_section)
+            for (label, code) in form_code["cell_integrals"]:
+                output += self.__generate_cell_integral(code, form_data, options, form_prefix, label, code_section)
                 output += "\n"
 
             # Generate code for ufc::exterior_facet_integral
@@ -566,13 +566,13 @@ class Format:
         elif code_section == "implementation":
             return self.__generate_code(dof_map_implementation, ufc_code, options)
 
-    def __generate_cell_integral(self, code, form_data, options, prefix, i, code_section):
+    def __generate_cell_integral(self, code, form_data, options, prefix, postfix, code_section):
         "Generate code for ufc::cell_integral"
 
         ufc_code = {}
 
         # Set class name
-        ufc_code["classname"] = "%s_cell_integral_%d" % (prefix, i)
+        ufc_code["classname"] = "%s_cell_integral_%s" % (prefix, postfix)
 
         # Generate code for constructor
         ufc_code["constructor"] = "// Do nothing"
@@ -580,41 +580,11 @@ class Format:
         # Generate code for destructor
         ufc_code["destructor"] = "// Do nothing"
 
-        members = ""
-        # If we only have one representation for this subdomain proceed as usual
-        if not "tabulate_tensor_tensor" in code:
+        # Generate code for members
+        ufc_code["members"] = self.__generate_body(code["members"])
 
-            # Generate code for members
-            # FIXME: These members doesn't define the classname for the
-            # implementation code
-            ufc_code["members"] = self.__generate_body(code["members"])
-            
-            # Generate code for tabulate_tensor
-            #    body  = __generate_jacobian(form_data.cell_dimension, Integral.CELL)
-            #    body += "\n"
-            body = self.__generate_body(code["tabulate_tensor"])
-            #    ufc_code["tabulate_tensor"] = remove_unused(body)
-            ufc_code["tabulate_tensor"] = body
-        else:
-
-            # Generate code for members (add contributions)
-            # TODO: The two generators might define overlapping members!
-            # FIXME: These members doesn't define the classname for the
-            # implementation code
-            ufc_code["members"] = self.__generate_body(code["tabulate_tensor_tensor"]["members"]) +\
-                                  self.__generate_body(code["tabulate_tensor_quadrature"]["members"])
-
-            # Generate code for function call
-            ufc_code["tabulate_tensor"] = cell_integral_call % {"reset_tensor": self.__generate_body(code["reset_tensor"])}
-
-            # Get correct format string and generate code for tabulate_tensor
-            # for both representations
-            format_string = private_declarations["cell_integral_" + code_section]
-            for function_name in ["tabulate_tensor_tensor", "tabulate_tensor_quadrature"]:
-                members += format_string % {"function_name": function_name,
-                              "tabulate_tensor": indent(self.__generate_body(code[function_name]["tabulate_tensor"]), 2),
-                              "classname": ufc_code["classname"]}
-            ufc_code["members"] += indent(members, 2)
+        # Generate code for tabulate_tensor
+        ufc_code["tabulate_tensor"] = self.__generate_body(code["tabulate_tensor"])
 
         if code_section == "combined":
             return self.__generate_code(cell_integral_combined, ufc_code, options)
