@@ -26,43 +26,49 @@ def generate_reset_tensor(num_entries, format):
 
     return code
 
-def combine_tensors(code, code0, code1, key, reset_code, facet_integral):
-    "Combine code for tabulate_tensor from two different code generators."
+def combine_tensors(code, quadrature_code, tensor_code, key, reset_code, facet_integral):
+    "Combine code for tabulate_tensor for the two different code generators."
+
+    # Note: This could be simplified if the assembler would reset
+    # the tensor before calling tabulate_tensor
 
     # If subdomain has both representations then combine them
-    if key in code1 and key in code0:
-        code[key] = {("tabulate_tensor_tensor"):code1[key],
-                     ("tabulate_tensor_quadrature"):code0[key],
+    if key in tensor_code and key in quadrature_code:
+        code[key] = {("tabulate_tensor_quadrature"): quadrature_code[key],
+                     ("tabulate_tensor_tensor"): tensor_code[key],
                      "reset_tensor": reset_code}
 
-    # Handle code from tensor generator
-    elif key in code1:
+    # Only quadrature code generated
+    elif key in quadrature_code:
+        
         # Add reset code to tabulate_tensor code
-        val = code1[key]["tabulate_tensor"]
-        # Check if we have a tuple (common, cases) for facet integrals
+        value = quadrature_code[key]["tabulate_tensor"]
+        
+        # Handle facet integral cases
         if facet_integral:
-            val = (reset_code + val[0], val[1])
+            value = (reset_code + value[0], value[1])
         else:
-            val = reset_code + val
-        code1[key]["tabulate_tensor"] = val
-        code[key] = code1[key]
+            value = reset_code + value
 
-    # Handle code from quadrature generator
-    elif key in code0:
+        quadrature_code[key]["tabulate_tensor"] = value
+        code[key] = quadrature_code[key]
+
+    # Only tensor code generated
+    elif key in tensor_code:
+        
         # Add reset code to tabulate_tensor code
-        val = code0[key]["tabulate_tensor"]
-        # Check if we have a tuple (common, cases) for facet integrals
-        if facet_integral:
-            val = (reset_code + val[0], val[1])
-        else:
-            val = reset_code + val
-        code0[key]["tabulate_tensor"] = val
-        code[key] = code0[key]
+        value = tensor_code[key]["tabulate_tensor"]
 
-    # If we reach this level it means that no code has been generated
-    # for the given subdomain so we need to add the reset code
-    # NOTE: If we were sure that all assemblers would reset the local
-    # tensor before calling tabulate_tensor this wouldn't be needed
+        # Handle facet integral cases
+        if facet_integral:
+            value = (reset_code + value[0], value[1])
+        else:
+            value = reset_code + value
+            
+        tensor_code[key]["tabulate_tensor"] = value
+        code[key] = tensor_code[key]
+
+    # No code generated
     else:
         if facet_integral:
             code[key] = {"tabulate_tensor": (reset_code, []), "members": []}
