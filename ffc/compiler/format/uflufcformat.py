@@ -53,8 +53,8 @@ class Format:
         # Attach format
         self.format = {
 # operators
-           "times equal": lambda i,j: "%s *= %s;" %(i,j),
-           "add equal": lambda i,j: "%s += %s;" % (i,j),
+           "times equal": lambda i, j: "%s *= %s;" %(i,j),
+           "add equal": lambda i, j: "%s += %s;" % (i,j),
            "inverse": lambda v: "(1.0/%s)" % v,
            "absolute value": lambda v: "std::abs(%s)" % v,
            "sqrt": lambda v: "std::sqrt(%s)" % v,

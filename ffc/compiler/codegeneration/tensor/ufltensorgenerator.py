@@ -27,18 +27,21 @@ class UFLTensorGenerator:
 
         code = {}
 
+        # Generate incremental code for now, might be an option later
+        incremental = True
+
         # Generate code for cell integrals
-        code.update(_generate_cell_integrals(form_representation, format))
+        code.update(_generate_cell_integrals(form_representation, incremental, format))
 
         # Generate code for exterior facet integrals
-        code.update(_generate_exterior_facet_integrals(form_representation, format))
+        code.update(_generate_exterior_facet_integrals(form_representation, incremental, format))
 
         # Generate code for interior facet integrals
-        code.update(_generate_interior_facet_integrals(form_representation, format))
+        code.update(_generate_interior_facet_integrals(form_representation, incremental, format))
 
         return code
 
-def _generate_cell_integrals(form_representation, format):
+def _generate_cell_integrals(form_representation, incremental, format):
     "Generate code for cell integrals."
 
     code = {}
@@ -51,12 +54,12 @@ def _generate_cell_integrals(form_representation, format):
     debug("Generating code for cell integrals using tensor representation...")
     for (sub_domain, terms) in enumerate(form_representation.cell_integrals):
         if len(terms) > 0:
-            code[("cell_integral", sub_domain)] = _generate_cell_integral(terms, format)
+            code[("cell_integral", sub_domain)] = _generate_cell_integral(terms, incremental, format)
     debug("done")
 
     return code
 
-def _generate_exterior_facet_integrals(form_representation, format):
+def _generate_exterior_facet_integrals(form_representation, incremental, format):
     "Generate code for exterior facet integrals."
 
     # FIXME: Not implemented
@@ -74,7 +77,7 @@ def _generate_exterior_facet_integrals(form_representation, format):
 
     return code
 
-def _generate_interior_facet_integrals(form_representation, format):
+def _generate_interior_facet_integrals(form_representation, incremental, format):
     "Generate code for interior facet integrals."
 
     # FIXME: Not implemented
@@ -92,7 +95,7 @@ def _generate_interior_facet_integrals(form_representation, format):
 
     return code
 
-def _generate_cell_integral(terms, format):
+def _generate_cell_integral(terms, incremental, format):
     """Generate dictionary of code for cell integral from the given
     form representation according to the given format"""
 
@@ -107,7 +110,7 @@ def _generate_cell_integral(terms, format):
     debug("")
 
     # Generate element code + set of used geometry terms
-    element_code, geo_set, tensor_ops = _generate_element_tensor(terms, format)
+    element_code, geo_set, tensor_ops = _generate_element_tensor(terms, incremental, format)
 
     # Generate geometry code + set of used coefficients + set of jacobi terms
     geo_code, coeff_set, trans_set, geo_ops = _generate_geometry_tensors(terms, geo_set, format)
@@ -360,7 +363,7 @@ def _generate_geometry_tensors(terms, geo_set, format):
 
     return (code, coeff_set, trans_set, num_ops)
 
-def _generate_element_tensor(terms, format):
+def _generate_element_tensor(terms, incremental, format):
     "Generate list of declarations for computation of element tensor"
 
     # Generate code as a list of declarations
@@ -373,6 +376,7 @@ def _generate_element_tensor(terms, format):
     format_element_tensor  = format["element tensor"]
     format_geometry_tensor = format["geometry tensor access"]
     format_add             = format["add"]
+    format_add_equal       = format["add equal"]
     format_subtract        = format["subtract"]
     format_multiply        = format["multiply"]
     format_floating_point  = format["floating point"]
@@ -410,7 +414,10 @@ def _generate_element_tensor(terms, format):
                 else:
                     num_dropped += 1
         value = value or zero
-        code += [(name, value)]
+        if incremental:
+            code += [format_add_equal(name, value)]
+        else:
+            code += [(name, value)]
         k += 1
 
     code = [format["comment"]("Number of operations to compute tensor = %d" %num_ops)] + code
