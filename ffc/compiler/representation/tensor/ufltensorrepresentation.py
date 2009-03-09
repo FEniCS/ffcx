@@ -35,7 +35,7 @@ class TensorRepresentation:
 
     Attributes:
 
-        form                   - the form generating the tensor contraction
+        cell_integrals         - list of TensorContractions for sub domains
         cell_tensor            - the representation of the cell tensor
         exterior_facet_tensors - the representation of the interior facet tensors,
                                  one for each facet
@@ -43,11 +43,11 @@ class TensorRepresentation:
                                  one for each facet-facet combination
     """
 
-    def __init__(self, form):
+    def __init__(self, form_data):
         "Create tensor representation for given form."
 
         # Extract monomial representation
-        monomial_form = extract_monomial_form(form)
+        monomial_form = extract_monomial_form(form_data.form)
         print ""
         print monomial_form
 
@@ -56,7 +56,7 @@ class TensorRepresentation:
         print monomial_form
 
         # Compute representation of cell tensor
-        self.cell_tensor = _compute_cell_tensor(monomial_form)
+        self.cell_integrals = [_compute_cell_tensor(monomial_form, form_data, i) for i in range(form.num_cell_integrals)]
         
         # Compute representation of exterior facet tensors
         #self.exterior_facet_tensors = self.__compute_exterior_facet_tensors(form)
@@ -64,13 +64,13 @@ class TensorRepresentation:
         # Compute representation of interior facet tensors
         #self.interior_facet_tensors = self.__compute_interior_facet_tensors(form)
         
-def _compute_cell_tensor(monomial_form):
+def _compute_cell_tensor(monomial_form, form_data,sub_domain):
     "Compute representation of cell tensor."
     
     begin("Computing cell tensor")
     
     # Extract all cell integrals
-    monomial_form = _extract_integrals(monomial_form, Measure.CELL)
+    monomial_form = _extract_integrals(monomial_form, form_data, Measure.CELL, sub_domain)
     
     # Compute sum of tensor representations
     terms = _compute_terms(monomial_form, Measure.CELL, None, None)
@@ -166,12 +166,15 @@ def __not_used_debug(self, i, facet0, facet1):
     else:
         debug("Computing tensor representation for facets (%d, %d), term %d..." % (facet0, facet1, i))
 
-def _extract_integrals(monomial_form, domain_type):
+def _extract_integrals(monomial_form, form_data, domain_type, sub_domain):
     "Extract subset of form matching given domain type."
     new_form = MonomialForm()
     for (integrand, measure) in monomial_form:
-        if measure.domain_type() == domain_type:
+        if measure.domain_type() == domain_type and measure.domain_id() == sub_domain:
             new_form.append(integrand, measure)
+    # FIXME: Check this
+    if not len(new_form.integrands) == 1:
+        raise RuntimeError, "More than one integrand, confused"
     return new_form
 
 def _compute_terms(monomial_form, domain_type, facet0, facet1):

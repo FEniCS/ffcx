@@ -91,14 +91,14 @@ def compile(forms, prefix="Form", options=FFC_OPTIONS, global_variables=None):
 
         # Compiler stage 2: compute form representation
         tensor_representation, quadrature_representation =\
-            compute_form_representation(form, options)
+            compute_form_representation(form_data, options)
 
         # FIXME: Temporary while debugging tensor representation
         #if os.environ["USER"] == "logg":
         #    continue
 
         # Compiler stage 3: optimize form representation
-        optimize_form_representation(form)
+        optimize_form_representation(form_data)
 
         # Compiler stage 4: generate form code
         form_code = generate_form_code(form_data,
@@ -136,6 +136,7 @@ def analyze_form(form, options):
 
     # FIXME: Consider adding the following to ufl.FormData
     # FIXME: Also change num_functions --> num_coefficients to match UFC
+    # FIXME: Check that integrals are numbered 0, 1, 2 (not 0, 5, 6) in UFL
     form_data.num_coefficients = form_data.num_functions
 
     # Attach number of integrals for convenience
@@ -149,7 +150,7 @@ def analyze_form(form, options):
     end()
     return form_data
 
-def compute_form_representation(form, options):
+def compute_form_representation(form_data, options):
     "Compiler stage 2."
     
     begin("Compiler stage 2: Computing form representation")
@@ -158,25 +159,25 @@ def compute_form_representation(form, options):
     if os.environ["USER"] == "logg":
 
         try:
-            tensor_representation = TensorRepresentation(form)
+            tensor_representation = TensorRepresentation(form_data)
         except MonomialException, exception:
             warning("Tensor representation failed. " + exception.message)
             info("Falling back to quadrature.")
             sys.exit(1)
 
-        quadrature_representation = QuadratureRepresentation(form)
+        quadrature_representation = QuadratureRepresentation(form_data)
 
         return (tensor_representation, quadrature_representation)
 
     else:
         # Compute quadrature representation
-        quadrature_representation = QuadratureRepresentation(form)
+        quadrature_representation = QuadratureRepresentation(form_data)
         tensor_representation = quadrature_representation
 
     end()
     return tensor_representation, quadrature_representation
     
-def optimize_form_representation(form):
+def optimize_form_representation(form_data):
     "Compiler stage 3."
     
     begin("Compiler stage 3: Optimizing form representation")

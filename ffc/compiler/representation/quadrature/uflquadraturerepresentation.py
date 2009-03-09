@@ -93,12 +93,12 @@ class QuadratureRepresentation:
         fiat_elements_map        - a dictionary, {ufl_element:fiat_element}
     """
 
-    def __init__(self, form):
+    def __init__(self, form_data):
         "Create tensor representation for given form"
 
         # Save form
         # TODO: Is this still used? should it be?
-        self.form = form.form_data().form
+        self.form = form_data.form
 
         # Save useful constants
         # TODO: Is this still used? should it be? The fiat_elements_map can be

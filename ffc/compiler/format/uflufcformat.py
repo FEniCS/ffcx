@@ -1076,7 +1076,7 @@ public:
 
         return code
 
-    def __generate_switch(self, variable, cases, default = ""):
+    def __generate_switch(self, variable, cases, default=""):
         "Generate switch statement from given variable and cases"
 
         # Special case: no cases
