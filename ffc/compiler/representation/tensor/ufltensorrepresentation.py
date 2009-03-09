@@ -26,7 +26,8 @@ class TensorContraction:
         "Create tensor contraction for given monomial."
         self.monomial = monomial
         self.A0 = ReferenceTensor(monomial, domain_type, facet0, facet1)
-        self.GK = GeometryTensor(monomial)
+        # FIXME: Does not need to be list if we find that factorization is not needed
+        self.GK = [GeometryTensor(monomial)]
 
 class TensorRepresentation:
     """This class represents a given multilinear form as a tensor
@@ -35,12 +36,12 @@ class TensorRepresentation:
 
     Attributes:
 
-        cell_integrals         - list of TensorContractions for sub domains
-        cell_tensor            - the representation of the cell tensor
-        exterior_facet_tensors - the representation of the interior facet tensors,
-                                 one for each facet
-        interior_facet_tensors - the representation of the exterior facet tensors,
-                                 one for each facet-facet combination
+        cell_integrals         - list of list of terms for sub domains
+        exterior_facet_tensors - list of list of list of terms for sub domains and facets
+        interior_facet_tensors - list of list of list of list of terms for sub domains and facet combinations
+        primary_multiindex     - primary multiindex (i)
+
+    Each term is represented as a TensorContraction.
     """
 
     def __init__(self, form_data):
@@ -56,15 +57,30 @@ class TensorRepresentation:
         print monomial_form
 
         # Compute representation of cell tensor
-        self.cell_integrals = [_compute_cell_tensor(monomial_form, form_data, i) for i in range(form.num_cell_integrals)]
+        n = form_data.num_cell_integrals
+        self.cell_integrals = [_compute_cell_tensor(monomial_form, form_data, i) for i in range(n)]
         
         # Compute representation of exterior facet tensors
         #self.exterior_facet_tensors = self.__compute_exterior_facet_tensors(form)
 
         # Compute representation of interior facet tensors
         #self.interior_facet_tensors = self.__compute_interior_facet_tensors(form)
-        
-def _compute_cell_tensor(monomial_form, form_data,sub_domain):
+
+        # Extract primary multiindex (pick first available)
+        self.primary_multiindex = self._extract_primary_multiindex()
+
+    def _extract_primary_multiindex(self):
+        "Extract primary multiindex (need to search all terms)."
+
+        for terms in self.cell_integrals:
+            if len(terms) > 0:
+                return terms[0].A0.i
+
+        # FIXME: Search exterior and interior facet integrals
+
+        raise RuntimeError, "Unable to extract primary multiindex."
+
+def _compute_cell_tensor(monomial_form, form_data, sub_domain):
     "Compute representation of cell tensor."
     
     begin("Computing cell tensor")
@@ -172,9 +188,6 @@ def _extract_integrals(monomial_form, form_data, domain_type, sub_domain):
     for (integrand, measure) in monomial_form:
         if measure.domain_type() == domain_type and measure.domain_id() == sub_domain:
             new_form.append(integrand, measure)
-    # FIXME: Check this
-    if not len(new_form.integrands) == 1:
-        raise RuntimeError, "More than one integrand, confused"
     return new_form
 
 def _compute_terms(monomial_form, domain_type, facet0, facet1):

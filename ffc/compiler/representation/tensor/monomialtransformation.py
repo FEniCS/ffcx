@@ -86,8 +86,9 @@ class MonomialDeterminant:
 
 class MonomialCoefficient:
 
-    def __init__(self, index):
+    def __init__(self, index, number):
         self.index = index
+        self.number = number
 
     def __str__(self):
         return "c_" + str(self.index)
@@ -158,7 +159,7 @@ class TransformedMonomial:
                 vindex = MonomialIndex(MonomialIndex.PRIMARY, range(vdim), f.function.count())
             elif isinstance(f.function, Function):
                 vindex = MonomialIndex(MonomialIndex.SECONDARY, range(vdim))
-                coefficient = MonomialCoefficient(vindex)
+                coefficient = MonomialCoefficient(vindex, f.function.count())
                 self.coefficients.append(coefficient)
 
             # Extract components

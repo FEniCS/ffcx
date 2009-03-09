@@ -8,14 +8,9 @@ __license__  = "GNU GPL version 3 or any later version"
 # FFC common modules
 from ffc.common.log import debug
 
-# FFC language modules
-#from ffc.compiler.language.index import *
-#from ffc.compiler.language.reassignment import *
-
 # FFC tensor representation modules
-from monomialextraction import MonomialException
 from monomialtransformation import MonomialIndex
-from multiindex import MultiIndex
+from multiindex import create_multi_index
 
 class GeometryTensor:
     """This class represents the geometry tensor for a monomial term
@@ -30,28 +25,8 @@ class GeometryTensor:
         self.transforms = monomial.transforms
 
         # Create secondary and auxiliary multi indices
-        self.a = _create_multi_index(monomial, MonomialIndex.SECONDARY)
-        self.b = _create_multi_index(monomial, MonomialIndex.AUXILIARY)
+        self.a = create_multi_index(monomial, MonomialIndex.SECONDARY)
+        self.b = create_multi_index(monomial, MonomialIndex.AUXILIARY)
 
         debug("Secondary multi index: " + str(self.a))
         debug("Auxiliary multi index: " + str(self.b))
-
-def _create_multi_index(monomial, index_type):
-    "Find dimensions and create multi index for given index type."
-
-    # Get sorted unique monomial indices
-    indices = []
-    for index in monomial.indices():
-        if index.index_type == index_type and not index in indices:
-            indices.append(index)
-    indices.sort()
-
-    # Check that we got all indices correctly
-    for (i, index) in enumerate(indices):
-        if not i == index.index_id:
-            raise MonomialException, "Unable to extract all indices."
-
-    # Get dimensions
-    dims = [range(len(index.index_range)) for index in indices]
-
-    return MultiIndex(dims)

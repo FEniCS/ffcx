@@ -191,7 +191,7 @@ class Format:
 #           "snippet delete_representation": delete_representation,
            "snippet calculate dof": calculate_dof,
            "get cell vertices" : "const double * const * x = c.coordinates;",
-           "generate jacobian": lambda d,i: self.__generate_jacobian(d,i),
+           "generate jacobian": lambda d, i: self.__generate_jacobian(d, i),
            "generate body": lambda d: self.__generate_body(d),
 # misc
            "comment": lambda v: "// %s" % v,
@@ -1059,15 +1059,15 @@ public:
             facet_determinant = facet_determinant_3D
         
         # Check if we need to compute more than one Jacobian
-        if integral_type == Integral.CELL:
+        if integral_type == "cell":
             code  = jacobian % {"restriction":  ""}
             code += "\n\n"
             code += scale_factor
-        elif integral_type == Integral.EXTERIOR_FACET:
+        elif integral_type == "exterior facet":
             code  = jacobian % {"restriction":  ""}
             code += "\n\n"
             code += facet_determinant % {"restriction": "", "facet" : "facet"}
-        elif integral_type == Integral.INTERIOR_FACET:
+        elif integral_type == "interior facet":
             code  = jacobian % {"restriction": choose_map[Restriction.PLUS]}
             code += "\n\n"
             code += jacobian % {"restriction": choose_map[Restriction.MINUS]}

@@ -7,9 +7,9 @@ class Integral:
     """An Integral represents an integral over a mesh entity."""
 
     # Available integral types
-    CELL = 0
-    EXTERIOR_FACET = 1
-    INTERIOR_FACET = 2
+    CELL = "cell"
+    EXTERIOR_FACET = "exterior facet"
+    INTERIOR_FACET = "interior facet"
 
     def __init__(self, type = "cell", sub_domain = 0):
         "Create Integral of given type."

@@ -1,6 +1,6 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-11-03 -- 2007-03-08"
-__copyright__ = "Copyright (C) 2004-2007 Anders Logg"
+__date__ = "2004-11-03 -- 2009-03-09"
+__copyright__ = "Copyright (C) 2004-2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Garth N. Wells 2006
@@ -26,6 +26,26 @@ def outer_join(a, b):
         for j in range(len(b)):
             outer += [a[i] + [b[j]]]
     return outer
+
+def create_multi_index(monomial, index_type):
+    "Find dimensions and create multi index for monomial of given index type."
+
+    # Get sorted unique monomial indices
+    indices = []
+    for index in monomial.indices():
+        if index.index_type == index_type and not index in indices:
+            indices.append(index)
+    indices.sort()
+
+    # Check that we got all indices correctly
+    for (i, index) in enumerate(indices):
+        if not i == index.index_id:
+            raise MonomialException, "Unable to extract all indices."
+
+    # Get dimensions
+    dims = [range(len(index.index_range)) for index in indices]
+
+    return MultiIndex(dims)
 
 class MultiIndex:
 

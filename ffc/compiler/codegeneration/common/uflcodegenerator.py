@@ -8,51 +8,26 @@ from dofmap import *
 from finiteelement import *
 from form import *
 
-class CodeGenerator:
-    "Code generator for common code (elements and dof maps)."
+def generate_common_code(form_data, format):
+    "Generate common form code according to given format."
 
-    def __init__(self):
-        "Constructor"
+    code = {}
 
-        # Common methods
-        self.generate_dof_map = generate_dof_map
-        self.generate_finite_element = generate_finite_element
-        self.generate_form = generate_form
+    # Generate code for finite elements
+    code["finite_elements"] = _generate_finite_elements(form_data.ffc_elements, format)
 
-    def generate_form_code(self, form_data, format):
-        "Generator form code according to given format."
+    # Generate code for dof maps
+    code["dof_maps"] = _generate_dof_maps(form_data.ffc_dof_maps, format)
 
-        code = {}
+    # Generate code for form
+    debug("Generating code for form...")
+    code["form"] = generate_form(form_data, format)
+    debug("done")
 
-        # Generate code for finite elements
-        code["finite_elements"] = _generate_finite_elements(form_data.ffc_elements, format)
-
-        # Generate code for dof maps
-        code["dof_maps"] = _generate_dof_maps(form_data.ffc_dof_maps, format)
-
-        # Generate code for form
-        debug("Generating code for form...")
-        code["form"] = generate_form(form_data, format)
-        debug("done")
-
-        return code
-
-    # FIXME: Remove this?
-    def generate_element_code(self, element_data, format):
-        "Generate element code according to given format"
-    
-        code = {}
-
-        # Generate code for finite elements
-        code["finite_elements"] = _generate_finite_elements(element_data.ffc_elements, format)
-
-        # Generate code for dof maps
-        code["dof_maps"] = _generate_dof_maps(element_data.ffc_dof_maps, format)
-
-        return code
+    return code
 
 def _generate_finite_elements(elements, format):
-    "Generate code for finite elements, including recursively nested sub elements"
+    "Generate code for finite elements, including recursively nested sub elements."
 
     debug("Generating code for finite elements...")
     code = []

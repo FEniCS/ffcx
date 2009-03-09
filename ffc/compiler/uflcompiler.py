@@ -45,7 +45,7 @@ from representation.quadrature.uflquadraturerepresentation import QuadratureRepr
 # FFC code generation modules
 #from codegeneration.tensor import *
 #from codegeneration.quadrature import *
-from codegeneration.common.uflcodegenerator import CodeGenerator
+from codegeneration.common.uflcodegenerator import generate_common_code
 from codegeneration.tensor import ufltensorgenerator
 from codegeneration.quadrature import UFLQuadratureGenerator
 
@@ -190,7 +190,6 @@ def generate_form_code(form_data, tensor_representation, quadrature_representati
     begin("Compiler stage 4: Generating code")
 
     # Create code generators
-    common_generator = CodeGenerator()    
     #tensor_generator = UFLTensorGenerator()
     quadrature_generator = UFLQuadratureGenerator()
 
@@ -200,7 +199,7 @@ def generate_form_code(form_data, tensor_representation, quadrature_representati
         tensor_generator = quadrature_generator
     
     # Generate common code like finite elements, dof map etc.
-    code = common_generator.generate_form_code(form_data, format)
+    code = generate_common_code(form_data, format)
 
     # Generate code for integrals using quadrature
     quadrature_code = {}
