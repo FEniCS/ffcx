@@ -269,7 +269,7 @@ class TensorGenerator(CodeGenerator):
                 value = format["add"](values)
 
                 # Multiply with determinant factor
-                # FIXME: dets = pick_first([G.determinants for G in term.G])
+                # FIXME: dets = pick_first([G.determinants for G in term.G])                
                 dets = term.G[0].determinants
                 value = self.__multiply_value_by_det(value, dets, format, len(values) > 1)
                 num_ops += 1

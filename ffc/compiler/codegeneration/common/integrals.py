@@ -104,6 +104,6 @@ def _generate_total_integral(integral_type, contributions, prefix, format):
     code["tabulate_tensor"].append("")
     code["tabulate_tensor"].append(format["comment"]("Add all contributions to element tensor"))
     for postfix in contributions:
-        code["tabulate_tensor"] += ["integral_%s.tabulate_tensor(A, w, c)" % postfix]
+        code["tabulate_tensor"] += ["integral_%s.tabulate_tensor(A, w, c);" % postfix]
 
     return code

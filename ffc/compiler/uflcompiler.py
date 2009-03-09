@@ -65,7 +65,7 @@ if os.environ["USER"] == "logg":
     CodeGenerators  = (UFLQuadratureGenerator, UFLTensorGenerator)
 else:
     Representations = (QuadratureRepresentation, QuadratureRepresentation)
-    CodeGenerators  = (UFLQuadratureGenerator, UFLQuadratureRepresentation)
+    CodeGenerators  = (UFLQuadratureGenerator, UFLQuadratureGenerator)
 
 def compile(forms, prefix="Form", options=FFC_OPTIONS, global_variables=None):
     """This is the main interface to FFC. The input argument must be

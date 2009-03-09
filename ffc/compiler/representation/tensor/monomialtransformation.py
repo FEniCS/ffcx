@@ -76,10 +76,13 @@ class MonomialRestriction:
 class MonomialDeterminant:
 
     def __init__(self):
-        self.power = 1
+        self.power = 0
+        self.restriction = None
 
     def __str__(self):
-        if self.power == 1:
+        if self.power == 0:
+            return ""
+        elif self.power == 1:
             return "(det F')"
         else:
             return "(det F')^%s" + str(self.power)

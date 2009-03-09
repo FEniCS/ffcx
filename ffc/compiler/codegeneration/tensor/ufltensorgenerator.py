@@ -14,8 +14,8 @@ from sets import Set
 # FFC common modules
 from ffc.common.constants import *
 
-# FFC language modules
-from ffc.compiler.language.index import *
+# FFC tensor representation modules
+from ffc.compiler.representation.tensor.monomialtransformation import MonomialIndex
 
 # FFC format modules
 from ffc.compiler.format.removeunused import *
@@ -310,18 +310,16 @@ def _generate_geometry_tensors(terms, geo_set, format):
     coeff_set = Set()
     trans_set = Set()
     num_ops = 0
-    for i in range(len(terms)):
-
-        term = terms[i]
+    for (i, term) in enumerate(terms):
 
         # Get list of secondary indices (should be the same so pick first)
-        aindices = terms[i].GK[0].a.indices
+        aindices = term.GK[0].a.indices
 
         # Iterate over secondary indices
         for a in aindices:
 
             # Skip code generation if term is not used
-            if not format["geometry tensor access"](i,a) in geo_set:
+            if not format["geometry tensor access"](i, a) in geo_set:
                 continue
 
             # Compute factorized values
@@ -343,8 +341,8 @@ def _generate_geometry_tensors(terms, geo_set, format):
 
             # Multiply with determinant factor
             # FIXME: dets = pick_first([GK.determinants for GK in term.GK])
-            #!dets = term.GK[0].determinants
-            #!value = _multiply_value_by_det(value, dets, format, len(values) > 1)
+            det = term.GK[0].determinant
+            value = _multiply_value_by_det(value, term.GK[0].determinant, format, len(values) > 1)
             num_ops += 1
 
             # Add determinant to transformation set
@@ -359,7 +357,7 @@ def _generate_geometry_tensors(terms, geo_set, format):
         j += len(term.GK)
 
     # Add comments
-    code = [format["comment"]("Compute geometry tensors"), format["comment"]("Number of operations to compute decalrations = %d" %num_ops)] + code
+    code = [format["comment"]("Compute geometry tensors"), format["comment"]("Number of operations to compute declarations = %d" %num_ops)] + code
 
     # Add scale factor
     trans_set.add(format["scale factor"])
@@ -437,18 +435,18 @@ def _generate_entry(GK, a, i, format):
     num_ops = 0
     for j in range(len(GK.coefficients)):
         c = GK.coefficients[j]
-        #!if not c.index.index_type == Index.AUXILIARY_G:
-        #!    coefficient = format["modified coefficient access"](c.number, i, j, c.index([], a, [], []))
-        #!    coeff_set.add(coefficient)
-        #!    factors += [coefficient]
-        
-    #!for t in GK.transforms:
-    #!    if not (t.index0.index_type == Index.AUXILIARY_G or  t.index1.index_type == Index.AUXILIARY_G):
-    #!        trans = format["transform"](t.transform_type, t.index0([], a, [], []), \
-    #!                                    t.index1([], a, [], []), \
-    #!                                    t.restriction)
-    #!       factors += [trans]
-    #!        trans_set.add(trans)
+        if not c.index.index_type == MonomialIndex.AUXILIARY:
+            coefficient = format["modified coefficient access"](c.number, i, j, c.index([], a, [], []))
+            coeff_set.add(coefficient)
+            factors += [coefficient]
+
+    for t in GK.transforms:
+        if not (t.index0.index_type == MonomialIndex.AUXILIARY or  t.index1.index_type == MonomialIndex.AUXILIARY):
+            trans = format["transform"](t.transform_type, t.index0([], a, [], []), \
+                                        t.index1([], a, [], []), \
+                                        t.restriction)
+            factors += [trans]
+            trans_set.add(trans)
     if factors:
         num_ops += len(factors) - 1
 
@@ -462,17 +460,17 @@ def _generate_entry(GK, a, i, format):
         factors = []
         for j in range(len(GK.coefficients)):
             c = GK.coefficients[j]
-            if c.index.index_type == Index.AUXILIARY_G:
+            if c.index.index_type == MonomialIndex.AUXILIARY:
                 coefficient = format["modified coefficient access"](c.number, i, j, c.index([], a, [], b))
                 coeff_set.add(coefficient)
                 factors += [coefficient]
-        for t in GK.transforms:
-            if t.index0.index_type == Index.AUXILIARY_G or t.index1.index_type == Index.AUXILIARY_G:
-                trans = format["transform"](t.transform_type, t.index0([], a, [], b), \
-                                            t.index1([], a, [], b), \
-                                            t.restriction)
-                factors += [trans]
-                trans_set.add(trans)
+        #!for t in GK.transforms:
+        #!    if t.index0.index_type == MonomialIndex.AUXILIARY or t.index1.index_type == MonomialIndex.AUXILIARY:
+        #!        trans = format["transform"](t.transform_type, t.index0([], a, [], b), \
+        #!                                    t.index1([], a, [], b), \
+        #!                                    t.restriction)
+        #!        factors += [trans]
+        #!        trans_set.add(trans)
         if factors:
             num_ops += len(factors) - 1
         terms += [format["multiply"](factors)]
@@ -493,20 +491,18 @@ def _generate_entry(GK, a, i, format):
     # Compute product of all factors
     return (format["multiply"](fs), coeff_set, trans_set, num_ops)
 
-def _multiply_value_by_det(value, dets, format, is_sum):
-    if dets:
-        #d0 = [format["power"](format["determinant"](det.restriction),
-        #                      det.power) for det in dets]
-        d0 = []
+def _multiply_value_by_det(value, det, format, is_sum):
+    if not det.power == 0:
+        d = [format["power"](format["determinant"](det.restriction), det.power)]
     else:
-        d0 = []
+        d = []
     if value == "1.0":
         v = []
     elif is_sum:
         v = [format["grouping"](value)]
     else:
         v = [value]
-    return format["multiply"](d0 + [format["scale factor"]] + v)
+    return format["multiply"](d + [format["scale factor"]] + v)
 
 def _remove_unused(code, set, format):
     "Remove unused variables so that the compiler will not complain"
