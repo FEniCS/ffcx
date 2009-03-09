@@ -18,7 +18,7 @@ from ffc.common.constants import *
 from ffc.compiler.language.index import *
 
 # FFC code generation common modules
-from ffc.compiler.codegeneration.common.resettensor import generate_reset_tensor
+from ffc.compiler.codegeneration.common.integrals import generate_reset_tensor
 
 # FFC format modules
 from ffc.compiler.format.removeunused import *

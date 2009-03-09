@@ -49,8 +49,10 @@ from representation.quadrature.uflquadraturerepresentation import QuadratureRepr
 #from codegeneration.tensor import *
 #from codegeneration.quadrature import *
 from codegeneration.common.uflcodegenerator import generate_common_code
+from codegeneration.common.integrals import combine_tensors
 from codegeneration.tensor import ufltensorgenerator
 from codegeneration.quadrature import UFLQuadratureGenerator
+
 
 #from codegeneration.common.finiteelement import *
 #from codegeneration.common.dofmap import *
@@ -223,57 +225,14 @@ def generate_form_code(form_data, tensor_representation, quadrature_representati
 
     # Loop all subdomains of integral types and combine code
     for i in range(form_data.num_cell_integrals):
-        _combine_code(code, tensor_code, quadrature_code, ("cell_integral", i), reset_code, False)
+        combine_tensors(code, quadrature_code, tensor_code, ("cell_integral", i), reset_code, False)
     for i in range(form_data.num_exterior_facet_integrals):
-        _combine_code(code, tensor_code, quadrature_code, ("exterior_facet_integral", i), reset_code, True)
+        combine_tensors(code, quadrature_code, tensor_code, ("exterior_facet_integral", i), reset_code, True)
     for i in range(form_data.num_interior_facet_integrals):
-        _combine_code(code, tensor_code, quadrature_code, ("interior_facet_integral", i), reset_code_restricted, True)
+        combine_tensors(code, quadrature_code, tensor_code, ("interior_facet_integral", i), reset_code_restricted, True)
 
     end()
     return code
-
-def _combine_code(code, tensor_code, quadrature_code, key, reset_code, facet_integral):
-    "Combine the code from the two code generators"
-
-    # If subdomain has both representations then combine them
-    if key in tensor_code and key in quadrature_code:
-        code[key] = {("tabulate_tensor_tensor"):tensor_code[key],
-                     ("tabulate_tensor_quadrature"):quadrature_code[key],
-                     "reset_tensor": reset_code}
-
-    # Handle code from tensor generator
-    elif key in tensor_code:
-        # Add reset code to tabulate_tensor code
-        val = tensor_code[key]["tabulate_tensor"]
-        # Check if we have a tuple (common, cases) for facet integrals
-        if facet_integral:
-            val = (reset_code + val[0], val[1])
-        else:
-            val = reset_code + val
-        tensor_code[key]["tabulate_tensor"] = val
-        code[key] = tensor_code[key]
-
-    # Handle code from quadrature generator
-    elif key in quadrature_code:
-        # Add reset code to tabulate_tensor code
-        val = quadrature_code[key]["tabulate_tensor"]
-        # Check if we have a tuple (common, cases) for facet integrals
-        if facet_integral:
-            val = (reset_code + val[0], val[1])
-        else:
-            val = reset_code + val
-        quadrature_code[key]["tabulate_tensor"] = val
-        code[key] = quadrature_code[key]
-
-    # If we reach this level it means that no code has been generated
-    # for the given subdomain so we need to add the reset code
-    # NOTE: If we were sure that all assemblers would reset the local
-    # tensor before calling tabulate_tensor this wouldn't be needed
-    else:
-        if facet_integral:
-            code[key] = {"tabulate_tensor": (reset_code, []), "members": []}
-        else:
-            code[key] = {"tabulate_tensor": reset_code, "members": []}
 
 def format_code(generated_forms, prefix, format, options):
     "Compiler stage 5: Format code"
