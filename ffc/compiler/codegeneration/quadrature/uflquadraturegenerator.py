@@ -73,6 +73,9 @@ class QuadratureGenerator:
 
         code = {}
 
+        # Set represenation
+        code["representation"] = "quadrature"
+
         # Generate code for cell integrals
         code.update(self.generate_cell_integrals(form_representation, format))
 

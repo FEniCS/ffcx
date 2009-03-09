@@ -581,7 +581,10 @@ class Format:
         ufc_code["destructor"] = "// Do nothing"
 
         # Generate code for members
-        ufc_code["members"] = self.__generate_body(code["members"])
+        # Note special handling of <form prefix> not known at code generation stage!
+        body = self.__generate_body(code["members"])
+        body = body.replace("<form prefix>", prefix)
+        ufc_code["members"] = body
 
         # Generate code for tabulate_tensor
         ufc_code["tabulate_tensor"] = self.__generate_body(code["tabulate_tensor"])

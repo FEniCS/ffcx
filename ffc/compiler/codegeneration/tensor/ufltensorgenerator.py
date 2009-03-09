@@ -27,6 +27,9 @@ class UFLTensorGenerator:
 
         code = {}
 
+        # Set represenation
+        code["representation"] = "tensor"
+
         # Generate incremental code for now, might be an option later
         incremental = True
 
