@@ -13,12 +13,14 @@ from sets import Set
 # FIAT modules
 from FIAT.shapes import LINE
 
+# FFC common modules
+from ffc.common.log import debug
+
 # FFC fem modules
 from ffc.fem.finiteelement import *
 from ffc.fem.vectorelement import *
 from ffc.fem.projection import *
 from ffc.fem.dofmap import *
-
 from ffc.fem.quadratureelement import *
 
 # FFC code generation common modules
@@ -26,9 +28,28 @@ from evaluatebasis import *
 from evaluatebasisderivatives import *
 from utils import *
 
+def generate_finite_elements(form_data, format):
+    "Generate code for finite elements, including recursively nested sub elements."
+
+    debug("Generating code for finite elements...")
+    code = []
+
+    # Iterate over form elements
+    for (i, element) in enumerate(form_data.ffc_elements):
+
+        # Extract sub elements
+        sub_elements = _extract_sub_elements(element, (i,))
+
+        # Generate code for each element
+        for (label, sub_element) in sub_elements:
+            code += [(label, generate_finite_element(sub_element, format))]
+                
+    debug("done")
+    return code
+
 def generate_finite_element(element, format):
     """Generate dictionary of code for the given finite element
-    according to the given format"""
+    according to the given format."""
 
     code = {}
 
@@ -83,6 +104,18 @@ def generate_finite_element(element, format):
     code["num_sub_elements"] = "%d" % element.num_sub_elements()
 
     return code
+
+def _extract_sub_elements(element, parent):
+    """Recursively extract sub elements as a list of tuples where
+    each tuple consists of a tuple labeling the sub element and
+    the sub element itself."""
+    
+    if element.num_sub_elements() == 1:
+        return [(parent, element)]
+    sub_elements = []
+    for i in range(element.num_sub_elements()):
+        sub_elements += _extract_sub_elements(element.sub_element(i), parent + (i,))
+    return sub_elements + [(parent, element)]
 
 def __generate_evaluate_dof(element, format):
     "Generate code for evaluate_dof"

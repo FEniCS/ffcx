@@ -8,6 +8,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Kristian Oelgaard 2007
 
 # FFC common modules
+from ffc.common.log import debug
 from ffc.common.utils import *
 
 # FFC fem modules
@@ -15,6 +16,25 @@ from ffc.fem.finiteelement import *
 
 # FFC codegeneration common modules
 from ffc.compiler.codegeneration.common.utils import *
+
+def generate_dof_maps(form_data, format):
+    "Generate code for dof maps, including recursively nested dof maps."
+    
+    debug("Generating code for finite dof maps...")
+    code = []
+
+    # Iterate over form dof maps
+    for (i, dof_map) in enumerate(form_data.ffc_dof_maps):
+
+        # Extract sub dof maps
+        sub_dof_maps = _extract_sub_dof_maps(dof_map, (i,))
+
+        # Generate code for each dof map
+        for (label, sub_dof_map) in sub_dof_maps:
+            code += [(label, generate_dof_map(sub_dof_map, format))]
+                
+    debug("done")
+    return code
 
 def generate_dof_map(dof_map, format):
     """Generate dictionary of code for the given dof map according to
@@ -53,6 +73,18 @@ def generate_dof_map(dof_map, format):
     code["num_sub_dof_maps"] = "%d" % dof_map.num_sub_dof_maps()
 
     return code
+
+def _extract_sub_dof_maps(dof_map, parent):
+    """Recursively extract sub dof maps as a list of tuples where
+    each tuple consists of a tuple labeling the sub dof map and
+    the sub dof map itself."""
+    
+    if dof_map.num_sub_dof_maps() == 1:
+        return [(parent, dof_map)]
+    sub_dof_maps = []
+    for i in range(dof_map.num_sub_dof_maps()):
+        sub_dof_maps += _extract_sub_dof_maps(dof_map.sub_dof_map(i), parent + (i,))
+    return sub_dof_maps + [(parent, dof_map)]
 
 def __generate_needs_mesh_entities(dof_map, format):
     "Generate code for needs_mesh_entities"
