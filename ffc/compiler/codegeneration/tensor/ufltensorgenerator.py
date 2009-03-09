@@ -119,9 +119,6 @@ def _generate_cell_integral(terms, incremental, format):
     geo_code, coeff_set, trans_set, geo_ops = _generate_geometry_tensors(terms, geo_set, format)
     total_ops = tensor_ops + geo_ops
 
-    # Generate code for manipulating coefficients
-    coeff_code = _generate_coefficients(terms, coeff_set, format) 
-
     # Get Jacobian snippet
     jacobi_code = [format["generate jacobian"](cell_dimension, "cell")]
 
@@ -130,7 +127,7 @@ def _generate_cell_integral(terms, incremental, format):
 
     # Add coefficient and geometry tensor declarations
     code.append(format["comment"]("Number of operations to compute element tensor = %d" % total_ops))
-    code += coeff_code + geo_code
+    code += geo_code
 
     # Add element code
     code += [""] + [format["comment"]("Compute element tensor")]
@@ -243,61 +240,6 @@ def generate_interior_facet_integral(form_representation, sub_domain, format):
     code += [""] + [format["comment"]("Compute element tensor for all facet-facet combinations")]
 
     return {"tabulate_tensor": (code, cases), "members": ""}
-
-def _generate_coefficients(terms, coeff_set, format):
-    "Generate code for manipulating coefficients"
-
-    # FIXME: Is this needed?
-    return []
-
-    # Generate code as a list of declarations
-    code = []
-
-    # Add comment
-    code += [format["comment"]("Compute coefficients")]
-
-    # A coefficient is identified by 4 numbers:
-    #
-    #   0 - the number of the function
-    #   1 - the position of the (factored) monomial it appears in
-    #   2 - the position of the coefficient inside the monomial
-    #   3 - the position of the expansion coefficient
-
-    # Iterate over all terms
-    j = 0
-    for term in terms:
-        for GK in term.GK:
-            for k in range(len(GK.coefficients)):
-                coefficient = GK.coefficients[k]
-                index = coefficient.n0.index
-                if term.monomial.integral.type == Integral.INTERIOR_FACET:
-                    space_dimension = 2*len(coefficient.index.range)
-                else:
-                    space_dimension = len(coefficient.index.range)
-                for l in range(space_dimension):
-                    # If coefficient is not used don't declare it
-                    if not format["modified coefficient access"](index, j, k, l) in coeff_set:
-                        continue
-                    name = format["modified coefficient declaration"](index, j, k, l)
-                    value = format["coefficient"](index, l)
-                    for l in range(len(coefficient.ops)):
-                        op = coefficient.ops[len(coefficient.ops) - 1 - l]
-                        if op == Operators.INVERSE:
-                            value = format["inverse"](value)
-                        elif op == Operators.MODULUS:
-                            value = format["absolute value"](value)
-                        elif op == Operators.SQRT:
-                            value = format["sqrt"](value)
-                    code += [(name, value)]
-            j += 1
-
-    # Don't add code if there are no coefficients
-    if len(code) == 1:
-        return []
-
-    # Add newline
-    code += [""]
-    return code
 
 def _generate_geometry_tensors(terms, geo_set, format):
     "Generate list of declarations for computation of geometry tensors"
@@ -436,7 +378,8 @@ def _generate_entry(GK, a, i, format):
     for j in range(len(GK.coefficients)):
         c = GK.coefficients[j]
         if not c.index.index_type == MonomialIndex.AUXILIARY:
-            coefficient = format["modified coefficient access"](c.number, i, j, c.index([], a, [], []))
+            #coefficient = format["coefficient"](c.number, i, j, c.index(a=a))
+            coefficient = format["coefficient"](c.number, c.index(a=a))
             coeff_set.add(coefficient)
             factors += [coefficient]
 
@@ -461,16 +404,18 @@ def _generate_entry(GK, a, i, format):
         for j in range(len(GK.coefficients)):
             c = GK.coefficients[j]
             if c.index.index_type == MonomialIndex.AUXILIARY:
-                coefficient = format["modified coefficient access"](c.number, i, j, c.index([], a, [], b))
+                #coefficient = format["coefficient"](c.number, i, j, c.index([], a, [], b))
+                coefficient = format["coefficient"](c.number, c.index([], a, [], b))
                 coeff_set.add(coefficient)
                 factors += [coefficient]
-        #!for t in GK.transforms:
-        #!    if t.index0.index_type == MonomialIndex.AUXILIARY or t.index1.index_type == MonomialIndex.AUXILIARY:
-        #!        trans = format["transform"](t.transform_type, t.index0([], a, [], b), \
-        #!                                    t.index1([], a, [], b), \
-        #!                                    t.restriction)
-        #!        factors += [trans]
-        #!        trans_set.add(trans)
+        for t in GK.transforms:
+            if t.index0.index_type == MonomialIndex.AUXILIARY or t.index1.index_type == MonomialIndex.AUXILIARY:
+                trans = format["transform"](t.transform_type,
+                                            t.index0(a=a, b=b),
+                                            t.index1(a=a, b=b),
+                                            t.restriction)
+                factors += [trans]
+                trans_set.add(trans)
         if factors:
             num_ops += len(factors) - 1
         terms += [format["multiply"](factors)]

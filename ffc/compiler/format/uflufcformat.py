@@ -30,9 +30,9 @@ from removeunused import *
 from dolfintemplates import *
 
 # Choose map from restriction
-choose_map = {Restriction.PLUS: "0", Restriction.MINUS: "1", Restriction.CONSTANT: "0", None: ""}
-transform_options = {Transform.JINV: lambda m, j, k: "Jinv%s_%d%d" % (m, j, k),
-                     Transform.J: lambda m, j, k: "J%s_%d%d" % (m, k, j)}
+choose_map = {"PLUS": "0", "MINUS": "1", "CONSTANT": "0", None: ""}
+transform_options = {"JINV": lambda m, j, k: "Jinv%s_%d%d" % (m, j, k),
+                     "J": lambda m, j, k: "J%s_%d%d" % (m, k, j)}
 # Options for the printing q or 1.0/(q) for q string:
 power_options = {True: lambda q: q, False: lambda q: "1.0/(%s)" % q}
 

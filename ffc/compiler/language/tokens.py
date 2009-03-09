@@ -125,8 +125,8 @@ class Transform:
         restriction - a Restriction for facet evaluation
     """
     # Available types for the transform
-    JINV = 0
-    J = 1
+    JINV = "JINV"
+    J = "J"
     
     def __init__(self, element, index0 = None, index1 = None, restriction = None, type = JINV):
         "Create Transform."

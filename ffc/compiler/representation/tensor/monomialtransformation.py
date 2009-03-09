@@ -40,10 +40,10 @@ def reset_indices():
 
 class MonomialIndex:
 
+    FIXED = "fixed"
     PRIMARY = "primary"
     SECONDARY = "secondary"
     AUXILIARY = "auxiliary"
-    FIXED = "fixed"
 
     def __init__(self, index_type, index_range, index_id=None):
         if index_type == MonomialIndex.SECONDARY and index_id is None:
@@ -56,6 +56,27 @@ class MonomialIndex:
 
     def __lt__(self, other):
         return self.index_id < other.index_id
+
+    def __call__(self, i=None, a=None, b=None):
+        "Evaluate index at current index list."
+
+        if self.index_type == MonomialIndex.FIXED:
+            return self.index_id
+        elif self.index_type == MonomialIndex.PRIMARY:
+            if not i:
+                raise RuntimeError, "Missing index values for primary indices."
+            return i[self.index_id]
+        elif self.index_type == MonomialIndex.SECONDARY:
+            if not a:
+                raise RuntimeError, "Missing index values for secondary indices."
+            return a[self.index_id]
+        elif self.index_type == MonomialIndex.AUXILIARY:
+            if not b:
+                raise RuntimeError, "Missing index values for auxiliary indices."
+            return b[self.index_id]
+        else:
+            raise RuntimeError, "Unknown index type " + str(self.type)
+        return
 
     def __str__(self):
         if self.index_type == MonomialIndex.PRIMARY:
@@ -105,6 +126,7 @@ class MonomialTransform:
         self.index0 = index0
         self.index1 = index1
         self.transform_type = MonomialTransform.JINV
+        self.restriction = None
 
     def __str__(self):
         return "dX_%s/dx_%s" % (str(self.index0), str(self.index1))

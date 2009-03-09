@@ -8,6 +8,6 @@ __license__  = "GNU GPL version 3 or any later version"
 class Restriction:
 
     # Avaiable restriction types
-    PLUS = 0
-    MINUS = 1
-    CONSTANT = 2
+    PLUS = "PLUS"
+    MINUS = "MINUS"
+    CONSTANT = "CONSTANT"
