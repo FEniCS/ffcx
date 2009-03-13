@@ -192,7 +192,7 @@ class Format:
            "snippet calculate dof": calculate_dof,
            "get cell vertices" : "const double * const * x = c.coordinates;",
            "generate jacobian": lambda d, i: self.__generate_jacobian(d, i),
-           "generate body": lambda d: self.__generate_body(d),
+           "generate body": lambda d: _generate_body(d),
 # misc
            "comment": lambda v: "// %s" % v,
            "pointer": "*",
@@ -380,17 +380,17 @@ class Format:
 
             # Generate code for ufc::cell_integral
             for (label, code) in form_code["cell_integrals"]:
-                output += self.__generate_cell_integral(code, form_data, options, form_prefix, label, code_section)
+                output += _generate_cell_integral(code, form_data, options, form_prefix, label, code_section)
                 output += "\n"
 
             # Generate code for ufc::exterior_facet_integral
-            for j in range(form_data.num_exterior_facet_integrals):
-                output += self.__generate_exterior_facet_integral(form_code[("exterior_facet_integral", j)], form_data, options, form_prefix, j, code_section)
+            for (label, code) in form_code["exterior_facet_integrals"]:
+                output += _generate_interior_facet_integral(code, form_data, options, form_prefix, label, code_section)
                 output += "\n"
-        
+
             # Generate code for ufc::interior_facet_integral
-            for j in range(form_data.num_interior_facet_integrals):
-                output += self.__generate_interior_facet_integral(form_code[("interior_facet_integral", j)], form_data, options, form_prefix, j, code_section)
+            for (label, code) in form_code["interior_facet_integrals"]:
+                output += _generate_exterior_facet_integral(code, form_data, options, form_prefix, label, code_section)
                 output += "\n"
 
             # Generate code for ufc::form
@@ -454,21 +454,21 @@ class Format:
         ufc_code["value_dimension"] = self.__generate_switch("i", cases, "return 0;")
 
         # Generate code for evaluate_basis (and vectorised counterpart)
-        ufc_code["evaluate_basis"] = self.__generate_body(code["evaluate_basis"])
-        ufc_code["evaluate_basis_all"] = self.__generate_body(code["evaluate_basis_all"])
+        ufc_code["evaluate_basis"] = _generate_body(code["evaluate_basis"])
+        ufc_code["evaluate_basis_all"] = _generate_body(code["evaluate_basis_all"])
 
         # Generate code for evaluate_basis_derivatives (and vectorised counterpart)
-        ufc_code["evaluate_basis_derivatives"] = self.__generate_body(code["evaluate_basis_derivatives"])
-        ufc_code["evaluate_basis_derivatives_all"] = self.__generate_body(code["evaluate_basis_derivatives_all"])
+        ufc_code["evaluate_basis_derivatives"] = _generate_body(code["evaluate_basis_derivatives"])
+        ufc_code["evaluate_basis_derivatives_all"] = _generate_body(code["evaluate_basis_derivatives_all"])
 
         # Generate code for evaluate_dof
-        ufc_code["evaluate_dof"] = self.__generate_body(code["evaluate_dof"])
+        ufc_code["evaluate_dof"] = _generate_body(code["evaluate_dof"])
 
         # Generate code for evaluate_dofs (introduced in UFC 1.1)
         ufc_code["evaluate_dofs"] = self.format["exception"]("Not implemented (introduced in UFC v1.1).")
 
         # Generate code for inperpolate_vertex_values
-        ufc_code["interpolate_vertex_values"] = remove_unused(self.__generate_body(code["interpolate_vertex_values"]))
+        ufc_code["interpolate_vertex_values"] = remove_unused(_generate_body(code["interpolate_vertex_values"]))
 
         # Generate code for num_sub_elements
         ufc_code["num_sub_elements"] = "return %s;" % code["num_sub_elements"]
@@ -482,11 +482,11 @@ class Format:
             ufc_code["create_sub_element"] = self.__generate_switch("i", cases, "return 0;")
         
         if code_section == "combined":
-            return self.__generate_code(finite_element_combined, ufc_code, options)
+            return _generate_code(finite_element_combined, ufc_code, options)
         elif code_section == "header":
-            return self.__generate_code(finite_element_header, ufc_code, options)
+            return _generate_code(finite_element_header, ufc_code, options)
         elif code_section == "implementation":
-            return self.__generate_code(finite_element_implementation, ufc_code, options)
+            return _generate_code(finite_element_implementation, ufc_code, options)
 
     def __generate_dof_map(self, code, form_data, options, prefix, label, code_section):
         "Generate code for ufc::dof_map"
@@ -537,16 +537,16 @@ class Format:
         ufc_code["num_entity_dofs"] = self.format["exception"]("Not implemented (introduced in UFC v1.1).")
 
         # Generate code for tabulate_dofs
-        ufc_code["tabulate_dofs"] = self.__generate_body(code["tabulate_dofs"])
+        ufc_code["tabulate_dofs"] = _generate_body(code["tabulate_dofs"])
 
         # Generate code for tabulate_facet_dofs
-        ufc_code["tabulate_facet_dofs"] = self.__generate_switch("facet", [self.__generate_body(case) for case in code["tabulate_facet_dofs"]])
+        ufc_code["tabulate_facet_dofs"] = self.__generate_switch("facet", [_generate_body(case) for case in code["tabulate_facet_dofs"]])
 
         # Generate code for tabulate_entity_dofs (introduced in UFC 1.1)
         ufc_code["tabulate_entity_dofs"] = self.format["exception"]("Not implemented (introduced in UFC v1.1).")
 
         # Generate code for tabulate_coordinates
-        ufc_code["tabulate_coordinates"] = self.__generate_body(code["tabulate_coordinates"])
+        ufc_code["tabulate_coordinates"] = _generate_body(code["tabulate_coordinates"])
 
         # Generate code for num_sub_dof_maps
         ufc_code["num_sub_dof_maps"] = "return %s;" % code["num_sub_dof_maps"]
@@ -560,175 +560,11 @@ class Format:
             ufc_code["create_sub_dof_map"] = self.__generate_switch("i", cases, "return 0;")
 
         if code_section == "combined":
-            return self.__generate_code(dof_map_combined, ufc_code, options)
+            return _generate_code(dof_map_combined, ufc_code, options)
         elif code_section == "header":
-            return self.__generate_code(dof_map_header, ufc_code, options)
+            return _generate_code(dof_map_header, ufc_code, options)
         elif code_section == "implementation":
-            return self.__generate_code(dof_map_implementation, ufc_code, options)
-
-    def __generate_cell_integral(self, code, form_data, options, prefix, postfix, code_section):
-        "Generate code for ufc::cell_integral"
-
-        ufc_code = {}
-
-        # Set class name
-        ufc_code["classname"] = "%s_cell_integral_%s" % (prefix, postfix)
-
-        # Generate code for constructor
-        ufc_code["constructor"] = "// Do nothing"
-
-        # Generate code for destructor
-        ufc_code["destructor"] = "// Do nothing"
-
-        # Generate code for members
-        # Note special handling of <form prefix> not known at code generation stage!
-        body = self.__generate_body(code["members"])
-        body = body.replace("<form prefix>", prefix)
-        ufc_code["members"] = body
-
-        # Generate code for tabulate_tensor
-        ufc_code["tabulate_tensor"] = self.__generate_body(code["tabulate_tensor"])
-
-        if code_section == "combined":
-            return self.__generate_code(cell_integral_combined, ufc_code, options)
-        elif code_section == "header":
-            return self.__generate_code(cell_integral_header, ufc_code, options)
-        elif code_section == "implementation":
-            return members + self.__generate_code(cell_integral_implementation, ufc_code, options)
-
-    def __generate_exterior_facet_integral(self, code, form_data, options, prefix, i, code_section):
-        "Generate code for ufc::exterior_facet_integral"
-
-        ufc_code = {}
-        
-        # Set class name
-        ufc_code["classname"] = "%s_exterior_facet_integral_%d" % (prefix, i)
-
-        # Generate code for constructor
-        ufc_code["constructor"] = "// Do nothing"
-
-        # Generate code for destructor
-        ufc_code["destructor"] = "// Do nothing"
-
-        members = ""
-        # If we only have one representation for this subdomain proceed as usual
-        if not "tabulate_tensor_tensor" in code:
-
-            # Generate code for members
-            # FIXME: These members doesn't define the classname for the
-            # implementation code
-            ufc_code["members"] = self.__generate_body(code["members"])
-            
-            # Generate code for tabulate_tensor
-            switch = self.__generate_switch("facet", [self.__generate_body(case) for case in code["tabulate_tensor"][1]])
-            #    body  = __generate_jacobian(form_data.cell_dimension, Integral.EXTERIOR_FACET)
-            #    body += "\n"
-            body = self.__generate_body(code["tabulate_tensor"][0])
-            body += "\n"
-            body += switch
-            #    ufc_code["tabulate_tensor"] = remove_unused(body)
-            ufc_code["tabulate_tensor"] = body
-
-        else:
-            # Generate code for members (add contributions)
-            # TODO: The two generators might define overlapping members!
-            # FIXME: These members doesn't define the classname for the
-            # implementation code
-            ufc_code["members"] = self.__generate_body(code["tabulate_tensor_tensor"]["members"]) +\
-                                  self.__generate_body(code["tabulate_tensor_quadrature"]["members"])
-
-            # Generate code for function call
-            ufc_code["tabulate_tensor"] = exterior_facet_integral_call % {"reset_tensor": self.__generate_body(code["reset_tensor"])}
-
-            # Get correct format string and generate code for tabulate_tensor
-            # for both representations
-            format_string = private_declarations["exterior_facet_integral_" + code_section]
-            for function_name in ["tabulate_tensor_tensor", "tabulate_tensor_quadrature"]:
-
-                switch = self.__generate_switch("facet", [indent(self.__generate_body(case), 2) for case in code[function_name]["tabulate_tensor"][1]])
-
-                body = self.__generate_body(code[function_name]["tabulate_tensor"][0])
-                body += "\n"
-                body += switch
-                members += format_string % {"function_name": function_name, "tabulate_tensor": body, "classname":ufc_code["classname"]}
-
-            ufc_code["members"] += indent(members, 2)
-
-        if code_section == "combined":
-            return self.__generate_code(exterior_facet_integral_combined, ufc_code, options)
-        elif code_section == "header":
-            return self.__generate_code(exterior_facet_integral_header, ufc_code, options)
-        elif code_section == "implementation":
-            return members + self.__generate_code(exterior_facet_integral_implementation, ufc_code, options)
-
-    def __generate_interior_facet_integral(self, code, form_data, options, prefix, i, code_section):
-        "Generate code for ufc::interior_facet_integral"
-
-        ufc_code = {}
-
-        # Set class name
-        ufc_code["classname"] = "%s_interior_facet_integral_%d" % (prefix, i)
-
-        # Generate code for constructor
-        ufc_code["constructor"] = "// Do nothing"
-
-        # Generate code for destructor
-        ufc_code["destructor"] = "// Do nothing"
-
-        members = ""
-        # If we only have one representation for this subdomain proceed as usual
-        if not "tabulate_tensor_tensor" in code:
-
-            # Generate code for members
-            # FIXME: These members doesn't define the classname for the
-            # implementation code
-            ufc_code["members"] = self.__generate_body(code["members"])
-
-            # Generate code for tabulate_tensor, impressive line of Python code follows
-            switch = self.__generate_switch("facet0", [self.__generate_switch("facet1", [self.__generate_body(case) for case in cases]) for cases in code["tabulate_tensor"][1]])
-            #    body  = __generate_jacobian(form_data.cell_dimension, Integral.INTERIOR_FACET)
-            #    body += "\n"
-            body = self.__generate_body(code["tabulate_tensor"][0])
-            body += "\n"
-            body += switch
-            #    ufc_code["tabulate_tensor"] = remove_unused(body)
-            ufc_code["tabulate_tensor"] = body
-        else:
-            # Generate code for members (add contributions)
-            # TODO: The two generators might define overlapping members!
-            # FIXME: These members doesn't define the classname for the
-            # implementation code
-            ufc_code["members"] = self.__generate_body(code["tabulate_tensor_tensor"]["members"]) +\
-                                  self.__generate_body(code["tabulate_tensor_quadrature"]["members"])
-
-            # Generate code for function call
-            ufc_code["tabulate_tensor"] = interior_facet_integral_call % {"reset_tensor": self.__generate_body(code["reset_tensor"])}
-
-            # Get correct format string and generate code for tabulate_tensor
-            # for both representations
-            format_string = private_declarations["interior_facet_integral_" + code_section]
-            for function_name in ["tabulate_tensor_tensor", "tabulate_tensor_quadrature"]:
-                # Generate code for tabulate_tensor, impressive line of Python code follows
-                switch = self.__generate_switch("facet0",\
-                             [self.__generate_switch("facet1",\
-                                  [indent(self.__generate_body(case), 2) for case in cases])\
-                                        for cases in code[function_name]["tabulate_tensor"][1]])
-                #    body  = __generate_jacobian(form_data.cell_dimension, Integral.INTERIOR_FACET)
-                #    body += "\n"
-                body = self.__generate_body(code[function_name]["tabulate_tensor"][0])
-                body += "\n"
-                body += switch
-                members += format_string % {"function_name": function_name, "tabulate_tensor": body, "classname":ufc_code["classname"]}
-
-            ufc_code["members"] += indent(members, 2)
-
-
-        if code_section == "combined":
-            return self.__generate_code(interior_facet_integral_combined, ufc_code, options)
-        elif code_section == "header":
-            return self.__generate_code(interior_facet_integral_header, ufc_code, options)
-        elif code_section == "implementation":
-            return members + self.__generate_code(interior_facet_integral_implementation, ufc_code, options)
+            return _generate_code(dof_map_implementation, ufc_code, options)
 
     def __generate_form(self, code, form_data, options, prefix, code_section):
         "Generate code for ufc::form"
@@ -748,7 +584,7 @@ class Format:
         ufc_code["destructor"] = "// Do nothing"
 
         # Generate code for signature
-        ufc_code["signature"] = "return \"%s\";" % self.__generate_body(code["signature"])
+        ufc_code["signature"] = "return \"%s\";" % _generate_body(code["signature"])
 
         # Generate code for rank
         ufc_code["rank"] = "return %s;" % code["rank"]
@@ -791,14 +627,16 @@ class Format:
         ufc_code["create_interior_facet_integral"] = self.__generate_switch("i", cases, "return 0;")
 
         if code_section == "combined":
-            return self.__generate_code(form_combined, ufc_code, options)
+            return _generate_code(form_combined, ufc_code, options)
         elif code_section == "header":
-            return self.__generate_code(form_header, ufc_code, options)
+            return _generate_code(form_header, ufc_code, options)
         elif code_section == "implementation":
-            return self.__generate_code(form_implementation, ufc_code, options)
+            return _generate_code(form_implementation, ufc_code, options)
 
     def _generate_dolfin_wrappers(self, generated_forms, prefix, options):
         "Generate code for DOLFIN wrappers"
+
+        # FIXME: Use module from dolfin_utils
 
         # We generate two versions of all constructors, one using references (_r)
         # and one using shared pointers (_s)
@@ -1070,28 +908,119 @@ public:
         
         return code
 
-    def __generate_body(self, declarations):
-        "Generate function body from list of declarations or statements"
-        if not isinstance(declarations, list):
-            declarations = [declarations]
-        lines = []
-        for declaration in declarations:
-            if isinstance(declaration, tuple):
-                lines += ["%s = %s;" % declaration]
-            else:
-                lines += ["%s" % declaration]
-        return "\n".join(lines)
+def _generate_cell_integral(code, form_data, options, prefix, postfix, code_section):
+    "Generate code for ufc::cell_integral."
 
-    def __generate_code(self, format_string, code, options):
-        "Generate code according to format string and code dictionary"
+    ufc_code = {}
 
-        # Fix indentation
-        for key in code:
-            flag = "no-" + key
-            if flag in options and options[flag]:
-                code[key] = self.format["exception"]("// Function %s not generated (compiled with -fno-%s)" % (key, key))
-            if not key in ["classname", "members"]:
-                code[key] = indent(code[key], 4)
+    # Set class name
+    ufc_code["classname"] = "%s_cell_integral_%s" % (prefix, postfix)
 
-        # Generate code
-        return format_string % code
+    # Generate code for constructor
+    ufc_code["constructor"] = "// Do nothing"
+
+    # Generate code for destructor
+    ufc_code["destructor"] = "// Do nothing"
+
+    # Generate code for members
+    # Note special handling of <form prefix> not known at code generation stage!
+    body = _generate_body(code["members"])
+    body = body.replace("<form prefix>", prefix)
+    ufc_code["members"] = body
+
+    # Generate code for tabulate_tensor
+    ufc_code["tabulate_tensor"] = _generate_body(code["tabulate_tensor"])
+
+    if code_section == "combined":
+        return _generate_code(cell_integral_combined, ufc_code, options)
+    elif code_section == "header":
+        return _generate_code(cell_integral_header, ufc_code, options)
+    elif code_section == "implementation":
+        return members + _generate_code(cell_integral_implementation, ufc_code, options)
+
+def _generate_exterior_facet_integral(code, form_data, options, prefix, postfix, code_section):
+    "Generate code for ufc::exterior_facet_integral."
+
+    ufc_code = {}
+
+    # Set class name
+    ufc_code["classname"] = "%s_exterior_facet_integral_%s" % (prefix, postfix)
+
+    # Generate code for constructor
+    ufc_code["constructor"] = "// Do nothing"
+
+    # Generate code for destructor
+    ufc_code["destructor"] = "// Do nothing"
+
+    # Generate code for members
+    # Note special handling of <form prefix> not known at code generation stage!
+    body = _generate_body(code["members"])
+    body = body.replace("<form prefix>", prefix)
+    ufc_code["members"] = body
+
+    # Generate code for tabulate_tensor
+    ufc_code["tabulate_tensor"] = _generate_body(code["tabulate_tensor"])
+
+    if code_section == "combined":
+        return _generate_code(exterior_facet_integral_combined, ufc_code, options)
+    elif code_section == "header":
+        return _generate_code(exterior_facet_integral_header, ufc_code, options)
+    elif code_section == "implementation":
+        return members + _generate_code(exterior_facet_integral_implementation, ufc_code, options)
+
+def _generate_interior_facet_integral(code, form_data, options, prefix, postfix, code_section):
+    "Generate code for ufc::interior_facet_integral."
+
+    ufc_code = {}
+
+    # Set class name
+    ufc_code["classname"] = "%s_interior_facet_integral_%s" % (prefix, postfix)
+
+    # Generate code for constructor
+    ufc_code["constructor"] = "// Do nothing"
+
+    # Generate code for destructor
+    ufc_code["destructor"] = "// Do nothing"
+
+    # Generate code for members
+    # Note special handling of <form prefix> not known at code generation stage!
+    body = _generate_body(code["members"])
+    body = body.replace("<form prefix>", prefix)
+    ufc_code["members"] = body
+
+    # Generate code for tabulate_tensor
+    ufc_code["tabulate_tensor"] = _generate_body(code["tabulate_tensor"])
+
+    if code_section == "combined":
+        return _generate_code(interior_facet_integral_combined, ufc_code, options)
+    elif code_section == "header":
+        return _generate_code(interior_facet_integral_header, ufc_code, options)
+    elif code_section == "implementation":
+        return members + _generate_code(interior_facet_integral_implementation, ufc_code, options)
+
+def _generate_body(declarations):
+    "Generate function body from list of declarations or statements."
+
+    if not isinstance(declarations, list):
+        declarations = [declarations]
+    lines = []
+    for declaration in declarations:
+        if isinstance(declaration, tuple):
+            lines += ["%s = %s;" % declaration]
+        else:
+            lines += ["%s" % declaration]
+    return "\n".join(lines)
+
+def _generate_code(format_string, code, options):
+    "Generate code according to format string and code dictionary"
+
+    # Fix indentation
+    for key in code:
+        flag = "no-" + key
+        if flag in options and options[flag]:
+            code[key] = self.format["exception"]("// Function %s not generated (compiled with -fno-%s)" % (key, key))
+        if not key in ["classname", "members"]:
+            code[key] = indent(code[key], 4)
+
+    # Generate code
+    return format_string % code
