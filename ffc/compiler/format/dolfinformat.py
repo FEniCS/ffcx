@@ -198,6 +198,15 @@ def _generate_dolfin_wrappers(generated_forms, prefix, options):
                                                "%sCoefficientSpace%d" % (form_prefix, j),
                                                element_map)
             output += "\n"
+        # If we compiled just one element
+        if form_data.rank < 0:
+            if not len(form_data.elements) == 1:
+                raise RuntimeError("Expected just one element")
+            output += _generate_function_space(form_data.elements[0],
+                                               "%sFunctionSpace" % (form_prefix),
+                                               element_map)
+            output += "\n"
+
 
     # Generate code for special function spaces
     if not test_element is None:
@@ -294,10 +303,10 @@ def _generate_dolfin_wrappers(generated_forms, prefix, options):
                                           form_prefix, constructor_args_r,  coefficient_init, constructor_body_r,
                                           form_prefix, constructor_args_rc, coefficient_init, constructor_body_rc,
                                           form_prefix, coefficient_members)
-            else:
-                output += form_class % (form_prefix,
-                                        form_prefix, constructor_args_r,  coefficient_init, constructor_body_r,
-                                        form_prefix, coefficient_members)
+#            else:
+#                output += form_class % (form_prefix,
+#                                        form_prefix, constructor_args_r,  coefficient_init, constructor_body_r,
+#                                        form_prefix, coefficient_members)
 
     return output
 
