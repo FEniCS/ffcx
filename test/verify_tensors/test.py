@@ -23,7 +23,7 @@ from ffc.jit.jit import jit
 #from ffc import *
 
 def main(argv):
-    "Main function, handle arguments and run tests accordingly"
+    "Main function, handle arguments and run tests accordingly."
 
     # Get command-line arguments
     try:
@@ -34,7 +34,7 @@ def main(argv):
         return 2
 
     # Run tests for both representations as default
-    representations = ["tensor", "quadrature"]
+    representations = ["quadrature", "tensor"]
 
     # Default options
     tolerance = 1e-14
@@ -70,16 +70,10 @@ def main(argv):
             usage()
             return 2
 
-    # Clean test_cache
-    print "\nDeleting forms in cache"
-    print "====================================================================\n"
-    system("rm -rf form_*")
-    system("rm -rf test_cache/form_*")
-    print "Done"
-    print "\n====================================================================\n"
-
-    test_options = {"tolerance":tolerance, "new_references":new_references,
-                    "form_files":args, "form_type": form_type}
+    test_options = {"tolerance": tolerance,
+                    "new_references": new_references,
+                    "form_files": args,
+                    "form_type": form_type}
 
     # Print test options
     print "\nThe following test options will be used"
@@ -92,11 +86,18 @@ def main(argv):
     print "representations: ", representations
     print "\n====================================================================\n"
 
+    # Clean test_cache
+    print "\nDeleting forms in cache"
+    print "====================================================================\n"
+    system("rm -rf form_*")
+    system("rm -rf test_cache/form_*")
+    print "Done"
+    print "\n====================================================================\n"
+
     # Run tests and get summary
     summary = {}
     for representation in representations:
         test_options["representation"] = representation
-#        t = time.clock()
         summary[representation] = run_tests(test_options)
 
     # Print summary for each test
@@ -110,7 +111,7 @@ def main(argv):
     return 0
 
 def run_tests(test_options):
-    "Run tests for given representation"
+    "Run tests for given options."
 
     new_references = test_options["new_references"]
 
@@ -563,16 +564,18 @@ def usage():
     "Display usage info."
     print """\nUsage: ./test.py [OPTION] [FILES (optional)], or: python test.py [OPTION] [FILES (optional)]
 
-  -h, --help              display this info
+  -h, --help              Display this info.
 
 
-  -n, --new_references    generate new reference tensors for all forms in
-                          [FILES] using tensor representation. E.g.,
+  -n, --new_references    Generate new reference tensors for all forms in
+                          [FILES] using tensor representation.
 
-                          ./test.py -n Poisson.form
+                          Example:
 
-                           - will generate new references for ../../demo/Poisson.form
-                             and put the result in ./references
+                            ./test.py -n Poisson.form
+
+                          This generates new references for ../../demo/Poisson.form
+                          and put the result in ./references
 
                           IMPORTANT! This option should only be used in one of
                           the following cases:
@@ -591,31 +594,41 @@ def usage():
                           4. If there's another good reason, put it here...
 
 
-  -r, --representation    specify the representation ('tensor' or 'quadrature') for
-                          which to run the tests. E.g.,
+  -r, --representation    Specify the representation ('tensor' or 'quadrature') for
+                          which to run the tests.
 
-                          ./test.py -r quadrature
+                          Example:
 
-                           - will test ALL forms in ../../demo using quadrature representation
+                            ./test.py -r quadrature
 
-                          ./test.py -r tensor Poisson.form
+                          This will test ALL forms in ../../demo using quadrature representation.
 
-                           - will test ../../demo/Poisson.form using tensor representation
+                            ./test.py -r tensor Poisson.form
+
+                          This will test ../../demo/Poisson.form using tensor representation.
 
                           If no representation is specified the tests will be
                           run for both representations.
 
 
-  -t, --tolerance         specify the tolerance the should be used when comparing
-                          tensors. E.g.,
+  -t, --tolerance         Specify the tolerance that should be used when comparing
+                          tensors.
 
-                          ./test.py -t 1e-10
+                          Example:
 
-                           - will use a tolerance of 1e-10 when comparing
-                             the norm between tensor being computed and those
-                             in the ./references directory
+                            ./test.py -t 1e-10
 
-  -T, --type              specify which type of forms to test. Can be either
+                          This will use a tolerance of 1e-10 when comparing the
+                          norm between tensors being computed and those in the
+                          ./references directory.
+
+                          If no tolerance is specified, the default value will be
+                          used (1e-14).
+
+
+  -T, --type              FIXME: Remove this option once the .form format is removed!
+
+                          Specify which type of forms to test. Can be either
                           the 'native' FFC i.e. 'form' (default), UFL i.e.
                           'ufl' or both types i.e. 'all'. E.g.,
 
@@ -623,9 +636,5 @@ def usage():
 """
     return
 
-
 if __name__ == "__main__":
     sys.exit(main(sys.argv[1:]))
-
-
-
