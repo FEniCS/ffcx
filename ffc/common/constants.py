@@ -24,10 +24,9 @@ FFC_OPTIONS = {"representation": "tensor",
 
 # FIXME: New options to replace FFC options
 UFL_OPTIONS = {"representation": "auto",      # form representation / code generation strategy
+               "format": "ufc",               # code generation format
                "quadrature_order": "auto",    # quadrature order used for quadrature representation
                "precision": "15",             # precision used when writing numbers
-               "blas": False,                 # generate BLAS code (currently broken)
-               "optimize": False,             # generate optimized code (currently broken)
                "split_implementation": False, # split generated code into .h and .cpp file
                "form_postfix": True,          # postfix form name with "Function", "LinearForm" or BilinearForm
                "cache_dir": None,             # cache dir used by Instant

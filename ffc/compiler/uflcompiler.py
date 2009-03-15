@@ -91,7 +91,7 @@ def compile(forms, prefix="Form", options=UFL_OPTIONS.copy(), global_variables=N
         info("No forms specified, nothing to do.")
         return
 
-    # Choose format
+    # Create format
     format = Format(options)
 
     # Compile all forms
@@ -161,9 +161,11 @@ def analyze_form(form, options, global_variables):
 
 def compute_form_representations(form_data, options):
     "Compiler stage 2."
+
     begin("Compiler stage 2: Computing form representation(s)")
     representations = [Representation(form_data) for Representation in Representations]
     end()
+    
     return representations
     
 def optimize_form_representation(form_data):
@@ -199,38 +201,20 @@ def generate_form_code(form_data, representations, prefix, format):
     return code
 
 def format_code(generated_forms, prefix, format, options):
-    "Compiler stage 5: Format code"
+    "Compiler stage 5."
+    
     begin("Compiler stage 5: Formatting code")
     format.write(generated_forms, prefix, options)
     end()
 
-def _auto_select_representation(integral):
-    "Automatically select the best representation for integral."
-
-    # FIXME: Implement this
-    return "quadrature"
-
-def _auto_select_quadrature_order(integral):
-    "Automatically select the appropriate quadrature order for integral."
-
-    # FIXME: Improve algorithms in UFL. In the mean time this is a dirty hack
-    # FIXME: to take into account Quadrature elements
-    if any(e.family() == "Quadrature" for e in extract_unique_elements(integral)):
-        quadrature_order = extract_quadrature_order(integral)
-    else:
-        quadrature_order = max(extract_quadrature_order(integral),\
-                               estimate_quadrature_order(integral))
-
-    return quadrature_order
-
 def _check_options(options):
     "Initial check of options."
     
-    if options["optimize"]:
+    if "optimize" in options:
         warning("Optimization unavailable (will return in a future version).")
-    if options["blas"]:
+    if "blas" in options:
         warning("BLAS mode unavailable (will return in a future version).")
-    if options["quadrature_points"]:
+    if "quadrature_points" in options:
         warning("Option 'quadrature_points' has been replaced by 'quadrature_order'.")
 
     return options
@@ -277,18 +261,18 @@ def _check_metadata(integral, options):
             warning("Unrecognized option '%s' for integral metadata." % key)
 
     # Check metadata
-    valid_representations = ["tensor", "quadrature", "automatic"]
+    valid_representations = ["tensor", "quadrature", "auto"]
     if not representation in valid_representations:
         error("Unrecognized form representation '%s', must be one of %s.",
               representation, ", ".join("'%s'" % r for r in valid_representations))
-    if not ((isinstance(quadrature_order, int) and quadrature_order >= 0) or quadrature_order == "automatic"):
-        error("Illegal quadrature order %s for integral, must be a nonnegative integer or 'automatic'.",
+    if not ((isinstance(quadrature_order, int) and quadrature_order >= 0) or quadrature_order == "auto"):
+        error("Illegal quadrature order '%s' for integral, must be a nonnegative integer or 'auto'.",
               str(quadrature_order))
 
-    # Automatically select metadata if "automatic" is selected
-    if representation == "automatic":
+    # Automatically select metadata if "auto" is selected
+    if representation == "auto":
         representation = _auto_select_representation(integral)
-    if quadrature_order == "automatic":
+    if quadrature_order == "auto":
         quadrature_order = _auto_select_quadrature_order(integral)
 
     # Create new measure with updated metadata
@@ -318,21 +302,8 @@ def _extract_objects(objects):
 
     return (forms, elements)
 
-def _choose_format(options):
-    "Choose output format."
-
-    # FIXME: Make format a class (since we call init())
-
-    language = options["language"]
-    if language.lower() == "ufc":
-        return ufcformat
-    elif language.lower() == "dolfin":
-        return dolfinformat
-    else:
-        raise RuntimeError, "Don't know how to compile code for language \"%s\"." % language
-
-def _choose_representation(form, options):
-    "Choose form representation"
+def _select_representation(form, options):
+    "Select form representation"
 
     option = options["representation"]
     if option == "tensor":
@@ -353,16 +324,36 @@ def _choose_representation(form, options):
     else:
         raise RuntimeError, 'Unknown form representation: "%s"' % option
 
-def __choose_code_generator(form_representation):
-    "Choose code generator"
+def __select_code_generator(form_representation):
+    "Select code generator"
 
     if form_representation == "tensor":
         return TensorGenerator
     else:
         return UFLQuadratureGenerator
-    "Choose code generator"
+    "Select code generator"
 
     if form_representation == "tensor":
         return TensorGenerator
     else:
         return UFLQuadratureGenerator
+
+def _auto_select_representation(integral):
+    "Automatically select the best representation for integral."
+
+    # FIXME: Implement this
+    info("Automatic selection of representation not implemented, defaulting to quadrature.")
+    return "quadrature"
+
+def _auto_select_quadrature_order(integral):
+    "Automatically select the appropriate quadrature order for integral."
+
+    # FIXME: Improve algorithms in UFL. In the mean time this is a dirty hack
+    # FIXME: to take into account Quadrature elements
+    if any(e.family() == "Quadrature" for e in extract_unique_elements(integral)):
+        quadrature_order = extract_quadrature_order(integral)
+    else:
+        quadrature_order = max(extract_quadrature_order(integral),\
+                               estimate_quadrature_order(integral))
+
+    return quadrature_order

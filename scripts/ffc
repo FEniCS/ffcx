@@ -5,8 +5,8 @@
 # Python module which is then executed.
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-10-14 -- 2008-09-27"
-__copyright__ = "Copyright (C) 2004-2008 Anders Logg"
+__date__ = "2004-10-14 -- 2009-03-15"
+__copyright__ = "Copyright (C) 2004-2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Johan Jansson, 2005
@@ -53,7 +53,12 @@ def main(argv):
     
     # Set default arguments
     debuglevel = FFC_DEBUG_LEVEL
-    options = FFC_OPTIONS.copy()
+
+    # FIXME: Temporary fix
+    if len([arg for arg in args if ".ufl" in arg]) > 0:
+        options = UFL_OPTIONS.copy()
+    else:
+        options = FFC_OPTIONS.copy()
 
     # Parse command-line options
     for opt, arg in opts:
