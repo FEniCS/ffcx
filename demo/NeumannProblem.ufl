@@ -6,13 +6,12 @@
 #
 # Compile this form with FFC: ffc NeumannProblem.ufl
 
-element = VectorElement("Lagrange", "triangle", 1)
+element = VectorElement("Lagrange", triangle, 1)
 
 v = TestFunction(element)
 u = TrialFunction(element)
 f = Function(element)
 g = Function(element)
 
-a = inner(grad(v), grad(u))*dx(0, {"quadrature_order":0})
-L = inner(v, f)*dx(0, {"quadrature_order":2}) + inner(v, g)*ds(0, {"quadrature_order":2})
-
+a = inner(grad(v), grad(u))*dx
+L = inner(v, f)*dx + inner(v, g)*ds

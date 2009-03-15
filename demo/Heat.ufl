@@ -6,15 +6,14 @@
 #
 # Compile this form with FFC: ffc Heat.ufl
 
-element = FiniteElement("Lagrange", "triangle", 1)
+element = FiniteElement("Lagrange", triangle, 1)
 
-v  = TestFunction(element)
-u1 = TrialFunction(element)
-u0 = Function(element)
-c  = Function(element)
-f  = Function(element)
-k  = Constant("triangle")
+v  = TestFunction(element)  # Test function
+u1 = TrialFunction(element) # Value at t_n
+u0 = Function(element)      # Value at t_n-1
+c  = Function(element)      # Heat conductivity
+f  = Function(element)      # Heat source
+k  = Constant(triangle)   # Time step
 
-a = v*u1*dx + k*c*dot(grad(v), grad(u1))*dx
-L = v*u0*dx(0, {"quadrature_order":2}) + k*v*f*dx(0, {"quadrature_order":2})
-
+a = v*u1*dx + k*c*inner(grad(v), grad(u1))*dx
+L = v*u0*dx + k*v*f*dx

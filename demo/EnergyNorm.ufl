@@ -6,8 +6,7 @@
 #
 # Compile this form with FFC: ffc EnergyNorm.ufl
 
-element = FiniteElement("Lagrange", "tetrahedron", 1)
+element = FiniteElement("Lagrange", tetrahedron, 1)
 
 v = Function(element)
-a = (v*v + dot(grad(v), grad(v)))*dx(0, {"quadrature_order":2})
-
+a = (v*v + inner(grad(v), grad(v)))*dx

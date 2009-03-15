@@ -5,4 +5,4 @@
 #
 # Compile this form with FFC: ffc P5tri.ufl
 
-element = FiniteElement("Lagrange", "triangle", 5)
+element = FiniteElement("Lagrange", triangle, 5)

@@ -10,28 +10,33 @@
 #
 # Compile this form with FFC: ffc PoissonDG.ufl
 
+# Elements
 element = FiniteElement("Discontinuous Lagrange", triangle, 1)
-N       = VectorElement("Discontinuous Lagrange", triangle, 0)
 
+# Test and trial functions
 v = TestFunction(element)
 u = TrialFunction(element)
 f = Function(element)
 
-n = Function(N)
-h = Constant(triangle)
+# Normal component, mesh size and right-hand side
+n = FacetNormal(triangle)
+h = MeshSize(triangle)
 
+# Neumann boundary conditions
 gN = Function(element)
 
+# Parameters
 alpha = 4.0
 gamma = 8.0
 
+# Bilinear form
 a = inner(grad(v), grad(u))*dx \
-    - inner(avg(grad(v)), jump(u, n))*dS \
-    - inner(jump(v, n), avg(grad(u)))*dS \
-    + alpha/h('+')*dot(jump(v, n), jump(u, n))*dS \
-    - inner(grad(v), u*n)*ds \
-    - inner(v*n, grad(u))*ds \
-    + gamma/h*v*u*ds
+   - inner(avg(grad(v)), jump(u, n))*dS \
+   - inner(jump(v, n), avg(grad(u)))*dS \
+   + alpha/h('+')*inner(jump(v, n), jump(u, n))*dS \
+   - inner(grad(v), u*n)*ds \
+   - inner(v,n)*grad(u)*ds \
+   + gamma/h*v*u*ds
 
-L = v*f*dx(0, {"quadrature_order":2}) + v*gN*ds(0, {"quadrature_order":2})
-
+# Linear form
+L = v*f*dx + v*gN*ds

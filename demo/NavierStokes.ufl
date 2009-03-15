@@ -6,7 +6,7 @@
 #
 # Compile this form with FFC: ffc NavierStokes.ufl
 
-element = VectorElement("Lagrange", "tetrahedron", 1)
+element = VectorElement("Lagrange", tetrahedron, 1)
 
 v = TestFunction(element)
 u = TrialFunction(element)
@@ -14,4 +14,3 @@ u = TrialFunction(element)
 w = Function(element)
 
 a = v[i]*w[j]*Dx(u[i], j)*dx
-
