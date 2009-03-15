@@ -1,3 +1,4 @@
+ - Moved configuration and construction of python extension module to ufc_module
 0.6.1 [2009-02-18]
  - Initial work on UFL transition
  - Minor bug fixes
