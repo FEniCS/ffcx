@@ -11,7 +11,7 @@ of forms and breaking the compilation into several sequential stages:
 """
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-02-05 -- 2009-03-05"
+__date__ = "2007-02-05 -- 2009-03-15"
 __copyright__ = "Copyright (C) 2007-2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
@@ -32,7 +32,7 @@ from ufl.algorithms import extract_unique_elements, extract_basis_functions
 # FFC common modules
 from ffc.common.log import debug, info, warning, error, begin, end, set_level, INFO
 from ffc.common.utils import product
-from ffc.common.constants import FFC_OPTIONS
+from ffc.common.constants import UFL_OPTIONS
 
 # FFC fem modules
 from ffc.fem import create_element
@@ -68,7 +68,7 @@ else:
     Representations = (QuadratureRepresentation, QuadratureRepresentation)
     CodeGenerators  = (UFLQuadratureGenerator, UFLQuadratureGenerator)
 
-def compile(forms, prefix="Form", options=FFC_OPTIONS, global_variables=None):
+def compile(forms, prefix="Form", options=UFL_OPTIONS.copy(), global_variables=None):
     """This is the main interface to FFC. The input argument must be
     either a single UFL Form object or a list of UFL Form objects.
     For each form, FFC generates C++ code conforming to the UFC

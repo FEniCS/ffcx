@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2005-05-20 -- 2009-02-18"
+__date__ = "2005-05-20 -- 2009-03-15"
 __copyright__ = "Copyright (C) 2005-2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
@@ -21,3 +21,14 @@ FFC_OPTIONS = {"representation": "tensor",
                "external_signature": None,
                "compiler": "ffc",
                "quadrature_order": "automatic"}
+
+# FIXME: New options to replace FFC options
+UFL_OPTIONS = {"representation": "auto",      # form representation / code generation strategy
+               "quadrature_order": "auto",    # quadrature order used for quadrature representation
+               "precision": "15",             # precision used when writing numbers
+               "blas": False,                 # generate BLAS code (currently broken)
+               "optimize": False,             # generate optimized code (currently broken)
+               "split_implementation": False, # split generated code into .h and .cpp file
+               "form_postfix": True,          # postfix form name with "Function", "LinearForm" or BilinearForm
+               "cache_dir": None,             # cache dir used by Instant
+               "output_dir": "."}             # output directory for generated code
