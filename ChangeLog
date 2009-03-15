@@ -1,3 +1,4 @@
+ - Added configuration and building of python extension module to ufc_utils.build_ufc_module
 1.1.1 [2009-02-20]
  - The extension module is now not built, if the conditions for shared_ptr are not met
  - Added SCons build system
