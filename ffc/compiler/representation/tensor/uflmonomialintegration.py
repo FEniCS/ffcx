@@ -156,7 +156,7 @@ def _compute_psi(v, table, num_points, domain_type):
     if len(v.components) ==  0:
         cindex = []
         cshape = []
-    elif len(v.componenst) == 1:
+    elif len(v.components) == 1:
         cindex = [v.components[0]]
         cshape = [len(v.components[0].index_range)]
     else:
