@@ -20,10 +20,12 @@ def tabulate_tensor(integral, header):
     options = {"n": 100, "N": 1000, "integral": integral, "header": header}
     code = tabulate_tensor_code % options
     open("tabulate_tensor.cpp", "w").write(code)
-    commands.getoutput("g++ -o tabulate_tensor tabulate_tensor.cpp")
+    (status, dummy) = commands.getstatusoutput("g++ -o tabulate_tensor tabulate_tensor.cpp")
+    if not status is 0: return "GCC compilation failed"
 
     # Run code and get results
-    output = commands.getoutput("./tabulate_tensor")
+    (status, output) = commands.getstatusoutput("./tabulate_tensor")
+    if not status is 0: return "Unable to tabulate tensor (segmentation fault?)"
     values = [float(value) for value in output.split(" ") if len(value) > 0]
 
     return numpy.array(values)
@@ -60,12 +62,15 @@ def main(args):
         # Compile form
         (integrals, form, header) = get_integrals(form_file)
         print "Compiling form %s..." % form
-        commands.getoutput("ffc %s" % form_file)
+        (status, dummy) = commands.getstatusoutput("ffc %s" % form_file)
 
         # Tabulate tensors for all integrals
         print "  Found %d integrals" % len(integrals)
         for integral in integrals:
-            values.append((integral, tabulate_tensor(integral, header)))
+            if status == 0:
+                values.append((integral, tabulate_tensor(integral, header)))
+            else:
+                values.append((integral, "FFC compilation failed"))
 
     # Load or update reference values
     if os.path.isfile("../reference.pickle"):
@@ -80,14 +85,17 @@ def main(args):
     tol = 1e-12
     results = []
     for (integral, value) in values:
-        if integral in reference:
-            e = max(abs(value - reference[integral]))
-            if e < tol:
-                result = "OK  (diff = %g)" % e
+        if not isinstance(value, str):
+            if integral in reference:
+                e = max(abs(value - reference[integral]))
+                if e < tol:
+                    result = "OK  (diff = %g)" % e
+                else:
+                    result = "*** (diff = %g)" % e
             else:
-                result = "*** (diff = %g)" % e
+                result = "missing reference"
         else:
-            result = "missing reference"
+            result = value
         results.append((integral, result))
     print tstr(results)
 
