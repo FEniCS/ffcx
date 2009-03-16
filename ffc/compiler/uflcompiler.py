@@ -59,7 +59,7 @@ from codegeneration.quadrature import UFLQuadratureGenerator
 #from codegeneration.common.dofmap import *
 
 # FFC format modules
-from format.uflufcformat import Format
+from format.ufcformat import Format
 
 # Form representations and code generators
 if os.environ["USER"] == "logg":
