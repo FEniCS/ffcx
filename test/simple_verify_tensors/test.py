@@ -11,6 +11,8 @@ import sys, os, commands, pickle, numpy
 #format = "form"
 format = "ufl"
 
+logfile = None
+
 def tabulate_tensor(integral, header):
     "Generate code and tabulate tensor for integral."
 
@@ -20,12 +22,12 @@ def tabulate_tensor(integral, header):
     options = {"n": 100, "N": 1000, "integral": integral, "header": header}
     code = tabulate_tensor_code % options
     open("tabulate_tensor.cpp", "w").write(code)
-    (status, dummy) = commands.getstatusoutput("g++ -o tabulate_tensor tabulate_tensor.cpp")
-    if not status is 0: return "GCC compilation failed"
+    (ok, output) = run_command("g++ -o tabulate_tensor tabulate_tensor.cpp")
+    if not ok: return "GCC compilation failed"
 
     # Run code and get results
-    (status, output) = commands.getstatusoutput("./tabulate_tensor")
-    if not status is 0: return "Unable to tabulate tensor (segmentation fault?)"
+    (ok, output) = run_command("./tabulate_tensor")
+    if not ok: return "Unable to tabulate tensor (segmentation fault?)"
     values = [float(value) for value in output.split(" ") if len(value) > 0]
 
     return numpy.array(values)
@@ -46,6 +48,16 @@ def to_dict(tuples):
         d[key] = value
     return d
 
+def run_command(command):
+    "Run system command and collect any errors."
+    global logfile
+    (status, output) = commands.getstatusoutput(command)
+    if not status is 0:
+        if logfile is None:
+            logfile = open("../error.log", "w")
+        logfile.write(output)
+    return (status == 0, output)
+    
 def main(args):
     "Call tabulate tensor for all integrals found in demo directory."
 
@@ -62,12 +74,12 @@ def main(args):
         # Compile form
         (integrals, form, header) = get_integrals(form_file)
         print "Compiling form %s..." % form
-        (status, dummy) = commands.getstatusoutput("ffc %s" % form_file)
+        status = run_command("ffc %s" % form_file)
 
         # Tabulate tensors for all integrals
         print "  Found %d integrals" % len(integrals)
         for integral in integrals:
-            if status == 0:
+            if status:
                 values.append((integral, tabulate_tensor(integral, header)))
             else:
                 values.append((integral, "FFC compilation failed"))
@@ -97,7 +109,14 @@ def main(args):
         else:
             result = value
         results.append((integral, result))
-    print tstr(results)
+    print tstr(results, 100)
+
+    if logfile is None:
+        print "\nAll tensors verified OK"
+        return 0
+    else:
+        print "\nVerification failed, see 'error.log' for details.'"
+        return 1
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv[1:]))
