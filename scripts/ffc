@@ -23,6 +23,7 @@ import os.path
 from ffc.common.debug import warning, error, debug, setlevel
 from ffc.common.constants import *
 from ffc.common.exceptions import *
+from ufl.algorithms import *
 
 def main(argv):
     "Main function"
@@ -68,6 +69,7 @@ def main(argv):
             debuglevel = -1
         elif opt in  ("-l", "--language"):
             options["language"] = arg
+            options["format"] = arg
         elif opt in  ("-r", "--representation"):
             options["representation"] = arg
         elif opt in  ("-f"):
@@ -170,8 +172,11 @@ from ffc.compiler.uflcompiler import compile as compile_ufl
 # Reserved variables for forms
 (a, L, M) = (None, None, None)
 
+# Reserved variable for element
+element = None
+
 %s
-compile_ufl([a, L, M], \"%s\", %s, globals())
+compile_ufl([a, L, M, element], \"%s\", %s, globals())
 """ % (input, prefix, options)
 
     # Write output

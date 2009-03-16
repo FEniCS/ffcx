@@ -9,6 +9,7 @@ FFC_DEBUG_LEVEL = 0
 
 FFC_OPTIONS = {"representation": "tensor",
                "language": "ufc",
+               "format": "ufc",
                "optimize": False,
                "cpp optimize": False,
                "blas": False,

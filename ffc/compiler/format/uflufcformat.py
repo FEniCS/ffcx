@@ -359,19 +359,22 @@ class Format:
                 output += "\n"
 
             # Generate code for ufc::cell_integral
-            for (label, code) in form_code["cell_integrals"]:
-                output += _generate_cell_integral(code, form_data, options, form_prefix, label, code_section)
-                output += "\n"
+            if form_code.has_key("cell_integrals"):
+                for (label, code) in form_code["cell_integrals"]:
+                    output += _generate_cell_integral(code, form_data, options, form_prefix, label, code_section, self.format["exception"])
+                    output += "\n"
 
             # Generate code for ufc::exterior_facet_integral
-            for (label, code) in form_code["exterior_facet_integrals"]:
-                output += _generate_interior_facet_integral(code, form_data, options, form_prefix, label, code_section)
-                output += "\n"
+            if form_code.has_key("exterior_facet_integrals"):
+                for (label, code) in form_code["exterior_facet_integrals"]:
+                    output += _generate_exterior_facet_integral(code, form_data, options, form_prefix, label, code_section, self.format["exception"])
+                    output += "\n"
 
             # Generate code for ufc::interior_facet_integral
-            for (label, code) in form_code["interior_facet_integrals"]:
-                output += _generate_exterior_facet_integral(code, form_data, options, form_prefix, label, code_section)
-                output += "\n"
+            if form_code.has_key("interior_facet_integrals"):
+                for (label, code) in form_code["interior_facet_integrals"]:
+                    output += _generate_interior_facet_integral(code, form_data, options, form_prefix, label, code_section, self.format["exception"])
+                    output += "\n"
 
             # Generate code for ufc::form
             if "form" in form_code:
@@ -462,11 +465,11 @@ class Format:
             ufc_code["create_sub_element"] = self.__generate_switch("i", cases, "return 0;")
         
         if code_section == "combined":
-            return _generate_code(finite_element_combined, ufc_code, options)
+            return _generate_code(finite_element_combined, ufc_code, options, self.format["exception"])
         elif code_section == "header":
-            return _generate_code(finite_element_header, ufc_code, options)
+            return _generate_code(finite_element_header, ufc_code, options, self.format["exception"])
         elif code_section == "implementation":
-            return _generate_code(finite_element_implementation, ufc_code, options)
+            return _generate_code(finite_element_implementation, ufc_code, options, self.format["exception"])
 
     def __generate_dof_map(self, code, form_data, options, prefix, label, code_section):
         "Generate code for ufc::dof_map"
@@ -540,11 +543,11 @@ class Format:
             ufc_code["create_sub_dof_map"] = self.__generate_switch("i", cases, "return 0;")
 
         if code_section == "combined":
-            return _generate_code(dof_map_combined, ufc_code, options)
+            return _generate_code(dof_map_combined, ufc_code, options, self.format["exception"])
         elif code_section == "header":
-            return _generate_code(dof_map_header, ufc_code, options)
+            return _generate_code(dof_map_header, ufc_code, options, self.format["exception"])
         elif code_section == "implementation":
-            return _generate_code(dof_map_implementation, ufc_code, options)
+            return _generate_code(dof_map_implementation, ufc_code, options, self.format["exception"])
 
     def __generate_form(self, code, form_data, options, prefix, code_section):
         "Generate code for ufc::form"
@@ -607,11 +610,11 @@ class Format:
         ufc_code["create_interior_facet_integral"] = self.__generate_switch("i", cases, "return 0;")
 
         if code_section == "combined":
-            return _generate_code(form_combined, ufc_code, options)
+            return _generate_code(form_combined, ufc_code, options, self.format["exception"])
         elif code_section == "header":
-            return _generate_code(form_header, ufc_code, options)
+            return _generate_code(form_header, ufc_code, options, self.format["exception"])
         elif code_section == "implementation":
-            return _generate_code(form_implementation, ufc_code, options)
+            return _generate_code(form_implementation, ufc_code, options, self.format["exception"])
 
     def _generate_dolfin_wrappers(self, generated_forms, prefix, options):
         "Generate code for DOLFIN wrappers"
@@ -888,7 +891,7 @@ public:
         
         return code
 
-def _generate_cell_integral(code, form_data, options, prefix, postfix, code_section):
+def _generate_cell_integral(code, form_data, options, prefix, postfix, code_section, format_exception):
     "Generate code for ufc::cell_integral."
 
     ufc_code = {}
@@ -912,13 +915,13 @@ def _generate_cell_integral(code, form_data, options, prefix, postfix, code_sect
     ufc_code["tabulate_tensor"] = _generate_body(code["tabulate_tensor"])
 
     if code_section == "combined":
-        return _generate_code(cell_integral_combined, ufc_code, options)
+        return _generate_code(cell_integral_combined, ufc_code, options, format_exception)
     elif code_section == "header":
-        return _generate_code(cell_integral_header, ufc_code, options)
+        return _generate_code(cell_integral_header, ufc_code, options, format_exception)
     elif code_section == "implementation":
-        return members + _generate_code(cell_integral_implementation, ufc_code, options)
+        return members + _generate_code(cell_integral_implementation, ufc_code, options, format_exception)
 
-def _generate_exterior_facet_integral(code, form_data, options, prefix, postfix, code_section):
+def _generate_exterior_facet_integral(code, form_data, options, prefix, postfix, code_section, format_exception):
     "Generate code for ufc::exterior_facet_integral."
 
     ufc_code = {}
@@ -939,16 +942,25 @@ def _generate_exterior_facet_integral(code, form_data, options, prefix, postfix,
     ufc_code["members"] = body
 
     # Generate code for tabulate_tensor
-    ufc_code["tabulate_tensor"] = _generate_body(code["tabulate_tensor"])
+    if isinstance(code["tabulate_tensor"], tuple):
+        switch = _generate_switch("facet", [_generate_body(case) for case in code["tabulate_tensor"][1]])
+        body = _generate_body(code["tabulate_tensor"][0])
+        body += "\n"
+        body += switch
+        #    ufc_code["tabulate_tensor"] = remove_unused(body)
+        ufc_code["tabulate_tensor"] = body
+    else:
+        # Generate code for tabulate_tensor
+        ufc_code["tabulate_tensor"] = _generate_body(code["tabulate_tensor"])
 
     if code_section == "combined":
-        return _generate_code(exterior_facet_integral_combined, ufc_code, options)
+        return _generate_code(exterior_facet_integral_combined, ufc_code, options, format_exception)
     elif code_section == "header":
-        return _generate_code(exterior_facet_integral_header, ufc_code, options)
+        return _generate_code(exterior_facet_integral_header, ufc_code, options, format_exception)
     elif code_section == "implementation":
-        return members + _generate_code(exterior_facet_integral_implementation, ufc_code, options)
+        return members + _generate_code(exterior_facet_integral_implementation, ufc_code, options, format_exception)
 
-def _generate_interior_facet_integral(code, form_data, options, prefix, postfix, code_section):
+def _generate_interior_facet_integral(code, form_data, options, prefix, postfix, code_section, format_exception):
     "Generate code for ufc::interior_facet_integral."
 
     ufc_code = {}
@@ -969,14 +981,44 @@ def _generate_interior_facet_integral(code, form_data, options, prefix, postfix,
     ufc_code["members"] = body
 
     # Generate code for tabulate_tensor
-    ufc_code["tabulate_tensor"] = _generate_body(code["tabulate_tensor"])
+    if isinstance(code["tabulate_tensor"], tuple):
+        # Generate code for tabulate_tensor, impressive line of Python code follows
+        switch = _generate_switch("facet0", [_generate_switch("facet1", [_generate_body(case) for case in cases]) for cases in code["tabulate_tensor"][1]])
+        body = _generate_body(code["tabulate_tensor"][0])
+        body += "\n"
+        body += switch
+        ufc_code["tabulate_tensor"] = body
+    else:
+        # Generate code for tabulate_tensor
+        ufc_code["tabulate_tensor"] = _generate_body(code["tabulate_tensor"])
 
     if code_section == "combined":
-        return _generate_code(interior_facet_integral_combined, ufc_code, options)
+        return _generate_code(interior_facet_integral_combined, ufc_code, options, format_exception)
     elif code_section == "header":
-        return _generate_code(interior_facet_integral_header, ufc_code, options)
+        return _generate_code(interior_facet_integral_header, ufc_code, options, format_exception)
     elif code_section == "implementation":
-        return members + _generate_code(interior_facet_integral_implementation, ufc_code, options)
+        return members + _generate_code(interior_facet_integral_implementation, ufc_code, options, format_exception)
+
+def _generate_switch(variable, cases, default = ""):
+    "Generate switch statement from given variable and cases"
+
+    # Special case: no cases
+    if len(cases) == 0:
+        return default
+
+    # Special case: one case
+    if len(cases) == 1:
+        return cases[0]
+
+    # Create switch
+    code = "switch ( %s )\n{\n" % variable
+    for i in range(len(cases)):
+        code += "case %d:\n%s\n  break;\n" % (i, indent(cases[i], 2))
+    code += "}"
+    if not default == "":
+        code += "\n" + default
+    
+    return code
 
 def _generate_body(declarations):
     "Generate function body from list of declarations or statements."
@@ -991,14 +1033,14 @@ def _generate_body(declarations):
             lines += ["%s" % declaration]
     return "\n".join(lines)
 
-def _generate_code(format_string, code, options):
+def _generate_code(format_string, code, options, format_exception):
     "Generate code according to format string and code dictionary"
 
     # Fix indentation
     for key in code:
         flag = "no-" + key
         if flag in options and options[flag]:
-            code[key] = self.format["exception"]("// Function %s not generated (compiled with -fno-%s)" % (key, key))
+            code[key] = format_exception("// Function %s not generated (compiled with -fno-%s)" % (key, key))
         if not key in ["classname", "members"]:
             code[key] = indent(code[key], 4)
 

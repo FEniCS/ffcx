@@ -40,6 +40,7 @@ from ffc.fem import create_dof_map
 
 # FFC analysis modules
 from ffc.compiler.analysis.formdata import create_ffc_coefficients
+from ffc.compiler.analysis.elementdata import ElementData
 
 # FFC form representation modules
 from representation.tensor.monomials import MonomialException
@@ -83,12 +84,15 @@ def compile(forms, prefix="Form", options=UFL_OPTIONS.copy(), global_variables=N
     # Check options
     options = _check_options(options)
 
+    # Get forms and elements
+    forms, elements = _extract_objects(forms)
+
     # Check forms
     forms = _check_forms(forms, options)
 
     # Check that we have at least one form
-    if len(forms) == 0:
-        info("No forms specified, nothing to do.")
+    if len(forms) == 0 and len(elements) == 0:
+        info("No forms or elements specified, nothing to do.")
         return
 
     # Create format
@@ -113,6 +117,10 @@ def compile(forms, prefix="Form", options=UFL_OPTIONS.copy(), global_variables=N
 
         # Add to list of codes
         generated_forms += [(form_code, form_data)]
+
+    # Generate code for elements, will only be generated if no forms were specified
+    if elements:
+        generated_forms += generate_element_code(elements, format.format)
 
     # Compiler stage 5: format code
     format_code(generated_forms, prefix, format, options)
@@ -200,6 +208,12 @@ def generate_form_code(form_data, representations, prefix, format):
     end()
     return code
 
+def generate_element_code(elements, format):
+    "Compiler stage 4."
+    # Create element_data and common code
+    form_data = ElementData([create_element(e) for e in elements])
+    return [(generate_common_code(form_data, format), form_data)]
+
 def format_code(generated_forms, prefix, format, options):
     "Compiler stage 5."
     
@@ -209,7 +223,7 @@ def format_code(generated_forms, prefix, format, options):
 
 def _check_options(options):
     "Initial check of options."
-    
+
     if "optimize" in options:
         warning("Optimization unavailable (will return in a future version).")
     if "blas" in options:
