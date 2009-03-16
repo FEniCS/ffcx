@@ -8,10 +8,18 @@ __license__  = "GNU GPL version 3 or any later version"
 from ufl.common import tstr
 import sys, os, commands, pickle, numpy
 
+# Temporary while testing new UFL compiler
 #format = "form"
 format = "ufl"
 
+# Log file
 logfile = None
+
+# Set paths
+if not "PATH" in os.environ: os.environ["PATH"] = ""
+if not "PYTHONPATH" in os.environ: os.environ["PYTHONPATH"] = ""
+os.environ["PATH"] = "../../../scripts:" + os.environ["PATH"]
+os.environ["PYTHONPATH"] ="../../..:" + os.environ["PYTHONPATH"]
 
 def tabulate_tensor(integral, header):
     "Generate code and tabulate tensor for integral."
@@ -55,7 +63,7 @@ def run_command(command):
     if not status is 0:
         if logfile is None:
             logfile = open("../error.log", "w")
-        logfile.write(output)
+        logfile.write(output + "\n")
     return (status == 0, output)
     
 def main(args):
@@ -74,12 +82,12 @@ def main(args):
         # Compile form
         (integrals, form, header) = get_integrals(form_file)
         print "Compiling form %s..." % form
-        status = run_command("ffc %s" % form_file)
+        (ok, output) = run_command("ffc %s" % form_file)
 
         # Tabulate tensors for all integrals
         print "  Found %d integrals" % len(integrals)
         for integral in integrals:
-            if status:
+            if ok:
                 values.append((integral, tabulate_tensor(integral, header)))
             else:
                 values.append((integral, "FFC compilation failed"))
