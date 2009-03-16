@@ -11,7 +11,7 @@
 
 element = FiniteElement("Lagrange", triangle, 2)
 QE = FiniteElement("Quadrature", triangle, 3)
-sig = VectorFiniteElement("Quadrature", triangle, 3)
+sig = VectorElement("Quadrature", triangle, 3)
 
 v = TestFunction(element)
 u = TrialFunction(element)
