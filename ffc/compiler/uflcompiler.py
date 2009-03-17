@@ -66,8 +66,8 @@ if os.environ["USER"] == "logg":
     Representations = (QuadratureRepresentation, TensorRepresentation)
     CodeGenerators  = (UFLQuadratureGenerator, UFLTensorGenerator)
 else:
-    Representations = (QuadratureRepresentation, QuadratureRepresentation)
-    CodeGenerators  = (UFLQuadratureGenerator, UFLQuadratureGenerator)
+    Representations = (QuadratureRepresentation,)
+    CodeGenerators  = (UFLQuadratureGenerator,)
 
 def compile(forms, prefix="Form", options=UFL_OPTIONS.copy(), global_variables=None):
     """This is the main interface to FFC. The input argument must be
@@ -162,7 +162,9 @@ def analyze_form(form, options, global_variables):
 
     # Attach number of entries in element tensor
     dims = [create_element(v.element()).space_dimension() for v in extract_basis_functions(form)]
+    dims_interior = [create_element(v.element()).space_dimension()*2 for v in extract_basis_functions(form)]
     form_data.num_entries = product(dims)
+    form_data.num_entries_interior = product(dims_interior)
 
     end()
     return form_data
@@ -298,10 +300,13 @@ def _check_metadata(integral, options):
 def _extract_objects(objects):
     "Extract forms and elements from list of objects."
 
-
     # Check each object
     forms = []
     elements = []
+
+    if not isinstance(objects, list):
+        objects = [objects]
+
     for object in objects:
         if isinstance(object, Form):
             forms.append(object)

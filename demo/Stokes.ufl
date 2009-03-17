@@ -16,4 +16,4 @@ TH = P2 + P1
 f = Function(P2)
 
 a = (inner(grad(v), grad(u)) - div(v)*p + q*div(u))*dx
-L = inner(v, f)*dx
+L = inner(v, f)*dx(0, {"quadrature_order":4})

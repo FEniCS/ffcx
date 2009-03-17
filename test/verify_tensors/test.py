@@ -27,8 +27,8 @@ def main(argv):
 
     # Get command-line arguments
     try:
-        opts, args = getopt.getopt(argv, "hnr:t:T:", \
-        ["help", "new_references", "representation=", "tolerance=", "type="])
+        opts, args = getopt.getopt(argv, "hnr:t:T:d:", \
+        ["help", "new_references", "representation=", "tolerance=", "type=", "dir="])
     except getopt.GetoptError:
         usage()
         return 2
@@ -41,6 +41,7 @@ def main(argv):
     new_references = False
     form_types = ["form", "ufl", "all"]
     form_type = "form"
+    test_dir = "../../demo"
 
     # Get options
     for opt, arg in opts:
@@ -66,6 +67,8 @@ def main(argv):
             else:
                 usage()
                 return 2
+        elif opt in  ("-d", "--dir"):
+            test_dir = arg
         else:
             usage()
             return 2
@@ -73,7 +76,8 @@ def main(argv):
     test_options = {"tolerance": tolerance,
                     "new_references": new_references,
                     "form_files": args,
-                    "form_type": form_type}
+                    "form_type": form_type,
+                    "test_dir":test_dir}
 
     # Print test options
     print "\nThe following test options will be used"
@@ -125,14 +129,15 @@ def run_tests(test_options):
 
     # Get form files from user and demo directory
     form_files = test_options["form_files"]
-    chdir("../../demo")
+    cwd = getcwd()
+    chdir(test_options["test_dir"])
     form_type = test_options["form_type"]
     demo_files = []
     if form_type == "form" or form_type == "all":
         demo_files += glob("*.form")
     if form_type == "ufl" or form_type == "all":
         demo_files += glob("*.ufl")
-    chdir("../test/verify_tensors")
+    chdir(cwd)
 
     # If not form files are specified, check all in demo directory
     if not form_files:
@@ -141,19 +146,7 @@ def run_tests(test_options):
 
     # Check that all form files are present in demo directory and remove forms
     # that are known to break the test
-    do_not_compile = ["TensorWeightedPoisson.ufl", "MixedPoisson.ufl", "VectorLaplaceGradCurl.ufl"]
-
-    working_forms = ["Constant.ufl", "Elasticity.ufl", "EnergyNorm.ufl", "Equation.ufl", "FunctionOperators.ufl",
-                     "Heat.ufl", "Mass.ufl", "NavierStokes.ufl", "NeumannProblem.ufl", "Optimization.ufl",
-                     "Poisson.ufl", "PoissonSystem.ufl", "SubDomain.ufl", "SubDomains.ufl",
-                     "PoissonDG.ufl"]
-
-    all_forms = ["Constant.ufl", "Mass.ufl", "P5tet.ufl", "QuadratureElement.ufl",
-                 "Elasticity.ufl", "MixedMixedElement.ufl", "P5tri.ufl", "Stokes.ufl",
-                 "EnergyNorm.ufl", "MixedPoisson.ufl", "PoissonDG.ufl", "SubDomains.ufl",
-                 "Equation.ufl", "NavierStokes.ufl", "PoissonSystem.ufl", "SubDomain.ufl",
-                 "FunctionOperators.ufl", "NeumannProblem.ufl", "Poisson.ufl", "TensorWeightedPoisson.ufl",
-                 "Heat.ufl", "Optimization.ufl", "Projection.ufl", "VectorLaplaceGradCurl.ufl"]
+    do_not_compile = []
 
     new_files = []
     for form_file in form_files:
@@ -206,7 +199,7 @@ def run_tests(test_options):
             print "--------------------------------------------------------------------"
 
         # Read the forms from the form file
-        (forms, read_ok) = read_forms("../../demo", form_file)
+        (forms, read_ok) = read_forms(test_options["test_dir"], form_file)
         if not read_ok:
             forms_not_read_ok.append(form_file)
         else:

@@ -59,7 +59,7 @@ class QuadratureGenerator:
         "Constructor"
 
         # TODO: Set this through OPTIONS
-        self.optimise_options = {"non zero columns": True,
+        self.optimise_options = {"non zero columns": False,
                                  "ignore ones": False,
                                  "remove zero terms": False,
                                  "simplify expressions": False,
@@ -340,15 +340,15 @@ class QuadratureGenerator:
         # I therefore need to generate the actual code to compute the element
         # tensors first, and then create the auxiliary code.
 
-        transformer.disp()
+#        transformer.disp()
 
         # We receive a dictionary {num_points: integral,}
         # Loop points and integrals
         for points, integral in integrals.items():
 
-#            print "\nIntegral: ", integral
-#            print "\nIntegral: ", str(integral)
-#            print "\nIntegral tree_format: ", tree_format(integral)
+            print "\nIntegral: ", integral
+            print "\nIntegral: ", str(integral)
+            print "\nIntegral tree_format: ", tree_format(integral)
 
             ip_code = ["", Indent.indent(format_comment\
                 ("Loop quadrature points for integral: %s" % repr(integral)))]
@@ -512,13 +512,13 @@ class QuadratureGenerator:
                             new_nzcs.remove(inv_name_map[n][1])
 
         # Tabulate remaining non-zero columns for tables that might have been deleted
-        new_nzcs = [nz for nz in new_nzcs if nz and len(nz[1]) > 1]
-        if self.optimise_options["non zero columns"] and new_nzcs:
-            code += [Indent.indent(format_comment("Array of non-zero columns for arrays that might have been deleted (on purpose)") )]
-            for i, cols in new_nzcs:
-                value = format_block(format_sep.join(["%d" %c for c in list(cols)]))
-                name_col = format_const_uint + format_nzcolumns(i) + format_array(len(cols))
-                code += [(Indent.indent(name_col), value)]
+#        new_nzcs = [nz for nz in new_nzcs if nz and len(nz[1]) > 1]
+#        if self.optimise_options["non zero columns"] and new_nzcs:
+#            code += [Indent.indent(format_comment("Array of non-zero columns for arrays that might have been deleted (on purpose)") )]
+#            for i, cols in new_nzcs:
+#                value = format_block(format_sep.join(["%d" %c for c in list(cols)]))
+#                name_col = format_const_uint + format_nzcolumns(i) + format_array(len(cols))
+#                code += [(Indent.indent(name_col), value)]
 
         return code
 

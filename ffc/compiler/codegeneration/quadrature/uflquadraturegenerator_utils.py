@@ -23,6 +23,7 @@ from ffc.compiler.language.tokens import Transform
 from ffc.compiler.language.restriction import *
 
 from ffc.fem.createelement import create_element
+from ffc.fem.mapping import *
 
 # Utility and optimisation functions for quadraturegenerator
 from quadraturegenerator_utils import generate_loop, unique_tables, get_ones, contains_zeros
@@ -39,7 +40,6 @@ class QuadratureTransformer(Transformer):
         self.format = format
         self.optimise_options = optimise_options
         self.quadrature_weights = form_representation.quadrature_weights[domain_type]
-#        self.fiat_elements_map = form_representation.fiat_elements_map
 
         # Create containers and variables
         self.used_psi_tables = set()
@@ -101,16 +101,14 @@ class QuadratureTransformer(Transformer):
     def expr(self, o, *operands):
         print "\n\nVisiting basic Expr:", o.__repr__(), "with operands:"
         print ", ".join(map(str,operands))
-#        return {}
-        # FIXME: unsafe switch back on
+        raise RuntimeError(o, "This expression is not handled")
         return o
 
     # Handle the basics just in case, probably not needed?
     def terminal(self, o, *operands):
         print "\n\nVisiting basic Terminal:", o.__repr__(), "with operands:"
         print ", ".join(map(str,operands))
-#        return {}
-        # FIXME: unsafe switch back on
+        raise RuntimeError(o, "This terminal is not handled")
         return o
 
     # -------------------------------------------------------------------------
@@ -537,24 +535,17 @@ class QuadratureTransformer(Transformer):
         if operands:
             raise RuntimeError(operands, "Didn't expect any operands for BasisFunction")
 
-#        print "self._components: ", self._components
-        if len(self._components) > 1:
-            raise RuntimeError(self._components, "Currently only supports 1 component value (tensor valued basis not supported)")
-
-#        print "self._derivatives: ", self._derivatives
         # Create aux. info
-        component = None
+        component = []
         derivatives = ()
         # Handle derivatives and components
         if self._derivatives:
             derivatives = self._derivatives[:]
         if self._components:
             component = [int(c) for c in self._components]
-            # Handle tensor elements
-            if len(component) > 1:
-                component = o.element()._sub_element_mapping[tuple(component)]
 
-#        print "\nDerivatives: ", derivatives
+        print "\nComponent: ", component
+        print "\nDerivatives: ", derivatives
 
         # Create mapping and code for basis function
         basis = self.create_basis_function(o, component, derivatives)
@@ -574,8 +565,10 @@ class QuadratureTransformer(Transformer):
         if len(self._components) > 0:
             raise RuntimeError(self._components, "Constant does not expect components")
 
-        # FIXME: restriction not handled yet
-        restriction = None
+        # Handle restriction
+        if self.restriction == Restriction.MINUS:
+            component += o.shape()[0] # could be += 1
+
         coefficient = self.format["coeff"] + self.format["matrix access"](str(o.count()), 0)
         return {():coefficient}
 
@@ -588,11 +581,13 @@ class QuadratureTransformer(Transformer):
         if len(self._components) != 1:
             raise RuntimeError(self._components, "VectorConstant only expext 1 component")
 
-        # FIXME: restriction not handled yet
-        restriction = None
-
         # We get one component
         component = int(self._components[0])
+
+        # Handle restriction
+        if self.restriction == Restriction.MINUS:
+            component += o.shape()[0]
+
         coefficient = self.format["coeff"] + self.format["matrix access"](str(o.count()), component)
         return {():coefficient}
 
@@ -603,24 +598,22 @@ class QuadratureTransformer(Transformer):
         if operands:
             raise RuntimeError(operands, "Didn't expect any operands for Function")
 
-        print "self._components: ", self._components
+#        print "self._components: ", self._components
 #        if len(self._components) > 1:
 #            raise RuntimeError(self._components, "Currently only supports 1 component value (tensor valued functions not supported)")
 
 #        print "self._derivatives: ", self._derivatives
         # Create aux. info
-        component = None
+        component = []
         derivatives = ()
         # Handle derivatives and components
         if self._derivatives:
             derivatives = self._derivatives[:]
         if self._components:
             component = [int(c) for c in self._components]
-            # Handle tensor elements
-            if len(component) > 1:
-                component = o.element()._sub_element_mapping[tuple(component)]
-#        print "\nO: ", o.__repr__()
-#        print o.element()._sub_element_mapping
+
+#        print "\nComponent: ", component
+#        print "\nDerivatives: ", derivatives
 
         # Create code for basis function
         code = self.create_function(o, component, derivatives)
@@ -645,6 +638,8 @@ class QuadratureTransformer(Transformer):
         format_mult          = self.format["multiply"]
         format_transform     = self.format["transform"]
         format_nzc           = self.format["nonzero columns"]
+        format_detJ          = self.format["determinant"]
+        format_inv           = self.format["inverse"]
 
         # Only support test and trial functions
         # TODO: Verify that test and trial functions will ALWAYS be rearranged to 0 and 1
@@ -657,12 +652,30 @@ class QuadratureTransformer(Transformer):
         if not ufl_basis_function.count() in indices:
             raise RuntimeError(ufl_basis_function, "Currently, BasisFunction index must be either -2, -1, 0 or 1")
 
+        # Get local component (in case we have mixed elements)
+        local_comp, local_elem = ufl_basis_function.element().extract_component(tuple(component))
+
         # Check that we don't take derivatives of QuadratureElements
-        # FIXME: We just raise an exception now, but should we just return 0?
-        # UFL will apply Dx(f_e*f_qe, 0) which should result in f_e.dx(0)*f_qe*dx
-        # instead of an error?
-        if derivatives and any(e.family() == "Quadrature" for e in extract_sub_elements(ufl_basis_function.element())):
+        if derivatives and local_elem.family() == "Quadrature":
             raise RuntimeError(ufl_basis_function, "Derivatives of Quadrature elements are not supported")
+
+        # Handle tensor elements
+        if len(local_comp) > 1:
+            local_comp = local_elem._sub_element_mapping[local_comp]
+        elif local_comp:
+            local_comp = local_comp[0]
+        else:
+            local_comp = 0
+
+        local_offset = 0
+        if len(component) > 1:
+            component = ufl_basis_function.element()._sub_element_mapping[tuple(component)]
+        elif component:
+            component = component.pop()
+
+        # Compute the local offset (needed for non-affine mappings)
+        if component:
+            local_offset = component - local_comp
 
         # Handle restriction through facet
         facet = {Restriction.PLUS: self.facet0, Restriction.MINUS: self.facet1, None: self.facet0}[self.restriction]
@@ -678,9 +691,9 @@ class QuadratureTransformer(Transformer):
             format_ip = "0"
         basis_access = format_matrix_access(format_ip, loop_index)
 
-
         # Get the FIAT element and offset by element space dimension in case of
-        # negative restriction
+        # negative restriction, need to use the complete element for offset in
+        # case of mixed element
         ffc_element = create_element(ufl_basis_function.element())
         space_dim = ffc_element.space_dimension()
         offset = {Restriction.PLUS: "", Restriction.MINUS: str(space_dim), None: ""}[self.restriction]
@@ -704,6 +717,11 @@ class QuadratureTransformer(Transformer):
         else:
             self.geo_dim = geo_dim
 
+#        # Get the element that we're actually dealing with
+#        element = create_element(ufl_basis_function.element().extract_component(component)[1])
+#        print "element: ", element
+
+
         # Generate FFC multi index for derivatives
         multiindices = FFCMultiIndex([range(geo_dim)]*len(derivatives)).indices
 #        print "multiindices: ", multiindices
@@ -716,60 +734,98 @@ class QuadratureTransformer(Transformer):
                 deriv = []
 #            print "deriv: ", deriv
 
-            # TODO: Handle zeros and ones info
-            name = self.__generate_psi_name(element_counter, facet, component, deriv)
-            name, non_zeros, zeros, ones = self.name_map[name]
-#            print "\nname: ", name
-#            print "\nnon_zeros: ", non_zeros
-#            print "\nzeros: ", zeros
-#            print "\nones: ", ones
-            loop_index_range = shape(self.unique_tables[name])[1]
+            if ffc_element.value_mapping(component) == Mapping.AFFINE:
+                name = self.__generate_psi_name(element_counter, facet, component, deriv)
+                name, non_zeros, zeros, ones = self.name_map[name]
+                loop_index_range = shape(self.unique_tables[name])[1]
 
-            # Append the name to the set of used tables and create
-            # matrix access
-            # TODO: Handle this more elegantly such that all terms involving this
-            # zero factor is removed
-            basis = "0"
-            if not (zeros and self.optimise_options["ignore zero tables"] == 1):
-                self.used_psi_tables.add(name)
-                basis = name + basis_access
+                # Append the name to the set of used tables and create
+                # matrix access
+                basis = "0"
+                if not (zeros and self.optimise_options["ignore zero tables"]):
+                    self.used_psi_tables.add(name)
+                    basis = name + basis_access
 
-            # Create the correct mapping of the basis function into the local
-            # element tensor
-            basis_map = loop_index
-            if non_zeros:
-                basis_map = format_nzc(non_zeros[0]) + format_array_access(basis_map)
-            if offset:
-                basis_map = format_group(format_add([basis_map, offset]))
+                # Create the correct mapping of the basis function into the local
+                # element tensor
+                basis_map = loop_index
+                if non_zeros:
+                    basis_map = format_nzc(non_zeros[0]) + format_array_access(basis_map)
+                if offset:
+                    basis_map = format_group(format_add([basis_map, offset]))
 
-            # Create mapping (index, map, loop_range, space_dim)
-            # Example dx and ds: (0, j, 3, 3)
-            # Example dS: (0, (j + 3), 3, 6), 6=2*space_dim
-            # Example dS optimised: (0, (nz2[j] + 3), 2, 6), 6=2*space_dim
-            mapping = ((ufl_basis_function.count(), basis_map, loop_index_range, space_dim),)
+                # Create mapping (index, map, loop_range, space_dim)
+                # Example dx and ds: (0, j, 3, 3)
+                # Example dS: (0, (j + 3), 3, 6), 6=2*space_dim
+                # Example dS optimised: (0, (nz2[j] + 3), 2, 6), 6=2*space_dim
+                mapping = ((ufl_basis_function.count(), basis_map, loop_index_range, space_dim),)
 
-            # Add transformation if supported and needed
-            transforms = []
-            for i, direction in enumerate(derivatives):
-                ref = multi[i]
-                # FIXME: Handle other element types too
-                if ufl_basis_function.element().family() not in ["Lagrange", "Discontinuous Lagrange"]:
-                    if ufl_basis_function.element().family() == "Mixed":
-                        # Check that current sub components only contain supported elements
-#                        print "Component: ", component
-#                        print "basis: ", basis
-                        if not all(e.family() in ["Lagrange", "Discontinuous Lagrange", "Mixed"] for e in extract_sub_elements(ufl_basis_function.element())):
-                            raise RuntimeError(ufl_basis_function.element().family(), "Only derivatives of Lagrange elements is currently supported")
-                    else:
-                        raise RuntimeError(ufl_basis_function.element().family(), "Only derivatives of Lagrange elements is currently supported")
-                t = format_transform(Transform.JINV, ref, direction, self.restriction)
-                self.trans_set.add(t)
-                transforms.append(t)
+                # Add transformation if needed
+                transforms = []
+                for i, direction in enumerate(derivatives):
+                    ref = multi[i]
+                    t = format_transform(Transform.JINV, ref, direction, self.restriction)
+                    self.trans_set.add(t)
+                    transforms.append(t)
 
-            if mapping in code:
-                code[mapping].append(format_mult(transforms + [basis]))
+                if mapping in code:
+                    code[mapping].append(format_mult(transforms + [basis]))
+                else:
+                    code[mapping] = [format_mult(transforms + [basis])]
+            # Handle non-affine mappings
             else:
-                code[mapping] = [format_mult(transforms + [basis])]
+                for c in range(geo_dim):
+                    name = self.__generate_psi_name(element_counter, facet, c + local_offset, deriv)
+                    name, non_zeros, zeros, ones = self.name_map[name]
+                    loop_index_range = shape(self.unique_tables[name])[1]
+
+                    # Append the name to the set of used tables and create
+                    # matrix access
+                    basis = "0"
+                    if not (zeros and self.optimise_options["ignore zero tables"]):
+                        self.used_psi_tables.add(name)
+                        basis = name + basis_access
+
+                    # Multiply basis by appropriate transform
+                    if ffc_element.value_mapping(component) == Mapping.COVARIANT_PIOLA:
+                        dxdX = format_transform(Transform.JINV, c, local_comp, self.restriction)
+                        self.trans_set.add(dxdX)
+                        basis = format_mult([dxdX, basis])
+                    elif ffc_element.value_mapping(component) == Mapping.CONTRAVARIANT_PIOLA:
+                        self.trans_set.add(format_detJ(self.restriction))
+                        detJ = format_inv(format_detJ(self.restriction))
+                        dXdx = format_transform(Transform.J, c, local_comp, self.restriction)
+                        self.trans_set.add(dXdx)
+                        basis = format_mult([detJ, dXdx, basis])
+                    else:
+                        raise RuntimeError(ffc_element.value_mapping(component), "Transformation is not supported")
+
+                    # Create the correct mapping of the basis function into the local
+                    # element tensor
+                    basis_map = loop_index
+                    if non_zeros:
+                        basis_map = format_nzc(non_zeros[0]) + format_array_access(basis_map)
+                    if offset:
+                        basis_map = format_group(format_add([basis_map, offset]))
+
+                    # Create mapping (index, map, loop_range, space_dim)
+                    # Example dx and ds: (0, j, 3, 3)
+                    # Example dS: (0, (j + 3), 3, 6), 6=2*space_dim
+                    # Example dS optimised: (0, (nz2[j] + 3), 2, 6), 6=2*space_dim
+                    mapping = ((ufl_basis_function.count(), basis_map, loop_index_range, space_dim),)
+
+                    # Add transformation if needed
+                    transforms = []
+                    for i, direction in enumerate(derivatives):
+                        ref = multi[i]
+                        t = format_transform(Transform.JINV, ref, direction, self.restriction)
+                        self.trans_set.add(t)
+                        transforms.append(t)
+
+                    if mapping in code:
+                        code[mapping].append(format_mult(transforms + [basis]))
+                    else:
+                        code[mapping] = [format_mult(transforms + [basis])]
 
         # Add sums and group if necessary
         for key, val in code.items():
@@ -793,16 +849,34 @@ class QuadratureTransformer(Transformer):
         format_coeff         = self.format["coeff"]
         format_F             = self.format["function value"]
         format_nzc           = self.format["nonzero columns"]
+        format_detJ          = self.format["determinant"]
+        format_inv           = self.format["inverse"]
+
+        # Get local component (in case we have mixed elements)
+        local_comp, local_elem = ufl_function.element().extract_component(tuple(component))
 
         # Check that we don't take derivatives of QuadratureElements
-        # FIXME: We just raise an exception now, but should we just return 0?
-        # UFL will apply Dx(f_e*f_qe, 0) which should result in f_e.dx(0)*f_qe*dx
-        # instead of an error?
-        # Is this even correct? What if we just want the first component of a
-        # mixed element which is not a quadrature element?
-        quad_element = any(e.family() == "Quadrature" for e in extract_sub_elements(ufl_function.element()))
+        quad_element = local_elem.family() == "Quadrature"
         if derivatives and quad_element:
             raise RuntimeError(ufl_function, "Derivatives of Quadrature elements are not supported")
+
+        # Handle tensor elements
+        if len(local_comp) > 1:
+            local_comp = local_elem._sub_element_mapping[local_comp]
+        elif local_comp:
+            local_comp = local_comp[0]
+        else:
+            local_comp = 0
+
+        local_offset = 0
+        if len(component) > 1:
+            component = ufl_function.element()._sub_element_mapping[tuple(component)]
+        elif component:
+            component = component.pop()
+
+        # Compute the local offset (needed for non-affine mappings)
+        if component:
+            local_offset = component - local_comp
 
         # Pick first free index of secondary type
         # (could use primary indices, but it's better to avoid confusion)
@@ -848,106 +922,54 @@ class QuadratureTransformer(Transformer):
                 deriv = []
 #            print "deriv: ", deriv
 
-            # TODO: Handle zeros info
-            basis_name = self.__generate_psi_name(element_counter, facet, component, deriv)
-            basis_name, non_zeros, zeros, ones = self.name_map[basis_name]
-#            print "\nbasis_name: ", basis_name
-#            print "\nnon_zeros: ", non_zeros
-#            print "\nzeros: ", zeros
-#            print "\nones: ", ones
-            # If all basis are zero we just return "0"
-            # TODO: Handle this more elegantly such that all terms involving this
-            # zero factor is removed
-            if zeros and self.optimise_options["ignore zero tables"]:
-                continue
+            if ffc_element.value_mapping(component) == Mapping.AFFINE:
 
-            # Get the index range of the loop index
-            loop_index_range = shape(self.unique_tables[basis_name])[1]
-#            print "\nloop index range: ", loop_index_range
+                function_name = self.__create_function_name(element_counter, facet,\
+                                component, deriv, loop_index, basis_access, quad_element, offset, ufl_function, ffc_element)
+                if not function_name:
+                    continue
 
-            # Set default coefficient access
-            coefficient_access = loop_index
+                # Add transformation if needed
+                transforms = []
+                for i, direction in enumerate(derivatives):
+                    ref = multi[i]
+                    t = format_transform(Transform.JINV, ref, direction, self.restriction)
+                    self.trans_set.add(t)
+                    transforms.append(t)
 
-            # If the loop index range is one we can look up the first component
-            # in the coefficient array. If we only have ones we don't need the basis
-            if self.optimise_options["ignore ones"] and loop_index_range == 1 and ones:
-                coefficient_access = "0"
-                basis_name = ""
+                # Multiply function value by the transformations and add to code
+                code.append(format_mult(transforms + [function_name]))
+
+            # Handle non-affine mappings
             else:
-                # Add basis name to set of used tables and add
-                # matrix access
-                self.used_psi_tables.add(basis_name)
-                basis_name += basis_access
+                for c in range(geo_dim):
+                    function_name = self.__create_function_name(element_counter, facet,\
+                                    c + local_offset, deriv, loop_index, basis_access, quad_element, offset, ufl_function, ffc_element)
 
-            # If we have a quadrature element we can use the ip number to look
-            # up the value directly. Need to add offset in case of components
-            if quad_element:
-                quad_offset = 0
-                if component:
-                    for i in range(component):
-                        quad_offset += ffc_element.sub_element(i).space_dimension()
-                if quad_offset:
-                    coefficient_access = format_add([format_ip, str(quad_offset)])
-                else:
-                    coefficient_access = format_ip
-            # If we have non zero column mapping but only one value just pick it
-            if non_zeros and coefficient_access == "0":
-                coefficient_access = str(non_zeros[1][0])
-            elif non_zeros:
-                coefficient_access = format_nzc(non_zeros[0]) + format_array_access(coefficient_access)
-            if offset:
-                coefficient_access = format_add([coefficient_access, offset])
-
-            # Try to evaluate coefficient access ("3 + 2" --> "5")
-            try:
-                coefficient_access = str(eval(coefficient_access))
-            except:
-                pass
-
-            coefficient = format_coeff + format_matrix_access(str(ufl_function.count()), coefficient_access)
-            function_expr = coefficient
-            if basis_name:
-                function_expr = format_mult([basis_name, coefficient])
-
-            # Add transformation if supported and needed
-            transforms = []
-            for i, direction in enumerate(derivatives):
-                ref = multi[i]
-                # FIXME: Handle other element types too
-                if ufl_function.element().family() not in ["Lagrange", "Discontinuous Lagrange"]:
-                    if ufl_function.element().family() == "Mixed":
-                        # Check that current sub components only contain supported elements
-#                        print "Component: ", component
-#                        print "basis: ", basis
-                        if not all(e.family() in ["Lagrange", "Discontinuous Lagrange", "Mixed"] for e in extract_sub_elements(ufl_function.element())):
-                            raise RuntimeError(ufl_function.element().family(), "Only derivatives of Lagrange elements is currently supported")
+                    # Multiply basis by appropriate transform
+                    if ffc_element.value_mapping(component) == Mapping.COVARIANT_PIOLA:
+                        dxdX = format_transform(Transform.JINV, c, local_comp, self.restriction)
+                        self.trans_set.add(dxdX)
+                        basis = format_mult([dxdX, function_name])
+                    elif ffc_element.value_mapping(component) == Mapping.CONTRAVARIANT_PIOLA:
+                        self.trans_set.add(format_detJ(self.restriction))
+                        detJ = format_inv(format_detJ(self.restriction))
+                        dXdx = format_transform(Transform.J, c, local_comp, self.restriction)
+                        self.trans_set.add(dXdx)
+                        basis = format_mult([detJ, dXdx, function_name])
                     else:
-                        raise RuntimeError(ufl_function.element().family(), "Only derivatives of Lagrange elements is currently supported")
-                # Create transform and add to set of used transformations
-                t = format_transform(Transform.JINV, ref, direction, self.restriction)
-                self.trans_set.add(t)
-                transforms.append(t)
+                        raise RuntimeError(ffc_element.value_mapping(component), "Transformation is not supported")
 
-            # If we have a quadrature element (or if basis was deleted) we
-            # don't need the basis
-            if quad_element or not basis_name:
-                function_name = coefficient
-            else:
-                # Check if the expression to compute the function value is already in
-                # the dictionary of used function. If not, generate a new name and add
-                function_name = format_F + str(self.function_count)
-                if not function_expr in self.functions:
-                    self.functions[function_expr] = (function_name, loop_index_range)
-                    # Increase count
-                    self.function_count += 1
-                else:
-                    function_name, index_r = self.functions[function_expr]
-                    # Check just to make sure
-                    if not index_r == loop_index_range:
-                        raise RuntimeError("Index ranges does not match")
+                    # Add transformation if needed
+                    transforms = []
+                    for i, direction in enumerate(derivatives):
+                        ref = multi[i]
+                        t = format_transform(Transform.JINV, ref, direction, self.restriction)
+                        self.trans_set.add(t)
+                        transforms.append(t)
 
-            # Multiply function value by the transformations and add to code
-            code.append(format_mult(transforms + [function_name]))
+                    # Multiply function value by the transformations and add to code
+                    code.append(format_mult(transforms + [function_name]))
 
         if not code:
             return "0"
@@ -957,6 +979,100 @@ class QuadratureTransformer(Transformer):
             code = code[0]
 
         return code
+
+    def __create_function_name(self, element_counter, facet, component, deriv, loop_index, basis_access, quad_element, offset, ufl_function, ffc_element):
+        format_ip            = self.format["integration points"]
+        format_matrix_access = self.format["matrix access"]
+        format_array_access = self.format["array access"]
+        format_group         = self.format["grouping"]
+        format_add           = self.format["add"]
+        format_mult          = self.format["multiply"]
+        format_transform     = self.format["transform"]
+        format_coeff         = self.format["coeff"]
+        format_F             = self.format["function value"]
+        format_nzc           = self.format["nonzero columns"]
+        format_detJ          = self.format["determinant"]
+        format_inv           = self.format["inverse"]
+
+        basis_name = self.__generate_psi_name(element_counter, facet, component, deriv)
+        basis_name, non_zeros, zeros, ones = self.name_map[basis_name]
+    #            print "\nbasis_name: ", basis_name
+    #            print "\nnon_zeros: ", non_zeros
+    #            print "\nzeros: ", zeros
+    #            print "\nones: ", ones
+        # If all basis are zero we just return "0"
+        # TODO: Handle this more elegantly such that all terms involving this
+        # zero factor is removed
+        if zeros and self.optimise_options["ignore zero tables"]:
+            return None
+
+        # Get the index range of the loop index
+        loop_index_range = shape(self.unique_tables[basis_name])[1]
+    #            print "\nloop index range: ", loop_index_range
+
+        # Set default coefficient access
+        coefficient_access = loop_index
+
+        # If the loop index range is one we can look up the first component
+        # in the coefficient array. If we only have ones we don't need the basis
+        if self.optimise_options["ignore ones"] and loop_index_range == 1 and ones:
+            coefficient_access = "0"
+            basis_name = ""
+        else:
+            # Add basis name to set of used tables and add
+            # matrix access
+            self.used_psi_tables.add(basis_name)
+            basis_name += basis_access
+
+        # If we have a quadrature element we can use the ip number to look
+        # up the value directly. Need to add offset in case of components
+        if quad_element:
+            quad_offset = 0
+            if component:
+                for i in range(component):
+                    quad_offset += ffc_element.sub_element(i).space_dimension()
+            if quad_offset:
+                coefficient_access = format_add([format_ip, str(quad_offset)])
+            else:
+                coefficient_access = format_ip
+        # If we have non zero column mapping but only one value just pick it
+        if non_zeros and coefficient_access == "0":
+            coefficient_access = str(non_zeros[1][0])
+        elif non_zeros:
+            coefficient_access = format_nzc(non_zeros[0]) + format_array_access(coefficient_access)
+        if offset:
+            coefficient_access = format_add([coefficient_access, offset])
+
+        # Try to evaluate coefficient access ("3 + 2" --> "5")
+        try:
+            coefficient_access = str(eval(coefficient_access))
+        except:
+            pass
+
+        coefficient = format_coeff + format_matrix_access(str(ufl_function.count()), coefficient_access)
+        function_expr = coefficient
+        if basis_name:
+            function_expr = format_mult([basis_name, coefficient])
+
+        # If we have a quadrature element (or if basis was deleted) we
+        # don't need the basis
+        if quad_element or not basis_name:
+            function_name = coefficient
+        else:
+            # Check if the expression to compute the function value is already in
+            # the dictionary of used function. If not, generate a new name and add
+            function_name = format_F + str(self.function_count)
+            if not function_expr in self.functions:
+                self.functions[function_expr] = (function_name, loop_index_range)
+                # Increase count
+                self.function_count += 1
+            else:
+                function_name, index_r = self.functions[function_expr]
+                # Check just to make sure
+                if not index_r == loop_index_range:
+                    raise RuntimeError("Index ranges does not match")
+        return function_name
+
 
     def __create_psi_tables(self, tables):
         "Create names and maps for tables and non-zero entries if appropriate."
@@ -1023,7 +1139,7 @@ class QuadratureTransformer(Transformer):
                                 # if needed I think)
                                 if shape(psi_table) != 2 and shape(psi_table)[1] != point:
                                     raise RuntimeError(psi_table, "Something is wrong with this table")
-                                name = self.__generate_psi_name(counter, facet, None, derivs)
+                                name = self.__generate_psi_name(counter, facet, [], derivs)
 #                                print "Name: ", name
                                 if name in flat_tables:
                                     raise RuntimeError(name, "Name is not unique, something is wrong")
@@ -1050,7 +1166,7 @@ class QuadratureTransformer(Transformer):
         name = "FE%d" %counter
         if facet != None:
             name += "_f%d" % facet
-        if component != None:
+        if component != []:
             name += "_C%d" % component
         if any(derivatives):
             name += "_D" + "".join([str(d) for d in derivatives])

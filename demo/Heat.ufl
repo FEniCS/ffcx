@@ -16,4 +16,4 @@ f  = Function(element)      # Heat source
 k  = Constant(triangle)   # Time step
 
 a = v*u1*dx + k*c*inner(grad(v), grad(u1))*dx
-L = v*u0*dx + k*v*f*dx
+L = v*u0*dx(0, {"quadrature_order":2}) + k*v*f*dx(0, {"quadrature_order":2})

@@ -13,4 +13,4 @@ u = TrialFunction(element)
 f = Function(element)
 
 a = inner(grad(v), grad(u))*dx
-L = v*f*dx
+L = v*f*dx(0, {"quadrature_order":6})

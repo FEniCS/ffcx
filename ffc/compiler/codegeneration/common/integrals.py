@@ -82,12 +82,21 @@ def _generate_total_integral(integral_type, contributions, form_data, prefix, fo
 
     # Reset all entries
     code["tabulate_tensor"] = []
-    code["tabulate_tensor"] += generate_reset_tensor(form_data.num_entries, format)
+    if integral_type == "interior_facet_integral":
+        code["tabulate_tensor"] += generate_reset_tensor(form_data.num_entries_interior, format)
+    else:
+        code["tabulate_tensor"] += generate_reset_tensor(form_data.num_entries, format)
 
     # Sum contributions
     code["tabulate_tensor"].append("")
     code["tabulate_tensor"].append(format["comment"]("Add all contributions to element tensor"))
     for postfix in contributions:
-        code["tabulate_tensor"] += ["integral_%s.tabulate_tensor(A, w, c);" % postfix]
+        # FIXME: This is UFC specific
+        if integral_type == "cell_integral":
+            code["tabulate_tensor"] += ["integral_%s.tabulate_tensor(A, w, c);" % postfix]
+        elif integral_type == "exterior_facet_integral":
+            code["tabulate_tensor"] += ["integral_%s.tabulate_tensor(A, w, c, facet);" % postfix]
+        else:
+            code["tabulate_tensor"] += ["integral_%s.tabulate_tensor(A, w, c0, c1, facet0, facet1);" % postfix]
 
     return code

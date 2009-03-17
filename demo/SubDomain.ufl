@@ -12,4 +12,4 @@ v = TestFunction(element)
 u = TrialFunction(element)
 f = Function(element)
 
-M = f*dx(2) + f*ds(5)
+M = f*dx(2)(0, {"quadrature_order":1}) + f*ds(5)(0, {"quadrature_order":1})
