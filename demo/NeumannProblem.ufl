@@ -14,4 +14,4 @@ f = Function(element)
 g = Function(element)
 
 a = inner(grad(v), grad(u))*dx
-L = inner(v, f)*dx(0, {"quadrature_order":2}) + inner(v, g)*ds(0, {"quadrature_order":2})
+L = inner(v, f)*dx + inner(v, g)*ds

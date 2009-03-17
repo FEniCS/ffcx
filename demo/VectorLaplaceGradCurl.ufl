@@ -25,7 +25,7 @@ def HodgeLaplaceGradCurl(element, felement):
     f = Function(felement)
     a = (inner(tau, sigma) - inner(grad(tau), u) + 
         inner(v, grad(sigma)) + inner(curl(v), curl(u)))*dx
-    L = inner(v, f)*dx(0, {"quadrature_order":2})
+    L = inner(v, f)*dx
     return [a, L]
 
 shape = tetrahedron

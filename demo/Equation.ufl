@@ -31,7 +31,7 @@ v = TestFunction(element)
 u = TrialFunction(element)
 u0 = Function(element)
 
-F = v*(u - u0)*dx(0, {"quadrature_order":2}) + k*inner(grad(v), grad(0.5*(u0 + u)))*dx
+F = v*(u - u0)*dx + k*inner(grad(v), grad(0.5*(u0 + u)))*dx
 
 a = lhs(F)
 L = rhs(F)

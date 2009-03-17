@@ -39,4 +39,4 @@ a = inner(grad(v), grad(u))*dx \
    + gamma/h*v*u*ds
 
 # Linear form
-L = v*f*dx(0, {"quadrature_order":2}) + v*gN*ds(0, {"quadrature_order":2})
+L = v*f*dx + v*gN*ds
