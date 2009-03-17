@@ -55,11 +55,10 @@ class QuadratureTransformer(Transformer):
 
         # Stacks
         self._derivatives = []
-        self._index_values = StackDict()
         self._components = StackDict()
         self.trans_set = set()
         self.element_map, self.name_map, self.unique_tables =\
-        self.__create_psi_tables(form_representation.psi_tables[domain_type])
+              self.__create_psi_tables(form_representation.psi_tables[domain_type])
 
     def update_facets(self, facet0, facet1):
         self.facet0 = facet0
@@ -85,12 +84,9 @@ class QuadratureTransformer(Transformer):
         self.points = 0
         self.facet0 = None
         self.facet1 = None
-        if self._index_values:
-            raise RuntimeError("This dictionary is supposed to be empty")
         if self._components:
             raise RuntimeError("This list is supposed to be empty")
         # It should be zero but clear just to be sure
-        self._index_values.clear()
         self._components = []
 
     def disp(self):
@@ -415,10 +411,8 @@ class QuadratureTransformer(Transformer):
         tmp = 0
         code = {}
         for i in range(o.dimension()):
-            self._index_values.push(index[0], i)
             tmp = self.visit(summand)
 #            print "index_sum, tmp: ", tmp
-            self._index_values.pop()
 
             # FIXME: remove this?
             if not tmp:
@@ -456,24 +450,12 @@ class QuadratureTransformer(Transformer):
         # Loop multi indices and create components
         for indx in index:
             self._components.append(indx)
-            # If index is not present in index_values, create it.
-            # (It means that it is a Fixed index??!)
-            if not indx in self._index_values:
-                if not isinstance(indx, FixedIndex):
-                    raise RuntimeError(indx, "Index must be Fixed for Indexed to add it to index_values")
-                self._index_values.push(indx, indx._value)
 
 #        print "\ncomponents: ", self._components
-#        print "\nindex_values: ", self._index_values
 
         # Visit expression subtrees and generate code
         code = self.visit(indexed_expr)
 
-        # Loop multi indices and delete components
-        for indx in index:
-#            self._components.pop()
-            if isinstance(indx, FixedIndex):
-                self._index_values.pop()
 
         # Set components equal to old components
         self._components = old_components[:]
@@ -494,19 +476,11 @@ class QuadratureTransformer(Transformer):
         old_components = self._components[:]
         self._components = []
 
-        # Loop multi indices and map index values
-        for i, indx in enumerate(index):
-            self._index_values.push(indx, self._index_values[old_components[i]])
 
 #        print "\nCTcomponents: ", self._components
-#        print "\nCTindex_values: ", self._index_values
 
         # Visit expression subtrees and generate code
         code = self.visit(indexed_expr)
-
-        # Loop multi indices and delete index values
-        for indx in index:
-            self._index_values.pop()
 
         # Set components equal to old components
         self._components = old_components[:]
@@ -518,13 +492,12 @@ class QuadratureTransformer(Transformer):
 
         raise RuntimeError("ListTensors should have been expanded!")
         print "\nLTcomponents: ", self._components
-        print "\nLTindex_values: ", self._index_values
 
         # A list tensor only has one component
         if len(self._components) != 1:
             raise RuntimeError(self._components, "ListTensor can only have one component")
 
-        expr = o.operands()[self._index_values[self._components[0]]]
+        expr = o.operands()[int(self._components[0])]
 
         return self.visit(expr)
 
@@ -543,9 +516,7 @@ class QuadratureTransformer(Transformer):
         # Get the direction that we need the derivative for
         direction = None
         if isinstance(index[0], FixedIndex):
-            direction = index[0]._value
-        else:
-            direction = self._index_values[index[0]]
+            direction = int(index[0])
 
         # Append the derivative
         self._derivatives.append(direction)
@@ -578,7 +549,10 @@ class QuadratureTransformer(Transformer):
         if self._derivatives:
             derivatives = self._derivatives[:]
         if self._components:
-            component = self._index_values[self._components[0]]
+            component = [int(c) for c in self._components]
+            # Handle tensor elements
+            if len(component) > 1:
+                component = o.element()._sub_element_mapping[tuple(component)]
 
 #        print "\nDerivatives: ", derivatives
 
@@ -618,7 +592,7 @@ class QuadratureTransformer(Transformer):
         restriction = None
 
         # We get one component
-        component = self._index_values[self._components[0]]
+        component = int(self._components[0])
         coefficient = self.format["coeff"] + self.format["matrix access"](str(o.count()), component)
         return {():coefficient}
 
@@ -629,9 +603,9 @@ class QuadratureTransformer(Transformer):
         if operands:
             raise RuntimeError(operands, "Didn't expect any operands for Function")
 
-#        print "self._components: ", self._components
-        if len(self._components) > 1:
-            raise RuntimeError(self._components, "Currently only supports 1 component value (tensor valued functions not supported)")
+        print "self._components: ", self._components
+#        if len(self._components) > 1:
+#            raise RuntimeError(self._components, "Currently only supports 1 component value (tensor valued functions not supported)")
 
 #        print "self._derivatives: ", self._derivatives
         # Create aux. info
@@ -641,9 +615,12 @@ class QuadratureTransformer(Transformer):
         if self._derivatives:
             derivatives = self._derivatives[:]
         if self._components:
-            component = self._index_values[self._components[0]]
-
-#        print "\nDerivatives: ", derivatives
+            component = [int(c) for c in self._components]
+            # Handle tensor elements
+            if len(component) > 1:
+                component = o.element()._sub_element_mapping[tuple(component)]
+#        print "\nO: ", o.__repr__()
+#        print o.element()._sub_element_mapping
 
         # Create code for basis function
         code = self.create_function(o, component, derivatives)
@@ -893,7 +870,7 @@ class QuadratureTransformer(Transformer):
 
             # If the loop index range is one we can look up the first component
             # in the coefficient array. If we only have ones we don't need the basis
-            if self.optimise_options["ignore ones"] > 0 and loop_index_range == 1 and ones:
+            if self.optimise_options["ignore ones"] and loop_index_range == 1 and ones:
                 coefficient_access = "0"
                 basis_name = ""
             else:

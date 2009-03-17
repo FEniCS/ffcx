@@ -59,7 +59,7 @@ class QuadratureGenerator:
         "Constructor"
 
         # TODO: Set this through OPTIONS
-        self.optimise_options = {"non zero columns": False,
+        self.optimise_options = {"non zero columns": True,
                                  "ignore ones": False,
                                  "remove zero terms": False,
                                  "simplify expressions": False,
@@ -340,7 +340,7 @@ class QuadratureGenerator:
         # I therefore need to generate the actual code to compute the element
         # tensors first, and then create the auxiliary code.
 
-#        transformer.disp()
+        transformer.disp()
 
         # We receive a dictionary {num_points: integral,}
         # Loop points and integrals
@@ -351,7 +351,7 @@ class QuadratureGenerator:
 #            print "\nIntegral tree_format: ", tree_format(integral)
 
             ip_code = ["", Indent.indent(format_comment\
-                ("Loop quadrature points for integral: %s" % str(integral)))]
+                ("Loop quadrature points for integral: %s" % repr(integral)))]
 #                ("Loop quadrature points for integral: %s" % integral.__repr__()))]
 
             # Update transformer to the current number of quadrature points
@@ -459,9 +459,14 @@ class QuadratureGenerator:
         inv_name_map = transformer.name_map
         tables = transformer.unique_tables
 
-        # Get list of non zero columns with more than 1 column
-        nzcs = [val[1] for key, val in inv_name_map.items()\
-                                       if val[1] and len(val[1][1]) > 1]
+        # Get list of non zero columns, if we ignore ones ignore columns with
+        # one component
+        if self.optimise_options["ignore ones"]:
+            nzcs = [val[1] for key, val in inv_name_map.items()\
+                                           if val[1] and len(val[1][1]) > 1]
+        else:
+            nzcs = [val[1] for key, val in inv_name_map.items()\
+                                           if val[1]]
 
         # TODO: Do we get arrays that are not unique?
         new_nzcs = []

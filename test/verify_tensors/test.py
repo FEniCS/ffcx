@@ -375,16 +375,16 @@ def verify_form(form_file, form_type, form, forms_not_compiled_ok, forms_not_com
 
     compiled_form, module, form_data = (0, 0, 0)
 
-#    try:
+    try:
         # Compile the form with jit
-    opt = {"representation":test_options["representation"], "cache_dir":"test_cache", "compiler": test_options["compiler"]}
-    (compiled_form, module, form_data) = jit(form, opt)
-#    except Exception, what:
-#        ok_compile = False
-#        forms_not_compiled_ok.append(form_file)
-#        print "\n*** An error occured while compiling form"
-#        print "What: ", what
-#        pass
+        opt = {"representation":test_options["representation"], "cache_dir":"test_cache", "compiler": test_options["compiler"]}
+        (compiled_form, module, form_data) = jit(form, opt)
+    except Exception, what:
+        ok_compile = False
+        forms_not_compiled_ok.append(form_file)
+        print "\n*** An error occured while compiling form"
+        print "What: ", what
+        pass
 
     norm = 1.0
     try:
