@@ -11,7 +11,7 @@ of forms and breaking the compilation into several sequential stages:
 """
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-02-05 -- 2009-03-05"
+__date__ = "2007-02-05 -- 2009-03-15"
 __copyright__ = "Copyright (C) 2007-2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
@@ -32,7 +32,7 @@ from ufl.algorithms import extract_unique_elements, extract_basis_functions
 # FFC common modules
 from ffc.common.log import debug, info, warning, error, begin, end, set_level, INFO
 from ffc.common.utils import product
-from ffc.common.constants import FFC_OPTIONS
+from ffc.common.constants import UFL_OPTIONS
 
 # FFC fem modules
 from ffc.fem import create_element
@@ -40,6 +40,7 @@ from ffc.fem import create_dof_map
 
 # FFC analysis modules
 from ffc.compiler.analysis.formdata import create_ffc_coefficients
+from ffc.compiler.analysis.elementdata import ElementData
 
 # FFC form representation modules
 from representation.tensor.monomials import MonomialException
@@ -58,17 +59,17 @@ from codegeneration.quadrature import UFLQuadratureGenerator
 #from codegeneration.common.dofmap import *
 
 # FFC format modules
-from format.uflufcformat import Format
+from format.ufcformat import Format
 
 # Form representations and code generators
 if os.environ["USER"] == "logg":
     Representations = (QuadratureRepresentation, TensorRepresentation)
     CodeGenerators  = (UFLQuadratureGenerator, UFLTensorGenerator)
 else:
-    Representations = (QuadratureRepresentation, QuadratureRepresentation)
-    CodeGenerators  = (UFLQuadratureGenerator, UFLQuadratureGenerator)
+    Representations = (QuadratureRepresentation,)
+    CodeGenerators  = (UFLQuadratureGenerator,)
 
-def compile(forms, prefix="Form", options=FFC_OPTIONS, global_variables=None):
+def compile(forms, prefix="Form", options=UFL_OPTIONS.copy(), global_variables=None):
     """This is the main interface to FFC. The input argument must be
     either a single UFL Form object or a list of UFL Form objects.
     For each form, FFC generates C++ code conforming to the UFC
@@ -83,15 +84,18 @@ def compile(forms, prefix="Form", options=FFC_OPTIONS, global_variables=None):
     # Check options
     options = _check_options(options)
 
+    # Get forms and elements
+    forms, elements = _extract_objects(forms)
+
     # Check forms
     forms = _check_forms(forms, options)
 
     # Check that we have at least one form
-    if len(forms) == 0:
-        info("No forms specified, nothing to do.")
+    if len(forms) == 0 and len(elements) == 0:
+        info("No forms or elements specified, nothing to do.")
         return
 
-    # Choose format
+    # Create format
     format = Format(options)
 
     # Compile all forms
@@ -113,6 +117,10 @@ def compile(forms, prefix="Form", options=FFC_OPTIONS, global_variables=None):
 
         # Add to list of codes
         generated_forms += [(form_code, form_data)]
+
+    # Generate code for elements, will only be generated if no forms were specified
+    if elements:
+        generated_forms += generate_element_code(elements, format.format)
 
     # Compiler stage 5: format code
     format_code(generated_forms, prefix, format, options)
@@ -154,16 +162,20 @@ def analyze_form(form, options, global_variables):
 
     # Attach number of entries in element tensor
     dims = [create_element(v.element()).space_dimension() for v in extract_basis_functions(form)]
+    dims_interior = [create_element(v.element()).space_dimension()*2 for v in extract_basis_functions(form)]
     form_data.num_entries = product(dims)
+    form_data.num_entries_interior = product(dims_interior)
 
     end()
     return form_data
 
 def compute_form_representations(form_data, options):
     "Compiler stage 2."
+
     begin("Compiler stage 2: Computing form representation(s)")
     representations = [Representation(form_data) for Representation in Representations]
     end()
+    
     return representations
     
 def optimize_form_representation(form_data):
@@ -198,39 +210,27 @@ def generate_form_code(form_data, representations, prefix, format):
     end()
     return code
 
+def generate_element_code(elements, format):
+    "Compiler stage 4."
+    # Create element_data and common code
+    form_data = ElementData([create_element(e) for e in elements])
+    return [(generate_common_code(form_data, format), form_data)]
+
 def format_code(generated_forms, prefix, format, options):
-    "Compiler stage 5: Format code"
+    "Compiler stage 5."
+    
     begin("Compiler stage 5: Formatting code")
     format.write(generated_forms, prefix, options)
     end()
 
-def _auto_select_representation(integral):
-    "Automatically select the best representation for integral."
-
-    # FIXME: Implement this
-    return "quadrature"
-
-def _auto_select_quadrature_order(integral):
-    "Automatically select the appropriate quadrature order for integral."
-
-    # FIXME: Improve algorithms in UFL. In the mean time this is a dirty hack
-    # FIXME: to take into account Quadrature elements
-    if any(e.family() == "Quadrature" for e in extract_unique_elements(integral)):
-        quadrature_order = extract_quadrature_order(integral)
-    else:
-        quadrature_order = max(extract_quadrature_order(integral),\
-                               estimate_quadrature_order(integral))
-
-    return quadrature_order
-
 def _check_options(options):
     "Initial check of options."
-    
-    if options["optimize"]:
+
+    if "optimize" in options:
         warning("Optimization unavailable (will return in a future version).")
-    if options["blas"]:
+    if "blas" in options:
         warning("BLAS mode unavailable (will return in a future version).")
-    if options["quadrature_points"]:
+    if "quadrature_points" in options:
         warning("Option 'quadrature_points' has been replaced by 'quadrature_order'.")
 
     return options
@@ -277,18 +277,18 @@ def _check_metadata(integral, options):
             warning("Unrecognized option '%s' for integral metadata." % key)
 
     # Check metadata
-    valid_representations = ["tensor", "quadrature", "automatic"]
+    valid_representations = ["tensor", "quadrature", "auto"]
     if not representation in valid_representations:
         error("Unrecognized form representation '%s', must be one of %s.",
               representation, ", ".join("'%s'" % r for r in valid_representations))
-    if not ((isinstance(quadrature_order, int) and quadrature_order >= 0) or quadrature_order == "automatic"):
-        error("Illegal quadrature order %s for integral, must be a nonnegative integer or 'automatic'.",
+    if not ((isinstance(quadrature_order, int) and quadrature_order >= 0) or quadrature_order == "auto"):
+        error("Illegal quadrature order '%s' for integral, must be a nonnegative integer or 'auto'.",
               str(quadrature_order))
 
-    # Automatically select metadata if "automatic" is selected
-    if representation == "automatic":
+    # Automatically select metadata if "auto" is selected
+    if representation == "auto":
         representation = _auto_select_representation(integral)
-    if quadrature_order == "automatic":
+    if quadrature_order == "auto":
         quadrature_order = _auto_select_quadrature_order(integral)
 
     # Create new measure with updated metadata
@@ -300,10 +300,13 @@ def _check_metadata(integral, options):
 def _extract_objects(objects):
     "Extract forms and elements from list of objects."
 
-
     # Check each object
     forms = []
     elements = []
+
+    if not isinstance(objects, list):
+        objects = [objects]
+
     for object in objects:
         if isinstance(object, Form):
             forms.append(object)
@@ -318,21 +321,8 @@ def _extract_objects(objects):
 
     return (forms, elements)
 
-def _choose_format(options):
-    "Choose output format."
-
-    # FIXME: Make format a class (since we call init())
-
-    language = options["language"]
-    if language.lower() == "ufc":
-        return ufcformat
-    elif language.lower() == "dolfin":
-        return dolfinformat
-    else:
-        raise RuntimeError, "Don't know how to compile code for language \"%s\"." % language
-
-def _choose_representation(form, options):
-    "Choose form representation"
+def _select_representation(form, options):
+    "Select form representation"
 
     option = options["representation"]
     if option == "tensor":
@@ -353,16 +343,36 @@ def _choose_representation(form, options):
     else:
         raise RuntimeError, 'Unknown form representation: "%s"' % option
 
-def __choose_code_generator(form_representation):
-    "Choose code generator"
+def __select_code_generator(form_representation):
+    "Select code generator"
 
     if form_representation == "tensor":
         return TensorGenerator
     else:
         return UFLQuadratureGenerator
-    "Choose code generator"
+    "Select code generator"
 
     if form_representation == "tensor":
         return TensorGenerator
     else:
         return UFLQuadratureGenerator
+
+def _auto_select_representation(integral):
+    "Automatically select the best representation for integral."
+
+    # FIXME: Implement this
+    info("Automatic selection of representation not implemented, defaulting to quadrature.")
+    return "quadrature"
+
+def _auto_select_quadrature_order(integral):
+    "Automatically select the appropriate quadrature order for integral."
+
+    # FIXME: Improve algorithms in UFL. In the mean time this is a dirty hack
+    # FIXME: to take into account Quadrature elements
+    if any(e.family() == "Quadrature" for e in extract_unique_elements(integral)):
+        quadrature_order = extract_quadrature_order(integral)
+    else:
+        quadrature_order = max(extract_quadrature_order(integral),\
+                               estimate_quadrature_order(integral))
+
+    return quadrature_order

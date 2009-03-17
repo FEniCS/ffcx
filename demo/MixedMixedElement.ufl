@@ -5,6 +5,6 @@
 #
 # Compile this form with FFC: ffc MixedMixedElement.ufl
 
-P3 = FiniteElement("Lagrange", "triangle", 3)
+P3 = FiniteElement("Lagrange", triangle, 3)
 
 element = (P3 + P3) + (P3 + P3)

@@ -46,9 +46,7 @@ from codegeneration.common.finiteelement import *
 from codegeneration.common.dofmap import *
 
 # FFC format modules
-from format import ufcformat
-from format import dolfinformat
-#from format.uflufcformat import Format
+from format.ufcformat import Format
 
 def compile(forms, prefix="Form", options=FFC_OPTIONS, global_variables=None):
     "Compile the given forms and/or elements"
@@ -83,10 +81,8 @@ def __compile_forms(forms, prefix, options, global_variables):
         debug("No forms specified, nothing to do.")
         return
 
-    # Choose format
-    format = __choose_format(options["language"])
-    format.init(options)
-#    format = Format(options)
+    # Initialise format
+    format = Format(options)
 
     # Iterate over forms for stages 1 - 4
     generated_forms = []
@@ -135,10 +131,8 @@ def __compile_elements(elements, prefix, options):
     debug_end()
     debug_begin("Compiler phase 4: Generating code")
 
-    # Choose format
-    format = __choose_format(options["language"])
-    format.init(options)
-#    format = Format(options)
+    # Initialise format
+    format = Format(options)
 
     # Choose code generator
     CodeGenerator = __choose_code_generator(options["representation"])
@@ -237,16 +231,6 @@ def format_code(generated_forms, prefix, format, options):
     format.write(generated_forms, prefix, options)
 
     debug_end()
-
-def __choose_format(language):
-    "Choose format from specified language"
-
-    if language.lower() == "ufc":
-        return ufcformat
-    elif language.lower() == "dolfin":
-        return dolfinformat
-    else:
-        raise RuntimeError, "Don't know how to compile code for language \"%s\"." % language
 
 def __choose_representation(form_representation):
     "Choose form representation"

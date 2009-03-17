@@ -5,15 +5,14 @@
 #
 # Compile this form with FFC: ffc Constant.ufl
 
-element = FiniteElement("Lagrange", "triangle", 1)
+element = FiniteElement("Lagrange", triangle, 1)
 
 v = TestFunction(element)
 u = TrialFunction(element)
 f = Function(element)
 
-c = Constant("triangle")
-d = VectorConstant("triangle")
+c = Constant(triangle)
+d = VectorConstant(triangle)
 
-a = c*dot(grad(v), grad(u))*dx
+a = c*inner(grad(v), grad(u))*dx
 L = inner(d, grad(v))*dx
-

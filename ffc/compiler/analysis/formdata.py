@@ -95,6 +95,8 @@ class FormData:
         self.num_interior_facet_integrals = self.__extract_num_interior_facet_integrals(form)
         self.elements                     = self.__extract_elements(form, self.rank, self.num_coefficients)
         self.dof_maps                     = self.__extract_dof_maps(self.elements)
+        self.ffc_elements                 = self.elements
+        self.ffc_dof_maps                 = self.dof_maps
         self.coefficients                 = self.__extract_coefficients(form, self.num_coefficients, global_variables)
         self.cell_dimension               = self.__extract_cell_dimension(self.elements)
         self.basisfunction_data           = self.__extract_basisfunction_data(form, self.rank)

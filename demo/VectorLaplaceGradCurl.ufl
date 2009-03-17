@@ -2,29 +2,37 @@
 # Licensed under the GNU GPL version 3 or any later version
 #
 # The bilinear form a(v, u) and linear form L(v) for the Hodge Laplace
-# problem using 0- and 1-forms. Intended to demonstrate use of Nedelec
+# problem using 0- and 1-forms. Intended to demonstrate use of N1curl
 # elements. 
 
 # Compile this form with FFC: ffc VectorLaplaceGradCurl.ufl
 
-
 def HodgeLaplaceGradCurl(element, felement):
+    """This is a formulation of the Hodge Laplacian using k=1 and n=3,
+    i.e 0-forms and 1-forms in 3D.
+
+    Appropriate elements are
+
+    GRAD \times CURL =    
+         Lagrange_r \ times Ned^1_{r-1}
+         Lagrange_{r+1} \ times Ned^2_{r}
+    
+    Only the 1st kind of N1curl elements are implemented in FIAT.
+    """
+
     (tau, v) = TestFunctions(element)
     (sigma, u) = TrialFunctions(element)
     f = Function(felement)
-
-    a = (inner(tau, sigma) - inner(grad(tau), u) + inner(v, grad(sigma)) + inner(curl(v), curl(u)))*dx
+    a = (inner(tau, sigma) - inner(grad(tau), u) + 
+        inner(v, grad(sigma)) + inner(curl(v), curl(u)))*dx
     L = inner(v, f)*dx
-    
     return [a, L]
 
-shape = "tetrahedron"
+shape = tetrahedron
 order = 1
 
 GRAD = FiniteElement("Lagrange", shape, order)
 CURL = FiniteElement("N1curl", shape, order-1)
-
 VectorLagrange = VectorElement("Lagrange", shape, order+1)
 
 [a, L] = HodgeLaplaceGradCurl(GRAD + CURL, VectorLagrange)
-

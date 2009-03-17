@@ -9,10 +9,9 @@
 #
 # Compile this form with FFC: ffc QuadratureElement.ufl
 
-element = FiniteElement("Lagrange", "triangle", 2)
-
-QE = FiniteElement("Quadrature", "triangle", 4)
-sig = VectorElement("Quadrature", "triangle", 4)
+element = FiniteElement("Lagrange", triangle, 2)
+QE = FiniteElement("Quadrature", triangle, 3)
+sig = VectorElement("Quadrature", triangle, 3)
 
 v = TestFunction(element)
 u = TrialFunction(element)
@@ -21,6 +20,6 @@ C = Function(QE)
 sig0 = Function(sig)
 f = Function(element)
 
-a = v.dx(i)*C*u.dx(i)*dx + v.dx(i)*2*u0*u*u0.dx(i)*dx(0, {"quadrature_order":6})
-L = v*f*dx(0, {"quadrature_order":4}) - dot(grad(v), sig0)*dx
+a = v.dx(i)*C*u.dx(i)*dx + v.dx(i)*2*u0*u*u0.dx(i)*dx
+L = v*f*dx - inner(grad(v), sig0)*dx
 

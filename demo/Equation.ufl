@@ -13,8 +13,8 @@
 #
 # The below formulation is equivalent to writing
 #
-#  a = v*u*dx + 0.5*k*dot(grad(v), grad(u))*dx
-#  L = v*u0*dx - 0.5*k*dot(grad(v), grad(u0))*dx
+#  a = v*u*dx + 0.5*k*inner(grad(v), grad(u))*dx
+#  L = v*u0*dx - 0.5*k*inner(grad(v), grad(u0))*dx
 #
 # but instead of manually shuffling terms not including
 # the unknown u to the right-hand side, all terms may
@@ -23,7 +23,7 @@
 #
 # Compile this form with FFC: ffc Equation.ufl
 
-element = FiniteElement("Lagrange", "triangle", 1)
+element = FiniteElement("Lagrange", triangle, 1)
 
 k = 0.1
 
@@ -31,8 +31,10 @@ v = TestFunction(element)
 u = TrialFunction(element)
 u0 = Function(element)
 
-F = v*(u - u0)*dx(0, {"quadrature_order":2}) + k*dot(grad(v), grad(0.5*(u0 + u)))*dx(0, {"quadrature_order":2})
+F = v*(u - u0)*dx + k*inner(grad(v), grad(0.5*(u0 + u)))*dx
 
 a = lhs(F)
 L = rhs(F)
 
+#a = v*u*dx + 0.5*k*inner(grad(v), grad(u))*dx
+#L = v*u0*dx - 0.5*k*inner(grad(v), grad(u0))*dx

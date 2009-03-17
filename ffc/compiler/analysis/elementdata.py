@@ -33,7 +33,10 @@ class ElementData:
         self.num_interior_facet_integrals = 0
         self.elements                     = elements
         self.dof_maps                     = [DofMap(element) for element in elements]
+        self.ffc_elements                 = self.elements
+        self.ffc_dof_maps                 = self.dof_maps
         self.cell_dimension               = pick_first([element.cell_dimension() for element in elements])
         self.coefficients                 = []
 
         debug("done")
+

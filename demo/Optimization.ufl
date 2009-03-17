@@ -6,12 +6,11 @@
 #
 # Compile this form with FFC: ffc -O Optimization.ufl
 
-element = FiniteElement("Lagrange", "triangle", 3)
+element = FiniteElement("Lagrange", triangle, 3)
 
 v = TestFunction(element)
 u = TrialFunction(element)
 f = Function(element)
 
-a = dot(grad(v), grad(u))*dx(0, {"quadrature_order":4})
-L = v*f*dx(0, {"quadrature_order":6})
-
+a = inner(grad(v), grad(u))*dx
+L = v*f*dx

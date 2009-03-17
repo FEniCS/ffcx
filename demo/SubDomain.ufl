@@ -6,11 +6,10 @@
 #
 # Compile this form with FFC: ffc SubDomain.ufl
 
-element = FiniteElement("CG", "tetrahedron", 1)
+element = FiniteElement("CG", tetrahedron, 1)
 
 v = TestFunction(element)
 u = TrialFunction(element)
 f = Function(element)
 
 M = f*dx(2) + f*ds(5)
-

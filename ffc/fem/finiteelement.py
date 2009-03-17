@@ -214,7 +214,8 @@ class FiniteElement(FiniteElementBase):
             return (BDFM(fiat_shape, degree),
                     Mapping.CONTRAVARIANT_PIOLA)
 
-        if family == "Nedelec":
+        # FIXME: Temporary fix, remove "Nedelec"
+        if family == "Nedelec" or "Nedelec 1st kind H(curl)" or"N1curl":
             self.__family = "Nedelec"
             return (Nedelec(fiat_shape, degree),
                     Mapping.COVARIANT_PIOLA)

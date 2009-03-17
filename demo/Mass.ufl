@@ -5,7 +5,7 @@
 #
 # Compile this form with FFC: ffc Mass.ufl
 
-element = FiniteElement("Lagrange", "tetrahedron", 3)
+element = FiniteElement("Lagrange", tetrahedron, 3)
 
 v = TestFunction(element)
 u = TrialFunction(element)

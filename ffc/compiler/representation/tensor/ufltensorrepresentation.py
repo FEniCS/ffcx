@@ -4,6 +4,7 @@ __copyright__ = "Copyright (C) 2007-2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 # UFL modules
+from ufl.classes import Form
 from ufl.integral import Measure
 from ufl.algorithms import extract_basis_functions
 
@@ -50,8 +51,16 @@ class TensorRepresentation:
     def __init__(self, form_data):
         "Create tensor representation for given form."
 
+        # Extract integrals integrals for tensor representation
+        form = _extract_tensor_integrals(form_data.form)
+
+        # FIXME: Temporary fix
+        if len(form.integrals()) == 0:
+            self.cell_integrals = []
+            return
+
         # Extract monomial representation
-        monomial_form = extract_monomial_form(form_data.form)
+        monomial_form = extract_monomial_form(form)
         print ""
         print monomial_form
 
@@ -69,16 +78,14 @@ class TensorRepresentation:
         # Compute representation of interior facet tensors
         #self.interior_facet_tensors = self.__compute_interior_facet_tensors(form)
 
-    def _extract_primary_multiindex(self):
-        "Extract primary multiindex (need to search all terms)."
+def _extract_tensor_integrals(form):
+    "Extract form containing only tensor representation integrals."
 
-        for terms in self.cell_integrals:
-            if len(terms) > 0:
-                return terms[0].A0.i
-
-        # FIXME: Search exterior and interior facet integrals
-
-        raise RuntimeError, "Unable to extract primary multiindex."
+    new_form = Form([])
+    for integral in form.integrals():
+        if integral.measure().metadata()["ffc_representation"] == "tensor":
+            new_form += integral
+    return new_form
 
 def _compute_cell_tensor(monomial_form, form_data, sub_domain):
     "Compute representation of cell tensor."

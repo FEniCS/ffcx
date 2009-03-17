@@ -5,12 +5,11 @@
 #
 # Compile this form with FFC: ffc FunctionOperators.ufl
 
-element = FiniteElement("Lagrange", "triangle", 1)
+element = FiniteElement("Lagrange", triangle, 1)
 
 v = TestFunction(element)
 u = TrialFunction(element)
 f = Function(element)
 g = Function(element)
 
-a = sqrt(1/abs(1/f))*sqrt(g)*dot(grad(v), grad(u))*dx + v*u*sqrt(f*g)*g*dx(0, {"quadrature_order":5})
-
+a = sqrt(1/abs(1/f))*sqrt(g)*inner(grad(v), grad(u))*dx + v*u*sqrt(f*g)*g*dx

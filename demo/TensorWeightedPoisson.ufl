@@ -6,12 +6,14 @@
 #
 # Compile this form with FFC: ffc TensorWeightedPoisson.ufl
 
-P1 = FiniteElement("Lagrange", "triangle", 1)
-P0 = TensorElement("Discontinuous Lagrange", "triangle", 0, shape=(2, 2))
+P1 = FiniteElement("Lagrange", triangle, 1)
+P0 = TensorElement("Discontinuous Lagrange", triangle, 0, (2, 2))
 
 v = TestFunction(P1)
 u = TrialFunction(P1)
+f = Function(P1)
+
 C = Function(P0)
 
 a = inner(grad(v), C*grad(u))*dx
-
+#L = v*f*dx
