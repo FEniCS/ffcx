@@ -72,26 +72,31 @@ def run_command(command):
 def check_results(values, reference):
     "Check results and print summary."
 
-    print ""
-    tol = 1e-12
-    results = []
     ok = True
-    for (integral, value) in values:
-        if not isinstance(value, str):
-            if integral in reference:
-                e = max(abs(value - reference[integral]))
-                if e < tol:
-                    result = "OK" % e
+    print ""
+    for representation in values:
+        vals = values[representation]
+        s = "Results for %s representation" % representation
+        print s + "\n" + "-"*len(s) + "\n"
+        tol = 1e-12
+        results = []
+
+        for (integral, value) in vals:
+            if not isinstance(value, str):
+                if integral in reference:
+                    e = max(abs(value - reference[integral]))
+                    if e < tol:
+                        result = "OK" % e
+                    else:
+                        result = "*** (diff = %g)" % e
+                        ok = False
                 else:
-                    result = "*** (diff = %g)" % e
-                    ok = False
+                    result = "missing reference"
             else:
-                result = "missing reference"
-        else:
-            result = value
-            ok = False
-        results.append((integral, result))
-    print tstr(results, 100)
+                result = value
+                ok = False
+            results.append((integral, result))
+        print tstr(results, 100)
 
     if ok:
         print "\nAll tensors verified OK"
@@ -110,21 +115,25 @@ def main(args):
 
     # Iterate over all form files
     form_files = commands.getoutput("ls ../../../demo/*.%s" % format).split("\n")
-    values = []
-    for form_file in form_files:
+    values = {}
+    for representation in ["quadrature", "tensor"]:
+        vals = []
+        for form_file in form_files:
 
-        # Compile form
-        (integrals, form, header) = get_integrals(form_file)
-        print "Compiling form %s..." % form
-        (ok, output) = run_command("ffc %s %s" % (" ".join(args), form_file))
+            # Compile form
+            (integrals, form, header) = get_integrals(form_file)
+            print "Compiling form %s..." % form
+            (ok, output) = run_command("ffc -r %s %s" % (representation, form_file))
 
-        # Tabulate tensors for all integrals
-        print "  Found %d integrals" % len(integrals)
-        for (integral, integral_type) in integrals:
-            if ok:
-                values.append((integral, tabulate_tensor(integral, integral_type, header)))
-            else:
-                values.append((integral, "FFC compilation failed"))
+            # Tabulate tensors for all integrals
+            print "  Found %d integrals" % len(integrals)
+            for (integral, integral_type) in integrals:
+                if ok:
+                    vals.append((integral, tabulate_tensor(integral, integral_type, header)))
+                else:
+                    vals.append((integral, "FFC compilation failed"))
+
+        values[representation] = vals
 
     # Load or update reference values
     if os.path.isfile("../reference.pickle"):
