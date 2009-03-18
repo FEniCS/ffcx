@@ -84,7 +84,7 @@ def _extract_tensor_integrals(form):
     new_form = Form([])
     for integral in form.integrals():
         if integral.measure().metadata()["ffc_representation"] == "tensor":
-            new_form += integral
+            new_form += Form([integral])
     return new_form
 
 def _compute_cell_tensor(monomial_form, form_data, sub_domain):
