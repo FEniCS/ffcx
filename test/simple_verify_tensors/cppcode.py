@@ -5,7 +5,11 @@ __date__ = "2009-03-15 -- 2009-03-15"
 __copyright__ = "Copyright (C) 2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
-tabulate_tensor_code = """\
+# Integral types
+integral_types = ["cell_integral", "exterior_facet_tensor", "interior_facet_tensor"]
+
+# Common code for all integral types
+tabulate_tensor_code_common = """\
 #include <iostream>
 #include <ufc.h>
 #include "%(header)s"
@@ -52,7 +56,7 @@ int main()
   }
 
   // Call tabulate_tensor
-  integral.tabulate_tensor(A, w, cell);
+  <tabulate_tensor>;
   
   // Print values
   for (int i = 0; i < N; i++)
@@ -61,3 +65,10 @@ int main()
   return 0;
 }
 """
+
+# Code for different integral types
+i = integral_types
+c = tabulate_tensor_code_common
+tabulate_tensor_code = {i[0] : c.replace("<tabulate_tensor>", "integral.tabulate_tensor(A, w, cell)"),
+                        i[1] : c.replace("<tabulate_tensor>", "integral.tabulate_tensor(A, w, cell, 0)"),
+                        i[2] : c.replace("<tabulate_tensor>", "integral.tabulate_tensor(A, w, cell, 0, 0)")}

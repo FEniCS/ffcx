@@ -1,10 +1,9 @@
-from cppcode import tabulate_tensor_code
-
 __author__ = "Anders Logg (logg@simula.no)"
 __date__ = "2009-03-15 -- 2009-03-15"
 __copyright__ = "Copyright (C) 2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
+from cppcode import tabulate_tensor_code, integral_types
 from ufl.common import tstr
 import sys, os, commands, pickle, numpy
 
@@ -21,14 +20,14 @@ if not "PYTHONPATH" in os.environ: os.environ["PYTHONPATH"] = ""
 os.environ["PATH"] = "../../../scripts:" + os.environ["PATH"]
 os.environ["PYTHONPATH"] ="../../..:" + os.environ["PYTHONPATH"]
 
-def tabulate_tensor(integral, header):
+def tabulate_tensor(integral, integral_type, header):
     "Generate code and tabulate tensor for integral."
 
     print "  Checking %s..." % integral
 
     # Generate and compile code
     options = {"n": 100, "N": 1000, "integral": integral, "header": header}
-    code = tabulate_tensor_code % options
+    code = tabulate_tensor_code[integral_type] % options
     open("tabulate_tensor.cpp", "w").write(code)
     (ok, output) = run_command("g++ -o tabulate_tensor tabulate_tensor.cpp")
     if not ok: return "GCC compilation failed"
@@ -45,8 +44,12 @@ def get_integrals(form_file):
     prefix = form_file.split("/")[-1].split(".")[0]
     form = prefix + "." + format
     header = prefix + ".h"
-    integrals = commands.getoutput("grep integral %s | grep class" % header).split("\n")
-    integrals = [integral.split(":")[0].split(" ")[-1] for integral in integrals if len(integral) > 0]
+    integrals = []
+    for integral_type in integral_types:
+        for integral in commands.getoutput("grep ufc::%s %s | grep class" % (integral_type, header)).split("\n"):
+            integral = integral.split(":")[0].split(" ")[-1].strip()
+            if not integral is "":
+                integrals.append((integral, integral_type))
     return (integrals, form, header)
 
 def to_dict(tuples):
@@ -65,6 +68,37 @@ def run_command(command):
             logfile = open("../error.log", "w")
         logfile.write(output + "\n")
     return (status == 0, output)
+
+def check_results(values, reference):
+    "Check results and print summary."
+
+    print ""
+    tol = 1e-12
+    results = []
+    ok = True
+    for (integral, value) in values:
+        if not isinstance(value, str):
+            if integral in reference:
+                e = max(abs(value - reference[integral]))
+                if e < tol:
+                    result = "OK" % e
+                else:
+                    result = "*** (diff = %g)" % e
+                    ok = False
+            else:
+                result = "missing reference"
+        else:
+            result = value
+            ok = False
+        results.append((integral, result))
+    print tstr(results, 100)
+
+    if ok:
+        print "\nAll tensors verified OK"
+        return 0
+    else:
+        print "\nVerification failed."
+        return 1
     
 def main(args):
     "Call tabulate tensor for all integrals found in demo directory."
@@ -82,13 +116,13 @@ def main(args):
         # Compile form
         (integrals, form, header) = get_integrals(form_file)
         print "Compiling form %s..." % form
-        (ok, output) = run_command("ffc %s" % form_file)
+        (ok, output) = run_command("ffc %s %s" % (" ".join(args), form_file))
 
         # Tabulate tensors for all integrals
         print "  Found %d integrals" % len(integrals)
-        for integral in integrals:
+        for (integral, integral_type) in integrals:
             if ok:
-                values.append((integral, tabulate_tensor(integral, header)))
+                values.append((integral, tabulate_tensor(integral, integral_type, header)))
             else:
                 values.append((integral, "FFC compilation failed"))
 
@@ -99,32 +133,9 @@ def main(args):
         print "Unable to find reference values, storing current values."
         pickle.dump(values, open("../reference.pickle", "w"))        
         return 0
-        
-    # Compare results
-    print ""
-    tol = 1e-12
-    results = []
-    for (integral, value) in values:
-        if not isinstance(value, str):
-            if integral in reference:
-                e = max(abs(value - reference[integral]))
-                if e < tol:
-                    result = "OK  (diff = %g)" % e
-                else:
-                    result = "*** (diff = %g)" % e
-            else:
-                result = "missing reference"
-        else:
-            result = value
-        results.append((integral, result))
-    print tstr(results, 100)
 
-    if logfile is None:
-        print "\nAll tensors verified OK"
-        return 0
-    else:
-        print "\nVerification failed, see 'error.log' for details.'"
-        return 1
+    # Check results
+    return check_results(values, reference)
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv[1:]))
