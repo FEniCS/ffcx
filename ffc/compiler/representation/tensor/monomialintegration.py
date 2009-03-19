@@ -43,22 +43,14 @@ def integrate(monomial, facet0, facet1):
 
     tic = time.time()
 
-    print ""
-    print "---"
-    print "monomial:", monomial
-
     # Check for integral type
     integral_type = monomial.integral.type
 
     # Initialize quadrature points and weights
     (points, weights) = __init_quadrature(monomial.basisfunctions, integral_type)
 
-    print points, weights
-
     # Initialize quadrature table for basis functions
     table = __init_table(monomial.basisfunctions, integral_type, points, facet0, facet1)
-
-    print table
 
     # Compute table Psi for each factor
     psis = [__compute_psi(v, table, len(points), integral_type) for v in monomial.basisfunctions]
@@ -71,8 +63,6 @@ def integrate(monomial, facet0, facet1):
     num_entries = numpy.prod(numpy.shape(A0))
     debug("%d entries computed in %.3g seconds" % (num_entries, toc), 1)
     debug("Shape of reference tensor: " + str(numpy.shape(A0)), 1)
-
-    #print A0
 
     return A0
 
@@ -133,8 +123,6 @@ def __init_table(basisfunctions, integral_type, points, facet0, facet1):
             table[(element, Restriction.PLUS)]  = element.tabulate(order, map_to_facet(points, facet0))
             table[(element, Restriction.MINUS)] = element.tabulate(order, map_to_facet(points, facet1))
 
-    #print table
-
     return table
 
 def __compute_psi(v, table, num_points, integral_type):
@@ -154,9 +142,6 @@ def __compute_psi(v, table, num_points, integral_type):
     # All fixed Indices are removed here. The first set of dimensions
     # corresponding to quadrature points and auxiliary Indices are removed
     # later when we sum over these dimensions.
-
-    #print ""
-    #print "v =", v
 
     # Get cell dimension
     cell_dimension = v.element.cell_dimension()

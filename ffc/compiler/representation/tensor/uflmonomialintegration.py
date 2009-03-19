@@ -31,14 +31,9 @@ from ffc.fem.quadrature import *
 from ffc.fem.referencecell import *
 from ffc.fem.quadratureelement import *
 
-# FFC language modules
-from ffc.compiler.language.index import *
-from ffc.compiler.language.algebra import *
-from ffc.compiler.language.integral import *
-
 # FFC tensor representation modules
-from multiindex import *
-from pointreordering import *
+from multiindex import build_indices
+#from pointreordering import *
 from monomialtransformation import MonomialRestriction, MonomialIndex
 
 def integrate(monomial, domain_type, facet0, facet1):
@@ -47,19 +42,11 @@ def integrate(monomial, domain_type, facet0, facet1):
 
     tic = time.time()
 
-    print ""
-    print "---"
-    print "monomial:", monomial
-
     # Initialize quadrature points and weights
     (points, weights) = _init_quadrature(monomial.basis_functions, domain_type)
 
-    print points, weights
-
     # Initialize quadrature table for basis functions
     table = _init_table(monomial.basis_functions, domain_type, points, facet0, facet1)
-
-    print table
 
     # Compute table Psi for each factor
     psis = [_compute_psi(v, table, len(points), domain_type) for v in monomial.basis_functions]
@@ -142,12 +129,12 @@ def _compute_psi(v, table, num_points, domain_type):
     # The dimensions of the resulting table are ordered as follows:
     #
     #     one dimension  corresponding to quadrature points
-    #     all dimensions corresponding to auxiliary Indices
+    #     all dimensions corresponding to internal  Indices
     #     all dimensions corresponding to primary   Indices
     #     all dimensions corresponding to secondary Indices
     #
     # All fixed Indices are removed here. The first set of dimensions
-    # corresponding to quadrature points and auxiliary Indices are removed
+    # corresponding to quadrature points and internal Indices are removed
     # later when we sum over these dimensions.
 
     # Get cell dimension
@@ -205,7 +192,7 @@ def _compute_psi(v, table, num_points, domain_type):
             # Get values from table
             Psi[tuple(dlist)] = etable[dtuple]
 
-    # Rearrange Indices as (fixed, auxiliary, primary, secondary)
+    # Rearrange Indices as (fixed, internal, primary, secondary)
     (rearrangement, num_indices) = _compute_rearrangement(indices)
     indices = [indices[i] for i in rearrangement]
     Psi = numpy.transpose(Psi, rearrangement + (len(indices),))
@@ -213,14 +200,14 @@ def _compute_psi(v, table, num_points, domain_type):
     # Remove fixed indices
     for i in range(num_indices[0]):
         Psi = Psi[0, ...]
-    indices = [index for index in indices if not index.index_type == Index.FIXED]
+    indices = [index for index in indices if not index.index_type == MonomialIndex.FIXED]
 
     # Put quadrature points first
     rank = numpy.rank(Psi)
     Psi = numpy.transpose(Psi, (rank - 1,) + tuple(range(0, rank - 1)))
 
-    # Compute auxiliary index positions for current Psi
-    bpart = [i.index_id for i in indices if i.index_type == Index.AUXILIARY]
+    # Compute internal index positions for current Psi
+    bpart = [i.index_id for i in indices if i.index_type == MonomialIndex.INTERNAL]
 
     return (Psi, indices, bpart)
 
@@ -228,18 +215,18 @@ def _compute_product(psis, weights):
     "Compute special product of list of Psis."
 
     # The reference tensor is obtained by summing over quadrature
-    # points and auxiliary Indices the outer product of all the Psis
+    # points and internal Indices the outer product of all the Psis
     # with the first dimension (corresponding to quadrature points)
-    # and all auxiliary dimensions removed.
+    # and all internal dimensions removed.
 
     # Initialize zero reference tensor (will be rearranged later)
     (shape, indices) = _compute_shape(psis)
     A0 = numpy.zeros(shape, dtype= numpy.float)
-    # Initialize list of auxiliary multiindices
-    bshape = _compute_auxiliary_shape(psis)
+    # Initialize list of internal multiindices
+    bshape = _compute_internal_shape(psis)
     bindices = build_indices([range(b) for b in bshape]) or [[]]
 
-    # Sum over quadrature points and auxiliary indices
+    # Sum over quadrature points and internal indices
     num_points = len(weights)
     for q in range(num_points):
         for b in bindices:            
@@ -269,44 +256,44 @@ def _compute_degree(basis_functions):
 def _compute_rearrangement(indices):
     """Compute rearrangement tuple for given list of Indices, so that
     the tuple reorders the given list of Indices with fixed, primary,
-    secondary and auxiliary Indices in rising order."""
+    secondary and internal Indices in rising order."""
     fixed     = _find_indices(indices, MonomialIndex.FIXED)
-    auxiliary = _find_indices(indices, MonomialIndex.AUXILIARY)
+    internal = _find_indices(indices, MonomialIndex.INTERNAL)
     primary   = _find_indices(indices, MonomialIndex.PRIMARY)
     secondary = _find_indices(indices, MonomialIndex.SECONDARY)
-    assert len(fixed + auxiliary + primary + secondary) == len(indices)
-    return (tuple(fixed + auxiliary + primary + secondary), \
-            (len(fixed), len(auxiliary), len(primary), len(secondary)))
+    assert len(fixed + internal + primary + secondary) == len(indices)
+    return (tuple(fixed + internal + primary + secondary), \
+            (len(fixed), len(internal), len(primary), len(secondary)))
 
 def _compute_shape(psis):
     "Compute shape of reference tensor from given list of tables."
     shape, indices = [], []
     for (Psi, index, bpart) in psis:
-        num_auxiliary = len([0 for i in index if i.index_type == Index.AUXILIARY])
-        shape += numpy.shape(Psi)[1 + num_auxiliary:]
-        indices += index[num_auxiliary:]
+        num_internal = len([0 for i in index if i.index_type == MonomialIndex.INTERNAL])
+        shape += numpy.shape(Psi)[1 + num_internal:]
+        indices += index[num_internal:]
     return (shape, indices)
     
-def _compute_auxiliary_shape(psis):
-    """Compute shape for auxiliary indices from given list of tables.
-    Also compute a list of  mappings from each table to the auxiliary
+def _compute_internal_shape(psis):
+    """Compute shape for internal indices from given list of tables.
+    Also compute a list of  mappings from each table to the internal
     dimensions associated with that table."""
-    # First find the number of different auxiliary indices (check maximum)
+    # First find the number of different internal indices (check maximum)
     bs = [b for (Psi, index, bpart) in psis for b in bpart]
     if len(bs) == 0: return []
     bmax = max(bs)
-    # Find the dimension for each auxiliary index
+    # Find the dimension for each internal index
     bshape = [0 for i in range(bmax + 1)]
     for (Psi, index, bpart) in psis:
         for i in range(len(bpart)):
             bshape[bpart[i]] = numpy.shape(Psi)[i + 1]
-    # Check that we found the shape for each auxiliary index
+    # Check that we found the shape for each internal index
     if 0 in bshape:
-        raise RuntimeError, "Unable to compute the shape for each auxiliary index."
+        raise RuntimeError, "Unable to compute the shape for each internal index."
     return bshape
 
 def _find_indices(indices, index_type):
-    "Return sorted list of positions for given Index type."
+    "Return sorted list of positions for given index type."
     pos = [i for i in range(len(indices)) if indices[i].index_type == index_type]
     val = [indices[i].index_id for i in range(len(indices)) if indices[i].index_type == index_type]
     return [pos[i] for i in numpy.argsort(val)]

@@ -25,8 +25,8 @@ class GeometryTensor:
         self.transforms = monomial.transforms
 
         # Create secondary and auxiliary multi indices
-        self.a = create_multi_index(monomial, MonomialIndex.SECONDARY)
-        self.b = create_multi_index(monomial, MonomialIndex.AUXILIARY)
+        self.secondary_multi_index = create_multi_index(monomial, MonomialIndex.SECONDARY)
+        self.external_multi_index  = create_multi_index(monomial, MonomialIndex.EXTERNAL)
 
-        debug("Secondary multi index: " + str(self.a))
-        debug("Auxiliary multi index: " + str(self.b))
+        debug("Secondary multi index: " + str(self.secondary_multi_index))
+        debug("External multi index:  " + str(self.external_multi_index))

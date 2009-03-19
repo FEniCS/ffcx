@@ -31,16 +31,13 @@ def create_multi_index(monomial, index_type):
     "Find dimensions and create multi index for monomial of given index type."
 
     # Get sorted unique monomial indices
-    indices = []
-    for index in monomial.indices():
-        if index.index_type == index_type and not index in indices:
-            indices.append(index)
+    indices = monomial.extract_unique_indices(index_type)
     indices.sort()
 
     # Check that we got all indices correctly
     for (i, index) in enumerate(indices):
         if not i == index.index_id:
-            raise MonomialException, "Unable to extract all indices."
+            raise RuntimeError, "Unable to extract all indices."
 
     # Get dimensions
     dims = [range(len(index.index_range)) for index in indices]

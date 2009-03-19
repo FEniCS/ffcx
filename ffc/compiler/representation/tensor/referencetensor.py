@@ -27,9 +27,6 @@ class ReferenceTensor:
         # Compute reference tensor
         self.A0 = integrate(monomial, facet0, facet1)
 
-        import sys
-        sys.exit(1)
-
         # Create primary, secondary and auxiliary multi indices
         self.i = self.__create_multi_index(monomial, Index.PRIMARY)
         self.a = self.__create_multi_index(monomial, Index.SECONDARY)

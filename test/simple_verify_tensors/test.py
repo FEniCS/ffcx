@@ -39,18 +39,15 @@ def tabulate_tensor(integral, integral_type, header):
 
     return numpy.array(values)
 
-def get_integrals(form_file):
-    "Extract all integral classes for form file."
-    prefix = form_file.split("/")[-1].split(".")[0]
-    form = prefix + "." + format
-    header = prefix + ".h"
+def get_integrals(form):
+    "Extract all integral classes for form."
     integrals = []
     for integral_type in integral_types:
-        for integral in commands.getoutput("grep ufc::%s %s | grep class" % (integral_type, header)).split("\n"):
+        for integral in commands.getoutput("grep ufc::%s %s | grep class" % (integral_type, form + ".h")).split("\n"):
             integral = integral.split(":")[0].split(" ")[-1].strip()
             if not integral is "":
                 integrals.append((integral, integral_type))
-    return (integrals, form, header)
+    return integrals
 
 def to_dict(tuples):
     "Convert list of tuples to dictionary (dictionaries can't be pickled)."
@@ -72,7 +69,10 @@ def run_command(command):
 def check_results(values, reference):
     "Check results and print summary."
 
-    ok = True
+    num_failed = 0
+    num_missing = 0
+    num_diffs = 0
+
     print ""
     for representation in values:
         vals = values[representation]
@@ -89,47 +89,53 @@ def check_results(values, reference):
                         result = "OK" % e
                     else:
                         result = "*** (diff = %g)" % e
-                        ok = False
+                        num_diffs += 1
                 else:
                     result = "missing reference"
+                    num_missing += 1
             else:
                 result = value
-                ok = False
+                num_failed += 1
             results.append((integral, result))
         print tstr(results, 100)
 
-    if ok:
+    if num_failed == num_missing == num_diffs:
         print "\nAll tensors verified OK"
         return 0
-    else:
-        print "\nVerification failed."
-        return 1
+
+    if num_failed > 0:
+        print "*** Compilation failed for %d integrals. See 'error.log' for details." % num_failed
+    if num_missing > 0:
+        print "*** References missing for %d integrals. Remove 'reference.pickle' and run again to update." % num_missing
+    if num_diffs > 0:
+        print "*** Results differ for %d integrals." % num_diffs
+
+    return 1
     
 def main(args):
     "Call tabulate tensor for all integrals found in demo directory."
 
-    # Change to temporary folder
+    # Change to temporary folder and copy form files
     if not os.path.isdir("tmp"):
         os.mkdir("tmp")
     os.chdir("tmp")
+    run_command("cp ../../../demo/*.%s ." % format)
 
     # Iterate over all form files
-    form_files = commands.getoutput("ls ../../../demo/*.%s" % format).split("\n")
+    forms = commands.getoutput("ls *.%s | cut -d'.' -f1" % format).split("\n")
     values = {}
     for representation in ["quadrature", "tensor"]:
         vals = []
-        for form_file in form_files:
+        for form in forms:
 
             # Compile form
-            (integrals, form, header) = get_integrals(form_file)
             print "Compiling form %s..." % form
-            (ok, output) = run_command("ffc -r %s %s" % (representation, form_file))
+            (ok, output) = run_command("ffc -r %s %s.%s" % (representation, form, format))
 
             # Tabulate tensors for all integrals
-            print "  Found %d integrals" % len(integrals)
-            for (integral, integral_type) in integrals:
+            for (integral, integral_type) in get_integrals(form):
                 if ok:
-                    vals.append((integral, tabulate_tensor(integral, integral_type, header)))
+                    vals.append((integral, tabulate_tensor(integral, integral_type, form + ".h")))
                 else:
                     vals.append((integral, "FFC compilation failed"))
 

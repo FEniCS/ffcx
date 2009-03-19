@@ -22,16 +22,11 @@ class ReferenceTensor:
         # Compute reference tensor
         self.A0 = integrate(monomial, domain_type, facet0, facet1)
 
-        # FIXME: Handle auxiliary indices for A0 and GK
-
         # Create primary, secondary and auxiliary multi indices
-        self.i = create_multi_index(monomial, MonomialIndex.PRIMARY)
-        self.a = create_multi_index(monomial, MonomialIndex.SECONDARY)
-        self.b = create_multi_index(monomial, MonomialIndex.AUXILIARY)
+        self.primary_multi_index   = create_multi_index(monomial, MonomialIndex.PRIMARY)
+        self.secondary_multi_index = create_multi_index(monomial, MonomialIndex.SECONDARY)
+        self.internal_multi_index  = create_multi_index(monomial, MonomialIndex.INTERNAL)
 
-        debug("Primary multi index: " + str(self.i))
-        debug("Secondary multi index: " + str(self.a))
-        debug("Auxiliary multi index: " + str(self.b))
-
-        import sys
-        sys.exit(1)
+        debug("Primary multi index:   " + str(self.primary_multi_index))
+        debug("Secondary multi index: " + str(self.secondary_multi_index))
+        debug("Internal multi index:  " + str(self.internal_multi_index))

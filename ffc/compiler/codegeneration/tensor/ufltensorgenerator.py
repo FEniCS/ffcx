@@ -255,10 +255,10 @@ def _generate_geometry_tensors(terms, geo_set, format):
     for (i, term) in enumerate(terms):
 
         # Get list of secondary indices (should be the same so pick first)
-        aindices = term.GK[0].a.indices
+        secondary_indices = term.GK[0].secondary_multi_index.indices
 
         # Iterate over secondary indices
-        for a in aindices:
+        for a in secondary_indices:
 
             # Skip code generation if term is not used
             if not format["geometry tensor access"](i, a) in geo_set:
@@ -313,7 +313,7 @@ def _generate_element_tensor(terms, incremental, format):
     code = []
 
     # Get list of primary indices (should be the same so pick first)
-    iindices = terms[0].A0.i.indices
+    primary_indices = terms[0].A0.primary_multi_index.indices
 
     # Prefetch formats to speed up code generation
     format_element_tensor  = format["element tensor"]
@@ -326,7 +326,13 @@ def _generate_element_tensor(terms, incremental, format):
     format_epsilon         = format["epsilon"]
 
     # Generate code for geometry tensor entries
-    gk_tensor = [ ( [(format_geometry_tensor(j, a), a) for a in terms[j].A0.a.indices], j) for j in range(len(terms)) ]
+
+    gk_tensor = []
+    for j in range(len(terms)):
+        gk_tensor_j = []
+        for a in terms[j].A0.secondary_multi_index.indices:
+            gk_tensor_j.append((format_geometry_tensor(j, a), a))
+        gk_tensor.append((gk_tensor_j, j))
 
     # Generate code for computing the element tensor
     k = 0
@@ -334,19 +340,13 @@ def _generate_element_tensor(terms, incremental, format):
     num_ops = 0
     zero = format_floating_point(0.0)
     geo_set = Set()
-    for i in iindices:
+    for i in primary_indices:
         name = format_element_tensor(i, k)
         value = None
         for (gka, j) in gk_tensor:
             A0 = terms[j].A0
-
-            print A0.A0
-            
-            for (gk, a) in gka:
+            for (gk, a) in gka:                
                 a0 = A0.A0[tuple(i + a)]
-
-                print "a0 =", a0
-            
                 if abs(a0) > format_epsilon:
                     if value and a0 < 0.0:
                         value = format_subtract([value, format_multiply([format_floating_point(-a0), gk])])
@@ -369,7 +369,7 @@ def _generate_element_tensor(terms, incremental, format):
             code += [(name, value)]
         k += 1
 
-    code = [format["comment"]("Number of operations to compute tensor = %d" %num_ops)] + code
+    code = [format["comment"]("Number of operations to compute tensor = %d" % num_ops)] + code
     return (code, geo_set, num_ops)
 
 def _generate_entry(GK, a, i, format):
@@ -383,19 +383,21 @@ def _generate_entry(GK, a, i, format):
     num_ops = 0
     for j in range(len(GK.coefficients)):
         c = GK.coefficients[j]
-        if not c.index.index_type == MonomialIndex.AUXILIARY:
-            #coefficient = format["coefficient"](c.number, i, j, c.index(a=a))
-            coefficient = format["coefficient"](c.number, c.index(a=a))
+        if not c.index.index_type == MonomialIndex.EXTERNAL:
+            #coefficient = format["coefficient"](c.number, i, j, c.index(secondary=a))
+            coefficient = format["coefficient"](c.number, c.index(secondary=a))
             coeff_set.add(coefficient)
             factors += [coefficient]
 
     for t in GK.transforms:
-        if not (t.index0.index_type == MonomialIndex.AUXILIARY or  t.index1.index_type == MonomialIndex.AUXILIARY):
-            trans = format["transform"](t.transform_type, t.index0([], a, [], []), \
-                                        t.index1([], a, [], []), \
+        if not (t.index0.index_type == MonomialIndex.EXTERNAL or t.index1.index_type == MonomialIndex.EXTERNAL):
+            trans = format["transform"](t.transform_type,
+                                        t.index0(secondary=a),
+                                        t.index1(secondary=a), 
                                         t.restriction)
             factors += [trans]
             trans_set.add(trans)
+
     if factors:
         num_ops += len(factors) - 1
 
@@ -405,20 +407,20 @@ def _generate_entry(GK, a, i, format):
 
     # Compute sum of monomials inside sum
     terms = []
-    for b in GK.b.indices:
+    for b in GK.external_multi_index.indices:
         factors = []
         for j in range(len(GK.coefficients)):
             c = GK.coefficients[j]
-            if c.index.index_type == MonomialIndex.AUXILIARY:
+            if c.index.index_type == MonomialIndex.EXTERNAL:
                 #coefficient = format["coefficient"](c.number, i, j, c.index([], a, [], b))
-                coefficient = format["coefficient"](c.number, c.index([], a, [], b))
+                coefficient = format["coefficient"](c.number, c.index(secondary=a))
                 coeff_set.add(coefficient)
                 factors += [coefficient]
         for t in GK.transforms:
-            if t.index0.index_type == MonomialIndex.AUXILIARY or t.index1.index_type == MonomialIndex.AUXILIARY:
+            if t.index0.index_type == MonomialIndex.EXTERNAL or t.index1.index_type == MonomialIndex.EXTERNAL:
                 trans = format["transform"](t.transform_type,
-                                            t.index0(a=a, b=b),
-                                            t.index1(a=a, b=b),
+                                            t.index0(secondary=a, external=b),
+                                            t.index1(secondary=a, external=b),
                                             t.restriction)
                 factors += [trans]
                 trans_set.add(trans)

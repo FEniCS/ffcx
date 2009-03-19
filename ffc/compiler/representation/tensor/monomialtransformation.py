@@ -108,16 +108,16 @@ class MonomialRestriction:
 class MonomialDeterminant:
 
     def __init__(self):
-        self.power = 1
+        self.power = 0
         self.restriction = None
 
     def __str__(self):
         if self.power == 0:
-            return ""
+            return "|det F'|"
         elif self.power == 1:
-            return "(det F')"
+            return "|det F'| (det F')"
         else:
-            return "(det F')^%s" + str(self.power)
+            return "|det F'| (det F')^%s" + str(self.power)
 
 class MonomialCoefficient:
 
@@ -286,6 +286,14 @@ class TransformedMonomial:
         return self.extract_internal_indices(index_type) + \
                self.extract_external_indices(index_type)
 
+    def extract_unique_indices(self, index_type=None):
+        "Return all unique indices for monomial."
+        indices = []
+        for index in self.extract_indices(index_type):
+            if not index in indices:
+                indices.append(index)
+        return indices
+
     def __str__(self):
         factors = []
         if not self.float_value == 1.0:
@@ -305,7 +313,3 @@ def transform_monomial_form(monomial_form):
     for (integrand, measure) in monomial_form:
         for (i, monomial) in enumerate(integrand.monomials):
             integrand.monomials[i] = TransformedMonomial(monomial)
-            print "transformed monomial: ", integrand.monomials[i]
-
-    import sys
-    sys.exit(1)
