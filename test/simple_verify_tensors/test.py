@@ -11,6 +11,9 @@ import sys, os, commands, pickle, numpy
 #format = "form"
 format = "ufl"
 
+# Forms that don't work with tensor representation
+only_quadrature = ["FunctionOperators", "QuadratureElement", "TensorWeightedPoisson"]
+
 # Log file
 logfile = None
 
@@ -128,16 +131,18 @@ def main(args):
         vals = []
         for form in forms:
 
+            # Skip forms not expected to work with tensor representation
+            if representation is "tensor" and form in only_quadrature:
+                continue
+
             # Compile form
             print "Compiling form %s..." % form
             (ok, output) = run_command("ffc -r %s %s.%s" % (representation, form, format))
+            if not ok: vals.append((form, "FFC compilation failed"))
 
             # Tabulate tensors for all integrals
             for (integral, integral_type) in get_integrals(form):
-                if ok:
-                    vals.append((integral, tabulate_tensor(integral, integral_type, form + ".h")))
-                else:
-                    vals.append((integral, "FFC compilation failed"))
+                vals.append((integral, tabulate_tensor(integral, integral_type, form + ".h")))
 
         values[representation] = vals
 

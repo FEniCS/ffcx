@@ -1,8 +1,8 @@
 "This module implements efficient integration of monomial forms"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-11-03 -- 2007-11-26"
-__copyright__ = "Copyright (C) 2004-2007 Anders Logg"
+__date__ = "2004-11-03 -- 2009-03-19"
+__copyright__ = "Copyright (C) 2004-2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Thanks to Robert C. Kirby for suggesting the initial algorithm that
@@ -34,6 +34,7 @@ from ffc.fem.quadratureelement import *
 # FFC tensor representation modules
 from multiindex import build_indices
 #from pointreordering import *
+from monomialextraction import MonomialException
 from monomialtransformation import MonomialRestriction, MonomialIndex
 
 def integrate(monomial, domain_type, facet0, facet1):
@@ -148,7 +149,7 @@ def _compute_psi(v, table, num_points, domain_type):
         cindex = [v.components[0]]
         cshape = [len(v.components[0].index_range)]
     else:
-        raise RuntimeError, "Can only handle rank 0 or rank 1 tensors."
+        raise MonomialException, "Can only handle rank 0 or rank 1 tensors."
 
     # Get indices and shapes for derivatives
     dindex = [d for d in v.derivatives]
