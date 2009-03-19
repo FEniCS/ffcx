@@ -841,6 +841,9 @@ public:
     def __generate_jacobian(self, cell_dimension, integral_type):
         "Generate code for computing jacobian"
 
+        print "cell_dimension =", cell_dimension
+
+
         # Choose space dimension
         if cell_dimension == 1:
             jacobian = jacobian_1D

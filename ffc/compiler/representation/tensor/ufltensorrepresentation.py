@@ -44,6 +44,7 @@ class TensorRepresentation:
         cell_integrals         - list of list of terms for sub domains
         exterior_facet_tensors - list of list of list of terms for sub domains and facets
         interior_facet_tensors - list of list of list of list of terms for sub domains and facet combinations
+        geometric_dimension    - geometric dimension of form
 
     Each term is represented as a TensorContraction.
     """
@@ -78,6 +79,9 @@ class TensorRepresentation:
         # Compute representation of interior facet tensors
         #self.interior_facet_tensors = self.__compute_interior_facet_tensors(form)
 
+        # Extract geometric dimension
+        self.geometric_dimension = form_data.geometric_dimension
+        
 def _extract_tensor_integrals(form):
     "Extract form containing only tensor representation integrals."
 

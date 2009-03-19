@@ -57,7 +57,8 @@ def _generate_cell_integrals(form_representation, incremental, format):
     debug("Generating code for cell integrals using tensor representation...")
     for (sub_domain, terms) in enumerate(form_representation.cell_integrals):
         if len(terms) > 0:
-            code[("cell_integral", sub_domain)] = _generate_cell_integral(terms, incremental, format)
+            code[("cell_integral", sub_domain)] = _generate_cell_integral(terms, form_representation,
+                                                                          incremental, format)
     debug("done")
 
     return code
@@ -98,17 +99,13 @@ def _generate_interior_facet_integrals(form_representation, incremental, format)
 
     return code
 
-def _generate_cell_integral(terms, incremental, format):
+def _generate_cell_integral(terms, form_representation, incremental, format):
     """Generate dictionary of code for cell integral from the given
     form representation according to the given format"""
 
     # Special case: zero contribution
     if len(terms) == 0:
-
         return {"tabulate_tensor": element_code, "members": ""}
-
-    # FIXME: Temporary while testing
-    cell_dimension = 2
 
     debug("")
 
@@ -120,7 +117,7 @@ def _generate_cell_integral(terms, incremental, format):
     total_ops = tensor_ops + geo_ops
 
     # Get Jacobian snippet
-    jacobi_code = [format["generate jacobian"](cell_dimension, "cell")]
+    jacobi_code = [format["generate jacobian"](form_representation.geometric_dimension, "cell")]
 
     # Remove unused declarations
     code = _remove_unused(jacobi_code, trans_set, format)
