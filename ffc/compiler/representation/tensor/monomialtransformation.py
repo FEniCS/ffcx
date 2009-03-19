@@ -173,7 +173,7 @@ class TransformedMonomial:
     def __init__(self, monomial):
 
         # Reset monomial data
-        self.float_value = 1.0
+        self.float_value = monomial.float_value
         self.determinant = MonomialDeterminant()
         self.coefficients = []
         self.transforms = []
@@ -297,7 +297,7 @@ class TransformedMonomial:
     def __str__(self):
         factors = []
         if not self.float_value == 1.0:
-            factors.append(float_value)
+            factors.append(self.float_value)
         factors.append(self.determinant)
         factors += self.coefficients
         factors += self.transforms
