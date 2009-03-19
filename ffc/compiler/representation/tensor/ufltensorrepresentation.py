@@ -98,6 +98,8 @@ def _compute_cell_tensor(monomial_form, form_data, sub_domain):
     # Compute sum of tensor representations
     terms = _compute_terms(monomial_form, Measure.CELL, None, None)
 
+    print "Number of terms:", terms
+
     end()
     
     return terms

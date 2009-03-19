@@ -32,3 +32,6 @@ class ReferenceTensor:
         debug("Primary multi index: " + str(self.i))
         debug("Secondary multi index: " + str(self.a))
         debug("Auxiliary multi index: " + str(self.b))
+
+        import sys
+        sys.exit(1)

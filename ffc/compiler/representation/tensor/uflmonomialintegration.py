@@ -47,11 +47,19 @@ def integrate(monomial, domain_type, facet0, facet1):
 
     tic = time.time()
 
+    print ""
+    print "---"
+    print "monomial:", monomial
+
     # Initialize quadrature points and weights
     (points, weights) = _init_quadrature(monomial.basis_functions, domain_type)
 
+    print points, weights
+
     # Initialize quadrature table for basis functions
     table = _init_table(monomial.basis_functions, domain_type, points, facet0, facet1)
+
+    print table
 
     # Compute table Psi for each factor
     psis = [_compute_psi(v, table, len(points), domain_type) for v in monomial.basis_functions]
@@ -64,8 +72,6 @@ def integrate(monomial, domain_type, facet0, facet1):
     num_entries = numpy.prod(numpy.shape(A0))
     debug("%d entries computed in %.3g seconds" % (num_entries, toc), 1)
     debug("Shape of reference tensor: " + str(numpy.shape(A0)), 1)
-
-    print A0
 
     return A0
 
@@ -124,8 +130,6 @@ def _init_table(basis_functions, domain_type, points, facet0, facet1):
             table[(element, MonomialRestriction.PLUS)]  = element.tabulate(order, map_to_facet(points, facet0))
             table[(element, MonomialRestriction.MINUS)] = element.tabulate(order, map_to_facet(points, facet1))
 
-    print table
-
     return table
 
 def _compute_psi(v, table, num_points, domain_type):
@@ -145,9 +149,6 @@ def _compute_psi(v, table, num_points, domain_type):
     # All fixed Indices are removed here. The first set of dimensions
     # corresponding to quadrature points and auxiliary Indices are removed
     # later when we sum over these dimensions.
-
-    print ""
-    print "v =", v
 
     # Get cell dimension
     cell_dimension = v.element.cell_dimension()
@@ -171,15 +172,9 @@ def _compute_psi(v, table, num_points, domain_type):
     vindex = [v.index]
     vshape = [len(v.index.index_range)]
 
-    print "v:", v.index.index_id, v.index.index_range
-
     # Create list of indices that label the dimensions of the tensor Psi
     indices = cindex + dindex + vindex
     shapes = cshape + dshape + vshape + [num_points]
-
-    print cshape, dshape, vshape
-
-    print "shapes =", shapes
 
     # Initialize tensor Psi: component, derivatives, basis function, points
     Psi = numpy.zeros(shapes, dtype = numpy.float)
@@ -208,8 +203,6 @@ def _compute_psi(v, table, num_points, domain_type):
             # Translate derivative multiindex to lookup tuple
             dtuple = _multiindex_to_tuple(dlist, cell_dimension)
             # Get values from table
-            print "dtuple =", dtuple
-            
             Psi[tuple(dlist)] = etable[dtuple]
 
     # Rearrange Indices as (fixed, auxiliary, primary, secondary)

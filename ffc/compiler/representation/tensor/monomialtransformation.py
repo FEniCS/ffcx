@@ -20,36 +20,41 @@ from monomialextraction import MonomialForm
 
 # Index counters
 _current_secondary_index = 0
-_current_auxiliary_index = 0
+_current_internal_index = 0
+_current_external_index = 0
 
 def next_secondary_index():
     global _current_secondary_index
     _current_secondary_index += 1
     return _current_secondary_index - 1
 
-def next_auxiliary_index():
-    global _current_auxiliary_index
-    _current_auxiliary_index += 1
-    return _current_auxiliary_index - 1
+def next_internal_index():
+    global _current_internal_index
+    _current_internal_index += 1
+    return _current_internal_index - 1
+
+def next_external_index():
+    global _current_external_index
+    _current_external_index += 1
+    return _current_external_index - 1
 
 def reset_indices():
     global _current_secondary_index
-    global _current_auxiliary_index
+    global _current_internal_index
+    global _current_external_index
     _current_secondary_index = 0
-    _current_auxiliary_index = 0
+    _current_internal_index = 0
+    _current_external_index = 0
 
 class MonomialIndex:
 
-    FIXED = "fixed"
-    PRIMARY = "primary"
-    SECONDARY = "secondary"
-    AUXILIARY = "auxiliary"
+    FIXED      = "fixed"      # Integer index
+    PRIMARY    = "primary"    # Argument basis function index
+    SECONDARY  = "secondary"  # Index appearing both inside and outside integral
+    INTERNAL   = "internal"   # Index appearing only inside integral
+    EXTERNAL   = "external"   # Index appearing only outside integral
 
-    def __init__(self, index_type, index_range, index_id=None):
-        if index_type == MonomialIndex.SECONDARY and index_id is None:
-            index_id = next_secondary_index()
-        elif index_type == MonomialIndex.AUXILIARY and index_id is None:
-            index_id = next_auxiliary_index()
+    def __init__(self, index_type=None, index_range=None, index_id=None):
         self.index_type = index_type
         self.index_range = index_range
         self.index_id = index_id
@@ -57,23 +62,27 @@ class MonomialIndex:
     def __lt__(self, other):
         return self.index_id < other.index_id
 
-    def __call__(self, i=None, a=None, b=None):
+    def __call__(self, primary=None, secondary=None, internal=None, external=None):
         "Evaluate index at current index list."
 
         if self.index_type == MonomialIndex.FIXED:
             return self.index_id
         elif self.index_type == MonomialIndex.PRIMARY:
-            if not i:
+            if not primary:
                 raise RuntimeError, "Missing index values for primary indices."
-            return i[self.index_id]
+            return primary[self.index_id]
         elif self.index_type == MonomialIndex.SECONDARY:
-            if not a:
+            if not secondary:
                 raise RuntimeError, "Missing index values for secondary indices."
-            return a[self.index_id]
-        elif self.index_type == MonomialIndex.AUXILIARY:
-            if not b:
-                raise RuntimeError, "Missing index values for auxiliary indices."
-            return b[self.index_id]
+            return secondary[self.index_id]
+        elif self.index_type == MonomialIndex.INTERNAL:
+            if not internal:
+                raise RuntimeError, "Missing index values for internal auxiliary indices."
+            return internal[self.index_id]
+        elif self.index_type == MonomialIndex.EXTERNAL:
+            if not external:
+                raise RuntimeError, "Missing index values for external auxiliary indices."
+            return external[self.index_id]
         else:
             raise RuntimeError, "Unknown index type " + str(self.type)
         return
@@ -83,10 +92,12 @@ class MonomialIndex:
             return "i_" + str(self.index_id)
         elif self.index_type == MonomialIndex.SECONDARY:
             return "a_" + str(self.index_id)
-        elif self.index_type == MonomialIndex.AUXILIARY:
+        elif self.index_type == MonomialIndex.INTERNAL:
+            return "g_" + str(self.index_id)
+        elif self.index_type == MonomialIndex.EXTERNAL:
             return "b_" + str(self.index_id)
-        elif self.index_type == MonomialIndex.FIXED:
-            return str(self.index_id)
+        else:
+            return "?"
 
 class MonomialRestriction:
 
@@ -97,7 +108,7 @@ class MonomialRestriction:
 class MonomialDeterminant:
 
     def __init__(self):
-        self.power = 0
+        self.power = 1
         self.restriction = None
 
     def __str__(self):
@@ -185,9 +196,11 @@ class TransformedMonomial:
 
             # Extract basis function index and coefficients
             if isinstance(f.function, BasisFunction):
-                vindex = MonomialIndex(MonomialIndex.PRIMARY, range(vdim), f.function.count())
+                vindex = MonomialIndex(MonomialIndex.PRIMARY,
+                                       index_range=range(vdim),
+                                       index_id=f.function.count())
             elif isinstance(f.function, Function):
-                vindex = MonomialIndex(MonomialIndex.SECONDARY, range(vdim))
+                vindex = MonomialIndex(index_range=range(vdim))
                 coefficient = MonomialCoefficient(vindex, f.function.count())
                 self.coefficients.append(coefficient)
 
@@ -197,22 +210,26 @@ class TransformedMonomial:
                 if c in index_map:
                     index = index_map[c]
                 elif isinstance(c, FixedIndex):
-                    index = MonomialIndex(MonomialIndex.FIXED, [int(c)], int(c))
+                    index = MonomialIndex(index_type=MonomialIndex.FIXED,
+                                          index_range=[int(c)],
+                                          index_id=int(c))
                 else:
-                    index = MonomialIndex(MonomialIndex.AUXILIARY, range(cdim))
+                    index = MonomialIndex(index_range=range(cdim))
                 index_map[c] = index
                 components.append(index)
 
             # Extract derivatives / transforms
             derivatives = []
             for d in f.derivatives:
-                index0 = MonomialIndex(MonomialIndex.SECONDARY, range(gdim))
+                index0 = MonomialIndex(index_range=range(gdim))
                 if d in index_map:
                     index1 = index_map[d]
                 elif isinstance(d, FixedIndex):
-                    index1 = MonomialIndex(MonomialIndex.FIXED, [int(d)], int(d))
+                    index1 = MonomialIndex(index_type=MonomialIndex.FIXED,
+                                           index_range=[int(d)],
+                                           index_id=int(d))
                 else:
-                    index1 = MonomialIndex(MonomialIndex.AUXILIARY, range(gdim))
+                    index1 = MonomialIndex(index_range=range(gdim))
                 index_map[d] = index1
                 transform = MonomialTransform(index0, index1)
                 self.transforms.append(transform)
@@ -224,12 +241,50 @@ class TransformedMonomial:
             v = MonomialBasisFunction(element, vindex, components, derivatives)
             self.basis_functions.append(v)
 
-    def indices(self):
+        # Figure out secondary and auxiliary indices
+        internal_indices = self.extract_internal_indices(None)
+        external_indices = self.extract_external_indices(None)        
+        for i in internal_indices + external_indices:
+
+            # Skip already visited indices
+            if not i.index_type is None:
+                continue
+
+            # Set index type and id
+            num_internal = len([j for j in internal_indices if j == i])
+            num_external = len([j for j in external_indices if j == i])
+            if num_internal == 1 and num_external == 1:
+                i.index_type = MonomialIndex.SECONDARY
+                i.index_id   = next_secondary_index()
+            elif num_internal == 2:
+                i.index_type = MonomialIndex.INTERNAL
+                i.index_id   = next_internal_index()
+                print "Found internal:", i
+            elif num_external == 2:
+                i.index_type = MonomialIndex.EXTERNAL
+                i.index_id   = next_external_index()
+                print "Found external:", i, i.index_type
+            else:
+                raise RuntimeError, "Summation index does not appear exactly twice: " + str(i)
+
+    def extract_internal_indices(self, index_type=None):
+        "Return list of indices appearing inside integral."
+        indices = []
+        for v in self.basis_functions:
+            indices += [v.index] + v.components + v.derivatives
+        return [i for i in indices if i.index_type == index_type]
+
+    def extract_external_indices(self, index_type=None):
+        "Return list of indices appearing outside integral."
+        indices = [c.index for c in self.coefficients] + \
+                  [t.index0 for t in self.transforms]  + \
+                  [t.index1 for t in self.transforms]
+        return [i for i in indices if i.index_type == index_type]        
+
+    def extract_indices(self, index_type=None):
         "Return all indices for monomial."
-        return [c.index for c in self.coefficients] + \
-               [t.index0 for t in self.transforms] + \
-               [t.index1 for t in self.transforms] + \
-               [v.index for v in self.basis_functions]
+        return self.extract_internal_indices(index_type) + \
+               self.extract_external_indices(index_type)
 
     def __str__(self):
         factors = []
@@ -250,3 +305,7 @@ def transform_monomial_form(monomial_form):
     for (integrand, measure) in monomial_form:
         for (i, monomial) in enumerate(integrand.monomials):
             integrand.monomials[i] = TransformedMonomial(monomial)
+            print "transformed monomial: ", integrand.monomials[i]
+
+    import sys
+    sys.exit(1)

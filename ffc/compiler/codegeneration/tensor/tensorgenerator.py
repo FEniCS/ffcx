@@ -313,7 +313,6 @@ class TensorGenerator(CodeGenerator):
 
         # Generate code for geometry tensor entries
         gk_tensor = [ ( [(format_geometry_tensor(j, a), a) for a in terms[j].A0.a.indices], j) for j in range(len(terms)) ]
-
         # Generate code for computing the element tensor
         k = 0
         num_dropped = 0
@@ -325,8 +324,14 @@ class TensorGenerator(CodeGenerator):
             value = None
             for (gka, j) in gk_tensor:
                 A0 = terms[j].A0
+
+                print A0.A0
+                
                 for (gk, a) in gka:
                     a0 = A0.A0[tuple(i + a)]
+
+                    print "a0 =", a0
+                    
                     if abs(a0) > format_epsilon:
                         if value and a0 < 0.0:
                             value = format_subtract([value, format_multiply([format_floating_point(-a0), gk])])
