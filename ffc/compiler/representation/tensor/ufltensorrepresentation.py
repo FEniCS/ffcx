@@ -45,6 +45,7 @@ class TensorRepresentation:
         exterior_facet_tensors - list of list of list of terms for sub domains and facets
         interior_facet_tensors - list of list of list of list of terms for sub domains and facet combinations
         geometric_dimension    - geometric dimension of form
+        num_facets             - number of cell facets
 
     Each term is represented as a TensorContraction.
     """
@@ -81,8 +82,9 @@ class TensorRepresentation:
         n = form_data.num_interior_facet_integrals
         self.interior_facet_integrals = [_compute_interior_facet_tensors(monomial_form, form_data, i) for i in range(n)]
 
-        # Extract geometric dimension
+        # Extract form data needed by code generation
         self.geometric_dimension = form_data.geometric_dimension
+        self.num_facets = form_data.num_facets
         
 def _extract_tensor_integrals(form):
     "Extract form containing only tensor representation integrals."
@@ -168,5 +170,12 @@ def _compute_terms(monomial_form, domain_type, facet0, facet1):
         # Iterate over monomials of integrand
         for monomial in integrand.monomials:
             terms.append(TensorContraction(monomial, domain_type, facet0, facet1))
+
+
+    print "Domain type:", domain_type
+    print "Number of terms:", len(terms)
+
+    import sys
+    sys.exit(1)
 
     return terms
