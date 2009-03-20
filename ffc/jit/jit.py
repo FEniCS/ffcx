@@ -104,10 +104,11 @@ def jit_form(form, options=None):
 
     # Create python extension module
     module = ufc_utils.build_ufc_module(
-        signature,
-        signature + ".h",
-        cpp_files = signature + ".cpp" if options["split_implementation"] else None,
-        cpp_args  = ["-O2"] if options["cpp optimize"] else ["-O0"] ,
+        signature + ".h", 
+        source_directory = os.curdir,
+        signature = signature,
+        sources = signature + ".cpp" if options["split_implementation"] else [],
+        cppargs  = ["-O2"] if options["cpp optimize"] else ["-O0"] ,
         cache_dir = options["cache_dir"])
 
     # Remove code
