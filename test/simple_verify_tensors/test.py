@@ -8,8 +8,8 @@ from ufl.common import tstr
 import sys, os, commands, pickle, numpy
 
 # Temporary while testing new UFL compiler
-#format = "form"
-format = "ufl"
+format = "form"
+#format = "ufl"
 
 # Forms that don't work with tensor representation
 only_quadrature = ["FunctionOperators",
