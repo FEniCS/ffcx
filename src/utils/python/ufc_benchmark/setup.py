@@ -9,7 +9,7 @@ extension = Extension('_ufc_benchmark', ['ufc_benchmark.cpp', 'ufc_benchmark_wra
 
 setup(### metadata:
       name              = 'ufc_benchmark',
-      version           = '1.0.0',
+      version           = '1.1.2',
       author            = 'Martin Sandve Alnes',
       author_email      = 'martinal@simula.no',
       maintainer        = 'Martin Sandve Alnes',

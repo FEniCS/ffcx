@@ -1,9 +1,8 @@
 %module ufc_benchmark
 
+// ------------------------ STL stuff
+
 %{
-#include "ufc.h"
-#include "ufc_benchmark.h"
-#include "ufc_reference_cell.h"
 #include <vector>
 %}
 
@@ -23,9 +22,21 @@
 %template(vector_vector_uint) std::vector< std::vector< unsigned int > >;
 %typedef std::vector< std::vector< unsigned int > > vector_vector_uint;
 
+// ------------------------ UFC stuff
+
+%import ufc.i
+
+%{
+#include "ufc.h"
+#include "ufc_benchmark.h"
+#include "ufc_reference_cell.h"
+%}
+
 %include "ufc.h"
 %include "ufc_benchmark.h"
 %include "ufc_reference_cell.h"
+
+// ----------------------- Reference to shared pointer utility
 
 %{
 class NoDeleter { public: void operator()(ufc::form *) {} };
@@ -33,6 +44,8 @@ boost::shared_ptr<ufc::form> form_ptr(ufc::form * form) { return boost::shared_p
 %}
 class NoDeleter { public: void operator()(ufc::form *) {} };
 boost::shared_ptr<ufc::form> form_ptr(ufc::form * form) { return boost::shared_ptr<ufc::form>(form, NoDeleter()); }
+
+// ----------------------- Python wrapper for benchmark
 
 %pythoncode{
 

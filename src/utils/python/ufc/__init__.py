@@ -28,7 +28,7 @@ For more information about UFC and the FEniCS project, visit
 
 # -*- coding: utf-8 -*-
 __author__  = "Martin Sandve Alnaes, Anders Logg, Kent-Andre Mardal, Ola Skavhaug, and Hans Petter Langtangen"
-__date__    = "2009-02-20"
+__date__    = "2009-03-20"
 __version__ = "1.1"
 __license__ = "This code is released into the public domain"
 
@@ -43,4 +43,4 @@ from finite_element import *
 from dof_map import *
 from integrals import *
 from form import *
-from build import build_ufc_module
+from build import build_ufc_module, old_build_ufc_module
