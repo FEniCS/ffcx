@@ -53,7 +53,7 @@ def get_integrals(form):
     return integrals
 
 def to_dict(tuples):
-    "Convert list of tuples to dictionary (dictionaries can't be pickled)."
+    "Convert list of tuples to dictionary."
     d = {}
     for key, value in tuples:
         d[key] = value
@@ -73,7 +73,8 @@ def check_results(values, reference):
     "Check results and print summary."
 
     num_failed = 0
-    num_missing = 0
+    num_missing_value = 0
+    num_missing_reference = 0
     num_diffs = 0
 
     print ""
@@ -84,32 +85,47 @@ def check_results(values, reference):
         tol = 1e-12
         results = []
 
-        for (integral, value) in vals:
-            if not isinstance(value, str):
-                if integral in reference:
-                    e = max(abs(value - reference[integral]))
+        integrals = []
+        for (integral, value) in vals + reference:
+            if not integral in integrals:
+                integrals.append(integral)
+
+        vals = to_dict(vals)
+        refs = to_dict(reference)
+            
+        for integral in integrals:
+            if integral in vals and integral in refs:
+                value = vals[integral]
+                if isinstance(value, str):
+                    result = value
+                    num_failed += 1
+                else:
+                    e = max(abs(vals[integral] - refs[integral]))
                     if e < tol:
                         result = "OK" % e
                     else:
                         result = "*** (diff = %g)" % e
                         num_diffs += 1
-                else:
-                    result = "missing reference"
-                    num_missing += 1
-            else:
-                result = value
-                num_failed += 1
+            elif not integral in vals:
+                result = "missing value"
+                num_missing_value += 1
+            elif not integral in reference:
+                result = "missing reference"
+                num_missing_reference += 1      
+
             results.append((integral, result))
         print tstr(results, 100)
 
-    if num_failed == num_missing == num_diffs:
+    if num_failed == num_missing_value == num_missing_reference == num_diffs:
         print "\nAll tensors verified OK"
         return 0
 
     if num_failed > 0:
         print "*** Compilation failed for %d integrals. See 'error.log' for details." % num_failed
-    if num_missing > 0:
-        print "*** References missing for %d integrals. Remove 'reference.pickle' and run again to update." % num_missing
+    if num_missing_value > 0:
+        print "*** Values missing for %d integrals." % num_missing_value
+    if num_missing_reference > 0:
+        print "*** References missing for %d integrals." % num_missing_reference
     if num_diffs > 0:
         print "*** Results differ for %d integrals." % num_diffs
 
@@ -148,7 +164,7 @@ def main(args):
 
     # Load or update reference values
     if os.path.isfile("../reference.pickle"):
-        reference = to_dict(pickle.load(open("../reference.pickle", "r")))
+        reference = pickle.load(open("../reference.pickle", "r"))
     else:
         print "Unable to find reference values, storing current values."
         pickle.dump(values, open("../reference.pickle", "w"))        
