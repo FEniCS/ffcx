@@ -43,4 +43,4 @@ from finite_element import *
 from dof_map import *
 from integrals import *
 from form import *
-from build import build_ufc_module, old_build_ufc_module
+from build import build_ufc_module

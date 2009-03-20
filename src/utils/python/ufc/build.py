@@ -5,88 +5,12 @@ __license__  = "GNU LGPL Version 2.1"
 
 __all__ = ['build_ufc_module']
 
+# Modified by Martin Alnes, 2009
+
 import instant
 import os, sys, re
 
 from distutils import sysconfig
-
-def old_build_ufc_module(signature, h_files,
-                     cpp_files=None,
-                     system_headers=None,
-                     cpp_args=None,
-                     cache_dir=None):
-
-    """ Build a python extension module from ufc complient source code
-
-    The compiled module will be imported an returned by the function.
-    
-    @param signature:
-       The signature that identifies the extenstion module
-    @param h_files:
-       The name(s) of the header files that should be compiled and included in
-       the python extension module
-    @param cpp_files:
-       Optional ufc-cpp files that will be compiled seperately and linked to the
-       ufc module.
-    @param system_headers:
-       Extra headers that will be #included in the generated wrapper file
-    @param cache_dir:
-       An optional cache dir.
-    """
-    print "FIXME: old_build_ufc_module is deprecated, use build_ufc_module instead!"
-    # Check signature argument
-    assert isinstance(signature,str), "Provide a 'str' as 'signature'"
-    
-    # Check h_files argument
-    assert isinstance(h_files,(list,str)) , "Provide a 'list' or a 'str' as 'h_files'"
-    if isinstance(h_files,str):
-        h_files = [h_files]
-    for f in h_files:
-        assert isinstance(f,str), "The provided h_file must be a 'str'"
-        if not os.path.isfile(f):
-            raise IOError, "The file '%s' does not excist"%f
-
-    # Check cpp_files argument
-    if not cpp_files is None:
-        assert isinstance(cpp_files,(list,str)) , "Provide a 'list' or a 'str' as 'cpp_files'"
-        if isinstance(cpp_files,str):
-            cpp_files = [cpp_files]
-        for f in cpp_files:
-            assert isinstance(f,str), "The provided cpp_file must be a 'str'"
-            if not os.path.isfile(f):
-                raise IOError, "The file '%s' does not excist"%f
-        if len(cpp_files) != len(h_files):
-            raise TypeError, "The provided number of h_files and cpp_files must be the same."
-    else:
-        cpp_files = []
-
-    # Check system_headers argument
-    system_headers = system_headers or []
-    assert isinstance(system_headers,list), "Provide a 'list' as 'system_headers'"
-    assert all(isinstance(header,str) for header in system_headers), "Elements of 'system_headers' must be 'str'"
-
-    system_headers.append("boost/shared_ptr.hpp")
-
-    # Check cpp_args
-    cpp_args = cpp_args or []
-    
-    # Get the swig interface file declarations
-    declarations = extract_declarations(h_files)
-    
-    # Check system requirements
-    (cpp_path, swig_path) = configure_instant()
-    
-    # Call instant and return module
-    return instant.build_module(wrap_headers            = h_files,
-                                sources                 = cpp_files,
-                                additional_declarations = declarations,
-                                system_headers          = system_headers,
-                                include_dirs            = cpp_path,
-                                swigargs                = ['-c++','-I.'],
-                                swig_include_dirs       = swig_path,
-                                cppargs                 = cpp_args,
-                                signature               = signature,
-                                cache_dir               = cache_dir)
 
 def build_ufc_module(h_files, source_directory="", system_headers=None, **kwargs):
     """Build a python extension module from ufc compliant source code.
@@ -210,7 +134,7 @@ def extract_declarations(h_files):
 %pythoncode %{
 import ufc
 '''
-A hack to get past a bug in swig.
+A hack to get passed a bug in swig.
 This is fixed in swig version 1.3.37
 %}
 %import "swig/ufc.i"
@@ -242,38 +166,6 @@ This is fixed in swig version 1.3.37
             for c in zip(ufc_proxy_classes, ufc_classes, derived_classes)\
             )
 
-        declarations += "\n\n// Swig %ignore declations\n"
-        
-        # Extract any provided form, elementa and dofmap classes
-        form_classes    = []
-        element_classes = []
-        dof_map_classes = []
-        for i, ufc_class in enumerate(ufc_classes):
-            if ufc_class == "ufc::form" :
-                form_classes.append(derived_classes[i])
-            if ufc_class == "ufc::finite_element" :
-                element_classes.append(derived_classes[i])
-            if ufc_class == "ufc::dof_map" :
-                dof_map_classes.append(derived_classes[i])
-        
-        # %ignore all foo::create_foo methods
-        for form_class in form_classes:
-            declarations += """
-%%ignore %s::create_finite_element;
-%%ignore %s::create_dof_map;
-%%ignore %s::create_cell_integral;
-%%ignore %s::create_exterior_facet_integral;
-%%ignore %s::create_interior_facet_integral;
-""" % ((form_class,)*5)
-        for element_class in element_classes:
-            declarations += """
-%%ignore %s::create_sub_element;
-""" % (element_class,)
-        for dof_map_class in dof_map_classes:
-            declarations += """
-%%ignore %s::create_sub_dof_map;
-""" % (dof_map_class,)
-        
         declarations += "\n"
     return declarations
 
