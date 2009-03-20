@@ -24,6 +24,9 @@ from ffc.common.log import debug, info
 # Utility and optimisation functions for quadraturegenerator
 from quadraturegenerator_utils import generate_loop
 from uflquadraturegenerator_utils import generate_code, QuadratureTransformer
+from uflquadraturegenerator_utils2 import generate_code as generate_code2
+from uflquadraturegenerator_utils2 import QuadratureTransformer2
+from reduce_operations2 import generate_aux_constants
 
 # FFC format modules
 from ffc.compiler.format.removeunused import remove_unused
@@ -42,11 +45,26 @@ class UFLQuadratureGenerator:
         "Constructor"
 
         # TODO: Set this through OPTIONS
-        self.optimise_options = {"non zero columns": False,
-                                 "ignore ones": False,
-                                 "remove zero terms": False,
-                                 "simplify expressions": False,
-                                 "ignore zero tables": False}
+        # These options should be safe and fast, but result in slow code
+#        self.optimise_options = {"non zero columns": False,
+#                                 "ignore ones": False,
+#                                 "remove zero terms": False,
+#                                 "simplify expressions": False,
+#                                 "ignore zero tables": False}
+
+#        self.optimise_options = {"non zero columns": False,
+#                                 "ignore ones": False,
+#                                 "remove zero terms": False,
+#                                 "simplify expressions": True,
+#                                 "ignore zero tables": False}
+
+        # These options results in fast code, but compiles slower and there
+        # might still be bugs
+        self.optimise_options = {"non zero columns": True,
+                                 "ignore ones": True,
+                                 "remove zero terms": True,
+                                 "simplify expressions": True,
+                                 "ignore zero tables": True}
 
     def generate_integrals(self, form_representation, format):
         "Generate code for all integrals."
@@ -73,8 +91,12 @@ class UFLQuadratureGenerator:
             return code
 
         # Create transformer
-        transformer = QuadratureTransformer(form_representation, Measure.CELL,\
-                                            self.optimise_options, format)
+        if self.optimise_options["simplify expressions"]:
+            transformer = QuadratureTransformer2(form_representation, Measure.CELL,\
+                                                self.optimise_options, format)
+        else:
+            transformer = QuadratureTransformer(form_representation, Measure.CELL,\
+                                                self.optimise_options, format)
 
         # Generate code for cell integral
         info("Generating code for cell integrals using quadrature representation.")
@@ -91,8 +113,12 @@ class UFLQuadratureGenerator:
             return code
 
         # Create transformer
-        transformer = QuadratureTransformer(form_representation, Measure.EXTERIOR_FACET,\
-                                            self.optimise_options, format)
+        if self.optimise_options["simplify expressions"]:
+            transformer = QuadratureTransformer2(form_representation, Measure.EXTERIOR_FACET,\
+                                                self.optimise_options, format)
+        else:
+            transformer = QuadratureTransformer(form_representation, Measure.EXTERIOR_FACET,\
+                                                self.optimise_options, format)
 
         # Generate code for cell integral
         info("Generating code for exterior facet integrals using quadrature representation.")
@@ -109,8 +135,12 @@ class UFLQuadratureGenerator:
             return code
 
         # Create transformer
-        transformer = QuadratureTransformer(form_representation, Measure.INTERIOR_FACET,\
-                                            self.optimise_options, format)
+        if self.optimise_options["simplify expressions"]:
+            transformer = QuadratureTransformer2(form_representation, Measure.INTERIOR_FACET,\
+                                                self.optimise_options, format)
+        else:
+            transformer = QuadratureTransformer(form_representation, Measure.INTERIOR_FACET,\
+                                                self.optimise_options, format)
 
         # Generate code for cell integral
         info("Generating code for interior facet integrals using quadrature representation.")
@@ -154,10 +184,17 @@ class UFLQuadratureGenerator:
         # Tabulate values of basis functions and their derivatives.
         code += self.__tabulate_psis(transformer, Indent, format)
 
+        # Create the constant geometry declarations (only generated if simplify expressions are enabled)
+        geo_ops, geo_code = generate_aux_constants(transformer.geo_consts, format["geometry tensor"], format["const float declaration"], False, format)
+        if geo_code:
+            num_ops += geo_ops
+            code += ["", format["comment"]("Number of operations to compute geometry constants: %d" %geo_ops)]
+            code += geo_code
+
         # Add element code
         code += ["", format["comment"]("Compute element tensor using UFL quadrature representation"),\
                  format["comment"]("Optimisations: %s" % ", ".join([str(i) for i in self.optimise_options.items()])),\
-                 format["comment"]("Total number of operations to compute element tensor (from this point): %d" %num_ops)]
+                 format["comment"]("Total number of operations to compute element tensor: %d" %num_ops)]
         code += element_code
 
         info("Number of operations to compute tensor: %d" % num_ops)
@@ -210,6 +247,15 @@ class UFLQuadratureGenerator:
         # Tabulate values of basis functions and their derivatives.
         common += self.__tabulate_psis(transformer, Indent, format)
 
+        # Create the constant geometry declarations (only generated if simplify expressions are enabled)
+        geo_ops, geo_code = generate_aux_constants(transformer.geo_consts, format["geometry tensor"], format["const float declaration"], False, format)
+        if geo_code:
+            num_ops += geo_ops
+            common += ["", format["comment"]("Number of operations to compute geometry constants: %d" %geo_ops)]
+            common += [format["comment"]("Should be added to total operation count.")]
+            common += geo_code
+            info("Number of operations to compute geometry terms: %s, should be added to facet count" % geo_ops)
+
         # Add comments
         common += ["", format["comment"]("Compute element tensor using UFL quadrature representation"),\
                  format["comment"]("Optimisations: %s" % ", ".join([str(i) for i in self.optimise_options.items()]))]
@@ -260,6 +306,15 @@ class UFLQuadratureGenerator:
         # Tabulate values of basis functions and their derivatives.
         common += self.__tabulate_psis(transformer, Indent, format)
 
+        # Create the constant geometry declarations (only generated if simplify expressions are enabled)
+        geo_ops, geo_code = generate_aux_constants(transformer.geo_consts, format["geometry tensor"], format["const float declaration"], False, format)
+        if geo_code:
+            num_ops += geo_ops
+            common += ["", format["comment"]("Number of operations to compute geometry constants: %d" %geo_ops)]
+            common += [format["comment"]("Should be added to total operation count.")]
+            common += geo_code
+            info("Number of operations to compute geometry terms: %s, should be added to facet count" % geo_ops)
+
         # Add comments
         common += ["", format["comment"]("Compute element tensor using UFL quadrature representation"),\
                  format["comment"]("Optimisations: %s" % ", ".join([str(i) for i in self.optimise_options.items()]))]
@@ -299,8 +354,12 @@ class UFLQuadratureGenerator:
             transformer.update_points(points)
 
             # Generate code for integrand and get number of operations
-            integral_code, num_ops =\
-                generate_code(integral.integrand(), transformer, Indent, format)
+            if self.optimise_options["simplify expressions"]:
+                integral_code, num_ops =\
+                    generate_code2(integral.integrand(), transformer, Indent, format)
+            else:
+                integral_code, num_ops =\
+                    generate_code(integral.integrand(), transformer, Indent, format)
 
             # Get number of operations to compute entries for all terms when
             # looping over all IPs and update tensor count
@@ -311,11 +370,12 @@ class UFLQuadratureGenerator:
                 ("Number of operations to compute element tensor for following IP loop = %d" %(num_operations)) )
 
             # Loop code over all IPs
-            if points > 1:
-                ip_code += generate_loop(integral_code, [(format_ip, 0, points)], Indent, format)
-            else:
-                ip_code.append(format_comment("Only 1 integration point, omitting IP loop."))
-                ip_code += integral_code
+            if integral_code:
+                if points > 1:
+                    ip_code += generate_loop(integral_code, [(format_ip, 0, points)], Indent, format)
+                else:
+                    ip_code.append(format_comment("Only 1 integration point, omitting IP loop."))
+                    ip_code += integral_code
 
             # Add integration points code to element code
             element_code += ip_code
