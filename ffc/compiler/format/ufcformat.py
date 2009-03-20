@@ -30,7 +30,7 @@ from removeunused import *
 from dolfintemplates import *
 
 # Choose map from restriction
-choose_map = {"PLUS": "0", "MINUS": "1", "CONSTANT": "0", None: ""}
+choose_map = {"PLUS": "0", "MINUS": "1", "CONSTANT": "0", None: "", "+": "0", "-": 1}
 transform_options = {"JINV": lambda m, j, k: "Jinv%s_%d%d" % (m, j, k),
                      "J": lambda m, j, k: "J%s_%d%d" % (m, k, j)}
 # Options for the printing q or 1.0/(q) for q string:
@@ -840,9 +840,6 @@ public:
 
     def __generate_jacobian(self, cell_dimension, integral_type):
         "Generate code for computing jacobian"
-
-        print "cell_dimension =", cell_dimension
-
 
         # Choose space dimension
         if cell_dimension == 1:

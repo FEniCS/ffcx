@@ -41,11 +41,11 @@ class TensorRepresentation:
 
     Attributes:
 
-        cell_integrals         - list of list of terms for sub domains
-        exterior_facet_tensors - list of list of list of terms for sub domains and facets
-        interior_facet_tensors - list of list of list of list of terms for sub domains and facet combinations
-        geometric_dimension    - geometric dimension of form
-        num_facets             - number of cell facets
+        cell_integrals           - list of list of terms for sub domains
+        exterior_facet_integrals - list of list of list of terms for sub domains and facets
+        interior_facet_integrals - list of list of list of list of terms for sub domains and facet combinations
+        geometric_dimension      - geometric dimension of form
+        num_facets               - number of cell facets
 
     Each term is represented as a TensorContraction.
     """
@@ -63,6 +63,8 @@ class TensorRepresentation:
         # FIXME: Temporary fix
         if len(form.integrals()) == 0:
             self.cell_integrals = []
+            self.interior_facet_integrals = []
+            self.exterior_facet_integrals = []
             return
 
         # Extract monomial representation
