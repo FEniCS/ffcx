@@ -885,7 +885,7 @@ public:
             return cases[0]
 
         # Create switch
-        code = "switch ( %s )\n{\n" % variable
+        code = "switch (%s)\n{\n" % variable
         for i in range(len(cases)):
             code += "case %d:\n%s\n  break;\n" % (i, indent(cases[i], 2))
         code += "}"

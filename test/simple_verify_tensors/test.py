@@ -32,7 +32,7 @@ def tabulate_tensor(integral, integral_type, header):
     options = {"n": 100, "N": 1000, "integral": integral, "header": header}
     code = tabulate_tensor_code[integral_type] % options
     open("tabulate_tensor.cpp", "w").write(code)
-    (ok, output) = run_command("g++ -o tabulate_tensor tabulate_tensor.cpp")
+    (ok, output) = run_command("g++ `pkg-config --cflags ufc-1` -o tabulate_tensor tabulate_tensor.cpp")
     if not ok: return "GCC compilation failed"
 
     # Run code and get results

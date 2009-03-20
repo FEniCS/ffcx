@@ -53,8 +53,12 @@ class TensorRepresentation:
     def __init__(self, form_data):
         "Create tensor representation for given form."
 
+        print "Input form:", form_data.form
+
         # Extract integrals integrals for tensor representation
         form = _extract_tensor_integrals(form_data.form)
+
+        print "Extracted form:", form
 
         # FIXME: Temporary fix
         if len(form.integrals()) == 0:
@@ -64,11 +68,11 @@ class TensorRepresentation:
         # Extract monomial representation
         monomial_form = extract_monomial_form(form)
         print ""
-        print monomial_form
+        print "Monomial form:", monomial_form
 
         # Transform monomial form to reference element
         transform_monomial_form(monomial_form)
-        print monomial_form
+        print "Transformed monomial:", monomial_form
 
         # Compute representation of cell tensor
         n = form_data.num_cell_integrals
@@ -150,6 +154,7 @@ def _compute_interior_facet_tensors(monomial_form, form_data, sub_domain):
 
 def _extract_integrals(monomial_form, form_data, domain_type, sub_domain):
     "Extract subset of form matching given domain type."
+
     new_form = MonomialForm()
     for (integrand, measure) in monomial_form:
         if measure.domain_type() == domain_type and measure.domain_id() == sub_domain:
@@ -170,12 +175,5 @@ def _compute_terms(monomial_form, domain_type, facet0, facet1):
         # Iterate over monomials of integrand
         for monomial in integrand.monomials:
             terms.append(TensorContraction(monomial, domain_type, facet0, facet1))
-
-
-    print "Domain type:", domain_type
-    print "Number of terms:", len(terms)
-
-    import sys
-    sys.exit(1)
 
     return terms

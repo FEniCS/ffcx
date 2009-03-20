@@ -178,6 +178,8 @@ class MonomialForm:
         return iter(self.integrals)
 
     def __str__(self):
+        if len(self.integrals) == 0:
+            return "<Empty form>"
         s  = "Monomial form of %d integral(s)\n" % len(self.integrals)
         s += len(s) * "-" + "\n"
         for (integrand, measure) in self.integrals:
@@ -301,7 +303,7 @@ def extract_monomial_form(form):
 
     # Iterate over all integrals
     monomial_form = MonomialForm()
-    for integral in form.cell_integrals():
+    for integral in form.integrals():
 
         # Get measure and integrand
         measure = integral.measure()
