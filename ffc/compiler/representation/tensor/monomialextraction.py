@@ -290,7 +290,6 @@ def extract_monomial_form(form):
 
     print ""
     print "Extracting monomials"
-    print "--------------------"
     print ""
     
     # Extract processed form

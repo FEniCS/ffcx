@@ -43,7 +43,7 @@ from ffc.compiler.analysis.formdata import create_ffc_coefficients
 from ffc.compiler.analysis.elementdata import ElementData
 
 # FFC form representation modules
-from representation.tensor.monomials import MonomialException
+from representation.tensor.monomialextraction import MonomialException
 from representation.tensor.ufltensorrepresentation import TensorRepresentation
 from representation.quadrature.uflquadraturerepresentation import QuadratureRepresentation
 
@@ -165,6 +165,9 @@ def analyze_form(form, options, global_variables):
     dims_interior = [create_element(v.element()).space_dimension()*2 for v in extract_basis_functions(form)]
     form_data.num_entries = product(dims)
     form_data.num_entries_interior = product(dims_interior)
+
+    # Attach number of facets
+    form_data.num_facets = form_data.ffc_elements[0].num_facets()
 
     end()
     return form_data

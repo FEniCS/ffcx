@@ -12,7 +12,7 @@ __license__  = "GNU GPL version 3 or any later version"
 from sets import Set
 
 # FFC common modules
-from ffc.common.constants import *
+from ffc.common.log import info, debug
 
 # FFC tensor representation modules
 from ffc.compiler.representation.tensor.monomialtransformation import MonomialIndex
@@ -34,103 +34,54 @@ class UFLTensorGenerator:
         incremental = True
 
         # Generate code for cell integrals
-        code.update(_generate_cell_integrals(form_representation, incremental, format))
+        for (sub_domain, terms) in enumerate(form_representation.cell_integrals):
+            if len(terms) > 0:
+                I = _generate_cell_integral(terms, form_representation, incremental, format)
+                code[("cell_integral", sub_domain)] = I
 
         # Generate code for exterior facet integrals
-        code.update(_generate_exterior_facet_integrals(form_representation, incremental, format))
+        for (sub_domain, terms) in enumerate(form_representation.exterior_facet_integrals):
+            if len(terms) > 0:
+                I = _generate_exterior_facet_integral(terms, form_representation, incremental, format)
+                code[("exterior_facet_integral", sub_domain)] = I
 
         # Generate code for interior facet integrals
-        code.update(_generate_interior_facet_integrals(form_representation, incremental, format))
+        for (sub_domain, terms) in enumerate(form_representation.interior_facet_integrals):
+            if len(terms) > 0:
+                I = _generate_interior_facet_integral(terms, form_representation, incremental, format)
+                code[("interior_facet_integral", sub_domain)] = I
 
         return code
-
-def _generate_cell_integrals(form_representation, incremental, format):
-    "Generate code for cell integrals."
-
-    code = {}
-
-    # Check if code needs to be generated
-    if len(form_representation.cell_integrals) == 0:
-        return code
-
-    # Generate code for all sub domains
-    debug("Generating code for cell integrals using tensor representation...")
-    for (sub_domain, terms) in enumerate(form_representation.cell_integrals):
-        if len(terms) > 0:
-            code[("cell_integral", sub_domain)] = _generate_cell_integral(terms, form_representation,
-                                                                          incremental, format)
-    debug("done")
-
-    return code
-
-def _generate_exterior_facet_integrals(form_representation, incremental, format):
-    "Generate code for exterior facet integrals."
-
-    # FIXME: Not implemented
-    return {}
-
-    # Check if code needs to be generated
-    if not form_representation.exterior_facet_integrals:
-        return {}
-
-    # Generate code for all sub domains
-    debug("Generating code for cell integrals using quadrature representation...")
-    for i, integral in form_representation.exterior_facet_integrals.items():
-        code[("exterior_facet_integral", subdomain)] = _generate_exterior_facet_integral(integral, i, format)
-    debug("done")
-
-    return code
-
-def _generate_interior_facet_integrals(form_representation, incremental, format):
-    "Generate code for interior facet integrals."
-
-    # FIXME: Not implemented
-    return {}
-
-    # Check if code needs to be generated
-    if not form_representation.interior_facet_integrals:
-        return {}
-
-    # Generate code for all sub domains
-    debug("Generating code for cell integrals using quadrature representation...")
-    for subdomain, integral in form_representation.interior_facet_integrals.items():
-        code[("interior_facet_integral", subdomain)] = _generate_interior_facet_integral(integral, format)
-    debug("done")
-
-    return code
 
 def _generate_cell_integral(terms, form_representation, incremental, format):
     """Generate dictionary of code for cell integral from the given
     form representation according to the given format"""
 
-    # Special case: zero contribution
-    if len(terms) == 0:
-        return {"tabulate_tensor": element_code, "members": ""}
-
     debug("")
 
-    # Generate element code + set of used geometry terms
-    element_code, geo_set, tensor_ops = _generate_element_tensor(terms, incremental, format)
+    code = []
 
-    # Generate geometry code + set of used coefficients + set of jacobi terms
-    geo_code, coeff_set, trans_set, geo_ops = _generate_geometry_tensors(terms, geo_set, format)
-    total_ops = tensor_ops + geo_ops
+    # Generate tensor code + set of used geometry terms
+    tensor_code, tensor_ops, geometry_set = _generate_element_tensor(terms, incremental, format)
 
-    # Get Jacobian snippet
+    # Generate geometry code + set of used jacobi terms
+    geometry_code, geometry_ops, jacobi_set = _generate_geometry_tensors(terms, geometry_set, format)
+
+    # Generate code for Jacobian
     jacobi_code = [format["generate jacobian"](form_representation.geometric_dimension, "cell")]
+    jacobi_code = _remove_unused(jacobi_code, jacobi_set, format)
 
-    # Remove unused declarations
-    code = _remove_unused(jacobi_code, trans_set, format)
-
-    # Add coefficient and geometry tensor declarations
-    code.append(format["comment"]("Number of operations to compute element tensor = %d" % total_ops))
-    code += geo_code
-
-    # Add element code
-    code += [""] + [format["comment"]("Compute element tensor")]
-    code += element_code
-
+    # Compute total number of operations
+    total_ops = tensor_ops + geometry_ops
     debug("Number of operations to compute tensor: %d" % total_ops)
+
+    # Add generated code
+    code += jacobi_code
+    code += [""] + [format["comment"]("Compute geometry tensor")]
+    code += geometry_code
+    code += [""] + [format["comment"]("Compute element tensor")]
+    code += tensor_code
+    code += [format["comment"]("Number of operations to compute element tensor = %d" % total_ops)]
 
     return {"tabulate_tensor": code, "members": ""}
 
@@ -164,23 +115,20 @@ def generate_exterior_facet_integral(form_representation, sub_domain, format):
 
     # Generate code for geometry tensor (should be the same so pick first)
     # Generate set of used coefficients + set of jacobi terms
-    geo_code, coeff_set, trans_set, geo_ops = _generate_geometry_tensors(terms[0], geo_set, format)
+    geometry_code, jacobi_set, geo_ops = _generate_geometry_tensors(terms[0], geo_set, format)
     debug("Number of operations to compute geometry terms (should be added): %d" % geo_ops)
     total_ops = tensor_ops + geo_ops
-
-    # Generate code for manipulating coefficients (should be the same so pick first)
-    coeff_code = _generate_coefficients(terms[0], coeff_set, format)
 
     # Get Jacobian snippet
     jacobi_code = [format["generate jacobian"](cell_dimension, "exterior facet")]
 
     # Remove unused declarations
-    code = _remove_unused(jacobi_code, trans_set, format)
+    code = _remove_unused(jacobi_code, jacobi_set, format)
 
     code.append(format["comment"]("Number of operations to compute element tensor = %d" % total_ops))
 
     # Add coefficient and geometry tensor declarations
-    code += coeff_code + geo_code
+    code += geo_code
 
     # Add element code
     code += [""] + [format["comment"]("Compute element tensor for all facets")]
@@ -215,30 +163,27 @@ def generate_interior_facet_integral(form_representation, sub_domain, format):
 
     # Generate code for geometry tensor (should be the same so pick first)
     # Generate set of used coefficients + set of jacobi terms
-    geo_code, coeff_set, trans_set, geo_ops = _generate_geometry_tensors(terms[0][0], geo_set, format)
+    geo_code, jacobi_set, geo_ops = _generate_geometry_tensors(terms[0][0], geo_set, format)
     debug("Number of operations to compute geometry terms (should be added): %d" % geo_ops)
     total_ops = tensor_ops + geo_ops
-
-    # Generate code for manipulating coefficients (should be the same so pick first)
-    coeff_code = _generate_coefficients(terms[0][0], coeff_set, format)
 
     # Get Jacobian snippet
     jacobi_code = [format["generate jacobian"](form_representation.cell_dimension, "interior facet")]
 
     # Remove unused declarations
-    code = _remove_unused(jacobi_code, trans_set, format)
+    code = _remove_unused(jacobi_code, jacobi_set, format)
 
     code.append(format["comment"]("Number of operations to compute element tensor = %d" % total_ops))
 
     # Add coefficient and geometry tensor declarations
-    code += coeff_code + geo_code
+    code += geo_code
 
     # Add element code
     code += [""] + [format["comment"]("Compute element tensor for all facet-facet combinations")]
 
     return {"tabulate_tensor": (code, cases), "members": ""}
 
-def _generate_geometry_tensors(terms, geo_set, format):
+def _generate_geometry_tensors(terms, geometry_set, format):
     "Generate list of declarations for computation of geometry tensors"
 
     # Generate code as a list of declarations
@@ -246,8 +191,7 @@ def _generate_geometry_tensors(terms, geo_set, format):
 
     # Iterate over all terms
     j = 0
-    coeff_set = Set()
-    trans_set = Set()
+    jacobi_set = Set()
     num_ops = 0
     for (i, term) in enumerate(terms):
 
@@ -258,18 +202,17 @@ def _generate_geometry_tensors(terms, geo_set, format):
         for a in secondary_indices:
 
             # Skip code generation if term is not used
-            if not format["geometry tensor access"](i, a) in geo_set:
+            if not format["geometry tensor access"](i, a) in geometry_set:
                 continue
 
             # Compute factorized values
             values = []
             jj = j
             for GK in term.GK:
-                val, c_set, t_set, entry_ops = _generate_entry(GK, a, jj, format)
+                val, entry_ops, t_set = _generate_entry(GK, a, jj, format)
                 values += [val]
                 num_ops += entry_ops
-                coeff_set = coeff_set | c_set
-                trans_set = trans_set | t_set
+                jacobi_set = jacobi_set | t_set
                 jj += 1
 
             # Sum factorized values
@@ -288,7 +231,7 @@ def _generate_geometry_tensors(terms, geo_set, format):
             #!if dets:
             #!    d0 = [format["power"](format["determinant"](det.restriction),
             #!                          det.power) for det in dets]
-            #!    trans_set.add(format["multiply"](d0))
+            #!    jacobi_set.add(format["multiply"](d0))
 
             # Add declaration
             code += [(name, value)]
@@ -299,12 +242,12 @@ def _generate_geometry_tensors(terms, geo_set, format):
     code = [format["comment"]("Compute geometry tensors"), format["comment"]("Number of operations to compute declarations = %d" %num_ops)] + code
 
     # Add scale factor
-    trans_set.add(format["scale factor"])
+    jacobi_set.add(format["scale factor"])
 
-    return (code, coeff_set, trans_set, num_ops)
+    return (code, num_ops, jacobi_set)
 
 def _generate_element_tensor(terms, incremental, format):
-    "Generate list of declarations for computation of element tensor"
+    "Generate list of declarations for computation of element tensor."
 
     # Generate code as a list of declarations
     code = []
@@ -323,7 +266,6 @@ def _generate_element_tensor(terms, incremental, format):
     format_epsilon         = format["epsilon"]
 
     # Generate code for geometry tensor entries
-
     gk_tensor = []
     for j in range(len(terms)):
         gk_tensor_j = []
@@ -336,7 +278,7 @@ def _generate_element_tensor(terms, incremental, format):
     num_dropped = 0
     num_ops = 0
     zero = format_floating_point(0.0)
-    geo_set = Set()
+    geometry_set = Set()
     for i in primary_indices:
         name = format_element_tensor(i, k)
         value = None
@@ -347,15 +289,15 @@ def _generate_element_tensor(terms, incremental, format):
                 if abs(a0) > format_epsilon:
                     if value and a0 < 0.0:
                         value = format_subtract([value, format_multiply([format_floating_point(-a0), gk])])
-                        geo_set.add(gk)
+                        geometry_set.add(gk)
                         num_ops += 1
                     elif value:
                         value = format_add([value, format_multiply([format_floating_point(a0), gk])])
-                        geo_set.add(gk)
+                        geometry_set.add(gk)
                         num_ops += 1
                     else:
                         value = format_multiply([format_floating_point(a0), gk])
-                        geo_set.add(gk)
+                        geometry_set.add(gk)
                     num_ops += 1
                 else:
                     num_dropped += 1
@@ -367,13 +309,13 @@ def _generate_element_tensor(terms, incremental, format):
         k += 1
 
     code = [format["comment"]("Number of operations to compute tensor = %d" % num_ops)] + code
-    return (code, geo_set, num_ops)
+    
+    return (code, num_ops, geometry_set)
 
 def _generate_entry(GK, a, i, format):
     "Generate code for the value of entry a of geometry tensor G"
 
-    coeff_set = Set()
-    trans_set = Set()
+    jacobi_set = Set()
 
     # Compute product of factors outside sum
     factors = []
@@ -383,7 +325,6 @@ def _generate_entry(GK, a, i, format):
         if not c.index.index_type == MonomialIndex.EXTERNAL:
             #coefficient = format["coefficient"](c.number, i, j, c.index(secondary=a))
             coefficient = format["coefficient"](c.number, c.index(secondary=a))
-            coeff_set.add(coefficient)
             factors += [coefficient]
 
     for t in GK.transforms:
@@ -393,7 +334,7 @@ def _generate_entry(GK, a, i, format):
                                         t.index1(secondary=a), 
                                         t.restriction)
             factors += [trans]
-            trans_set.add(trans)
+            jacobi_set.add(trans)
 
     if factors:
         num_ops += len(factors) - 1
@@ -411,7 +352,6 @@ def _generate_entry(GK, a, i, format):
             if c.index.index_type == MonomialIndex.EXTERNAL:
                 #coefficient = format["coefficient"](c.number, i, j, c.index([], a, [], b))
                 coefficient = format["coefficient"](c.number, c.index(secondary=a))
-                coeff_set.add(coefficient)
                 factors += [coefficient]
         for t in GK.transforms:
             if t.index0.index_type == MonomialIndex.EXTERNAL or t.index1.index_type == MonomialIndex.EXTERNAL:
@@ -420,7 +360,7 @@ def _generate_entry(GK, a, i, format):
                                             t.index1(secondary=a, external=b),
                                             t.restriction)
                 factors += [trans]
-                trans_set.add(trans)
+                jacobi_set.add(trans)
         if factors:
             num_ops += len(factors) - 1
         terms += [format["multiply"](factors)]
@@ -439,7 +379,7 @@ def _generate_entry(GK, a, i, format):
         num_ops += len(fs) - 1
 
     # Compute product of all factors
-    return (format["multiply"](fs), coeff_set, trans_set, num_ops)
+    return (format["multiply"](fs), num_ops, jacobi_set)
 
 def _multiply_value_by_det(value, det, format, is_sum):
     if not det.power == 0:
