@@ -129,7 +129,7 @@ def _generate_exterior_facet_integral(terms, form_representation, incremental, f
 def _generate_interior_facet_integral(terms, form_representation, incremental, format):
     "Generate code for interior facet integral."
 
-    code = []
+    code = []    
 
     # Generate tensor code + set of used geometry terms
     num_facets = form_representation.num_facets
@@ -144,7 +144,7 @@ def _generate_interior_facet_integral(terms, form_representation, incremental, f
     tensor_ops = float(tensor_ops) / float(form_representation.num_facets)
     
     # Generate geometry code + set of used jacobi terms (should be the same, so pick first)
-    geometry_code, geometry_ops, jacobi_set = _generate_geometry_tensors(terms[0], geometry_set, format)
+    geometry_code, geometry_ops, jacobi_set = _generate_geometry_tensors(terms[0][0], geometry_set, format)
 
     # Generate code for Jacobian
     jacobi_code = [format["generate jacobian"](form_representation.geometric_dimension, "cell")]
@@ -178,6 +178,8 @@ def _generate_geometry_tensors(terms, geometry_set, format):
     jacobi_set = set()
     num_ops = 0
     for (i, term) in enumerate(terms):
+
+        print "term = ", term
 
         # Get list of secondary indices (should be the same so pick first)
         secondary_indices = term.GK[0].secondary_multi_index.indices

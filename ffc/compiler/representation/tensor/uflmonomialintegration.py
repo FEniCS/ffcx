@@ -35,7 +35,7 @@ from ffc.fem.quadratureelement import *
 from multiindex import build_indices
 #from pointreordering import *
 from monomialextraction import MonomialException
-from monomialtransformation import MonomialRestriction, MonomialIndex
+from monomialtransformation import MonomialIndex
 
 def integrate(monomial, domain_type, facet0, facet1):
     """Compute the reference tensor for a given monomial term of a
@@ -115,8 +115,8 @@ def _init_table(basis_functions, domain_type, points, facet0, facet1):
         elif domain_type == Measure.EXTERIOR_FACET:
             table[(element, None)] = element.tabulate(order, map_to_facet(points, facet0))
         elif domain_type == Measure.INTERIOR_FACET:
-            table[(element, MonomialRestriction.PLUS)]  = element.tabulate(order, map_to_facet(points, facet0))
-            table[(element, MonomialRestriction.MINUS)] = element.tabulate(order, map_to_facet(points, facet1))
+            table[(element, "+")] = element.tabulate(order, map_to_facet(points, facet0))
+            table[(element, "-")] = element.tabulate(order, map_to_facet(points, facet1))
 
     return table
 
@@ -167,18 +167,10 @@ def _compute_psi(v, table, num_points, domain_type):
     # Initialize tensor Psi: component, derivatives, basis function, points
     Psi = numpy.zeros(shapes, dtype = numpy.float)
 
-    # Get restriction and handle constants
-    restriction = v.restriction
-    if restriction == MonomialRestriction.CONSTANT:
-        if domain_type == Measure.INTERIOR_FACET:
-            restriction = MonomialRestriction.PLUS
-        else:
-            restriction = None
-
     # Iterate over derivative indices
     dlists = build_indices([index.index_range for index in dindex]) or [[]]
     if len(cindex) > 0:
-        etable = table[(v.element, restriction)]
+        etable = table[(v.element, v.restriction)]
         for component in range(len(cindex[0].index_range)):
             for dlist in dlists:
                 # Translate derivative multiindex to lookup tuple
@@ -186,7 +178,7 @@ def _compute_psi(v, table, num_points, domain_type):
                 # Get values from table
                 Psi[component][tuple(dlist)] = etable[cindex[0].index_range[component]][dorder][dtuple]
     else:
-        etable = table[(v.element, restriction)][dorder]
+        etable = table[(v.element, v.restriction)][dorder]
         for dlist in dlists:
             # Translate derivative multiindex to lookup tuple
             dtuple = _multiindex_to_tuple(dlist, cell_dimension)

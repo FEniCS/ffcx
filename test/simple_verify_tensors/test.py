@@ -12,7 +12,10 @@ import sys, os, commands, pickle, numpy
 format = "ufl"
 
 # Forms that don't work with tensor representation
-only_quadrature = ["FunctionOperators", "QuadratureElement", "TensorWeightedPoisson"]
+only_quadrature = ["FunctionOperators",
+                   "QuadratureElement",
+                   "TensorWeightedPoisson",
+                   "PoissonDG"]
 
 # Log file
 logfile = None

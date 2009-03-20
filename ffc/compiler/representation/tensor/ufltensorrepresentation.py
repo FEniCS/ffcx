@@ -22,7 +22,7 @@ from monomialextraction import extract_monomial_form, MonomialForm
 from monomialtransformation import transform_monomial_form
 from uflreferencetensor import ReferenceTensor
 from uflgeometrytensor import GeometryTensor
-from tensorreordering import reorder_entries
+from ufltensorreordering import reorder_entries
 
 class TensorContraction:
     "This class represents a tensor contraction A^K = A^0 : G_K."
@@ -146,10 +146,8 @@ def _compute_interior_facet_tensors(monomial_form, form_data, sub_domain):
             terms[i][j] = _compute_terms(monomial_form, Measure.INTERIOR_FACET, i, j)
             reorder_entries(terms[i][j])
 
-    return terms
-                
-    debug_end()
-    
+    end()
+
     return terms
 
 def _extract_integrals(monomial_form, form_data, domain_type, sub_domain):

@@ -99,12 +99,6 @@ class MonomialIndex:
         else:
             return "?"
 
-class MonomialRestriction:
-
-    PLUS = "plus"
-    MINUS = "minus"
-    CONSTANT = "constant"
-
 class MonomialDeterminant:
 
     def __init__(self):
@@ -133,28 +127,29 @@ class MonomialTransform:
     J = "J"
     JINV = "JINV"
 
-    def __init__(self, index0, index1):
+    def __init__(self, index0, index1, restriction):
         self.index0 = index0
         self.index1 = index1
         self.transform_type = MonomialTransform.JINV
-        self.restriction = None
+        self.restriction = restriction
 
     def __str__(self):
-        return "dX_%s/dx_%s" % (str(self.index0), str(self.index1))
+        if self.restriction is None:
+            r = ""
+        else:
+            r = "(%s)" % str(self.restriction)        
+        return "dX_%s/dx_%s%s" % (str(self.index0), str(self.index1), r)
 
 class MonomialBasisFunction:
 
-    def __init__(self, element, index, components, derivatives):
+    def __init__(self, element, index, components, derivatives, restriction):
         self.element = element
         self.index = index
         self.components = components
         self.derivatives = derivatives
-
-        # FIXME: Handle restriction
-        self.restriction = None
+        self.restriction = restriction
 
     def __str__(self):
-        c = ""
         if len(self.components) == 0:
             c = ""
         else:
@@ -165,8 +160,12 @@ class MonomialBasisFunction:
         else:
             d0 = "(" + " ".join("d/dX_%s" % str(d) for d in self.derivatives) + " "
             d1 = ")"
+        if self.restriction is None:
+            r = ""
+        else:
+            r = "(%s)" % str(self.restriction)
         v = "V_" + str(self.index)
-        return d0 + v + c + d1
+        return d0 + v + r + c + d1
 
 class TransformedMonomial:
 
@@ -231,14 +230,17 @@ class TransformedMonomial:
                 else:
                     index1 = MonomialIndex(index_range=range(gdim))
                 index_map[d] = index1
-                transform = MonomialTransform(index0, index1)
+                transform = MonomialTransform(index0, index1, f.restriction)
                 self.transforms.append(transform)
                 derivatives.append(index0)
+
+            # Extract restriction
+            restriction = f.restriction
 
             print "derivatives =", derivatives
 
             # Create basis function
-            v = MonomialBasisFunction(element, vindex, components, derivatives)
+            v = MonomialBasisFunction(element, vindex, components, derivatives, restriction)
             self.basis_functions.append(v)
 
         # Figure out secondary and auxiliary indices
