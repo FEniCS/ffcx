@@ -6,7 +6,7 @@ __copyright__ = "Copyright (C) 2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Integral types
-integral_types = ["cell_integral", "exterior_facet_tensor", "interior_facet_tensor"]
+integral_types = ["cell_integral", "exterior_facet_integral", "interior_facet_integral"]
 
 # Common code for all integral types
 tabulate_tensor_code_common = """\
