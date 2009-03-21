@@ -31,14 +31,17 @@ class MonomialFactor:
             self.function = arg.function
             self.components = arg.components
             self.derivatives = arg.derivatives
+            self.restriction = arg.restriction
         elif isinstance(arg, (BasisFunction, Function)):
             self.function = arg
             self.components = []
             self.derivatives = []
+            self.restriction = None
         elif arg is None:
             self.function = None
             self.components = []
             self.derivatives = []
+            self.restriction = None
         else:
             raise MonomialException, ("Unable to create monomial from expression: " + str(arg))
 
@@ -51,6 +54,9 @@ class MonomialFactor:
     def apply_derivative(self, indices):
         self.derivatives += indices
 
+    def apply_restriction(self, restriction):
+        self.restriction = restriction
+
     def replace_indices(self, old_indices, new_indices):
         if old_indices is None:
             self.components = new_indices
@@ -59,7 +65,6 @@ class MonomialFactor:
             _replace_indices(self.derivatives, old_indices, new_indices)
 
     def __str__(self):
-        c = ""
         if len(self.components) == 0:
             c = ""
         else:
@@ -70,7 +75,11 @@ class MonomialFactor:
         else:
             d0 = "(" + " ".join("d/dx_%s" % str(d) for d in self.derivatives) + " "
             d1 = ")"
-        return d0 + str(self.function) + c + d1
+        if self.restriction is None:
+            r = ""
+        else:
+            r = "(%s)" % str(self.restriction)
+        return d0 + str(self.function) + r + c + d1
 
 class Monomial:
     
@@ -110,6 +119,10 @@ class Monomial:
             v.replace_indices(self.index_slots, indices)
         self.index_slots = None
 
+    def apply_restriction(self, restriction):
+        for v in self.factors:
+            v.apply_restriction(restriction)
+
     def __mul__(self, other):
         m = Monomial()
         m.float_value = self.float_value * other.float_value
@@ -144,6 +157,10 @@ class MonomialSum:
     def apply_indices(self, indices):
         for m in self.monomials:
             m.apply_indices(indices)
+
+    def apply_restriction(self, restriction):
+        for m in self.monomials:
+            m.apply_restriction(restriction)
 
     def __add__(self, other):
         sum = MonomialSum()
@@ -239,6 +256,16 @@ class MonomialTransformer(ReuseTransformer):
         s = MonomialSum(s)
         s.apply_derivative(indices)
         print "Result:", s
+        return s
+
+    def positive_restricted(self, o, s):
+        print "\nPositiveRestricted", s
+        s.apply_restriction("+")
+        return s
+
+    def negative_restricted(self, o, s):
+        print "\nPositiveRestricted", s
+        s.apply_restriction("-")
         return s
 
     def power(self, o, s, ignored_exponent_expressed_as_sum):

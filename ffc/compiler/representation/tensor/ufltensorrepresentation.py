@@ -22,7 +22,7 @@ from monomialextraction import extract_monomial_form, MonomialForm
 from monomialtransformation import transform_monomial_form
 from uflreferencetensor import ReferenceTensor
 from uflgeometrytensor import GeometryTensor
-from tensorreordering import reorder_entries
+from ufltensorreordering import reorder_entries
 
 class TensorContraction:
     "This class represents a tensor contraction A^K = A^0 : G_K."
@@ -41,11 +41,11 @@ class TensorRepresentation:
 
     Attributes:
 
-        cell_integrals         - list of list of terms for sub domains
-        exterior_facet_tensors - list of list of list of terms for sub domains and facets
-        interior_facet_tensors - list of list of list of list of terms for sub domains and facet combinations
-        geometric_dimension    - geometric dimension of form
-        num_facets             - number of cell facets
+        cell_integrals           - list of list of terms for sub domains
+        exterior_facet_integrals - list of list of list of terms for sub domains and facets
+        interior_facet_integrals - list of list of list of list of terms for sub domains and facet combinations
+        geometric_dimension      - geometric dimension of form
+        num_facets               - number of cell facets
 
     Each term is represented as a TensorContraction.
     """
@@ -63,6 +63,8 @@ class TensorRepresentation:
         # FIXME: Temporary fix
         if len(form.integrals()) == 0:
             self.cell_integrals = []
+            self.interior_facet_integrals = []
+            self.exterior_facet_integrals = []
             return
 
         # Extract monomial representation
@@ -146,10 +148,8 @@ def _compute_interior_facet_tensors(monomial_form, form_data, sub_domain):
             terms[i][j] = _compute_terms(monomial_form, Measure.INTERIOR_FACET, i, j)
             reorder_entries(terms[i][j])
 
-    return terms
-                
-    debug_end()
-    
+    end()
+
     return terms
 
 def _extract_integrals(monomial_form, form_data, domain_type, sub_domain):

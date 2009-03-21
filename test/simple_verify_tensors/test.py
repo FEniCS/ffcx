@@ -12,7 +12,10 @@ import sys, os, commands, pickle, numpy
 format = "ufl"
 
 # Forms that don't work with tensor representation
-only_quadrature = ["FunctionOperators", "QuadratureElement", "TensorWeightedPoisson"]
+only_quadrature = ["FunctionOperators",
+                   "QuadratureElement",
+                   "TensorWeightedPoisson",
+                   "PoissonDG"]
 
 # Log file
 logfile = None
@@ -167,7 +170,7 @@ def main(args):
         reference = pickle.load(open("../reference.pickle", "r"))
     else:
         print "Unable to find reference values, storing current values."
-        pickle.dump(values, open("../reference.pickle", "w"))        
+        pickle.dump(values["tensor"], open("../reference.pickle", "w"))
         return 0
 
     # Check results
