@@ -26,7 +26,7 @@ if not "PYTHONPATH" in os.environ: os.environ["PYTHONPATH"] = ""
 os.environ["PATH"] = "../../../scripts:" + os.environ["PATH"]
 os.environ["PYTHONPATH"] ="../../..:" + os.environ["PYTHONPATH"]
 
-def tabulate_tensor(integral, integral_type, header):
+def tabulate_tensor(representation, integral, integral_type, header):
     "Generate code and tabulate tensor for integral."
 
     print "  Checking %s..." % integral
@@ -35,11 +35,12 @@ def tabulate_tensor(integral, integral_type, header):
     options = {"n": 100, "N": 1000, "integral": integral, "header": header}
     code = tabulate_tensor_code[integral_type] % options
     open("tabulate_tensor.cpp", "w").write(code)
-    (ok, output) = run_command("g++ `pkg-config --cflags ufc-1` -o tabulate_tensor tabulate_tensor.cpp")
+    c = "g++ `pkg-config --cflags ufc-1` -o tabulate_tensor tabulate_tensor.cpp"
+    (ok, output) = run_command(c, representation, integral)
     if not ok: return "GCC compilation failed"
 
     # Run code and get results
-    (ok, output) = run_command("./tabulate_tensor")
+    (ok, output) = run_command("./tabulate_tensor", representation, integral)
     if not ok: return "Unable to tabulate tensor (segmentation fault?)"
     values = [float(value) for value in output.split(" ") if len(value) > 0]
 
@@ -62,14 +63,16 @@ def to_dict(tuples):
         d[key] = value
     return d
 
-def run_command(command):
+def run_command(command, representation="", integral=""):
     "Run system command and collect any errors."
     global logfile
     (status, output) = commands.getstatusoutput(command)
     if not status is 0:
         if logfile is None:
             logfile = open("../error.log", "w")
-        logfile.write(output + "\n")
+        s = "%s: %s" % (representation, integral)
+        logfile.write(s + "\n" + len(s) * "-" + "\n")
+        logfile.write(output + "\n\n")
     return (status == 0, output)
 
 def check_results(values, reference):
@@ -97,18 +100,16 @@ def check_results(values, reference):
         refs = to_dict(reference)
             
         for integral in integrals:
-            if integral in vals and integral in refs:
-                value = vals[integral]
-                if isinstance(value, str):
-                    result = value
-                    num_failed += 1
+            if integral in vals and isinstance(vals[integral], str):
+                result = vals[integral]
+                num_failed += 1
+            elif integral in vals and integral in refs:
+                e = max(abs(vals[integral] - refs[integral]))
+                if e < tol:
+                    result = "OK" % e
                 else:
-                    e = max(abs(vals[integral] - refs[integral]))
-                    if e < tol:
-                        result = "OK" % e
-                    else:
-                        result = "*** (diff = %g)" % e
-                        num_diffs += 1
+                    result = "*** (diff = %g)" % e
+                    num_diffs += 1
             elif not integral in vals:
                 result = "missing value"
                 num_missing_value += 1
@@ -156,12 +157,14 @@ def main(args):
 
             # Compile form
             print "Compiling form %s..." % form
-            (ok, output) = run_command("ffc -r %s %s.%s" % (representation, form, format))
-            if not ok: vals.append((form, "FFC compilation failed"))
+            (ok, output) = run_command("ffc -r %s %s.%s" % (representation, form, format), representation, form)
+            if not ok:
+                vals.append((form, "FFC compilation failed"))
+                continue
 
             # Tabulate tensors for all integrals
             for (integral, integral_type) in get_integrals(form):
-                vals.append((integral, tabulate_tensor(integral, integral_type, form + ".h")))
+                vals.append((integral, tabulate_tensor(representation, integral, integral_type, form + ".h")))
 
         values[representation] = vals
 

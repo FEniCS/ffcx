@@ -46,13 +46,19 @@ int main()
                               {0.11, 0.35, 0.49},
                               {0.51, 0.88, 0.65},
                               {0.98, 0.45, 0.01}};
-  ufc::cell cell;
-  cell.coordinates = new double * [8];
+  ufc::cell cell0;
+  ufc::cell cell1;
+  cell0.coordinates = new double * [8];
+  cell1.coordinates = new double * [8];
   for (int i = 0; i < 8; i++)
   {
-    cell.coordinates[i] = new double[3];
+    cell0.coordinates[i] = new double[3];
+    cell1.coordinates[i] = new double[3];
     for (int j = 0; j < 3; j++)
-      cell.coordinates[i][j] = coordinates[i][j];
+    {
+      cell0.coordinates[i][j] = coordinates[i][j];
+      cell1.coordinates[i][j] = coordinates[i][j] + 0.1;
+    }
   }
 
   // Call tabulate_tensor
@@ -69,6 +75,6 @@ int main()
 # Code for different integral types
 i = integral_types
 c = tabulate_tensor_code_common
-tabulate_tensor_code = {i[0] : c.replace("<tabulate_tensor>", "integral.tabulate_tensor(A, w, cell)"),
-                        i[1] : c.replace("<tabulate_tensor>", "integral.tabulate_tensor(A, w, cell, 0)"),
-                        i[2] : c.replace("<tabulate_tensor>", "integral.tabulate_tensor(A, w, cell, 0, 0)")}
+tabulate_tensor_code = {i[0] : c.replace("<tabulate_tensor>", "integral.tabulate_tensor(A, w, cell0)"),
+                        i[1] : c.replace("<tabulate_tensor>", "integral.tabulate_tensor(A, w, cell0, 0)"),
+                        i[2] : c.replace("<tabulate_tensor>", "integral.tabulate_tensor(A, w, cell0, cell1, 0, 0)")}
