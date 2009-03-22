@@ -58,6 +58,10 @@ def _generate_cell_integral(terms, form_representation, incremental, format):
 
     code = []
 
+    # Special case: zero contribution
+    if len(terms) == 0:
+        return {"tabulate_tensor": [format["comment"]("Do nothing")], "members": ""}
+
     # Generate tensor code + set of used geometry terms
     tensor_code, tensor_ops, geometry_set = _generate_element_tensor(terms, incremental, format)
 
@@ -91,12 +95,20 @@ def _generate_exterior_facet_integral(terms, form_representation, incremental, f
 
     code = []
 
+    # Special case: zero contribution
+    if all([len(t) == 0 for t in terms]):
+        return {"tabulate_tensor": ([format["comment"]("Do nothing")], []), "members": ""}
+
     # Generate tensor code + set of used geometry terms
     num_facets = form_representation.num_facets
     cases = [None for i in range(num_facets)]
     geometry_set = set()
     tensor_ops = 0
     for i in range(form_representation.num_facets):
+
+        print ""
+        print "Generating element tensor for exterior facet integral"
+        
         cases[i], t_ops, g_set = _generate_element_tensor(terms[i], incremental, format)
         geometry_set = geometry_set.union(g_set)
         tensor_ops += t_ops
@@ -130,6 +142,13 @@ def _generate_interior_facet_integral(terms, form_representation, incremental, f
     "Generate code for interior facet integral."
 
     code = []    
+
+    # Special case: zero contribution
+    if all([len(t) == 0 for tt in terms for t in tt]):
+        return {"tabulate_tensor": ([format["comment"]("Do nothing")], []), "members": ""}
+
+    # Special case: zero contribution
+    if len(terms) == 0: return {"tabulate_tensor": "", "members": ""}
 
     # Generate tensor code + set of used geometry terms
     num_facets = form_representation.num_facets
@@ -174,6 +193,8 @@ def _generate_element_tensor(terms, incremental, format):
 
     # Generate code as a list of declarations
     code = []
+
+    print "Number of terms:", len(terms)
 
     # Get list of primary indices (should be the same so pick first)
     primary_indices = terms[0].A0.primary_multi_index.indices

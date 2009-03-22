@@ -943,14 +943,13 @@ def _generate_exterior_facet_integral(code, form_data, options, prefix, postfix,
 
     # Generate code for tabulate_tensor
     if isinstance(code["tabulate_tensor"], tuple):
-        switch = _generate_switch("facet", [_generate_body(case) for case in code["tabulate_tensor"][1]])
-        body = _generate_body(code["tabulate_tensor"][0])
-        body += "\n"
-        body += switch
-        #    ufc_code["tabulate_tensor"] = remove_unused(body)
+        body_lines, cases = code["tabulate_tensor"]
+        body = _generate_body(body_lines)
+        if len(cases) > 0:
+            body += "\n"            
+            body += _generate_switch("facet", [_generate_body(case) for case in cases])
         ufc_code["tabulate_tensor"] = body
     else:
-        # Generate code for tabulate_tensor
         ufc_code["tabulate_tensor"] = _generate_body(code["tabulate_tensor"])
 
     if code_section == "combined":
@@ -982,14 +981,24 @@ def _generate_interior_facet_integral(code, form_data, options, prefix, postfix,
 
     # Generate code for tabulate_tensor
     if isinstance(code["tabulate_tensor"], tuple):
-        # Generate code for tabulate_tensor, impressive line of Python code follows
-        switch = _generate_switch("facet0", [_generate_switch("facet1", [_generate_body(case) for case in cases]) for cases in code["tabulate_tensor"][1]])
-        body = _generate_body(code["tabulate_tensor"][0])
-        body += "\n"
-        body += switch
+        body_lines, cases = code["tabulate_tensor"]
+        body = _generate_body(body_lines)
+        if len(cases) > 0:
+            body += "\n"            
+            body += _generate_switch("facet", [_generate_body(case) for case in cases])
         ufc_code["tabulate_tensor"] = body
     else:
-        # Generate code for tabulate_tensor
+        ufc_code["tabulate_tensor"] = _generate_body(code["tabulate_tensor"])
+
+    # Generate code for tabulate_tensor
+    if isinstance(code["tabulate_tensor"], tuple):
+        body_lines, cases = code["tabulate_tensor"]
+        body = _generate_body(body_lines)
+        if len(cases) > 0:
+            body += "\n"            
+            body += _generate_switch("facet0", [_generate_switch("facet1", [_generate_body(c) for c in case]) for case in cases])
+        ufc_code["tabulate_tensor"] = body
+    else:
         ufc_code["tabulate_tensor"] = _generate_body(code["tabulate_tensor"])
 
     if code_section == "combined":
