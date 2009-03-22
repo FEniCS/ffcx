@@ -82,6 +82,9 @@ class TensorRepresentation:
         
         # Compute representation of exterior facet tensors
         n = form_data.num_exterior_facet_integrals
+
+        print "Check 1: ", form_data.num_exterior_facet_integrals
+        
         self.exterior_facet_integrals = [_compute_exterior_facet_tensors(monomial_form, form_data, i) for i in range(n)]
 
         # Compute representation of interior facet tensors

@@ -39,6 +39,8 @@ class UFLTensorGenerator:
                 I = _generate_cell_integral(terms, form_representation, incremental, format)
                 code[("cell_integral", sub_domain)] = I
 
+        print "Check:", len(form_representation.exterior_facet_integrals)
+
         # Generate code for exterior facet integrals
         for (sub_domain, terms) in enumerate(form_representation.exterior_facet_integrals):
             if len(terms) > 0:

@@ -43,6 +43,9 @@ class CodeGenerator:
         debug("Generating code for exterior facet integrals...")
         if form_data.num_exterior_facet_integrals:
             code["exterior_facet_integrals"] = []
+
+        print "Check:", form_data.num_exterior_facet_integrals
+        
         for i in range(form_data.num_exterior_facet_integrals):
             code["exterior_facet_integrals"].append(("%d"%i, self.generate_exterior_facet_integral(\
                                                        form_representation, i, format)))
