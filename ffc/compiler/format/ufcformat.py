@@ -364,8 +364,6 @@ class Format:
                     output += _generate_cell_integral(code, form_data, options, form_prefix, label, code_section, self.format["exception"])
                     output += "\n"
 
-            print "Check ufcformat", len(form_code["exterior_facet_integrals"])
-
             # Generate code for ufc::exterior_facet_integral
             if form_code.has_key("exterior_facet_integrals"):
                 for (label, code) in form_code["exterior_facet_integrals"]:
