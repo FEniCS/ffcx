@@ -30,15 +30,15 @@ def generate_combined_code(codes, form_data, prefix, format):
     combined_code = {}
 
     # Generate combined code for cell integrals
-    args = (codes, form_data, prefix, format, "cell_integral", form_data.num_cell_integrals)
+    args = (codes, form_data, prefix, format, "cell_integral", form_data.num_cell_domains)
     combined_code["cell_integrals"] = _generate_combined_code_common(*args)
 
     # Generate combined code for exterior facet integrals
-    args = (codes, form_data, prefix, format, "exterior_facet_integral", form_data.num_exterior_facet_integrals)
+    args = (codes, form_data, prefix, format, "exterior_facet_integral", form_data.num_exterior_facet_domains)
     combined_code["exterior_facet_integrals"] = _generate_combined_code_common(*args)
 
     # Generate combined code for interior facet integrals
-    args = (codes, form_data, prefix, format, "interior_facet_integral", form_data.num_interior_facet_integrals)
+    args = (codes, form_data, prefix, format, "interior_facet_integral", form_data.num_interior_facet_domains)
     combined_code["interior_facet_integrals"] = _generate_combined_code_common(*args)
 
     return combined_code

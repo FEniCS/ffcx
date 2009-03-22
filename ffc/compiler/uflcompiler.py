@@ -152,16 +152,15 @@ def analyze_form(form, options, global_variables):
     # FIXME: Check that integrals are numbered 0, 1, 2 (not 0, 5, 6) in UFL
     form_data.num_coefficients = form_data.num_functions
 
-    # Attach maximum domain_id for all integral types
-    form_data.max_cell_integral = max([-1] + [i.measure().domain_id() for i in form.cell_integrals()])
-    form_data.max_exterior_facet_integral = max([-1] + [i.measure().domain_id() for i in form.exterior_facet_integrals()])
-    form_data.max_interior_facet_integral = max([-1] + [i.measure().domain_id() for i in form.interior_facet_integrals()])
+    # Attach number of domains for all integral types
+    form_data.num_cell_domains = max([-1] + [i.measure().domain_id() for i in form.cell_integrals()]) + 1
+    form_data.num_exterior_facet_domains = max([-1] + [i.measure().domain_id() for i in form.exterior_facet_integrals()]) + 1
+    form_data.num_interior_facet_domains = max([-1] + [i.measure().domain_id() for i in form.interior_facet_integrals()]) + 1
 
-    # FIXME: Remove this? Not used
-    # Attach number of integrals for convenience 
-    form_data.num_cell_integrals = len(form_data.form.cell_integrals())
-    form_data.num_exterior_facet_integrals = len(form_data.form.exterior_facet_integrals())
-    form_data.num_interior_facet_integrals = len(form_data.form.interior_facet_integrals())
+    # FIXME: Remove these, only here for compatibility with old ufcformat.py
+    form_data.num_cell_integrals = form_data.num_cell_domains
+    form_data.num_exterior_facet_integrals = form_data.num_exterior_facet_domains
+    form_data.num_interior_facet_integrals = form_data.num_interior_facet_domains
 
     # Attach signature for convenience and reuse
     form_data.signature = form_data.form.signature()

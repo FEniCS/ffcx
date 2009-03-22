@@ -77,18 +77,18 @@ class TensorRepresentation:
         print "Transformed monomial:", monomial_form
 
         # Compute representation of cell tensor
-        n = form_data.num_cell_integrals
+        n = form_data.num_cell_domains
         self.cell_integrals = [_compute_cell_tensor(monomial_form, form_data, i) for i in range(n)]
         
         # Compute representation of exterior facet tensors
-        n = form_data.num_exterior_facet_integrals
+        n = form_data.num_exterior_facet_domains
 
-        print "Check 1: ", form_data.num_exterior_facet_integrals
+        print "Check 1: ", form_data.num_exterior_facet_domains
         
         self.exterior_facet_integrals = [_compute_exterior_facet_tensors(monomial_form, form_data, i) for i in range(n)]
 
         # Compute representation of interior facet tensors
-        n = form_data.num_interior_facet_integrals
+        n = form_data.num_interior_facet_domains
         self.interior_facet_integrals = [_compute_interior_facet_tensors(monomial_form, form_data, i) for i in range(n)]
 
         # Extract form data needed by code generation
