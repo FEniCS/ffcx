@@ -1,8 +1,8 @@
 "Some simple functions for manipulating expressions symbolically"
 
 __author__ = "Kristian B. Oelgaard (k.b.oelgaard@tudelft.nl)"
-__date__ = "2008-04-24 -- 2008-09-08"
-__copyright__ = "Copyright (C) 2008 Kristian B. Oelgaard"
+__date__ = "2008-04-24 -- 2009-03-18"
+__copyright__ = "Copyright (C) 2008-2009 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
 def split_expression(expression, format, operator, allow_split = False):
