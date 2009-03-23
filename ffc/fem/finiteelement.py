@@ -40,6 +40,11 @@ shape_to_dim = {LINE: 1, TRIANGLE: 2, TETRAHEDRON: 3}
 shape_to_facet = {LINE: None, TRIANGLE: LINE, TETRAHEDRON: TRIANGLE}
 shape_to_num_facets = {LINE: 2, TRIANGLE: 3, TETRAHEDRON: 4}
 
+# Value mappings
+AFFINE = "affine"
+CONTRAVARIANT_PIOLA = "contravariant Piola"
+COVARIANT_PIOLA = "covariant Piola"
+
 class FiniteElement(FiniteElementBase):
     """A FiniteElement represents a finite element in the classical
     sense as defined by Ciarlet. The actual work is done by FIAT and
@@ -73,6 +78,12 @@ class FiniteElement(FiniteElementBase):
 
         # Get the dof identifiers from FIAT element
         self.__dual_basis = self.__create_dof_representation(self.__fiat_element.dual_basis().get_dualbasis_types())
+
+        # FIXME: Temporary fix until Mapping class has been remove after UFL is working
+        m = {Mapping.AFFINE: AFFINE,
+             Mapping.CONTRAVARIANT_PIOLA: CONTRAVARIANT_PIOLA,
+             Mapping.COVARIANT_PIOLA: COVARIANT_PIOLA}
+        self._mapping = m[self.__mapping]
         
     def family(self):
         "Return a string indentifying the finite element family"
@@ -119,6 +130,10 @@ class FiniteElement(FiniteElementBase):
     def degree(self):
         "Return degree of polynomial basis"
         return self.basis().degree()
+
+    def mapping(self):
+        "Return the type of mapping associated with the given component."
+        return self._mapping
 
     def value_mapping(self, component):
         """Return the type of mapping associated with the i'th

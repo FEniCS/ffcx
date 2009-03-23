@@ -77,6 +77,26 @@ class MixedElement(FiniteElementBase):
         "Return degree of polynomial basis"
         return max([element.degree() for element in self.__elements])
 
+    def mapping(self, component_range):
+        "Return the type of mapping associated with the given component range."
+
+        print "Checking mapping for: ", component_range
+
+        # If we are given a range, check all components in range (should be the same for all)
+        if len(component_range) > 1:
+            return pick_first([self.mapping([component]) for component in component_range])
+
+        # If we are given a single component, step to correct sub element
+        component = component_range[0]
+        offset = 0
+        for element in self.extract_elements():
+            offset += element.space_dimension()
+            if offset > component:
+                return element.mapping()
+
+        raise RuntimeError, "Unable to extract mapping for component %s of %s." % (str(component), str(self))
+        
+    # FIXME: Old version, remove
     def value_mapping(self, component):
         """Return the type of mapping associated with the given
         component of the element. """
@@ -197,9 +217,14 @@ class MixedElement(FiniteElementBase):
 
         return mixed_table
 
+    # FIXME: Old version, remove
     def basis_elements(self):
         "Returns a list of all basis elements"
-        return self.__extract_elements(self)
+        return _extract_elements(self)
+
+    def extract_elements(self):
+        "Extract list of all recursively nested elements."
+        return _extract_elements(self)
 
     def __compute_mixed_entity_dofs(self, elements):
         "Compute mixed entity dofs as a list of entity dof mappings"
@@ -230,34 +255,6 @@ class MixedElement(FiniteElementBase):
                 component_table[dorder][dtuple] = mixed_subtable
         return component_table
 
-    def __extract_elements(self, element):
-        """This function extracts the basis elements recursively from vector elements and mixed elements.
-        Example, the following mixed element:
-
-        element1 = FiniteElement("Lagrange", "triangle", 1)
-        element2 = VectorElement("Lagrange", "triangle", 2)
-
-        element  = element2 + element1, has the structure:
-        mixed-element[mixed-element[Lagrange order 2, Lagrange order 2], Lagrange order 1]
-
-        This function returns the list of basis elements:
-        elements = [Lagrange order 2, Lagrange order 2, Lagrange order 1]"""
-
-        elements = []
-
-        # Import here to avoid cyclic dependency
-        from finiteelement import FiniteElement
-
-        # If the element is not mixed (a basis element, add to list)        
-        if isinstance(element, FiniteElement):
-            elements += [element]
-        # Else call this function again for each subelement
-        else:
-            for i in range(element.num_sub_elements()):
-                elements += self.__extract_elements(element.sub_element(i))
-
-        return elements
-
     def __add__(self, other):
         "Create mixed element"
         return MixedElement([self, other])
@@ -265,3 +262,32 @@ class MixedElement(FiniteElementBase):
     def __repr__(self):
         "Pretty print"
         return "Mixed finite element: " + str(self.__elements)
+
+
+def _extract_elements(element):
+    """This function extracts the basis elements recursively from vector elements and mixed elements.
+    Example, the following mixed element:
+
+    element1 = FiniteElement("Lagrange", "triangle", 1)
+    element2 = VectorElement("Lagrange", "triangle", 2)
+
+    element  = element2 + element1, has the structure:
+    mixed-element[mixed-element[Lagrange order 2, Lagrange order 2], Lagrange order 1]
+
+    This function returns the list of basis elements:
+    elements = [Lagrange order 2, Lagrange order 2, Lagrange order 1]"""
+
+    elements = []
+
+    # Import here to avoid cyclic dependency
+    from finiteelement import FiniteElement
+
+    # If the element is not mixed (a basis element, add to list)        
+    if isinstance(element, FiniteElement):
+        elements += [element]
+    # Else call this function again for each subelement
+    else:
+        for i in range(element.num_sub_elements()):
+            elements += _extract_elements(element.sub_element(i))
+
+    return elements

@@ -14,6 +14,7 @@ from ffc.common.log import ffc_assert
 
 # FFC fem modules
 from ffc.fem import create_element
+from ffc.fem.finiteelement import AFFINE, CONTRAVARIANT_PIOLA, COVARIANT_PIOLA
 
 # FFC tensor representation modules
 from monomialextraction import MonomialForm
@@ -88,7 +89,9 @@ class MonomialIndex:
         return
 
     def __str__(self):
-        if self.index_type == MonomialIndex.PRIMARY:
+        if self.index_type == MonomialIndex.FIXED:
+            return str(self.index_id)
+        elif self.index_type == MonomialIndex.PRIMARY:
             return "i_" + str(self.index_id)
         elif self.index_type == MonomialIndex.SECONDARY:
             return "a_" + str(self.index_id)
@@ -101,6 +104,8 @@ class MonomialIndex:
 
 class MonomialDeterminant:
 
+    # FIXME: Handle restrictions for determinants
+
     def __init__(self):
         self.power = 0
         self.restriction = None
@@ -111,7 +116,7 @@ class MonomialDeterminant:
         elif self.power == 1:
             return "|det F'| (det F')"
         else:
-            return "|det F'| (det F')^%s" + str(self.power)
+            return "|det F'| (det F')^%s" % str(self.power)
 
 class MonomialCoefficient:
 
@@ -127,18 +132,21 @@ class MonomialTransform:
     J = "J"
     JINV = "JINV"
 
-    def __init__(self, index0, index1, restriction):
+    def __init__(self, index0, index1, transform_type, restriction):
         self.index0 = index0
         self.index1 = index1
-        self.transform_type = MonomialTransform.JINV
+        self.transform_type = transform_type
         self.restriction = restriction
 
     def __str__(self):
         if self.restriction is None:
             r = ""
         else:
-            r = "(%s)" % str(self.restriction)        
-        return "dX_%s/dx_%s%s" % (str(self.index0), str(self.index1), r)
+            r = "(%s)" % str(self.restriction)
+        if self.transform_type == "J":
+            return "dx_%s/dX_%s%s" % (str(self.index0), str(self.index1), r)
+        else:
+            return "dX_%s/dx_%s%s" % (str(self.index0), str(self.index1), r)
 
 class MonomialBasisFunction:
 
@@ -187,6 +195,8 @@ class TransformedMonomial:
         # Iterate over factors
         for f in monomial.factors:
 
+            print "Factor:", f
+
             # Extract element and dimensions
             element = create_element(f.element())
             vdim = element.space_dimension()
@@ -216,6 +226,29 @@ class TransformedMonomial:
                     index = MonomialIndex(index_range=range(cdim))
                 index_map[c] = index
                 components.append(index)
+            if len(components) > 1:
+                raise MonomialException, "Can only handle rank 0 or rank 1 tensors."
+            
+            # Handle non-affine mappings (Piola)
+            if len(components) > 0:
+
+                # Get type of mapping
+                mapping = element.mapping(components[0].index_range)
+
+                # FIXME: Work in progress!
+
+                # Add transforms where appropriate
+                if mapping == CONTRAVARIANT_PIOLA:
+                    # phi(x) = (det J)^{-1} J Phi(X) 
+                    index0 = components[0]
+                    index1 = MonomialIndex(index_range=[])
+                    transform = MonomialTransform(index0, index1, MonomialTransform.J, f.restriction)
+                    self.determinant.power -= 1
+                elif mapping == COVARIANT_PIOLA:
+                    # phi(x) = J^{-T} Phi(X)
+                    index1 = components[0]                    
+                    index0 = MonomialIndex(index_range=[])
+                    transform = MonomialTransform(index1, index0, MonomialTransform.JINV, f.restriction)
 
             # Extract derivatives / transforms
             derivatives = []
@@ -230,7 +263,7 @@ class TransformedMonomial:
                 else:
                     index1 = MonomialIndex(index_range=range(gdim))
                 index_map[d] = index1
-                transform = MonomialTransform(index0, index1, f.restriction)
+                transform = MonomialTransform(index0, index1, MonomialTransform.JINV, f.restriction)
                 self.transforms.append(transform)
                 derivatives.append(index0)
 

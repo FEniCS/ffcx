@@ -326,7 +326,7 @@ class BasisFunction(Element):
     def pick_component_contravariant_piola(self, component):
         """ Pick given component of BasisFunction mapped with the
         contravariant Piola transform:
-              phi(x) = (det J)^{-1} J Phi(X) 
+              phi(x) = (det J)^{-1} J Phi(X)
         """
         rank = self.element.value_rank()
         if isinstance(component, list):
