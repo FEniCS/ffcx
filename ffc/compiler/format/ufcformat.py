@@ -919,7 +919,7 @@ def _generate_cell_integral(code, form_data, options, prefix, postfix, code_sect
     elif code_section == "header":
         return _generate_code(cell_integral_header, ufc_code, options, format_exception)
     elif code_section == "implementation":
-        return members + _generate_code(cell_integral_implementation, ufc_code, options, format_exception)
+        return _generate_code(cell_integral_implementation, ufc_code, options, format_exception)
 
 def _generate_exterior_facet_integral(code, form_data, options, prefix, postfix, code_section, format_exception):
     "Generate code for ufc::exterior_facet_integral."
@@ -957,7 +957,7 @@ def _generate_exterior_facet_integral(code, form_data, options, prefix, postfix,
     elif code_section == "header":
         return _generate_code(exterior_facet_integral_header, ufc_code, options, format_exception)
     elif code_section == "implementation":
-        return members + _generate_code(exterior_facet_integral_implementation, ufc_code, options, format_exception)
+        return _generate_code(exterior_facet_integral_implementation, ufc_code, options, format_exception)
 
 def _generate_interior_facet_integral(code, form_data, options, prefix, postfix, code_section, format_exception):
     "Generate code for ufc::interior_facet_integral."
@@ -1006,7 +1006,7 @@ def _generate_interior_facet_integral(code, form_data, options, prefix, postfix,
     elif code_section == "header":
         return _generate_code(interior_facet_integral_header, ufc_code, options, format_exception)
     elif code_section == "implementation":
-        return members + _generate_code(interior_facet_integral_implementation, ufc_code, options, format_exception)
+        return _generate_code(interior_facet_integral_implementation, ufc_code, options, format_exception)
 
 def _generate_switch(variable, cases, default = ""):
     "Generate switch statement from given variable and cases"
