@@ -33,6 +33,8 @@ from dolfintemplates import *
 choose_map = {"PLUS": "0", "MINUS": "1", "CONSTANT": "0", None: "", "+": "0", "-": 1}
 transform_options = {"JINV": lambda m, j, k: "Jinv%s_%d%d" % (m, j, k),
                      "J": lambda m, j, k: "J%s_%d%d" % (m, k, j)}
+transform_options_ufl = {"JINV": lambda m, j, k: "Jinv%s_%d%d" % (m, j, k),
+                         "J": lambda m, j, k: "J%s_%d%d" % (m, j, k)}
 # Options for the printing q or 1.0/(q) for q string:
 power_options = {True: lambda q: q, False: lambda q: "1.0/(%s)" % q}
 
@@ -140,6 +142,7 @@ class Format:
            "modified coefficient declaration": lambda i, j, k, l: "const double c%d_%d_%d_%d" % (i, j, k, l),
            "modified coefficient access": lambda i, j, k, l: "c%d_%d_%d_%d" % (i, j, k, l),
            "transform": lambda type, j, k, r: "%s" % (transform_options[type](choose_map[r], j, k)),
+           "transform_ufl": lambda type, j, k, r: "%s" % (transform_options_ufl[type](choose_map[r], j, k)),
            "reference tensor" : lambda j, i, a: None,
            "geometry tensor declaration": lambda j, a: "const double " + self.format["geometry tensor access"](j, a),
            "geometry tensor access": lambda j, a: "G%d_%s" % (j, "_".join(["%d" % index for index in a])),

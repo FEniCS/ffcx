@@ -345,9 +345,6 @@ class TensorGenerator(CodeGenerator):
             value = value or zero
             code += [(name, value)]
             k += 1
-
-        print geo_set
-
         code = [format["comment"]("Number of operations to compute tensor = %d" %num_ops)] + code
         return (code, geo_set, num_ops)
 

@@ -323,10 +323,10 @@ def _generate_entry(GK, a, i, format):
 
     for t in GK.transforms:
         if not (t.index0.index_type == MonomialIndex.EXTERNAL or t.index1.index_type == MonomialIndex.EXTERNAL):
-            trans = format["transform"](t.transform_type,
-                                        t.index0(secondary=a),
-                                        t.index1(secondary=a), 
-                                        t.restriction)            
+            trans = format["transform_ufl"](t.transform_type,
+                                            t.index0(secondary=a),
+                                            t.index1(secondary=a), 
+                                            t.restriction)            
             factors += [trans]
             jacobi_set.add(trans)
 
@@ -348,15 +348,10 @@ def _generate_entry(GK, a, i, format):
                 factors += [coefficient]
         for t in GK.transforms:
             if t.index0.index_type == MonomialIndex.EXTERNAL or t.index1.index_type == MonomialIndex.EXTERNAL:
-                trans = format["transform"](t.transform_type,
-                                            t.index0(secondary=a, external=b),
-                                            t.index1(secondary=a, external=b),
-                                            t.restriction)
-
-                if trans == "Jinv_":
-                    print ""
-                    print "Other place: Found illegal Jinv"
-                
+                trans = format["transform_ufl"](t.transform_type,
+                                                t.index0(secondary=a, external=b),
+                                                t.index1(secondary=a, external=b),
+                                                t.restriction)
                 factors += [trans]
                 jacobi_set.add(trans)
         if factors:
