@@ -70,11 +70,16 @@ class TensorRepresentation:
         # Extract monomial representation
         monomial_form = extract_monomial_form(form)
         print ""
-        print "Monomial form:", monomial_form
+        print "Monomial form",
+        print "monomial_form"
+        print ""
 
         # Transform monomial form to reference element
         transform_monomial_form(monomial_form)
-        print "Transformed monomial:", monomial_form
+        print ""
+        print "Transformed monomial"
+        print monomial_form
+        print ""
 
         # Compute representation of cell tensor
         n = form_data.num_cell_domains

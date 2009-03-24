@@ -132,7 +132,7 @@ class FiniteElement(FiniteElementBase):
         return self.basis().degree()
 
     def mapping(self):
-        "Return the type of mapping associated with the given component."
+        "Return the type of mapping associated with the element."
         return self._mapping
 
     def value_mapping(self, component):
@@ -144,7 +144,12 @@ class FiniteElement(FiniteElementBase):
         """Return the type of mapping associated with the i'th basis
         function of the element"""
         return self.__mapping
-    
+
+    def component_element(self, component):
+        "Return sub element and offset for given component."
+        return (self, 0)
+
+    # FIXME: Remove (replaced by component_element)
     def value_offset(self, component):
         """Given an absolute component (index), return the associated
         subelement and offset of the component""" 

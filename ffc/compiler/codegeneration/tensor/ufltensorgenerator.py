@@ -39,11 +39,8 @@ class UFLTensorGenerator:
                 I = _generate_cell_integral(terms, form_representation, incremental, format)
                 code[("cell_integral", sub_domain)] = I
 
-        print "Check 2:", len(form_representation.exterior_facet_integrals)
-
         # Generate code for exterior facet integrals
         for (sub_domain, terms) in enumerate(form_representation.exterior_facet_integrals):
-            print "Check 3:", sub_domain
             if len(terms) > 0:
                 I = _generate_exterior_facet_integral(terms, form_representation, incremental, format)
                 code[("exterior_facet_integral", sub_domain)] = I
@@ -107,11 +104,7 @@ def _generate_exterior_facet_integral(terms, form_representation, incremental, f
     cases = [None for i in range(num_facets)]
     geometry_set = set()
     tensor_ops = 0
-    for i in range(form_representation.num_facets):
-
-        print ""
-        print "Generating element tensor for exterior facet integral"
-        
+    for i in range(form_representation.num_facets):        
         cases[i], t_ops, g_set = _generate_element_tensor(terms[i], incremental, format)
         geometry_set = geometry_set.union(g_set)
         tensor_ops += t_ops
@@ -165,8 +158,6 @@ def _generate_interior_facet_integral(terms, form_representation, incremental, f
             tensor_ops += t_ops
     tensor_ops = float(tensor_ops) / float(form_representation.num_facets)
 
-    print "After iteration:", geometry_set
-    
     # Generate geometry code + set of used jacobi terms (should be the same, so pick first)
     geometry_code, geometry_ops, jacobi_set = _generate_geometry_tensors(terms[0][0], geometry_set, format)
 
@@ -196,8 +187,6 @@ def _generate_element_tensor(terms, incremental, format):
 
     # Generate code as a list of declarations
     code = []
-
-    print "Number of terms:", len(terms)
 
     # Get list of primary indices (should be the same so pick first)
     primary_indices = terms[0].A0.primary_multi_index.indices
@@ -255,8 +244,6 @@ def _generate_element_tensor(terms, incremental, format):
             code += [(name, value)]
         k += 1
 
-    print geometry_set
-
     return (code, num_ops, geometry_set)
 
 def _generate_geometry_tensors(terms, geometry_set, format):
@@ -278,9 +265,7 @@ def _generate_geometry_tensors(terms, geometry_set, format):
         for a in secondary_indices:
 
             # Skip code generation if term is not used
-            print geometry_set
             if not format["geometry tensor access"](i, a) in geometry_set:
-                print "Missing:", format["geometry tensor access"](i, a)
                 continue
 
             # Compute factorized values
@@ -319,8 +304,6 @@ def _generate_geometry_tensors(terms, geometry_set, format):
     # Add scale factor
     jacobi_set.add(format["scale factor"])
 
-    print "Code for geometry tensor:", code
-
     return (code, num_ops, jacobi_set)
 
 def _generate_entry(GK, a, i, format):
@@ -344,7 +327,6 @@ def _generate_entry(GK, a, i, format):
                                         t.index0(secondary=a),
                                         t.index1(secondary=a), 
                                         t.restriction)
-            print "check 1", t.restriction            
             factors += [trans]
             jacobi_set.add(trans)
 
@@ -370,7 +352,6 @@ def _generate_entry(GK, a, i, format):
                                             t.index0(secondary=a, external=b),
                                             t.index1(secondary=a, external=b),
                                             t.restriction)
-                print "check 2", t.restriction
                 factors += [trans]
                 jacobi_set.add(trans)
         if factors:

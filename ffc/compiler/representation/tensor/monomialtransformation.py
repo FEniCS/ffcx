@@ -11,13 +11,14 @@ from ufl.indexing import FixedIndex
 
 # FFC common modules
 from ffc.common.log import ffc_assert
+from ffc.common.utils import pick_first
 
 # FFC fem modules
 from ffc.fem import create_element
 from ffc.fem.finiteelement import AFFINE, CONTRAVARIANT_PIOLA, COVARIANT_PIOLA
 
 # FFC tensor representation modules
-from monomialextraction import MonomialForm
+from monomialextraction import MonomialForm, MonomialException
 
 # Index counters
 _current_secondary_index = 0
@@ -195,8 +196,6 @@ class TransformedMonomial:
         # Iterate over factors
         for f in monomial.factors:
 
-            print "Factor:", f
-
             # Extract element and dimensions
             element = create_element(f.element())
             vdim = element.space_dimension()
@@ -232,23 +231,32 @@ class TransformedMonomial:
             # Handle non-affine mappings (Piola)
             if len(components) > 0:
 
-                # Get type of mapping
-                mapping = element.mapping(components[0].index_range)
-
-                # FIXME: Work in progress!
+                # Get sub element, offset and mapping
+                component = components[0]
+                if len(component.index_range) > 1:
+                    if not all([element.component_element(c)[0].mapping() is AFFINE for c in components[0].index_range]):
+                        raise MonomialException, "Unable to handle non-affine mappings for index range."
+                    mapping = AFFINE
+                else:
+                    (sub_element, offset) = element.component_element(component.index_range[0])
+                    mapping = sub_element.mapping()
 
                 # Add transforms where appropriate
                 if mapping == CONTRAVARIANT_PIOLA:
                     # phi(x) = (det J)^{-1} J Phi(X) 
                     index0 = components[0]
-                    index1 = MonomialIndex(index_range=[])
+                    index1 = MonomialIndex(index_range=[offset + i for i in range(sub_element.value_dimension(0))])
+                    components[0] = index1
                     transform = MonomialTransform(index0, index1, MonomialTransform.J, f.restriction)
+                    self.transforms.append(transform)
                     self.determinant.power -= 1
                 elif mapping == COVARIANT_PIOLA:
                     # phi(x) = J^{-T} Phi(X)
-                    index1 = components[0]                    
-                    index0 = MonomialIndex(index_range=[])
+                    index1 = components[0]
+                    index1 = MonomialIndex(index_range=[offset + i for i in range(sub_element.value_dimension(0))])
+                    components[0] = index1
                     transform = MonomialTransform(index1, index0, MonomialTransform.JINV, f.restriction)
+                    self.transforms.append(transform)
 
             # Extract derivatives / transforms
             derivatives = []
@@ -269,8 +277,6 @@ class TransformedMonomial:
 
             # Extract restriction
             restriction = f.restriction
-
-            print "derivatives =", derivatives
 
             # Create basis function
             v = MonomialBasisFunction(element, vindex, components, derivatives, restriction)
@@ -294,11 +300,9 @@ class TransformedMonomial:
             elif num_internal == 2:
                 i.index_type = MonomialIndex.INTERNAL
                 i.index_id   = next_internal_index()
-                print "Found internal:", i
             elif num_external == 2:
                 i.index_type = MonomialIndex.EXTERNAL
                 i.index_id   = next_external_index()
-                print "Found external:", i, i.index_type
             else:
                 raise RuntimeError, "Summation index does not appear exactly twice: " + str(i)
 

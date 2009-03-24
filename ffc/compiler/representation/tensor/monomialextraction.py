@@ -114,7 +114,6 @@ class Monomial:
         self.index_slots = indices
     
     def apply_indices(self, indices):
-        print "Applying indices:", self.index_slots, "-->", indices
         for v in self.factors:
             v.replace_indices(self.index_slots, indices)
         self.index_slots = None

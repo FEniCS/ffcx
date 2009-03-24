@@ -76,25 +76,6 @@ class MixedElement(FiniteElementBase):
     def degree(self):
         "Return degree of polynomial basis"
         return max([element.degree() for element in self.__elements])
-
-    def mapping(self, component_range):
-        "Return the type of mapping associated with the given component range."
-
-        print "Checking mapping for: ", component_range
-
-        # If we are given a range, check all components in range (should be the same for all)
-        if len(component_range) > 1:
-            return pick_first([self.mapping([component]) for component in component_range])
-
-        # If we are given a single component, step to correct sub element
-        component = component_range[0]
-        offset = 0
-        for element in self.extract_elements():
-            offset += element.space_dimension()
-            if offset > component:
-                return element.mapping()
-
-        raise RuntimeError, "Unable to extract mapping for component %s of %s." % (str(component), str(self))
         
     # FIXME: Old version, remove
     def value_mapping(self, component):
@@ -117,10 +98,31 @@ class MixedElement(FiniteElementBase):
         function of the element"""
         (sub_element, offset) = self.space_offset(i)
         return sub_element.space_mapping(i - offset)
+
+    def component_element(self, component):
+        "Return sub element and offset for given component."
+
+        print ""
+        print "Extracting element for component:", component
         
+        offset = 0
+
+        print "Number of elements:", len(self.extract_elements())
+        print "Elements:", self.extract_elements()
+        for element in self.extract_elements():
+            offset += element.value_dimension(0)
+            if offset > component:
+
+                print "Found offset =", offset
+
+                print ""
+                return (element, offset)
+        raise RuntimeError, "Unable to extract sub element for component %s of %s." % (str(component), str(self))
+
+    # FIXME: Remove (replaced by component_element)
     def value_offset(self, component):
         """Given an absolute component (index), return the associated
-        subelement and relative position of the component""" 
+        subelement and relative position of the component.""" 
         i = Index(component)
         adjustment = 0
         for element in self.__elements:

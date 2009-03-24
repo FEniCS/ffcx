@@ -11,7 +11,7 @@ def product(sequence):
     return reduce(operator.__mul__, sequence, 1)
 
 def pick_first(values):
-    "Check that all values are equal and return the value"
+    "Check that all values are equal and return the value."
     if not values[:-1] == values[1:]:
         raise RuntimeError, "Values differ: " + str(values)
     return values[0]
