@@ -326,7 +326,7 @@ def _generate_entry(GK, a, i, format):
             trans = format["transform"](t.transform_type,
                                         t.index0(secondary=a),
                                         t.index1(secondary=a), 
-                                        t.restriction)
+                                        t.restriction)            
             factors += [trans]
             jacobi_set.add(trans)
 
@@ -352,6 +352,11 @@ def _generate_entry(GK, a, i, format):
                                             t.index0(secondary=a, external=b),
                                             t.index1(secondary=a, external=b),
                                             t.restriction)
+
+                if trans == "Jinv_":
+                    print ""
+                    print "Other place: Found illegal Jinv"
+                
                 factors += [trans]
                 jacobi_set.add(trans)
         if factors:

@@ -167,15 +167,32 @@ def _compute_psi(v, table, num_points, domain_type):
     # Initialize tensor Psi: component, derivatives, basis function, points
     Psi = numpy.zeros(shapes, dtype = numpy.float)
 
+    print ""
+    print "---"
+
     # Iterate over derivative indices
     dlists = build_indices([index.index_range for index in dindex]) or [[]]
     if len(cindex) > 0:
         etable = table[(v.element, v.restriction)]
         for component in range(len(cindex[0].index_range)):
+
+            print ""
+            print "---"
+            print "component =", component
+
             for dlist in dlists:
                 # Translate derivative multiindex to lookup tuple
                 dtuple = _multiindex_to_tuple(dlist, cell_dimension)
                 # Get values from table
+
+                print "not ok"
+                print "range =", cindex[0].index_range
+                iii = cindex[0].index_range[component]                
+                print "iii =", iii
+                print "len(etable) =", len(etable)
+                #print etable[cindex[0].index_range[component]]
+                print "ok"
+                
                 Psi[component][tuple(dlist)] = etable[cindex[0].index_range[component]][dorder][dtuple]
     else:
         etable = table[(v.element, v.restriction)][dorder]

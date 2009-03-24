@@ -110,13 +110,12 @@ class MixedElement(FiniteElementBase):
         print "Number of elements:", len(self.extract_elements())
         print "Elements:", self.extract_elements()
         for element in self.extract_elements():
-            offset += element.value_dimension(0)
-            if offset > component:
-
+            next_offset = offset + element.value_dimension(0)
+            if next_offset > component:
                 print "Found offset =", offset
-
                 print ""
                 return (element, offset)
+            offset = next_offset
         raise RuntimeError, "Unable to extract sub element for component %s of %s." % (str(component), str(self))
 
     # FIXME: Remove (replaced by component_element)

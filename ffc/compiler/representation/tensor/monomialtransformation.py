@@ -56,10 +56,15 @@ class MonomialIndex:
     INTERNAL   = "internal"   # Index appearing only inside integral
     EXTERNAL   = "external"   # Index appearing only outside integral
 
-    def __init__(self, index_type=None, index_range=None, index_id=None):
-        self.index_type = index_type
-        self.index_range = index_range
-        self.index_id = index_id
+    def __init__(self, index=None, index_type=None, index_range=None, index_id=None):
+        if isinstance(index, MonomialIndex):
+            self.index_type = index.index_type
+            self.index_range = [i for i in index.index_range]
+            self.index_id = index.index_id
+        else:
+            self.index_type = index_type
+            self.index_range = index_range
+            self.index_id = index_id
 
     def __lt__(self, other):
         return self.index_id < other.index_id
@@ -68,7 +73,7 @@ class MonomialIndex:
         "Evaluate index at current index list."
 
         if self.index_type == MonomialIndex.FIXED:
-            return self.index_id
+            return self.index_range[0]
         elif self.index_type == MonomialIndex.PRIMARY:
             if not primary:
                 raise RuntimeError, "Missing index values for primary indices."
@@ -87,7 +92,16 @@ class MonomialIndex:
             return external[self.index_id]
         else:
             raise RuntimeError, "Unknown index type " + str(self.type)
-        return
+
+    def __add__(self, offset):
+        "Add offset to index range."
+        index = MonomialIndex(self)
+        index.index_range = [offset + i for i in index.index_range]
+        return index
+
+    def __sub__(self, offset):
+        "Subtract offset from index range."
+        return self + (-offset)
 
     def __str__(self):
         if self.index_type == MonomialIndex.FIXED:
@@ -133,11 +147,23 @@ class MonomialTransform:
     J = "J"
     JINV = "JINV"
 
-    def __init__(self, index0, index1, transform_type, restriction):
+    def __init__(self, index0, index1, transform_type, restriction, offset):
+
+        # Set data
         self.index0 = index0
         self.index1 = index1
         self.transform_type = transform_type
         self.restriction = restriction
+        self.offset = offset
+
+        # Subtract offset for fixed indices. Note that the index subtraction
+        # creates a new index instance. This is ok here since a fixed index
+        # does not need to match any other index (being the same instance)
+        # in index summation and index extraction.
+        if index0.index_type is MonomialIndex.FIXED:
+            self.index0 = index0 - offset
+        if index1.index_type is MonomialIndex.FIXED:
+            self.index1 = index1 - offset
 
     def __str__(self):
         if self.restriction is None:
@@ -204,7 +230,7 @@ class TransformedMonomial:
 
             # Extract basis function index and coefficients
             if isinstance(f.function, BasisFunction):
-                vindex = MonomialIndex(MonomialIndex.PRIMARY,
+                vindex = MonomialIndex(index_type=MonomialIndex.PRIMARY,
                                        index_range=range(vdim),
                                        index_id=f.function.count())
             elif isinstance(f.function, Function):
@@ -220,7 +246,7 @@ class TransformedMonomial:
                 elif isinstance(c, FixedIndex):
                     index = MonomialIndex(index_type=MonomialIndex.FIXED,
                                           index_range=[int(c)],
-                                          index_id=int(c))
+                                          index_id=None)
                 else:
                     index = MonomialIndex(index_range=range(cdim))
                 index_map[c] = index
@@ -234,7 +260,7 @@ class TransformedMonomial:
                 # Get sub element, offset and mapping
                 component = components[0]
                 if len(component.index_range) > 1:
-                    if not all([element.component_element(c)[0].mapping() is AFFINE for c in components[0].index_range]):
+                    if not all([element.component_element(c)[0].mapping() is AFFINE for c in component.index_range]):
                         raise MonomialException, "Unable to handle non-affine mappings for index range."
                     mapping = AFFINE
                 else:
@@ -244,19 +270,19 @@ class TransformedMonomial:
                 # Add transforms where appropriate
                 if mapping == CONTRAVARIANT_PIOLA:
                     # phi(x) = (det J)^{-1} J Phi(X) 
-                    index0 = components[0]
-                    index1 = MonomialIndex(index_range=[offset + i for i in range(sub_element.value_dimension(0))])
-                    components[0] = index1
-                    transform = MonomialTransform(index0, index1, MonomialTransform.J, f.restriction)
+                    index0 = component
+                    index1 = MonomialIndex(index_range=range(gdim)) + offset
+                    transform = MonomialTransform(index0, index1, MonomialTransform.J, f.restriction, offset)
                     self.transforms.append(transform)
                     self.determinant.power -= 1
+                    components[0] = index1
                 elif mapping == COVARIANT_PIOLA:
                     # phi(x) = J^{-T} Phi(X)
-                    index1 = components[0]
-                    index1 = MonomialIndex(index_range=[offset + i for i in range(sub_element.value_dimension(0))])
-                    components[0] = index1
-                    transform = MonomialTransform(index1, index0, MonomialTransform.JINV, f.restriction)
+                    index0 = MonomialIndex(index_range=range(gdim)) + offset
+                    index1 = component
+                    transform = MonomialTransform(index0, index1, MonomialTransform.JINV, f.restriction, offset)
                     self.transforms.append(transform)
+                    components[0] = index0                    
 
             # Extract derivatives / transforms
             derivatives = []
@@ -271,7 +297,7 @@ class TransformedMonomial:
                 else:
                     index1 = MonomialIndex(index_range=range(gdim))
                 index_map[d] = index1
-                transform = MonomialTransform(index0, index1, MonomialTransform.JINV, f.restriction)
+                transform = MonomialTransform(index0, index1, MonomialTransform.JINV, f.restriction, 0)
                 self.transforms.append(transform)
                 derivatives.append(index0)
 
@@ -294,13 +320,14 @@ class TransformedMonomial:
             # Set index type and id
             num_internal = len([j for j in internal_indices if j == i])
             num_external = len([j for j in external_indices if j == i])
+           
             if num_internal == 1 and num_external == 1:
                 i.index_type = MonomialIndex.SECONDARY
                 i.index_id   = next_secondary_index()
-            elif num_internal == 2:
+            elif num_internal == 2 and num_external == 0:
                 i.index_type = MonomialIndex.INTERNAL
                 i.index_id   = next_internal_index()
-            elif num_external == 2:
+            elif num_internal == 0 and num_external == 2:
                 i.index_type = MonomialIndex.EXTERNAL
                 i.index_id   = next_external_index()
             else:
@@ -326,7 +353,7 @@ class TransformedMonomial:
                self.extract_external_indices(index_type)
 
     def extract_unique_indices(self, index_type=None):
-        "Return all unique indices for monomial."
+        "Return all unique indices for monomial w.r.t. type and id (not range)."
         indices = []
         for index in self.extract_indices(index_type):
             if not index in indices:

@@ -391,8 +391,8 @@ class TensorGenerator(CodeGenerator):
         for t in G.transforms:
             if not (t.index0.type == Index.AUXILIARY_G or t.index1.type == Index.AUXILIARY_G):
                 trans = format["transform"](t.type, t.index0([], a, [], []), \
-                                                        t.index1([], a, [], []), \
-                                                        t.restriction)
+                                            t.index1([], a, [], []), \
+                                            t.restriction)
                 factors += [trans]
                 trans_set.add(trans)
         if factors:
