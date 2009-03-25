@@ -37,7 +37,7 @@ def main(argv):
     representations = ["quadrature", "tensor"]
 
     # Default options
-    tolerance = 1e-14
+    tolerance = 1e-12
     new_references = False
     form_types = ["form", "ufl", "all"]
     form_type = "form"

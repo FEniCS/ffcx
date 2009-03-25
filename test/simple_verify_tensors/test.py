@@ -113,9 +113,11 @@ def check_results(values, reference):
             elif not integral in vals:
                 result = "missing value"
                 num_missing_value += 1
-            elif not integral in reference:
+            elif not integral in reference and not ("_tensor" in integral or "_quadrature" in integral):
                 result = "missing reference"
-                num_missing_reference += 1      
+                num_missing_reference += 1
+            else:
+                continue
 
             results.append((integral, result))
         print tstr(results, 100)

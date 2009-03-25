@@ -46,19 +46,19 @@ class UFLQuadratureGenerator:
 
         # TODO: Set this through OPTIONS
         # These options should be safe and fast, but result in slow code
-#        self.optimise_options = {"non zero columns": False,
-#                                 "ignore ones": False,
-#                                 "remove zero terms": False,
-#                                 "simplify expressions": False,
-#                                 "ignore zero tables": False}
+        self.optimise_options = {"non zero columns": False,
+                                 "ignore ones": False,
+                                 "remove zero terms": False,
+                                 "simplify expressions": False,
+                                 "ignore zero tables": False}
 
         # These options results in fast code, but compiles slower and there
         # might still be bugs
-        self.optimise_options = {"non zero columns": True,
-                                 "ignore ones": True,
-                                 "remove zero terms": True,
-                                 "simplify expressions": True,
-                                 "ignore zero tables": True}
+#        self.optimise_options = {"non zero columns": True,
+#                                 "ignore ones": True,
+#                                 "remove zero terms": True,
+#                                 "simplify expressions": True,
+#                                 "ignore zero tables": True}
 
     def generate_integrals(self, form_representation, format):
         "Generate code for all integrals."
