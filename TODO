@@ -68,11 +68,11 @@ Constant              |    C     |    OK   |
 Elasticity            |    C     |    OK   |
 EnergyNorm            |    x     |    OK   |
 Equation              |    c     |    OK   |
-FunctionOperators     |    c     |    OK** |
+FunctionOperators     |    c     |    OK*  |
 Heat                  |    c     |    OK   |
 Mass                  |    c     |    OK   |
 MixedMixedElement     |    c     |    OK   |
-MixedPoisson          |    c     |    x    |
+MixedPoisson          |    c     |    OK   |
 NavierStokes          |    c     |    OK   |
 NeumannProblem        |    c     |    OK   |
 Optimization          |    c     |    OK   |
@@ -81,16 +81,17 @@ P5tri                 |    c     |    OK   |
 PoissonDG             |    c     |    OK   |
 PoissonSystem         |    c     |    OK   |
 Poisson               |    C     |    OK   |
-QuadratureElement     |    c     |    OK   |
+QuadratureElement     |    c     |    OK** |
 Stokes                |    c     |    OK   |
 SubDomains            |    c     |    OK   |
 SubDomain             |    c     |    OK   |
-TensorWeightedPoisson |    c     |    x    |
-VectorLaplaceGradCurl |    c     |    x    |
+TensorWeightedPoisson |    c     |    OK   |
+VectorLaplaceGradCurl |    c     |    OK   |
 
 Notes Quadr:
-x  - Only Lagrange, Discontinuous Lagrange and Quadrature elements are supported
-     for now
-OK - Code is not very efficient
-** - Due to the difference in how tensor and quadrature applies function
+*  - Due to the difference in how tensor and quadrature applies function
      operators the norm when comparing two tensors is around 1.3e-1
+** - Because the QuadratureElement in FFC specifies the number of points
+     rather than the quadrature order, there is a difference when comparing
+     FFC and UFL form files.
+    operators the norm when comparing two tensors is around 1.3e-1

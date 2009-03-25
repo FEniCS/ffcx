@@ -196,11 +196,13 @@ class QuadratureTransformer2(QuadratureTransformer):
             error("Didn't expect any operands for Constant: " + str(operands))
         if len(self._components) > 0:
             error("Constant does not expect component indices: " + str(self._components))
+        if o.shape() != ():
+            error("Constant should not have a value shape: " + str(o.shape()))
 
         component = 0
         # Handle restriction
         if self.restriction == Restriction.MINUS:
-            component += o.shape()[0] # could be += 1
+            component += 1
 
         coefficient = self.format["coeff"] + self.format["matrix access"](str(o.count()), component)
         debug("Constant coefficient: " + coefficient)
@@ -814,6 +816,9 @@ def generate_code(integrand, transformer, Indent, format):
             continue
         # Multiply by weight and determinant, add both to set of used weights and transforms
         value = Product([val, Symbol(weight, 1, ACCESS, format), Symbol(format_scale_factor, 1, GEO, format)], format)
+#        print "key: ", key
+#        print value
+#        print repr(value)
         value = optimise_code(value, ip_consts, transformer.geo_consts, transformer.trans_set, format)
         # Only continue if value is not zero
         if not value.c:

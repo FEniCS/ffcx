@@ -56,7 +56,7 @@ def main(argv):
                 return 2
         elif opt in  ("-n", "--new_references"):
             new_references = True
-            representations = ["tensor"]
+#            representations = ["tensor"]
         elif opt in  ("-t", "--tolerance"):
             try:
                 tolerance = float(arg)

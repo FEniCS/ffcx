@@ -13,7 +13,7 @@ BASIS = 0
 IP  = 1
 GEO = 2
 CONST = 3
-type_to_string = {BASIS:"basis", IP:"ip",GEO:"geo", CONST:"const"}
+type_to_string = {BASIS:"BASIS", IP:"IP",GEO:"GEO", CONST:"CONST"}
 
 def generate_aux_constants(constant_decl, name, var_type, print_ops, format):
     "A helper tool to generate code for constant declarations"
@@ -47,7 +47,7 @@ def optimise_code(expr, ip_consts, geo_consts, trans_set, format):
         return Symbol("", 0, CONST, format)
 
     # Reduce expression with respect to basis function variable
-#    print "\nEXP: ", expr.remove_nested()
+#    print "\nEXP: ", repr(expr.remove_nested())
     expr = expr.expand()
 #    print "\nEXP1: ", expr
     basis_expressions = expr.reduce_vartype(BASIS)
@@ -109,7 +109,7 @@ def optimise_code(expr, ip_consts, geo_consts, trans_set, format):
             trans_set.update(map(lambda x: str(x), geo.get_unique_vars(GEO)))
 
 #            print "RD"
-            test = geo
+#            test = geo
             # Reduce operations of the geo term
             geo = geo.expand().reduce_ops()
 #            if not test.expand() == geo.expand():
@@ -158,6 +158,8 @@ def optimise_code(expr, ip_consts, geo_consts, trans_set, format):
 
 
 class Symbol(object):
+    __slots__ = ("v", "c", "t", "base_expr", "base_op", "format")
+
     def __init__(self, variable, count, symbol_type, format):
         """Initialise a Symbols object it contains a:
         v - string, variable name
@@ -182,19 +184,7 @@ class Symbol(object):
     def __repr__(self):
         "Representation for debugging"
 
-        s = self.v + self.format["block"](type_to_string[self.t])
-        # If a symbols is not a const we only need the count if it is different
-        # from 1 and -1
-        if self.t != CONST:
-            if self.c != 1 and self.c != -1:
-                s = self.format["multiply"]([self.format["floating point"](abs(self.c)), s])
-        # If a symbol is a const, its representation is simply the count
-        else:
-            s += self.format["floating point"](abs(self.c))
-        # Add a minus sign if needed
-        if self.c < 0:
-            s = self.format["subtract"](["", s])
-        return s
+        return "Symbol('%s', %.4f, %s)" % (self.v, self.c, type_to_string[self.t])
 
     def __str__(self):
         "Simple string representation"
@@ -404,6 +394,8 @@ class Symbol(object):
         return ops
 
 class Product(object):
+    __slots__ = ("vs", "c", "t", "format")
+
     def __init__(self, variables, format, copies=False):
         """Initialise a Product object, the class contains:
         vs - a list of symbols
@@ -462,18 +454,12 @@ class Product(object):
 
     def __repr__(self):
         "Representation for debugging"
-        # Group and join representation of members
-        s = "prod" + self.format["grouping"](" " + ", ".join([v.__repr__() for v in self.vs]) + " ")
-        s += self.format["block"](type_to_string[self.t])
 
-        # Only multiply by count if it is different from 1 and -1
-        if self.c != 1 and self.c != -1:
-            s = self.format["multiply"]([self.format["floating point"](abs(self.c)), s])
-
-        # Add minus sign if appropriate
-        if self.c < 0:
-            s = self.format["subtract"](["", s])
-        return s
+        l = [v.__repr__() for v in self.vs]
+        if self.c != 1:
+            l = [repr(Symbol("", self.c, CONST, self.format))] + l
+        l = ", ".join(l)
+        return "Product([%s])" % l
 
     def __str__(self):
         "Simple string representation"
@@ -868,6 +854,8 @@ class Product(object):
             return reduce(lambda x, y:x*y, rest).remove_nested()
 
 class Sum(object):
+    __slots__ = ("c", "t", "pos", "neg", "format")
+
     def __init__(self, variables, format, copies=False):
         """Initialise a Sum object, the class contains:
         vs - a list of symbols
@@ -926,25 +914,9 @@ class Sum(object):
     def __repr__(self):
         "Representation for debugging"
 
-        # If the count is zero we're done
-        if self.c == 0:
-            return self.format["floating point"](0.0)
-
-        # First add all the positive variables using plus, then add all
-        # negative using minus
-        pos = self.format["add"]([v.__repr__() for v in self.pos])
-        neg = pos + "".join([v.__repr__() for v in self.neg])
-
-        # Group the members of the sum and multiply by factor 
-        s = "sum" + self.format["grouping"](neg)
-        if self.c and self.c != 1 and self.c != -1:
-            s = self.format["multiply"]([self.format["floating point"](abs(self.c)), s])
-
-        s += self.format["block"](type_to_string[self.t])
-        # Add minus sign
-        if self.c < 0:
-            s = self.format["subtract"](["", s])
-        return s
+        l = [v.__repr__() for v in self.mbrs()]
+        l = ", ".join(l)
+        return "Sum([%s])" % l
 
     def __str__(self):
         "Simple string representation"
@@ -1105,12 +1077,18 @@ class Sum(object):
         var = {}
         var_map = {}
         new_self = self.recon()
+        not_reduce_terms = set()
+        not_r_add = not_reduce_terms.add
         for vr in new_self.get_vars():
+#            print "vr: ", vr
             variables = vr.get_vars()
+#            print "variables: ", variables
             if not variables:
+                not_r_add(vr)
                 continue
             for v in variables:
                 if not v:
+                    not_r_add(vr)
                     continue
                 if not v.v in var:
                     var[v.v] = set([vr])
@@ -1129,7 +1107,8 @@ class Sum(object):
         min_occur = 0
         for key,v in var.iteritems():
             k = var_map[key]
-
+#            print "k: ", k
+#            print "v: ", v
             # If this is a variable that we should reduce
             if len(v) == max_var:
                 occur = min([vr.num_var(k.v) for vr in v])
@@ -1142,12 +1121,10 @@ class Sum(object):
 
         if not reduce_terms:
             return new_self
-        not_reduce_terms = set()
-        add = not_reduce_terms.add
         for k,v in var.iteritems():
             for vr in v:
                 if not vr in reduce_terms:
-                    add(vr)
+                    not_r_add(vr)
 
         # Start reducing n times v
         new_reduced = []
@@ -1160,6 +1137,9 @@ class Sum(object):
 #        print "reduce_by: ", reduce_by
         for rt in reduce_terms:
             append(rt.reduce_var(reduce_by))
+
+#        print "new_reduced: ", new_reduced
+#        print "not_reduce_terms: ", not_reduce_terms
 
         # Create the new sum and reduce it further
         reduced_terms = Sum(list(new_reduced), self.format, True).reduce_ops()
@@ -1355,6 +1335,8 @@ class Sum(object):
         return Sum(new_expanded, self.format, True)
 
 class Fraction(object):
+    __slots__ = ("c", "t", "num", "denom", "format")
+
     def __init__(self, numerator, denominator, format, copies=False):
         """Initialise a Fraction object, the class contains:
         num   - the numerator
@@ -1389,14 +1371,7 @@ class Fraction(object):
     def __repr__(self):
         "Representation for debugging"
 
-        s = "frac" + self.format["grouping"](" " + self.num.__repr__() + ", " + self.denom.__repr__() + " ")
-        if self.t != None:
-            s += self.format["block"](type_to_string[self.t])
-        if self.c != 1 and self.c != -1:
-            s = self.format["multiply"]([self.format["floating point"](abs(self.c)), s])
-        if self.c < 0:
-            s = self.format["subtract"](["", s])
-        return s
+        return "Fraction(%s, %s)" %(repr(self.get_num()), repr(self.denom))
 
     def __str__(self):
         "Simple string representation"
@@ -1437,6 +1412,9 @@ class Fraction(object):
 
     def __mul__(self, other):
 
+#        print "frac mul, self: ", repr(self)
+#        print "frac mul: other:", repr(other)
+
         # If product will be zero
         if self.c == 0 or not other or other.c == 0:
             return Symbol("", 0, CONST, self.format)
@@ -1460,10 +1438,24 @@ class Fraction(object):
         else:
             # If other is not a fraction, multiply the numerator by it and
             # divide it by the denominator (should reduce it if possible)
+#            print "num: ", num
             num *= other
+#            print "num2: ", repr(num)
 
             # Create new fraction
             return num/self.denom
+
+    def __div__(self, other):
+
+        # If division is illegal (this should definitely not happen)
+        if not other or other.c == 0:
+            raise RuntimeError("Division by zero")
+
+        # If fraction will be zero
+        if self.c == 0:
+            return Symbol("", 0, CONST, self.format)
+
+        return self.get_num()/(self.denom*other)
 
     def __add__(self, other):
         # If two fractions are equal add their count

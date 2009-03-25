@@ -306,7 +306,7 @@ class QuadratureTransformer(Transformer):
         # Get denominator and create new values for the numerator
         denominator = denominator_code.pop(())
         for key, val in numerator_code.items():
-            numerator_code[key] = val + format_div + denominator
+            numerator_code[key] = val + format_div + self.format["grouping"](denominator)
 
         return numerator_code
 
@@ -427,11 +427,13 @@ class QuadratureTransformer(Transformer):
             error("Didn't expect any operands for Constant: " + str(operands))
         if len(self._components) > 0:
             error("Constant does not expect component indices: " + str(self._components))
+        if o.shape() != ():
+            error("Constant should not have a value shape: " + str(o.shape()))
 
         component = 0
         # Handle restriction
         if self.restriction == Restriction.MINUS:
-            component += o.shape()[0] # could be += 1
+            component += 1
 
         coefficient = self.format["coeff"] + self.format["matrix access"](str(o.count()), component)
         debug("Constant coefficient: " + coefficient)
@@ -1130,8 +1132,10 @@ def generate_code(integrand, transformer, Indent, format):
     # In form.form_data().form, which we should be using, coefficients have
     # been mapped and derivatives expande. So it should be enough to just
     # expand_indices and purge_list_tensors
+#    print tree_format(integrand)
     new_integrand = expand_indices(integrand)
     new_integrand = purge_list_tensors(new_integrand)
+#    print tree_format(new_integrand)
     debug("\nExpanded integrand\n" + str(tree_format(new_integrand)))
 
     # Let the Transformer create the loop code

@@ -52,12 +52,6 @@ class UFLQuadratureGenerator:
 #                                 "simplify expressions": False,
 #                                 "ignore zero tables": False}
 
-#        self.optimise_options = {"non zero columns": False,
-#                                 "ignore ones": False,
-#                                 "remove zero terms": False,
-#                                 "simplify expressions": True,
-#                                 "ignore zero tables": False}
-
         # These options results in fast code, but compiles slower and there
         # might still be bugs
         self.optimise_options = {"non zero columns": True,
@@ -270,7 +264,6 @@ class UFLQuadratureGenerator:
 
         # Object to control the code indentation
         Indent = IndentControl()
-
         # FIXME: Get one of the elements, they should all be defined on the same Cell?
         ffc_element = create_element(list(extract_unique_elements(integrals.items()[0][1]))[0])
         num_facets = ffc_element.num_facets()
@@ -348,7 +341,8 @@ class UFLQuadratureGenerator:
             debug("\nIntegral tree_format: " + str(tree_format(integral)))
 
             ip_code = ["", Indent.indent(format_comment\
-                ("Loop quadrature points for integral: %s" % repr(integral)))]
+                ("Loop quadrature points for integral"))]
+#                ("Loop quadrature points for integral: %s" % repr(integral)))]
 
             # Update transformer to the current number of quadrature points
             transformer.update_points(points)
