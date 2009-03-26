@@ -135,6 +135,14 @@ def check_results(values, reference):
     if num_diffs > 0:
         print "*** Results differ for %d integrals." % num_diffs
 
+    print ""
+    print """The following are known fail and should fail but are indeed OK
+FunctionOperatorsBilinearForm_cell_integral_0:        *** (diff = 0.010091)
+MassBilinearForm_cell_integral_0:                     *** (diff = 1e-09)
+QuadratureElementBilinearForm_cell_integral_0:        *** (diff = 0.249892)
+QuadratureElementLinearForm_cell_integral_0:          *** (diff = 0.10106)
+"""
+
     return 1
     
 def main(args):
