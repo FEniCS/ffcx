@@ -5,11 +5,14 @@ file, it is convenient to install org-mode in Emacs.
 * Write introduction in manual
   - The introduction is currently empty
 
+# This should be in the UFL manual, delete this?
 * Write about a, L, M in manual
   - Missing in current manual
 
+# This should be in the UFL manual, delete this?
 * Write about lhs() and rhs() in manual
 
+# Should this also be in UFL?
 * Projections
   - Reimplement (worked before)
   - Add to manual
@@ -37,12 +40,14 @@ file, it is convenient to install org-mode in Emacs.
   - num_entity_dofs()
   - tabulate_entity_dofs()
 
+# This should be in the UFL manual, delete this?
 * Time derivatives
   - Dt(u)
 
 * Quad elements
   - Isoparametric mapping
 
+# This should be in the UFL manual, delete this?
 * Tensor-valued functions
 
 * Fix all FIXMEs
@@ -94,4 +99,3 @@ Notes Quadr:
 ** - Because the QuadratureElement in FFC specifies the number of points
      rather than the quadrature order, there is a difference when comparing
      FFC and UFL form files.
-    operators the norm when comparing two tensors is around 1.3e-1

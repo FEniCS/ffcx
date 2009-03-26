@@ -43,6 +43,7 @@ class QuadratureTransformer2(QuadratureTransformer):
 
         # Initialise base class
         QuadratureTransformer.__init__(self, form_representation, domain_type, optimise_options, format)
+        set_format(format)
 
     # -------------------------------------------------------------------------
     # Start handling UFL classes
@@ -67,7 +68,7 @@ class QuadratureTransformer2(QuadratureTransformer):
         # Add sums and group if necessary
         for key, val in code.items():
             if len(val) > 1:
-                code[key] = Sum(val, self.format)
+                code[key] = Sum(val)
             else:
                 code[key] = val[0]
         return code
@@ -106,9 +107,9 @@ class QuadratureTransformer2(QuadratureTransformer):
                 # just have a list of objects we should never get any conflicts here.
                 if tuple(l) in code:
                     error("This key should not be in the code.")
-                code[tuple(l)] = Product(val + not_permute, self.format)
+                code[tuple(l)] = Product(val + not_permute, False)
         else:
-            code[()] = Product(not_permute, self.format)
+            code[()] = Product(not_permute, False)
 
         return code
 
@@ -130,7 +131,7 @@ class QuadratureTransformer2(QuadratureTransformer):
         # Get denominator and create new values for the numerator
         denominator = denominator_code.pop(())
         for key, val in numerator_code.items():
-            numerator_code[key] = Fraction(val, denominator, self.format)
+            numerator_code[key] = Fraction(val, denominator)
 
         return numerator_code
 
@@ -152,7 +153,7 @@ class QuadratureTransformer2(QuadratureTransformer):
 
         # Get the base code and create power
         val = base_code.pop(())
-        power = Product([val]*expo.value(), self.format)
+        power = Product([val]*expo.value(), False)
         return {(): power}
 
     def abs(self, o, *operands):
@@ -165,7 +166,7 @@ class QuadratureTransformer2(QuadratureTransformer):
         # Take absolute value of operand
         operand = operands[0]
         for key, val in operand.items():
-            new_val = Symbol(self.format["absolute value"](str(val)), 1, val.t, self.format)
+            new_val = Symbol(self.format["absolute value"](str(val)), 1, val.t)
             new_val.base_expr = val
             new_val.base_op = 1 # Add one operation for taking the absolute value
             operand[key] = new_val
@@ -183,7 +184,7 @@ class QuadratureTransformer2(QuadratureTransformer):
             error("Did not expect any operands for ScalarValue: " + str((o, operands)))
 
         # TODO: Handle value < 0 better such that we don't have + -2 in the code
-        return {(): Symbol("", o.value(), CONST, self.format)}
+        return {(): Symbol("", o.value(), CONST)}
 
     # -------------------------------------------------------------------------
     # Function and Constants (function.py)
@@ -206,7 +207,7 @@ class QuadratureTransformer2(QuadratureTransformer):
 
         coefficient = self.format["coeff"] + self.format["matrix access"](str(o.count()), component)
         debug("Constant coefficient: " + coefficient)
-        return {(): Symbol(coefficient, 1, GEO, self.format)}
+        return {(): Symbol(coefficient, 1, GEO)}
 
     def vector_constant(self, o, *operands):
         debug("\n\nVisiting VectorConstant: " + o.__repr__())
@@ -225,7 +226,7 @@ class QuadratureTransformer2(QuadratureTransformer):
 
         coefficient = self.format["coeff"] + self.format["matrix access"](str(o.count()), component)
         debug("VectorConstant coefficient: " + coefficient)
-        return {(): Symbol(coefficient, 1, GEO, self.format)}
+        return {(): Symbol(coefficient, 1, GEO)}
 
     def tensor_constant(self, o, *operands):
         debug("\n\nVisiting TensorConstant: " + o.__repr__())
@@ -246,7 +247,7 @@ class QuadratureTransformer2(QuadratureTransformer):
 
         coefficient = self.format["coeff"] + self.format["matrix access"](str(o.count()), component)
         debug("TensorConstant coefficient: " + coefficient)
-        return {(): Symbol(coefficient, 1, GEO, self.format)}
+        return {(): Symbol(coefficient, 1, GEO)}
 
     # -------------------------------------------------------------------------
     # MathFunctions (mathfunctions.py)
@@ -258,7 +259,7 @@ class QuadratureTransformer2(QuadratureTransformer):
         # Use format function on value of operand
         operand = operands[0]
         for key, val in operand.items():
-            new_val = Symbol(format_function(str(val)), 1, val.t, self.format)
+            new_val = Symbol(format_function(str(val)), 1, val.t)
             new_val.base_expr = val
             new_val.base_op = 1 # Add one operation for the math function
             operand[key] = new_val
@@ -362,9 +363,9 @@ class QuadratureTransformer2(QuadratureTransformer):
                     transforms.append(t)
 
                 if mapping in code:
-                    code[mapping].append(Product([Symbol(t, 1, GEO, self.format) for t in transforms] + [basis], self.format))
+                    code[mapping].append(Product([Symbol(t, 1, GEO) for t in transforms] + [basis]))
                 else:
-                    code[mapping] = [Product([Symbol(t, 1, GEO, self.format) for t in transforms] + [basis], self.format)]
+                    code[mapping] = [Product([Symbol(t, 1, GEO) for t in transforms] + [basis])]
             # Handle non-affine mappings
             else:
                 for c in range(geo_dim):
@@ -373,12 +374,12 @@ class QuadratureTransformer2(QuadratureTransformer):
 
                     # Multiply basis by appropriate transform
                     if ffc_element.value_mapping(component) == Mapping.COVARIANT_PIOLA:
-                        dxdX = Symbol(format_transform(Transform.JINV, c, local_comp, self.restriction), 1, GEO, self.format)
-                        basis = Product([dxdX, basis], self.format)
+                        dxdX = Symbol(format_transform(Transform.JINV, c, local_comp, self.restriction), 1, GEO)
+                        basis = Product([dxdX, basis])
                     elif ffc_element.value_mapping(component) == Mapping.CONTRAVARIANT_PIOLA:
-                        detJ = Fraction(Symbol("", 1, CONST, self.format), Symbol(format_detJ(self.restriction), 1, GEO, self.format), self.format)
-                        dXdx = Symbol(format_transform(Transform.J, c, local_comp, self.restriction), 1, GEO, self.format)
-                        basis = Product([detJ, dXdx, basis], self.format)
+                        detJ = Fraction(Symbol("", 1, CONST), Symbol(format_detJ(self.restriction), 1, GEO))
+                        dXdx = Symbol(format_transform(Transform.J, c, local_comp, self.restriction), 1, GEO)
+                        basis = Product([detJ, dXdx, basis])
                     else:
                         error("Transformation is not supported: " + str(ffc_element.value_mapping(component)))
 
@@ -390,14 +391,14 @@ class QuadratureTransformer2(QuadratureTransformer):
                         transforms.append(t)
 
                     if mapping in code:
-                        code[mapping].append(Product([Symbol(t, 1, GEO, self.format) for t in transforms] + [basis], self.format))
+                        code[mapping].append(Product([Symbol(t, 1, GEO) for t in transforms] + [basis]))
                     else:
-                        code[mapping] = [Product([Symbol(t, 1, GEO, self.format) for t in transforms] + [basis], self.format)]
+                        code[mapping] = [Product([Symbol(t, 1, GEO) for t in transforms] + [basis])]
 
         # Add sums and group if necessary
         for key, val in code.items():
             if len(val) > 1:
-                code[key] = Sum(val, self.format)
+                code[key] = Sum(val)
             else:
                 code[key] = val[0]
 
@@ -456,12 +457,12 @@ class QuadratureTransformer2(QuadratureTransformer):
         # matrix access
         basis = "0"
         if zeros and (self.optimise_options["ignore zero tables"] or self.optimise_options["remove zero terms"]):
-            basis = Symbol("", 0, CONST, self.format)
+            basis = Symbol("", 0, CONST)
         elif self.optimise_options["ignore ones"] and loop_index_range == 1 and ones:
-            basis = Symbol("", 1, CONST, self.format)
+            basis = Symbol("", 1, CONST)
             loop_index = "0"
         else:
-            basis = Symbol(name + basis_access, 1, BASIS, self.format)
+            basis = Symbol(name + basis_access, 1, BASIS)
             self.psi_tables_map[basis] = name
 
         # Create the correct mapping of the basis function into the local
@@ -558,7 +559,7 @@ class QuadratureTransformer2(QuadratureTransformer):
                     transforms.append(t)
 
                 # Multiply function value by the transformations and add to code
-                code.append(Product([Symbol(t, 1, GEO, self.format) for t in transforms] + [function_name], self.format))
+                code.append(Product([Symbol(t, 1, GEO) for t in transforms] + [function_name]))
 
             # Handle non-affine mappings
             else:
@@ -567,12 +568,12 @@ class QuadratureTransformer2(QuadratureTransformer):
 
                     # Multiply basis by appropriate transform
                     if ffc_element.value_mapping(component) == Mapping.COVARIANT_PIOLA:
-                        dxdX = Symbot(format_transform(Transform.JINV, c, local_comp, self.restriction), 1, GEO, self.format)
-                        basis = Product([dxdX, function_name], self.format)
+                        dxdX = Symbot(format_transform(Transform.JINV, c, local_comp, self.restriction), 1, GEO)
+                        basis = Product([dxdX, function_name])
                     elif ffc_element.value_mapping(component) == Mapping.CONTRAVARIANT_PIOLA:
-                        detJ = Fraction(Symbol("", 1, CONST, self.format), Symbol(format_detJ(self.restriction), 1, GEO, self.format), self.format)
-                        dXdx = Symbol(format_transform(Transform.J, c, local_comp, self.restriction), 1, GEO, self.format)
-                        basis = Product([detJ, dXdx, function_name], self.format)
+                        detJ = Fraction(Symbol("", 1, CONST), Symbol(format_detJ(self.restriction), 1, GEO))
+                        dXdx = Symbol(format_transform(Transform.J, c, local_comp, self.restriction), 1, GEO)
+                        basis = Product([detJ, dXdx, function_name])
                     else:
                         error("Transformation is not supported: ", str(ffc_element.value_mapping(component)))
 
@@ -585,11 +586,11 @@ class QuadratureTransformer2(QuadratureTransformer):
                         transforms.append(t)
 
                     # Multiply function value by the transformations and add to code
-                    code.append(Product([Symbol(t, 1, GEO, self.format) for t in transforms] + [function_name], self.format))
+                    code.append(Product([Symbol(t, 1, GEO) for t in transforms] + [function_name]))
         if not code:
             return "0"
         elif len(code) > 1:
-            code = Sum(code, self.format)
+            code = Sum(code)
         else:
             code = code[0]
 
@@ -637,7 +638,7 @@ class QuadratureTransformer2(QuadratureTransformer):
 
         # If all basis are zero we just return "0"
         if zeros and self.optimise_options["ignore zero tables"]:
-            return Symbol("", 0, CONST, self.format)
+            return Symbol("", 0, CONST)
 
         # Get the index range of the loop index
         loop_index_range = shape(self.unique_tables[basis_name])[1]
@@ -685,10 +686,10 @@ class QuadratureTransformer2(QuadratureTransformer):
         except:
             pass
 
-        coefficient = Symbol(format_coeff + format_matrix_access(str(ufl_function.count()), coefficient_access), 1, ACCESS, self.format)
+        coefficient = Symbol(format_coeff + format_matrix_access(str(ufl_function.count()), coefficient_access), 1, ACCESS)
         function_expr = coefficient
         if basis_name:
-            function_expr = Product([Symbol(basis_name, 1, ACCESS, self.format), coefficient], self.format)
+            function_expr = Product([Symbol(basis_name, 1, ACCESS), coefficient])
 
         # If we have a quadrature element (or if basis was deleted) we
         # don't need the basis
@@ -697,7 +698,7 @@ class QuadratureTransformer2(QuadratureTransformer):
         else:
             # Check if the expression to compute the function value is already in
             # the dictionary of used function. If not, generate a new name and add
-            function_name = Symbol(format_F + str(self.function_count), 1, ACCESS, self.format)
+            function_name = Symbol(format_F + str(self.function_count), 1, ACCESS)
             if not function_expr in self.functions:
                 self.functions[function_expr] = (function_name, loop_index_range)
                 # Increase count
@@ -722,6 +723,7 @@ def generate_code(integrand, transformer, Indent, format):
     format_mult         = format["multiply"]
     format_float        = format["floating point"]
     format_float_decl   = format["float declaration"]
+    format_const_float_decl = format["const float declaration"]
     format_r            = format["free secondary indices"][0]
     format_comment      = format["comment"]
     format_F            = format["function value"]
@@ -815,11 +817,11 @@ def generate_code(integrand, transformer, Indent, format):
         if val == None:
             continue
         # Multiply by weight and determinant, add both to set of used weights and transforms
-        value = Product([val, Symbol(weight, 1, ACCESS, format), Symbol(format_scale_factor, 1, GEO, format)], format)
+        value = Product([val, Symbol(weight, 1, ACCESS), Symbol(format_scale_factor, 1, GEO)])
 #        print "key: ", key
 #        print value
 #        print repr(value)
-        value = optimise_code(value, ip_consts, transformer.geo_consts, transformer.trans_set, format)
+        value = optimise_code(value, ip_consts, transformer.geo_consts, transformer.trans_set)
         # Only continue if value is not zero
         if not value.c:
             continue
@@ -895,7 +897,7 @@ def generate_code(integrand, transformer, Indent, format):
             loops[loop][1] += [entry_ops_comment, entry_code]
 
     # Generate code for ip constant declarations
-    ip_const_ops, ip_const_code = generate_aux_constants(ip_consts, format_Gip, format_float_decl, True, format)
+    ip_const_ops, ip_const_code = generate_aux_constants(ip_consts, format_Gip, format_const_float_decl, True, True)
     num_ops += ip_const_ops
     if ip_const_code:
         code += ["", format["comment"]("Number of operations to compute ip constants: %d" %ip_const_ops)]

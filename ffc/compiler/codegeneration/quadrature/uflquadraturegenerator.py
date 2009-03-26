@@ -60,6 +60,7 @@ class UFLQuadratureGenerator:
 #                                 "simplify expressions": True,
 #                                 "ignore zero tables": True}
 
+
     def generate_integrals(self, form_representation, format):
         "Generate code for all integrals."
 
@@ -179,7 +180,7 @@ class UFLQuadratureGenerator:
         code += self.__tabulate_psis(transformer, Indent, format)
 
         # Create the constant geometry declarations (only generated if simplify expressions are enabled)
-        geo_ops, geo_code = generate_aux_constants(transformer.geo_consts, format["geometry tensor"], format["const float declaration"], False, format)
+        geo_ops, geo_code = generate_aux_constants(transformer.geo_consts, format["geometry tensor"], format["const float declaration"])
         if geo_code:
             num_ops += geo_ops
             code += ["", format["comment"]("Number of operations to compute geometry constants: %d" %geo_ops)]
@@ -242,7 +243,7 @@ class UFLQuadratureGenerator:
         common += self.__tabulate_psis(transformer, Indent, format)
 
         # Create the constant geometry declarations (only generated if simplify expressions are enabled)
-        geo_ops, geo_code = generate_aux_constants(transformer.geo_consts, format["geometry tensor"], format["const float declaration"], False, format)
+        geo_ops, geo_code = generate_aux_constants(transformer.geo_consts, format["geometry tensor"], format["const float declaration"])
         if geo_code:
             num_ops += geo_ops
             common += ["", format["comment"]("Number of operations to compute geometry constants: %d" %geo_ops)]
@@ -300,7 +301,7 @@ class UFLQuadratureGenerator:
         common += self.__tabulate_psis(transformer, Indent, format)
 
         # Create the constant geometry declarations (only generated if simplify expressions are enabled)
-        geo_ops, geo_code = generate_aux_constants(transformer.geo_consts, format["geometry tensor"], format["const float declaration"], False, format)
+        geo_ops, geo_code = generate_aux_constants(transformer.geo_consts, format["geometry tensor"], format["const float declaration"])
         if geo_code:
             num_ops += geo_ops
             common += ["", format["comment"]("Number of operations to compute geometry constants: %d" %geo_ops)]

@@ -15,7 +15,45 @@ GEO = 2
 CONST = 3
 type_to_string = {BASIS:"BASIS", IP:"IP",GEO:"GEO", CONST:"CONST"}
 
-def generate_aux_constants(constant_decl, name, var_type, print_ops, format):
+format = None
+
+def set_format(_format):
+    global format
+    format = _format
+
+def get_format():
+    return format
+
+def group_fractions(expr):
+#    print "expr: ", expr
+
+    if not isinstance(expr, Sum):
+        return expr
+
+    not_frac = []
+    fracs = {}
+
+    for v in expr.mbrs():
+        if isinstance(v, Fraction):
+            if v.denom in fracs:
+                fracs[v.denom].append(v.get_num())
+            else:
+                fracs[v.denom] = [v.get_num()]
+            continue
+        not_frac.append(v)
+
+    for k,v in fracs.items():
+        if len(v) > 1:
+            not_frac.append(Fraction(Sum(v), k))
+        else:
+            not_frac.append(Fraction(v[0], k))
+
+    if len(not_frac) > 1:
+        return Sum(not_frac)
+    return not_frac[0]
+
+
+def generate_aux_constants(constant_decl, name, var_type, print_ops=False, reduce_ops=False):
     "A helper tool to generate code for constant declarations"
     code = []
     append = code.append
@@ -23,7 +61,9 @@ def generate_aux_constants(constant_decl, name, var_type, print_ops, format):
     sorted_list = [(v, k) for k, v in constant_decl.iteritems()]
     sorted_list.sort()
     for s in sorted_list:
-        c = s[1].expand().reduce_ops()
+        c = s[1]
+        c = c.expand().reduce_ops()
+#        if reduce_ops:
         ops += c.ops()
         if print_ops:
             append(format["comment"]("Number of operations: %d" %c.ops()))
@@ -33,7 +73,7 @@ def generate_aux_constants(constant_decl, name, var_type, print_ops, format):
             append((var_type + name + str(s[0]), str(c)))
     return (ops, code)
 
-def optimise_code(expr, ip_consts, geo_consts, trans_set, format):
+def optimise_code(expr, ip_consts, geo_consts, trans_set):
     """Optimise a given expression with respect to, basis functions,
     integration points variables and geometric constants.
     The function will update the dictionaries ip_const and geo_consts with new
@@ -44,7 +84,7 @@ def optimise_code(expr, ip_consts, geo_consts, trans_set, format):
 
     # Return constant symbol if value is zero
     if expr.c == 0:
-        return Symbol("", 0, CONST, format)
+        return Symbol("", 0, CONST)
 
     # Reduce expression with respect to basis function variable
 #    print "\nEXP: ", repr(expr.remove_nested())
@@ -68,14 +108,14 @@ def optimise_code(expr, ip_consts, geo_consts, trans_set, format):
 
         # If we have no basis (like functionals) create a const
         if not basis:
-            basis = Symbol("", 1, CONST, format)
+            basis = Symbol("", 1, CONST)
 
         # If the ip expression doesn't contain any operations skip remainder
         if not ip_expr:
             basis_vals.append(basis)
             continue
         if not ip_expr.ops() > 0:
-            basis_vals.append(Product([basis, ip_expr], format, True))
+            basis_vals.append(Product([basis, ip_expr]))
             continue
 
         # Reduce the ip expressions with respect to IP variables
@@ -111,7 +151,7 @@ def optimise_code(expr, ip_consts, geo_consts, trans_set, format):
 #            print "RD"
 #            test = geo
             # Reduce operations of the geo term
-            geo = geo.expand().reduce_ops()
+#            geo = geo.expand().reduce_ops()
 #            if not test.expand() == geo.expand():
 #                print "geo:\n", geo.expand()
 #                print "test:\n", test
@@ -125,19 +165,19 @@ def optimise_code(expr, ip_consts, geo_consts, trans_set, format):
                     geo_consts[geo] = len(geo_consts)
 
                 # Substitute geometry expression
-                geo = Symbol(format_G + str(geo_consts[geo]), 1, GEO, format)
+                geo = Symbol(format_G + str(geo_consts[geo]), 1, GEO)
 
             # If we did not have any ip_declarations use geo, else create a
             # product and append to the list of ip_values
             if not ip_dec:
                 ip_dec = geo
             else:
-                ip_dec = Product([ip_dec, geo], format, True)
+                ip_dec = Product([ip_dec, geo])
             ip_vals.append(ip_dec)
 
         # Create sum of ip expressions to multiply by basis
         if len(ip_vals) > 1:
-            ip_expr = Sum(ip_vals, format, True)
+            ip_expr = Sum(ip_vals)
         elif ip_vals:
             ip_expr = ip_vals.pop()
 
@@ -148,27 +188,23 @@ def optimise_code(expr, ip_consts, geo_consts, trans_set, format):
                 ip_consts[ip_expr] = len(ip_consts)
 
             # Substitute ip expression
-            ip_expr = Symbol(format_G + format_ip + str(ip_consts[ip_expr]), 1, IP, format)
+            ip_expr = Symbol(format_G + format_ip + str(ip_consts[ip_expr]), 1, IP)
 
         # Multiply by basis and append to basis vals
-        basis_vals.append(Product([basis, ip_expr], format, True).expand())
+        basis_vals.append(Product([basis, ip_expr]).expand())
 
     # Return sum of basis values
-    return Sum(basis_vals, format, True)
+    return Sum(basis_vals)
 
 
 class Symbol(object):
-    __slots__ = ("v", "c", "t", "base_expr", "base_op", "format")
+    __slots__ = ("v", "c", "t", "base_expr", "base_op")
 
-    def __init__(self, variable, count, symbol_type, format):
+    def __init__(self, variable, count, symbol_type):
         """Initialise a Symbols object it contains a:
         v - string, variable name
         c - float, a count of number of occurrences
         t - Type, one of CONST, GEO, IP, BASIS"""
-
-        # Save format TODO: Is it possible to define this once outside the
-        # classes so that we don't have to 'drag' the format around?
-        self.format = format
 
         self.v = variable
         self.c = float(count)
@@ -191,20 +227,20 @@ class Symbol(object):
 
         # If the count is zero, there's no need to spend more time on it
         if self.c == 0:
-            return self.format["floating point"](0.0)
+            return format["floating point"](0.0)
 
         # If a symbols is not a const we only need the count if it is different
         # from 1 and -1
         if self.t != CONST:
             s = self.v
             if self.c != 1 and self.c != -1:
-                s = self.format["multiply"]([self.format["floating point"](abs(self.c)), s])
+                s = format["multiply"]([format["floating point"](abs(self.c)), s])
         # If a symbol is a const, its representation is simply the count
         else:
-            s = self.format["floating point"](abs(self.c))
+            s = format["floating point"](abs(self.c))
         # Add a minus sign if needed
         if self.c < 0:
-            s = self.format["subtract"](["", s])
+            s = format["subtract"](["", s])
         return s
 
     def __hash__(self):
@@ -213,12 +249,12 @@ class Symbol(object):
     def __mul__(self, other):
         # If product will be zero
         if self.c == 0 or not other or other.c == 0:
-            return Symbol("", 0, CONST, self.format)
+            return Symbol("", 0, CONST)
 
         # Just handle multiplication by other symbols, else let other classes
         # handle it
         if isinstance(other, Symbol):
-            return Product([self, other], self.format)
+            return Product([self, other], False)
         else:
             return other.__mul__(self)
 
@@ -229,19 +265,19 @@ class Symbol(object):
 
         # If fraction will be zero
         if self.c == 0:
-            return Symbol("", 0, CONST, self.format)
+            return Symbol("", 0, CONST)
 
         # In case we get a symbol equal to the one we have the fraction is a
         # constant, else we have a simple fraction
         if isinstance(other, Symbol):
             if self == other:
-                return Symbol("", self.c/other.c, CONST, self.format)
-            return Fraction(self, other, self.format)
+                return Symbol("", self.c/other.c, CONST)
+            return Fraction(self, other, False)
 
         # We get expanded objects where nested operators have been removed
         # If other is a Sum we can only return a fraction
         elif isinstance(other, Sum):
-            return Fraction(self, other, self.format)
+            return Fraction(self, other, False)
         elif isinstance(other, (Symbol, Product)):
 
             # Create copy of self and save count (possibly new numerator)
@@ -254,13 +290,13 @@ class Symbol(object):
             # If self is in denominator, remove it and create const numerator
             if num in denom_list:
                 denom_list.remove(num)
-                num = Symbol("", num.c/other.c, CONST, self.format)
+                num = Symbol("", num.c/other.c, CONST)
 
             # Create the denominator and new fraction
             if len(denom_list) > 1:
-                return Fraction(num, Product(denom_list, self.format, True), self.format, True)
+                return Fraction(num, Product(denom_list))
             elif len(denom_list) == 1:
-                return Fraction(num, denom_list[0], self.format, True)
+                return Fraction(num, denom_list[0])
             else:
                 return num
         else:
@@ -320,7 +356,7 @@ class Symbol(object):
         if self.t == var_type:
             new = self.copy()
             new.c = 1
-            return (new, Symbol("", self.c, CONST, self.format))
+            return (new, Symbol("", self.c, CONST))
         # Types did not match
         return ([], self.copy())
 
@@ -346,7 +382,7 @@ class Symbol(object):
     def copy(self):
         "Returning a copy"
         # Return a constant if count is zero, else copy of self
-        new = Symbol(self.v, self.c, self.t, self.format)
+        new = Symbol(self.v, self.c, self.t)
         new.base_expr = self.base_expr
         new.base_op = self.base_op
         return new
@@ -354,7 +390,7 @@ class Symbol(object):
     def recon(self):
         "Reconstruct a variable, (returning a copy)"
         if self.c == 0:
-            return Symbol("", 0, CONST, self.format)
+            return Symbol("", 0, CONST)
         return self.copy()
 
     def mbrs(self):
@@ -394,18 +430,15 @@ class Symbol(object):
         return ops
 
 class Product(object):
-    __slots__ = ("vs", "c", "t", "format")
+    __slots__ = ("vs", "c", "t")
 
-    def __init__(self, variables, format, copies=False):
+    def __init__(self, variables, copies=True):
         """Initialise a Product object, the class contains:
         vs - a list of symbols
         c  - float, a count of occurrences (constant factor)
         t - Type, one of CONST, GEO, IP, BASIS. It is equal to the lowest
             type of its members"""
 
-        # Save format TODO: Is it possible to define this once outside the
-        # classes so that we don't have to 'drag' the format around?
-        self.format = format
         self.c = 1
         self.vs = []
 #        print "variables: ", variables
@@ -419,7 +452,7 @@ class Product(object):
             if v == None or v.c == 0:
                 # Create a const symbols and add to list, no need to proceed
                 self.c = 0
-                self.vs = [Symbol("", 0, CONST, self.format)]
+                self.vs = [Symbol("", 0, CONST)]
                 self.t = CONST
                 break
 
@@ -448,7 +481,7 @@ class Product(object):
             if self.vs:
                 self.t = min([v.t for v in self.vs])
             else:
-                self.vs = [Symbol("", 1, CONST, self.format)]
+                self.vs = [Symbol("", 1, CONST)]
                 self.t = CONST
             self.vs.sort()
 
@@ -457,7 +490,7 @@ class Product(object):
 
         l = [v.__repr__() for v in self.vs]
         if self.c != 1:
-            l = [repr(Symbol("", self.c, CONST, self.format))] + l
+            l = [repr(Symbol("", self.c, CONST))] + l
         l = ", ".join(l)
         return "Product([%s])" % l
 
@@ -465,18 +498,18 @@ class Product(object):
         "Simple string representation"
         # If the count is zero, just return a zero float
         if self.c == 0:
-            return self.format["floating point"](0.0)
+            return format["floating point"](0.0)
 
         # Join string representation of members by multiplication
-        s = self.format["multiply"]([str(v) for v in self.vs])
+        s = format["multiply"]([str(v) for v in self.vs])
 
         # Only multiply by count if it is needed
         if self.c != 1 and self.c != -1:
-            s = self.format["multiply"]([self.format["floating point"](abs(self.c)), s])
+            s = format["multiply"]([format["floating point"](abs(self.c)), s])
 
         # Add minus sign if needed
         if self.c < 0:
-            s = self.format["subtract"](["", s])
+            s = format["subtract"](["", s])
         return s
 
     def __hash__(self):
@@ -485,7 +518,7 @@ class Product(object):
     def __mul__(self, other):
         # If product will be zero
         if self.c == 0 or not other or other.c == 0:
-            return Symbol("", 0, CONST, self.format)
+            return Symbol("", 0, CONST)
 
         # If we get a symbol or another product, create a new product from the
         # members. It is safe because the expressions have been expanded and
@@ -494,11 +527,11 @@ class Product(object):
 
             # Rather than using Product(self.mbrs() + other.mbrs())
             # We create it here and set the count manually to avoid calling recon()
-            new = Product(self.vs + [other], self.format)
+            new = Product(self.vs + [other], False)
             new.c = self.c*other.c
             return new
         elif isinstance(other, Product):
-            new = Product(self.vs + other.vs, self.format)
+            new = Product(self.vs + other.vs, False)
             new.c = self.c*other.c
             return new
         else:
@@ -513,12 +546,12 @@ class Product(object):
 
         # If fraction will be zero
         if self.c == 0:
-            return Symbol("", 0, CONST, self.format)
+            return Symbol("", 0, CONST)
 
         # We get expanded objects where nested operators have been removed
         # If other is a Sum we can only return a fraction
         if isinstance(other, Sum):
-            return Fraction(self, other, self.format)
+            return Fraction(self, other, False)
 
         # If we get a symbol and it is present in the product list, construct
         # new list and remove the symbols
@@ -532,24 +565,24 @@ class Product(object):
                 # should have been removed at an earlier stage, but it is OK to
                 # leave it
                 if not new_list:
-                    return Symbol("", self.c/other.c, CONST, self.format)
+                    return Symbol("", self.c/other.c, CONST)
                 # If we still have many symbols, create a new product
                 elif len(new_list) > 1:
                     new_list[0].c = self.c/other.c
-                    return Product(new_list, self.format, True)
+                    return Product(new_list)
                 # If only one symbol is left, just return it
                 else:
                     new = new_list[0]
                     new.c = self.c/other.c
                     return new
             # If other was not in the list of symbols, return a fraction
-            return Fraction(self, other, self.format)
+            return Fraction(self, other, False)
 
         elif isinstance(other, Product):
 
             # If by chance the products are equal return a const
             if self.vs == other.vs:
-                return Symbol("", self.c/other.c, CONST, self.format)
+                return Symbol("", self.c/other.c, CONST)
 
             # Get new potential numerator members
             num_list = self.mbrs()
@@ -570,9 +603,9 @@ class Product(object):
             # If we still have a list of members, the numerator is a product
             # else it's just a constant
             if not num_list:
-                num = Symbol("", self.c/other.c, CONST, self.format)
+                num = Symbol("", self.c/other.c, CONST)
             elif len(num_list) > 1:
-                num = Product(num_list, self.format, True)
+                num = Product(num_list)
                 num.c = self.c/other.c
             else:
                 num = num_list[0]
@@ -584,12 +617,12 @@ class Product(object):
                 return num
             denom = ""
             if len(denom_list) > 1:
-                denom = Product(denom_list, self.format, True)
+                denom = Product(denom_list, False)
             else:
                 denom = denom_list[0]
             # The numerator already contain the count, so set it to one
             denom.c = 1
-            return Fraction(num, denom, self.format, True)
+            return Fraction(num, denom)
         else:
             raise RuntimeError("Product can only be divided by Symbol, Product and Sum")
 
@@ -657,7 +690,7 @@ class Product(object):
 
         # To get the remainder, simply divide by created class of found members
         if len(found) > 1:
-            found = Product(found, self.format)
+            found = Product(found, False)
         elif found:
             found = found.pop()
         else:
@@ -681,7 +714,7 @@ class Product(object):
         return members
 
     def copy(self):
-        new = Product([], self.format)
+        new = Product([])
         new.vs = [v.copy() for v in self.vs]
         new.t = self.t
         new.c = self.c
@@ -690,7 +723,7 @@ class Product(object):
     def recon(self):
         # If the product is zero return zero Symbol
         if self.c == 0:
-            return Symbol("", 0, CONST, self.format)
+            return Symbol("", 0, CONST)
 
         # Return new product of members
         if len(self.vs) > 1:
@@ -700,13 +733,13 @@ class Product(object):
             for v in self.vs:
                 new_v = v.recon()
                 if new_v == None or new_v.c == 0:
-                    return Symbol("", 0, CONST, self.format)
+                    return Symbol("", 0, CONST)
                 new_c *= new_v.c
                 if isinstance(v, Symbol) and v.t == CONST:
                     continue
                 append(new_v)
 
-            new = Product([], self.format)
+            new = Product([])
             new.vs = new_vars
             new.c = new_c
             new.t = self.t
@@ -783,8 +816,8 @@ class Product(object):
             new.c = new_c
             return new
         else:
-#            new = Product(new_prods, self.format)
-            new = Product([], self.format)
+#            new = Product(new_prods)
+            new = Product([])
             new.c = new_c
             new.vs = new_prods
             new.vs.sort()
@@ -811,7 +844,7 @@ class Product(object):
         # If there is anything in the list that will make the product zero
         # Just return a zero const
         if not expanded or None in expanded:
-            return Symbol("", 0, CONST, self.format)
+            return Symbol("", 0, CONST)
 
         # Add the factor to the first component
         expanded[0].c = new_self.c
@@ -836,17 +869,17 @@ class Product(object):
 #        print "rest: ", rest
 #        print "syms: ", syms
 #        if syms:
-#            append_rest(Product(syms, self.format))
+#            append_rest(Product(syms))
 #        return reduce(lambda x, y:x*y, rest)
         if not syms:
             # Multiply all members of the list
             return reduce(lambda x, y:x*y, rest)
         elif len(syms) > 1:
-            new = Product(syms, self.format, True)
+            new = Product(syms)
         else:
             new = syms[0]
         if new.c == 0:
-            return Symbol("", 0, CONST, self.format)
+            return Symbol("", 0, CONST)
         if not rest:
             return new
         else:
@@ -854,18 +887,15 @@ class Product(object):
             return reduce(lambda x, y:x*y, rest).remove_nested()
 
 class Sum(object):
-    __slots__ = ("c", "t", "pos", "neg", "format")
+    __slots__ = ("c", "t", "pos", "neg")
 
-    def __init__(self, variables, format, copies=False):
+    def __init__(self, variables, copies=True):
         """Initialise a Sum object, the class contains:
         vs - a list of symbols
         c  - float, a count of occurrences (constant factor)
         t - Type, one of CONST, GEO, IP, BASIS. It is equal to the lowest
             type of its members"""
 
-        # Save format TODO: Is it possible to define this once outside the
-        # classes so that we don't have to 'drag' the format around?
-        self.format = format
         self.pos = []
         self.neg = []
         self.c = 0
@@ -923,22 +953,22 @@ class Sum(object):
 
         # If the count is zero we're done
         if self.c == 0:
-            return self.format["floating point"](0.0)
+            return format["floating point"](0.0)
 
         # First add all the positive variables using plus, then add all
         # negative using minus
-        pos = self.format["add"]([str(v) for v in self.pos])
+        pos = format["add"]([str(v) for v in self.pos])
         neg = pos + "".join([str(v) for v in self.neg])
 
         # Group only if we have more that one variable
         if len(self.get_vars()) > 1:
-            neg = self.format["grouping"](neg)
+            neg = format["grouping"](neg)
         # Multiply by count if it is different from 1 and -1
         if self.c and self.c != 1 and self.c != -1:
-            neg = self.format["multiply"]([self.format["floating point"](abs(self.c)), neg])
+            neg = format["multiply"]([format["floating point"](abs(self.c)), neg])
         # Add minus sign
         if self.c < 0:
-             neg = self.format["subtract"](["", neg])
+             neg = format["subtract"](["", neg])
         return neg
 
     def __hash__(self):
@@ -948,7 +978,7 @@ class Sum(object):
 
         # If product will be zero
         if self.c == 0 or not other or other.c == 0:
-            return Symbol("", 0, CONST, self.format)
+            return Symbol("", 0, CONST)
 
         # List of new products
         new_prods = []
@@ -981,9 +1011,9 @@ class Sum(object):
 
         # Create new sum
         if not new_prods:
-            return Symbol("", 0, CONST, self.format)
+            return Symbol("", 0, CONST)
         elif len(new_prods) > 1:
-            return Sum(new_prods, self.format, True)
+            return Sum(new_prods)
         return new_prods[0]
 
     def __div__(self, other):
@@ -994,7 +1024,7 @@ class Sum(object):
 
         # If fraction will be zero
         if self.c == 0:
-            return Symbol("", 0, CONST, self.format)
+            return Symbol("", 0, CONST)
 
         # We get expanded objects where nested operators have been removed
         new_sum = []
@@ -1002,7 +1032,7 @@ class Sum(object):
         # If by chance we get a sum and it's equal to the sum we have return a
         # const
         if self == other:
-            return Symbol("", self.c/other.c, CONST, self.format)
+            return Symbol("", self.c/other.c, CONST)
 
         # If we get a symbol, sum or product, just divide each of the members
         # in self by other and add to the list
@@ -1021,9 +1051,9 @@ class Sum(object):
 
         # Create new sum and reconstruct to handle zero count
         if not new_sum:
-            return Symbol("", 0, CONST, self.format)
+            return Symbol("", 0, CONST)
         elif len(new_sum) > 1:
-            return Sum(new_sum, self.format, True)
+            return Sum(new_sum)
         return new_sum[0]
             
     def __add__(self, other):
@@ -1130,7 +1160,8 @@ class Sum(object):
         new_reduced = []
         append = new_reduced.append
         if len(reduce_vars) > 1 or min_occur > 1:
-            reduce_by = Product(reduce_vars*min_occur, self.format)
+            #TODO: copies?
+            reduce_by = Product(reduce_vars*min_occur, False)
         else:
             reduce_by = reduce_vars.pop()
 
@@ -1142,15 +1173,17 @@ class Sum(object):
 #        print "not_reduce_terms: ", not_reduce_terms
 
         # Create the new sum and reduce it further
-        reduced_terms = Sum(list(new_reduced), self.format, True).reduce_ops()
-        reduced = Product([reduce_by, reduced_terms], self.format, True)
+        reduced_terms = Sum(list(new_reduced)).reduce_ops()
+        reduced_terms = group_fractions(reduced_terms)
+        reduced = Product([reduce_by, reduced_terms])
         reduced.c *= self.c
 
         # Return reduced expression
         if not_reduce_terms:
-            not_reduce = Sum(not_reduce_terms, self.format, True).reduce_ops()
+            not_reduce = Sum(not_reduce_terms).reduce_ops()
             not_reduce.c *= self.c
-            new = Sum([reduced, not_reduce], self.format, True)
+            not_reduce = group_fractions(not_reduce)
+            new = Sum([reduced, not_reduce])
 
 #            test = new.expand()
 #            if not test == self:
@@ -1188,7 +1221,7 @@ class Sum(object):
         append = returns.append
         for f, r in found.iteritems():
             if len(r) > 1:
-                r = Sum(r, self.format, True)
+                r = Sum(r, True)
                 r.c *= self.c
             elif r:
                 r = r.pop()
@@ -1208,7 +1241,7 @@ class Sum(object):
         return members
 
     def copy(self):
-        new = Sum([], self.format)
+        new = Sum([])
         new.c = self.c
         new.t = self.t
         new.pos = [v.copy() for v in self.pos]
@@ -1218,7 +1251,7 @@ class Sum(object):
     def recon(self):
         # If the count is zero return a zero const
         if self.c == 0:
-            return Symbol("", 0, CONST, self.format)
+            return Symbol("", 0, CONST)
 
         # If the length of the positive and negative members are more than one
         # return a new sum of the members
@@ -1226,7 +1259,7 @@ class Sum(object):
             new_vars = [v.recon() for v in self.get_vars()]
             for v in new_vars:
                 v.c *= self.c
-            return Sum(new_vars, self.format, True)
+            return Sum(new_vars)
 
         # If we have one member return it, don't forget to multiply by count
         elif self.get_vars():
@@ -1294,7 +1327,7 @@ class Sum(object):
         if len(new_sums) == 1:
             return new_sums[0]
         else:
-            return Sum(new_sums, self.format, True)
+            return Sum(new_sums, True)
 
     def expand(self):
         # Remove nested expressions
@@ -1302,7 +1335,7 @@ class Sum(object):
 
         # If the count is zero return a const
         if new_self.c == 0:
-            return Symbol("", 0, CONST, self.format)
+            return Symbol("", 0, CONST)
 
         # If we don't have a sum anymore return the expansion of it
         if not isinstance(new_self, Sum):
@@ -1319,7 +1352,7 @@ class Sum(object):
 
         # Create new sum and remove nested, then reconstruct to remove zero count
         if not expanded:
-            return Symbol("", 0, CONST, self.format)
+            return Symbol("", 0, CONST)
         elif len(expanded) == 1:
             return expanded[0]
         new_expanded = []
@@ -1332,12 +1365,12 @@ class Sum(object):
                 extend(e.get_vars())
             else:
                 append(e)
-        return Sum(new_expanded, self.format, True)
+        return Sum(new_expanded)
 
 class Fraction(object):
-    __slots__ = ("c", "t", "num", "denom", "format")
+    __slots__ = ("c", "t", "num", "denom")
 
-    def __init__(self, numerator, denominator, format, copies=False):
+    def __init__(self, numerator, denominator, copies=True):
         """Initialise a Fraction object, the class contains:
         num   - the numerator
         denom - the denominator
@@ -1345,15 +1378,11 @@ class Fraction(object):
         t - Type, one of CONST, GEO, IP, BASIS. It is equal to the lowest
             type of its members"""
 
-        # Save format TODO: Is it possible to define this once outside the
-        # classes so that we don't have to 'drag' the format around?
-        self.format = format
-
         # If numerator and denominator are equal, we have a scalar
         if numerator == denominator:
             self.t = CONST
-            self.num = Symbol("", 1, CONST, self.format)
-            self.denom = Symbol("", 1, CONST, self.format)
+            self.num = Symbol("", 1, CONST)
+            self.denom = Symbol("", 1, CONST)
             self.c = numerator.c/denominator.c
         else:
             # Create copies of symbols
@@ -1377,34 +1406,51 @@ class Fraction(object):
         "Simple string representation"
 
         if self.c == 0:
-            return self.format["floating point"](0.0)
+            return format["floating point"](0.0)
         num = ""
         denom = ""
+        remain = ""
         new = self.recon()
+
         if not isinstance(new, Fraction):
             return str(new)
 
         # Handle numerator
         if isinstance(new.num, Fraction):
-            num = self.format["grouping"](str(new.num))
+            num = format["grouping"](str(new.num))
         elif isinstance(new.num, Symbol) and new.num.t != CONST:
             num = str(new.num)
-        elif isinstance(new.num, (Product, Sum)):
-            num = str(new.num)
+        elif isinstance(new.num, Sum):
+            if new.c != 1 and new.c != -1:
+                remain = str(new.num)
+            else:
+                num = format["floating point"](abs(new.c))
+                remain = str(new.num)
+
+            remain = str(new.num)
+        elif isinstance(new.num, Product):
+            if new.c != 1 and new.c != -1:
+                remain = str(new.num)
+            else:
+                num = str(new.num.vs[0])
+                remain = str(Product(new.num.vs[1:]))
 
         # Default
         if not num:
-            num = self.format["floating point"](abs(new.c))
+            num = format["floating point"](abs(new.c))
         elif new.c != 1 and new.c != -1:
-            num = self.format["multiply"]([self.format["floating point"](abs(new.c)), num])
+            num = format["multiply"]([format["floating point"](abs(new.c)), num])
 
         denom = str(new.denom)
         if isinstance(new.denom, (Product, Fraction)):
-            denom = self.format["grouping"](denom)
+            denom = format["grouping"](denom)
 
-        s = num + self.format["division"] + denom
+        s = num + format["division"] + denom
+
+        if remain:
+            s = format["multiply"]([s,remain])
         if new.c < 0:
-            s = self.format["subtract"](["", s])
+            s = format["subtract"](["", s])
         return s
 
     def __hash__(self):
@@ -1417,7 +1463,7 @@ class Fraction(object):
 
         # If product will be zero
         if self.c == 0 or not other or other.c == 0:
-            return Symbol("", 0, CONST, self.format)
+            return Symbol("", 0, CONST)
 
         # Multiplication of a fraction always involves the numerator, create new
         num = self.get_num()
@@ -1433,7 +1479,7 @@ class Fraction(object):
             new_denom = self.denom * other.denom
             # If they are equal, we just have a const
             if new_num == new_denom:
-                return Symbol("", new_num.c/new_denom.c, CONST, self.format)
+                return Symbol("", new_num.c/new_denom.c, CONST)
             return new_num/new_denom
         else:
             # If other is not a fraction, multiply the numerator by it and
@@ -1453,7 +1499,7 @@ class Fraction(object):
 
         # If fraction will be zero
         if self.c == 0:
-            return Symbol("", 0, CONST, self.format)
+            return Symbol("", 0, CONST)
 
         return self.get_num()/(self.denom*other)
 
@@ -1506,7 +1552,7 @@ class Fraction(object):
         return sum([v.v == var_name for v in self.num.get_vars() if v])
 
     def reduce_var(self, var):
-        return Fraction(self.get_num()/var, self.denom, self.format)
+        return Fraction(self.get_num()/var, self.denom, False)
 
     def reduce_vartype(self, var_type):
         num_found, num_remains = self.get_num().reduce_vartype(var_type)
@@ -1516,11 +1562,11 @@ class Fraction(object):
         if not denom_found or denom_found.t == CONST:
             found = num_found
         else:
-            found = Fraction(num_found, denom_found, self.format, True)
+            found = Fraction(num_found, denom_found)
         if not denom_remains or denom_remains.t == CONST:
             remains = num_remains
         else:
-            remains = Fraction(num_remains, denom_remains, self.format, True)
+            remains = Fraction(num_remains, denom_remains)
         return (found, remains)
 
     def get_unique_vars(self, var_type):
@@ -1536,7 +1582,7 @@ class Fraction(object):
         return num
 
     def copy(self):
-        new = Fraction(self.num, self.denom, self.format)
+        new = Fraction(self.num, self.denom)
         new.c = self.c
         new.t = self.t
         return new
@@ -1544,7 +1590,7 @@ class Fraction(object):
     def recon(self):
         # If count is zero return const zero
         if self.c == 0:
-            return Symbol("", 0, CONST, self.format)
+            return Symbol("", 0, CONST)
         # Reconstruct the numerator and denominator
         num = self.num.recon()
         num.c = self.c
@@ -1555,11 +1601,11 @@ class Fraction(object):
         if isinstance(denom, Symbol) and denom.t == CONST:
             return num
         # Return new fraction
-        return Fraction(num, denom, self.format, True)
+        return Fraction(num, denom)
 
     def inv(self):
         # Construct inverse, needed by remove_nested (division by fraction)
-        return Fraction(self.denom.copy(), self.get_num(), self.format, True)
+        return Fraction(self.denom.copy(), self.get_num())
 
     def ops(self):
         # If count is zero the number of operations are zero
@@ -1577,6 +1623,9 @@ class Fraction(object):
 
         # Add the two counts and + 1 for the '/' symbol
         ops = num_op + denom_op + 1
+
+        if isinstance(new.num, Sum) and not (new.c != 1 and new.c != -1):
+            ops += 1
 
         # Add one for the minus sign
         if new.c < 0:
@@ -1601,26 +1650,26 @@ class Fraction(object):
         # that might have been created
         if isinstance(num, Fraction) and isinstance(denom, Fraction):
             # Create fraction
-            new_num = Product([num.num, denom.denom], self.format, True).remove_nested()
-            new_denom = Product([num.denom, denom.num], self.format, True).remove_nested()
-            new = Fraction(new_num, new_denom, self.format, True)
+            new_num = Product([num.num, denom.denom]).remove_nested()
+            new_denom = Product([num.denom, denom.num]).remove_nested()
+            new = Fraction(new_num, new_denom)
             new.c = num.c/denom.c
             return new
         # If the numerator is a fraction, multiply denominators
         elif isinstance(num, Fraction):
             # Create fraction and remove nested in case new where created
-            new_denom = Product([num.denom, denom], self.format, True).remove_nested()
-            new = Fraction(num.get_num(), new_denom, self.format, True)
+            new_denom = Product([num.denom, denom]).remove_nested()
+            new = Fraction(num.get_num(), new_denom)
             return new
 
         # If the denominator is a fraction multiply by the inverse and
         # remove the nested products that might have been created
         elif isinstance(denom, Fraction):
-            new = Product([num, denom.inv()], self.format, True)
+            new = Product([num, denom.inv()])
             return new.remove_nested()
         else:
             # If we didn't have a nested fraction, just return a new one
-            return Fraction(num, denom, self.format, True)
+            return Fraction(num, denom)
 
     def expand(self):
         # Remove all nested operators from expression
