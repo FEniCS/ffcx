@@ -154,7 +154,7 @@ def main(args):
         for form in forms:
 
             # Skip forms not expected to work with tensor representation
-            if representation is "tensor" and form in only_quadrature:
+            if representation is "tensor" and form in only_quadrature and format is "ufl":
                 continue
 
             # Compile form
