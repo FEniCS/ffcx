@@ -41,24 +41,24 @@ from ufl.algorithms.printing import tree_format
 class UFLQuadratureGenerator:
     "Code generator for quadrature representation"
 
-    def __init__(self):
+    def __init__(self, options):
         "Constructor"
 
-        # TODO: Set this through OPTIONS
-        # These options should be safe and fast, but result in slow code
-        self.optimise_options = {"non zero columns": False,
-                                 "ignore ones": False,
-                                 "remove zero terms": False,
-                                 "simplify expressions": False,
-                                 "ignore zero tables": False}
-
-        # These options results in fast code, but compiles slower and there
-        # might still be bugs
-#        self.optimise_options = {"non zero columns": True,
-#                                 "ignore ones": True,
-#                                 "remove zero terms": True,
-#                                 "simplify expressions": True,
-#                                 "ignore zero tables": True}
+        if options["optimize"]:
+            # These options results in fast code, but compiles slower and there
+            # might still be bugs
+            self.optimise_options = {"non zero columns": True,
+                                     "ignore ones": True,
+                                     "remove zero terms": True,
+                                     "simplify expressions": True,
+                                     "ignore zero tables": True}
+        else:
+            # These options should be safe and fast, but result in slow code
+            self.optimise_options = {"non zero columns": False,
+                                     "ignore ones": False,
+                                     "remove zero terms": False,
+                                     "simplify expressions": False,
+                                     "ignore zero tables": False}
 
 
     def generate_integrals(self, form_representation, format):
