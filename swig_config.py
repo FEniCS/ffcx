@@ -129,10 +129,7 @@ def prepareSwigEnv(swig_env):
         # try to use g++ as default:
         swig_env["CXX"] = "g++"
 
-    if "-Werror" in swig_env["CXXFLAGS"]:
-            swig_env["CXXFLAGS"].remove("-Werror")
-    
-    swig_env["SWIGFLAGS"] = "-python -c++ -shadow".split()
+    swig_env["SWIGFLAGS"] = "-python -c++ -shadow -O".split()
     swig_env["SHLIBPREFIX"] = "_"
     if swig_env["PLATFORM"] == "darwin":
         swig_env.Append(CXXFLAGS=" -undefined dynamic_lookup")

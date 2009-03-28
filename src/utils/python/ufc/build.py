@@ -58,7 +58,7 @@ def build_ufc_module(h_files, source_directory="", system_headers=None, **kwargs
                                 additional_declarations = declarations,
                                 system_headers          = system_headers,
                                 include_dirs            = cpp_path,
-                                swigargs                = ['-c++', '-I.'],
+                                swigargs                = ['-c++', '-I.','-O'],
                                 swig_include_dirs       = swig_path,
                                 **kwargs)
 
