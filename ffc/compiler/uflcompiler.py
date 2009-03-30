@@ -321,7 +321,7 @@ def _extract_objects(objects):
         elif isinstance(object, FiniteElementBase):
             elements.append(object)
         elif not object is None:
-            error("Not a form: " + str(object))
+            forms.append(Form(object))
 
     # Only compile element(s) when there are no forms
     if len(forms) > 0 and len(elements) > 0:
