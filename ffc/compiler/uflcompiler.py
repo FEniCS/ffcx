@@ -113,7 +113,7 @@ def compile(forms, prefix="Form", options=UFL_OPTIONS.copy(), global_variables=N
         optimize_form_representation(form_data)
 
         # Compiler stage 4: generate form code
-        form_code = generate_form_code(form_data, representations, prefix, format.format)
+        form_code = generate_form_code(form_data, representations, prefix, format.format, options)
 
         # Add to list of codes
         generated_forms += [(form_code, form_data)]
@@ -193,7 +193,7 @@ def optimize_form_representation(form_data):
     info("Optimization currently broken (to be fixed).")
     end()
 
-def generate_form_code(form_data, representations, prefix, format):
+def generate_form_code(form_data, representations, prefix, format, options):
     "Compiler stage 4."
     
     begin("Compiler stage 4: Generating code")
@@ -204,7 +204,7 @@ def generate_form_code(form_data, representations, prefix, format):
     # Generate code for integrals using quadrature
     codes = []
     for (i, CodeGenerator) in enumerate(CodeGenerators):
-        code_generator = CodeGenerator()
+        code_generator = CodeGenerator(options)
         codes.append(code_generator.generate_integrals(representations[i], format))
 
     # Loop all subdomains of integral types and combine code

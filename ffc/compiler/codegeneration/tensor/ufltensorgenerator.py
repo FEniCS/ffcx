@@ -21,6 +21,9 @@ from ffc.compiler.representation.tensor.monomialtransformation import MonomialIn
 from ffc.compiler.format.removeunused import *
 
 class UFLTensorGenerator:
+
+    def __init__(self, options):
+        pass
     
     def generate_integrals(self, form_representation, format):
         "Generate code for all integrals."
