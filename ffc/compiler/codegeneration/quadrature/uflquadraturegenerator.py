@@ -37,6 +37,8 @@ from ufl.algorithms.analysis import extract_unique_elements
 # TODO: Can be removed once module is complete
 from ufl.algorithms.printing import tree_format
 
+import time
+
 #class QuadratureGenerator(CodeGenerator):
 class UFLQuadratureGenerator:
     "Code generator for quadrature representation"
@@ -44,6 +46,11 @@ class UFLQuadratureGenerator:
     def __init__(self, options):
         "Constructor"
 
+#        self.optimise_options = {"non zero columns": True,
+#                                  "ignore ones": True,
+#                                  "remove zero terms": True,
+#                                  "simplify expressions": True,
+#                                  "ignore zero tables": True}
         if options["optimize"]:
             # These options results in fast code, but compiles slower and there
             # might still be bugs
@@ -70,7 +77,9 @@ class UFLQuadratureGenerator:
         code["representation"] = "quadrature"
 
         # Generate code for cell integrals
+#        start = time.time()
         code.update(self.generate_cell_integrals(form_representation, format))
+#        print "time cell int: ", time.time() - start
 
         # Generate code for exterior facet integrals
         code.update(self.generate_exterior_facet_integrals(form_representation, format))
@@ -159,10 +168,11 @@ class UFLQuadratureGenerator:
         transformer.update_facets(None, None)
 
         # Generate element code + set of used geometry terms
+#        start = time.time()
         element_code, members_code, num_ops =\
           self.__generate_element_tensor(form_representation, transformer,\
                                          integrals, Indent, format)
-
+#        print "elem tens: ", time.time() - start
         # Get Jacobian snippet
         # FIXME: This will most likely have to change if we support e.g., 2D elements in 3D space
         jacobi_code = [format["generate jacobian"](transformer.geo_dim, FFCIntegral.CELL)]
@@ -180,11 +190,14 @@ class UFLQuadratureGenerator:
         code += self.__tabulate_psis(transformer, Indent, format)
 
         # Create the constant geometry declarations (only generated if simplify expressions are enabled)
+#        start = time.time()
+#        print transformer.geo_consts
         geo_ops, geo_code = generate_aux_constants(transformer.geo_consts, format["geometry tensor"], format["const float declaration"])
         if geo_code:
             num_ops += geo_ops
             code += ["", format["comment"]("Number of operations to compute geometry constants: %d" %geo_ops)]
             code += geo_code
+#        print "tab geo: ", time.time() - start
 
         # Add element code
         code += ["", format["comment"]("Compute element tensor using UFL quadrature representation"),\
@@ -349,13 +362,14 @@ class UFLQuadratureGenerator:
             transformer.update_points(points)
 
             # Generate code for integrand and get number of operations
+#            start = time.time()
             if self.optimise_options["simplify expressions"]:
                 integral_code, num_ops =\
                     generate_code2(integral.integrand(), transformer, Indent, format)
             else:
                 integral_code, num_ops =\
                     generate_code(integral.integrand(), transformer, Indent, format)
-
+#            print "gen code: ", time.time() - start
             # Get number of operations to compute entries for all terms when
             # looping over all IPs and update tensor count
             num_operations = num_ops*points

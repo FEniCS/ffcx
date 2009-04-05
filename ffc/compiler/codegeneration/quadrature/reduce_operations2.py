@@ -53,7 +53,7 @@ def group_fractions(expr):
     return not_frac[0]
 
 
-def generate_aux_constants(constant_decl, name, var_type, print_ops=False, reduce_ops=False):
+def generate_aux_constants(constant_decl, name, var_type, print_ops=False):
     "A helper tool to generate code for constant declarations"
     code = []
     append = code.append
@@ -198,7 +198,7 @@ def optimise_code(expr, ip_consts, geo_consts, trans_set):
 
 
 class Symbol(object):
-    __slots__ = ("v", "c", "t", "base_expr", "base_op")
+    __slots__ = ("v", "c", "t", "base_expr", "base_op", "_hash")
 
     def __init__(self, variable, count, symbol_type):
         """Initialise a Symbols object it contains a:
@@ -209,6 +209,7 @@ class Symbol(object):
         self.v = variable
         self.c = float(count)
         self.t = symbol_type
+        self._hash = False
 
         # Needed for symbols like std::cos(x*y + z) --> base_ops = 2
         # (should that really be 3?)
@@ -244,7 +245,10 @@ class Symbol(object):
         return s
 
     def __hash__(self):
-        return hash(str(self))
+        if self._hash:
+            return self._hash
+        self._hash = hash(str(self))
+        return self._hash
 
     def __mul__(self, other):
         # If product will be zero
@@ -430,7 +434,7 @@ class Symbol(object):
         return ops
 
 class Product(object):
-    __slots__ = ("vs", "c", "t")
+    __slots__ = ("vs", "c", "t", "_hash")
 
     def __init__(self, variables, copies=True):
         """Initialise a Product object, the class contains:
@@ -441,6 +445,7 @@ class Product(object):
 
         self.c = 1
         self.vs = []
+        self._hash = False
 #        print "variables: ", variables
         if not variables:
             # Create a const symbols and add to list, no need to proceed
@@ -513,7 +518,10 @@ class Product(object):
         return s
 
     def __hash__(self):
-        return hash(str(self))
+        if self._hash:
+            return self._hash
+        self._hash = hash(str(self))
+        return self._hash
 
     def __mul__(self, other):
         # If product will be zero
@@ -887,7 +895,7 @@ class Product(object):
             return reduce(lambda x, y:x*y, rest).remove_nested()
 
 class Sum(object):
-    __slots__ = ("c", "t", "pos", "neg")
+    __slots__ = ("c", "t", "pos", "neg", "_hash")
 
     def __init__(self, variables, copies=True):
         """Initialise a Sum object, the class contains:
@@ -900,6 +908,7 @@ class Sum(object):
         self.neg = []
         self.c = 0
         self.t = CONST
+        self._hash = False
 
         # Create copies of variable, exclude if they are zero valued
 
@@ -972,7 +981,10 @@ class Sum(object):
         return neg
 
     def __hash__(self):
-        return hash(str(self))
+        if self._hash:
+            return self._hash
+        self._hash = hash(str(self))
+        return self._hash
 
     def __mul__(self, other):
 
@@ -1104,12 +1116,18 @@ class Sum(object):
 
     def reduce_ops(self):
 #        print "\nreduce:\n", self
+#        print "\nreduce:\n", repr(self)
         var = {}
         var_map = {}
-        new_self = self.recon()
+        new_expr = self.recon()
+        if not isinstance(new_expr, Sum):
+            return new_expr.reduce_ops()
+#        new_expr = self
         not_reduce_terms = set()
         not_r_add = not_reduce_terms.add
-        for vr in new_self.get_vars():
+#        print "\nnew_expr:\n", new_expr
+#        print "\nnew_expr:\n", repr(new_expr)
+        for vr in new_expr.get_vars():
 #            print "vr: ", vr
             variables = vr.get_vars()
 #            print "variables: ", variables
@@ -1127,81 +1145,113 @@ class Sum(object):
                 elif v.v in var:
                     var[v.v].add(vr)
         if not var:
-            return new_self
+            return new_expr
         max_var = max([len(v) for k,v in var.iteritems()])
         if not max_var > 1:
-            return new_self
+            return new_expr
 
-        reduce_vars = None
-        reduce_terms = None
+        reduce_vars = {}
         min_occur = 0
         for key,v in var.iteritems():
             k = var_map[key]
+#            if isinstance(k, Symbol) and k.t == CONST:
+            if isinstance(k, Symbol) and k.t == CONST:
+                continue
 #            print "k: ", k
-#            print "v: ", v
             # If this is a variable that we should reduce
             if len(v) == max_var:
+#                print "K: ", k
                 occur = min([vr.num_var(k.v) for vr in v])
-                if occur > min_occur:
-                    min_occur = occur
-                    reduce_vars = [k]
-                    reduce_terms = v
-                elif occur == min_occur and v == reduce_terms:
-                    reduce_vars.append(k)
+#                if occur > min_occur:
+#                      min_occur = occur
+#                      reduce_vars = {tuple(v[1])}
+#                print "occur: ", occur
+#                print "sum: ", Sum(v)
+                if tuple(v) in reduce_vars:
+                    reduce_vars[tuple(v)].extend([k]*occur)
+                else:
+#                    print "not present"
+                    ok_add = True
+#                        print "key: ", key
+#                        print "val: ", val
+                    for a in v:
+                        for key, val in reduce_vars.items():
+                            if a in key:
+                                ok_add = False
+                                # Overwrite if we have more occurences
+                                if occur > min([vr.num_var(k.v) for vr in key]):
+                                    ok_add = True
+                                    del reduce_vars[key]
+                                break
+                        if not ok_add:
+                            break
+                    if ok_add:
+#                        print "addin"
+                        reduce_vars[tuple(v)] = [k]
 
-        if not reduce_terms:
-            return new_self
-        for k,v in var.iteritems():
-            for vr in v:
-                if not vr in reduce_terms:
-                    not_r_add(vr)
+        if not reduce_vars:
+            return new_expr
+#        for key,val in var.iteritems():
 
-        # Start reducing n times v
-        new_reduced = []
-        append = new_reduced.append
-        if len(reduce_vars) > 1 or min_occur > 1:
-            #TODO: copies?
-            reduce_by = Product(reduce_vars*min_occur, False)
-        else:
-            reduce_by = reduce_vars.pop()
-
-#        print "reduce_by: ", reduce_by
-        for rt in reduce_terms:
-            append(rt.reduce_var(reduce_by))
-
-#        print "new_reduced: ", new_reduced
 #        print "not_reduce_terms: ", not_reduce_terms
+        for vr in new_expr.get_vars():
+#            print "\nvr: ", vr
+            add_ok = True
+            for reduce_terms, v in reduce_vars.items():
+                if vr in reduce_terms:
+                    add_ok = False
+            if add_ok:
+                not_r_add(vr)
+        new_sums = []
+        append_sum = new_sums.append
+#        print "reduce_by: ", [v for k,v in reduce_vars.items()]
+        for reduce_terms, reduce_by in reduce_vars.items():
+            new_reduced = []
+            append = new_reduced.append
+            # Start reducing terms
+            if len(reduce_by) > 1:
+                reduce_by = Product(reduce_by, False)
+            else:
+                reduce_by = reduce_by.pop()
 
-        # Create the new sum and reduce it further
-        reduced_terms = Sum(list(new_reduced)).reduce_ops()
-        reduced_terms = group_fractions(reduced_terms)
-        reduced = Product([reduce_by, reduced_terms])
-        reduced.c *= self.c
+            for rt in reduce_terms:
+                append(rt.reduce_var(reduce_by))
+#            print "reduce_by: ", reduce_by
+
+#            print "new_reduced: ", new_reduced
+            # Create the new sum and reduce it further
+            reduced_terms = Sum(new_reduced).reduce_ops()
+            reduced_terms = group_fractions(reduced_terms)
+            reduced = Product([reduce_by, reduced_terms])
+            reduced.c *= new_expr.c
+            append_sum(reduced)
+#        raise RuntimeError("hello")
 
         # Return reduced expression
         if not_reduce_terms:
             not_reduce = Sum(not_reduce_terms).reduce_ops()
-            not_reduce.c *= self.c
+            not_reduce.c *= new_expr.c
             not_reduce = group_fractions(not_reduce)
-            new = Sum([reduced, not_reduce])
-
+            new = Sum(new_sums + [not_reduce])
+#            print "New: ", new
 #            test = new.expand()
-#            if not test == self:
+#            if not test == expr:
 #                print "new: ", new.__repr__()
 #                print "new: ", new
-#                print "self: ", self.pos
+#                print "self: ", expr.pos
 #                print "test: ", test.pos
 #                error("Not equal")
             return new.remove_nested()
         else:
 #            test = reduced.expand().recon()
-#            if not test == self:
-#                print "1self: ", repr(self)
+#            if not test == expr:
+#                print "1self: ", repr(expr)
 #                print "1test: ", repr(test)
-#                print "1self: ", self
+#                print "1self: ", expr
 #                print "1test: ", test
 #                error("Not equal")
-            return reduced.remove_nested()
+#            print "new_sums: ", Sum(new_sums)
+            return Sum(new_sums).remove_nested()
 
 
     def reduce_vartype(self, var_type):
@@ -1368,7 +1418,7 @@ class Sum(object):
         return Sum(new_expanded)
 
 class Fraction(object):
-    __slots__ = ("c", "t", "num", "denom")
+    __slots__ = ("c", "t", "num", "denom", "_hash")
 
     def __init__(self, numerator, denominator, copies=True):
         """Initialise a Fraction object, the class contains:
@@ -1377,7 +1427,7 @@ class Fraction(object):
         c     - a float count of the number of occurrences
         t - Type, one of CONST, GEO, IP, BASIS. It is equal to the lowest
             type of its members"""
-
+        self._hash = False
         # If numerator and denominator are equal, we have a scalar
         if numerator == denominator:
             self.t = CONST
@@ -1454,7 +1504,10 @@ class Fraction(object):
         return s
 
     def __hash__(self):
-        return hash(str(self))
+        if self._hash:
+            return self._hash
+        self._hash = hash(str(self))
+        return self._hash
 
     def __mul__(self, other):
 
