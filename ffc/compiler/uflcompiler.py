@@ -27,7 +27,7 @@ import os
 # UFL modules
 from ufl.classes import Form, FiniteElementBase, Measure, Integral
 from ufl.algorithms import validate_form, extract_quadrature_order, estimate_quadrature_order
-from ufl.algorithms import extract_unique_elements, extract_basis_functions
+from ufl.algorithms import extract_unique_elements, extract_basis_functions, as_form
 
 # FFC common modules
 from ffc.common.log import debug, info, warning, error, begin, end, set_level, INFO
@@ -308,20 +308,18 @@ def _check_metadata(integral, options):
 def _extract_objects(objects):
     "Extract forms and elements from list of objects."
 
-    # Check each object
-    forms = []
-    elements = []
-
-    if not isinstance(objects, list):
+    # Check that we get a list of objects
+    if not isinstance(objects, (list, tuple)):
         objects = [objects]
 
+    # Iterate over objects and extract forms and elements
+    forms = []
+    elements = []
     for object in objects:
-        if isinstance(object, Form):
-            forms.append(object)
-        elif isinstance(object, FiniteElementBase):
-            elements.append(object)
+        if isinstance(object, FiniteElementBase):
+            elements.append(object)        
         elif not object is None:
-            forms.append(Form(object))
+            forms.append(as_form(object))
 
     # Only compile element(s) when there are no forms
     if len(forms) > 0 and len(elements) > 0:
