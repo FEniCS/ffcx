@@ -1,3 +1,5 @@
+0.6.2 [2009-04-07]
+ - Experimental support for UFL, supporting both .form and .ufl
  - Moved configuration and construction of python extension module to ufc_module
 0.6.1 [2009-02-18]
  - Initial work on UFL transition
