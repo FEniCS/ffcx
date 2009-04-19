@@ -27,7 +27,7 @@ import os
 
 # UFL modules
 from ufl.classes import Form, FiniteElementBase, Measure, Integral
-from ufl.algorithms import validate_form, extract_quadrature_order, estimate_max_quadrature_order, estimate_quadrature_order
+from ufl.algorithms import validate_form, extract_max_quadrature_element_degree, estimate_max_polynomial_degree
 from ufl.algorithms import extract_unique_elements, extract_basis_functions, as_form
 from ufl.algorithms import *
 # FFC common modules
@@ -374,11 +374,14 @@ def _auto_select_representation(integral):
 def _auto_select_quadrature_order(integral):
     "Automatically select the appropriate quadrature order for integral."
 
-    # FIXME: to take into account Quadrature elements
-    if any(e.family() == "Quadrature" for e in extract_unique_elements(integral)):
-        quadrature_order = extract_quadrature_order(integral)
-    else:
-        quadrature_order = max(extract_quadrature_order(integral),\
-                               estimate_max_quadrature_order(integral.integrand()))
+    # Use maximum degree of quadrature element if any
+    quadrature_degree = extract_max_quadrature_element_degree(integral)
+
+    # Otherwise, estimate polynomial degree (may not be a polymomial)
+    if quadrature_degree is None:
+        quadrature_degree = estimate_max_polynomial_degree(integral)
+
+    # Set quadrature order to polynomial degree
+    quadrature_order = quadrature_degree
 
     return quadrature_order
