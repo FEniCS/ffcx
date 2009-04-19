@@ -376,9 +376,9 @@ def _auto_select_quadrature_order(integral):
 
     # FIXME: to take into account Quadrature elements
     if any(e.family() == "Quadrature" for e in extract_unique_elements(integral)):
-        quadrature_order = estimate_max_quadrature_order(integral._integrand)
+        quadrature_order = estimate_max_quadrature_order(integral.integrand())
     else:
-        quadrature_order = max(estimate_max_quadrature_order(integral._integrand),\
+        quadrature_order = max(estimate_max_quadrature_order(integral.integrand()),\
                                estimate_quadrature_order(integral))
 
     return quadrature_order
