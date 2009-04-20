@@ -133,7 +133,7 @@ class QuadratureTransformer2(QuadratureTransformer):
         # Get denominator and create new values for the numerator
         denominator = denominator_code.pop(())
         for key, val in numerator_code.items():
-            numerator_code[key] = Fraction(val, denominator)
+            numerator_code[key] = Fraction(val, denominator, False)
 
         return numerator_code
 
