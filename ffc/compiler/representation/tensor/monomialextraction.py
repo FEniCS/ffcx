@@ -12,9 +12,8 @@ from ufl.basisfunction import BasisFunction
 from ufl.function import Function
 from ufl.constantvalue import ScalarValue, IntValue
 from ufl.form import Form
-from ufl.algorithms.transformations import purge_list_tensors
-from ufl.algorithms.transformations import ReuseTransformer, apply_transformer
-from ufl.algorithms.printing import tree_format
+from ufl.algorithms import purge_list_tensors, tree_format, apply_transformer
+from ufl.algorithms.transformations import ReuseTransformer
 
 # FFC common modules
 from ffc.common.log import ffc_assert
