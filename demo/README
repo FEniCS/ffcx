@@ -1,10 +1,10 @@
 To compile a form in this directory, just type
 
-   ffc <prefix>.form
+   ffc <prefix>.ufl
 
 for example
 
-  ffc Poisson.form
+  ffc Poisson.ufl
 
 To run these demos from within the source tree without needing to
 install FFC system-wide, update your paths according to

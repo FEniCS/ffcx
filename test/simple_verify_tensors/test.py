@@ -7,10 +7,6 @@ from cppcode import tabulate_tensor_code, integral_types
 from ufl.common import tstr
 import sys, os, commands, pickle, numpy
 
-# Temporary while testing new UFL compiler
-#format = "form"
-format = "ufl"
-
 # Forms that don't work with tensor representation
 only_quadrature = ["FunctionOperators",
                    "QuadratureElement",
@@ -52,15 +48,15 @@ def get_integrals(form):
     for integral_type in integral_types:
         for integral in commands.getoutput("grep ufc::%s %s | grep class" % (integral_type, form + ".h")).split("\n"):
             integral = integral.split(":")[0].split(" ")[-1].strip()
-            if not integral is "":
+            if not integral is "" and not integral.endswith("_tensor") and not integral.endswith("_quadrature"):
                 integrals.append((integral, integral_type))
     return integrals
 
 def to_dict(tuples):
     "Convert list of tuples to dictionary."
     d = {}
-    for key, value in tuples:
-        d[key] = value
+    for t in tuples:
+        d[t[0]] = t[1]
     return d
 
 def run_command(command, representation="", integral=""):
@@ -92,8 +88,8 @@ def check_results(values, reference):
         results = []
 
         integrals = []
-        for (integral, value) in vals + reference:
-            if not integral in integrals:
+        for (integral, value, form) in vals + reference:
+            if not integral in integrals and not (representation is "tensor" and form in only_quadrature):
                 integrals.append(integral)
 
         vals = to_dict(vals)
@@ -136,11 +132,8 @@ def check_results(values, reference):
         print "*** Results differ for %d integrals." % num_diffs
 
     print ""
-    print """The following are known fail and should fail but are indeed OK
-FunctionOperatorsBilinearForm_cell_integral_0:        *** (diff = 0.010091)
+    print """The following test should fail (due to round-off errors):
 MassBilinearForm_cell_integral_0:                     *** (diff = 1e-09)
-QuadratureElementBilinearForm_cell_integral_0:        *** (diff = 0.249892)
-QuadratureElementLinearForm_cell_integral_0:          *** (diff = 0.10106)
 """
 
     return 1
@@ -152,29 +145,29 @@ def main(args):
     if not os.path.isdir("tmp"):
         os.mkdir("tmp")
     os.chdir("tmp")
-    run_command("cp ../../../demo/*.%s ." % format)
+    run_command("cp ../../../demo/*.ufl .")
 
     # Iterate over all form files
-    forms = commands.getoutput("ls *.%s | cut -d'.' -f1" % format).split("\n")
+    forms = commands.getoutput("ls *.ufl | cut -d'.' -f1").split("\n")
     values = {}
     for representation in ["quadrature", "tensor"]:
         vals = []
         for form in forms:
 
             # Skip forms not expected to work with tensor representation
-            if representation is "tensor" and form in only_quadrature and format is "ufl":
+            if representation is "tensor" and form in only_quadrature:
                 continue
 
             # Compile form
             print "Compiling form %s..." % form
-            (ok, output) = run_command("ffc -r %s %s.%s" % (representation, form, format), representation, form)
+            (ok, output) = run_command("ffc -r %s %s.ufl" % (representation, form), representation, form)
             if not ok:
                 vals.append((form, "FFC compilation failed"))
                 continue
 
             # Tabulate tensors for all integrals
             for (integral, integral_type) in get_integrals(form):
-                vals.append((integral, tabulate_tensor(representation, integral, integral_type, form + ".h")))
+                vals.append((integral, tabulate_tensor(representation, integral, integral_type, form + ".h"), form))
 
         values[representation] = vals
 
@@ -183,7 +176,7 @@ def main(args):
         reference = pickle.load(open("../reference.pickle", "r"))
     else:
         print "Unable to find reference values, storing current values."
-        pickle.dump(values["tensor"], open("../reference.pickle", "w"))
+        pickle.dump(values["quadrature"], open("../reference.pickle", "w"))
         return 0
 
     # Check results

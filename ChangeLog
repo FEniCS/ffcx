@@ -1,3 +1,4 @@
+ - Remove support for old style .form files/format
 0.6.2 [2009-04-07]
  - Experimental support for UFL, supporting both .form and .ufl
  - Moved configuration and construction of python extension module to ufc_module

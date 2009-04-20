@@ -1,7 +1,7 @@
 "Regression tests for FFC"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-03-05 -- 2008-04-29"
+__date__ = "2007-03-05 -- 2009-04-20"
 __copyright__ = "Copyright (C) 2007-2008 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
@@ -17,7 +17,7 @@ else:
 
 # Check all in demo directory
 chdir(path.join(pardir, pardir, "demo"))
-form_files = [f for f in listdir(curdir) if f[-5:] == ".form"]
+form_files = [f for f in listdir(curdir) if f.endswith(".ufl")]
 form_files.sort()
 num_forms = len(form_files)
 num_forms_ok = 0
