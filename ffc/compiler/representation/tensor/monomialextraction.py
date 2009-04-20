@@ -8,12 +8,8 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Martin Alnes, 2008
 
 # UFL modules
-from ufl.basisfunction import BasisFunction
-from ufl.function import Function
-from ufl.constantvalue import ScalarValue, IntValue
-from ufl.form import Form
-from ufl.algorithms import purge_list_tensors, tree_format, apply_transformer
-from ufl.algorithms.transformations import ReuseTransformer
+from ufl.classes import Form, BasisFunction, Function, ScalarValue, IntValue
+from ufl.algorithms import purge_list_tensors, tree_format, apply_transformer, ReuseTransformer
 
 # FFC common modules
 from ffc.common.log import ffc_assert

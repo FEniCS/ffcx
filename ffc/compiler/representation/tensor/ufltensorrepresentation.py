@@ -4,8 +4,7 @@ __copyright__ = "Copyright (C) 2007-2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 # UFL modules
-from ufl.classes import Form
-from ufl.integral import Measure
+from ufl.classes import Form, Measure
 from ufl.algorithms import extract_basis_functions
 
 # FFC common modules

@@ -16,7 +16,7 @@ import numpy
 import time
 
 # UFL modules
-from ufl.integral import Measure
+from ufl.classes import Measure
 
 # FIAT modules
 from FIAT.transformedspace import *

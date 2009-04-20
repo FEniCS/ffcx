@@ -16,10 +16,8 @@ from ffc.fem.referencecell import map_to_facet
 from ffc.fem.createelement import create_element
 
 # UFL modules
-from ufl.classes import Form, Integral
-from ufl.differentiation import SpatialDerivative
-from ufl.integral import Measure
-from ufl.algorithms.analysis import extract_elements, extract_unique_elements, extract_type
+from ufl.classes import Form, Integral, SpatialDerivative, Measure
+from ufl.algorithms import extract_elements, extract_unique_elements, extract_type
 
 class QuadratureRepresentation:
     """This class initialises some data structures that are used by the

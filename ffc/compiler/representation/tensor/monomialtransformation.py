@@ -6,8 +6,7 @@ __copyright__ = "Copyright (C) 2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 # UFL modules
-from ufl import BasisFunction, Function
-from ufl.indexing import FixedIndex
+from ufl.classes import BasisFunction, Function, FixedIndex
 
 # FFC common modules
 from ffc.common.log import ffc_assert
