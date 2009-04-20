@@ -135,7 +135,7 @@ def print_summary(summary, form_types, representations):
     failed = "failed"
 
     # Text info
-    max_name = max([len(f) for f in summary]) + 4
+    max_name = max([len(f) for f in summary] + [len("Form files"), len("Best performance:")]) + 4
     form_file_header = center_text(max_name, "Form files")
 
     # Create column headers
@@ -156,8 +156,14 @@ def print_summary(summary, form_types, representations):
     sorted_files = [f for f in summary]
     sorted_files.sort()
     columns = {}
+    performance = {}
+    for t in form_types:
+        for r in representations:
+            performance[(t, r)] = [0, 0]
+    num_forms = 0
     # Create column entries
     for form_file, val in summary.iteritems():
+        num_forms += 1
         row = left_text(max_name, form_file) + "|"
         min_t = None
         min_s = None
@@ -185,11 +191,13 @@ def print_summary(summary, form_types, representations):
                 if _time > min_t and min_t:
                     _time = time_format % (_time/min_t)
                 else:
+                    performance[(t,r)][0] += 1
                     _time = "*" + time_format % _time
 
                 if _size > min_s and min_s:
                     _size = size_format % (_size/min_s)
                 else:
+                    performance[(t,r)][1] += 1
                     _size = "*" + size_format % _size
                 # Add column to row
                 row += right_text(max_column/2, _time) + right_text(max_column/2, _size) + "|"
@@ -205,6 +213,12 @@ def print_summary(summary, form_types, representations):
     print "-"*len(top_head)
     for f in sorted_files:
         print columns[f]
+    p = left_text(max_name, "Performance:") + "|"
+    for t in form_types:
+        for r in representations:
+            time, size = performance[(t, r)]
+            p += right_text(max_column/2, "%d/%d" % (time, num_forms)) + right_text(max_column/2, "%d/%d" % (size, num_forms)) + "|"
+    print p
     print ""
     print "Note:  '*' denotes the best measure, all other values are ratios e.g., file_size/(*file_size)"
     print ""

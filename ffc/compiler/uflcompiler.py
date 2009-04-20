@@ -262,7 +262,7 @@ def _check_forms(forms, options):
     # Check form metadata
     for (i, form) in enumerate(forms):
         new_form = Form([])
-        for integral in form.integrals():
+        for integral in form.form_data().form.integrals():
             new_form += Form([_check_metadata(integral, options)])
         forms[i] = new_form
 
