@@ -13,7 +13,10 @@ import os
 from time import time
 
 sys.path.append(os.path.join(os.pardir, os.pardir))
-from ffc import *
+
+from ufl import *
+from ffc.fem.finiteelement import FiniteElement as FFCElement
+from ffc import jit
 
 interval = [(0,), (1,)]
 triangle = [(0, 0), (1, 0), (0, 1)]
@@ -29,28 +32,28 @@ class SpaceDimensionTests(unittest.TestCase):
     def testContinuousLagrange(self):
         "Test space dimensions of continuous Lagrange elements."
         
-        P1 = FiniteElement("Lagrange", "triangle", 1)
+        P1 = FFCElement("Lagrange", "triangle", 1)
         self.assertEqual(P1.space_dimension(), 3)
 
-        P2 = FiniteElement("Lagrange", "triangle", 2)
+        P2 = FFCElement("Lagrange", "triangle", 2)
         self.assertEqual(P2.space_dimension(), 6)
         
-        P3 = FiniteElement("Lagrange", "triangle", 3)
+        P3 = FFCElement("Lagrange", "triangle", 3)
         self.assertEqual(P3.space_dimension(), 10)
 
     def testDiscontinuousLagrange(self):
         "Test space dimensions of discontinuous Lagrange elements."
 
-        P0 = FiniteElement("Discontinuous Lagrange", "triangle", 0)
+        P0 = FFCElement("Discontinuous Lagrange", "triangle", 0)
         self.assertEqual(P0.space_dimension(), 1)
         
-        P1 = FiniteElement("Discontinuous Lagrange", "triangle", 1)
+        P1 = FFCElement("Discontinuous Lagrange", "triangle", 1)
         self.assertEqual(P1.space_dimension(), 3)
 
-        P2 = FiniteElement("Discontinuous Lagrange", "triangle", 2)
+        P2 = FFCElement("Discontinuous Lagrange", "triangle", 2)
         self.assertEqual(P2.space_dimension(), 6)
         
-        P3 = FiniteElement("Discontinuous Lagrange", "triangle", 3)
+        P3 = FFCElement("Discontinuous Lagrange", "triangle", 3)
         self.assertEqual(P3.space_dimension(), 10)
 
 class FunctionValueTests(unittest.TestCase):
@@ -58,7 +61,7 @@ class FunctionValueTests(unittest.TestCase):
     def testContinuousLagrange1D(self):
         "Test values of continuous Lagrange functions in 1D."
 
-        element = FiniteElement("Lagrange", "interval", 1)
+        element = FFCElement("Lagrange", "interval", 1)
         basis = element.basis()
         
         reference = [lambda x: 1 - x[0],
@@ -72,7 +75,7 @@ class FunctionValueTests(unittest.TestCase):
     def testContinuousLagrange2D(self):
         "Test values of continuous Lagrange functions in 2D."
 
-        element = FiniteElement("Lagrange", "triangle", 1)
+        element = FFCElement("Lagrange", "triangle", 1)
         basis = element.basis()
         
         reference = [lambda x: 1 - x[0] - x[1],
@@ -87,7 +90,7 @@ class FunctionValueTests(unittest.TestCase):
     def testContinuousLagrange3D(self):
         "Test values of continuous Lagrange functions in 3D."
 
-        element = FiniteElement("Lagrange", "tetrahedron", 1)
+        element = FFCElement("Lagrange", "tetrahedron", 1)
         basis = element.basis()
         
         reference = [lambda x: 1 - x[0] - x[1] - x[2],
@@ -103,7 +106,7 @@ class FunctionValueTests(unittest.TestCase):
     def testDiscontinuousLagrange1D(self):
         "Test values of discontinuous Lagrange functions in 1D."
 
-        element = FiniteElement("Discontinuous Lagrange", "interval", 1)
+        element = FFCElement("Discontinuous Lagrange", "interval", 1)
         basis = element.basis()
         
         reference = [lambda x: 1 - x[0],
@@ -117,7 +120,7 @@ class FunctionValueTests(unittest.TestCase):
     def testDiscontinuousLagrange2D(self):
         "Test values of discontinuous Lagrange functions in 2D."
 
-        element = FiniteElement("Discontinuous Lagrange", "triangle", 1)
+        element = FFCElement("Discontinuous Lagrange", "triangle", 1)
         basis = element.basis()
         
         reference = [lambda x: 1 - x[0] - x[1],
@@ -132,7 +135,7 @@ class FunctionValueTests(unittest.TestCase):
     def testDiscontinuousLagrange3D(self):
         "Test values of discontinuous Lagrange functions in 3D."
 
-        element = FiniteElement("Discontinuous Lagrange", "tetrahedron", 1)
+        element = FFCElement("Discontinuous Lagrange", "tetrahedron", 1)
         basis = element.basis()
         
         reference = [lambda x: 1 - x[0] - x[1] - x[2],
@@ -148,7 +151,7 @@ class FunctionValueTests(unittest.TestCase):
     def testBDM1(self):
         "Test values of BDM1."
 
-        element = FiniteElement("Brezzi-Douglas-Marini", "triangle", 1)
+        element = FFCElement("Brezzi-Douglas-Marini", "triangle", 1)
         basis = element.basis()
         
         reference = [lambda x: (2*x[0], -x[1]),
@@ -167,7 +170,7 @@ class FunctionValueTests(unittest.TestCase):
     def testRT0(self):
         "Test values of RT0."
 
-        element = FiniteElement("Raviart-Thomas", "triangle", 0)
+        element = FFCElement("Raviart-Thomas", "triangle", 0)
         basis = element.basis()
         
         reference = [lambda x: (x[0], x[1]),
@@ -183,7 +186,7 @@ class FunctionValueTests(unittest.TestCase):
     def testRT1(self):
         "Test values of RT1."
 
-        element = FiniteElement("Raviart-Thomas", "triangle", 1)
+        element = FFCElement("Raviart-Thomas", "triangle", 1)
         basis = element.basis()
         
         reference = [lambda x: (-2*x[0] + 4*x[0]**2, -x[1] + 4*x[0]*x[1]),

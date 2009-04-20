@@ -215,55 +215,40 @@ class MonomialTransformer(ReuseTransformer):
     #--- Operator handles ---
 
     def sum(self, o, s0, s1):
-        print "\nSum"
         s = s0 + s1
-        print "Result:", s
         return s
 
     def product(self, o, s0, s1):
-        print "\nProduct: [%s] * [%s]" % (str(s0), str(s1))
         s = s0 * s1
-        print "Result:", s
         return s
 
     def index_sum(self, o, s, index):
-        print "\nIgnoring IndexSum expression for now"
-        print "Result:", s
         return s
 
     def indexed(self, o, s, indices): 
-        print "\nIndexed", s, indices
         s = MonomialSum(s)
         s.apply_indices(indices)
-        print "Result:", s
         return s
 
     def component_tensor(self, o, s, indices):
-        print "\nComponentTensor", s, indices
         s = MonomialSum(s)
         s.apply_tensor(indices)
-        print "Result:", s
         return s
 
     def spatial_derivative(self, o, s, indices):
-        print "\nSpatialDerivative", s, indices
         s = MonomialSum(s)
         s.apply_derivative(indices)
-        print "Result:", s
         return s
 
     def positive_restricted(self, o, s):
-        print "\nPositiveRestricted", s
         s.apply_restriction("+")
         return s
 
     def negative_restricted(self, o, s):
-        print "\nPositiveRestricted", s
         s.apply_restriction("-")
         return s
 
     def power(self, o, s, ignored_exponent_expressed_as_sum):
-        print "\nPower", s, ignored_exponent_expressed_as_sum
         (expr, exponent) = o.operands()
         if not isinstance(exponent, IntValue):
             raise MonomialException, "Cannot handle non-integer exponents."
@@ -275,30 +260,22 @@ class MonomialTransformer(ReuseTransformer):
     #--- Terminal handlers ---
 
     def multi_index(self, multi_index):
-        print "\nMultiIndex"
         indices = [index for index in multi_index]
-        print indices
         return indices
 
     def index(self, o):
         raise MonomialException, "Not expecting to see an Index terminal."
 
     def basis_function(self, v):
-        print "\nBasisFunction", v
         s = MonomialSum(v)
-        print "Result:", s
         return s
 
     def function(self, v):
-        print "\nFunction", v
         s = MonomialSum(v)
-        print "Result:", s
         return s
 
     def scalar_value(self, x):
-        print "\nScalarValue", x
         s = MonomialSum(x)
-        print "Result:", s
         return s
 
 def extract_monomial_form(form):
@@ -311,10 +288,6 @@ def extract_monomial_form(form):
     # Check that we get a Form
     ffc_assert(isinstance(form, Form), "Expecting a UFL form.")
 
-    print ""
-    print "Extracting monomials"
-    print ""
-    
     # Extract processed form
     form_data = form.form_data()
     form = form_data.form
@@ -329,7 +302,6 @@ def extract_monomial_form(form):
         # Get measure and integrand
         measure = integral.measure()
         integrand = integral.integrand()
-        print tree_format(integrand)
 
         # Extract monomial representation if possible
         integrand = apply_transformer(integrand, MonomialTransformer())

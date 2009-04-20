@@ -19,7 +19,6 @@ from ffc.common.log import debug
 # FFC fem modules
 from ffc.fem.finiteelement import *
 from ffc.fem.vectorelement import *
-from ffc.fem.projection import *
 from ffc.fem.dofmap import *
 from ffc.fem.quadratureelement import *
 

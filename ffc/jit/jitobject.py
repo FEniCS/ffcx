@@ -6,9 +6,8 @@ __license__  = "GNU GPL version 3 or any later version"
 from hashlib import sha1
 from instant import get_swig_version
 
-# FFC compiler modules
-from ffc.compiler.analysis import simplify, analyze
-from ffc.common.constants  import FFC_VERSION
+# FFC common modules
+from ffc.common.constants import FFC_VERSION
 
 try:
     from ufl.algorithms import FormData

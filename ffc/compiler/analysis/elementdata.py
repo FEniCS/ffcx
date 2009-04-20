@@ -39,4 +39,3 @@ class ElementData:
         self.coefficients                 = []
 
         debug("done")
-

@@ -18,9 +18,6 @@ from ffc.common.debug import *
 from ffc.common.utils import *
 from ffc.common.exceptions import *
 
-# FFC language modules
-from ffc.compiler.language.index import Index
-
 class MixedElement(FiniteElementBase):
     """A MixedElement represents a finite element defined as a tensor
     product of finite elements. It is represented as a list of finite

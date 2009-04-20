@@ -26,10 +26,11 @@ import sys
 import os
 
 # UFL modules
-from ufl.classes import Form, FiniteElementBase, Measure, Integral
+from ufl.classes import Form, FiniteElementBase, Measure, Integral, Function
 from ufl.algorithms import validate_form, extract_max_quadrature_element_degree, estimate_max_polynomial_degree
 from ufl.algorithms import extract_unique_elements, extract_basis_functions, as_form
 from ufl.algorithms import *
+
 # FFC common modules
 from ffc.common.log import debug, info, warning, error, begin, end, set_level, INFO
 from ffc.common.utils import product
@@ -38,10 +39,6 @@ from ffc.common.constants import UFL_OPTIONS
 # FFC fem modules
 from ffc.fem import create_element
 from ffc.fem import create_dof_map
-
-# FFC analysis modules
-from ffc.compiler.analysis.formdata import create_ffc_coefficients
-from ffc.compiler.analysis.elementdata import ElementData
 
 # FFC form representation modules
 from representation.tensor.monomialextraction import MonomialException
@@ -223,7 +220,7 @@ def generate_form_code(form_data, representations, prefix, format, options):
 def generate_element_code(elements, format):
     "Compiler stage 4."
     # Create element_data and common code
-    form_data = ElementData([create_element(e) for e in elements])
+    form_data = ElementData(elements)
     return [(generate_common_code(form_data, format), form_data)]
 
 def format_code(generated_forms, prefix, format, options):
@@ -236,8 +233,8 @@ def format_code(generated_forms, prefix, format, options):
 def _check_options(options):
     "Initial check of options."
 
-    if "optimize" in options:
-        warning("Optimization unavailable (will return in a future version).")
+    #if "optimize" in options:
+    #    warning("Optimization unavailable (will return in a future version).")
     if "blas" in options:
         warning("BLAS mode unavailable (will return in a future version).")
     if "quadrature_points" in options:
@@ -365,6 +362,61 @@ def _auto_select_quadrature_order(integral):
     # Set quadrature order to polynomial degree
     quadrature_order = quadrature_degree
 
-    print "q =", quadrature_order
-
     return quadrature_order
+
+# FIXME: Old stuff below needs to be cleaned up
+
+def create_ffc_coefficients(ufl_functions, global_variables):
+    "Try to convert UFL functions to FFC Coefficients"
+
+    class Coefficient:
+        def __init__(self, element, name):
+            self.element = element
+            self.name = name
+
+    # Extract names of all coefficients
+    coefficient_names = {}
+    if not global_variables is None:
+        for name in global_variables:
+            variable = global_variables[name]
+            if isinstance(variable, Function):
+                coefficient_names[variable] = str(name)
+
+    # Create Coefficients and set name
+    ffc_coefficients = []
+    for function in ufl_functions:
+        element = function.element()
+        if function in coefficient_names:
+            name = coefficient_names[function]
+        else:
+            name = "w" + str(function.count())
+        ffc_coefficients.append(Coefficient(element, name))
+
+    return ffc_coefficients
+
+class ElementData:
+    """This class holds meta data for a list of elements. It has the
+    same attributes as FormData, but only the elements and their dof
+    maps are available."""
+
+    def __init__(self, elements):
+        "Create element for list of elements"
+
+        debug("Extracting element data...")
+
+        self.form                         = None
+        self.signature                    = None
+        self.rank                         = -1
+        self.num_coefficients             = 0
+        self.num_arguments                = len(elements)
+        self.num_terms                    = 0
+        self.num_cell_integrals           = 0
+        self.num_exterior_facet_integrals = 0
+        self.num_interior_facet_integrals = 0
+        self.elements                     = [create_element(element) for element in elements]
+        self.dof_maps                     = [create_dof_map(element) for element in elements]
+        self.ffc_elements                 = self.elements
+        self.ffc_dof_maps                 = self.dof_maps
+        self.coefficients                 = []
+
+        debug("done")

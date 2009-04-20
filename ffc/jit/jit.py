@@ -23,20 +23,13 @@ from ffc.fem.finiteelement import FiniteElement
 from ffc.fem.mixedelement import MixedElement
 
 # FFC compiler modules
-from ffc.compiler.compiler import compile
+from ffc.compiler.uflcompiler import compile as uflcompile
 
-try:
-    from ffc.compiler.uflcompiler import compile as uflcompile
-    from ufl.classes import Form as UFLForm
-    from ufl.classes import FiniteElementBase
-    from ufl.classes import TestFunction as UFLTestFunction
-    from ufl.objects import dx as UFLdx
-except:
-    print "Error while importing UFL"
-    pass
-
-from ffc.compiler.language.algebra import Form, TestFunction
-from ffc.compiler.language.builtins import dx
+# UFL modules
+from ufl.classes import Form as UFLForm
+from ufl.classes import FiniteElementBase
+from ufl.classes import TestFunction as UFLTestFunction
+from ufl.objects import dx as UFLdx
 
 # FFC jit modules
 from jitobject import JITObject

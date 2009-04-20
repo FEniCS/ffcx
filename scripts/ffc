@@ -191,44 +191,5 @@ compile_ufl([a, L, M, element], \"%s\", %s, globals())
     # Return script filename
     return script
 
-# Old version for .form files
-def _make_script_form(filename, options):
-    "Create Python module from given .form file and return name of module file"
-
-    # Strip directories from filename for output file
-    filename_out = filename.split(os.path.sep)[-1]
-
-    # Get prefix of file name and generate Python script file name
-    prefix = ".".join(filename_out.split(".")[:-1])
-    script = prefix + ".py"
-    debug("Preprocessing form file: %s --> %s\n" % (filename, script))
-
-    # Read input
-    infile = open(filename, "r")
-    input = infile.read()
-    infile.close()
-
-    # Generate output
-    output = """\
-from ffc import *
-
-# Reserved variables for forms
-(a, L, M) = (None, None, None)
-
-# Reserved variable for element
-element = None
-
-%s
-compile([a, L, M, element], \"%s\", options=%s, global_variables=globals())
-""" % (input, prefix, options)
-
-    # Write output
-    outfile = open(script, "w")
-    outfile.write(output)
-    outfile.close()
-
-    # Return script filename
-    return script
-
 if __name__ == "__main__":
     sys.exit(main(sys.argv[1:]))

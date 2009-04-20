@@ -30,7 +30,7 @@ from ffc.common.debug import *
 from mapping import *
 import mixedelement
 import referencecell
-from  dofrepresentation import *
+from dofrepresentation import *
 from finiteelementbase import *
 
 # Dictionaries of basic element data

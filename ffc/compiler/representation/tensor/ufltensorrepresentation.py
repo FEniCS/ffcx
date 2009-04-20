@@ -52,12 +52,8 @@ class TensorRepresentation:
     def __init__(self, form_data):
         "Create tensor representation for given form."
 
-        print "Input form:", form_data.form
-
         # Extract integrals integrals for tensor representation
         form = _extract_tensor_integrals(form_data)
-
-        print "Extracted form:", form
 
         # FIXME: Temporary fix
         if len(form.integrals()) == 0:
@@ -68,17 +64,9 @@ class TensorRepresentation:
 
         # Extract monomial representation
         monomial_form = extract_monomial_form(form)
-        print ""
-        print "Monomial form",
-        print "monomial_form"
-        print ""
 
         # Transform monomial form to reference element
         transform_monomial_form(monomial_form)
-        print ""
-        print "Transformed monomial"
-        print monomial_form
-        print ""
 
         # Compute representation of cell tensor
         n = form_data.num_cell_domains

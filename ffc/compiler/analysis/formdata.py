@@ -33,30 +33,6 @@ try:
 except:
     pass
 
-def create_ffc_coefficients(ufl_functions, global_variables):
-    "Try to convert UFL functions to FFC Coefficients"
-
-    # Extract names of all coefficients
-    coefficient_names = {}
-    if not global_variables is None:
-        for name in global_variables:
-            variable = global_variables[name]
-            if isinstance(variable, UFLFunction):
-                coefficient_names[variable] = str(name)
-
-    # FIXME: Check that this is correct
-    # Create Coefficients and set name
-    ffc_coefficients = []
-    for function in ufl_functions:
-        f = Function(create_element(function.element()))
-        f.n0 = function.count()
-        c = Coefficient(f)
-        if coefficient_names.has_key(function):
-            c.set_name(coefficient_names[function])
-        ffc_coefficients.append(c)
-
-    return ffc_coefficients
-
 class FormData:
     """This class holds meta data for a form. The following attributes
     are extracted and stored for a given form:
