@@ -85,13 +85,10 @@ def compile(forms, prefix="Form", options=UFL_OPTIONS.copy(), global_variables=N
     # Check options
     options = _check_options(options)
 
-    # Get forms and elements
+    # Extract objects to compile
     forms, elements = _extract_objects(forms)
 
-    # Check forms
-    forms = _check_forms(forms, options)
-
-    # Check that we have at least one form
+    # Check that we have at least one object
     if len(forms) == 0 and len(elements) == 0:
         info("No forms or elements specified, nothing to do.")
         return
@@ -134,11 +131,20 @@ def analyze_form(form, options, global_variables):
     
     begin("Compiler stage 1: Analyzing form")
 
+    # FIXME: Use of form, form.form_data(), form_data.form() confusing!
+
     # Validate form
     validate_form(form)
 
+    # Set metadata for all integrals (requires form_data().form)
+    new_form = Form([])
+    for integral in form.form_data().form.integrals():
+        new_form += Form([_set_integral_metadata(integral, options)])
+    form = new_form
+
     # Extract form data
     form_data = form.form_data()
+    form = form_data.form
     info(str(form_data))
 
     # Attach FFC elements and dofmaps
@@ -244,31 +250,29 @@ def _check_options(options):
 
     return options
 
-def _check_forms(forms, options):
-    "Initial check of forms."
+def _extract_objects(objects):
+    "Extract forms and elements from list of objects."
 
-    # Check that we get a list
-    if not (isinstance(forms, list) or isinstance(forms, tuple)):
-        forms = [forms]
+    # Check that we get a list of objects
+    if not isinstance(objects, (list, tuple)):
+        objects = [objects]
 
-    # Ignore None
-    forms = [form for form in forms if not form is None]
-    
-    # Check that all arguments are UFL forms and ignore None
-    for form in forms:
-        if not isinstance(form, Form):
-            error("Unable to compile, object is not a UFL form: " + str(form))
+    # Iterate over objects and extract forms and elements
+    forms = []
+    elements = []
+    for object in objects:
+        if isinstance(object, FiniteElementBase):
+            elements.append(object)        
+        elif not object is None:
+            forms.append(as_form(object))
 
-    # Check form metadata
-    for (i, form) in enumerate(forms):
-        new_form = Form([])
-        for integral in form.form_data().form.integrals():
-            new_form += Form([_check_metadata(integral, options)])
-        forms[i] = new_form
+    # Only compile element(s) when there are no forms
+    if len(forms) > 0 and len(elements) > 0:
+        elements = []
 
-    return forms
+    return (forms, elements)
 
-def _check_metadata(integral, options):
+def _set_integral_metadata(integral, options):
     "Check metadata for integral and return new integral with proper metadata."
 
     # Set default values for metadata
@@ -305,28 +309,6 @@ def _check_metadata(integral, options):
     measure = integral.measure().reconstruct(metadata=metadata)
 
     return Integral(integral.integrand(), measure)
-
-def _extract_objects(objects):
-    "Extract forms and elements from list of objects."
-
-    # Check that we get a list of objects
-    if not isinstance(objects, (list, tuple)):
-        objects = [objects]
-
-    # Iterate over objects and extract forms and elements
-    forms = []
-    elements = []
-    for object in objects:
-        if isinstance(object, FiniteElementBase):
-            elements.append(object)        
-        elif not object is None:
-            forms.append(as_form(object))
-
-    # Only compile element(s) when there are no forms
-    if len(forms) > 0 and len(elements) > 0:
-        elements = []
-
-    return (forms, elements)
 
 def _select_representation(form, options):
     "Select form representation"
@@ -383,5 +365,7 @@ def _auto_select_quadrature_order(integral):
 
     # Set quadrature order to polynomial degree
     quadrature_order = quadrature_degree
+
+    print "q =", quadrature_order
 
     return quadrature_order
