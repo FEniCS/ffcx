@@ -5,7 +5,7 @@
 # Python module which is then executed.
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-10-14 -- 2009-03-15"
+__date__ = "2004-10-14 -- 2009-04-20"
 __copyright__ = "Copyright (C) 2004-2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
@@ -104,7 +104,11 @@ def main(argv):
         if suffix == "ufl":
             script = _make_script_ufl(filename, options)
         elif suffix == "form":
-            script = _make_script_form(filename, options)
+            print "*** Old style .form files are no longer supported. Use form2ufl to convert to UFL format."
+            return 2
+        else:
+            print "*** Expecting a UFL form file (.ufl)."
+            return 2
 
         # Catch exceptions only if debug level is non-negative
         if debuglevel >= 1:
