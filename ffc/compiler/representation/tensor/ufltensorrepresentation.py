@@ -56,7 +56,7 @@ class TensorRepresentation:
         print "Input form:", form_data.form
 
         # Extract integrals integrals for tensor representation
-        form = _extract_tensor_integrals(form_data.form)
+        form = _extract_tensor_integrals(form_data)
 
         print "Extracted form:", form
 
@@ -97,12 +97,12 @@ class TensorRepresentation:
         self.geometric_dimension = form_data.geometric_dimension
         self.num_facets = form_data.num_facets
         
-def _extract_tensor_integrals(form):
+def _extract_tensor_integrals(form_data):
     "Extract form containing only tensor representation integrals."
 
     new_form = Form([])
-    for integral in form.integrals():
-        if integral.measure().metadata()["ffc_representation"] == "tensor":
+    for integral in form_data.form.integrals():
+        if form_data.metadata[integral]["ffc_representation"] == "tensor":
             new_form += Form([integral])
     return new_form
 

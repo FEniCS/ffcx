@@ -131,21 +131,16 @@ def analyze_form(form, options, global_variables):
     
     begin("Compiler stage 1: Analyzing form")
 
-    # FIXME: Use of form, form.form_data(), form_data.form() confusing!
-
     # Validate form
     validate_form(form)
-
-    # Set metadata for all integrals (requires form_data().form)
-    new_form = Form([])
-    for integral in form.form_data().form.integrals():
-        new_form += Form([_set_integral_metadata(integral, options)])
-    form = new_form
 
     # Extract form data
     form_data = form.form_data()
     form = form_data.form
     info(str(form_data))
+
+    # Extract integral metadata
+    form_data.metadata = _extract_metadata(form, options)
 
     # Attach FFC elements and dofmaps
     form_data.ffc_elements = [create_element(element) for element in form_data.elements]
@@ -272,43 +267,47 @@ def _extract_objects(objects):
 
     return (forms, elements)
 
-def _set_integral_metadata(integral, options):
+def _extract_metadata(form, options):
     "Check metadata for integral and return new integral with proper metadata."
 
-    # Set default values for metadata
-    representation = options["representation"]
-    quadrature_order = options["quadrature_order"]
+    metadata = {}
 
-    # Get metadata for integral (if any)
-    metadata = integral.measure().metadata() or {}
-    for (key, value) in metadata.iteritems():
-        if key == "ffc_representation":
-            representation = metadata["ffc_representation"]
-        elif key == "quadrature_order":
-            quadrature_order = metadata["quadrature_order"]
-        else:
-            warning("Unrecognized option '%s' for integral metadata." % key)
+    # Iterate over integrals
+    for integral in form.integrals():
 
-    # Check metadata
-    valid_representations = ["tensor", "quadrature", "auto"]
-    if not representation in valid_representations:
-        error("Unrecognized form representation '%s', must be one of %s.",
-              representation, ", ".join("'%s'" % r for r in valid_representations))
-    if not ((isinstance(quadrature_order, int) and quadrature_order >= 0) or quadrature_order == "auto"):
-        error("Illegal quadrature order '%s' for integral, must be a nonnegative integer or 'auto'.",
-              str(quadrature_order))
+        # Set default values for metadata
+        representation = options["representation"]
+        quadrature_order = options["quadrature_order"]
 
-    # Automatically select metadata if "auto" is selected
-    if representation == "auto":
-        representation = _auto_select_representation(integral)
-    if quadrature_order == "auto":
-        quadrature_order = _auto_select_quadrature_order(integral)
+        # Get metadata for integral (if any)
+        integral_metadata = integral.measure().metadata() or {}
+        for (key, value) in integral_metadata.iteritems():
+            if key == "ffc_representation":
+                representation = integral_metadata["ffc_representation"]
+            elif key == "quadrature_order":
+                quadrature_order = integral_metadata["quadrature_order"]
+            else:
+                warning("Unrecognized option '%s' for integral metadata." % key)
 
-    # Create new measure with updated metadata
-    metadata = {"quadrature_order": quadrature_order, "ffc_representation": representation}
-    measure = integral.measure().reconstruct(metadata=metadata)
+        # Check metadata
+        valid_representations = ["tensor", "quadrature", "auto"]
+        if not representation in valid_representations:
+            error("Unrecognized form representation '%s', must be one of %s.",
+                  representation, ", ".join("'%s'" % r for r in valid_representations))
+        if not ((isinstance(quadrature_order, int) and quadrature_order >= 0) or quadrature_order == "auto"):
+            error("Illegal quadrature order '%s' for integral, must be a nonnegative integer or 'auto'.",
+                  str(quadrature_order))
 
-    return Integral(integral.integrand(), measure)
+        # Automatically select metadata if "auto" is selected
+        if representation == "auto":
+            representation = _auto_select_representation(integral)
+        if quadrature_order == "auto":
+            quadrature_order = _auto_select_quadrature_order(integral)
+
+        # Set metadata for integral
+        metadata[integral] = {"quadrature_order": quadrature_order, "ffc_representation": representation}
+
+    return metadata
 
 def _select_representation(form, options):
     "Select form representation"

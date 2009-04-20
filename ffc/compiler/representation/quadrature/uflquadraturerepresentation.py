@@ -5,6 +5,8 @@ __date__ = "2009-01-07 -- 2009-03-18"
 __copyright__ = "Copyright (C) 2009 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
+# Modified by Anders Logg, 2009.
+
 # FFC common modules
 from ffc.common.log import debug, info, error
 
@@ -57,24 +59,24 @@ class QuadratureRepresentation:
         debug("\nQR, init, form:\n" + str(self.form))
 
         # Get relevant integrals of all types
-        cell_integrals = self.__extract_integrals(self.form.cell_integrals())
-        exterior_facet_integrals = self.__extract_integrals(self.form.exterior_facet_integrals())
-        interior_facet_integrals = self.__extract_integrals(self.form.interior_facet_integrals())
+        cell_integrals = self.__extract_integrals(self.form.cell_integrals(), form_data)
+        exterior_facet_integrals = self.__extract_integrals(self.form.exterior_facet_integrals(), form_data)
+        interior_facet_integrals = self.__extract_integrals(self.form.interior_facet_integrals(), form_data)
 
         # Tabulate basis values
-        self.cell_integrals = self.__tabulate(cell_integrals)
-        self.exterior_facet_integrals = self.__tabulate(exterior_facet_integrals)
-        self.interior_facet_integrals = self.__tabulate(interior_facet_integrals)
+        self.cell_integrals = self.__tabulate(cell_integrals, form_data)
+        self.exterior_facet_integrals = self.__tabulate(exterior_facet_integrals, form_data)
+        self.interior_facet_integrals = self.__tabulate(interior_facet_integrals, form_data)
 
         debug("\nQR, init, psi_tables:\n" + str(self.psi_tables))
         debug("\nQR, init, quadrature_weights:\n" + str(self.quadrature_weights))
 
-    def __extract_integrals(self, integrals):
+    def __extract_integrals(self, integrals, form_data):
         "Extract relevant integrals for the QuadratureGenerator."
         return [i for i in integrals\
-            if i.measure().metadata()["ffc_representation"] == "quadrature"]
+                if form_data.metadata[i]["ffc_representation"] == "quadrature"]
 
-    def __sort_integrals_quadrature_points(self, integrals):
+    def __sort_integrals_quadrature_points(self, integrals, form_data):
         "Sort integrals according to the number of quadrature points needed per axis."
 
         sorted_integrals = {}
@@ -86,7 +88,7 @@ class QuadratureRepresentation:
         # It will of course only work for integrals defined on the same
         # subdomain and representation
         for integral in integrals:
-            order = integral.measure().metadata()["quadrature_order"]
+            order = form_data.metadata[integral]["quadrature_order"]
 
             # Compute the required number of points for each axis (exact integration)
             num_points_per_axis = (order + 1 + 1) / 2 # integer division gives 2m - 1 >= q
@@ -101,7 +103,7 @@ class QuadratureRepresentation:
 
         return sorted_integrals
 
-    def __tabulate(self, unsorted_integrals):
+    def __tabulate(self, unsorted_integrals, form_data):
         "Tabulate the basisfunctions and derivatives."
 
         # Initialise return values
@@ -113,7 +115,7 @@ class QuadratureRepresentation:
 
         # Sort the integrals according number of points needed per axis to
         # integrate the quadrature order exactly
-        sorted_integrals = self.__sort_integrals_quadrature_points(unsorted_integrals)
+        sorted_integrals = self.__sort_integrals_quadrature_points(unsorted_integrals, form_data)
 
         # The integral type IS the same for ALL integrals
         integral_type = unsorted_integrals[0].measure().domain_type()
