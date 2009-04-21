@@ -51,7 +51,7 @@ from representation.quadrature.uflquadraturerepresentation import QuadratureRepr
 from codegeneration.common.uflcodegenerator import generate_common_code
 from codegeneration.common.integrals import generate_combined_code
 from codegeneration.tensor import UFLTensorGenerator
-from codegeneration.quadrature import UFLQuadratureGenerator
+from codegeneration.quadrature import QuadratureGenerator
 
 #from codegeneration.common.finiteelement import *
 #from codegeneration.common.dofmap import *
@@ -61,7 +61,7 @@ from format.ufcformat import Format
 
 # Form representations and code generators
 Representations = (QuadratureRepresentation, TensorRepresentation)
-CodeGenerators  = (UFLQuadratureGenerator, UFLTensorGenerator)
+CodeGenerators  = (QuadratureGenerator, UFLTensorGenerator)
 
 def compile(forms, prefix="Form", options=FFC_OPTIONS.copy(), global_variables=None):
     """This is the main interface to FFC. The input argument must be

@@ -10,8 +10,8 @@ import os
 from sets import Set
 
 # FFC language modules
-from ffc.compiler.language.index import *
-from ffc.compiler.language.restriction import *
+#from ffc.compiler.language.index import *
+#from ffc.compiler.language.restriction import *
 
 # FFC tensor representation modules
 from ffc.compiler.representation.tensor.multiindex import *
@@ -130,48 +130,48 @@ from numpy import shape, array
 
 #    return ([loop_dof, dof_num], dof_range, entry)
 
-#def generate_loop(lines, loop_vars, Indent, format):
-#    "This function generates a loop over a vector or matrix."
+def generate_loop(lines, loop_vars, Indent, format):
+    "This function generates a loop over a vector or matrix."
 
-#    # Prefetch formats to speed up code generation
-#    format_loop     = format["loop"]
-#    format_begin    = format["block begin"]
-#    format_end      = format["block end"]
-#    format_comment  = format["comment"]
+    # Prefetch formats to speed up code generation
+    format_loop     = format["loop"]
+    format_begin    = format["block begin"]
+    format_end      = format["block end"]
+    format_comment  = format["comment"]
 
-#    if not loop_vars:
-#        return lines
-#    code = []
-#    for ls in loop_vars:
-#        # Get index and lower and upper bounds
-#        index, lower, upper = ls
+    if not loop_vars:
+        return lines
+    code = []
+    for ls in loop_vars:
+        # Get index and lower and upper bounds
+        index, lower, upper = ls
 
-#        # Loop index
-#        code.append( Indent.indent(format_loop(index, lower, upper)) )
-#        code.append( Indent.indent(format_begin) )
+        # Loop index
+        code.append( Indent.indent(format_loop(index, lower, upper)) )
+        code.append( Indent.indent(format_begin) )
 
-#        # Increase indentation
-#        Indent.increase()
+        # Increase indentation
+        Indent.increase()
 
-#        # If this is the last loop, write values
-#        if index == loop_vars[-1][0]:
-#            for l in lines:
-#                if (isinstance(l,tuple) or isinstance(l,list)) and len(l) == 2:
-#                    code.append((Indent.indent(l[0]), l[1]))
-#                elif isinstance(l,str):
-#                    code.append(Indent.indent(l))
-#                else:
-#                    print "line: ", l
-#                    raise RuntimeError, "Line must be a string or a list or tuple of length 2"
+        # If this is the last loop, write values
+        if index == loop_vars[-1][0]:
+            for l in lines:
+                if (isinstance(l,tuple) or isinstance(l,list)) and len(l) == 2:
+                    code.append((Indent.indent(l[0]), l[1]))
+                elif isinstance(l,str):
+                    code.append(Indent.indent(l))
+                else:
+                    print "line: ", l
+                    raise RuntimeError, "Line must be a string or a list or tuple of length 2"
 
-#    # Decrease indentation and write end blocks
-#    vrs = [lv[0] for lv in loop_vars]
-#    vrs.reverse()
-#    for lv in vrs:
-#        Indent.decrease()
-#        code.append( Indent.indent(format_end + format_comment("end loop over '%s'" %lv) ) )
+    # Decrease indentation and write end blocks
+    vrs = [lv[0] for lv in loop_vars]
+    vrs.reverse()
+    for lv in vrs:
+        Indent.decrease()
+        code.append( Indent.indent(format_end + format_comment("end loop over '%s'" %lv) ) )
 
-#    return code
+    return code
 
 #def equal_loops(tensors):
 #    "Group tensor with an equal number of quadrature points and primary indices"
@@ -250,67 +250,67 @@ from numpy import shape, array
 
 #    return tables
 
-#def unique_tables(tables, format_epsilon):
-#    """Removes tables with redundant values and returns a name_map and a
-#    inverse_name_map. E.g.,
+def unique_tables(tables, format_epsilon):
+    """Removes tables with redundant values and returns a name_map and a
+    inverse_name_map. E.g.,
 
-#    tables = {a:[0,1,2], b:[0,2,3], c:[0,1,2], d:[0,1,2]}
-#    results in:
-#    tables = {a:[0,1,2], b:[0,2,3]}
-#    name_map = {a:[c,d]}
-#    inverse_name_map = {a:a, b:b, c:a, d:a}"""
+    tables = {a:[0,1,2], b:[0,2,3], c:[0,1,2], d:[0,1,2]}
+    results in:
+    tables = {a:[0,1,2], b:[0,2,3]}
+    name_map = {a:[c,d]}
+    inverse_name_map = {a:a, b:b, c:a, d:a}"""
 
-#    name_map = {}
-#    inverse_name_map = {}
-#    names = [name for name in tables]
-#    mapped = []
+    name_map = {}
+    inverse_name_map = {}
+    names = [name for name in tables]
+    mapped = []
 
-#    # Loop all tables to see if some are redundant
-#    for i in range(len(names)):
-#        name0 = names[i]
-#        if name0 in mapped:
-#            continue
-#        val0 = array(tables[name0])
+    # Loop all tables to see if some are redundant
+    for i in range(len(names)):
+        name0 = names[i]
+        if name0 in mapped:
+            continue
+        val0 = array(tables[name0])
 
-#        for j in range(i+1, len(names)):
-#            name1 = names[j]
-#            if name1 in mapped:
-#                continue
-#            val1 = array(tables[name1])
+        for j in range(i+1, len(names)):
+            name1 = names[j]
+            if name1 in mapped:
+                continue
+            val1 = array(tables[name1])
 
-#            # Check if dimensions match
-#            if shape(val0) == shape(val1):
-#                # Check if values are the same
-#                if sqrt(((val0 - val1)*(val0 - val1)).sum()) < format_epsilon:
-#                    mapped.append(name1)
-#                    del tables[name1]
-#                    if name0 in name_map:
-#                        name_map[name0].append(name1)
-#                    else:
-#                        name_map[name0] = [name1]
-#                    # Create inverse name map
-#                    inverse_name_map[name1] = name0
+            # Check if dimensions match
+            if shape(val0) == shape(val1):
+                # Check if values are the same
+                if sqrt(((val0 - val1)*(val0 - val1)).sum()) < format_epsilon:
+                    mapped.append(name1)
+                    del tables[name1]
+                    if name0 in name_map:
+                        name_map[name0].append(name1)
+                    else:
+                        name_map[name0] = [name1]
+                    # Create inverse name map
+                    inverse_name_map[name1] = name0
 
-#    # Add self
-#    for name in tables:
-#        if not name in inverse_name_map:
-#            inverse_name_map[name] = name
+    # Add self
+    for name in tables:
+        if not name in inverse_name_map:
+            inverse_name_map[name] = name
 
-#    return (name_map, inverse_name_map)
+    return (name_map, inverse_name_map)
 
-#def get_ones(tables, format_epsilon):
-#    "Return names of tables for which all values are 1.0"
-#    names = []
-#    for name in tables:
-#        vals = tables[name]
-#        one = True
-#        for r in range(numpy.shape(vals)[0]):
-#            for c in range(numpy.shape(vals)[1]):
-#                if abs(vals[r][c] - 1.0) > format_epsilon:
-#                    one = False
-#        if one:
-#            names.append(name)
-#    return names
+def get_ones(tables, format_epsilon):
+    "Return names of tables for which all values are 1.0"
+    names = []
+    for name in tables:
+        vals = tables[name]
+        one = True
+        for r in range(numpy.shape(vals)[0]):
+            for c in range(numpy.shape(vals)[1]):
+                if abs(vals[r][c] - 1.0) > format_epsilon:
+                    one = False
+        if one:
+            names.append(name)
+    return names
 
 #def contains_zeros(tables, format_epsilon):
 #    "Checks if any tables contains all zeros"

@@ -418,14 +418,14 @@ def compute_reference_derivatives(element, Indent, format):
         if mapping == Mapping.CONTRAVARIANT_PIOLA:
             value_code.insert(i,(Indent.indent(format_tmp(0, i)), value))
             basis_col = [format_tmp_access(0, j) for j in range(element.cell_dimension())]
-            jacobian_row = [format["transform"](Transform.J, j, i, None) for j in range(element.cell_dimension())]
+            jacobian_row = [format["transform"]("J", j, i, None) for j in range(element.cell_dimension())]
             inner = [format_multiply([jacobian_row[j], basis_col[j]]) for j in range(element.cell_dimension())]
             sum = format_group(format_add(inner))
             value = format_multiply([format_inv(format_det(None)), sum])
         elif mapping == Mapping.COVARIANT_PIOLA:
             value_code.insert(i,(Indent.indent(format_tmp(0, i)), value))
             basis_col = [format_tmp_access(0, j) for j in range(element.cell_dimension())]
-            inverse_jacobian_column = [format["transform"](Transform.JINV, j, i, None) for j in range(element.cell_dimension())]
+            inverse_jacobian_column = [format["transform"]("JINV", j, i, None) for j in range(element.cell_dimension())]
             inner = [format_multiply([inverse_jacobian_column[j], basis_col[j]]) for j in range(element.cell_dimension())]
             sum = format_group(format_add(inner))
             value = format_multiply([sum])

@@ -8,9 +8,6 @@ __license__  = "GNU GPL version 3 or any later version"
 # Python modules
 from numpy import shape
 
-# FFC language modules
-from ffc.compiler.language.integral import Integral as FFCIntegral
-
 # FFC code generation modules
 from ffc.compiler.codegeneration.common.utils import tabulate_matrix
 from ffc.compiler.codegeneration.common.evaluatebasis import IndentControl
@@ -40,7 +37,7 @@ from ufl.algorithms.printing import tree_format
 import time
 
 #class QuadratureGenerator(CodeGenerator):
-class UFLQuadratureGenerator:
+class QuadratureGenerator:
     "Code generator for quadrature representation"
 
     def __init__(self, options):
@@ -175,7 +172,7 @@ class UFLQuadratureGenerator:
 #        print "elem tens: ", time.time() - start
         # Get Jacobian snippet
         # FIXME: This will most likely have to change if we support e.g., 2D elements in 3D space
-        jacobi_code = [format["generate jacobian"](transformer.geo_dim, FFCIntegral.CELL)]
+        jacobi_code = [format["generate jacobian"](transformer.geo_dim, "cell")]
 
         # After we have generated the element code we can remove the unused
         # transformations and tabulate the used psi tables and weights
@@ -240,7 +237,7 @@ class UFLQuadratureGenerator:
 
         # Get Jacobian snippet
         # FIXME: This will most likely have to change if we support e.g., 2D elements in 3D space
-        jacobi_code = [format["generate jacobian"](transformer.geo_dim, FFCIntegral.EXTERIOR_FACET)]
+        jacobi_code = [format["generate jacobian"](transformer.geo_dim, "exterior facet")]
 
         # After we have generated the element code for all facets we can remove
         # the unused transformations and tabulate the used psi tables and
@@ -298,7 +295,7 @@ class UFLQuadratureGenerator:
 
         # Get Jacobian snippet
         # FIXME: This will most likely have to change if we support e.g., 2D elements in 3D space
-        jacobi_code = [format["generate jacobian"](transformer.geo_dim, FFCIntegral.INTERIOR_FACET)]
+        jacobi_code = [format["generate jacobian"](transformer.geo_dim, "interior facet")]
 
         # After we have generated the element code for all facets we can remove
         # the unused transformations and tabulate the used psi tables and

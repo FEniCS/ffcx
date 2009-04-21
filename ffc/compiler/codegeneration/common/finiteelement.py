@@ -478,11 +478,11 @@ def __generate_interpolate_vertex_values(element, format):
 
                         if mapping == Mapping.COVARIANT_PIOLA:
                             # Get row of inverse transpose Jacobian
-                            jacobian_row = [format["transform"](Transform.JINV, j, dim, None) for j in range(sub_element.cell_dimension())]
+                            jacobian_row = [format["transform"]("JINV", j, dim, None) for j in range(sub_element.cell_dimension())]
                         else:
                             # mapping == Mapping.CONTRAVARIANT_PIOLA:
                             # Get row of Jacobian
-                            jacobian_row = [format["transform"](Transform.J, j, dim, None) for j in range(sub_element.cell_dimension())]
+                            jacobian_row = [format["transform"]("J", j, dim, None) for j in range(sub_element.cell_dimension())]
                             
                         # Multiply vector-valued basis function with Jacobian
                         basis_function = inner_product(coefficients, jacobian_row, format)

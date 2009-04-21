@@ -23,8 +23,8 @@ from ufl.algorithms.printing import tree_format
 from ffc.common.log import debug, error
 
 # FFC compiler modules
-from ffc.compiler.language.restriction import Restriction
-from ffc.compiler.language.tokens import Transform
+#from ffc.compiler.language.restriction import Restriction
+#from ffc.compiler.language.tokens import Transform
 from ffc.compiler.representation.tensor.multiindex import MultiIndex as FFCMultiIndex
 
 # FFC fem modules
@@ -204,7 +204,7 @@ class QuadratureTransformer2(QuadratureTransformer):
 
         component = 0
         # Handle restriction
-        if self.restriction == Restriction.MINUS:
+        if self.restriction == "-":
             component += 1
 
         coefficient = self.format["coeff"] + self.format["matrix access"](str(o.count()), component)
@@ -223,7 +223,7 @@ class QuadratureTransformer2(QuadratureTransformer):
         component = int(self._components[0])
 
         # Handle restriction
-        if self.restriction == Restriction.MINUS:
+        if self.restriction == "-":
             component += o.shape()[0]
 
         coefficient = self.format["coeff"] + self.format["matrix access"](str(o.count()), component)
@@ -244,7 +244,7 @@ class QuadratureTransformer2(QuadratureTransformer):
         component = o.element()._sub_element_mapping[component]
 
         # Handle restriction (offset by value shape)
-        if self.restriction == Restriction.MINUS:
+        if self.restriction == "-":
             component += product(o.shape())
 
         coefficient = self.format["coeff"] + self.format["matrix access"](str(o.count()), component)
@@ -361,7 +361,7 @@ class QuadratureTransformer2(QuadratureTransformer):
                 transforms = []
                 for i, direction in enumerate(derivatives):
                     ref = multi[i]
-                    t = format_transform(Transform.JINV, ref, direction, self.restriction)
+                    t = format_transform("JINV", ref, direction, self.restriction)
                     transforms.append(t)
 
                 if mapping in code:
@@ -376,11 +376,11 @@ class QuadratureTransformer2(QuadratureTransformer):
 
                     # Multiply basis by appropriate transform
                     if ffc_element.value_mapping(component) == Mapping.COVARIANT_PIOLA:
-                        dxdX = Symbol(format_transform(Transform.JINV, c, local_comp, self.restriction), 1, GEO)
+                        dxdX = Symbol(format_transform("JINV", c, local_comp, self.restriction), 1, GEO)
                         basis = Product([dxdX, basis])
                     elif ffc_element.value_mapping(component) == Mapping.CONTRAVARIANT_PIOLA:
                         detJ = Fraction(Symbol("", 1, CONST), Symbol(format_detJ(self.restriction), 1, GEO))
-                        dXdx = Symbol(format_transform(Transform.J, c, local_comp, self.restriction), 1, GEO)
+                        dXdx = Symbol(format_transform("J", c, local_comp, self.restriction), 1, GEO)
                         basis = Product([detJ, dXdx, basis])
                     else:
                         error("Transformation is not supported: " + str(ffc_element.value_mapping(component)))
@@ -389,7 +389,7 @@ class QuadratureTransformer2(QuadratureTransformer):
                     transforms = []
                     for i, direction in enumerate(derivatives):
                         ref = multi[i]
-                        t = format_transform(Transform.JINV, ref, direction, self.restriction)
+                        t = format_transform("JINV", ref, direction, self.restriction)
                         transforms.append(t)
 
                     if mapping in code:
@@ -428,7 +428,7 @@ class QuadratureTransformer2(QuadratureTransformer):
             error("Currently, BasisFunction index must be either -2, -1, 0 or 1: " + str(ufl_basis_function))
 
         # Handle restriction through facet
-        facet = {Restriction.PLUS: self.facet0, Restriction.MINUS: self.facet1, None: self.facet0}[self.restriction]
+        facet = {"+": self.facet0, "-": self.facet1, None: self.facet0}[self.restriction]
 
         # Get element counter and loop index
         element_counter = self.element_map[self.points][ufl_basis_function.element()]
@@ -444,10 +444,10 @@ class QuadratureTransformer2(QuadratureTransformer):
         # Offset element space dimension in case of negative restriction,
         # need to use the complete element for offset in case of mixed element
         space_dim = ffc_element.space_dimension()
-        offset = {Restriction.PLUS: "", Restriction.MINUS: str(space_dim), None: ""}[self.restriction]
+        offset = {"+": "", "-": str(space_dim), None: ""}[self.restriction]
 
         # If we have a restricted function multiply space_dim by two
-        if self.restriction == Restriction.PLUS or self.restriction == Restriction.MINUS:
+        if self.restriction == "+" or self.restriction == "-":
             space_dim *= 2
 
         # Generate psi name and map to correct values
@@ -557,7 +557,7 @@ class QuadratureTransformer2(QuadratureTransformer):
                 transforms = []
                 for i, direction in enumerate(derivatives):
                     ref = multi[i]
-                    t = format_transform(Transform.JINV, ref, direction, self.restriction)
+                    t = format_transform("JINV", ref, direction, self.restriction)
                     transforms.append(t)
 
                 # Multiply function value by the transformations and add to code
@@ -570,11 +570,11 @@ class QuadratureTransformer2(QuadratureTransformer):
 
                     # Multiply basis by appropriate transform
                     if ffc_element.value_mapping(component) == Mapping.COVARIANT_PIOLA:
-                        dxdX = Symbol(format_transform(Transform.JINV, c, local_comp, self.restriction), 1, GEO)
+                        dxdX = Symbol(format_transform("JINV", c, local_comp, self.restriction), 1, GEO)
                         basis = Product([dxdX, function_name])
                     elif ffc_element.value_mapping(component) == Mapping.CONTRAVARIANT_PIOLA:
                         detJ = Fraction(Symbol("", 1, CONST), Symbol(format_detJ(self.restriction), 1, GEO))
-                        dXdx = Symbol(format_transform(Transform.J, c, local_comp, self.restriction), 1, GEO)
+                        dXdx = Symbol(format_transform("J", c, local_comp, self.restriction), 1, GEO)
                         basis = Product([detJ, dXdx, function_name])
                     else:
                         error("Transformation is not supported: ", str(ffc_element.value_mapping(component)))
@@ -583,7 +583,7 @@ class QuadratureTransformer2(QuadratureTransformer):
                     transforms = []
                     for i, direction in enumerate(derivatives):
                         ref = multi[i]
-                        t = format_transform(Transform.JINV, ref, direction, self.restriction)
+                        t = format_transform("JINV", ref, direction, self.restriction)
                         self.trans_set.add(t)
                         transforms.append(t)
 
@@ -626,13 +626,13 @@ class QuadratureTransformer2(QuadratureTransformer):
         ACCESS = IP
 
         # Handle restriction through facet
-        facet = {Restriction.PLUS: self.facet0, Restriction.MINUS: self.facet1, None: self.facet0}[self.restriction]
+        facet = {"+": self.facet0, "-": self.facet1, None: self.facet0}[self.restriction]
 
         # Get the element counter
         element_counter = self.element_map[self.points][ufl_function.element()]
 
         # Offset by element space dimension in case of negative restriction
-        offset = {Restriction.PLUS: "", Restriction.MINUS: str(ffc_element.space_dimension()), None: ""}[self.restriction]
+        offset = {"+": "", "-": str(ffc_element.space_dimension()), None: ""}[self.restriction]
 
         # Create basis name and map to correct basis and get info
         basis_name = generate_psi_name(element_counter, facet, component, deriv)

@@ -23,8 +23,8 @@ from ufl.algorithms.printing import tree_format
 from ffc.common.log import debug, error
 
 # FFC compiler modules
-from ffc.compiler.language.restriction import Restriction
-from ffc.compiler.language.tokens import Transform
+#from ffc.compiler.language.restriction import Restriction
+#from ffc.compiler.language.tokens import Transform
 from ffc.compiler.representation.tensor.multiindex import MultiIndex as FFCMultiIndex
 
 # FFC fem modules
@@ -432,7 +432,7 @@ class QuadratureTransformer(Transformer):
 
         component = 0
         # Handle restriction
-        if self.restriction == Restriction.MINUS:
+        if self.restriction == "-":
             component += 1
 
         coefficient = self.format["coeff"] + self.format["matrix access"](str(o.count()), component)
@@ -451,7 +451,7 @@ class QuadratureTransformer(Transformer):
         component = int(self._components[0])
 
         # Handle restriction
-        if self.restriction == Restriction.MINUS:
+        if self.restriction == "-":
             component += o.shape()[0]
 
         coefficient = self.format["coeff"] + self.format["matrix access"](str(o.count()), component)
@@ -472,7 +472,7 @@ class QuadratureTransformer(Transformer):
         component = o.element()._sub_element_mapping[component]
 
         # Handle restriction (offset by value shape)
-        if self.restriction == Restriction.MINUS:
+        if self.restriction == "-":
             component += product(o.shape())
 
         coefficient = self.format["coeff"] + self.format["matrix access"](str(o.count()), component)
@@ -596,7 +596,7 @@ class QuadratureTransformer(Transformer):
             error("Only expected one operand for restriction: " + str(restricted_expr))
  
         # Visit operand and generate restricted code
-        self.restriction = Restriction.PLUS
+        self.restriction = "+"
         code = self.visit(restricted_expr[0])
 
         # Reset restriction
@@ -616,7 +616,7 @@ class QuadratureTransformer(Transformer):
             error("Only expected one operand for restriction: " + str(restricted_expr))
  
         # Visit operand and generate restricted code
-        self.restriction = Restriction.MINUS
+        self.restriction = "-"
         code = self.visit(restricted_expr[0])
 
         # Reset restriction
@@ -742,7 +742,7 @@ class QuadratureTransformer(Transformer):
                 transforms = []
                 for i, direction in enumerate(derivatives):
                     ref = multi[i]
-                    t = format_transform(Transform.JINV, ref, direction, self.restriction)
+                    t = format_transform("JINV", ref, direction, self.restriction)
                     self.trans_set.add(t)
                     transforms.append(t)
                 # Only multiply by basis if it is present
@@ -765,13 +765,13 @@ class QuadratureTransformer(Transformer):
 
                     # Multiply basis by appropriate transform
                     if ffc_element.component_element(component)[0].mapping() == COVARIANT_PIOLA:
-                        dxdX = format_transform(Transform.JINV, c, local_comp, self.restriction)
+                        dxdX = format_transform("JINV", c, local_comp, self.restriction)
                         self.trans_set.add(dxdX)
                         basis = format_mult([dxdX, basis])
                     elif ffc_element.component_element(component)[0].mapping() == CONTRAVARIANT_PIOLA:
                         self.trans_set.add(format_detJ(self.restriction))
                         detJ = format_inv(format_detJ(self.restriction))
-                        dXdx = format_transform(Transform.J, c, local_comp, self.restriction)
+                        dXdx = format_transform("J", c, local_comp, self.restriction)
                         self.trans_set.add(dXdx)
                         basis = format_mult([detJ, dXdx, basis])
                     else:
@@ -781,7 +781,7 @@ class QuadratureTransformer(Transformer):
                     transforms = []
                     for i, direction in enumerate(derivatives):
                         ref = multi[i]
-                        t = format_transform(Transform.JINV, ref, direction, self.restriction)
+                        t = format_transform("JINV", ref, direction, self.restriction)
                         self.trans_set.add(t)
                         transforms.append(t)
 
@@ -826,7 +826,7 @@ class QuadratureTransformer(Transformer):
             error("Currently, BasisFunction index must be either -2, -1, 0 or 1: " + str(ufl_basis_function))
 
         # Handle restriction through facet
-        facet = {Restriction.PLUS: self.facet0, Restriction.MINUS: self.facet1, None: self.facet0}[self.restriction]
+        facet = {"+": self.facet0, "-": self.facet1, None: self.facet0}[self.restriction]
 
         # Get element counter and loop index
         element_counter = self.element_map[self.points][ufl_basis_function.element()]
@@ -842,10 +842,10 @@ class QuadratureTransformer(Transformer):
         # Offset element space dimension in case of negative restriction,
         # need to use the complete element for offset in case of mixed element
         space_dim = ffc_element.space_dimension()
-        offset = {Restriction.PLUS: "", Restriction.MINUS: str(space_dim), None: ""}[self.restriction]
+        offset = {"+": "", "-": str(space_dim), None: ""}[self.restriction]
 
         # If we have a restricted function multiply space_dim by two
-        if self.restriction == Restriction.PLUS or self.restriction == Restriction.MINUS:
+        if self.restriction == "+" or self.restriction == "-":
             space_dim *= 2
 
         # Generate psi name and map to correct values
@@ -957,7 +957,7 @@ class QuadratureTransformer(Transformer):
                 transforms = []
                 for i, direction in enumerate(derivatives):
                     ref = multi[i]
-                    t = format_transform(Transform.JINV, ref, direction, self.restriction)
+                    t = format_transform("JINV", ref, direction, self.restriction)
                     self.trans_set.add(t)
                     transforms.append(t)
 
@@ -971,13 +971,13 @@ class QuadratureTransformer(Transformer):
 
                     # Multiply basis by appropriate transform
                     if ffc_element.component_element(component)[0].mapping() == COVARIANT_PIOLA:
-                        dxdX = format_transform(Transform.JINV, c, local_comp, self.restriction)
+                        dxdX = format_transform("JINV", c, local_comp, self.restriction)
                         self.trans_set.add(dxdX)
                         basis = format_mult([dxdX, function_name])
                     elif ffc_element.component_element(component)[0].mapping() == CONTRAVARIANT_PIOLA:
                         self.trans_set.add(format_detJ(self.restriction))
                         detJ = format_inv(format_detJ(self.restriction))
-                        dXdx = format_transform(Transform.J, c, local_comp, self.restriction)
+                        dXdx = format_transform("J", c, local_comp, self.restriction)
                         self.trans_set.add(dXdx)
                         basis = format_mult([detJ, dXdx, function_name])
                     else:
@@ -987,7 +987,7 @@ class QuadratureTransformer(Transformer):
                     transforms = []
                     for i, direction in enumerate(derivatives):
                         ref = multi[i]
-                        t = format_transform(Transform.JINV, ref, direction, self.restriction)
+                        t = format_transform("JINV", ref, direction, self.restriction)
                         self.trans_set.add(t)
                         transforms.append(t)
 
@@ -1030,13 +1030,13 @@ class QuadratureTransformer(Transformer):
         basis_access = format_matrix_access(format_ip, loop_index)
 
         # Handle restriction through facet
-        facet = {Restriction.PLUS: self.facet0, Restriction.MINUS: self.facet1, None: self.facet0}[self.restriction]
+        facet = {"+": self.facet0, "-": self.facet1, None: self.facet0}[self.restriction]
 
         # Get the element counter
         element_counter = self.element_map[self.points][ufl_function.element()]
 
         # Offset by element space dimension in case of negative restriction
-        offset = {Restriction.PLUS: "", Restriction.MINUS: str(ffc_element.space_dimension()), None: ""}[self.restriction]
+        offset = {"+": "", "-": str(ffc_element.space_dimension()), None: ""}[self.restriction]
 
         # Create basis name and map to correct basis and get info
         basis_name = generate_psi_name(element_counter, facet, component, deriv)

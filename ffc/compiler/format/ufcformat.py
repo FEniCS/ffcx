@@ -25,7 +25,7 @@ from removeunused import *
 from dolfintemplates import *
 
 # Choose map from restriction
-choose_map = {"PLUS": "0", "MINUS": "1", "CONSTANT": "0", None: "", "+": "0", "-": 1}
+choose_map = {None: "", "+": "0", "-": 1}
 transform_options = {"JINV": lambda m, j, k: "Jinv%s_%d%d" % (m, j, k),
                      "J": lambda m, j, k: "J%s_%d%d" % (m, k, j)}
 transform_options_ufl = {"JINV": lambda m, j, k: "Jinv%s_%d%d" % (m, j, k),
@@ -850,11 +850,11 @@ public:
             code += "\n\n"
             code += facet_determinant % {"restriction": "", "facet" : "facet"}
         elif integral_type == "interior facet":
-            code  = jacobian % {"restriction": choose_map[Restriction.PLUS]}
+            code  = jacobian % {"restriction": choose_map["+"]}
             code += "\n\n"
-            code += jacobian % {"restriction": choose_map[Restriction.MINUS]}
+            code += jacobian % {"restriction": choose_map["-"]}
             code += "\n\n"
-            code += facet_determinant % {"restriction": choose_map[Restriction.PLUS], "facet": "facet0"}
+            code += facet_determinant % {"restriction": choose_map["+"], "facet": "facet0"}
 
         return code
 
