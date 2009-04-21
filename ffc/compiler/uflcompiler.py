@@ -43,7 +43,7 @@ from ffc.fem import create_dof_map
 # FFC form representation modules
 from representation.tensor.monomialextraction import MonomialException
 from representation.tensor.ufltensorrepresentation import TensorRepresentation
-from representation.quadrature.uflquadraturerepresentation import QuadratureRepresentation
+from representation.quadrature.quadraturerepresentation import QuadratureRepresentation
 
 # FFC code generation modules
 #from codegeneration.tensor import *

@@ -216,9 +216,7 @@ class QuadratureGenerator:
         # Object to control the code indentation
         Indent = IndentControl()
 
-        # FIXME: Get one of the elements, they should all be defined on the same Cell?
-        ffc_element = create_element(list(extract_unique_elements(integrals.items()[0][1]))[0])
-        num_facets = ffc_element.num_facets()
+        num_facets = form_representation.form_data.num_facets
         cases = [None for i in range(num_facets)]
         for i in range(num_facets):
 
@@ -275,9 +273,7 @@ class QuadratureGenerator:
 
         # Object to control the code indentation
         Indent = IndentControl()
-        # FIXME: Get one of the elements, they should all be defined on the same Cell?
-        ffc_element = create_element(list(extract_unique_elements(integrals.items()[0][1]))[0])
-        num_facets = ffc_element.num_facets()
+        num_facets = form_representation.form_data.num_facets
         cases = [[None for j in range(num_facets)] for i in range(num_facets)]
         for i in range(num_facets):
             for j in range(num_facets):
