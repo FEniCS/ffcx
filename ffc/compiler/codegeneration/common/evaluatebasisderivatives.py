@@ -17,9 +17,6 @@ from ffc.fem.mixedelement import *
 # FFC code generation common modules
 import evaluatebasis
 
-# FFC language modules
-from ffc.compiler.language.tokens import *
-
 # FFC code generation common modules
 from utils import *
 

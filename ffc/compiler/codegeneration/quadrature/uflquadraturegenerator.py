@@ -8,9 +8,6 @@ __license__  = "GNU GPL version 3 or any later version"
 # Python modules
 from numpy import shape
 
-# FFC language modules
-from ffc.compiler.language.integral import Integral as FFCIntegral
-
 # FFC code generation modules
 from ffc.compiler.codegeneration.common.utils import tabulate_matrix
 from ffc.compiler.codegeneration.common.evaluatebasis import IndentControl
@@ -22,7 +19,7 @@ from ffc.fem.createelement import create_element
 from ffc.common.log import debug, info
 
 # Utility and optimisation functions for quadraturegenerator
-from quadraturegenerator_utils import generate_loop
+#from quadraturegenerator_utils import generate_loop
 from uflquadraturegenerator_utils import generate_code, QuadratureTransformer
 from uflquadraturegenerator_utils2 import generate_code as generate_code2
 from uflquadraturegenerator_utils2 import QuadratureTransformer2

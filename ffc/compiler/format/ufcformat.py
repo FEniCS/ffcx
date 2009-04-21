@@ -16,13 +16,8 @@ from ufc_utils import *
 
 # FFC common modules
 from ffc.common.utils import *
-from ffc.common.debug import *
+from ffc.common.log import debug
 from ffc.common.constants import *
-
-# FFC language modules
-from ffc.compiler.language.restriction import *
-from ffc.compiler.language.tokens import *
-from ffc.compiler.language.integral import *
 
 # FFC format modules
 from codesnippets import *

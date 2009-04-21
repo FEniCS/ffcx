@@ -23,8 +23,6 @@ from ufl.algorithms.printing import tree_format
 from ffc.common.log import debug, error
 
 # FFC compiler modules
-from ffc.compiler.language.restriction import Restriction
-from ffc.compiler.language.tokens import Transform
 from ffc.compiler.representation.tensor.multiindex import MultiIndex as FFCMultiIndex
 
 # FFC fem modules
@@ -32,7 +30,7 @@ from ffc.fem.createelement import create_element
 from ffc.fem.finiteelement import AFFINE, CONTRAVARIANT_PIOLA, COVARIANT_PIOLA
 
 # Utility and optimisation functions for quadraturegenerator
-from quadraturegenerator_utils import generate_loop, unique_tables, get_ones
+#from quadraturegenerator_utils import generate_loop, unique_tables, get_ones
 from reduce_operations import operation_count
 
 class QuadratureTransformer(Transformer):

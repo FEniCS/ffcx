@@ -7,10 +7,7 @@ __license__  = "GNU GPL version 3 or any later version"
 import sys
 
 # FFC common modules
-from ffc.common.debug import *
 from ffc.common.utils import *
-
-# FFC fem modules
 
 class DofRepresentation:
     """A degree of freedom is represented by its point(s), direction(s)

@@ -23,9 +23,6 @@ from FIAT.BDFM import BDFM
 from FIAT.Nedelec import Nedelec
 from FIAT.darcystokes import DarcyStokes
 
-# FFC common modules
-from ffc.common.debug import *
-
 # FFC fem modules
 from mapping import *
 import mixedelement

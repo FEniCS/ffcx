@@ -1,3 +1,1 @@
-from quadraturegenerator import QuadratureGenerator
 from uflquadraturegenerator import UFLQuadratureGenerator
-

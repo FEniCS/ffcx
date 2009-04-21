@@ -17,9 +17,6 @@ from ffc.common.utils import *
 from ffc.fem.finiteelement import *
 from ffc.fem.mixedelement import *
 
-# FFC language modules
-from ffc.compiler.language.tokens import *
-
 # FFC format modules
 from ffc.compiler.format.removeunused import *
 

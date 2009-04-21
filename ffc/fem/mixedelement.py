@@ -14,7 +14,6 @@ from dofrepresentation import *
 from finiteelementbase import *
 
 # FFC common modules
-from ffc.common.debug import *
 from ffc.common.utils import *
 from ffc.common.exceptions import *
 

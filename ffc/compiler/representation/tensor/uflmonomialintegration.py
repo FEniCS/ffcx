@@ -23,8 +23,7 @@ from FIAT.transformedspace import *
 from FIAT.shapes import *
 
 # FFC common modules
-from ffc.common.debug import *
-from ffc.common.progress import *
+from ffc.common.log import debug
 
 # FFC fem modules
 from ffc.fem.quadrature import *
@@ -58,8 +57,8 @@ def integrate(monomial, domain_type, facet0, facet1):
     # Report elapsed time and number of entries
     toc = time.time() - tic
     num_entries = numpy.prod(numpy.shape(A0))
-    debug("%d entries computed in %.3g seconds" % (num_entries, toc), 1)
-    debug("Shape of reference tensor: " + str(numpy.shape(A0)), 1)
+    debug("%d entries computed in %.3g seconds" % (num_entries, toc))
+    debug("Shape of reference tensor: " + str(numpy.shape(A0)))
 
     return A0
 
