@@ -1,7 +1,7 @@
 "Utility functions for UFL quadrature code generation, optimised version."
 
 __author__ = "Kristian B. Oelgaard (k.b.oelgaard@tudelft.nl)"
-__date__ = "2009-03-18 -- 2009-03-18"
+__date__ = "2009-03-18 -- 2009-04-21"
 __copyright__ = "Copyright (C) 2009 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
@@ -32,9 +32,9 @@ from ffc.fem.createelement import create_element
 from ffc.fem.mapping import Mapping
 
 # Utility and optimisation functions for quadraturegenerator
-from quadraturegenerator_utils import generate_loop
+from quadraturegenerator_utils import generate_loop, generate_psi_name, create_permutations
 from reduce_operations2 import *
-from quadraturetransformer import QuadratureTransformer, generate_psi_name, create_permutations
+from quadraturetransformer import QuadratureTransformer
 
 import time
 

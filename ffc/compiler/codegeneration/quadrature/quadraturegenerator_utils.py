@@ -6,12 +6,7 @@ __copyright__ = "Copyright (C) 2007-2008 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Python modules
-import os
-from sets import Set
-
-# FFC language modules
-#from ffc.compiler.language.index import *
-#from ffc.compiler.language.restriction import *
+from numpy import transpose
 
 # FFC tensor representation modules
 from ffc.compiler.representation.tensor.multiindex import *
@@ -20,115 +15,6 @@ from ffc.compiler.representation.tensor.multiindex import *
 from ffc.compiler.codegeneration.common.codegenerator import *
 
 from numpy import shape, array
-
-#def compute_macro_idims(monomial, idims, irank):
-#    "Compute macro dimensions in case of restricted basisfunctions"
-
-#    # copy dims
-#    macro_idims = [dim for dim in idims]
-#    for i in range(irank):
-#        for v in monomial.basisfunctions:
-#            if v.index.type == Index.PRIMARY and v.index.index == i:
-#                if v.restriction != None:
-#                    macro_idims[i] = idims[i] * 2
-#                    break
-#    return macro_idims
-
-
-#def generate_psi_name(tensor_number, psi_indices, vindex, aindices, bindices,\
-#                      format, qeindices = []):
-#    "Generate the name of a Psi table, but not the access to the matrix."
-
-#    # Prefetch formats to speed up code generation
-#    format_secondary_index  = format["secondary index"]
-#    index_names             = format["psi index names"]
-#    multi_index = []
-
-#    indices = ""
-#    for index in psi_indices:
-#        # We only need QE psi tables if they're primary indices
-#        if index in qeindices and not index.type == Index.PRIMARY:
-#            return None
-#        # If we have a vindex we move it in front of the name
-#        if index == vindex:
-#            indices = format_secondary_index(index_names[index.type](index.index)) + indices
-#        else:
-#            indices += format_secondary_index(index_names[index.type](index([], aindices, bindices, [])))
-
-#    name = format["psis"] + format_secondary_index("t%d" %tensor_number) + indices
-
-#    return name
-
-#def generate_psi_entry2(num_ips, tensor_number, aindices, bindices, psi_indices,\
-#                        vindices, name_map, optimise_level, format, qeindices = []):
-#    "Generate both name and matrix access for a given Psi."
-
-#    # Prefetch formats to speed up code generation
-#    primary_indices         = [format["first free index"], format["second free index"]]
-#    format_secondary_index  = format["secondary index"]
-#    format_ip               = format["integration points"]
-#    index_names             = format["psi index names"]
-
-#    # If we only have 1 IP, pick first
-#    # FIXME: this is language dependent, other languages might use '1' as first
-#    # component
-#    if num_ips == 1:
-#        format_ip = "0"
-
-#    entry = ""
-#    indices = ""
-#    dof_range = -1
-#    loop_dof = 0
-#    df_range = 0
-#    # Create indices (for name) and information to generate loop
-#    for index in psi_indices:
-#        if index in vindices:
-#            indices = format_secondary_index(index_names[index.type](index.index)) + indices
-#            loop_dof = index(primary_indices, aindices, bindices, [])
-#            df_range = len(index.range)
-#        else:
-#            indices += format_secondary_index(index_names[index.type](index([], aindices, bindices, [])))
-
-#    name = format["psis"] + format_secondary_index("t%d" %tensor_number) + indices
-
-#    # For QE, we only need a psi entry if we do have a primary index
-#    for index in psi_indices:
-#        if index in qeindices and not index.type == Index.PRIMARY:
-#            name = ""
-
-#    # If we have a name and a name map, m
-#    if name and name in name_map:
-#        dof_num = loop_dof
-#        if name_map[name][1]:
-#            # Get non-zero column info and new name
-#            i, cols = name_map[name][1]
-#            name = name_map[name][0]
-#            dof_range = len(cols)
-#            if dof_range == 1:
-#                # Direct lookup
-#                dof_num = "%d" % cols[0]
-#                entry = name + format["matrix access"](format_ip, dof_num)
-#            else:
-#                dof_num = format["nonzero columns"](i) + format["array access"](loop_dof)
-#                entry = name + format["matrix access"](format_ip, loop_dof)
-#            if not name:
-#                entry = name
-#        else:
-#            name = name_map[name][0]
-#            if name:
-#                entry = name + format["matrix access"](format_ip, loop_dof)
-#            else:
-#                entry = name
-#    else:
-#        dof_num = loop_dof
-#        entry = ""
-
-#    # If optimise level is 0, we loop the entire range of the dof
-#    if optimise_level == 0:
-#        dof_num = loop_dof
-#        dof_range = -1
-
-#    return ([loop_dof, dof_num], dof_range, entry)
 
 def generate_loop(lines, loop_vars, Indent, format):
     "This function generates a loop over a vector or matrix."
@@ -173,82 +59,257 @@ def generate_loop(lines, loop_vars, Indent, format):
 
     return code
 
-#def equal_loops(tensors):
-#    "Group tensor with an equal number of quadrature points and primary indices"
+def generate_psi_name(counter, facet, component, derivatives):
+    """Generate a name for the psi table of the form:
+    FE#_f#_C#_D###, where '#' will be an integer value.
 
-#    # Loop all tensors and group number of quadrature points
-#    group_tensors = {}
-#    for i in range(len(tensors)):
-#        tens = tensors[i]
-#        num_points = len(tens.quadrature.weights)
-#        if num_points in group_tensors:
-#            group_tensors[num_points].append(i)
-#        else:
-#            group_tensors[num_points] = [i]
+    FE  - is a simple counter to distinguish the various basis, it will be
+          assigned in an arbitrary fashion.
 
-#    return group_tensors
+    f   - denotes facets if applicable, range(element.num_facets()).
 
-#def get_names_tables(tensor, tensor_number, format):
-#    "Tabulate values of basis functions and their derivatives at quadrature points"
+    C   - is the component number if any (this does not yet take into account
+          tensor valued functions)
 
-#    tables = {}
+    D   - is the number of derivatives in each spatial direction if any. If the
+          element is defined in 3D, then D012 means d^3(*)/dydz^2."""
 
-#    # Loop psis
-#    for psi in tensor.Psis:
+    name = "FE%d" % counter
+    if facet != None:
+        name += "_f%d" % facet
+    if component != []:
+        name += "_C%d" % component
+    if any(derivatives):
+        name += "_D" + "".join([str(d) for d in derivatives])
 
-#        # Get values of psi, list of indices and index of basisfunction for psi
-#        values, indices, vindex = psi[0], psi[1], psi[2]
+    return name
 
-#        # Create list of secondary indices
-#        sec_indices = [index for index in indices if not index == vindex]
+def create_psi_tables(tables, format_epsilon, options):
+    "Create names and maps for tables and non-zero entries if appropriate."
 
-#        # Get the number of dofs and quadrature points
-#        num_dofs = len(vindex.range)
-#        num_quadrature_points = len(tensor.quadrature.weights)
+    debug("\nQG-utils, psi_tables:\n" + str(tables))
 
-#        # Get lists of secondary indices and auxiliary_0 indices (global)
-#        aindices = tensor.a.indices
-#        b0indices = tensor.b0.indices
+    # Create element map {points:{element:number,},}
+    # and a plain dictionary {name:values,}
+    element_map, flat_tables = flatten_psi_tables(tables)
 
-#        # Reduce multi indices a and b0 (number of pertubations)
-#        # according to current psi
-#        a_reduced = [[0],]*len(aindices[0])
-#        for index in indices:
-#            if index.type == Index.SECONDARY and index != vindex:
-#                a_reduced[index.index] = range(len(index.range))
-#        a_reduced = MultiIndex(a_reduced).indices
+    debug("\nQG-utils, psi_tables, flat_tables:\n" + str(flat_tables))
 
-#        b0_reduced = [[0],]*len(b0indices[0])
-#        for index in indices:
-#            if index.type == Index.AUXILIARY_0 and index != vindex:
-#                b0_reduced[index.index] = range(len(index.range))
-#        b0_reduced = MultiIndex(b0_reduced).indices
+    # Reduce tables such that we only have those tables left with unique values
+    # Create a name map for those tables that are redundant
+    name_map, unique_tables = unique_psi_tables(flat_tables, format_epsilon, options)
 
-#        # Loop secondary and auxiliary indices to generate names and entries
-#        # in the psi table
-#        for a in a_reduced:
-#            for b in b0_reduced:
-#                # Generate name
-#                name = generate_psi_name(tensor_number, indices, vindex,\
-#                                      a, b, format, tensor.qei)
-#                if name:
-#                    multi_index = []
-#                    for index in sec_indices:
-#                        multi_index.append(index([], a, b, []))
+    debug("\nQG-utils, psi_tables, unique_tables:\n" + str(unique_tables))
+    debug("\nQG-utils, psi_tables, name_map:\n" + str(name_map))
 
-#                    # Get values from psi tensor, should have format values[dofs][quad_points]
-#                    vals = values[tuple(multi_index)]
+    return (element_map, name_map, unique_tables)
 
-#                    # Check if the values have the correct dimensions, otherwise quadrature is not correctly
-#                    # implemented for the given form!!
-#                    if numpy.shape(vals) != (num_dofs, num_quadrature_points):
-#                        raise RuntimeError, "Quadrature is not correctly implemented for the given form!"
+def flatten_psi_tables(tables):
+    """Create a 'flat' dictionary of tables with unique names and a name
+    map that maps number of quadrature points and element name to a unique
+    element number. returns:
+    name_map    - {num_quad_points:{ufl_element:element_number,},}
+    flat_tables - {unique_table_name:values (ip,basis),}"""
 
-#                    # Generate values (FIAT returns [dof, quad_points] transpose to [quad_points, dof])
-#                    value = numpy.transpose(vals)
-#                    tables[name] = value
+    # Initialise return values and element counter
+    flat_tables = {}
+    element_map = {}
+    counter = 0
 
-#    return tables
+    # Loop quadrature points and get element dictionary {elem: {tables}}
+    for point, elem_dict in tables.items():
+        element_map[point] = {}
+        debug("\nQG-utils, flatten_tables, points:\n" + str(point))
+        debug("\nQG-utils, flatten_tables, elem_dict:\n" + str(elem_dict))
+
+        # Loop all elements and get all their tables
+        for elem, facet_tables in elem_dict.items():
+            debug("\nQG-utils, flatten_tables, elem:\n" + str(elem))
+            debug("\nQG-utils, flatten_tables, facet_tables:\n" + str(facet_tables))
+            element_map[point][elem] = counter
+            for facet, elem_tables in facet_tables.items():
+                # If the element value rank != 0, we must loop the components
+                # before the derivatives (that's the way the values are tabulated)
+                if len(elem.value_shape()) != 0:
+                    for num_comp, comp in enumerate(elem_tables):
+                        for num_deriv in comp:
+                            for derivs, psi_table in num_deriv.items():
+                                debug("\nQG-utils, flatten_tables, derivs:\n" + str(derivs))
+                                debug("\nQG-utils, flatten_tables, psi_table:\n" + str(psi_table))
+                                # Verify shape of basis (can be omitted for speed
+                                # if needed I think)
+                                if shape(psi_table) != 2 and shape(psi_table)[1] != point:
+                                    error("Something is wrong with this table: " + str(psi_table))
+                                # Generate the table name
+                                name = generate_psi_name(counter, facet, num_comp, derivs)
+                                debug("Table name: " + name)
+                                if name in flat_tables:
+                                    error("Table name is not unique, something is wrong: " + name + str(flat_tables))
+                                # Take transpose such that we get (ip_number, basis_number)
+                                # instead of (basis_number, ip_number)
+                                flat_tables[name] = transpose(psi_table)
+                # If we don't have any components
+                else:
+                    for num_deriv in elem_tables:
+                        for derivs, psi_table in num_deriv.items():
+                            debug("\nQG-utils, flatten_tables, derivs:\n" + str(derivs))
+                            debug("\nQG-utils, flatten_tables, psi_table:\n" + str(psi_table))
+                            # Verify shape of basis (can be omitted for speed
+                            # if needed I think)
+                            if shape(psi_table) != 2 and shape(psi_table)[1] != point:
+                                error("Something is wrong with this table: " + str(psi_table))
+                            # Generate the table name
+                            name = generate_psi_name(counter, facet, [], derivs)
+                            debug("Table name: " + name)
+                            if name in flat_tables:
+                                error("Table name is not unique, something is wrong: " + name + str(flat_tables))
+                            flat_tables[name] = transpose(psi_table)
+            # Increase unique element counter
+            counter += 1
+    return (element_map, flat_tables)
+
+def unique_psi_tables(tables, format_epsilon, options):
+    """Returns a name map and a dictionary of unique tables. The function checks
+    if values in the tables are equal, if this is the case it creates a name
+    mapping. It also create additional information (depending on which options
+    are set) such as if the table contains all ones, or only zeros, and a list
+    on non-zero columns.
+    unique_tables - {name:values,}
+    name_map      - {original_name:[new_name, non-zero-columns (list), is zero (bool), is ones (bool)],}"""
+
+    # Get unique tables (from old table utility)
+    name_map, inverse_name_map = unique_tables(tables, format_epsilon)
+
+    debug("\ntables: " + str(tables))
+    debug("\nname_map: " + str(name_map))
+    debug("\ninv_name_map: " + str(inverse_name_map))
+
+    # Get names of tables with all ones (from old table utility)
+    names_ones = get_ones(tables, format_epsilon)
+
+    # Set values to zero if they are lower than threshold
+    for name in tables:
+        # Get values
+        vals = tables[name]
+        for r in range(shape(vals)[0]):
+            for c in range(shape(vals)[1]):
+                if abs(vals[r][c]) < format_epsilon:
+                    vals[r][c] = 0
+        tables[name] = vals
+
+    # Extract the column numbers that are non-zero
+    # If optimisation option is set
+    # Counter for non-zero column arrays
+    i = 0
+    non_zero_columns = {}
+    if options["non zero columns"]:
+        for name in tables:
+            # Get values
+            vals = tables[name]
+
+            # Use the first row as reference
+            non_zeros = list(vals[0].nonzero()[0])
+
+            # If all columns in the first row are non zero, there's no point
+            # in continuing
+            if len(non_zeros) == shape(vals)[1]:
+                continue
+
+            # If we only have one row (IP) we just need the nonzero columns
+            if shape(vals)[0] == 1:
+                if list(non_zeros):
+                    non_zeros.sort()
+                    non_zero_columns[name] = (i, non_zeros)
+
+                    # Compress values
+                    tables[name] = vals[:, non_zeros]
+                    i += 1
+
+            # Check if the remaining rows are nonzero in the same positions, else expand
+            else:
+                for j in range(shape(vals)[0] - 1):
+                    # All rows must have the same non-zero columns
+                    # for the optimization to work (at this stage)
+                    new_non_zeros = list(vals[j+1].nonzero()[0])
+                    if non_zeros != new_non_zeros:
+                        non_zeros = non_zeros + [c for c in new_non_zeros if not c in non_zeros]
+                        # If this results in all columns being non-zero, continue.
+                        if len(non_zeros) == shape(vals)[1]:
+                            continue
+
+                # Only add nonzeros if it results in a reduction of columns
+                if len(non_zeros) != shape(vals)[1]:
+                    if list(non_zeros):
+                        non_zeros.sort()
+                        non_zero_columns[name] = (i, non_zeros)
+
+                        # Compress values
+                        tables[name] = vals[:, non_zeros]
+                        i += 1
+
+    # Check if we have some zeros in the tables
+    names_zeros = contains_zeros(tables, format_epsilon)
+
+    # Add non-zero column, zero and ones info to inverse_name_map
+    # (so we only need to pass around one name_map to code generating functions)
+    for name in inverse_name_map:
+        if inverse_name_map[name] in non_zero_columns:
+            nzc = non_zero_columns[inverse_name_map[name]]
+            zero = inverse_name_map[name] in names_zeros
+            ones = inverse_name_map[name] in names_ones
+            inverse_name_map[name] = [inverse_name_map[name], nzc, zero, ones]
+        else:
+            zero = inverse_name_map[name] in names_zeros
+            ones = inverse_name_map[name] in names_ones
+            inverse_name_map[name] = [inverse_name_map[name], (), zero, ones]
+
+    # If we found non zero columns we might be able to reduce number of tables
+    # further
+    if non_zero_columns:
+        # Try reducing the tables. This is possible if some tables have become
+        # identical as a consequence of compressing the tables
+        # This happens with e.g., gradients of linear basis
+        # FE0 = {-1,0,1}, nzc0 = [0,2]
+        # FE1 = {-1,1,0}, nzc1 = [0,1]  -> FE0 = {-1,1}, nzc0 = [0,2], nzc1 = [0,1]
+
+        # Call old utility function again
+        nm, inv_nm = unique_tables(tables, format_epsilon)
+
+        # Update name maps
+        for name in inverse_name_map:
+            if inverse_name_map[name][0] in inv_nm:
+                inverse_name_map[name][0] = inv_nm[inverse_name_map[name][0]]
+        for name in nm:
+            maps = nm[name]
+            for m in maps:
+                if not name in name_map:
+                    name_map[name] = []
+                if m in name_map:
+                    name_map[name] += name_map[m] + [m]
+                    del name_map[m]
+                else:
+                    name_map[name].append(m)
+
+        # Get new names of tables with all ones (for vector constants)
+        names = get_ones(tables, format_epsilon)
+
+        # Because these tables now contain ones as a consequence of compression
+        # we still need to consider the non-zero columns when looking up values
+        # in coefficient arrays. The psi entries can however we neglected and we
+        # don't need to tabulate the values (if option is set)
+        for name in names:
+            if name in name_map:
+                maps = name_map[name]
+                for m in maps:
+                    inverse_name_map[m][3] = True
+            if name in inverse_name_map:
+                    inverse_name_map[name][3] = True
+
+    # Write protect info and return values
+    for name in inverse_name_map:
+        inverse_name_map[name] = tuple(inverse_name_map[name])
+
+    return (inverse_name_map, tables)
 
 def unique_tables(tables, format_epsilon):
     """Removes tables with redundant values and returns a name_map and a
@@ -312,176 +373,72 @@ def get_ones(tables, format_epsilon):
             names.append(name)
     return names
 
-#def contains_zeros(tables, format_epsilon):
-#    "Checks if any tables contains all zeros"
+def contains_zeros(tables, format_epsilon):
+    "Checks if any tables contains only zeros."
 
-#    names = []
-#    for name in tables:
-#        vals = tables[name]
-#        zero = True
-#        for r in range(numpy.shape(vals)[0]):
-#            if not zero:
-#                break
-#            for c in range(numpy.shape(vals)[1]):
-#                # If just one value is different from zero, break loops
-#                if abs(vals[r][c]) > format_epsilon:
-#                    zero = False
-#                    break
+    names = []
+    for name in tables:
+        vals = tables[name]
+        zero = True
+        for r in range(shape(vals)[0]):
+            # Loop as long as we have zeros
+            if not zero:
+                break
+            for c in range(shape(vals)[1]):
+                # If just one value is different from zero, break loops
+                if abs(vals[r][c]) > format_epsilon:
+                    # If we find a non-zero value break loop
+                    zero = False
+                    break
+        if zero:
+            names.append(name)
+    return names
 
-#        if zero:
-#            debug("\n*** Warning: this table only contains zeros. This is not critical,")
-#            debug("but it might slow down the runtime performance of your code!")
-#            debug("Do you take derivatives of a constant?\n")
-#            names.append(name)
-#    return names
+# TODO: Delete this function if it is not used anymore.
+def create_permutations(expr):
 
-#def unique_psi_tables(tables, optimisation_level, format):
-#    "Determine if some tensors have the same tables (and same names)"
+    # This is probably not used
+    if len(expr) == 0:
+        return expr
+    # Format keys and values to lists and tuples
+    if len(expr) == 1:
+        new = {}
+        for key, val in expr[0].items():
+            if not isinstance(key[0], tuple):
+                key = (key,)
+            if not isinstance(val, list):
+                val = [val]
+            new[key] = val
 
-#    # Get formats
-#    format_epsilon = format["epsilon"]
+        return new
+    # Create permutations of two lists
+    # TODO: there could be a cleverer way of changing types of keys and vals
+    if len(expr) == 2:
+        new = {}
+        for key0, val0 in expr[0].items():
+            if isinstance(key0[0], tuple):
+                key0 = list(key0)
+            if not isinstance(key0, list):
+                key0 = [key0]
+            if not isinstance(val0, list):
+                val0 = [val0]
+            for key1, val1 in expr[1].items():
+                if isinstance(key1[0], tuple):
+                    key1 = list(key1)
+                if not isinstance(key1, list):
+                    key1 = [key1]
+                if not isinstance(val1, list):
+                    val1 = [val1]
+                if tuple(key0 + key1) in new:
+                    error("This is not supposed to happen.")
+                new[tuple(key0 + key1)] = val0 + val1
 
-#    # Get unique tables
-#    name_map, inverse_name_map = unique_tables(tables, format_epsilon)
+        return new
 
-#    # Exclude tables with all ones
-#    names = get_ones(tables, format_epsilon)
-#    for name in names:
-#        del tables[name]
-#        if name in name_map:
-#            maps = name_map[name]
-#            for m in maps:
-#                del inverse_name_map[m]
-#        del inverse_name_map[name]
+    # Create permutations by calling this function recursively
+    # This is only used for rank > 2 tensors I think
+    if len(expr) > 2:
+        new = permutations(expr[0:2])
+        return permutations(new + expr[2:])
 
-#    # Set values to zero if they are lower than threshold
-#    for name in tables:
-#        # Get values
-#        vals = tables[name]
-#        for r in range(numpy.shape(vals)[0]):
-#            for c in range(numpy.shape(vals)[1]):
-#                if abs(vals[r][c]) < format_epsilon:
-#                    vals[r][c] = 0
-#        tables[name] = vals
-
-#    # Extract the column numbers that are non-zero
-#    # (only for optimisations higher than 0)
-#    i = 0
-#    non_zero_columns = {}
-#    if optimisation_level > 0:
-#        for name in tables:
-#            # Get values
-#            vals = tables[name]
-
-#            # Use the first row as reference
-#            non_zeros = list(vals[0].nonzero()[0])
-
-#            # If all columns in the first row are non zero, there's no point
-#            # in continuing
-#            if len(non_zeros) == numpy.shape(vals)[1]:
-#                continue
-
-#            # If we only have one row (IP) we just need the nonzero columns
-#            if numpy.shape(vals)[0] == 1:
-#                if list(non_zeros):
-#                    non_zeros.sort()
-#                    non_zero_columns[name] = (i, non_zeros)
-
-#                    # Possibly compress values
-#                    if optimisation_level == 0:
-#                        tables[name] = vals
-#                    else:
-#                        tables[name] = vals[:, non_zeros]
-#                    i += 1
-
-#            # Check if the remaining rows are nonzero in the same positions, else expand
-#            else:
-#                for j in range(numpy.shape(vals)[0] - 1):
-#                    # All rows must have the same non-zero columns
-#                    # for the optimization to work (at this stage)
-#                    new_non_zeros = list(vals[j+1].nonzero()[0])
-#                    if non_zeros != new_non_zeros:
-#                        non_zeros = non_zeros + [c for c in new_non_zeros if not c in non_zeros]
-#                        # If this results in all columns being non-zero, continue.
-#                        if len(non_zeros) == numpy.shape(vals)[1]:
-#                            continue
-
-#                # Only add nonzeros if it implies a reduction of columns
-#                if len(non_zeros) != numpy.shape(vals)[1]:
-#                    non_zeros.sort()
-#                    non_zero_columns[name] = (i, non_zeros)
-
-#                    # Compress values
-#                    tables[name] = vals[:, non_zeros]
-#                    i += 1
-
-#    # Add non-zero column info to inverse_name_map
-#    # (so we only need to pass around one name_map to code generating functions)
-#    for name in inverse_name_map:
-#        if inverse_name_map[name] in non_zero_columns:
-#            nzc = non_zero_columns[inverse_name_map[name]]
-#            inverse_name_map[name] = [inverse_name_map[name], nzc]
-#        else:
-#            inverse_name_map[name] = [inverse_name_map[name], ()]
-
-#    # Check if we have some zeros in the tables
-#    # FIXME: this shouldn't be necessary once UFL has removed all zero terms
-#    contains_zeros(tables, format_epsilon)
-
-#    # If we found non zero columns we might be able to reduce number of tables
-#    # further if optimise level is higher than 0
-#    if non_zero_columns:
-
-#        # Try reducing the tables. This is possible if some tables have become
-#        # identical as a consequence of compressing the tables
-#        nm, inv_nm = unique_tables(tables, format_epsilon)
-
-#        # Update name maps
-#        for name in inverse_name_map:
-#            if inverse_name_map[name][0] in inv_nm:
-#                inverse_name_map[name][0] = inv_nm[inverse_name_map[name][0]]
-#        for name in nm:
-#            maps = nm[name]
-#            for m in maps:
-#                if not name in name_map:
-#                    name_map[name] = []
-#                if m in name_map:
-#                    name_map[name] += name_map[m] + [m]
-#                    del name_map[m]
-#                else:
-#                    name_map[name].append(m)
-
-#        # Exclude tables with all ones
-#        names = get_ones(tables, format_epsilon)
-#        # Because these tables now contain ones as a consequence of compression
-#        # we still need to consider the non-zero columns when looking up values
-#        # in coefficient arrays. The psi entries can however we neglected and we
-#        # don't need to tabulate the values
-#        for name in names:
-#            if name in name_map:
-#                maps = name_map[name]
-#                for m in maps:
-#                    inverse_name_map[m][0] = ""
-#            if name in inverse_name_map:
-#                inverse_name_map[name][0] = ""
-#            tables[name] = None
-
-#    # Write protect info
-#    for name in inverse_name_map:
-#        inverse_name_map[name] = tuple(inverse_name_map[name])
-
-#    return (inverse_name_map, tables)
-
-#def unique_weight_tables(tensors, format):
-#    "Determine if some tensors have the same tables (and same names)"
-
-#    tables = {}
-#    # Loop tensors and get all tables
-#    for tensor_number in range(len(tensors)):
-#        weights = tensors[tensor_number].quadrature.weights
-#        tables[tensor_number] = weights
-
-#    name_map, inverse_name_map = unique_tables(tables, format["epsilon"])
-
-#    return (name_map, tables)
 
