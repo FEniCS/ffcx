@@ -162,7 +162,7 @@ def _make_script_ufl(filename, options):
     output = """\
 from ufl import *
 from ufl.log import set_level
-from ffc.compiler.uflcompiler import compile as compile_ufl
+from ffc.compiler.compiler import compile
 
 # Set debug level
 set_level(%d)
@@ -174,7 +174,7 @@ set_level(%d)
 element = None
 
 %s
-compile_ufl([a, L, M, element], \"%s\", %s, globals())
+compile([a, L, M, element], \"%s\", %s, globals())
 """ % (options["log_level"], input, prefix, options)
 
     # Write output

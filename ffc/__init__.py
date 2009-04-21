@@ -10,7 +10,7 @@ from FIAT import reference
 reference.reference_element = "default"
 
 # Import compiler
-from ffc.compiler.uflcompiler import compile as compile_ufl
+from ffc.compiler.compiler import compile
 
 # Import JIT compiler
 from ffc.jit.jit import jit

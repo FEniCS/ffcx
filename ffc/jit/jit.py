@@ -23,7 +23,7 @@ from ffc.fem.finiteelement import FiniteElement
 from ffc.fem.mixedelement import MixedElement
 
 # FFC compiler modules
-from ffc.compiler.uflcompiler import compile# as uflcompile
+from ffc.compiler.compiler import compile
 
 # UFL modules
 from ufl.classes import Form

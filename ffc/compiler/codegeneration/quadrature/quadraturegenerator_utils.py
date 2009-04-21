@@ -6,7 +6,7 @@ __copyright__ = "Copyright (C) 2007-2008 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Python modules
-from numpy import transpose
+from numpy import transpose, sqrt
 
 # FFC tensor representation modules
 from ffc.compiler.representation.tensor.multiindex import *
