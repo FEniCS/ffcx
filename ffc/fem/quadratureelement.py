@@ -8,6 +8,7 @@ from finiteelement import *
 from dofrepresentation import *
 from quadrature import *
 from mapping import *
+from finiteelement import AFFINE, CONTRAVARIANT_PIOLA, COVARIANT_PIOLA
 
 class QuadratureElement(FiniteElement):
     """Write description of QuadratureElement"""
@@ -30,6 +31,7 @@ class QuadratureElement(FiniteElement):
 
         # Set mapping to AFFINE (not important, I think, for this element)
         self.__mapping = Mapping.AFFINE
+        self._mapping = AFFINE
 
         # Create quadrature (only interested in points)
         points, weights = make_quadrature(self.__cell_shape, num_points_per_axis)

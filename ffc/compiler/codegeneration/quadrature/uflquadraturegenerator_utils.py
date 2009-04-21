@@ -29,7 +29,7 @@ from ffc.compiler.representation.tensor.multiindex import MultiIndex as FFCMulti
 
 # FFC fem modules
 from ffc.fem.createelement import create_element
-from ffc.fem.mapping import Mapping
+from ffc.fem.finiteelement import AFFINE, CONTRAVARIANT_PIOLA, COVARIANT_PIOLA
 
 # Utility and optimisation functions for quadraturegenerator
 from quadraturegenerator_utils import generate_loop, unique_tables, get_ones
@@ -363,7 +363,7 @@ class QuadratureTransformer(Transformer):
             derivatives = self._derivatives[:]
         if self._components:
             component = [int(c) for c in self._components]
-
+#        print "C: ", component
         debug("\ncomponent: " + str(component))
         debug("\nderivatives: " + str(derivatives))
 
@@ -673,6 +673,8 @@ class QuadratureTransformer(Transformer):
 
         # Get local component (in case we have mixed elements)
         local_comp, local_elem = ufl_basis_function.element().extract_component(tuple(component))
+#        print "local_comp: ", local_comp
+#        print "local_elem: ", local_elem
 
         # Check that we don't take derivatives of QuadratureElements
         if derivatives and local_elem.family() == "Quadrature":
@@ -696,9 +698,12 @@ class QuadratureTransformer(Transformer):
         # elements are labeled with the global component number
         if component:
             local_offset = component - local_comp
+#        print "local_offset: ", local_offset
+#        print "component: ", component
 
         # Create FFC element
         ffc_element = create_element(ufl_basis_function.element())
+#        print "ffc_element: ", ffc_element
 
         code = {}
         # Generate FFC multi index for derivatives
@@ -721,8 +726,14 @@ class QuadratureTransformer(Transformer):
             deriv = [multi.count(i) for i in range(geo_dim)]
             if not any(deriv):
                 deriv = []
-
-            if ffc_element.space_mapping(component) == Mapping.AFFINE:
+#            print "Mapping.AFFINE: ", AFFINE
+#            print "ffc_element.space_mapping(component): ", ffc_element.space_mapping(component)
+#            print "ffc_element.component_element(component): ", ffc_element.component_element(component)
+            
+#            print "ffc_element.component_element(component).mapping(): ", ffc_element.component_element(component)[0].mapping()
+#            if ffc_element.value_mapping(component) == Mapping.AFFINE:
+#            if ffc_element.space_mapping(component) == Mapping.AFFINE:
+            if ffc_element.component_element(component)[0].mapping() == AFFINE:
                 # Call function to create mapping and basis name
                 mapping, basis = self.__create_mapping_basis(component, deriv, ufl_basis_function, ffc_element)
                 if basis == None:
@@ -753,11 +764,11 @@ class QuadratureTransformer(Transformer):
                         continue
 
                     # Multiply basis by appropriate transform
-                    if ffc_element.space_mapping(component) == Mapping.COVARIANT_PIOLA:
+                    if ffc_element.component_element(component)[0].mapping() == COVARIANT_PIOLA:
                         dxdX = format_transform(Transform.JINV, c, local_comp, self.restriction)
                         self.trans_set.add(dxdX)
                         basis = format_mult([dxdX, basis])
-                    elif ffc_element.space_mapping(component) == Mapping.CONTRAVARIANT_PIOLA:
+                    elif ffc_element.component_element(component)[0].mapping() == CONTRAVARIANT_PIOLA:
                         self.trans_set.add(format_detJ(self.restriction))
                         detJ = format_inv(format_detJ(self.restriction))
                         dXdx = format_transform(Transform.J, c, local_comp, self.restriction)
@@ -936,7 +947,7 @@ class QuadratureTransformer(Transformer):
             deriv = [multi.count(i) for i in range(geo_dim)]
             if not any(deriv):
                 deriv = []
-            if ffc_element.space_mapping(component) == Mapping.AFFINE:
+            if ffc_element.component_element(component)[0].mapping() == AFFINE:
                 # Call other function to create function name
                 function_name = self.__create_function_name(component, deriv, quad_element, ufl_function, ffc_element)
                 if not function_name:
@@ -959,11 +970,11 @@ class QuadratureTransformer(Transformer):
                     function_name = self.__create_function_name(c + local_offset, deriv, quad_element, ufl_function, ffc_element)
 
                     # Multiply basis by appropriate transform
-                    if ffc_element.space_mapping(component) == Mapping.COVARIANT_PIOLA:
+                    if ffc_element.component_element(component)[0].mapping() == COVARIANT_PIOLA:
                         dxdX = format_transform(Transform.JINV, c, local_comp, self.restriction)
                         self.trans_set.add(dxdX)
                         basis = format_mult([dxdX, function_name])
-                    elif ffc_element.space_mapping(component) == Mapping.CONTRAVARIANT_PIOLA:
+                    elif ffc_element.component_element(component)[0].mapping() == CONTRAVARIANT_PIOLA:
                         self.trans_set.add(format_detJ(self.restriction))
                         detJ = format_inv(format_detJ(self.restriction))
                         dXdx = format_transform(Transform.J, c, local_comp, self.restriction)
