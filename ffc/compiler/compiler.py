@@ -48,7 +48,7 @@ from representation.quadrature.quadraturerepresentation import QuadratureReprese
 # FFC code generation modules
 #from codegeneration.tensor import *
 #from codegeneration.quadrature import *
-from codegeneration.common.uflcodegenerator import generate_common_code
+from codegeneration.common.codegenerator import generate_common_code
 from codegeneration.common.integrals import generate_combined_code
 from codegeneration.tensor import UFLTensorGenerator
 from codegeneration.quadrature import QuadratureGenerator
