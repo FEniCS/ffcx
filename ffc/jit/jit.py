@@ -23,10 +23,10 @@ from ffc.fem.finiteelement import FiniteElement
 from ffc.fem.mixedelement import MixedElement
 
 # FFC compiler modules
-from ffc.compiler.uflcompiler import compile as uflcompile
+from ffc.compiler.uflcompiler import compile# as uflcompile
 
 # UFL modules
-from ufl.classes import Form as UFLForm
+from ufl.classes import Form# as UFLForm
 from ufl.classes import FiniteElementBase
 from ufl.classes import TestFunction as UFLTestFunction
 from ufl.objects import dx as UFLdx
@@ -35,7 +35,8 @@ from ufl.objects import dx as UFLdx
 from jitobject import JITObject
 
 # Special Options for JIT-compilation
-FFC_OPTIONS_JIT = FFC_OPTIONS.copy()
+#FFC_OPTIONS_JIT = FFC_OPTIONS.copy()
+FFC_OPTIONS_JIT = UFL_OPTIONS.copy()
 FFC_OPTIONS_JIT["no-evaluate_basis_derivatives"] = True
 
 # Set debug level for Instant
@@ -51,47 +52,44 @@ def jit(object, options=None):
     """
 
     # FIXME: Remove this test later
-    use_ufl = not options is None and "compiler" in options and options["compiler"] == "ufl"
+#    use_ufl = not options is None and "compiler" in options and options["compiler"] == "ufl"
     # Check if we get an element or a form
-    if isinstance(object, FiniteElement) or isinstance(object, MixedElement) or (use_ufl and isinstance(object, FiniteElementBase)):
-        return jit_element(object, options, use_ufl)
+#    if isinstance(object, FiniteElement) or isinstance(object, MixedElement) or (use_ufl and isinstance(object, FiniteElementBase)):
+    if isinstance(object, FiniteElementBase):
+        return jit_element(object, options)
     else:
-        return jit_form(object, options, use_ufl)
+        return jit_form(object, options)
 
-def jit_form(form, options=None, use_ufl=False):
+def jit_form(form, options=None):
     "Just-in-time compile the given form"
 
-    if use_ufl:
-        if not isinstance(form, UFLForm):
-            form = UFLForm(form)
-    else:
-        if not isinstance(form, Form):
-            form = Form(form)
+    if not isinstance(form, Form):
+        form = Form(form)
         
     # Check options
     options = check_options(form, options)
     
     # Wrap input
-    jit_object = JITObject(form, options, use_ufl)
+    jit_object = JITObject(form, options)
     
     # Check cache
     #    signature = jit_object.signature()
     module = instant.import_module(jit_object, cache_dir=options["cache_dir"])
     if module:
         compiled_form = getattr(module, module.__name__)()
-        if use_ufl:
-            return (compiled_form, module, form.form_data())
-        else:
-            return (compiled_form, module, form.form_data)
+#        if use_ufl:
+        return (compiled_form, module, form.form_data())
+#        else:
+#            return (compiled_form, module, form.form_data)
     
     # Generate code
     debug("Calling FFC just-in-time (JIT) compiler, this may take some time...", -1)
     signature = jit_object.signature()
 
-    if use_ufl:
-        uflcompile(form, signature, options)
-    else:
-        compile(form, signature, options)
+#    if use_ufl:
+#        uflcompile(form, signature, options)
+#    else:
+    compile(form, signature, options)
 
     debug("done", -1)
     
@@ -117,33 +115,34 @@ def jit_form(form, options=None, use_ufl=False):
     # Extract compiled form
     compiled_form = getattr(module, module.__name__)()
 
-    if use_ufl:
-        return compiled_form, module, form.form_data()
-    else:
-        return compiled_form, module, form.form_data
+#    if use_ufl:
+    return compiled_form, module, form.form_data()
+#    else:
+#        return compiled_form, module, form.form_data
 
-def jit_element(element, options=None, use_ufl=False):
+def jit_element(element, options=None):
     "Just-in-time compile the given element"
     
     # Check that we get an element
-    if not (isinstance(element, FiniteElement) or isinstance(element, MixedElement) or (use_ufl and isinstance(element, FiniteElementBase))):
+#    if not (isinstance(element, FiniteElement) or isinstance(element, MixedElement) or (use_ufl and isinstance(element, FiniteElementBase))):
+    if not isinstance(element, FiniteElementBase):
         raise RuntimeError, "Expecting a finite element."
 
     # Create simplest possible dummy form
-    if use_ufl:
-        # FIXME: Check that his is correct...
-        if len(element.value_shape()) > 0:
-            form = UFLTestFunction(element)[0]*UFLdx 
-        else:
-            form = UFLTestFunction(element)*UFLdx
+#    if use_ufl:
+    # FIXME: Check that his is correct...
+    if len(element.value_shape()) > 0:
+        form = UFLTestFunction(element)[0]*UFLdx 
     else:
-        if element.value_dimension(0) > 1:
-            form = TestFunction(element)[0]*dx
-        else:
-            form = TestFunction(element)*dx
+        form = UFLTestFunction(element)*UFLdx
+#    else:
+#        if element.value_dimension(0) > 1:
+#            form = TestFunction(element)[0]*dx
+#        else:
+#            form = TestFunction(element)*dx
 
     # Compile form
-    (compiled_form, module, form_data) = jit_form(form, options, use_ufl)
+    (compiled_form, module, form_data) = jit_form(form, options)
 
     return extract_element_and_dofmap(module)
 

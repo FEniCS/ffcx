@@ -259,4 +259,5 @@ class JITTests(unittest.TestCase):
         self.assertTrue(dt1 < 0.5)
         
 if __name__ == "__main__":
+    os.system("python testcreateelement.py")
     unittest.main()

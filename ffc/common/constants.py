@@ -32,5 +32,6 @@ UFL_OPTIONS = {"representation": "auto",      # form representation / code gener
                "form_postfix": True,          # postfix form name with "Function", "LinearForm" or BilinearForm
                "cache_dir": None,             # cache dir used by Instant
                "output_dir": ".",             # output directory for generated code
+               "cpp optimize": False,         # optimization for the JIT compiler
                "optimize": False}             # optimise the quadrature code generation
 
