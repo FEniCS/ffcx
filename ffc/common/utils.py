@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2005-02-04 -- 2009-03-09"
+__date__ = "2005-02-04 -- 2009-03-21"
 __copyright__ = "Copyright (C) 2005-2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
@@ -76,16 +76,3 @@ def abbreviate(dict):
     for key in d.keys():
         if not d[key]: del d[key]
     return d
-
-if __name__ == "__main__":
-
-    for p in permutations([0, 1, 2, 3]):
-        print p
-
-    text = """\
-logg@galerkin:~/work/src/fenics/ffc/ffc/src/ffc/common# ls
-constants.py   debug.py       exceptions.pyc  progress.py   util.py
-constants.pyc  debug.pyc      __init__.py     progress.pyc  util.py.~1.2.~
-CVS            exceptions.py  __init__.pyc    #util.py#     util.pyc"""
-    print text
-    print indent(text, 2)

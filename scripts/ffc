@@ -5,7 +5,7 @@
 # Python module which is then executed.
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-10-14 -- 2009-04-20"
+__date__ = "2004-10-14 -- 2009-04-21"
 __copyright__ = "Copyright (C) 2004-2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
@@ -20,10 +20,9 @@ import getopt
 import os.path
 
 # FFC modules
-from ffc.common.debug import warning, error, debug, setlevel
-from ffc.common.constants import *
-from ffc.common.exceptions import *
-from ufl.algorithms import *
+from ffc.common.log import info, debug, set_level, INFO, ERROR
+from ffc.common.constants import FFC_OPTIONS, FFC_VERSION
+from ffc.common.exceptions import FormError
 
 def main(argv):
     "Main function"
@@ -51,22 +50,14 @@ def main(argv):
     if len(args) == 0:
         error("Missing file")
         return 2
-    
-    # Set default arguments
-    debuglevel = FFC_DEBUG_LEVEL
-
-    # FIXME: Temporary fix
-    if len([arg for arg in args if ".ufl" in arg]) > 0:
-        options = UFL_OPTIONS.copy()
-    else:
-        options = FFC_OPTIONS.copy()
 
     # Parse command-line options
+    options = FFC_OPTIONS.copy()
     for opt, arg in opts:
         if opt in  ("-d", "--debug"):
-            debuglevel = int(arg)
+            options["debug_level"] = int(arg)
         elif opt in ("-s", "--silent"):
-            debuglevel = -1
+            options["debug_level"] = ERROR
         elif opt in  ("-l", "--language"):
             options["language"] = arg
             options["format"] = arg
@@ -88,11 +79,10 @@ def main(argv):
             options["output_dir"] = arg
 
     # Set debug level
-    setlevel(debuglevel)
+    set_level(options["debug_level"])
 
     # Print a nice message
-    if debuglevel > -1:
-        print_version()
+    print_version()
 
     # Call parser and compiler for each file
     for filename in args:
@@ -110,10 +100,8 @@ def main(argv):
             print "*** Expecting a UFL form file (.ufl)."
             return 2
 
-        # Catch exceptions only if debug level is non-negative
-        if debuglevel >= 1:
-            execfile(script, {})
-        else:
+        # Catch exceptions only for low debug levels
+        if options["debug_level"] <= INFO:
             try:
                 execfile(script, {})
             except FormError, exception:
@@ -130,24 +118,26 @@ def main(argv):
                 print "*** " + str(exception)
                 print "*** To get more information about this error, rerun ffc with the option -d1."
                 return 2
+        else:
+            execfile(script, {})
 
     return 0
 
 def print_usage():
-    "Print usage info"
+    "Print usage info."
     print_version()
-    print """Usage: ffc [OPTION]... input.form
+    info("""Usage: ffc [OPTION]... input.form
 
 For information about the FFC command-line interface, refer to
 the FFC man page which may invoked by 'man ffc' (if installed).
-"""
-    return
+""")
 
 def print_version():
-    "Print version number"
-    print("This is FFC, the FEniCS Form Compiler, version %s." % FFC_VERSION)
-    print("For further information, visit http://www.fenics.org/wiki/FFC/.\n")
-    return
+    "Print version number."
+    info("""\
+This is FFC, the FEniCS Form Compiler, version %s.
+For further information, visit http://www.fenics.org/ffc/.
+""" % FFC_VERSION)
 
 # New version for .ufl files
 def _make_script_ufl(filename, options):

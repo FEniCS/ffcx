@@ -9,10 +9,8 @@ from instant import get_swig_version
 # FFC common modules
 from ffc.common.constants import FFC_VERSION
 
-try:
-    from ufl.algorithms import FormData
-except:
-    pass
+# UFC modules
+from ufl.algorithms import FormData
 
 class JITObject:
     """This class is a wrapper for a compiled object in the context of
@@ -55,15 +53,8 @@ class JITObject:
             return self._signature
         
         # Compute form data and element signature
-#        if self.options["compiler"] == "ffc":
-#            self.form_data = analyze.analyze(self.form, simplify_form=True)
-#            element_signature = ";".join([element.signature() for element in self.form_data.elements])
-#        if self.options["compiler"] == "ufl":
-#            print "--- UFL signature"
         self.form_data = FormData(self.form)
         element_signature = ";".join([element.__repr__() for element in self.form_data.elements])
-#        else:
-#            raise RuntimeError("Unknown compiler.")
 
         # Build signature including form, elements, options, FFC version and SWIG version
         form_signature    = str(self.form)
@@ -73,10 +64,5 @@ class JITObject:
         signatures = [form_signature, element_signature, options_signature, ffc_signature, swig_signature]
         string = ";".join(signatures)
         self._signature = "form_" + sha1(string).hexdigest()
-
-        # FIXME: Temporary fix
-        # Store form data and signature in form for later reuse
-#        if not self.use_ufl:
-#            self.form.form_data = self.form_data
 
         return self._signature

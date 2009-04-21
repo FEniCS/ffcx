@@ -633,17 +633,14 @@ class Format:
         test_element = None
         elements_string_map = {}
         test_elements = []
-#        test_elements = [form_data.elements[0] for (form_code, form_data) in generated_forms if form_data.rank >= 1]
         for (form_code, form_data) in generated_forms:
             if form_data.rank >= 1:
                 test_elements.append(form_data.ffc_elements[0].__repr__())
                 elements_string_map[form_data.ffc_elements[0].__repr__()] = form_data.ffc_elements[0]
         if len(test_elements) > 0 and test_elements[1:] == test_elements[:-1]:
             test_element = test_elements[0]
-#            test_element = elements_string_map[test_elements[0]]
         elif len(test_elements) > 0:
             raise RuntimeError, "Unable to extract test space (not uniquely defined)."
-#        print "test: ", test_element
 
         # Extract common trial element if any
         trial_element = None
@@ -654,11 +651,9 @@ class Format:
                 trial_elements.append(form_data.ffc_elements[0].__repr__())
                 elements_string_map[form_data.ffc_elements[0].__repr__()] = form_data.ffc_elements[0]
         if len(trial_elements) > 0 and trial_elements[1:] == trial_elements[:-1]:
-#            trial_element = elements_string_map[trial_elements[0]]
             trial_element = trial_elements[0]
         elif len(trial_elements) > 0:
             raise RuntimeError, "Unable to extract trial space (not uniquely defined)."
-#        print "trial: ", trial_element
 
         # Extract common coefficient element if any
         coefficient_element = None
@@ -669,17 +664,13 @@ class Format:
             coefficient_elements.append(c.e0.__repr__())
             elements_string_map[c.e0.__repr__()] = c.e0
         if len(coefficient_elements) > 0 and coefficient_elements[1:] == coefficient_elements[:-1]:
-#            coefficient_element = elements_string_map[coefficient_elements[0]]
             coefficient_element = coefficient_elements[0]
-#        print "coeff: ", coefficient_element
 
         # Extract common element if any
         common_element = None
         elements = test_elements + trial_elements # + coefficient_elements
         if len(elements) > 0 and elements[1:] == elements[:-1]:
-#            common_element = elements_string_map[elements[-1]]
             common_element = elements[-1]
-#        print "common: ", common_element
 
         # Build map from elements to forms
         element_map = {}    
@@ -706,7 +697,6 @@ class Format:
                                                    "%sCoefficientSpace%d" % (form_prefix, j),
                                                    element_map)
                 output += "\n"
-#            print "form_rank: ", form_data.rank
             # If we compiled just one element
             if form_data.rank < 0:
                 if not len(form_data.ffc_elements) == 1:

@@ -97,20 +97,11 @@ class MixedElement(FiniteElementBase):
         return sub_element.space_mapping(i - offset)
 
     def component_element(self, component):
-        "Return sub element and offset for given component."
-
-        print ""
-        print "Extracting element for component:", component
-        
+        "Return sub element and offset for given component."        
         offset = 0
-
-        print "Number of elements:", len(self.extract_elements())
-        print "Elements:", self.extract_elements()
         for element in self.extract_elements():
             next_offset = offset + element.value_dimension(0)
             if next_offset > component:
-                print "Found offset =", offset
-                print ""
                 return (element, offset)
             offset = next_offset
         raise RuntimeError, "Unable to extract sub element for component %s of %s." % (str(component), str(self))

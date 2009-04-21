@@ -15,8 +15,8 @@ import instant
 import ufc_utils
 
 # FFC common modules
-from ffc.common.debug import *
-from ffc.common.constants import *
+from ffc.common.log import debug
+from ffc.common.constants import FFC_OPTIONS
 
 # FFC fem modules
 from ffc.fem.finiteelement import FiniteElement
@@ -26,17 +26,16 @@ from ffc.fem.mixedelement import MixedElement
 from ffc.compiler.uflcompiler import compile# as uflcompile
 
 # UFL modules
-from ufl.classes import Form# as UFLForm
+from ufl.classes import Form
 from ufl.classes import FiniteElementBase
 from ufl.classes import TestFunction as UFLTestFunction
-from ufl.objects import dx as UFLdx
+from ufl.objects import dx
 
 # FFC jit modules
 from jitobject import JITObject
 
 # Special Options for JIT-compilation
-#FFC_OPTIONS_JIT = FFC_OPTIONS.copy()
-FFC_OPTIONS_JIT = UFL_OPTIONS.copy()
+FFC_OPTIONS_JIT = FFC_OPTIONS.copy()
 FFC_OPTIONS_JIT["no-evaluate_basis_derivatives"] = True
 
 # Set debug level for Instant
@@ -51,10 +50,7 @@ def jit(object, options=None):
       options : An option dictionary
     """
 
-    # FIXME: Remove this test later
-#    use_ufl = not options is None and "compiler" in options and options["compiler"] == "ufl"
     # Check if we get an element or a form
-#    if isinstance(object, FiniteElement) or isinstance(object, MixedElement) or (use_ufl and isinstance(object, FiniteElementBase)):
     if isinstance(object, FiniteElementBase):
         return jit_element(object, options)
     else:
@@ -73,28 +69,20 @@ def jit_form(form, options=None):
     jit_object = JITObject(form, options)
     
     # Check cache
-    #    signature = jit_object.signature()
     module = instant.import_module(jit_object, cache_dir=options["cache_dir"])
     if module:
         compiled_form = getattr(module, module.__name__)()
-#        if use_ufl:
         return (compiled_form, module, form.form_data())
-#        else:
-#            return (compiled_form, module, form.form_data)
     
     # Generate code
-    debug("Calling FFC just-in-time (JIT) compiler, this may take some time...", -1)
+    debug("Calling FFC just-in-time (JIT) compiler, this may take some time...")
     signature = jit_object.signature()
-
-#    if use_ufl:
-#        uflcompile(form, signature, options)
-#    else:
     compile(form, signature, options)
 
-    debug("done", -1)
+    debug("done")
     
     # Wrap code into a Python module using Instant
-    debug("Creating Python extension (compiling and linking), this may take some time...", -1)
+    debug("Creating Python extension (compiling and linking), this may take some time...")
 
     # Create python extension module
     module = ufc_utils.build_ufc_module(
@@ -110,36 +98,25 @@ def jit_form(form, options=None):
     if options["split_implementation"] :
         os.unlink(signature + ".cpp")
     
-    debug("done", -1)
+    debug("done")
 
     # Extract compiled form
     compiled_form = getattr(module, module.__name__)()
 
-#    if use_ufl:
     return compiled_form, module, form.form_data()
-#    else:
-#        return compiled_form, module, form.form_data
 
 def jit_element(element, options=None):
     "Just-in-time compile the given element"
     
     # Check that we get an element
-#    if not (isinstance(element, FiniteElement) or isinstance(element, MixedElement) or (use_ufl and isinstance(element, FiniteElementBase))):
     if not isinstance(element, FiniteElementBase):
         raise RuntimeError, "Expecting a finite element."
 
     # Create simplest possible dummy form
-#    if use_ufl:
-    # FIXME: Check that his is correct...
     if len(element.value_shape()) > 0:
-        form = UFLTestFunction(element)[0]*UFLdx 
+        form = UFLTestFunction(element)[0]*dx 
     else:
-        form = UFLTestFunction(element)*UFLdx
-#    else:
-#        if element.value_dimension(0) > 1:
-#            form = TestFunction(element)[0]*dx
-#        else:
-#            form = TestFunction(element)*dx
+        form = UFLTestFunction(element)*dx
 
     # Compile form
     (compiled_form, module, form_data) = jit_form(form, options)
@@ -179,4 +156,3 @@ def extract_element_and_dofmap(module):
     name = module.__name__
     return (getattr(module, name + "_finite_element_0")(),
             getattr(module, name + "_dof_map_0")())
-

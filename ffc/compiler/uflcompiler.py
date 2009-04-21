@@ -34,7 +34,7 @@ from ufl.algorithms import *
 # FFC common modules
 from ffc.common.log import debug, info, warning, error, begin, end, set_level, INFO
 from ffc.common.utils import product
-from ffc.common.constants import UFL_OPTIONS
+from ffc.common.constants import FFC_OPTIONS
 
 # FFC fem modules
 from ffc.fem import create_element
@@ -60,14 +60,10 @@ from codegeneration.quadrature import UFLQuadratureGenerator
 from format.ufcformat import Format
 
 # Form representations and code generators
-if os.environ["USER"] == "logg":
-    Representations = (QuadratureRepresentation, TensorRepresentation)
-    CodeGenerators  = (UFLQuadratureGenerator, UFLTensorGenerator)
-else:
-    Representations = (QuadratureRepresentation, TensorRepresentation)
-    CodeGenerators  = (UFLQuadratureGenerator, UFLTensorGenerator)
+Representations = (QuadratureRepresentation, TensorRepresentation)
+CodeGenerators  = (UFLQuadratureGenerator, UFLTensorGenerator)
 
-def compile(forms, prefix="Form", options=UFL_OPTIONS.copy(), global_variables=None):
+def compile(forms, prefix="Form", options=FFC_OPTIONS.copy(), global_variables=None):
     """This is the main interface to FFC. The input argument must be
     either a single UFL Form object or a list of UFL Form objects.
     For each form, FFC generates C++ code conforming to the UFC

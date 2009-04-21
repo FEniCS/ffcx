@@ -1,15 +1,15 @@
 "Utility function for removing unused variables from a C++ code"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-03-07 -- 2007-05-17"
-__copyright__ = "Copyright (C) 2007 Anders Logg"
+__date__ = "2007-03-07 -- 2009-04-21"
+__copyright__ = "Copyright (C) 2007-2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Python modules
 import re
 
 # FFC common modules
-from ffc.common.debug import *
+from ffc.common.log import debug
 
 # Declarations to examine
 types = [["double"], ["const", "double"], ["const", "double", "*", "const", "*"], ["int"], ["const", "int"]]
@@ -76,7 +76,7 @@ def remove_unused(code):
             if line in used_lines:
                 used_lines.remove(line)
         if used_lines == []:
-            debug("Removing unused variable: %s" % variable_name, 1)
+            debug("Removing unused variable: %s" % variable_name)
             #lines[declaration_line] = "// " + lines[declaration_line]
             lines[declaration_line] = None
             removed_lines += [declaration_line]
