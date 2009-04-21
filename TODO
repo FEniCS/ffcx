@@ -2,6 +2,14 @@ This file lists TODO items for FFC. As usual, the priority depends
 on the current interests of the various FFC developers. To edit this
 file, it is convenient to install org-mode in Emacs.
 
+* Conversion to UFL
+  - Skipping factorization in tensor representation, does it matter?
+    Check speed against old FFC.
+  - Use DOLFIN wrappers from dolfin_utils
+  - Use load_form_file from UFL
+  - Clean out old unused code (check coverage)
+  - Rename uflfoo --> foo
+    
 * Write introduction in manual
   - The introduction is currently empty
 
@@ -52,50 +60,3 @@ file, it is convenient to install org-mode in Emacs.
 
 * Fix all FIXMEs
   - There are a few of these: find src/ffc -name '*.py' | xargs grep FIXME
-
-* Conversion to UFL
-  - Skipping factorization in tensor representation, does it matter?
-    Check speed against old FFC.
-  - Estimation of quadrature_order not correct in UFL
-
-* Conversion status
-
-  ?  = Unknown
-  -  = Shouldn't work
-  x  = Does not compile
-  c  = Compiles
-  C  = Compiles and looks ok
-  OK = Works perfectly
-
-                      |  Tensor  |  Quadr. |
---------------------------------------------
-Constant              |    C     |    OK   |
-Elasticity            |    C     |    OK   |
-EnergyNorm            |    x     |    OK   |
-Equation              |    c     |    OK   |
-FunctionOperators     |    c     |    OK*  |
-Heat                  |    c     |    OK   |
-Mass                  |    c     |    OK   |
-MixedMixedElement     |    c     |    OK   |
-MixedPoisson          |    c     |    OK   |
-NavierStokes          |    c     |    OK   |
-NeumannProblem        |    c     |    OK   |
-Optimization          |    c     |    OK   |
-P5tet                 |    c     |    OK   |
-P5tri                 |    c     |    OK   |
-PoissonDG             |    c     |    OK   |
-PoissonSystem         |    c     |    OK   |
-Poisson               |    C     |    OK   |
-QuadratureElement     |    c     |    OK** |
-Stokes                |    c     |    OK   |
-SubDomains            |    c     |    OK   |
-SubDomain             |    c     |    OK   |
-TensorWeightedPoisson |    c     |    OK   |
-VectorLaplaceGradCurl |    c     |    OK   |
-
-Notes Quadr:
-*  - Due to the difference in how tensor and quadrature applies function
-     operators the norm when comparing two tensors is around 1.3e-1
-** - Because the QuadratureElement in FFC specifies the number of points
-     rather than the quadrature order, there is a difference when comparing
-     FFC and UFL form files.
