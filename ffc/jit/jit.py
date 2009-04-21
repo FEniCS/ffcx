@@ -28,7 +28,7 @@ from ffc.compiler.uflcompiler import compile# as uflcompile
 # UFL modules
 from ufl.classes import Form
 from ufl.classes import FiniteElementBase
-from ufl.classes import TestFunction as UFLTestFunction
+from ufl.classes import TestFunction
 from ufl.objects import dx
 
 # FFC jit modules
@@ -113,10 +113,10 @@ def jit_element(element, options=None):
         raise RuntimeError, "Expecting a finite element."
 
     # Create simplest possible dummy form
-    if len(element.value_shape()) > 0:
-        form = UFLTestFunction(element)[0]*dx 
-    else:
-        form = UFLTestFunction(element)*dx
+    v = TestFunction(element)
+    for i in range(element.value_shape()):
+        v = v[i]
+    form = v*dx 
 
     # Compile form
     (compiled_form, module, form_data) = jit_form(form, options)
@@ -140,7 +140,7 @@ def check_options(form, options):
     for key in options:
         if not key in FFC_OPTIONS_JIT:
             warning('Unknown option "%s" for JIT compiler, ignoring.' % key)
-
+            
     # Add defaults for missing options
     for key in FFC_OPTIONS_JIT:
         if not key in options:
