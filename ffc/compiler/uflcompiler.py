@@ -72,9 +72,6 @@ def compile(forms, prefix="Form", options=FFC_OPTIONS.copy(), global_variables=N
     files. For detailed documentation of available options, refer to
     the FFC user manual."""
 
-    # Set log level
-    set_level(INFO)
-
     # Check options
     options = _check_options(options)
 
