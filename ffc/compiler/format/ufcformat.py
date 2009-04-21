@@ -656,8 +656,8 @@ class Format:
         coefficient_elements = []
         for c in coefficients:
 #            coefficient_elements.append(c.e0)
-            coefficient_elements.append(c.e0.__repr__())
-            elements_string_map[c.e0.__repr__()] = c.e0
+            coefficient_elements.append(c.element.__repr__())
+            elements_string_map[c.element.__repr__()] = c.element
         if len(coefficient_elements) > 0 and coefficient_elements[1:] == coefficient_elements[:-1]:
             coefficient_element = coefficient_elements[0]
 
@@ -719,7 +719,7 @@ class Format:
             form_prefix = self.compute_prefix(prefix, generated_forms, i, options)
 
             # Generate code for coefficient member variables
-            coefficient_names = [c.name() for c in form_data.coefficients]
+            coefficient_names = [c.name for c in form_data.coefficients]
             n = len(coefficient_names)
             coefficient_classes = ["%sCoefficient%d" % (form_prefix, j) for j in range(n)]
             if n == 0:

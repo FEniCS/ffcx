@@ -383,7 +383,7 @@ def create_ffc_coefficients(ufl_functions, global_variables):
             name = coefficient_names[function]
         else:
             name = "w" + str(function.count())
-        ffc_coefficients.append(Coefficient(element, name))
+        ffc_coefficients.append(Coefficient(create_element(element), name))
 
     return ffc_coefficients
 
