@@ -29,7 +29,7 @@ from ffc.compiler.representation.tensor.multiindex import MultiIndex as FFCMulti
 
 # FFC fem modules
 from ffc.fem.createelement import create_element
-from ffc.fem.mapping import Mapping
+from ffc.fem.finiteelement import AFFINE, CONTRAVARIANT_PIOLA, COVARIANT_PIOLA
 
 # Utility and optimisation functions for quadraturegenerator
 from quadraturegenerator_utils import generate_loop, generate_psi_name, create_permutations
@@ -353,7 +353,7 @@ class QuadratureTransformer2(QuadratureTransformer):
             if not any(deriv):
                 deriv = []
 
-            if ffc_element.value_mapping(component) == Mapping.AFFINE:
+            if ffc_element.component_element(component)[0].mapping() == AFFINE:
                 # Call function to create mapping and basis name
                 mapping, basis = self.__create_mapping_basis(component, deriv, ufl_basis_function, ffc_element)
 
@@ -375,15 +375,15 @@ class QuadratureTransformer2(QuadratureTransformer):
                     mapping, basis = self.__create_mapping_basis(c + local_offset, deriv, ufl_basis_function, ffc_element)
 
                     # Multiply basis by appropriate transform
-                    if ffc_element.value_mapping(component) == Mapping.COVARIANT_PIOLA:
+                    if ffc_element.component_element(component)[0].mapping() == COVARIANT_PIOLA:
                         dxdX = Symbol(format_transform("JINV", c, local_comp, self.restriction), 1, GEO)
                         basis = Product([dxdX, basis])
-                    elif ffc_element.value_mapping(component) == Mapping.CONTRAVARIANT_PIOLA:
+                    elif ffc_element.component_element(component)[0].mapping() == CONTRAVARIANT_PIOLA:
                         detJ = Fraction(Symbol("", 1, CONST), Symbol(format_detJ(self.restriction), 1, GEO))
                         dXdx = Symbol(format_transform("J", c, local_comp, self.restriction), 1, GEO)
                         basis = Product([detJ, dXdx, basis])
                     else:
-                        error("Transformation is not supported: " + str(ffc_element.value_mapping(component)))
+                        error("Transformation is not supported: " + str(ffc_element.component_element(component)[0].mapping()))
 
                     # Add transformation if needed
                     transforms = []
@@ -547,7 +547,7 @@ class QuadratureTransformer2(QuadratureTransformer):
             deriv = [multi.count(i) for i in range(geo_dim)]
             if not any(deriv):
                 deriv = []
-            if ffc_element.value_mapping(component) == Mapping.AFFINE:
+            if ffc_element.component_element(component)[0].mapping() == AFFINE:
                 # Call other function to create function name
                 function_name = self.__create_function_name(component, deriv, quad_element, ufl_function, ffc_element)
                 if not function_name:
@@ -569,15 +569,15 @@ class QuadratureTransformer2(QuadratureTransformer):
                     function_name = self.__create_function_name(c + local_offset, deriv, quad_element, ufl_function, ffc_element)
 
                     # Multiply basis by appropriate transform
-                    if ffc_element.value_mapping(component) == Mapping.COVARIANT_PIOLA:
+                    if ffc_element.component_element(component)[0].mapping() == COVARIANT_PIOLA:
                         dxdX = Symbol(format_transform("JINV", c, local_comp, self.restriction), 1, GEO)
                         basis = Product([dxdX, function_name])
-                    elif ffc_element.value_mapping(component) == Mapping.CONTRAVARIANT_PIOLA:
+                    elif ffc_element.component_element(component)[0].mapping() == CONTRAVARIANT_PIOLA:
                         detJ = Fraction(Symbol("", 1, CONST), Symbol(format_detJ(self.restriction), 1, GEO))
                         dXdx = Symbol(format_transform("J", c, local_comp, self.restriction), 1, GEO)
                         basis = Product([detJ, dXdx, function_name])
                     else:
-                        error("Transformation is not supported: ", str(ffc_element.value_mapping(component)))
+                        error("Transformation is not supported: ", str(ffc_element.component_element(component)[0].mapping()))
 
                     # Add transformation if needed
                     transforms = []
