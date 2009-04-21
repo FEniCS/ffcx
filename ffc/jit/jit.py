@@ -2,7 +2,7 @@
 It uses Instant to wrap the generated code into a Python module."""
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-07-20 -- 2009-03-15"
+__date__ = "2007-07-20 -- 2009-04-21"
 __copyright__ = "Copyright (C) 2007-2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
@@ -15,7 +15,7 @@ import instant
 import ufc_utils
 
 # FFC common modules
-from ffc.common.log import debug
+from ffc.common.log import debug, warning
 from ffc.common.constants import FFC_OPTIONS
 
 # FFC fem modules
@@ -114,7 +114,7 @@ def jit_element(element, options=None):
 
     # Create simplest possible dummy form
     v = TestFunction(element)
-    for i in range(element.value_shape()):
+    for i in range(len(element.value_shape())):
         v = v[i]
     form = v*dx 
 
