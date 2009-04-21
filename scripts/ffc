@@ -20,7 +20,7 @@ import getopt
 import os.path
 
 # FFC modules
-from ffc.common.log import info, debug, set_level, INFO, ERROR
+from ffc.common.log import info, debug, set_level, DEBUG, ERROR
 from ffc.common.constants import FFC_OPTIONS, FFC_VERSION
 from ffc.common.exceptions import FormError
 
@@ -29,8 +29,8 @@ def main(argv):
 
     # Get command-line arguments
     try:
-        opts, args = getopt.getopt(argv, "hvd:sl:r:f:Oo:", \
-        ["help", "version", "debug=", "silent", "language=", "representation=", "optimize", "output-directory="])
+        opts, args = getopt.getopt(argv, "hvdsl:r:f:Oo:", \
+        ["help", "version", "debug", "silent", "language=", "representation=", "optimize", "output-directory="])
     except getopt.GetoptError:
         error("Illegal command-line arguments")
         print_usage()
@@ -55,9 +55,9 @@ def main(argv):
     options = FFC_OPTIONS.copy()
     for opt, arg in opts:
         if opt in  ("-d", "--debug"):
-            options["debug_level"] = int(arg)
+             options["log_level"] = DEBUG
         elif opt in ("-s", "--silent"):
-            options["debug_level"] = ERROR
+            options["log_level"] = ERROR
         elif opt in  ("-l", "--language"):
             options["language"] = arg
             options["format"] = arg
@@ -78,9 +78,9 @@ def main(argv):
         elif opt in ("-o", "--output-directory"):
             options["output_dir"] = arg
 
-    # Set debug level
-    set_level(options["debug_level"])
-
+    # Set log level
+    set_level(options["log_level"])
+    
     # Print a nice message
     print_version()
 
@@ -100,26 +100,26 @@ def main(argv):
             print "*** Expecting a UFL form file (.ufl)."
             return 2
 
-        # Catch exceptions only for low debug levels
-        if options["debug_level"] <= INFO:
+        # Catch exceptions only when not in debug mode
+        if options["log_level"] <= DEBUG:
+            execfile(script, {})
+        else:
             try:
                 execfile(script, {})
             except FormError, exception:
                 print ""
                 print "*** Error at " + str(exception.expression)
                 print "*** " + exception.message
-                print "*** To get more information about this error, rerun ffc with the option -d1."
+                print "*** To get more information about this error, rerun FFC with --debug"
                 return 2
             except RuntimeError, exception:
                 print "*** " + str(exception)
-                print "*** To get more information about this error, rerun ffc with the option -d1."
+                print "*** To get more information about this error, rerun FFC with --debug"
                 return 2
             except Exception, exception:
                 print "*** " + str(exception)
-                print "*** To get more information about this error, rerun ffc with the option -d1."
+                print "*** To get more information about this error, rerun FFC with --debug"
                 return 2
-        else:
-            execfile(script, {})
 
     return 0
 

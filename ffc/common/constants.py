@@ -7,8 +7,7 @@ from log import INFO
 
 FFC_VERSION = "0.6.2"
 
-FFC_OPTIONS = {"debug_level":         INFO,   # debug level
-               "representation":      "auto", # form representation / code generation strategy
+FFC_OPTIONS = {"representation":      "auto", # form representation / code generation strategy
                "format":              "ufc",  # code generation format
                "quadrature_order":    "auto", # quadrature order used for quadrature representation
                "precision":           "15",   # precision used when writing numbers
@@ -17,4 +16,5 @@ FFC_OPTIONS = {"debug_level":         INFO,   # debug level
                "cache_dir":            None,  # cache dir used by Instant
                "output_dir":           ".",   # output directory for generated code
                "cpp optimize":         False, # optimization for the JIT compiler
-               "optimize":             False} # optimise the quadrature code generation
+               "optimize":             False, # optimise the quadrature code generation
+               "log_level":            INFO}  # log level, displaying only messages with level >= log_level
