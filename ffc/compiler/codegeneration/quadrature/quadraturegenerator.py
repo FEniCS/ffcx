@@ -481,8 +481,10 @@ class QuadratureGenerator:
                 if name in name_map:
                     for n in name_map[name]:
                         if inv_name_map[n][1] and inv_name_map[n][1] in new_nzcs:
-                            code += [Indent.indent(format_comment("Array of non-zero columns") )]
                             i, cols = inv_name_map[n][1]
+                            if not i in transformer.used_nzcs:
+                                continue
+                            code += [Indent.indent(format_comment("Array of non-zero columns") )]
                             value = format_block(format_sep.join(["%d" %c for c in list(cols)]))
                             name_col = format_const_uint + format_nzcolumns(i) + format_array(len(cols))
                             code += [(Indent.indent(name_col), value)]

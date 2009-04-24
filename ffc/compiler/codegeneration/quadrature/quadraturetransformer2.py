@@ -730,6 +730,7 @@ def generate_code(integrand, transformer, Indent, format):
     format_comment      = format["comment"]
     format_F            = format["function value"]
     format_Gip          = format["geometry tensor"] + format["integration points"]
+    format_nzc          = format["nonzero columns"](0).split("0")[0]
 
     # Initialise return values
     code = []
@@ -791,7 +792,12 @@ def generate_code(integrand, transformer, Indent, format):
             # operations count
             f_ops = function.ops() + 1
             func_ops += f_ops
-            function_expr[number] = format_add_equal(name, function)
+            entry = format_add_equal(name, function)
+            function_expr[number] = entry
+
+            # Extract non-zero column number if needed
+            if format_nzc in entry:
+                transformer.used_nzcs.add(int(entry.split(format_nzc)[1].split("[")[0]))
 
         # Multiply number of operations by the range of the loop index and add
         # number of operations to compute function values to total count
@@ -873,6 +879,10 @@ def generate_code(integrand, transformer, Indent, format):
             # Multiply number of operations to compute entries by range of loop
             prim_ops *= range_j
 
+            # Extract non-zero column number if needed
+            if format_nzc in entry:
+                transformer.used_nzcs.add(int(entry.split(format_nzc)[1].split("[")[0]))
+
         elif len(key) == 2:
             # Extract test and trial loops in correct order and check if for is legal
             key0, key1 = (0, 0)
@@ -897,6 +907,12 @@ def generate_code(integrand, transformer, Indent, format):
 
             # Multiply number of operations to compute entries by range of loops
             prim_ops *= range_j*range_k
+
+            # Extract non-zero column number if needed
+            if format_nzc in entry_j:
+                transformer.used_nzcs.add(int(entry_j.split(format_nzc)[1].split("[")[0]))
+            if format_nzc in entry_k:
+                transformer.used_nzcs.add(int(entry_k.split(format_nzc)[1].split("[")[0]))
         else:
             error("Only rank 0, 1 and 2 tensors are currently supported: " + str(key))
 

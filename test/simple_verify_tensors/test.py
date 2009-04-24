@@ -31,7 +31,7 @@ def tabulate_tensor(representation, integral, integral_type, header):
     options = {"n": 100, "N": 1000, "integral": integral, "header": header}
     code = tabulate_tensor_code[integral_type] % options
     open("tabulate_tensor.cpp", "w").write(code)
-    c = "g++ `pkg-config --cflags ufc-1` -o tabulate_tensor tabulate_tensor.cpp"
+    c = "g++ `pkg-config --cflags ufc-1` -Wall -Werror -o tabulate_tensor tabulate_tensor.cpp"
     (ok, output) = run_command(c, representation, integral)
     if not ok: return "GCC compilation failed"
 
@@ -48,7 +48,7 @@ def get_integrals(form):
     for integral_type in integral_types:
         for integral in commands.getoutput("grep ufc::%s %s | grep class" % (integral_type, form + ".h")).split("\n"):
             integral = integral.split(":")[0].split(" ")[-1].strip()
-            if not integral is "" and not integral.endswith("_tensor") and not integral.endswith("_quadrature"):
+            if not integral == "" and not integral.endswith("_tensor") and not integral.endswith("_quadrature"):
                 integrals.append((integral, integral_type))
     return integrals
 
@@ -150,7 +150,7 @@ def main(args):
     # Iterate over all form files
     forms = commands.getoutput("ls *.ufl | cut -d'.' -f1").split("\n")
     values = {}
-    for representation in ["quadrature", "tensor"]:
+    for representation, option in [("quadrature", ""), ("tensor", ""), ("quadrature", " -O")]:
         vals = []
         for form in forms:
 
@@ -160,16 +160,15 @@ def main(args):
 
             # Compile form
             print "Compiling form %s..." % form
-            (ok, output) = run_command("ffc -r %s %s.ufl" % (representation, form), representation, form)
+            (ok, output) = run_command("ffc -r %s %s.ufl" % (representation + option, form), representation, form)
             if not ok:
-                vals.append((form, "FFC compilation failed"))
+                vals.append((form, "FFC compilation failed", ""))
                 continue
 
             # Tabulate tensors for all integrals
             for (integral, integral_type) in get_integrals(form):
                 vals.append((integral, tabulate_tensor(representation, integral, integral_type, form + ".h"), form))
-
-        values[representation] = vals
+        values[representation + option] = vals
 
     # Load or update reference values
     if os.path.isfile("../reference.pickle"):
