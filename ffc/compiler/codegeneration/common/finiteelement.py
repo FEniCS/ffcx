@@ -7,8 +7,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian Oelgaard 2007
 # Modified by Marie Rognes 2008
-
-from sets import Set
+# Modified by Garth N. Wells 2009
 
 # FIAT modules
 from FIAT.shapes import LINE
@@ -242,7 +241,7 @@ def __map_function_values(num_values, element, format):
     # Compute the mapping associated with each dof:
     mappings = [element.space_mapping(i)
                 for i in range(element.space_dimension())]
-    whichmappings = Set(mappings)
+    whichmappings = set(mappings)
 
     # If there is more than one mapping involved, we will need to
     # keep track of them at runtime:
