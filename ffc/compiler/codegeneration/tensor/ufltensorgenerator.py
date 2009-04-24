@@ -7,9 +7,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian B. Oelgaard 2007
 # Modified by Marie Rognes (meg@math.uio.no) 2007
-
-# Python modules
-from sets import Set
+# Modified by Garth N. Wells 2009
 
 # FFC common modules
 from ffc.common.log import info, debug
