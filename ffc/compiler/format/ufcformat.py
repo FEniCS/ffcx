@@ -508,6 +508,9 @@ class Format:
         # Generate code for local_dimension
         ufc_code["local_dimension"] = "return %s;" % code["local_dimension"]
 
+        # Generate code for max_local_dimension
+        ufc_code["max_local_dimension"] = "return %s;" % code["local_dimension"]
+
         # Generate code for geometric_dimension
         ufc_code["geometric_dimension"] = "return %s;" % code["geometric_dimension"]
 
