@@ -65,18 +65,18 @@ void assemble(..., ufc::form& form, ...)
   // Initialize array of values for the cell tensor
   unsigned int size = 1;
   for (unsigned int i = 0; i < form.rank(); i++)
-    size *= dof_maps[i]->local_dimension();
+    size *= dof_maps[i]->max_local_dimension();
   double* AK = new double[size];
 
   // Initialize array of local to global dofmaps
   unsigned int** dofs = new unsigned int*[form.rank()];
   for (unsigned int i = 0; i < form.rank(); i++)
-    dofs[i] = new unsigned int[dof_maps[i]->local_dimension()];
+    dofs[i] = new unsigned int[dof_maps[i]->max_local_dimension()];
 
   // Initialize array of coefficient values
   double** w = new double*[form.num_coefficients()];
   for (unsigned int i = 0; i < form.num_coefficients(); i++)
-    w[i] = new double[dof_maps[form.rank() + i]->local_dimension()];
+    w[i] = new double[dof_maps[form.rank() + i]->max_local_dimension()];
 
   // Iterate over cells
   for (...)

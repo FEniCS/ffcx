@@ -1,3 +1,5 @@
+ - Add new function ufc::dof_map::max_local_dimension()
+ - Change ufc::dof_map::local_dimension() to ufc::dof_map::local_dimension(const ufc::cell c) 
 1.1.2 [2009-04-07]
  - Added configuration and building of python extension module to ufc_utils.build_ufc_module
 1.1.1 [2009-02-20]

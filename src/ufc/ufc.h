@@ -202,8 +202,11 @@ namespace ufc
     /// Return the dimension of the global finite element function space
     virtual unsigned int global_dimension() const = 0;
 
-    /// Return the dimension of the local finite element function space
-    virtual unsigned int local_dimension() const = 0;
+    /// Return the dimension of the local finite element function space for a cell
+    virtual unsigned int local_dimension(const cell& c) const = 0;
+
+    /// Return the maximum dimension of the local finite element function space
+    virtual unsigned int max_local_dimension() const = 0;
 
     // Return the geometric dimension of the coordinates this dof map provides
     virtual unsigned int geometric_dimension() const

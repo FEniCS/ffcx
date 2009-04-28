@@ -60,10 +60,16 @@ public:
 %(global_dimension)s
   }
 
-  /// Return the dimension of the local finite element function space
-  virtual unsigned int local_dimension() const
+  /// Return the dimension of the local finite element function space for a cell
+  virtual unsigned int local_dimension(const ufc::cell& c) const
   {
 %(local_dimension)s
+  }
+
+  /// Return the maximum dimension of the local finite element function space
+  virtual unsigned int max_local_dimension() const
+  {
+%(max_local_dimension)s
   }
 
   // Return the geometric dimension of the coordinates this dof map provides
@@ -161,8 +167,11 @@ public:
   /// Return the dimension of the global finite element function space
   virtual unsigned int global_dimension() const;
 
-  /// Return the dimension of the local finite element function space
-  virtual unsigned int local_dimension() const;
+  /// Return the dimension of the local finite element function space for a cell
+  virtual unsigned int local_dimension(const ufc::cell& c) const;
+
+  /// Return the maximum dimension of the local finite element function space
+  virtual unsigned int max_local_dimension() const;
 
   // Return the geometric dimension of the coordinates this dof map provides
   virtual unsigned int geometric_dimension() const;
@@ -249,10 +258,16 @@ unsigned int %(classname)s::global_dimension() const
 %(global_dimension)s
 }
 
-/// Return the dimension of the local finite element function space
-unsigned int %(classname)s::local_dimension() const
+/// Return the dimension of the local finite element function space for a cell
+unsigned int %(classname)s::local_dimension(const ufc::cell& c) const
 {
 %(local_dimension)s
+}
+
+/// Return the maximum dimension of the local finite element function space
+unsigned int %(classname)s::max_local_dimension() const
+{
+%(max_local_dimension)s
 }
 
 // Return the geometric dimension of the coordinates this dof map provides
