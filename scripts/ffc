@@ -22,7 +22,6 @@ import os.path
 # FFC modules
 from ffc.common.log import info, debug, set_level, DEBUG, ERROR
 from ffc.common.constants import FFC_OPTIONS, FFC_VERSION
-from ffc.common.exceptions import FormError
 
 def main(argv):
     "Main function"
@@ -106,9 +105,9 @@ def main(argv):
         else:
             try:
                 execfile(script, {})
-            except FormError, exception:
+            except RuntimeError, exception:
                 print ""
-                print "*** Error at " + str(exception.expression)
+                print "*** Error at " + str(exception)
                 print "*** " + exception.message
                 print "*** To get more information about this error, rerun FFC with --debug"
                 return 2
