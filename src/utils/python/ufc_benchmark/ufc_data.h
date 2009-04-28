@@ -35,7 +35,7 @@ namespace ufc
       {
         dofmaps[i]    = form.create_dof_map(i);
         elements[i]   = form.create_finite_element(i);
-        dimensions[i] = dofmaps[i]->local_dimension();
+        dimensions[i] = dofmaps[i]->max_local_dimension();
 
         if(dimensions[i] != elements[i]->space_dimension())
           throw std::runtime_error("Mismatching dimensions between finite_elements and dof_maps!");
