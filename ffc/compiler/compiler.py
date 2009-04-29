@@ -113,6 +113,7 @@ def compile(forms, prefix="Form", options=FFC_OPTIONS.copy(), global_variables=N
     # Compiler stage 5: format code
     format_code(generated_forms, prefix, format, options)
 
+    info("Code generation complete.")
     return
 #    return (form_datas, form_representations)
 
