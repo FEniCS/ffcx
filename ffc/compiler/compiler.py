@@ -380,9 +380,9 @@ class ElementData:
         self.num_coefficients             = 0
         self.num_arguments                = len(elements)
         self.num_terms                    = 0
-        self.num_cell_integrals           = 0
-        self.num_exterior_facet_integrals = 0
-        self.num_interior_facet_integrals = 0
+        self.num_cell_domains             = 0
+        self.num_exterior_facet_domains   = 0
+        self.num_interior_facet_domains   = 0
         self.elements                     = [create_element(element) for element in elements]
         self.dof_maps                     = [create_dof_map(element) for element in elements]
         self.ffc_elements                 = self.elements
