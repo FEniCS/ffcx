@@ -1,7 +1,7 @@
 "Some simple functions for manipulating expressions symbolically"
 
 __author__ = "Kristian B. Oelgaard (k.b.oelgaard@tudelft.nl)"
-__date__ = "2009-03-04 -- 2009-03-18"
+__date__ = "2009-03-04 -- 2009-05-04"
 __copyright__ = "Copyright (C) 2009 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
@@ -25,8 +25,6 @@ def get_format():
     return format
 
 def group_fractions(expr):
-#    print "expr: ", expr
-
     if not isinstance(expr, Sum):
         return expr
 
@@ -63,7 +61,6 @@ def generate_aux_constants(constant_decl, name, var_type, print_ops=False):
     for s in sorted_list:
         c = s[1]
         c = c.expand().reduce_ops()
-#        if reduce_ops:
         ops += c.ops()
         if print_ops:
             append(format["comment"]("Number of operations: %d" %c.ops()))
@@ -87,9 +84,7 @@ def optimise_code(expr, ip_consts, geo_consts, trans_set):
         return Symbol("", 0, CONST)
 
     # Reduce expression with respect to basis function variable
-#    print "\nEXP: ", repr(expr.remove_nested())
     expr = expr.expand()
-#    print "\nEXP1: ", expr
     basis_expressions = expr.reduce_vartype(BASIS)
 
     # If we had a product instance we'll get a tuple back so embed in list
@@ -101,8 +96,6 @@ def optimise_code(expr, ip_consts, geo_consts, trans_set):
     for b in basis_expressions:
         # Get the basis and the ip expression
         basis, ip_expr = b
-#        print "\nbasis: ", basis
-#        print "\nip_expr: ", ip_expr
         debug("basis\n" + str(basis))
         debug("ip_epxr\n" + str(ip_expr))
 
@@ -133,8 +126,6 @@ def optimise_code(expr, ip_consts, geo_consts, trans_set):
             ip_dec, geo = ip
             debug("ip_dec: " + str(ip_dec))
             debug("geo: " + str(geo))
-#            print "ip_dec: ", ip_dec
-#            print "geo: ", geo
             # Update transformation set with those values that might be
             # embedded in IP terms
             if ip_dec:
@@ -147,15 +138,6 @@ def optimise_code(expr, ip_consts, geo_consts, trans_set):
 
             # Update the transformation set with the variables in the geo term
             trans_set.update(map(lambda x: str(x), geo.get_unique_vars(GEO)))
-
-#            print "RD"
-#            test = geo
-            # Reduce operations of the geo term
-#            geo = geo.expand().reduce_ops()
-#            if not test.expand() == geo.expand():
-#                print "geo:\n", geo.expand()
-#                print "test:\n", test
-#                error("not equal")
 
             # Only declare auxiliary geo terms if we can save operations            
             if geo.ops() > 0:
@@ -446,7 +428,6 @@ class Product(object):
         self.c = 1
         self.vs = []
         self._hash = False
-#        print "variables: ", variables
         if not variables:
             # Create a const symbols and add to list, no need to proceed
             self.c = 0
@@ -794,10 +775,9 @@ class Product(object):
         # Get local functions to speed things up
         append = new_prods.append
         extend = new_prods.extend
-#        print "self: ", self
+
         # Loop all elements of self
         for m in self.vs:
-#            print "m: ", m
             # Remove nested from sub expressions
             new_m = m.remove_nested()
 
@@ -824,7 +804,6 @@ class Product(object):
             new.c = new_c
             return new
         else:
-#            new = Product(new_prods)
             new = Product([])
             new.c = new_c
             new.vs = new_prods
@@ -842,10 +821,6 @@ class Product(object):
         if not isinstance(new_self, Product):
             return new_self.expand()
 
-#        print "\nbeging"
-#        print self
-#        print new_self
-
         # Expand all members
         expanded = [m.expand() for m in new_self.vs]
 
@@ -856,8 +831,6 @@ class Product(object):
 
         # Add the factor to the first component
         expanded[0].c = new_self.c
-
-#        print "expanded: ", expanded
 
         # If we only have one member in the list just return it
         # (it is already expanded)
@@ -874,11 +847,7 @@ class Product(object):
                 append_sym(e)
             else:
                 append_rest(e)
-#        print "rest: ", rest
-#        print "syms: ", syms
-#        if syms:
-#            append_rest(Product(syms))
-#        return reduce(lambda x, y:x*y, rest)
+
         if not syms:
             # Multiply all members of the list
             return reduce(lambda x, y:x*y, rest)
@@ -1115,22 +1084,16 @@ class Sum(object):
         return var
 
     def reduce_ops(self):
-#        print "\nreduce:\n", self
-#        print "\nreduce:\n", repr(self)
         var = {}
         var_map = {}
         new_expr = self.recon()
         if not isinstance(new_expr, Sum):
             return new_expr.reduce_ops()
-#        new_expr = self
         not_reduce_terms = set()
         not_r_add = not_reduce_terms.add
-#        print "\nnew_expr:\n", new_expr
-#        print "\nnew_expr:\n", repr(new_expr)
+
         for vr in new_expr.get_vars():
-#            print "vr: ", vr
             variables = vr.get_vars()
-#            print "variables: ", variables
             if not variables:
                 not_r_add(vr)
                 continue
@@ -1154,26 +1117,15 @@ class Sum(object):
         min_occur = 0
         for key,v in var.iteritems():
             k = var_map[key]
-#            if isinstance(k, Symbol) and k.t == CONST:
             if isinstance(k, Symbol) and k.t == CONST:
                 continue
-#            print "k: ", k
             # If this is a variable that we should reduce
             if len(v) == max_var:
-#                print "K: ", k
                 occur = min([vr.num_var(k.v) for vr in v])
-#                if occur > min_occur:
-#                      min_occur = occur
-#                      reduce_vars = {tuple(v[1])}
-#                print "occur: ", occur
-#                print "sum: ", Sum(v)
                 if tuple(v) in reduce_vars:
                     reduce_vars[tuple(v)].extend([k]*occur)
                 else:
-#                    print "not present"
                     ok_add = True
-#                        print "key: ", key
-#                        print "val: ", val
                     for a in v:
                         for key, val in reduce_vars.items():
                             if a in key:
@@ -1186,16 +1138,12 @@ class Sum(object):
                         if not ok_add:
                             break
                     if ok_add:
-#                        print "addin"
                         reduce_vars[tuple(v)] = [k]
 
         if not reduce_vars:
             return new_expr
-#        for key,val in var.iteritems():
 
-#        print "not_reduce_terms: ", not_reduce_terms
         for vr in new_expr.get_vars():
-#            print "\nvr: ", vr
             add_ok = True
             for reduce_terms, v in reduce_vars.items():
                 if vr in reduce_terms:
@@ -1204,7 +1152,7 @@ class Sum(object):
                 not_r_add(vr)
         new_sums = []
         append_sum = new_sums.append
-#        print "reduce_by: ", [v for k,v in reduce_vars.items()]
+
         for reduce_terms, reduce_by in reduce_vars.items():
             new_reduced = []
             append = new_reduced.append
@@ -1216,16 +1164,13 @@ class Sum(object):
 
             for rt in reduce_terms:
                 append(rt.reduce_var(reduce_by))
-#            print "reduce_by: ", reduce_by
 
-#            print "new_reduced: ", new_reduced
             # Create the new sum and reduce it further
             reduced_terms = Sum(new_reduced).reduce_ops()
             reduced_terms = group_fractions(reduced_terms)
             reduced = Product([reduce_by, reduced_terms])
             reduced.c *= new_expr.c
             append_sum(reduced)
-#        raise RuntimeError("hello")
 
         # Return reduced expression
         if not_reduce_terms:
@@ -1233,24 +1178,8 @@ class Sum(object):
             not_reduce.c *= new_expr.c
             not_reduce = group_fractions(not_reduce)
             new = Sum(new_sums + [not_reduce])
-#            print "New: ", new
-#            test = new.expand()
-#            if not test == expr:
-#                print "new: ", new.__repr__()
-#                print "new: ", new
-#                print "self: ", expr.pos
-#                print "test: ", test.pos
-#                error("Not equal")
             return new.remove_nested()
         else:
-#            test = reduced.expand().recon()
-#            if not test == expr:
-#                print "1self: ", repr(expr)
-#                print "1test: ", repr(test)
-#                print "1self: ", expr
-#                print "1test: ", test
-#                error("Not equal")
-#            print "new_sums: ", Sum(new_sums)
             return Sum(new_sums).remove_nested()
 
 
@@ -1510,10 +1439,6 @@ class Fraction(object):
         return self._hash
 
     def __mul__(self, other):
-
-#        print "frac mul, self: ", repr(self)
-#        print "frac mul: other:", repr(other)
-
         # If product will be zero
         if self.c == 0 or not other or other.c == 0:
             return Symbol("", 0, CONST)
@@ -1537,9 +1462,7 @@ class Fraction(object):
         else:
             # If other is not a fraction, multiply the numerator by it and
             # divide it by the denominator (should reduce it if possible)
-#            print "num: ", num
             num *= other
-#            print "num2: ", repr(num)
 
             # Create new fraction
             return num/self.denom

@@ -1,7 +1,7 @@
 "Utility functions for UFL quadrature code generation, optimised version."
 
 __author__ = "Kristian B. Oelgaard (k.b.oelgaard@tudelft.nl)"
-__date__ = "2009-03-18 -- 2009-04-21"
+__date__ = "2009-03-18 -- 2009-05-04"
 __copyright__ = "Copyright (C) 2009 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
@@ -746,17 +746,13 @@ def generate_code(integrand, transformer, Indent, format):
     new_integrand = expand_indices(integrand)
     new_integrand = purge_list_tensors(new_integrand)
     debug("\nExpanded integrand\n" + str(tree_format(new_integrand)))
-#    print tree_format(new_integrand)
     # Let the Transformer create the loop code
-#    start = time.time()
     loop_code = transformer.visit(new_integrand)
-#    print "\nvisit:    ", time.time() - start
 
     # TODO: Verify that test and trial functions will ALWAYS be rearranged to 0 and 1
     indices = {-2: format["first free index"], -1: format["second free index"],
                 0: format["first free index"],  1: format["second free index"]}
 
-#    start = time.time()
     # Create the function declarations, we know that the code generator numbers
     # functions from 0 to n.
     if transformer.function_count:
@@ -764,7 +760,6 @@ def generate_code(integrand, transformer, Indent, format):
     for function_number in range(transformer.function_count):
         code.append((format_float_decl + format_F + str(function_number), format_float(0)))
 
-#    start = time.time()
     # Create code for computing function values, sort after loop ranges first
     functions = transformer.functions
     function_list = {}
@@ -812,7 +807,6 @@ def generate_code(integrand, transformer, Indent, format):
         for number in function_numbers:
             lines.append(function_expr[number])
         code += func_ops_comment + generate_loop(lines, [(format_r, 0, loop_range)], Indent, format)
-#    print "func code: ", time.time() - start
 
     # Create weight
     ACCESS = GEO
@@ -832,14 +826,7 @@ def generate_code(integrand, transformer, Indent, format):
             continue
         # Multiply by weight and determinant, add both to set of used weights and transforms
         value = Product([val, Symbol(weight, 1, ACCESS), Symbol(format_scale_factor, 1, GEO)])
-#        print "\nkey: ", key
-#        print value
-#        print repr(value)
-#        start = time.time()
         value = optimise_code(value, ip_consts, transformer.geo_consts, transformer.trans_set)
-#        print value
-#        print "time opt: ", time.time() - start
-#        t += time.time() - start
 
         # Only continue if value is not zero
         if not value.c:
@@ -924,13 +911,9 @@ def generate_code(integrand, transformer, Indent, format):
         else:
             loops[loop][0] += prim_ops
             loops[loop][1] += [entry_ops_comment, entry_code]
-#    print "tot time: ", t
 
-#    start = time.time()
     # Generate code for ip constant declarations
-#    print ip_consts
     ip_const_ops, ip_const_code = generate_aux_constants(ip_consts, format_Gip, format_const_float_decl, True)
-#    print "gen ip: ", time.time() - start
     num_ops += ip_const_ops
     if ip_const_code:
         code += ["", format["comment"]("Number of operations to compute ip constants: %d" %ip_const_ops)]
@@ -944,7 +927,6 @@ def generate_code(integrand, transformer, Indent, format):
         num_ops += ops
         code += ["", format_comment("Number of operations for primary indices = %d" % ops)]
         code += generate_loop(lines, loop, Indent, format)
-#    print "gen code: ", time.time() - start
 
     return (code, num_ops)
 

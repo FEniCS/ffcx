@@ -1,7 +1,7 @@
 "Utility functions for UFL quadrature code generation"
 
 __author__ = "Kristian B. Oelgaard (k.b.oelgaard@tudelft.nl)"
-__date__ = "2009-02-09 -- 2009-04-21"
+__date__ = "2009-02-09 -- 2009-05-04"
 __copyright__ = "Copyright (C) 2009 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
@@ -23,8 +23,6 @@ from ufl.algorithms.printing import tree_format
 from ffc.common.log import debug, error
 
 # FFC compiler modules
-#from ffc.compiler.language.restriction import Restriction
-#from ffc.compiler.language.tokens import Transform
 from ffc.compiler.representation.tensor.multiindex import MultiIndex as FFCMultiIndex
 
 # FFC fem modules
@@ -261,8 +259,6 @@ class QuadratureTransformer(Transformer):
                 not_permute.append(op[()])
 
         # Create permutations
-        # TODO: After all indices have been expanded I don't think that we'll
-        # ever get more than a list of entries and values
         permutations = create_permutations(permute)
 
         debug("\npermute: " + str(permute))
@@ -365,7 +361,6 @@ class QuadratureTransformer(Transformer):
             derivatives = self._derivatives[:]
         if self._components:
             component = [int(c) for c in self._components]
-#        print "C: ", component
         debug("\ncomponent: " + str(component))
         debug("\nderivatives: " + str(derivatives))
 
@@ -675,8 +670,6 @@ class QuadratureTransformer(Transformer):
 
         # Get local component (in case we have mixed elements)
         local_comp, local_elem = ufl_basis_function.element().extract_component(tuple(component))
-#        print "local_comp: ", local_comp
-#        print "local_elem: ", local_elem
 
         # Check that we don't take derivatives of QuadratureElements
         if derivatives and local_elem.family() == "Quadrature":
@@ -700,16 +693,11 @@ class QuadratureTransformer(Transformer):
         # elements are labeled with the global component number
         if component:
             local_offset = component - local_comp
-#        print "local_offset: ", local_offset
-#        print "component: ", component
 
         # Create FFC element
         ffc_element = create_element(ufl_basis_function.element())
-#        print "ffc_element: ", ffc_element
 
         code = {}
-        # Generate FFC multi index for derivatives
-
         # Set geo_dim
         # TODO: All terms REALLY have to be defined on cell with the same
         # geometrical dimension so only do this once and exclude the check?
@@ -728,13 +716,6 @@ class QuadratureTransformer(Transformer):
             deriv = [multi.count(i) for i in range(geo_dim)]
             if not any(deriv):
                 deriv = []
-#            print "Mapping.AFFINE: ", AFFINE
-#            print "ffc_element.space_mapping(component): ", ffc_element.space_mapping(component)
-#            print "ffc_element.component_element(component): ", ffc_element.component_element(component)
-            
-#            print "ffc_element.component_element(component).mapping(): ", ffc_element.component_element(component)[0].mapping()
-#            if ffc_element.value_mapping(component) == Mapping.AFFINE:
-#            if ffc_element.space_mapping(component) == Mapping.AFFINE:
             if ffc_element.component_element(component)[0].mapping() == AFFINE:
                 # Call function to create mapping and basis name
                 mapping, basis = self.__create_mapping_basis(component, deriv, ufl_basis_function, ffc_element)
@@ -1146,10 +1127,8 @@ def generate_code(integrand, transformer, Indent, format):
     # In form.form_data().form, which we should be using, coefficients have
     # been mapped and derivatives expande. So it should be enough to just
     # expand_indices and purge_list_tensors
-#    print tree_format(integrand)
     new_integrand = expand_indices(integrand)
     new_integrand = purge_list_tensors(new_integrand)
-#    print tree_format(new_integrand)
     debug("\nExpanded integrand\n" + str(tree_format(new_integrand)))
 
     # Let the Transformer create the loop code

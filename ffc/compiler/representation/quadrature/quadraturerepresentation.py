@@ -1,7 +1,7 @@
 "Quadrature representation class for UFL"
 
 __author__ = "Kristian B. Oelgaard (k.b.oelgaard@tudelft.nl)"
-__date__ = "2009-01-07 -- 2009-04-21"
+__date__ = "2009-01-07 -- 2009-05-04"
 __copyright__ = "Copyright (C) 2009 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
@@ -213,8 +213,6 @@ class QuadratureRepresentation:
 
                 # Tabulate for different integral types and insert table into
                 # dictionary based on UFL elements
-                # FIXME: Is restriction needed? I only think it is necessary to
-                # pick facet0 or facet1 in case of interior facet integrals.
                 if integral_type == Measure.CELL:
                     self.psi_tables[integral_type][len_weights]\
                          [elements[i]] = {None: element.tabulate(deriv_order, points)}
