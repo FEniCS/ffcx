@@ -11,7 +11,7 @@ of forms and breaking the compilation into several sequential stages:
 """
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-02-05 -- 2009-03-15"
+__date__ = "2007-02-05 -- 2009-05-04"
 __copyright__ = "Copyright (C) 2007-2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
@@ -42,26 +42,21 @@ from ffc.fem import create_dof_map
 
 # FFC form representation modules
 from representation.tensor.monomialextraction import MonomialException
-from representation.tensor.ufltensorrepresentation import TensorRepresentation
+from representation.tensor.tensorrepresentation import TensorRepresentation
 from representation.quadrature.quadraturerepresentation import QuadratureRepresentation
 
 # FFC code generation modules
-#from codegeneration.tensor import *
-#from codegeneration.quadrature import *
 from codegeneration.common.codegenerator import generate_common_code
 from codegeneration.common.integrals import generate_combined_code
-from codegeneration.tensor import UFLTensorGenerator
+from codegeneration.tensor import TensorGenerator
 from codegeneration.quadrature import QuadratureGenerator
-
-#from codegeneration.common.finiteelement import *
-#from codegeneration.common.dofmap import *
 
 # FFC format modules
 from format.ufcformat import Format
 
 # Form representations and code generators
 Representations = (QuadratureRepresentation, TensorRepresentation)
-CodeGenerators  = (QuadratureGenerator, UFLTensorGenerator)
+CodeGenerators  = (QuadratureGenerator, TensorGenerator)
 
 def compile(forms, prefix="Form", options=FFC_OPTIONS.copy(), global_variables=None):
     """This is the main interface to FFC. The input argument must be

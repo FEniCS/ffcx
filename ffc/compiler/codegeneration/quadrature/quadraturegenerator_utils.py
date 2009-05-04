@@ -6,15 +6,14 @@ __copyright__ = "Copyright (C) 2007-2008 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Python modules
-from numpy import transpose, sqrt
+from numpy import transpose, sqrt, shape, array
 
 # FFC tensor representation modules
 from ffc.compiler.representation.tensor.multiindex import *
 
-# FFC code generation modules
-from ffc.compiler.codegeneration.common.codegenerator import *
+# FFC common modules
+from ffc.common.log import debug, error
 
-from numpy import shape, array
 
 def generate_loop(lines, loop_vars, Indent, format):
     "This function generates a loop over a vector or matrix."
@@ -48,7 +47,7 @@ def generate_loop(lines, loop_vars, Indent, format):
                     code.append(Indent.indent(l))
                 else:
                     print "line: ", l
-                    raise RuntimeError, "Line must be a string or a list or tuple of length 2"
+                    error("Line must be a string or a list or tuple of length 2")
 
     # Decrease indentation and write end blocks
     vrs = [lv[0] for lv in loop_vars]

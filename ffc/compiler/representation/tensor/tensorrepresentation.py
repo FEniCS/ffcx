@@ -1,7 +1,9 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-02-05 -- 2009-03-05"
+__date__ = "2007-02-05 -- 2009-05-04"
 __copyright__ = "Copyright (C) 2007-2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
+
+# Modified by Kristian B. Oelgaard, 2009.
 
 # UFL modules
 from ufl.classes import Form, Measure
@@ -19,9 +21,9 @@ from ffc.fem import create_element
 # FFC tensor representation modules
 from monomialextraction import extract_monomial_form, MonomialForm
 from monomialtransformation import transform_monomial_form
-from uflreferencetensor import ReferenceTensor
-from uflgeometrytensor import GeometryTensor
-from ufltensorreordering import reorder_entries
+from referencetensor import ReferenceTensor
+from geometrytensor import GeometryTensor
+from tensorreordering import reorder_entries
 
 class TensorContraction:
     "This class represents a tensor contraction A^K = A^0 : G_K."

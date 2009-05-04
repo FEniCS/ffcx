@@ -1,11 +1,11 @@
 "Code generator for tensor representation"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-11-03 -- 2008-06-12"
-__copyright__ = "Copyright (C) 2004-2008 Anders Logg"
+__date__ = "2004-11-03 -- 2009-05-04"
+__copyright__ = "Copyright (C) 2004-2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Modified by Kristian B. Oelgaard 2007
+# Modified by Kristian B. Oelgaard 2009
 # Modified by Marie Rognes (meg@math.uio.no) 2007
 # Modified by Garth N. Wells 2009
 
@@ -18,7 +18,7 @@ from ffc.compiler.representation.tensor.monomialtransformation import MonomialIn
 # FFC format modules
 from ffc.compiler.format.removeunused import *
 
-class UFLTensorGenerator:
+class TensorGenerator:
 
     def __init__(self, options):
         pass

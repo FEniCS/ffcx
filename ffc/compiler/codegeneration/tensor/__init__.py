@@ -1,1 +1,1 @@
-from ufltensorgenerator import UFLTensorGenerator
+from tensorgenerator import TensorGenerator

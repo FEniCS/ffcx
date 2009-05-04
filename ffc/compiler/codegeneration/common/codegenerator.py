@@ -1,7 +1,9 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-03-06 -- 2009-03-08"
+__date__ = "2007-03-06 -- 2009-05-04"
 __copyright__ = "Copyright (C) 2007-2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
+
+# Modified by Kristian B. Oelgaard, 2009.
 
 # FFC common modules
 from ffc.common.log import debug
