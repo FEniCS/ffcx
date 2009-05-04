@@ -6,15 +6,15 @@ This gives convenient expand/collapse of bullets by pressing TAB.
 -----------------------------------------------------------------------
 
 * Suggestions for UFC 1.2 from Garth
-** Add cell argument to local_dimension: dof_map::local_dimension(ufc::cell& c
+** (added) Add cell argument to local_dimension: dof_map::local_dimension(const ufc::cell& c)
 ** Possibly also for needs_mesh_entities, num_facet_dofs, tabulate_facet_dofs, tabulate_entity_dofs
-** Add dof_map::max_local_dimension()
+** (added) Add dof_map::max_local_dimension()
 ** Add evaluate_basis() and evaluate_basis_derivatives without cell
    argument (overload) for tabulation on reference element
-
+** Add bool dof_map::const_local_dimension()?
 
 * Suggestions for UFC 1.2
-** Add foo_integral::tabulate_tensors()
+** (dismissed) Add foo_integral::tabulate_tensors()
 ** Add dof_map::topological_dimension()
 ** Add finite_element::topological_dimension()
 ** Add finite_element::geometric_dimension()
