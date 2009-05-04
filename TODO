@@ -8,7 +8,6 @@ file, it is convenient to install org-mode in Emacs.
   - Use DOLFIN wrappers from dolfin_utils
   - Use load_form_file from UFL
   - Clean out old unused code (check coverage)
-  - Rename uflfoo --> foo
     
 * Write introduction in manual
   - The introduction is currently empty
