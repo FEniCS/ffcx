@@ -145,11 +145,6 @@ def analyze_form(form, options, global_variables):
     form_data.num_exterior_facet_domains = max([-1] + [i.measure().domain_id() for i in form.exterior_facet_integrals()]) + 1
     form_data.num_interior_facet_domains = max([-1] + [i.measure().domain_id() for i in form.interior_facet_integrals()]) + 1
 
-    # FIXME: Remove these, only here for compatibility with old ufcformat.py
-    form_data.num_cell_integrals = form_data.num_cell_domains
-    form_data.num_exterior_facet_integrals = form_data.num_exterior_facet_domains
-    form_data.num_interior_facet_integrals = form_data.num_interior_facet_domains
-
     # Attach signature for convenience and reuse
     form_data.signature = form_data.form.signature()
 
@@ -316,20 +311,6 @@ def _select_representation(form, options):
 
     else:
         raise RuntimeError, 'Unknown form representation: "%s"' % option
-
-def __select_code_generator(form_representation):
-    "Select code generator"
-
-    if form_representation == "tensor":
-        return TensorGenerator
-    else:
-        return UFLQuadratureGenerator
-    "Select code generator"
-
-    if form_representation == "tensor":
-        return TensorGenerator
-    else:
-        return UFLQuadratureGenerator
 
 def _auto_select_representation(integral):
     "Automatically select the best representation for integral."

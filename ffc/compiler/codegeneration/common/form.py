@@ -1,9 +1,11 @@
 "Code generation for form"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-01-27 -- 2007-03-06"
+__date__ = "2007-01-27 -- 2009-05-04"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
+
+# Modified by Kristian B. Oelgaard 2009
 
 def generate_form(form_data, format):
     """Generate dictionary of code for the given form data map
@@ -21,12 +23,12 @@ def generate_form(form_data, format):
     code["num_coefficients"] = "%d" % form_data.num_coefficients
 
     # Generate code for num_cell_integrals
-    code["num_cell_integrals"] = "%d" % form_data.num_cell_integrals
+    code["num_cell_integrals"] = "%d" % form_data.num_cell_domains
 
     # Generate code for num_exterior_facet_integrals
-    code["num_exterior_facet_integrals"] = "%d" % form_data.num_exterior_facet_integrals
+    code["num_exterior_facet_integrals"] = "%d" % form_data.num_exterior_facet_domains
     
     # Generate code for num_interior_facet_integrals
-    code["num_interior_facet_integrals"] = "%d" % form_data.num_interior_facet_integrals
+    code["num_interior_facet_integrals"] = "%d" % form_data.num_interior_facet_domains
     
     return code

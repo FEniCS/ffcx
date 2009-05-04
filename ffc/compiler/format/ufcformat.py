@@ -1,11 +1,11 @@
 "Code generation for the UFC 1.0 format"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-01-08 -- 2009-03-08"
+__date__ = "2007-01-08 -- 2009-05-04"
 __copyright__ = "Copyright (C) 2007-2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Modified by Kristian B. Oelgaard 2008
+# Modified by Kristian B. Oelgaard 2009
 # Modified by Dag Lindbo, 2008
 # Modified by Johan hake, 2009
 # Python modules
@@ -596,17 +596,17 @@ class Format:
         ufc_code["create_dof_map"] = self.__generate_switch("i", cases, "return 0;")
 
         # Generate code for cell_integral
-        num_cases = form_data.num_cell_integrals
+        num_cases = form_data.num_cell_domains
         cases = ["return new %s_cell_integral_%d();" % (prefix, i) for i in range(num_cases)]
         ufc_code["create_cell_integral"] = self.__generate_switch("i", cases, "return 0;")
 
         # Generate code for exterior_facet_integral
-        num_cases = form_data.num_exterior_facet_integrals
+        num_cases = form_data.num_exterior_facet_domains
         cases = ["return new %s_exterior_facet_integral_%d();" % (prefix, i) for i in range(num_cases)]
         ufc_code["create_exterior_facet_integral"] = self.__generate_switch("i", cases, "return 0;")
 
         # Generate code for interior_facet_integral
-        num_cases = form_data.num_interior_facet_integrals
+        num_cases = form_data.num_interior_facet_domains
         cases = ["return new %s_interior_facet_integral_%d();" % (prefix, i) for i in range(num_cases)]
         ufc_code["create_interior_facet_integral"] = self.__generate_switch("i", cases, "return 0;")
 
