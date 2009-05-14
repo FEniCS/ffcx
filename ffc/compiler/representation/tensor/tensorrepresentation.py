@@ -10,7 +10,7 @@ from ufl.classes import Form, Measure
 from ufl.algorithms import extract_basis_functions
 
 # FFC common modules
-from ffc.common.log import debug, info, warning, error, begin, end, set_level, INFO
+from ffc.common.log import info
 
 # FFC fem modules
 from ffc.fem import create_element 
@@ -42,6 +42,10 @@ class TensorRepresentation:
 
     Attributes:
 
+        num_integrals            - total number of integrals
+
+    Attributes added only when num_integrals is nonzero:
+    
         cell_integrals           - list of list of terms for sub domains
         exterior_facet_integrals - list of list of list of terms for sub domains and facets
         interior_facet_integrals - list of list of list of list of terms for sub domains and facet combinations
@@ -57,12 +61,12 @@ class TensorRepresentation:
         # Extract integrals integrals for tensor representation
         form = _extract_tensor_integrals(form_data)
 
-        # FIXME: Temporary fix
-        if len(form.integrals()) == 0:
-            self.cell_integrals = []
-            self.interior_facet_integrals = []
-            self.exterior_facet_integrals = []
+        # Check number of integrals
+        self.num_integrals = len(form.integrals())
+        if self.num_integrals == 0:
             return
+
+        info("Computing tensor representation")
 
         # Extract monomial representation
         monomial_form = extract_monomial_form(form)
@@ -85,7 +89,7 @@ class TensorRepresentation:
         # Extract form data needed by code generation
         self.geometric_dimension = form_data.geometric_dimension
         self.num_facets = form_data.num_facets
-        
+
 def _extract_tensor_integrals(form_data):
     "Extract form containing only tensor representation integrals."
 
@@ -98,22 +102,16 @@ def _extract_tensor_integrals(form_data):
 def _compute_cell_tensor(monomial_form, form_data, sub_domain):
     "Compute representation of cell tensor."
     
-    begin("Computing cell tensor")
-    
     # Extract cell integrals
     monomial_form = _extract_integrals(monomial_form, form_data, Measure.CELL, sub_domain)
     
     # Compute sum of tensor representations
     terms = _compute_terms(monomial_form, Measure.CELL, None, None)
 
-    end()
-    
     return terms
 
 def _compute_exterior_facet_tensors(monomial_form, form_data, sub_domain):
     "Compute representation of exterior facet tensors."
-
-    begin("Computing exterior facet tensors")
 
     # Extract exterior facet integrals
     monomial_form = _extract_integrals(monomial_form, form_data, Measure.EXTERIOR_FACET, sub_domain)
@@ -123,14 +121,10 @@ def _compute_exterior_facet_tensors(monomial_form, form_data, sub_domain):
     for i in range(form_data.num_facets):
         terms[i] = _compute_terms(monomial_form, Measure.EXTERIOR_FACET, i, None)
 
-    end()
-
     return terms
 
 def _compute_interior_facet_tensors(monomial_form, form_data, sub_domain):
     "Compute representation of interior facet tensors."
-
-    begin("Computing interior facet tensors")
 
     # Extract interior facet integrals
     monomial_form = _extract_integrals(monomial_form, form_data, Measure.INTERIOR_FACET, sub_domain)
@@ -141,8 +135,6 @@ def _compute_interior_facet_tensors(monomial_form, form_data, sub_domain):
         for j in range(form_data.num_facets):
             terms[i][j] = _compute_terms(monomial_form, Measure.INTERIOR_FACET, i, j)
             reorder_entries(terms[i][j])
-
-    end()
 
     return terms
 

@@ -5,14 +5,14 @@
 # Python module which is then executed.
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-10-14 -- 2009-04-21"
+__date__ = "2004-10-14 -- 2009-05-14"
 __copyright__ = "Copyright (C) 2004-2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Modified by Johan Jansson, 2005
-# Modified by Ola Skavhaug, 2006
-# Modified by Kristian B. Oelgaard 2008
-# Modified by Dag Lindbo, 2008
+# Modified by Johan Jansson, 2005.
+# Modified by Ola Skavhaug, 2006.
+# Modified by Kristian B. Oelgaard 2008.
+# Modified by Dag Lindbo, 2008.
 
 # Python modules
 import sys
@@ -20,49 +20,69 @@ import getopt
 import os.path
 
 # FFC modules
-from ffc.common.log import info, debug, set_level, DEBUG, ERROR
+from ffc.common.log import info, set_level, DEBUG, ERROR
 from ffc.common.constants import FFC_OPTIONS, FFC_VERSION
 
+def error(msg):
+    "Print error message (cannot use log system at top level)."
+    print "\n".join(["*** FFC: " + line for line in msg.split("\n")])
+
+def info_version():
+    "Print version number."
+    info("""\
+This is FFC, the FEniCS Form Compiler, version %s.
+For further information, visit http://www.fenics.org/ffc/.
+""" % FFC_VERSION)
+
+def info_usage():
+    "Print usage information."
+    info_version()
+    info("""Usage: ffc [OPTION]... input.form
+
+For information about the FFC command-line interface, refer to
+the FFC man page which may invoked by 'man ffc' (if installed).
+""")
+
 def main(argv):
-    "Main function"
+    "Main function."
 
     # Get command-line arguments
     try:
-        opts, args = getopt.getopt(argv, "hvdsl:r:f:Oo:", \
+        opts, args = getopt.getopt(argv, \
+        "hvdsl:r:f:Oo:", \
         ["help", "version", "debug", "silent", "language=", "representation=", "optimize", "output-directory="])
     except getopt.GetoptError:
-        error("Illegal command-line arguments")
-        print_usage()
-        return 2
+        info_usage()
+        error("Illegal command-line arguments.")
+        return 1
 
-    # Check for -h
-    if len(argv) == 1 and argv[0] in ("-h", "--help"):
-        print_usage()
+    # Check for --help
+    if ("-h", "") in opts or ("--help", "") in opts:
+        info_usage()
         return 0
 
-    # Check for -v
-    if len(argv) == 1 and argv[0] in ("-v", "--version"):
-        print_version()
+    # Check for --version
+    if ("-v", "") in opts or ("--version", "") in opts:
+        info_version()
         return 0
 
     # Check that we get at least one file
     if len(args) == 0:
-        error("Missing file")
-        return 2
+        error("Missing file.")
+        return 1
 
     # Parse command-line options
     options = FFC_OPTIONS.copy()
     for opt, arg in opts:
-        if opt in  ("-d", "--debug"):
+        if opt in ("-d", "--debug"):
              options["log_level"] = DEBUG
         elif opt in ("-s", "--silent"):
             options["log_level"] = ERROR
-        elif opt in  ("-l", "--language"):
-            options["language"] = arg
+        elif opt in ("-l", "--language"):
             options["format"] = arg
-        elif opt in  ("-r", "--representation"):
+        elif opt in ("-r", "--representation"):
             options["representation"] = arg
-        elif opt in  ("-f"):
+        elif opt == "-f":
             if len(arg.split("=")) == 2:
                 (key, value) = arg.split("=")
                 options[key] = value
@@ -70,8 +90,8 @@ def main(argv):
                 key = arg.split("=")[0]
                 options[arg] = True
             else:
-                print_usage()
-                return 2
+                info_usage()
+                return 1
         elif opt in ("-O", "--optimize"):
             options["optimize"] = True
         elif opt in ("-o", "--output-directory"):
@@ -79,9 +99,9 @@ def main(argv):
 
     # Set log level
     set_level(options["log_level"])
-    
+
     # Print a nice message
-    print_version()
+    info_version()
 
     # Call parser and compiler for each file
     for filename in args:
@@ -93,11 +113,11 @@ def main(argv):
         if suffix == "ufl":
             script = _make_script_ufl(filename, options)
         elif suffix == "form":
-            print "*** Old style .form files are no longer supported. Use form2ufl to convert to UFL format."
-            return 2
+            error("Old style .form files are no longer supported. Use form2ufl to convert to UFL format.")
+            return 1
         else:
-            print "*** Expecting a UFL form file (.ufl)."
-            return 2
+            error("Expecting a UFL form file (.ufl).")
+            return 1
 
         # Catch exceptions only when not in debug mode
         if options["log_level"] <= DEBUG:
@@ -105,38 +125,14 @@ def main(argv):
         else:
             try:
                 execfile(script, {})
-            except RuntimeError, exception:
-                print ""
-                print "*** Error at " + str(exception)
-                print "*** " + exception.message
-                print "*** To get more information about this error, rerun FFC with --debug"
-                return 2
-            except RuntimeError, exception:
-                print "*** " + str(exception)
-                print "*** To get more information about this error, rerun FFC with --debug"
-                return 2
             except Exception, exception:
-                print "*** " + str(exception)
-                print "*** To get more information about this error, rerun FFC with --debug"
-                return 2
+                info("")
+                error(str(exception))
+                error(exception.message)
+                error("To get more information about this error, rerun FFC with --debug.")
+                return 1
 
     return 0
-
-def print_usage():
-    "Print usage info."
-    print_version()
-    info("""Usage: ffc [OPTION]... input.form
-
-For information about the FFC command-line interface, refer to
-the FFC man page which may invoked by 'man ffc' (if installed).
-""")
-
-def print_version():
-    "Print version number."
-    info("""\
-This is FFC, the FEniCS Form Compiler, version %s.
-For further information, visit http://www.fenics.org/ffc/.
-""" % FFC_VERSION)
 
 # New version for .ufl files
 def _make_script_ufl(filename, options):
@@ -150,7 +146,7 @@ def _make_script_ufl(filename, options):
     # Get prefix of file name and generate Python script file name
     prefix = ".".join(filename_out.split(".")[:-1])
     script = prefix + ".py"
-    debug("Preprocessing form file: %s --> %s\n" % (filename, script))
+    info("Preprocessing form file: %s --> %s\n" % (filename, script))
 
     # Read input
     infile = open(filename, "r")

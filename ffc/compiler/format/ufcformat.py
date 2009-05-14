@@ -1,7 +1,7 @@
 "Code generation for the UFC 1.0 format"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-01-08 -- 2009-05-04"
+__date__ = "2007-01-08 -- 2009-05-14"
 __copyright__ = "Copyright (C) 2007-2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
@@ -16,7 +16,7 @@ from ufc_utils import *
 
 # FFC common modules
 from ffc.common.utils import *
-from ffc.common.log import debug
+from ffc.common.log import info
 from ffc.common.constants import *
 
 # FFC format modules
@@ -212,7 +212,6 @@ class Format:
 
     def write(self, generated_forms, prefix, options):
         "Generate UFC 1.0 code for a given list of pregenerated forms"
-        debug("Generating code for UFC 1.0")
           
         # Strip directory names from prefix and add output directory
         prefix = prefix.split(os.path.join(' ',' ').split()[0])[-1]
@@ -229,7 +228,6 @@ class Format:
         if not options["split_implementation"]:
 
             if self.output_format == "dolfin":
-                debug("Generating code for UFC 1.0 with DOLFIN wrappers")
 
                 # Generate UFC code
                 output += self.generate_ufc(generated_forms, "UFC_" + prefix, options, "combined")
@@ -249,12 +247,11 @@ class Format:
             file = open(filename, "w")
             file.write(output)
             file.close()
-            debug("Output written to " + filename)
+            info("Output written to " + filename + ".")
 
         else:
 
             if self.output_format == "dolfin":
-                debug("Generating code for UFC 1.0 with DOLFIN wrappers, split header and implementation")
 
                 # Generate UFC header code
                 output += self.generate_ufc(generated_forms, "UFC_" + prefix, options, "header")
@@ -274,7 +271,7 @@ class Format:
             file = open(filename, "w")
             file.write(output)
             file.close()
-            debug("Output written to " + filename)
+            info("Output written to " + filename + ".")
 
             output = ""
             
@@ -292,7 +289,7 @@ class Format:
             file = open(filename, "w")
             file.write(output)
             file.close()
-            debug("Output written to " + filename)
+            info("Output written to " + filename + ".")
 
     def generate_header(self, prefix, options):
         "Generate code for header"
@@ -336,6 +333,8 @@ class Format:
 
     def generate_ufc(self, generated_forms, prefix, options, code_section):
         "Generate code for body"
+
+        info("Formatting code for UFC 1.0.")
 
         output = ""
         
@@ -619,6 +618,8 @@ class Format:
 
     def _generate_dolfin_wrappers(self, generated_forms, prefix, options):
         "Generate code for DOLFIN wrappers"
+
+        info("Writing DOLFIN wrappers.")
 
         # FIXME: Use module from dolfin_utils
 

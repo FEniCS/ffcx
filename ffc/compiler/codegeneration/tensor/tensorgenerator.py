@@ -28,6 +28,12 @@ class TensorGenerator:
 
         code = {}
 
+        # Check if code needs to be generated
+        if form_representation.num_integrals == 0:
+            return {}
+
+        info("Generating code using tensor representation")
+
         # Set represenation
         code["representation"] = "tensor"
 

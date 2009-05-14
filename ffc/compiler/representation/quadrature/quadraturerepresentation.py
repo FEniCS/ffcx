@@ -1,14 +1,14 @@
 "Quadrature representation class for UFL"
 
 __author__ = "Kristian B. Oelgaard (k.b.oelgaard@tudelft.nl)"
-__date__ = "2009-01-07 -- 2009-05-04"
+__date__ = "2009-01-07 -- 2009-05-14"
 __copyright__ = "Copyright (C) 2009 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Anders Logg, 2009.
 
 # FFC common modules
-from ffc.common.log import debug, info, error
+from ffc.common.log import debug, info, error, begin, end
 
 # FFC fem modules
 from ffc.fem.quadrature import make_quadrature
@@ -25,6 +25,10 @@ class QuadratureRepresentation:
 
     Attributes:
 
+        num_integrals            - total number of integrals
+
+    Attributes added only when num_integrals is nonzero:
+
         form_data                - UFL form data
         cell_integrals           - UFL integrals {subdomain:{num_quad_points: integral,},}
         exterior_facet_integrals - UFL integrals {subdomain:{num_quad_points: integral,},}
@@ -40,8 +44,6 @@ class QuadratureRepresentation:
 
     def __init__(self, form_data):
         "Create tensor representation for given form"
-
-        info("Extracting information for quadrature representation.")
 
         # Save form
         self.form_data = form_data
@@ -60,6 +62,13 @@ class QuadratureRepresentation:
         cell_integrals = self.__extract_integrals(form_data.form.cell_integrals(), form_data)
         exterior_facet_integrals = self.__extract_integrals(form_data.form.exterior_facet_integrals(), form_data)
         interior_facet_integrals = self.__extract_integrals(form_data.form.interior_facet_integrals(), form_data)
+
+        # Check number of integrals
+        self.num_integrals = len(cell_integrals) + len(exterior_facet_integrals) + len(interior_facet_integrals)
+        if self.num_integrals == 0:
+            return
+
+        info("Computing quadrature representation")
 
         # Tabulate basis values
         self.cell_integrals = self.__tabulate(cell_integrals, form_data)

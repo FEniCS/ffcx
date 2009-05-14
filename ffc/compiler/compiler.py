@@ -184,7 +184,7 @@ def generate_form_code(form_data, representations, prefix, format, options):
     # Generate common code like finite elements, dof map etc.
     common_code = generate_common_code(form_data, format)
 
-    # Generate code for integrals using quadrature
+    # Generate code for integrals
     codes = []
     for (i, CodeGenerator) in enumerate(CodeGenerators):
         code_generator = CodeGenerator(options)

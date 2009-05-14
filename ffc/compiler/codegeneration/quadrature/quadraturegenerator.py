@@ -56,11 +56,16 @@ class QuadratureGenerator:
                                      "simplify expressions": False,
                                      "ignore zero tables": False}
 
-
     def generate_integrals(self, form_representation, format):
         "Generate code for all integrals."
 
         code = {}
+
+        # Check if code needs to be generated
+        if form_representation.num_integrals == 0:
+            return {}
+
+        info("Generating code using quadrature representation")
 
         # Set represenation
         code["representation"] = "quadrature"
