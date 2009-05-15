@@ -7,7 +7,8 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian B. Oelgaard, 2009.
 # Modified by Dag Lindbo, 2008.
-# Modified by Johan hake, 2009.
+# Modified by Johan Hake, 2009.
+# Modified by Garth N. Wells, 2009.
 
 # Python modules
 import os
@@ -16,7 +17,12 @@ import os
 from ufc_utils import *
 
 # DOLFIN wrapper generator
-from dolfin_utils.wrappers import generate_dolfin_code, UFCFormNames
+try:
+    from dolfin_utils.wrappers import generate_dolfin_code, UFCFormNames
+    dolfin_utils_imported = True
+except:
+    "Cannot import dolfin_utils. This will lead to an error if you try to generate warpper code"
+    dolfin_utils_imported = False
 
 # FFC common modules
 from ffc.common.utils import *
@@ -45,6 +51,10 @@ class Format:
         self.output_format = options["format"].lower()
         if not self.output_format in ["ufc", "dolfin"]:
             raise RuntimeError, "Don't know how to compile code for format '%s'." % output_format
+
+        # Check that DOLFIN wrapper utils have been imorted
+        if self.output_format == "dolfin" and not dolfin_utils_imported:
+            raise RuntimeError, "Module dolfin_utils must be imported to generate wrapper for DOLFIN."
 
         # Attach format
         self.format = {
