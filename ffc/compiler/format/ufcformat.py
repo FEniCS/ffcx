@@ -21,7 +21,6 @@ try:
     from dolfin_utils.wrappers import generate_dolfin_code, UFCFormNames
     dolfin_utils_imported = True
 except:
-    "Cannot import dolfin_utils. This will lead to an error if you try to generate warpper code"
     dolfin_utils_imported = False
 
 # FFC common modules
