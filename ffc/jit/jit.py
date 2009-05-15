@@ -70,8 +70,8 @@ def jit_form(form, options=None):
     
     # Check cache
     module = instant.import_module(jit_object, cache_dir=options["cache_dir"])
-    if module:
-        compiled_form = getattr(module, module.__name__)()
+    if module:       
+        compiled_form = getattr(module, module.__name__ + "_form_0")()
         return (compiled_form, module, form.form_data())
     
     # Generate code
@@ -101,7 +101,7 @@ def jit_form(form, options=None):
     debug("done")
 
     # Extract compiled form
-    compiled_form = getattr(module, module.__name__)()
+    compiled_form = getattr(module, module.__name__ + "_form_0")()
 
     return compiled_form, module, form.form_data()
 
@@ -153,6 +153,5 @@ def check_options(form, options):
 
 def extract_element_and_dofmap(module):
     "Extract element and dofmap from module"
-    name = module.__name__
-    return (getattr(module, name + "_finite_element_0")(),
-            getattr(module, name + "_dof_map_0")())
+    return (getattr(module, module.__name__ + "_0_finite_element_0")(),
+            getattr(module, module.__name__ + "_0_dof_map_0")())
