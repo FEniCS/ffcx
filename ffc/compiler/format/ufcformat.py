@@ -624,7 +624,6 @@ def _generate_dolfin_wrappers(generated_forms, prefix, options, format):
 
     # Generate name data for each form
     form_names = []
-    element_signatures = []
     for (i, (form_code, form_data)) in enumerate(generated_forms):
         n = max(form_data.rank + form_data.num_coefficients, 1) # hack
         fn = UFCFormNames("%d" % i,
@@ -633,7 +632,12 @@ def _generate_dolfin_wrappers(generated_forms, prefix, options, format):
                           [format["classname finite_element"](prefix, i, (j,)) for j in range(n)],
                           [format["classname dof_map"](prefix, i, (j,)) for j in range(n)])
         form_names.append(fn)
-        element_signatures += [element.__repr__() for element in form_data.elements]
+
+    # Collect element signatures
+    element_signatures = []
+    for (i, (form_code, form_data)) in enumerate(generated_forms):
+        n = max(form_data.rank, 1) # hack
+        element_signatures += [element.__repr__() for element in form_data.elements[:n]]
 
     # Extract common element if any
     if len(element_signatures) > 0 and element_signatures[1:] == element_signatures[:-1]:
