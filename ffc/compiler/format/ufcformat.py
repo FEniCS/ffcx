@@ -619,11 +619,14 @@ def _generate_dolfin_wrappers(generated_forms, prefix, options, format):
 
     info("Writing DOLFIN wrappers.")
 
+    # Note hack for handling compilation of single elements by making sure
+    # that we generate code for at least one element.
+
     # Generate name data for each form
     form_names = []
     element_signatures = []
     for (i, (form_code, form_data)) in enumerate(generated_forms):
-        n = form_data.rank + form_data.num_coefficients
+        n = max(form_data.rank + form_data.num_coefficients, 1) # hack
         fn = UFCFormNames("%d" % i,
                           [c.name for c in form_data.coefficients],
                           format["classname form"](prefix, i),
