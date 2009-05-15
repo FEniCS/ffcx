@@ -628,13 +628,19 @@ def _generate_dolfin_wrappers(generated_forms, prefix, options, format):
 
     info("Writing DOLFIN wrappers.")
 
-    # Note hack for handling compilation of single elements by making sure
-    # that we generate code for at least one element.
+    # Special case: single element
+    if len(generated_forms) == 1 and generated_forms[0][1].form is None:
+        fn = UFCFormNames("0",
+                          [],
+                          format["classname form"](prefix, 0),
+                          [format["classname finite_element"](prefix, 0, (0,))],
+                          [format["classname dof_map"](prefix, 0, (0,))])
+        return generate_dolfin_code(prefix, "", [fn], (0, 0), False) + "\n\n"
 
     # Generate name data for each form
     form_names = []
     for (i, (form_code, form_data)) in enumerate(generated_forms):
-        n = max(form_data.rank + form_data.num_coefficients, 1) # hack
+        n = form_data.rank + form_data.num_coefficients
         fn = UFCFormNames("%d" % i,
                           [c.name for c in form_data.coefficients],
                           format["classname form"](prefix, i),
@@ -645,8 +651,7 @@ def _generate_dolfin_wrappers(generated_forms, prefix, options, format):
     # Collect element signatures
     element_signatures = []
     for (i, (form_code, form_data)) in enumerate(generated_forms):
-        n = max(form_data.rank, 1) # hack
-        element_signatures += [element.__repr__() for element in form_data.elements[:n]]
+        element_signatures += [element.__repr__() for element in form_data.elements[:form_data.rank]]
 
     # Extract common element if any
     if len(element_signatures) > 0 and element_signatures[1:] == element_signatures[:-1]:
