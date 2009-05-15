@@ -19,6 +19,9 @@ import sys
 import getopt
 import os.path
 
+# UFL modules
+from ufl.log import UFLException
+
 # FFC modules
 from ffc.common.log import info, set_level, DEBUG, ERROR
 from ffc.common.constants import FFC_OPTIONS, FFC_VERSION
@@ -125,10 +128,9 @@ def main(argv):
         else:
             try:
                 execfile(script, {})
-            except Exception, exception:
+            except UFLException, exception:
                 info("")
                 error(str(exception))
-                error(exception.message)
                 error("To get more information about this error, rerun FFC with --debug.")
                 return 1
 
