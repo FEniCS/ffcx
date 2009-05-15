@@ -16,7 +16,7 @@ from ufl.classes import MultiIndex, FixedIndex
 
 # UFL Algorithms
 from ufl.algorithms.transformations import Transformer
-from ufl.algorithms import purge_list_tensors, expand_indices
+from ufl.algorithms import purge_list_tensors, expand_indices, propagate_restrictions
 from ufl.algorithms.printing import tree_format
 
 # FFC common modules
@@ -745,6 +745,7 @@ def generate_code(integrand, transformer, Indent, format):
     # expand_indices and purge_list_tensors
     new_integrand = expand_indices(integrand)
     new_integrand = purge_list_tensors(new_integrand)
+    new_integrand = propagate_restrictions(new_integrand)
     debug("\nExpanded integrand\n" + str(tree_format(new_integrand)))
     # Let the Transformer create the loop code
     loop_code = transformer.visit(new_integrand)
