@@ -173,7 +173,7 @@ def optimize_form_representation(form_data):
     "Compiler stage 3."
     
     begin("Compiler stage 3: Optimizing form representation")
-    info("Optimization currently broken (to be fixed).")
+    info("Optimization of tensor contraction representation currently broken (to be fixed).")
     end()
 
 def generate_form_code(form_data, representations, prefix, format, options):
@@ -259,7 +259,7 @@ def _extract_metadata(form, options):
         # Set default values for metadata
         representation = options["representation"]
         quadrature_order = options["quadrature_order"]
-
+            
         # Get metadata for integral (if any)
         integral_metadata = integral.measure().metadata() or {}
         for (key, value) in integral_metadata.iteritems():
@@ -270,14 +270,21 @@ def _extract_metadata(form, options):
             else:
                 warning("Unrecognized option '%s' for integral metadata." % key)
 
+
         # Check metadata
         valid_representations = ["tensor", "quadrature", "auto"]
         if not representation in valid_representations:
             error("Unrecognized form representation '%s', must be one of %s.",
                   representation, ", ".join("'%s'" % r for r in valid_representations))
-        if not ((isinstance(quadrature_order, int) and quadrature_order >= 0) or quadrature_order == "auto"):
-            error("Illegal quadrature order '%s' for integral, must be a nonnegative integer or 'auto'.",
-                  str(quadrature_order))
+        if quadrature_order != "auto":
+            try:
+                quadrature_order = int(quadrature_order)
+                if not quadrature_order >= 0:
+                    error("Illegal quadrature order '%s' for integral, must be a nonnegative integer.",
+                        str(quadrature_order))
+            except:
+                error("Illegal quadrature order '%s' for integral, must be a nonnegative integer or 'auto'.",
+                    str(quadrature_order))
 
         # Automatically select metadata if "auto" is selected
         if representation == "auto":
