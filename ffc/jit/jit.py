@@ -2,7 +2,7 @@
 It uses Instant to wrap the generated code into a Python module."""
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-07-20 -- 2009-04-21"
+__date__ = "2007-07-20 -- 2009-05-22"
 __copyright__ = "Copyright (C) 2007-2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
@@ -15,7 +15,7 @@ import instant
 import ufc_utils
 
 # FFC common modules
-from ffc.common.log import debug, warning
+from ffc.common.log import info, warning
 from ffc.common.constants import FFC_OPTIONS
 
 # FFC fem modules
@@ -75,14 +75,13 @@ def jit_form(form, options=None):
         return (compiled_form, module, form.form_data())
     
     # Generate code
-    debug("Calling FFC just-in-time (JIT) compiler, this may take some time...")
+    info("Calling FFC just-in-time (JIT) compiler, this may take some time...")
     signature = jit_object.signature()
     compile(form, signature, options)
-
-    debug("done")
+    info("done")
     
     # Wrap code into a Python module using Instant
-    debug("Creating Python extension (compiling and linking), this may take some time...")
+    info("Creating Python extension (compiling and linking), this may take some time...")
 
     # Create python extension module
     module = ufc_utils.build_ufc_module(
@@ -98,7 +97,7 @@ def jit_form(form, options=None):
     if options["split_implementation"] :
         os.unlink(signature + ".cpp")
     
-    debug("done")
+    info("done")
 
     # Extract compiled form
     compiled_form = getattr(module, module.__name__ + "_form_0")()
