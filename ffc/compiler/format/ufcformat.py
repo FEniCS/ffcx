@@ -256,7 +256,7 @@ class Format:
             output += _generate_dolfin_header(prefix, options)
         output += "\n"
 
-        if not options["split_implementation"]:
+        if not options["split"]:
 
             if self.output_format == "dolfin":
 

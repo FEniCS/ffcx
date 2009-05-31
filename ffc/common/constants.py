@@ -11,7 +11,7 @@ FFC_OPTIONS = {"representation":      "auto", # form representation / code gener
                "format":              "ufc",  # code generation format
                "quadrature_order":    "auto", # quadrature order used for quadrature representation
                "precision":           "15",   # precision used when writing numbers
-               "split_implementation": False, # split generated code into .h and .cpp file
+               "split":                False, # split generated code into .h and .cpp file
                "form_postfix":         True,  # postfix form name with "Function", "LinearForm" or BilinearForm
                "cache_dir":            None,  # cache dir used by Instant
                "output_dir":           ".",   # output directory for generated code

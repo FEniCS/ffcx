@@ -88,13 +88,13 @@ def jit_form(form, options=None):
         signature + ".h", 
         source_directory = os.curdir,
         signature = signature,
-        sources = signature + ".cpp" if options["split_implementation"] else [],
+        sources = signature + ".cpp" if options["split"] else [],
         cppargs  = ["-O2"] if options["cpp optimize"] else ["-O0"] ,
         cache_dir = options["cache_dir"])
 
     # Remove code
     os.unlink(signature + ".h")
-    if options["split_implementation"] :
+    if options["split"] :
         os.unlink(signature + ".cpp")
     
     info("done")
