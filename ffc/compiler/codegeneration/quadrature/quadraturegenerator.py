@@ -273,7 +273,7 @@ class QuadratureGenerator:
                 case = [format["block begin"]]
                 c, members_code, num_ops =\
                     self.__generate_element_tensor(form_representation, transformer,\
-                                                   integrals, Indent, format)
+                                                   integrals, Indent, format, interior=True)
                 case += [format["comment"]("Total number of operations to compute element tensor (from this point): %d" %num_ops)] + c
                 case += [format["block end"]]
                 cases[i][j] = case
@@ -311,7 +311,7 @@ class QuadratureGenerator:
 
         return {"tabulate_tensor": (common, cases), "constructor":"// Do nothing", "members":members_code}
 
-    def __generate_element_tensor(self, form_representation, transformer, integrals, Indent, format):
+    def __generate_element_tensor(self, form_representation, transformer, integrals, Indent, format, interior=False):
         "Construct quadrature code for element tensors"
 
         # Prefetch formats to speed up code generation
@@ -346,10 +346,10 @@ class QuadratureGenerator:
             # Generate code for integrand and get number of operations
             if self.optimise_options["simplify expressions"]:
                 integral_code, num_ops =\
-                    generate_code2(integral.integrand(), transformer, Indent, format)
+                    generate_code2(integral.integrand(), transformer, Indent, format, interior)
             else:
                 integral_code, num_ops =\
-                    generate_code(integral.integrand(), transformer, Indent, format)
+                    generate_code(integral.integrand(), transformer, Indent, format, interior)
 
             # Get number of operations to compute entries for all terms when
             # looping over all IPs and update tensor count

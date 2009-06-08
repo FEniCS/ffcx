@@ -1098,7 +1098,7 @@ class QuadratureTransformer(Transformer):
                     error("Index ranges does not match")
         return function_name
 
-def generate_code(integrand, transformer, Indent, format):
+def generate_code(integrand, transformer, Indent, format, interior):
     """Generate code from a UFL integral type. It generates all the code that
     goes inside the quadrature loop."""
 
@@ -1129,7 +1129,9 @@ def generate_code(integrand, transformer, Indent, format):
     # expand_indices and purge_list_tensors
     new_integrand = expand_indices(integrand)
     new_integrand = purge_list_tensors(new_integrand)
-    new_integrand = propagate_restrictions(new_integrand)
+    # Only propagate restrictions if we have an interior integral
+    if interior:
+        new_integrand = propagate_restrictions(new_integrand)
     debug("\nExpanded integrand\n" + str(tree_format(new_integrand)))
 
     # Let the Transformer create the loop code
