@@ -78,7 +78,6 @@ def check_results(values, reference):
     num_missing_value = 0
     num_missing_reference = 0
     num_diffs = 0
-
     print ""
     for representation in values:
         vals = values[representation]
@@ -94,7 +93,7 @@ def check_results(values, reference):
 
         vals = to_dict(vals)
         refs = to_dict(reference)
-            
+
         for integral in integrals:
             if integral in vals and isinstance(vals[integral], str):
                 result = vals[integral]
@@ -132,9 +131,11 @@ def check_results(values, reference):
         print "*** Results differ for %d integrals." % num_diffs
 
     print ""
-    print """The following test should fail (due to round-off errors):
-MassBilinearForm_cell_integral_0:                     *** (diff = 1e-09)
+    print """The following test should fail for tensor representation (due to round-off errors):
+mass_0_cell_integral_0:                     *** (diff = 1e-09)
 """
+    print "The following forms for tensor representation should have 'missing values' (not supported):"
+    print "\n".join(only_quadrature)
 
     return 1
     
@@ -153,9 +154,8 @@ def main(args):
     for representation, option in [("quadrature", ""), ("tensor", ""), ("quadrature", " -O")]:
         vals = []
         for form in forms:
-
             # Skip forms not expected to work with tensor representation
-            if representation is "tensor" and form in only_quadrature:
+            if representation == "tensor" and form in only_quadrature:
                 continue
 
             # Compile form
