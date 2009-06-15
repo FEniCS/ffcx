@@ -337,7 +337,7 @@ class QuadratureTransformer2(QuadratureTransformer):
         # Set geo_dim
         # TODO: All terms REALLY have to be defined on cell with the same
         # geometrical dimension so only do this once and exclude the check?
-        geo_dim = ufl_basis_function.element().cell().d
+        geo_dim = ufl_basis_function.element().cell().geometric_dimension()
         if self.geo_dim:
             if geo_dim != self.geo_dim:
                 error("All terms must be defined on cells with the same geometrical dimension")
@@ -534,7 +534,7 @@ class QuadratureTransformer2(QuadratureTransformer):
         # Set geo_dim
         # TODO: All terms REALLY have to be defined on cell with the same
         # geometrical dimension so only do this once and exclude the check?
-        geo_dim = ufl_function.element().cell().d
+        geo_dim = ufl_function.element().cell().geometric_dimension()
         if self.geo_dim:
             if geo_dim != self.geo_dim:
                 error("All terms must be defined on cells with the same geometrical dimension")
