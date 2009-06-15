@@ -30,6 +30,7 @@ from ufl.classes import Form
 from ufl.classes import FiniteElementBase
 from ufl.classes import TestFunction
 from ufl.objects import dx
+from ufl.algorithms import as_form
 
 # FFC jit modules
 from jitobject import JITObject
@@ -60,7 +61,7 @@ def jit_form(form, options=None):
     "Just-in-time compile the given form"
 
     if not isinstance(form, Form):
-        form = Form(form)
+        form = as_form(form)
         
     # Check options
     options = check_options(form, options)
