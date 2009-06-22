@@ -1,5 +1,5 @@
 __author__ = "Johan Hake (hake@simula.no)"
-__date__ = "2009-03-06 -- 2009-03-20"
+__date__ = "2009-03-06 -- 2009-06-22"
 __copyright__ = "Copyright (C) 2009 Johan Hake"
 __license__  = "GNU LGPL Version 2.1"
 
@@ -79,7 +79,7 @@ def configure_instant():
     
     # Check swig version for shared_ptr
     if not instant.check_swig_version("1.3.35"):
-        raise OSError, "Your current swig version is %s, it needs to be 1.3.35 or higher.\n" % swig_version
+        raise OSError, "Your current swig version is %s, it needs to be 1.3.35 or higher.\n" % instant.get_swig_version()
 
     # Check if UFC is importable and what version of swig was used to
     # create the UFC extension module
