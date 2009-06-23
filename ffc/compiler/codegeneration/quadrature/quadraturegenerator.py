@@ -387,22 +387,26 @@ class QuadratureGenerator:
         code = ["", Indent.indent(format["comment"]("Array of quadrature weights"))]
 
         # Loop tables of weights and create code
-        for points in transformer.used_weights:
-            weights = transformer.quadrature_weights[points]
+        for num_points in transformer.used_weights:
+            weights, points = transformer.quadrature_weights[num_points]
 
             # FIXME: For now, raise error if we don't have weights.
             # We might want to change this later
             if not weights.any():
                 raise RuntimeError(weights, "No weights")
 
-            # Create name and value
-            name = format_table + format_weight(points)
+            # Create name and value for weight
+            name = format_table + format_weight(num_points)
             value = format_float(weights[0])
             if len(weights) > 1:
-                name += format_array(str(points))
+                name += format_array(str(num_points))
                 value = format_block(format_sep.join([format_float(w)\
                                                       for w in weights]))
-            code += [(Indent.indent(name), value), ""]
+            code += [(Indent.indent(name), value)]
+
+            # Create comment with a list of the quadrature points
+            comment = "Quadrature points on the UFC reference element: " + ", ".join([str(p) for p in points])
+            code += [Indent.indent(format["comment"](comment)), ""]
 
         return code
 
@@ -423,6 +427,8 @@ class QuadratureGenerator:
         # FIXME: Check if we can simplify the tabulation
 
         code = []
+        code += [Indent.indent(format_comment("Value of basis functions at quadrature points.") )]
+
         inv_name_map = transformer.name_map
         tables = transformer.unique_tables
 
@@ -462,7 +468,7 @@ class QuadratureGenerator:
 
                 # Generate array of values
                 value = tabulate_matrix(vals, format)
-                code += ["", (Indent.indent(decl_name), Indent.indent(value))]
+                code += [(Indent.indent(decl_name), Indent.indent(value)), ""]
 
             # Tabulate non-zero indices
             if self.optimise_options["non zero columns"]:

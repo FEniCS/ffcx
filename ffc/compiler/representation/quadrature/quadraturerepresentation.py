@@ -165,7 +165,7 @@ class QuadratureRepresentation:
             if len_weights in self.quadrature_weights[integral_type]:
                 print "weights: ", self.quadrature_weights
                 error("This number of points is already present in the weight table: " + str(len_weights))
-            self.quadrature_weights[integral_type][len_weights] = weights
+            self.quadrature_weights[integral_type][len_weights] = (weights, points)
 
             # Add the number of points to the psi tables dictionary
             # TODO: This check should not be needed, remove later
