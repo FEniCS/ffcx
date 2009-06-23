@@ -571,11 +571,11 @@ class QuadratureTransformer2(QuadratureTransformer):
                     # Multiply basis by appropriate transform
                     if ffc_element.component_element(component)[0].mapping() == COVARIANT_PIOLA:
                         dxdX = Symbol(format_transform("JINV", c, local_comp, self.restriction), 1, GEO)
-                        basis = Product([dxdX, function_name])
+                        function_name = Product([dxdX, function_name])
                     elif ffc_element.component_element(component)[0].mapping() == CONTRAVARIANT_PIOLA:
                         detJ = Fraction(Symbol("", 1, CONST), Symbol(format_detJ(self.restriction), 1, GEO))
                         dXdx = Symbol(format_transform("J", c, local_comp, self.restriction), 1, GEO)
-                        basis = Product([detJ, dXdx, function_name])
+                        function_name = Product([detJ, dXdx, function_name])
                     else:
                         error("Transformation is not supported: ", str(ffc_element.component_element(component)[0].mapping()))
 

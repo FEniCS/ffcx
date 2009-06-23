@@ -956,13 +956,13 @@ class QuadratureTransformer(Transformer):
                     if ffc_element.component_element(component)[0].mapping() == COVARIANT_PIOLA:
                         dxdX = format_transform("JINV", c, local_comp, self.restriction)
                         self.trans_set.add(dxdX)
-                        basis = format_mult([dxdX, function_name])
+                        function_name = format_mult([dxdX, function_name])
                     elif ffc_element.component_element(component)[0].mapping() == CONTRAVARIANT_PIOLA:
                         self.trans_set.add(format_detJ(self.restriction))
                         detJ = format_inv(format_detJ(self.restriction))
                         dXdx = format_transform("J", c, local_comp, self.restriction)
                         self.trans_set.add(dXdx)
-                        basis = format_mult([detJ, dXdx, function_name])
+                        function_name = format_mult([detJ, dXdx, function_name])
                     else:
                         error("Transformation is not supported: ", str(ffc_element.space_mapping(component)))
 
