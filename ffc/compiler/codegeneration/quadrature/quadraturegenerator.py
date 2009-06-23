@@ -383,6 +383,7 @@ class QuadratureGenerator:
         format_sep      = format["separator"]
         format_weight   = format["weight"]
         format_array    = format["array access"]
+        format_group    = format["grouping"]
 
         code = ["", Indent.indent(format["comment"]("Array of quadrature weights"))]
 
@@ -405,7 +406,8 @@ class QuadratureGenerator:
             code += [(Indent.indent(name), value)]
 
             # Create comment with a list of the quadrature points
-            comment = "Quadrature points on the UFC reference element: " + ", ".join([str(p) for p in points])
+            points = format_sep.join([format_group(format_sep.join([format_float(val) for val in point])) for point in points])
+            comment = "Quadrature points on the UFC reference element: " + points
             code += [Indent.indent(format["comment"](comment)), ""]
 
         return code
