@@ -693,6 +693,7 @@ class QuadratureTransformer(Transformer):
         # elements are labeled with the global component number
         if component:
             local_offset = component - local_comp
+#        print "local_offset: ", local_offset
 
         # Create FFC element
         ffc_element = create_element(ufl_basis_function.element())
@@ -909,6 +910,7 @@ class QuadratureTransformer(Transformer):
         # Compute the local offset (needed for non-affine mappings)
         if component:
             local_offset = component - local_comp
+#        print "local_offset: ", local_offset
 
         # Create FFC element
         ffc_element = create_element(ufl_function.element())

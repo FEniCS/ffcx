@@ -405,10 +405,46 @@ class QuadratureGenerator:
                                                       for w in weights]))
             code += [(Indent.indent(name), value)]
 
-            # Create comment with a list of the quadrature points
-            points = format_sep.join([format_group(format_sep.join([format_float(val) for val in point])) for point in points])
-            comment = "Quadrature points on the UFC reference element: " + points
-            code += [Indent.indent(format["comment"](comment)), ""]
+            # Tabulate the quadrature points
+            # 1) Tabulate the points as: p0, p1, p2, with p0 = (x0, y0, z0) etc.
+            # Use format_float to format the value (enable variable precision)
+            formatted_points = [format_group(format_sep.join([format_float(val)\
+                                for val in point])) for point in points]
+
+            # Create comment
+            comment = "Quadrature points on the UFC reference element: " \
+                      + format_sep.join(formatted_points)
+            code += [Indent.indent(format["comment"](comment))]
+
+            # 2) Tabulate the coordinates of the points p0, p1, p2 etc.
+            #    X: x0, x1, x2
+            #    Y: y0, y1, y2
+            #    Z: z0, z1, z2
+#            comment = "Quadrature coordinates on the UFC reference element: "
+#            code += [Indent.indent(format["comment"](comment))]
+
+#            # All points have the same number of coordinates
+#            num_coord = len(points[0])
+
+#            # All points have x-coordinates
+#            xs = [format_float(p[0]) for p in points]
+#            comment = "X: " + format_sep.join(xs)
+#            code += [Indent.indent(format["comment"](comment))]
+
+#            ys = []
+#            zs = []
+#            # Tabulate y-coordinate if we have 2 or more coordinates
+#            if num_coord >= 2:
+#                ys = [format_float(p[1]) for p in points]
+#                comment = "Y: " + format_sep.join(ys)
+#                code += [Indent.indent(format["comment"](comment))]
+#            # Only tabulate z-coordinate if we have 3 coordinates
+#            if num_coord == 3:
+#                zs = [format_float(p[2]) for p in points]
+#                comment = "Z: " + format_sep.join(zs)
+#                code += [Indent.indent(format["comment"](comment))]
+
+            code += [""]
 
         return code
 
