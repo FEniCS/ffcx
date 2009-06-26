@@ -11,7 +11,8 @@ import sys, os, commands, pickle, numpy
 only_quadrature = ["FunctionOperators",
                    "QuadratureElement",
                    "TensorWeightedPoisson",
-                   "PoissonDG"]
+                   "PoissonDG",
+                   "Biharmonic"]
 
 # Log file
 logfile = None
