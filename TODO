@@ -5,7 +5,6 @@ file, it is convenient to install org-mode in Emacs.
 * Conversion to UFL
   - Skipping factorization in tensor representation, does it matter?
     Check speed against old FFC.
-  - Use DOLFIN wrappers from dolfin_utils
   - Use load_form_file from UFL
   - Clean out old unused code (check coverage)
     
@@ -42,6 +41,9 @@ file, it is convenient to install org-mode in Emacs.
 
 * Quad elements
   - Isoparametric mapping
+
+* Tensor representation
+  - use quadrature_order from the metadata when integrating monomials
 
 * Fix all FIXMEs
   - There are a few of these: find src/ffc -name '*.py' | xargs grep FIXME
