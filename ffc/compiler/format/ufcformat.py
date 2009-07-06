@@ -105,7 +105,7 @@ class Format:
             "const uint declaration": "const unsigned int ",
             "static const uint declaration": "static const unsigned int ",
             "static uint declaration": "static unsigned int ",
-            "table declaration": "const static double ",
+            "table declaration": "static const double ",
             # variable names
             "element tensor quad": "A",
             "integration points": "ip",
