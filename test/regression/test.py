@@ -68,6 +68,8 @@ for representation in representations:
     print ""
 
 # Print summary
+
+test_failed = False
 for representation in representations:
     num_forms = len(form_files) - len(exceptions[representation])
     num_forms_not_ok = len(forms_not_ok[representation])
@@ -76,6 +78,7 @@ for representation in representations:
         print "\tRegression test completed for all %d forms ... All OK!" % num_forms
         print ""
     else:
+        test_failed = True
         print "\t*** Regression test failed for %d of %d forms:" % (num_forms_not_ok, num_forms)
         for form_file in forms_not_ok[representation]:
             print "  " + form_file
@@ -93,4 +96,4 @@ for representation in representations:
         print "\nTo view diffs with meld, run the script viewdiff_%s.sh" % representation
 
 # Return error code if tests failed
-sys.exit(True)
+sys.exit(test_failed)
