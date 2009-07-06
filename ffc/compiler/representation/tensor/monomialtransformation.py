@@ -104,7 +104,7 @@ class MonomialIndex:
 
     def __str__(self):
         if self.index_type == MonomialIndex.FIXED:
-            return str(self.index_id)
+            return str(self.index_range[0])
         elif self.index_type == MonomialIndex.PRIMARY:
             return "i_" + str(self.index_id)
         elif self.index_type == MonomialIndex.SECONDARY:
@@ -223,36 +223,27 @@ class TransformedMonomial:
 
             # Extract element and dimensions
             element = create_element(f.element())
-            vdim = element.space_dimension()
+            vdim = element.value_dimension(0) # FIXME: rank dependent (meg)
+            sdim = element.space_dimension()
             gdim = element.geometric_dimension()
             cdim = element.num_sub_elements()
 
             # Extract basis function index and coefficients
             if isinstance(f.function, BasisFunction):
                 vindex = MonomialIndex(index_type=MonomialIndex.PRIMARY,
-                                       index_range=range(vdim),
+                                       index_range=range(sdim),
                                        index_id=f.function.count())
+
             elif isinstance(f.function, Function):
-                vindex = MonomialIndex(index_range=range(vdim))
+                vindex = MonomialIndex(index_range=range(sdim))
                 coefficient = MonomialCoefficient(vindex, f.function.count())
                 self.coefficients.append(coefficient)
 
             # Extract components
-            components = []
-            for c in f.components:
-                if c in index_map:
-                    index = index_map[c]
-                elif isinstance(c, FixedIndex):
-                    index = MonomialIndex(index_type=MonomialIndex.FIXED,
-                                          index_range=[int(c)],
-                                          index_id=None)
-                else:
-                    index = MonomialIndex(index_range=range(cdim))
-                index_map[c] = index
-                components.append(index)
+            components = self._extract_components(f, index_map, vdim)
             if len(components) > 1:
                 raise MonomialException, "Can only handle rank 0 or rank 1 tensors."
-            
+
             # Handle non-affine mappings (Piola)
             if len(components) > 0:
 
@@ -330,6 +321,22 @@ class TransformedMonomial:
                 i.index_id   = next_external_index()
             else:
                 raise RuntimeError, "Summation index does not appear exactly twice: " + str(i)
+
+    def _extract_components(self, f, index_map, vdim):
+        components = []
+        for c in f.components:
+            if c in index_map:
+                index = index_map[c]
+            elif isinstance(c, FixedIndex):
+                index = MonomialIndex(index_type=MonomialIndex.FIXED,
+                                      index_range=[int(c)],
+                                      index_id=None)
+            else:
+                index = MonomialIndex(index_range=range(vdim)) # meg: What kind of index should this be?
+            index_map[c] = index
+            components.append(index)
+        return components
+
 
     def extract_internal_indices(self, index_type=None):
         "Return list of indices appearing inside integral."
