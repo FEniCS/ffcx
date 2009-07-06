@@ -52,8 +52,9 @@ def main(argv):
     # Get command-line arguments
     try:
         opts, args = getopt.getopt(argv, \
-        "hvdsl:r:f:Oo:", \
-        ["help", "version", "debug", "silent", "language=", "representation=", "optimize", "output-directory="])
+        "hvdsl:r:f:Oo:q:", \
+        ["help", "version", "debug", "silent", "language=", "representation=",
+         "optimize", "output-directory=", "quadrature-rule="])
     except getopt.GetoptError:
         info_usage()
         error("Illegal command-line arguments.")
@@ -85,6 +86,8 @@ def main(argv):
             options["format"] = arg
         elif opt in ("-r", "--representation"):
             options["representation"] = arg
+        elif opt in ("-q", "--quadrature-rule"):
+            options["quadrature_rule"] = arg
         elif opt == "-f":
             if len(arg.split("=")) == 2:
                 (key, value) = arg.split("=")

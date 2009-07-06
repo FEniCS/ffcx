@@ -8,7 +8,7 @@ from numpy import array
 from FIAT.quadrature import make_quadrature as fiat_make_quadrature
 from FIAT.shapes import LINE, TRIANGLE, TETRAHEDRON
 
-def make_quadrature(shape, n):
+def make_quadrature(shape, n, quad_rule=None):
     """Generate quadrature rule (points, weights) for given shape
     with n points in each direction. Quadrature rule is generated
     using FIAT and then transformed and scaled to the UFC element"""

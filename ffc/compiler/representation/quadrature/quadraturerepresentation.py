@@ -96,6 +96,7 @@ class QuadratureRepresentation:
         # subdomain and representation
         for integral in integrals:
             order = form_data.metadata[integral]["quadrature_order"]
+            rule  = form_data.metadata[integral]["quadrature_rule"]
 
             # Compute the required number of points for each axis (exact integration)
             num_points_per_axis = (order + 1 + 1) / 2 # integer division gives 2m - 1 >= q
@@ -103,10 +104,10 @@ class QuadratureRepresentation:
             # FIXME: This could take place somewhere else. In uflcompiler.py
             # we might want to sort according to number of points rather than
             # order?
-            if not num_points_per_axis in sorted_integrals:
-                sorted_integrals[num_points_per_axis] = Form([Integral(integral.integrand(), integral.measure().reconstruct(metadata={}))])
+            if not (num_points_per_axis, rule) in sorted_integrals:
+                sorted_integrals[(num_points_per_axis, rule)] = Form([Integral(integral.integrand(), integral.measure().reconstruct(metadata={}))])
             else:
-                sorted_integrals[num_points_per_axis] += Form([Integral(integral.integrand(), integral.measure().reconstruct(metadata={}))])
+                sorted_integrals[(num_points_per_axis, rule)] += Form([Integral(integral.integrand(), integral.measure().reconstruct(metadata={}))])
 
         return sorted_integrals
 
@@ -128,7 +129,9 @@ class QuadratureRepresentation:
         integral_type = unsorted_integrals[0].measure().domain_type()
 
         # Loop the quadrature points and tabulate the basis values
-        for num_points_per_axis, form in sorted_integrals.iteritems():
+        for pr, form in sorted_integrals.iteritems():
+
+            num_points_per_axis, rule = pr
 
             # Get all unique elements in integrals and convert to list
             elements = set()
@@ -153,9 +156,9 @@ class QuadratureRepresentation:
 
             # Make quadrature rule and get points and weights
             if integral_type == Measure.CELL:
-                (points, weights) = make_quadrature(shape, num_points_per_axis)
+                (points, weights) = make_quadrature(shape, num_points_per_axis, rule)
             elif integral_type == Measure.EXTERIOR_FACET or integral_type == Measure.INTERIOR_FACET:
-                (points, weights) = make_quadrature(facet_shape, num_points_per_axis)
+                (points, weights) = make_quadrature(facet_shape, num_points_per_axis, rule)
             else:
                 error("Unknown integral type: " + str(integral_type))
 

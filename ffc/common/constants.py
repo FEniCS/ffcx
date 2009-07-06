@@ -10,6 +10,7 @@ FFC_VERSION = "0.6.2"
 FFC_OPTIONS = {"representation":      "auto", # form representation / code generation strategy
                "format":              "ufc",  # code generation format
                "quadrature_order":    "auto", # quadrature order used for quadrature representation
+               "quadrature_rule":      None,  # quadrature rule used for integration of element tensors
                "precision":           "15",   # precision used when writing numbers
                "split":                False, # split generated code into .h and .cpp file
                "form_postfix":         True,  # postfix form name with "Function", "LinearForm" or BilinearForm

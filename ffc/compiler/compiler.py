@@ -259,7 +259,8 @@ def _extract_metadata(form, options):
         # Set default values for metadata
         representation = options["representation"]
         quadrature_order = options["quadrature_order"]
-            
+        quadrature_rule = options["quadrature_rule"]
+
         # Get metadata for integral (if any)
         integral_metadata = integral.measure().metadata() or {}
         for (key, value) in integral_metadata.iteritems():
@@ -267,6 +268,8 @@ def _extract_metadata(form, options):
                 representation = integral_metadata["ffc_representation"]
             elif key == "quadrature_order":
                 quadrature_order = integral_metadata["quadrature_order"]
+            elif key == "quadrature_rule":
+                quadrature_rule = integral_metadata["quadrature_rule"]
             else:
                 warning("Unrecognized option '%s' for integral metadata." % key)
 
@@ -293,7 +296,9 @@ def _extract_metadata(form, options):
             quadrature_order = _auto_select_quadrature_order(integral)
 
         # Set metadata for integral
-        metadata[integral] = {"quadrature_order": quadrature_order, "ffc_representation": representation}
+        metadata[integral] = {"quadrature_order": quadrature_order,
+                              "ffc_representation": representation,
+                              "quadrature_rule":quadrature_rule}
 
     return metadata
 
