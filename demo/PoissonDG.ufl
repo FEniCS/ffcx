@@ -21,6 +21,8 @@ f = Function(element)
 # Normal component, mesh size and right-hand side
 n = VectorConstant(triangle)
 h = Constant(triangle)
+# Compute average of mesh size
+h_avg = (h('+') + h('-'))/2.0
 
 # Neumann boundary conditions
 gN = Function(element)
@@ -33,7 +35,7 @@ gamma = 8.0
 a = inner(grad(v), grad(u))*dx \
    - inner(avg(grad(v)), jump(u, n))*dS \
    - inner(jump(v, n), avg(grad(u)))*dS \
-   + alpha/h('+')*inner(jump(v, n), jump(u, n))*dS \
+   + alpha/h_avg*inner(jump(v, n), jump(u, n))*dS \
    - inner(grad(v), u*n)*ds \
    - inner(v*n, grad(u))*ds \
    + gamma/h*v*u*ds
