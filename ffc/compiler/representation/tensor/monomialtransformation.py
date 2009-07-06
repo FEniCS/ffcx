@@ -259,12 +259,11 @@ class TransformedMonomial:
                 # Get sub element, offset and mapping
                 component = components[0]
                 if len(component.index_range) > 1:
-                    if not all([element.component_element(c)[0].mapping() is AFFINE for c in component.index_range]):
-                        raise MonomialException, "Unable to handle non-affine mappings for index range."
-                    mapping = AFFINE
-                else:
-                    (sub_element, offset) = element.component_element(component.index_range[0])
-                    mapping = sub_element.mapping()
+                    same = element.component_element(component.index_range[0])[0].mapping()
+                    if not all([element.component_element(c)[0].mapping() is same for c in component.index_range]):
+                        raise MonomialException, "Unable to handle different mappings for index range."
+                (sub_element, offset) = element.component_element(component.index_range[0])
+                mapping = sub_element.mapping()
 
                 # Add transforms where appropriate
                 if mapping == CONTRAVARIANT_PIOLA:
