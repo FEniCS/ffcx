@@ -193,8 +193,7 @@ class Symbol(object):
         self.t = symbol_type
         self._hash = False
 
-        # Needed for symbols like std::cos(x*y + z) --> base_ops = 2
-        # (should that really be 3?)
+        # Needed for symbols like std::cos(x*y + z) --> base_ops + math operation = 2 + 1 = 3
         # This variable should be set after construction
         # TODO: put this in the constructor
         self.base_expr = None
@@ -401,7 +400,8 @@ class Symbol(object):
         if self.c == 0:
             return 0
 
-        # Get base ops (like sin(2*x + 1)) --> 2
+        # Get base ops, typically 1 for sin() and then add the operations
+        # for the base (sin(2*x + 1)) --> 1 + 2
         ops = self.base_op
         if self.base_expr:
             ops += self.base_expr.ops()
@@ -1531,19 +1531,59 @@ class Fraction(object):
         return Fraction(self.get_num()/var, self.denom, False)
 
     def reduce_vartype(self, var_type):
+
+        # Reduce the numerator by the var type (should be safe, since the
+        # expand() should have eliminated all sums in the numerator)
         num_found, num_remains = self.get_num().reduce_vartype(var_type)
-        denom_found, denom_remains = self.denom.reduce_vartype(var_type)
-        found = ""
-        remains = ""
-        if not denom_found or denom_found.t == CONST:
-            found = num_found
+
+        # If the denominator is not a Sum things are straightforward
+        if not isinstance(self.denom, Sum):
+            denom_found, denom_remains = self.denom.reduce_vartype(var_type)
+            if not denom_found or denom_found.t == CONST:
+                found = num_found
+            else:
+                # In case we did not find any variables of given type in the numerator
+                # declare a constant. We always have a remainder.
+                if not num_found:
+                    num_found = Symbol("", 1.0, CONST)
+                found = Fraction(num_found, denom_found)
+            if not denom_remains or denom_remains.t == CONST:
+                remains = num_remains
+            else:
+                remains = Fraction(num_remains, denom_remains)
+            return (found, remains)
+        # If we have a Sum in the denominator, all terms must be reduced by
+        # the same terms to make sense
         else:
-            found = Fraction(num_found, denom_found)
-        if not denom_remains or denom_remains.t == CONST:
-            remains = num_remains
-        else:
-            remains = Fraction(num_remains, denom_remains)
-        return (found, remains)
+            denom_found = None
+            remains = []
+            for m in self.denom.mbrs():
+                d_found, d_remains = m.reduce_vartype(var_type)
+                # If we've found a denom, but the new found is different from
+                # the one already found, terminate loop since it wouldn't make
+                # sense to reduce the fraction
+                if denom_found != None and str(d_found) != str(denom_found):
+                    # In case we did not find any variables of given type in the numerator
+                    # declare a constant. We always have a remainder.
+                    return (num_found, Fraction(num_remains, self.denom.recon()))
+
+                denom_found = d_found
+                remains.append(d_remains)
+            # If we have found a common denominator, but no found numerator,
+            # create a constant
+            if not denom_found or denom_found.t == CONST:
+                found = num_found
+            else:
+                # In case we did not find any variables of given type in the numerator
+                # declare a constant. We always have a remainder.
+                if not num_found:
+                    num_found = Symbol("", 1.0, CONST)
+                found = Fraction(num_found, denom_found)
+
+            # There is always a non-const remainder if denominator was a sum,
+            # so just return a fraction
+            remains = Fraction(num_remains, Sum(remains))
+            return (found, remains)
 
     def get_unique_vars(self, var_type):
         var = set()
