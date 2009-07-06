@@ -9,68 +9,88 @@ import sys
 from os import chdir, listdir, system, path, pardir, curdir
 from difflib import unified_diff
 
+# Modified by Marie Rognes (meg), 2009-07-05
+
+def check_forms(form_files, representation, exceptions):
+
+    num_forms = len(form_files)
+    forms_not_ok = []
+
+    for form_file in form_files:
+        if form_file in exceptions:
+            continue
+
+        print "Compiling and verifying form %s using %s representation ..." % (form_file, representation)
+        # Compile form
+        if system("python %s -fprecision=9 -s -r %s %s" % (path.join(pardir, "scripts", "ffc"), representation, form_file)) == 0:
+            # Compare against reference
+            code_file = form_file.split(".")[0] + ".h"
+            f0 = open(path.join(pardir, "test", "regression", "reference", representation, code_file), "r")
+            f1 = open(code_file, "r")
+            c0 = f0.read().split("\n")
+            c1 = f1.read().split("\n")
+            f0.close()
+            f1.close()
+            if c0 != c1:
+                print "*** Generated code does not match reference, diff follows"
+                diff = unified_diff(c0, c1)
+                for line in diff:
+                    print line
+                forms_not_ok += [form_file]
+        else:
+            forms_not_ok += [form_file]
+    return forms_not_ok
+
 # Check arguments, -nw specifices that we run in terminal mode
 if len(sys.argv) == 2 and sys.argv[1] == "-nw":
     nw = True
 else:
     nw = False
 
+# Check both representations
+representations = ["quadrature", "tensor"]
+
+
 # Check all in demo directory
 chdir(path.join(pardir, pardir, "demo"))
 form_files = [f for f in listdir(curdir) if f.endswith(".ufl")]
 form_files.sort()
-num_forms = len(form_files)
-num_forms_ok = 0
-forms_not_ok = []
 
-# Iterate over form files
-for form_file in form_files:
+# Some exceptions for the tensor representation
+exceptions = {"tensor": ["Biharmonic.ufl", "FunctionOperators.ufl", "PoissonDG.ufl", "QuadratureElement.ufl", "TensorWeightedPoisson.ufl"],
+              "quadrature" : []}
 
-    print "Compiling and verifying form %s..." % form_file
-
-    # Compile form
-    if system("python %s -fprecision=9 -s %s" % (path.join(pardir, "scripts", "ffc"), form_file)) == 0:
-
-        # Compare against reference
-        code_file = form_file.split(".")[0] + ".h"
-        f0 = open(path.join(pardir, "test", "regression", "reference", code_file), "r")
-        f1 = open(code_file, "r")
-        c0 = f0.read().split("\n")
-        c1 = f1.read().split("\n")
-        f0.close()
-        f1.close()
-        if c0 == c1:
-            num_forms_ok += 1
-        else:
-            print "*** Generated code does not match reference, diff follows"
-            diff = unified_diff(c0, c1)
-            for line in diff:
-                print line
-            forms_not_ok += [form_file]
+# Run regression tests for each representation
+forms_not_ok = {}
+for representation in representations:
+    print "Checking %s representation \n" % representation
+    forms_not_ok[representation] = check_forms(form_files, representation, exceptions[representation])
+    print ""
 
 # Print summary
-if num_forms_ok == num_forms:
-    print ""
-    print "Regression test completed for all %d forms" % num_forms_ok
-    print ""
-    print "OK"
-else:
-    print ""
-    print "*** Regression test failed for %d of %d forms:" % (num_forms - num_forms_ok, num_forms)
-    for form_file in forms_not_ok:
-        print "  " + form_file
+for representation in representations:
+    num_forms = len(form_files) - len(exceptions[representation])
+    num_forms_not_ok = len(forms_not_ok[representation])
+    print "Summary for %s representation:" % representation
+    if num_forms_not_ok == 0:
+        print "\tRegression test completed for all %d forms ... All OK!" % num_forms
+        print ""
+    else:
+        print "\t*** Regression test failed for %d of %d forms:" % (num_forms_not_ok, num_forms)
+        for form_file in forms_not_ok[representation]:
+            print "  " + form_file
 
-    # Generate script for viewing diffs in meld                                    \
-    file = open("../test/regression/viewdiff.sh", "w")
-    file.write("#!/bin/sh\n\n")
-    for form_file in forms_not_ok:
-        code_file = form_file.split(".")[0] + ".h"
-        if nw:
-            file.write("diff reference/%s ../../demo/%s\n" % (code_file, code_file))
-        else:
-            file.write("meld reference/%s ../../demo/%s\n" % (code_file, code_file))
-    file.close()
-    print "\nTo view diffs with meld, run the script viewdiff.sh"
+        # Generate script for viewing diffs in meld                                    \
+        file = open("../test/regression/viewdiff_%s.sh" % representation, "w")
+        file.write("#!/bin/sh\n\n")
+        for form_file in forms_not_ok[representation]:
+            code_file = form_file.split(".")[0] + ".h"
+            if nw:
+                file.write("diff reference/%s/%s ../../demo/%s\n" % (representation, code_file, code_file))
+            else:
+                file.write("meld reference/%s/%s ../../demo/%s\n" % (representation, code_file, code_file))
+        file.close()
+        print "\nTo view diffs with meld, run the script viewdiff_%s.sh" % representation
 
-    # Return error code if tests failed
-    sys.exit(True)
+# Return error code if tests failed
+sys.exit(True)
