@@ -39,6 +39,9 @@ file, it is convenient to install org-mode in Emacs.
   - num_entity_dofs()
   - tabulate_entity_dofs()
 
+* Missing support for UFL functionality
+  - Restrictions of function spaces to subdomains
+
 * Quad elements
   - Isoparametric mapping
 
