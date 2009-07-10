@@ -5,7 +5,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 from cppcode import tabulate_tensor_code, integral_types
 from ufl.common import tstr
-import sys, os, commands, pickle, numpy
+import sys, os, commands, pickle, numpy, shutil
 
 # Forms that don't work with tensor representation
 only_quadrature = ["FunctionOperators",
@@ -171,12 +171,16 @@ def main(args):
                 vals.append((integral, tabulate_tensor(representation, integral, integral_type, form + ".h"), form))
         values[representation + option] = vals
 
+    # Remove temporary directory
+    os.chdir("..")
+    shutil.rmtree("tmp")
+
     # Load or update reference values
-    if os.path.isfile("../reference.pickle"):
-        reference = pickle.load(open("../reference.pickle", "r"))
+    if os.path.isfile("reference.pickle"):
+        reference = pickle.load(open("reference.pickle", "r"))
     else:
         print "Unable to find reference values, storing current values."
-        pickle.dump(values["quadrature"], open("../reference.pickle", "w"))
+        pickle.dump(values["quadrature"], open("reference.pickle", "w"))
         return 0
 
     # Check results

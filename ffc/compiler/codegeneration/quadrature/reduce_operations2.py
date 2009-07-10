@@ -60,7 +60,9 @@ def generate_aux_constants(constant_decl, name, var_type, print_ops=False):
     sorted_list.sort()
     for s in sorted_list:
         c = s[1]
+#        debug("c orig: " + str(c))
         c = c.expand().reduce_ops()
+#        debug("c opt:  " + str(c))
         ops += c.ops()
         if print_ops:
             append(format["comment"]("Number of operations: %d" %c.ops()))
@@ -84,7 +86,10 @@ def optimise_code(expr, ip_consts, geo_consts, trans_set):
         return Symbol("", 0, CONST)
 
     # Reduce expression with respect to basis function variable
+    debug("\n\nexpr before exp: " + repr(expr))
     expr = expr.expand()
+    debug("\n\nexpr: " + str(expr))
+    debug("\n\nexpr: " + repr(expr))
     basis_expressions = expr.reduce_vartype(BASIS)
 
     # If we had a product instance we'll get a tuple back so embed in list
@@ -96,12 +101,37 @@ def optimise_code(expr, ip_consts, geo_consts, trans_set):
     for b in basis_expressions:
         # Get the basis and the ip expression
         basis, ip_expr = b
-        debug("basis\n" + str(basis))
+        debug("\nbasis\n" + str(basis))
         debug("ip_epxr\n" + str(ip_expr))
 
         # If we have no basis (like functionals) create a const
         if not basis:
             basis = Symbol("", 1, CONST)
+
+        if Product([basis, ip_expr], False).expand() != expr:
+
+            prod = Product([basis, ip_expr], False).expand()
+            print "prod == sum: ", isinstance(prod, Sum)
+            print "expr == sum: ", isinstance(expr, Sum)
+
+            print "prod.pos: ", prod.pos
+            print "expr.pos: ", expr.pos
+            print "expr.pos = prod.pos: ", expr.pos == prod.pos
+
+            print "prod.neg: ", prod.neg
+            print "expr.neg: ", expr.neg
+            print "expr.neg = prod.neg: ", expr.neg == prod.neg
+
+            print "equal: ", prod == expr
+
+##        if isinstance(other, Sum):
+##            return self.pos == other.pos and self.neg == other.neg
+
+            print "\nprod:    ", prod
+            print "\nexpr:    ", expr
+            print "\nbasis:   ", basis
+            print "\nip_expr: ", ip_expr
+            raise RuntimeError("Not equal")
 
         # If the ip expression doesn't contain any operations skip remainder
         if not ip_expr:
@@ -114,7 +144,6 @@ def optimise_code(expr, ip_consts, geo_consts, trans_set):
         # Reduce the ip expressions with respect to IP variables
         ip_expr = ip_expr.expand()
         ip_expressions = ip_expr.reduce_vartype(IP)
-        debug("ip_epxressions\n" + str(ip_expressions))
 
         # If we had a product instance we'll get a tuple back so embed in list
         if not isinstance(ip_expressions, list):
@@ -124,8 +153,8 @@ def optimise_code(expr, ip_consts, geo_consts, trans_set):
         # Loop ip expressions
         for ip in ip_expressions:
             ip_dec, geo = ip
-            debug("ip_dec: " + str(ip_dec))
-            debug("geo: " + str(geo))
+            debug("\nip_dec: " + str(ip_dec))
+            debug("\ngeo: " + str(geo))
             # Update transformation set with those values that might be
             # embedded in IP terms
             if ip_dec:
@@ -141,7 +170,7 @@ def optimise_code(expr, ip_consts, geo_consts, trans_set):
 
             # Only declare auxiliary geo terms if we can save operations            
             if geo.ops() > 0:
-                debug("\n\ngeo: " + str(geo))
+                debug("geo: " + str(geo))
                 # If the geo term is not in the dictionary append it
                 if not geo_consts.has_key(geo):
                     geo_consts[geo] = len(geo_consts)
@@ -302,6 +331,10 @@ class Symbol(object):
             return self.v == other.v # and self.t == other.t
         else:
             return False
+
+    def __ne__(self, other):
+        "Two symbols are not equal if equal is false"
+        return not self == other
 
     def __lt__(self, other):
         if isinstance(other, Symbol):
@@ -545,6 +578,13 @@ class Product(object):
         # If we get a symbol and it is present in the product list, construct
         # new list and remove the symbols
         elif isinstance(other, Symbol):
+
+            # If other is a const just divide the count
+            if other.t == CONST:
+                new = self.recon()
+                new.c /= other.c
+                return new
+
             if other in self.vs:
                 new_list = self.mbrs()
                 if other in new_list:
@@ -630,6 +670,10 @@ class Product(object):
             return self.vs == other.vs
         else:
             return False
+
+    def __ne__(self, other):
+        "Two products are not equal if equal is false"
+        return not self == other
 
     def __lt__(self, other):
         # Symbols are always less
@@ -736,7 +780,7 @@ class Product(object):
         # If we have just one member return it
         elif len(self.vs) == 1:
             new = self.vs[0].recon()
-            new.c = self.c
+            new.c *= self.c
             return new
         else:
             # This should never happen
@@ -1053,6 +1097,10 @@ class Sum(object):
         else:
             return False
 
+    def __ne__(self, other):
+        "Two sums are not equal if equal is false"
+        return not self == other
+
     def __lt__(self, other):
         # Symbols and products are always less
         if isinstance(other, (Symbol, Product)):
@@ -1178,8 +1226,16 @@ class Sum(object):
             not_reduce.c *= new_expr.c
             not_reduce = group_fractions(not_reduce)
             new = Sum(new_sums + [not_reduce])
+            if new.remove_nested().expand() != self:
+                print "self: ", self
+                print "new:  ", new.remove_nested().expand()
+                raise RuntimeError("here1")
             return new.remove_nested()
         else:
+            if Sum(new_sums, False).remove_nested().expand() != self:
+                print "self: ", self
+                print "new:  ", Sum(new_sums, False).remove_nested().expand()
+                raise RuntimeError("here2")
             return Sum(new_sums).remove_nested()
 
 
@@ -1376,6 +1432,14 @@ class Fraction(object):
             self.num.c = 1
             self.denom.c = 1
 
+#        print "num: ", repr(numerator)
+#        print "den: ", denominator
+
+#        print "selfnum: ", repr(self.num)
+#        print "selfden: ", self.denom
+#        print repr(self)
+#        print str(self)
+
     def __repr__(self):
         "Representation for debugging"
 
@@ -1495,6 +1559,10 @@ class Fraction(object):
         else:
             return False
 
+    def __ne__(self, other):
+        "Two fractions are not equal if equal is false"
+        return not self == other
+
     def __lt__(self, other):
         if isinstance(other, Fraction):
             if self.num < other.num:
@@ -1609,7 +1677,7 @@ class Fraction(object):
             return Symbol("", 0, CONST)
         # Reconstruct the numerator and denominator
         num = self.num.recon()
-        num.c = self.c
+        num.c *= self.c
         denom = self.denom.recon()
         # Special handling if the denominator is constant
         # Just return the numerator because the factor has been handled during
@@ -1658,8 +1726,13 @@ class Fraction(object):
 
         # Remove nested for numerator and denominator
         num = self.num.remove_nested()
-        num.c = self.c
+#        print "num nest: ", num
+        num.c *= self.c
         denom = self.denom.remove_nested()
+
+#        print "self nest: ", repr(self)
+#        print "num nest: ", num
+#        print "denom nest: ", denom
 
         # If both the numerator and denominator are fractions, create new
         # numerator and denominator and remove the nested products expressions

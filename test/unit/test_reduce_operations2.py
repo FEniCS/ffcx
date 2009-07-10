@@ -196,42 +196,48 @@ class Tests(unittest.TestCase):
         y = Symbol("y", 4.5, GEO)
         z = Symbol("z", -8, GEO)
         zp= Symbol("z", 4, GEO)
-        c = Symbol("", 4, CONST)
+        c0 = Symbol("", 4, CONST)
+        c1 = Symbol("", 16, CONST)
         x0 = Symbol("x", 0, GEO)
         xp = Symbol("x",1, GEO)
         yp = Symbol("y",1, GEO)
 
-        s0 = Sum([c, x], False)
-        p0 = Product([c, x], False)
+        s0 = Sum([c0, x], False)
+        s1 = Sum([x, x], False)
+        p0 = Product([c0, x], False)
         p1 = Product([y, x], False)
 
         f0 = Fraction(y, x, False)
         f1 = Fraction(z, zp, False)
         f2 = Fraction(x0, y, False)
-        f3 = Fraction(z, c, False)
-        f4 = Fraction(c, x, False)
+        f3 = Fraction(z, c0, False)
+        f4 = Fraction(c0, x, False)
         f5 = Fraction(s0, p0, False)
         f6 = Fraction(p0, s0, False)
         f7 = Fraction(p0, f0, False)
         f8 = Fraction(xp, yp, False)
         f9 = Fraction(f8, p1, False)
+        f10= Fraction(s1, c1, False)
+
 #        print "\nTesting Fractions"
 #        print "x:  '%s'" %x
 #        print "y:  '%s'" %y
 #        print "z:  '%s'" %z
 #        print "zp: '%s'" %zp
-#        print "c:  '%s'" %c
+#        print "c0:  '%s'" %c0
+#        print "c1:  '%s'" %c1
 #        print "x0: '%s'" %x0
 #        print "f0 = frac(%s, %s) = '%s'" %(y, x, f0)
 #        print "f1 = frac(%s, %s) = '%s'" %(z, zp, f1)
 #        print "f2 = frac(%s, %s) = '%s'" %(x0, y, f2)
-#        print "f3 = frac(%s, %s) = '%s'" %(z, c, f3)
-#        print "f4 = frac(%s, %s) = '%s'" %(c, x, f4)
+#        print "f3 = frac(%s, %s) = '%s'" %(z, c0, f3)
+#        print "f4 = frac(%s, %s) = '%s'" %(c0, x, f4)
 #        print "f5 = frac(%s, %s) = '%s'" %(s0, p0, f5)
 #        print "f6 = frac(%s, %s) = '%s'" %(p0, s0, f6)
 #        print "f7 = frac(%s, %s) = '%s'" %(p0, f0, f7)
 #        print "f8 = frac(%s, %s) = '%s'" %(xp, yp, f8)
 #        print "f9 = frac(%s, %s) = '%s'" %(f8, p1, f9)
+#        print "f10= frac(%s, %s) = '%s'" %(s1, c1, f10)
 
         self.assertEqual(f0.__repr__(), "Fraction(Symbol('y', 2.2500, GEO), Symbol('x', 1.0000, GEO))")
         self.assertEqual(str(f0), "2.25*y/x")
@@ -245,6 +251,7 @@ class Tests(unittest.TestCase):
         self.assertEqual(str(f7), '3.55555555555556*x/(y/x)')
         self.assertEqual(str(f8), 'x/y')
         self.assertEqual(str(f9), '0.111111111111111*(x/y)/(x*y)')
+        self.assertEqual(str(f10), '0.25*x')
 
         self.assertEqual(f0.ops(), 2)
         self.assertEqual(f1.ops(), 1)
@@ -256,6 +263,7 @@ class Tests(unittest.TestCase):
         self.assertEqual(f7.ops(), 3)
         self.assertEqual(f8.ops(), 1)
         self.assertEqual(f9.ops(), 4)
+        self.assertEqual(f10.ops(), 1)
 
     def testMixedSymbols(self):
 
@@ -451,6 +459,8 @@ class Tests(unittest.TestCase):
         s2 = Symbol("z", 5, IP)
         s3 = Symbol("z", -4, GEO)
         s4 = Symbol("w", 0, GEO)
+        c0 = Symbol("", 2, CONST)
+        c1 = Symbol("", 1, CONST)
 
         x = 2.2
         y = -0.2
@@ -462,6 +472,7 @@ class Tests(unittest.TestCase):
 #        print "s2: '%s'" %s2
 #        print "s3: '%s'" %s3
 #        print "s4: '%s'" %s4
+
         P0 = Product([s2, s1], False)
         P1 = Product([P0, s0], False)
         P2 = Product([P1, s1, P0], False)
@@ -477,7 +488,6 @@ class Tests(unittest.TestCase):
         F2 = Fraction(F1, F0, False)
         F3 = Fraction(F1, F2, False)
         PF = Product([F0, F1], False)
-        PF.expand()
 
         e0 = Product([P3, F2], False)
         e1 = Product([S3, P2], False)
@@ -494,6 +504,7 @@ class Tests(unittest.TestCase):
         e7 = Fraction(S3, P2, False)
         e8 = Fraction(F3, S1, False)
         e9 = Fraction(S0, s0, False)
+        e9 = Fraction(S0, s0, False)
 
         P00 = Product([Symbol("Jinv_00", 1, GEO)]*2, False)
         P01 = Product([Symbol("Jinv_01", 1, GEO)]*2, False)
@@ -502,9 +513,8 @@ class Tests(unittest.TestCase):
         PS0 = Product([Symbol("Jinv_22", 1, GEO), Sum([P00, P01], False)])
         PS1 = Product([Symbol("Jinv_02", -1, GEO), Sum([P20, P21], False)])
         SP = Sum([PS0, PS1], False)
-        SPx = SP.expand()
 
-
+        E0 = Fraction(Sum([Product([c0])]), c1)
 
         ex0 = e0.expand()
         ex1 = e1.expand()
@@ -518,6 +528,9 @@ class Tests(unittest.TestCase):
         ex7 = e7.expand()
         ex8 = e8.expand()
         ex9 = e9.expand()
+        PF.expand()
+        SPx = SP.expand()
+        Ex0 = E0.expand()
 #        print "\ne0: '%s'" %e0
 #        print "ex0: '%s'" %ex0
 #        print "\ne1: '%s'" %e1
@@ -544,8 +557,10 @@ class Tests(unittest.TestCase):
 #        print "ex9: '%s'" %ex9
 #        print "\nSP: '%s'" %SP
 #        print "SPx: '%s'" %SPx
+#        print "\nE0: '%s'" %E0
+#        print "Ex0: '%s'" %Ex0
 
-        Jinv_00, Jinv_01, Jinv_02, Jinv_20, Jinv_22, Jinv_21 = [1,2,3,4,5,6]
+        Jinv_00, Jinv_01, Jinv_10, Jinv_02, Jinv_20, Jinv_22, Jinv_21, W1, det = [1,2,3,4,5,6,7,8,9]
 
         self.assertAlmostEqual(eval(str(e0)), eval(str(e0.remove_nested())))
         self.assertAlmostEqual(eval(str(e0)), eval(str(ex0)))
@@ -559,6 +574,7 @@ class Tests(unittest.TestCase):
         self.assertAlmostEqual(eval(str(e8)), eval(str(ex8)))
         self.assertAlmostEqual(eval(str(e9)), eval(str(ex9)))
         self.assertAlmostEqual(eval(str(SP)), eval(str(SPx)))
+        self.assertAlmostEqual(eval(str(E0)), eval(str(Ex0)))
 
         self.assertEqual(e0.ops(), 15)
         self.assertEqual(ex0.ops(), 9)
@@ -580,6 +596,7 @@ class Tests(unittest.TestCase):
         self.assertEqual(ex8.ops(), 8)
         self.assertEqual(e9.ops(), 5)
         self.assertEqual(ex9.ops(), 5)
+        self.assertEqual(Ex0.ops(), 0)
 
     def testReduceVarType(self):
 
