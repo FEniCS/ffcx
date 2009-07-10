@@ -108,30 +108,27 @@ def optimise_code(expr, ip_consts, geo_consts, trans_set):
         if not basis:
             basis = Symbol("", 1, CONST)
 
-        if Product([basis, ip_expr], False).expand() != expr:
+#        if Product([basis, ip_expr], False).expand() != expr:
 
-            prod = Product([basis, ip_expr], False).expand()
-            print "prod == sum: ", isinstance(prod, Sum)
-            print "expr == sum: ", isinstance(expr, Sum)
+#            prod = Product([basis, ip_expr], False).expand()
+#            print "prod == sum: ", isinstance(prod, Sum)
+#            print "expr == sum: ", isinstance(expr, Sum)
 
-            print "prod.pos: ", prod.pos
-            print "expr.pos: ", expr.pos
-            print "expr.pos = prod.pos: ", expr.pos == prod.pos
+#            print "prod.pos: ", prod.pos
+#            print "expr.pos: ", expr.pos
+#            print "expr.pos = prod.pos: ", expr.pos == prod.pos
 
-            print "prod.neg: ", prod.neg
-            print "expr.neg: ", expr.neg
-            print "expr.neg = prod.neg: ", expr.neg == prod.neg
+#            print "prod.neg: ", prod.neg
+#            print "expr.neg: ", expr.neg
+#            print "expr.neg = prod.neg: ", expr.neg == prod.neg
 
-            print "equal: ", prod == expr
+#            print "equal: ", prod == expr
 
-##        if isinstance(other, Sum):
-##            return self.pos == other.pos and self.neg == other.neg
-
-            print "\nprod:    ", prod
-            print "\nexpr:    ", expr
-            print "\nbasis:   ", basis
-            print "\nip_expr: ", ip_expr
-            raise RuntimeError("Not equal")
+#            print "\nprod:    ", prod
+#            print "\nexpr:    ", expr
+#            print "\nbasis:   ", basis
+#            print "\nip_expr: ", ip_expr
+#            raise RuntimeError("Not equal")
 
         # If the ip expression doesn't contain any operations skip remainder
         if not ip_expr:
@@ -1226,16 +1223,16 @@ class Sum(object):
             not_reduce.c *= new_expr.c
             not_reduce = group_fractions(not_reduce)
             new = Sum(new_sums + [not_reduce])
-            if new.remove_nested().expand() != self:
-                print "self: ", self
-                print "new:  ", new.remove_nested().expand()
-                raise RuntimeError("here1")
+#            if new.remove_nested().expand() != self:
+#                print "self: ", self
+#                print "new:  ", new.remove_nested().expand()
+#                raise RuntimeError("here1")
             return new.remove_nested()
         else:
-            if Sum(new_sums, False).remove_nested().expand() != self:
-                print "self: ", self
-                print "new:  ", Sum(new_sums, False).remove_nested().expand()
-                raise RuntimeError("here2")
+#            if Sum(new_sums, False).remove_nested().expand() != self:
+#                print "self: ", self
+#                print "new:  ", Sum(new_sums, False).remove_nested().expand()
+#                raise RuntimeError("here2")
             return Sum(new_sums).remove_nested()
 
 
@@ -1431,14 +1428,6 @@ class Fraction(object):
             self.t = min([self.num.t, self.denom.t])
             self.num.c = 1
             self.denom.c = 1
-
-#        print "num: ", repr(numerator)
-#        print "den: ", denominator
-
-#        print "selfnum: ", repr(self.num)
-#        print "selfden: ", self.denom
-#        print repr(self)
-#        print str(self)
 
     def __repr__(self):
         "Representation for debugging"
@@ -1726,13 +1715,8 @@ class Fraction(object):
 
         # Remove nested for numerator and denominator
         num = self.num.remove_nested()
-#        print "num nest: ", num
         num.c *= self.c
         denom = self.denom.remove_nested()
-
-#        print "self nest: ", repr(self)
-#        print "num nest: ", num
-#        print "denom nest: ", denom
 
         # If both the numerator and denominator are fractions, create new
         # numerator and denominator and remove the nested products expressions

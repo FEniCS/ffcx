@@ -89,15 +89,6 @@ class QuadratureTransformer2(QuadratureTransformer):
             elif op:
                 not_permute.append(op[()])
 
-#        test = permute[0]
-#        trial = permute[1]
-#        print "\nTEST:"
-#        for k,v in test.items():
-#            print k,v
-#        print "\nTRIAL:"
-#        for k,v in trial.items():
-#            print k,v
-
         # Create permutations
         # TODO: After all indices have been expanded I don't think that we'll
         # ever get more than a list of entries and values
@@ -841,10 +832,8 @@ def generate_code(integrand, transformer, Indent, format, interior):
             continue
         # Multiply by weight and determinant, add both to set of used weights and transforms
         value = Product([val, Symbol(weight, 1, ACCESS), Symbol(format_scale_factor, 1, GEO)])
-
 #        print "\n\nValue: ", value
 #        print "key: ", key
-
         value = optimise_code(value, ip_consts, transformer.geo_consts, transformer.trans_set)
 
         # Only continue if value is not zero
