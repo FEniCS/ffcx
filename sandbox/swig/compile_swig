@@ -1,0 +1,7 @@
+#!/bin/bash
+swig -python -c++ optimise.i
+gcc -c -O3 optimise.cpp
+gcc -c -O3 optimise_wrap.cxx -I/usr/include/python2.6
+g++ -shared -O3 optimise_wrap.o optimise.o -o _optimise.so
+
+
