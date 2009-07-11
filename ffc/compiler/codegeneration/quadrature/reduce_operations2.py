@@ -6,8 +6,16 @@ __copyright__ = "Copyright (C) 2009 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
 # FFC common modules
-from ffc.common.log import debug, error
+from ffc.common.log import debug, error, info
 from copy import deepcopy
+
+# Use psyco if it is available
+try:
+    import psyco
+    psyco.full()
+except:
+    info("Did not find the Python module 'psyco', consider installing it if you need to speed up compilation.")
+    pass
 
 BASIS = 0
 IP  = 1
