@@ -1161,7 +1161,11 @@ Symbol("G2", 1, GEO) ])])
                           ])
                                                        
 
+        start = time.time()
         exprx = exprn.expand()
+        print
+        print "ElasWeighted: time, expand(): ", time.time() - start
+
         exprr = exprn.expand().reduce_ops()
 
         ip_consts = {}
@@ -1245,7 +1249,11 @@ Symbol("G2", 1, GEO) ])])
 
 
 
+        start = time.time()
         exprx = expr.expand()
+        print
+        print "ElasWeighted2: time, expand():", time.time() - start
+
         exprr = exprx.reduce_ops()
 
         ip_consts = {}
