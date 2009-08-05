@@ -40,7 +40,7 @@ class FloatValue(object):
         "Simple string representation"
         return format["floating point"](self.val)
 
-    # Hash (for lookup in {} and [])
+    # Hash (for lookup in {})
     def __hash__(self):
         "Use repr() to compute hash."
         if self._hash:
@@ -187,8 +187,14 @@ class FloatValue(object):
         """Determine the number of times all variables occurs in the expression.
         Returns a dictionary of variables and the number of times they occur."""
 
-        # There is only one foat value
+        # There is only one float value (if it is not -1 or 1)
+        if abs(self.val) == 1.0:
+            return {}
         return {self:1}
+
+    def reduce_var(self, var):
+        "Reduce the float value by another variable through division"
+        return self/var
 
 #    def get_all_vars(self):
 #        return [self]
@@ -198,11 +204,6 @@ class FloatValue(object):
 #        if self == var:
 #            return 1
 #        return 0
-
-#    def reduce_var(self, var):
-#        # Reduce the variable by other variable through division
-#        return self/var
-
 
 from symbol_obj     import Symbol
 from product_obj    import Product

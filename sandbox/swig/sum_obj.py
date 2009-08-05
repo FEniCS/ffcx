@@ -105,7 +105,7 @@ class Sum(object):
             return format["grouping"](s)
         return s
 
-    # Hash (for lookup in {} and [])
+    # Hash (for lookup in {})
     def __hash__(self):
         "Use repr as hash"
         if self._hash:
@@ -349,18 +349,46 @@ class Sum(object):
             update(v.get_unique_vars(var_type))
         return var
 
+    def get_var_occurrences(self):
+        """Determine the number of minimum number of times all variables occurs
+        in the expression. Returns a dictionary of variables and the number of
+        times they occur. x*x + x returns {x:1}, x + y returns {}"""
+        # NOTE: This function is only used if the numerator of a Fraction is a Sum
+
+        # Get occurrences in first expression
+        d0 = (self.pos + self.neg)[0].get_var_occurrences()
+        for var in (self.pos + self.neg)[1:]:
+            # Get the occurrences
+            d = var.get_var_occurrences()
+            # Delete those variables in d0 that are not in d
+            for k, v in d0.items():
+                if not k in d:
+                    del d0[k]
+            # Set the number of occurrences equal to the smallest number
+            for k, v in d.items():
+                if k in d0:
+                    d0[k] = min(d0[k], v)
+        return d0
+
     def reduce_ops(self):
         "Reduce the number of operations needed to evaluate the sum"
 
         # NOTE: Assuming that sum has already been expanded
         # TODO: Add test for this and handle case if it is not
 
-        # TODO: This looks expensive, can it be optimised?
+        # TODO: The entire function looks expensive, can it be optimised?
 
+        # TODO: It is not necessary to create a new Sum if we do not have more
+        # than one Fraction
+        # First group all fractions in the sum
+        new_sum = group_fractions(self)
+#        print "\nnew_sum: ", new_sum
+        if not isinstance(new_sum, Sum):
+            return new_sum.reduce_ops()
         # Loop all variables of the sum and collect the number of common
         # variables that can be factored out.
         common_vars = {}
-        for var in self.pos + self.neg:
+        for var in new_sum.pos + new_sum.neg:
 
             # Get dictonary of occurrences
             # TODO: Don't save d, group with following line
@@ -373,83 +401,176 @@ class Sum(object):
                 else:
                     common_vars[k] = [(v, var)]
 
-        print "\n\nvars: ", common_vars
-
         # Determine the maximum reduction for each variable
-        reduction_vars = []
-        do_reduce_terms = []
-        max_red = 0
-        for k,v in common_vars.items():
-            print k, v
+        # sorted as: {(x*x*y, x*y*z, 2*y):[2, [y]]}
+        terms_reductions = {}
+        for k, v in common_vars.items():
             # If the number of expressions that can be reduced is only one
             # there is nothing to be done
             if len(v) > 1:
-                # Compute possible reduction
-                reduc = len(v)
-                occur = [t[0] for t in v]
-                min_occur = min(occur)
-                max_occur = max(occur)
+                # TODO: Is there a better way to compute the reduction gain
+                # and the number of occurrences we should remove?
 
-                if reduc > max_red:
-                    max_red = reduc
-                    reduction_vars = [k]
-                    do_reduce_terms = v
-                # If this reducing by this variable reduces the number of
-                # operations similarly, check if we can reduce all at once.
-                elif reduc == max_red:
-                    # TODO: Do we need to do some kind or sorting here?
-                    if v == do_reduce_terms:
-                        reduction_vars.append(k)
+                # Get the list of number of occurences of 'k' in expressions
+                # in 'v'
+                occurrences = [t[0] for t in v]
+                # Extract the terms of v
+                terms = [t[1] for t in v]
+
+                # Determine the favorable number of occurences and an estimate
+                # of the maximum reduction for current variable
+                fav_occur = 0
+                reduc = 0
+                for i in set(occurrences):
+                    # Get number of terms that has a number of occcurences equal
+                    # to or higher than the current number
+                    num_terms = len([o for o in occurrences if o >= i])
+
+                    # An estimate of the reduction in operations is:
+                    # (number_of_terms - 1) * number_occurrences
+                    new_reduc = (num_terms-1)*i
+                    if new_reduc > reduc:
+                        reduc = new_reduc
+                        fav_occur = i
+
+                # We need to reduce the expression with the favorable number of
+                # occurrences of the current variable
+                red_vars = [k]*fav_occur
+
+                # If the list of terms is already present in the dictionary,
+                # add the reduction count and the variables
+                if tuple(terms) in terms_reductions:
+                    terms_reductions[tuple(terms)][0] += reduc
+                    terms_reductions[tuple(terms)][1] += red_vars
+                else:
+                    terms_reductions[tuple(terms)] = [reduc, red_vars]
             else:
                 continue
 
-        if reduction_vars:
-            print "reduction vars: ", reduction_vars
+        if terms_reductions:
+#            print "terms_reductions"
+#            for k, v in terms_reductions.items():
+#                print Sum(k)
+#                print v[0], v[1]
 
-            # Extract terms from tuples
-            do_reduce_terms = [v[1] for v in do_reduce_terms]
-            print "do_reduce_terms: ", do_reduce_terms
+            # Invert dictionary of terms
+            reductions_terms = dict([((v[0], tuple(v[1])), k) for k, v in terms_reductions.items()])
 
-            # Create variable that we will use to reduce the terms
-            reduction_var = None
-            if len(reduction_vars) > 1:
-                reduction_var = Product(reduction_vars)
-            else:
-                reduction_var = reduction_vars[0]
+            # Create a sorted list of those variables that give the highest
+            # reduction
+            sorted_reduc_var = [k for k, v in reductions_terms.items()]
+            sorted_reduc_var.sort(lambda x, y: cmp(x[0], y[0]))
+            sorted_reduc_var.reverse()
 
-            # Reduce all terms that need to be reduced
-            reduced_terms = [v/reduction_var for v in do_reduce_terms]
+            # Create a new dictionary of terms that should be reduced, if some
+            # terms overlap, only pick the one which give the highest reduction to
+            # ensure that a*x*x + b*x*x + x*x*y + 2*y -> x*x*(a + b + y) + 2*y NOT 
+            # x*x*(a + b) + y*(2 + x*x)
+            reduction_vars = {}
+            for var in sorted_reduc_var:
+                if not overlap(reductions_terms[var], reduction_vars):
+                    reduction_vars[var[1]] = reductions_terms[var]
 
-            # Create reduced expression
-            reduced_expr = None
-            if len(reduced_terms) > 1:
-                # Try to reduce the reduced terms further
-                reduced_expr = Product([reduction_var, Sum(reduced_terms).reduce_ops()])
-            else:
-                reduced_expr = Product(reduction_var, reduced_terms[0])
+            # Reduce each set of terms with appropriate variables
+            all_reduced_terms = []
+            reduced_expressions = []
+            for reduc_var, terms in reduction_vars.items():
+#                print "reduc_var: ", reduc_var
+#                print "terms: ", terms
+                # Add current terms to list of all variables that have been reduced
+                all_reduced_terms += list(terms)
+
+                # Create variable that we will use to reduce the terms
+                reduction_var = None
+                if len(reduc_var) > 1:
+                    reduction_var = Product(reduc_var)
+                else:
+                    reduction_var = reduc_var[0]
+
+                # Reduce all terms that need to be reduced
+                reduced_terms = [t.reduce_var(reduction_var) for t in terms]
+
+                # Create reduced expression
+                reduced_expr = None
+                if len(reduced_terms) > 1:
+                    # Try to reduce the reduced terms further
+#                    print "recursion on reduced terms"
+                    reduced_expr = Product([reduction_var, Sum(reduced_terms).reduce_ops()])
+#                    reduced_expr = Product([reduction_var, Sum(reduced_terms)])
+                else:
+                    reduced_expr = Product(reduction_var, reduced_terms[0])
+
+                # Add reduced expression to list of reduced expressions
+                reduced_expressions.append(reduced_expr)
 
             # Create list of terms that should not be reduced
             dont_reduce_terms = []
-            for v in self.pos + self.neg:
-                if not v in do_reduce_terms:
+            for v in new_sum.pos + new_sum.neg:
+                if not v in all_reduced_terms:
                     dont_reduce_terms.append(v)
+#            print "dont reduce: ", dont_reduce_terms
+#            print "reduced expr: ", reduced_expressions
 
-            # Create expression that is not reduced
+            # Create expression from terms that was not reduced
             not_reduced_expr = None
             if dont_reduce_terms and len(dont_reduce_terms) > 1:
-                # Try to reduce the remaining terms that was not reduced at first
+#                print "recursion on not reduced terms"
+                # Try to reduce the remaining terms that were not reduced at first
+#                print "expr: ", Sum(dont_reduce_terms)
                 not_reduced_expr = Sum(dont_reduce_terms).reduce_ops()
             elif dont_reduce_terms:
                 not_reduced_expr = dont_reduce_terms[0]
 
             # Create return expression
             if not_reduced_expr:
-                return Sum([reduced_expr, not_reduced_expr])
-            return reduced_expr
+                return Sum(reduced_expressions + [not_reduced_expr])
+            elif len(reduced_expressions) > 1:
+                return Sum(reduced_expressions)
+            return reduced_expressions[0]
 
         # Return self if we don't have any variables for which we can reduce
         # the sum
         return self
+
+def overlap(l, d):
+    "Check if a member in list l is in the value (list) of dictionary d"
+    for m in l:
+        for k, v in d.items():
+            if m in v:
+                return True
+    return False
+
+def group_fractions(expr):
+    "Group Fractions in a Sum: 2/x + y/x -> (2 + y)/x"
+    if not isinstance(expr, Sum):
+        return expr
+
+    # Loop variables and group those with common denominator
+    not_frac = []
+    fracs = {}
+    for v in expr.pos + expr.neg:
+        if isinstance(v, Fraction):
+            if v.denom in fracs:
+                fracs[v.denom][1].append(v.num)
+                fracs[v.denom][0] += 1
+            else:
+                fracs[v.denom] = [1, [v.num], v]
+            continue
+        not_frac.append(v)
+    if not fracs:
+        return expr
+
+    for k, v in fracs.items():
+        if v[0] > 1:
+            # TODO: Is it possible to avoid expanding the Sum?
+            # I think we have to because x/a + 2*x/a -> 3*x/a
+            not_frac.append(Fraction(Sum(v[1]).expand(), k))
+        else:
+            not_frac.append(v[2])
+
+    if len(not_frac) > 1:
+        return Sum(not_frac)
+    return not_frac[0]
 
 from floatvalue_obj import FloatValue
 from symbol_obj     import Symbol

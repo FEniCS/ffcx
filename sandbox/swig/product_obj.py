@@ -98,7 +98,7 @@ class Product(object):
             return neg + format["multiply"]([str(v) for v in self.vrs[1:]])
         return format["multiply"]([str(v) for v in self.vrs])
 
-    # Hash (for lookup in {} and [])
+    # Hash (for lookup in {})
     def __hash__(self):
         "Use repr as hash"
         if self._hash:
@@ -385,16 +385,14 @@ class Product(object):
                 d[v] = 1
         return d
 
+    def reduce_var(self, var):
+        "Reduce the product by another variable through division"
+        return self/var
 
 #    def num_var(self, var):
 #        # The number of variables with a given name is just the sum of all
 #        # occurrences of that symbol in the product
 #        return sum([v == var for v in self.vrs])
-
-
-#    def reduce_var(self, var):
-#        # Reduce by another variable by division
-#        return self/var
 
 #    def get_all_vars(self):
 #        return self.vrs

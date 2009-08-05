@@ -54,7 +54,7 @@ class Symbol(object):
         "Simple string representation"
         return self.v
 
-    # Hash (for lookup in {} and [])
+    # Hash (for lookup in {})
     def __hash__(self):
         "Use repr as hash"
         if self._hash:
@@ -256,12 +256,12 @@ class Symbol(object):
         # There is only one symbol
         return {self:1}
 
+    def reduce_var(self, var):
+        "Reduce the symbol by another variable through division"
+        return self/var
+
 #    def get_all_vars(self):
 #        return [self]
-
-#    def reduce_var(self, var):
-#        # Reduce the variable by other variable through division
-#        return self/var
 
 #    def num_var(self, var_name):
 #        # Get the number of varibles with given name

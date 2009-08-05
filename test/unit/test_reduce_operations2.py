@@ -199,8 +199,8 @@ class Tests(unittest.TestCase):
         c0 = Symbol("", 4, CONST)
         c1 = Symbol("", 16, CONST)
         x0 = Symbol("x", 0, GEO)
-        xp = Symbol("x",1, GEO)
-        yp = Symbol("y",1, GEO)
+        xp = Symbol("x", 1,  GEO)
+        yp = Symbol("y", 1,  GEO)
 
         s0 = Sum([c0, x], False)
         s1 = Sum([x, x], False)
@@ -806,40 +806,261 @@ class Tests(unittest.TestCase):
 #        self.assertEqual(ex9.ops(), 10)
 #        self.assertEqual(er9.ops(), 8)
 
-    def testExpandOperationsDGElastoDyn(self):
-        exp = Product([
+
+    def testDGElastoDyn(self):
+        expr = Product([
                        Sum([
-                            Symbol("F0",1,IP),
+                            Symbol("F0", 1, IP),
                             Symbol("F1",-1,IP)
                           ]),
                        Fraction(
-                                 Symbol("w4",1,GEO),
-                                 Symbol("w3",1,GEO)
+                                 Symbol("w4", 1, GEO),
+                                 Symbol("w3", 1, GEO)
                                 ),
                        Fraction(
                                  Product([
-                                          Symbol("w2",1,GEO),
-                                          Symbol("w5",1,GEO)
+                                          Symbol("w2", 1, GEO),
+                                          Symbol("w5", 1, GEO)
                                          ]),
-                                 Symbol("w6",1,GEO)
+                                 Symbol("w6", 1, GEO)
                                 )
                       ])
 
-#        print "exp: ", exp
-#        print "exp.ops(): ", exp.ops()
-        expx = exp.expand()
-#        print "exp: ", expx
-#        print "expx.ops(): ", expx.ops()
+        print
+        start = time.time()
+        expr_rem = expr.remove_nested()
+        print "DGElastoDyn: time, remove_nested():                  ", time.time() - start
+
+        start = time.time()
+        expr_exp = expr.expand()
+        print "DGElastoDyn: time, expand() (incl. remove_nested()): ", time.time() - start
+
+        start = time.time()
+        expr_red = expr_exp.reduce_ops()
+        print "DGElastoDyn: time, reduce_ops():                     ", time.time() - start
+
+        print "expr.ops():     ", expr.ops()
+        print "expr_exp.ops(): ", expr_exp.ops()
+        print "expr_red.ops(): ", expr_red.ops()
+
+#        print "expr:\n", expr
+#        print "exp:\n", expr_exp
+#        print "red:\n", expr_red
 
         F0, F1, w2, w3, w4, w5, w6 = (3.12, -8.1, -45.3, 17.5, 2.2, 5.3, 9.145)
+        self.assertAlmostEqual(eval(str(expr)), eval(str(expr_rem)))
+        self.assertAlmostEqual(eval(str(expr)), eval(str(expr_exp)))
+        self.assertAlmostEqual(eval(str(expr)), eval(str(expr_red)))
 
-        self.assertAlmostEqual(eval(str(exp)), eval(str(expx)))
+    def testReduceGIP(self):
+
+        expr = Sum([
+                    Product([
+                              Symbol("F17", 1, IP), Symbol("F17", 1, IP), Symbol("F18", 1, IP), Symbol("F18", 1, IP),
+                              Symbol("F20", 1, IP), Symbol("F3", 1, IP), Symbol("W9", 1, IP), Symbol("G0", 1, GEO)
+                            ]),
+                    Product([
+                              Symbol("F11", 1, IP), Symbol("F11", 1, IP), Symbol("F13", 1, IP), Symbol("F13", 1, IP),
+                              Symbol("F20", 1, IP), Symbol("F3", 1, IP), Symbol("W9", 1, IP), Symbol("G1", 1, GEO)
+                            ]),
+                    Product([
+                              Symbol("F11", 1, IP), Symbol("F11", 1, IP), Symbol("F12", 1, IP), Symbol("F13", 1, IP),
+                              Symbol("F20", 1, IP), Symbol("F3", 1, IP), Symbol("W9", 1, IP), Symbol("G2", 1, GEO)
+                            ]),
+                    Product([
+                              Symbol("F10", 1, IP), Symbol("F11", 1, IP), Symbol("F12", 1, IP), Symbol("F20", 1, IP),
+                              Symbol("F3", 1, IP), Symbol("F8", 1, IP), Symbol("W9", 1, IP), Symbol("G2", 1, GEO)
+                            ]),
+                    Product([
+                              Symbol("F17", 1, IP), Symbol("F18", 1, IP), Symbol("F20", 1, IP), Symbol("F3", 1, IP),
+                              Symbol("F8", 1, IP), Symbol("F9", 1, IP), Symbol("W9", 1, IP), Symbol("G3", 1, GEO)
+                            ]),
+                    Product([
+                              Symbol("F10", 1, IP), Symbol("F17", 1, IP), Symbol("F18", 1, IP), Symbol("F20", 1, IP),
+                              Symbol("F8", 1, IP), Symbol("W9", 1, IP), Symbol("G4", 1, GEO)
+                            ]),
+                    Product([
+                              Symbol("F10", 1, IP), Symbol("F20", 1, IP), Symbol("F8", 1, IP), Symbol("F8", 1, IP),
+                              Symbol("F9", 1, IP), Symbol("W9", 1, IP), Symbol("G4", 1, GEO)
+                            ]),
+                    Product([
+                              Symbol("F11", 1, IP), Symbol("F13", 1, IP), Symbol("F17", 1, IP), Symbol("F18", 1, IP),
+                              Symbol("F20", 1, IP), Symbol("F3", 1, IP), Symbol("W9", 1, IP), Symbol("G2", 1, GEO)
+                            ]),
+                    Product([
+                              Symbol("F20", 1, IP), Symbol("F8", 1, IP), Symbol("F8", 1, IP), Symbol("F9", 1, IP),
+                              Symbol("F9", 1, IP), Symbol("W9", 1, IP), Symbol("G5", 1, GEO)
+                            ]),
+                    Product([
+                              Symbol("F11", 1, IP), Symbol("F12", 1, IP), Symbol("F17", 1, IP), Symbol("F18", 1, IP),
+                              Symbol("F20", 1, IP), Symbol("W9", 1, IP), Symbol("G6", 1, GEO)
+                            ]),
+                    Product([
+                              Symbol("F10", 1, IP), Symbol("F10", 1, IP), Symbol("F20", 1, IP), Symbol("F3", 1, IP),
+                              Symbol("F8", 1, IP), Symbol("F8", 1, IP), Symbol("W9", 1, IP), Symbol("G1", 1, GEO)
+                            ]),
+                    Product([
+                              Symbol("F10", 1, IP), Symbol("F10", 1, IP), Symbol("F20", 1, IP), Symbol("F8", 1, IP),
+                              Symbol("F8", 1, IP), Symbol("W9", 1, IP), Symbol("G7", 1, GEO)
+                            ]),
+                    Product([
+                              Symbol("F17", 1, IP), Symbol("F17", 1, IP), Symbol("F18", 1, IP), Symbol("F19", 1, IP),
+                              Symbol("F20", 1, IP), Symbol("F3", 1, IP), Symbol("W9", 1, IP), Symbol("G2", 1, GEO)
+                            ]),
+                    Product([
+                              Symbol("F11", 1, IP), Symbol("F12", 1, IP), Symbol("F17", 1, IP), Symbol("F19", 1, IP),
+                              Symbol("F20", 1, IP), Symbol("W9", 1, IP), Symbol("G4", 1, GEO)
+                            ]),
+                    Product([
+                              Symbol("F11", 1, IP), Symbol("F11", 1, IP), Symbol("F13", 1, IP), Symbol("F13", 1, IP),
+                              Symbol("F20", 1, IP), Symbol("W9", 1, IP), Symbol("G7", 1, GEO)
+                            ]),
+                    Product([
+                              Symbol("F10", 1, IP), Symbol("F17", 1, IP), Symbol("F19", 1, IP), Symbol("F20", 1, IP),
+                              Symbol("F3", 1, IP), Symbol("F8", 1, IP), Symbol("W9", 1, IP), Symbol("G8", 1, GEO)
+                            ]),
+                    Product([
+                              Symbol("F17", 1, IP), Symbol("F17", 1, IP), Symbol("F18", 1, IP), Symbol("F18", 1, IP),
+                              Symbol("F20", 1, IP), Symbol("W9", 1, IP), Symbol("G5", 1, GEO)
+                            ]),
+                    Product([
+                              Symbol("F10", 1, IP), Symbol("F17", 1, IP), Symbol("F19", 1, IP), Symbol("F20", 1, IP),
+                              Symbol("F8", 1, IP), Symbol("W9", 1, IP), Symbol("G9", 1, GEO)
+                            ]),
+                    Product([
+                              Symbol("F10", 1, IP), Symbol("F17", 1, IP), Symbol("F18", 1, IP), Symbol("F20", 1, IP),
+                              Symbol("F3", 1, IP), Symbol("F8", 1, IP), Symbol("W9", 1, IP), Symbol("G2", 1, GEO)
+                            ]),
+                    Product([
+                              Symbol("F17", 1, IP), Symbol("F18", 1, IP), Symbol("F20", 1, IP), Symbol("F8", 1, IP),
+                              Symbol("F9", 1, IP), Symbol("W9", 1, IP), Symbol("G6", 1, GEO)
+                            ]),
+                    Product([
+                              Symbol("F10", 1, IP), Symbol("F11", 1, IP), Symbol("F13", 1, IP), Symbol("F20", 1, IP),
+                              Symbol("F3", 1, IP), Symbol("F8", 1, IP), Symbol("W9", 1, IP), Symbol("G8", 1, GEO)
+                            ]),
+                    Product([
+                              Symbol("F11", 1, IP), Symbol("F11", 1, IP), Symbol("F12", 1, IP), Symbol("F13", 1, IP),
+                              Symbol("F20", 1, IP), Symbol("W9", 1, IP), Symbol("G4", 1, GEO)
+                            ]),
+                    Product([
+                              Symbol("F10", 1, IP), Symbol("F11", 1, IP), Symbol("F13", 1, IP), Symbol("F20", 1, IP),
+                              Symbol("F8", 1, IP), Symbol("W9", 1, IP), Symbol("G9", 1, GEO)
+                            ]),
+                    Product([
+                              Symbol("F11", 1, IP), Symbol("F13", 1, IP), Symbol("F20", 1, IP), Symbol("F3", 1, IP),
+                              Symbol("F8", 1, IP), Symbol("F9", 1, IP), Symbol("W9", 1, IP), Symbol("G2", 1, GEO)
+                            ]),
+                    Product([
+                              Symbol("F11", 1, IP), Symbol("F12", 1, IP), Symbol("F17", 1, IP), Symbol("F18", 1, IP),
+                              Symbol("F20", 1, IP), Symbol("F3", 1, IP), Symbol("W9", 1, IP), Symbol("G3", 1, GEO)
+                            ]),
+                    Product([
+                              Symbol("F10", 1, IP), Symbol("F20", 1, IP), Symbol("F3", 1, IP), Symbol("F8", 1, IP),
+                              Symbol("F8", 1, IP), Symbol("F9", 1, IP), Symbol("W9", 1, IP), Symbol("G2", 1, GEO)
+                            ]),
+                    Product([
+                              Symbol("F17", 1, IP), Symbol("F19", 1, IP), Symbol("F20", 1, IP), Symbol("F8", 1, IP),
+                              Symbol("F9", 1, IP), Symbol("W9", 1, IP), Symbol("G4", 1, GEO)
+                            ]),
+                    Product([
+                              Symbol("F11", 1, IP), Symbol("F13", 1, IP), Symbol("F17", 1, IP), Symbol("F19", 1, IP),
+                              Symbol("F20", 1, IP), Symbol("W9", 1, IP), Symbol("G9", 1, GEO)
+                            ]),
+                    Product([
+                              Symbol("F11", 1, IP), Symbol("F13", 1, IP), Symbol("F17", 1, IP), Symbol("F18", 1, IP),
+                              Symbol("F20", 1, IP), Symbol("W9", 1, IP), Symbol("G4", 1, GEO)
+                            ]),
+                    Product([
+                              Symbol("F11", 1, IP), Symbol("F11", 1, IP), Symbol("F12", 1, IP), Symbol("F12", 1, IP),
+                              Symbol("F20", 1, IP), Symbol("F3", 1, IP), Symbol("W9", 1, IP), Symbol("G0", 1, GEO)
+                            ]),
+                    Product([
+                              Symbol("F17", 1, IP), Symbol("F17", 1, IP), Symbol("F19", 1, IP), Symbol("F19", 1, IP),
+                              Symbol("F20", 1, IP), Symbol("W9", 1, IP), Symbol("G7", 1, GEO)
+                            ]),
+                    Product([
+                              Symbol("F17", 1, IP), Symbol("F17", 1, IP), Symbol("F18", 1, IP), Symbol("F19", 1, IP),
+                              Symbol("F20", 1, IP), Symbol("W9", 1, IP), Symbol("G4", 1, GEO)
+                            ]),
+                    Product([
+                              Symbol("F20", 1, IP), Symbol("F3", 1, IP), Symbol("F8", 1, IP), Symbol("F8", 1, IP),
+                              Symbol("F9", 1, IP), Symbol("F9", 1, IP), Symbol("W9", 1, IP), Symbol("G0", 1, GEO)
+                            ]),
+                    Product([
+                              Symbol("F11", 1, IP), Symbol("F12", 1, IP), Symbol("F20", 1, IP), Symbol("F8", 1, IP),
+                              Symbol("F9", 1, IP), Symbol("W9", 1, IP), Symbol("G6", 1, GEO)
+                            ]),
+                    Product([
+                              Symbol("F11", 1, IP), Symbol("F13", 1, IP), Symbol("F17", 1, IP), Symbol("F19", 1, IP),
+                              Symbol("F20", 1, IP), Symbol("F3", 1, IP), Symbol("W9", 1, IP), Symbol("G8", 1, GEO)
+                            ]),
+                    Product([
+                              Symbol("F17", 1, IP), Symbol("F19", 1, IP), Symbol("F20", 1, IP), Symbol("F3", 1, IP),
+                              Symbol("F8", 1, IP), Symbol("F9", 1, IP), Symbol("W9", 1, IP), Symbol("G2", 1, GEO)
+                            ]),
+                    Product([
+                              Symbol("F10", 1, IP), Symbol("F11", 1, IP), Symbol("F12", 1, IP), Symbol("F20", 1, IP),
+                              Symbol("F8", 1, IP), Symbol("W9", 1, IP), Symbol("G4", 1, GEO)
+                            ]),
+                    Product([
+                              Symbol("F11", 1, IP), Symbol("F13", 1, IP), Symbol("F20", 1, IP), Symbol("F8", 1, IP),
+                              Symbol("F9", 1, IP), Symbol("W9", 1, IP), Symbol("G4", 1, GEO)
+                            ]),
+                    Product([
+                              Symbol("F11", 1, IP), Symbol("F11", 1, IP), Symbol("F12", 1, IP), Symbol("F12", 1, IP),
+                              Symbol("F20", 1, IP), Symbol("W9", 1, IP), Symbol("G5", 1, GEO)
+                            ]),
+                    Product([
+                              Symbol("F11", 1, IP), Symbol("F12", 1, IP), Symbol("F20", 1, IP), Symbol("F3", 1, IP),
+                              Symbol("F8", 1, IP), Symbol("F9", 1, IP), Symbol("W9", 1, IP), Symbol("G3", 1, GEO)
+                            ]),
+                    Product([
+                              Symbol("F17", 1, IP), Symbol("F17", 1, IP), Symbol("F19", 1, IP), Symbol("F19", 1, IP),
+                              Symbol("F20", 1, IP), Symbol("F3", 1, IP), Symbol("W9", 1, IP), Symbol("G1", 1, GEO)
+                            ]),
+                    Product([
+                              Symbol("F11", 1, IP), Symbol("F12", 1, IP), Symbol("F17", 1, IP), Symbol("F19", 1, IP),
+                              Symbol("F20", 1, IP), Symbol("F3", 1, IP), Symbol("W9", 1, IP), Symbol("G2", 1, GEO)
+                            ])
+                   ])
+
+        print
+        start = time.time()
+        expr_rem = expr.remove_nested()
+        print "ReduceGIP: time, remove_nested():                  ", time.time() - start
+
+        start = time.time()
+        expr_exp = expr.expand()
+        print "ReduceGIP: time, expand() (incl. remove_nested()): ", time.time() - start
+
+        start = time.time()
+        expr_red = expr_exp.reduce_ops()
+        print "ReduceGIP: time, reduce_ops():                     ", time.time() - start
+
+        print "expr.ops():     ", expr.ops()
+        print "expr_exp.ops(): ", expr_exp.ops()
+        print "expr_red.ops(): ", expr_red.ops()
+
+#        print "expr: ", expr
+#        print "exp:  ", expr_exp
+#        print "red:  ", expr_red
+
+        W9 = 9
+        F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13, F14, F15, F16, F17, F18, F19, F20 = [0.123 * i for i in range(1,21)]
+        G0, G1, G2, G3, G4, G5, G6, G7, G8, G9 = [2.64 + 1.0/i for i in range(20, 30)]
+
+        self.assertAlmostEqual(eval(str(expr)), eval(str(expr_rem)))
+        self.assertAlmostEqual(eval(str(expr)), eval(str(expr_exp)))
+        self.assertAlmostEqual(eval(str(expr)), eval(str(expr_red)))
+        self.assertAlmostEqual(expr.ops() > expr_red.ops(), True)
+
 
     def testPoisson(self):
 
-        poisson = """((Jinv_00*FE0_D10[ip][j] + Jinv_10*FE0_D01[ip][j])*(Jinv_00*FE0_D10[ip][k] + Jinv_10*FE0_D01[ip][k]) + (Jinv_01*FE0_D10[ip][j] + Jinv_11*FE0_D01[ip][j])*(Jinv_01*FE0_D10[ip][k] + Jinv_11*FE0_D01[ip][k]))*W4[ip]*det"""
+        poisson = """((Jinv_00*FE0_D10_ip_j + Jinv_10*FE0_D01_ip_j)*(Jinv_00*FE0_D10_ip_k + Jinv_10*FE0_D01_ip_k) + (Jinv_01*FE0_D10_ip_j + Jinv_11*FE0_D01_ip_j)*(Jinv_01*FE0_D10_ip_k + Jinv_11*FE0_D01_ip_k))*W4_ip*det"""
 
-        A = Product([
+        expr = Product([
                      Sum([
                           Product([
                                    Sum([
@@ -873,44 +1094,54 @@ class Tests(unittest.TestCase):
                      Symbol("det", 1, GEO)
                     ])
 
+        print
         start = time.time()
-        A_rem = A.remove_nested()
-        print "\nPoisson: time, remove_nested(): ", time.time() - start
+        expr_rem = expr.remove_nested()
+        print "Poisson: time, remove_nested():                  ", time.time() - start
+
         start = time.time()
-        A_exp = A.expand()
-        print "\nPoisson: time, expand() (including remove_nested()): ", time.time() - start
+        expr_exp = expr.expand()
+        print "Poisson: time, expand() (incl. remove_nested()): ", time.time() - start
 
         start = time.time()
         poisson_exp = expand_operations(poisson, get_format())
-        print "Poisson: time, old expand():                         ", time.time() - start
+        print "Poisson: time, old expand():                     ", time.time() - start
 
         start = time.time()
-        A_red = A_exp.reduce_ops()
-        print "\nPoisson: time, reduce_ops(): ", time.time() - start
+        expr_red = expr_exp.reduce_ops()
+        print "Poisson: time, reduce_ops():                     ", time.time() - start
 
         start = time.time()
         poisson_red = reduce_operations(poisson, get_format())
-        print "Poisson: time, old reduce(): ", time.time() - start
+        print "Poisson: time, old reduce():                     ", time.time() - start
 
-#        print "\nA.ops()", A.ops()
-#        ops = operation_count(poisson_exp)
-#        print "Poisson old exp: ops: ", ops
-#        print "A_exp.ops():          ", A_exp.ops()
+        ops = operation_count(poisson_exp, get_format())
+        print "expr.ops():           ", expr.ops()
+        print "Poisson old exp: ops: ", ops
+        print "expr_exp.ops():       ", expr_exp.ops()
 
-#        ops = operation_count(poisson_red)
-#        print "Poisson old red: ops: ", ops
-#        print "A_red.ops():          ", A_red.ops()
+        ops = operation_count(poisson_red, get_format())
+        print "Poisson old red: ops: ", ops
+        print "expr_red.ops():       ", expr_red.ops()
+
+#        print "expr: ", expr
+#        print "exp:  ", expr_exp
+#        print "red:  ", expr_red
 
         Jinv_00, Jinv_01, Jinv_10, Jinv_11, W4_ip, det = (1.1, 1.5, -4.3, 1.7, 11, 52.3)
         FE0_D01_ip_j, FE0_D10_ip_j, FE0_D01_ip_k, FE0_D10_ip_k = (1.12, 5.7, -9.3, 7.4)
-        self.assertAlmostEqual(eval(str(A)), eval(str(A_rem)))
-        self.assertAlmostEqual(eval(str(A)), eval(str(A_exp)))
+        self.assertAlmostEqual(eval(str(expr)), eval(str(expr_rem)))
+        self.assertAlmostEqual(eval(str(expr)), eval(str(expr_exp)))
+        self.assertAlmostEqual(eval(str(expr)), eval(str(expr_red)))
+        self.assertAlmostEqual(eval(str(expr)), eval(str(poisson)))
+        self.assertAlmostEqual(eval(str(expr)), eval(str(poisson_exp)))
+        self.assertAlmostEqual(eval(str(expr)), eval(str(poisson_red)))
 
     def testElasticity2D(self):
 
         elasticity = """(((Jinv_00*FE0_C0_D10_ip_j + Jinv_10*FE0_C0_D01_ip_j)*2*(Jinv_00*FE0_C0_D10_ip_k + Jinv_10*FE0_C0_D01_ip_k)*2 + ((Jinv_00*FE0_C1_D10_ip_j + Jinv_10*FE0_C1_D01_ip_j) + (Jinv_01*FE0_C0_D10_ip_j + Jinv_11*FE0_C0_D01_ip_j))*((Jinv_00*FE0_C1_D10_ip_k + Jinv_10*FE0_C1_D01_ip_k) + (Jinv_01*FE0_C0_D10_ip_k + Jinv_11*FE0_C0_D01_ip_k))) + ((Jinv_01*FE0_C1_D10_ip_j + Jinv_11*FE0_C1_D01_ip_j)*2*(Jinv_01*FE0_C1_D10_ip_k + Jinv_11*FE0_C1_D01_ip_k)*2 + ((Jinv_01*FE0_C0_D10_ip_j + Jinv_11*FE0_C0_D01_ip_j) + (Jinv_00*FE0_C1_D10_ip_j + Jinv_10*FE0_C1_D01_ip_j))*((Jinv_01*FE0_C0_D10_ip_k + Jinv_11*FE0_C0_D01_ip_k) + (Jinv_00*FE0_C1_D10_ip_k + Jinv_10*FE0_C1_D01_ip_k))))*0.25*W4_ip*det"""
 
-        A = Product([
+        expr = Product([
                      Sum([
                           Sum([
                                Product([
@@ -1020,107 +1251,106 @@ class Tests(unittest.TestCase):
                      Symbol("det", 1, GEO)
                      ])
 
+        print
         start = time.time()
-        A_rem = A.remove_nested()
-        print "\nElasticity: time, remove_nested(): ", time.time() - start
-        start = time.time()
-        A_exp = A.expand()
-        print "\nElasticity: time, expand() (including remove_nested()): ", time.time() - start
+        expr_rem = expr.remove_nested()
+        print "Elasticity2D: time, remove_nested():                  ", time.time() - start
 
-        ops = operation_count(elasticity, get_format())
+        start = time.time()
+        expr_exp = expr.expand()
+        print "Elasticity2D: time, expand() (incl. remove_nested()): ", time.time() - start
+
         start = time.time()
         elasticity_exp = expand_operations(elasticity, get_format())
-        print "Elasticity: time, old expand():                         ", time.time() - start
+        print "Elasticity2D: time, old expand():                     ", time.time() - start
 
         start = time.time()
-        A_red = A_exp.reduce_ops()
-        print "\nElasticity: time, reduce_ops(): ", time.time() - start
+        expr_red = expr_exp.reduce_ops()
+        print "Elasticity2D: time, reduce_ops():                     ", time.time() - start
 
         start = time.time()
         elasticity_red = reduce_operations(elasticity, get_format())
-        print "Elasticity: time, old reduce(): ", time.time() - start
-        # Try to reduce the output from A
-        old_red_A = reduce_operations(str(A), get_format())
+        print "Elasticity2D: time, old reduce():                     ", time.time() - start
 
+        ops = operation_count(elasticity_exp, get_format())
+        print "expr.ops():                ", expr.ops()
+        print "Elasticity2D old exp: ops: ", ops
+        print "expr_exp.ops():            ", expr_exp.ops()
 
-#        print "Elasticity.ops()", A.ops()
-#        print "\nA_exp.ops()", A_exp.ops()
-#        ops = operation_count(elasticity_exp)
-#        print "Elasticity old exp: ops: ", ops
-#        ops = operation_count(elasticity_red)
-#        print "\nElasticity old red: ops: ", ops
-#        print "Elasticity A_red.ops(): ", A_red.ops()
+        ops = operation_count(elasticity_red, get_format())
+        print "Elasticity2D old red: ops: ", ops
+        print "expr_red.ops():            ", expr_red.ops()
 
-#        print "\nA_red:\n", A_red
-#        print "\nold_red:\n", elasticity_red
+#        print "expr:\n", expr
+#        print "exp:\n", expr_exp
+#        print "red:\n", expr_red
+#        print "old red:\n", elasticity_red
 
         Jinv_00, Jinv_01, Jinv_10, Jinv_11, W4_ip, det = (1.1, 1.5, -4.3, 1.7, 11, 52.3)
         FE0_C0_D01_ip_j, FE0_C0_D10_ip_j, FE0_C0_D01_ip_k, FE0_C0_D10_ip_k = (1.12, 5.7, -9.3, 7.4)
         FE0_C1_D01_ip_j, FE0_C1_D10_ip_j, FE0_C1_D01_ip_k, FE0_C1_D10_ip_k = (3.12, -8.1, -45.3, 17.5)
 
-        self.assertAlmostEqual(eval(str(A)), eval(str(A_rem)))
-        self.assertAlmostEqual(eval(str(A)), eval(str(A_exp)))
-        self.assertAlmostEqual(eval(str(A)), eval(str(elasticity)))
-        self.assertAlmostEqual(eval(str(A)), eval(str(elasticity_exp)))
-        self.assertAlmostEqual(eval(str(A)), eval(str(elasticity_red)))
-        self.assertAlmostEqual(eval(str(A)), eval(str(old_red_A)))
+        self.assertAlmostEqual(eval(str(expr)), eval(str(expr_rem)))
+        self.assertAlmostEqual(eval(str(expr)), eval(str(expr_exp)))
+        self.assertAlmostEqual(eval(str(expr)), eval(str(expr_red)))
+        self.assertAlmostEqual(eval(str(expr)), eval(str(elasticity)))
+        self.assertAlmostEqual(eval(str(expr)), eval(str(elasticity_exp)))
+        self.assertAlmostEqual(eval(str(expr)), eval(str(elasticity_red)))
 
-    def testExpandGip(self):
-        S = Sum([
-Product([ Symbol("F17",1,IP), Symbol("F17",1,IP), Symbol("F18",1,IP), Symbol("F18",1,IP), Symbol("F20",1,IP), Symbol("F3",1,IP), Symbol("W9", 1, IP), Symbol("G0", 1, GEO) ]),
-Product([ Symbol("F11", 1, IP), Symbol("F11", 1, IP), Symbol("F13", 1, IP), Symbol("F13", 1, IP), Symbol("F20",1,IP), Symbol("F3",1,IP), Symbol("W9", 1, IP), Symbol("G1", 1, GEO) ]),
-Product([ Symbol("F11", 1, IP), Symbol("F11", 1, IP), Symbol("F12", 1, IP), Symbol("F13", 1, IP), Symbol("F20",1,IP), Symbol("F3",1,IP), Symbol("W9", 1, IP), Symbol("G2", 1, GEO) ]),
-Product([ Symbol("F10", 1, IP), Symbol("F11", 1, IP), Symbol("F12", 1, IP), Symbol("F20",1,IP), Symbol("F3",1,IP), Symbol("F8",1,IP), Symbol("W9", 1, IP), Symbol("G2", 1, GEO) ]),
-Product([ Symbol("F17",1,IP), Symbol("F18",1,IP), Symbol("F20",1,IP), Symbol("F3",1,IP), Symbol("F8",1,IP), Symbol("F9", 1, IP), Symbol("W9", 1, IP), Symbol("G3", 1, GEO) ]),
-Product([ Symbol("F10", 1, IP), Symbol("F17",1,IP), Symbol("F18",1,IP), Symbol("F20",1,IP), Symbol("F8",1,IP), Symbol("W9", 1, IP), Symbol("G4", 1, GEO) ]),
-Product([ Symbol("F10", 1, IP), Symbol("F20",1,IP), Symbol("F8",1,IP), Symbol("F8",1,IP), Symbol("F9", 1, IP), Symbol("W9", 1, IP), Symbol("G4", 1, GEO) ]),
-Product([ Symbol("F11", 1, IP), Symbol("F13", 1, IP), Symbol("F17",1,IP), Symbol("F18",1,IP), Symbol("F20",1,IP), Symbol("F3",1,IP), Symbol("W9", 1, IP), Symbol("G2", 1, GEO) ]),
-Product([ Symbol("F20",1,IP), Symbol("F8",1,IP), Symbol("F8",1,IP), Symbol("F9", 1, IP), Symbol("F9", 1, IP), Symbol("W9", 1, IP), Symbol("G5", 1, GEO) ]),
-Product([ Symbol("F11", 1, IP), Symbol("F12", 1, IP), Symbol("F17",1,IP), Symbol("F18",1,IP), Symbol("F20",1,IP), Symbol("W9", 1, IP), Symbol("G6", 1, GEO) ]),
-Product([ Symbol("F10", 1, IP), Symbol("F10", 1, IP), Symbol("F20",1,IP), Symbol("F3",1,IP), Symbol("F8",1,IP), Symbol("F8",1,IP), Symbol("W9", 1, IP), Symbol("G1", 1, GEO) ]),
-Product([ Symbol("F10", 1, IP), Symbol("F10", 1, IP), Symbol("F20",1,IP), Symbol("F8",1,IP), Symbol("F8",1,IP), Symbol("W9", 1, IP), Symbol("G7", 1, GEO) ]),
-Product([ Symbol("F17",1,IP), Symbol("F17",1,IP), Symbol("F18",1,IP), Symbol("F19", 1, IP), Symbol("F20",1,IP), Symbol("F3",1,IP), Symbol("W9", 1, IP), Symbol("G2", 1, GEO) ]),
-Product([ Symbol("F11", 1, IP), Symbol("F12", 1, IP), Symbol("F17",1,IP), Symbol("F19", 1, IP), Symbol("F20",1,IP), Symbol("W9", 1, IP), Symbol("G4", 1, GEO) ]),
-Product([ Symbol("F11", 1, IP), Symbol("F11", 1, IP), Symbol("F13", 1, IP), Symbol("F13", 1, IP), Symbol("F20",1,IP), Symbol("W9", 1, IP), Symbol("G7", 1, GEO) ]),
-Product([ Symbol("F10", 1, IP), Symbol("F17",1,IP), Symbol("F19", 1, IP), Symbol("F20",1,IP), Symbol("F3",1,IP), Symbol("F8",1,IP), Symbol("W9", 1, IP), Symbol("G8", 1, GEO) ]),
-Product([ Symbol("F17",1,IP), Symbol("F17",1,IP), Symbol("F18",1,IP), Symbol("F18",1,IP), Symbol("F20",1,IP), Symbol("W9", 1, IP), Symbol("G5", 1, GEO) ]),
-Product([ Symbol("F10", 1, IP), Symbol("F17",1,IP), Symbol("F19", 1, IP), Symbol("F20",1,IP), Symbol("F8",1,IP), Symbol("W9", 1, IP), Symbol("G9", 1, GEO) ]),
-Product([ Symbol("F10", 1, IP), Symbol("F17",1,IP), Symbol("F18",1,IP), Symbol("F20",1,IP), Symbol("F3",1,IP), Symbol("F8",1,IP), Symbol("W9", 1, IP), Symbol("G2", 1, GEO) ]),
-Product([ Symbol("F17",1,IP), Symbol("F18",1,IP), Symbol("F20",1,IP), Symbol("F8",1,IP), Symbol("F9", 1, IP), Symbol("W9", 1, IP), Symbol("G6", 1, GEO) ]),
-Product([ Symbol("F10", 1, IP), Symbol("F11", 1, IP), Symbol("F13", 1, IP), Symbol("F20",1,IP), Symbol("F3",1,IP), Symbol("F8",1,IP), Symbol("W9", 1, IP), Symbol("G8", 1, GEO) ]),
-Product([ Symbol("F11", 1, IP), Symbol("F11", 1, IP), Symbol("F12", 1, IP), Symbol("F13", 1, IP), Symbol("F20",1,IP), Symbol("W9", 1, IP), Symbol("G4", 1, GEO) ]),
-Product([ Symbol("F10", 1, IP), Symbol("F11", 1, IP), Symbol("F13", 1, IP), Symbol("F20",1,IP), Symbol("F8",1,IP), Symbol("W9", 1, IP), Symbol("G9", 1, GEO) ]),
-Product([ Symbol("F11", 1, IP), Symbol("F13", 1, IP), Symbol("F20",1,IP), Symbol("F3",1,IP), Symbol("F8",1,IP), Symbol("F9", 1, IP), Symbol("W9", 1, IP), Symbol("G2", 1, GEO) ]),
-Product([ Symbol("F11", 1, IP), Symbol("F12", 1, IP), Symbol("F17",1,IP), Symbol("F18",1,IP), Symbol("F20",1,IP), Symbol("F3",1,IP), Symbol("W9", 1, IP), Symbol("G3", 1, GEO) ]),
-Product([ Symbol("F10", 1, IP), Symbol("F20",1,IP), Symbol("F3",1,IP), Symbol("F8",1,IP), Symbol("F8",1,IP), Symbol("F9", 1, IP), Symbol("W9", 1, IP), Symbol("G2", 1, GEO) ]),
-Product([ Symbol("F17",1,IP), Symbol("F19", 1, IP), Symbol("F20",1,IP), Symbol("F8",1,IP), Symbol("F9", 1, IP), Symbol("W9", 1, IP), Symbol("G4", 1, GEO) ]),
-Product([ Symbol("F11", 1, IP), Symbol("F13", 1, IP), Symbol("F17",1,IP), Symbol("F19", 1, IP), Symbol("F20",1,IP), Symbol("W9", 1, IP), Symbol("G9", 1, GEO) ]),
-Product([ Symbol("F11", 1, IP), Symbol("F13", 1, IP), Symbol("F17",1,IP), Symbol("F18",1,IP), Symbol("F20",1,IP), Symbol("W9", 1, IP), Symbol("G4", 1, GEO) ]),
-Product([ Symbol("F11", 1, IP), Symbol("F11", 1, IP), Symbol("F12", 1, IP), Symbol("F12", 1, IP), Symbol("F20",1,IP), Symbol("F3",1,IP), Symbol("W9", 1, IP), Symbol("G0", 1, GEO) ]),
-Product([ Symbol("F17",1,IP), Symbol("F17",1,IP), Symbol("F19", 1, IP), Symbol("F19", 1, IP), Symbol("F20",1,IP), Symbol("W9", 1, IP), Symbol("G7", 1, GEO) ]),
-Product([ Symbol("F17",1,IP), Symbol("F17",1,IP), Symbol("F18",1,IP), Symbol("F19", 1, IP), Symbol("F20",1,IP), Symbol("W9", 1, IP), Symbol("G4", 1, GEO) ]),
-Product([ Symbol("F20",1,IP), Symbol("F3",1,IP), Symbol("F8",1,IP), Symbol("F8",1,IP), Symbol("F9", 1, IP), Symbol("F9", 1, IP), Symbol("W9", 1, IP), Symbol("G0", 1, GEO) ]),
-Product([ Symbol("F11", 1, IP), Symbol("F12", 1, IP), Symbol("F20",1,IP), Symbol("F8",1,IP), Symbol("F9", 1, IP), Symbol("W9", 1, IP), Symbol("G6", 1, GEO) ]),
-Product([ Symbol("F11", 1, IP), Symbol("F13", 1, IP), Symbol("F17",1,IP), Symbol("F19", 1, IP), Symbol("F20",1,IP), Symbol("F3",1,IP), Symbol("W9", 1, IP), Symbol("G8", 1, GEO) ]),
-Product([ Symbol("F17",1,IP), Symbol("F19", 1, IP), Symbol("F20",1,IP), Symbol("F3",1,IP), Symbol("F8",1,IP), Symbol("F9", 1, IP), Symbol("W9", 1, IP), Symbol("G2", 1, GEO) ]),
-Product([ Symbol("F10", 1, IP), Symbol("F11", 1, IP), Symbol("F12", 1, IP), Symbol("F20",1,IP), Symbol("F8",1,IP), Symbol("W9", 1, IP), Symbol("G4", 1, GEO) ]),
-Product([ Symbol("F11", 1, IP), Symbol("F13", 1, IP), Symbol("F20",1,IP), Symbol("F8",1,IP), Symbol("F9", 1, IP), Symbol("W9", 1, IP), Symbol("G4", 1, GEO) ]),
-Product([ Symbol("F11", 1, IP), Symbol("F11", 1, IP), Symbol("F12", 1, IP), Symbol("F12", 1, IP), Symbol("F20",1,IP), Symbol("W9", 1, IP), Symbol("G5", 1, GEO) ]),
-Product([ Symbol("F11", 1, IP), Symbol("F12", 1, IP), Symbol("F20",1,IP), Symbol("F3",1,IP), Symbol("F8",1,IP), Symbol("F9", 1, IP), Symbol("W9", 1, IP), Symbol("G3", 1, GEO) ]),
-Product([ Symbol("F17",1,IP), Symbol("F17",1,IP), Symbol("F19", 1, IP), Symbol("F19", 1, IP), Symbol("F20",1,IP), Symbol("F3",1,IP), Symbol("W9", 1, IP), Symbol("G1", 1, GEO) ]),
-Product([ Symbol("F11", 1, IP), Symbol("F12", 1, IP), Symbol("F17",1,IP), Symbol("F19", 1, IP), Symbol("F20",1,IP), Symbol("F3",1,IP), Symbol("W9", 1, IP), 
-Symbol("G2", 1, GEO) ])])
 
-        W9 = 9
-        F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13, F14, F15, F16, F17, F18, F19, F20 = [i for i in range(20)]
-        G0, G1, G2, G3, G4, G5, G6, G7, G8, G9 = [i for i in range(20, 30)]
 
-        S_red = S.reduce_ops()
-        self.assertAlmostEqual(eval(str(S)), eval(str(S_red)))
-        self.assertAlmostEqual(S.ops() > S_red.ops(), True)
+    def testElasticityTerm(self):
+
+        # expr:  0.25*W1*det*(FE0_C2_D001[0][j]*FE0_C2_D001[0][k]*Jinv_00*Jinv_21 + FE0_C2_D001[0][j]*FE0_C2_D001[0][k]*Jinv_00*Jinv_21)
+        expr = Product([
+                         Symbol('W1', 0.25, GEO), Symbol('det', 1, GEO),
+                         Sum([Product([Symbol('FE0_C2_D001_0_j', 1, BASIS), Symbol('FE0_C2_D001_0_k', 1, BASIS),
+                                       Symbol('Jinv_00', 1, GEO), Symbol('Jinv_21', 1, GEO)]),
+                              Product([Symbol('FE0_C2_D001_0_j', 1, BASIS), Symbol('FE0_C2_D001_0_k', 1, BASIS),
+                                  Symbol('Jinv_00', 1, GEO), Symbol('Jinv_21', 1, GEO)])
+                             ])
+                      ])
+
+        print
+        start = time.time()
+        expr_rem = expr.remove_nested()
+        print "ElasticityTerm: time, remove_nested():                  ", time.time() - start
+
+        start = time.time()
+        expr_exp = expr.expand()
+        print "ElasticityTerm: time, expand() (incl. remove_nested()): ", time.time() - start
+
+        start = time.time()
+        expr_red = expr_exp.reduce_ops()
+        print "ElasticityTerm: time, reduce_ops():                     ", time.time() - start
+
+        print "expr.ops():     ", expr.ops()
+        print "expr_exp.ops(): ", expr_exp.ops()
+        print "expr_red.ops(): ", expr_red.ops()
+
+#        print "expr:\n", expr
+#        print "exp:\n", expr_exp
+#        print "red:\n", expr_red
+
+        # Generate code
+        ip_consts = {}
+        geo_consts = {}
+        trans_set = set()
+
+        start = time.time()
+        opt_code = optimise_code(expr, ip_consts, geo_consts, trans_set)
+        print "ElasticityTerm, optimise_code(): ", time.time() - start
+
+        det, W1, Jinv_00, Jinv_21, FE0_C2_D001_0_j, FE0_C2_D001_0_k = [0.123 + i for i in range(6)]
+        G0 = eval(str(geo_consts.items()[0][0]))
+        self.assertAlmostEqual(eval(str(expr)), eval(str(expr_rem)))
+        self.assertAlmostEqual(eval(str(expr)), eval(str(expr_exp)))
+        self.assertAlmostEqual(eval(str(expr)), eval(str(expr_red)))
+        self.assertAlmostEqual(eval(str(expr)), eval(str(opt_code)))
+
 
     def testElasWeighted(self):
-        exprn = Product([
+        expr = Product([
                           Symbol('W4', 1.0000, IP),
                           Symbol('det', 1.0000, GEO),
                           Sum([
@@ -1160,29 +1390,44 @@ Symbol("G2", 1, GEO) ])])
                               ])
                           ])
                                                        
+        print
+        start = time.time()
+        expr_rem = expr.remove_nested()
+        print "ElasWeighted: time, remove_nested():                  ", time.time() - start
 
         start = time.time()
-        exprx = exprn.expand()
-        print
-        print "ElasWeighted: time, expand(): ", time.time() - start
+        expr_exp = expr.expand()
+        print "ElasWeighted: time, expand() (incl. remove_nested()): ", time.time() - start
 
-        exprr = exprn.expand().reduce_ops()
+        start = time.time()
+        expr_red = expr_exp.reduce_ops()
+        print "ElasWeighted: time, reduce_ops():                     ", time.time() - start
 
+        print "expr.ops():     ", expr.ops()
+        print "expr_exp.ops(): ", expr_exp.ops()
+        print "expr_red.ops(): ", expr_red.ops()
+
+#        print "expr:\n", expr
+#        print "exp:\n", expr_exp
+#        print "red:\n", expr_red
+
+        # Generate code
         ip_consts = {}
         geo_consts = {}
         trans_set = set()
-        opt_code = optimise_code(exprn, ip_consts, geo_consts, trans_set)
+
+        start = time.time()
+        opt_code = optimise_code(expr, ip_consts, geo_consts, trans_set)
+        print "ElasWeighted, optimise_code(): ", time.time() - start
 
         det, W4, w0, w1, w2, Jinv_00, Jinv_01, Jinv_11, Jinv_10, FE0_C1_D01_ip_j, FE0_C1_D01_ip_k = [0.123 + i for i in range(11)]
         G0 = eval(str(geo_consts.items()[0][0]))
         Gip0 = eval(str(ip_consts.items()[0][0]))
-        self.assertAlmostEqual(eval(str(exprn)), eval(str(exprx)))
-        self.assertAlmostEqual(eval(str(exprn)), eval(str(exprr)))
-        self.assertAlmostEqual(eval(str(exprn)), eval(str(opt_code)))
-#        print "exprn: ", eval(str(exprn))
-#        print "exprx: ", eval(str(exprx))
-#        print "exprr: ", eval(str(exprr))
-#        print "opt:   ", eval(str(opt_code))
+        self.assertAlmostEqual(eval(str(expr)), eval(str(expr_rem)))
+        self.assertAlmostEqual(eval(str(expr)), eval(str(expr_exp)))
+        self.assertAlmostEqual(eval(str(expr)), eval(str(expr_red)))
+        self.assertAlmostEqual(eval(str(expr)), eval(str(opt_code)))
+
 
     def testElasWeighted2(self):
 
@@ -1246,36 +1491,48 @@ Symbol("G2", 1, GEO) ])])
                               ])
                         ])
 
-
-
+        print
+        start = time.time()
+        expr_rem = expr.remove_nested()
+        print "ElasWeighted2: time, remove_nested():                  ", time.time() - start
 
         start = time.time()
-        exprx = expr.expand()
-        print
-        print "ElasWeighted2: time, expand():", time.time() - start
+        expr_exp = expr.expand()
+        print "ElasWeighted2: time, expand() (incl. remove_nested()): ", time.time() - start
 
-        exprr = exprx.reduce_ops()
+        start = time.time()
+        expr_red = expr_exp.reduce_ops()
+        print "ElasWeighted2: time, reduce_ops():                     ", time.time() - start
 
+        print "expr.ops():     ", expr.ops()
+        print "expr_exp.ops(): ", expr_exp.ops()
+        print "expr_red.ops(): ", expr_red.ops()
+
+#        print "expr:\n", expr
+#        print "exp:\n", expr_exp
+#        print "red:\n", expr_red
+
+        # Generate code
         ip_consts = {}
         geo_consts = {}
         trans_set = set()
-        opt_code = optimise_code(exprx, ip_consts, geo_consts, trans_set)
 
-#        print "expr:  ", eval(str(expr))
-#        print "exprx: ", eval(str(exprx))
-#        print "exprr: ", eval(str(exprr))
-#        print "opt:   ", eval(str(opt_code))
+        start = time.time()
+        opt_code = optimise_code(expr, ip_consts, geo_consts, trans_set)
+        print "ElasWeighted, optimise_code(): ", time.time() - start
 
         det, W4, w0, w1, w2, Jinv_00, Jinv_01, Jinv_11, Jinv_10, FE0_C1_D01_ip_j, FE0_C1_D01_ip_k = [0.123 + i for i in range(11)]
         G0 = eval(str(geo_consts.items()[0][0]))
         Gip0 = eval(str(ip_consts.items()[0][0]))
-        self.assertAlmostEqual(eval(str(expr)), eval(str(exprx)))
-        self.assertAlmostEqual(eval(str(expr)), eval(str(exprr)))
+        self.assertAlmostEqual(eval(str(expr)), eval(str(expr_rem)))
+        self.assertAlmostEqual(eval(str(expr)), eval(str(expr_exp)))
+        self.assertAlmostEqual(eval(str(expr)), eval(str(expr_red)))
         self.assertAlmostEqual(eval(str(expr)), eval(str(opt_code)))
 
 
 def suite():
     suite = unittest.TestSuite()
+    # Classes and member functions
     suite.addTest(Tests('testSymbol'))
     suite.addTest(Tests('testProduct'))
     suite.addTest(Tests('testSum'))
@@ -1285,12 +1542,18 @@ def suite():
     suite.addTest(Tests('testExpandOperations'))
     suite.addTest(Tests('testReduceVarType'))
     suite.addTest(Tests('testReduceOperations'))
-    suite.addTest(Tests('testExpandOperationsDGElastoDyn'))
+
+    # 'Real' expressions (expand and reduce)
+    suite.addTest(Tests('testDGElastoDyn'))
+    suite.addTest(Tests('testReduceGIP'))
     suite.addTest(Tests('testPoisson'))
     suite.addTest(Tests('testElasticity2D'))
-    suite.addTest(Tests('testExpandGip'))
+
+    # 'Real' expressions (generate code)
+    suite.addTest(Tests('testElasticityTerm'))
     suite.addTest(Tests('testElasWeighted'))
     suite.addTest(Tests('testElasWeighted2'))
+
     return suite
 
 

@@ -926,35 +926,6 @@ class Tests(unittest.TestCase):
         self.assertEqual(P5.ops(), 5)
         self.assertEqual(P5x.ops(), 9)
 
-    def testExpandOperationsDGElastoDyn(self):
-        exp = Product([
-                       Sum([
-                            Symbol("F0",IP),
-                            Product([FloatValue(-1), Symbol("F1",IP)])
-                          ]),
-                       Fraction(
-                                 Symbol("w4",GEO),
-                                 Symbol("w3",GEO)
-                                ),
-                       Fraction(
-                                 Product([
-                                          Symbol("w2",GEO),
-                                          Symbol("w5",GEO)
-                                         ]),
-                                 Symbol("w6",GEO)
-                                )
-                      ])
-
-#        print "exp: ", exp
-#        print "exp.ops(): ", exp.ops()
-        expx = exp.expand()
-#        print "exp: ", expx
-#        print "expx.ops(): ", expx.ops()
-
-        F0, F1, w2, w3, w4, w5, w6 = (3.12, -8.1, -45.3, 17.5, 2.2, 5.3, 9.145)
-
-        self.assertAlmostEqual(eval(str(exp)), eval(str(expx)))
-
     def testReduceVarType(self):
 
         f1 = FloatValue(1)
@@ -1062,49 +1033,43 @@ class Tests(unittest.TestCase):
         print "\nTesting ReduceOperations"
 
         # Aux. variables
-        f0 = FloatValue(2)
-        f1 = FloatValue(0.5)
+        f2 = FloatValue(2)
+        f0_5 = FloatValue(0.5)
+        f1 = FloatValue(1.0)
+        fm1 = FloatValue(-1.0)
 
-        s0 = Symbol("x", GEO)
-        s1 = Symbol("y", GEO)
-        s2 = Symbol("z", GEO)
+        x = Symbol("x", GEO)
+        y = Symbol("y", GEO)
+        z = Symbol("z", GEO)
         a = Symbol("a", GEO)
         b = Symbol("b", GEO)
         c = Symbol("c", GEO)
         d = Symbol("d", GEO)
 
-        # Random values of variables
-        x = 2.2
-        y = -0.2
-        z = 1.1
-
-
-
         # Simple expand and reduce simple float and symbol objects
-        fx0 = f0.expand()
-        sx0 = s0.expand()
+        fx2 = f2.expand()
+        xx = x.expand()
 
-        fr0 = fx0.reduce_ops()
-        sr0 = sx0.reduce_ops()
+        fr2 = fx2.reduce_ops()
+        xr = xx.reduce_ops()
 
-#        print "Test float and symbol"
-#        print "f0:  '%s'" %f0
-#        print "fx0: '%s'" %fx0
-#        print "fr0: '%s'" %fr0
+#        print "\nTest float and symbol"
+#        print "f0:  '%s'" %f2
+#        print "fx0: '%s'" %fx2
+#        print "fr0: '%s'" %fr2
 #        print
-#        print "s0:  '%s'" %s0
-#        print "sx0: '%s'" %sx0
-#        print "sr0: '%s'" %sr0
+#        print "x:  '%s'" %x
+#        print "xx: '%s'" %xx
+#        print "xr: '%s'" %xr
 
-        self.assertEqual(f0, fr0)
-        self.assertEqual(s0, sr0)
-
+        self.assertEqual(f2, fr2)
+        self.assertEqual(x, xr)
 
         # Test product
-        p0 = Product([f0, s0])
-        p1 = Product([s1, s0])
-        p2 = Product([s0, Fraction(f0, s1)])
-        p3 = Product([s0, Sum([s0, s1])])
+        p0 = f2*x
+        p1 = y*x
+        p2 = x*f2/y
+        p3 = x*Sum([x, y])
 
         px0 = p0.expand()
         px1 = p1.expand()
@@ -1112,8 +1077,7 @@ class Tests(unittest.TestCase):
         pr0 = px0.reduce_ops()
         pr1 = px1.reduce_ops()
 
-
-#        print "Test product"
+#        print "\nTest product"
 #        print "p0:  '%s'" %p0
 #        print "px0: '%s'" %px0
 #        print "pr0: '%s'" %pr0
@@ -1124,24 +1088,27 @@ class Tests(unittest.TestCase):
 
         self.assertEqual(p0, pr0)
         self.assertEqual(p1, pr1)
-        self.assertRaises(RuntimeError, p2.reduce_ops)
-        self.assertRaises(RuntimeError, p3.reduce_ops)
-
 
         # Test fraction
-        F0 = Fraction(p0, s1)
-        F1 = Fraction(s0, p0)
+        F0 = Fraction(p0, y)
+        F1 = Fraction(x, p0)
         F2 = Fraction(p0, p1)
+        F3 = Fraction(Sum([x*x, x*y]), y)
+        F4 = Fraction(Sum([f2*x, x*y]), a)
 
         Fx0 = F0.expand()
         Fx1 = F1.expand()
         Fx2 = F2.expand()
+        Fx3 = F3.expand()
+        Fx4 = F4.expand()
 
         Fr0 = Fx0.reduce_ops()
         Fr1 = Fx1.reduce_ops()
         Fr2 = Fx2.reduce_ops()
+        Fr3 = Fx3.reduce_ops()
+        Fr4 = Fx4.reduce_ops()
 
-#        print "Test fraction"
+#        print "\nTest fraction"
 #        print "F0:  '%s'" %F0
 #        print "Fx0: '%s'" %Fx0
 #        print "Fr0: '%s'" %Fr0
@@ -1153,23 +1120,44 @@ class Tests(unittest.TestCase):
 #        print "F2:  '%s'" %F2
 #        print "Fx2: '%s'" %Fx2
 #        print "Fr2: '%s'" %Fr2
+#        print
+#        print "F3:  '%s'" %F3
+#        print "Fx3: '%s'" %Fx3
+#        print "Fr3: '%s'" %Fr3
+#        print
+#        print "F4:  '%s'" %F4
+#        print "Fx4: '%s'" %Fx4
+#        print "Fr4: '%s'" %Fr4
 
         self.assertEqual(Fr0, F0)
-        self.assertEqual(Fr1, f1)
-        self.assertEqual(Fr2, Fraction(f0, s1))
-
+        self.assertEqual(Fr1, f0_5)
+        self.assertEqual(Fr2, Fraction(f2, y))
+        self.assertEqual(str(Fr3), "x*(1 + x/y)")
+        self.assertEqual(str(Fr4), "x*(2 + y)/a")
 
         # Test sum
         # TODO: Here we might have to add additional tests
-        S0 = Sum([s0, s1])
+        S0 = Sum([x, y])
         S1 = Sum([p0, p1])
-        S2 = Sum([s0, p1])
-        S3 = Sum([p0, Product([f0, s1])])
-        S4 = Sum([Product([f0, p1]), Product([s2, p1])])
-        S5 = Sum([s0, Product([s0, s0]), Product([s0, s0, s0])])
-        S6 = Sum([Product([a, s0, s0]), Product([b, s0, s0, s0]), Product([c, s0, s0]), Product([d, s0, s0, s0])])
-        S7 = Sum([p0, p1, Product([s0, s0]), Product([f0, s2]), Product([s1, s2])])
-        S8 = Sum([Product([a, s1]), Product([b, s1]), Product([s0, s0, s0, s1]), Product([s0, s0, s0, s2])])
+        S2 = Sum([x, p1])
+        S3 = Sum([p0, f2*y])
+        S4 = Sum([f2*p1, z*p1])
+        S5 = Sum([x, x*x, x*x*x])
+        S6 = Sum([a*x*x, b*x*x*x, c*x*x, d*x*x*x])
+        S7 = Sum([p0, p1, x*x, f2*z, y*z])
+        S8 = Sum([a*y, b*y, x*x*x*y, x*x*x*z])
+        S9 = Sum([a*y, b*y, c*y, x*x*x*y, f2*x*x, x*x*x*z])
+        S10 = Sum([f2*x*x*y, x*x*y*z])
+        S11 = Sum([f2*x*x*y*y, x*x*y*y*z])
+        S12 = Sum([f2*x*x*y*y, x*x*y*y*z, a*z, b*z, c*z])
+        S13 = Sum([Fraction(f1, x), Fraction(f1, y)])
+        S14 = Sum([Fraction(fm1, x), Fraction(fm1, y)])
+        S15 = Sum([Fraction(f2, x), Fraction(f2, x)])
+        S16 = Sum([Fraction(f2*x, y*z), Fraction(f0_5, y*z)])
+        S17 = Sum([(f2*x*y)/a, (x*y*z)/b])
+        S18 = Sum([(x*y)/a, (x*z)/a, f2/a, (f2*x*y)/a])
+        S19 = Sum([(f2*x)/a, (x*y)/a, z*x])
+        S20 = Product([ Sum([x, y]), Fraction(a, b), Fraction( Product([c, d]), z ) ])
 
         Sx0 = S0.expand()
         Sx1 = S1.expand()
@@ -1180,6 +1168,18 @@ class Tests(unittest.TestCase):
         Sx6 = S6.expand()
         Sx7 = S7.expand()
         Sx8 = S8.expand()
+        Sx9 = S9.expand()
+        Sx10 = S10.expand()
+        Sx11 = S11.expand()
+        Sx12 = S12.expand()
+        Sx13 = S13.expand()
+        Sx14 = S14.expand()
+        Sx15 = S15.expand()
+        Sx16 = S16.expand()
+        Sx17 = S17.expand()
+        Sx18 = S18.expand()
+        Sx19 = S19.expand()
+        Sx20 = S20.expand()
 
         Sr0 = Sx0.reduce_ops()
         Sr1 = Sx1.reduce_ops()
@@ -1190,43 +1190,103 @@ class Tests(unittest.TestCase):
         Sr6 = Sx6.reduce_ops()
         Sr7 = Sx7.reduce_ops()
         Sr8 = Sx8.reduce_ops()
+        Sr9 = Sx9.reduce_ops()
+        Sr10 = Sx10.reduce_ops()
+        Sr11 = Sx11.reduce_ops()
+        Sr12 = Sx12.reduce_ops()
+        Sr13 = Sx13.reduce_ops()
+        Sr14 = Sx14.reduce_ops()
+        Sr15 = Sx15.reduce_ops()
+        Sr16 = Sx16.reduce_ops()
+        Sr17 = Sx17.reduce_ops()
+        Sr18 = Sx18.reduce_ops()
+        Sr19 = Sx19.reduce_ops()
+        Sr20 = Sx20.reduce_ops()
 
-        print "Test sum"
-        print "S0:  '%s'" %S0
-        print "Sx0: '%s'" %Sx0
-        print "Sr0: '%s'" %Sr0
-        print
-        print "S1:  '%s'" %S1
-        print "Sx1: '%s'" %Sx1
-        print "Sr1: '%s'" %Sr1
-        print
-        print "S2:  '%s'" %S2
-        print "Sx2: '%s'" %Sx2
-        print "Sr2: '%s'" %Sr2
-        print
-        print "S3:  '%s'" %S3
-        print "Sx3: '%s'" %Sx3
-        print "Sr3: '%s'" %Sr3
-        print
-        print "S4:  '%s'" %S4
-        print "Sx4: '%s'" %Sx4
-        print "Sr4: '%s'" %Sr4
-        print
-        print "S5:  '%s'" %S5
-        print "Sx5: '%s'" %Sx5
-        print "Sr5: '%s'" %Sr5
-        print
-        print "S6:  '%s'" %S6
-        print "Sx6: '%s'" %Sx6
-        print "Sr6: '%s'" %Sr6
-        print
-        print "S7:  '%s'" %S7
-        print "Sx7: '%s'" %Sx7
-        print "Sr7: '%s'" %Sr7
-        print
-        print "S8:  '%s'" %S8
-        print "Sx8: '%s'" %Sx8
-        print "Sr8: '%s'" %Sr8
+#        print "Test sum"
+#        print "S0:  '%s'" %S0
+#        print "Sx0: '%s'" %Sx0
+#        print "Sr0: '%s'" %Sr0
+#        print
+#        print "S1:  '%s'" %S1
+#        print "Sx1: '%s'" %Sx1
+#        print "Sr1: '%s'" %Sr1
+#        print
+#        print "S2:  '%s'" %S2
+#        print "Sx2: '%s'" %Sx2
+#        print "Sr2: '%s'" %Sr2
+#        print
+#        print "S3:  '%s'" %S3
+#        print "Sx3: '%s'" %Sx3
+#        print "Sr3: '%s'" %Sr3
+#        print
+#        print "S4:  '%s'" %S4
+#        print "Sx4: '%s'" %Sx4
+#        print "Sr4: '%s'" %Sr4
+#        print
+#        print "S5:  '%s'" %S5
+#        print "Sx5: '%s'" %Sx5
+#        print "Sr5: '%s'" %Sr5
+#        print
+#        print "S6:  '%s'" %S6
+#        print "Sx6: '%s'" %Sx6
+#        print "Sr6: '%s'" %Sr6
+#        print
+#        print "S7:  '%s'" %S7
+#        print "Sx7: '%s'" %Sx7
+#        print "Sr7: '%s'" %Sr7
+#        print
+#        print "S8:  '%s'" %S8
+#        print "Sx8: '%s'" %Sx8
+#        print "Sr8: '%s'" %Sr8
+#        print
+#        print "S9:  '%s'" %S9
+#        print "Sx9: '%s'" %Sx9
+#        print "Sr9: '%s'" %Sr9
+#        print
+#        print "S10:  '%s'" %S10
+#        print "Sx10: '%s'" %Sx10
+#        print "Sr10: '%s'" %Sr10
+#        print
+#        print "S11:  '%s'" %S11
+#        print "Sx11: '%s'" %Sx11
+#        print "Sr11: '%s'" %Sr11
+#        print
+#        print "S12:  '%s'" %S12
+#        print "Sx12: '%s'" %Sx12
+#        print "Sr12: '%s'" %Sr12
+#        print
+#        print "S13:  '%s'" %S13
+#        print "Sx13: '%s'" %Sx13
+#        print "Sr13: '%s'" %Sr13
+#        print
+#        print "S14:  '%s'" %S14
+#        print "Sx14: '%s'" %Sx14
+#        print "Sr14: '%s'" %Sr14
+#        print
+#        print "S15:  '%s'" %S15
+#        print "Sx15: '%s'" %Sx15
+#        print "Sr15: '%s'" %Sr15
+#        print
+#        print "S16:  '%s'" %S16
+#        print "Sx16: '%s'" %Sx16
+#        print "Sr16: '%s'" %Sr16
+#        print
+#        print "S17:  '%s'" %S17
+#        print "Sx17: '%s'" %Sx17
+#        print "Sr17: '%s'" %Sr17
+#        print
+#        print "S18:  '%s'" %S18
+#        print "Sx18: '%s'" %Sx18
+#        print "Sr18: '%s'" %Sr18
+#        print
+#        print "S19:  '%s'" %S19
+#        print "Sx19: '%s'" %Sx19
+#        print "Sr19: '%s'" %Sr19
+#        print
+#        print "S20:  '%s'" %S20
+#        print "Sx20: '%s'" %Sx20
+#        print "Sr20: '%s'" %Sr20
 
         self.assertEqual(Sr0, S0)
         self.assertEqual(str(Sr1), "x*(2 + y)")
@@ -1236,10 +1296,21 @@ class Tests(unittest.TestCase):
         self.assertEqual(str(Sr3), "2*(x + y)")
         self.assertEqual(str(Sr4), "x*y*(2 + z)")
         self.assertEqual(str(Sr5), "x*(1 + x*(1 + x))")
-        # TODO: Sr6 should be reduced in one go
         self.assertEqual(str(Sr6), "x*x*(a + c + x*(b + d))")
         self.assertEqual(str(Sr7), "(x*(2 + x + y) + z*(2 + y))")
         self.assertEqual(str(Sr8), "(x*x*x*(y + z) + y*(a + b))")
+        self.assertEqual(str(Sr9), "(x*x*(2 + x*(y + z)) + y*(a + b + c))")
+        self.assertEqual(str(Sr10), "x*x*y*(2 + z)")
+        self.assertEqual(str(Sr11), "x*x*y*y*(2 + z)")
+        self.assertEqual(str(Sr12), "(x*x*y*y*(2 + z) + z*(a + b + c))")
+        self.assertEqual(str(Sr13), "(1/x + 1/y)")
+        self.assertEqual(str(Sr14), "(-1/x-1/y)")
+        self.assertEqual(str(Sr15), "4/x")
+        self.assertEqual(str(Sr16), "(0.5 + 2*x)/(y*z)")
+        self.assertEqual(str(Sr17), "x*y*(2/a + z/b)")
+        self.assertEqual(str(Sr18), "(2 + x*(z + 3*y))/a")
+        self.assertEqual(str(Sr19), "x*(z + (2 + y)/a)")
+        self.assertEqual(str(Sr20), "a*c*d*(x + y)/(b*z)")
 
         self.assertEqual(S0.ops(), 1)
         self.assertEqual(Sr0.ops(), 1)
@@ -1259,82 +1330,28 @@ class Tests(unittest.TestCase):
         self.assertEqual(Sr7.ops(), 6)
         self.assertEqual(S8.ops(), 11)
         self.assertEqual(Sr8.ops(), 7)
-
-#        self.assertEqual(ex0.ops(), 9)
-#        self.assertEqual(er0.ops(), 9)
-#        self.assertEqual(ex1.ops(), 23)
-#        self.assertEqual(er1.ops(), 11)
-#        self.assertEqual(ex2.ops(), 9)
-#        self.assertEqual(er2.ops(), 7)
-#        self.assertEqual(ex3.ops(), 11)
-#        self.assertEqual(er3.ops(), 11)
-#        self.assertEqual(ex4.ops(), 12)
-#        self.assertEqual(er4.ops(), 12)
-#        self.assertEqual(ex5.ops(), 6)
-#        self.assertEqual(er5.ops(), 6)
-#        self.assertEqual(ex6.ops(), 11)
-#        self.assertEqual(er6.ops(), 11)
-#        self.assertEqual(ex7.ops(), 17)
-#        self.assertEqual(er7.ops(), 17)
-#        self.assertEqual(ex8.ops(), 8)
-#        self.assertEqual(er8.ops(), 6)
-#        self.assertEqual(ex9.ops(), 10)
-#        self.assertEqual(er9.ops(), 8)
-
-    def testReduceGIP(self):
-        S = Sum([Product([ Symbol("F17",IP), Symbol("F17",IP), Symbol("F18",IP), Symbol("F18",IP), Symbol("F20",IP), Symbol("F3",IP), Symbol("W9",IP), Symbol("G0", GEO) ]),
-Product([ Symbol("F11",IP), Symbol("F11",IP), Symbol("F13",IP), Symbol("F13",IP), Symbol("F20",IP), Symbol("F3",IP), Symbol("W9",IP), Symbol("G1",GEO) ]),
-Product([ Symbol("F11",IP), Symbol("F11",IP), Symbol("F12",IP), Symbol("F13",IP), Symbol("F20",IP), Symbol("F3",IP), Symbol("W9",IP), Symbol("G2",GEO) ]),
-Product([ Symbol("F10",IP), Symbol("F11",IP), Symbol("F12",IP), Symbol("F20",IP), Symbol("F3",IP), Symbol("F8",IP), Symbol("W9",IP), Symbol("G2",GEO) ]),
-Product([ Symbol("F17",IP), Symbol("F18",IP), Symbol("F20",IP), Symbol("F3",IP), Symbol("F8",IP), Symbol("F9",IP), Symbol("W9",IP), Symbol("G3",GEO) ]),
-Product([ Symbol("F10",IP), Symbol("F17",IP), Symbol("F18",IP), Symbol("F20",IP), Symbol("F8",IP), Symbol("W9",IP), Symbol("G4",GEO) ]),
-Product([ Symbol("F10",IP), Symbol("F20",IP), Symbol("F8",IP), Symbol("F8",IP), Symbol("F9",IP), Symbol("W9",IP), Symbol("G4",GEO) ]),
-Product([ Symbol("F11",IP), Symbol("F13",IP), Symbol("F17",IP), Symbol("F18",IP), Symbol("F20",IP), Symbol("F3",IP), Symbol("W9",IP), Symbol("G2",GEO) ]),
-Product([ Symbol("F20",IP), Symbol("F8",IP), Symbol("F8",IP), Symbol("F9",IP), Symbol("F9",IP), Symbol("W9",IP), Symbol("G5",GEO) ]),
-Product([ Symbol("F11",IP), Symbol("F12",IP), Symbol("F17",IP), Symbol("F18",IP), Symbol("F20",IP), Symbol("W9",IP), Symbol("G6",GEO) ]),
-Product([ Symbol("F10",IP), Symbol("F10",IP), Symbol("F20",IP), Symbol("F3",IP), Symbol("F8",IP), Symbol("F8",IP), Symbol("W9",IP), Symbol("G1",GEO) ]),
-Product([ Symbol("F10",IP), Symbol("F10",IP), Symbol("F20",IP), Symbol("F8",IP), Symbol("F8",IP), Symbol("W9",IP), Symbol("G7",GEO) ]),
-Product([ Symbol("F17",IP), Symbol("F17",IP), Symbol("F18",IP), Symbol("F19",IP), Symbol("F20",IP), Symbol("F3",IP), Symbol("W9",IP), Symbol("G2",GEO) ]),
-Product([ Symbol("F11",IP), Symbol("F12",IP), Symbol("F17",IP), Symbol("F19",IP), Symbol("F20",IP), Symbol("W9",IP), Symbol("G4",GEO) ]),
-Product([ Symbol("F11",IP), Symbol("F11",IP), Symbol("F13",IP), Symbol("F13",IP), Symbol("F20",IP), Symbol("W9",IP), Symbol("G7",GEO) ]),
-Product([ Symbol("F10",IP), Symbol("F17",IP), Symbol("F19",IP), Symbol("F20",IP), Symbol("F3",IP), Symbol("F8",IP), Symbol("W9",IP), Symbol("G8",GEO) ]),
-Product([ Symbol("F17",IP), Symbol("F17",IP), Symbol("F18",IP), Symbol("F18",IP), Symbol("F20",IP), Symbol("W9",IP), Symbol("G5",GEO) ]),
-Product([ Symbol("F10",IP), Symbol("F17",IP), Symbol("F19",IP), Symbol("F20",IP), Symbol("F8",IP), Symbol("W9",IP), Symbol("G9",GEO) ]),
-Product([ Symbol("F10",IP), Symbol("F17",IP), Symbol("F18",IP), Symbol("F20",IP), Symbol("F3",IP), Symbol("F8",IP), Symbol("W9",IP), Symbol("G2",GEO) ]),
-Product([ Symbol("F17",IP), Symbol("F18",IP), Symbol("F20",IP), Symbol("F8",IP), Symbol("F9",IP), Symbol("W9",IP), Symbol("G6",GEO) ]),
-Product([ Symbol("F10",IP), Symbol("F11",IP), Symbol("F13",IP), Symbol("F20",IP), Symbol("F3",IP), Symbol("F8",IP), Symbol("W9",IP), Symbol("G8",GEO) ]),
-Product([ Symbol("F11",IP), Symbol("F11",IP), Symbol("F12",IP), Symbol("F13",IP), Symbol("F20",IP), Symbol("W9",IP), Symbol("G4",GEO) ]),
-Product([ Symbol("F10",IP), Symbol("F11",IP), Symbol("F13",IP), Symbol("F20",IP), Symbol("F8",IP), Symbol("W9",IP), Symbol("G9",GEO) ]),
-Product([ Symbol("F11",IP), Symbol("F13",IP), Symbol("F20",IP), Symbol("F3",IP), Symbol("F8",IP), Symbol("F9",IP), Symbol("W9",IP), Symbol("G2",GEO) ]),
-Product([ Symbol("F11",IP), Symbol("F12",IP), Symbol("F17",IP), Symbol("F18",IP), Symbol("F20",IP), Symbol("F3",IP), Symbol("W9",IP), Symbol("G3",GEO) ]),
-Product([ Symbol("F10",IP), Symbol("F20",IP), Symbol("F3",IP), Symbol("F8",IP), Symbol("F8",IP), Symbol("F9",IP), Symbol("W9",IP), Symbol("G2",GEO) ]),
-Product([ Symbol("F17",IP), Symbol("F19",IP), Symbol("F20",IP), Symbol("F8",IP), Symbol("F9",IP), Symbol("W9",IP), Symbol("G4",GEO) ]),
-Product([ Symbol("F11",IP), Symbol("F13",IP), Symbol("F17",IP), Symbol("F19",IP), Symbol("F20",IP), Symbol("W9",IP), Symbol("G9",GEO) ]),
-Product([ Symbol("F11",IP), Symbol("F13",IP), Symbol("F17",IP), Symbol("F18",IP), Symbol("F20",IP), Symbol("W9",IP), Symbol("G4",GEO) ]),
-Product([ Symbol("F11",IP), Symbol("F11",IP), Symbol("F12",IP), Symbol("F12",IP), Symbol("F20",IP), Symbol("F3",IP), Symbol("W9",IP), Symbol("G0",GEO) ]),
-Product([ Symbol("F17",IP), Symbol("F17",IP), Symbol("F19",IP), Symbol("F19",IP), Symbol("F20",IP), Symbol("W9",IP), Symbol("G7",GEO) ]),
-Product([ Symbol("F17",IP), Symbol("F17",IP), Symbol("F18",IP), Symbol("F19",IP), Symbol("F20",IP), Symbol("W9",IP), Symbol("G4",GEO) ]),
-Product([ Symbol("F20",IP), Symbol("F3",IP), Symbol("F8",IP), Symbol("F8",IP), Symbol("F9",IP), Symbol("F9",IP), Symbol("W9",IP), Symbol("G0",GEO) ]),
-Product([ Symbol("F11",IP), Symbol("F12",IP), Symbol("F20",IP), Symbol("F8",IP), Symbol("F9",IP), Symbol("W9",IP), Symbol("G6",GEO) ]),
-Product([ Symbol("F11",IP), Symbol("F13",IP), Symbol("F17",IP), Symbol("F19",IP), Symbol("F20",IP), Symbol("F3",IP), Symbol("W9",IP), Symbol("G8",GEO) ]),
-Product([ Symbol("F17",IP), Symbol("F19",IP), Symbol("F20",IP), Symbol("F3",IP), Symbol("F8",IP), Symbol("F9",IP), Symbol("W9",IP), Symbol("G2",GEO) ]),
-Product([ Symbol("F10",IP), Symbol("F11",IP), Symbol("F12",IP), Symbol("F20",IP), Symbol("F8",IP), Symbol("W9",IP), Symbol("G4",GEO) ]),
-Product([ Symbol("F11",IP), Symbol("F13",IP), Symbol("F20",IP), Symbol("F8",IP), Symbol("F9",IP), Symbol("W9",IP), Symbol("G4",GEO) ]),
-Product([ Symbol("F11",IP), Symbol("F11",IP), Symbol("F12",IP), Symbol("F12",IP), Symbol("F20",IP), Symbol("W9",IP), Symbol("G5",GEO) ]),
-Product([ Symbol("F11",IP), Symbol("F12",IP), Symbol("F20",IP), Symbol("F3",IP), Symbol("F8",IP), Symbol("F9",IP), Symbol("W9",IP), Symbol("G3",GEO) ]),
-Product([ Symbol("F17",IP), Symbol("F17",IP), Symbol("F19",IP), Symbol("F19",IP), Symbol("F20",IP), Symbol("F3",IP), Symbol("W9",IP), Symbol("G1",GEO) ]),
-Product([ Symbol("F11",IP), Symbol("F12",IP), Symbol("F17",IP), Symbol("F19",IP), Symbol("F20",IP), Symbol("F3",IP), Symbol("W9",IP), 
-Symbol("G2",GEO) ])])
-
-        W9 = 9
-        F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13, F14, F15, F16, F17, F18, F19, F20 = [i for i in range(20)]
-        G0, G1, G2, G3, G4, G5, G6, G7, G8, G9 = [i for i in range(20, 30)]
-
-        print S.ops()
-        S_red = S.reduce_ops()
-
-        self.assertAlmostEqual(eval(str(S)), eval(str(S_red)))
-        self.assertAlmostEqual(S.ops() > S_red.ops())
+        self.assertEqual(S9.ops(), 16)
+        self.assertEqual(Sr9.ops(), 9)
+        self.assertEqual(S10.ops(), 7)
+        self.assertEqual(Sr10.ops(), 4)
+        self.assertEqual(S11.ops(), 9)
+        self.assertEqual(Sr11.ops(), 5)
+        self.assertEqual(S12.ops(), 15)
+        self.assertEqual(Sr12.ops(), 9)
+        self.assertEqual(S13.ops(), 3)
+        self.assertEqual(Sr13.ops(), 3)
+        self.assertEqual(S14.ops(), 3)
+        self.assertEqual(Sr14.ops(), 3)
+        self.assertEqual(S15.ops(), 3)
+        self.assertEqual(Sr15.ops(), 1)
+        self.assertEqual(S16.ops(), 6)
+        self.assertEqual(Sr16.ops(), 4)
+        self.assertEqual(S17.ops(), 7)
+        self.assertEqual(Sr17.ops(), 5)
+        self.assertEqual(S18.ops(), 11)
+        self.assertEqual(Sr18.ops(), 5)
+        self.assertEqual(S19.ops(), 7)
+        self.assertEqual(Sr19.ops(), 4)
 
     def testNotFinished(self):
         "Stuff that would be nice to implement."
@@ -1345,6 +1362,9 @@ Symbol("G2",GEO) ])])
         s0 = Symbol("x", GEO)
         s1 = Symbol("y", GEO)
         s2 = Symbol("z", GEO)
+        a = Symbol("a", GEO)
+        b = Symbol("b", GEO)
+        c = Symbol("c", GEO)
 
         # Aux. expressions
         p0 = Product([f1, s0])
@@ -1362,118 +1382,362 @@ Symbol("G2",GEO) ])])
         e0 = f0 / S0
         e1 = s0 / S1
         e2 = S2 / S1
-        # TODO: Use some other function to do this
-#        e3 = S3.expand()
+        e3 = group_fractions(S3)
+        e4 = Sum([Fraction(f1*s0, a*b*c), Fraction(s0, a*b)]).expand().reduce_ops()
 
         # Tests that pass the current implementation
         self.assertEqual(str(e0), '4/(2*x + 8*y)')
         self.assertEqual(str(e1), 'x/(x + x*y)')
         self.assertEqual(str(e2), '(1 + y)/(x + x*y)')
-#        self.assertEqual(str(e3), '8/x')
+        self.assertEqual(str(e3), '8/x')
+        self.assertEqual(str(e4), 'x*(1/(a*b) + 2/(a*b*c))')
 
-        # Tests that should pass in future implementations
-        self.assertEqual(str(e0), '2/(x + 4*y)')
-        self.assertEqual(str(e1), '1/(1 + y)')
-        self.assertEqual(str(e2), '1/x')
- 
-        # Test that passed old implementation
-#        self.assertEqual(str(e3), '(4/x + 4/x)')
+        # Tests that should pass in future implementations (change NotEqual to Equal)
+        self.assertNotEqual(str(e0), '2/(x + 4*y)')
+        self.assertNotEqual(str(e1), '1/(1 + y)')
+        self.assertNotEqual(str(e2), '1/x')
+        self.assertNotEqual(str(e4), 'x*(2/c + 1)/(a*b)')
+
 
     def testCache(self):
         raise RuntimeError("Tests not implemented")
 
 
+    def testDGElastoDyn(self):
+        expr = Product([
+                       Sum([
+                            Symbol("F0", IP),
+                            Symbol("F1", IP)
+                          ]),
+                       Fraction(
+                                 Symbol("w4", GEO),
+                                 Symbol("w3", GEO)
+                                ),
+                       Fraction(
+                                 Product([
+                                          Symbol("w2", GEO),
+                                          Symbol("w5", GEO)
+                                         ]),
+                                 Symbol("w6", GEO)
+                                )
+                      ])
+
+        print
+        start = time.time()
+        expr_exp = expr.expand()
+        print "DGElastoDyn: time, expand():     ", time.time() - start
+
+        start = time.time()
+        expr_red = expr_exp.reduce_ops()
+        print "DGElastoDyn: time, reduce_ops(): ", time.time() - start
+
+        print "expr.ops():     ", expr.ops()
+        print "expr_exp.ops(): ", expr_exp.ops()
+        print "expr_red.ops(): ", expr_red.ops()
+
+#        print "expr:\n", expr
+#        print "exp:\n", expr_exp
+#        print "red:\n", expr_red
+
+        F0, F1, w2, w3, w4, w5, w6 = (3.12, -8.1, -45.3, 17.5, 2.2, 5.3, 9.145)
+        self.assertAlmostEqual(eval(str(expr)), eval(str(expr_exp)))
+        self.assertAlmostEqual(eval(str(expr)), eval(str(expr_red)))
+
+    def testReduceGIP(self):
+
+        expr = Sum([
+                    Product([
+                              Symbol("F17", IP), Symbol("F17", IP), Symbol("F18", IP), Symbol("F18", IP),
+                              Symbol("F20", IP), Symbol("F3", IP), Symbol("W9", IP), Symbol("G0", GEO)
+                            ]),
+                    Product([
+                              Symbol("F11", IP), Symbol("F11", IP), Symbol("F13", IP), Symbol("F13", IP),
+                              Symbol("F20", IP), Symbol("F3", IP), Symbol("W9", IP), Symbol("G1", GEO)
+                            ]),
+                    Product([
+                              Symbol("F11", IP), Symbol("F11", IP), Symbol("F12", IP), Symbol("F13", IP),
+                              Symbol("F20", IP), Symbol("F3", IP), Symbol("W9", IP), Symbol("G2", GEO)
+                            ]),
+                    Product([
+                              Symbol("F10", IP), Symbol("F11", IP), Symbol("F12", IP), Symbol("F20", IP),
+                              Symbol("F3", IP), Symbol("F8", IP), Symbol("W9", IP), Symbol("G2", GEO)
+                            ]),
+                    Product([
+                              Symbol("F17", IP), Symbol("F18", IP), Symbol("F20", IP), Symbol("F3", IP),
+                              Symbol("F8", IP), Symbol("F9", IP), Symbol("W9", IP), Symbol("G3", GEO)
+                            ]),
+                    Product([
+                              Symbol("F10", IP), Symbol("F17", IP), Symbol("F18", IP), Symbol("F20", IP),
+                              Symbol("F8", IP), Symbol("W9", IP), Symbol("G4", GEO)
+                            ]),
+                    Product([
+                              Symbol("F10", IP), Symbol("F20", IP), Symbol("F8", IP), Symbol("F8", IP),
+                              Symbol("F9", IP), Symbol("W9", IP), Symbol("G4", GEO)
+                            ]),
+                    Product([
+                              Symbol("F11", IP), Symbol("F13", IP), Symbol("F17", IP), Symbol("F18", IP),
+                              Symbol("F20", IP), Symbol("F3", IP), Symbol("W9", IP), Symbol("G2", GEO)
+                            ]),
+                    Product([
+                              Symbol("F20", IP), Symbol("F8", IP), Symbol("F8", IP), Symbol("F9", IP),
+                              Symbol("F9", IP), Symbol("W9", IP), Symbol("G5", GEO)
+                            ]),
+                    Product([
+                              Symbol("F11", IP), Symbol("F12", IP), Symbol("F17", IP), Symbol("F18", IP),
+                              Symbol("F20", IP), Symbol("W9", IP), Symbol("G6", GEO)
+                            ]),
+                    Product([
+                              Symbol("F10", IP), Symbol("F10", IP), Symbol("F20", IP), Symbol("F3", IP),
+                              Symbol("F8", IP), Symbol("F8", IP), Symbol("W9", IP), Symbol("G1", GEO)
+                            ]),
+                    Product([
+                              Symbol("F10", IP), Symbol("F10", IP), Symbol("F20", IP), Symbol("F8", IP),
+                              Symbol("F8", IP), Symbol("W9", IP), Symbol("G7", GEO)
+                            ]),
+                    Product([
+                              Symbol("F17", IP), Symbol("F17", IP), Symbol("F18", IP), Symbol("F19", IP),
+                              Symbol("F20", IP), Symbol("F3", IP), Symbol("W9", IP), Symbol("G2", GEO)
+                            ]),
+                    Product([
+                              Symbol("F11", IP), Symbol("F12", IP), Symbol("F17", IP), Symbol("F19", IP),
+                              Symbol("F20", IP), Symbol("W9", IP), Symbol("G4", GEO)
+                            ]),
+                    Product([
+                              Symbol("F11", IP), Symbol("F11", IP), Symbol("F13", IP), Symbol("F13", IP),
+                              Symbol("F20", IP), Symbol("W9", IP), Symbol("G7", GEO)
+                            ]),
+                    Product([
+                              Symbol("F10", IP), Symbol("F17", IP), Symbol("F19", IP), Symbol("F20", IP),
+                              Symbol("F3", IP), Symbol("F8", IP), Symbol("W9", IP), Symbol("G8", GEO)
+                            ]),
+                    Product([
+                              Symbol("F17", IP), Symbol("F17", IP), Symbol("F18", IP), Symbol("F18", IP),
+                              Symbol("F20", IP), Symbol("W9", IP), Symbol("G5", GEO)
+                            ]),
+                    Product([
+                              Symbol("F10", IP), Symbol("F17", IP), Symbol("F19", IP), Symbol("F20", IP),
+                              Symbol("F8", IP), Symbol("W9", IP), Symbol("G9", GEO)
+                            ]),
+                    Product([
+                              Symbol("F10", IP), Symbol("F17", IP), Symbol("F18", IP), Symbol("F20", IP),
+                              Symbol("F3", IP), Symbol("F8", IP), Symbol("W9", IP), Symbol("G2", GEO)
+                            ]),
+                    Product([
+                              Symbol("F17", IP), Symbol("F18", IP), Symbol("F20", IP), Symbol("F8", IP),
+                              Symbol("F9", IP), Symbol("W9", IP), Symbol("G6", GEO)
+                            ]),
+                    Product([
+                              Symbol("F10", IP), Symbol("F11", IP), Symbol("F13", IP), Symbol("F20", IP),
+                              Symbol("F3", IP), Symbol("F8", IP), Symbol("W9", IP), Symbol("G8", GEO)
+                            ]),
+                    Product([
+                              Symbol("F11", IP), Symbol("F11", IP), Symbol("F12", IP), Symbol("F13", IP),
+                              Symbol("F20", IP), Symbol("W9", IP), Symbol("G4", GEO)
+                            ]),
+                    Product([
+                              Symbol("F10", IP), Symbol("F11", IP), Symbol("F13", IP), Symbol("F20", IP),
+                              Symbol("F8", IP), Symbol("W9", IP), Symbol("G9", GEO)
+                            ]),
+                    Product([
+                              Symbol("F11", IP), Symbol("F13", IP), Symbol("F20", IP), Symbol("F3", IP),
+                              Symbol("F8", IP), Symbol("F9", IP), Symbol("W9", IP), Symbol("G2", GEO)
+                            ]),
+                    Product([
+                              Symbol("F11", IP), Symbol("F12", IP), Symbol("F17", IP), Symbol("F18", IP),
+                              Symbol("F20", IP), Symbol("F3", IP), Symbol("W9", IP), Symbol("G3", GEO)
+                            ]),
+                    Product([
+                              Symbol("F10", IP), Symbol("F20", IP), Symbol("F3", IP), Symbol("F8", IP),
+                              Symbol("F8", IP), Symbol("F9", IP), Symbol("W9", IP), Symbol("G2", GEO)
+                            ]),
+                    Product([
+                              Symbol("F17", IP), Symbol("F19", IP), Symbol("F20", IP), Symbol("F8", IP),
+                              Symbol("F9", IP), Symbol("W9", IP), Symbol("G4", GEO)
+                            ]),
+                    Product([
+                              Symbol("F11", IP), Symbol("F13", IP), Symbol("F17", IP), Symbol("F19", IP),
+                              Symbol("F20", IP), Symbol("W9", IP), Symbol("G9", GEO)
+                            ]),
+                    Product([
+                              Symbol("F11", IP), Symbol("F13", IP), Symbol("F17", IP), Symbol("F18", IP),
+                              Symbol("F20", IP), Symbol("W9", IP), Symbol("G4", GEO)
+                            ]),
+                    Product([
+                              Symbol("F11", IP), Symbol("F11", IP), Symbol("F12", IP), Symbol("F12", IP),
+                              Symbol("F20", IP), Symbol("F3", IP), Symbol("W9", IP), Symbol("G0", GEO)
+                            ]),
+                    Product([
+                              Symbol("F17", IP), Symbol("F17", IP), Symbol("F19", IP), Symbol("F19", IP),
+                              Symbol("F20", IP), Symbol("W9", IP), Symbol("G7", GEO)
+                            ]),
+                    Product([
+                              Symbol("F17", IP), Symbol("F17", IP), Symbol("F18", IP), Symbol("F19", IP),
+                              Symbol("F20", IP), Symbol("W9", IP), Symbol("G4", GEO)
+                            ]),
+                    Product([
+                              Symbol("F20", IP), Symbol("F3", IP), Symbol("F8", IP), Symbol("F8", IP),
+                              Symbol("F9", IP), Symbol("F9", IP), Symbol("W9", IP), Symbol("G0", GEO)
+                            ]),
+                    Product([
+                              Symbol("F11", IP), Symbol("F12", IP), Symbol("F20", IP), Symbol("F8", IP),
+                              Symbol("F9", IP), Symbol("W9", IP), Symbol("G6", GEO)
+                            ]),
+                    Product([
+                              Symbol("F11", IP), Symbol("F13", IP), Symbol("F17", IP), Symbol("F19", IP),
+                              Symbol("F20", IP), Symbol("F3", IP), Symbol("W9", IP), Symbol("G8", GEO)
+                            ]),
+                    Product([
+                              Symbol("F17", IP), Symbol("F19", IP), Symbol("F20", IP), Symbol("F3", IP),
+                              Symbol("F8", IP), Symbol("F9", IP), Symbol("W9", IP), Symbol("G2", GEO)
+                            ]),
+                    Product([
+                              Symbol("F10", IP), Symbol("F11", IP), Symbol("F12", IP), Symbol("F20", IP),
+                              Symbol("F8", IP), Symbol("W9", IP), Symbol("G4", GEO)
+                            ]),
+                    Product([
+                              Symbol("F11", IP), Symbol("F13", IP), Symbol("F20", IP), Symbol("F8", IP),
+                              Symbol("F9", IP), Symbol("W9", IP), Symbol("G4", GEO)
+                            ]),
+                    Product([
+                              Symbol("F11", IP), Symbol("F11", IP), Symbol("F12", IP), Symbol("F12", IP),
+                              Symbol("F20", IP), Symbol("W9", IP), Symbol("G5", GEO)
+                            ]),
+                    Product([
+                              Symbol("F11", IP), Symbol("F12", IP), Symbol("F20", IP), Symbol("F3", IP),
+                              Symbol("F8", IP), Symbol("F9", IP), Symbol("W9", IP), Symbol("G3", GEO)
+                            ]),
+                    Product([
+                              Symbol("F17", IP), Symbol("F17", IP), Symbol("F19", IP), Symbol("F19", IP),
+                              Symbol("F20", IP), Symbol("F3", IP), Symbol("W9", IP), Symbol("G1", GEO)
+                            ]),
+                    Product([
+                              Symbol("F11", IP), Symbol("F12", IP), Symbol("F17", IP), Symbol("F19", IP),
+                              Symbol("F20", IP), Symbol("F3", IP), Symbol("W9", IP), Symbol("G2", GEO)
+                            ])
+                   ])
+
+        print
+        start = time.time()
+        expr_exp = expr.expand()
+        print "ReduceGIP: time, expand()      ", time.time() - start
+
+        start = time.time()
+        expr_red = expr_exp.reduce_ops()
+        print "ReduceGIP: time, reduce_ops(): ", time.time() - start
+
+        print "expr.ops():     ", expr.ops()
+        print "expr_exp.ops(): ", expr_exp.ops()
+        print "expr_red.ops(): ", expr_red.ops()
+
+#        print "expr: ", expr
+#        print "exp:  ", expr_exp
+#        print "red:  ", expr_red
+
+        W9 = 9
+        F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13, F14, F15, F16, F17, F18, F19, F20 = [0.123 * i for i in range(1,21)]
+        G0, G1, G2, G3, G4, G5, G6, G7, G8, G9 = [2.64 + 1.0/i for i in range(20, 30)]
+
+        self.assertAlmostEqual(eval(str(expr)), eval(str(expr_exp)))
+        self.assertAlmostEqual(eval(str(expr)), eval(str(expr_red)))
+        self.assertAlmostEqual(expr.ops() > expr_red.ops(), True)
+
 
     def testPoisson(self):
 
-        poisson = """((Jinv_00*FE0_D10[IP][j] + Jinv_10*FE0_D01[IP][j])*(Jinv_00*FE0_D10[IP][k] + Jinv_10*FE0_D01[IP][k]) + (Jinv_01*FE0_D10[IP][j] + Jinv_11*FE0_D01[IP][j])*(Jinv_01*FE0_D10[IP][k] + Jinv_11*FE0_D01[IP][k]))*W4[IP]*det"""
+        poisson = """((Jinv_00*FE0_D10_ip_j + Jinv_10*FE0_D01_ip_j)*(Jinv_00*FE0_D10_ip_k + Jinv_10*FE0_D01_ip_k) + (Jinv_01*FE0_D10_ip_j + Jinv_11*FE0_D01_ip_j)*(Jinv_01*FE0_D10_ip_k + Jinv_11*FE0_D01_ip_k))*W4_ip*det"""
 
-        A = Product([
+        expr = Product([
                      Sum([
                           Product([
                                    Sum([
-                                        Product([Symbol("Jinv_00",GEO), Symbol("FE0_D10_IP_j",BASIS)])
+                                        Product([Symbol("Jinv_00", GEO), Symbol("FE0_D10_ip_j", BASIS)])
                                         ,
-                                        Product([Symbol("Jinv_10",GEO), Symbol("FE0_D01_IP_j",BASIS)])
+                                        Product([Symbol("Jinv_10", GEO), Symbol("FE0_D01_ip_j", BASIS)])
                                        ]),
                                    Sum([
-                                        Product([Symbol("Jinv_00",GEO), Symbol("FE0_D10_IP_k",BASIS)])
+                                        Product([Symbol("Jinv_00", GEO), Symbol("FE0_D10_ip_k", BASIS)])
                                         ,
-                                        Product([Symbol("Jinv_10",GEO), Symbol("FE0_D01_IP_k",BASIS)])
+                                        Product([Symbol("Jinv_10", GEO), Symbol("FE0_D01_ip_k", BASIS)])
                                        ])
                                   ])
                           ,
                           Product([
                                    Sum([
-                                        Product([Symbol("Jinv_01",GEO), Symbol("FE0_D10_IP_j",BASIS)])
+                                        Product([Symbol("Jinv_01", GEO), Symbol("FE0_D10_ip_j", BASIS)])
                                         ,
-                                        Product([Symbol("Jinv_11",GEO), Symbol("FE0_D01_IP_j",BASIS)])
+                                        Product([Symbol("Jinv_11", GEO), Symbol("FE0_D01_ip_j", BASIS)])
                                        ]),
                                    Sum([
-                                        Product([Symbol("Jinv_01",GEO), Symbol("FE0_D10_IP_k",BASIS)])
+                                        Product([Symbol("Jinv_01", GEO), Symbol("FE0_D10_ip_k", BASIS)])
                                         ,
-                                        Product([Symbol("Jinv_11",GEO), Symbol("FE0_D01_IP_k",BASIS)])
+                                        Product([Symbol("Jinv_11", GEO), Symbol("FE0_D01_ip_k", BASIS)])
                                        ])
                                   ])
                          ])
                      ,
-                     Symbol("W4_IP",IP)
+                     Symbol("W4_ip", IP)
                      ,
-                     Symbol("det",GEO)
+                     Symbol("det", GEO)
                     ])
 
-        start = time.time()
-        A_exp = A.expand()
         print
-        print "Poisson: time, expand()):    ", time.time() - start
+        start = time.time()
+        expr_exp = expr.expand()
+        print "Poisson: time, expand():     ", time.time() - start
 
         start = time.time()
         poisson_exp = expand_operations(poisson, get_format())
         print "Poisson: time, old expand(): ", time.time() - start
 
-#        start = time.time()
-#        A_red = A_exp.reduce_ops()
-#        print "\nPoisson: time, reduce_ops(): ", time.time() - start
+        start = time.time()
+        expr_red = expr_exp.reduce_ops()
+        print "Poisson: time, reduce_ops(): ", time.time() - start
 
-#        start = time.time()
-#        poisson_red = reduce_operations(poisson, get_format())
-#        print "Poisson: time, old reduce(): ", time.time() - start
+        start = time.time()
+        poisson_red = reduce_operations(poisson, get_format())
+        print "Poisson: time, old reduce(): ", time.time() - start
 
-#        print "\nA.ops()", A.ops()
-#        ops = operation_count(poisson_exp)
-#        print "Poisson old exp: ops: ", ops
-#        print "A_exp.ops():          ", A_exp.ops()
+        ops = operation_count(poisson_exp, get_format())
+        print "expr.ops():           ", expr.ops()
+        print "Poisson old exp: ops: ", ops
+        print "expr_exp.ops():       ", expr_exp.ops()
 
-#        ops = operation_count(poisson_red)
-#        print "Poisson old red: ops: ", ops
-#        print "A_red.ops():          ", A_red.ops()
+        ops = operation_count(poisson_red, get_format())
+        print "Poisson old red: ops: ", ops
+        print "expr_red.ops():       ", expr_red.ops()
 
-        Jinv_00, Jinv_01, Jinv_10, Jinv_11, W4_IP, det = (1.1, 1.5, -4.3, 1.7, 11, 52.3)
-        FE0_D01_IP_j, FE0_D10_IP_j, FE0_D01_IP_k, FE0_D10_IP_k = (1.12, 5.7, -9.3, 7.4)
+#        print "expr: ", expr
+#        print "exp:  ", expr_exp
+#        print "red:  ", expr_red
 
-        self.assertAlmostEqual(eval(str(A)), eval(str(A_exp)))
-#        self.assertAlmostEqual(eval(str(A)), eval(str(A_red)))
+        Jinv_00, Jinv_01, Jinv_10, Jinv_11, W4_ip, det = (1.1, 1.5, -4.3, 1.7, 11, 52.3)
+        FE0_D01_ip_j, FE0_D10_ip_j, FE0_D01_ip_k, FE0_D10_ip_k = (1.12, 5.7, -9.3, 7.4)
+        self.assertAlmostEqual(eval(str(expr)), eval(str(expr_exp)))
+        self.assertAlmostEqual(eval(str(expr)), eval(str(expr_red)))
+        self.assertAlmostEqual(eval(str(expr)), eval(str(poisson)))
+        self.assertAlmostEqual(eval(str(expr)), eval(str(poisson_exp)))
+        self.assertAlmostEqual(eval(str(expr)), eval(str(poisson_red)))
 
     def testElasticity2D(self):
 
-        elasticity = """(((Jinv_00*FE0_C0_D10_IP_j + Jinv_10*FE0_C0_D01_IP_j)*2*(Jinv_00*FE0_C0_D10_IP_k + Jinv_10*FE0_C0_D01_IP_k)*2 + ((Jinv_00*FE0_C1_D10_IP_j + Jinv_10*FE0_C1_D01_IP_j) + (Jinv_01*FE0_C0_D10_IP_j + Jinv_11*FE0_C0_D01_IP_j))*((Jinv_00*FE0_C1_D10_IP_k + Jinv_10*FE0_C1_D01_IP_k) + (Jinv_01*FE0_C0_D10_IP_k + Jinv_11*FE0_C0_D01_IP_k))) + ((Jinv_01*FE0_C1_D10_IP_j + Jinv_11*FE0_C1_D01_IP_j)*2*(Jinv_01*FE0_C1_D10_IP_k + Jinv_11*FE0_C1_D01_IP_k)*2 + ((Jinv_01*FE0_C0_D10_IP_j + Jinv_11*FE0_C0_D01_IP_j) + (Jinv_00*FE0_C1_D10_IP_j + Jinv_10*FE0_C1_D01_IP_j))*((Jinv_01*FE0_C0_D10_IP_k + Jinv_11*FE0_C0_D01_IP_k) + (Jinv_00*FE0_C1_D10_IP_k + Jinv_10*FE0_C1_D01_IP_k))))*0.25*W4_IP*det"""
+        elasticity = """(((Jinv_00*FE0_C0_D10_ip_j + Jinv_10*FE0_C0_D01_ip_j)*2*(Jinv_00*FE0_C0_D10_ip_k + Jinv_10*FE0_C0_D01_ip_k)*2 + ((Jinv_00*FE0_C1_D10_ip_j + Jinv_10*FE0_C1_D01_ip_j) + (Jinv_01*FE0_C0_D10_ip_j + Jinv_11*FE0_C0_D01_ip_j))*((Jinv_00*FE0_C1_D10_ip_k + Jinv_10*FE0_C1_D01_ip_k) + (Jinv_01*FE0_C0_D10_ip_k + Jinv_11*FE0_C0_D01_ip_k))) + ((Jinv_01*FE0_C1_D10_ip_j + Jinv_11*FE0_C1_D01_ip_j)*2*(Jinv_01*FE0_C1_D10_ip_k + Jinv_11*FE0_C1_D01_ip_k)*2 + ((Jinv_01*FE0_C0_D10_ip_j + Jinv_11*FE0_C0_D01_ip_j) + (Jinv_00*FE0_C1_D10_ip_j + Jinv_10*FE0_C1_D01_ip_j))*((Jinv_01*FE0_C0_D10_ip_k + Jinv_11*FE0_C0_D01_ip_k) + (Jinv_00*FE0_C1_D10_ip_k + Jinv_10*FE0_C1_D01_ip_k))))*0.25*W4_ip*det"""
 
-        A = Product([
+        expr = Product([
                      Sum([
                           Sum([
                                Product([
                                         Sum([
-                                             Product([Symbol("Jinv_00",GEO), Symbol("FE0_C0_D10_IP_j",BASIS)])
+                                             Product([Symbol("Jinv_00", GEO), Symbol("FE0_C0_D10_ip_j", BASIS)])
                                              ,
-                                             Product([Symbol("Jinv_10",GEO), Symbol("FE0_C0_D01_IP_j",BASIS)])
+                                             Product([Symbol("Jinv_10", GEO), Symbol("FE0_C0_D01_ip_j", BASIS)])
                                             ])
                                         ,
                                         FloatValue(2)
                                         ,
                                         Sum([
-                                             Product([Symbol("Jinv_00",GEO), Symbol("FE0_C0_D10_IP_k",BASIS)])
+                                             Product([Symbol("Jinv_00", GEO), Symbol("FE0_C0_D10_ip_k", BASIS)])
                                              ,
-                                             Product([Symbol("Jinv_10",GEO), Symbol("FE0_C0_D01_IP_k",BASIS)])
+                                             Product([Symbol("Jinv_10", GEO), Symbol("FE0_C0_D01_ip_k", BASIS)])
                                             ])
                                         ,
                                         FloatValue(2)
@@ -1482,29 +1746,29 @@ Symbol("G2",GEO) ])])
                                Product([
                                         Sum([
                                              Sum([
-                                                  Product([Symbol("Jinv_00",GEO), Symbol("FE0_C1_D10_IP_j",BASIS)])
+                                                  Product([Symbol("Jinv_00", GEO), Symbol("FE0_C1_D10_ip_j", BASIS)])
                                                   ,
-                                                  Product([Symbol("Jinv_10",GEO), Symbol("FE0_C1_D01_IP_j",BASIS)])
+                                                  Product([Symbol("Jinv_10", GEO), Symbol("FE0_C1_D01_ip_j", BASIS)])
                                                  ])
                                              ,
                                              Sum([
-                                                  Product([Symbol("Jinv_01",GEO), Symbol("FE0_C0_D10_IP_j",BASIS)])
+                                                  Product([Symbol("Jinv_01", GEO), Symbol("FE0_C0_D10_ip_j", BASIS)])
                                                   ,
-                                                  Product([Symbol("Jinv_11",GEO), Symbol("FE0_C0_D01_IP_j",BASIS)])
+                                                  Product([Symbol("Jinv_11", GEO), Symbol("FE0_C0_D01_ip_j", BASIS)])
                                                  ])
                                             ])
                                         ,
                                         Sum([
                                              Sum([
-                                                  Product([Symbol("Jinv_00",GEO), Symbol("FE0_C1_D10_IP_k",BASIS)])
+                                                  Product([Symbol("Jinv_00", GEO), Symbol("FE0_C1_D10_ip_k", BASIS)])
                                                   ,
-                                                  Product([Symbol("Jinv_10",GEO), Symbol("FE0_C1_D01_IP_k",BASIS)])
+                                                  Product([Symbol("Jinv_10", GEO), Symbol("FE0_C1_D01_ip_k", BASIS)])
                                                  ])
                                              ,
                                              Sum([
-                                                  Product([Symbol("Jinv_01",GEO), Symbol("FE0_C0_D10_IP_k",BASIS)])
+                                                  Product([Symbol("Jinv_01", GEO), Symbol("FE0_C0_D10_ip_k", BASIS)])
                                                   ,
-                                                  Product([Symbol("Jinv_11",GEO), Symbol("FE0_C0_D01_IP_k",BASIS)])
+                                                  Product([Symbol("Jinv_11", GEO), Symbol("FE0_C0_D01_ip_k", BASIS)])
                                                  ])
                                             ])
                                        ])
@@ -1513,17 +1777,17 @@ Symbol("G2",GEO) ])])
                           Sum([
                                Product([
                                         Sum([
-                                             Product([Symbol("Jinv_01",GEO), Symbol("FE0_C1_D10_IP_j",BASIS)])
+                                             Product([Symbol("Jinv_01", GEO), Symbol("FE0_C1_D10_ip_j", BASIS)])
                                              ,
-                                             Product([Symbol("Jinv_11",GEO), Symbol("FE0_C1_D01_IP_j",BASIS)])
+                                             Product([Symbol("Jinv_11", GEO), Symbol("FE0_C1_D01_ip_j", BASIS)])
                                             ])
                                         ,
                                         FloatValue(2)
                                         ,
                                         Sum([
-                                             Product([Symbol("Jinv_01",GEO), Symbol("FE0_C1_D10_IP_k",BASIS)])
+                                             Product([Symbol("Jinv_01", GEO), Symbol("FE0_C1_D10_ip_k", BASIS)])
                                              ,
-                                             Product([Symbol("Jinv_11",GEO), Symbol("FE0_C1_D01_IP_k",BASIS)])
+                                             Product([Symbol("Jinv_11", GEO), Symbol("FE0_C1_D01_ip_k", BASIS)])
                                             ])
                                         ,
                                         FloatValue(2)
@@ -1532,29 +1796,29 @@ Symbol("G2",GEO) ])])
                                Product([
                                         Sum([
                                              Sum([
-                                                  Product([Symbol("Jinv_01",GEO), Symbol("FE0_C0_D10_IP_j",BASIS)])
+                                                  Product([Symbol("Jinv_01", GEO), Symbol("FE0_C0_D10_ip_j", BASIS)])
                                                   ,
-                                                  Product([Symbol("Jinv_11",GEO), Symbol("FE0_C0_D01_IP_j",BASIS)])
+                                                  Product([Symbol("Jinv_11", GEO), Symbol("FE0_C0_D01_ip_j", BASIS)])
                                                  ])
                                              ,
                                              Sum([
-                                                  Product([Symbol("Jinv_00",GEO), Symbol("FE0_C1_D10_IP_j",BASIS)])
+                                                  Product([Symbol("Jinv_00", GEO), Symbol("FE0_C1_D10_ip_j", BASIS)])
                                                   ,
-                                                  Product([Symbol("Jinv_10",GEO), Symbol("FE0_C1_D01_IP_j",BASIS)])
+                                                  Product([Symbol("Jinv_10", GEO), Symbol("FE0_C1_D01_ip_j", BASIS)])
                                                  ])
                                             ])
                                         ,
                                         Sum([
                                              Sum([
-                                                  Product([Symbol("Jinv_01",GEO), Symbol("FE0_C0_D10_IP_k",BASIS)])
+                                                  Product([Symbol("Jinv_01", GEO), Symbol("FE0_C0_D10_ip_k", BASIS)])
                                                   ,
-                                                  Product([Symbol("Jinv_11",GEO), Symbol("FE0_C0_D01_IP_k",BASIS)])
+                                                  Product([Symbol("Jinv_11", GEO), Symbol("FE0_C0_D01_ip_k", BASIS)])
                                                  ])
                                              ,
                                              Sum([
-                                                  Product([Symbol("Jinv_00",GEO), Symbol("FE0_C1_D10_IP_k",BASIS)])
+                                                  Product([Symbol("Jinv_00", GEO), Symbol("FE0_C1_D10_ip_k", BASIS)])
                                                   ,
-                                                  Product([Symbol("Jinv_10",GEO), Symbol("FE0_C1_D01_IP_k",BASIS)])
+                                                  Product([Symbol("Jinv_10", GEO), Symbol("FE0_C1_D01_ip_k", BASIS)])
                                                  ])
                                             ])
                                        ])
@@ -1563,90 +1827,114 @@ Symbol("G2",GEO) ])])
                      ,
                      FloatValue(0.25)
                      ,
-                     Symbol("W4_IP",IP)
+                     Symbol("W4_ip", IP)
                      ,
-                     Symbol("det",GEO)
+                     Symbol("det", GEO)
                      ])
 
-        start = time.time()
-        A_exp = A.expand()
         print
-        print "Elasticity: time, expand():     ", time.time() - start
+        start = time.time()
+        expr_exp = expr.expand()
+        print "Elasticity2D: time, expand():     ", time.time() - start
 
         start = time.time()
         elasticity_exp = expand_operations(elasticity, get_format())
-        print "Elasticity: time, old expand(): ", time.time() - start
+        print "Elasticity2D: time, old expand(): ", time.time() - start
 
-#        start = time.time()
-#        A_red = A_exp.reduce_ops()
-#        print "\nElasticity: time, reduce_ops(): ", time.time() - start
+        start = time.time()
+        expr_red = expr_exp.reduce_ops()
+        print "Elasticity2D: time, reduce_ops(): ", time.time() - start
 
-#        start = time.time()
-#        elasticity_red = reduce_operations(elasticity, get_format())
-#        print "Elasticity: time, old reduce(): ", time.time() - start
-#        # Try to reduce the output from A
-#        old_red_A = reduce_operations(str(A), get_format())
+        start = time.time()
+        elasticity_red = reduce_operations(elasticity, get_format())
+        print "Elasticity2D: time, old reduce(): ", time.time() - start
+
+        ops = operation_count(elasticity_exp, get_format())
+        print "expr.ops():                ", expr.ops()
+        print "Elasticity2D old exp: ops: ", ops
+        print "expr_exp.ops():            ", expr_exp.ops()
+
+        ops = operation_count(elasticity_red, get_format())
+        print "Elasticity2D old red: ops: ", ops
+        print "expr_red.ops():            ", expr_red.ops()
+
+#        print "expr:\n", expr
+#        print "exp:\n", expr_exp
+#        print "red:\n", expr_red
+#        print "old red:\n", elasticity_red
+
+        Jinv_00, Jinv_01, Jinv_10, Jinv_11, W4_ip, det = (1.1, 1.5, -4.3, 1.7, 11, 52.3)
+        FE0_C0_D01_ip_j, FE0_C0_D10_ip_j, FE0_C0_D01_ip_k, FE0_C0_D10_ip_k = (1.12, 5.7, -9.3, 7.4)
+        FE0_C1_D01_ip_j, FE0_C1_D10_ip_j, FE0_C1_D01_ip_k, FE0_C1_D10_ip_k = (3.12, -8.1, -45.3, 17.5)
+
+        self.assertAlmostEqual(eval(str(expr)), eval(str(expr_exp)))
+        self.assertAlmostEqual(eval(str(expr)), eval(str(expr_red)))
+        self.assertAlmostEqual(eval(str(expr)), eval(str(elasticity)))
+        self.assertAlmostEqual(eval(str(expr)), eval(str(elasticity_exp)))
+        self.assertAlmostEqual(eval(str(expr)), eval(str(elasticity_red)))
 
 
-#        ops = operation_count(elasticity, get_format())
-#        print "Elasticity.ops()", A.ops()
-#        print "\nA_exp.ops()", A_exp.ops()
-#        ops = operation_count(elasticity_exp)
-#        print "Elasticity old exp: ops: ", ops
-#        ops = operation_count(elasticity_red)
-#        print "\nElasticity old red: ops: ", ops
-#        print "Elasticity A_red.ops(): ", A_red.ops()
-
-#        print "\nA_red:\n", A_red
-#        print "\nold_red:\n", elasticity_red
-
-        Jinv_00, Jinv_01, Jinv_10, Jinv_11, W4_IP, det = (1.1, 1.5, -4.3, 1.7, 11, 52.3)
-        FE0_C0_D01_IP_j, FE0_C0_D10_IP_j, FE0_C0_D01_IP_k, FE0_C0_D10_IP_k = (1.12, 5.7, -9.3, 7.4)
-        FE0_C1_D01_IP_j, FE0_C1_D10_IP_j, FE0_C1_D01_IP_k, FE0_C1_D10_IP_k = (3.12, -8.1, -45.3, 17.5)
-
-        self.assertAlmostEqual(eval(str(A)), eval(str(A_exp)))
-#        self.assertAlmostEqual(eval(str(A)), eval(str(A_red)))
-
-#        self.assertAlmostEqual(eval(str(A)), eval(str(elasticity)))
-#        self.assertAlmostEqual(eval(str(A)), eval(str(elasticity_exp)))
-#        self.assertAlmostEqual(eval(str(A)), eval(str(elasticity_red)))
-#        self.assertAlmostEqual(eval(str(A)), eval(str(old_red_A)))
 
     def testElasticityTerm(self):
 
-        # Value:  0.25*W1*det*(FE0_C2_D001[0][j]*FE0_C2_D001[0][k]*Jinv_00*Jinv_21 + FE0_C2_D001[0][j]*FE0_C2_D001[0][k]*Jinv_00*Jinv_21)
-        Value = Product([
+        # expr:  0.25*W1*det*(FE0_C2_D001[0][j]*FE0_C2_D001[0][k]*Jinv_00*Jinv_21 + FE0_C2_D001[0][j]*FE0_C2_D001[0][k]*Jinv_00*Jinv_21)
+        expr = Product([
                          FloatValue(0.25), Symbol('W1', GEO), Symbol('det', GEO),
-                         Sum([Product([Symbol('FE0_C2_D001[0][j]', BASIS), Symbol('FE0_C2_D001[0][k]', BASIS),
+                         Sum([Product([Symbol('FE0_C2_D001_0_j', BASIS), Symbol('FE0_C2_D001_0_k', BASIS),
                                        Symbol('Jinv_00', GEO), Symbol('Jinv_21', GEO)]),
-                              Product([Symbol('FE0_C2_D001[0][j]', BASIS), Symbol('FE0_C2_D001[0][k]', BASIS),
-                                  Symbol('Jinv_00', GEO), Symbol('Jinv_21',GEO)])
+                              Product([Symbol('FE0_C2_D001_0_j', BASIS), Symbol('FE0_C2_D001_0_k', BASIS),
+                                  Symbol('Jinv_00', GEO), Symbol('Jinv_21', GEO)])
                              ])
-                        ])
+                      ])
 
-        #Value after opt, wrong:  2*FE0_C2_D001[0][j]*FE0_C2_D001[0][k]*G0*Jinv_00*Jinv_21          
-        IP_CONSTs = {}
-        GEO_CONSTs = {}
+        print
+        start = time.time()
+        expr_exp = expr.expand()
+        print "ElasticityTerm: time, expand():     ", time.time() - start
+
+        start = time.time()
+        expr_red = expr_exp.reduce_ops()
+        print "ElasticityTerm: time, reduce_ops(): ", time.time() - start
+
+        print "expr.ops():     ", expr.ops()
+        print "expr_exp.ops(): ", expr_exp.ops()
+        print "expr_red.ops(): ", expr_red.ops()
+
+#        print "expr:\n", expr
+#        print "exp:\n", expr_exp
+#        print "red:\n", expr_red
+
+        # Generate code
+        ip_consts = {}
+        geo_consts = {}
         trans_set = set()
-        opt_code = optimise_code(Value, IP_CONSTs, GEO_CONSTs, trans_set)
 
-        print opt_code
+        start = time.time()
+        opt_code = optimise_code(expr, ip_consts, geo_consts, trans_set)
+        print "ElasticityTerm, optimise_code(): ", time.time() - start
+
+        det, W1, Jinv_00, Jinv_21, FE0_C2_D001_0_j, FE0_C2_D001_0_k = [0.123 + i for i in range(6)]
+        G0 = eval(str(geo_consts.items()[0][0]))
+        self.assertAlmostEqual(eval(str(expr)), eval(str(expr_exp)))
+        self.assertAlmostEqual(eval(str(expr)), eval(str(expr_red)))
+        self.assertAlmostEqual(eval(str(expr)), eval(str(opt_code)))
+
 
     def testElasWeighted(self):
-        exprn = Product([
+        expr = Product([
                           Symbol('W4', IP),
                           Symbol('det', GEO),
                           Sum([
                               Product([
-                                        Symbol('FE0_C1_D01_IP_j', BASIS),
-                                        Symbol('FE0_C1_D01_IP_k', BASIS),
+                                        Symbol('FE0_C1_D01_ip_j', BASIS),
+                                        Symbol('FE0_C1_D01_ip_k', BASIS),
                                         Symbol('Jinv_00', GEO),
                                         Symbol('Jinv_11', GEO),
                                         Symbol('w1', GEO)
                                         ]),
                               Product([
-                                        Symbol('FE0_C1_D01_IP_j', BASIS),
-                                        Symbol('FE0_C1_D01_IP_k', BASIS),
+                                        Symbol('FE0_C1_D01_ip_j', BASIS),
+                                        Symbol('FE0_C1_D01_ip_k', BASIS),
                                         Symbol('Jinv_01', GEO),
                                         Symbol('Jinv_10', GEO),
                                         Symbol('w0', GEO)
@@ -1655,15 +1943,15 @@ Symbol("G2",GEO) ])])
                                         Symbol('w2', GEO),
                                         Sum([
                                               Product([
-                                                      Symbol('FE0_C1_D01_IP_j', BASIS),
-                                                      Symbol('FE0_C1_D01_IP_k', BASIS),
+                                                      Symbol('FE0_C1_D01_ip_j', BASIS),
+                                                      Symbol('FE0_C1_D01_ip_k', BASIS),
                                                       Symbol('Jinv_00', GEO),
                                                       Symbol('Jinv_11', GEO),
                                                       Symbol('w1', GEO)
                                                       ]),
                                               Product([
-                                                      Symbol('FE0_C1_D01_IP_j', BASIS),
-                                                      Symbol('FE0_C1_D01_IP_k', BASIS),
+                                                      Symbol('FE0_C1_D01_ip_j', BASIS),
+                                                      Symbol('FE0_C1_D01_ip_k', BASIS),
                                                       Symbol('Jinv_01', GEO),
                                                       Symbol('Jinv_10', GEO),
                                                       Symbol('w0', GEO)
@@ -1673,33 +1961,39 @@ Symbol("G2",GEO) ])])
                               ])
                           ])
                                                        
+        print
+        start = time.time()
+        expr_exp = expr.expand()
+        print "ElasWeighted: time, expand():     ", time.time() - start
 
         start = time.time()
-        exprx = exprn.expand()
-        print
-        print "ElasWeighted: time, expand(): ", time.time() - start
+        expr_red = expr_exp.reduce_ops()
+        print "ElasWeighted: time, reduce_ops(): ", time.time() - start
 
-#        exprr = exprn.expand().reduce_ops()
+        print "expr.ops():     ", expr.ops()
+        print "expr_exp.ops(): ", expr_exp.ops()
+        print "expr_red.ops(): ", expr_red.ops()
 
-        IP_CONSTs = {}
-        GEO_CONSTs = {}
+#        print "expr:\n", expr
+#        print "exp:\n", expr_exp
+#        print "red:\n", expr_red
+
+        # Generate code
+        ip_consts = {}
+        geo_consts = {}
         trans_set = set()
 
-        opt_code = optimise_code(exprn, IP_CONSTs, GEO_CONSTs, trans_set)
+        start = time.time()
+        opt_code = optimise_code(expr, ip_consts, geo_consts, trans_set)
+        print "ElasWeighted, optimise_code(): ", time.time() - start
 
-        det, W4, w0, w1, w2, Jinv_00, Jinv_01, Jinv_11, Jinv_10, FE0_C1_D01_IP_j, FE0_C1_D01_IP_k = [0.123 + i for i in range(11)]
-        G0 = eval(str(GEO_CONSTs.items()[0][0]))
-        Gip0 = eval(str(IP_CONSTs.items()[0][0]))
+        det, W4, w0, w1, w2, Jinv_00, Jinv_01, Jinv_11, Jinv_10, FE0_C1_D01_ip_j, FE0_C1_D01_ip_k = [0.123 + i for i in range(11)]
+        G0 = eval(str(geo_consts.items()[0][0]))
+        Gip0 = eval(str(ip_consts.items()[0][0]))
+        self.assertAlmostEqual(eval(str(expr)), eval(str(expr_exp)))
+        self.assertAlmostEqual(eval(str(expr)), eval(str(expr_red)))
+        self.assertAlmostEqual(eval(str(expr)), eval(str(opt_code)))
 
-        self.assertAlmostEqual(eval(str(exprn)), eval(str(exprx)))
-#        self.assertAlmostEqual(eval(str(exprn)), eval(str(exprr)))
-        self.assertAlmostEqual(eval(str(exprn)), eval(str(opt_code)))
-
-#        print "exprn: ", eval(str(exprn))
-#        print "exprx: ", eval(str(exprx))
-#        print "exprr: ", eval(str(exprr))
-#        print "opt:   ", opt_code
-#        print GEO_CONSTs
 
     def testElasWeighted2(self):
 
@@ -1708,24 +2002,24 @@ Symbol("G2",GEO) ])])
                         Symbol('det', GEO),
                         Sum([
                               Product([
-                                        Symbol('FE0_C1_D01_IP_j', BASIS),
-                                        Symbol('FE0_C1_D01_IP_k', BASIS),
+                                        Symbol('FE0_C1_D01_ip_j', BASIS),
+                                        Symbol('FE0_C1_D01_ip_k', BASIS),
                                         Symbol('Jinv_00', GEO),
                                         Symbol('Jinv_10', GEO),
                                         Symbol('w1', GEO)
                                         ]),
                               Product([
-                                        Symbol('FE0_C1_D01_IP_j', BASIS),
+                                        Symbol('FE0_C1_D01_ip_j', BASIS),
                                         Symbol('Jinv_01', GEO),
                                         Sum([
                                               Product([
-                                                        Symbol('FE0_C1_D01_IP_k', BASIS),
+                                                        Symbol('FE0_C1_D01_ip_k', BASIS),
                                                         Symbol('Jinv_11', GEO),
                                                         Symbol('w0', GEO)
                                                         ]),
                                               Product([
-                                                         FloatValue(2),
-                                                        Symbol('FE0_C1_D01_IP_k', BASIS),
+                                                        FloatValue(2),
+                                                        Symbol('FE0_C1_D01_ip_k', BASIS),
                                                         Symbol('Jinv_11', GEO),
                                                         Symbol('w1', GEO)
                                                         ])
@@ -1735,24 +2029,24 @@ Symbol("G2",GEO) ])])
                                         Symbol('w2', GEO),
                                         Sum([
                                             Product([
-                                                    Symbol('FE0_C1_D01_IP_j', BASIS),
-                                                    Symbol('FE0_C1_D01_IP_k', BASIS),
+                                                    Symbol('FE0_C1_D01_ip_j', BASIS),
+                                                    Symbol('FE0_C1_D01_ip_k', BASIS),
                                                     Symbol('Jinv_00', GEO),
                                                     Symbol('Jinv_10', GEO),
                                                     Symbol('w1', GEO)
                                                     ]),
                                             Product([
-                                                    Symbol('FE0_C1_D01_IP_j', BASIS),
+                                                    Symbol('FE0_C1_D01_ip_j', BASIS),
                                                     Symbol('Jinv_01', GEO),
                                                     Sum([
                                                           Product([
-                                                                  Symbol('FE0_C1_D01_IP_k', BASIS),
+                                                                  Symbol('FE0_C1_D01_ip_k', BASIS),
                                                                   Symbol('Jinv_11', GEO),
                                                                   Symbol('w0', GEO)
                                                                   ]),
                                                           Product([
-                                                                   FloatValue(2),
-                                                                  Symbol('FE0_C1_D01_IP_k', BASIS),
+                                                                  FloatValue(2),
+                                                                  Symbol('FE0_C1_D01_ip_k', BASIS),
                                                                   Symbol('Jinv_11', GEO),
                                                                   Symbol('w1', GEO)
                                                                   ])
@@ -1763,53 +2057,68 @@ Symbol("G2",GEO) ])])
                               ])
                         ])
 
-
-
+        print
+        start = time.time()
+        expr_exp = expr.expand()
+        print "ElasWeighted2: time, expand():     ", time.time() - start
 
         start = time.time()
-        exprx = expr.expand()
-        print
-        print "ElasWeighted2: time, expand(): ", time.time() - start
+        expr_red = expr_exp.reduce_ops()
+        print "ElasWeighted2: time, reduce_ops(): ", time.time() - start
 
-#        exprr = exprx.reduce_ops()
+        print "expr.ops():     ", expr.ops()
+        print "expr_exp.ops(): ", expr_exp.ops()
+        print "expr_red.ops(): ", expr_red.ops()
 
-        IP_CONSTs = {}
-        GEO_CONSTs = {}
+#        print "expr:\n", expr
+#        print "exp:\n", expr_exp
+#        print "red:\n", expr_red
+
+        # Generate code
+        ip_consts = {}
+        geo_consts = {}
         trans_set = set()
-        opt_code = optimise_code(exprx, IP_CONSTs, GEO_CONSTs, trans_set)
 
-        det, W4, w0, w1, w2, Jinv_00, Jinv_01, Jinv_11, Jinv_10, FE0_C1_D01_IP_j, FE0_C1_D01_IP_k = [0.123 + i for i in range(11)]
-        G0 = eval(str(GEO_CONSTs.items()[0][0]))
-        Gip0 = eval(str(IP_CONSTs.items()[0][0]))
-        self.assertAlmostEqual(eval(str(expr)), eval(str(exprx)))
-#        self.assertAlmostEqual(eval(str(expr)), eval(str(exprr)))
+        start = time.time()
+        opt_code = optimise_code(expr, ip_consts, geo_consts, trans_set)
+        print "ElasWeighted2, optimise_code(): ", time.time() - start
+
+        det, W4, w0, w1, w2, Jinv_00, Jinv_01, Jinv_11, Jinv_10, FE0_C1_D01_ip_j, FE0_C1_D01_ip_k = [0.123 + i for i in range(11)]
+        G0 = eval(str(geo_consts.items()[0][0]))
+        Gip0 = eval(str(ip_consts.items()[0][0]))
+        self.assertAlmostEqual(eval(str(expr)), eval(str(expr_exp)))
+        self.assertAlmostEqual(eval(str(expr)), eval(str(expr_red)))
         self.assertAlmostEqual(eval(str(expr)), eval(str(opt_code)))
 
 
 def suite():
     suite = unittest.TestSuite()
-#    suite.addTest(Tests('testFloat'))
-#    suite.addTest(Tests('testSymbol'))
-#    suite.addTest(Tests('testProduct'))
-#    suite.addTest(Tests('testSum'))
-#    suite.addTest(Tests('testFraction'))
-#    suite.addTest(Tests('testMixedSymbols'))
-#    suite.addTest(Tests('testOperators'))
-#    suite.addTest(Tests('testExpandOperations'))
-#    suite.addTest(Tests('testExpandOperationsDGElastoDyn'))
-#    suite.addTest(Tests('testReduceVarType'))
-
+    # Classes and member functions
+    suite.addTest(Tests('testFloat'))
+    suite.addTest(Tests('testSymbol'))
+    suite.addTest(Tests('testProduct'))
+    suite.addTest(Tests('testSum'))
+    suite.addTest(Tests('testFraction'))
+    suite.addTest(Tests('testMixedSymbols'))
+    suite.addTest(Tests('testOperators'))
+    suite.addTest(Tests('testExpandOperations'))
+    suite.addTest(Tests('testReduceVarType'))
     suite.addTest(Tests('testReduceOperations'))
-#    suite.addTest(Tests('testReduceGIP'))
 
-#    suite.addTest(Tests('testNotFinished'))
+    # Misc.
+    suite.addTest(Tests('testNotFinished'))
 #    suite.addTest(Tests('testCache'))
 
-#    suite.addTest(Tests('testPoisson'))
-#    suite.addTest(Tests('testElasticity2D'))
-#    suite.addTest(Tests('testElasticityTerm'))
-#    suite.addTest(Tests('testElasWeighted'))
-#    suite.addTest(Tests('testElasWeighted2'))
+    # 'Real' expressions (expand and reduce)
+    suite.addTest(Tests('testDGElastoDyn'))
+    suite.addTest(Tests('testReduceGIP'))
+    suite.addTest(Tests('testPoisson'))
+    suite.addTest(Tests('testElasticity2D'))
+
+    # 'Real' expressions (generate code)
+    suite.addTest(Tests('testElasticityTerm'))
+    suite.addTest(Tests('testElasWeighted'))
+    suite.addTest(Tests('testElasWeighted2'))
 
     return suite
 
@@ -1817,11 +2126,7 @@ def suite():
 if __name__ == "__main__":
 
 
-#    print dir(format)
-#    print BASIS
     if format == None:
-#        print "none"
-#        format = Format(FFC_OPTIONS).format
         set_format(Format(FFC_OPTIONS).format)
 
     # Run all returned tests

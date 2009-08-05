@@ -86,7 +86,7 @@ class Fraction(object):
 
       # TODO: Need to fix other hashes before switching this one on
       # can't do 'frac' in {}!
-    # Hash (for lookup in {} and [])
+    # Hash (for lookup in {})
     def __hash__(self):
         "Use repr as hash"
         if self._hash:
@@ -268,12 +268,23 @@ class Fraction(object):
 
     def reduce_ops(self):
         # Try to reduce operations and divide to remove common factors
-        # FIXME: We assume expanded variables here, so there should be no
-        # need to reduce the numerator e.g., (1 + y) / x -> 1/x + y/x
-        # However, when reducing the denominator it might no longer be expanded
-        # which is in conflict with what the '/' operator of the other classes
-        # expect. The question is if it matters?
-        return self.num.reduce_ops()/self.denom.reduce_ops()
+        # FIXME: We assume expanded variables here, so any common variables in
+        # the numerator and denominator are already removed i.e, there is no
+        # risk of encountering (x + x*y) / x -> x*(1 + y)/x -> (1 + y)
+        num = self.num.reduce_ops()
+        denom = self.denom.reduce_ops()
+        return Fraction(num, denom)
+
+    def get_var_occurrences(self):
+        """Determine the number of minimum number of times all variables occurs
+        in the expression simply by calling the function on the numerator"""
+        return self.num.get_var_occurrences()
+
+    def reduce_var(self, var):
+        "Reduce the fraction by another variable through division of numerator."
+        # We assume that this function is only called by reduce_ops, such that
+        # we just need to consider the numerator.
+        return Fraction(self.num/var, self.denom)
 
 #    def get_all_vars(self):
 #        return self.num.get_all_vars()

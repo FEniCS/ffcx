@@ -28,7 +28,7 @@ EPS = 1e-12
 from floatvalue_obj import FloatValue, set_format as set_format_float
 from symbol_obj     import Symbol
 from product_obj    import Product, set_format as set_format_prod
-from sum_obj        import Sum, set_format as set_format_sum
+from sum_obj        import Sum, group_fractions, set_format as set_format_sum
 from fraction_obj   import Fraction, set_format as set_format_frac
 
 def set_format(_format):
