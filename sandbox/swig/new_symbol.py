@@ -7,12 +7,6 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # FFC common modules
 from ffc.common.log import debug, error
-#from copy import deepcopy
-
-#BASIS = 'BASIS'
-#IP  = 'IP'
-#GEO = 'GEO'
-#CONST = 'CONST'
 
 BASIS = 0
 IP  = 1

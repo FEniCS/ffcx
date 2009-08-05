@@ -7,8 +7,6 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # FFC common modules
 #from ffc.common.log import debug, error
-#from copy import deepcopy
-
 
 from new_symbol import type_to_string
 
@@ -259,16 +257,6 @@ class Symbol(object):
     def reduce_var(self, var):
         "Reduce the symbol by another variable through division"
         return self/var
-
-#    def get_all_vars(self):
-#        return [self]
-
-#    def num_var(self, var_name):
-#        # Get the number of varibles with given name
-#        if self.v == var_name:
-#            return 1
-#        return 0
-
 
 from floatvalue_obj import FloatValue
 from product_obj    import Product

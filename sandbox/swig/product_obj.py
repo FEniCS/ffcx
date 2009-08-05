@@ -7,7 +7,6 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # FFC common modules
 #from ffc.common.log import debug, error
-#from copy import deepcopy
 
 def set_format(_format):
     global format
@@ -103,19 +102,13 @@ class Product(object):
         "Use repr as hash"
         if self._hash:
             return self._hash
-        # TODO: Better way than use hash on all members?
-        # NOTE: Exclude FloatValue when computing hash
-#        self._hash = hash(tuple([hash(v) for v in self.get_vrs()]))
         self._hash = hash(repr(self))
         return self._hash
 
     # Comparison
-    # TODO: Beware that due to definition of
-    # FloatValue and Symbol definitions 3*x == 2*x evaluates to True
     def __eq__(self, other):
         "Two products are equal if their list of variables are equal"
         if isinstance(other, Product):
-#            return self.get_vrs() == other.get_vrs()
             return self.vrs == other.vrs
         else:
             return False
@@ -388,15 +381,6 @@ class Product(object):
     def reduce_var(self, var):
         "Reduce the product by another variable through division"
         return self/var
-
-#    def num_var(self, var):
-#        # The number of variables with a given name is just the sum of all
-#        # occurrences of that symbol in the product
-#        return sum([v == var for v in self.vrs])
-
-#    def get_all_vars(self):
-#        return self.vrs
-
 
 from floatvalue_obj import FloatValue
 from symbol_obj     import Symbol

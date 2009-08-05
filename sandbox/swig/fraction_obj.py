@@ -7,7 +7,6 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # FFC common modules
 #from ffc.common.log import debug, error
-#from copy import deepcopy
 
 def set_format(_format):
     global format
@@ -84,19 +83,14 @@ class Fraction(object):
 
         return num + format["division"] + denom
 
-      # TODO: Need to fix other hashes before switching this one on
-      # can't do 'frac' in {}!
     # Hash (for lookup in {})
     def __hash__(self):
         "Use repr as hash"
         if self._hash:
             return self._hash
-        # TODO: Better way than use hash on numerator and denominator?
         self._hash = hash(repr(self))
         return self._hash
 
-    # TODO: Beware that due to definition of
-    # FloatValue and Symbol definitions 3*x == 2*x evaluates to True
     def __eq__(self, other):
         # Fractions are equal if their denominator and numerator are equal
         if isinstance(other, Fraction):
@@ -267,7 +261,7 @@ class Fraction(object):
         return var
 
     def reduce_ops(self):
-        # Try to reduce operations and divide to remove common factors
+        # Try to reduce operations by reducing the numerator and denominator.
         # FIXME: We assume expanded variables here, so any common variables in
         # the numerator and denominator are already removed i.e, there is no
         # risk of encountering (x + x*y) / x -> x*(1 + y)/x -> (1 + y)
@@ -285,23 +279,6 @@ class Fraction(object):
         # We assume that this function is only called by reduce_ops, such that
         # we just need to consider the numerator.
         return Fraction(self.num/var, self.denom)
-
-#    def get_all_vars(self):
-#        return self.num.get_all_vars()
-#        if isinstance(self.num, Symbol):
-#            return [self.num]
-#        elif isinstance(self.num, Product):
-#            return self.num.vs
-#        else:
-#            return None
-
-#    def num_var(self, var):
-#        return sum([v == var for v in self.num.get_all_vars()])
-
-#    def reduce_var(self, var):
-#        return Fraction(self.num/var, self.denom)
-
-
 
 from floatvalue_obj import FloatValue
 from symbol_obj     import Symbol

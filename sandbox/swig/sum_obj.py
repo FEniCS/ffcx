@@ -7,7 +7,6 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # FFC common modules
 #from ffc.common.log import debug, error
-#from copy import deepcopy
 
 def set_format(_format):
     global format
@@ -110,15 +109,10 @@ class Sum(object):
         "Use repr as hash"
         if self._hash:
             return self._hash
-        # TODO: Better way than use hash on all members?
-        # NOTE: Exclude FloatValue when computing hash
-#        self._hash = hash(tuple([hash(v) for v in self.pos + self.neg]))
         self._hash = hash(repr(self))
         return self._hash
 
     # Comparison
-    # TODO: Beware that due to definition of
-    # FloatValue and Symbol definitions 3*x == 2*x evaluates to True
     def __eq__(self, other):
         "Two sums are equal if their list of variables are equal including sign"
         if isinstance(other, Sum):

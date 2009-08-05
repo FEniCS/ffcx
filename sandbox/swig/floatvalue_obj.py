@@ -7,7 +7,6 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # FFC common modules
 #from ffc.common.log import debug, error
-#from copy import deepcopy
 
 from new_symbol import EPS, CONST, format
 
@@ -51,8 +50,6 @@ class FloatValue(object):
     # Comparison
     def __eq__(self, other):
         "Equal if they are both float values"
-        # TODO: Should the value be included here? see, __hash__
-#        if isinstance(other, FloatValue):
         if repr(self) == repr(other):
             return True
         return False
@@ -195,15 +192,6 @@ class FloatValue(object):
     def reduce_var(self, var):
         "Reduce the float value by another variable through division"
         return self/var
-
-#    def get_all_vars(self):
-#        return [self]
-
-#    def num_var(self, var):
-#        # Get the number of varibles with given name
-#        if self == var:
-#            return 1
-#        return 0
 
 from symbol_obj     import Symbol
 from product_obj    import Product
