@@ -8,24 +8,33 @@ __license__  = "GNU GPL version 3 or any later version"
 # FFC common modules
 #from ffc.common.log import debug, error
 
-from new_symbol import EPS, CONST, format
+from new_symbol import EPS, CONST, format, create_float, create_product, create_fraction
+
+#import psyco
+#psyco.full()
 
 def set_format(_format):
     global format
     format = _format
+    global format_float
+    format_float = format["floating point"]
 
 class FloatValue(object):
-#    __slots__ = ("val", "t", "_hash")
+    __slots__ = ("val", "t", "_class", "_hash", "_repr")
     def __init__(self, value):
         """Initialise a FloatValue object it contains a:
         val  - float, holds value of object
         t    - Type, always CONST for float."""
 
+        # Initialise value, type and class type
         self.val = float(value)
         self.t = CONST
+        self._class = "float"
 
         # TODO: Use cache for hash instead
         self._hash = False
+
+        self._repr = False
 
         if abs(value) <  EPS:
             self.val = 0.0
@@ -33,11 +42,15 @@ class FloatValue(object):
     # Print functions
     def __repr__(self):
         "Representation for debugging"
-        return "FloatValue(%s)" % format["floating point"](self.val)
+#        return "FloatValue(%s)" % format["floating point"](self.val)
+        if not self._repr:
+            self._repr = "FloatValue(%s)" % format_float(self.val)
+        return self._repr
 
     def __str__(self):
         "Simple string representation"
-        return format["floating point"](self.val)
+#        return format["floating point"](self.val)
+        return format_float(self.val)
 
     # Hash (for lookup in {})
     def __hash__(self):
@@ -50,18 +63,21 @@ class FloatValue(object):
     # Comparison
     def __eq__(self, other):
         "Equal if they are both float values"
-        if repr(self) == repr(other):
-            return True
-        return False
+        return repr(self) == repr(other)
+#        if repr(self) == repr(other):
+#            return True
+#        return False
 
     def __ne__(self, other):
         "Opposite of __eq__"
-        return not self == other
+        return repr(self) != repr(other)
+#        return not self == other
 
     def __lt__(self, other):
         """A float value is always smallest compared to other objects"""
         # If we have two float values, compare numbers
-        if isinstance(other, FloatValue):
+#        if isinstance(other, FloatValue):
+        if other._class == "float":
             return self.val < other.val
         # FloatValue is always lowest
         return True
@@ -69,7 +85,8 @@ class FloatValue(object):
     def __gt__(self, other):
         "Opposite of __lt__"
         # If we have two float values, compare numbers
-        if isinstance(other, FloatValue):
+#        if isinstance(other, FloatValue):
+        if other._class == "float":
             return self.val > other.val
         # FloatValue is always lowest
         return False
@@ -79,8 +96,10 @@ class FloatValue(object):
         "Addition by other objects"
         # NOTE: We expect expanded objects here
         # This is only well-defined if other is a float or if self.val == 0
-        if isinstance(other, FloatValue):
-            return FloatValue(self.val+other.val)
+#        if isinstance(other, FloatValue):
+        if other._class == "float":
+#            return FloatValue(self.val+other.val)
+            return create_float(self.val+other.val)
         elif self.val == 0.0:
             return other
         # Addition is not defined if self is not zero
@@ -93,8 +112,10 @@ class FloatValue(object):
         # should not be present
         # Only handle case where other is a float, else let the other
         # object handle the multiplication
-        if isinstance(other, FloatValue):
-            return FloatValue(self.val*other.val)
+#        if isinstance(other, FloatValue):
+        if other._class == "float":
+#            return FloatValue(self.val*other.val)
+            return create_float(self.val*other.val)
         return other.__mul__(self)
 
     def __div__(self, other):
@@ -106,7 +127,8 @@ class FloatValue(object):
 
         # TODO: Should we also support division by fraction for generality?
         # It should not be needed by this module
-        if isinstance(other, Fraction):
+#        if isinstance(other, Fraction):
+        if other._class == "frac":
             raise RuntimeError("Did not expected to divide by fraction")
 
         # If fraction will be zero
@@ -116,37 +138,53 @@ class FloatValue(object):
         # NOTE: We expect expanded objects here i.e., Product([FloatValue])
         # should not be present
         # Handle types appropriately
-        if isinstance(other, FloatValue):
-            return FloatValue(self.val/other.val)
+#        if isinstance(other, FloatValue):
+        if other._class == "float":
+#            return FloatValue(self.val/other.val)
+            return create_float(self.val/other.val)
         # If other is a symbol, return a simple fraction
-        elif isinstance(other, Symbol):
-            return Fraction(self, other)
+#        elif isinstance(other, Symbol):
+        elif other._class == "sym":
+#            return Fraction(self, other)
+            return create_fraction(self, other)
         # Don't handle division by sum
-        elif isinstance(other, Sum):
+#        elif isinstance(other, Sum):
+        elif other._class == "sum":
             # TODO: Here we could do: 4 / (2*x + 4*y) -> 2/(x + 2*y)
-            return Fraction(self, other)
+#            return Fraction(self, other)
+            return create_fraction(self, other)
 
         # If other is a product, remove any float value to avoid
         # 4 / (2*x), this will return 2/x
         val = 1.0
         for v in other.vrs:
-            if isinstance(v, FloatValue):
+#            if isinstance(v, FloatValue):
+            if v._class == "float":
                 val *= v.val
         # If we had any floats, create new numerator and only use 'real' variables
         # from the product in the denominator
         if val != 1.0:
             # Check if we need to create a new denominator
             # TODO: Just use other.vrs[1:] instead
-            if len(other.get_vrs()) > 1:
-                return Fraction(FloatValue(self.val/val), Product(other.get_vrs()))
+#            if len(other.get_vrs()) > 1:
+            if len(other._vrs) > 1:
+#                return Fraction(FloatValue(self.val/val), Product(other.get_vrs()))
+#                return Fraction(create_float(self.val/val), Product(other.get_vrs()))
+#                return Fraction(create_float(self.val/val), create_product(other.get_vrs()))
+#                return create_fraction(create_float(self.val/val), create_product(other.get_vrs()))
+                return create_fraction(create_float(self.val/val), create_product(other._vrs))
             # TODO: Because we expect all products to be expanded we shouldn't need
             # to check for this case, just use other.vrs[1]
-            elif len(other.get_vrs()) == 1:
-                return Fraction(FloatValue(self.val/val), other.vrs[1])
+#            elif len(other.get_vrs()) == 1:
+            elif len(other._vrs) == 1:
+#                return Fraction(FloatValue(self.val/val), other.vrs[1])
+#                return Fraction(create_float(self.val/val), other.vrs[1])
+                return create_fraction(create_float(self.val/val), other.vrs[1])
             raise RuntimeError("No variables left in denominator")
 
         # Nothing left to do
-        return Fraction(self, other)
+#        return Fraction(self, other)
+        return create_fraction(self, other)
 
     # Public functions
     def ops(self):
@@ -167,7 +205,8 @@ class FloatValue(object):
         self = found*remain."""
 
         if self.t == var_type:
-            return (self, FloatValue(1))
+#            return (self, FloatValue(1))
+            return (self, create_float(1))
         return ((), self)
 
     def get_unique_vars(self, var_type):

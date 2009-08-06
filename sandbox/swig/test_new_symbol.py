@@ -1158,6 +1158,8 @@ class Tests(unittest.TestCase):
         S18 = Sum([(x*y)/a, (x*z)/a, f2/a, (f2*x*y)/a])
         S19 = Sum([(f2*x)/a, (x*y)/a, z*x])
         S20 = Product([ Sum([x, y]), Fraction(a, b), Fraction( Product([c, d]), z ) ])
+        S21 = Sum([a*x, b*x, c*x, x*y, x*z, f2*y, a*y, b*y, f2*z, a*z, b*z])
+        S22 = Sum([ FloatValue(0.5)*x/y, FloatValue(-0.5)*x/y ])
 
         Sx0 = S0.expand()
         Sx1 = S1.expand()
@@ -1180,6 +1182,8 @@ class Tests(unittest.TestCase):
         Sx18 = S18.expand()
         Sx19 = S19.expand()
         Sx20 = S20.expand()
+        Sx21 = S21.expand()
+        Sx22 = S22.expand()
 
         Sr0 = Sx0.reduce_ops()
         Sr1 = Sx1.reduce_ops()
@@ -1202,6 +1206,8 @@ class Tests(unittest.TestCase):
         Sr18 = Sx18.reduce_ops()
         Sr19 = Sx19.reduce_ops()
         Sr20 = Sx20.reduce_ops()
+        Sr21 = Sx21.reduce_ops()
+        Sr22 = Sx22.reduce_ops()
 
 #        print "Test sum"
 #        print "S0:  '%s'" %S0
@@ -1287,6 +1293,14 @@ class Tests(unittest.TestCase):
 #        print "S20:  '%s'" %S20
 #        print "Sx20: '%s'" %Sx20
 #        print "Sr20: '%s'" %Sr20
+#        print
+#        print "S21:  '%s'" %S21
+#        print "Sx21: '%s'" %Sx21
+#        print "Sr21: '%s'" %Sr21
+#        print
+#        print "S22:  '%s'" %S22
+#        print "Sx22: '%s'" %Sx22
+#        print "Sr22: '%s'" %Sr22
 
         self.assertEqual(Sr0, S0)
         self.assertEqual(str(Sr1), "x*(2 + y)")
@@ -1311,6 +1325,10 @@ class Tests(unittest.TestCase):
         self.assertEqual(str(Sr18), "(2 + x*(z + 3*y))/a")
         self.assertEqual(str(Sr19), "x*(z + (2 + y)/a)")
         self.assertEqual(str(Sr20), "a*c*d*(x + y)/(b*z)")
+        self.assertEqual(str(Sr21), "(x*(a + b + c + y + z) + y*(2 + a + b) + z*(2 + a + b))")
+        self.assertEqual(str(Sr22), "0")
+
+
 
         self.assertEqual(S0.ops(), 1)
         self.assertEqual(Sr0.ops(), 1)
@@ -1352,6 +1370,10 @@ class Tests(unittest.TestCase):
         self.assertEqual(Sr18.ops(), 5)
         self.assertEqual(S19.ops(), 7)
         self.assertEqual(Sr19.ops(), 4)
+        self.assertEqual(S20.ops(), 6)
+        self.assertEqual(Sr20.ops(), 6)
+        self.assertEqual(S21.ops(), 21)
+        self.assertEqual(Sr21.ops(), 13)
 
     def testNotFinished(self):
         "Stuff that would be nice to implement."

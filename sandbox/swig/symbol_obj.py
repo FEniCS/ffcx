@@ -8,9 +8,13 @@ __license__  = "GNU GPL version 3 or any later version"
 # FFC common modules
 #from ffc.common.log import debug, error
 
-from new_symbol import type_to_string
+from new_symbol import type_to_string, create_float, create_product, create_fraction
+
+#import psyco
+#psyco.full()
 
 class Symbol(object):
+    __slots__ = ("val", "v", "t", "base_expr", "base_op", "_class", "_hash", "_repr")
     def __init__(self, variable, symbol_type, base_expr=None, base_op=0):
         """Initialise a Symbols object it contains a:
         val       - float, holds value of object (always 1 for symbol)
@@ -25,8 +29,13 @@ class Symbol(object):
         self.v = variable
         self.t = symbol_type
 
+        # Initialise class type
+        self._class = "sym"
+
         # TODO: Use cache for hash instead
         self._hash = False
+
+        self._repr = False
 
         # Needed for symbols like std::cos(x*y + z),
         # where base_expr = x*y + z
@@ -44,9 +53,12 @@ class Symbol(object):
     # Print functions
     def __repr__(self):
         "Representation for debugging"
-        if self.base_expr:
-            return "Symbol('%s', %s, %s, %d)" % (self.v, type_to_string[self.t], repr(self.base_expr), self.base_op)
-        return "Symbol('%s', %s)" % (self.v, type_to_string[self.t])
+        if not self._repr:
+            if self.base_expr:
+                self._repr = "Symbol('%s', %s, %s, %d)" % (self.v, type_to_string[self.t], repr(self.base_expr), self.base_op)
+            else:
+                self._repr = "Symbol('%s', %s)" % (self.v, type_to_string[self.t])
+        return self._repr
 
     def __str__(self):
         "Simple string representation"
@@ -64,25 +76,30 @@ class Symbol(object):
     # Comparison
     def __eq__(self, other):
         "Two symbols are equal if the variable and domain are equal"
-        if isinstance(other, Symbol):
+#        return repr(self) == repr(other)
+#        if isinstance(other, Symbol):
+        if other and other._class == "sym":
             return self.v == other.v and self.t == other.t
         return False
 
     def __ne__(self, other):
         "Two symbols are not equal if equal is false"
+#        return repr(self) != repr(other)
         return not self == other
 
     def __lt__(self, other):
         "Less than"
-        if isinstance(other, FloatValue):
+#        if isinstance(other, FloatValue):
+        if other._class == "float":
             return False
         # TODO: Just sort by name?
-        if isinstance(other, Symbol):
+#        if isinstance(other, Symbol):
+        elif other._class == "sym":
             # First sort by type then by variable name
-            if self.t == other.t:
-                return self.v < other.v
-            elif self.t < other.t:
+            if self.t < other.t:
                 return True
+            elif self.t == other.t:
+                return self.v < other.v
             else:
                 return False
         # Symbols are always lower than the rest
@@ -90,14 +107,16 @@ class Symbol(object):
 
     def __gt__(self, other):
         "Greater than"
-        if isinstance(other, FloatValue):
+#        if isinstance(other, FloatValue):
+        if other._class == "float":
             return True
-        if isinstance(other, Symbol):
+#        if isinstance(other, Symbol):
+        elif other._class == "sym":
             # First sort by type then by variable name
-            if self.t == other.t:
-                return self.v > other.v
-            elif self.t > other.t:
+            if self.t > other.t:
                 return True
+            elif self.t == other.t:
+                return self.v > other.v
             else:
                 return False
         # Symbols are always lowest
@@ -111,8 +130,11 @@ class Symbol(object):
         # TODO: Should we also support addition by other objects for generality?
         # Add x + x by returning 2*x
         if self == other:
-            return Product([FloatValue(2), self])
-        elif isinstance(other, Product):
+#            return Product([FloatValue(2), self])
+#            return Product([create_float(2), self])
+            return create_product([create_float(2), self])
+#        elif isinstance(other, Product):
+        elif other._class == "prod":
             return other.__add__(self)
         raise RuntimeError("Not implemented")
 
@@ -122,18 +144,23 @@ class Symbol(object):
         # NOTE: We assume expanded objects
         # If product will be zero
         if self.val == 0.0 or other.val == 0.0:
-            return FloatValue(0)
+#            return FloatValue(0)
+            return create_float(0)
 
         # If other is Sum or Fraction let them handle the multiply
-        if isinstance(other, (Sum, Fraction)):
+#        if isinstance(other, (Sum, Fraction)):
+        if other._class in ("sum", "frac"):
             return other.__mul__(self)
 
         # If other is a float or symbol, create simple product
-        if isinstance(other, (FloatValue, Symbol)):
-            return Product([self, other])
+#        if isinstance(other, (FloatValue, Symbol)):
+        if other._class in ("float", "sym"):
+#            return Product([self, other])
+            return create_product([self, other])
 
         # Else add variables from product
-        return Product([self] + other.vrs)
+#        return Product([self] + other.vrs)
+        return create_product([self] + other.vrs)
 
     def __div__(self, other):
         "Division of symbols by other objects"
@@ -145,12 +172,15 @@ class Symbol(object):
 
         # Return 1 if the two symbols are equal
         if self == other:
-            return FloatValue(1)
+#            return FloatValue(1)
+            return create_float(1)
 
         # If other is a Sum we can only return a fraction
         # TODO: Refine this later such that x / (x + x*y) -> 1 / (1 + y)?
-        if isinstance(other, Sum):
-            return Fraction(self, other)
+#        if isinstance(other, Sum):
+        if other._class == "sum":
+#            return Fraction(self, other)
+            return create_fraction(self, other)
 
         # Handle division by FloatValue, Symbol, Product and Fraction
         # Create numerator and list for denominator
@@ -158,9 +188,11 @@ class Symbol(object):
         denom = []
 
         # Add floatvalue, symbol and products to the list of denominators
-        if isinstance(other, (FloatValue, Symbol)):
+#        if isinstance(other, (FloatValue, Symbol)):
+        if other._class in ("float", "sym"):
             denom.append(other)
-        elif isinstance(other, Product):
+#        elif isinstance(other, Product):
+        elif other._class == "prod":
             denom += other.vrs
         # fraction
         else:
@@ -179,31 +211,41 @@ class Symbol(object):
         append_denom = new_denom.append
         for d in denom:
             # Add the inverse of a float to the numerator and continue
-            if isinstance(d, FloatValue):
-                num.append(FloatValue(1.0/other.val))
+#            if isinstance(d, FloatValue):
+            if d._class == "float":
+#                num.append(FloatValue(1.0/other.val))
+                num.append(create_float(1.0/other.val))
                 continue
             append_denom(d)
 
         # Create appropriate return value depending on remaining data
         # Can only be for x / (2*y*z) -> 0.5*x / (y*z)
         if len(num) > 1:
-            num = Product(num)
+#            num = Product(num)
+            num = create_product(num)
         # x / (y*z) -> x/(y*z)
         elif num:
             num = num[0]
         # else x / (x*y) -> 1/y
         else:
-            num = FloatValue(1)
+#            num = FloatValue(1)
+            num = create_float(1)
 
         # If we have a long denominator, create product and fraction
         if len(new_denom) > 1:
-            return Fraction(num, Product(new_denom))
+#            return Fraction(num, Product(new_denom))
+#            return Fraction(num, create_product(new_denom))
+            return create_fraction(num, create_product(new_denom))
         # If we do have a denominator, but only one variable don't create a
         # product, just return a fraction using the variable as denominator
         elif new_denom:
-            return Fraction(num, new_denom[0])
-        # If we don't have any donominator left, return the numerator
-        # x / 2.0 -> 0.5*x
+#            return Fraction(num, new_denom[0])
+            return create_fraction(num, new_denom[0])
+#        if new_denom:
+#            return create_fraction(num, create_product(new_denom).expand())
+
+#        # If we don't have any donominator left, return the numerator
+#        # x / 2.0 -> 0.5*x
         return num
 
     # Public functions
@@ -229,7 +271,8 @@ class Symbol(object):
         self = found*remain."""
 
         if self.t == var_type:
-            return (self, FloatValue(1))
+#            return (self, FloatValue(1))
+            return (self, create_float(1))
         return ((), self)
 
     def get_unique_vars(self, var_type):

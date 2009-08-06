@@ -21,13 +21,14 @@ from ffc.common.log import debug, info
 # Utility and optimisation functions for quadraturegenerator
 from quadraturegenerator_utils import generate_loop
 from quadraturetransformer import generate_code, QuadratureTransformer
-from quadraturetransformer2 import generate_code as generate_code2
-from quadraturetransformer2 import QuadratureTransformer2
-from reduce_operations2 import generate_aux_constants
 
-#from quadraturetransformer3 import generate_code as generate_code2
-#from quadraturetransformer3 import QuadratureTransformer2
-#from new_symbol import generate_aux_constants
+#from quadraturetransformer2 import generate_code as generate_code2
+#from quadraturetransformer2 import QuadratureTransformer2
+#from reduce_operations2 import generate_aux_constants
+
+from quadraturetransformer3 import generate_code as generate_code2
+from quadraturetransformer3 import QuadratureTransformer2
+from sandbox.swig.new_symbol import generate_aux_constants
 
 # FFC format modules
 from ffc.compiler.format.removeunused import remove_unused
