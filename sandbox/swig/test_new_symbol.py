@@ -23,7 +23,7 @@ class Tests(unittest.TestCase):
         "Test simple FloatValue instance."
         f0 = FloatValue(1.5)
         f1 = FloatValue(-5)
-        f2 = FloatValue(-1e-13)
+        f2 = FloatValue(-1e-14)
         f3 = FloatValue(-1e-11)
         f4 = FloatValue(1.5)
 

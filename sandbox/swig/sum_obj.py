@@ -20,6 +20,8 @@ def set_format(_format):
 class Sum(object):
 #    __slots__ = ("val", "t", "pos", "neg", "expanded", "reduced", "_class", "_hash", "_repr", "_ops")
     __slots__ = ("val", "t", "pos", "neg", "expanded", "reduced", "_class", "_hash", "_repr")
+#    __slots__ = ("val", "t", "pos", "neg", "reduced", "_class", "_hash", "_repr")
+#    __slots__ = ("val", "t", "pos", "neg", "expanded", "reduced", "_class", "_hash")
     def __init__(self, variables):
         """Initialise a Sum object, the class contains:
         val - float, numeric value of the object (defualt is 1, but can be
@@ -29,38 +31,29 @@ class Sum(object):
         pos - list, all positive variables
         neg - list, all negative variables
         """
-
         # TODO: Could add 'expanded' to this object too for speed?
         self.val = 1.0
         self.pos = []
         self.neg = []
-        pos_append = self.pos.append
-        neg_append = self.neg.append
+#        pos_append = self.pos.append
+#        neg_append = self.neg.append
         self.expanded = False
         self.reduced = False
 
         # Initialise class type
         self._class = "sum"
 
-        # TODO: Use cache for hash instead
-        self._hash = False
-
-        self._repr = False
-#        self._ops = False
-#        self._occurs = False
-#        self._unique_vars = {}
-#        self._reduce_vartype = {}
-
         if variables:
             # Remove nested Sums
             new_vars = []
-            new_vars_append = new_vars.append
+#            new_vars_append = new_vars.append
             for v in variables:
 #                if isinstance(v, Sum):
                 if v._class == "sum":
                     new_vars += v.pos + v.neg
                     continue
-                new_vars_append(v)
+                new_vars.append(v)
+#                new_vars_append(v)
 
             floats = []
             # Loop variables and sort in positive and negative
@@ -75,11 +68,11 @@ class Sum(object):
                 if v._class == "float":
                     floats.append(v)
                 elif v.val < 0.0:
-#                    self.neg.append(v)
-                    neg_append(v)
+                    self.neg.append(v)
+#                    neg_append(v)
                 else:
-#                    self.pos.append(v)
-                    pos_append(v)
+                    self.pos.append(v)
+#                    pos_append(v)
 
             # Only create new float if we have more than one. Also ignore it
             # if 1 + 1 - 2 = 0
@@ -87,19 +80,19 @@ class Sum(object):
                 val = sum([v.val for v in floats])
                 if val and val < 0.0:
 #                    self.neg.append(FloatValue(val))
-#                    self.neg.append(create_float(val))
-                    neg_append(create_float(val))
+                    self.neg.append(create_float(val))
+#                    neg_append(create_float(val))
                 elif val:
 #                    self.pos.append(FloatValue(val))
-#                    self.pos.append(create_float(val))
-                    pos_append(create_float(val))
+                    self.pos.append(create_float(val))
+#                    pos_append(create_float(val))
             elif floats:
                 if floats[0].val and floats[0].val < 0.0:
-#                    self.neg.append(floats[0])
-                    neg_append(floats[0])
+                    self.neg.append(floats[0])
+#                    neg_append(floats[0])
                 elif floats[0].val:
-#                    self.pos.append(floats[0])
-                    pos_append(floats[0])
+                    self.pos.append(floats[0])
+#                    pos_append(floats[0])
 
         # If we don't have any variables the sum is zero
         else:
@@ -119,11 +112,21 @@ class Sum(object):
         self.pos.sort()
         self.neg.sort()
 
+        # Compute the representation now, such that we can use it directly
+        # in the __eq__ and __ne__ methods (improves performance a bit, but
+        # only when objects are cached).
+#        self._repr = self.__repr__()
+        self._repr = "Sum([%s])" % ", ".join([v._repr for v in self.pos + self.neg])
+
+        # TODO: Use cache for hash instead
+        self._hash = hash(self._repr)
+
     # Print functions
     def __repr__(self):
         "Representation for debugging"
-        if not self._repr:
-            self._repr = "Sum([%s])" % ", ".join([repr(v) for v in self.pos + self.neg])
+#        return "Sum([%s])" % ", ".join([repr(v) for v in self.pos + self.neg])
+#        if not self._repr:
+#            self._repr = "Sum([%s])" % ", ".join([repr(v) for v in self.pos + self.neg])
         return self._repr
 
     def __str__(self):
@@ -142,24 +145,28 @@ class Sum(object):
     # Hash (for lookup in {})
     def __hash__(self):
         "Use repr as hash"
-        if self._hash:
-            return self._hash
-        self._hash = hash(repr(self))
+#        if self._hash:
+#            return self._hash
+#        self._hash = hash(repr(self))
         return self._hash
 
     # Comparison
     def __eq__(self, other):
         "Two sums are equal if their list of variables are equal including sign"
-#        return repr(self) == repr(other)
+#        if other and other._class in ("float", "sym", "prod", "sum", "frac"):
+        if other:
+            return self._repr == other._repr
 #        if isinstance(other, Sum):
-        if other and other._class == "sum":
-            return self.pos == other.pos and self.neg == other.neg
+#        if other and other._class == "sum":
+#            return self.pos == other.pos and self.neg == other.neg
         return False
 
     def __ne__(self, other):
         "Two sums are not equal if equal is false"
-#        return repr(self) != repr(other)
-        return not self == other
+#        if other and other._class in ("float", "sym", "prod", "sum", "frac"):
+        if other:
+            return self._repr != other._repr
+        return True
 
     def __lt__(self, other):
         # Symbols and products are always less
@@ -284,23 +291,24 @@ class Sum(object):
 
         # Remove nested sums that got created by expanding variables
         new_vars = []
-        new_append = new_vars.append
+#        new_append = new_vars.append
         for v in variables:
 #            if isinstance(v, Sum):
             if v._class == "sum":
                 new_vars += v.pos + v.neg
                 continue
-            new_append(v)
+            new_vars.append(v)
+#            new_append(v)
 
         # Sort variables into symbols, products and fractions (add floats
         # directly to new list, will be handled later). Add fractions if
         # possible else add to list.
         new_variables = []
-        append = new_variables.append
+#        append = new_variables.append
         syms = []
-        sym_append = syms.append
+#        sym_append = syms.append
         prods = []
-        prod_append = prods.append
+#        prod_append = prods.append
         frac_groups = {}
         # TODO: Rather than using '+', would it be more efficient to collect
         # the terms first?
@@ -310,13 +318,16 @@ class Sum(object):
             # TODO: Should we also group fractions, or put this in a separate function?
 #            if isinstance(v, (FloatValue, Fraction)):
             if v._class in ("float", "frac"):
-                append(v)
+                new_variables.append(v)
+#                append(v)
 #            elif isinstance(v, Symbol):
             elif v._class == "sym":
-                sym_append(v)
+                syms.append(v)
+#                sym_append(v)
 #            elif isinstance(v, Product):
             elif v._class == "prod":
-                prod_append(v)
+                prods.append(v)
+#                prod_append(v)
             # TODO: put this in another function, cannot group fractions
             # before we have reduced fractions with respect to Types etc.
 #            else:
@@ -332,13 +343,13 @@ class Sum(object):
         for v in prods:
 #            print "v: ", v
 #            print "getvrs: ", v.get_vrs()
-#            if v.get_vrs() in prod_groups:
-            if v._vrs in prod_groups:
-#                prod_groups[v.get_vrs()] += v
-                prod_groups[v._vrs] += v
+            if v.get_vrs() in prod_groups:
+#            if v._vrs in prod_groups:
+                prod_groups[v.get_vrs()] += v
+#                prod_groups[v._vrs] += v
             else:
-#                prod_groups[v.get_vrs()] = v
-                prod_groups[v._vrs] = v
+                prod_groups[v.get_vrs()] = v
+#                prod_groups[v._vrs] = v
 
         sym_groups = {}
         # Loop symbols and add to appropriate groups
@@ -355,10 +366,13 @@ class Sum(object):
 
         # Loop groups and add to new variable list
         for k,v in sym_groups.iteritems():
-            append(v)
+            new_variables.append(v)
+#            append(v)
         for k,v in prod_groups.iteritems():
-            append(v)
+            new_variables.append(v)
+#            append(v)
 #        for k,v in frac_groups.iteritems():
+#            new_variables.append(v)
 #            append(v)
 
         if len(new_variables) > 1:
@@ -395,7 +409,7 @@ class Sum(object):
 
         # Create the return value
         returns = []
-        append = returns.append
+#        append = returns.append
         for f, r in found.iteritems():
             if len(r) > 1:
                 # Use expand to group expressions
@@ -403,10 +417,11 @@ class Sum(object):
                 r = create_sum(r).expand()
             elif r:
                 r = r.pop()
-            append((f, r))
+            returns.append((f, r))
+#            append((f, r))
         return returns
-#        self._reduce_vartype[var_type] = returns
-#        return returns
+        self._reduce_vartype[var_type] = returns
+        return returns
 
     def get_unique_vars(self, var_type):
         "Get unique variables (Symbols) as a set"
@@ -426,9 +441,6 @@ class Sum(object):
         times they occur. x*x + x returns {x:1}, x + y returns {}"""
         # NOTE: This function is only used if the numerator of a Fraction is a Sum
 
-#        if self._occurs:
-#            return self._occurs
-
         # Get occurrences in first expression
         d0 = (self.pos + self.neg)[0].get_var_occurrences()
         for var in (self.pos + self.neg)[1:]:
@@ -442,7 +454,6 @@ class Sum(object):
             for k, v in d.iteritems():
                 if k in d0:
                     d0[k] = min(d0[k], v)
-#        self._occurs = d0
         return d0
 
     def reduce_ops(self):
@@ -472,6 +483,7 @@ class Sum(object):
             # Get dictonary of occurrences
             # TODO: Don't save d, group with following line
             d = var.get_var_occurrences()
+#            d = get_var_occurrences(var)
 
             # Add the variable and the number of occurrences to common dictionary
             for k, v in d.iteritems():
@@ -528,8 +540,6 @@ class Sum(object):
                     terms_reductions[tuple(terms)][1] += red_vars
                 else:
                     terms_reductions[tuple(terms)] = [reduc, red_vars]
-#            else:
-#                continue
 
         if terms_reductions:
 #            print "\nterms_reductions"
@@ -601,11 +611,11 @@ class Sum(object):
 
             # Create list of terms that should not be reduced
             dont_reduce_terms = []
-            dont_reduce_terms_append = dont_reduce_terms.append
+#            dont_reduce_terms_append = dont_reduce_terms.append
             for v in new_sum.pos + new_sum.neg:
                 if not v in all_reduced_terms:
-#                    dont_reduce_terms.append(v)
-                    dont_reduce_terms_append(v)
+                    dont_reduce_terms.append(v)
+#                    dont_reduce_terms_append(v)
 #            print "dont reduce: ", dont_reduce_terms
 #            print "reduced expr: ", reduced_expressions
 
@@ -654,7 +664,7 @@ def group_fractions(expr):
 
     # Loop variables and group those with common denominator
     not_frac = []
-    not_frac_append = not_frac.append
+#    not_frac_append = not_frac.append
     fracs = {}
     for v in expr.pos + expr.neg:
 #        if isinstance(v, Fraction):
@@ -665,8 +675,8 @@ def group_fractions(expr):
             else:
                 fracs[v.denom] = [1, [v.num], v]
             continue
-#        not_frac.append(v)
-        not_frac_append(v)
+        not_frac.append(v)
+#        not_frac_append(v)
     if not fracs:
         return expr
 
@@ -676,16 +686,17 @@ def group_fractions(expr):
             # I think we have to because x/a + 2*x/a -> 3*x/a
 #            not_frac.append(Fraction(Sum(v[1]).expand(), k))
 #            not_frac.append(Fraction(create_sum(v[1]).expand(), k))
-#            not_frac.append(create_fraction(create_sum(v[1]).expand(), k))
-            not_frac_append(create_fraction(create_sum(v[1]).expand(), k))
+            not_frac.append(create_fraction(create_sum(v[1]).expand(), k))
+#            not_frac_append(create_fraction(create_sum(v[1]).expand(), k))
         else:
-#            not_frac.append(v[2])
-            not_frac_append(v[2])
+            not_frac.append(v[2])
+#            not_frac_append(v[2])
 
     if len(not_frac) > 1:
 #        return Sum(not_frac)
         return create_sum(not_frac)
     return not_frac[0]
+
 
 from floatvalue_obj import FloatValue
 from symbol_obj     import Symbol

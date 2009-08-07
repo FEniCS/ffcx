@@ -15,6 +15,7 @@ from new_symbol import type_to_string, create_float, create_product, create_frac
 
 class Symbol(object):
     __slots__ = ("val", "v", "t", "base_expr", "base_op", "_class", "_hash", "_repr")
+#    __slots__ = ("val", "v", "t", "base_expr", "base_op", "_class", "_hash")
     def __init__(self, variable, symbol_type, base_expr=None, base_op=0):
         """Initialise a Symbols object it contains a:
         val       - float, holds value of object (always 1 for symbol)
@@ -32,9 +33,6 @@ class Symbol(object):
         # Initialise class type
         self._class = "sym"
 
-        # TODO: Use cache for hash instead
-        self._hash = False
-
         self._repr = False
 
         # Needed for symbols like std::cos(x*y + z),
@@ -50,14 +48,33 @@ class Symbol(object):
         if base_expr and base_expr.t < self.t:
             self.t = base_expr.t
 
+        # Compute the representation now, such that we can use it directly
+        # in the __eq__ and __ne__ methods (improves performance a bit, but
+        # only when objects are cached).
+#        self._repr = self.__repr__()
+        if self.base_expr:
+            self._repr = "Symbol('%s', %s, %s, %d)" % (self.v, type_to_string[self.t], self.base_expr._repr, self.base_op)
+        else:
+            self._repr = "Symbol('%s', %s)" % (self.v, type_to_string[self.t])
+
+
+        # TODO: Use cache for hash instead
+#        self._hash = False
+        self._hash = hash(self._repr)
+
     # Print functions
     def __repr__(self):
         "Representation for debugging"
-        if not self._repr:
-            if self.base_expr:
-                self._repr = "Symbol('%s', %s, %s, %d)" % (self.v, type_to_string[self.t], repr(self.base_expr), self.base_op)
-            else:
-                self._repr = "Symbol('%s', %s)" % (self.v, type_to_string[self.t])
+#        if self.base_expr:
+#            return "Symbol('%s', %s, %s, %d)" % (self.v, type_to_string[self.t], repr(self.base_expr), self.base_op)
+#        else:
+#            return "Symbol('%s', %s)" % (self.v, type_to_string[self.t])
+
+#        if not self._repr:
+#            if self.base_expr:
+#                self._repr = "Symbol('%s', %s, %s, %d)" % (self.v, type_to_string[self.t], repr(self.base_expr), self.base_op)
+#            else:
+#                self._repr = "Symbol('%s', %s)" % (self.v, type_to_string[self.t])
         return self._repr
 
     def __str__(self):
@@ -67,25 +84,30 @@ class Symbol(object):
     # Hash (for lookup in {})
     def __hash__(self):
         "Use repr as hash"
-        if self._hash:
-            return self._hash
-        # TODO: Will it be OK in all practical cases to use __str__ instead??
-        self._hash = hash(repr(self))
+#        if self._hash:
+#            return self._hash
+#        # TODO: Will it be OK in all practical cases to use __str__ instead??
+#        self._hash = hash(repr(self))
         return self._hash
 
     # Comparison
     def __eq__(self, other):
         "Two symbols are equal if the variable and domain are equal"
-#        return repr(self) == repr(other)
-#        if isinstance(other, Symbol):
-        if other and other._class == "sym":
-            return self.v == other.v and self.t == other.t
+#        if other and other._class in ("float", "sym", "prod", "sum", "frac"):
+        if other:
+            return self._repr == other._repr
+##        if isinstance(other, Symbol):
+#        if other and other._class == "sym":
+#            return self.v == other.v and self.t == other.t
         return False
 
     def __ne__(self, other):
         "Two symbols are not equal if equal is false"
-#        return repr(self) != repr(other)
-        return not self == other
+#        if other and other._class in ("float", "sym", "prod", "sum", "frac"):
+        if other:
+            return self._repr != other._repr
+        return True
+#        return not self == other
 
     def __lt__(self, other):
         "Less than"
@@ -208,7 +230,7 @@ class Symbol(object):
 
         # Loop entries in denominator and move float value to numerator
         new_denom = []
-        append_denom = new_denom.append
+#        append_denom = new_denom.append
         for d in denom:
             # Add the inverse of a float to the numerator and continue
 #            if isinstance(d, FloatValue):
@@ -216,7 +238,8 @@ class Symbol(object):
 #                num.append(FloatValue(1.0/other.val))
                 num.append(create_float(1.0/other.val))
                 continue
-            append_denom(d)
+#            append_denom(d)
+            new_denom.append(d)
 
         # Create appropriate return value depending on remaining data
         # Can only be for x / (2*y*z) -> 0.5*x / (y*z)

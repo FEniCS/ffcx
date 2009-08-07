@@ -10,6 +10,10 @@ __license__  = "GNU GPL version 3 or any later version"
 
 from new_symbol import create_float, create_product, create_sum, create_fraction
 
+from ffc.compiler.format.ufcformat import Format
+from ffc.common.constants import FFC_OPTIONS
+format = Format(FFC_OPTIONS).format
+
 #import psyco
 #psyco.full()
 
@@ -19,6 +23,7 @@ def set_format(_format):
 
 class Fraction(object):
     __slots__ = ("val", "t", "num", "denom", "expanded", "reduced", "_class", "_hash", "_repr")
+#    __slots__ = ("val", "t", "num", "denom", "expanded", "reduced", "_class", "_hash")
     def __init__(self, numerator, denominator):
         """Initialise a Fraction object, the class contains:
         val   - float, value of fraction (equal to value of numerator)
@@ -48,10 +53,6 @@ class Fraction(object):
         # Initialise class type
         self._class = "frac"
 
-        # TODO: Use cache for hash instead
-        self._hash = False
-
-        self._repr = False
 #        self._unique_vars = {}
 #        self._reduce_vartype = {}
 
@@ -71,15 +72,32 @@ class Fraction(object):
             # Remove denominator, such that it will be excluded when printing
             self.denom = None
 
+        # Compute the representation now, such that we can use it directly
+        # in the __eq__ and __ne__ methods (improves performance a bit, but
+        # only when objects are cached).
+        # TODO: Use cache for hash instead
+#        self._repr = False
+        if self.denom:
+            self._repr = "Fraction(%s, %s)" %(self.num._repr, self.denom._repr)
+        else:
+            self._repr = "Fraction(%s, %s)" %(self.num._repr, create_float(1)._repr)
+
+#        self._hash = False
+        self._hash = hash(self._repr)
+
     # Print functions
     def __repr__(self):
         "Representation for debugging"
-        if not self._repr:
-            if self.denom:
-                self._repr = "Fraction(%s, %s)" %(repr(self.num), repr(self.denom))
-            else:
-#                self._repr = "Fraction(%s, %s)" %(repr(self.num), repr(FloatValue(1)))
-                self._repr = "Fraction(%s, %s)" %(repr(self.num), repr(create_float(1)))
+#        if self.denom:
+#            return "Fraction(%s, %s)" %(repr(self.num), repr(self.denom))
+#        else:
+#            return "Fraction(%s, %s)" %(repr(self.num), repr(create_float(1)))
+
+#        if not self._repr:
+#            if self.denom:
+#                self._repr = "Fraction(%s, %s)" %(repr(self.num), repr(self.denom))
+#            else:
+#                self._repr = "Fraction(%s, %s)" %(repr(self.num), repr(create_float(1)))
         return self._repr
 
 
@@ -105,29 +123,34 @@ class Fraction(object):
 #        if isinstance(self.denom, (Product, Fraction)) or self.denom.val < 0.0:
         if self.denom._class in ("prod", "frac") or self.denom.val < 0.0:
             denom = format["grouping"](denom)
-
         return num + format["division"] + denom
 
     # Hash (for lookup in {})
     def __hash__(self):
         "Use repr as hash"
-        if self._hash:
-            return self._hash
-        self._hash = hash(repr(self))
+#        if self._hash:
+#            return self._hash
+#        self._hash = hash(repr(self))
         return self._hash
 
     def __eq__(self, other):
         # Fractions are equal if their denominator and numerator are equal
 #        return repr(self) == repr(other)
 #        if isinstance(other, Fraction):
-        if other and other._class == "frac":
-            return self.denom == other.denom and self.num == other.num
+#        if other and other._class in ("float", "sym", "prod", "sum", "frac"):
+        if other:
+            return self._repr == other._repr
         return False
+#        if other and other._class == "frac":
+#            return self.denom == other.denom and self.num == other.num
+#        return False
 
     def __ne__(self, other):
         "Two fractions are not equal if equal is false"
-#        return repr(self) != repr(other)
-        return not self == other
+#        if other and other._class in ("float", "sym", "prod", "sum", "frac"):
+        if other:
+            return self._repr != other._repr
+        return True
 
     def __lt__(self, other):
         # Fractions are always greater than
@@ -287,7 +310,6 @@ class Fraction(object):
                 remain.append(d_remain)
 
             # There is always a non-const remainder if denominator was a sum
-#            denom_remain = Sum(remain)
             denom_remain = create_sum(remain)
 
         # If we have found a common denominator, but no found numerator,
@@ -295,19 +317,15 @@ class Fraction(object):
         # TODO: Add more checks to avoid expansion
         found = None
         # There is always a remainder
-#        remain = Fraction(num_remain, denom_remain).expand()
         remain = create_fraction(num_remain, denom_remain).expand()
 
         if num_found:
             if denom_found:
-#                found = Fraction(num_found, denom_found)
                 found = create_fraction(num_found, denom_found)
             else:
                 found = num_found
         else:
             if denom_found:
-#                found = Fraction(FloatValue(1), denom_found)
-#                found = Fraction(create_float(1), denom_found)
                 found = create_fraction(create_float(1), denom_found)
             else:
                 found = ()

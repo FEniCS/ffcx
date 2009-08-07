@@ -18,8 +18,7 @@ def set_format(_format):
     format = _format
 
 class Product(object):
-#    __slots__ = ("val", "t", "vrs", "_vrs", "expanded", "_class", "_hash", "_repr", "_ops")
-    __slots__ = ("val", "t", "vrs", "_vrs", "expanded", "_class", "_hash", "_repr")
+    __slots__ = ("val", "t", "vrs", "expanded", "_class", "_hash", "_repr")
     def __init__(self, variables):
         """Initialise a Product object, the class contains:
         val       - float, holds the value of the object
@@ -30,25 +29,16 @@ class Product(object):
 
         self.val = 1.0
         self.vrs = []
-        vrs_append = self.vrs.append
+#        vrs_append = self.vrs.append
         self.expanded = True
 
         # Initialise class type
         self._class = "prod"
 
-        # TODO: Use cache for hash instead
-        self._hash = False
-
-        self._repr = False
-#        self._ops = False
-#        self._occurs = False
-#        self._unique_vars = {}
-#        self._reduce_vartype = {}
-
         if variables:
             # Remove nested Products and test for expansion
             new_vars = []
-            new_vars_append = new_vars.append
+#            new_vars_append = new_vars.append
             for v in variables:
                 # If any value is zero the entire term is zero
                 if v.val == 0.0:
@@ -72,7 +62,8 @@ class Product(object):
                         self.expanded = False
                     new_vars += v.vrs
                     continue
-                new_vars_append(v)
+#                new_vars_append(v)
+                new_vars.append(v)
 
             # Loop variables and collect all floats in one variable
             float_val = 1.0
@@ -81,8 +72,8 @@ class Product(object):
                 if v._class == "float":
                     float_val *= v.val
                     continue
-#                self.vrs.append(v)
-                vrs_append(v)
+                self.vrs.append(v)
+#                vrs_append(v)
 
             # If value is 1 there is no need to include it, unless it is the
             # only parameter left i.e., 2*0.5 = 1
@@ -107,16 +98,26 @@ class Product(object):
 
         # Sort the variables such that comparisons work
         self.vrs.sort()
-        if self.vrs[0]._class == "float":
-            self._vrs = tuple(self.vrs[1:])
-        else:
-            self._vrs = tuple(self.vrs)
+
+        # Compute the representation now, such that we can use it directly
+        # in the __eq__ and __ne__ methods (improves performance a bit, but
+        # only when objects are cached).
+#        self._repr = self.__repr__()
+        self._repr = "Product([%s])" % ", ".join([v._repr for v in self.vrs])
+
+        # TODO: Use cache for hash instead
+#        self._hash = False
+        self._hash = hash(self._repr)
+
+        if self.expanded:
+            self.expanded = self
 
     # Print functions
     def __repr__(self):
         "Representation for debugging"
-        if not self._repr:
-            self._repr = "Product([%s])" % ", ".join([repr(v) for v in self.vrs])
+#        return "Product([%s])" % ", ".join([repr(v) for v in self.vrs])
+#        if not self._repr:
+#            self._repr = "Product([%s])" % ", ".join([repr(v) for v in self.vrs])
         return self._repr
 
     def __str__(self):
@@ -133,24 +134,28 @@ class Product(object):
     # Hash (for lookup in {})
     def __hash__(self):
         "Use repr as hash"
-        if self._hash:
-            return self._hash
-        self._hash = hash(repr(self))
+#        if self._hash:
+#            return self._hash
+#        self._hash = hash(repr(self))
         return self._hash
 
     # Comparison
     def __eq__(self, other):
         "Two products are equal if their list of variables are equal"
-#        return repr(self) == repr(other)
+#        if other and other._class in ("float", "sym", "prod", "sum", "frac"):
+        if other:
+            return self._repr == other._repr
 #        if isinstance(other, Product):
-        if other and other._class == "prod":
-            return self.vrs == other.vrs
+#        if other and other._class == "prod":
+#            return self.vrs == other.vrs
         return False
 
     def __ne__(self, other):
         "Two products are not equal if equal is false"
-#        return repr(self) != repr(other)
-        return not self == other
+#        if other and other._class in ("float", "sym", "prod", "sum", "frac"):
+        if other:
+            return self._repr != other._repr
+        return True
 
     def __lt__(self, other):
         # FloatValue and Symbols are always less
@@ -181,18 +186,18 @@ class Product(object):
         # NOTE: Assuming expanded variables
         # If two products are equal, add their float values
 #        if isinstance(other, Product) and self.get_vrs() == other.get_vrs():
-#        if other._class == "prod" and self.get_vrs() == other.get_vrs():
-        if other._class == "prod" and self._vrs == other._vrs:
+        if other._class == "prod" and self.get_vrs() == other.get_vrs():
+#        if other._class == "prod" and self._vrs == other._vrs:
             # Return expanded product, to get rid of 3*x + -2*x -> x, not 1*x
 #            return Product([FloatValue(self.val + other.val)] + list(self.get_vrs())).expand()
 #            return Product([create_float(self.val + other.val)] + list(self.get_vrs())).expand()
-#            return create_product([create_float(self.val + other.val)] + list(self.get_vrs())).expand()
-            return create_product([create_float(self.val + other.val)] + list(self._vrs)).expand()
+            return create_product([create_float(self.val + other.val)] + list(self.get_vrs())).expand()
+#            return create_product([create_float(self.val + other.val)] + list(self._vrs)).expand()
         # if self == 2*x and other == x return 3*x
 #        elif isinstance(other, Symbol):
         elif other._class == "sym":
-#            if self.get_vrs() == (other,):
-            if self._vrs == (other,):
+            if self.get_vrs() == (other,):
+#            if self._vrs == (other,):
                 # Return expanded product, to get rid of -x + x -> 0, not product(0)
 #                return Product([FloatValue(self.val + 1.0), other]).expand()
 #                return Product([create_float(self.val + 1.0), other]).expand()
@@ -252,7 +257,7 @@ class Product(object):
 
         # Copy numerator, and create list for denominator
         num = [v for v in self.vrs]
-        num_remove = num.remove
+#        num_remove = num.remove
         denom = []
 
         # Add floatvalue, symbol and products to the list of denominators
@@ -268,7 +273,7 @@ class Product(object):
 
         # Loop entries in denominator and remove from numerator (and denominator)
         new_denom = []
-        new_denom_append = new_denom.append
+#        new_denom_append = new_denom.append
         for d in denom:
             # Add the inverse of a float to the numerator and continue
 #            if isinstance(d, FloatValue):
@@ -277,9 +282,11 @@ class Product(object):
                 num.append(create_float(1.0/d.val))
                 continue
             if d in num:
-                num_remove(d)
+                num.remove(d)
+#                num_remove(d)
             else:
-                new_denom_append(d)
+                new_denom.append(d)
+#                new_denom_append(d)
 
         # Create appropriate return value depending on remaining data
         if len(num) > 1:
@@ -338,44 +345,50 @@ class Product(object):
 
         # If product is already expanded, return self
         if self.expanded:
-            return self
+            return self.expanded
 
         # Sort variables in FloatValue and Symbols and the rest such that
         # we don't call the '*' operator more than we have to
         float_syms = []
         rest = []
-        append_syms = float_syms.append
-        append_rest = rest.append
+#        append_syms = float_syms.append
+#        append_rest = rest.append
         for v in self.vrs:
 #            if isinstance(v, (FloatValue, Symbol)):
             if v._class in ("float", "sym"):
-                append_syms(v)
+                float_syms.append(v)
+#                append_syms(v)
                 continue
 
-            append_rest(v.expand())
+            rest.append(v.expand())
+#            append_rest(v.expand())
 
         # If we have floats or symbols add the symbols to the rest using
         # appropriate object
         # single product (for speed)
         if len(float_syms) > 1:
 #            append_rest( Product(float_syms) )
-            append_rest( create_product(float_syms) )
+            rest.append( create_product(float_syms) )
+#            append_rest( create_product(float_syms) )
         elif float_syms:
-            append_rest(float_syms[0])
+            rest.append(float_syms[0])
+#            append_rest(float_syms[0])
 
         # Use __mult__ to reduce list to one single variable
         # TODO: Can this be done more efficiently without creating all the
         # intermediate variables?
-        return reduce(lambda x,y: x*y, rest)
+#        return reduce(lambda x,y: x*y, rest)
+        self.expanded = reduce(lambda x,y: x*y, rest)
+        return self.expanded
 
-#    def get_vrs(self):
-#        "Return all 'real' variables"
-#        # A product should only have one float value
-#        # TODO: Use this knowledge directly in other classes
-##        if isinstance(self.vrs[0], FloatValue):
-#        if self.vrs[0]._class == "float":
-#            return tuple(self.vrs[1:])
-#        return tuple(self.vrs)
+    def get_vrs(self):
+        "Return all 'real' variables"
+        # A product should only have one float value
+        # TODO: Use this knowledge directly in other classes
+#        if isinstance(self.vrs[0], FloatValue):
+        if self.vrs[0]._class == "float":
+            return tuple(self.vrs[1:])
+        return tuple(self.vrs)
 
     def reduce_vartype(self, var_type):
         """Reduce expression with given var_type. It returns a tuple
@@ -389,14 +402,16 @@ class Product(object):
 
         # Sort variables according to type
         found = []
-        found_append = found.append
+#        found_append = found.append
         remains = []
-        remains_append = remains.append
+#        remains_append = remains.append
         for v in self.vrs:
             if v.t == var_type:
-                found_append(v)
+                found.append(v)
+#                found_append(v)
                 continue
-            remains_append(v)
+            remains.append(v)
+#            remains_append(v)
 
         # Create appropriate object for found
         if len(found) > 1:
@@ -452,9 +467,6 @@ class Product(object):
         """Determine the number of times all variables occurs in the expression.
         Returns a dictionary of variables and the number of times they occur."""
 
-#        if self._occurs:
-#            return self._occurs
-
         # TODO: The product should be expanded at this stage, should we check
         # this?
 
@@ -466,8 +478,6 @@ class Product(object):
             else:
                 d[v] = 1
         return d
-#        self._occurs = d
-#        return self._occurs
 
     def reduce_var(self, var):
         "Reduce the product by another variable through division"

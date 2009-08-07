@@ -11,15 +11,19 @@ from ffc.common.log import debug, error
 #import psyco
 #psyco.full()
 
+# TODO: Use proper errors, not just RuntimeError
+# TODO: Change all if value == 0.0 to something more safe
+
+# Some basic variables
 BASIS = 0
 IP  = 1
 GEO = 2
 CONST = 3
 type_to_string = {BASIS:"BASIS", IP:"IP",GEO:"GEO", CONST:"CONST"}
-
 format = None
-EPS = 1e-12
 
+# Functions and dictionaries for cache implementation
+# Increases speed and should also reduce memory consumption
 _float_cache = {}
 def create_float(val):
     if val in _float_cache:
@@ -42,8 +46,8 @@ def create_symbol(variable, symbol_type, base_expr=None, base_op=0):
 _product_cache = {}
 def create_product(variables):
 #    variables.sort()
-    key = tuple(sorted(variables))
-#    key = tuple(variables)
+#    key = tuple(sorted(variables))
+    key = tuple(variables)
     if key in _product_cache:
 #        print "found %s in cache" %str(key)
         return _product_cache[key]
@@ -54,8 +58,8 @@ def create_product(variables):
 _sum_cache = {}
 def create_sum(variables):
 #    variables.sort()
-    key = tuple(sorted(variables))
-#    key = tuple(variables)
+#    key = tuple(sorted(variables))
+    key = tuple(variables)
     if key in _sum_cache:
 #        print "found %s in cache" %str(key)
         return _sum_cache[key]
@@ -73,14 +77,7 @@ def create_fraction(num, denom):
     _fraction_cache[key] = fraction
     return fraction
 
-# TODO: Use proper errors, not just RuntimeError
-# TODO: Change all if value == 0.0 to something more safe
-from floatvalue_obj import FloatValue, set_format as set_format_float
-from symbol_obj     import Symbol
-from product_obj    import Product, set_format as set_format_prod
-from sum_obj        import Sum, group_fractions, set_format as set_format_sum
-from fraction_obj   import Fraction, set_format as set_format_frac
-
+# Function to set global format to avoid passing around the dictionary
 def set_format(_format):
     global format
     format = _format
@@ -150,7 +147,7 @@ def optimise_code(expr, ip_consts, geo_consts, trans_set):
         basis_expressions = [basis_expressions]
 
     basis_vals = []
-    basis_vals_append = basis_vals.append
+#    basis_vals_append = basis_vals.append
     # Process each instance of basis functions
 #    for b in basis_expressions:
     for basis, ip_expr in basis_expressions:
@@ -188,13 +185,14 @@ def optimise_code(expr, ip_consts, geo_consts, trans_set):
 
         # If the ip expression doesn't contain any operations skip remainder
         if not ip_expr:
-#            basis_vals.append(basis)
-            basis_vals_append(basis)
+            basis_vals.append(basis)
+#            basis_vals_append(basis)
             continue
         if not ip_expr.ops() > 0:
 #            basis_vals.append(Product([basis, ip_expr]))
 #            basis_vals_append(Product([basis, ip_expr]))
-            basis_vals_append(create_product([basis, ip_expr]))
+            basis_vals.append(create_product([basis, ip_expr]))
+#            basis_vals_append(create_product([basis, ip_expr]))
             continue
 
         # Reduce the ip expressions with respect to IP variables
@@ -207,7 +205,7 @@ def optimise_code(expr, ip_consts, geo_consts, trans_set):
             ip_expressions = [ip_expressions]
 
         ip_vals = []
-        ip_vals_append = ip_vals.append
+#        ip_vals_append = ip_vals.append
         # Loop ip expressions
         for ip in ip_expressions:
             ip_dec, geo = ip
@@ -221,8 +219,8 @@ def optimise_code(expr, ip_consts, geo_consts, trans_set):
 
             # Append and continue if we did not have any geo values
             if not geo:
-#                ip_vals.append(ip_dec)
-                ip_vals_append(ip_dec)
+                ip_vals.append(ip_dec)
+#                ip_vals_append(ip_dec)
                 continue
 
             # Update the transformation set with the variables in the geo term
@@ -247,8 +245,8 @@ def optimise_code(expr, ip_consts, geo_consts, trans_set):
             else:
 #                ip_dec = Product([ip_dec, geo])
                 ip_dec = create_product([ip_dec, geo])
-#            ip_vals.append(ip_dec)
-            ip_vals_append(ip_dec)
+            ip_vals.append(ip_dec)
+#            ip_vals_append(ip_dec)
 
         # Create sum of ip expressions to multiply by basis
         if len(ip_vals) > 1:
@@ -270,11 +268,132 @@ def optimise_code(expr, ip_consts, geo_consts, trans_set):
         # Multiply by basis and append to basis vals
 #        basis_vals.append(Product([basis, ip_expr]).expand())
 #        basis_vals_append(Product([basis, ip_expr]).expand())
-        basis_vals_append(create_product([basis, ip_expr]).expand())
+        basis_vals.append(create_product([basis, ip_expr]).expand())
+#        basis_vals_append(create_product([basis, ip_expr]).expand())
 
     # Return sum of basis values
 #    return Sum(basis_vals)
     return create_sum(basis_vals)
 
+#def reduce_vartype(o, var_type):
+
+#    if o._class in ("float", "sym"):
+#        if o.t == var_type:
+##            return (self, FloatValue(1))
+#            return (o, create_float(1))
+#        return ((), o)
+
+#    elif o._class  == "prod":
+#        # Sort variables according to type
+#        found = []
+#        found_append = found.append
+#        remains = []
+#        remains_append = remains.append
+#        for v in o.vrs:
+#            if v.t == var_type:
+#                found_append(v)
+#                continue
+#            remains_append(v)
+
+#        # Create appropriate object for found
+#        if len(found) > 1:
+#            found = create_product(found)
+#        elif found:
+#            found = found.pop()
+#        # We did not find any variables
+#        else:
+#            return ((), o)
+#        # Create appropriate object for remains
+#        if len(remains) > 1:
+#            remains = create_product(remains)
+#        elif remains:
+#            remains = remains.pop()
+#        # We don't have anything left
+#        else:
+#            return (o, create_float(1))
+#        # Return whatever we found
+#        return (found, remains)
+
+#    elif o._class  == "sum":
+#        found = {}
+#        # Loop members and reduce them by vartype
+#        for v in o.pos + o.neg:
+#            f, r = reduce_vartype(v, var_type)
+#            if f in found:
+#                found[f].append(r)
+#            else:
+#                found[f] = [r]
+
+#        # Create the return value
+#        returns = []
+#        append = returns.append
+#        for f, r in found.iteritems():
+#            if len(r) > 1:
+#                # Use expand to group expressions
+#                r = create_sum(r).expand()
+#            elif r:
+#                r = r.pop()
+#            append((f, r))
+#        return returns
+
+#    # Fraction
+#    num_found, num_remain = reduce_vartype(o.num, var_type)
+
+#    # TODO: Remove this test later, expansion should have taken care of
+#    # no denominator
+#    if not o.denom:
+#        raise RuntimeError("This fraction should have been expanded")
+
+#    # If the denominator is not a Sum things are straightforward
+#    denom_found = None
+#    denom_remain = None
+##        if not isinstance(self.denom, Sum):
+#    if o.denom._class != "sum":
+#        denom_found, denom_remain = reduce_vartype(o.denom, var_type)
+
+#    # If we have a Sum in the denominator, all terms must be reduced by
+#    # the same terms to make sense
+#    else:
+#        remain = []
+#        for m in o.denom.pos + o.denom.neg:
+#            d_found, d_remain = reduce_vartype(m, var_type)
+#            # If we've found a denom, but the new found is different from
+#            # the one already found, terminate loop since it wouldn't make
+#            # sense to reduce the fraction
+#            if denom_found != None and str(d_found) != str(denom_found):
+#                # In case we did not find any variables of given type in the numerator
+#                # declare a constant. We always have a remainder.
+#                return (num_found, create_fraction(num_remain, o.denom))
+
+#            denom_found = d_found
+#            remain.append(d_remain)
+
+#        # There is always a non-const remainder if denominator was a sum
+#        denom_remain = create_sum(remain)
+
+#    # If we have found a common denominator, but no found numerator,
+#    # create a constant
+#    # TODO: Add more checks to avoid expansion
+#    found = None
+#    # There is always a remainder
+#    remain = create_fraction(num_remain, denom_remain).expand()
+
+#    if num_found:
+#        if denom_found:
+#            found = create_fraction(num_found, denom_found)
+#        else:
+#            found = num_found
+#    else:
+#        if denom_found:
+#            found = create_fraction(create_float(1), denom_found)
+#        else:
+#            found = ()
+#    return (found, remain)
+
+from floatvalue_obj import FloatValue, set_format as set_format_float
+from symbol_obj     import Symbol
+from product_obj    import Product, set_format as set_format_prod
+from sum_obj        import Sum, group_fractions, set_format as set_format_sum
+from fraction_obj   import Fraction, set_format as set_format_frac
 
 
