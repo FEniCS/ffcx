@@ -10,8 +10,8 @@ __license__  = "GNU GPL version 3 or any later version"
 
 from new_symbol import CONST, format, create_float, create_product, create_fraction
 
-#import psyco
-#psyco.full()
+import psyco
+psyco.full()
 
 def set_format(_format):
     global format
@@ -170,10 +170,11 @@ class FloatValue(object):
     def ops(self):
         "Return number of operations to compute the float (always zero)."
         # Just return 0
+        # NOTE: This means that minus in e.g., -2  and -2*x is not counted.
         return 0
 
     def expand(self):
-        "Expand the expression for a float. (Expanded by construction)."
+        "Expand the expression for a float. (A float is expanded by construction)."
         # Nothing to be done
         return self
 
