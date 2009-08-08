@@ -1,394 +1,325 @@
-"Some simple functions for manipulating expressions symbolically"
+"This file implements a class to represent a product."
 
 __author__ = "Kristian B. Oelgaard (k.b.oelgaard@tudelft.nl)"
-__date__ = "2009-07-12 -- 2009-07-15"
+__date__ = "2009-07-12 -- 2009-08-08"
 __copyright__ = "Copyright (C) 2009 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# FFC common modules
-#from ffc.common.log import debug, error
+# FFC common modules.
+#from ffc.common.log import error
 
 from new_symbol import create_float, create_product, create_fraction
+from expr import Expr
 
 #import psyco
 #psyco.full()
 
+# TODO: This function is needed to avoid passing around the 'format', but could
+# it be done differently?
 def set_format(_format):
     global format
     format = _format
 
-class Product(object):
-    __slots__ = ("val", "t", "vrs", "expanded", "_class", "_hash", "_repr")
+#class Product(object):
+class Product(Expr):
+    __slots__ = ("vrs", "_expanded")
     def __init__(self, variables):
-        """Initialise a Product object, the class contains:
-        val       - float, holds the value of the object
-        t         - Type, one of CONST, GEO, IP, BASIS. It is equal to the lowest
-                    type of its members
-        vrs       - a list of variables
-        expanded  - bool, flag depending whether or not the product needs expansion"""
+        """Initialise a Product object, it derives from Expr and contains
+        the additional variables:
 
+        vrs       - a list of variables
+        _expanded - object, an expanded object of self, e.g.,
+                    self = x*(2+y) -> self._expanded = (2*x + x*y) (a sum), or
+                    self = 2*x -> self._expanded = 2*x (self).
+        NOTE: self._prec = 2."""
+
+        # Initialise value, list of variables, class.
         self.val = 1.0
         self.vrs = []
-#        vrs_append = self.vrs.append
-        self.expanded = True
+        self._prec = 2
 
-        # Initialise class type
-        self._class = "prod"
+        # Initially set _expanded to True.
+        self._expanded = True
 
+        # Process variables if we have any.
         if variables:
-            # Remove nested Products and test for expansion
-            new_vars = []
-#            new_vars_append = new_vars.append
+            # Remove nested Products and test for expansion.
             for v in variables:
-                # If any value is zero the entire term is zero
+                # If any value is zero the entire product is zero.
                 if v.val == 0.0:
                     self.val = 0.0
-#                    self.vrs = [FloatValue(0.0)]
                     self.vrs = [create_float(0.0)]
-                    new_vars = []
                     break
 
-                # If we have sums or fractions in the variables the product is
-                # not expanded
-#                if isinstance(v, (Sum, Fraction)):
-                if v._class in ("sum", "frac"):
-                    self.expanded = False
-
-                # Take care of product such that we don't create nested products
-#                if isinstance(v, Product):
-                if v._class == "prod":
-                    # If other product is not expanded, we must expand this product later
-                    if not v.expanded:
-                        self.expanded = False
-                    new_vars += v.vrs
+                # Take care of product such that we don't create nested products.
+                if v._prec == 2:
+                    # If other product is not expanded, we must expand this product later.
+                    if not v._expanded:
+                        self._expanded = False
+                    # Add copies of the variables of other product
+                    self.vrs += v.vrs
                     continue
-#                new_vars_append(v)
-                new_vars.append(v)
 
-            # Loop variables and collect all floats in one variable
-            float_val = 1.0
-            for v in new_vars:
-#                if isinstance(v, FloatValue):
-                if v._class == "float":
-                    float_val *= v.val
-                    continue
+                # If we have sums or fractions in the variables the product is not expanded.
+                if v._prec in (3, 4):
+                    self._expanded = False
+
+                # Just add any variable at this point to list of new vars.
                 self.vrs.append(v)
-#                vrs_append(v)
+
+            # Loop variables (copies) and collect all floats into one variable.
+            # Remove any floats from list
+            float_val = 1.0
+            for v in self.vrs[:]:
+                if v._prec == 0:
+                    float_val *= v.val
+                    self.vrs.remove(v)
 
             # If value is 1 there is no need to include it, unless it is the
-            # only parameter left i.e., 2*0.5 = 1
+            # only parameter left i.e., 2*0.5 = 1.
             if float_val and float_val != 1.0:
-#                fv = FloatValue(float_val)
-                fv = create_float(float_val)
                 self.val = float_val
-                self.vrs.append(fv)
+                self.vrs.append(create_float(float_val))
+            # If we no longer have any variables add a zero
+            elif not self.vrs:
+                self.val = float_val
+                self.vrs = [create_float(float_val)]
             elif float_val == 1.0 and not self.vrs:
-#                fv = FloatValue(float_val)
-                fv = create_float(float_val)
                 self.val = float_val
-                self.vrs.append(fv)
+                self.vrs = [create_float(float_val)]
 
-        # If we don't have any variables the product is zero
+        # If we don't have any variables the product is zero.
         else:
-#            self.vrs = [FloatValue(0)]
+            self.val = 0.0
             self.vrs = [create_float(0)]
 
-        # The type is equal to the lowest variable type
+        # The type is equal to the lowest variable type.
         self.t = min([v.t for v in self.vrs])
 
-        # Sort the variables such that comparisons work
+        # Sort the variables such that comparisons work.
         self.vrs.sort()
 
         # Compute the representation now, such that we can use it directly
         # in the __eq__ and __ne__ methods (improves performance a bit, but
         # only when objects are cached).
-#        self._repr = self.__repr__()
         self._repr = "Product([%s])" % ", ".join([v._repr for v in self.vrs])
 
-        # TODO: Use cache for hash instead
-#        self._hash = False
+        # Use repr as hash value.
         self._hash = hash(self._repr)
 
-        if self.expanded:
-            self.expanded = self
+        # Store self as expanded value, if we did not encounter any sums or fractions.
+        if self._expanded:
+            self._expanded = self
 
-    # Print functions
-    def __repr__(self):
-        "Representation for debugging"
-#        return "Product([%s])" % ", ".join([repr(v) for v in self.vrs])
-#        if not self._repr:
-#            self._repr = "Product([%s])" % ", ".join([repr(v) for v in self.vrs])
-        return self._repr
-
+    # Print functions.
     def __str__(self):
-        "Simple string representation"
-
-        # If the first float is -1 exlude the 1.
-#        if isinstance(self.vrs[0], FloatValue) and self.vrs[0].val == -1.0:
-        if self.vrs[0]._class == "float" and self.vrs[0].val == -1.0:
+        "Simple string representation which will appear in the generated code."
+        # If we have more than one variable and the first float is -1 exlude the 1.
+        if len(self.vrs) > 1 and self.vrs[0]._prec == 0 and self.vrs[0].val == -1.0:
             # Join string representation of members by multiplication
-            neg = format["subtract"](["",""]).split()[0]
-            return neg + format["multiply"]([str(v) for v in self.vrs[1:]])
+            return   format["subtract"](["",""]).split()[0]\
+                   + format["multiply"]([str(v) for v in self.vrs[1:]])
         return format["multiply"]([str(v) for v in self.vrs])
 
-    # Hash (for lookup in {})
-    def __hash__(self):
-        "Use repr as hash"
-#        if self._hash:
-#            return self._hash
-#        self._hash = hash(repr(self))
-        return self._hash
-
-    # Comparison
-    def __eq__(self, other):
-        "Two products are equal if their list of variables are equal"
-#        if other and other._class in ("float", "sym", "prod", "sum", "frac"):
-        if other:
-            return self._repr == other._repr
-#        if isinstance(other, Product):
-#        if other and other._class == "prod":
-#            return self.vrs == other.vrs
-        return False
-
-    def __ne__(self, other):
-        "Two products are not equal if equal is false"
-#        if other and other._class in ("float", "sym", "prod", "sum", "frac"):
-        if other:
-            return self._repr != other._repr
-        return True
-
-    def __lt__(self, other):
-        # FloatValue and Symbols are always less
-#        if isinstance(other, (FloatValue, Symbol)):
-        if other._class in ("float", "sym"):
-            return False
-        # Compare list of symbols for two products
-#        elif isinstance(other, Product):
-        elif other._class == "prod":
-            return self.vrs < other.vrs
-        # Products are less than sum and fraction
-        return True
-
-    def __gt__(self, other):
-        # Symbols are always less
-#        if isinstance(other, (FloatValue, Symbol)):
-        if other._class in ("float", "sym"):
-            return True
-        # Compare list of symbols for two products
-#        elif isinstance(other, Product):
-        elif other._class == "prod":
-            return self.vrs > other.vrs
-        # Products are less than sum and fraction
-        return False
-
-    # Binary operators
+    # Binary operators.
     def __add__(self, other):
-        # NOTE: Assuming expanded variables
-        # If two products are equal, add their float values
-#        if isinstance(other, Product) and self.get_vrs() == other.get_vrs():
-        if other._class == "prod" and self.get_vrs() == other.get_vrs():
-#        if other._class == "prod" and self._vrs == other._vrs:
-            # Return expanded product, to get rid of 3*x + -2*x -> x, not 1*x
-#            return Product([FloatValue(self.val + other.val)] + list(self.get_vrs())).expand()
-#            return Product([create_float(self.val + other.val)] + list(self.get_vrs())).expand()
+        "Addition by other objects."
+        # NOTE: Assuming expanded variables.
+        # If two products are equal, add their float values.
+        if other._prec == 2 and self.get_vrs() == other.get_vrs():
+            # Return expanded product, to get rid of 3*x + -2*x -> x, not 1*x.
             return create_product([create_float(self.val + other.val)] + list(self.get_vrs())).expand()
-#            return create_product([create_float(self.val + other.val)] + list(self._vrs)).expand()
-        # if self == 2*x and other == x return 3*x
-#        elif isinstance(other, Symbol):
-        elif other._class == "sym":
+        # if self == 2*x and other == x return 3*x.
+        elif other._prec == 1:
             if self.get_vrs() == (other,):
-#            if self._vrs == (other,):
-                # Return expanded product, to get rid of -x + x -> 0, not product(0)
-#                return Product([FloatValue(self.val + 1.0), other]).expand()
-#                return Product([create_float(self.val + 1.0), other]).expand()
+                # Return expanded product, to get rid of -x + x -> 0, not product(0).
                 return create_product([create_float(self.val + 1.0), other]).expand()
             else:
-                raise RuntimeError("Not implemented")
+                # Can't do 2*x + y, not needed by this module.
+                raise RuntimeError("Not implemented.")
         else:
-            raise RuntimeError("Not implemented")
+            raise RuntimeError("Not implemented.")
 
     def __mul__(self, other):
-
-        # If product will be zero
+        "Multiplication by other objects."
+        # If product will be zero.
         if self.val == 0.0 or other.val == 0.0:
-#            return FloatValue(0)
             return create_float(0)
 
-        # If other is a Sum or Fraction let them handle it
-#        if isinstance(other, (Sum, Fraction)):
-        if other._class in ("sum", "frac"):
+        # If other is a Sum or Fraction let them handle it.
+        if other._prec in (3, 4):
             return other.__mul__(self)
 
-        # Get copy of variables
-        new_prod = [v for v in self.vrs]
-
-        # NOTE: We expect expanded sub-expressions with no nested operators
-        # If other is a float or symbol, add to list
-#        if isinstance(other, (FloatValue, Symbol)):
-        if other._class in ("float", "sym"):
-            new_prod.append(other)
-        # Add variables of other product
-        else:
-            new_prod += other.vrs
-#        return Product(new_prod)
-        return create_product(new_prod)
+        # NOTE: We expect expanded sub-expressions with no nested operators.
+        # Create new product adding float or symbol.
+        if other._prec in (0, 1):
+            return create_product(self.vrs + [other])
+        # Create new product adding all variables from other Product.
+        return create_product(self.vrs + other.vrs)
 
     def __div__(self, other):
-
-        # If division is illegal (this should definitely not happen)
+        "Division by other objects."
+        # If division is illegal (this should definitely not happen).
         if other.val == 0.0:
-            raise RuntimeError("Division by zero")
+            raise RuntimeError("Division by zero.")
 
-        # If fraction will be zero
+        # If fraction will be zero.
         if self.val == 0.0:
             return self.vrs[0]
 
-        # If other is a Sum we can only return a fraction
+        # If other is a Sum we can only return a fraction.
         # NOTE: Expect that other is expanded i.e., x + x -> 2*x which can be handled
-        # TODO: Fix x / (x + x*y) -> 1 / (1 + y)
+        # TODO: Fix x / (x + x*y) -> 1 / (1 + y).
         # Or should this be handled when reducing a fraction?
-#        if isinstance(other, Sum):
-        if other._class == "sum":
-#            return Fraction(self, other)
+        if other._prec == 3:
             return create_fraction(self, other)
 
-        # Handle division by FloatValue, Symbol, Product and Fraction
-        # NOTE: assuming that we get expanded variables
+        # Handle division by FloatValue, Symbol, Product and Fraction.
+        # NOTE: assuming that we get expanded variables.
 
-        # Copy numerator, and create list for denominator
-        num = [v for v in self.vrs]
-#        num_remove = num.remove
+        # Copy numerator, and create list for denominator.
+        num = self.vrs[:]
         denom = []
-
-        # Add floatvalue, symbol and products to the list of denominators
-#        if isinstance(other, (FloatValue, Symbol)):
-        if other._class in ("float", "sym"):
-            denom.append(other)
-#        elif isinstance(other, Product):
-        elif other._class == "prod":
-            denom += other.vrs
-        # fraction
+        # Add floatvalue, symbol and products to the list of denominators.
+        if other._prec in (0, 1):
+            denom = [other]
+        elif other._prec == 2:
+            # Get copy.
+            denom = other.vrs[:]
+        # fraction.
         else:
-            raise RuntimeError("Did not expected to divide by fraction")
+            raise RuntimeError("Did not expected to divide by fraction.")
 
-        # Loop entries in denominator and remove from numerator (and denominator)
-        new_denom = []
-#        new_denom_append = new_denom.append
-        for d in denom:
-            # Add the inverse of a float to the numerator and continue
-#            if isinstance(d, FloatValue):
-            if d._class == "float":
-#                num.append(FloatValue(1.0/d.val))
+        # Loop entries in denominator and remove from numerator (and denominator).
+        for d in denom[:]:
+            # Add the inverse of a float to the numerator and continue.
+            if d._prec == 0:
                 num.append(create_float(1.0/d.val))
+                denom.remove(d)
                 continue
             if d in num:
                 num.remove(d)
-#                num_remove(d)
-            else:
-                new_denom.append(d)
-#                new_denom_append(d)
+                denom.remove(d)
 
-        # Create appropriate return value depending on remaining data
+        # Create appropriate return value depending on remaining data.
         if len(num) > 1:
             # TODO: Make this more efficient?
             # Create product and expand to reduce
-            # Product([5, 0.2]) == Product([1]) -> Float(1)
-#            num = Product(num).expand()
+            # Product([5, 0.2]) == Product([1]) -> Float(1).
             num = create_product(num).expand()
         elif num:
             num = num[0]
-        # If all variables in the numerator has been eliminated we only have
-        # 1 left (We should then have no denominator left)
+        # If all variables in the numerator has been eliminated we need to add '1'.
         else:
-            if new_denom:
-                raise RuntimeError("Where did the numbers go?")
-#            num = FloatValue(1)
             num = create_float(1)
 
-        if len(new_denom) > 1:
-#            new_denom = Product(new_denom)
-            new_denom = create_product(new_denom)
-#            return Fraction(num, new_denom)
-            return create_fraction(num, new_denom)
-        elif new_denom:
-#            return Fraction(num, new_denom[0])
-            return create_fraction(num, new_denom[0])
+        if len(denom) > 1:
+            return create_fraction(num, create_product(denom))
+        elif denom:
+            return create_fraction(num, denom[0])
+        # If we no longer have a denominater, just return the numerator.
         return num
 
-    # Public functions
+    # Public functions.
+    def expand(self):
+        "Expand all members of the product."
+        # If we just have one variable, compute the expansion of it
+        # (it is not a Product, so it should be safe). We need this to get
+        # rid of Product([Symbol]) type expressions.
+        if len(self.vrs) == 1:
+            return self.vrs[0].expand()
+
+        # If product is already expanded, simply return the expansion.
+        if self._expanded:
+            return self._expanded
+
+        # Sort variables in FloatValue and Symbols and the rest such that
+        # we don't call the '*' operator more than we have to.
+        float_syms = []
+        rest = []
+        for v in self.vrs:
+            if v._prec in (0, 1):
+                float_syms.append(v)
+                continue
+            exp = v.expand()
+            # If the expanded expression is a float, sym or product,
+            # we can add the variables.
+            if exp._prec == 2:
+                float_syms += exp.vrs
+                continue
+            elif exp._prec in (0, 1):
+                float_syms.append(v)
+                continue
+            rest.append(exp)
+
+        # If we have floats or symbols add the symbols to the rest as a single
+        # product (for speed).
+        if len(float_syms) > 1:
+            rest.append( create_product(float_syms) )
+        elif float_syms:
+            rest.append(float_syms[0])
+
+        # Use __mult__ to reduce list to one single variable.
+        # TODO: Can this be done more efficiently without creating all the
+        # intermediate variables?
+        self._expanded = reduce(lambda x,y: x*y, rest)
+        return self._expanded
+
+    def get_unique_vars(self, var_type):
+        "Get unique variables (Symbols) as a set."
+        # Loop all members and update the set.
+        var = set()
+        for v in self.vrs:
+            var.update(v.get_unique_vars(var_type))
+        return var
+
+    def get_var_occurrences(self):
+        """Determine the number of times all variables occurs in the expression.
+        Returns a dictionary of variables and the number of times they occur."""
+        # TODO: The product should be expanded at this stage, should we check
+        # this?
+        # Create dictionary and count number of occurrences of each variable.
+        d = {}
+        for v in self.vrs:
+            if v in d:
+                d[v] += 1
+                continue
+            d[v] = 1
+        return d
+
+    def get_vrs(self):
+        "Return all 'real' variables."
+        # A product should only have one float value after initialisation.
+        # TODO: Use this knowledge directly in other classes?
+        if self.vrs[0]._prec == 0:
+            return tuple(self.vrs[1:])
+        return tuple(self.vrs)
+
     def ops(self):
-        "Get the number of operations to compute product"
-#        if self._ops:
-#            return self._ops
-        # It takes n-1 operations ('*') for a product of n members
+        "Get the number of operations to compute product."
+        # It takes n-1 operations ('*') for a product of n members.
         op = len(self.vrs) - 1
 
-        # Loop members and add their count
+        # Loop members and add their count.
         for v in self.vrs:
             op += v.ops()
 
         # Subtract 1, if the first member is -1 i.e., -1*x*y -> x*y is only 1 op.
-#        if isinstance(self.vrs[0], FloatValue) and self.vrs[0].val == -1.0:
-        if self.vrs[0]._class == "float" and self.vrs[0].val == -1.0:
+        if self.vrs[0]._prec == 0 and self.vrs[0].val == -1.0:
             op -= 1
-#        self._ops = op
         return op
 
-    def expand(self):
-        "Expand all members of the product"
-
-        # If we just have one variable, return the expansion of it
-        # (it is not a Product, so it should be safe). We need this to get
-        # rid of Product([Symbol]) type expressions
-        if len(self.vrs) == 1:
-            return self.vrs[0].expand()
-
-        # If product is already expanded, return self
-        if self.expanded:
-            return self.expanded
-
-        # Sort variables in FloatValue and Symbols and the rest such that
-        # we don't call the '*' operator more than we have to
-        float_syms = []
-        rest = []
-#        append_syms = float_syms.append
-#        append_rest = rest.append
-        for v in self.vrs:
-#            if isinstance(v, (FloatValue, Symbol)):
-            if v._class in ("float", "sym"):
-                float_syms.append(v)
-#                append_syms(v)
-                continue
-
-            rest.append(v.expand())
-#            append_rest(v.expand())
-
-        # If we have floats or symbols add the symbols to the rest using
-        # appropriate object
-        # single product (for speed)
-        if len(float_syms) > 1:
-#            append_rest( Product(float_syms) )
-            rest.append( create_product(float_syms) )
-#            append_rest( create_product(float_syms) )
-        elif float_syms:
-            rest.append(float_syms[0])
-#            append_rest(float_syms[0])
-
-        # Use __mult__ to reduce list to one single variable
-        # TODO: Can this be done more efficiently without creating all the
-        # intermediate variables?
-#        return reduce(lambda x,y: x*y, rest)
-        self.expanded = reduce(lambda x,y: x*y, rest)
-        return self.expanded
-
-    def get_vrs(self):
-        "Return all 'real' variables"
-        # A product should only have one float value
-        # TODO: Use this knowledge directly in other classes
-#        if isinstance(self.vrs[0], FloatValue):
-        if self.vrs[0]._class == "float":
-            return tuple(self.vrs[1:])
-        return tuple(self.vrs)
+    def reduce_ops(self):
+        "Reduce the number of operations to evaluate the product."
+        # It's not possible to reduce a product if it is already expanded and
+        # it should be at this stage.
+        # TODO: Is it safe to return self.expand().reduce_ops() if product is
+        # not expanded? And do we want to?
+#        if self._expanded:
+#            return self
+#        raise RuntimeError("Product must be expanded first before we can reduce the number of operations.")
+        # TODO: This should crash if it goes wrong (the above is more correct but slower).
+        return self._expanded
 
     def reduce_vartype(self, var_type):
         """Reduce expression with given var_type. It returns a tuple
@@ -396,96 +327,38 @@ class Product(object):
         of type == var_type. If no variables are found, found=(). The 'remain'
         part contains the leftover after division by 'found' such that:
         self = found*remain."""
-
-#        if var_type in self._reduce_vartype:
-#            return self._reduce_vartype[var_type]
-
-        # Sort variables according to type
+        # Sort variables according to type.
         found = []
-#        found_append = found.append
         remains = []
-#        remains_append = remains.append
         for v in self.vrs:
             if v.t == var_type:
                 found.append(v)
-#                found_append(v)
                 continue
             remains.append(v)
-#            remains_append(v)
 
-        # Create appropriate object for found
+        # Create appropriate object for found.
         if len(found) > 1:
-#            found = Product(found)
             found = create_product(found)
         elif found:
             found = found.pop()
-        # We did not find any variables
+        # We did not find any variables.
         else:
             return ((), self)
-#            self._reduce_vartype[var_type] = ((), self)
-#            return ((), self)
-        # Create appropriate object for remains
+
+        # Create appropriate object for remains.
         if len(remains) > 1:
-#            remains = Product(remains)
             remains = create_product(remains)
         elif remains:
             remains = remains.pop()
-        # We don't have anything left
+        # We don't have anything left.
         else:
-#            return (self, FloatValue(1))
             return (self, create_float(1))
-#            self._reduce_vartype[var_type] = (self, create_float(1))
-#            return self._reduce_vartype[var_type]
-        # Return whatever we found
+
+        # Return whatever we found.
         return (found, remains)
-#        self._reduce_vartype[var_type] = (found, remains)
-#        return (found, remains)
-
-    def get_unique_vars(self, var_type):
-        "Get unique variables (Symbols) as a set"
-        # Loop all members and get their types
-#        if var_type in self._unique_vars:
-#            return self._unique_vars[var_type]
-        var = set()
-        update = var.update
-        for v in self.vrs:
-            update(v.get_unique_vars(var_type))
-#        self._unique_vars[var_type] = var
-        return var
-
-    def reduce_ops(self):
-        "Reduce the number of operations to evaluate the product"
-        # It's not possible to reduce a product if it is already expanded and
-        # it should be at this stage
-        # TODO: Is it safe to return self.expand().reduce_ops() if product is
-        # not expanded? And do we want to?
-        if self.expanded:
-            return self
-        raise RuntimeError("Product must be expanded first before we can reduce the number of operations")
-
-    def get_var_occurrences(self):
-        """Determine the number of times all variables occurs in the expression.
-        Returns a dictionary of variables and the number of times they occur."""
-
-        # TODO: The product should be expanded at this stage, should we check
-        # this?
-
-        # Create dictionary and count number of occurrences of each variable
-        d = {}
-        for v in self.vrs:
-            if v in d:
-                d[v] += 1
-            else:
-                d[v] = 1
-        return d
-
-    def reduce_var(self, var):
-        "Reduce the product by another variable through division"
-        return self/var
 
 from floatvalue_obj import FloatValue
 from symbol_obj     import Symbol
 from sum_obj        import Sum
 from fraction_obj   import Fraction
-
 

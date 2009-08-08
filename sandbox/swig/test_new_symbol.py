@@ -116,6 +116,7 @@ class Tests(unittest.TestCase):
         f3 = FloatValue(-1)
         f4 = FloatValue(1)
         f5 = FloatValue(-0.5)
+        f6 = FloatValue(2.0)
         s0 = Symbol("x", BASIS)
         s1 = Symbol("y", GEO)
         s2 = Symbol("z", GEO)
@@ -130,6 +131,10 @@ class Tests(unittest.TestCase):
         p7 = Product([s0, f4, s1])
         p8 = Product([s0, f0, s2, f5])
         p9 = Product([s0, s1])
+        p10 = Product([p0, p1])
+        p11 = Product([f5, f0])
+        p12 = Product([f6, f5])
+        p13 = Product([f6, f5]).expand()
 
 #        print "\nTesting Products"
 #        print "\np0: [] '%s'" % (p0)
@@ -141,6 +146,11 @@ class Tests(unittest.TestCase):
 #        print "\np6: %s * %s * %s = '%s'" % (s0, f3, s1, p6)
 #        print "\np7: %s * %s * %s = '%s'" % (s0, f4, s1, p7)
 #        print "\np8: %s * %s * %s * %s = '%s'" % (s0, f0, s2, f5, p8)
+#        print "\np9: %s * %s = '%s'" % (s0, s1, p9)
+#        print "\np10: %s * %s = '%s'" % (p0, p1, p10)
+#        print "\np11: %s * %s = '%s'" % (f6, f1, p11)
+#        print "\np12: %s * %s = '%s'" % (f6, f5, p12)
+#        print "\np13: %s * %s = '%s'" % (f6, f5, p13)
 
         self.assertEqual(repr(p0), "Product([FloatValue(0)])")
         self.assertEqual(repr(p1), "Product([Symbol('x', BASIS)])")
@@ -154,6 +164,12 @@ class Tests(unittest.TestCase):
         self.assertEqual(str(p6), '-x*y')
         self.assertEqual(str(p7), 'x*y')
         self.assertEqual(str(p8), 'x*z')
+        self.assertEqual(str(p9), 'x*y')
+        self.assertEqual(p0.val, 0)
+        self.assertEqual(str(p10), '0')
+        self.assertEqual(str(p11), '1')
+        self.assertEqual(str(p12), '-1')
+        self.assertEqual(str(p13), '-1')
 
         self.assertEqual(p1 == p1, True)
         self.assertEqual(p1 == p7, False)
@@ -170,6 +186,8 @@ class Tests(unittest.TestCase):
         self.assertEqual(p6.ops(), 1)
         self.assertEqual(p7.ops(), 1)
         self.assertEqual(p8.ops(), 1)
+        self.assertEqual(p9.ops(), 1)
+        self.assertEqual(p10.ops(), 0)
 
         # Test hash
         l = [p3]
@@ -222,7 +240,8 @@ class Tests(unittest.TestCase):
         self.assertEqual(repr(S0), "Sum([FloatValue(0)])")
         self.assertEqual(S0.t, CONST)
         self.assertEqual(repr(S1), "Sum([Symbol('x', BASIS)])")
-        self.assertEqual(repr(S4), "Sum([Symbol('x', BASIS), FloatValue(-2)])")
+#        self.assertEqual(repr(S4), "Sum([Symbol('x', BASIS), FloatValue(-2)])")
+        self.assertEqual(repr(S4), "Sum([FloatValue(-2), Symbol('x', BASIS)])")
         self.assertEqual(repr(S9), "Sum([Symbol('y', GEO)])")
 
         self.assertEqual(str(S2), "(x + y)")
@@ -410,7 +429,8 @@ class Tests(unittest.TestCase):
         self.assertEqual(str(mpp3), '9*x*x*x*y*y*y')
         self.assertEqual(str(mps0), 'x*(x + y)')
         self.assertEqual(str(mps1), '(x + x)*(x + y)')
-        self.assertEqual(str(mps2), '(x-2)*(x + x-2)')
+#        self.assertEqual(str(mps2), '(x-2)*(x + x-2)')
+        self.assertEqual(str(mps2), '(x + x-2)*(x-2)')
         self.assertEqual(str(mps3), '(x + x)*(x + x)*(x + y)')
         self.assertEqual(str(mpf0), 'x*x/y')
         self.assertEqual(str(mpf1), 'x/3*x/y')
@@ -587,6 +607,7 @@ class Tests(unittest.TestCase):
         p0 = Product([f0, s0])
         p1 = Product([s0, s1])
         p2 = Product([f0, s2])
+        p3 = Product([s1, s0, s2])
 
         S0 = Sum([s0, s1])
         S1 = Sum([s0, s2])
@@ -666,6 +687,8 @@ class Tests(unittest.TestCase):
         self.assertEqual(p0/Product([f0, p1]), Fraction(FloatValue(1), s1))
         self.assertEqual(p1/p0, Product([FloatValue(0.5), s1]))
         self.assertEqual(p1/p1, FloatValue(1))
+        self.assertEqual(p1/p3, Fraction(FloatValue(1), s2))
+        self.assertEqual(str(p1/p3), '1/z')
         self.assertRaises(RuntimeError, p0.__div__, FloatValue(0))
         self.assertRaises(RuntimeError, p0.__div__, F0)
 
@@ -1421,10 +1444,6 @@ class Tests(unittest.TestCase):
         self.assertNotEqual(str(e4), 'x*(2/c + 1)/(a*b)')
 
 
-    def testCache(self):
-        raise RuntimeError("Tests not implemented")
-
-
     def testDGElastoDyn(self):
         expr = Product([
                        Sum([
@@ -2129,7 +2148,6 @@ def suite():
 
     # Misc.
     suite.addTest(Tests('testNotFinished'))
-#    suite.addTest(Tests('testCache'))
 
     # 'Real' expressions (expand and reduce)
     suite.addTest(Tests('testDGElastoDyn'))
@@ -2146,7 +2164,6 @@ def suite():
 
 
 if __name__ == "__main__":
-
 
     if format == None:
         set_format(Format(FFC_OPTIONS).format)
