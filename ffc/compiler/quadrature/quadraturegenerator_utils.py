@@ -8,9 +8,6 @@ __license__  = "GNU GPL version 3 or any later version"
 # Python modules.
 from numpy import transpose, sqrt, shape, array
 
-# FFC tensor representation modules.
-from ffc.compiler.representation.tensor.multiindex import *
-
 # FFC common modules.
 from ffc.common.log import debug, error
 
@@ -362,8 +359,8 @@ def get_ones(tables, format_epsilon):
     for name in tables:
         vals = tables[name]
         one = True
-        for r in range(numpy.shape(vals)[0]):
-            for c in range(numpy.shape(vals)[1]):
+        for r in range(shape(vals)[0]):
+            for c in range(shape(vals)[1]):
                 if abs(vals[r][c] - 1.0) > format_epsilon:
                     one = False
         if one:
@@ -391,7 +388,6 @@ def contains_zeros(tables, format_epsilon):
             names.append(name)
     return names
 
-# TODO: Delete this function if it is not used anymore.
 def create_permutations(expr):
 
     # This is probably not used.

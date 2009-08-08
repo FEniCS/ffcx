@@ -1,11 +1,11 @@
 "Code generation for dof map"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-01-24 -- 2008-05-08"
-__copyright__ = "Copyright (C) 2007-2008 Anders Logg"
+__date__ = "2007-01-24 -- 2009-08-08"
+__copyright__ = "Copyright (C) 2007-2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Modified by Kristian Oelgaard 2007
+# Modified by Kristian Oelgaard 2009
 
 # FFC common modules
 from ffc.common.log import debug
@@ -15,7 +15,7 @@ from ffc.common.utils import *
 from ffc.fem.finiteelement import *
 
 # FFC codegeneration common modules
-from ffc.compiler.codegeneration.common.utils import *
+from codeutils import inner_product
 
 def generate_dof_maps(form_data, format):
     "Generate code for dof maps, including recursively nested dof maps."

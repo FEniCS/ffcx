@@ -23,7 +23,7 @@ from ufl.algorithms.printing import tree_format
 from ffc.common.log import info, debug, error
 
 # FFC compiler modules.
-from ffc.compiler.representation.tensor.multiindex import MultiIndex as FFCMultiIndex
+from ffc.compiler.tensor.multiindex import MultiIndex as FFCMultiIndex
 
 # FFC fem modules.
 from ffc.fem.createelement import create_element

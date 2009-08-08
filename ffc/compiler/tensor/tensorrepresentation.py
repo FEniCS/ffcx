@@ -15,9 +15,6 @@ from ffc.common.log import info
 # FFC fem modules
 from ffc.fem import create_element 
 
-# FFC language modules
-#from ffc.compiler.language.integral import *
-
 # FFC tensor representation modules
 from monomialextraction import extract_monomial_form, MonomialForm
 from monomialtransformation import transform_monomial_form

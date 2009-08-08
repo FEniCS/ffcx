@@ -1,7 +1,7 @@
 "Code generator for tensor representation"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-11-03 -- 2009-05-04"
+__date__ = "2004-11-03 -- 2009-08-08"
 __copyright__ = "Copyright (C) 2004-2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
@@ -13,10 +13,10 @@ __license__  = "GNU GPL version 3 or any later version"
 from ffc.common.log import info, debug
 
 # FFC tensor representation modules
-from ffc.compiler.representation.tensor.monomialtransformation import MonomialIndex
+from ffc.compiler.tensor.monomialtransformation import MonomialIndex
 
 # FFC format modules
-from ffc.compiler.format.removeunused import *
+from ffc.compiler.removeunused import remove_unused
 
 class TensorGenerator:
 

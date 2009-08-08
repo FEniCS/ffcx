@@ -3,7 +3,7 @@ code which is more or less a C++ representation of FIAT code. More specifically 
 functions from the modules expansion.py and jacobi.py are translated into C++"""
 
 __author__ = "Kristian B. Oelgaard (k.b.oelgaard@tudelft.nl)"
-__date__ = "2007-04-04 -- 2007-04-16"
+__date__ = "2007-04-04 -- 2009-08-08"
 __copyright__ = "Copyright (C) 2007 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
@@ -18,35 +18,15 @@ from ffc.fem.finiteelement import *
 from ffc.fem.mixedelement import *
 
 # FFC format modules
-from ffc.compiler.format.removeunused import *
+from removeunused import remove_unused
 
 # FFC code generation common modules
-from utils import *
+from codeutils import *
 
 
 # Python modules
 import math
 import numpy
-
-class IndentControl:
-    "Class to control the indentation of code"
-
-    def __init__(self):
-        "Constructor"
-        self.size = 0
-        self.increment = 2
-
-    def increase(self):
-        "Increase indentation by increment"
-        self.size += self.increment
-
-    def decrease(self):
-        "Decrease indentation by increment"
-        self.size -= self.increment
-
-    def indent(self, a):
-        "Indent string input string by size"
-        return indent(a, self.size)
 
 def evaluate_basis(element, format):
     """Evaluate an element basisfunction at a point. The value(s) of the basisfunction is/are

@@ -1,13 +1,14 @@
 "Code generation utils"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-04-11 -- 2007-05-07"
-__copyright__ = "Copyright (C) 2007 Anders Logg"
+__date__ = "2007-04-11 -- 2009-08-08"
+__copyright__ = "Copyright (C) 2007-2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Modified by Kristian Oelgaard 2007
+# Modified by Kristian Oelgaard 2009
 
 # FFC common modules
+from ffc.common.utils import indent
 from ffc.common.constants import *
 import numpy
 
@@ -87,3 +88,24 @@ def tabulate_matrix(matrix, format):
     value += format["block end"]
 
     return value
+
+class IndentControl:
+    "Class to control the indentation of code"
+
+    def __init__(self):
+        "Constructor"
+        self.size = 0
+        self.increment = 2
+
+    def increase(self):
+        "Increase indentation by increment"
+        self.size += self.increment
+
+    def decrease(self):
+        "Decrease indentation by increment"
+        self.size -= self.increment
+
+    def indent(self, a):
+        "Indent string input string by size"
+        return indent(a, self.size)
+

@@ -9,8 +9,7 @@ __license__  = "GNU GPL version 3 or any later version"
 from numpy import shape
 
 # FFC code generation modules.
-from ffc.compiler.codegeneration.common.utils import tabulate_matrix
-from ffc.compiler.codegeneration.common.evaluatebasis import IndentControl
+from ffc.compiler.codeutils import tabulate_matrix, IndentControl
 
 # FFC fem module.
 from ffc.fem.createelement import create_element
@@ -22,12 +21,12 @@ from ffc.common.log import debug, info
 from quadraturegenerator_utils import generate_loop
 from quadraturetransformer import generate_code, QuadratureTransformer
 
-from quadraturetransformer3 import generate_code as generate_code2
-from quadraturetransformer3 import QuadratureTransformer2
+from optimisedquadraturetransformer import generate_code as generate_code_opt
+from optimisedquadraturetransformer import QuadratureTransformerOpt
 from sandbox.swig.new_symbol import generate_aux_constants
 
 # FFC format modules.
-from ffc.compiler.format.removeunused import remove_unused
+from ffc.compiler.removeunused import remove_unused
 
 # UFL modules.
 from ufl.classes import Measure
@@ -89,7 +88,7 @@ class QuadratureGenerator:
 
         # Create transformer.
         if self.optimise_options["simplify expressions"]:
-            transformer = QuadratureTransformer2(form_representation, Measure.CELL,\
+            transformer = QuadratureTransformerOpt(form_representation, Measure.CELL,\
                                                 self.optimise_options, format)
         else:
             transformer = QuadratureTransformer(form_representation, Measure.CELL,\
@@ -110,7 +109,7 @@ class QuadratureGenerator:
 
         # Create transformer.
         if self.optimise_options["simplify expressions"]:
-            transformer = QuadratureTransformer2(form_representation, Measure.EXTERIOR_FACET,\
+            transformer = QuadratureTransformerOpt(form_representation, Measure.EXTERIOR_FACET,\
                                                 self.optimise_options, format)
         else:
             transformer = QuadratureTransformer(form_representation, Measure.EXTERIOR_FACET,\
@@ -131,7 +130,7 @@ class QuadratureGenerator:
 
         # Create transformer.
         if self.optimise_options["simplify expressions"]:
-            transformer = QuadratureTransformer2(form_representation, Measure.INTERIOR_FACET,\
+            transformer = QuadratureTransformerOpt(form_representation, Measure.INTERIOR_FACET,\
                                                 self.optimise_options, format)
         else:
             transformer = QuadratureTransformer(form_representation, Measure.INTERIOR_FACET,\
@@ -340,7 +339,7 @@ class QuadratureGenerator:
             # Generate code for integrand and get number of operations.
             if self.optimise_options["simplify expressions"]:
                 integral_code, num_ops =\
-                    generate_code2(integral.integrand(), transformer, Indent, format, interior)
+                    generate_code_opt(integral.integrand(), transformer, Indent, format, interior)
             else:
                 integral_code, num_ops =\
                     generate_code(integral.integrand(), transformer, Indent, format, interior)

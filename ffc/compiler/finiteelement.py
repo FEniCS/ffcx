@@ -1,11 +1,11 @@
 "Code generation for finite element"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-01-23 -- 2008-04-22"
-__copyright__ = "Copyright (C) 2007-2008 Anders Logg"
+__date__ = "2007-01-23 -- 2009-08-08"
+__copyright__ = "Copyright (C) 2007-2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Modified by Kristian Oelgaard 2007
+# Modified by Kristian Oelgaard 2009
 # Modified by Marie Rognes 2008
 # Modified by Garth N. Wells 2009
 
@@ -22,9 +22,9 @@ from ffc.fem.dofmap import *
 from ffc.fem.quadratureelement import *
 
 # FFC code generation common modules
-from evaluatebasis import *
-from evaluatebasisderivatives import *
-from utils import *
+from evaluatebasis import evaluate_basis
+from evaluatebasisderivatives import evaluate_basis_derivatives
+from codeutils import inner_product
 
 def generate_finite_elements(form_data, format):
     "Generate code for finite elements, including recursively nested sub elements."

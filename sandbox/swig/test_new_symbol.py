@@ -2,19 +2,19 @@
 "Some simple functions for manIPulating expressions symbolically"
 
 __author__ = "Kristian B. Oelgaard (k.b.oelgaard@tudelft.nl)"
-__date__ = "2009-07-11 -- 2009-07-15"
+__date__ = "2009-07-11 -- 2009-08-08"
 __copyright__ = "Copyright (C) 2009 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
 
 import unittest
 from ufl.common import dstr
-from ffc.compiler.codegeneration.quadrature.reduce_operations import operation_count, expand_operations, reduce_operations
+from ffc.compiler.quadrature.reduce_operations import operation_count, expand_operations, reduce_operations
 from new_symbol import *
 
 import time
 
-from ffc.compiler.format.ufcformat import Format
+from ffc.compiler.ufcformat import Format
 from ffc.common.constants import FFC_OPTIONS
 
 class Tests(unittest.TestCase):

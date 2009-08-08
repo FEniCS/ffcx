@@ -3,8 +3,8 @@ module generates code which is more or less a C++ representation of FIAT code. M
 specifically the functions from the modules expansion.py and jacobi.py are translated into C++"""
 
 __author__ = "Kristian B. Oelgaard (k.b.oelgaard@tudelft.nl)"
-__date__ = "2007-04-16 -- 2007-04-16"
-__copyright__ = "Copyright (C) 2007 Kristian B. Oelgaard"
+__date__ = "2007-04-16 -- 2009-08-08"
+__copyright__ = "Copyright (C) 2007-2009 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
 # FFC common modules
@@ -15,13 +15,13 @@ from ffc.fem.finiteelement import *
 from ffc.fem.mixedelement import *
 
 # FFC code generation common modules
-import evaluatebasis
+from evaluatebasis import generate_map, dof_map, generate_basisvalues, tabulate_coefficients
 
 # FFC code generation common modules
-from utils import *
+from codeutils import tabulate_matrix, IndentControl
 
 # FFC format modules
-from ffc.compiler.format.removeunused import *
+from removeunused import remove_unused
 
 # Python modules
 import math
@@ -54,10 +54,10 @@ def evaluate_basis_derivatives(element, format):
 
     code = []
 
-    Indent = evaluatebasis.IndentControl()
+    Indent = IndentControl()
 
     # Get coordinates and generate map
-    code += evaluatebasis.generate_map(element, Indent, format)
+    code += generate_map(element, Indent, format)
 
     # Compute number of derivatives that has to be computed, and declare an array to hold
     # the values of the derivatives on the reference element
@@ -76,7 +76,7 @@ def evaluate_basis_derivatives(element, format):
     if (element.num_sub_elements() == 1):
 
         # Map degree of freedom to local degree of freedom for current element
-        code += evaluatebasis.dof_map(0, Indent, format)
+        code += dof_map(0, Indent, format)
 
         code += generate_element_code(element, 0, Indent, format)
 
@@ -178,10 +178,10 @@ def generate_element_code(element, sum_value_dim, Indent, format):
     code = []
 
     # Compute basisvalues, from evaluatebasis.py
-    code += evaluatebasis.generate_basisvalues(element, Indent, format)
+    code += generate_basisvalues(element, Indent, format)
 
     # Tabulate coefficients
-    code += evaluatebasis.tabulate_coefficients(element, Indent, format)
+    code += tabulate_coefficients(element, Indent, format)
 
     code += [Indent.indent(format["comment"]("Interesting (new) part"))]
 
@@ -211,7 +211,6 @@ def mixed_elements(element, Indent, format):
     format_dof_map_if   = format["dof map if"]
 
     # Extract basis elements, and determine number of elements
-#    elements = evaluatebasis.extract_elements(element)
     elements = element.basis_elements()
     num_elements = len(elements)
 
@@ -235,7 +234,7 @@ def mixed_elements(element, Indent, format):
         Indent.increase()
 
         # Generate map from global to local dof
-        code += evaluatebasis.dof_map(sum_space_dim, Indent, format)
+        code += dof_map(sum_space_dim, Indent, format)
 
         # Generate code for basis element
         code += generate_element_code(basis_element, sum_value_dim, Indent, format)
