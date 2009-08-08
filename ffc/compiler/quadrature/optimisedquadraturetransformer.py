@@ -32,7 +32,7 @@ from ffc.fem.finiteelement import AFFINE, CONTRAVARIANT_PIOLA, COVARIANT_PIOLA
 # Utility and optimisation functions for quadraturegenerator.
 from quadraturegenerator_utils import generate_loop, generate_psi_name, create_permutations
 from quadraturetransformer import QuadratureTransformer
-from sandbox.swig.new_symbol import *
+from symbolics import *
 
 import time
 

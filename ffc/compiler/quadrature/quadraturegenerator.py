@@ -23,7 +23,7 @@ from quadraturetransformer import generate_code, QuadratureTransformer
 
 from optimisedquadraturetransformer import generate_code as generate_code_opt
 from optimisedquadraturetransformer import QuadratureTransformerOpt
-from sandbox.swig.new_symbol import generate_aux_constants
+from symbolics import generate_aux_constants
 
 # FFC format modules.
 from ffc.compiler.removeunused import remove_unused
