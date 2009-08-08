@@ -71,7 +71,7 @@ class Symbol(Expr):
         # Returns x + x -> 2*x, x + 2*x -> 3*x.
         if self._repr == other._repr:
             return create_product([create_float(2), self])
-        elif other._prec == 2:
+        elif other._prec == 2: # prod
             return other.__add__(self)
         raise RuntimeError("Not implemented.")
 
@@ -83,11 +83,11 @@ class Symbol(Expr):
             return create_float(0)
 
         # If other is Sum or Fraction let them handle the multiply.
-        if other._prec in (3, 4):
+        if other._prec in (3, 4): # sum or frac
             return other.__mul__(self)
 
         # If other is a float or symbol, create simple product.
-        if other._prec in (0, 1):
+        if other._prec in (0, 1): # float or sym
             return create_product([self, other])
 
         # Else add variables from product.
@@ -106,7 +106,7 @@ class Symbol(Expr):
 
         # If other is a Sum we can only return a fraction.
         # TODO: Refine this later such that x / (x + x*y) -> 1 / (1 + y)?
-        if other._prec == 3:
+        if other._prec == 3: # sum
             return create_fraction(self, other)
 
         # Handle division by FloatValue, Symbol, Product and Fraction.
@@ -115,9 +115,9 @@ class Symbol(Expr):
         denom = []
 
         # Add floatvalue, symbol and products to the list of denominators.
-        if other._prec in (0, 1):
+        if other._prec in (0, 1): # float or sym
             denom = [other]
-        elif other._prec == 2:
+        elif other._prec == 2: # prod
             # Need copies, so can't just do denom = other.vrs.
             denom += other.vrs
         # fraction.
@@ -136,7 +136,7 @@ class Symbol(Expr):
         for d in denom:
             # Add the inverse of a float to the numerator, remove it from
             # the denominator and continue.
-            if d._prec == 0:
+            if d._prec == 0: # float
                 num.append(create_float(1.0/other.val))
                 denom.remove(d)
                 continue

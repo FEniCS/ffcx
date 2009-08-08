@@ -1,21 +1,21 @@
 "Quadrature representation class for UFL"
 
 __author__ = "Kristian B. Oelgaard (k.b.oelgaard@tudelft.nl)"
-__date__ = "2009-01-07 -- 2009-05-14"
+__date__ = "2009-01-07 -- 2009-08-08"
 __copyright__ = "Copyright (C) 2009 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Anders Logg, 2009.
 
-# FFC common modules
+# FFC common modules.
 from ffc.common.log import debug, info, error, begin, end
 
-# FFC fem modules
+# FFC fem modules.
 from ffc.fem.quadrature import make_quadrature
 from ffc.fem.referencecell import map_to_facet
 from ffc.fem.createelement import create_element
 
-# UFL modules
+# UFL modules.
 from ufl.classes import Form, Integral, SpatialDerivative, Measure
 from ufl.algorithms import extract_elements, extract_unique_elements, extract_type
 
@@ -45,10 +45,10 @@ class QuadratureRepresentation:
     def __init__(self, form_data):
         "Create tensor representation for given form"
 
-        # Save form
+        # Save form.
         self.form_data = form_data
 
-        # Initialise tables
+        # Initialise tables.
         self.psi_tables = {Measure.CELL:{},
                            Measure.EXTERIOR_FACET: {},
                            Measure.INTERIOR_FACET: {}}
@@ -56,27 +56,27 @@ class QuadratureRepresentation:
                            Measure.EXTERIOR_FACET: {},
                            Measure.INTERIOR_FACET: {}}
 
-        debug("\nQR, init, form:\n" + str(form_data.form))
+        debug("\nQR, init(), form:\n" + str(form_data.form))
 
-        # Get relevant integrals of all types
+        # Get relevant integrals of all types.
         cell_integrals = self.__extract_integrals(form_data.form.cell_integrals(), form_data)
         exterior_facet_integrals = self.__extract_integrals(form_data.form.exterior_facet_integrals(), form_data)
         interior_facet_integrals = self.__extract_integrals(form_data.form.interior_facet_integrals(), form_data)
 
-        # Check number of integrals
+        # Check number of integrals.
         self.num_integrals = len(cell_integrals) + len(exterior_facet_integrals) + len(interior_facet_integrals)
         if self.num_integrals == 0:
             return
 
-        info("Computing quadrature representation")
+        info("Computing quadrature representation.")
 
-        # Tabulate basis values
+        # Tabulate basis values.
         self.cell_integrals = self.__tabulate(cell_integrals, form_data)
         self.exterior_facet_integrals = self.__tabulate(exterior_facet_integrals, form_data)
         self.interior_facet_integrals = self.__tabulate(interior_facet_integrals, form_data)
 
-        debug("\nQR, init, psi_tables:\n" + str(self.psi_tables))
-        debug("\nQR, init, quadrature_weights:\n" + str(self.quadrature_weights))
+        debug("\nQR, init(), psi_tables:\n" + str(self.psi_tables))
+        debug("\nQR, init(), quadrature_weights:\n" + str(self.quadrature_weights))
 
     def __extract_integrals(self, integrals, form_data):
         "Extract relevant integrals for the QuadratureGenerator."
@@ -93,12 +93,12 @@ class QuadratureRepresentation:
         # likely be integrated faster if one does
         # a = (f*g*h + f)*v*u*dx(0, quadrature_order=4)
         # It will of course only work for integrals defined on the same
-        # subdomain and representation
+        # subdomain and representation.
         for integral in integrals:
             order = form_data.metadata[integral]["quadrature_order"]
             rule  = form_data.metadata[integral]["quadrature_rule"]
 
-            # Compute the required number of points for each axis (exact integration)
+            # Compute the required number of points for each axis (exact integration).
             num_points_per_axis = (order + 1 + 1) / 2 # integer division gives 2m - 1 >= q
 
             # FIXME: This could take place somewhere else. In uflcompiler.py
@@ -114,32 +114,32 @@ class QuadratureRepresentation:
     def __tabulate(self, unsorted_integrals, form_data):
         "Tabulate the basisfunctions and derivatives."
 
-        # Initialise return values
+        # Initialise return values.
         return_integrals = {}
 
-        # If we don't get any integrals there's nothing to do
+        # If we don't get any integrals there's nothing to do.
         if not unsorted_integrals:
             return None
 
         # Sort the integrals according number of points needed per axis to
-        # integrate the quadrature order exactly
+        # integrate the quadrature order exactly.
         sorted_integrals = self.__sort_integrals_quadrature_points(unsorted_integrals, form_data)
 
-        # The integral type IS the same for ALL integrals
+        # The integral type IS the same for ALL integrals.
         integral_type = unsorted_integrals[0].measure().domain_type()
 
-        # Loop the quadrature points and tabulate the basis values
+        # Loop the quadrature points and tabulate the basis values.
         for pr, form in sorted_integrals.iteritems():
 
             num_points_per_axis, rule = pr
 
-            # Get all unique elements in integrals and convert to list
+            # Get all unique elements in integrals and convert to list.
             elements = set()
             for i in form.integrals():
                 elements.update(extract_unique_elements(i))
             elements = list(elements)
 
-            # Create a list of equivalent FIAT elements
+            # Create a list of equivalent FIAT elements.
             fiat_elements = [create_element(e) for e in elements]
 
             # Get shape and facet shape.
@@ -154,7 +154,7 @@ class QuadratureRepresentation:
                 print "elements: ", elements
                 error("The facet shape of all elements MUST be equal: " + str(facet_shape))
 
-            # Make quadrature rule and get points and weights
+            # Make quadrature rule and get points and weights.
             if integral_type == Measure.CELL:
                 (points, weights) = make_quadrature(shape, num_points_per_axis, rule)
             elif integral_type == Measure.EXTERIOR_FACET or integral_type == Measure.INTERIOR_FACET:
@@ -162,45 +162,45 @@ class QuadratureRepresentation:
             else:
                 error("Unknown integral type: " + str(integral_type))
 
-            # Add rules to dictionary
+            # Add rules to dictionary.
             len_weights = len(weights) # The TOTAL number of weights/points
-            # TODO: This check should not be needed, remove later
+            # TODO: This check should not be needed, remove later.
             if len_weights in self.quadrature_weights[integral_type]:
                 print "weights: ", self.quadrature_weights
                 error("This number of points is already present in the weight table: " + str(len_weights))
             self.quadrature_weights[integral_type][len_weights] = (weights, points)
 
-            # Add the number of points to the psi tables dictionary
-            # TODO: This check should not be needed, remove later
+            # Add the number of points to the psi tables dictionary.
+            # TODO: This check should not be needed, remove later.
             if len_weights in self.psi_tables[integral_type]:
                 print "psi tables: ", self.psi_tables
                 error("This number of points is already present in the psi table: " + str(len_weights))
             self.psi_tables[integral_type][len_weights] = {}
 
             # Sort the integrals according to subdomain and add to the return
-            # dictionary
+            # dictionary.
             for i in form.integrals():
                 subdomain = i.measure().domain_id()
                 if subdomain in return_integrals:
                     if len_weights in return_integrals[subdomain]:
-                        error("There should only be one integral for any number of quadrature points on any given subdomain")
+                        error("There should only be one integral for any number of quadrature points on any given subdomain.")
                     else:
                         return_integrals[subdomain][len_weights] = i
                 else:
                     return_integrals[subdomain] = {len_weights: i}
 
             # TODO: This is most likely not the best way to get the highest
-            # derivative of an element
-            # Initialise dictionary of elements and the number of derivatives
+            # derivative of an element.
+            # Initialise dictionary of elements and the number of derivatives.
             num_derivatives = dict([(e, 0) for e in elements])
 
-            # Extract the derivatives from all integrals
+            # Extract the derivatives from all integrals.
             derivatives = set()
             for i in form.integrals():
                 derivatives.update(extract_type(i, SpatialDerivative))
             debug("Derivatives: " + str(derivatives))
 
-            # Loop derivatives and extract multiple derivatives
+            # Loop derivatives and extract multiple derivatives.
             for d in list(derivatives):
                 num_deriv = len(extract_type(d, SpatialDerivative))
 
@@ -211,20 +211,20 @@ class QuadratureRepresentation:
                     error("SpatialDerivative has more than one element: " + str(elem))
                 elem = elem[0]
                 # Set the number of derivatives to the highest value
-                # encountered so far
+                # encountered so far.
                 num_derivatives[elem] = max(num_derivatives[elem], num_deriv)
             debug("num_derivatives: " + str(num_derivatives))
 
-            # Loop FIAT elements and tabulate basis as usual
+            # Loop FIAT elements and tabulate basis as usual.
             for i, element in enumerate(fiat_elements):
                 # The order in the two lists (fiat_elements and elements)
-                # should be the same
+                # should be the same.
 
-                # Get order of derivatives
+                # Get order of derivatives.
                 deriv_order = num_derivatives[elements[i]]
 
                 # Tabulate for different integral types and insert table into
-                # dictionary based on UFL elements
+                # dictionary based on UFL elements.
                 if integral_type == Measure.CELL:
                     self.psi_tables[integral_type][len_weights]\
                          [elements[i]] = {None: element.tabulate(deriv_order, points)}

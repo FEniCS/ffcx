@@ -51,7 +51,7 @@ class Fraction(Expr):
         # TODO: If we divide by a float, we could add the inverse to the
         # numerator as a product, but I don't know if this is efficient
         # since it will involve creating a new object.
-        if denominator._prec == 0 and numerator._prec == 0:
+        if denominator._prec == 0 and numerator._prec == 0: # float
             self.num = create_float(numerator.val/denominator.val)
             # Remove denominator, such that it will be excluded when printing.
             self.denom = None
@@ -84,12 +84,12 @@ class Fraction(Expr):
         denom = str(self.denom)
 
         # Group numerator if it is a fraction, otherwise it should be handled already.
-        if self.num._prec == 4:
+        if self.num._prec == 4: # frac
             num = format["grouping"](num)
 
         # Group denominator if it is a fraction or product, or if the value is negative.
         # NOTE: This will be removed by the optimisations later before writing any code.
-        if self.denom._prec in (2, 4) or self.denom.val < 0.0:
+        if self.denom._prec in (2, 4) or self.denom.val < 0.0: # prod or frac
             denom = format["grouping"](denom)
         return num + format["division"] + denom
 
@@ -98,7 +98,7 @@ class Fraction(Expr):
         "Addition by other objects."
         # Add two fractions if their denominators are equal by creating
         # (expanded) sum of their numerators.
-        if other._prec == 4 and self.denom == other.denom:
+        if other._prec == 4 and self.denom == other.denom: # frac
             return create_fraction(create_sum([self.num, other.num]).expand(), self.denom)
         else:
             raise RuntimeError("Not implemented.")
@@ -111,7 +111,7 @@ class Fraction(Expr):
             return create_float(0)
 
         # Create new expanded numerator and denominator and use '/' to reduce.
-        if other._prec != 4:
+        if other._prec != 4: # frac
             return create_product([self.num, other]).expand()/self.denom
         # If we have a fraction, create new numerator and denominator and use
         # '/' to reduce expression.
@@ -137,18 +137,18 @@ class Fraction(Expr):
         # If both the numerator and denominator are fractions, create new
         # numerator and denominator and use division to possibly reduce the
         # expression.
-        if num._prec == 4 and denom._prec == 4:
+        if num._prec == 4 and denom._prec == 4: # frac
             new_num = create_product([num.num, denom.denom]).expand()
             new_denom = create_product([num.denom, denom.num]).expand()
             self._expanded = new_num/new_denom
         # If the numerator is a fraction, multiply denominators and use
         # division to reduce expression.
-        elif num._prec == 4:
+        elif num._prec == 4: # frac
             new_denom = create_product([num.denom, denom]).expand()
             self._expanded = num.num/new_denom
         # If the denominator is a fraction multiply by the inverse and
         # use division to reduce expression.
-        elif denom._prec == 4:
+        elif denom._prec == 4: # frac
             new_num = create_product([num, denom.denom]).expand()
             self._expanded = new_num/denom.num
         # Use division to reduce the expression, no need to call expand().
@@ -217,7 +217,7 @@ class Fraction(Expr):
         # If the denominator is not a Sum things are straightforward.
         denom_found = None
         denom_remain = None
-        if self.denom._prec != 3:
+        if self.denom._prec != 3: # sum
             denom_found, denom_remain = self.denom.reduce_vartype(var_type)
 
         # If we have a Sum in the denominator, all terms must be reduced by

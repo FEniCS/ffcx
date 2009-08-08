@@ -45,7 +45,7 @@ class Sum(Expr):
             # Remove nested Sums.
             new_vars = []
             for v in variables:
-                if v._prec == 3:
+                if v._prec == 3: # sum
                     new_vars += v.vrs
                     continue
                 new_vars.append(v)
@@ -59,7 +59,7 @@ class Sum(Expr):
                 # Skip zero terms.
                 if v.val ==  0.0:
                     continue
-                if v._prec == 0:
+                if v._prec == 0: # float
                     floats.append(v)
                 else:
                     self.vrs.append(v)
@@ -152,7 +152,7 @@ class Sum(Expr):
         # NOTE: Expect that other is expanded i.e., x + x -> 2*x which can be handled.
         # TODO: Fix (1 + y) / (x + x*y) -> 1 / x
         # Will this be handled when reducing operations on a fraction?
-        if other._prec == 3:
+        if other._prec == 3: # sum
             return create_fraction(self, other)
 
         # NOTE: We expect expanded sub-expressions with no nested operators.
@@ -188,7 +188,7 @@ class Sum(Expr):
         variables = []
         for v in self.vrs:
             exp = v.expand()
-            if exp._prec == 3:
+            if exp._prec == 3: # sum
                 variables += exp.vrs
                 continue
             variables.append(exp)
@@ -204,11 +204,11 @@ class Sum(Expr):
         # the terms first?
         for v in variables:
             # TODO: Should we also group fractions, or put this in a separate function?
-            if v._prec in (0, 4):
+            if v._prec in (0, 4): # float or frac
                 new_variables.append(v)
-            elif v._prec == 1:
+            elif v._prec == 1: # sym
                 syms.append(v)
-            elif v._prec == 2:
+            elif v._prec == 2: # prod
                 prods.append(v)
             # TODO: put this in another function, cannot group fractions
             # before we have reduced fractions with respect to Types etc.
@@ -314,7 +314,7 @@ class Sum(Expr):
         # than one Fraction.
         # First group all fractions in the sum.
         new_sum = group_fractions(self)
-        if new_sum._prec != 3:
+        if new_sum._prec != 3: # sum
             self._reduced = new_sum.reduce_ops()
             return self._reduced
 
@@ -491,14 +491,14 @@ def overlap(l, d):
 
 def group_fractions(expr):
     "Group Fractions in a Sum: 2/x + y/x -> (2 + y)/x."
-    if expr._prec != 3:
+    if expr._prec != 3: # sum
         return expr
 
     # Loop variables and group those with common denominator.
     not_frac = []
     fracs = {}
     for v in expr.vrs:
-        if v._prec == 4:
+        if v._prec == 4: # frac
             if v.denom in fracs:
                 fracs[v.denom][1].append(v.num)
                 fracs[v.denom][0] += 1

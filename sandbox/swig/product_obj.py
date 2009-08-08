@@ -52,7 +52,7 @@ class Product(Expr):
                     break
 
                 # Take care of product such that we don't create nested products.
-                if v._prec == 2:
+                if v._prec == 2: # prod
                     # If other product is not expanded, we must expand this product later.
                     if not v._expanded:
                         self._expanded = False
@@ -61,7 +61,7 @@ class Product(Expr):
                     continue
 
                 # If we have sums or fractions in the variables the product is not expanded.
-                if v._prec in (3, 4):
+                if v._prec in (3, 4): # sum or frac
                     self._expanded = False
 
                 # Just add any variable at this point to list of new vars.
@@ -71,7 +71,7 @@ class Product(Expr):
             # Remove any floats from list
             float_val = 1.0
             for v in self.vrs[:]:
-                if v._prec == 0:
+                if v._prec == 0: # float
                     float_val *= v.val
                     self.vrs.remove(v)
 
@@ -130,7 +130,7 @@ class Product(Expr):
             # Return expanded product, to get rid of 3*x + -2*x -> x, not 1*x.
             return create_product([create_float(self.val + other.val)] + list(self.get_vrs())).expand()
         # if self == 2*x and other == x return 3*x.
-        elif other._prec == 1:
+        elif other._prec == 1: # sym
             if self.get_vrs() == (other,):
                 # Return expanded product, to get rid of -x + x -> 0, not product(0).
                 return create_product([create_float(self.val + 1.0), other]).expand()
@@ -147,12 +147,12 @@ class Product(Expr):
             return create_float(0)
 
         # If other is a Sum or Fraction let them handle it.
-        if other._prec in (3, 4):
+        if other._prec in (3, 4): # sum or frac
             return other.__mul__(self)
 
         # NOTE: We expect expanded sub-expressions with no nested operators.
         # Create new product adding float or symbol.
-        if other._prec in (0, 1):
+        if other._prec in (0, 1): # float or sym
             return create_product(self.vrs + [other])
         # Create new product adding all variables from other Product.
         return create_product(self.vrs + other.vrs)
@@ -171,7 +171,7 @@ class Product(Expr):
         # NOTE: Expect that other is expanded i.e., x + x -> 2*x which can be handled
         # TODO: Fix x / (x + x*y) -> 1 / (1 + y).
         # Or should this be handled when reducing a fraction?
-        if other._prec == 3:
+        if other._prec == 3: # sum
             return create_fraction(self, other)
 
         # Handle division by FloatValue, Symbol, Product and Fraction.
@@ -181,9 +181,9 @@ class Product(Expr):
         num = self.vrs[:]
         denom = []
         # Add floatvalue, symbol and products to the list of denominators.
-        if other._prec in (0, 1):
+        if other._prec in (0, 1): # float or sym
             denom = [other]
-        elif other._prec == 2:
+        elif other._prec == 2: # prod
             # Get copy.
             denom = other.vrs[:]
         # fraction.
@@ -193,7 +193,7 @@ class Product(Expr):
         # Loop entries in denominator and remove from numerator (and denominator).
         for d in denom[:]:
             # Add the inverse of a float to the numerator and continue.
-            if d._prec == 0:
+            if d._prec == 0: # float
                 num.append(create_float(1.0/d.val))
                 denom.remove(d)
                 continue
@@ -238,16 +238,16 @@ class Product(Expr):
         float_syms = []
         rest = []
         for v in self.vrs:
-            if v._prec in (0, 1):
+            if v._prec in (0, 1): # float or sym
                 float_syms.append(v)
                 continue
             exp = v.expand()
             # If the expanded expression is a float, sym or product,
             # we can add the variables.
-            if exp._prec == 2:
+            if exp._prec == 2: # prod
                 float_syms += exp.vrs
                 continue
-            elif exp._prec in (0, 1):
+            elif exp._prec in (0, 1): # float or sym
                 float_syms.append(v)
                 continue
             rest.append(exp)
@@ -291,7 +291,7 @@ class Product(Expr):
         "Return all 'real' variables."
         # A product should only have one float value after initialisation.
         # TODO: Use this knowledge directly in other classes?
-        if self.vrs[0]._prec == 0:
+        if self.vrs[0]._prec == 0: # float
             return tuple(self.vrs[1:])
         return tuple(self.vrs)
 

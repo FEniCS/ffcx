@@ -58,7 +58,7 @@ class FloatValue(Expr):
         "Addition by other objects."
         # NOTE: We expect expanded objects here.
         # This is only well-defined if other is a float or if self.val == 0.
-        if other._prec == 0:
+        if other._prec == 0: # float
             return create_float(self.val+other.val)
         elif self.val == 0.0:
             return other
@@ -72,7 +72,7 @@ class FloatValue(Expr):
         # should not be present.
         # Only handle case where other is a float, else let the other
         # object handle the multiplication.
-        if other._prec == 0:
+        if other._prec == 0: # float
             return create_float(self.val*other.val)
         return other.__mul__(self)
 
@@ -84,7 +84,7 @@ class FloatValue(Expr):
 
         # TODO: Should we also support division by fraction for generality?
         # It should not be needed by this module.
-        if other._prec == 4:
+        if other._prec == 4: # frac
             raise RuntimeError("Did not expected to divide by fraction")
 
         # If fraction will be zero.
@@ -94,13 +94,13 @@ class FloatValue(Expr):
         # NOTE: We expect expanded objects here i.e., Product([FloatValue])
         # should not be present.
         # Handle types appropriately.
-        if other._prec == 0:
+        if other._prec == 0: # float
             return create_float(self.val/other.val)
         # If other is a symbol, return a simple fraction.
-        elif other._prec == 1:
+        elif other._prec == 1: # sym
             return create_fraction(self, other)
         # Don't handle division by sum.
-        elif other._prec == 3:
+        elif other._prec == 3: # sum
             # TODO: Here we could do: 4 / (2*x + 4*y) -> 2/(x + 2*y).
             return create_fraction(self, other)
 
@@ -108,7 +108,7 @@ class FloatValue(Expr):
         # 4 / (2*x), this will return 2/x.
         val = 1.0
         for v in other.vrs:
-            if v._prec == 0:
+            if v._prec == 0: # float
                 val *= v.val
 
         # If we had any floats, create new numerator and only use 'real' variables
