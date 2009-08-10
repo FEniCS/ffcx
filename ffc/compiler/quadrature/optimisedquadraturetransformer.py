@@ -36,9 +36,6 @@ from symbolics import *
 
 import time
 
-#import psyco
-#psyco.full()
-
 class QuadratureTransformerOpt(QuadratureTransformer):
     "Transform UFL representation to quadrature code."
 
@@ -304,7 +301,6 @@ class QuadratureTransformerOpt(QuadratureTransformer):
         # Prefetch formats to speed up code generation.
         format_transform     = self.format["transform"]
         format_detJ          = self.format["determinant"]
-        format_inv           = self.format["inverse"]
 
         # Get local component (in case we have mixed elements).
         local_comp, local_elem = ufl_basis_function.element().extract_component(tuple(component))
@@ -411,13 +407,8 @@ class QuadratureTransformerOpt(QuadratureTransformer):
     def __create_mapping_basis(self, component, deriv, ufl_basis_function, ffc_element):
         "Create basis name and mapping from given basis_info."
 
-        # Prefetch formats to speed up code generation.
-        format_ip            = self.format["integration points"]
-        format_matrix_access  = self.format["matrix access"]
-        format_array_access  = self.format["array access"]
-        format_group         = self.format["grouping"]
-        format_add           = self.format["add"]
-        format_nzc           = self.format["nonzero columns"]
+        # Get string for integration point.
+        format_ip = self.format["integration points"]
 
         # Only support test and trial functions.
         # TODO: Verify that test and trial functions will ALWAYS be rearranged to 0 and 1.
@@ -441,7 +432,7 @@ class QuadratureTransformerOpt(QuadratureTransformer):
         # since we will either loop the entire space dimension or the non-zeros.
         if self.points == 1:
             format_ip = "0"
-        basis_access = format_matrix_access(format_ip, loop_index)
+        basis_access = self.format["matrix access"](format_ip, loop_index)
 
         # Offset element space dimension in case of negative restriction,
         # need to use the complete element for offset in case of mixed element.
@@ -473,9 +464,9 @@ class QuadratureTransformerOpt(QuadratureTransformer):
         if non_zeros and basis_map == "0":
             basis_map = str(non_zeros[1][0])
         elif non_zeros:
-            basis_map = format_nzc(non_zeros[0]) + format_array_access(basis_map)
+            basis_map = self.format["nonzero columns"](non_zeros[0]) + self.format["array access"](basis_map)
         if offset:
-            basis_map = format_group(format_add([basis_map, offset]))
+            basis_map = self.format["grouping"](self.format["add"]([basis_map, offset]))
 
         # Try to evaluate basis map ("3 + 2" --> "5").
         try:
@@ -495,12 +486,8 @@ class QuadratureTransformerOpt(QuadratureTransformer):
         "Create code for basis functions, and update relevant tables of used basis."
 
         # Prefetch formats to speed up code generation.
-        format_group         = self.format["grouping"]
-        format_add           = self.format["add"]
-        format_mult          = self.format["multiply"]
         format_transform     = self.format["transform"]
         format_detJ          = self.format["determinant"]
-        format_inv           = self.format["inverse"]
 
         # Get local component (in case we have mixed elements).
         local_comp, local_elem = ufl_function.element().extract_component(tuple(component))
@@ -603,17 +590,6 @@ class QuadratureTransformerOpt(QuadratureTransformer):
 
         # Prefetch formats to speed up code generation.
         format_ip            = self.format["integration points"]
-        format_matrix_access = self.format["matrix access"]
-        format_array_access = self.format["array access"]
-        format_group         = self.format["grouping"]
-        format_add           = self.format["add"]
-        format_mult          = self.format["multiply"]
-        format_transform     = self.format["transform"]
-        format_coeff         = self.format["coeff"]
-        format_F             = self.format["function value"]
-        format_nzc           = self.format["nonzero columns"]
-        format_detJ          = self.format["determinant"]
-        format_inv           = self.format["inverse"]
 
         # Pick first free index of secondary type
         # (could use primary indices, but it's better to avoid confusion).
@@ -623,7 +599,7 @@ class QuadratureTransformerOpt(QuadratureTransformer):
         # since we will either loop the entire space dimension or the non-zeros.
         if self.points == 1:
             format_ip = "0"
-        basis_access = format_matrix_access(format_ip, loop_index)
+        basis_access = self.format["matrix access"](format_ip, loop_index)
         ACCESS = IP
 
         # Handle restriction through facet.
@@ -669,7 +645,7 @@ class QuadratureTransformerOpt(QuadratureTransformer):
                 for i in range(component):
                     quad_offset += ffc_element.sub_element(i).space_dimension()
             if quad_offset:
-                coefficient_access = format_add([format_ip, str(quad_offset)])
+                coefficient_access = self.format["add"]([format_ip, str(quad_offset)])
             else:
                 coefficient_access = format_ip
 
@@ -677,9 +653,10 @@ class QuadratureTransformerOpt(QuadratureTransformer):
         if non_zeros and coefficient_access == "0":
             coefficient_access = str(non_zeros[1][0])
         elif non_zeros and not quad_element:
-            coefficient_access = format_nzc(non_zeros[0]) + format_array_access(coefficient_access)
+            coefficient_access = self.format["nonzero columns"](non_zeros[0]) +\
+                                 self.format["array access"](coefficient_access)
         if offset:
-            coefficient_access = format_add([coefficient_access, offset])
+            coefficient_access = self.format["add"]([coefficient_access, offset])
 
         # Try to evaluate coefficient access ("3 + 2" --> "5").
         try:
@@ -688,7 +665,8 @@ class QuadratureTransformerOpt(QuadratureTransformer):
         except:
             pass
 
-        coefficient = create_symbol(format_coeff + format_matrix_access(str(ufl_function.count()), coefficient_access), ACCESS)
+        coefficient = create_symbol(self.format["coeff"] +\
+                      self.format["matrix access"](str(ufl_function.count()), coefficient_access), ACCESS)
         function_expr = coefficient
         if basis_name:
             function_expr = create_product([create_symbol(basis_name, ACCESS), coefficient])
@@ -699,7 +677,7 @@ class QuadratureTransformerOpt(QuadratureTransformer):
         else:
             # Check if the expression to compute the function value is already in
             # the dictionary of used function. If not, generate a new name and add.
-            function_name = create_symbol(format_F + str(self.function_count), ACCESS)
+            function_name = create_symbol(self.format["function value"] + str(self.function_count), ACCESS)
             if not function_expr in self.functions:
                 self.functions[function_expr] = (function_name, loop_index_range)
                 # Increase count.
@@ -716,21 +694,19 @@ def generate_code(integrand, transformer, Indent, format, interior):
     goes inside the quadrature loop."""
 
     # Prefetch formats to speed up code generation.
-    format_weight           = format["weight"]
+    format_comment          = format["comment"]
+    format_float_decl       = format["float declaration"]
+    format_F                = format["function value"]
+    format_float            = format["floating point"]
+    format_add_equal        = format["add equal"]
+    format_nzc              = format["nonzero columns"](0).split("0")[0]
+    format_r                = format["free secondary indices"][0]
+    format_array_access     = format["array access"]
     format_scale_factor     = format["scale factor"]
     format_add              = format["add"]
-    format_add_equal        = format["add equal"]
-    format_tensor           = format["element tensor quad"]
-    format_array_access     = format["array access"]
     format_mult             = format["multiply"]
-    format_float            = format["floating point"]
-    format_float_decl       = format["float declaration"]
-    format_const_float_decl = format["const float declaration"]
-    format_r                = format["free secondary indices"][0]
-    format_comment          = format["comment"]
-    format_F                = format["function value"]
+    format_tensor           = format["element tensor quad"]
     format_Gip              = format["geometry tensor"] + format["integration points"]
-    format_nzc              = format["nonzero columns"](0).split("0")[0]
 
     # Initialise return values.
     code = []
@@ -814,9 +790,9 @@ def generate_code(integrand, transformer, Indent, format, interior):
 
     # Create weight.
     ACCESS = GEO
-    weight = format_weight(transformer.points)
+    weight = format["weight"](transformer.points)
     if transformer.points > 1:
-        weight += format["array access"](format["integration points"])
+        weight += format_array_access(format["integration points"])
         ACCESS = IP
 
     # Generate entries, multiply by weights and sort after primary loops.
@@ -921,7 +897,8 @@ def generate_code(integrand, transformer, Indent, format, interior):
     info("Writing code...")
     t = time.time()
     # Generate code for ip constant declarations.
-    ip_const_ops, ip_const_code = generate_aux_constants(ip_consts, format_Gip, format_const_float_decl, True)
+    ip_const_ops, ip_const_code = generate_aux_constants(ip_consts, format_Gip,\
+                                    format["const float declaration"], True)
     num_ops += ip_const_ops
     if ip_const_code:
         code += ["", format["comment"]("Number of operations to compute ip constants: %d" %ip_const_ops)]

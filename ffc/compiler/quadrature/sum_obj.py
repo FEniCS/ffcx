@@ -11,9 +11,6 @@ __license__  = "GNU GPL version 3 or any later version"
 from symbolics import create_float, create_product, create_sum, create_fraction
 from expr import Expr
 
-#import psyco
-#psyco.full()
-
 # TODO: This function is needed to avoid passing around the 'format', but could
 # it be done differently?
 def set_format(_format):
@@ -42,36 +39,32 @@ class Sum(Expr):
 
         # Process variables if we have any.
         if variables:
-            # Remove nested Sums.
-            new_vars = []
-            for v in variables:
-                if v._prec == 3: # sum
-                    new_vars += v.vrs
-                    continue
-                new_vars.append(v)
-
-            floats = []
-            # Loop variables and sort in positive and negative.
-            # Also collect all floats in 1 variable.
-            # We don't collect [x, x, x] into 3*x to avoid creating objects.
-            # Instead we do this when expanding the object.
-            for v in new_vars:
+            # Loop variables and remove nested Sums and collect all floats in
+            # 1 variable. We don't collect [x, x, x] into 3*x to avoid creating
+            # objects, instead we do this when expanding the object.
+            float_val = 0.0
+            for var in variables:
                 # Skip zero terms.
-                if v.val ==  0.0:
+                if var.val == 0.0:
                     continue
-                if v._prec == 0: # float
-                    floats.append(v)
-                else:
-                    self.vrs.append(v)
+                elif var._prec == 3: # sum
+                    # Loop and handle variables of nested sum.
+                    for v in var.vrs:
+                        if v.val == 0.0:
+                            continue
+                        elif v._prec == 0: # float
+                            float_val += v.val
+                            continue
+                        self.vrs.append(v)
+                    continue
+                elif var._prec == 0: # float
+                    float_val += var.val
+                    continue
+                self.vrs.append(var)
 
-            # Only create new float if we have more than one. Also ignore it
-            # if 1 + 1 - 2 = 0.
-            if len(floats) > 1:
-                val = sum([v.val for v in floats])
-                if val:
-                    self.vrs.append(create_float(val))
-            elif floats:
-                self.vrs.append(floats[0])
+            # Only create new float if value is different from 0.
+            if float_val:
+                self.vrs.append(create_float(float_val))
 
         # If we don't have any variables the sum is zero.
         else:
@@ -313,7 +306,7 @@ class Sum(Expr):
         # TODO: It is not necessary to create a new Sum if we do not have more
         # than one Fraction.
         # First group all fractions in the sum.
-        new_sum = group_fractions(self)
+        new_sum = _group_fractions(self)
         if new_sum._prec != 3: # sum
             self._reduced = new_sum.reduce_ops()
             return self._reduced
@@ -393,7 +386,7 @@ class Sum(Expr):
             rejections = {}
             for var in sorted_reduc_var:
                 terms = reductions_terms[var]
-                if overlap(terms, reduction_vars) or overlap(terms, rejections):
+                if _overlap(terms, reduction_vars) or _overlap(terms, rejections):
                     rejections[var[1]] = terms
                 else:
                     reduction_vars[var[1]] = terms
@@ -481,7 +474,7 @@ class Sum(Expr):
             returns.append((f, r))
         return returns
 
-def overlap(l, d):
+def _overlap(l, d):
     "Check if a member in list l is in the value (list) of dictionary d."
     for m in l:
         for k, v in d.iteritems():
@@ -489,7 +482,7 @@ def overlap(l, d):
                 return True
     return False
 
-def group_fractions(expr):
+def _group_fractions(expr):
     "Group Fractions in a Sum: 2/x + y/x -> (2 + y)/x."
     if expr._prec != 3: # sum
         return expr

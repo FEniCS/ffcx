@@ -7,9 +7,6 @@ __license__  = "GNU GPL version 3 or any later version"
 
 from symbolics import create_float
 
-#import psyco
-#psyco.full()
-
 class Expr(object):
     __slots__ = ("val", "t", "_prec", "_repr", "_hash")
     def __init__(self):

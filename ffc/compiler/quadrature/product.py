@@ -11,9 +11,6 @@ __license__  = "GNU GPL version 3 or any later version"
 from symbolics import create_float, create_product, create_fraction
 from expr import Expr
 
-#import psyco
-#psyco.full()
-
 # TODO: This function is needed to avoid passing around the 'format', but could
 # it be done differently?
 def set_format(_format):
@@ -44,36 +41,37 @@ class Product(Expr):
         # Process variables if we have any.
         if variables:
             # Remove nested Products and test for expansion.
-            for v in variables:
+            float_val = 1.0
+            for var in variables:
                 # If any value is zero the entire product is zero.
-                if v.val == 0.0:
+                if var.val == 0.0:
                     self.val = 0.0
                     self.vrs = [create_float(0.0)]
                     break
 
+                # Collect floats into one variable
+                if var._prec == 0: # float
+                    float_val *= var.val
+                    continue
                 # Take care of product such that we don't create nested products.
-                if v._prec == 2: # prod
+                elif var._prec == 2: # prod
                     # If other product is not expanded, we must expand this product later.
-                    if not v._expanded:
+                    if not var._expanded:
                         self._expanded = False
-                    # Add copies of the variables of other product
-                    self.vrs += v.vrs
+                    # Add copies of the variables of other product (collect floats)
+                    if var.vrs[0]._prec == 0:
+                        float_val *= var.vrs[0].val
+                        self.vrs += var.vrs[1:]
+                        continue
+                    self.vrs += var.vrs
                     continue
 
                 # If we have sums or fractions in the variables the product is not expanded.
-                if v._prec in (3, 4): # sum or frac
+                elif var._prec in (3, 4): # sum or frac
                     self._expanded = False
 
                 # Just add any variable at this point to list of new vars.
-                self.vrs.append(v)
-
-            # Loop variables (copies) and collect all floats into one variable.
-            # Remove any floats from list
-            float_val = 1.0
-            for v in self.vrs[:]:
-                if v._prec == 0: # float
-                    float_val *= v.val
-                    self.vrs.remove(v)
+                self.vrs.append(var)
 
             # If value is 1 there is no need to include it, unless it is the
             # only parameter left i.e., 2*0.5 = 1.
@@ -233,36 +231,35 @@ class Product(Expr):
         if self._expanded:
             return self._expanded
 
-        # Sort variables in FloatValue and Symbols and the rest such that
-        # we don't call the '*' operator more than we have to.
+        # Sort variables such that we don't call the '*' operator more than we have to.
         float_syms = []
-        rest = []
+        sum_fracs = []
         for v in self.vrs:
             if v._prec in (0, 1): # float or sym
                 float_syms.append(v)
                 continue
             exp = v.expand()
+
             # If the expanded expression is a float, sym or product,
             # we can add the variables.
-            if exp._prec == 2: # prod
+            if exp._prec in (0, 1): # float or sym
+                float_syms.append(exp)
+            elif exp._prec == 2: # prod
                 float_syms += exp.vrs
-                continue
-            elif exp._prec in (0, 1): # float or sym
-                float_syms.append(v)
-                continue
-            rest.append(exp)
+            else:
+                sum_fracs.append(exp)
 
         # If we have floats or symbols add the symbols to the rest as a single
         # product (for speed).
         if len(float_syms) > 1:
-            rest.append( create_product(float_syms) )
+            sum_fracs.append( create_product(float_syms) )
         elif float_syms:
-            rest.append(float_syms[0])
+            sum_fracs.append(float_syms[0])
 
         # Use __mult__ to reduce list to one single variable.
         # TODO: Can this be done more efficiently without creating all the
         # intermediate variables?
-        self._expanded = reduce(lambda x,y: x*y, rest)
+        self._expanded = reduce(lambda x,y: x*y, sum_fracs)
         return self._expanded
 
     def get_unique_vars(self, var_type):

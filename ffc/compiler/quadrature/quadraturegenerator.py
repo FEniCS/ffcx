@@ -446,7 +446,6 @@ class QuadratureGenerator:
 
         # Prefetch formats to speed up code generation.
         format_comment    = format["comment"]
-        format_float      = format["floating point"]
         format_block      = format["block"]
         format_table      = format["table declaration"]
         format_matrix     = format["matrix access"]

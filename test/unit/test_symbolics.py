@@ -11,6 +11,7 @@ import unittest
 from ufl.common import dstr
 from ffc.compiler.quadrature.reduce_operations import operation_count, expand_operations, reduce_operations
 from ffc.compiler.quadrature.symbolics import *
+from ffc.compiler.quadrature.sum_obj import _group_fractions
 
 import time
 
@@ -1427,7 +1428,7 @@ class Tests(unittest.TestCase):
         e0 = f0 / S0
         e1 = s0 / S1
         e2 = S2 / S1
-        e3 = group_fractions(S3)
+        e3 = _group_fractions(S3)
         e4 = Sum([Fraction(f1*s0, a*b*c), Fraction(s0, a*b)]).expand().reduce_ops()
 
         # Tests that pass the current implementation
@@ -2131,8 +2132,21 @@ class Tests(unittest.TestCase):
         self.assertAlmostEqual(eval(str(expr)), eval(str(expr_red)))
         self.assertAlmostEqual(eval(str(expr)), eval(str(opt_code)))
 
+    def testRealExamples(self):
+
+        expr = Product([Sum([FloatValue(1), Symbol('w[8][0]', GEO)]), Fraction(Symbol('w[18][0]', GEO), Fraction(Sum([Symbol('w[3][0]', GEO), Symbol('w[3][1]', GEO)]), FloatValue(2)))])
+
+#        print "expr: ", expr
+
+        exp = expr.expand()
+#        print "EXP: ", exp
+
+        exp.reduce_vartype(BASIS)
+
+
 
 def suite():
+
     suite = unittest.TestSuite()
     # Classes and member functions
     suite.addTest(Tests('testFloat'))
@@ -2159,6 +2173,10 @@ def suite():
     suite.addTest(Tests('testElasticityTerm'))
     suite.addTest(Tests('testElasWeighted'))
     suite.addTest(Tests('testElasWeighted2'))
+
+    # Various bug encounters
+    suite.addTest(Tests('testRealExamples'))
+
 
     return suite
 

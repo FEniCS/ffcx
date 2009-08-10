@@ -11,9 +11,6 @@ __license__  = "GNU GPL version 3 or any later version"
 from symbolics import type_to_string, create_float, create_product, create_fraction
 from expr import Expr
 
-#import psyco
-#psyco.full()
-
 class Symbol(Expr):
     __slots__ = ("v", "base_expr", "base_op")
     def __init__(self, variable, symbol_type, base_expr=None, base_op=0):

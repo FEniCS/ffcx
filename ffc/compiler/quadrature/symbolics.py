@@ -8,9 +8,6 @@ __license__  = "GNU GPL version 3 or any later version"
 # FFC common modules
 from ffc.common.log import debug, error
 
-#import psyco
-#psyco.full()
-
 # TODO: Use proper errors, not just RuntimeError.
 # TODO: Change all if value == 0.0 to something more safe.
 
@@ -103,25 +100,26 @@ def generate_aux_constants(constant_decl, name, var_type, print_ops=False):
     code = []
     append = code.append
     ops = 0
-    for s in sorted([(v, k) for k, v in constant_decl.iteritems()]):
-        c = s[1]
+    for num, expr in sorted([(v, k) for k, v in constant_decl.iteritems()]):
 #        debug("c orig: " + str(c))
 #        prit "c orig: " + str(c)
-        c = c.expand().reduce_ops()
+        # Expand and reduce expression
+        expr = expr.expand().reduce_ops()
 #        debug("c opt:  " + str(c))
 #        print "c opt:  " + str(c)
         if print_ops:
-            op = c.ops()
+            op = expr.ops()
             ops += op
             append(format_comment("Number of operations: %d" %op))
-            append((var_type + name + str(s[0]), str(c)))
+            append((var_type + name + str(num), str(expr)))
             append("")
         else:
-            ops += c.ops()
-            append((var_type + name + str(s[0]), str(c)))
+            ops += expr.ops()
+            append((var_type + name + str(num), str(expr)))
 
     return (ops, code)
 
+# NOTE: We use commented print for debug, since debug will make the code run slower.
 def optimise_code(expr, ip_consts, geo_consts, trans_set):
     """Optimise a given expression with respect to, basis functions,
     integration points variables and geometric constants.
@@ -215,7 +213,7 @@ def optimise_code(expr, ip_consts, geo_consts, trans_set):
 #                debug("geo: " + str(geo))
 #                print "geo: " + str(geo)
                 # If the geo term is not in the dictionary append it.
-                if not geo_consts.has_key(geo):
+                if not geo in geo_consts:
                     geo_consts[geo] = len(geo_consts)
 
                 # Substitute geometry expression.
@@ -245,14 +243,19 @@ def optimise_code(expr, ip_consts, geo_consts, trans_set):
             ip_expr = create_symbol(format_G + format_ip + str(ip_consts[ip_expr]), IP)
 
         # Multiply by basis and append to basis vals.
-        basis_vals.append(create_product([basis, ip_expr]).expand())
+        basis_vals.append(create_product([basis, ip_expr]))
 
-    # Return sum of basis values.
-    return create_sum(basis_vals)
+    # Return (possible) sum of basis values.
+    if len(basis_vals) > 1:
+        return create_sum(basis_vals)
+    elif basis_vals:
+        return basis_vals[0]
+    # Where did the values go?
+    raise RuntimeError("Values disappeared.")
 
 from floatvalue import FloatValue, set_format as set_format_float
 from symbol     import Symbol
 from product    import Product, set_format as set_format_prod
-from sum_obj    import Sum, group_fractions, set_format as set_format_sum
+from sum_obj    import Sum, set_format as set_format_sum
 from fraction   import Fraction, set_format as set_format_frac
 

@@ -11,9 +11,6 @@ __license__  = "GNU GPL version 3 or any later version"
 from symbolics import create_float, create_product, create_sum, create_fraction
 from expr import Expr
 
-#import psyco
-#psyco.full()
-
 # TODO: This function is needed to avoid passing around the 'format', but could
 # it be done differently?
 def set_format(_format):
@@ -109,10 +106,9 @@ class Fraction(Expr):
         # If product will be zero.
         if self.val == 0.0 or other.val == 0.0:
             return create_float(0)
-
         # Create new expanded numerator and denominator and use '/' to reduce.
         if other._prec != 4: # frac
-            return create_product([self.num, other]).expand()/self.denom
+            return (self.num*other)/self.denom
         # If we have a fraction, create new numerator and denominator and use
         # '/' to reduce expression.
         return create_product([self.num, other.num]).expand()/create_product([self.denom, other.denom]).expand()
@@ -204,10 +200,13 @@ class Fraction(Expr):
         part contains the leftover after division by 'found' such that:
         self = found*remain."""
 
-        # NOTE: We expect self to be expanded at this point.
         # Reduce the numerator by the var type (should be safe, since the
         # expand() should have eliminated all sums in the numerator).
-        num_found, num_remain = self.num.reduce_vartype(var_type)
+        # Handle case where numerator is a sum.
+        if self.num._prec == 3:
+            num_found, num_remain = self.num.reduce_vartype(var_type)[0]
+        else:
+            num_found, num_remain = self.num.reduce_vartype(var_type)
 
 #        # TODO: Remove this test later, expansion should have taken care of
 #        # no denominator.

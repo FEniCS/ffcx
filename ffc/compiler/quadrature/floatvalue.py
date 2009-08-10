@@ -11,9 +11,6 @@ __license__  = "GNU GPL version 3 or any later version"
 from symbolics import CONST, format, create_float, create_product, create_fraction
 from expr import Expr
 
-#import psyco
-#psyco.full()
-
 # TODO: This function is needed to avoid passing around the 'format', but could
 # it be done differently?
 def set_format(_format):
