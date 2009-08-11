@@ -78,7 +78,7 @@ class Expr(object):
         Returns a dictionary of variables and the number of times they occur.
         Works for FloatValue and Symbol."""
         # There is only one float value (if it is not -1 or 1).
-        if abs(self.val) == 1.0:
+        if self.val == 1.0 or self.val == -1.0:
             return {}
         return {self:1}
 

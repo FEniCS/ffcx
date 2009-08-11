@@ -33,9 +33,13 @@ class FloatValue(Expr):
         self.t = CONST
         self._prec = 0
 
-        # Handle zero value explicitly.
+        # Handle 0.0, 1.0 and -1.0 values explicitly.
         if abs(value) <  EPS:
             self.val = 0.0
+        elif abs(value - 1.0) <  EPS:
+            self.val = 1.0
+        elif abs(value + 1.0) <  EPS:
+            self.val = -1.0
 
         # Compute the representation now, such that we can use it directly
         # in the __eq__ and __ne__ methods (improves performance a bit, but

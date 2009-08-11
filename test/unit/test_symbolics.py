@@ -129,7 +129,7 @@ class Tests(unittest.TestCase):
         p4 = Product([s0, f2, s2])
         p5 = Product([s0, f0, s1, f1, s2])
         p6 = Product([s0, f3, s1])
-        p7 = Product([s0, f4, s1])
+        p7 = Product([s0, f4, s1]).expand().reduce_ops()
         p8 = Product([s0, f0, s2, f5])
         p9 = Product([s0, s1])
         p10 = Product([p0, p1])
@@ -1007,7 +1007,7 @@ class Tests(unittest.TestCase):
         rf3 = F2.reduce_vartype(BASIS)
         rf4 = F3.reduce_vartype(BASIS)
 
-
+#        print
 #        print "%s, red(BASIS): ('%s', '%s')" %(B0, r0[0], r0[1])
 #        print "%s, red(CONST): ('%s', '%s')" %(B0, r1[0], r1[1])
 
@@ -1464,7 +1464,7 @@ class Tests(unittest.TestCase):
                                 )
                       ])
 
-#        print
+#        print "\nDGElastoDyn"
 #        start = time.time()
         expr_exp = expr.expand()
 #        print "DGElastoDyn: time, expand():     ", time.time() - start
@@ -1484,6 +1484,9 @@ class Tests(unittest.TestCase):
         F0, F1, w2, w3, w4, w5, w6 = (3.12, -8.1, -45.3, 17.5, 2.2, 5.3, 9.145)
         self.assertAlmostEqual(eval(str(expr)), eval(str(expr_exp)))
         self.assertAlmostEqual(eval(str(expr)), eval(str(expr_red)))
+        self.assertEqual(expr.ops(), 6)
+        self.assertEqual(expr_exp.ops(), 11)
+        self.assertEqual(expr_red.ops(), 6)
 
     def testReduceGIP(self):
 
@@ -1658,7 +1661,7 @@ class Tests(unittest.TestCase):
                             ])
                    ])
 
-#        print
+#        print "\nReduceGIP"
 #        start = time.time()
         expr_exp = expr.expand()
 #        print "ReduceGIP: time, expand()      ", time.time() - start
@@ -1681,7 +1684,9 @@ class Tests(unittest.TestCase):
 
         self.assertAlmostEqual(eval(str(expr)), eval(str(expr_exp)))
         self.assertAlmostEqual(eval(str(expr)), eval(str(expr_red)))
-        self.assertAlmostEqual(expr.ops() > expr_red.ops(), True)
+        self.assertEqual(expr.ops(), 314)
+        self.assertEqual(expr_exp.ops(), 314)
+        self.assertEqual(expr_red.ops(), 114)
 
 
     def testPoisson(self):
@@ -1722,7 +1727,7 @@ class Tests(unittest.TestCase):
                      Symbol("det", GEO)
                     ])
 
-#        print
+#        print "\nPoisson"
 #        start = time.time()
         expr_exp = expr.expand()
 #        print "Poisson: time, expand():     ", time.time() - start
@@ -1739,13 +1744,12 @@ class Tests(unittest.TestCase):
         poisson_red = reduce_operations(poisson, get_format())
 #        print "Poisson: time, old reduce(): ", time.time() - start
 
-        ops = operation_count(poisson_exp, get_format())
+        poisson_exp_ops = operation_count(poisson_exp, get_format())
+        poisson_red_ops = operation_count(poisson_red, get_format())
 #        print "expr.ops():           ", expr.ops()
-#        print "Poisson old exp: ops: ", ops
+#        print "Poisson old exp: ops: ", poisson_exp_ops
 #        print "expr_exp.ops():       ", expr_exp.ops()
-
-        ops = operation_count(poisson_red, get_format())
-#        print "Poisson old red: ops: ", ops
+#        print "Poisson old red: ops: ", poisson_red_ops
 #        print "expr_red.ops():       ", expr_red.ops()
 
 #        print "expr: ", expr
@@ -1759,6 +1763,11 @@ class Tests(unittest.TestCase):
         self.assertAlmostEqual(eval(str(expr)), eval(str(poisson)))
         self.assertAlmostEqual(eval(str(expr)), eval(str(poisson_exp)))
         self.assertAlmostEqual(eval(str(expr)), eval(str(poisson_red)))
+        self.assertEqual(expr.ops(), 17)
+        self.assertEqual(poisson_exp_ops, 47)
+        self.assertEqual(expr_exp.ops(), 47)
+        self.assertEqual(poisson_red_ops, 23)
+        self.assertEqual(expr_red.ops(), 23)
 
     def testElasticity2D(self):
 
@@ -1874,7 +1883,7 @@ class Tests(unittest.TestCase):
                      Symbol("det", GEO)
                      ])
 
-#        print
+#        print "\nElasticity2D"
 #        start = time.time()
         expr_exp = expr.expand()
 #        print "Elasticity2D: time, expand():     ", time.time() - start
@@ -1891,13 +1900,12 @@ class Tests(unittest.TestCase):
         elasticity_red = reduce_operations(elasticity, get_format())
 #        print "Elasticity2D: time, old reduce(): ", time.time() - start
 
-        ops = operation_count(elasticity_exp, get_format())
+        elasticity_exp_ops = operation_count(elasticity_exp, get_format())
+        elasticity_red_ops = operation_count(elasticity_red, get_format())
 #        print "expr.ops():                ", expr.ops()
-#        print "Elasticity2D old exp: ops: ", ops
+#        print "Elasticity2D old exp: ops: ", elasticity_exp_ops
 #        print "expr_exp.ops():            ", expr_exp.ops()
-
-        ops = operation_count(elasticity_red, get_format())
-#        print "Elasticity2D old red: ops: ", ops
+#        print "Elasticity2D old red: ops: ", elasticity_red_ops
 #        print "expr_red.ops():            ", expr_red.ops()
 
 #        print "expr:\n", expr
@@ -1914,7 +1922,11 @@ class Tests(unittest.TestCase):
         self.assertAlmostEqual(eval(str(expr)), eval(str(elasticity)))
         self.assertAlmostEqual(eval(str(expr)), eval(str(elasticity_exp)))
         self.assertAlmostEqual(eval(str(expr)), eval(str(elasticity_red)))
-
+        self.assertEqual(expr.ops(), 52)
+        self.assertEqual(elasticity_exp_ops, 159)
+        self.assertEqual(expr_exp.ops(), 159)
+        self.assertEqual(elasticity_red_ops, 71)
+        self.assertEqual(expr_red.ops(), 71)
 
 
     def testElasticityTerm(self):
@@ -1929,7 +1941,7 @@ class Tests(unittest.TestCase):
                              ])
                       ])
 
-#        print
+#        print "\nElasticityTerm"
 #        start = time.time()
         expr_exp = expr.expand()
 #        print "ElasticityTerm: time, expand():     ", time.time() - start
@@ -1960,6 +1972,9 @@ class Tests(unittest.TestCase):
         self.assertAlmostEqual(eval(str(expr)), eval(str(expr_exp)))
         self.assertAlmostEqual(eval(str(expr)), eval(str(expr_red)))
         self.assertAlmostEqual(eval(str(expr)), eval(str(opt_code)))
+        self.assertEqual(expr.ops(), 10)
+        self.assertEqual(expr_exp.ops(), 6)
+        self.assertEqual(expr_red.ops(), 6)
 
 
     def testElasWeighted(self):
@@ -2003,7 +2018,7 @@ class Tests(unittest.TestCase):
                               ])
                           ])
                                                        
-#        print
+#        print "\nElasticityWeighted"
 #        start = time.time()
         expr_exp = expr.expand()
 #        print "ElasWeighted: time, expand():     ", time.time() - start
@@ -2035,6 +2050,9 @@ class Tests(unittest.TestCase):
         self.assertAlmostEqual(eval(str(expr)), eval(str(expr_exp)))
         self.assertAlmostEqual(eval(str(expr)), eval(str(expr_red)))
         self.assertAlmostEqual(eval(str(expr)), eval(str(opt_code)))
+        self.assertEqual(expr.ops(), 22)
+        self.assertEqual(expr_exp.ops(), 29)
+        self.assertEqual(expr_red.ops(), 13)
 
 
     def testElasWeighted2(self):
@@ -2099,7 +2117,7 @@ class Tests(unittest.TestCase):
                               ])
                         ])
 
-#        print
+#        print "\nElasticityWeighted2"
         start = time.time()
         expr_exp = expr.expand()
 #        print "ElasWeighted2: time, expand():     ", time.time() - start
@@ -2131,6 +2149,10 @@ class Tests(unittest.TestCase):
         self.assertAlmostEqual(eval(str(expr)), eval(str(expr_exp)))
         self.assertAlmostEqual(eval(str(expr)), eval(str(expr_red)))
         self.assertAlmostEqual(eval(str(expr)), eval(str(opt_code)))
+        self.assertEqual(expr.ops(), 30)
+        self.assertEqual(expr_exp.ops(), 46)
+        self.assertEqual(expr_red.ops(), 17)
+
 
     def testRealExamples(self):
 

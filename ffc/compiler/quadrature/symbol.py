@@ -11,6 +11,14 @@ __license__  = "GNU GPL version 3 or any later version"
 from symbolics import type_to_string, create_float, create_product, create_fraction
 from expr import Expr
 
+# TODO: This function is needed to avoid passing around the 'format', but could
+# it be done differently?
+def set_format(_format):
+    global format
+    format = _format
+    global EPS
+    EPS = format["epsilon"]
+
 class Symbol(Expr):
     __slots__ = ("v", "base_expr", "base_op")
     def __init__(self, variable, symbol_type, base_expr=None, base_op=0):

@@ -16,6 +16,8 @@ from expr import Expr
 def set_format(_format):
     global format
     format = _format
+    global EPS
+    EPS = format["epsilon"]
 
 class Sum(Expr):
     __slots__ = ("vrs", "_expanded", "_reduced")
@@ -45,12 +47,12 @@ class Sum(Expr):
             float_val = 0.0
             for var in variables:
                 # Skip zero terms.
-                if var.val == 0.0:
+                if abs(var.val) < EPS:
                     continue
                 elif var._prec == 3: # sum
                     # Loop and handle variables of nested sum.
                     for v in var.vrs:
-                        if v.val == 0.0:
+                        if abs(v.val) < EPS:
                             continue
                         elif v._prec == 0: # float
                             float_val += v.val
@@ -63,7 +65,7 @@ class Sum(Expr):
                 self.vrs.append(var)
 
             # Only create new float if value is different from 0.
-            if float_val:
+            if abs(float_val) > EPS:
                 self.vrs.append(create_float(float_val))
 
         # If we don't have any variables the sum is zero.
@@ -457,18 +459,26 @@ class Sum(Expr):
         found = {}
         # Loop members and reduce them by vartype.
         for v in self.vrs:
-            f, r = v.reduce_vartype(var_type)
-            if f in found:
-                found[f].append(r)
-            else:
-                found[f] = [r]
+#            if v._prec == 2:
+#                for f, r in v.reduce_vartype(var_type):
+#                    if f in found:
+#                        found[f].append(r)
+#                    else:
+#                        found[f] = [r]
+#            else:
+                f, r = v.reduce_vartype(var_type)
+                if f in found:
+                    found[f].append(r)
+                else:
+                    found[f] = [r]
 
         # Create the return value.
         returns = []
         for f, r in found.iteritems():
             if len(r) > 1:
                 # Use expand to group expressions.
-                r = create_sum(r).expand()
+#                r = create_sum(r).expand()
+                r = create_sum(r)
             elif r:
                 r = r.pop()
             returns.append((f, r))

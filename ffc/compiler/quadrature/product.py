@@ -8,7 +8,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # FFC common modules.
 #from ffc.common.log import error
 
-from symbolics import create_float, create_product, create_fraction
+from symbolics import create_float, create_product, create_sum, create_fraction
 from expr import Expr
 
 # TODO: This function is needed to avoid passing around the 'format', but could
@@ -16,6 +16,8 @@ from expr import Expr
 def set_format(_format):
     global format
     format = _format
+    global EPS
+    EPS = format["epsilon"]
 
 #class Product(object):
 class Product(Expr):
@@ -44,6 +46,7 @@ class Product(Expr):
             float_val = 1.0
             for var in variables:
                 # If any value is zero the entire product is zero.
+#                if abs(var.val) < EPS:
                 if var.val == 0.0:
                     self.val = 0.0
                     self.vrs = [create_float(0.0)]
@@ -73,18 +76,26 @@ class Product(Expr):
                 # Just add any variable at this point to list of new vars.
                 self.vrs.append(var)
 
+#            if (abs(float_val - 1.0) > EPS) != (float_val != 1.0):
+#                print "\nflv: ", float_val
+#                print "variables: ", variables
+#                print "1: ", abs(float_val - 1.0)
+#                print "eps: ", EPS
+#                print "2: ", float_val != 1.0
+
             # If value is 1 there is no need to include it, unless it is the
             # only parameter left i.e., 2*0.5 = 1.
             if float_val and float_val != 1.0:
                 self.val = float_val
                 self.vrs.append(create_float(float_val))
-            # If we no longer have any variables add a zero
+            # If we no longer have any variables add the float.
             elif not self.vrs:
                 self.val = float_val
                 self.vrs = [create_float(float_val)]
-            elif float_val == 1.0 and not self.vrs:
-                self.val = float_val
-                self.vrs = [create_float(float_val)]
+            # If 1.0 is the only value left, add it.
+            elif abs(float_val - 1.0) < EPS and not self.vrs:
+                self.val = 1.0
+                self.vrs = [create_float(1)]
 
         # If we don't have any variables the product is zero.
         else:
@@ -324,6 +335,58 @@ class Product(Expr):
         of type == var_type. If no variables are found, found=(). The 'remain'
         part contains the leftover after division by 'found' such that:
         self = found*remain."""
+
+#        found_sum = {}
+#        found = []
+#        remains = []
+#        # Loop members and reduce them by vartype.
+#        for v in self.vrs:
+#            if v._prec == 3:
+#                for f, r in v.reduce_vartype(var_type):
+#                    if f in found_sum:
+#                        found_sum[f].append(r)
+#                    else:
+#                        found_sum[f] = [r]
+#            else:
+#                f, r = v.reduce_vartype(var_type)
+#                if f:
+#                    found.append(f)
+#                    continue
+#                remains.append(r)
+
+#        # Create the return value.
+#        for f, r in found_sum.iteritems():
+#            if len(r) > 1:
+#                # Use expand to group expressions.
+##                r = create_sum(r).expand()
+#                r = create_sum(r)
+#            elif r:
+#                r = r.pop()
+#            if f:
+#                found.append(f)
+#            remains.append(r)
+
+#        # Create appropriate object for found.
+#        if len(found) > 1:
+#            found = create_product(found)
+#        elif found:
+#            found = found.pop()
+#        # We did not find any variables.
+#        else:
+#            return ((), self)
+
+#        # Create appropriate object for remains.
+#        if len(remains) > 1:
+#            remains = create_product(remains)
+#        elif remains:
+#            remains = remains.pop()
+#        # We don't have anything left.
+#        else:
+#            return (self, create_float(1))
+
+#        # Return whatever we found.
+#        return (found, remains)
+
         # Sort variables according to type.
         found = []
         remains = []

@@ -85,6 +85,7 @@ def set_format(_format):
     global format
     format = _format
     set_format_float(format)
+    set_format_sym(format)
     set_format_prod(format)
     set_format_sum(format)
     set_format_frac(format)
@@ -101,12 +102,14 @@ def generate_aux_constants(constant_decl, name, var_type, print_ops=False):
     append = code.append
     ops = 0
     for num, expr in sorted([(v, k) for k, v in constant_decl.iteritems()]):
-#        debug("c orig: " + str(c))
-#        prit "c orig: " + str(c)
+#        debug("expr orig: " + str(expr))
+#        print "\nnum: ", num
+#        print "expr orig: " + repr(expr)
+#        print "expr exp: " + str(expr.expand())
         # Expand and reduce expression
         expr = expr.expand().reduce_ops()
-#        debug("c opt:  " + str(c))
-#        print "c opt:  " + str(c)
+#        debug("expr opt:  " + str(expr))
+#        print "expr opt:  " + str(expr)
         if print_ops:
             op = expr.ops()
             ops += op
@@ -138,6 +141,7 @@ def optimise_code(expr, ip_consts, geo_consts, trans_set):
 #    debug("\n\nexpr before exp: " + repr(expr))
 #    print "\n\nexpr before exp: " + repr(expr)
     basis_expressions = expr.expand().reduce_vartype(BASIS)
+#    basis_expressions = expr.reduce_vartype(BASIS)
 
     # If we had a product instance we'll get a tuple back so embed in list.
     if not isinstance(basis_expressions, list):
@@ -183,6 +187,7 @@ def optimise_code(expr, ip_consts, geo_consts, trans_set):
 
         # Reduce the ip expressions with respect to IP variables.
         ip_expressions = ip_expr.expand().reduce_vartype(IP)
+#        ip_expressions = ip_expr.reduce_vartype(IP)
 
         # If we had a product instance we'll get a tuple back so embed in list.
         if not isinstance(ip_expressions, list):
@@ -254,7 +259,7 @@ def optimise_code(expr, ip_consts, geo_consts, trans_set):
     raise RuntimeError("Values disappeared.")
 
 from floatvalue import FloatValue, set_format as set_format_float
-from symbol     import Symbol
+from symbol     import Symbol, set_format as set_format_sym
 from product    import Product, set_format as set_format_prod
 from sum_obj    import Sum, set_format as set_format_sum
 from fraction   import Fraction, set_format as set_format_frac

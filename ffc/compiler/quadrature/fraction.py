@@ -16,6 +16,8 @@ from expr import Expr
 def set_format(_format):
     global format
     format = _format
+    global EPS
+    EPS = format["epsilon"]
 
 class Fraction(Expr):
     __slots__ = ("num", "denom", "_expanded", "_reduced")
