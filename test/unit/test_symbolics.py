@@ -636,7 +636,8 @@ class Tests(unittest.TestCase):
         self.assertEqual(str(f1/S0), '-3/(x + y)')
         self.assertRaises(RuntimeError, f1.__div__, F0)
         self.assertRaises(RuntimeError, f1.__div__, FloatValue(0))
-        self.assertRaises(RuntimeError, f1.__div__, Product([FloatValue(0), s1]))
+        self.assertRaises(RuntimeError, f1.__div__,
+        Product([FloatValue(0), s1]))
 
         # Test Symbol '+', only supported for two equal symbols x + x -> 2*x
         self.assertEqual(str(s0+s0), '2*x')
@@ -667,7 +668,8 @@ class Tests(unittest.TestCase):
         self.assertEqual(str(p0+s0), '3*x')
         self.assertEqual(str(p0+p0), '4*x')
         self.assertEqual(p0+Product([FloatValue(-1), s0]), Symbol('x', GEO))
-        self.assertEqual(Product([FloatValue(-1), s0])+s0, FloatValue(0))
+        self.assertEqual(
+        Product([FloatValue(-1), s0])+s0, FloatValue(0))
         self.assertEqual(str(s0+Product([FloatValue(-1), s0])), '0')
         self.assertRaises(RuntimeError, p0.__add__, FloatValue(0))
         self.assertRaises(RuntimeError, p0.__add__, s2)
@@ -680,13 +682,16 @@ class Tests(unittest.TestCase):
         self.assertEqual(str(p0*p1), '2*x*x*y')
 
         # Test Product '/'
-        self.assertEqual(str(Product([FloatValue(0), s0])/s0), '0')
+        self.assertEqual(str(
+        Product([FloatValue(0), s0])/s0), '0')
         self.assertEqual(str(p0/S0), '2*x/(x + y)')
         self.assertEqual(p1/s1, s0)
-        self.assertEqual(p1/p2, Fraction(Product([p1, FloatValue(0.5)]), s2))
+        self.assertEqual(p1/p2, Fraction(
+        Product([p1, FloatValue(0.5)]), s2))
         self.assertEqual(p1/s2, Fraction(p1, s2))
         self.assertEqual(p0/Product([f0, p1]), Fraction(FloatValue(1), s1))
-        self.assertEqual(p1/p0, Product([FloatValue(0.5), s1]))
+        self.assertEqual(p1/p0,
+        Product([FloatValue(0.5), s1]))
         self.assertEqual(p1/p1, FloatValue(1))
         self.assertEqual(p1/p3, Fraction(FloatValue(1), s2))
         self.assertEqual(str(p1/p3), '1/z')
@@ -721,18 +726,22 @@ class Tests(unittest.TestCase):
         self.assertEqual(str(F1*s0), 'x*x/y')
         self.assertEqual(str(F1*p1), 'x*x')
         self.assertEqual(str(F1*S0), '(x + x*x/y)')
-        self.assertEqual(repr(F1*S0), repr(Sum([s0, Fraction(Product([Symbol('x', GEO), Symbol('x', GEO)]), Symbol('y', GEO))])))
+        self.assertEqual(repr(F1*S0), repr(Sum([s0, Fraction(
+        Product([Symbol('x', GEO), Symbol('x', GEO)]), Symbol('y', GEO))])))
         self.assertEqual(str(F1*F0), '2*x/(y*y)')
 
 
     def testExpandOperations(self):
+        f0 = FloatValue(-1)
+        f1 = FloatValue(2)
+        f2 = FloatValue(1)
+        sx = Symbol("x", GEO)
+        sy = Symbol("y", GEO)
+        sz = Symbol("z", GEO)
         s0 = Product([FloatValue(-1), Symbol("x", GEO)])
         s1 = Symbol("y", GEO)
         s2 = Product([FloatValue(5), Symbol("z", IP)])
         s3 = Product([FloatValue(-4), Symbol("z", GEO)])
-        f0 = FloatValue(-1)
-        f1 = FloatValue(2)
-        f2 = FloatValue(1)
 
         # Random variable values
         x = 2.2
@@ -759,7 +768,8 @@ class Tests(unittest.TestCase):
         F4 = Fraction(P0, F0)
         F5 = Fraction(Fraction(s0, P0), P0)
         F6 = Fraction( Fraction( Fraction(s1, s0), Fraction(s1, s2)), Fraction( Fraction(s2, s0), Fraction(s1, s0)) )
-        F7 = Fraction(s1, Product([s1, Symbol("x", GEO)]))
+        F7 = Fraction(s1,
+        Product([s1, Symbol("x", GEO)]))
 
         F4x = F4.expand()
         F5x = F5.expand()
@@ -873,8 +883,10 @@ class Tests(unittest.TestCase):
         E1 = Sum([P0, E0])
         E2 = Fraction(Sum([Product([f1])]), f2)
         E3 = Sum([F0, F0])
-
-        P4 = Product([s1, Sum([s0, s1])])
+        E4 = Product([ Sum([ Product([sx, Sum([sy, Product([ Sum([sy, Product([sy, sz]), sy])]), sy])]),
+                             Product([sx, Sum([ Product([sy, sz]), sy])])])])
+        P4 = Product([s1,
+        Sum([s0, s1])])
         P5 = Product([s0, E0])
         P6 = Product([s1])
         S4 = Sum([s1])
@@ -883,10 +895,14 @@ class Tests(unittest.TestCase):
         # Create 'real' term that caused me trouble
         P00 = Product([Symbol("Jinv_00", GEO)]*2)
         P01 = Product([Symbol("Jinv_01", GEO)]*2)
-        P20 = Product([Symbol("Jinv_00", GEO), Product([f1, Symbol("Jinv_20", GEO)]) ])
-        P21 = Product([Symbol("Jinv_01", GEO), Product([f1, Symbol("Jinv_21", GEO)]) ])
-        PS0 = Product([Symbol("Jinv_22", GEO), Sum([P00, P01])])
-        PS1 = Product([ Product([f0, Symbol("Jinv_02", GEO)]), Sum([P20, P21])])
+        P20 = Product([Symbol("Jinv_00", GEO),
+        Product([f1, Symbol("Jinv_20", GEO)]) ])
+        P21 = Product([Symbol("Jinv_01", GEO),
+        Product([f1, Symbol("Jinv_21", GEO)]) ])
+        PS0 = Product([Symbol("Jinv_22", GEO),
+        Sum([P00, P01])])
+        PS1 = Product([ Product([f0, Symbol("Jinv_02", GEO)]),
+        Sum([P20, P21])])
         SP = Sum([PS0, PS1])
 
         PFx = PF.expand()
@@ -894,6 +910,7 @@ class Tests(unittest.TestCase):
         E1x = E1.expand()
         E2x = E2.expand()
         E3x = E3.expand()
+        E4x = E4.expand()
         P4x = P4.expand()
         P5x = P5.expand()
         P6x = P6.expand()
@@ -910,6 +927,8 @@ class Tests(unittest.TestCase):
 #        print "E2x: '%s'" %E2x
 #        print "\nE3: '%s'" %E3
 #        print "E3x: '%s'" %E3x
+#        print "\nE4: '%s'" %E4
+#        print "E4x: '%s'" %E4x
 #        print "\nP4: '%s'" %P4
 #        print "P4x: '%s'" %P4x
 #        print "\nP5: '%s'" %P5
@@ -927,12 +946,13 @@ class Tests(unittest.TestCase):
         self.assertAlmostEqual(eval(str(E0)), eval(str(E0x)))
         self.assertAlmostEqual(eval(str(E1)), eval(str(E1x)))
         self.assertAlmostEqual(eval(str(E2)), eval(str(E2x)))
+        self.assertAlmostEqual(eval(str(E3)), eval(str(E3x)))
+        self.assertAlmostEqual(eval(str(E4)), eval(str(E4x)))
         self.assertAlmostEqual(eval(str(SP)), eval(str(SPx)))
         self.assertAlmostEqual(eval(str(P4)), eval(str(P4x)))
         self.assertAlmostEqual(eval(str(P5)), eval(str(P5x)))
         self.assertEqual(P6x, s1)
         self.assertEqual(S4x, s1)
-
         self.assertEqual(PF.ops(), 6)
         self.assertEqual(PFx.ops(), 5)
         self.assertEqual(E0.ops(), 4)
@@ -943,6 +963,8 @@ class Tests(unittest.TestCase):
         self.assertEqual(E2x.ops(), 0)
         self.assertEqual(E3.ops(), 5)
         self.assertEqual(E3x.ops(), 5)
+        self.assertEqual(E4.ops(), 10)
+        self.assertEqual(E4x.ops(), 6)
         self.assertEqual(SP.ops(), 11)
         self.assertEqual(SPx.ops(), 13)
         self.assertEqual(P4.ops(), 2)
@@ -1040,17 +1062,23 @@ class Tests(unittest.TestCase):
         self.assertEqual((B0, f1), rs0[1])
         self.assertEqual((I0, f5), rs1[0])
         self.assertEqual(((), B0), rs1[1])
-        self.assertEqual((Product([B0, B1]), f1), rs2[0])
+        self.assertEqual((
+        Product([B0, B1]), f1), rs2[0])
         self.assertEqual((B0, I5), rs2[1])
         self.assertEqual(((), f5), rs3[0])
         self.assertEqual((B0, I5), rs3[1])
-        self.assertEqual((f5, Sum([f1, Product([B0, I0])])), rs4[0])
+        self.assertEqual((f5,
+        Sum([f1,
+        Product([B0, I0])])), rs4[0])
 
         self.assertEqual((B0, Fraction(FloatValue(0.2), I0)), rf0)
-        self.assertEqual((Product([B0, B1]), Fraction(FloatValue(0.2), I0)), rf1)
-        self.assertEqual( ( Fraction(f1, I0), Product([FloatValue(0.2), B0]) ), rf2)
+        self.assertEqual((
+        Product([B0, B1]), Fraction(FloatValue(0.2), I0)), rf1)
+        self.assertEqual( ( Fraction(f1, I0),
+        Product([FloatValue(0.2), B0]) ), rf2)
         self.assertEqual(((), F2), rf3)
-        self.assertEqual( ( Fraction(f1, B0), Fraction( G3, Sum([I5, f1]))), rf4)
+        self.assertEqual( ( Fraction(f1, B0), Fraction( G3,
+        Sum([I5, f1]))), rf4)
 
     def testReduceOperations(self):
 
@@ -1184,6 +1212,8 @@ class Tests(unittest.TestCase):
         S20 = Product([ Sum([x, y]), Fraction(a, b), Fraction( Product([c, d]), z ) ])
         S21 = Sum([a*x, b*x, c*x, x*y, x*z, f2*y, a*y, b*y, f2*z, a*z, b*z])
         S22 = Sum([ FloatValue(0.5)*x/y, FloatValue(-0.5)*x/y ])
+        S23 = Sum([x*y*z, x*y*y*y*z*z*z, y*y*y*z*z*z*z, z*z*z*z*z])
+
 
         Sx0 = S0.expand()
         Sx1 = S1.expand()
@@ -1208,6 +1238,7 @@ class Tests(unittest.TestCase):
         Sx20 = S20.expand()
         Sx21 = S21.expand()
         Sx22 = S22.expand()
+        Sx23 = S23.expand()
 
         Sr0 = Sx0.reduce_ops()
         Sr1 = Sx1.reduce_ops()
@@ -1232,6 +1263,7 @@ class Tests(unittest.TestCase):
         Sr20 = Sx20.reduce_ops()
         Sr21 = Sx21.reduce_ops()
         Sr22 = Sx22.reduce_ops()
+        Sr23 = Sx23.reduce_ops()
 
 #        print "Test sum"
 #        print "S0:  '%s'" %S0
@@ -1325,6 +1357,10 @@ class Tests(unittest.TestCase):
 #        print "S22:  '%s'" %S22
 #        print "Sx22: '%s'" %Sx22
 #        print "Sr22: '%s'" %Sr22
+#        print
+#        print "S23:  '%s'" %S23
+#        print "Sx23: '%s'" %Sx23
+#        print "Sr23: '%s'" %Sr23
 
         self.assertEqual(Sr0, S0)
         self.assertEqual(str(Sr1), "x*(2 + y)")
@@ -1351,8 +1387,7 @@ class Tests(unittest.TestCase):
         self.assertEqual(str(Sr20), "a*c*d*(x + y)/(b*z)")
         self.assertEqual(str(Sr21), "(x*(a + b + c + y + z) + y*(2 + a + b) + z*(2 + a + b))")
         self.assertEqual(str(Sr22), "0")
-
-
+        self.assertEqual(str(Sr23), "(x*y*z + z*z*z*(y*y*y*(x + z) + z*z))")
 
         self.assertEqual(S0.ops(), 1)
         self.assertEqual(Sr0.ops(), 1)
@@ -1398,6 +1433,8 @@ class Tests(unittest.TestCase):
         self.assertEqual(Sr20.ops(), 6)
         self.assertEqual(S21.ops(), 21)
         self.assertEqual(Sr21.ops(), 13)
+        self.assertEqual(S23.ops(), 21)
+        self.assertEqual(Sr23.ops(), 12)
 
     def testNotFinished(self):
         "Stuff that would be nice to implement."
@@ -1443,6 +1480,17 @@ class Tests(unittest.TestCase):
         self.assertNotEqual(str(e1), '1/(1 + y)')
         self.assertNotEqual(str(e2), '1/x')
         self.assertNotEqual(str(e4), 'x*(2/c + 1)/(a*b)')
+
+        # TODO: Would it be a good idea to reduce expressions wrt. var_type
+        # without first expanding?
+        E0 = Product([ Sum([ Product([ Symbol('B0', BASIS), Product([Symbol('B1', BASIS), Sum([s0]), Sum([s0])]) ]),
+                             Product([Symbol('B0', BASIS), Symbol('B1', BASIS)]) ]) ])
+        Er0 = E0.reduce_vartype(BASIS)
+        Ex0 = E0.expand().reduce_vartype(BASIS)
+#        print "%s, red(BASIS): ('%s', '%s')" %(E0, Ex0[0][0], Ex0[0][1])
+#        print "%s, red(BASIS): ('%s', '%s')" %(E0, Er0[0], Er0[1])
+        self.assertNotEqual( Ex0[0][1], Er0[1].expand() )
+
 
 
     def testDGElastoDyn(self):
@@ -1958,6 +2006,13 @@ class Tests(unittest.TestCase):
 #        print "exp:\n", expr_exp
 #        print "red:\n", expr_red
 
+        det, W1, Jinv_00, Jinv_21, FE0_C2_D001_0_j, FE0_C2_D001_0_k = [0.123 + i for i in range(6)]
+        self.assertAlmostEqual(eval(str(expr)), eval(str(expr_exp)))
+        self.assertAlmostEqual(eval(str(expr)), eval(str(expr_red)))
+        self.assertEqual(expr.ops(), 10)
+        self.assertEqual(expr_exp.ops(), 6)
+        self.assertEqual(expr_red.ops(), 6)
+
         # Generate code
         ip_consts = {}
         geo_consts = {}
@@ -1967,33 +2022,24 @@ class Tests(unittest.TestCase):
         opt_code = optimise_code(expr, ip_consts, geo_consts, trans_set)
 #        print "ElasticityTerm, optimise_code(): ", time.time() - start
 
-        det, W1, Jinv_00, Jinv_21, FE0_C2_D001_0_j, FE0_C2_D001_0_k = [0.123 + i for i in range(6)]
         G0 = eval(str(geo_consts.items()[0][0]))
-        self.assertAlmostEqual(eval(str(expr)), eval(str(expr_exp)))
-        self.assertAlmostEqual(eval(str(expr)), eval(str(expr_red)))
         self.assertAlmostEqual(eval(str(expr)), eval(str(opt_code)))
-        self.assertEqual(expr.ops(), 10)
-        self.assertEqual(expr_exp.ops(), 6)
-        self.assertEqual(expr_red.ops(), 6)
 
 
     def testElasWeighted(self):
         expr = Product([
                           Symbol('W4', IP),
-                          Symbol('det', GEO),
                           Sum([
                               Product([
                                         Symbol('FE0_C1_D01_ip_j', BASIS),
                                         Symbol('FE0_C1_D01_ip_k', BASIS),
                                         Symbol('Jinv_00', GEO),
-                                        Symbol('Jinv_11', GEO),
                                         Symbol('w1', GEO)
                                         ]),
                               Product([
                                         Symbol('FE0_C1_D01_ip_j', BASIS),
                                         Symbol('FE0_C1_D01_ip_k', BASIS),
                                         Symbol('Jinv_01', GEO),
-                                        Symbol('Jinv_10', GEO),
                                         Symbol('w0', GEO)
                                         ]),
                               Product([
@@ -2003,14 +2049,12 @@ class Tests(unittest.TestCase):
                                                       Symbol('FE0_C1_D01_ip_j', BASIS),
                                                       Symbol('FE0_C1_D01_ip_k', BASIS),
                                                       Symbol('Jinv_00', GEO),
-                                                      Symbol('Jinv_11', GEO),
                                                       Symbol('w1', GEO)
                                                       ]),
                                               Product([
                                                       Symbol('FE0_C1_D01_ip_j', BASIS),
                                                       Symbol('FE0_C1_D01_ip_k', BASIS),
                                                       Symbol('Jinv_01', GEO),
-                                                      Symbol('Jinv_10', GEO),
                                                       Symbol('w0', GEO)
                                                       ])
                                             ])
@@ -2035,6 +2079,13 @@ class Tests(unittest.TestCase):
 #        print "exp:\n", expr_exp
 #        print "red:\n", expr_red
 
+        det, W4, w0, w1, w2, Jinv_00, Jinv_01, Jinv_11, Jinv_10, FE0_C1_D01_ip_j, FE0_C1_D01_ip_k = [0.123 + i for i in range(11)]
+        self.assertAlmostEqual(eval(str(expr)), eval(str(expr_exp)))
+        self.assertAlmostEqual(eval(str(expr)), eval(str(expr_red)))
+        self.assertEqual(expr.ops(), 17)
+        self.assertEqual(expr_exp.ops(), 21)
+        self.assertEqual(expr_red.ops(), 10)
+
         # Generate code
         ip_consts = {}
         geo_consts = {}
@@ -2044,28 +2095,20 @@ class Tests(unittest.TestCase):
         opt_code = optimise_code(expr, ip_consts, geo_consts, trans_set)
 #        print "ElasWeighted, optimise_code(): ", time.time() - start
 
-        det, W4, w0, w1, w2, Jinv_00, Jinv_01, Jinv_11, Jinv_10, FE0_C1_D01_ip_j, FE0_C1_D01_ip_k = [0.123 + i for i in range(11)]
         G0 = eval(str(geo_consts.items()[0][0]))
         Gip0 = eval(str(ip_consts.items()[0][0]))
-        self.assertAlmostEqual(eval(str(expr)), eval(str(expr_exp)))
-        self.assertAlmostEqual(eval(str(expr)), eval(str(expr_red)))
         self.assertAlmostEqual(eval(str(expr)), eval(str(opt_code)))
-        self.assertEqual(expr.ops(), 22)
-        self.assertEqual(expr_exp.ops(), 29)
-        self.assertEqual(expr_red.ops(), 13)
 
 
     def testElasWeighted2(self):
 
         expr = Product([
                         Symbol('W4', IP),
-                        Symbol('det', GEO),
-                        Sum([
+                                        Sum([
                               Product([
                                         Symbol('FE0_C1_D01_ip_j', BASIS),
                                         Symbol('FE0_C1_D01_ip_k', BASIS),
                                         Symbol('Jinv_00', GEO),
-                                        Symbol('Jinv_10', GEO),
                                         Symbol('w1', GEO)
                                         ]),
                               Product([
@@ -2074,13 +2117,10 @@ class Tests(unittest.TestCase):
                                         Sum([
                                               Product([
                                                         Symbol('FE0_C1_D01_ip_k', BASIS),
-                                                        Symbol('Jinv_11', GEO),
                                                         Symbol('w0', GEO)
                                                         ]),
                                               Product([
-                                                        FloatValue(2),
                                                         Symbol('FE0_C1_D01_ip_k', BASIS),
-                                                        Symbol('Jinv_11', GEO),
                                                         Symbol('w1', GEO)
                                                         ])
                                               ])
@@ -2092,7 +2132,6 @@ class Tests(unittest.TestCase):
                                                     Symbol('FE0_C1_D01_ip_j', BASIS),
                                                     Symbol('FE0_C1_D01_ip_k', BASIS),
                                                     Symbol('Jinv_00', GEO),
-                                                    Symbol('Jinv_10', GEO),
                                                     Symbol('w1', GEO)
                                                     ]),
                                             Product([
@@ -2101,14 +2140,11 @@ class Tests(unittest.TestCase):
                                                     Sum([
                                                           Product([
                                                                   Symbol('FE0_C1_D01_ip_k', BASIS),
-                                                                  Symbol('Jinv_11', GEO),
                                                                   Symbol('w0', GEO)
                                                                   ]),
                                                           Product([
-                                                                  FloatValue(2),
-                                                                  Symbol('FE0_C1_D01_ip_k', BASIS),
-                                                                  Symbol('Jinv_11', GEO),
-                                                                  Symbol('w1', GEO)
+                                                                   Symbol('FE0_C1_D01_ip_k', BASIS),
+                                                                   Symbol('w1', GEO)
                                                                   ])
                                                           ])
                                                     ])
@@ -2134,6 +2170,13 @@ class Tests(unittest.TestCase):
 #        print "exp:\n", expr_exp
 #        print "red:\n", expr_red
 
+        det, W4, w0, w1, w2, Jinv_00, Jinv_01, Jinv_11, Jinv_10, FE0_C1_D01_ip_j, FE0_C1_D01_ip_k = [0.123 + i for i in range(11)]
+        self.assertAlmostEqual(eval(str(expr)), eval(str(expr_exp)))
+        self.assertAlmostEqual(eval(str(expr)), eval(str(expr_red)))
+        self.assertEqual(expr.ops(), 21)
+        self.assertEqual(expr_exp.ops(), 32)
+        self.assertEqual(expr_red.ops(), 13)
+
         # Generate code
         ip_consts = {}
         geo_consts = {}
@@ -2143,29 +2186,126 @@ class Tests(unittest.TestCase):
         opt_code = optimise_code(expr, ip_consts, geo_consts, trans_set)
 #        print "ElasWeighted2, optimise_code(): ", time.time() - start
 
-        det, W4, w0, w1, w2, Jinv_00, Jinv_01, Jinv_11, Jinv_10, FE0_C1_D01_ip_j, FE0_C1_D01_ip_k = [0.123 + i for i in range(11)]
         G0 = eval(str(geo_consts.items()[0][0]))
         Gip0 = eval(str(ip_consts.items()[0][0]))
-        self.assertAlmostEqual(eval(str(expr)), eval(str(expr_exp)))
-        self.assertAlmostEqual(eval(str(expr)), eval(str(expr_red)))
         self.assertAlmostEqual(eval(str(expr)), eval(str(opt_code)))
-        self.assertEqual(expr.ops(), 30)
-        self.assertEqual(expr_exp.ops(), 46)
-        self.assertEqual(expr_red.ops(), 17)
-
 
     def testRealExamples(self):
 
-        expr = Product([Sum([FloatValue(1), Symbol('w[8][0]', GEO)]), Fraction(Symbol('w[18][0]', GEO), Fraction(Sum([Symbol('w[3][0]', GEO), Symbol('w[3][1]', GEO)]), FloatValue(2)))])
+#        p = Product([
+#                    Sum([
+#                        Product([
+#                                  Symbol('w[5][0]', GEO),
+#                                  Fraction(
+#                                            Product([
+#                                                    Symbol('FE0_C1_D01[ip][k]', BASIS), Symbol('Jinv_10', GEO)
+#                                                    ]),
+#                                            Product([
+#                                                    Symbol('w[5][0]', GEO), Symbol('w[5][0]', GEO)
+#                                                    ])
+#                                            )
+#                                                    
+#                                ]),
+#                        Product([
+#                                  Symbol('w[5][0]', GEO),
+#                                  Fraction(
+#                                          Product([
+#                                                    Symbol('FE0_C1_D01[ip][k]', BASIS), Symbol('Jinv_11', GEO)
+#                                                  ]),
+#                                          Product([
+#                                                    Symbol('w[5][0]', GEO), Symbol('w[5][0]', GEO)
+#                                                  ])
+#                                          )
+#                                ])
+#                        ])
+#                   ])
 
-#        print "expr: ", expr
+#        p = Product([
+#                      Sum([
+#                            Product([
+#                                      Symbol('x', BASIS),
+#                                      Sum([
+#                                            Symbol('y', BASIS),
+#                                            Product([
+#                                                      Sum([
+#                                                           Symbol('y', BASIS),
+#                                                           Product([
+#                                                                    Symbol('y', BASIS),
+#                                                                    Symbol('z', GEO)
+#                                                                   ]),
+#                                                           Symbol('y', BASIS)
+#                                                         ])
+#                                                    ]),
+#                                           Symbol('y', BASIS)
+#                                          ])
+#                                    ]),
+#                          Product([
+#                                  Symbol('x', BASIS),
+#                                  Sum([
+#                                        Product([
+#                                                Symbol('y', BASIS),
+#                                                              Symbol('z', GEO)
+#                                              ]),
+#                                        Symbol('y', BASIS)
+#                                      ])
+#                                ])
 
-        exp = expr.expand()
-#        print "EXP: ", exp
+#                          ])
+#                      ])
 
-        exp.reduce_vartype(BASIS)
+#        p = Product([
+#                     Sum([
+#                          Product([
+#                                    Symbol('FE0_C1_D01[ip][j]', BASIS),
+#                                    Product([
+#                                            Symbol('FE0_C1_D01[ip][k]', BASIS),
+#                                            Sum([
+#                                                 Symbol('w[4][0]', GEO)
+#                                                ]),
+#                                            Sum([
+#                                                  Symbol('w[4][0]', GEO)
+#                                                ])
+#                                          ])
+#                                    ]),
+#                        Product([
+#                                  Symbol('FE0_C1_D01[ip][j]', BASIS),
+#                                  Symbol('FE0_C1_D01[ip][k]', BASIS)
+#                                ])
+#                         ])
+#                      ])
 
+        p = Product([ Symbol('FE0_C1_D01[ip][k]', BASIS),
+                      Sum([
+                            Symbol('Jinv_10', GEO),
+                            Symbol('w[4][0]', GEO)
+                          ]),
+                      Sum([
+                            Symbol('Jinv_10', GEO),
+                            Symbol('w[4][0]', GEO)
+                          ])
+                    ])
 
+#        print "p: ", p
+#        print p.expand()
+
+        br = p.reduce_vartype(BASIS)
+#        print
+#        print br[0]
+#        print br[1]
+
+        be = p.expand().reduce_vartype(BASIS)
+#        print
+#        print be[0][0]
+#        print be[0][1]
+        if len(be) == 1:
+            if be[0][0] == br[0]:
+                if be[0][1] != br[1].expand():
+#                        print "\np: ", repr(p)
+                        print "\nbe: ", repr(be[0][1])
+                        print "\nbr: ", repr(br[1].expand())
+                        print "\nbe: ", be[0][1]
+                        print "\nbr: ", br[1].expand()
+                        error("here1")
 
 def suite():
 
@@ -2211,4 +2351,17 @@ if __name__ == "__main__":
     # Run all returned tests
     runner = unittest.TextTestRunner()
     runner.run(suite())
+
+#    p = create_product([Sum([FloatValue(-0.5), Product([FloatValue(2), Symbol('w[4][0]', GEO)])])])
+#    p1 = p.expand()
+#    print "repr(p): ", repr(p)
+#    print "repr(p.exp): ", repr(p._expanded)
+#    p2 = Product([Symbol('x', CONST), p])
+##    print "repr(p2): ", repr(p2)
+##    print "repr(p2.exp): ", repr(p2.expand())
+#    print "p: ", p
+#    print "p2: ", p2
+
+
+
 

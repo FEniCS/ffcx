@@ -46,7 +46,6 @@ class Product(Expr):
             float_val = 1.0
             for var in variables:
                 # If any value is zero the entire product is zero.
-#                if abs(var.val) < EPS:
                 if var.val == 0.0:
                     self.val = 0.0
                     self.vrs = [create_float(0.0)]
@@ -58,30 +57,46 @@ class Product(Expr):
                     continue
                 # Take care of product such that we don't create nested products.
                 elif var._prec == 2: # prod
-                    # If other product is not expanded, we must expand this product later.
-                    if not var._expanded:
+#                    if var.vrs[0]._prec == 0:
+#                        float_val *= var.vrs[0].val
+#                        self.vrs += var.vrs[1:]
+#                        continue
+#                    self.vrs += var.vrs
+#                    continue
+                    # If expanded product is a float, just add it.
+                    if var._expanded and var._expanded._prec == 0:
+                        float_val *= var._expanded.vrs[0].val
+                    # If expanded product is symbol, this product is still expanded and add symbol.
+                    elif var._expanded and var._expanded._prec == 1:
+                        self.vrs.append(var._expanded)
+                    # If expanded product is still a product, add the variables.
+                    elif var._expanded and var._expanded._prec == 2:
+                        # Add copies of the variables of other product (collect floats).
+                        if var._expanded.vrs[0]._prec == 0:
+                            float_val *= var._expanded.vrs[0].val
+                            self.vrs += var._expanded.vrs[1:]
+                            continue
+                        self.vrs += var._expanded.vrs
+                    # If expanded product is a sum or fraction, we must expand this product later.
+                    elif var._expanded and var._expanded._prec in (3, 4):
                         self._expanded = False
-                    # Add copies of the variables of other product (collect floats)
-                    if var.vrs[0]._prec == 0:
-                        float_val *= var.vrs[0].val
-                        self.vrs += var.vrs[1:]
-                        continue
-                    self.vrs += var.vrs
+                        self.vrs.append(var._expanded)
+                    # Else the product is not expanded, and we must expand this one later
+                    else:
+                        self._expanded = False
+                        # Add copies of the variables of other product (collect floats).
+                        if var.vrs[0]._prec == 0:
+                            float_val *= var.vrs[0].val
+                            self.vrs += var.vrs[1:]
+                            continue
+                        self.vrs += var.vrs
                     continue
-
                 # If we have sums or fractions in the variables the product is not expanded.
                 elif var._prec in (3, 4): # sum or frac
                     self._expanded = False
 
                 # Just add any variable at this point to list of new vars.
                 self.vrs.append(var)
-
-#            if (abs(float_val - 1.0) > EPS) != (float_val != 1.0):
-#                print "\nflv: ", float_val
-#                print "variables: ", variables
-#                print "1: ", abs(float_val - 1.0)
-#                print "eps: ", EPS
-#                print "2: ", float_val != 1.0
 
             # If value is 1 there is no need to include it, unless it is the
             # only parameter left i.e., 2*0.5 = 1.
@@ -236,7 +251,8 @@ class Product(Expr):
         # (it is not a Product, so it should be safe). We need this to get
         # rid of Product([Symbol]) type expressions.
         if len(self.vrs) == 1:
-            return self.vrs[0].expand()
+            self._expanded = self.vrs[0].expand()
+            return self._expanded
 
         # If product is already expanded, simply return the expansion.
         if self._expanded:
@@ -259,7 +275,6 @@ class Product(Expr):
                 float_syms += exp.vrs
             else:
                 sum_fracs.append(exp)
-
         # If we have floats or symbols add the symbols to the rest as a single
         # product (for speed).
         if len(float_syms) > 1:
@@ -324,7 +339,7 @@ class Product(Expr):
         # TODO: Is it safe to return self.expand().reduce_ops() if product is
         # not expanded? And do we want to?
 #        if self._expanded:
-#            return self
+#            return self._expanded
 #        raise RuntimeError("Product must be expanded first before we can reduce the number of operations.")
         # TODO: This should crash if it goes wrong (the above is more correct but slower).
         return self._expanded
@@ -335,58 +350,6 @@ class Product(Expr):
         of type == var_type. If no variables are found, found=(). The 'remain'
         part contains the leftover after division by 'found' such that:
         self = found*remain."""
-
-#        found_sum = {}
-#        found = []
-#        remains = []
-#        # Loop members and reduce them by vartype.
-#        for v in self.vrs:
-#            if v._prec == 3:
-#                for f, r in v.reduce_vartype(var_type):
-#                    if f in found_sum:
-#                        found_sum[f].append(r)
-#                    else:
-#                        found_sum[f] = [r]
-#            else:
-#                f, r = v.reduce_vartype(var_type)
-#                if f:
-#                    found.append(f)
-#                    continue
-#                remains.append(r)
-
-#        # Create the return value.
-#        for f, r in found_sum.iteritems():
-#            if len(r) > 1:
-#                # Use expand to group expressions.
-##                r = create_sum(r).expand()
-#                r = create_sum(r)
-#            elif r:
-#                r = r.pop()
-#            if f:
-#                found.append(f)
-#            remains.append(r)
-
-#        # Create appropriate object for found.
-#        if len(found) > 1:
-#            found = create_product(found)
-#        elif found:
-#            found = found.pop()
-#        # We did not find any variables.
-#        else:
-#            return ((), self)
-
-#        # Create appropriate object for remains.
-#        if len(remains) > 1:
-#            remains = create_product(remains)
-#        elif remains:
-#            remains = remains.pop()
-#        # We don't have anything left.
-#        else:
-#            return (self, create_float(1))
-
-#        # Return whatever we found.
-#        return (found, remains)
-
         # Sort variables according to type.
         found = []
         remains = []

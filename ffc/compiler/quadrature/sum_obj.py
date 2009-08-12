@@ -49,6 +49,9 @@ class Sum(Expr):
                 # Skip zero terms.
                 if abs(var.val) < EPS:
                     continue
+                elif var._prec == 0: # float
+                    float_val += var.val
+                    continue
                 elif var._prec == 3: # sum
                     # Loop and handle variables of nested sum.
                     for v in var.vrs:
@@ -58,9 +61,6 @@ class Sum(Expr):
                             float_val += v.val
                             continue
                         self.vrs.append(v)
-                    continue
-                elif var._prec == 0: # float
-                    float_val += var.val
                     continue
                 self.vrs.append(var)
 
@@ -178,16 +178,6 @@ class Sum(Expr):
 
         # TODO: This function might need some optimisation.
 
-        # Loop all variable and expand, then remove nested sums that got
-        # created by expanding variables.
-        variables = []
-        for v in self.vrs:
-            exp = v.expand()
-            if exp._prec == 3: # sum
-                variables += exp.vrs
-                continue
-            variables.append(exp)
-
         # Sort variables into symbols, products and fractions (add floats
         # directly to new list, will be handled later). Add fractions if
         # possible else add to list.
@@ -197,22 +187,23 @@ class Sum(Expr):
         frac_groups = {}
         # TODO: Rather than using '+', would it be more efficient to collect
         # the terms first?
-        for v in variables:
+        for var in self.vrs:
+            exp = var.expand()
             # TODO: Should we also group fractions, or put this in a separate function?
-            if v._prec in (0, 4): # float or frac
-                new_variables.append(v)
-            elif v._prec == 1: # sym
-                syms.append(v)
-            elif v._prec == 2: # prod
-                prods.append(v)
-            # TODO: put this in another function, cannot group fractions
-            # before we have reduced fractions with respect to Types etc.
-#            else:
-#                # Try to group fractions with similar denominators.
-#                if v.denom in frac_groups:
-#                    frac_groups[v.denom] += v
-#                else:
-#                    frac_groups[v.denom] = v
+            if exp._prec in (0, 4): # float or frac
+                new_variables.append(exp)
+            elif exp._prec == 1: # sym
+                syms.append(exp)
+            elif exp._prec == 2: # prod
+                prods.append(exp)
+            elif exp._prec == 3: # sum
+                for v in exp.vrs:
+                    if v._prec in (0, 4): # float or frac
+                        new_variables.append(v)
+                    elif v._prec == 1: # sym
+                        syms.append(v)
+                    elif v._prec == 2: # prod
+                        prods.append(v)
 
         # Sort all variables in groups: [2*x, -7*x], [(x + y), (2*x + 4*y)] etc.
         # First handle product in order to add symbols if possible.
@@ -228,7 +219,7 @@ class Sum(Expr):
         for v in syms:
             # First try to add to a product group.
             if (v,) in prod_groups:
-                prod_groups[(v,)] = v
+                prod_groups[(v,)] += v
             # Then to other symbols.
             elif v in sym_groups:
                 sym_groups[v] += v
@@ -312,12 +303,10 @@ class Sum(Expr):
         if new_sum._prec != 3: # sum
             self._reduced = new_sum.reduce_ops()
             return self._reduced
-
         # Loop all variables of the sum and collect the number of common
         # variables that can be factored out.
         common_vars = {}
         for var in new_sum.vrs:
-
             # Get dictonary of occurrences and add the variable and the number
             # of occurrences to common dictionary.
             for k, v in var.get_var_occurrences().iteritems():
@@ -325,7 +314,12 @@ class Sum(Expr):
                     common_vars[k].append((v, var))
                 else:
                     common_vars[k] = [(v, var)]
-
+#        print
+#        print "common vars: "
+#        for k,v in common_vars.items():
+#            print "k: ", k
+#            print "v: ", v
+#        print
         # Determine the maximum reduction for each variable
         # sorted as: {(x*x*y, x*y*z, 2*y):[2, [y]]}.
         terms_reductions = {}
@@ -339,8 +333,6 @@ class Sum(Expr):
                 # Get the list of number of occurences of 'k' in expressions
                 # in 'v'.
                 occurrences = [t[0] for t in v]
-                # Extract the terms of v.
-                terms = [t[1] for t in v]
 
                 # Determine the favorable number of occurences and an estimate
                 # of the maximum reduction for current variable.
@@ -358,6 +350,10 @@ class Sum(Expr):
                         reduc = new_reduc
                         fav_occur = i
 
+                # Extract the terms of v where the number of occurrences is
+                # equal to or higher than the most favorable number of occurrences.
+                terms = [t[1] for t in v if t[0] >= fav_occur]
+
                 # We need to reduce the expression with the favorable number of
                 # occurrences of the current variable.
                 red_vars = [k]*fav_occur
@@ -369,7 +365,11 @@ class Sum(Expr):
                     terms_reductions[tuple(terms)][1] += red_vars
                 else:
                     terms_reductions[tuple(terms)] = [reduc, red_vars]
-
+#        print "\nterms_reductions: "
+#        for k,v in terms_reductions.items():
+#            print "k: ", create_sum(k)
+#            print "v: ", v
+#        print "red: self: ", self
         if terms_reductions:
             # Invert dictionary of terms.
             reductions_terms = dict([((v[0], tuple(v[1])), k) for k, v in terms_reductions.iteritems()])
@@ -392,6 +392,11 @@ class Sum(Expr):
                     rejections[var[1]] = terms
                 else:
                     reduction_vars[var[1]] = terms
+
+#            print "\nreduction_vars: "
+#            for k,v in reduction_vars.items():
+#                print "k: ", k
+#                print "v: ", v
 
             # Reduce each set of terms with appropriate variables.
             all_reduced_terms = []
@@ -443,6 +448,15 @@ class Sum(Expr):
                 self._reduced = create_sum(reduced_expressions)
             else:
                 self._reduced = reduced_expressions[0]
+#            # NOTE: Only switch on for debugging.
+#            if not self._reduced.expand() == self.expand():
+#                print reduced_expressions[0]
+#                print reduced_expressions[0].expand()
+#                print "self: ", self
+#                print "red:  ", repr(self._reduced)
+#                print "self.exp: ", self.expand()
+#                print "red.exp:  ", self._reduced.expand()
+#                raise RuntimeError("Reduced expression is not equal to original expression.")
             return self._reduced
 
         # Return self if we don't have any variables for which we can reduce
@@ -459,18 +473,11 @@ class Sum(Expr):
         found = {}
         # Loop members and reduce them by vartype.
         for v in self.vrs:
-#            if v._prec == 2:
-#                for f, r in v.reduce_vartype(var_type):
-#                    if f in found:
-#                        found[f].append(r)
-#                    else:
-#                        found[f] = [r]
-#            else:
-                f, r = v.reduce_vartype(var_type)
-                if f in found:
-                    found[f].append(r)
-                else:
-                    found[f] = [r]
+            f, r = v.reduce_vartype(var_type)
+            if f in found:
+                found[f].append(r)
+            else:
+                found[f] = [r]
 
         # Create the return value.
         returns = []

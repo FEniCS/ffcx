@@ -106,7 +106,7 @@ def generate_aux_constants(constant_decl, name, var_type, print_ops=False):
 #        print "\nnum: ", num
 #        print "expr orig: " + repr(expr)
 #        print "expr exp: " + str(expr.expand())
-        # Expand and reduce expression
+        # Expand and reduce expression (If we don't already get reduced expressions.)
         expr = expr.expand().reduce_ops()
 #        debug("expr opt:  " + str(expr))
 #        print "expr opt:  " + str(expr)
@@ -138,10 +138,7 @@ def optimise_code(expr, ip_consts, geo_consts, trans_set):
         return create_float(0)
 
     # Reduce expression with respect to basis function variable.
-#    debug("\n\nexpr before exp: " + repr(expr))
-#    print "\n\nexpr before exp: " + repr(expr)
     basis_expressions = expr.expand().reduce_vartype(BASIS)
-#    basis_expressions = expr.reduce_vartype(BASIS)
 
     # If we had a product instance we'll get a tuple back so embed in list.
     if not isinstance(basis_expressions, list):
@@ -187,7 +184,6 @@ def optimise_code(expr, ip_consts, geo_consts, trans_set):
 
         # Reduce the ip expressions with respect to IP variables.
         ip_expressions = ip_expr.expand().reduce_vartype(IP)
-#        ip_expressions = ip_expr.reduce_vartype(IP)
 
         # If we had a product instance we'll get a tuple back so embed in list.
         if not isinstance(ip_expressions, list):
@@ -201,6 +197,13 @@ def optimise_code(expr, ip_consts, geo_consts, trans_set):
 #            debug("\ngeo: " + str(geo))
 #            print "\nip_dec: " + str(ip_dec)
 #            print "\ngeo: " + str(geo)
+            # NOTE: Useful for debugging to check that terms where properly reduced.
+#            if Product([ip_dec, geo]).expand() != ip_expr.expand():
+#                print "\nip_expr: ", repr(ip_expr)
+#                print "ip_dec: ", repr(ip_dec)
+#                print "geo: ", repr(geo)
+#                error("Not equal")
+
             # Update transformation set with those values that might be embedded in IP terms.
             if ip_dec:
                 trans_set_update(map(lambda x: str(x), ip_dec.get_unique_vars(GEO)))
@@ -214,6 +217,7 @@ def optimise_code(expr, ip_consts, geo_consts, trans_set):
             trans_set_update(map(lambda x: str(x), geo.get_unique_vars(GEO)))
 
             # Only declare auxiliary geo terms if we can save operations.
+#            geo = geo.expand().reduce_ops()
             if geo.ops() > 0:
 #                debug("geo: " + str(geo))
 #                print "geo: " + str(geo)
@@ -240,6 +244,7 @@ def optimise_code(expr, ip_consts, geo_consts, trans_set):
 
         # If we can save operations by declaring it as a constant do so, if it
         # is not in IP dictionary, add it and use new name.
+#        ip_expr = ip_expr.expand().reduce_ops()
         if ip_expr.ops() > 0:
             if not ip_expr in ip_consts:
                 ip_consts[ip_expr] = len(ip_consts)
