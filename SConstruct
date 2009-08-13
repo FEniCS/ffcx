@@ -5,7 +5,7 @@ from distutils   import sysconfig
 from swig_config import configure_swig_env, get_status_output
 
 # Make sure that we have a good scons-version
-EnsureSConsVersion(0, 96)
+EnsureSConsVersion(0, 98, 5)
 
 # Create a SCons Environment based on the main os environment
 env = Environment(ENV=os.environ)
@@ -31,27 +31,27 @@ else:
 
 options = [
     # configurable options for installation:
-    PathOption("prefix", "Installation prefix", default_prefix, PathOption.PathAccept),
-    PathOption("includeDir", "ufc.h installation directory",
-               join("$prefix","include"), PathOption.PathAccept),
-    PathOption("pythonModuleDir", "Python module installation directory", 
-               default_python_dir, PathOption.PathAccept),
-    BoolOption("enablePyUFC", "Compile and install the python extension module", "Yes"),
-    PathOption("pythonExtDir", "Python extension module installation directory",
-               default_python_dir, PathOption.PathAccept),
-    PathOption("boostDir", "Specify path to Boost", None),
-    PathOption("pkgConfDir", "Directory for installation of pkg-config files",
-               join("$prefix","lib","pkgconfig"), PathOption.PathAccept),
-    BoolOption("cleanOldUFC", "Clean any old installed UFC modules", "No"),
-    BoolOption("cacheOptions", "Cache command-line options for later invocations", "Yes"),
-    PathOption("DESTDIR", "Prepend DESTDIR to each installed target file",
-               None, PathOption.PathAccept),
+    PathVariable("prefix", "Installation prefix", default_prefix, PathVariable.PathAccept),
+    PathVariable("includeDir", "ufc.h installation directory",
+               join("$prefix","include"), PathVariable.PathAccept),
+    PathVariable("pythonModuleDir", "Python module installation directory", 
+               default_python_dir, PathVariable.PathAccept),
+    BoolVariable("enablePyUFC", "Compile and install the python extension module", "Yes"),
+    PathVariable("pythonExtDir", "Python extension module installation directory",
+               default_python_dir, PathVariable.PathAccept),
+    PathVariable("boostDir", "Specify path to Boost", None),
+    PathVariable("pkgConfDir", "Directory for installation of pkg-config files",
+               join("$prefix","lib","pkgconfig"), PathVariable.PathAccept),
+    BoolVariable("cleanOldUFC", "Clean any old installed UFC modules", "No"),
+    BoolVariable("cacheOptions", "Cache command-line options for later invocations", "Yes"),
+    PathVariable("DESTDIR", "Prepend DESTDIR to each installed target file",
+               None, PathVariable.PathAccept),
     ]
 
 # Set the options using any cached options
 cache_file = "options.cache"
-opts = Options(cache_file, args=ARGUMENTS.copy())
-opts.AddOptions(*options)
+opts = Variables(cache_file, args=ARGUMENTS.copy())
+opts.AddVariables(*options)
 opts.Update(env)
 cache_options = env.get("cacheOptions", False)
 DESTDIR = env.get("DESTDIR")
