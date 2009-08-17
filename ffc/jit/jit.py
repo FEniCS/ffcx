@@ -15,7 +15,7 @@ import instant
 import ufc_utils
 
 # FFC common modules
-from ffc.common.log import info, warning,  push_level, pop_level, WARNING, INFO
+from ffc.common.log import info, warning, debug, push_level, pop_level, WARNING, INFO
 from ffc.common.constants import FFC_OPTIONS
 
 # FFC fem modules
@@ -87,7 +87,7 @@ def jit_form(form, options=None):
     info("done")
 
     # Wrap code into a Python module using Instant
-    info("Creating Python extension (compiling and linking), this may take some time...")
+    debug("Creating Python extension (compiling and linking), this may take some time...")
 
     # Create python extension module
     module = ufc_utils.build_ufc_module(
