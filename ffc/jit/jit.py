@@ -15,7 +15,7 @@ import instant
 import ufc_utils
 
 # FFC common modules
-from ffc.common.log import info, warning, debug, push_level, pop_level, WARNING, INFO
+from ffc.common.log import log, info, warning, debug, set_level, INFO
 from ffc.common.constants import FFC_OPTIONS
 
 # FFC fem modules
@@ -63,11 +63,11 @@ def jit_form(form, options=None):
     if not isinstance(form, Form):
         form = as_form(form)
 
-    # Set level to INFO
-    push_level(INFO)
-
     # Check options
     options = check_options(form, options)
+
+    # Set log level
+    set_level(options["log_level"])
 
     # Wrap input
     jit_object = JITObject(form, options)
@@ -78,18 +78,14 @@ def jit_form(form, options=None):
         compiled_form = getattr(module, module.__name__ + "_form_0")()
         return (compiled_form, module, form.form_data())
 
+    log(INFO + 5, "Calling FFC just-in-time (JIT) compiler, this may take some time...")
+
     # Generate code
-    info("Calling FFC just-in-time (JIT) compiler, this may take some time...")
     signature = jit_object.signature()
-    push_level(WARNING) # Less verbose code generation
     compile(form, signature, options)
-    pop_level()
-    info("done")
 
-    # Wrap code into a Python module using Instant
+    # Create python extension module using Instant (through UFC)
     debug("Creating Python extension (compiling and linking), this may take some time...")
-
-    # Create python extension module
     module = ufc_utils.build_ufc_module(
         signature + ".h",
         source_directory = os.curdir,
@@ -103,10 +99,10 @@ def jit_form(form, options=None):
     if options["split"] :
         os.unlink(signature + ".cpp")
 
-    info("done")
-
     # Extract compiled form
     compiled_form = getattr(module, module.__name__ + "_form_0")()
+
+    log(INFO + 5, "done")
 
     return compiled_form, module, form.form_data()
 
