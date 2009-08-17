@@ -5,4 +5,8 @@ __license__  = "GNU GPL version 3 or any later version"
 
 class FiniteElementBase:
     "Base class for all finite elements"
-    pass
+    def __init__(self):
+        # TODO: Just a simple data member while playing around with restrictions.
+        # Move somewhere else later.
+        self.domain = None
+        pass

@@ -221,6 +221,7 @@ class JITTests(unittest.TestCase):
         "Test that JIT compiler is fast enough."
 
         # FIXME: Use local cache: cache_dir argument to instant.build_module
+        options = {"log_level": INFO + 5}
 
         # Define two forms with the same signatures
         element = FiniteElement("Lagrange", "triangle", 1)
@@ -234,19 +235,19 @@ class JITTests(unittest.TestCase):
         # This will/might change with UFL so it's enough to compile it once.
 
         # Compile a0 twice so it will be in the cache (both in-memory and disk)
-        jit(a0)
-        jit(a0)
+        jit(a0, options)
+        jit(a0, options)
 
         # Compile a0 again (should be really fast, using in-memory cache)
         t = time()
-        jit(a0)
+        jit(a0, options)
         dt0 = time() - t
 
         print ""
 
         # Compile a1 (should be fairly, using disk cache)
         t = time()
-        jit(a1)
+        jit(a1, options)
         dt1 = time() - t
 
         print ""
