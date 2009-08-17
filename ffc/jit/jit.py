@@ -2,7 +2,7 @@
 It uses Instant to wrap the generated code into a Python module."""
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-07-20 -- 2009-05-22"
+__date__ = "2007-07-20 -- 2009-08-17"
 __copyright__ = "Copyright (C) 2007-2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
@@ -15,7 +15,7 @@ import instant
 import ufc_utils
 
 # FFC common modules
-from ffc.common.log import info, warning
+from ffc.common.log import info, warning,  push_level, pop_level, WARNING, INFO
 from ffc.common.constants import FFC_OPTIONS
 
 # FFC fem modules
@@ -44,9 +44,9 @@ instant.set_logging_level("warning")
 
 def jit(object, options=None):
     """Just-in-time compile the given form or element
-    
+
     Parameters:
-    
+
       object  : The object to be compiled
       options : An option dictionary
     """
@@ -62,31 +62,36 @@ def jit_form(form, options=None):
 
     if not isinstance(form, Form):
         form = as_form(form)
-        
+
+    # Set level to INFO
+    push_level(INFO)
+
     # Check options
     options = check_options(form, options)
-    
+
     # Wrap input
     jit_object = JITObject(form, options)
-    
+
     # Check cache
     module = instant.import_module(jit_object, cache_dir=options["cache_dir"])
-    if module:       
+    if module:
         compiled_form = getattr(module, module.__name__ + "_form_0")()
         return (compiled_form, module, form.form_data())
-    
+
     # Generate code
     info("Calling FFC just-in-time (JIT) compiler, this may take some time...")
     signature = jit_object.signature()
+    push_level(WARNING) # Less verbose code generation
     compile(form, signature, options)
+    pop_level()
     info("done")
-    
+
     # Wrap code into a Python module using Instant
     info("Creating Python extension (compiling and linking), this may take some time...")
 
     # Create python extension module
     module = ufc_utils.build_ufc_module(
-        signature + ".h", 
+        signature + ".h",
         source_directory = os.curdir,
         signature = signature,
         sources = signature + ".cpp" if options["split"] else [],
@@ -97,7 +102,7 @@ def jit_form(form, options=None):
     os.unlink(signature + ".h")
     if options["split"] :
         os.unlink(signature + ".cpp")
-    
+
     info("done")
 
     # Extract compiled form
@@ -107,7 +112,7 @@ def jit_form(form, options=None):
 
 def jit_element(element, options=None):
     "Just-in-time compile the given element"
-    
+
     # Check that we get an element
     if not isinstance(element, FiniteElementBase):
         raise RuntimeError, "Expecting a finite element."
@@ -116,7 +121,7 @@ def jit_element(element, options=None):
     v = TestFunction(element)
     for i in range(len(element.value_shape())):
         v = v[i]
-    form = v*dx 
+    form = v*dx
 
     # Compile form
     (compiled_form, module, form_data) = jit_form(form, options)
@@ -140,7 +145,7 @@ def check_options(form, options):
     for key in options:
         if not key in FFC_OPTIONS_JIT:
             warning('Unknown option "%s" for JIT compiler, ignoring.' % key)
-            
+
     # Add defaults for missing options
     for key in FFC_OPTIONS_JIT:
         if not key in options:
