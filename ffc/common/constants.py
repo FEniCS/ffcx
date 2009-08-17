@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2005-05-20 -- 2009-04-21"
+__date__ = "2005-05-20 -- 2009-08-17"
 __copyright__ = "Copyright (C) 2005-2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
@@ -18,4 +18,6 @@ FFC_OPTIONS = {"representation":      "auto", # form representation / code gener
                "output_dir":           ".",   # output directory for generated code
                "cpp optimize":         False, # optimization for the JIT compiler
                "optimize":             False, # optimise the quadrature code generation
-               "log_level":            INFO}  # log level, displaying only messages with level >= log_level
+               "log_level":            INFO,  # log level, displaying only messages with level >= log_level
+               "num_processes":        1,     # number of processes, for parallel log system
+               "process_number":       0}     # process number, for unique signatures in parallel and log system

@@ -15,7 +15,7 @@ import instant
 import ufc_utils
 
 # FFC common modules
-from ffc.common.log import log, info, warning, debug, set_level, INFO
+from ffc.common.log import log, info, warning, debug, set_level, set_prefix, INFO
 from ffc.common.constants import FFC_OPTIONS
 
 # FFC fem modules
@@ -69,6 +69,10 @@ def jit_form(form, options=None):
     # Set log level
     set_level(options["log_level"])
 
+    # Set prefix for log system
+    if options["num_processes"] > 1:
+        set_prefix("Process %d: " % options["process_number"])
+
     # Wrap input
     jit_object = JITObject(form, options)
 
@@ -78,7 +82,7 @@ def jit_form(form, options=None):
         compiled_form = getattr(module, module.__name__ + "_form_0")()
         return (compiled_form, module, form.form_data())
 
-    log(INFO + 5, "Calling FFC just-in-time (JIT) compiler, this may take some time...")
+    log(INFO + 5, "Calling FFC just-in-time (JIT) compiler, this may take some time.")
 
     # Generate code
     signature = jit_object.signature()
@@ -101,8 +105,6 @@ def jit_form(form, options=None):
 
     # Extract compiled form
     compiled_form = getattr(module, module.__name__ + "_form_0")()
-
-    log(INFO + 5, "done")
 
     return compiled_form, module, form.form_data()
 
