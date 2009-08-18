@@ -7,6 +7,7 @@ __license__  = "GNU GPL version 3 or any later version"
 from ufl import FiniteElement as UFLFiniteElement
 from ufl import MixedElement as UFLMixedElement
 from ufl import ElementRestriction as UFLElementRestriction
+from ufl.geometry import as_cell
 
 # FFC common modules
 from ffc.common.log import debug
@@ -33,7 +34,7 @@ def create_element(ufl_element):
     domain = None
     if isinstance(ufl_element, UFLElementRestriction):
         # Get restriction and overwrite element
-        domain = ufl_element._domain
+        domain = as_cell(ufl_element._domain)
         ufl_element = ufl_element._element
         print "\nelement: ", ufl_element
         print "domain: ", domain
