@@ -255,6 +255,24 @@ class FiniteElement(FiniteElementBase):
 #        print "return: ", self.basis().tabulate_jet(order, points)
         # TODO: Modify this for restrictions, might be able to propagate this
         # to FIAT
+        if self.domain:
+            if not self.__reduced_dofs:
+                self.entity_dofs()
+#            for d in self.__reduced_dofs:
+#                new_dofs.append(self.__dual_basis[d])
+            basis_values = self.basis().tabulate_jet(order, points)
+            new_basis = []
+            for b in basis_values:
+                for k,v in b.items():
+                    new_vals = []
+                    print "v: ", v
+                    print numpy.shape(v)
+                    for dof in self.__reduced_dofs:
+                        new_vals.append(v[dof])
+                    b[k] = numpy.array(new_vals)
+                new_basis.append(b)
+            return new_basis
+
         return self.basis().tabulate_jet(order, points)
 
     def basis_elements(self):
