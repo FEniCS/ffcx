@@ -23,6 +23,9 @@ from FIAT.BDFM import BDFM
 from FIAT.Nedelec import Nedelec
 from FIAT.darcystokes import DarcyStokes
 
+# FFC common modules
+from ffc.common.log import error
+
 # FFC fem modules
 from mapping import *
 import mixedelement
@@ -207,13 +210,16 @@ class FiniteElement(FiniteElementBase):
         # TODO: This should only work if self.domain is Cell, insert check.
         # Move this to the constructor
         if self.domain:
+            # Only restrictions to facets are currently supported
+            if self.domain.topological_dimension() != self.facet_shape():
+                error("Only restrictions to facets are currently supported.")
             if self.__reduced_dofs:
                 return self.__entity_dofs
             for entity_dict in self.__entity_dofs:
                 for key, val in entity_dict.items():
 #                    print "val: ", val
                     # TODO: Implement better rule to reflect what we really mean
-                    if key > self.domain.topological_dimension():
+                    if key != self.domain.topological_dimension():
                         for k, v in val.items():
                             val[k] = []
                             continue
@@ -265,8 +271,6 @@ class FiniteElement(FiniteElementBase):
             for b in basis_values:
                 for k,v in b.items():
                     new_vals = []
-                    print "v: ", v
-                    print numpy.shape(v)
                     for dof in self.__reduced_dofs:
                         new_vals.append(v[dof])
                     b[k] = numpy.array(new_vals)
