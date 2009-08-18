@@ -26,6 +26,8 @@ class MixedElement(FiniteElementBase):
     def __init__(self, elements):
         "Create MixedElement from a list of elements."
 
+        FiniteElementBase.__init__(self)
+
         # Make sure we get a list of elements
         if not isinstance(elements, list):
             raise RuntimeError, (elements, "Mixed finite element must be created from a list of at least two elements.")

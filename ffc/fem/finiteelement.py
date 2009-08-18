@@ -219,7 +219,7 @@ class FiniteElement(FiniteElementBase):
                 for key, val in entity_dict.items():
 #                    print "val: ", val
                     # TODO: Implement better rule to reflect what we really mean
-                    if key != self.domain.topological_dimension():
+                    if key > self.domain.topological_dimension():
                         for k, v in val.items():
                             val[k] = []
                             continue

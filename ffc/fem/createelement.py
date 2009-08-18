@@ -32,8 +32,9 @@ def create_element(ufl_element):
     # around with just having the restriction as a property of a FFC element.
     # If it works out, we could change this in UFL?
     domain = None
+    ufl_element_hash = ufl_element
     if isinstance(ufl_element, UFLElementRestriction):
-        # Get restriction and overwrite element
+        # Get restriction and overwrite element (which is why I save hash)
         domain = as_cell(ufl_element._domain)
         ufl_element = ufl_element._element
         print "\nelement: ", ufl_element
@@ -47,14 +48,24 @@ def create_element(ufl_element):
         ffc_element = FFCFiniteElement(ufl_element.family(), ufl_element.cell().domain(), ufl_element.degree())
     elif isinstance(ufl_element, UFLMixedElement):
         sub_elements = [create_element(e) for e in ufl_element.sub_elements()]
+        # If the mixed element is restricted, all sub elements must also be restricted
+        if domain:
+            for e in sub_elements:
+                e.domain = domain
+        # FIXME: If any of the sub elements are restricted also restrict the mixed element.
+        # This is only needed because evaluate_basis etc. doesn't currently support restrictions.
+        for e in sub_elements:
+            if e.domain:
+                domain = e.domain
         ffc_element = FFCMixedElement(sub_elements)
     else:
         raise RuntimeError, ("Unable to create equivalent FIAT element: %s" % str(ufl_element))
 
-    ffc_element.domain = domain
+    if domain:
+        ffc_element.domain = domain
 
     # Add element to cache
-    _cache[ufl_element] = ffc_element
+    _cache[ufl_element_hash] = ffc_element
 
     return ffc_element
 
