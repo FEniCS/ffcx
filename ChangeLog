@@ -1,3 +1,8 @@
+ - Added new symbolic classes for quadrature optimisation (speed up compilation)
+ - Added demos: Biharmonic.ufl (div(grad(v)) term), ReactionDiffusion (tuple notation)
+ - Tabulate the coordinates of the integration points in the tabulate_tensor() function
+ - Change command line option '-f split_implementation' -> '-f split'
+ - Renaming of files and restructuring of the compiler directory
  - Added option -q rule (--quadrature-rule rule) to specify which rule to use
    for integration of a given integral. (Can also bet set through the metadata
    through "quadrature_rule"). No rules have yet been implemented, so default

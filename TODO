@@ -7,7 +7,6 @@ file, it is convenient to install org-mode in Emacs.
     Check speed against old FFC.
   - Use load_form_file from UFL
   - Clean out old unused code (check coverage)
-  - Flatten directory structure
   
 * Write introduction in manual
   - The introduction is currently empty
@@ -43,6 +42,7 @@ file, it is convenient to install org-mode in Emacs.
 
 * Missing support for UFL functionality
   - Restrictions of function spaces to subdomains
+  - Restrictions of function spaces to Cells (cell, interval, vertex)
 
 * Quad elements
   - Isoparametric mapping
