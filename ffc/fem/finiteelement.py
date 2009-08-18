@@ -13,6 +13,9 @@ import numpy
 
 # FIAT modules
 from FIAT.shapes import *
+# FIXME: Move this somewhere else
+VERTEX = 0
+
 from FIAT.transformedspace import *
 from FIAT.Lagrange import Lagrange
 from FIAT.DiscontinuousLagrange import DiscontinuousLagrange
@@ -34,11 +37,11 @@ from dofrepresentation import *
 from finiteelementbase import *
 
 # Dictionaries of basic element data
-shape_to_string = {LINE: "interval", TRIANGLE: "triangle", TETRAHEDRON: "tetrahedron"}
-string_to_shape = {"interval": LINE, "triangle": TRIANGLE, "tetrahedron": TETRAHEDRON}
-shape_to_dim = {LINE: 1, TRIANGLE: 2, TETRAHEDRON: 3}
-shape_to_facet = {LINE: None, TRIANGLE: LINE, TETRAHEDRON: TRIANGLE}
-shape_to_num_facets = {LINE: 2, TRIANGLE: 3, TETRAHEDRON: 4}
+shape_to_string = {VERTEX: "vertex", LINE: "interval", TRIANGLE: "triangle", TETRAHEDRON: "tetrahedron"}
+string_to_shape = {"vertex": VERTEX, "interval": LINE, "triangle": TRIANGLE, "tetrahedron": TETRAHEDRON}
+shape_to_dim = {VERTEX: 0, LINE: 1, TRIANGLE: 2, TETRAHEDRON: 3}
+shape_to_facet = {VERTEX: None, LINE: VERTEX, TRIANGLE: LINE, TETRAHEDRON: TRIANGLE}
+shape_to_num_facets = {VERTEX: 0, LINE: 2, TRIANGLE: 3, TETRAHEDRON: 4}
 
 # Value mappings
 AFFINE = "affine"
