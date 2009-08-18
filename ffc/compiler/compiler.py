@@ -295,6 +295,10 @@ def _extract_metadata(form, options):
         if quadrature_order == "auto":
             quadrature_order = _auto_select_quadrature_order(integral)
 
+        # No quadrature rules have been implemented yet
+        if quadrature_rule:
+            warning("No quadrature rules have been implemented yet, using the default from FIAT.")
+
         # Set metadata for integral
         metadata[integral] = {"quadrature_order": quadrature_order,
                               "ffc_representation": representation,
