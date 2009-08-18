@@ -1,3 +1,7 @@
+ - Added option -q rule (--quadrature-rule rule) to specify which rule to use
+   for integration of a given integral. (Can also bet set through the metadata
+   through "quadrature_rule"). No rules have yet been implemented, so default
+   is the FIAT rule.
  - Remove support for old style .form files/format
 0.6.2 [2009-04-07]
  - Experimental support for UFL, supporting both .form and .ufl

@@ -4,7 +4,8 @@ NAME
 
 SYNOPSIS
        ffc [-h] [-v] [-d debuglevel] [-s] [-l language] [-r representation]
-       [-f option] [-O] [-o output-directory] ... input.form ...
+       [-f option] [-O] [-o output-directory] [-q quadrature-rule] ...
+       input.ufl ...
 
 
 DESCRIPTION
@@ -101,11 +102,20 @@ OPTIONS
               Specify the directory where the generated files should be written
               to. The default output directory is the current ('.') directory.
 
+       -q rule, --quadrature-rule rule
+              Specify the quadrature rule that should be used when integrating
+              the   forms.  This   will   affect  both  tensor and  quadrature
+              representation.  Currently,  no  quadrature   rules   has   been
+              implemented so the default from FIAT will be used.
+
+
        BUGS
 
        Send comments, questions, bug reports etc. to ffc-dev@fenics.org.
 
 AUTHOR
-       Anders Logg (logg@simula.no)
+       Written by Anders Logg (logg@simula.no) with help from Kristian {\O}lgaard,
+       Marie Rognes, Garth N. Wells and many others.
+
 
                                                                         FFC(1)
