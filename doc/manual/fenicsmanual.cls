@@ -2,7 +2,7 @@
 % Licensed under the GNU GPL Version 3 or any later version.
 %
 % First added:  2004-09-03
-% Last changed: 2007-08-20
+% Last changed: 2009-08-18
 %
 % LaTeX document class for FEniCS manuals.
 
@@ -23,7 +23,6 @@
 \RequirePackage{stmaryrd}
 \RequirePackage{makeidx}
 \RequirePackage{url}
-\RequirePackage{here}
 \RequirePackage[latin1]{inputenc}
 \RequirePackage[colorlinks]{hyperref}
 \RequirePackage[small]{caption}
