@@ -18,6 +18,7 @@ FFC_OPTIONS = {"representation":      "auto", # form representation / code gener
                "output_dir":           ".",   # output directory for generated code
                "cpp optimize":         False, # optimization for the JIT compiler
                "optimize":             False, # optimise the quadrature code generation
-               "log_level":            INFO,  # log level, displaying only messages with level >= log_level
-               "num_processes":        1,     # number of processes, for parallel log system
-               "process_number":       0}     # process number, for unique signatures in parallel and log system
+               "log_level":            INFO}  # log level, displaying only messages with level >= log_level
+
+#               "num_processes":        1,     # number of processes, for parallel log system
+#               "process_number":       0}     # process number, for unique signatures in parallel and log system

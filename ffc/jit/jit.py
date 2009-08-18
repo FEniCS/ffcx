@@ -70,8 +70,8 @@ def jit_form(form, options=None):
     set_level(options["log_level"])
 
     # Set prefix for log system
-    if options["num_processes"] > 1:
-        set_prefix("Process %d: " % options["process_number"])
+    #if options["num_processes"] > 1:
+    #    set_prefix("Process %d: " % options["process_number"])
 
     # Wrap input
     jit_object = JITObject(form, options)
