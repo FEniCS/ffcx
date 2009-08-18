@@ -23,6 +23,9 @@ from FIAT.BDFM import BDFM
 from FIAT.Nedelec import Nedelec
 from FIAT.darcystokes import DarcyStokes
 
+# FFC common modules
+from ffc.common.log import error
+
 # FFC fem modules
 from mapping import *
 import mixedelement
@@ -61,6 +64,8 @@ class FiniteElement(FiniteElementBase):
     def __init__(self, family, shape, degree=None):
         "Create FiniteElement"
 
+        FiniteElementBase.__init__(self)
+
         # Save element family
         self.__family = family
 
@@ -76,6 +81,9 @@ class FiniteElement(FiniteElementBase):
         # Get the dof identifiers from FIAT element
         self.__dual_basis = self.__create_dof_representation(self.__fiat_element.dual_basis().get_dualbasis_types())
 
+        # FIXME: Temporary for restrictions
+        self.__reduced_dofs = []
+
         # FIXME: Temporary fix until Mapping class has been remove after UFL is working
         m = {Mapping.AFFINE: AFFINE,
              Mapping.CONTRAVARIANT_PIOLA: CONTRAVARIANT_PIOLA,
@@ -88,6 +96,7 @@ class FiniteElement(FiniteElementBase):
 
     def signature(self):
         "Return a string identifying the finite element"
+        # TODO: Modify this for restrictions
         return "FiniteElement('%s', '%s', %d)" % \
                (self.__family, shape_to_string[self.cell_shape()], self.degree())
 
@@ -97,6 +106,14 @@ class FiniteElement(FiniteElementBase):
 
     def space_dimension(self):
         "Return the dimension of the finite element function space"
+        # TODO: Modify this for restrictions, might be able to propagate this
+        # to FIAT
+        if self.domain:
+            if not self.__reduced_dofs:
+                self.entity_dofs()
+#            print "space_dim: ", len(self.__reduced_dofs)
+            return len(self.__reduced_dofs)
+#        print "space_dim: ", len(self.basis())
         return len(self.basis())
 
     def geometric_dimension(self):
@@ -122,10 +139,16 @@ class FiniteElement(FiniteElementBase):
 
     def sub_element(self, i):
         "Return sub element i"
+#        print "sub_element: ", self
+        # TODO: Who is calling this function and do I need to modify this for
+        # restrictions?
         return self
 
     def degree(self):
         "Return degree of polynomial basis"
+#        print "degree: ", self.basis().degree()
+        # TODO: Who is calling this function and do I need to modify this for
+        # restrictions?
         return self.basis().degree()
 
     def mapping(self):
@@ -144,17 +167,26 @@ class FiniteElement(FiniteElementBase):
 
     def component_element(self, component):
         "Return sub element and offset for given component."
+#        print "component_element: ", (self, 0)
+        # TODO: Who is calling this function and do I need to modify this for
+        # restrictions?
         return (self, 0)
 
     # FIXME: Remove (replaced by component_element)
     def value_offset(self, component):
         """Given an absolute component (index), return the associated
         subelement and offset of the component""" 
+#        print "value_offset: ", (self, 0)
+        # TODO: Who is calling this function and do I need to modify this for
+        # restrictions?
         return (self, 0)
 
     def space_offset(self, i):
         """Given a basis function number i, return the associated
         subelement and offset""" 
+#        print "space_offset: ", (self, 0)
+        # TODO: Who is calling this function and do I need to modify this for
+        # restrictions?
         return (self, 0)
     
     def cell_dimension(self):
@@ -171,23 +203,87 @@ class FiniteElement(FiniteElementBase):
 
     def entity_dofs(self):
         "Return the mapping from entities to dofs"
+#        print "old entity_dofs: ", self.__entity_dofs
+        # TODO: Might be able to propagate this to FIAT?
+        # Eliminate those dofs that live on a topology higher than the one whereto
+        # dofs should be restricted
+        # TODO: This should only work if self.domain is Cell, insert check.
+        # Move this to the constructor
+        if self.domain:
+            # Only restrictions to facets are currently supported
+            if self.domain.topological_dimension() != self.facet_shape():
+                error("Only restrictions to facets are currently supported.")
+            if self.__reduced_dofs:
+                return self.__entity_dofs
+            for entity_dict in self.__entity_dofs:
+                for key, val in entity_dict.items():
+#                    print "val: ", val
+                    # TODO: Implement better rule to reflect what we really mean
+                    if key > self.domain.topological_dimension():
+                        for k, v in val.items():
+                            val[k] = []
+                            continue
+                    for k,v in val.items():
+                        self.__reduced_dofs += v
+#        print "reduced_dofs: ", self.__reduced_dofs
+#        print "new entity_dofs: ", self.__entity_dofs
+
         return self.__entity_dofs
 
     def dual_basis(self):
         "Return the representation dual basis of finite element space"
+        # TODO: Modify this for restrictions, should be handled by
+        # __create_dofs_representations
+
+        # Pick out those dofs that are present after restriction.
+        # Assuming same numbering as in entity_dofs (as far as I can tell from
+        # FIAT, this should be safe fiat/lagrange.py LagrangeDual())
+        if self.domain:
+            new_dofs = []
+            if not self.__reduced_dofs:
+                self.entity_dofs()
+            for d in self.__reduced_dofs:
+                new_dofs.append(self.__dual_basis[d])
+            return new_dofs
         return self.__dual_basis
 
     def basis(self):
         "Return basis of finite element space"
+#        print "basis: ", self.__transformed_space
+        # TODO: Where is this function used and do I need to modify this for
+        # restrictions?
         return self.__transformed_space
 
     def tabulate(self, order, points):
         """Return tabulated values of derivatives up to given order of
         basis functions at given points."""
+#        print "tabulate: ", (order, points)
+#        print "return: ", self.basis().tabulate_jet(order, points)
+        # TODO: Modify this for restrictions, might be able to propagate this
+        # to FIAT
+        if self.domain:
+            if not self.__reduced_dofs:
+                self.entity_dofs()
+#            for d in self.__reduced_dofs:
+#                new_dofs.append(self.__dual_basis[d])
+            basis_values = self.basis().tabulate_jet(order, points)
+            new_basis = []
+            for b in basis_values:
+                for k,v in b.items():
+                    new_vals = []
+                    for dof in self.__reduced_dofs:
+                        new_vals.append(v[dof])
+                    b[k] = numpy.array(new_vals)
+                new_basis.append(b)
+            return new_basis
+
         return self.basis().tabulate_jet(order, points)
 
     def basis_elements(self):
         "Returns a list of all basis elements"
+#        print "basis_elements: ", [self]
+        # TODO: Who is calling this function and do I need to modify this for
+        # restrictions?
         return [self]
 
     def __add__(self, other):
@@ -253,11 +349,14 @@ class FiniteElement(FiniteElementBase):
         function_space = self.__fiat_element.function_space()
         vertices = referencecell.get_vertex_coordinates(self.cell_dimension())
         if self.__mapping == Mapping.AFFINE:
+#            print "__transformed_function_space: ", AffineTransformedFunctionSpace(function_space, vertices)
             return AffineTransformedFunctionSpace(function_space, vertices)
         elif self.__mapping == Mapping.CONTRAVARIANT_PIOLA:
+#            print "__transformed_function_space: ", PiolaTransformedFunctionSpace(function_space, vertices, "div")
             return PiolaTransformedFunctionSpace(function_space, vertices,
                                                  "div")
         elif self.__mapping == Mapping.COVARIANT_PIOLA:
+#            print "__transformed_function_space: ", PiolaTransformedFunctionSpace(function_space, vertices, "curl")
             return PiolaTransformedFunctionSpace(function_space, vertices,
                                                  "curl")
         else:
@@ -268,6 +367,8 @@ class FiniteElement(FiniteElementBase):
         dof representation including transforming the points from one
         reference element onto the other."""
 
+        # TODO: Modify this for restrictions, might be able to propagate this
+        # to FIAT
         dofs = []
 
         # In order to convert from the FIAT geometry to the UFC

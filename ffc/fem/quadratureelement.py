@@ -57,6 +57,8 @@ class QuadratureElement(FiniteElement):
         # Used in dofmap.py", line 158, in __compute_dof_coordinates
         self.__dual_basis = self.__create_dual_basis(points)
 
+        FiniteElementBase.__init__(self)
+
     def family(self):
         "Return a string indentifying the finite element family"
         return self.__family

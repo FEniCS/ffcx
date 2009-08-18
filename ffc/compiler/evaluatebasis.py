@@ -277,6 +277,7 @@ def tabulate_coefficients(element, Indent, format):
     format_const_float        = format["const float declaration"]
 
     # Get coefficients from basis functions, computed by FIAT at compile time
+    # TODO: Use a new function element.get_coeffs() here?
     coefficients = element.basis().get_coeffs()
 
     # Scalar valued basis element [Lagrange, Discontinuous Lagrange, Crouzeix-Raviart]
@@ -294,6 +295,7 @@ def tabulate_coefficients(element, Indent, format):
     num_components = element.value_dimension(0)
 
     # Get polynomial dimension of basis
+    # TODO: Get poly_dim and num_dofs as the shape of coefficients, this Must work
     poly_dim = len(element.basis().fspace.base.bs)
 
     # Get the number of dofs from element
@@ -302,10 +304,7 @@ def tabulate_coefficients(element, Indent, format):
     code += [Indent.indent(format_comment("Table(s) of coefficients"))]
 
     # Generate tables for each component
-    for i in range(num_components):
-
-        # Extract coefficients for current component
-        coeffs = coefficients[i]
+    for i, coeffs in enumerate(coefficients):
 
         # Declare varable name for coefficients
         name = format_table_declaration + format_coefficients(i) + format_matrix_access(num_dofs, poly_dim)
@@ -334,6 +333,7 @@ def relevant_coefficients(element, Indent, format):
     num_components = element.value_dimension(0)
 
     # Get polynomial dimension of basis
+    # TODO: Can we simply use element.space_dimension() here?
     poly_dim = len(element.basis().fspace.base.bs)
 
     # Extract relevant coefficients and declare as floats

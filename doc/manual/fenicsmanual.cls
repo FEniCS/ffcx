@@ -17,6 +17,7 @@
 \RequirePackage{fancyhdr}
 \RequirePackage{fancybox}
 \RequirePackage{fancyvrb}
+\RequirePackage{alltt}
 \RequirePackage{sectsty}
 \RequirePackage{amsmath}
 \RequirePackage{amssymb}
