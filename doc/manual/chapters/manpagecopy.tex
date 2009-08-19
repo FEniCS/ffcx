@@ -91,12 +91,16 @@ OPTIONS
               these functions are not needed.
 
        -O, --optimize
-              Generate optimized code using FErari optimizations. This  option
-              is  currently  ignored,  but can be used to reduce the operation
-              count for assembly  (run-time  for  the  generated  code).  This
-              option  requires FErari and should be used with caution since it
-              may be very costly  (at  compile-time)  for  other  than  simple
-              forms.
+              Generate optimized code with a lower operation  count compared to
+              non-optimized code for the assembly of  the local element tensor.
+              This  will  in  general increase the  run-time performance of the
+              code. If  the representation (see -r option) is 'tensor' then FFC
+              will use FErari optimizations. However, this option is  currently
+              ignored. This  option  requires  FErari  and  should be used with
+              caution since it may be very costly (at compile-time)  for  other
+              than  simple  forms.  If the representation is  'quadrature'  the
+              compile-time increase tends to be  much  less drastic compared to
+              FErari for very complex forms.
 
        -o directory, --output-directory directory
               Specify the directory where the generated files should be written
