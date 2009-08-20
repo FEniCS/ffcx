@@ -617,6 +617,7 @@ class Tests(unittest.TestCase):
         F1 = Fraction(s0, s1)
         F2 = Fraction(s0, S0)
         F3 = Fraction(s0, s1)
+        F4 = Fraction(p0, s1)
 
         # Test FloatValue '+', only defined for addition by other floats
         # or if self.val == 0
@@ -730,6 +731,14 @@ class Tests(unittest.TestCase):
         Product([Symbol('x', GEO), Symbol('x', GEO)]), Symbol('y', GEO))])))
         self.assertEqual(str(F1*F0), '2*x/(y*y)')
 
+        # Test Fraction '/'
+        self.assertEqual(str(F0/f0), '1/y')
+        self.assertEqual(str(F1/s0), '1/y')
+        self.assertEqual(str(F4/p1), '2/(y*y)')
+        self.assertEqual(str(F4/s0), '2/y')
+        self.assertEqual(str(F2/s1), 'x/(x*y + y*y)')
+        self.assertEqual(str(F0/S0), '2/(x*y + y*y)')
+        self.assertRaises(RuntimeError, F0.__div__, F0)
 
     def testExpandOperations(self):
         f0 = FloatValue(-1)
@@ -768,13 +777,14 @@ class Tests(unittest.TestCase):
         F4 = Fraction(P0, F0)
         F5 = Fraction(Fraction(s0, P0), P0)
         F6 = Fraction( Fraction( Fraction(s1, s0), Fraction(s1, s2)), Fraction( Fraction(s2, s0), Fraction(s1, s0)) )
-        F7 = Fraction(s1,
-        Product([s1, Symbol("x", GEO)]))
+        F7 = Fraction(s1, Product([s1, Symbol("x", GEO)]))
+        F8 = Fraction( Sum([sx, Fraction(sy, sx)]), FloatValue(2))
 
         F4x = F4.expand()
         F5x = F5.expand()
         F6x = F6.expand()
         F7x = F7.expand()
+        F8x = F8.expand()
 
 #        print "\nF4: '%s'" %F4
 #        print "F4x: '%s'" %F4x
@@ -784,11 +794,14 @@ class Tests(unittest.TestCase):
 #        print "F6x: '%s'" %F6x
 #        print "\nF7: '%s'" %F7
 #        print "F7x: '%s'" %F7x
+#        print "\nF8: '%s'" %F8
+#        print "F8x: '%s'" %F8x
 
         self.assertAlmostEqual(eval(str(F4)), eval(str(F4x)))
         self.assertAlmostEqual(eval(str(F5)), eval(str(F5x)))
         self.assertAlmostEqual(eval(str(F6)), eval(str(F6x)))
         self.assertAlmostEqual(eval(str(F7)), eval(str(F7x)))
+        self.assertAlmostEqual(eval(str(F8)), eval(str(F8x)))
 
         self.assertEqual(F4.ops(), 5)
         self.assertEqual(F4x.ops(), 1)
@@ -798,6 +811,8 @@ class Tests(unittest.TestCase):
         self.assertEqual(F6x.ops(), 1)
         self.assertEqual(F7.ops(), 2)
         self.assertEqual(F7x.ops(), 1)
+        self.assertEqual(F8.ops(), 3)
+        self.assertEqual(F8x.ops(), 4)
 
         # Expressions that should be expanded
         e0 = Product([P3, F2])
@@ -2351,17 +2366,4 @@ if __name__ == "__main__":
     # Run all returned tests
     runner = unittest.TextTestRunner()
     runner.run(suite())
-
-#    p = create_product([Sum([FloatValue(-0.5), Product([FloatValue(2), Symbol('w[4][0]', GEO)])])])
-#    p1 = p.expand()
-#    print "repr(p): ", repr(p)
-#    print "repr(p.exp): ", repr(p._expanded)
-#    p2 = Product([Symbol('x', CONST), p])
-##    print "repr(p2): ", repr(p2)
-##    print "repr(p2.exp): ", repr(p2.expand())
-#    print "p: ", p
-#    print "p2: ", p2
-
-
-
 

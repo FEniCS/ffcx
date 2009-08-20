@@ -808,6 +808,8 @@ def generate_code(integrand, transformer, Indent, format, interior):
 #        print "\nval: ", val
         # Multiply by weight and determinant, add both to set of used weights and transforms.
         value = create_product([val, create_symbol(weight, ACCESS), create_symbol(format_scale_factor, GEO)])
+#        print "value: ", value
+#        print "repr: ", repr(value)
         value = optimise_code(value, ip_consts, transformer.geo_consts, transformer.trans_set)
 
         # Only continue if value is not zero.

@@ -115,6 +115,30 @@ class Fraction(Expr):
         # '/' to reduce expression.
         return create_product([self.num, other.num]).expand()/create_product([self.denom, other.denom]).expand()
 
+    def __div__(self, other):
+        "Division by other objects."
+        # If division is illegal (this should definitely not happen).
+        if other.val == 0.0:
+            raise RuntimeError("Division by zero.")
+
+        # If fraction will be zero.
+        if self.val == 0.0:
+            return self.vrs[0]
+
+        # The only thing that we shouldn't need to handle is division by other
+        # Fractions
+        if other._prec == 4:
+            raise RuntimeError("Did not expected to divide by fraction.")
+
+        # Handle division by FloatValue, Symbol, Product and Sum in the same
+        # way i.e., multiply other by the donominator and use division
+        # (__div__ or other) in order to (try to) reduce the expression.
+        # TODO: Is it better to first try to divide the numerator by other,
+        # if a Fraction is the return value, then multiply the denominator of
+        # that value by denominator of self. Otherwise the reduction was
+        # successful and we just use the denom of self as denominator.
+        return self.num/(other*self.denom)
+
     # Public functions.
     def expand(self):
         "Expand the fraction expression."
