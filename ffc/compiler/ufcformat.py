@@ -1,7 +1,7 @@
 "Code generation for the UFC 1.0 format"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-01-08 -- 2009-05-15"
+__date__ = "2007-01-08 -- 2009-08-21"
 __copyright__ = "Copyright (C) 2007-2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
@@ -56,6 +56,12 @@ class Format:
             raise RuntimeError, "Module dolfin_utils must be imported to generate wrapper for DOLFIN."
 
         # Attach format
+        # FIXME: KBO: It should be possible to clean up the below formats by only
+        # having e.g., format["const"] = "const ", format["double"] = "double "
+        # instead of format["const float declaration"] = "const double ".
+        # Then when we generating code, we have to combine the two manually, it
+        # requires a little more work when using the formt, but the format itself
+        # will be a lot cleaner and less confusion is likely to appear.
         self.format = {
             #
             # Operators
@@ -156,7 +162,7 @@ class Format:
             "geometry tensor declaration": lambda j, a: "const double " + self.format["geometry tensor access"](j, a),
             "geometry tensor access": lambda j, a: "G%d_%s" % (j, "_".join(["%d" % index for index in a])),
             "geometry tensor": "G",
-            "element tensor": lambda i, k: "A[%d]" % k, # FIXME: Remove argument i, not used
+            "element tensor": lambda i: "A[%d]" % i,
             "sign tensor": lambda type, i, k: "S%s%s_%d" % (type, i, k),
             "sign tensor declaration": lambda s: "const int " + s,
             "signs": "S",

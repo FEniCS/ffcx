@@ -1,7 +1,9 @@
 __author__ = "Kristian B. Oelgaard (k.b.oelgaard@tudelft.nl) and Anders Logg (logg@simula.no)"
-__date__ = "2009-03-09 -- 2009-03-09"
+__date__ = "2009-03-09 -- 2009-08-21"
 __copyright__ = "Copyright (C) 2009 Kristian B. Oelgaard and Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
+
+from codeutils import IndentControl
 
 def generate_reset_tensor(num_entries, format):
     "Generate code for resetting the entries of the local element tensor."
@@ -12,15 +14,22 @@ def generate_reset_tensor(num_entries, format):
     # Comment
     code.append(format["comment"]("Reset values of the element tensor block"))
 
-    # Prefetch formats to speed up code generation
-    format_element_tensor = format["element tensor"]
-    format_floating_point = format["floating point"]
-
-    # Set entries to zero
-    for k in range(num_entries):
-        name = format_element_tensor(None, k)
-        value = format_floating_point(0.0)
-        code += [(name, value)]
+    # If number of entries is 1, just the entry equal to zero, otherwise use loop
+    if num_entries == 1:
+        format_element_tensor = format["element tensor"]
+        format_floating_point = format["floating point"]
+        code += [(format["element tensor"](0), format["floating point"](0.0))]
+    else:
+        # Create loop
+        var = format["first free index"]
+        code += [format["loop"](var, 0, num_entries)]
+        name = format["element tensor quad"] + format["array access"](var)
+        value = format["floating point"](0.0)
+        # Use indent control to format loop code
+        Indent = IndentControl()
+        Indent.increase()
+        code += [(Indent.indent(name), value)]
+        Indent.decrease()
 
     return code
 

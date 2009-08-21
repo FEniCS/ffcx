@@ -1,15 +1,16 @@
 "Regression tests for FFC"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-03-05 -- 2009-04-20"
+__date__ = "2007-03-05 -- 2009-08-21"
 __copyright__ = "Copyright (C) 2007-2008 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
-import sys
-from os import chdir, listdir, system, path, pardir, curdir
+import sys, shutil
+from os import chdir, listdir, system, path, pardir, curdir, mkdir
 from difflib import unified_diff
 
 # Modified by Marie Rognes (meg), 2009-07-05
+# Modified by Kristian B. Oelgaard, 2009-08-21
 
 def check_forms(form_files, representation, exceptions):
 
@@ -37,6 +38,11 @@ def check_forms(form_files, representation, exceptions):
                 for line in diff:
                     print line
                 forms_not_ok += [form_file]
+
+                # Copy failed file to temporary directory
+                f_failed = open(path.join(pardir, "test", "regression", "tmp", representation, code_file), "w")
+                f_failed.write("\n".join(c1))
+                f_failed.close()
         else:
             forms_not_ok += [form_file]
     return forms_not_ok
@@ -50,6 +56,13 @@ else:
 # Check both representations
 representations = ["quadrature", "tensor"]
 
+# Create temporary directory for generated files that fails
+if not path.isdir("tmp"):
+    mkdir("tmp")
+    chdir("tmp")
+    mkdir("quadrature")
+    mkdir("tensor")
+    chdir(pardir)
 
 # Check all in demo directory
 chdir(path.join(pardir, pardir, "demo"))
@@ -89,11 +102,16 @@ for representation in representations:
         for form_file in forms_not_ok[representation]:
             code_file = form_file.split(".")[0] + ".h"
             if nw:
-                file.write("diff reference/%s/%s ../../demo/%s\n" % (representation, code_file, code_file))
+                file.write("diff reference/%s/%s tmp/%s/%s\n" % (representation, code_file, representation, code_file))
             else:
-                file.write("meld reference/%s/%s ../../demo/%s\n" % (representation, code_file, code_file))
+                file.write("meld reference/%s/%s tmp/%s/%s\n" % (representation, code_file, representation, code_file))
         file.close()
         print "\nTo view diffs with meld, run the script viewdiff_%s.sh" % representation
+
+#  Remove temporary directory if not errors occurred
+if not test_failed:
+    chdir(path.join(pardir, "test", "regression"))
+    shutil.rmtree("tmp")
 
 # Return error code if tests failed
 sys.exit(test_failed)

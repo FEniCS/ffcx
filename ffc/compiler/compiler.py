@@ -351,6 +351,8 @@ def _auto_select_quadrature_order(integral):
     return quadrature_order
 
 # FIXME: Old stuff below needs to be cleaned up
+# FIXME: KBO: Is the above FIXME still valid? The function and class below are
+# both used, and they look up to date and clean to me.
 
 def create_ffc_coefficients(ufl_functions, global_variables):
     "Try to convert UFL functions to FFC Coefficients"

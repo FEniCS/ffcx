@@ -1,7 +1,7 @@
 "Code generator for tensor representation"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-11-03 -- 2009-08-08"
+__date__ = "2004-11-03 -- 2009-08-21"
 __copyright__ = "Copyright (C) 2004-2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
@@ -223,7 +223,7 @@ def _generate_element_tensor(terms, incremental, format):
     zero = format_floating_point(0.0)
     geometry_set = set()
     for i in primary_indices:
-        name = format_element_tensor(i, k)
+        name = format_element_tensor(k)
         value = None
         for (gka, j) in gk_tensor:
             A0 = terms[j].A0
