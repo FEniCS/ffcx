@@ -11,7 +11,7 @@ of forms and breaking the compilation into several sequential stages:
 """
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-02-05 -- 2009-08-08"
+__date__ = "2007-02-05 -- 2009-08-24"
 __copyright__ = "Copyright (C) 2007-2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
@@ -21,31 +21,23 @@ __license__  = "GNU GPL version 3 or any later version"
 
 __all__ = ["compile"]
 
-# FIXME: Temporary while testing
-import sys
-import os
-
 # UFL modules
-from ufl.classes import Form, FiniteElementBase, Measure, Integral, Function
-from ufl.algorithms import validate_form, extract_max_quadrature_element_degree, estimate_max_polynomial_degree
-from ufl.algorithms import extract_unique_elements, extract_basis_functions, as_form
-from ufl.algorithms import *
+from ufl.algorithms import extract_max_quadrature_element_degree, estimate_max_polynomial_degree, extract_basis_functions
+from ufl.finiteelement import FiniteElementBase
 
 # FFC common modules
-from ffc.common.log import debug, info, warning, error, begin, end, set_level, INFO
+from ffc.common.log import begin, end, debug, info, warning, error
 from ffc.common.utils import product
 from ffc.common.constants import FFC_OPTIONS
 
 # FFC fem modules
-from ffc.fem import create_element
-from ffc.fem import create_dof_map
+from ffc.fem import create_element, create_dof_map
 
 # FFC form representation modules
-from tensor.monomialextraction import MonomialException
 from tensor.tensorrepresentation import TensorRepresentation
 from quadrature.quadraturerepresentation import QuadratureRepresentation
 
-# FFC code generation modules
+## FFC code generation modules
 from codegenerator import generate_common_code
 from integrals import generate_combined_code
 from tensor.tensorgenerator import TensorGenerator
@@ -58,7 +50,7 @@ from ufcformat import Format
 Representations = (QuadratureRepresentation, TensorRepresentation)
 CodeGenerators  = (QuadratureGenerator, TensorGenerator)
 
-def compile(forms, prefix="Form", options=FFC_OPTIONS.copy(), global_variables=None):
+def compile(objects, prefix="Form", options=FFC_OPTIONS.copy()):
     """This is the main interface to FFC. The input argument must be
     either a single UFL Form object or a list of UFL Form objects.
     For each form, FFC generates C++ code conforming to the UFC
@@ -71,7 +63,7 @@ def compile(forms, prefix="Form", options=FFC_OPTIONS.copy(), global_variables=N
     options = _check_options(options)
 
     # Extract objects to compile
-    forms, elements = _extract_objects(forms)
+    forms, elements = _extract_objects(objects)
 
     # Check that we have at least one object
     if len(forms) == 0 and len(elements) == 0:
@@ -86,8 +78,7 @@ def compile(forms, prefix="Form", options=FFC_OPTIONS.copy(), global_variables=N
     for form in forms:
 
         # Compiler stage 1: analyze form
-        form_data = analyze_form(form, options, global_variables)
-        #form_datas += [form_data]
+        form_data = analyze_form(form.form_data(), options)
 
         # Compiler stage 2: compute form representations
         representations = compute_form_representations(form_data, options)
@@ -110,20 +101,15 @@ def compile(forms, prefix="Form", options=FFC_OPTIONS.copy(), global_variables=N
 
     info("Code generation complete.")
     return
-#    return (form_datas, form_representations)
 
-def analyze_form(form, options, global_variables):
+def analyze_form(form_data, options):
     "Compiler stage 1."
     
     begin("Compiler stage 1: Analyzing form")
-
-    # Validate form
-    validate_form(form)
-
-    # Extract form data
-    form_data = form.form_data()
-    form = form_data.form
     info(str(form_data))
+
+    # Extract form
+    form = form_data.form
 
     # Extract integral metadata
     form_data.metadata = _extract_metadata(form, options)
@@ -133,7 +119,7 @@ def analyze_form(form, options, global_variables):
     form_data.ffc_dof_maps = [create_dof_map(element) for element in form_data.elements]
 
     # Attach FFC coefficients
-    form_data.coefficients = create_ffc_coefficients(form_data.original_functions, global_variables)
+    form_data.coefficients = create_ffc_coefficients(form_data.functions, form_data.function_names)
 
     # FIXME: Consider adding the following to ufl.FormData
     # FIXME: Also change num_functions --> num_coefficients to match UFC
@@ -146,7 +132,7 @@ def analyze_form(form, options, global_variables):
     form_data.num_interior_facet_domains = max([-1] + [i.measure().domain_id() for i in form.interior_facet_integrals()]) + 1
 
     # Attach signature for convenience and reuse
-    form_data.signature = form_data.form.signature()
+    form_data.signature = form.signature()
 
     # Attach number of entries in element tensor
     dims = [create_element(v.element()).space_dimension() for v in extract_basis_functions(form)]
@@ -239,8 +225,8 @@ def _extract_objects(objects):
     for object in objects:
         if isinstance(object, FiniteElementBase):
             elements.append(object)        
-        elif not object is None:
-            forms.append(as_form(object))
+        else:
+            forms.append(object)
 
     # Only compile element(s) when there are no forms
     if len(forms) > 0 and len(elements) > 0:
@@ -353,32 +339,16 @@ def _auto_select_quadrature_order(integral):
 # FIXME: Old stuff below needs to be cleaned up
 # FIXME: KBO: Is the above FIXME still valid? The function and class below are
 # both used, and they look up to date and clean to me.
-
-def create_ffc_coefficients(ufl_functions, global_variables):
+def create_ffc_coefficients(ufl_functions, ufl_function_names):
     "Try to convert UFL functions to FFC Coefficients"
 
     class Coefficient:
         def __init__(self, element, name):
             self.element = element
             self.name = name
-
-    # Extract names of all coefficients
-    coefficient_names = {}
-    if not global_variables is None:
-        for name in global_variables:
-            variable = global_variables[name]
-            if isinstance(variable, Function):
-                coefficient_names[variable] = str(name)
-
-    # Create Coefficients and set name
     ffc_coefficients = []
-    for function in ufl_functions:
-        element = function.element()
-        if function in coefficient_names:
-            name = coefficient_names[function]
-        else:
-            name = "w" + str(function.count())
-        ffc_coefficients.append(Coefficient(create_element(element), name))
+    for i, f in enumerate(ufl_functions):
+        ffc_coefficients.append(Coefficient(create_element(f.element()), ufl_function_names[i]))
 
     return ffc_coefficients
 
