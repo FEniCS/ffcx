@@ -1,0 +1,24 @@
+# Copyright (C) 2009 Kristian B. Oelgaard (k.b.oelgaard@tudelft.nl)
+# Licensed under the GNU GPL version 3 or any later version
+#
+# Test form for metadata
+#
+# Compile this form with FFC: ffc MetaData.ufl
+
+element = FiniteElement("Lagrange", triangle, 1)
+
+v = TestFunction(element)
+u = TrialFunction(element)
+
+# Three terms on the same subdomain using different representations
+a_0 = v*u*dx(0, {"ffc_representation":"tensor"})\
+    + inner(grad(v), grad(u))*dx(0, {"ffc_representation":"quadrature"})\
+    + inner(grad(v), grad(u))*dx(0, {"ffc_representation":"auto"})
+
+# Three terms on different subdomains using different representations and order
+a_1 = inner(grad(v), grad(u))*dx(0, {"ffc_representation":"tensor", "quadrature_order":8})\
+    + inner(grad(v), grad(u))*dx(1, {"ffc_representation":"quadrature", "quadrature_order":4})\
+    + inner(grad(v), grad(u))*dx(1, {"ffc_representation":"auto", "quadrature_order":"auto"})
+
+a = a_0 + a_1
+
