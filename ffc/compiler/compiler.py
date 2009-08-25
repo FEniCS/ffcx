@@ -23,7 +23,7 @@ __all__ = ["compile"]
 
 # UFL modules
 from ufl.algorithms import extract_max_quadrature_element_degree, estimate_max_polynomial_degree, extract_basis_functions
-from ufl.finiteelement import FiniteElementBase
+from ufl.classes import FiniteElementBase, Integral
 
 # FFC common modules
 from ffc.common.log import begin, end, debug, info, warning, error

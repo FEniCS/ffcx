@@ -1,12 +1,12 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-02-05 -- 2009-05-04"
+__date__ = "2007-02-05 -- 2009-08-25"
 __copyright__ = "Copyright (C) 2007-2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian B. Oelgaard, 2009.
 
 # UFL modules
-from ufl.classes import Form, Measure
+from ufl.classes import Form, Measure, Integral
 from ufl.algorithms import extract_basis_functions
 
 # FFC common modules
@@ -25,10 +25,10 @@ from tensorreordering import reorder_entries
 class TensorContraction:
     "This class represents a tensor contraction A^K = A^0 : G_K."
 
-    def __init__(self, monomial, domain_type, facet0=None, facet1=None):
+    def __init__(self, monomial, domain_type, quadrature_order, facet0=None, facet1=None):
         "Create tensor contraction for given monomial."
         self.monomial = monomial
-        self.A0 = ReferenceTensor(monomial, domain_type, facet0, facet1)
+        self.A0 = ReferenceTensor(monomial, domain_type, facet0, facet1, quadrature_order)
         # FIXME: Does not need to be list if we find that factorization is not needed
         self.GK = [GeometryTensor(monomial)]
 
@@ -93,6 +93,11 @@ def _extract_tensor_integrals(form_data):
     new_form = Form([])
     for integral in form_data.form.integrals():
         if form_data.metadata[integral]["ffc_representation"] == "tensor":
+            # Get quadrature order and create new integral attaching the order
+            # as metadata such that the monomial integration will be aware of
+            # quadrature_order specified by the user on the command line or in forms
+            quadrature_order = form_data.metadata[integral]["quadrature_order"]
+            integral = Integral(integral.integrand(), integral.measure().reconstruct(metadata={"quadrature_order":quadrature_order}))
             new_form += Form([integral])
     return new_form
 
@@ -150,13 +155,16 @@ def _compute_terms(monomial_form, domain_type, facet0, facet1):
     # Compute terms
     terms = []
     for (integrand, measure) in monomial_form:
-
+        
         # Only consider monomials of given integral type
         if not measure.domain_type() == domain_type:
             continue
 
+        # Get quadrature order and pass it on to monomial integration
+        quadrature_order = measure.metadata()["quadrature_order"]
+
         # Iterate over monomials of integrand
         for monomial in integrand.monomials:
-            terms.append(TensorContraction(monomial, domain_type, facet0, facet1))
+            terms.append(TensorContraction(monomial, domain_type, quadrature_order, facet0, facet1))
 
     return terms

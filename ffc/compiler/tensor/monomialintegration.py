@@ -1,7 +1,7 @@
 "This module implements efficient integration of monomial forms"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-11-03 -- 2009-03-19"
+__date__ = "2004-11-03 -- 2009-08-25"
 __copyright__ = "Copyright (C) 2004-2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
@@ -10,6 +10,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Garth N. Wells 2006
 # Modified by Marie E. Rognes (meg@math.uio.no) 2008
+# Modified by Kristian B. Oelgaard, 2009
 
 # Python modules
 import numpy
@@ -36,14 +37,14 @@ from multiindex import build_indices
 from monomialextraction import MonomialException
 from monomialtransformation import MonomialIndex
 
-def integrate(monomial, domain_type, facet0, facet1):
+def integrate(monomial, domain_type, facet0, facet1, quadrature_order):
     """Compute the reference tensor for a given monomial term of a
     multilinear form"""
 
     tic = time.time()
 
     # Initialize quadrature points and weights
-    (points, weights) = _init_quadrature(monomial.basis_functions, domain_type)
+    (points, weights) = _init_quadrature(monomial.basis_functions, domain_type, quadrature_order)
 
     # Initialize quadrature table for basis functions
     table = _init_table(monomial.basis_functions, domain_type, points, facet0, facet1)
@@ -62,7 +63,7 @@ def integrate(monomial, domain_type, facet0, facet1):
 
     return A0
 
-def _init_quadrature(basis_functions, domain_type):
+def _init_quadrature(basis_functions, domain_type, quadrature_order):
     "Initialize quadrature for given monomial."
 
     # Get shapes (check first factor, should be the same for all)
@@ -70,17 +71,25 @@ def _init_quadrature(basis_functions, domain_type):
     cell_shape = element.cell_shape()
     facet_shape = element.facet_shape()
 
+    # FIXME: KBO: Old, remove this?
     # Compute number of points to match the degree
-    degree = _compute_degree(basis_functions)
-    num_points = (degree + 2) / 2
-    debug("Total degree is %d, using %d quadrature point(s) in each dimension." % (degree, num_points))
+    #quadrature_order = _compute_degree(basis_functions)
 
+    # Use the quadrature order given by metadata to compute the number of points
+    # TODO: KBO: This might be suboptimal, since each monomial in the tensor
+    # representation might have different order.
+    num_points = (quadrature_order + 2) / 2
+
+    debug("Quadrature order is %d, using %d quadrature point(s) in each dimension." % (quadrature_order, num_points))
+
+    # FIXME: KBO: This should be handled in compiler.py when computing the
+    # quadrature order, so we can remove this.
     # Check if any basis functions are defined on a quadrature element
-    for v in basis_functions:
-        if isinstance(v.element, QuadratureElement):
-            num_points = v.element.num_axis_points()
-            debug("Found quadrature element, adjusting number of points to %d.", num_points)
-            break
+    #for v in basis_functions:
+    #    if isinstance(v.element, QuadratureElement):
+    #        num_points = v.element.num_axis_points()
+    #        debug("Found quadrature element, adjusting number of points to %d.", num_points)
+    #        break
 
     # Create quadrature rule and get points and weights
     if domain_type == Measure.CELL:
@@ -236,14 +245,15 @@ def _compute_product(psis, weights):
     
     return A0
 
-def _compute_degree(basis_functions):
-    "Compute total degree for given monomial."
-    q = 0
-    for v in basis_functions:
-        q += v.element.degree()
-        for d in v.derivatives:
-            q -= 1
-    return q
+# FIXME: KBO: This function is obsolete, should we remove it?
+#def _compute_degree(basis_functions):
+#    "Compute total degree for given monomial."
+#    q = 0
+#    for v in basis_functions:
+#        q += v.element.degree()
+#        for d in v.derivatives:
+#            q -= 1
+#    return q
 
 def _compute_rearrangement(indices):
     """Compute rearrangement tuple for given list of Indices, so that

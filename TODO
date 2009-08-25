@@ -46,8 +46,5 @@ file, it is convenient to install org-mode in Emacs.
 * Quad elements
   - Isoparametric mapping
 
-* Tensor representation
-  - use quadrature_order from the metadata when integrating monomials
-
 * Fix all FIXMEs
   - There are a few of these: find src/ffc -name '*.py' | xargs grep FIXME

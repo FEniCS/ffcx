@@ -5,7 +5,7 @@
 # Python module which is then executed.
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-10-14 -- 2009-08-24"
+__date__ = "2004-10-14 -- 2009-08-25"
 __copyright__ = "Copyright (C) 2004-2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
@@ -51,6 +51,10 @@ the FFC man page which may invoked by 'man ffc' (if installed).
 def main(argv):
     "Main function."
 
+    # Get options and set log level (such that info_usage() will work)
+    options = FFC_OPTIONS.copy()
+    set_level(options["log_level"])
+
     # Get command-line arguments
     try:
         opts, args = getopt.getopt(argv, \
@@ -78,7 +82,6 @@ def main(argv):
         return 1
 
     # Parse command-line options
-    options = FFC_OPTIONS.copy()
     for opt, arg in opts:
         if opt in ("-d", "--debug"):
              options["log_level"] = DEBUG
@@ -105,7 +108,7 @@ def main(argv):
         elif opt in ("-o", "--output-directory"):
             options["output_dir"] = arg
 
-    # Set log level
+    # Set log_level again in case -d or -s was used on the command line
     set_level(options["log_level"])
 
     # Print a nice message

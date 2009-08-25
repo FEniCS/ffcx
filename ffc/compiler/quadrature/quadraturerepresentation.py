@@ -1,7 +1,7 @@
 "Quadrature representation class for UFL"
 
 __author__ = "Kristian B. Oelgaard (k.b.oelgaard@tudelft.nl)"
-__date__ = "2009-01-07 -- 2009-08-08"
+__date__ = "2009-01-07 -- 2009-08-25"
 __copyright__ = "Copyright (C) 2009 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
@@ -59,9 +59,9 @@ class QuadratureRepresentation:
         debug("\nQR, init(), form:\n" + str(form_data.form))
 
         # Get relevant integrals of all types.
-        cell_integrals = self.__extract_integrals(form_data.form.cell_integrals(), form_data)
-        exterior_facet_integrals = self.__extract_integrals(form_data.form.exterior_facet_integrals(), form_data)
-        interior_facet_integrals = self.__extract_integrals(form_data.form.interior_facet_integrals(), form_data)
+        cell_integrals = _extract_integrals(form_data.form.cell_integrals(), form_data)
+        exterior_facet_integrals = _extract_integrals(form_data.form.exterior_facet_integrals(), form_data)
+        interior_facet_integrals = _extract_integrals(form_data.form.interior_facet_integrals(), form_data)
 
         # Check number of integrals.
         self.num_integrals = len(cell_integrals) + len(exterior_facet_integrals) + len(interior_facet_integrals)
@@ -71,62 +71,22 @@ class QuadratureRepresentation:
         info("Computing quadrature representation.")
 
         # Tabulate basis values.
-        self.cell_integrals = self.__tabulate(cell_integrals, form_data)
-        self.exterior_facet_integrals = self.__tabulate(exterior_facet_integrals, form_data)
-        self.interior_facet_integrals = self.__tabulate(interior_facet_integrals, form_data)
+        self.cell_integrals = self.__tabulate(_sort_integrals_quadrature_points(cell_integrals, form_data), Measure.CELL)
+        self.exterior_facet_integrals = self.__tabulate(_sort_integrals_quadrature_points(exterior_facet_integrals, form_data), Measure.EXTERIOR_FACET)
+        self.interior_facet_integrals = self.__tabulate(_sort_integrals_quadrature_points(interior_facet_integrals, form_data), Measure.INTERIOR_FACET)
 
         debug("\nQR, init(), psi_tables:\n" + str(self.psi_tables))
         debug("\nQR, init(), quadrature_weights:\n" + str(self.quadrature_weights))
 
-    def __extract_integrals(self, integrals, form_data):
-        "Extract relevant integrals for the QuadratureGenerator."
-        return [i for i in integrals\
-                if form_data.metadata[i]["ffc_representation"] == "quadrature"]
-
-    def __sort_integrals_quadrature_points(self, integrals, form_data):
-        "Sort integrals according to the number of quadrature points needed per axis."
-
-        sorted_integrals = {}
-        # TODO: We might want to take into account that a form like
-        # a = f*g*h*v*u*dx(0, quadrature_order=4) + f*v*u*dx(0, quadrature_order=2),
-        # although it involves two integrals of different order, will most
-        # likely be integrated faster if one does
-        # a = (f*g*h + f)*v*u*dx(0, quadrature_order=4)
-        # It will of course only work for integrals defined on the same
-        # subdomain and representation.
-        for integral in integrals:
-            order = form_data.metadata[integral]["quadrature_order"]
-            rule  = form_data.metadata[integral]["quadrature_rule"]
-
-            # Compute the required number of points for each axis (exact integration).
-            num_points_per_axis = (order + 1 + 1) / 2 # integer division gives 2m - 1 >= q
-
-            # FIXME: This could take place somewhere else. In uflcompiler.py
-            # we might want to sort according to number of points rather than
-            # order?
-            if not (num_points_per_axis, rule) in sorted_integrals:
-                sorted_integrals[(num_points_per_axis, rule)] = Form([Integral(integral.integrand(), integral.measure().reconstruct(metadata={}))])
-            else:
-                sorted_integrals[(num_points_per_axis, rule)] += Form([Integral(integral.integrand(), integral.measure().reconstruct(metadata={}))])
-
-        return sorted_integrals
-
-    def __tabulate(self, unsorted_integrals, form_data):
+    def __tabulate(self, sorted_integrals, integral_type):
         "Tabulate the basisfunctions and derivatives."
 
         # Initialise return values.
         return_integrals = {}
 
         # If we don't get any integrals there's nothing to do.
-        if not unsorted_integrals:
+        if not sorted_integrals:
             return None
-
-        # Sort the integrals according number of points needed per axis to
-        # integrate the quadrature order exactly.
-        sorted_integrals = self.__sort_integrals_quadrature_points(unsorted_integrals, form_data)
-
-        # The integral type IS the same for ALL integrals.
-        integral_type = unsorted_integrals[0].measure().domain_type()
 
         # Loop the quadrature points and tabulate the basis values.
         for pr, form in sorted_integrals.iteritems():
@@ -242,4 +202,35 @@ class QuadratureRepresentation:
                                element.tabulate(deriv_order, map_to_facet(points, facet))
 
         return return_integrals
+
+def _extract_integrals(integrals, form_data):
+    "Extract relevant integrals for the QuadratureGenerator."
+    return [i for i in integrals\
+            if form_data.metadata[i]["ffc_representation"] == "quadrature"]
+
+def _sort_integrals_quadrature_points(integrals, form_data):
+    "Sort integrals according to the number of quadrature points needed per axis."
+
+    sorted_integrals = {}
+    # TODO: We might want to take into account that a form like
+    # a = f*g*h*v*u*dx(0, quadrature_order=4) + f*v*u*dx(0, quadrature_order=2),
+    # although it involves two integrals of different order, will most
+    # likely be integrated faster if one does
+    # a = (f*g*h + f)*v*u*dx(0, quadrature_order=4)
+    # It will of course only work for integrals defined on the same
+    # subdomain and representation.
+    for integral in integrals:
+        order = form_data.metadata[integral]["quadrature_order"]
+        rule  = form_data.metadata[integral]["quadrature_rule"]
+
+        # Compute the required number of points for each axis (exact integration).
+        num_points_per_axis = (order + 1 + 1) / 2 # integer division gives 2m - 1 >= q
+
+        # FIXME: This could take place somewhere else? In uflcompiler.py perhaps?
+        if not (num_points_per_axis, rule) in sorted_integrals:
+            sorted_integrals[(num_points_per_axis, rule)] = Form([Integral(integral.integrand(), integral.measure().reconstruct(metadata={}))])
+        else:
+            sorted_integrals[(num_points_per_axis, rule)] += Form([Integral(integral.integrand(), integral.measure().reconstruct(metadata={}))])
+
+    return sorted_integrals
 

@@ -85,7 +85,7 @@ def _generate_cell_integral(terms, form_representation, incremental, format):
     code += [format["comment"]("Number of operations to compute tensor contraction:  %d" % tensor_ops)]
     code += [format["comment"]("Total number of operations to compute cell tensor:   %d" % total_ops)]
     code += [""]
-    debug("Number of operations to compute tensor: %d" % total_ops)
+    info("Number of operations to compute tensor: %d" % total_ops)
 
     # Add generated code
     code += jacobi_code
@@ -130,7 +130,7 @@ def _generate_exterior_facet_integral(terms, form_representation, incremental, f
     code += [format["comment"]("Number of operations to compute tensor contraction:  %d" % tensor_ops)]
     code += [format["comment"]("Total number of operations to compute facet tensor:  %d" % total_ops)]
     code += [""]
-    debug("Number of operations to compute tensor: %d" % total_ops)
+    info("Number of operations to compute tensor: %d" % total_ops)
 
     # Add generated code
     code += jacobi_code
@@ -178,7 +178,7 @@ def _generate_interior_facet_integral(terms, form_representation, incremental, f
     code += [format["comment"]("Number of operations to compute tensor contraction:  %d" % tensor_ops)]
     code += [format["comment"]("Total number of operations to compute facet tensor:  %d" % total_ops)]
     code += [""]
-    debug("Number of operations to compute tensor: %d" % total_ops)
+    info("Number of operations to compute tensor: %d" % total_ops)
 
     # Add generated code
     code += jacobi_code
