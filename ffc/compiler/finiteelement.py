@@ -68,7 +68,7 @@ def generate_finite_element(element, format):
 
     # Disable code generation for unsupported functions of QuadratureElement,
     # (or MixedElements including QuadratureElements)
-    if not True in [isinstance(e, QuadratureElement) for e in element.basis_elements()]:
+    if not True in [isinstance(e, QuadratureElement) for e in element.extract_elements()]:
         # Generate code for evaluate_basis
         code["evaluate_basis"] = evaluate_basis(element, format)
 
@@ -118,6 +118,7 @@ def _extract_sub_elements(element, parent):
         sub_elements += _extract_sub_elements(element.sub_element(i), parent + (i,))
     return sub_elements + [(parent, element)]
 
+# FIXME: This is C++ dependent, move relevant parts to ufc_format.py
 def __generate_evaluate_dof(element, format):
     "Generate code for evaluate_dof"
 
@@ -232,6 +233,7 @@ def __generate_evaluate_dof(element, format):
     code += [format["return"]("result")]
     return code
 
+# FIXME: This is C++ dependent, move relevant parts to ufc_format.py
 def __map_function_values(num_values, element, format):
 
     block = format["block"]
@@ -241,7 +243,7 @@ def __map_function_values(num_values, element, format):
     code = []
 
     # Compute the mapping associated with each dof:
-    mappings = [element.space_mapping(i)
+    mappings = [mapping_to_int[element.space_mapping(i)]
                 for i in range(element.space_dimension())]
     whichmappings = set(mappings)
 
@@ -253,8 +255,8 @@ def __map_function_values(num_values, element, format):
                      block(separator.join(([str(m) for m in mappings]))))]
         
     # Check whether we will need a piola
-    contrapiola_present = Mapping.CONTRAVARIANT_PIOLA in whichmappings
-    copiola_present = Mapping.COVARIANT_PIOLA in whichmappings
+    contrapiola_present = mapping_to_int[CONTRAVARIANT_PIOLA] in whichmappings
+    copiola_present = mapping_to_int[COVARIANT_PIOLA] in whichmappings
     piola_present = contrapiola_present or copiola_present
 
     # Add code for the jacobian if we need it for the
@@ -283,7 +285,7 @@ def __map_function_values(num_values, element, format):
             value_offsets += [adjustment]*subelement.space_dimension()
             adjustment += subelement.value_dimension(0)
 
-        # if mapping[i] != Mapping.AFFINE == 0 and value_offset[i] !=
+        # if mapping[i] != AFFINE == 0 and value_offset[i] !=
         # 0 for all i, then need_offsets = True:
         need_offsets = bool(max([mappings[i] and value_offsets[i]
                                  for i in range(len(mappings))]))
@@ -296,10 +298,10 @@ def __map_function_values(num_values, element, format):
 
     # Then it just remains to actually add the different mappings to the code:
     n = element.cell_dimension()
-    mappings_code = {Mapping.AFFINE: __affine_map(),
-                     Mapping.CONTRAVARIANT_PIOLA:
+    mappings_code = {mapping_to_int[AFFINE]: __affine_map(),
+                     mapping_to_int[CONTRAVARIANT_PIOLA]:
                      __contravariant_piola(n, offset),
-                     Mapping.COVARIANT_PIOLA: __covariant_piola(n, offset)}
+                     mapping_to_int[COVARIANT_PIOLA]: __covariant_piola(n, offset)}
 
     ifs = ["mappings[i] == %d" % mapping for mapping in whichmappings]
     cases = [mappings_code[mapping] for mapping in whichmappings]
@@ -307,9 +309,11 @@ def __map_function_values(num_values, element, format):
                                   comment("Other mappings not applicable."))]
     return ("\n".join(precode), "\n".join(code))
 
+# FIXME: This is C++ dependent, move to ufc_format.py
 def __affine_map():
     return "// Affine map: Do nothing"
 
+# FIXME: This is C++ dependent, move to ufc_format.py
 def __contravariant_piola(dim, offset=""):
     code = []
     code += ["// Copy old values:"]
@@ -322,6 +326,7 @@ def __contravariant_piola(dim, offset=""):
         code += ["values[%s%d] = detJ*(%s);" % (offset, i, "+".join(terms))]
     return "\n".join(code)
 
+# FIXME: This is C++ dependent, move to ufc_format.py
 def __covariant_piola(dim, offset=""):
     code = []
     code += ["// Copy old values:"]
@@ -334,6 +339,7 @@ def __covariant_piola(dim, offset=""):
         code += ["values[%s%d] = %s;" % (offset, i, "+".join(terms))]
     return  "\n".join(code)
 
+# FIXME: This is C++ dependent, move to ufc_format.py
 def __generate_if_block(ifs, cases, default = ""):
     "Generate if block from given ifs and cases"
     if len(ifs) != len(cases):
@@ -355,46 +361,6 @@ def __generate_if_block(ifs, cases, default = ""):
     code += "} else { \n %s \n}" % indent(default,2)
     return code
 
-def __generate_interpolate_vertex_values_old(element, format):
-    "Generate code for interpolate_vertex_values"
-
-    # Check that we have a scalar- or vector-valued element
-    if element.value_rank() > 1:
-        return format["exception"]("interpolate_vertex_values not implemented for this type of element")
-
-    # Generate code as a list of declarations
-    code = []
-
-    # Set vertices
-    if element.cell_shape() == LINE:
-        vertices = [(0.0,), (1.0,)]
-    elif element.cell_shape() == TRIANGLE:
-        vertices = [(0.0, 0.0), (1.0, 0.0), (0.0, 1.0)]
-    elif element.cell_shape() == TETRAHEDRON:
-        vertices =  [(0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0,0), (0,0, 0,0, 1.0)]
-
-    # Tabulate basis functions at vertices
-    table = element.tabulate(0, vertices)
-
-    # Get vector dimension
-    if element.value_rank() == 0:
-        for v in range(len(vertices)):
-            coefficients = table[0][element.cell_dimension()*(0,)][:, v]
-            dof_values = [format["dof values"](n) for n in range(len(coefficients))]
-            name = format["vertex values"](v)
-            value = inner_product(coefficients, dof_values, format)
-            code += [(name, value)]
-    else:
-        for dim in range(element.value_dimension(0)):
-            for v in range(len(vertices)):
-                coefficients = table[dim][0][element.cell_dimension()*(0,)][:, v]
-                dof_values = [format["dof values"](n) for n in range(len(coefficients))]
-                name = format["vertex values"](dim*len(vertices) + v)
-                value = inner_product(coefficients, dof_values, format)
-                code += [(name, value)]
-
-    return code
-
 def __generate_interpolate_vertex_values(element, format):
     "Generate code for interpolate_vertex_values"
 
@@ -414,7 +380,7 @@ def __generate_interpolate_vertex_values(element, format):
         vertices =  [(0, 0, 0), (1, 0, 0), (0, 1, 0), (0, 0, 1)]
 
     # Extract nested sub elements
-    sub_elements = element.basis_elements()
+    sub_elements = element.extract_elements()
 
     # Iterate over sub elements
     offset_dof_values = 0
@@ -432,10 +398,10 @@ def __generate_interpolate_vertex_values(element, format):
         table = sub_element.tabulate(0, vertices)
 
         # Check which transform we should use to map the basis functions
-        mapping = pick_first([sub_element.value_mapping(dim) for dim in range(sub_element.value_dimension(0))])
+        mapping = sub_element.mapping()
 
         # Generate different code depending on mapping
-        if mapping == Mapping.AFFINE:
+        if mapping == AFFINE:
 
             code += [format["comment"]("Evaluate at vertices and use affine mapping")]
 
@@ -456,7 +422,7 @@ def __generate_interpolate_vertex_values(element, format):
                         value = inner_product(coefficients, dof_values, format)
                         code += [(name, value)]
 
-        elif (mapping == Mapping.CONTRAVARIANT_PIOLA or mapping == Mapping.COVARIANT_PIOLA):
+        elif (mapping == CONTRAVARIANT_PIOLA or mapping == COVARIANT_PIOLA):
 
             code += [format["comment"]("Evaluate at vertices and use Piola mapping")]
 
@@ -477,11 +443,11 @@ def __generate_interpolate_vertex_values(element, format):
                         # Get basis function values at vertices
                         coefficients = [table[j][0][sub_element.cell_dimension()*(0,)][n, v] for j in range(sub_element.value_dimension(0))]
 
-                        if mapping == Mapping.COVARIANT_PIOLA:
+                        if mapping == COVARIANT_PIOLA:
                             # Get row of inverse transpose Jacobian
                             jacobian_row = [format["transform"]("JINV", j, dim, None) for j in range(sub_element.cell_dimension())]
                         else:
-                            # mapping == Mapping.CONTRAVARIANT_PIOLA:
+                            # mapping == CONTRAVARIANT_PIOLA:
                             # Get row of Jacobian
                             jacobian_row = [format["transform"]("J", j, dim, None) for j in range(sub_element.cell_dimension())]
                             
@@ -500,7 +466,7 @@ def __generate_interpolate_vertex_values(element, format):
                     else:
                         sum = format["add"](terms)
                     name = format["vertex values"](size*v + offset_vertex_values + dim)
-                    if mapping == Mapping.CONTRAVARIANT_PIOLA:
+                    if mapping == CONTRAVARIANT_PIOLA:
                         value = format["multiply"]([format["inverse"](format["determinant"](None)), sum])
                     else: 
                         value = format["multiply"]([sum])

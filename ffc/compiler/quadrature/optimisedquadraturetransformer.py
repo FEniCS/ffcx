@@ -351,7 +351,8 @@ class QuadratureTransformerOpt(QuadratureTransformer):
             if not any(deriv):
                 deriv = []
 
-            if ffc_element.component_element(component)[0].mapping() == AFFINE:
+            transformation = ffc_element.component_element(component)[0].mapping()
+            if transformation == AFFINE:
                 # Call function to create mapping and basis name.
                 mapping, basis = self.__create_mapping_basis(component, deriv, ufl_basis_function, ffc_element)
 
@@ -373,15 +374,15 @@ class QuadratureTransformerOpt(QuadratureTransformer):
                     mapping, basis = self.__create_mapping_basis(c + local_offset, deriv, ufl_basis_function, ffc_element)
 
                     # Multiply basis by appropriate transform.
-                    if ffc_element.component_element(component)[0].mapping() == COVARIANT_PIOLA:
+                    if transformation == COVARIANT_PIOLA:
                         dxdX = create_symbol(format_transform("JINV", c, local_comp, self.restriction), GEO)
                         basis = create_product([dxdX, basis])
-                    elif ffc_element.component_element(component)[0].mapping() == CONTRAVARIANT_PIOLA:
+                    elif transformation == CONTRAVARIANT_PIOLA:
                         detJ = create_fraction(create_float(1), create_symbol(format_detJ(self.restriction), GEO))
                         dXdx = create_symbol(format_transform("J", c, local_comp, self.restriction), GEO)
                         basis = create_product([detJ, dXdx, basis])
                     else:
-                        error("Transformation is not supported: " + str(ffc_element.component_element(component)[0].mapping()))
+                        error("Transformation is not supported: " + str(transformation))
 
                     # Add transformation if needed.
                     transforms = []
@@ -535,7 +536,8 @@ class QuadratureTransformerOpt(QuadratureTransformer):
             deriv = [multi.count(i) for i in range(geo_dim)]
             if not any(deriv):
                 deriv = []
-            if ffc_element.component_element(component)[0].mapping() == AFFINE:
+            transformation = ffc_element.component_element(component)[0].mapping()
+            if transformation == AFFINE:
                 # Call other function to create function name.
                 function_name = self.__create_function_name(component, deriv, quad_element, ufl_function, ffc_element)
                 if not function_name:
@@ -557,15 +559,15 @@ class QuadratureTransformerOpt(QuadratureTransformer):
                     function_name = self.__create_function_name(c + local_offset, deriv, quad_element, ufl_function, ffc_element)
 
                     # Multiply basis by appropriate transform.
-                    if ffc_element.component_element(component)[0].mapping() == COVARIANT_PIOLA:
+                    if transformation == COVARIANT_PIOLA:
                         dxdX = create_symbol(format_transform("JINV", c, local_comp, self.restriction), GEO)
                         function_name = create_product([dxdX, function_name])
-                    elif ffc_element.component_element(component)[0].mapping() == CONTRAVARIANT_PIOLA:
+                    elif transformation == CONTRAVARIANT_PIOLA:
                         detJ = create_fraction(create_float(1), create_symbol(format_detJ(self.restriction), GEO))
                         dXdx = create_symbol(format_transform("J", c, local_comp, self.restriction), GEO)
                         function_name = create_product([detJ, dXdx, function_name])
                     else:
-                        error("Transformation is not supported: ", str(ffc_element.component_element(component)[0].mapping()))
+                        error("Transformation is not supported: ", str(transformation))
 
                     # Add transformation if needed.
                     transforms = []

@@ -80,54 +80,17 @@ class MixedElement(FiniteElementBase):
     def degree(self):
         "Return degree of polynomial basis"
         return max([element.degree() for element in self.__elements])
-        
-    # FIXME: Old version, remove
-    def value_mapping(self, component):
-        """Return the type of mapping associated with the given
-        component of the element. """
-        i = Index(component)
-        if i.type == i.FIXED:
-            (sub_element, offset) = self.value_offset(i)
-            return sub_element.value_mapping(Index(i.index - offset))
-        else:
-            if component.range:
-                return pick_first([self.value_mapping(i)
-                                   for i in component.range])
-            else:
-                return pick_first([self.value_mapping(i)
-                                   for i in range(self.value_dimension(0))])
 
+    # FIXME: KBO: This function is only used in:
+    # compiler/finiteelement.py __map_function_values(), there must be another
+    # way of computing this such that we can remove this function.
     def space_mapping(self, i):
         """Return the type of mapping associated with the i'th basis
         function of the element"""
         (sub_element, offset) = self.space_offset(i)
         return sub_element.space_mapping(i - offset)
 
-    def component_element(self, component):
-        "Return sub element and offset for given component."        
-        offset = 0
-        for element in self.extract_elements():
-            next_offset = offset + element.value_dimension(0)
-            if next_offset > component:
-                return (element, offset)
-            offset = next_offset
-        error("Unable to extract sub element for component %s of %s." % (str(component), str(self)))
-
-    # FIXME: Remove (replaced by component_element)
-    def value_offset(self, component):
-        """Given an absolute component (index), return the associated
-        subelement and relative position of the component.""" 
-        i = Index(component)
-        adjustment = 0
-        for element in self.__elements:
-            value_dim = element.value_dimension(0)
-            if (adjustment + value_dim) > i.index:
-                (subelement, offset) = element.value_offset(i.index - adjustment)
-                return (subelement, offset + adjustment)
-            else:
-                adjustment += value_dim
-        error("Component does not match value dimension")
-
+    # FIXME: This function is only used by space_mapping
     def space_offset(self, i):
         """Given an absolute basis_no (i), return the associated
         subelement and offset"""
@@ -140,6 +103,16 @@ class MixedElement(FiniteElementBase):
             else:
                 adjustment += space_dim
         error("Basis number does not match space dimension")
+
+    def component_element(self, component):
+        "Return sub element and offset for given component."        
+        offset = 0
+        for element in self.extract_elements():
+            next_offset = offset + element.value_dimension(0)
+            if next_offset > component:
+                return (element, offset)
+            offset = next_offset
+        error("Unable to extract sub element for component %s of %s." % (str(component), str(self)))
 
     def cell_dimension(self):
         "Return dimension of shape"
@@ -212,11 +185,6 @@ class MixedElement(FiniteElementBase):
             offset += element.space_dimension()
 
         return mixed_table
-
-    # FIXME: Old version, remove
-    def basis_elements(self):
-        "Returns a list of all basis elements"
-        return _extract_elements(self)
 
     def extract_elements(self):
         "Extract list of all recursively nested elements."

@@ -31,7 +31,6 @@ from FIAT.darcystokes import DarcyStokes
 from ffc.common.log import error, warning
 
 # FFC fem modules
-from mapping import *
 import mixedelement
 import referencecell
 from dofrepresentation import *
@@ -51,6 +50,7 @@ shape_to_num_facets = {VERTEX: 0, LINE: 2, TRIANGLE: 3, TETRAHEDRON: 4}
 AFFINE = "affine"
 CONTRAVARIANT_PIOLA = "contravariant Piola"
 COVARIANT_PIOLA = "covariant Piola"
+mapping_to_int = {AFFINE:0, CONTRAVARIANT_PIOLA:1, COVARIANT_PIOLA:2}
 
 class FiniteElement(FiniteElementBase):
     """A FiniteElement represents a finite element in the classical
@@ -88,12 +88,6 @@ class FiniteElement(FiniteElementBase):
 
         # Dofs that have been restricted (it is a subset of self.__entity_dofs)
         self.__restricted_dofs = []
-
-        # FIXME: Temporary fix until Mapping class has been remove after UFL is working
-        m = {Mapping.AFFINE: AFFINE,
-             Mapping.CONTRAVARIANT_PIOLA: CONTRAVARIANT_PIOLA,
-             Mapping.COVARIANT_PIOLA: COVARIANT_PIOLA}
-        self._mapping = m[self.__mapping]
 
         # Handle restrictions
         if domain and isinstance(domain, Cell):
@@ -177,7 +171,6 @@ class FiniteElement(FiniteElementBase):
 
     def sub_element(self, i):
         "Return sub element i"
-        # restrictions?
         return self
 
     def degree(self):
@@ -186,36 +179,30 @@ class FiniteElement(FiniteElementBase):
 
     def mapping(self):
         "Return the type of mapping associated with the element."
-        return self._mapping
-
-    def value_mapping(self, component):
-        """Return the type of mapping associated with the i'th
-        component of the element"""
-        return self.__mapping
-
-    def space_mapping(self, i):
-        """Return the type of mapping associated with the i'th basis
-        function of the element"""
         return self.__mapping
 
     def component_element(self, component):
         "Return sub element and offset for given component."
         return (self, 0)
 
-    # FIXME: Remove (replaced by component_element)
-    def value_offset(self, component):
-        """Given an absolute component (index), return the associated
-        subelement and offset of the component""" 
-        # TODO: Who is calling this function and do I need to modify this for
-        # restrictions?
-        return (self, 0)
+    # FIXME: KBO: This function is only used in:
+    # compiler/finiteelement.py __map_function_values(), there must be another
+    # way of computing this such that we can remove this function.
+    def space_mapping(self, i):
+        """Return the type of mapping associated with the i'th basis
+        function of the element"""
+        return self.__mapping
 
-    # FIXME: KBO: Deprecated?
+    # FIXME: This function is only used by space_mapping
     def space_offset(self, i):
         """Given a basis function number i, return the associated
         subelement and offset"""
         return (self, 0)
     
+    def extract_elements(self):
+        "Extract list of all recursively nested elements."
+        return [self]
+
     def cell_dimension(self):
         "Return dimension of shape"
         return shape_to_dim[self.cell_shape()]
@@ -271,11 +258,6 @@ class FiniteElement(FiniteElementBase):
             return new_basis
         return self.basis().tabulate_jet(order, points)
 
-    # FIXME: Old version, remove
-    def basis_elements(self):
-        "Returns a list of all basis elements"
-        return [self]
-
     def get_coeffs(self):
         "Return the expansion coefficients from FIAT"
         # TODO: Might be able to propagate this to FIAT?
@@ -303,45 +285,45 @@ class FiniteElement(FiniteElementBase):
         if family == "Lagrange" or family == "CG":
             self.__family = "Lagrange"
             return (Lagrange(fiat_shape, degree),
-                    Mapping.AFFINE)
+                    AFFINE)
 
         if family == "Discontinuous Lagrange" or family == "DG":
             self.__family = "Discontinuous Lagrange"
             return (DiscontinuousLagrange(fiat_shape, degree),
-                    Mapping.AFFINE)
+                    AFFINE)
 
         if family == "Crouzeix-Raviart" or family == "CR":
             self.__family = "Crouzeix-Raviart"
             return (CrouzeixRaviart(fiat_shape, degree),
-                    Mapping.AFFINE)
+                    AFFINE)
 
         if family == "Raviart-Thomas" or family == "RT":
             self.__family = "Raviart-Thomas"
             return (RaviartThomas(fiat_shape, degree),
-                    Mapping.CONTRAVARIANT_PIOLA)
+                    CONTRAVARIANT_PIOLA)
 
         if family == "Brezzi-Douglas-Marini" or family == "BDM":
             self.__family = "Brezzi-Douglas-Marini"
             return (BDM(fiat_shape, degree),
-                    Mapping.CONTRAVARIANT_PIOLA)
+                    CONTRAVARIANT_PIOLA)
 
         if family == "Brezzi-Douglas-Fortin-Marini" or family == "BDFM":
             self.__family = "Brezzi-Douglas-Fortin-Marini"
             return (BDFM(fiat_shape, degree),
-                    Mapping.CONTRAVARIANT_PIOLA)
+                    CONTRAVARIANT_PIOLA)
 
         # FIXME: Temporary fix, remove "Nedelec"
         if family == "Nedelec" or "Nedelec 1st kind H(curl)" or"N1curl":
             self.__family = "Nedelec"
             return (Nedelec(fiat_shape, degree),
-                    Mapping.COVARIANT_PIOLA)
+                    COVARIANT_PIOLA)
 
         if family == "Darcy-Stokes" or family == "KLMR":
             if not shape == "triangle":
                 error("Sorry, Darcy-Stokes element only available on triangles")
             self.__family = "Darcy-Stokes"
             return (DarcyStokes(degree),
-                    Mapping.CONTRAVARIANT_PIOLA)
+                    CONTRAVARIANT_PIOLA)
 
         # Unknown element
         error("Unknown finite element: " + str(family))
@@ -351,11 +333,11 @@ class FiniteElement(FiniteElementBase):
         cell according to the given mapping of the finite element."""
         function_space = self.__fiat_element.function_space()
         vertices = referencecell.get_vertex_coordinates(self.cell_dimension())
-        if self.__mapping == Mapping.AFFINE:
+        if self.__mapping == AFFINE:
             return AffineTransformedFunctionSpace(function_space, vertices)
-        elif self.__mapping == Mapping.CONTRAVARIANT_PIOLA:
+        elif self.__mapping == CONTRAVARIANT_PIOLA:
             return PiolaTransformedFunctionSpace(function_space, vertices, "div")
-        elif self.__mapping == Mapping.COVARIANT_PIOLA:
+        elif self.__mapping == COVARIANT_PIOLA:
             return PiolaTransformedFunctionSpace(function_space, vertices, "curl")
         else:
             error(family, "Unknown transform")
@@ -377,9 +359,9 @@ class FiniteElement(FiniteElementBase):
         # used in this code.
         pushforward = self.basis().pushforward
         fiat_J = self.basis().get_jacobian()
-        if self.__mapping == Mapping.CONTRAVARIANT_PIOLA:
+        if self.__mapping == CONTRAVARIANT_PIOLA:
             J = 1.0/numpy.linalg.det(fiat_J)*numpy.transpose(fiat_J)
-        elif self.__mapping == Mapping.COVARIANT_PIOLA:
+        elif self.__mapping == COVARIANT_PIOLA:
             J = numpy.linalg.inv(fiat_J)
 
         for fiat_dof_repr in list_of_fiat_dofs:

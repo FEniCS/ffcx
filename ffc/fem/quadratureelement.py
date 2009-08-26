@@ -7,9 +7,8 @@ __license__  = "GNU GPL version 3 or any later version"
 from finiteelement import *
 from dofrepresentation import *
 from quadrature import *
-from mapping import *
-from finiteelement import AFFINE, CONTRAVARIANT_PIOLA, COVARIANT_PIOLA
-from ufl.classes import Cell, Measure
+#from mapping import *
+#from finiteelement import AFFINE, CONTRAVARIANT_PIOLA, COVARIANT_PIOLA
 
 # FFC common modules
 from ffc.common.log import error
@@ -32,6 +31,7 @@ class QuadratureElement(FiniteElement):
         # Save incoming arguments
         self.__cell_shape = string_to_shape[shape]
         self.__domain = domain
+
         # Compute number of points per axis from the degree of the element
         self.__num_axis_points = (degree + 2) / 2
 
@@ -45,8 +45,7 @@ class QuadratureElement(FiniteElement):
         self.__degree = 0
 
         # Set mapping to AFFINE (not important, I think, for this element)
-        self.__mapping = Mapping.AFFINE
-        self._mapping = AFFINE
+        self.__mapping = AFFINE
 
         # Create quadrature (only interested in points)
         points, weights = make_quadrature(self.__cell_shape, self.__num_axis_points)
@@ -97,21 +96,6 @@ class QuadratureElement(FiniteElement):
         "Return the rank of the value space"
         return self.__rank
 
-#     def value_dimension(self, i):
-#         "Return the dimension of the value space for axis i"
-#         if self.value_rank() == 0:
-#             return 1
-#         else:
-#             return self.basis().tensor_dim()[i]
-
-#     def num_sub_elements(self):
-#         "Return the number of sub elements"
-#         return 1
-
-#     def sub_element(self, i):
-#         "Return sub element i"
-#         return self
-
     def degree(self):
         "Return degree of polynomial basis"
         return self.__degree
@@ -120,45 +104,21 @@ class QuadratureElement(FiniteElement):
         "Return the domain"
         return self.__domain
 
-    def value_mapping(self, component):
-        """Return the type of mapping associated with the i'th
-        component of the element"""
-        return self.__mapping
-
+    # FIXME: KBO: This function is only used in:
+    # compiler/finiteelement.py __map_function_values(), there must be another
+    # way of computing this such that we can remove this function.
     def space_mapping(self, i):
         """Return the type of mapping associated with the i'th basis
         function of the element"""
         return self.__mapping
 
-#     def value_offset(self, component):
-#         """Given an absolute component (index), return the associated
-#         subelement and offset of the component""" 
-#         return (self, 0)
-
-#     def space_offset(self, i):
-#         """Given a basis function number i, return the associated
-#         subelement and offset""" 
-#         return (self, 0)
-#     
-#     def cell_dimension(self):
-#         "Return dimension of shape"
-#         return shape_to_dim[self.cell_shape()]
-
-#     def facet_shape(self):
-#         "Return shape of facet"
-#         return shape_to_facet[self.cell_shape()]
-
-#     def num_facets(self):
-#         "Return number of facets for shape of element"
-#         return shape_to_num_facets[self.cell_shape()]
+    def mapping(self):
+        "Return the type of mapping associated with the element."
+        return self.__mapping
 
     def entity_dofs(self):
         "Return the mapping from entities to dofs"
         return self.__entity_dofs
-
-#     def basis(self):
-#         "Return basis of finite element space"
-#         return self.__fiat_element.function_space()
 
     def dual_basis(self):
         "Return dummy dual basis of finite element space"
@@ -200,18 +160,9 @@ class QuadratureElement(FiniteElement):
         table = [{(0,)*self.__cell_shape: values}]
         return table
 
-#     def basis_elements(self):
-#         "Returns a list of all basis elements"
-#         return [self]
-
     def num_axis_points(self):
         "Return the number of quadrature points per axis as specified by user"
         return self.__num_axis_points
-
-#     def __add__(self, other):
-#         "Create mixed element"
-#         return mixedelement.MixedElement([self, other])
-
 
     def __repr__(self):
         "Pretty print"

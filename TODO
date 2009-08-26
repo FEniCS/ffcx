@@ -8,6 +8,7 @@ file, it is convenient to install org-mode in Emacs.
   - Clean out old unused code (check coverage)
     -- ffc/common/exceptions.py
     -- ffc/compiler/obsolete/*
+    -- ffc/fem/mapping
   
 * Manual
   - The introduction is currently empty
