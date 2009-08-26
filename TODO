@@ -6,6 +6,8 @@ file, it is convenient to install org-mode in Emacs.
   - Skipping factorization in tensor representation, does it matter?
     Check speed against old FFC.
   - Clean out old unused code (check coverage)
+    -- ffc/common/exceptions.py
+    -- ffc/compiler/obsolete/*
   
 * Write introduction in manual
   - The introduction is currently empty

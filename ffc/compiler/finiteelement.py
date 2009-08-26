@@ -1,7 +1,7 @@
 "Code generation for finite element"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-01-23 -- 2009-08-08"
+__date__ = "2007-01-23 -- 2009-08-26"
 __copyright__ = "Copyright (C) 2007-2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
@@ -66,23 +66,9 @@ def generate_finite_element(element, format):
     # Generate code for value_dimension
     code["value_dimension"] = ["%d" % element.value_dimension(i) for i in range(max(element.value_rank(), 1))]
 
-    # FIXME: Temporary fix for restricted elements
-    if element.domain:
-        code["evaluate_basis"] =\
-          format["exception"]("evaluate_basis() is not supported for restricted elements.")
-        code["evaluate_basis_derivatives"] =\
-          format["exception"]("evaluate_basis_derivatives() is not supported for restricted elements.")
-        # Generate vectorised version of evaluate functions
-        code["evaluate_basis_all"] =\
-          format["exception"]("evaluate_basis_all() is not supported for restricted elements.")
-        code["evaluate_basis_derivatives_all"] =\
-          format["exception"]("evaluate_basis_derivatives_all() is not supported for restricted elements.")
-        # Generate code for interpolate_vertex_values
-        code["interpolate_vertex_values"] = __generate_interpolate_vertex_values(element, format)
-
     # Disable code generation for unsupported functions of QuadratureElement,
     # (or MixedElements including QuadratureElements)
-    elif not True in [isinstance(e, QuadratureElement) for e in element.basis_elements()]:
+    if not True in [isinstance(e, QuadratureElement) for e in element.basis_elements()]:
         # Generate code for evaluate_basis
         code["evaluate_basis"] = evaluate_basis(element, format)
 

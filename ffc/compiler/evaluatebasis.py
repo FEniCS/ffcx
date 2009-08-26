@@ -3,7 +3,7 @@ code which is more or less a C++ representation of FIAT code. More specifically 
 functions from the modules expansion.py and jacobi.py are translated into C++"""
 
 __author__ = "Kristian B. Oelgaard (k.b.oelgaard@tudelft.nl)"
-__date__ = "2007-04-04 -- 2009-08-08"
+__date__ = "2007-04-04 -- 2009-08-26"
 __copyright__ = "Copyright (C) 2007 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
@@ -12,6 +12,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # FFC common modules
 from ffc.common.constants import *
 from ffc.common.utils import *
+from ffc.common.log import error
 
 # FFC fem modules
 from ffc.fem.finiteelement import *
@@ -47,6 +48,7 @@ def evaluate_basis(element, format):
     Brezzi-Douglas-Marini   + mixed/vector valued
 
     Not supported in 2D or 3D:
+from ffc.common.log import error, warning
 
     Raviart-Thomas ? (not tested since it is broken in FFC, but should work)
     Nedelec (broken?)
@@ -126,7 +128,7 @@ def generate_map(element, Indent, format):
         code += [Indent.indent(format["snippet eta_tetrahedron"]) %(format_floating_point(format_epsilon),\
                        format_floating_point(format_epsilon))]
     else:
-        raise RuntimeError, "Cannot generate map for shape: %d" %(element.cell_shape())
+        error("Cannot generate map for shape: %d" %(element.cell_shape()))
  
     return code + [""]
 
@@ -178,8 +180,7 @@ def mixed_elements(element, Indent, format):
     format_dof_map_if = format["dof map if"]
 
     # Extract basis elements, and determine number of elements
-#    elements = extract_elements(element)
-    elements = element.basis_elements()
+    elements = element.extract_elements()
     num_elements = len(elements)
 
     sum_value_dim = 0
@@ -191,7 +192,7 @@ def mixed_elements(element, Indent, format):
         # Get sub element
         basis_element = elements[i]
 
-        # FIXME: This must most likely change for tensor valued elements
+        # Get value and space dimension
         value_dim = basis_element.value_dimension(0)
         space_dim = basis_element.space_dimension()
 
@@ -256,7 +257,7 @@ def generate_basisvalues(element, Indent, format):
         code += compute_psitilde_b(element, Indent, format)
         code += compute_psitilde_c(element, Indent, format)
     else:
-        raise RuntimeError, "Cannot compute auxilliary functions for shape: %d" %(element.cell_shape())
+        error("Cannot compute auxilliary functions for shape: %d" %(element.cell_shape()))
 
     # Compute the basisvalues
     code += compute_basisvalues(element, Indent, format)
@@ -277,8 +278,7 @@ def tabulate_coefficients(element, Indent, format):
     format_const_float        = format["const float declaration"]
 
     # Get coefficients from basis functions, computed by FIAT at compile time
-    # TODO: Use a new function element.get_coeffs() here?
-    coefficients = element.basis().get_coeffs()
+    coefficients = element.get_coeffs()
 
     # Scalar valued basis element [Lagrange, Discontinuous Lagrange, Crouzeix-Raviart]
     if (element.value_rank() == 0):
@@ -289,7 +289,7 @@ def tabulate_coefficients(element, Indent, format):
         coefficients = numpy.transpose(coefficients, [1,0,2])
 
     else:
-        raise RuntimeError, "Tensor elements not supported!"
+        error("Tensor elements not supported!")
 
     # Get number of components, must change for tensor valued elements
     num_components = element.value_dimension(0)
@@ -453,7 +453,7 @@ def compute_scaling(element, Indent, format):
         factors = [format_grouping(format_subtract(["0.5", format_multiply(["0.5", format_y])])),\
                    format_grouping(format_subtract(["0.5", format_multiply(["0.5", format_z])]))]
     else:
-        raise RuntimeError, "Cannot compute scaling for shape: %d" %(element_shape)
+        error("Cannot compute scaling for shape: %d" %(element_shape))
 
     code += [Indent.indent(format["comment"]("Generate scalings"))]
 
@@ -645,7 +645,7 @@ def compute_basisvalues(element, Indent, format):
             code += [(Indent.indent(name), value)]
             count += 1
         if (count != poly_dim):
-            raise RuntimeError, "The number of basis values must be the same as the polynomium dimension of the base"
+            error("The number of basis values must be the same as the polynomium dimension of the base")
 
     # 2D
     elif (element_shape == TRIANGLE):
@@ -668,7 +668,7 @@ def compute_basisvalues(element, Indent, format):
                 code += [(Indent.indent(name), value)]
                 count += 1
         if (count != poly_dim):
-            raise RuntimeError, "The number of basis values must be the same as the polynomium dimension of the base"
+            error("The number of basis values must be the same as the polynomium dimension of the base")
 
     # 3D
     elif (element_shape == TETRAHEDRON):
@@ -695,36 +695,36 @@ def compute_basisvalues(element, Indent, format):
                     code += [(Indent.indent(name), value)]
                     count += 1
         if (count != poly_dim):
-            raise RuntimeError, "The number of basis values must be the same as the polynomium dimension of the base"
+            error("The number of basis values must be the same as the polynomium dimension of the base")
     else:
-        raise RuntimeError, "Cannot compute basis values for shape: %d" % elemet_shape
+        error("Cannot compute basis values for shape: %d" % elemet_shape)
 
     return code + [""]
 
-def extract_elements(element):
-    """This function extracts the basis elements recursively from vector elements and mixed elements.
-    Example, the following mixed element:
+#def extract_elements(element):
+#    """This function extracts the basis elements recursively from vector elements and mixed elements.
+#    Example, the following mixed element:
 
-    element1 = FiniteElement("Lagrange", "triangle", 1)
-    element2 = VectorElement("Lagrange", "triangle", 2)
+#    element1 = FiniteElement("Lagrange", "triangle", 1)
+#    element2 = VectorElement("Lagrange", "triangle", 2)
 
-    element  = element2 + element1, has the structure:
-    mixed-element[mixed-element[Lagrange order 2, Lagrange order 2], Lagrange order 1]
+#    element  = element2 + element1, has the structure:
+#    mixed-element[mixed-element[Lagrange order 2, Lagrange order 2], Lagrange order 1]
 
-    This function returns the list of basis elements:
-    elements = [Lagrange order 2, Lagrange order 2, Lagrange order 1]"""
+#    This function returns the list of basis elements:
+#    elements = [Lagrange order 2, Lagrange order 2, Lagrange order 1]"""
 
-    elements = []
+#    elements = []
 
-    # If the element is not mixed (a basis element, add to list)
-    if isinstance(element, FiniteElement):
-        elements += [element]
-    # Else call this function again for each subelement
-    else:
-        for i in range(element.num_sub_elements()):
-            elements += extract_elements(element.sub_element(i))
+#    # If the element is not mixed (a basis element, add to list)
+#    if isinstance(element, FiniteElement):
+#        elements += [element]
+#    # Else call this function again for each subelement
+#    else:
+#        for i in range(element.num_sub_elements()):
+#            elements += extract_elements(element.sub_element(i))
 
-    return elements
+#    return elements
 
 def eval_jacobi_batch_scalar(a, b, n, variables, format):
     """Implementation of FIAT function eval_jacobi_batch(a,b,n,xs) from jacobi.py"""

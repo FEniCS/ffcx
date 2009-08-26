@@ -1,10 +1,11 @@
 _author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2005-09-16 -- 2007-11-26"
+__date__ = "2005-09-16 -- 2009-08-26"
 __copyright__ = "Copyright (C) 2005-2007 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Garth N. Wells 2006
 # Modified by Marie E. Rognes (meg@math.uio.no) 2007
+# Modified by Kristian B. Oelgaard 2009
 
 # Python modules
 import numpy
@@ -15,7 +16,7 @@ from finiteelementbase import *
 
 # FFC common modules
 from ffc.common.utils import *
-from ffc.common.exceptions import *
+from ffc.common.log import error
 
 class MixedElement(FiniteElementBase):
     """A MixedElement represents a finite element defined as a tensor
@@ -23,21 +24,26 @@ class MixedElement(FiniteElementBase):
     elements (mixed or simple) and may thus be recursively defined in
     terms of other mixed elements."""
     
-    def __init__(self, elements):
+    def __init__(self, elements, domain=None):
         "Create MixedElement from a list of elements."
-
-        FiniteElementBase.__init__(self)
 
         # Make sure we get a list of elements
         if not isinstance(elements, list):
-            raise RuntimeError, (elements, "Mixed finite element must be created from a list of at least two elements.")
+            error(elements, "Mixed finite element must be created from a list of at least two elements.")
 
         # Save list of elements
         self.__elements = elements
 
+        # Save domain, no need to do any checks, that should be handled by the subelements
+        self.__domain = domain
+
     def family(self):
         "Return a string indentifying the finite element family"
         return "Mixed"
+
+    def domain(self):
+        "Return the domain to which the element is restricted"
+        return self.__domain
 
     def signature(self):
         "Return a string identifying the finite element"
@@ -105,7 +111,7 @@ class MixedElement(FiniteElementBase):
             if next_offset > component:
                 return (element, offset)
             offset = next_offset
-        raise RuntimeError, "Unable to extract sub element for component %s of %s." % (str(component), str(self))
+        error("Unable to extract sub element for component %s of %s." % (str(component), str(self)))
 
     # FIXME: Remove (replaced by component_element)
     def value_offset(self, component):
@@ -120,7 +126,7 @@ class MixedElement(FiniteElementBase):
                 return (subelement, offset + adjustment)
             else:
                 adjustment += value_dim
-        raise RuntimeError("Component does not match value dimension")
+        error("Component does not match value dimension")
 
     def space_offset(self, i):
         """Given an absolute basis_no (i), return the associated
@@ -133,7 +139,7 @@ class MixedElement(FiniteElementBase):
                 return (subelement, offset + adjustment)
             else:
                 adjustment += space_dim
-        raise RuntimeError("Basis number does not match space dimension")
+        error("Basis number does not match space dimension")
 
     def cell_dimension(self):
         "Return dimension of shape"
@@ -177,7 +183,7 @@ class MixedElement(FiniteElementBase):
 
     def basis(self):
         "Return basis of finite element space"
-        raise RuntimeError, "Basis cannot be accessed explicitly for a mixed element."
+        error("Basis cannot be accessed explicitly for a mixed element.")
 
     def tabulate(self, order, points):
         """Tabulate values on mixed element by appropriately reordering
