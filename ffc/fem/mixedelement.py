@@ -175,29 +175,6 @@ class MixedElement(FiniteElementBase):
         "Return the rank of the value space"
         return 1
 
-    # FIXME: KBO: This function is only used in:
-    # compiler/finiteelement.py __map_function_values(), there must be another
-    # way of computing this such that we can remove this function.
-    def space_mapping(self, i):
-        """Return the type of mapping associated with the i'th basis
-        function of the element"""
-        (sub_element, offset) = self.space_offset(i)
-        return sub_element.space_mapping(i - offset)
-
-    # FIXME: This function is only used by space_mapping
-    def space_offset(self, i):
-        """Given an absolute basis_no (i), return the associated
-        subelement and offset"""
-        adjustment = 0
-        for element in self.__elements:
-            space_dim = element.space_dimension()
-            if (adjustment + space_dim) > i:
-                (subelement, offset) = element.space_offset(i - adjustment)
-                return (subelement, offset + adjustment)
-            else:
-                adjustment += space_dim
-        error("Basis number does not match space dimension")
-
 def _compute_component_table(table, offset, space_dimension):
     "Compute subtable for given component"
     component_table = []

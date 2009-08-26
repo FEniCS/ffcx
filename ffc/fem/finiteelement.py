@@ -265,20 +265,6 @@ class FiniteElement(FiniteElementBase):
         "Return the rank of the value space"
         return self.basis().rank()
 
-    # FIXME: KBO: This function is only used in:
-    # compiler/finiteelement.py __map_function_values(), there must be another
-    # way of computing this such that we can remove this function.
-    def space_mapping(self, i):
-        """Return the type of mapping associated with the i'th basis
-        function of the element"""
-        return self.__mapping
-
-    # FIXME: This function is only used by space_mapping
-    def space_offset(self, i):
-        """Given a basis function number i, return the associated
-        subelement and offset"""
-        return (self, 0)
-
     def __choose_element(self, family, shape, degree):
         "Choose FIAT finite element from string"
 

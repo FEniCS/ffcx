@@ -243,8 +243,15 @@ def __map_function_values(num_values, element, format):
     code = []
 
     # Compute the mapping associated with each dof:
-    mappings = [mapping_to_int[element.space_mapping(i)]
-                for i in range(element.space_dimension())]
+    # Looping the extracted element should have the same effect as using the
+    # old element.space_mapping() function.
+    # mappings = [mapping_to_int[element.space_mapping(i)]
+    #             for i in range(element.space_dimension())]
+    mappings = []
+    for e in element.extract_elements():
+        for d in range(e.space_dimension()):
+            mappings.append(mapping_to_int[e.mapping()])
+
     whichmappings = set(mappings)
 
     # If there is more than one mapping involved, we will need to

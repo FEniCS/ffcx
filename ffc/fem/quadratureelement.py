@@ -155,11 +155,3 @@ class QuadratureElement(FiniteElement):
         "Return the rank of the value space"
         return self.__rank
 
-    # FIXME: KBO: This function is only used in:
-    # compiler/finiteelement.py __map_function_values(), there must be another
-    # way of computing this such that we can remove this function.
-    def space_mapping(self, i):
-        """Return the type of mapping associated with the i'th basis
-        function of the element"""
-        return self.__mapping
-
