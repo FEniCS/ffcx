@@ -5,6 +5,9 @@ __license__  = "GNU GPL version 3 or any later version"
 
 import operator
 
+# FFC common modules
+from ffc.common.log import error
+
 def product(sequence):
     "Return the product of all elements in a sequence."
     # Copied from UFL
@@ -13,7 +16,7 @@ def product(sequence):
 def pick_first(values):
     "Check that all values are equal and return the value."
     if not values[:-1] == values[1:]:
-        raise RuntimeError, "Values differ: " + str(values)
+        error("Values differ: " + str(values))
     return values[0]
 
 def listcopy(l):

@@ -261,7 +261,7 @@ def optimise_code(expr, ip_consts, geo_consts, trans_set):
     elif basis_vals:
         return basis_vals[0]
     # Where did the values go?
-    raise RuntimeError("Values disappeared.")
+    error("Values disappeared.")
 
 from floatvalue import FloatValue, set_format as set_format_float
 from symbol     import Symbol, set_format as set_format_sym

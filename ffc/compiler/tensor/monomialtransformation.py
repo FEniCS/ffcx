@@ -9,7 +9,7 @@ __license__  = "GNU GPL version 3 or any later version"
 from ufl.classes import BasisFunction, Function, FixedIndex
 
 # FFC common modules
-from ffc.common.log import ffc_assert
+from ffc.common.log import ffc_assert, error
 from ffc.common.utils import pick_first
 
 # FFC fem modules
@@ -75,22 +75,22 @@ class MonomialIndex:
             return self.index_range[0]
         elif self.index_type == MonomialIndex.PRIMARY:
             if not primary:
-                raise RuntimeError, "Missing index values for primary indices."
+                error("Missing index values for primary indices.")
             return primary[self.index_id]
         elif self.index_type == MonomialIndex.SECONDARY:
             if not secondary:
-                raise RuntimeError, "Missing index values for secondary indices."
+                error("Missing index values for secondary indices.")
             return secondary[self.index_id]
         elif self.index_type == MonomialIndex.INTERNAL:
             if not internal:
-                raise RuntimeError, "Missing index values for internal auxiliary indices."
+                error("Missing index values for internal auxiliary indices.")
             return internal[self.index_id]
         elif self.index_type == MonomialIndex.EXTERNAL:
             if not external:
-                raise RuntimeError, "Missing index values for external auxiliary indices."
+                error("Missing index values for external auxiliary indices.")
             return external[self.index_id]
         else:
-            raise RuntimeError, "Unknown index type " + str(self.type)
+            error("Unknown index type " + str(self.type))
 
     def __add__(self, offset):
         "Add offset to index range."
@@ -320,7 +320,7 @@ class TransformedMonomial:
                 i.index_type = MonomialIndex.EXTERNAL
                 i.index_id   = next_external_index()
             else:
-                raise RuntimeError, "Summation index does not appear exactly twice: " + str(i)
+                error("Summation index does not appear exactly twice: " + str(i))
 
     def _extract_components(self, f, index_map, vdim):
         components = []

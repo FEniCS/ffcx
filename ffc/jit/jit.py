@@ -15,7 +15,7 @@ import instant
 import ufc_utils
 
 # FFC common modules
-from ffc.common.log import log, info, warning, debug, set_level, set_prefix, INFO
+from ffc.common.log import log, info, warning, debug, error, set_level, set_prefix, INFO
 from ffc.common.constants import FFC_OPTIONS
 
 # FFC fem modules
@@ -113,7 +113,7 @@ def jit_element(element, options=None):
 
     # Check that we get an element
     if not isinstance(element, FiniteElementBase):
-        raise RuntimeError, "Expecting a finite element."
+        error("Expecting a finite element.")
 
     # Create simplest possible dummy form
     v = TestFunction(element)
@@ -131,7 +131,7 @@ def check_options(form, options):
 
     # Form can not be a list
     if isinstance(form, list):
-        raise RuntimeError, "JIT compiler requires a single form (not a list of forms)."
+        error("JIT compiler requires a single form (not a list of forms).")
 
     # Copy options
     if options is None:

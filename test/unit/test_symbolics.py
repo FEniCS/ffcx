@@ -16,7 +16,9 @@ from ffc.compiler.quadrature.sum_obj import _group_fractions
 import time
 
 from ffc.compiler.ufcformat import Format
+# FFC common modules
 from ffc.common.constants import FFC_OPTIONS
+from ffc.common.log import error, push_level, pop_level, CRITICAL
 
 class Tests(unittest.TestCase):
 
@@ -304,8 +306,11 @@ class Tests(unittest.TestCase):
 #        print "F5 = frac(%s, %s) = '%s'" %(f2, s1, F5)
 #        print "F6 = frac(%s, %s) = '%s'" %(s0, s1, F6)
 
-        self.assertRaises(RuntimeError, Fraction, f0, f2)
-        self.assertRaises(RuntimeError, Fraction, s0, f2)
+        # Silence output
+        push_level(CRITICAL)
+        self.assertRaises(Exception, Fraction, f0, f2)
+        self.assertRaises(Exception, Fraction, s0, f2)
+        pop_level()
 
         self.assertEqual(repr(F0), "Fraction(FloatValue(-1.5), FloatValue(1))")
         self.assertEqual(repr(F2), "Fraction(Symbol('x', BASIS), Symbol('y', GEO))")
@@ -624,7 +629,10 @@ class Tests(unittest.TestCase):
         self.assertEqual(str(f0+f1), '-1')
         self.assertEqual(str(f0+f1+f1+f0+f0), '0')
         self.assertEqual(str(FloatValue(0)+p0), str(p0))
-        self.assertRaises(RuntimeError, f1.__add__, p0)
+        # Silence output
+        push_level(CRITICAL)
+        self.assertRaises(Exception, f1.__add__, p0)
+        pop_level()
 
         # Test FloatValue '*', only need one because all other cases are
         # handled by 'other'
@@ -635,15 +643,20 @@ class Tests(unittest.TestCase):
         self.assertEqual(str(f0/s1), '2/y')
         self.assertEqual(str(f1/p0), '-1.5/x')
         self.assertEqual(str(f1/S0), '-3/(x + y)')
-        self.assertRaises(RuntimeError, f1.__div__, F0)
-        self.assertRaises(RuntimeError, f1.__div__, FloatValue(0))
-        self.assertRaises(RuntimeError, f1.__div__,
-        Product([FloatValue(0), s1]))
+        # Silence output
+        push_level(CRITICAL)
+        self.assertRaises(Exception, f1.__div__, F0)
+        self.assertRaises(Exception, f1.__div__, FloatValue(0))
+        self.assertRaises(Exception, f1.__div__, Product([FloatValue(0), s1]))
+        pop_level()
 
         # Test Symbol '+', only supported for two equal symbols x + x -> 2*x
         self.assertEqual(str(s0+s0), '2*x')
-        self.assertRaises(RuntimeError, s0.__add__, s1)
-        self.assertRaises(RuntimeError, s0.__add__, f0)
+        # Silence output
+        push_level(CRITICAL)
+        self.assertRaises(Exception, s0.__add__, s1)
+        self.assertRaises(Exception, s0.__add__, f0)
+        pop_level()
 
         # Test Symbol '*', only need to test float, symbol and product. Sum and
         # fraction are handled by 'other'
@@ -660,8 +673,11 @@ class Tests(unittest.TestCase):
         self.assertEqual(str(s1/p1), '1/x')
         self.assertEqual(str(s2/p0), '0.5*z/x')
         self.assertEqual(str(s2/p1), 'z/(x*y)')
-        self.assertRaises(RuntimeError, s0.__div__, F0)
-        self.assertRaises(RuntimeError, s1.__div__, FloatValue(0))
+        # Silence output
+        push_level(CRITICAL)
+        self.assertRaises(Exception, s0.__div__, F0)
+        self.assertRaises(Exception, s1.__div__, FloatValue(0))
+        pop_level()
 
         # Test Product '+', only supported for products e.g.,
         # 2*x*y + -5*x*y -> -3*x*y. (and symbols, but only
@@ -672,8 +688,11 @@ class Tests(unittest.TestCase):
         self.assertEqual(
         Product([FloatValue(-1), s0])+s0, FloatValue(0))
         self.assertEqual(str(s0+Product([FloatValue(-1), s0])), '0')
-        self.assertRaises(RuntimeError, p0.__add__, FloatValue(0))
-        self.assertRaises(RuntimeError, p0.__add__, s2)
+        # Silence output
+        push_level(CRITICAL)
+        self.assertRaises(Exception, p0.__add__, FloatValue(0))
+        self.assertRaises(Exception, p0.__add__, s2)
+        pop_level()
 
         # Test Product '*', only need to test float, symbol and product.
         # Sum and fraction are handled by 'other'
@@ -696,8 +715,11 @@ class Tests(unittest.TestCase):
         self.assertEqual(p1/p1, FloatValue(1))
         self.assertEqual(p1/p3, Fraction(FloatValue(1), s2))
         self.assertEqual(str(p1/p3), '1/z')
-        self.assertRaises(RuntimeError, p0.__div__, FloatValue(0))
-        self.assertRaises(RuntimeError, p0.__div__, F0)
+        # Silence output
+        push_level(CRITICAL)
+        self.assertRaises(Exception, p0.__div__, FloatValue(0))
+        self.assertRaises(Exception, p0.__div__, F0)
+        pop_level()
 
         # Test Sum '*'
         self.assertEqual(str(S0*f0), '(2*x + 2*y)')
@@ -713,14 +735,20 @@ class Tests(unittest.TestCase):
         self.assertEqual(str(S0/p1), '(1/x + 1/y)')
         self.assertEqual(str(S0/S0), '(x + y)/(x + y)')
         self.assertEqual(str(S0/S1), '(x + y)/(x + z)')
-        self.assertRaises(RuntimeError, S0.__div__, FloatValue(0))
-        self.assertRaises(RuntimeError, S0.__div__, F0)
+        # Silence output
+        push_level(CRITICAL)
+        self.assertRaises(Exception, S0.__div__, FloatValue(0))
+        self.assertRaises(Exception, S0.__div__, F0)
+        pop_level()
 
         # Test Fraction '+'
         self.assertEqual(str(F1+F3), '2*x/y')
         self.assertEqual(str(F0+F1), '(2 + x)/y')
-        self.assertRaises(RuntimeError, F2.__add__, FloatValue(0))
-        self.assertRaises(RuntimeError, F2.__add__, F3)
+        # Silence output
+        push_level(CRITICAL)
+        self.assertRaises(Exception, F2.__add__, FloatValue(0))
+        self.assertRaises(Exception, F2.__add__, F3)
+        pop_level()
 
         # Test Fraction '*'
         self.assertEqual(str(F1*f0), '2*x/y')
@@ -738,7 +766,10 @@ class Tests(unittest.TestCase):
         self.assertEqual(str(F4/s0), '2/y')
         self.assertEqual(str(F2/s1), 'x/(x*y + y*y)')
         self.assertEqual(str(F0/S0), '2/(x*y + y*y)')
-        self.assertRaises(RuntimeError, F0.__div__, F0)
+        # Silence output
+        push_level(CRITICAL)
+        self.assertRaises(Exception, F0.__div__, F0)
+        pop_level()
 
     def testExpandOperations(self):
         f0 = FloatValue(-1)

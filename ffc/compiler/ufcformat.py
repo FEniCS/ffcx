@@ -25,7 +25,7 @@ except:
 
 # FFC common modules
 from ffc.common.utils import *
-from ffc.common.log import info
+from ffc.common.log import info, error
 from ffc.common.constants import *
 
 # FFC format modules
@@ -49,11 +49,11 @@ class Format:
         # Check format option
         self.output_format = options["format"].lower()
         if not self.output_format in ["ufc", "dolfin"]:
-            raise RuntimeError, "Don't know how to compile code for format '%s'." % output_format
+            error("Don't know how to compile code for format '%s'." % output_format)
 
         # Check that DOLFIN wrapper utils have been imorted
         if self.output_format == "dolfin" and not dolfin_utils_imported:
-            raise RuntimeError, "Module dolfin_utils must be imported to generate wrapper for DOLFIN."
+            error("Module dolfin_utils must be imported to generate wrapper for DOLFIN.")
 
         # Attach format
         # FIXME: KBO: It should be possible to clean up the below formats by only

@@ -338,13 +338,13 @@ class FiniteElement(FiniteElementBase):
 
         if family == "Darcy-Stokes" or family == "KLMR":
             if not shape == "triangle":
-                raise RuntimeError, "Sorry, Darcy-Stokes element only available on triangles"
+                error("Sorry, Darcy-Stokes element only available on triangles")
             self.__family = "Darcy-Stokes"
             return (DarcyStokes(degree),
                     Mapping.CONTRAVARIANT_PIOLA)
 
         # Unknown element
-        raise RuntimeError, "Unknown finite element: " + str(family)
+        error("Unknown finite element: " + str(family))
 
     def __transformed_function_space(self):
         """ Transform the function space onto the chosen reference
@@ -358,7 +358,7 @@ class FiniteElement(FiniteElementBase):
         elif self.__mapping == Mapping.COVARIANT_PIOLA:
             return PiolaTransformedFunctionSpace(function_space, vertices, "curl")
         else:
-            raise RuntimeError, (family, "Unknown transform")
+            error(family, "Unknown transform")
 
     def __create_dof_representation(self, list_of_fiat_dofs):
         """ Take the FIAT dof representation and convert it to the ffc

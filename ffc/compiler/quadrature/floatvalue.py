@@ -6,7 +6,7 @@ __copyright__ = "Copyright (C) 2009 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
 # FFC common modules.
-#from ffc.common.log import error
+from ffc.common.log import error
 
 from symbolics import CONST, format, create_float, create_product, create_fraction
 from expr import Expr
@@ -65,7 +65,7 @@ class FloatValue(Expr):
             return other
         # Addition is not defined if self is not zero.
         # TODO: We could just return a Sum?
-        raise RuntimeError("Can only add two floats, or other to zero.")
+        error("Can only add two floats, or other to zero.")
 
     def __mul__(self, other):
         "Multiplication by other objects."
@@ -81,12 +81,12 @@ class FloatValue(Expr):
         "Division by other objects."
         # If division is illegal (this should definitely not happen).
         if other.val == 0.0:
-            raise RuntimeError("Division by zero")
+            error("Division by zero")
 
         # TODO: Should we also support division by fraction for generality?
         # It should not be needed by this module.
         if other._prec == 4: # frac
-            raise RuntimeError("Did not expected to divide by fraction")
+            error("Did not expected to divide by fraction")
 
         # If fraction will be zero.
         if self.val == 0.0:
@@ -123,7 +123,7 @@ class FloatValue(Expr):
             # to check for this case, just use other.vrs[1].
             elif len(other.get_vrs()) == 1:
                 return create_fraction(create_float(self.val/val), other.vrs[1])
-            raise RuntimeError("No variables left in denominator")
+            error("No variables left in denominator")
 
         # Nothing left to do.
         return create_fraction(self, other)

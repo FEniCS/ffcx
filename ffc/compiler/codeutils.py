@@ -10,6 +10,8 @@ __license__  = "GNU GPL version 3 or any later version"
 # FFC common modules
 from ffc.common.utils import indent
 from ffc.common.constants import *
+from ffc.common.log import error
+
 import numpy
 
 def inner_product(a, b, format):
@@ -18,7 +20,7 @@ def inner_product(a, b, format):
 
     # Check input
     if not len(a) == len(b):
-        raise RuntimeError, "Dimensions don't match for inner product."
+        error("Dimensions don't match for inner product.")
 
     # Prefetch formats to speed up code generation
     format_add            = format["add"]
@@ -58,7 +60,7 @@ def tabulate_matrix(matrix, format):
 
     # Check input
     if not len(numpy.shape(matrix)) == 2:
-        raise RuntimeError, "This is not a matrix."
+        error("This is not a matrix.")
 
     # Prefetch formats to speed up code generation
     format_block          = format["block"]

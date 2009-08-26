@@ -312,7 +312,7 @@ def _select_representation(form, options):
         return QuadratureRepresentation
 
     else:
-        raise RuntimeError, 'Unknown form representation: "%s"' % option
+        error('Unknown form representation: "%s"' % option)
 
 def _auto_select_representation(integral):
     "Automatically select the best representation for integral."

@@ -8,6 +8,10 @@ from numpy import array
 from FIAT.quadrature import make_quadrature as fiat_make_quadrature
 from FIAT.shapes import LINE, TRIANGLE, TETRAHEDRON
 
+# FFC common modules
+from ffc.common.log import error
+
+
 def make_quadrature(shape, n, quad_rule=None):
     """Generate quadrature rule (points, weights) for given shape
     with n points in each direction. Quadrature rule is generated
@@ -28,7 +32,7 @@ def make_quadrature(shape, n, quad_rule=None):
         offset = array((1.0, 1.0, 1.0))
         scaling = 0.125
     else:
-        raise RuntimeError, "Unknown shape"
+        error("Unknown shape")
 
     # Get quadrature from FIAT
     q = fiat_make_quadrature(shape, n)

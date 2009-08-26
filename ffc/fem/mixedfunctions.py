@@ -13,10 +13,13 @@ from ffc.compiler.language.algebra import *
 # FFC fem modules
 from ffc.fem.mixedelement import *
 
+# FFC common modules
+from ffc.common.log import error
+
 def BasisFunctions(element, functiontype = BasisFunction):
     "Create tuple of BasisFunctions from given MixedElement"
     if not isinstance(element, MixedElement):
-        raise RuntimeError, "Basis function tuple must be created from mixed element."
+        error("Basis function tuple must be created from mixed element.")
     # Create basis functions for mixed element
     basisfunctions = tabulate_components(element, functiontype)
     return basisfunctions
@@ -32,7 +35,7 @@ def TrialFunctions(element):
 def Functions(element):
     "Create tuple of Functions from given MixedElement."
     if not isinstance(element, MixedElement):
-        raise RuntimeError, "Function tuple must be created from mixed element."
+        error("Function tuple must be created from mixed element.")
     # Create function for mixed element
     functions = tabulate_components(element, Function)
     return functions
@@ -52,6 +55,6 @@ def tabulate_components(element, functiontype):
             sub_vector = [vector[Index(k)] for k in range(offset, sub_element.value_dimension(0)+offset)]
             offset += sub_element.value_dimension(0)
         else:
-            raise RuntimeError, "Mixed elements can only be created from scalar or vector-valued elements."
+            error("Mixed elements can only be created from scalar or vector-valued elements.")
         components += [sub_vector]
     return tuple(components)

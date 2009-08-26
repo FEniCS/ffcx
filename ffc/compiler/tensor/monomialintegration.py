@@ -24,7 +24,7 @@ from FIAT.transformedspace import *
 from FIAT.shapes import *
 
 # FFC common modules
-from ffc.common.log import debug
+from ffc.common.log import debug, error
 
 # FFC fem modules
 from ffc.fem.quadrature import *
@@ -291,7 +291,7 @@ def _compute_internal_shape(psis):
             bshape[bpart[i]] = numpy.shape(Psi)[i + 1]
     # Check that we found the shape for each internal index
     if 0 in bshape:
-        raise RuntimeError, "Unable to compute the shape for each internal index."
+        error("Unable to compute the shape for each internal index.")
     return bshape
 
 def _find_indices(indices, index_type):

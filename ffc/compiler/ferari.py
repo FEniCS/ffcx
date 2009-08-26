@@ -8,6 +8,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # FFC common modules
 from ffc.common.debug import *
 from ffc.common.constants import *
+from ffc.common.log import error
 
 # FIXME: Remove
 from ffc.remove.declaration import *
@@ -22,7 +23,7 @@ def optimize(terms, format):
     try:
         from FErari import binary
     except:
-        raise RuntimeError, "Cannot find FErari on your system, unable to optimize."
+        error("Cannot find FErari on your system, unable to optimize.")
 
     # Create empty list of declarations
     declarations = []
@@ -47,7 +48,7 @@ def optimize(terms, format):
         elif rank == 1:
             code = binary.optimize_action(term.A0.A0)
         else:
-            raise RuntimeError, "Optimization only available for rank 1 or 2 tensors."        
+            error("Optimization only available for rank 1 or 2 tensors.")
 
         # Get primary and secondary indices
         iindices = term.A0.i.indices or [[]]
@@ -90,7 +91,7 @@ def build_lhs(lhs, j, iindices, aindices, num_terms, format):
 
     # Check that id is for the element tensor
     if not id == 0:
-        raise RuntimeError, "Expecting entry of element tensor from FErari but got something else."
+        error("Expecting entry of element tensor from FErari but got something else.")
 
     # Get variable name
     if num_terms == 1:

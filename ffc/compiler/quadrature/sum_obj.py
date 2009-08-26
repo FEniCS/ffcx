@@ -6,7 +6,7 @@ __copyright__ = "Copyright (C) 2009 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
 # FFC common modules.
-#from ffc.common.log import error
+from ffc.common.log import error
 
 from symbolics import create_float, create_product, create_sum, create_fraction
 from expr import Expr
@@ -134,7 +134,7 @@ class Sum(Expr):
         "Division by other objects."
         # If division is illegal (this should definitely not happen).
         if other.val == 0.0:
-            raise RuntimeError("Division by zero.")
+            error("Division by zero.")
 
         # If fraction will be zero.
         if self.val == 0.0:
@@ -244,7 +244,7 @@ class Sum(Expr):
             # If we just have one variable left, return it since it is already expanded.
             self._expanded = new_variables[0]
             return self._expanded
-        raise RuntimeError("Where did the variables go?")
+        error("Where did the variables go?")
 
     def get_unique_vars(self, var_type):
         "Get unique variables (Symbols) as a set."
@@ -456,7 +456,7 @@ class Sum(Expr):
 #                print "red:  ", repr(self._reduced)
 #                print "self.exp: ", self.expand()
 #                print "red.exp:  ", self._reduced.expand()
-#                raise RuntimeError("Reduced expression is not equal to original expression.")
+#                error("Reduced expression is not equal to original expression.")
             return self._reduced
 
         # Return self if we don't have any variables for which we can reduce

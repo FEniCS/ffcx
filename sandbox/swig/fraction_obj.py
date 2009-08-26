@@ -11,6 +11,9 @@ __license__  = "GNU GPL version 3 or any later version"
 from new_symbol import create_float, create_product, create_sum, create_fraction
 from expr import Expr
 
+# FFC common modules
+from ffc.common.log import error
+
 #import psyco
 #psyco.full()
 
@@ -36,7 +39,7 @@ class Fraction(Expr):
 
         # Check for illegal division.
         if denominator.val == 0.0:
-            raise RuntimeError("Division by zero.")
+            error("Division by zero.")
 
         # Initialise all variables.
         self.val = numerator.val
@@ -101,7 +104,7 @@ class Fraction(Expr):
         if other._prec == 4 and self.denom == other.denom: # frac
             return create_fraction(create_sum([self.num, other.num]).expand(), self.denom)
         else:
-            raise RuntimeError("Not implemented.")
+            error("Not implemented.")
 
     def __mul__(self, other):
         "Multiplication by other objects."
@@ -212,7 +215,7 @@ class Fraction(Expr):
 #        # TODO: Remove this test later, expansion should have taken care of
 #        # no denominator.
 #        if not self.denom:
-#            raise RuntimeError("This fraction should have been expanded.")
+#            error("This fraction should have been expanded.")
 
         # If the denominator is not a Sum things are straightforward.
         denom_found = None

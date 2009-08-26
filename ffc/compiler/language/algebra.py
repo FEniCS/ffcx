@@ -9,6 +9,9 @@ __license__  = "GNU GPL Version 2"
 from derivative import Derivative
 from index import Index
 
+# FFC common modules
+from ffc.common.log import error
+
 class Element:
     "Base class for elements of the algebra."
     pass
@@ -45,7 +48,7 @@ class BasisFunction(Element):
             w.products = [Product(self)] + other.products
             return w
         else:
-            raise RuntimeError, "Can't add BasisFunction with " + str(other)
+            error("Can't add BasisFunction with " + str(other))
         return
 
     def __sub__(self, other):
@@ -68,7 +71,7 @@ class BasisFunction(Element):
             w.products = [Product(self)] + other.products
             return w
         else:
-            raise RuntimeError, "Can't subtract BasisFunction with " + str(other)
+            error("Can't subtract BasisFunction with " + str(other))
         return
 
     def __mul__(self, other):
@@ -91,7 +94,7 @@ class BasisFunction(Element):
                 w.products += [self*p]
             return w
         else:
-            raise RuntimeError, "Can't multiply BasisFunction with " + str(other)
+            error("Can't multiply BasisFunction with " + str(other))
         return
 
     def dx(self, index = None):
@@ -122,7 +125,7 @@ class Factor(Element):
             self.basisfunction = other.basisfunction
             self.derivatives = other.derivatives
         else:
-            raise RuntimeError, "Unable to create Factor from " + str(other)
+            error("Unable to create Factor from " + str(other))
         return
 
     def __add__(self, other):
@@ -143,7 +146,7 @@ class Factor(Element):
             w.products = [Product(self)] + other.products
             return w
         else:
-            raise RuntimeError, "Can't add Factor with " + str(other)
+            error("Can't add Factor with " + str(other))
         return
 
     def __sub__(self, other):
@@ -165,7 +168,7 @@ class Factor(Element):
             w.products = [Product(self)] + other.products
             return w
         else:
-            raise RuntimeError, "Can't add Factor with " + str(other)
+            error("Can't add Factor with " + str(other))
         return
     
     def __mul__(self, other):
@@ -187,7 +190,7 @@ class Factor(Element):
                 w.products += [self*p]
             return w
         else:
-            raise RuntimeError, "Can't multiply Factor with " + str(other)
+            error("Can't multiply Factor with " + str(other))
         return
 
     def dx(self, index = None):
@@ -222,7 +225,7 @@ class Product(Element):
         elif isinstance(other, Product):
             self.factors = other.factors
         else:
-            raise RuntimeError, "Unable to create Product from " + str(other)
+            error("Unable to create Product from " + str(other))
         return
     
     def __add__(self, other):
@@ -243,7 +246,7 @@ class Product(Element):
             w.products = [self] + other.products
             return w
         else:
-            raise RuntimeError, "Can't add Product with " + str(other)
+            error("Can't add Product with " + str(other))
         return
 
     def __sub__(self, other):
@@ -265,7 +268,7 @@ class Product(Element):
             w.products = [self] + other.products
             return w
         else:
-            raise RuntimeError, "Can't subtract Product with " + str(other)
+            error("Can't subtract Product with " + str(other))
         return
     
     def __mul__(self, other):
@@ -287,7 +290,7 @@ class Product(Element):
                 w.products += [self*p]
             return w
         else:
-            raise RuntimeError, "Can't multiply Product with " + str(other)
+            error("Can't multiply Product with " + str(other))
         return
 
     def dx(self, index = None):
@@ -333,7 +336,7 @@ class Sum(Element):
         elif isinstance(other, Sum):
             self.products = other.products
         else:
-            raise RuntimeError, "Unable to create Sum from " + str(other)
+            error("Unable to create Sum from " + str(other))
         return
 
     def __add__(self, other):
@@ -354,7 +357,7 @@ class Sum(Element):
             w.products = self.products + other.products
             return w
         else:
-            raise RuntimeError, "Can't add Sum with " + str(other)
+            error("Can't add Sum with " + str(other))
         return
 
     def __sub__(self, other):
@@ -376,7 +379,7 @@ class Sum(Element):
             w.products = self.products + other.products
             return w
         else:
-            raise RuntimeError, "Can't add Sum with " + str(other)
+            error("Can't add Sum with " + str(other))
         return
     
     def __mul__(self, other):
@@ -402,7 +405,7 @@ class Sum(Element):
                     w.products += [p*q]
             return w
         else:
-            raise RuntimeError, "Can't multiply Sum with " + str(other)
+            error("Can't multiply Sum with " + str(other))
         return
 
     def dx(self, index = None):

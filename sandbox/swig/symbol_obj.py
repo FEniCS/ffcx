@@ -11,6 +11,9 @@ __license__  = "GNU GPL version 3 or any later version"
 from new_symbol import type_to_string, create_float, create_product, create_fraction
 from expr import Expr
 
+# FFC common modules
+from ffc.common.log import error
+
 #import psyco
 #psyco.full()
 
@@ -73,7 +76,7 @@ class Symbol(Expr):
             return create_product([create_float(2), self])
         elif other._prec == 2: # prod
             return other.__add__(self)
-        raise RuntimeError("Not implemented.")
+        error("Not implemented.")
 
     def __mul__(self, other):
         "Multiplication by other objects."
@@ -98,7 +101,7 @@ class Symbol(Expr):
         # NOTE: We assume expanded objects.
         # If division is illegal (this should definitely not happen).
         if other.val == 0.0:
-            raise RuntimeError("Division by zero.")
+            error("Division by zero.")
 
         # Return 1 if the two symbols are equal.
         if self._repr == other._repr:
@@ -124,7 +127,7 @@ class Symbol(Expr):
         else:
             # TODO: Should we also support division by fraction for generality?
             # It should not be needed by this module.
-            raise RuntimeError("Did not expected to divide by fraction.")
+            error("Did not expected to divide by fraction.")
 
         # Remove one instance of self in numerator and denominator if
         # present in denominator i.e., x/(x*y) --> 1/y.

@@ -11,6 +11,7 @@ import numpy
 
 # FFC common modules
 from ffc.common.utils import *
+from ffc.common.log import error
 
 def build_indices(dims):
     "Create a list of all index combinations"
@@ -37,7 +38,7 @@ def create_multi_index(monomial, index_type):
     # Check that we got all indices correctly
     for (i, index) in enumerate(indices):
         if not i == index.index_id:
-            raise RuntimeError, "Unable to extract all indices."
+            error("Unable to extract all indices.")
 
     # Get dimensions
     dims = [range(len(index.index_range)) for index in indices]

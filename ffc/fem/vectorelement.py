@@ -20,7 +20,7 @@ def VectorElement(family, shape, degree, num_sub_elements=None):
 
     # Check dimension
     if not num_sub_elements > 1:
-        raise RuntimeError, "A vector-valued element must have 2 or more components."
+        error("A vector-valued element must have 2 or more components.")
 
     # Create mixed element by repeating the "scalar" element
     return MixedElement([FiniteElement(family, shape, degree) for i in range(num_sub_elements)])
@@ -34,7 +34,7 @@ def VectorQuadratureElement(shape, degree, num_sub_elements=None):
 
     # Check dimension
     if not num_sub_elements > 1:
-        raise RuntimeError, "A vector-valued element must have 2 or more components."
+        error("A vector-valued element must have 2 or more components.")
 
     # Create mixed element by repeating the "scalar" element
     return MixedElement([QuadratureElement(shape, degree) for i in range(num_sub_elements)])

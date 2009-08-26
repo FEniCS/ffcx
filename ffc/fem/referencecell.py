@@ -8,6 +8,9 @@ __license__  = "GNU GPL version 3 or any later version"
 
 from numpy import array
 
+# FFC common modules
+from ffc.common.log import error
+
 LINE = 1
 TRIANGLE = 2
 TETRAHEDRON = 3
@@ -43,7 +46,7 @@ def map_to_facet(points, facet):
         vertex_coordinates = [(0.0,), (1.0,)]
         return [vertex_coordinates[facet]]
     else:
-        raise RuntimeError, "Unable to map points to facet for shape of dimension %d" % dim
+        error("Unable to map points to facet for shape of dimension %d" % dim)
 
     coordinates = [vertex_coordinates[v] for v in facet_vertices[facet]]
 

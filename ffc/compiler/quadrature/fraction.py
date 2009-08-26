@@ -6,7 +6,7 @@ __copyright__ = "Copyright (C) 2009 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
 # FFC common modules
-#from ffc.common.log import error
+from ffc.common.log import error
 
 from symbolics import create_float, create_product, create_sum, create_fraction
 from expr import Expr
@@ -35,7 +35,7 @@ class Fraction(Expr):
 
         # Check for illegal division.
         if denominator.val == 0.0:
-            raise RuntimeError("Division by zero.")
+            error("Division by zero.")
 
         # Initialise all variables.
         self.val = numerator.val
@@ -100,7 +100,7 @@ class Fraction(Expr):
         if other._prec == 4 and self.denom == other.denom: # frac
             return create_fraction(create_sum([self.num, other.num]).expand(), self.denom)
         else:
-            raise RuntimeError("Not implemented.")
+            error("Not implemented.")
 
     def __mul__(self, other):
         "Multiplication by other objects."
@@ -119,7 +119,7 @@ class Fraction(Expr):
         "Division by other objects."
         # If division is illegal (this should definitely not happen).
         if other.val == 0.0:
-            raise RuntimeError("Division by zero.")
+            error("Division by zero.")
 
         # If fraction will be zero.
         if self.val == 0.0:
@@ -128,7 +128,7 @@ class Fraction(Expr):
         # The only thing that we shouldn't need to handle is division by other
         # Fractions
         if other._prec == 4:
-            raise RuntimeError("Did not expected to divide by fraction.")
+            error("Did not expected to divide by fraction.")
 
         # Handle division by FloatValue, Symbol, Product and Sum in the same
         # way i.e., multiply other by the donominator and use division
@@ -237,7 +237,7 @@ class Fraction(Expr):
 #        # TODO: Remove this test later, expansion should have taken care of
 #        # no denominator.
 #        if not self.denom:
-#            raise RuntimeError("This fraction should have been expanded.")
+#            error("This fraction should have been expanded.")
 
         # If the denominator is not a Sum things are straightforward.
         denom_found = None

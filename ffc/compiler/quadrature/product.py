@@ -6,7 +6,7 @@ __copyright__ = "Copyright (C) 2009 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
 # FFC common modules.
-#from ffc.common.log import error
+from ffc.common.log import error
 
 from symbolics import create_float, create_product, create_sum, create_fraction
 from expr import Expr
@@ -160,9 +160,9 @@ class Product(Expr):
                 return create_product([create_float(self.val + 1.0), other]).expand()
             else:
                 # Can't do 2*x + y, not needed by this module.
-                raise RuntimeError("Not implemented.")
+                error("Not implemented.")
         else:
-            raise RuntimeError("Not implemented.")
+            error("Not implemented.")
 
     def __mul__(self, other):
         "Multiplication by other objects."
@@ -185,7 +185,7 @@ class Product(Expr):
         "Division by other objects."
         # If division is illegal (this should definitely not happen).
         if other.val == 0.0:
-            raise RuntimeError("Division by zero.")
+            error("Division by zero.")
 
         # If fraction will be zero.
         if self.val == 0.0:
@@ -212,7 +212,7 @@ class Product(Expr):
             denom = other.vrs[:]
         # fraction.
         else:
-            raise RuntimeError("Did not expected to divide by fraction.")
+            error("Did not expected to divide by fraction.")
 
         # Loop entries in denominator and remove from numerator (and denominator).
         for d in denom[:]:
@@ -340,7 +340,7 @@ class Product(Expr):
         # not expanded? And do we want to?
 #        if self._expanded:
 #            return self._expanded
-#        raise RuntimeError("Product must be expanded first before we can reduce the number of operations.")
+#        error("Product must be expanded first before we can reduce the number of operations.")
         # TODO: This should crash if it goes wrong (the above is more correct but slower).
         return self._expanded
 

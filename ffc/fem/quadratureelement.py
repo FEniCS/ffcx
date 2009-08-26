@@ -185,14 +185,14 @@ class QuadratureElement(FiniteElement):
         # This issue should be fixed in UFL and then we can switch on the
         # RuntimeError again.
         if order:
-#            raise RuntimeError("Derivatives are not defined on a QuadratureElement")
+#            error("Derivatives are not defined on a QuadratureElement")
             print "\n*** WARNING: Derivatives are not defined on a QuadratureElement,"
             print   "             returning values of basisfunction.\n"
 
         # Check if (the number of ) incoming points are equal to
         # quadrature points... 
         if not len(points) == self.__num_quad_points:
-            raise error("Points must be equal to coordinates of quadrature points")
+            error("Points must be equal to coordinates of quadrature points")
             
         # Return the identity matrix of size __num_quad_points in a
         # suitable format for monomialintegration.

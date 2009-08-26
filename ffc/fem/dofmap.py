@@ -8,6 +8,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # FFC common modules
 from ffc.common.utils import *
+from ffc.common.log import error
 
 # FFC fem modules
 from finiteelement import *
@@ -167,7 +168,7 @@ class DofMap:
         elif cell_shape == TETRAHEDRON:
             D = 3
         else:
-            raise RuntimeError, "Cannot handle cell shape: " + str(cell_shape)
+            error("Cannot handle cell shape: " + str(cell_shape))
 
         # Compute the incident vertices for each entity
         sub_simplices = []

@@ -13,7 +13,7 @@ __license__  = "GNU GPL version 3 or any later version"
 from FIAT.shapes import LINE
 
 # FFC common modules
-from ffc.common.log import debug
+from ffc.common.log import debug, error
 
 # FFC fem modules
 from ffc.fem.finiteelement import *
@@ -150,8 +150,7 @@ def __generate_evaluate_dof(element, format):
     # it matches the dimension of the function
     value_dim = pick_first([dof.value_dim() for dof in dofs])
     if value_dim != num_values:
-        raise RuntimeError, "Directional component does not match vector \
-                             dimension"
+        error("Directional component does not match vector dimension")
 
     # Initialize the points, weights and directions for the dofs:
     code += [comment("The reference points, direction and weights:")]
@@ -338,7 +337,7 @@ def __covariant_piola(dim, offset=""):
 def __generate_if_block(ifs, cases, default = ""):
     "Generate if block from given ifs and cases"
     if len(ifs) != len(cases):
-        raise RuntimeError, "Mismatch of dimensions ifs and cases"  
+        error("Mismatch of dimensions ifs and cases")
 
     # Special case: no cases
     if len(ifs) == 0:
@@ -466,7 +465,7 @@ def __generate_interpolate_vertex_values(element, format):
 
             # Check that dimension matches for Piola transform
             if not sub_element.value_dimension(0) == sub_element.cell_dimension():
-                raise RuntimeError, "Vector dimension of basis function does not match for Piola transform."
+                error("Vector dimension of basis function does not match for Piola transform.")
 
             # Get entities for the dofs
             dof_entities = DofMap(sub_element).dof_entities()
@@ -508,7 +507,7 @@ def __generate_interpolate_vertex_values(element, format):
                     code += [(name, value)]
 
         else:
-            raise RuntimeError, "Unknown mapping: " + str(mapping)
+            error("Unknown mapping: " + str(mapping))
 
         offset_dof_values    += sub_element.space_dimension()
         offset_vertex_values += sub_element.value_dimension(0)

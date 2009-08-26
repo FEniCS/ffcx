@@ -14,6 +14,9 @@ from FIAT.shapes import *
 
 from numpy import array
 
+# FFC common modules
+from ffc.common.log import error
+
 def reorder_points(points, shape, facet):
     """Reorder points on given reference shape for given facet."""
 
@@ -22,7 +25,7 @@ def reorder_points(points, shape, facet):
     elif shape == TETRAHEDRON:
         return __reorder_face(points, facet)
     else:
-        raise RuntimeError, "Unable to reorder quadrature points. Unknown shape: " + str(shape)
+        error("Unable to reorder quadrature points. Unknown shape: " + str(shape))
 
 def __reorder_edge(points, facet):
     """Reorder points on edge of (FIAT) reference triangle."""
@@ -44,7 +47,7 @@ def __reorder_edge(points, facet):
         p0 = -1.0
         p1 =  1.0
     else:
-        raise RuntimeError, "Illegal facet for reordering of points on facet."
+        error("Illegal facet for reordering of points on facet.")
 
     new_points = [(Phi0(x)*p0 + Phi1(x)*p1, ) for x in points]
 
@@ -80,7 +83,7 @@ def __reorder_face(points, facet):
         p1 = (1.0, -1.0)
         p2 = (-1.0, 1.0)
     else:
-        raise RuntimeError, "Illegal facet for reordering of points on facet."
+        error("Illegal facet for reordering of points on facet.")
 
     p0 = array(p0)
     p1 = array(p1)

@@ -5,6 +5,9 @@ __date__ = "2008-04-24 -- 2009-03-18"
 __copyright__ = "Copyright (C) 2008-2009 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
+# FFC common modules
+from ffc.common.log import error
+
 def split_expression(expression, format, operator, allow_split = False):
     """Split the expression at the given operator, return list.
     Do not split () or [] unless told to split (). This is to enable easy count
@@ -194,7 +197,7 @@ def is_constant(variable, format, constants = [], from_is_constant = False):
 
     if not variable.count(l) == variable.count(r):
         print "variable: ", variable
-        raise RuntimeError, "Something wrong with variable"
+        error("Something wrong with variable")
 
     # Be sure that we don't have a compound
     variable = expand_operations(variable, format)
@@ -227,7 +230,7 @@ def is_constant(variable, format, constants = [], from_is_constant = False):
                 # Check if access is OK ('[' is before ']')
                 if not v.index(l) < v.index(r):
                     print "variable: ", v
-                    raise RuntimeError, "Something is wrong with the array access"
+                    error("Something is wrong with the array access")
 
                 # Auxiliary variables
                 index = ""; left = 0; inside = False; indices = []
@@ -309,7 +312,7 @@ def expand_operations(expression, format):
 
     # Check that we have the same number of left/right parenthesis in expression
     if not expression.count(l) == expression.count(r):
-        raise RuntimeError, "Number of left/right parenthesis do not match"
+        error("Number of left/right parenthesis do not match")
 
     # If we don't have any parenthesis, group variables and return
     if expression.count(l) == 0:
