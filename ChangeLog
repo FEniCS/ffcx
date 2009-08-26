@@ -1,9 +1,11 @@
+ - Support for restriction of finite elements to only consider facet dofs
  - Use quadrature_order from metadata when integrating terms using tensor representation
  - Use loop to reset the entries of the local element tensor
  - Added new symbolic classes for quadrature optimisation (speed up compilation)
  - Added demos: Biharmonic.ufl, div(grad(v)) term;
                 ReactionDiffusion.ufl, tuple notation;
-                MetaData.ufl, example on how to attach metadata to the measure
+                MetaData.ufl, how to attach metadata to the measure;
+                ElementRestriction.ufl, restriction of elements to facets
  - Tabulate the coordinates of the integration points in the tabulate_tensor() function
  - Change command line option '-f split_implementation' -> '-f split'
  - Renaming of files and restructuring of the compiler directory

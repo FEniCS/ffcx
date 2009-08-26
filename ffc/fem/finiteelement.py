@@ -138,7 +138,7 @@ class FiniteElement(FiniteElementBase):
     def signature(self):
         "Return a string identifying the finite element"
         if self.domain():
-            return "FiniteElement('%s', '%s', %d, %s)" % \
+            return "FiniteElement('%s', '%s', %d)|_{%s}" % \
                    (self.__family, shape_to_string[self.cell_shape()], self.degree(), str(self.domain()))
         else:
             return "FiniteElement('%s', '%s', %d)" % \

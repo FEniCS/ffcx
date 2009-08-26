@@ -1,0 +1,23 @@
+# Copyright (C) 2009 Kristian B. Oelgaard (k.b.oelgaard@tudelft.nl)
+# Licensed under the GNU GPL version 3 or any later version
+#
+# Restriction of a finite element.
+# The below syntax show how one can restrict a higher order Lagrange element
+# to only take into account those DOFs that live on the facets.
+#
+# Compile this form with FFC: ffc ElementRestriction.ufl
+
+# This element will have 3 DOFs living on the interior
+CG = FiniteElement("Lagrange", triangle, 4)
+
+# One can use either the strings "facet" or "interval", or the built-ins
+# 'facet' or 'interval' to restrict the element to only contain the facet dofs
+# elem_r will thus only have 12 DOFs
+elem_r = CG["facet"]
+
+# A mixed element where only the second element is restricted
+elem_m = CG + elem_r
+
+# Restricting a mixed element implies restriction of all sub-elements
+element = elem_m[interval]
+
