@@ -10,8 +10,6 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Anders Logg 2007
 
 # FFC common modules
-from ffc.common.constants import *
-#from ffc.common.utils import *
 from ffc.common.log import error
 
 # FFC fem modules

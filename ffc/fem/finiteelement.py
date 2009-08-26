@@ -121,103 +121,39 @@ class FiniteElement(FiniteElementBase):
         # Save the domain
         self.__domain = domain
 
-    def family(self):
-        "Return a string indentifying the finite element family"
-        return self.__family
+    def __add__(self, other):
+        "Create mixed element"
+        return mixedelement.MixedElement([self, other])
 
-    def domain(self):
-        "Return the domain to which the element is restricted"
-        return self.__domain
+    def __repr__(self):
+        "Pretty print"
+        return self.signature()
 
-    def signature(self):
-        "Return a string identifying the finite element"
-        if self.domain():
-            return "FiniteElement('%s', '%s', %d)|_{%s}" % \
-                   (self.__family, shape_to_string[self.cell_shape()], self.degree(), str(self.domain()))
-        else:
-            return "FiniteElement('%s', '%s', %d)" % \
-                   (self.__family, shape_to_string[self.cell_shape()], self.degree())
-
-    def cell_shape(self):
-        "Return the cell shape"
-        return self.__fiat_element.domain_shape()
-
-    def space_dimension(self):
-        "Return the dimension of the finite element function space"
-        if self.domain():
-            return len(self.__restricted_dofs)
-        return len(self.basis())
-
-    def geometric_dimension(self):
-        "Return the geometric dimension of the finite element domain"
-        return shape_to_dim[self.cell_shape()]
-
-    def value_rank(self):
-        "Return the rank of the value space"
-        return self.basis().rank()
-
-    def value_dimension(self, i):
-        "Return the dimension of the value space for axis i"
-        if self.value_rank() == 0:
-            return 1
-        else:
-            # return self.basis().tensor_dim()[i]
-            # meg: Need tensor_dim in FIAT.transformedspace
-            return self.basis().fspace.tensor_dim()[i]
-
-    def num_sub_elements(self):
-        "Return the number of sub elements"
-        return 1
-
-    def sub_element(self, i):
-        "Return sub element i"
-        return self
-
-    def degree(self):
-        "Return degree of polynomial basis"
-        return self.basis().degree()
-
-    def mapping(self):
-        "Return the type of mapping associated with the element."
-        return self.__mapping
-
-    def component_element(self, component):
-        "Return sub element and offset for given component."
-        return (self, 0)
-
-    # FIXME: KBO: This function is only used in:
-    # compiler/finiteelement.py __map_function_values(), there must be another
-    # way of computing this such that we can remove this function.
-    def space_mapping(self, i):
-        """Return the type of mapping associated with the i'th basis
-        function of the element"""
-        return self.__mapping
-
-    # FIXME: This function is only used by space_mapping
-    def space_offset(self, i):
-        """Given a basis function number i, return the associated
-        subelement and offset"""
-        return (self, 0)
-    
-    def extract_elements(self):
-        "Extract list of all recursively nested elements."
-        return [self]
+    def basis(self):
+        "Return basis of finite element space"
+        # Should be safe w.r.t. restrictions, is only used in this module and
+        # evaluate_basis and evaluate_basis_derivatives where it is not abused.
+        return self.__transformed_space
 
     def cell_dimension(self):
         "Return dimension of shape"
         return shape_to_dim[self.cell_shape()]
 
-    def facet_shape(self):
-        "Return shape of facet"
-        return shape_to_facet[self.cell_shape()]
+    def cell_shape(self):
+        "Return the cell shape"
+        return self.__fiat_element.domain_shape()
 
-    def num_facets(self):
-        "Return number of facets for shape of element"
-        return shape_to_num_facets[self.cell_shape()]
+    def component_element(self, component):
+        "Return sub element and offset for given component."
+        return (self, 0)
 
-    def entity_dofs(self):
-        "Return the mapping from entities to dofs"
-        return self.__entity_dofs
+    def degree(self):
+        "Return degree of polynomial basis"
+        return self.basis().degree()
+
+    def domain(self):
+        "Return the domain to which the element is restricted"
+        return self.__domain
 
     def dual_basis(self):
         "Return the representation dual basis of finite element space"
@@ -233,11 +169,69 @@ class FiniteElement(FiniteElementBase):
             return new_dofs
         return self.__dual_basis
 
-    def basis(self):
-        "Return basis of finite element space"
-        # Should be safe w.r.t. restrictions, is only used in this module and
-        # evaluate_basis and evaluate_basis_derivatives where it is not abused.
-        return self.__transformed_space
+    def entity_dofs(self):
+        "Return the mapping from entities to dofs"
+        return self.__entity_dofs
+
+    def extract_elements(self):
+        "Extract list of all recursively nested elements."
+        return [self]
+
+    def facet_shape(self):
+        "Return shape of facet"
+        return shape_to_facet[self.cell_shape()]
+
+    def family(self):
+        "Return a string indentifying the finite element family"
+        return self.__family
+
+    def geometric_dimension(self):
+        "Return the geometric dimension of the finite element domain"
+        return shape_to_dim[self.cell_shape()]
+
+    def get_coeffs(self):
+        "Return the expansion coefficients from FIAT"
+        # TODO: Might be able to propagate this to FIAT?
+        if self.domain():
+            # Get coefficients and create new table with only the values
+            # associated with the restricted dofs.
+            coeffs = self.basis().get_coeffs()
+            new_coeffs = []
+            for dof in self.__restricted_dofs:
+                new_coeffs.append(coeffs[dof])
+            return numpy.array(new_coeffs)
+        return self.basis().get_coeffs()
+
+    def mapping(self):
+        "Return the type of mapping associated with the element."
+        return self.__mapping
+
+    def num_facets(self):
+        "Return number of facets for shape of element"
+        return shape_to_num_facets[self.cell_shape()]
+
+    def num_sub_elements(self):
+        "Return the number of sub elements"
+        return 1
+
+    def signature(self):
+        "Return a string identifying the finite element"
+        if self.domain():
+            return "FiniteElement('%s', '%s', %d)|_{%s}" % \
+                   (self.__family, shape_to_string[self.cell_shape()], self.degree(), str(self.domain()))
+        else:
+            return "FiniteElement('%s', '%s', %d)" % \
+                   (self.__family, shape_to_string[self.cell_shape()], self.degree())
+
+    def space_dimension(self):
+        "Return the dimension of the finite element function space"
+        if self.domain():
+            return len(self.__restricted_dofs)
+        return len(self.basis())
+
+    def sub_element(self, i):
+        "Return sub element i"
+        return self
 
     def tabulate(self, order, points):
         """Return tabulated values of derivatives up to given order of
@@ -258,22 +252,32 @@ class FiniteElement(FiniteElementBase):
             return new_basis
         return self.basis().tabulate_jet(order, points)
 
-    def get_coeffs(self):
-        "Return the expansion coefficients from FIAT"
-        # TODO: Might be able to propagate this to FIAT?
-        if self.domain():
-            # Get coefficients and create new table with only the values
-            # associated with the restricted dofs.
-            coeffs = self.basis().get_coeffs()
-            new_coeffs = []
-            for dof in self.__restricted_dofs:
-                new_coeffs.append(coeffs[dof])
-            return numpy.array(new_coeffs)
-        return self.basis().get_coeffs()
+    def value_dimension(self, i):
+        "Return the dimension of the value space for axis i"
+        if self.value_rank() == 0:
+            return 1
+        else:
+            # return self.basis().tensor_dim()[i]
+            # meg: Need tensor_dim in FIAT.transformedspace
+            return self.basis().fspace.tensor_dim()[i]
 
-    def __add__(self, other):
-        "Create mixed element"
-        return mixedelement.MixedElement([self, other])
+    def value_rank(self):
+        "Return the rank of the value space"
+        return self.basis().rank()
+
+    # FIXME: KBO: This function is only used in:
+    # compiler/finiteelement.py __map_function_values(), there must be another
+    # way of computing this such that we can remove this function.
+    def space_mapping(self, i):
+        """Return the type of mapping associated with the i'th basis
+        function of the element"""
+        return self.__mapping
+
+    # FIXME: This function is only used by space_mapping
+    def space_offset(self, i):
+        """Given a basis function number i, return the associated
+        subelement and offset"""
+        return (self, 0)
 
     def __choose_element(self, family, shape, degree):
         "Choose FIAT finite element from string"
@@ -328,20 +332,6 @@ class FiniteElement(FiniteElementBase):
         # Unknown element
         error("Unknown finite element: " + str(family))
 
-    def __transformed_function_space(self):
-        """ Transform the function space onto the chosen reference
-        cell according to the given mapping of the finite element."""
-        function_space = self.__fiat_element.function_space()
-        vertices = referencecell.get_vertex_coordinates(self.cell_dimension())
-        if self.__mapping == AFFINE:
-            return AffineTransformedFunctionSpace(function_space, vertices)
-        elif self.__mapping == CONTRAVARIANT_PIOLA:
-            return PiolaTransformedFunctionSpace(function_space, vertices, "div")
-        elif self.__mapping == COVARIANT_PIOLA:
-            return PiolaTransformedFunctionSpace(function_space, vertices, "curl")
-        else:
-            error(family, "Unknown transform")
-
     def __create_dof_representation(self, list_of_fiat_dofs):
         """ Take the FIAT dof representation and convert it to the ffc
         dof representation including transforming the points from one
@@ -387,6 +377,17 @@ class FiniteElement(FiniteElementBase):
 
         return dofs
 
-    def __repr__(self):
-        "Pretty print"
-        return self.signature()
+    def __transformed_function_space(self):
+        """ Transform the function space onto the chosen reference
+        cell according to the given mapping of the finite element."""
+        function_space = self.__fiat_element.function_space()
+        vertices = referencecell.get_vertex_coordinates(self.cell_dimension())
+        if self.__mapping == AFFINE:
+            return AffineTransformedFunctionSpace(function_space, vertices)
+        elif self.__mapping == CONTRAVARIANT_PIOLA:
+            return PiolaTransformedFunctionSpace(function_space, vertices, "div")
+        elif self.__mapping == COVARIANT_PIOLA:
+            return PiolaTransformedFunctionSpace(function_space, vertices, "curl")
+        else:
+            error(family, "Unknown transform")
+

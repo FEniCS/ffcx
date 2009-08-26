@@ -8,7 +8,6 @@ __copyright__ = "Copyright (C) 2007-2009 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
 # FFC common modules
-from ffc.common.constants import *
 from ffc.common.log import error
 
 # FFC fem modules

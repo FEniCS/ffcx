@@ -69,11 +69,43 @@ class QuadratureElement(FiniteElement):
         # elements.
         # Initialise a dummy dual_basis.
         # Used in dofmap.py", line 158, in __compute_dof_coordinates
-        self.__dual_basis = self.__create_dual_basis(points)
+        self.__dual_basis = [DofRepresentation("Quadrature", [pt]) for pt in points]
+
+    def __repr__(self):
+        "Pretty print"
+        return self.signature()
+
+    def cell_shape(self):
+        "Return the cell shape"
+        return self.__cell_shape
+
+    def degree(self):
+        "Return degree of polynomial basis"
+        return self.__degree
+
+    def domain(self):
+        "Return the domain"
+        return self.__domain
+
+    def dual_basis(self):
+        "Return dummy dual basis of finite element space"
+        return self.__dual_basis
+
+    def entity_dofs(self):
+        "Return the mapping from entities to dofs"
+        return self.__entity_dofs
 
     def family(self):
         "Return a string indentifying the finite element family"
         return self.__family
+
+    def mapping(self):
+        "Return the type of mapping associated with the element."
+        return self.__mapping
+
+    def num_axis_points(self):
+        "Return the number of quadrature points per axis as specified by user"
+        return self.__num_axis_points
 
     def signature(self):
         "Return a string identifying the QuadratureElement"
@@ -84,50 +116,9 @@ class QuadratureElement(FiniteElement):
         return "%s element with %d quadrature point(s)%s on a %s" % \
                (self.__family, self.__num_quad_points, s, shape_to_string[self.__cell_shape])
 
-    def cell_shape(self):
-        "Return the cell shape"
-        return self.__cell_shape
-
     def space_dimension(self):
         "Return the total number of quadrature points"
         return self.__num_quad_points
-
-    def value_rank(self):
-        "Return the rank of the value space"
-        return self.__rank
-
-    def degree(self):
-        "Return degree of polynomial basis"
-        return self.__degree
-
-    def domain(self):
-        "Return the domain"
-        return self.__domain
-
-    # FIXME: KBO: This function is only used in:
-    # compiler/finiteelement.py __map_function_values(), there must be another
-    # way of computing this such that we can remove this function.
-    def space_mapping(self, i):
-        """Return the type of mapping associated with the i'th basis
-        function of the element"""
-        return self.__mapping
-
-    def mapping(self):
-        "Return the type of mapping associated with the element."
-        return self.__mapping
-
-    def entity_dofs(self):
-        "Return the mapping from entities to dofs"
-        return self.__entity_dofs
-
-    def dual_basis(self):
-        "Return dummy dual basis of finite element space"
-        return self.__dual_basis
-
-    def __create_dual_basis(self, points):
-        "Create the ffc dual basis representation of the Quadrature Element"
-        return [DofRepresentation("Quadrature", [pt]) for pt in points]
-    
 
     def tabulate(self, order, points):
         """Return the identity matrix of size (num_quad_points, num_quad_points),
@@ -160,12 +151,15 @@ class QuadratureElement(FiniteElement):
         table = [{(0,)*self.__cell_shape: values}]
         return table
 
-    def num_axis_points(self):
-        "Return the number of quadrature points per axis as specified by user"
-        return self.__num_axis_points
+    def value_rank(self):
+        "Return the rank of the value space"
+        return self.__rank
 
-    def __repr__(self):
-        "Pretty print"
-        return self.signature()
-
+    # FIXME: KBO: This function is only used in:
+    # compiler/finiteelement.py __map_function_values(), there must be another
+    # way of computing this such that we can remove this function.
+    def space_mapping(self, i):
+        """Return the type of mapping associated with the i'th basis
+        function of the element"""
+        return self.__mapping
 
