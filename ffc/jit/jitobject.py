@@ -9,8 +9,8 @@ from instant import get_swig_version
 # FFC common modules
 from ffc.common.constants import FFC_VERSION
 
-# UFC modules
-from ufl.algorithms import FormData
+# UFL modules
+import ufl
 
 class JITObject:
     """This class is a wrapper for a compiled object in the context of
@@ -21,9 +21,11 @@ class JITObject:
 
     def __init__(self, form, options):
         "Create JITObject for given form and options"
+        assert(isinstance(form,ufl.Form))
+        
+        # Pick out the renumbered form
         self.form = form
         self.options = options
-        self._form_data = None
         self._hash = None
         self._signature = None
 
@@ -31,15 +33,14 @@ class JITObject:
         "Return unique integer for form + options"
 
         # Check if we have computed the hash before
-        if not self._hash is None:
-            return self._hash
+        if self._hash is None:
+            # Compute hash
+            string = str(id(self.form)) + str(self.options)
+            hexdigest = sha1(string).hexdigest()
+            self._hash = int(hexdigest, 16)
+            
+        return self._hash
 
-        # Compute hash
-        string = str(id(self.form)) + str(self.options)
-        hexdigest = sha1(string).hexdigest()
-        number = int(hexdigest, 16)
-        
-        return number
 
     def __eq__(self, other):
         "Check for equality"
@@ -52,16 +53,14 @@ class JITObject:
         if not self._signature is None:
             return self._signature
         
-        # Compute form data and element signature
-        self.form_data = FormData(self.form)
-        element_signature = ";".join([element.__repr__() for element in self.form_data.elements])
+        # Compute form signature based on form stored in formdata
+        form_signature = repr(self.form.form_data().form)
 
-        # Build signature including form, elements, options, FFC version and SWIG version
-        form_signature    = str(self.form)
+        # Build signature including form, options, FFC version and SWIG version
         options_signature = str(self.options)
         ffc_signature     = str(FFC_VERSION)
         swig_signature    = str(get_swig_version())
-        signatures = [form_signature, element_signature, options_signature, ffc_signature, swig_signature]
+        signatures = [form_signature,options_signature, ffc_signature, swig_signature]
         string = ";".join(signatures)
         self._signature = "form_" + sha1(string).hexdigest()
 
