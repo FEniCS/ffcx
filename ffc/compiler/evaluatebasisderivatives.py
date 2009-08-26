@@ -9,6 +9,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # FFC common modules
 from ffc.common.constants import *
+from ffc.common.log import error
 
 # FFC fem modules
 from ffc.fem.finiteelement import *
@@ -143,7 +144,7 @@ def generate_transform(element, Indent, format):
            "n": format["argument derivative order"], "combinations": format["derivative combinations"],\
            "Jinv":format["transform Jinv"]}]
     else:
-        raise RuntimeError, "Cannot generate transform for shape: %d" %(element.cell_shape())
+        error("Cannot generate transform for shape: %d" %(element.cell_shape()))
 
     return code + [""]
 

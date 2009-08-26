@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"Some simple functions for manIPulating expressions symbolically"
+"Some simple functions for manipulating expressions symbolically"
 
 __author__ = "Kristian B. Oelgaard (k.b.oelgaard@tudelft.nl)"
 __date__ = "2009-07-11 -- 2009-08-08"
@@ -1097,7 +1097,7 @@ class Tests(unittest.TestCase):
 
     def testReduceOperations(self):
 
-        print "\nTesting ReduceOperations"
+#        print "\nTesting ReduceOperations"
 
         # Aux. variables
         f2 = FloatValue(2)

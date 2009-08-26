@@ -1,5 +1,5 @@
 __author__ = "Kristian B. Oelgaard (k.b.oelgaard@tudelft.nl)"
-__date__ = "2007-12-10 -- 2007-01-16"
+__date__ = "2007-12-10 -- 2009-08-26"
 __copyright__ = "Copyright (C) 2007-2008 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
@@ -9,16 +9,31 @@ from dofrepresentation import *
 from quadrature import *
 from mapping import *
 from finiteelement import AFFINE, CONTRAVARIANT_PIOLA, COVARIANT_PIOLA
+from ufl.classes import Cell, Measure
+
+# FFC common modules
+from ffc.common.log import error
+
+# UFL modules
+from ufl.classes import Cell, Measure
 
 class QuadratureElement(FiniteElement):
     """Write description of QuadratureElement"""
 
-    def __init__(self, shape, num_points_per_axis):
+    def __init__(self, shape, degree, domain=None):
         "Create QuadratureElement"
+
+        # Handle restrictions
+        if domain and isinstance(domain, Cell):
+            error("Restriction of QuadratureElement to Cell is not supported because all dofs are internal to the element.")
+        elif domain and isinstance(domain, Measure):
+            error("Restriction of QuadratureElement to Measure has not been implemented yet.")
 
         # Save incoming arguments
         self.__cell_shape = string_to_shape[shape]
-        self.__num_axis_points = num_points_per_axis
+        self.__domain = domain
+        # Compute number of points per axis from the degree of the element
+        self.__num_axis_points = (degree + 2) / 2
 
         # Save element family
         self.__family = "Quadrature"
@@ -34,7 +49,7 @@ class QuadratureElement(FiniteElement):
         self._mapping = AFFINE
 
         # Create quadrature (only interested in points)
-        points, weights = make_quadrature(self.__cell_shape, num_points_per_axis)
+        points, weights = make_quadrature(self.__cell_shape, self.__num_axis_points)
 
         # Save number of quadrature points
         self.__num_quad_points = len(points)
@@ -56,8 +71,6 @@ class QuadratureElement(FiniteElement):
         # Initialise a dummy dual_basis.
         # Used in dofmap.py", line 158, in __compute_dof_coordinates
         self.__dual_basis = self.__create_dual_basis(points)
-
-        FiniteElementBase.__init__(self)
 
     def family(self):
         "Return a string indentifying the finite element family"
@@ -102,6 +115,10 @@ class QuadratureElement(FiniteElement):
     def degree(self):
         "Return degree of polynomial basis"
         return self.__degree
+
+    def domain(self):
+        "Return the domain"
+        return self.__domain
 
     def value_mapping(self, component):
         """Return the type of mapping associated with the i'th
@@ -175,7 +192,7 @@ class QuadratureElement(FiniteElement):
         # Check if (the number of ) incoming points are equal to
         # quadrature points... 
         if not len(points) == self.__num_quad_points:
-            raise RuntimeError("Points must be equal to coordinates of quadrature points")
+            raise error("Points must be equal to coordinates of quadrature points")
             
         # Return the identity matrix of size __num_quad_points in a
         # suitable format for monomialintegration.
