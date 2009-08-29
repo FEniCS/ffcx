@@ -22,7 +22,7 @@ class JITObject:
     def __init__(self, form, options):
         "Create JITObject for given form and options"
         assert(isinstance(form,ufl.Form))
-        
+
         # Pick out the renumbered form
         self.form = form
         self.options = options
@@ -35,33 +35,42 @@ class JITObject:
         # Check if we have computed the hash before
         if self._hash is None:
             # Compute hash
-            string = str(id(self.form)) + str(self.options)
+            string = str(id(self.form)) + _options_signature(self.options)
             hexdigest = sha1(string).hexdigest()
             self._hash = int(hexdigest, 16)
-            
+
         return self._hash
 
 
     def __eq__(self, other):
         "Check for equality"
         return hash(self) == hash(other)
-    
+
     def signature(self):
         "Return unique string for form expression + options"
-        
+
         # Check if we have computed the signature before
         if not self._signature is None:
             return self._signature
-        
+
         # Compute form signature based on form stored in formdata
         form_signature = repr(self.form.form_data().form)
 
         # Build signature including form, options, FFC version and SWIG version
-        options_signature = str(self.options)
+        options_signature = _options_signature(self.options)
         ffc_signature     = str(FFC_VERSION)
         swig_signature    = str(get_swig_version())
-        signatures = [form_signature,options_signature, ffc_signature, swig_signature]
+        signatures = [form_signature, options_signature, ffc_signature, swig_signature]
         string = ";".join(signatures)
         self._signature = "form_" + sha1(string).hexdigest()
 
         return self._signature
+
+def _options_signature(options):
+    "Return options signature (some options must be ignored)."
+    options = options.copy()
+    ignores = ["log_prefix"]
+    for ignore in ignores:
+        if ignore in options:
+            del options[ignore]
+    return str(options)
