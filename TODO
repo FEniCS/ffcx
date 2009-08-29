@@ -24,6 +24,8 @@ file, it is convenient to install org-mode in Emacs.
   - Re-implement for tensor contraction (worked before)
   - Write about optimizations in manual
   - Add to man page
+  - Fix output for compiler stage 3. This only applies for tensor
+    representation
 
 * BLAS mode
   - Reimplement level 2 BLAS (worked before)
