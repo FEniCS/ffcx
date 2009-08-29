@@ -2,7 +2,7 @@
 It uses Instant to wrap the generated code into a Python module."""
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-07-20 -- 2009-08-17"
+__date__ = "2007-07-20 -- 2009-08-29"
 __copyright__ = "Copyright (C) 2007-2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
@@ -68,10 +68,7 @@ def jit_form(form, options=None):
 
     # Set log level
     set_level(options["log_level"])
-
-    # Set prefix for log system
-    #if options["num_processes"] > 1:
-    #    set_prefix("Process %d: " % options["process_number"])
+    set_prefix(options["log_prefix"])
 
     # Wrap input
     jit_object = JITObject(form, options)
