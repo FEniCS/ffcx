@@ -17,7 +17,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Python modules
 import sys
 import getopt
-import os.path
+from os import curdir, path, getcwd
 
 # UFL modules
 from ufl.log import UFLException
@@ -50,6 +50,11 @@ the FFC man page which may invoked by 'man ffc' (if installed).
 
 def main(argv):
     "Main function."
+
+    # Append current directory to path, such that the *_debug module created by
+    # ufl_load_file can be found when FFC  compiles a form which is not in the
+    # PYHTONPATH
+    sys.path.append(getcwd())
 
     # Get options and set log level (such that info_usage() will work)
     options = FFC_OPTIONS.copy()

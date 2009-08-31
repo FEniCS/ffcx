@@ -12,21 +12,22 @@ import getopt
 from glob import glob
 from os import chdir, path, pardir, system
 import time
+from commands import getstatusoutput
 
 def main(argv):
     "Main function, handle arguments and run tests accordingly"
 
     # Get command-line arguments
     try:
-        opts, args = getopt.getopt(argv, "hr:T:", \
-        ["help", "representation=", "type="])
+        opts, args = getopt.getopt(argv, "hr:", \
+        ["help", "representation="])
     except getopt.GetoptError:
         usage()
         return 2
 
     # Run tests for both representations and form types as default
     representations = ["tensor", "quadrature"]
-    form_types = ["form", "ufl"]
+    form_types = ["ufl"]
 
     # Get options
     for opt, arg in opts:
@@ -36,12 +37,6 @@ def main(argv):
         elif opt in  ("-r", "--representation"):
             if arg in representations:
                 representations = [arg]
-            else:
-                usage()
-                return 2
-        elif opt in  ("-T", "--type"):
-            if arg in form_types:
-                form_types = [arg]
             else:
                 usage()
                 return 2
@@ -118,7 +113,8 @@ def compile_forms(form_type, representation, file_name):
 
     form_file = file_name + "." + form_type
     start = time.time()
-    if system("python %s %s -r %s %s" % (path.join(pardir, "scripts", "ffc"), options, representation, form_file)) == 0:
+    (error, output) = getstatusoutput("python -s %s %s -r %s %s" % (path.join(pardir, "scripts", "ffc"), options, representation, form_file))
+    if error == 0:
         compile_time =  time.time() - start
         file_size = path.getsize(file_name + ".h")/1024.0
 
@@ -132,7 +128,7 @@ def print_summary(summary, form_types, representations):
     size_head = " size [KB] "
     time_format = "%.5f"
     size_format = "%.3f"
-    failed = "failed"
+    failed = "---"
 
     # Text info
     max_name = max([len(f) for f in summary] + [len("Form files"), len("Best performance:")]) + 4
@@ -242,32 +238,6 @@ def usage():
 
   -h, --help              display this info
 
-
-  -n, --new_references    generate new reference tensors for all forms in
-                          [FILES] using tensor representation. E.g.,
-
-                          ./test.py -n Poisson.form
-
-                           - will generate new references for ../../demo/Poisson.form
-                             and put the result in ./references
-
-                          IMPORTANT! This option should only be used in one of
-                          the following cases:
-
-                          0. If a new form file was added to the ../../demo
-                             directory.
-
-                          1. If a bug was discovered, and the output to
-                             tabulate_tensor() has changed.
-
-                          2. If the benchmark has changed for some reason,
-                             like the element which is being integrated.
-
-                          3. If a form file in the ../../demo directory has changed.
-
-                          4. If there's another good reason, put it here...
-
-
   -r, --representation    specify the representation ('tensor' or 'quadrature') for
                           which to run the tests. E.g.,
 
@@ -275,28 +245,12 @@ def usage():
 
                            - will test ALL forms in ../../demo using quadrature representation
 
-                          ./test.py -r tensor Poisson.form
+                          ./test.py -r tensor Poisson.ufl
 
-                           - will test ../../demo/Poisson.form using tensor representation
+                           - will test ../../demo/Poisson.ufl using tensor representation
 
                           If no representation is specified the tests will be
                           run for both representations.
-
-
-  -t, --tolerance         specify the tolerance the should be used when comparing
-                          tensors. E.g.,
-
-                          ./test.py -t 1e-10
-
-                           - will use a tolerance of 1e-10 when comparing
-                             the norm between tensor being computed and those
-                             in the ./references directory
-
-  -T, --type              specify which type of forms to test. Can be either
-                          the 'native' FFC i.e. 'form' (default), UFL i.e.
-                          'ufl' or both types i.e. 'all'. E.g.,
-
-                          ./test.py -T ufl
 """
     return
 
