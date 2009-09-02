@@ -38,6 +38,7 @@ from finiteelementbase import *
 
 # UFL modules
 from ufl.classes import Cell, Measure
+from ufl.objects import dc
 
 # Dictionaries of basic element data
 shape_to_string = {VERTEX: "vertex", LINE: "interval", TRIANGLE: "triangle", TETRAHEDRON: "tetrahedron"}
@@ -116,7 +117,11 @@ class FiniteElement(FiniteElementBase):
                         self.__restricted_dofs.extend(v)
 
         elif domain and isinstance(domain, Measure):
-            error("Restriction of FiniteElement to Measure has not been implemented yet.")
+            # FIXME: Support for restriction to cracks (dc) is only experimental
+            if domain == dc:
+                warning("Restriciton to Measure dc is only experimental.")
+            else:
+                error("Restriction of FiniteElement to Measure has not been implemented yet.")
 
         # Save the domain
         self.__domain = domain
@@ -162,7 +167,8 @@ class FiniteElement(FiniteElementBase):
         # Pick out those dofs that are present after restriction.
         # Assuming same numbering as in entity_dofs (as far as I can tell from
         # FIAT, this should be safe fiat/lagrange.py LagrangeDual())
-        if self.domain():
+        # FIXME: Experimental support for dc
+        if self.domain() and self.domain() != dc:
             new_dofs = []
             for d in self.__restricted_dofs:
                 new_dofs.append(self.__dual_basis[d])
@@ -192,7 +198,8 @@ class FiniteElement(FiniteElementBase):
     def get_coeffs(self):
         "Return the expansion coefficients from FIAT"
         # TODO: Might be able to propagate this to FIAT?
-        if self.domain():
+        # FIXME: Experimental support for dc
+        if self.domain() and self.domain() != dc:
             # Get coefficients and create new table with only the values
             # associated with the restricted dofs.
             coeffs = self.basis().get_coeffs()
@@ -225,7 +232,8 @@ class FiniteElement(FiniteElementBase):
 
     def space_dimension(self):
         "Return the dimension of the finite element function space"
-        if self.domain():
+        # FIXME: Experimental support for dc
+        if self.domain() and self.domain() != dc:
             return len(self.__restricted_dofs)
         return len(self.basis())
 
@@ -237,7 +245,8 @@ class FiniteElement(FiniteElementBase):
         """Return tabulated values of derivatives up to given order of
         basis functions at given points."""
         # TODO: Might be able to propagate this to FIAT?
-        if self.domain():
+        # FIXME: Experimental support for dc
+        if self.domain() and self.domain() != dc:
             # Get basis values and create new table where only the values
             # associated with the restricted dofs are present
             basis_values = self.basis().tabulate_jet(order, points)
