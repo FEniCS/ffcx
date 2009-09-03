@@ -51,10 +51,12 @@ class QuadratureRepresentation:
         # Initialise tables.
         self.psi_tables = {Measure.CELL:{},
                            Measure.EXTERIOR_FACET: {},
-                           Measure.INTERIOR_FACET: {}}
+                           Measure.INTERIOR_FACET: {},
+                           Measure.SURFACE: {}}
         self.quadrature_weights = {Measure.CELL:{},
                            Measure.EXTERIOR_FACET: {},
-                           Measure.INTERIOR_FACET: {}}
+                           Measure.INTERIOR_FACET: {},
+                           Measure.SURFACE: {}}
 
         debug("\nQR, init(), form:\n" + str(form_data.form))
 
