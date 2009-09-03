@@ -151,7 +151,7 @@ def optimise_code(expr, ip_consts, geo_consts, trans_set):
 #        debug("\nbasis\n" + str(basis))
 #        debug("ip_epxr\n" + str(ip_expr))
 #        print "\nbasis\n" + str(basis)
-#        print "ip_epxr\n" + str(ip_expr)
+#        print "ip_epxr\n" + repr(ip_expr)
 
         # If we have no basis (like functionals) create a const.
         if not basis:

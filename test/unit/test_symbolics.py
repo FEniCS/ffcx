@@ -1032,6 +1032,7 @@ class Tests(unittest.TestCase):
         B5 = Product([f5, B0])
 
         I0 = Symbol("I0", IP)
+        I1 = Symbol("I1", IP)
         I5 = Product([f5, I0])
 
         G0 = Symbol("G0", GEO)
@@ -1054,6 +1055,7 @@ class Tests(unittest.TestCase):
         F1 = Fraction(p1,I5).expand()
         F2 = Fraction(G3,S2).expand()
         F3 = Fraction(G3,S3).expand()
+        F4 = Fraction(I1, Sum([I1, I0]))
 
         r0 = B0.reduce_vartype(BASIS)
         r1 = B0.reduce_vartype(CONST)
@@ -1074,6 +1076,7 @@ class Tests(unittest.TestCase):
         rf2 = F0.reduce_vartype(IP)
         rf3 = F2.reduce_vartype(BASIS)
         rf4 = F3.reduce_vartype(BASIS)
+        rf5 = F4.reduce_vartype(IP)
 
 #        print
 #        print "%s, red(BASIS): ('%s', '%s')" %(B0, r0[0], r0[1])
@@ -1090,11 +1093,12 @@ class Tests(unittest.TestCase):
 #        print "%s, red(BASIS): '%s', '%s'" %(S4, rs3[0], rs3[1])
 #        print "%s, red(BASIS): '%s'" %(S4, rs4[0])
 
-#        print "\n%s, red(BASIS): ('%s', '%s')" %(F0, rf0[0], rf0[1])
-#        print "%s, red(BASIS): ('%s', '%s')" %(F1, rf1[0], rf1[1])
-#        print "%s, red(IP): ('%s', '%s')" %(F0, rf2[0], rf2[1])
-#        print "%s, red(BASIS): ('%s', '%s')" %(F2, rf3[0], rf3[1])
-#        print "%s, red(BASIS): ('%s', '%s')" %(F3, rf4[0], rf4[1])
+#        print "\nrf0: %s, red(BASIS): ('%s', '%s')" %(F0, rf0[0], rf0[1])
+#        print "rf1: %s, red(BASIS): ('%s', '%s')" %(F1, rf1[0], rf1[1])
+#        print "rf2: %s, red(IP): ('%s', '%s')" %(F0, rf2[0], rf2[1])
+#        print "rf3: %s, red(BASIS): ('%s', '%s')" %(F2, rf3[0], rf3[1])
+#        print "rf4: %s, red(BASIS): ('%s', '%s')" %(F3, rf4[0], rf4[1])
+#        print "rf5: %s, red(IP): ('%s', '%s')" %(F4, rf5[0], rf5[1])
 
         self.assertEqual((B0, f1), r0)
         self.assertEqual(((), B0), r1)
@@ -1122,9 +1126,10 @@ class Tests(unittest.TestCase):
         Product([B0, B1]), Fraction(FloatValue(0.2), I0)), rf1)
         self.assertEqual( ( Fraction(f1, I0),
         Product([FloatValue(0.2), B0]) ), rf2)
-        self.assertEqual(((), F2), rf3)
-        self.assertEqual( ( Fraction(f1, B0), Fraction( G3,
-        Sum([I5, f1]))), rf4)
+        self.assertEqual((Fraction(f1, S2), G3), rf3)
+        self.assertEqual( ( Fraction(f1, B0), Fraction( G3, Sum([I5, f1]))), rf4)
+        self.assertEqual(F4, rf5[0])
+        self.assertEqual(FloatValue(1), rf5[1])
 
     def testReduceOperations(self):
 
@@ -2353,6 +2358,64 @@ class Tests(unittest.TestCase):
                         print "\nbr: ", br[1].expand()
                         error("here1")
 
+    def testSingle(self):
+        "Run a single test"
+
+        expr = Product([
+                       Product([
+                                 Symbol('F1', IP),
+                                 Symbol('std::exp(1/(F0 + F1))', IP),
+                                 Fraction(
+                                          Product([
+                                                    FloatValue(-1),
+                                                    Symbol('FE0_C1[ip][j]', BASIS),
+                                                    Fraction(
+                                                             FloatValue(1),
+                                                             Sum([
+                                                                  Product([
+                                                                           Symbol('F0', IP)
+                                                                          ]),
+                                                                  Product([
+                                                                           Symbol('F1', IP)
+                                                                          ])
+                                                                 ])
+                                                             )
+                                                  ]),
+                                          Sum([
+                                               Product([
+                                                        Symbol('F0', IP)
+                                                       ]),
+                                               Product([
+                                                        Symbol('F1', IP)
+                                                       ])
+                                              ])
+                                          )
+                                ]),
+                ])
+
+        print expr
+        # Generate code
+        ip_consts = {}
+        geo_consts = {}
+        trans_set = set()
+
+        opt_code = optimise_code(expr, ip_consts, geo_consts, trans_set)
+        print "\nopt_code: ", opt_code
+        print "\nip_consts: ", ip_consts.keys()[0]
+        print "\ngeo_consts: ", geo_consts
+        print "\ntrans_set: ", trans_set
+
+        expr = Fraction(
+                        Symbol('F1', IP),
+                        Sum([
+                             Symbol('F0', IP),
+                             Symbol('F1', IP)
+                            ])
+                        )
+        print expr
+        print expr.reduce_vartype(IP)[0]
+        print expr.reduce_vartype(IP)[1]
+
 def suite():
 
     suite = unittest.TestSuite()
@@ -2397,4 +2460,7 @@ if __name__ == "__main__":
     # Run all returned tests
     runner = unittest.TextTestRunner()
     runner.run(suite())
+#    runner.run(Tests('testSingle'))
+
+
 

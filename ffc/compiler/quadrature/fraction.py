@@ -226,8 +226,7 @@ class Fraction(Expr):
         part contains the leftover after division by 'found' such that:
         self = found*remain."""
 
-        # Reduce the numerator by the var type (should be safe, since the
-        # expand() should have eliminated all sums in the numerator).
+        # Reduce the numerator by the var type.
         # Handle case where numerator is a sum.
         if self.num._prec == 3:
             num_found, num_remain = self.num.reduce_vartype(var_type)[0]
@@ -255,9 +254,19 @@ class Fraction(Expr):
                 # the one already found, terminate loop since it wouldn't make
                 # sense to reduce the fraction.
                 if denom_found != None and repr(d_found) != repr(denom_found):
-                    # In case we did not find any variables of given type in the numerator
-                    # declare a constant. We always have a remainder.
-                    return (num_found, create_fraction(num_remain, self.denom))
+                    # If the denominator of the entire sum has a type which is
+                    # lower than or equal to the vartype that we are currently
+                    # reducing for, we have to move it outside the expression
+                    # as well.
+                    # TODO: This is quite application specific, but I don't see
+                    # how we can do it differently at the moment.
+                    if self.denom.t <= var_type:
+                        if not num_found:
+                            num_found = create_float(1)
+                        return (create_fraction(num_found, self.denom), num_remain)
+                    else:
+                        # The remainder is always a fraction
+                        return (num_found, create_fraction(num_remain, self.denom))
 
                 # Update denom found and add remainder.
                 denom_found = d_found
