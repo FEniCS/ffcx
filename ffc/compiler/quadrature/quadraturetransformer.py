@@ -9,7 +9,7 @@ __license__  = "GNU GPL version 3 or any later version"
 from numpy import shape
 
 # UFL common.
-from ufl.common import StackDict, product
+from ufl.common import product
 
 # UFL Classes.
 from ufl.classes import MultiIndex, FixedIndex
@@ -62,7 +62,7 @@ class QuadratureTransformer(Transformer):
 
         # Stacks.
         self._derivatives = []
-        self._components = StackDict()
+        self._components = []
         self.trans_set = set()
         self.element_map, self.name_map, self.unique_tables =\
               create_psi_tables(form_representation.psi_tables[domain_type],\
