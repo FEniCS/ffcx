@@ -30,10 +30,10 @@ Dependencies:
 
   1. Python, version 2.5
 
-  2. The latest version of FIAT and UFC
+  2. The latest version of FIAT, UFC and UFL
 
-     You need to have FIAT and UFC installed. FIAT and UFC are available
-     from the FEniCS web page: http://www.fenics.org/.
+     You need to have FIAT, UFC and UFL installed. They are available from the
+     FEniCS web page: http://www.fenics.org/.
 
   3. The Python NumPy module
 
