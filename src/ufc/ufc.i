@@ -29,8 +29,6 @@ SWIG_SHARED_PTR(interior_facet_integral,ufc::interior_facet_integral)
 int ufc_swigversion() { return SWIGVERSION; }
 %}
 
-int ufc_swigversion();
-
 %pythoncode %{
 __version__ = UFC_VERSION
 del UFC_VERSION, UFC_VERSION_MAJOR, UFC_VERSION_MINOR
