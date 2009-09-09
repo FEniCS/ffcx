@@ -169,7 +169,7 @@ class QuadratureTransformer(Transformer):
     # -------------------------------------------------------------------------
     # Things which are not supported yet, from:
     # condition.py, constantvalue.py, function.py, geometry.py, mathfunctions.py,
-    # restriction.py, tensoralgebra.py, variable.py.
+    # restriction.py, tensoralgebra.py.
     # -------------------------------------------------------------------------
     def condition(self, o):
         print "\n\nVisiting Condition:", o.__repr__()
@@ -206,10 +206,6 @@ class QuadratureTransformer(Transformer):
     def restricted(self, o):
         print "\n\nVisiting Restricted:", o.__repr__()
         error("This type of Restricted is not supported (only positive and negative are supported).")
-
-    def variable(self, o):
-        print "\n\nVisiting Variable:", o.__repr__()
-        error("Variable is not supported (yet).")
 
     # -------------------------------------------------------------------------
     # Supported classes.
@@ -659,6 +655,13 @@ class QuadratureTransformer(Transformer):
         debug("\nold components: " + str(self._components))
 
         return code
+
+    # -------------------------------------------------------------------------
+    # Variable (variable.py).
+    # -------------------------------------------------------------------------
+    def variable(self, o):
+        debug("\n\nVisiting Variable: " + o.__repr__())
+        return self.visit(o.expression())
 
     # -------------------------------------------------------------------------
     # Helper functions for BasisFunction and Function).
