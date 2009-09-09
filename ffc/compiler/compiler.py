@@ -247,6 +247,12 @@ def _extract_metadata(form, options):
         quadrature_order = options["quadrature_order"]
         quadrature_rule = options["quadrature_rule"]
 
+        if quadrature_rule is None:
+            info("Quadrature rule:  default")
+        else:
+            info("Quadrature rule:  " + str(quadrature_rule))
+        info("Quadrature order: " + str(quadrature_order))
+
         # Get metadata for integral (if any)
         integral_metadata = integral.measure().metadata() or {}
         for (key, value) in integral_metadata.iteritems():
