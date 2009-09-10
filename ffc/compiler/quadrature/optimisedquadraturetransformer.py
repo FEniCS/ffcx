@@ -12,7 +12,7 @@ from numpy import shape, transpose
 from ufl.common import StackDict, product
 
 # UFL Classes.
-from ufl.classes import MultiIndex, FixedIndex
+from ufl.classes import MultiIndex, FixedIndex, IntValue, FloatValue, Function
 
 # UFL Algorithms.
 from ufl.algorithms.transformations import Transformer
@@ -32,7 +32,10 @@ from ffc.fem.finiteelement import AFFINE, CONTRAVARIANT_PIOLA, COVARIANT_PIOLA
 # Utility and optimisation functions for quadraturegenerator.
 from quadraturegenerator_utils import generate_loop, generate_psi_name, create_permutations
 from quadraturetransformer import QuadratureTransformer
-from symbolics import *
+from symbolics import set_format, create_float, create_symbol, create_product, \
+                      create_sum, create_fraction, BASIS, IP, GEO, optimise_code, \
+                      generate_aux_constants
+                        
 
 import time
 
@@ -155,8 +158,24 @@ class QuadratureTransformerOpt(QuadratureTransformer):
 
         # Get the base code and create power.
         val = base_code.pop(())
-        power = create_product([val]*expo.value())
-        return {(): power}
+
+        # Handle different exponents
+        if isinstance(expo, IntValue):
+            return {(): create_product([val]*expo.value())}
+        elif isinstance(expo, FloatValue):
+            exp = self.format["floating point"](expo.value())
+            sym = create_symbol(self.format["std power"](str(val), exp), val.t)
+            sym.base_expr = val
+            sym.base_op = 1 # Add one operation for the pow() function.
+            return {(): sym}
+        elif isinstance(expo, Function):
+            exp = self.visit(expo)
+            sym = create_symbol(self.format["std power"](str(val), exp.pop(())), val.t)
+            sym.base_expr = val
+            sym.base_op = 1 # Add one operation for the pow() function.
+            return {(): sym}
+        else:
+            error("power does not support this exponent: " + repr(expo))
 
     def abs(self, o, *operands):
         debug("\n\nVisiting Abs: " + o.__repr__() + "with operands: " + "\n".join(map(str,operands)))
@@ -251,9 +270,10 @@ class QuadratureTransformerOpt(QuadratureTransformer):
         return {(): create_symbol(coefficient, GEO)}
 
     # -------------------------------------------------------------------------
-    # MathFunctions (mathfunctions.py).
+    # MathFunctions (mathfunctions.py). (Let parent class handle call to _math_function)
     # -------------------------------------------------------------------------
-    def __math_function(self, operands, format_function):
+    def _math_function(self, operands, format_function):
+        debug("Calling _math_function() of optimisedquadraturetransformer.")
         # TODO: Are these safety checks needed?
         if len(operands) != 1 and not () in operands[0] and len(operands[0]) != 1:
             error("MathFunctions expect one operand of function type: " + str(operands))
@@ -266,31 +286,6 @@ class QuadratureTransformerOpt(QuadratureTransformer):
             operand[key] = new_val
         debug("operand: " + str(operand))
         return operand
-
-    def sqrt(self, o, *operands):
-        debug("\n\nVisiting Sqrt: " + o.__repr__() + "with operands: " + "\n".join(map(str,operands)))
-        # Call common math function.
-        return self.__math_function(operands, self.format["sqrt"])
-
-    def exp(self, o, *operands):
-        debug("\n\nVisiting Exp: " + o.__repr__() + "with operands: " + "\n".join(map(str,operands)))
-        # Call common math function.
-        return self.__math_function(operands, self.format["exp"])
-
-    def ln(self, o, *operands):
-        debug("\n\nVisiting Ln: " + o.__repr__() + "with operands: " + "\n".join(map(str,operands)))
-        # Call common math function.
-        return self.__math_function(operands, self.format["ln"])
-
-    def cos(self, o, *operands):
-        debug("\n\nVisiting Cos: " + o.__repr__() + "with operands: " + "\n".join(map(str,operands)))
-        # Call common math function.
-        return self.__math_function(operands, self.format["cos"])
-
-    def sin(self, o, *operands):
-        debug("\n\nVisiting Sin: " + o.__repr__() + "with operands: " + "\n".join(map(str,operands)))
-        # Call common math function.
-        return self.__math_function(operands, self.format["sin"])
 
     # -------------------------------------------------------------------------
     # Helper functions for BasisFunction and Function).

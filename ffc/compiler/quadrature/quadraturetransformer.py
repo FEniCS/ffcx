@@ -12,7 +12,7 @@ from numpy import shape
 from ufl.common import product
 
 # UFL Classes.
-from ufl.classes import MultiIndex, FixedIndex
+from ufl.classes import MultiIndex, FixedIndex, IntValue, FloatValue, Function
 
 # UFL Algorithms.
 from ufl.algorithms.transformations import Transformer
@@ -323,9 +323,19 @@ class QuadratureTransformer(Transformer):
         if not () in base_code and len(base_code) != 1:
             error("Only support function type base: " + str(base_code))
 
-        # Get the base code and create power.
+        # Get the base code.
         val = base_code.pop(())
-        return {(): self.format["power"](val, expo.value())}
+
+        # Handle different exponents
+        if isinstance(expo, IntValue):
+            return {(): self.format["power"](val, expo.value())}
+        elif isinstance(expo, FloatValue):
+            return {(): self.format["std power"](val, self.format["floating point"](expo.value()))}
+        elif isinstance(expo, Function):
+            exp = self.visit(expo)
+            return {(): self.format["std power"](val, exp.pop(()))}
+        else:
+            error("power does not support this exponent: " + repr(expo))
 
     def abs(self, o, *operands):
         debug("\n\nVisiting Abs: " + o.__repr__() + "with operands: " + "\n".join(map(str,operands)))
@@ -546,7 +556,7 @@ class QuadratureTransformer(Transformer):
     # -------------------------------------------------------------------------
     # MathFunctions (mathfunctions.py).
     # -------------------------------------------------------------------------
-    def __math_function(self, operands, format_function):
+    def _math_function(self, operands, format_function):
         # TODO: Are these safety checks needed?
         if len(operands) != 1 and not () in operands[0] and len(operands[0]) != 1:
             error("MathFunctions expect one operand of function type: " + str(operands))
@@ -560,27 +570,27 @@ class QuadratureTransformer(Transformer):
     def sqrt(self, o, *operands):
         debug("\n\nVisiting Sqrt: " + o.__repr__() + "with operands: " + "\n".join(map(str,operands)))
         # Call common math function.
-        return self.__math_function(operands, self.format["sqrt"])
+        return self._math_function(operands, self.format["sqrt"])
 
     def exp(self, o, *operands):
         debug("\n\nVisiting Exp: " + o.__repr__() + "with operands: " + "\n".join(map(str,operands)))
         # Call common math function.
-        return self.__math_function(operands, self.format["exp"])
+        return self._math_function(operands, self.format["exp"])
 
     def ln(self, o, *operands):
         debug("\n\nVisiting Ln: " + o.__repr__() + "with operands: " + "\n".join(map(str,operands)))
         # Call common math function.
-        return self.__math_function(operands, self.format["ln"])
+        return self._math_function(operands, self.format["ln"])
 
     def cos(self, o, *operands):
         debug("\n\nVisiting Cos: " + o.__repr__() + "with operands: " + "\n".join(map(str,operands)))
         # Call common math function.
-        return self.__math_function(operands, self.format["cos"])
+        return self._math_function(operands, self.format["cos"])
 
     def sin(self, o, *operands):
         debug("\n\nVisiting Sin: " + o.__repr__() + "with operands: " + "\n".join(map(str,operands)))
         # Call common math function.
-        return self.__math_function(operands, self.format["sin"])
+        return self._math_function(operands, self.format["sin"])
 
     # -------------------------------------------------------------------------
     # PositiveRestricted and NegativeRestricted (restriction.py).
