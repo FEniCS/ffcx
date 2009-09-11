@@ -112,6 +112,18 @@ const double dx1 = x%(restriction)s[v1][1] - x%(restriction)s[v0][1];
 const double det = std::sqrt(dx0*dx0 + dx1*dx1);
 """
 
+facet_normal_2D = """\
+
+// Compute facet normals from the facet scale factor constants.
+bool direction;
+// FIXME: remove_unused wasn't removing this.
+direction = dx1*(x%(restriction)s[%(facet)s][0] - x%(restriction)s[v0][0]) + dx0*(x%(restriction)s[%(facet)s][1] - x%(restriction)s[v0][1]) < 0;
+const double n0 = direction ? dx1 / det : -dx1 / det;
+const double n1 = direction ? dx0 / det : -dx0 / det;
+
+"""
+
+
 # Code snippet for computing the determinant of the facet mapping in 3D
 facet_determinant_3D = """\
 // Vertices on faces
@@ -130,6 +142,19 @@ const double a1 = (x%(restriction)s[v0][2]*x%(restriction)s[v1][0] + x%(restrict
 const double a2 = (x%(restriction)s[v0][0]*x%(restriction)s[v1][1] + x%(restriction)s[v0][1]*x%(restriction)s[v2][0] + x%(restriction)s[v1][0]*x%(restriction)s[v2][1])
               - (x%(restriction)s[v2][0]*x%(restriction)s[v1][1] + x%(restriction)s[v2][1]*x%(restriction)s[v0][0] + x%(restriction)s[v1][0]*x%(restriction)s[v0][1]);
 const double det = std::sqrt(a0*a0 + a1*a1 + a2*a2);
+"""
+
+# Code snippet for computing the facet normal of the facet mapping in 3D
+facet_normal_3D = """\
+
+// Compute facet normals from the facet scale factor constants.
+bool direction;
+// FIXME: remove_unused wasn't removing this.
+direction = a0*(x%(restriction)s[%(facet)s][0] - x%(restriction)s[v0][0]) + a1*(x%(restriction)s[%(facet)s][1] - x%(restriction)s[v0][1])  + a2*(x%(restriction)s[%(facet)s][2] - x%(restriction)s[v0][2]) < 0;
+const double n0 = direction ? a0 / det : -a0 / det;
+const double n1 = direction ? a1 / det : -a1 / det;
+const double n2 = direction ? a2 / det : -a2 / det;
+
 """
 
 # Code snippet for evaluate_dof in 1D

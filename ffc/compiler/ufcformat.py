@@ -147,6 +147,7 @@ class Format:
             "derivative combinations": "combinations",
             "transform matrix": "transform",
             "transform Jinv": "Jinv",
+            "normal component": "n",
             "tmp declaration": lambda j, k: "const double " + self.format["tmp access"](j, k),
             "tmp access": lambda j, k: "tmp%d_%d" % (j, k),
             "determinant": lambda r: "detJ%s" % choose_map[r],
@@ -195,7 +196,7 @@ class Format:
             "snippet eta_tetrahedron": eta_tetrahedron_snippet,
             "snippet jacobian": lambda d: eval("jacobian_%dD" % d),
             "snippet only jacobian": lambda d: eval("only_jacobian_%dD" % d),
-            
+            "snippet normal": lambda d: eval("facet_normal_%dD" %d),
             "snippet combinations": combinations_snippet,
             "snippet transform": lambda d: eval("transform%dD_snippet" % d),
             #           "snippet inverse 2D": inverse_jacobian_2D,
@@ -207,6 +208,7 @@ class Format:
             "snippet calculate dof": calculate_dof,
             "get cell vertices" : "const double * const * x = c.coordinates;",
             "generate jacobian": lambda d, i: _generate_jacobian(d, i),
+            "generate normal": lambda d, i: _generate_normal(d, i),
             "generate body": lambda d: _generate_body(d),
             # misc
             "comment": lambda v: "// %s" % v,
@@ -698,6 +700,25 @@ def _generate_jacobian(cell_dimension, integral_type):
         code += jacobian % {"restriction": choose_map["-"]}
         code += "\n\n"
         code += facet_determinant % {"restriction": choose_map["+"], "facet": "facet0"}
+        
+    return code
+
+
+def _generate_normal(cell_dimension, integral_type, reference_normal=False):
+    "Generate code for computing normal"
+
+    # Choose space dimension
+    if cell_dimension == 1:
+        facet_normal = facet_normal_1D
+    elif cell_dimension == 2:
+        facet_normal = facet_normal_2D
+    else:
+        facet_normal = facet_normal_3D
+        
+    if integral_type == "exterior facet":
+        code = facet_normal % {"restriction": "", "facet" : "facet"}
+    elif integral_type == "interior facet":
+        code = facet_normal % {"restriction": choose_map["+"], "facet": "facet0"}
         
     return code
 

@@ -223,13 +223,15 @@ class QuadratureGenerator:
         # Get Jacobian snippet.
         # FIXME: This will most likely have to change if we support e.g., 2D elements in 3D space.
         jacobi_code = [format["generate jacobian"](transformer.geo_dim, "exterior facet")]
+        jacobi_code += [format["generate normal"](transformer.geo_dim, "exterior facet")]
+
 
         # After we have generated the element code for all facets we can remove
         # the unused transformations and tabulate the used psi tables and weights.
 
         # Remove unused declarations.
         common = self.__remove_unused(jacobi_code, transformer.trans_set, format)
-
+        
         # Tabulate weights at quadrature points.
         common += self.__tabulate_weights(transformer, Indent, format)
 
@@ -278,6 +280,7 @@ class QuadratureGenerator:
         # Get Jacobian snippet.
         # FIXME: This will most likely have to change if we support e.g., 2D elements in 3D space.
         jacobi_code = [format["generate jacobian"](transformer.geo_dim, "interior facet")]
+        jacobi_code += [format["generate normal"](transformer.geo_dim, "interior facet")]
 
         # After we have generated the element code for all facets we can remove
         # the unused transformations and tabulate the used psi tables and weights.

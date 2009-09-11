@@ -197,9 +197,21 @@ class QuadratureTransformer(Transformer):
         print "\n\nVisiting SpatialCoordinate:", o.__repr__()
         error("SpatialCoordinate is not supported (yet).")
 
-    def facet_normal(self, o):
-        print "\n\nVisiting FacetNormal:", o.__repr__()
-        error("FacetNormal is not supported (yet), use a VectorConstant instead.")
+
+    def facet_normal(self, o,  *operands):
+        debug("Visiting FacetNormal:")
+        # Safety checks.
+        if operands:
+            error("Didn't expect any operands for FacetNormal: " + str(operands))
+        if len(self._components) != 1 or not isinstance(self._components[0], FixedIndex):
+            error("FacetNormal expects 1 Fixed component index: " + str(self._components))
+
+        # We get one component.
+        component = int(self._components[0])
+        normal_component = self.format["normal component"] + str(component)
+        self.trans_set.add(normal_component)
+        debug("Facet Normal Component: " + normal_component)
+        return {():normal_component}
 
     def math_function(self, o):
         print "\n\nVisiting MathFunction:", o.__repr__()
