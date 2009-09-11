@@ -16,7 +16,7 @@ from ufl.classes import MultiIndex, FixedIndex, IntValue, FloatValue, Function
 
 # UFL Algorithms.
 from ufl.algorithms.transformations import Transformer
-from ufl.algorithms import purge_list_tensors, expand_indices, propagate_restrictions
+from ufl.algorithms import purge_list_tensors, expand_indices, propagate_restrictions, strip_variables
 from ufl.algorithms.printing import tree_format
 
 # FFC common modules.
@@ -32,6 +32,8 @@ from ffc.fem.finiteelement import AFFINE, CONTRAVARIANT_PIOLA, COVARIANT_PIOLA
 # Utility and optimisation functions for quadraturegenerator.
 from quadraturegenerator_utils import generate_loop, generate_psi_name, create_psi_tables, create_permutations
 from reduce_operations import operation_count
+
+import time
 
 class QuadratureTransformer(Transformer):
     "Transform UFL representation to quadrature code."
@@ -169,7 +171,7 @@ class QuadratureTransformer(Transformer):
     # -------------------------------------------------------------------------
     # Things which are not supported yet, from:
     # condition.py, constantvalue.py, function.py, geometry.py, mathfunctions.py,
-    # restriction.py, tensoralgebra.py.
+    # restriction.py, tensoralgebra.py, variable.py.
     # -------------------------------------------------------------------------
     def condition(self, o):
         print "\n\nVisiting Condition:", o.__repr__()
@@ -207,6 +209,10 @@ class QuadratureTransformer(Transformer):
         print "\n\nVisiting Restricted:", o.__repr__()
         error("This type of Restricted is not supported (only positive and negative are supported).")
 
+    def variable(self, o):
+        print "\n\nVisiting Variable:", o.__repr__()
+        error("Variable is not handled yet, should have been removed by strip_variables).")
+
     # -------------------------------------------------------------------------
     # Supported classes.
     # -------------------------------------------------------------------------
@@ -238,6 +244,7 @@ class QuadratureTransformer(Transformer):
                 code[key] = format_group(format_add(value))
             else:
                 code[key] = val[0]
+
         return code
 
     def product(self, o, *operands):
@@ -669,9 +676,9 @@ class QuadratureTransformer(Transformer):
     # -------------------------------------------------------------------------
     # Variable (variable.py).
     # -------------------------------------------------------------------------
-    def variable(self, o):
-        debug("\n\nVisiting Variable: " + o.__repr__())
-        return self.visit(o.expression())
+#    def variable(self, o):
+#        debug("\n\nVisiting Variable: " + o.__repr__())
+#        return self.visit(o.expression())
 
     # -------------------------------------------------------------------------
     # Helper functions for BasisFunction and Function).
@@ -1129,17 +1136,24 @@ def generate_code(integrand, transformer, Indent, format, interior):
     # Apply basic expansions.
     # TODO: Figure out if there is a 'correct' order of doing this
     # In form.form_data().form, which we should be using, coefficients have
-    # been mapped and derivatives expande. So it should be enough to just
+    # been mapped and derivatives expandes. So it should be enough to just
     # expand_indices and purge_list_tensors.
-    new_integrand = expand_indices(integrand)
+    t = time.time()
+    new_integrand = strip_variables(integrand)
+    new_integrand = expand_indices(new_integrand)
+    info("expand_indices, time = %f" % (time.time() - t))
+    t = time.time()
     new_integrand = purge_list_tensors(new_integrand)
+    info("purge_tensors, time  = %f" % (time.time() - t))
     # Only propagate restrictions if we have an interior integral.
     if interior:
         new_integrand = propagate_restrictions(new_integrand)
     debug("\nExpanded integrand\n" + str(tree_format(new_integrand)))
 
     # Let the Transformer create the loop code.
+    t = time.time()
     loop_code = transformer.visit(new_integrand)
+    info("gen. loop_code, time = %f" % (time.time() - t))
 
     # TODO: Verify that test and trial functions will ALWAYS be rearranged to 0 and 1.
     indices = {-2: format["first free index"], -1: format["second free index"],
@@ -1205,6 +1219,7 @@ def generate_code(integrand, transformer, Indent, format, interior):
 
     # Generate entries, multiply by weights and sort after primary loops.
     loops = {}
+    t = time.time()
     for key, val in loop_code.items():
 
         # If value was zero continue.
@@ -1296,6 +1311,6 @@ def generate_code(integrand, transformer, Indent, format, interior):
         num_ops += ops
         code += ["", format_comment("Number of operations for primary indices = %d" % ops)]
         code += generate_loop(lines, loop, Indent, format)
-
+    info("write code, time     = %f" % (time.time() - t))
     return (code, num_ops)
 

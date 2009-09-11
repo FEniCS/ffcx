@@ -16,7 +16,7 @@ from ufl.classes import MultiIndex, FixedIndex, IntValue, FloatValue, Function
 
 # UFL Algorithms.
 from ufl.algorithms.transformations import Transformer
-from ufl.algorithms import purge_list_tensors, expand_indices, propagate_restrictions
+from ufl.algorithms import purge_list_tensors, expand_indices, propagate_restrictions, strip_variables
 from ufl.algorithms.printing import tree_format
 
 # FFC common modules.
@@ -35,7 +35,6 @@ from quadraturetransformer import QuadratureTransformer
 from symbolics import set_format, create_float, create_symbol, create_product, \
                       create_sum, create_fraction, BASIS, IP, GEO, optimise_code, \
                       generate_aux_constants
-                        
 
 import time
 
@@ -716,7 +715,8 @@ def generate_code(integrand, transformer, Indent, format, interior):
     # In form.form_data().form, which we should be using, coefficients have
     # been mapped and derivatives expanded. So it should be enough to just
     # expand_indices and purge_list_tensors.
-    new_integrand = expand_indices(integrand)
+    new_integrand = strip_variables(integrand)
+    new_integrand = expand_indices(new_integrand)
     new_integrand = purge_list_tensors(new_integrand)
     # Only propagate restrictions if we have an interior integral.
     if interior:
