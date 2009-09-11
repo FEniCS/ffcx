@@ -1,0 +1,19 @@
+# Copyright (C) 2009 Peter Brune (brune@uchicago.edu)
+# Licensed under the GNU GPL version 3 or any later version
+#
+# This example demonstrates how to use the facet normals
+# Merely project the normal onto a vector section
+#
+# Compile this form with FFC: ffc Normals.ufl
+
+cell = triangle
+
+element = VectorElement("Lagrange", cell, 1)
+
+n = cell.n
+
+u = TestFunction(element)
+v = TrialFunction(element)
+
+a = dot(u, v)*ds
+L = dot(n, v)*ds
