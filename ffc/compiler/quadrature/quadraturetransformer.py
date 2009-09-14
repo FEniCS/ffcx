@@ -197,22 +197,6 @@ class QuadratureTransformer(Transformer):
         print "\n\nVisiting SpatialCoordinate:", o.__repr__()
         error("SpatialCoordinate is not supported (yet).")
 
-
-    def facet_normal(self, o,  *operands):
-        debug("Visiting FacetNormal:")
-        # Safety checks.
-        if operands:
-            error("Didn't expect any operands for FacetNormal: " + str(operands))
-        if len(self._components) != 1 or not isinstance(self._components[0], FixedIndex):
-            error("FacetNormal expects 1 Fixed component index: " + str(self._components))
-
-        # We get one component.
-        component = int(self._components[0])
-        normal_component = self.format["normal component"] + str(component)
-        self.trans_set.add(normal_component)
-        debug("Facet Normal Component: " + normal_component)
-        return {():normal_component}
-
     def math_function(self, o):
         print "\n\nVisiting MathFunction:", o.__repr__()
         error("This MathFunction is not supported (yet).")
@@ -538,6 +522,24 @@ class QuadratureTransformer(Transformer):
         debug("function code: " + str(code))
 
         return {(): code}
+
+    # -------------------------------------------------------------------------
+    # FacetNormal (geometry.py).
+    # -------------------------------------------------------------------------
+    def facet_normal(self, o,  *operands):
+        debug("Visiting FacetNormal:")
+        # Safety checks.
+        if operands:
+            error("Didn't expect any operands for FacetNormal: " + str(operands))
+        if len(self._components) != 1 or not isinstance(self._components[0], FixedIndex):
+            error("FacetNormal expects 1 Fixed component index: " + str(self._components))
+
+        # We get one component.
+        component = int(self._components[0])
+        normal_component = self.format["normal component"] + str(component)
+        self.trans_set.add(normal_component)
+        debug("Facet Normal Component: " + normal_component)
+        return {():normal_component}
 
     # -------------------------------------------------------------------------
     # Indexed (indexed.py).
@@ -1150,22 +1152,22 @@ def generate_code(integrand, transformer, Indent, format, interior):
     # In form.form_data().form, which we should be using, coefficients have
     # been mapped and derivatives expandes. So it should be enough to just
     # expand_indices and purge_list_tensors.
-    t = time.time()
+#    t = time.time()
     new_integrand = strip_variables(integrand)
     new_integrand = expand_indices(new_integrand)
-    info("expand_indices, time = %f" % (time.time() - t))
-    t = time.time()
+#    info("expand_indices, time = %f" % (time.time() - t))
+#    t = time.time()
     new_integrand = purge_list_tensors(new_integrand)
-    info("purge_tensors, time  = %f" % (time.time() - t))
+#    info("purge_tensors, time  = %f" % (time.time() - t))
     # Only propagate restrictions if we have an interior integral.
     if interior:
         new_integrand = propagate_restrictions(new_integrand)
     debug("\nExpanded integrand\n" + str(tree_format(new_integrand)))
 
     # Let the Transformer create the loop code.
-    t = time.time()
+#    t = time.time()
     loop_code = transformer.visit(new_integrand)
-    info("gen. loop_code, time = %f" % (time.time() - t))
+#    info("gen. loop_code, time = %f" % (time.time() - t))
 
     # TODO: Verify that test and trial functions will ALWAYS be rearranged to 0 and 1.
     indices = {-2: format["first free index"], -1: format["second free index"],
@@ -1231,7 +1233,7 @@ def generate_code(integrand, transformer, Indent, format, interior):
 
     # Generate entries, multiply by weights and sort after primary loops.
     loops = {}
-    t = time.time()
+#    t = time.time()
     for key, val in loop_code.items():
 
         # If value was zero continue.
@@ -1323,6 +1325,6 @@ def generate_code(integrand, transformer, Indent, format, interior):
         num_ops += ops
         code += ["", format_comment("Number of operations for primary indices = %d" % ops)]
         code += generate_loop(lines, loop, Indent, format)
-    info("write code, time     = %f" % (time.time() - t))
+#    info("write code, time     = %f" % (time.time() - t))
     return (code, num_ops)
 

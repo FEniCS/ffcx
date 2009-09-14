@@ -269,6 +269,24 @@ class QuadratureTransformerOpt(QuadratureTransformer):
         return {(): create_symbol(coefficient, GEO)}
 
     # -------------------------------------------------------------------------
+    # FacetNormal (geometry.py).
+    # -------------------------------------------------------------------------
+    def facet_normal(self, o,  *operands):
+        debug("Visiting FacetNormal:")
+        # Safety checks.
+        if operands:
+            error("Didn't expect any operands for FacetNormal: " + str(operands))
+        if len(self._components) != 1 or not isinstance(self._components[0], FixedIndex):
+            error("FacetNormal expects 1 Fixed component index: " + str(self._components))
+
+        # We get one component.
+        component = int(self._components[0])
+        normal_component = self.format["normal component"] + str(component)
+        self.trans_set.add(normal_component)
+        debug("Facet Normal Component: " + normal_component)
+        return {(): create_symbol(normal_component, GEO)}
+
+    # -------------------------------------------------------------------------
     # MathFunctions (mathfunctions.py). (Let parent class handle call to _math_function)
     # -------------------------------------------------------------------------
     def _math_function(self, operands, format_function):
