@@ -115,9 +115,9 @@ const double det = std::sqrt(dx0*dx0 + dx1*dx1);
 facet_normal_2D = """\
 
 // Compute facet normals from the facet scale factor constants
-const bool direction = dx1*(x%(restriction)s[%(facet)s][0] - x%(restriction)s[v0][0]) + dx0*(x%(restriction)s[%(facet)s][1] - x%(restriction)s[v0][1]) < 0;
+const bool direction = dx1*(x%(restriction)s[%(facet)s][0] - x%(restriction)s[v0][0]) - dx0*(x%(restriction)s[%(facet)s][1] - x%(restriction)s[v0][1]) < 0;
 const double n0 = direction ? dx1 / det : -dx1 / det;
-const double n1 = direction ? dx0 / det : -dx0 / det;
+const double n1 = direction ? -dx0 / det : dx0 / det;
 
 """
 
