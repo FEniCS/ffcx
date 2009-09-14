@@ -3,7 +3,7 @@
 # Licensed under the GNU LGPL Version 2.1.
 #
 # First added:  2009-06-26
-# Last changed: 2009-06-26
+# Last changed: 2009-09-14
 #
 # The bilinear form a(v, u) and linear form L(v) for
 # Biharmonic equation in a discontinuous Galerkin (DG)
@@ -20,8 +20,8 @@ u = TrialFunction(element)
 f = Function(element)
 
 # Normal component, mesh size and right-hand side
-n  = VectorConstant(triangle)
-h  = Constant(triangle)
+n = VectorConstant(triangle)
+h = Constant(triangle)
 
 # Parameters
 alpha = Constant(triangle)

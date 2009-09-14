@@ -70,7 +70,12 @@ form_files = [f for f in listdir(curdir) if f.endswith(".ufl")]
 form_files.sort()
 
 # Some exceptions for the tensor representation
-exceptions = {"tensor": ["Biharmonic.ufl", "FunctionOperators.ufl", "PoissonDG.ufl", "QuadratureElement.ufl", "TensorWeightedPoisson.ufl"],
+exceptions = {"tensor": ["Biharmonic.ufl",
+                         "FunctionOperators.ufl",
+                         "PoissonDG.ufl",
+                         "QuadratureElement.ufl",
+                         "TensorWeightedPoisson.ufl",
+                         "Normals.ufl"],
               "quadrature" : []}
 
 # Run regression tests for each representation

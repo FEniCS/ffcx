@@ -12,7 +12,13 @@ import re
 from ffc.common.log import debug
 
 # Declarations to examine
-types = [["double"], ["const", "double"], ["const", "double", "*", "const", "*"], ["int"], ["const", "int"]]
+types = [["double"],
+         ["const", "double"],
+         ["const", "double", "*", "const", "*"],
+         ["int"],
+         ["const", "int"],
+         ["bool"],
+         ["const", "bool"]]
 
 # Special characters and delimiters
 special_characters = ["+", "-", "*", "/", "=", ".", " ", ";", "(", ")", "\\", "{", "}", "[","]"]
@@ -67,7 +73,7 @@ def remove_unused(code):
     # Reverse the order of the variable names (to catch variables used
     # only by variables that are removed)
     variable_names.reverse()
-    
+
     # Remove declarations that are not used (need to search backwards)
     removed_lines = []
     for variable_name in variable_names:
@@ -80,7 +86,7 @@ def remove_unused(code):
             #lines[declaration_line] = "// " + lines[declaration_line]
             lines[declaration_line] = None
             removed_lines += [declaration_line]
-        
+
     return "\n".join([line for line in lines if not line == None])
 
 def __variable_in_line(variable_name, line):

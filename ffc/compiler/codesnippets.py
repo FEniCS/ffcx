@@ -15,10 +15,10 @@ const double * const * x%(restriction)s = c%(restriction)s.coordinates;
 
 // Compute Jacobian of affine map from reference cell
 const double J%(restriction)s_00 = x%(restriction)s[1][0] - x%(restriction)s[0][0];
-  
+
 // Compute determinant of Jacobian
 double detJ%(restriction)s = J%(restriction)s_00;
-  
+
 // Compute inverse of Jacobian
 const double Jinv%(restriction)s_00 =  1.0 / detJ%(restriction)s;"""
 
@@ -32,10 +32,10 @@ const double J%(restriction)s_00 = x%(restriction)s[1][0] - x%(restriction)s[0][
 const double J%(restriction)s_01 = x%(restriction)s[2][0] - x%(restriction)s[0][0];
 const double J%(restriction)s_10 = x%(restriction)s[1][1] - x%(restriction)s[0][1];
 const double J%(restriction)s_11 = x%(restriction)s[2][1] - x%(restriction)s[0][1];
-  
+
 // Compute determinant of Jacobian
 double detJ%(restriction)s = J%(restriction)s_00*J%(restriction)s_11 - J%(restriction)s_01*J%(restriction)s_10;
-  
+
 // Compute inverse of Jacobian
 const double Jinv%(restriction)s_00 =  J%(restriction)s_11 / detJ%(restriction)s;
 const double Jinv%(restriction)s_01 = -J%(restriction)s_01 / detJ%(restriction)s;
@@ -57,7 +57,7 @@ const double J%(restriction)s_12 = x%(restriction)s[3][1] - x%(restriction)s[0][
 const double J%(restriction)s_20 = x%(restriction)s[1][2] - x%(restriction)s[0][2];
 const double J%(restriction)s_21 = x%(restriction)s[2][2] - x%(restriction)s[0][2];
 const double J%(restriction)s_22 = x%(restriction)s[3][2] - x%(restriction)s[0][2];
-  
+
 // Compute sub determinants
 const double d%(restriction)s_00 = J%(restriction)s_11*J%(restriction)s_22 - J%(restriction)s_12*J%(restriction)s_21;
 const double d%(restriction)s_01 = J%(restriction)s_12*J%(restriction)s_20 - J%(restriction)s_10*J%(restriction)s_22;
@@ -70,10 +70,10 @@ const double d%(restriction)s_12 = J%(restriction)s_01*J%(restriction)s_20 - J%(
 const double d%(restriction)s_20 = J%(restriction)s_01*J%(restriction)s_12 - J%(restriction)s_02*J%(restriction)s_11;
 const double d%(restriction)s_21 = J%(restriction)s_02*J%(restriction)s_10 - J%(restriction)s_00*J%(restriction)s_12;
 const double d%(restriction)s_22 = J%(restriction)s_00*J%(restriction)s_11 - J%(restriction)s_01*J%(restriction)s_10;
-  
+
 // Compute determinant of Jacobian
 double detJ%(restriction)s = J%(restriction)s_00*d%(restriction)s_00 + J%(restriction)s_10*d%(restriction)s_10 + J%(restriction)s_20*d%(restriction)s_20;
-  
+
 // Compute inverse of Jacobian
 const double Jinv%(restriction)s_00 = d%(restriction)s_00 / detJ%(restriction)s;
 const double Jinv%(restriction)s_01 = d%(restriction)s_10 / detJ%(restriction)s;
@@ -114,15 +114,12 @@ const double det = std::sqrt(dx0*dx0 + dx1*dx1);
 
 facet_normal_2D = """\
 
-// Compute facet normals from the facet scale factor constants.
-bool direction;
-// FIXME: remove_unused wasn't removing this.
-direction = dx1*(x%(restriction)s[%(facet)s][0] - x%(restriction)s[v0][0]) + dx0*(x%(restriction)s[%(facet)s][1] - x%(restriction)s[v0][1]) < 0;
+// Compute facet normals from the facet scale factor constants
+const bool direction = dx1*(x%(restriction)s[%(facet)s][0] - x%(restriction)s[v0][0]) + dx0*(x%(restriction)s[%(facet)s][1] - x%(restriction)s[v0][1]) < 0;
 const double n0 = direction ? dx1 / det : -dx1 / det;
 const double n1 = direction ? dx0 / det : -dx0 / det;
 
 """
-
 
 # Code snippet for computing the determinant of the facet mapping in 3D
 facet_determinant_3D = """\
@@ -147,10 +144,8 @@ const double det = std::sqrt(a0*a0 + a1*a1 + a2*a2);
 # Code snippet for computing the facet normal of the facet mapping in 3D
 facet_normal_3D = """\
 
-// Compute facet normals from the facet scale factor constants.
-bool direction;
-// FIXME: remove_unused wasn't removing this.
-direction = a0*(x%(restriction)s[%(facet)s][0] - x%(restriction)s[v0][0]) + a1*(x%(restriction)s[%(facet)s][1] - x%(restriction)s[v0][1])  + a2*(x%(restriction)s[%(facet)s][2] - x%(restriction)s[v0][2]) < 0;
+// Compute facet normals from the facet scale factor constants
+const bool direction = a0*(x%(restriction)s[%(facet)s][0] - x%(restriction)s[v0][0]) + a1*(x%(restriction)s[%(facet)s][1] - x%(restriction)s[v0][1])  + a2*(x%(restriction)s[%(facet)s][2] - x%(restriction)s[v0][2]) < 0;
 const double n0 = direction ? a0 / det : -a0 / det;
 const double n1 = direction ? a1 / det : -a1 / det;
 const double n2 = direction ? a2 / det : -a2 / det;
@@ -308,7 +303,7 @@ const double J_00 = element_coordinates[1][0] - element_coordinates[0][0];
 const double J_01 = element_coordinates[2][0] - element_coordinates[0][0];
 const double J_10 = element_coordinates[1][1] - element_coordinates[0][1];
 const double J_11 = element_coordinates[2][1] - element_coordinates[0][1];
-  
+
 // Compute determinant of Jacobian
 const double detJ = J_00*J_11 - J_01*J_10;
 
@@ -341,7 +336,7 @@ const double J_12 = element_coordinates[3][1] - element_coordinates[0][1];
 const double J_20 = element_coordinates[1][2] - element_coordinates[0][2];
 const double J_21 = element_coordinates[2][2] - element_coordinates[0][2];
 const double J_22 = element_coordinates[3][2] - element_coordinates[0][2];
-  
+
 // Compute sub determinants
 const double d00 = J_11*J_22 - J_12*J_21;
 const double d01 = J_12*J_20 - J_10*J_22;
@@ -354,7 +349,7 @@ const double d12 = J_01*J_20 - J_00*J_21;
 const double d20 = J_01*J_12 - J_02*J_11;
 const double d21 = J_02*J_10 - J_00*J_12;
 const double d22 = J_00*J_11 - J_01*J_10;
-  
+
 // Compute determinant of Jacobian
 double detJ = J_00*d00 + J_10*d10 + J_20*d20;
 
@@ -398,7 +393,7 @@ const double J_00 = element_coordinates[1][0] - element_coordinates[0][0];
 const double J_01 = element_coordinates[2][0] - element_coordinates[0][0];
 const double J_10 = element_coordinates[1][1] - element_coordinates[0][1];
 const double J_11 = element_coordinates[2][1] - element_coordinates[0][1];
-  
+
 // Compute determinant of Jacobian
 const double detJ = J_00*J_11 - J_01*J_10;
 
@@ -425,7 +420,7 @@ const double J_12 = element_coordinates[3][1] - element_coordinates[0][1];
 const double J_20 = element_coordinates[1][2] - element_coordinates[0][2];
 const double J_21 = element_coordinates[2][2] - element_coordinates[0][2];
 const double J_22 = element_coordinates[3][2] - element_coordinates[0][2];
-  
+
 // Compute sub determinants
 const double d00 = J_11*J_22 - J_12*J_21;
 const double d01 = J_12*J_20 - J_10*J_22;
@@ -438,7 +433,7 @@ const double d12 = J_01*J_20 - J_00*J_21;
 const double d20 = J_01*J_12 - J_02*J_11;
 const double d21 = J_02*J_10 - J_00*J_12;
 const double d22 = J_00*J_11 - J_01*J_10;
-  
+
 // Compute determinant of Jacobian
 double detJ = J_00*d00 + J_10*d10 + J_20*d20;
 
@@ -463,14 +458,14 @@ z = (2.0*d02*x + 2.0*d12*y + 2.0*d22*z - d02*C0 - d12*C1 - d22*C2) / detJ;"""
 combinations_snippet = """\
 // Declare pointer to two dimensional array that holds combinations of derivatives and initialise
 unsigned int **%(combinations)s = new unsigned int *[%(num_derivatives)s];
-    
+
 for (unsigned int j = 0; j < %(num_derivatives)s; j++)
 {
   %(combinations)s[j] = new unsigned int [%(n)s];
   for (unsigned int k = 0; k < %(n)s; k++)
     %(combinations)s[j][k] = 0;
 }
-    
+
 // Generate combinations of derivatives
 for (unsigned int row = 1; row < %(num_derivatives)s; row++)
 {
@@ -497,7 +492,7 @@ const double %(Jinv)s[1][1] =  {{1.0 / J_00}};
 // Declare transformation matrix
 // Declare pointer to two dimensional array and initialise
 double **%(transform)s = new double *[%(num_derivatives)s];
-    
+
 for (unsigned int j = 0; j < %(num_derivatives)s; j++)
 {
   %(transform)s[j] = new double [%(num_derivatives)s];
@@ -523,7 +518,7 @@ const double %(Jinv)s[2][2] =  {{J_11 / detJ, -J_01 / detJ}, {-J_10 / detJ, J_00
 // Declare transformation matrix
 // Declare pointer to two dimensional array and initialise
 double **%(transform)s = new double *[%(num_derivatives)s];
-    
+
 for (unsigned int j = 0; j < %(num_derivatives)s; j++)
 {
   %(transform)s[j] = new double [%(num_derivatives)s];
@@ -551,7 +546,7 @@ const double %(Jinv)s[3][3] =\
 // Declare transformation matrix
 // Declare pointer to two dimensional array and initialise
 double **%(transform)s = new double *[%(num_derivatives)s];
-    
+
 for (unsigned int j = 0; j < %(num_derivatives)s; j++)
 {
   %(transform)s[j] = new double [%(num_derivatives)s];
@@ -577,7 +572,7 @@ const double %(Jinv)s[2][2] =  {{2*J_11 / detJ, -2*J_01 / detJ}, {-2*J_10 / detJ
 // Declare transformation matrix
 // Declare pointer to two dimensional array and initialise
 double **%(transform)s = new double *[%(num_derivatives)s];
-    
+
 for (unsigned int j = 0; j < %(num_derivatives)s; j++)
 {
   %(transform)s[j] = new double [%(num_derivatives)s];
@@ -605,7 +600,7 @@ const double %(Jinv)s[3][3] =\
 // Declare transformation matrix
 // Declare pointer to two dimensional array and initialise
 double **%(transform)s = new double *[%(num_derivatives)s];
-    
+
 for (unsigned int j = 0; j < %(num_derivatives)s; j++)
 {
   %(transform)s[j] = new double [%(num_derivatives)s];
@@ -627,7 +622,7 @@ for (unsigned int row = 0; row < %(num_derivatives)s; row++)
 inverse_jacobian_2D = """\
 // Compute determinant of Jacobian
 double detJ%(restriction)s = J%(restriction)s_00*J%(restriction)s_11 - J%(restriction)s_01*J%(restriction)s_10;
-  
+
 // Compute inverse of Jacobian
 const double Jinv%(restriction)s_00 =  J%(restriction)s_11 / detJ%(restriction)s;
 const double Jinv%(restriction)s_01 = -J%(restriction)s_01 / detJ%(restriction)s;
@@ -648,10 +643,10 @@ const double d12 = J%(restriction)s_01*J%(restriction)s_20 - J%(restriction)s_00
 const double d20 = J%(restriction)s_01*J%(restriction)s_12 - J%(restriction)s_02*J%(restriction)s_11;
 const double d21 = J%(restriction)s_02*J%(restriction)s_10 - J%(restriction)s_00*J%(restriction)s_12;
 const double d22 = J%(restriction)s_00*J%(restriction)s_11 - J%(restriction)s_01*J%(restriction)s_10;
-  
+
 // Compute determinant of Jacobian
 double detJ%(restriction)s = J%(restriction)s_00*d00 + J%(restriction)s_10*d10 + J%(restriction)s_20*d20;
-  
+
 // Compute inverse of Jacobian
 const double Jinv%(restriction)s_00 = d00 / detJ%(restriction)s;
 const double Jinv%(restriction)s_01 = d10 / detJ%(restriction)s;
@@ -703,7 +698,7 @@ calculate_dof = """\
 // Take directional components
 for(int k = 0; k < %(dim)d; k++)
   result += values[k]*D[i][%(index)s][k];
-// Multiply by weights 
+// Multiply by weights
 result *= W[i][%(index)s];"""
 
 
