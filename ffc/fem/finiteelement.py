@@ -162,7 +162,7 @@ class FiniteElement(FiniteElementBase):
 
     def dual_basis(self):
         "Return the representation dual basis of finite element space"
-        # TODO: The restrictions could be handled by __create_dofs_representations, 
+        # TODO: The restrictions could be handled by __create_dofs_representations,
         # or is it just as elegant to leave it here?
         # Pick out those dofs that are present after restriction.
         # Assuming same numbering as in entity_dofs (as far as I can tell from
@@ -279,7 +279,7 @@ class FiniteElement(FiniteElementBase):
 
         # Get FIAT shape from string
         fiat_shape = string_to_shape[shape]
-    
+
         # Choose FIAT function space
         if family == "Lagrange" or family == "CG":
             self.__family = "Lagrange"
@@ -298,7 +298,7 @@ class FiniteElement(FiniteElementBase):
 
         if family == "Raviart-Thomas" or family == "RT":
             self.__family = "Raviart-Thomas"
-            return (RaviartThomas(fiat_shape, degree),
+            return (RaviartThomas(fiat_shape, degree-1),
                     CONTRAVARIANT_PIOLA)
 
         if family == "Brezzi-Douglas-Marini" or family == "BDM":
@@ -314,7 +314,7 @@ class FiniteElement(FiniteElementBase):
         # FIXME: Temporary fix, remove "Nedelec"
         if family == "Nedelec" or "Nedelec 1st kind H(curl)" or"N1curl":
             self.__family = "Nedelec"
-            return (Nedelec(fiat_shape, degree),
+            return (Nedelec(fiat_shape, degree-1),
                     COVARIANT_PIOLA)
 
         if family == "Darcy-Stokes" or family == "KLMR":
@@ -357,7 +357,7 @@ class FiniteElement(FiniteElementBase):
             # The points on the FIAT reference element are pushed onto
             # the UFC reference element:
             points = [tuple(pushforward(p)) for p in fiat_pts]
-            
+
             # The direction map according to inverse tranpose of the
             # mapping of the element space
             if not fiat_dirs == None:

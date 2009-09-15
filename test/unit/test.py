@@ -31,13 +31,13 @@ class SpaceDimensionTests(unittest.TestCase):
 
     def testContinuousLagrange(self):
         "Test space dimensions of continuous Lagrange elements."
-        
+
         P1 = FFCElement("Lagrange", "triangle", 1)
         self.assertEqual(P1.space_dimension(), 3)
 
         P2 = FFCElement("Lagrange", "triangle", 2)
         self.assertEqual(P2.space_dimension(), 6)
-        
+
         P3 = FFCElement("Lagrange", "triangle", 3)
         self.assertEqual(P3.space_dimension(), 10)
 
@@ -46,13 +46,13 @@ class SpaceDimensionTests(unittest.TestCase):
 
         P0 = FFCElement("Discontinuous Lagrange", "triangle", 0)
         self.assertEqual(P0.space_dimension(), 1)
-        
+
         P1 = FFCElement("Discontinuous Lagrange", "triangle", 1)
         self.assertEqual(P1.space_dimension(), 3)
 
         P2 = FFCElement("Discontinuous Lagrange", "triangle", 2)
         self.assertEqual(P2.space_dimension(), 6)
-        
+
         P3 = FFCElement("Discontinuous Lagrange", "triangle", 3)
         self.assertEqual(P3.space_dimension(), 10)
 
@@ -63,7 +63,7 @@ class FunctionValueTests(unittest.TestCase):
 
         element = FFCElement("Lagrange", "interval", 1)
         basis = element.basis()
-        
+
         reference = [lambda x: 1 - x[0],
                      lambda x: x[0]]
 
@@ -77,7 +77,7 @@ class FunctionValueTests(unittest.TestCase):
 
         element = FFCElement("Lagrange", "triangle", 1)
         basis = element.basis()
-        
+
         reference = [lambda x: 1 - x[0] - x[1],
                      lambda x: x[0],
                      lambda x: x[1]]
@@ -92,7 +92,7 @@ class FunctionValueTests(unittest.TestCase):
 
         element = FFCElement("Lagrange", "tetrahedron", 1)
         basis = element.basis()
-        
+
         reference = [lambda x: 1 - x[0] - x[1] - x[2],
                      lambda x: x[0],
                      lambda x: x[1],
@@ -108,7 +108,7 @@ class FunctionValueTests(unittest.TestCase):
 
         element = FFCElement("Discontinuous Lagrange", "interval", 1)
         basis = element.basis()
-        
+
         reference = [lambda x: 1 - x[0],
                      lambda x: x[0]]
 
@@ -122,7 +122,7 @@ class FunctionValueTests(unittest.TestCase):
 
         element = FFCElement("Discontinuous Lagrange", "triangle", 1)
         basis = element.basis()
-        
+
         reference = [lambda x: 1 - x[0] - x[1],
                      lambda x: x[0],
                      lambda x: x[1]]
@@ -137,7 +137,7 @@ class FunctionValueTests(unittest.TestCase):
 
         element = FFCElement("Discontinuous Lagrange", "tetrahedron", 1)
         basis = element.basis()
-        
+
         reference = [lambda x: 1 - x[0] - x[1] - x[2],
                      lambda x: x[0],
                      lambda x: x[1],
@@ -153,7 +153,7 @@ class FunctionValueTests(unittest.TestCase):
 
         element = FFCElement("Brezzi-Douglas-Marini", "triangle", 1)
         basis = element.basis()
-        
+
         reference = [lambda x: (2*x[0], -x[1]),
                      lambda x: (-x[0], 2*x[1]),
                      lambda x: (2 - 2*x[0] - 3*x[1], x[1]),
@@ -167,12 +167,12 @@ class FunctionValueTests(unittest.TestCase):
                 self.assertAlmostEqual(basis[i](x)[0], reference[i](x)[0])
                 self.assertAlmostEqual(basis[i](x)[1], reference[i](x)[1])
 
-    def testRT0(self):
-        "Test values of RT0."
+    def testRT1(self):
+        "Test values of RT1."
 
-        element = FFCElement("Raviart-Thomas", "triangle", 0)
+        element = FFCElement("Raviart-Thomas", "triangle", 1)
         basis = element.basis()
-        
+
         reference = [lambda x: (x[0], x[1]),
                      lambda x: (1 - x[0], -x[1]),
                      lambda x: (x[0], x[1] - 1)]
@@ -183,12 +183,12 @@ class FunctionValueTests(unittest.TestCase):
                 self.assertAlmostEqual(basis[i](x)[0], reference[i](x)[0])
                 self.assertAlmostEqual(basis[i](x)[1], reference[i](x)[1])
 
-    def testRT1(self):
-        "Test values of RT1."
+    def testRT2(self):
+        "Test values of RT2."
 
-        element = FFCElement("Raviart-Thomas", "triangle", 1)
+        element = FFCElement("Raviart-Thomas", "triangle", 2)
         basis = element.basis()
-        
+
         reference = [lambda x: (-2*x[0] + 4*x[0]**2, -x[1] + 4*x[0]*x[1]),
                      lambda x: (-x[0] + 4*x[0]*x[1], -2*x[1] + 4*x[1]**2),
                      lambda x: (2 - 6*x[0] - 3*x[1] + 4*x[0]*x[1] + 4*x[0]**2,
@@ -254,11 +254,11 @@ class JITTests(unittest.TestCase):
         print "JIT in-memory cache:", dt0
         print "JIT disk cache:     ", dt1
         print "Reasonable values are 0.002 and 0.03"
-        
+
         # Check times
         self.assertTrue(dt0 < 0.001)
         self.assertTrue(dt1 < 0.5)
-        
+
 if __name__ == "__main__":
     os.system("python testcreateelement.py")
     os.system("python test_symbolics.py")
