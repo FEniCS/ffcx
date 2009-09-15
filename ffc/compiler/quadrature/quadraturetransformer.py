@@ -5,6 +5,8 @@ __date__ = "2009-02-09 -- 2009-08-08"
 __copyright__ = "Copyright (C) 2009 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
+# Modified by Peter Brune 2009
+
 # Python modules.
 from numpy import shape
 
@@ -536,7 +538,7 @@ class QuadratureTransformer(Transformer):
 
         # We get one component.
         component = int(self._components[0])
-        normal_component = self.format["normal component"] + str(component)
+        normal_component = self.format["normal component"](self.restriction, component)
         self.trans_set.add(normal_component)
         debug("Facet Normal Component: " + normal_component)
         return {():normal_component}

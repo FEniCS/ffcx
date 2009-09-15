@@ -147,7 +147,7 @@ class Format:
             "derivative combinations": "combinations",
             "transform matrix": "transform",
             "transform Jinv": "Jinv",
-            "normal component": "n",
+            "normal component": lambda r, j: "n%s%s" % (choose_map[r], j),
             "tmp declaration": lambda j, k: "const double " + self.format["tmp access"](j, k),
             "tmp access": lambda j, k: "tmp%d_%d" % (j, k),
             "determinant": lambda r: "detJ%s" % choose_map[r],
@@ -709,17 +709,22 @@ def _generate_normal(cell_dimension, integral_type, reference_normal=False):
 
     # Choose space dimension
     if cell_dimension == 1:
+        normal_direction = normal_direction_1D
         facet_normal = facet_normal_1D
     elif cell_dimension == 2:
+        normal_direction = normal_direction_2D
         facet_normal = facet_normal_2D
     else:
+        normal_direction = normal_direction_3D
         facet_normal = facet_normal_3D
-        
+
     if integral_type == "exterior facet":
-        code = facet_normal % {"restriction": "", "facet" : "facet"}
+        code = normal_direction % {"restriction": "", "facet" : "facet"}
+        code += facet_normal % {"direction" : "", "restriction": ""}
     elif integral_type == "interior facet":
-        code = facet_normal % {"restriction": choose_map["+"], "facet": "facet0"}
-        
+        code = normal_direction % {"restriction": choose_map["+"], "facet": "facet0"}
+        code += facet_normal % {"direction" : "", "restriction": choose_map["+"]}
+        code += facet_normal % {"direction" : "!", "restriction": choose_map["-"]}
     return code
 
 def _generate_switch(variable, cases, default=""):

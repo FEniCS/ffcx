@@ -7,6 +7,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian Oelgaard 2007
 # Modified by Marie Rognes 2007, 2008
+# Modified by Peter Brune 2009
 
 # Code snippet for computing the Jacobian, its inverse and determinant in 1D
 jacobian_1D = """\
@@ -97,6 +98,9 @@ facet_determinant_1D = """\
 const double det = 1.0;
 """
 
+normal_direction_1D = """\
+"""
+
 # Code snippet for computing the facet normal in 1D
 facet_normal_1D = """\
 
@@ -120,14 +124,16 @@ const double dx1 = x%(restriction)s[v1][1] - x%(restriction)s[v0][1];
 const double det = std::sqrt(dx0*dx0 + dx1*dx1);
 """
 
+normal_direction_2D = """\
+const bool direction = dx1*(x%(restriction)s[%(facet)s][0] - x%(restriction)s[v0][0]) - dx0*(x%(restriction)s[%(facet)s][1] - x%(restriction)s[v0][1]) < 0;
+"""
+
 # Code snippet for computing the facet normal in 2D
 facet_normal_2D = """\
 
 // Compute facet normals from the facet scale factor constants
-const bool direction = dx1*(x%(restriction)s[%(facet)s][0] - x%(restriction)s[v0][0]) - dx0*(x%(restriction)s[%(facet)s][1] - x%(restriction)s[v0][1]) < 0;
-const double n0 = direction ? dx1 / det : -dx1 / det;
-const double n1 = direction ? -dx0 / det : dx0 / det;
-
+const double n%(restriction)s0 = %(direction)sdirection ? dx1 / det : -dx1 / det;
+const double n%(restriction)s1 = %(direction)sdirection ? -dx0 / det : dx0 / det;
 """
 
 # Code snippet for computing the determinant of the facet mapping in 3D
@@ -150,15 +156,17 @@ const double a2 = (x%(restriction)s[v0][0]*x%(restriction)s[v1][1] + x%(restrict
 const double det = std::sqrt(a0*a0 + a1*a1 + a2*a2);
 """
 
+# Code snippet for computing the direction of the facet normal in 3D
+normal_direction_3D = """\
+const bool direction = a0*(x%(restriction)s[%(facet)s][0] - x%(restriction)s[v0][0]) + a1*(x%(restriction)s[%(facet)s][1] - x%(restriction)s[v0][1])  + a2*(x%(restriction)s[%(facet)s][2] - x%(restriction)s[v0][2]) < 0;
+"""
+
 # Code snippet for computing the facet normal in 3D
 facet_normal_3D = """\
-
 // Compute facet normals from the facet scale factor constants
-const bool direction = a0*(x%(restriction)s[%(facet)s][0] - x%(restriction)s[v0][0]) + a1*(x%(restriction)s[%(facet)s][1] - x%(restriction)s[v0][1])  + a2*(x%(restriction)s[%(facet)s][2] - x%(restriction)s[v0][2]) < 0;
-const double n0 = direction ? a0 / det : -a0 / det;
-const double n1 = direction ? a1 / det : -a1 / det;
-const double n2 = direction ? a2 / det : -a2 / det;
-
+const double n%(restriction)s0 = %(direction)sdirection ? a0 / det : -a0 / det;
+const double n%(restriction)s1 = %(direction)sdirection ? a1 / det : -a1 / det;
+const double n%(restriction)s2 = %(direction)sdirection ? a2 / det : -a2 / det;
 """
 
 # Code snippet for evaluate_dof in 1D
