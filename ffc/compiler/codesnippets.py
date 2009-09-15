@@ -97,6 +97,14 @@ facet_determinant_1D = """\
 const double det = 1.0;
 """
 
+# Code snippet for computing the facet normal in 1D
+facet_normal_1D = """\
+
+// Compute facet normals from the facet scale factor constants
+// FIXME: not implemented
+
+"""
+
 # Code snippet for computing the determinant of the facet mapping in 2D
 facet_determinant_2D = """\
 // Vertices on edges
@@ -112,6 +120,7 @@ const double dx1 = x%(restriction)s[v1][1] - x%(restriction)s[v0][1];
 const double det = std::sqrt(dx0*dx0 + dx1*dx1);
 """
 
+# Code snippet for computing the facet normal in 2D
 facet_normal_2D = """\
 
 // Compute facet normals from the facet scale factor constants
@@ -141,7 +150,7 @@ const double a2 = (x%(restriction)s[v0][0]*x%(restriction)s[v1][1] + x%(restrict
 const double det = std::sqrt(a0*a0 + a1*a1 + a2*a2);
 """
 
-# Code snippet for computing the facet normal of the facet mapping in 3D
+# Code snippet for computing the facet normal in 3D
 facet_normal_3D = """\
 
 // Compute facet normals from the facet scale factor constants
