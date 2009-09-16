@@ -5,40 +5,7 @@ It is available as part of Emacs 22 and can be invoked by M-x org-mode.
 This gives convenient expand/collapse of bullets by pressing TAB.
 -----------------------------------------------------------------------
 
-* Suggestions for UFC 1.2 from Garth
-** (added) Add cell argument to local_dimension: dof_map::local_dimension(const ufc::cell& c)
-** Possibly also for needs_mesh_entities, num_facet_dofs, tabulate_facet_dofs, tabulate_entity_dofs
-** (added) Add dof_map::max_local_dimension()
-** Add evaluate_basis() and evaluate_basis_derivatives without cell
-   argument (overload) for tabulation on reference element
-** Add bool dof_map::const_local_dimension()?
-
-* Suggestions for UFC 1.2
-** (dismissed) Add foo_integral::tabulate_tensors()
-** Add dof_map::topological_dimension()
-** Add finite_element::topological_dimension()
-** Add finite_element::geometric_dimension()
-** Add function::rank() and function::dim(i) and function::geometric_dimension()
-** Add "std::string *::ufl() const" for all relevant classes, returning the matching UFL representation string.
-
 * Features to possibly include in future versions
-** Obtaining local sparsity pattern from form and/or *_integral.
-   The sparsity pattern of a form can be the combined sparsity patterns
-   of the integrals, i.e. a worst-case-scenario, while letting each integral
-   have its own pattern may yield a more optimized pattern with multiple
-   integrals over subdomains. Possible signatures to add in form and/or *_integral:
-      
-      /// Return the number of nonzeros in an element tensor
-      virtual uint num_nonzeros() const;
-      
-      /// Return the number of nonzeros in an element tensor
-      virtual void tabulate_sparsity_pattern(uint ** pattern) const
-
-      // Explanation: Either we define (pattern[0][i], pattern[1][i])
-      //   to hold the row and col of nonzero number i,
-      //   or (pattern[i][0], pattern[i][1]). We could also use a single
-      //   pointer uint*pattern, the choice depends on how it will be
-      //   natural to use.
 
 ** Support for true constants (now handled as piecewise constants),
    to avoid overhead in tabulate_dof_map and filling of w[][] when
