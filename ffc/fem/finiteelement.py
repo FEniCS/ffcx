@@ -298,7 +298,7 @@ class FiniteElement(FiniteElementBase):
 
         if family == "Raviart-Thomas" or family == "RT":
             self.__family = "Raviart-Thomas"
-            return (RaviartThomas(fiat_shape, degree-1),
+            return (RaviartThomas(fiat_shape, degree),
                     CONTRAVARIANT_PIOLA)
 
         if family == "Brezzi-Douglas-Marini" or family == "BDM":
@@ -314,7 +314,7 @@ class FiniteElement(FiniteElementBase):
         # FIXME: Temporary fix, remove "Nedelec"
         if family == "Nedelec" or "Nedelec 1st kind H(curl)" or"N1curl":
             self.__family = "Nedelec"
-            return (Nedelec(fiat_shape, degree-1),
+            return (Nedelec(fiat_shape, degree),
                     COVARIANT_PIOLA)
 
         if family == "Darcy-Stokes" or family == "KLMR":
