@@ -159,7 +159,7 @@ if not env.GetOption("clean"):
     if 'install' not in COMMAND_LINE_TARGETS:
         end_message += """
 ---------------------------------------------------------
-If there were no errors, run
+Compilation of UFC finished. Now run
 
     scons install
 
@@ -172,6 +172,13 @@ installation directory, run
 ---------------------------------------------------------
 """
     def out():
-        print end_message
+        from SCons.Script import GetBuildFailures
+        build_failures = GetBuildFailures()
+        if build_failures:
+            for bf in build_failures:
+                print "%s failed: %s" % (bf.node, bf.errstr)
+            return
+        if not env.GetOption('clean') and not env.GetOption('help'):
+            print end_message
     atexit.register(out)
 
