@@ -65,8 +65,6 @@ if cache_options:
     if DESTDIR:
         env["DESTDIR"] = DESTDIR
 
-env.Help(opts.GenerateHelpText(env))
-
 # Start building the message presented at the end of a simulation
 end_message = "\n"
 
@@ -113,6 +111,16 @@ if env.get("DESTDIR"):
     tgts_dir = ["includeDir", "pythonModuleDir", "pythonExtDir", "pkgConfDir"]
     for tgt_dir in tgts_dir:
         env[tgt_dir] = env[tgt_dir].replace("$prefix", install_prefix)
+
+# If necessary, replace site-packages with dist-packages when prefix is
+# either /usr or /usr/local (hack for Python 2.6 on Debian/Ubuntu)
+if env.subst("$prefix").rstrip("/") in ("/usr", "/usr/local") and \
+       "dist-packages" in sysconfig.get_python_lib():
+    for tgt_dir in ["pythonModuleDir", "pythonExtDir"]:
+        env[tgt_dir] = env[tgt_dir].replace("site-packages", "dist-packages")
+               
+# Now generate the help text
+env.Help(opts.GenerateHelpText(env))
 
 # Set up installation targets
 ufc_basename = join("src", "ufc", "ufc")
