@@ -79,7 +79,12 @@ def jit_form(form, options=None):
         compiled_form = getattr(module, module.__name__ + "_form_0")()
         return (compiled_form, module, form.form_data())
 
-    log(INFO + 5, "Calling FFC just-in-time (JIT) compiler, this may take some time.")
+    # Write a message
+    if options["representation"] == "auto":
+        representation = ""
+    else:
+        representation = " (%s representation)" % options["representation"]
+    log(INFO + 5, "Calling FFC just-in-time (JIT) compiler%s, this may take some time." % representation)
 
     # Generate code
     signature = jit_object.signature()
