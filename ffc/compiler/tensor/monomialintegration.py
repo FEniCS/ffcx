@@ -230,7 +230,7 @@ def _compute_product(psis, weights):
     # Sum over quadrature points and internal indices
     num_points = len(weights)
     for q in range(num_points):
-        for b in bindices:            
+        for b in bindices:
             # Compute outer products of subtables for current (q, b)
             B = weights[q]
             for (Psi, index, bpart) in psis:
@@ -242,18 +242,8 @@ def _compute_product(psis, weights):
     # Rearrange Indices as (primary, secondary)
     (rearrangement, num_indices) = _compute_rearrangement(indices)
     A0 = numpy.transpose(A0, rearrangement)
-    
-    return A0
 
-# FIXME: KBO: This function is obsolete, should we remove it?
-#def _compute_degree(basis_functions):
-#    "Compute total degree for given monomial."
-#    q = 0
-#    for v in basis_functions:
-#        q += v.element.degree()
-#        for d in v.derivatives:
-#            q -= 1
-#    return q
+    return A0
 
 def _compute_rearrangement(indices):
     """Compute rearrangement tuple for given list of Indices, so that
@@ -275,7 +265,7 @@ def _compute_shape(psis):
         shape += numpy.shape(Psi)[1 + num_internal:]
         indices += index[num_internal:]
     return (shape, indices)
-    
+
 def _compute_internal_shape(psis):
     """Compute shape for internal indices from given list of tables.
     Also compute a list of  mappings from each table to the internal
