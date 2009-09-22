@@ -12,7 +12,8 @@ only_quadrature = ["FunctionOperators",
                    "QuadratureElement",
                    "TensorWeightedPoisson",
                    "PoissonDG",
-                   "Biharmonic"]
+                   "Biharmonic",
+                   "Normals"]
 
 # Log file
 logfile = None
