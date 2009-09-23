@@ -1,4 +1,4 @@
 #!/bin/sh
 
 cp tmp/quadrature/*.h reference/quadrature
-cp tmp/reference/*.h reference/tensor
+cp tmp/tensor/*.h reference/tensor
