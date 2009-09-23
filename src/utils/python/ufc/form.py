@@ -1,7 +1,7 @@
-# Code generation format strings for UFC (Unified Form-assembly Code) v. 1.1.2.
+# Code generation format strings for UFC (Unified Form-assembly Code) v. 1.2.
 # This code is released into the public domain.
 #
-# The FEniCS Project (http://www.fenics.org/) 2006-2008.
+# The FEniCS Project (http://www.fenics.org/) 2006-2009.
 
 form_combined = """\
 /// This class defines the interface for the assembly of the global
@@ -58,25 +58,25 @@ public:
   {
 %(num_cell_integrals)s
   }
-  
+
   /// Return the number of exterior facet integrals
   virtual unsigned int num_exterior_facet_integrals() const
   {
 %(num_exterior_facet_integrals)s
   }
-  
+
   /// Return the number of interior facet integrals
   virtual unsigned int num_interior_facet_integrals() const
   {
 %(num_interior_facet_integrals)s
   }
-    
+
   /// Create a new finite element for argument function i
   virtual ufc::finite_element* create_finite_element(unsigned int i) const
   {
 %(create_finite_element)s
   }
-  
+
   /// Create a new dof map for argument function i
   virtual ufc::dof_map* create_dof_map(unsigned int i) const
   {
@@ -141,10 +141,10 @@ public:
 
   /// Return the number of cell integrals
   virtual unsigned int num_cell_integrals() const;
-  
+
   /// Return the number of exterior facet integrals
   virtual unsigned int num_exterior_facet_integrals() const;
-  
+
   /// Return the number of interior facet integrals
   virtual unsigned int num_interior_facet_integrals() const;
 
@@ -202,13 +202,13 @@ unsigned int %(classname)s::num_cell_integrals() const
 {
 %(num_cell_integrals)s
 }
-  
+
 /// Return the number of exterior facet integrals
 unsigned int %(classname)s::num_exterior_facet_integrals() const
 {
 %(num_exterior_facet_integrals)s
 }
-  
+
 /// Return the number of interior facet integrals
 unsigned int %(classname)s::num_interior_facet_integrals() const
 {

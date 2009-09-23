@@ -1,7 +1,7 @@
-# Code generation format strings for UFC (Unified Form-assembly Code) v. 1.1.2.
+# Code generation format strings for UFC (Unified Form-assembly Code) v. 1.2.
 # This code is released into the public domain.
 #
-# The FEniCS Project (http://www.fenics.org/) 2006-2008.
+# The FEniCS Project (http://www.fenics.org/) 2006-2009.
 
 cell_integral_combined = """\
 /// This class defines the interface for the tabulation of the cell
