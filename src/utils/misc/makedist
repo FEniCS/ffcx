@@ -74,7 +74,7 @@ cd ..
 
 # Copy archive and files to web page
 echo '--- Copying files to web server'
-scp release/$TARBALL fenics@fenics.org:www.fenics.org/pub/software/ufc/v1.1
+scp release/$TARBALL fenics@fenics.org:www.fenics.org/pub/software/ufc/v1.2
 scp ChangeLog fenics@fenics.org:www.fenics.org/pub/software/ufc/
 scp TODO fenics@fenics.org:www.fenics.org/pub/software/ufc/
 
