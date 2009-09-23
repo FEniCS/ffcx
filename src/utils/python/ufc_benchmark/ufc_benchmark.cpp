@@ -1,4 +1,4 @@
-// This is utility code for UFC (Unified Form-assembly Code) v. 1.1.2.
+// This is utility code for UFC (Unified Form-assembly Code) v. 1.2
 // This code is released into the public domain.
 //
 // The FEniCS Project (http://www.fenics.org/) 2006-2007.
@@ -146,7 +146,7 @@ vector< vector<double> > benchmark(const ufc::form & form, bool print_tensor)
 vector< vector<double> > tabulate_cell_tensor(const ufc::form & form, vector< vector<double> > w, int domain)
 {
   ufc::ufc_data data(form);
- 
+
   // copy w to the appropriate array
   if(data.num_coefficients != w.size())
       throw std::runtime_error("Wrong number of coefficients");

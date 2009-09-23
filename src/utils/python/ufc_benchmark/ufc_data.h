@@ -1,4 +1,4 @@
-// This is utility code for UFC (Unified Form-assembly Code) v. 1.1.2.
+// This is utility code for UFC (Unified Form-assembly Code) v. 1.2
 // This code is released into the public domain.
 //
 // The FEniCS Project (http://www.fenics.org/) 2006-2007.
@@ -103,15 +103,15 @@ namespace ufc
 
       for(unsigned i=0; i<num_arguments; i++)
         delete elements[i];
-      
+
       delete [] dimensions;
 
       for(unsigned i=0; i<form.num_cell_integrals(); i++)
         delete cell_integrals[i];
-      
+
       for(unsigned i=0; i<form.num_exterior_facet_integrals(); i++)
         delete exterior_facet_integrals[i];
-      
+
       for(unsigned i=0; i<form.num_interior_facet_integrals(); i++)
         delete interior_facet_integrals[i];
 
@@ -122,7 +122,7 @@ namespace ufc
       for(unsigned i=0; i<num_coefficients; i++)
         delete [] macro_w[i];
       delete [] macro_w;
-      
+
       delete [] A;
       delete [] macro_A;
     }
@@ -162,7 +162,7 @@ namespace ufc
           dim0 = dimensions[0];
           dim1 = dimensions[1];
       }
-      
+
       cout << "[" << endl;
       int k=0;
       for(int ii=0; ii<dim0; ii++)

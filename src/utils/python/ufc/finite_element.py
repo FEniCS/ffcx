@@ -1,4 +1,4 @@
-# Code generation format strings for UFC (Unified Form-assembly Code) v. 1.1.2.
+# Code generation format strings for UFC (Unified Form-assembly Code) v. 1.2
 # This code is released into the public domain.
 #
 # The FEniCS Project (http://www.fenics.org/) 2006-2008.
@@ -172,7 +172,7 @@ public:
                                           double* values,
                                           const double* coordinates,
                                           const ufc::cell& c) const;
-  
+
   /// Evaluate order n derivatives of all basis functions at given point in cell
   virtual void evaluate_basis_derivatives_all(unsigned int n,
                                               double* values,
