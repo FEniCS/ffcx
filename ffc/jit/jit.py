@@ -96,7 +96,7 @@ def jit_form(form, options=None):
         signature + ".h",
         source_directory = os.curdir,
         signature = signature,
-        sources = signature + ".cpp" if options["split"] else [],
+        sources = [signature + ".cpp"] if options["split"] else [],
         cppargs  = ["-O2"] if options["cpp optimize"] else ["-O0"] ,
         cache_dir = options["cache_dir"])
 
