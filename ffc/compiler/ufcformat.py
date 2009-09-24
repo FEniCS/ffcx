@@ -11,7 +11,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Garth N. Wells, 2009.
 
 # Python modules
-import os
+import os, platform
 
 # UFC code templates
 from ufc_utils import *
@@ -243,11 +243,18 @@ class Format:
         f1 = "%%.%dg" % precision
         f2 = "%%.%de" % precision
         def floating_point(v):
+            "Format floating point number."
             if abs(v) < 100.0:
                 return f1 % v
             else:
                 return f2 % v
-        self.format["floating point"] = floating_point
+        def floating_point_windows(v):
+            "Format floating point number for Windows (remove extra leading zero in exponents)."
+            return floating_point(v).replace("e-0", "e-").replace("e+0", "e+") 
+        if platform.system() == "Windows":
+            self.format["floating point"] = floating_point_windows
+        else:
+            self.format["floating point"] = floating_point
         self.format["epsilon"] = 10.0*eval("1e-%s" % precision)
 
     def write(self, generated_forms, prefix, options):
