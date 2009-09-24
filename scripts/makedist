@@ -6,14 +6,19 @@
 # This script creates a new release of FFC
 
 # Make sure FFC is installed (so we may run unit tests)
-echo '--- Uninstalling FFC'
-sudo python setup.py install
+#echo '--- Uninstalling FFC'
+#sudo python setup.py install
+
+# Make sure latest version is installed
+echo "Before proceeding, make sure you have installed the latest version of FFC on your system."
+echo "Press return to continue or ctrl-c to cancel."
+read
 
 # Make sure we have the current version
 echo '--- Synchronizing repository'
 sleep 1
 hg commit
-hg pull http://www.fenics.org/hg/ffc
+hg pull ssh://ffc@fenics.org/hg/ffc
 hg merge
 hg commit
 hg update
@@ -66,7 +71,7 @@ hg archive -t tgz ffc-$VERSION.tar.gz
 
 # Copy files to web page
 echo '--- Copying files to web server'
-scp ffc-$VERSION.tar.gz fenics@fenics.org:www.fenics.org/pub/software/ffc/v0.6
+scp ffc-$VERSION.tar.gz fenics@fenics.org:www.fenics.org/pub/software/ffc/v0.7
 scp ChangeLog fenics@fenics.org:www.fenics.org/pub/software/ffc/
 scp TODO fenics@fenics.org:www.fenics.org/pub/software/ffc/
 
