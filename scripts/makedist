@@ -46,8 +46,9 @@ cd test
 python test.py
 echo '--- Only version numbers should differ, press return to continue'
 read
-cd ..
-cp demo/*.h test/regression/reference
+cd regression
+./update-references
+cd ../..
 
 # Run benchmark problem
 echo '--- Running benchmark problem'
