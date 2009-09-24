@@ -1,3 +1,4 @@
+0.7.0
  - Move contents of TODO to: https://blueprints.launchpad.net/ffc
  - Support for restriction of finite elements to only consider facet dofs
  - Use quadrature_order from metadata when integrating terms using tensor representation

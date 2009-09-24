@@ -9,11 +9,6 @@
 #echo '--- Uninstalling FFC'
 #sudo python setup.py install
 
-# Make sure latest version is installed
-echo "Before proceeding, make sure you have installed the latest version of FFC on your system."
-echo "Press return to continue or ctrl-c to cancel."
-read
-
 # Make sure we have the current version
 echo '--- Synchronizing repository'
 sleep 1
@@ -34,6 +29,12 @@ emacs -nw ffc/common/constants.py
 echo '--- Update version number in setup.py'
 sleep 1
 emacs -nw setup.py
+
+# Install latest version
+echo "Running commands for installing FFC locally on my machine. Sorry about that.
+echo "We need to figure out a better way to organize the makedist script. /Anders"
+fenics-install
+fenics-dev
 
 # Get the version number
 VERSION=`grep 'FFC_VERSION' ffc/common/constants.py | cut -d'"' -f2`
