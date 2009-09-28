@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import os, sys, glob
+import os, sys, glob, re
 from os.path     import join, isfile, isdir, getsize, sep, normpath, dirname, basename
 from distutils   import sysconfig
 from swig_config import configure_swig_env, get_status_output
@@ -11,8 +11,10 @@ EnsureSConsVersion(0, 98, 5)
 env = Environment(ENV=os.environ)
 
 # UFC version number
-major = 1
-minor = 1
+ufc_file = open("src/ufc/ufc.h","r").read()
+major = int(re.findall("UFC_VERSION_MAJOR ([0-9])",ufc_file)[0])
+minor = int(re.findall("UFC_VERSION_MINOR ([0-9])",ufc_file)[0])
+maintenance = int(re.findall("UFC_VERSION_MAINTENANCE ([0-9])",ufc_file)[0])
 
 # Build the commandline options for SCons:
 if env["PLATFORM"].startswith("win"):
@@ -100,7 +102,7 @@ Note that you may need to be root.
 pkg_config_file = "ufc-%d.pc" % major
 file = open(pkg_config_file, "w")
 file.write("Name: UFC\n")
-file.write("Version: %d.%d\n" % (major, minor))
+file.write("Version: %d.%d.%d\n" % (major, minor, maintenance))
 file.write("Description: Unified Form-assembly Code\n")
 file.write("Cflags: -I%s\n" % \
            repr(normpath(env.subst(env["includeDir"])))[1:-1])

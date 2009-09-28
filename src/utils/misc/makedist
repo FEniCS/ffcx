@@ -28,8 +28,7 @@ FILES="ChangeLog \
       src/utils/python/ufc/form.py \
       src/utils/python/ufc/function.py \
       src/utils/python/ufc/__init__.py \
-      src/utils/python/ufc/integrals.py \
-      ufc-1.pc"
+      src/utils/python/ufc/integrals.py"
 
 for f in $FILES; do
     emacs -nw $f
