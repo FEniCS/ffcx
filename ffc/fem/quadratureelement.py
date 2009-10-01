@@ -39,7 +39,7 @@ class QuadratureElement(FiniteElement):
         self.__family = "Quadrature"
 
         # Set rank (is rank = 0 for this element?)
-        self.__rank = 0
+        self._rank = 0
 
         # Save element degree (constant)
         self.__degree = 0
@@ -153,5 +153,5 @@ class QuadratureElement(FiniteElement):
 
     def value_rank(self):
         "Return the rank of the value space"
-        return self.__rank
+        return self._rank
 

@@ -37,6 +37,9 @@ class MixedElement(FiniteElementBase):
         # Save domain, no need to do any checks, that should be handled by the subelements
         self.__domain = domain
 
+        # FIXME: This is just a temporary hack to 'support' tensor elements
+        self._rank = 1
+
     def __add__(self, other):
         "Create mixed element"
         return MixedElement([self, other])

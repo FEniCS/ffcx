@@ -61,7 +61,9 @@ def generate_finite_element(element, format):
     code["space_dimension"] = "%d" % element.space_dimension()
 
     # Generate code for value_rank
-    code["value_rank"] = "%d" % element.value_rank()
+    # FIXME: This is just a temporary hack to 'support' tensor elements
+#    code["value_rank"] = "%d" % element.value_rank()
+    code["value_rank"] = "%d" % element._rank
 
     # Generate code for value_dimension
     code["value_dimension"] = ["%d" % element.value_dimension(i) for i in range(max(element.value_rank(), 1))]

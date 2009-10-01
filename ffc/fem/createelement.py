@@ -7,6 +7,7 @@ __license__  = "GNU GPL version 3 or any later version"
 from ufl import FiniteElement as UFLFiniteElement
 from ufl import MixedElement as UFLMixedElement
 from ufl import ElementRestriction as UFLElementRestriction
+from ufl import TensorElement as UFLTensorElement
 
 # FFC common modules
 from ffc.common.log import debug, error
@@ -49,6 +50,9 @@ def create_element(ufl_element, domain=None):
     elif isinstance(ufl_element, UFLMixedElement):
         sub_elements = [create_element(e, domain) for e in ufl_element.sub_elements()]
         ffc_element = FFCMixedElement(sub_elements, domain)
+        # FIXME: This is just a temporary hack to 'support' tensor elements
+        if isinstance(ufl_element, UFLTensorElement):
+            ffc_element._rank = len(ufl_element._shape)
     else:
         error("Unable to create equivalent FIAT element: %s" % str(ufl_element))
 

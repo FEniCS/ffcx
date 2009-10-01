@@ -126,6 +126,9 @@ class FiniteElement(FiniteElementBase):
         # Save the domain
         self.__domain = domain
 
+        # FIXME: This is just a temporary hack to 'support' tensor elements
+        self._rank = self.basis().rank()
+
     def __add__(self, other):
         "Create mixed element"
         return mixedelement.MixedElement([self, other])
