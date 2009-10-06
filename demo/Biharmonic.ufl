@@ -20,7 +20,7 @@ u = TrialFunction(element)
 f = Function(element)
 
 # Normal component, mesh size and right-hand side
-n = VectorConstant(triangle)
+n = element.cell().n
 h = Constant(triangle)
 
 # Parameters

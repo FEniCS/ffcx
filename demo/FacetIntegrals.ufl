@@ -14,7 +14,7 @@ v = TestFunction(element)
 u = TrialFunction(element)
 
 h = Constant(triangle)
-n = VectorConstant(triangle)
+n = element.cell().n
 
 a = v*u*ds \
   + v('+')*u('-')*dS \
