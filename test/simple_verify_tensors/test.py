@@ -13,7 +13,8 @@ only_quadrature = ["FunctionOperators",
                    "TensorWeightedPoisson",
                    "PoissonDG",
                    "Biharmonic",
-                   "Normals"]
+                   "Normals",
+                   "FacetIntegrals"]
 
 # Log file
 logfile = None

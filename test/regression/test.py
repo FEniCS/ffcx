@@ -75,7 +75,8 @@ exceptions = {"tensor": ["Biharmonic.ufl",
                          "PoissonDG.ufl",
                          "QuadratureElement.ufl",
                          "TensorWeightedPoisson.ufl",
-                         "Normals.ufl"],
+                         "Normals.ufl",
+                         "FacetIntegrals.ufl"],
               "quadrature" : []}
 
 # Run regression tests for each representation
