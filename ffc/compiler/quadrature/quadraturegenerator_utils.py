@@ -112,23 +112,28 @@ def flatten_psi_tables(tables):
     counter = 0
 
     # Loop quadrature points and get element dictionary {elem: {tables}}.
-    for point, elem_dict in tables.items():
+    for point in sorted(tables.keys()):
+        elem_dict = tables[point]
         element_map[point] = {}
         debug("\nQG-utils, flatten_tables, points:\n" + str(point))
         debug("\nQG-utils, flatten_tables, elem_dict:\n" + str(elem_dict))
 
         # Loop all elements and get all their tables.
-        for elem, facet_tables in elem_dict.items():
+        for elem in sorted(elem_dict.keys()):
+            facet_tables = elem_dict[elem]
             debug("\nQG-utils, flatten_tables, elem:\n" + str(elem))
             debug("\nQG-utils, flatten_tables, facet_tables:\n" + str(facet_tables))
             element_map[point][elem] = counter
-            for facet, elem_tables in facet_tables.items():
+            for facet in sorted(facet_tables.keys()):
+                elem_tables = facet_tables[facet]
                 # If the element value rank != 0, we must loop the components.
                 # before the derivatives (that's the way the values are tabulated).
                 if len(elem.value_shape()) != 0:
+                    # TODO: Do we need to sort elem_tables too?
                     for num_comp, comp in enumerate(elem_tables):
                         for num_deriv in comp:
-                            for derivs, psi_table in num_deriv.items():
+                            for derivs in sorted(num_deriv.keys()):
+                                psi_table = num_deriv[derivs]
                                 debug("\nQG-utils, flatten_tables, derivs:\n" + str(derivs))
                                 debug("\nQG-utils, flatten_tables, psi_table:\n" + str(psi_table))
                                 # Verify shape of basis (can be omitted for speed
@@ -145,8 +150,10 @@ def flatten_psi_tables(tables):
                                 flat_tables[name] = transpose(psi_table)
                 # If we don't have any components.
                 else:
+                    # TODO: Do we need to sort elem_tables too?
                     for num_deriv in elem_tables:
-                        for derivs, psi_table in num_deriv.items():
+                        for derivs in sorted(num_deriv.keys()):
+                            psi_table = num_deriv[derivs]
                             debug("\nQG-utils, flatten_tables, derivs:\n" + str(derivs))
                             debug("\nQG-utils, flatten_tables, psi_table:\n" + str(psi_table))
                             # Verify shape of basis (can be omitted for speed
