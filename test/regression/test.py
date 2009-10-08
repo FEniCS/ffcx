@@ -22,8 +22,10 @@ def check_forms(form_files, representation, exceptions):
             continue
 
         print "Compiling and verifying form %s using %s representation ..." % (form_file, representation)
+
         # Compile form
         if system("python %s -fprecision=9 -s -r %s %s" % (path.join(pardir, "scripts", "ffc"), representation, form_file)) == 0:
+
             # Compare against reference
             code_file = form_file.split(".")[0] + ".h"
             f0 = open(path.join(pardir, "test", "regression", "reference", representation, code_file), "r")
@@ -39,10 +41,10 @@ def check_forms(form_files, representation, exceptions):
                     print line
                 forms_not_ok += [form_file]
 
-                # Copy failed file to temporary directory
-                f_failed = open(path.join(pardir, "test", "regression", "tmp", representation, code_file), "w")
-                f_failed.write("\n".join(c1))
-                f_failed.close()
+            # Copy failed file to temporary directory
+            f = open(path.join(pardir, "test", "regression", "tmp", representation, code_file), "w")
+            f.write("\n".join(c1))
+            f.close()
         else:
             forms_not_ok += [form_file]
     return forms_not_ok
@@ -56,7 +58,7 @@ else:
 # Check both representations
 representations = ["quadrature", "tensor"]
 
-# Create temporary directory for generated files that fails
+# Create temporary directory for generated files
 if not path.isdir("tmp"):
     mkdir("tmp")
     chdir("tmp")
@@ -64,7 +66,7 @@ if not path.isdir("tmp"):
     mkdir("tensor")
     chdir(pardir)
 
-# Check all in demo directory
+# Check all forms in demo directory
 chdir(path.join(pardir, pardir, "demo"))
 form_files = [f for f in listdir(curdir) if f.endswith(".ufl")]
 form_files.sort()
@@ -87,7 +89,6 @@ for representation in representations:
     print ""
 
 # Print summary
-
 test_failed = False
 for representation in representations:
     num_forms = len(form_files) - len(exceptions[representation])
@@ -113,11 +114,6 @@ for representation in representations:
                 file.write("meld reference/%s/%s tmp/%s/%s\n" % (representation, code_file, representation, code_file))
         file.close()
         print "\nTo view diffs with meld, run the script viewdiff_%s.sh" % representation
-
-#  Remove temporary directory if not errors occurred
-if not test_failed:
-    chdir(path.join(pardir, "test", "regression"))
-    shutil.rmtree("tmp")
 
 # Return error code if tests failed
 sys.exit(test_failed)

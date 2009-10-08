@@ -58,7 +58,7 @@ def generate_psi_name(counter, facet, component, derivatives):
     """Generate a name for the psi table of the form:
     FE#_f#_C#_D###, where '#' will be an integer value.
 
-    FE  - is a simple counter to distinguish the various basis, it will be
+    FE  - is a simple counter to distinguish the various bases, it will be
           assigned in an arbitrary fashion.
 
     f   - denotes facets if applicable, range(element.num_facets()).
@@ -168,6 +168,7 @@ def flatten_psi_tables(tables):
                             flat_tables[name] = transpose(psi_table)
             # Increase unique element counter.
             counter += 1
+
     return (element_map, flat_tables)
 
 def unique_psi_tables(tables, format_epsilon, options):
@@ -440,5 +441,3 @@ def create_permutations(expr):
     if len(expr) > 2:
         new = permutations(expr[0:2])
         return permutations(new + expr[2:])
-
-
