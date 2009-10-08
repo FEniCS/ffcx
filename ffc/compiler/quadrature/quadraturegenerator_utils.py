@@ -205,7 +205,7 @@ def unique_psi_tables(tables, format_epsilon, options):
     i = 0
     non_zero_columns = {}
     if options["non zero columns"]:
-        for name in tables:
+        for name in sorted(tables.keys()):
             # Get values.
             vals = tables[name]
 
@@ -324,7 +324,7 @@ def unique_tables(tables, format_epsilon):
 
     name_map = {}
     inverse_name_map = {}
-    names = [name for name in tables]
+    names = sorted(tables.keys())
     mapped = []
 
     # Loop all tables to see if some are redundant.
