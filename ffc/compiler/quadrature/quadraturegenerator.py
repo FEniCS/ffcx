@@ -490,10 +490,10 @@ class QuadratureGenerator:
                     name_map[inv_name_map[name][0]] = [name]
 
         # Loop items in table and tabulate.
-        for name in transformer.used_psi_tables:
+        for name in sorted(list(transformer.used_psi_tables)):
             # Only proceed if values are still used (if they're not remapped).
             vals = tables[name]
-            if not vals == None:
+            if not vals is None:
                 # Add declaration to name.
                 ip, dofs = shape(vals)
                 decl_name = format_table + name + format_matrix(ip, dofs)
