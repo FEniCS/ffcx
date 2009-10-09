@@ -33,7 +33,7 @@ class SpaceDimensionTests(unittest.TestCase):
         "Test space dimensions of continuous Lagrange elements."
 
         P1 = FFCElement("Lagrange", "triangle", 1)
-        self.assertEqual(P1.space_dimension(), 3)
+        self.assertEqual(P1.space_dimension(), 5)
 
         P2 = FFCElement("Lagrange", "triangle", 2)
         self.assertEqual(P2.space_dimension(), 6)
