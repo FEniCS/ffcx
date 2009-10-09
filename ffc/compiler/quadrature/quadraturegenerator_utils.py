@@ -70,7 +70,7 @@ def generate_psi_name(counter, facet, component, derivatives):
           element is defined in 3D, then D012 means d^3(*)/dydz^2."""
 
     name = "FE%d" % counter
-    if facet != None:
+    if not facet is None:
         name += "_f%d" % facet
     if component != []:
         name += "_C%d" % component
@@ -87,7 +87,6 @@ def create_psi_tables(tables, format_epsilon, options):
     # Create element map {points:{element:number,},}
     # and a plain dictionary {name:values,}.
     element_map, flat_tables = flatten_psi_tables(tables)
-
     debug("\nQG-utils, psi_tables, flat_tables:\n" + str(flat_tables))
 
     # Reduce tables such that we only have those tables left with unique values
@@ -119,7 +118,7 @@ def flatten_psi_tables(tables):
         debug("\nQG-utils, flatten_tables, elem_dict:\n" + str(elem_dict))
 
         # Loop all elements and get all their tables.
-        for elem in sorted(elem_dict.keys()):
+        for elem in sorted(elem_dict.keys(), lambda x, y: cmp(str(x), str(y))):
             facet_tables = elem_dict[elem]
             debug("\nQG-utils, flatten_tables, elem:\n" + str(elem))
             debug("\nQG-utils, flatten_tables, facet_tables:\n" + str(facet_tables))
@@ -129,7 +128,6 @@ def flatten_psi_tables(tables):
                 # If the element value rank != 0, we must loop the components.
                 # before the derivatives (that's the way the values are tabulated).
                 if len(elem.value_shape()) != 0:
-                    # TODO: Do we need to sort elem_tables too?
                     for num_comp, comp in enumerate(elem_tables):
                         for num_deriv in comp:
                             for derivs in sorted(num_deriv.keys()):
