@@ -1,22 +1,27 @@
 "QuadratureTransformer (optimised) for quadrature code generation to translate UFL expressions."
 
 __author__ = "Kristian B. Oelgaard (k.b.oelgaard@tudelft.nl)"
-__date__ = "2009-03-18 -- 2009-08-08"
+__date__ = "2009-03-18 -- 2009-10-13"
 __copyright__ = "Copyright (C) 2009 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Python modules.
-from numpy import shape, transpose
+from numpy import shape
 
 # UFL common.
-from ufl.common import StackDict, product
+from ufl.common import product
 
 # UFL Classes.
-from ufl.classes import MultiIndex, FixedIndex, IntValue, FloatValue, Function
+from ufl.classes import FixedIndex
+from ufl.classes import IntValue
+from ufl.classes import FloatValue
+from ufl.classes import Function
 
 # UFL Algorithms.
-from ufl.algorithms.transformations import Transformer
-from ufl.algorithms import purge_list_tensors, expand_indices, propagate_restrictions, strip_variables
+from ufl.algorithms import purge_list_tensors
+from ufl.algorithms import expand_indices
+from ufl.algorithms import propagate_restrictions
+from ufl.algorithms import strip_variables
 from ufl.algorithms.printing import tree_format
 
 # FFC common modules.
@@ -30,21 +35,30 @@ from ffc.fem.createelement import create_element
 from ffc.fem.finiteelement import AFFINE, CONTRAVARIANT_PIOLA, COVARIANT_PIOLA
 
 # Utility and optimisation functions for quadraturegenerator.
-from quadraturegenerator_utils import generate_loop, generate_psi_name, create_permutations
-from quadraturetransformer import QuadratureTransformer
-from symbolics import set_format, create_float, create_symbol, create_product, \
-                      create_sum, create_fraction, BASIS, IP, GEO, optimise_code, \
-                      generate_aux_constants
+from quadraturetransformerbase import QuadratureTransformerBase
+from quadraturegenerator_utils import generate_loop
+from quadraturegenerator_utils import generate_psi_name
+from quadraturegenerator_utils import create_permutations
+
+from symbolics import set_format
+from symbolics import create_float
+from symbolics import create_symbol
+from symbolics import create_product
+from symbolics import create_sum
+from symbolics import create_fraction
+from symbolics import BASIS, IP, GEO
+from symbolics import optimise_code
+from symbolics import generate_aux_constants
 
 import time
 
-class QuadratureTransformerOpt(QuadratureTransformer):
+class QuadratureTransformerOpt(QuadratureTransformerBase):
     "Transform UFL representation to quadrature code."
 
     def __init__(self, form_representation, domain_type, optimise_options, format):
 
         # Initialise base class.
-        QuadratureTransformer.__init__(self, form_representation, domain_type, optimise_options, format)
+        QuadratureTransformerBase.__init__(self, form_representation, domain_type, optimise_options, format)
         set_format(format)
 
     # -------------------------------------------------------------------------

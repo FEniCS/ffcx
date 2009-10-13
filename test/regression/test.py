@@ -6,7 +6,7 @@ __copyright__ = "Copyright (C) 2007-2008 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 import sys, shutil
-from os import chdir, listdir, system, path, pardir, curdir, mkdir
+from os import chdir, listdir, system, path, pardir, curdir, mkdir, getcwd
 from difflib import unified_diff
 
 # Modified by Marie Rognes (meg), 2009-07-05
@@ -57,6 +57,9 @@ else:
 
 # Check both representations
 representations = ["quadrature", "tensor"]
+
+# Get current working directory
+cwd = getcwd()
 
 # Create temporary directory for generated files
 if not path.isdir("tmp"):
@@ -114,6 +117,11 @@ for representation in representations:
                 file.write("meld reference/%s/%s tmp/%s/%s\n" % (representation, code_file, representation, code_file))
         file.close()
         print "\nTo view diffs with meld, run the script viewdiff_%s.sh" % representation
+
+# Remove temporary directory if no test failed
+if not test_failed:
+    chdir(cwd)
+    shutil.rmtree("tmp")
 
 # Return error code if tests failed
 sys.exit(test_failed)
