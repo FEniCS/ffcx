@@ -72,7 +72,7 @@ def generate_psi_name(counter, facet, component, derivatives):
     name = "FE%d" % counter
     if not facet is None:
         name += "_f%d" % facet
-    if component != []:
+    if component != ():
         name += "_C%d" % component
     if any(derivatives):
         name += "_D" + "".join([str(d) for d in derivatives])
@@ -159,7 +159,7 @@ def flatten_psi_tables(tables):
                             if shape(psi_table) != 2 and shape(psi_table)[1] != point:
                                 error("Something is wrong with this table: " + str(psi_table))
                             # Generate the table name.
-                            name = generate_psi_name(counter, facet, [], derivs)
+                            name = generate_psi_name(counter, facet, (), derivs)
                             debug("Table name: " + name)
                             if name in flat_tables:
                                 error("Table name is not unique, something is wrong: " + name + str(flat_tables))

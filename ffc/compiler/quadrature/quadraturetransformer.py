@@ -9,9 +9,10 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Python modules.
 from numpy import shape
+import hotshot, hotshot.stats
 
 # UFL common.
-from ufl.common import product
+from ufl.common import product, StackDict, Stack
 
 # UFL Classes.
 from ufl.classes import FixedIndex
@@ -24,6 +25,7 @@ from ufl.algorithms import purge_list_tensors
 from ufl.algorithms import expand_indices
 from ufl.algorithms import propagate_restrictions
 from ufl.algorithms import strip_variables
+from ufl.algorithms.transformations import *
 from ufl.algorithms.printing import tree_format
 
 # FFC common modules.
@@ -59,11 +61,13 @@ class QuadratureTransformer(QuadratureTransformerBase):
     # AlgebraOperators (algebra.py).
     # -------------------------------------------------------------------------
     def sum(self, o, *operands):
-        debug("Visiting Sum: " + o.__repr__() + "\noperands: " + "\n".join(map(str, operands)))
+        #print("Visiting Sum: " + "\noperands: " + "\n".join(map(str, operands)))
 
         # Prefetch formats to speed up code generation.
         format_group  = self.format["grouping"]
         format_add    = self.format["add"]
+        format_mult   = self.format["multiply"]
+        format_float  = self.format["floating point"]
         code = {}
 
         # Loop operands that has to be summend.
@@ -79,15 +83,59 @@ class QuadratureTransformer(QuadratureTransformerBase):
         # Add sums and group if necessary.
         for key, val in code.items():
             if len(val) > 1:
+
                 value = [v for v in val if v]
-                code[key] = format_group(format_add(value))
+
+#                value = []
+##                print "\nsum"
+#                for v in val:
+#                    if v is None:
+##                        print "v is None"
+#                        pass
+#                    elif not v:
+#                        raise RuntimeError("sum, should not happen")
+#                    else:
+#                        value.append(v)
+                # NOTE: Since we no longer call expand_indices, the following
+                # is needed to prevent the code from exploding for forms like
+                # HyperElasticity
+                duplications = {}
+                for val in value:
+                    if val in duplications:
+                        duplications[val] += 1
+                        continue
+                    duplications[val] = 1
+
+                # Add a product for eacht term that has duplicate code
+                expressions = []
+                for expr, num_occur in duplications.items():
+                    if num_occur > 1:
+                        # Pre-multiply expression with number of occurrences
+                        expressions.append(format_mult([format_float(num_occur), expr]))
+                        continue
+                    # Just add to expressions
+                    expressions.append(expr)
+
+                if not expressions:
+                    code[key] = None
+#                    print "expr is [] '%s'" % format_group(format_add(expressions))
+                    continue
+                code[key] = format_group(format_add(expressions))
+#                code[key] = format_group(format_add(value))
             else:
+#                print "\nsum val[0] '%s'" % val[0]
+                if val[0] is None:
+                    print "val[0] is None"
+                elif not val[0]:
+                    print "val[0] is not"
+
                 code[key] = val[0]
 
         return code
 
     def product(self, o, *operands):
-        debug("\n\nVisiting Product: " + o.__repr__() + "with operands: " + "\n".join(map(str,operands)))
+#        print("Visiting Product: " + str(tree_format(o)) + "with operands: " + "\n".join(map(str,operands)))
+        #print("Visiting Product: " + "with operands: " + "\n".join(map(str,operands)))
 
         # Prefetch formats to speed up code generation.
         format_mult = self.format["multiply"]
@@ -104,9 +152,9 @@ class QuadratureTransformer(QuadratureTransformerBase):
         # Create permutations.
         permutations = create_permutations(permute)
 
-        debug("\npermute: " + str(permute))
-        debug("\nnot_permute: " + str(not_permute))
-        debug("\npermutations: " + str(permutations))
+        ##print("\npermute: " + str(permute))
+        ##print("\nnot_permute: " + str(not_permute))
+        ##print("\npermutations: " + str(permutations))
 
         # Create code.
         code ={}
@@ -118,17 +166,68 @@ class QuadratureTransformer(QuadratureTransformerBase):
                 # TODO: I think this check can be removed for speed since we
                 # just have a list of objects we should never get any conflicts here.
                 value = [v for v in val + not_permute if v]
+#                value = [v for v in val + not_permute if v and v != "1"]
+
+#                value = []
+##                print "\nperm"
+#                zero = False
+#                for v in val + not_permute:
+#                    if v is None:
+##                        print "v is None"
+#                        if tuple(l) in code:
+#                            error("This key should not be in the code.")
+#                        code[tuple(l)] = None
+#                        zero = True
+#                        break
+#                    elif not v:
+#                        raise RuntimeError("should not happen")
+#                    elif v == "1":
+##                        print "v == 1:"
+#                        pass
+#                    else:
+#                        value.append(v)
                 if tuple(l) in code:
                     error("This key should not be in the code.")
+
+#                if not value:
+##                    print "No values left: '%s'" % format_mult(value)
+#                    value = ["1"]
+#                if not zero:
+#                    code[tuple(l)] = format_mult(value)
                 code[tuple(l)] = format_mult(value)
         else:
             value = [v for v in not_permute if v]
+
+#            value = [v for v in not_permute if v and v != "1"]
+
+#            value = []
+##            print "\nfunc"
+#            for v in not_permute:
+#                if v is None:
+##                    print "v is None"
+#                    code[()] = None
+#                    return code
+#                elif not v:
+#                    print "v: '%s'" % str(v)
+#                    raise RuntimeError("should not happen")
+#                elif v == "1":
+##                    print "v == 1: '%s'" % str(v)
+#                    pass
+#                else:
+#                    value.append(v)
+##            print "value: ", value
+##            print "value == []: ", value == []
+
+#            if value == []:
+##                print "No values left: '%s'" % format_mult(value)
+#                value = ["1"]
+
             code[()] = format_mult(value)
 
         return code
 
     def division(self, o, *operands):
-        debug("\n\nVisiting Division: " + o.__repr__() + "with operands: " + "\n".join(map(str,operands)))
+        ##print("\n\nVisiting Division: " + o.__repr__() + "with operands: " + "\n".join(map(str,operands)))
 
         # Prefetch formats to speed up code generation.
         format_div      = self.format["division"]
@@ -139,8 +238,8 @@ class QuadratureTransformer(QuadratureTransformerBase):
 
         # Get the code from the operands.
         numerator_code, denominator_code = operands
-        debug("\nnumerator: " + str(numerator_code))
-        debug("\ndenominator: " + str(denominator_code))
+        ##print("\nnumerator: " + str(numerator_code))
+        ##print("\ndenominator: " + str(denominator_code))
 
         # TODO: Are these safety checks needed?
         if not () in denominator_code and len(denominator_code) != 1:
@@ -154,16 +253,16 @@ class QuadratureTransformer(QuadratureTransformerBase):
         return numerator_code
 
     def power(self, o):
-        debug("\n\nVisiting Power: " + o.__repr__())
+        ##print("\n\nVisiting Power: " + o.__repr__())
 
         # Get base and exponent.
         base, expo = o.operands()
-        debug("\nbase: " + str(base))
-        debug("\nexponent: " + str(expo))
+        ##print("\nbase: " + str(base))
+        ##print("\nexponent: " + str(expo))
 
         # Visit base to get base code.
         base_code = self.visit(base)
-        debug("base_code: " + str(base_code))
+        ##print("base_code: " + str(base_code))
 
         # TODO: Are these safety checks needed?
         if not () in base_code and len(base_code) != 1:
@@ -184,7 +283,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
             error("power does not support this exponent: " + repr(expo))
 
     def abs(self, o, *operands):
-        debug("\n\nVisiting Abs: " + o.__repr__() + "with operands: " + "\n".join(map(str,operands)))
+        ##print("\n\nVisiting Abs: " + o.__repr__() + "with operands: " + "\n".join(map(str,operands)))
 
         # Prefetch formats to speed up code generation.
         format_abs = self.format["absolute value"]
@@ -203,9 +302,28 @@ class QuadratureTransformer(QuadratureTransformerBase):
     # -------------------------------------------------------------------------
     # Constant values (constantvalue.py).
     # -------------------------------------------------------------------------
+    def identity(self, o):
+        ##print("\n\nVisiting Identity:" + o.__repr__())
+
+#        print "Identity: o:", repr(o)
+
+        # Get components
+        components = self.component()
+
+        # Safety checks.
+        if o.operands():
+            error("Didn't expect any operands for Identity: " + str(o.operands()))
+        if len(components) != 2:
+            error("Identity expect exactly two component indices: " + str(components))
+
+        # Only return a value if i==j
+        if components[0] == components[1]:
+           return {():self.format["floating point"](1.0)}
+        return {():None}
+
     def scalar_value(self, o, *operands):
         "ScalarValue covers IntValue and FloatValue"
-        debug("\n\nVisiting FloatValue:" + o.__repr__())
+        ##print("\n\nVisiting FloatValue:" + o.__repr__())
 
         # FIXME: Might be needed because it can be IndexAnnotated?
         if operands:
@@ -218,12 +336,14 @@ class QuadratureTransformer(QuadratureTransformerBase):
     # Function and Constants (function.py).
     # -------------------------------------------------------------------------
     def constant(self, o, *operands):
-        debug("\n\nVisiting Constant: " + o.__repr__())
+        ##print("\n\nVisiting Constant: " + o.__repr__())
+
+        components = self.component()
 
         # Safety checks.
         if operands:
             error("Didn't expect any operands for Constant: " + str(operands))
-        if len(self._components) > 0:
+        if len(components) > 0:
             error("Constant does not expect component indices: " + str(self._components))
         if o.shape() != ():
             error("Constant should not have a value shape: " + str(o.shape()))
@@ -234,30 +354,34 @@ class QuadratureTransformer(QuadratureTransformerBase):
             component += 1
 
         coefficient = self.format["coeff"] + self.format["matrix access"](str(o.count()), component)
-        debug("Constant coefficient: " + coefficient)
+        ##print("Constant coefficient: " + coefficient)
         return {():coefficient}
 
     def vector_constant(self, o, *operands):
-        debug("\n\nVisiting VectorConstant: " + o.__repr__())
+        ##print("\n\nVisiting VectorConstant: " + o.__repr__())
+
+        # Get the component
+        components = self.component()
+
         # Safety checks.
         if operands:
             error("Didn't expect any operands for VectorConstant: " + str(operands))
-        if len(self._components) != 1 or not isinstance(self._components[0], FixedIndex):
-            error("VectorConstant expects 1 Fixed component index: " + str(self._components))
+        if len(self._components) != 1:
+            error("VectorConstant expects 1 component index: " + str(components))
 
         # We get one component.
-        component = int(self._components[0])
+        component = components[0]
 
         # Handle restriction.
         if self.restriction == "-":
             component += o.shape()[0]
 
         coefficient = self.format["coeff"] + self.format["matrix access"](str(o.count()), component)
-        debug("VectorConstant coefficient: " + coefficient)
+        ##print("VectorConstant coefficient: " + coefficient)
         return {():coefficient}
 
     def tensor_constant(self, o, *operands):
-        debug("\n\nVisiting TensorConstant: " + o.__repr__())
+        ##print("\n\nVisiting TensorConstant: " + o.__repr__())
 
         # Safety checks.
         if operands:
@@ -274,25 +398,28 @@ class QuadratureTransformer(QuadratureTransformerBase):
             component += product(o.shape())
 
         coefficient = self.format["coeff"] + self.format["matrix access"](str(o.count()), component)
-        debug("TensorConstant coefficient: " + coefficient)
+        ##print("TensorConstant coefficient: " + coefficient)
         return {():coefficient}
 
     # -------------------------------------------------------------------------
     # FacetNormal (geometry.py).
     # -------------------------------------------------------------------------
     def facet_normal(self, o,  *operands):
-        debug("Visiting FacetNormal:")
+        ##print("Visiting FacetNormal:")
+
+        # Get the component
+        components = self.component()
+
         # Safety checks.
         if operands:
             error("Didn't expect any operands for FacetNormal: " + str(operands))
-        if len(self._components) != 1 or not isinstance(self._components[0], FixedIndex):
-            error("FacetNormal expects 1 Fixed component index: " + str(self._components))
+        if len(components) != 1:
+            error("FacetNormal expects 1 component index: " + str(components))
 
         # We get one component.
-        component = int(self._components[0])
-        normal_component = self.format["normal component"](self.restriction, component)
+        normal_component = self.format["normal component"](self.restriction, components[0])
         self.trans_set.add(normal_component)
-        debug("Facet Normal Component: " + normal_component)
+        ##print("Facet Normal Component: " + normal_component)
         return {():normal_component}
 
     # -------------------------------------------------------------------------
@@ -306,7 +433,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
         operand = operands[0]
         for key, val in operand.items():
             operand[key] = format_function(val)
-        debug("operand: " + str(operand))
+        ##print("operand: " + str(operand))
         return operand
 
     # -------------------------------------------------------------------------
@@ -342,7 +469,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
         if len(component) > 1:
             component = ufl_basis_function.element()._sub_element_mapping[tuple(component)]
         elif component:
-            component = component.pop()
+            component = component[0]
 
         # Compute the local offset, needed for non-affine mappings because the
         # elements are labeled with the global component number.
@@ -553,7 +680,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
         if len(component) > 1:
             component = ufl_function.element()._sub_element_mapping[tuple(component)]
         elif component:
-            component = component.pop()
+            component = component[0]
 
         # Compute the local offset (needed for non-affine mappings).
         if component:
@@ -768,21 +895,38 @@ def generate_code(integrand, transformer, Indent, format, interior):
     # been mapped and derivatives expandes. So it should be enough to just
     # expand_indices and purge_list_tensors.
 #    t = time.time()
-    new_integrand = strip_variables(integrand)
-    new_integrand = expand_indices(new_integrand)
+#    print "\nIntegrand integrand\n" + repr(integrand)
+#    print "\nIntegrand integrand\n" + str(tree_format(integrand))
+#    print "\ndublications\n", str(tree_format(mark_duplications(integrand)))
+#    print "\ndublications\n", str(tree_format(purge_duplications(integrand)))
+#    new_integrand = purge_duplications(integrand)
+
+#    new_integrand = strip_variables(integrand)
+#    new_integrand = expand_indices(integrand)
 #    info("expand_indices, time = %f" % (time.time() - t))
 #    t = time.time()
-    new_integrand = purge_list_tensors(new_integrand)
+#    new_integrand = purge_list_tensors(new_integrand)
 #    info("purge_tensors, time  = %f" % (time.time() - t))
     # Only propagate restrictions if we have an interior integral.
-    if interior:
-        new_integrand = propagate_restrictions(new_integrand)
-    debug("\nExpanded integrand\n" + str(tree_format(new_integrand)))
+#    if interior:
+#        new_integrand = propagate_restrictions(new_integrand)
+#    #print("\nExpanded integrand\n" + str(tree_format(new_integrand)))
+
+    # Profiling
+#    name = "test.prof"
+#    prof = hotshot.Profile(name)
+#    prof.runcall(transformer.visit, integrand)
+#    prof.close()
+#    stats = hotshot.stats.load(name)
+##    stats.strip_dirs()
+#    stats.sort_stats("time").print_stats(50)
+#    raise RuntimeError
 
     # Let the Transformer create the loop code.
     info("Transforming UFL integrand...")
     t = time.time()
-    loop_code = transformer.visit(new_integrand)
+    loop_code = transformer.visit(integrand)
+#    loop_code = transformer.visit(new_integrand)
     info("done, time = %f" % (time.time() - t))
 
     # TODO: Verify that test and trial functions will ALWAYS be rearranged to 0 and 1.
@@ -863,7 +1007,8 @@ def generate_code(integrand, transformer, Indent, format, interior):
         # Compute number of operations to compute entry and create comment
         # (add 1 because of += in assignment).
         entry_ops = operation_count(value, format) + 1
-        entry_ops_comment = format_comment("Number of operations to compute entry = %d" % entry_ops)
+#        entry_ops = 0
+        entry_ops_comment = format_comment("Number of operations to compute entry: %d" % entry_ops)
         prim_ops = entry_ops
 
         # Create appropriate entries.
@@ -939,8 +1084,8 @@ def generate_code(integrand, transformer, Indent, format, interior):
 
         # Add number of operations for current loop to total count.
         num_ops += ops
-        code += ["", format_comment("Number of operations for primary indices = %d" % ops)]
+        code += ["", format_comment("Number of operations for primary indices: %d" % ops)]
         code += generate_loop(lines, loop, Indent, format)
-#    info("write code, time     = %f" % (time.time() - t))
+
     return (code, num_ops)
 

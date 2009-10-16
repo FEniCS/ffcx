@@ -5,12 +5,19 @@ __date__ = "2009-10-13 -- 2009-10-13"
 __copyright__ = "Copyright (C) 2009 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
+# Python modules
+from itertools import izip
+
 # UFL Classes.
 from ufl.classes import MultiIndex
 from ufl.classes import FixedIndex
+from ufl.classes import Index
+from ufl.common import StackDict
+from ufl.common import Stack
 
 # UFL Algorithms.
 from ufl.algorithms.transformations import Transformer
+from ufl.algorithms.transformations import ReuseTransformer
 
 # FFC common modules.
 from ffc.common.log import debug, error
@@ -19,6 +26,7 @@ from ffc.common.log import debug, error
 from quadraturegenerator_utils import create_psi_tables
 
 class QuadratureTransformerBase(Transformer):
+#class QuadratureTransformerBase(ReuseTransformer):
     "Transform UFL representation to quadrature code."
 
     def __init__(self, form_representation, domain_type, optimise_options, format):
@@ -47,11 +55,16 @@ class QuadratureTransformerBase(Transformer):
 
         # Stacks.
         self._derivatives = []
-        self._components = []
+        self._index2value = StackDict()
+        self._components = Stack()
         self.trans_set = set()
         self.element_map, self.name_map, self.unique_tables =\
               create_psi_tables(form_representation.psi_tables[domain_type],\
                                        self.format["epsilon"], self.optimise_options)
+
+        # Cache.
+        self.basis_function_cache = {}
+        self.function_cache = {}
 
     def update_facets(self, facet0, facet1):
         self.facet0 = facet0
@@ -83,7 +96,8 @@ class QuadratureTransformerBase(Transformer):
         if self._components:
             error("This list is supposed to be empty.")
         # It should be zero but clear just to be sure.
-        self._components = []
+        self._components = Stack()
+        self._index2value = StackDict()
 
     def disp(self):
         print "\n\n **** Displaying QuadratureTransformer ****"
@@ -95,61 +109,63 @@ class QuadratureTransformerBase(Transformer):
         print "\nQuadratureTransformer, used_weights:\n", self.used_weights
         print "\nQuadratureTransformer, geo_consts:\n", self.geo_consts
 
+    def component(self):
+        "Return current component tuple."
+        if len(self._components):
+            return self._components.peek()
+        return ()
+
+    def derivatives(self):
+        "Return all derivatives tuple."
+        if len(self._derivatives):
+            return tuple(self._derivatives[:])
+        return ()
+
     # -------------------------------------------------------------------------
     # Start handling UFL classes.
     # -------------------------------------------------------------------------
     # Nothing in expr.py is handled. Can only handle children of these clases.
-    def expr(self, o, *operands):
+    def expr(self, o):
         print "\n\nVisiting basic Expr:", o.__repr__(), "with operands:"
-        print ", ".join(map(str,operands))
         error("This expression is not handled: ", str(o))
 
     # Nothing in terminal.py is handled. Can only handle children of these clases.
-    def terminal(self, o, *operands):
+    def terminal(self, o):
         print "\n\nVisiting basic Terminal:", o.__repr__(), "with operands:"
-        print ", ".join(map(str,operands))
         error("This terminal is not handled: ", str(o))
 
     # -------------------------------------------------------------------------
     # Things which should not be here (after expansion etc.) from:
-    # algebra.py, constantvalue.py, differentiation.py, finiteelement.py,
-    # form.py, indexing.py, integral.py, tensors.py.
+    # algebra.py, differentiation.py, finiteelement.py,
+    # form.py, indexing.py, integral.py.
     # -------------------------------------------------------------------------
     def algebra_operator(self, o, *operands):
-        debug("\n\nVisiting AlgebraOperator: " + o.__repr__())
+        print "\n\nVisiting AlgebraOperator: ", o.__repr__()
         error("This type of AlgebraOperator should have been expanded!!" + o.__repr__())
 
-    def identity(self, o, *operands):
-        debug("\n\nVisiting Identity: " + o.__repr__())
-        error("Identity should have been expanded!!")
-
     def derivative(self, o, *operands):
-        debug("\n\nVisiting Derivative: " + o.__repr__())
+        print "\n\nVisiting Derivative: ", o.__repr__()
         error("All derivatives apart from SpatialDerivative should have been expanded!!")
 
     def finite_element_base(self, o, *operands):
-        debug("\n\nVisiting FiniteElementBase: " + o.__repr__())
+        print "\n\nVisiting FiniteElementBase: ", o.__repr__()
         error("FiniteElements must be member of a BasisFunction or Function!!")
 
     def form(self, o, *operands):
-        debug("\n\nVisiting Form: " + o.__repr__())
+        print "\n\nVisiting Form: ", o.__repr__()
         error("The transformer only work on a Form integrand, not the Form itself!!")
 
     def index_base(self, o):
-        debug("\n\nVisiting IndexBase: " + o.__repr__())
+        print "\n\nVisiting IndexBase: ", o.__repr__()
         error("Indices should not be floating around freely in the integrand!!")
 
     def integral(self, o):
-        debug("\n\nVisiting Integral: " + o.__repr__())
+        print "\n\nVisiting Integral: ", o.__repr__()
         error("Integral should not be present in the integrand!!")
 
     def measure(self, o):
-        debug("\n\nVisiting Measure: " + o.__repr__())
+        print "\n\nVisiting Measure: ", o.__repr__()
         error("Measure should not be present in the integrand!!")
-
-    def list_tensor(self, o):
-        debug("\n\nVisiting ListTensor: " + o.__repr__())
-        error("ListTensor should have been purged!!")
 
     # -------------------------------------------------------------------------
     # Things which are not supported yet, from:
@@ -188,10 +204,6 @@ class QuadratureTransformerBase(Transformer):
         print "\n\nVisiting Restricted:", o.__repr__()
         error("This type of Restricted is not supported (only positive and negative are supported).")
 
-    def variable(self, o):
-        print "\n\nVisiting Variable:", o.__repr__()
-        error("Variable is not handled yet, should have been removed by strip_variables).")
-
     # -------------------------------------------------------------------------
     # Things that should be implemented by child classes.
     # -------------------------------------------------------------------------
@@ -209,7 +221,6 @@ class QuadratureTransformerBase(Transformer):
     def division(self, o, *operands):
         print "\n\nVisiting Division: ", o.__repr__()
         error("This object should be implemented by the child class.")
-        debug("\n\nVisiting Division: " + o.__repr__() + "with operands: " + "\n".join(map(str,operands)))
 
     def power(self, o):
         print "\n\nVisiting Power: ", o.__repr__()
@@ -217,6 +228,17 @@ class QuadratureTransformerBase(Transformer):
 
     def abs(self, o, *operands):
         print "\n\nVisiting Abs: ", o.__repr__()
+        error("This object should be implemented by the child class.")
+
+    # -------------------------------------------------------------------------
+    # Constant values (constantvalue.py).
+    # -------------------------------------------------------------------------
+    def identity(self, o):
+        print "\n\nVisiting Identity: ", o.__repr__()
+        error("This object should be implemented by the child class.")
+
+    def scalar_value(self, o, *operands):
+        print "\n\nVisiting ScalarValue: ", o.__repr__()
         error("This object should be implemented by the child class.")
 
     # -------------------------------------------------------------------------
@@ -242,38 +264,35 @@ class QuadratureTransformerBase(Transformer):
         error("This object should be implemented by the child class.")
 
     # -------------------------------------------------------------------------
-    # Supported classes.
+    # Things that can be handled by the base class.
     # -------------------------------------------------------------------------
     # -------------------------------------------------------------------------
     # BasisFunction (basisfunction.py).
     # -------------------------------------------------------------------------
     def basis_function(self, o, *operands):
-        debug("\n\nVisiting BasisFunction:" + o.__repr__())
+        #print("\nVisiting BasisFunction:" + str(o))
 
         # Just checking that we don't get any operands.
         if operands:
             error("Didn't expect any operands for BasisFunction: " + str(operands))
 
         # Create aux. info.
-        component = []
-        derivatives = ()
+        component = self.component()
+        derivatives = self.derivatives()
 
-        # Handle derivatives and components.
-        if self._derivatives:
-            derivatives = self._derivatives[:]
-        if self._components:
-            component = [int(c) for c in self._components]
-        debug("\ncomponent: " + str(component))
-        debug("\nderivatives: " + str(derivatives))
+#        print ("BasisFunction: component: " + str(component))
+#        print ("BasisFunction: derivatives: " + str(derivatives))
+
+        # Check if basis is already in cache
+        basis = self.basis_function_cache.get((o, component, derivatives), None)
+        if basis is not None:
+            return basis
 
         # Create mapping and code for basis function.
         basis = self.create_basis_function(o, component, derivatives)
+        self.basis_function_cache[(o, component, derivatives)] = basis
 
-        # Reset spatial derivatives.
-        # FIXME: (should this be handled by SpatialDerivative).
-        self._derivatives = []
-
-        debug("basis code: " + str(basis))
+#        print "BasisFunction: code: " + str(basis)
 
         return basis
 
@@ -281,119 +300,167 @@ class QuadratureTransformerBase(Transformer):
     # SpatialDerivative (differentiation.py).
     # -------------------------------------------------------------------------
     def spatial_derivative(self, o):
-        debug("\n\nVisiting SpatialDerivative: " + o.__repr__())
+#        #print("\n\nVisiting SpatialDerivative: " + o.__repr__())
 
         derivative_expr, index = o.operands()
-        debug("derivative_expr: " + str(derivative_expr))
-        debug("index: " + index.__repr__())
-        if not isinstance(index, MultiIndex) and len(index) == 1 and isinstance(index[0], FixedIndex):
-            error("Expecting 1 MultiIndex with 1 FixedIndex: " + str(index))
 
-        # Get the direction that we need the derivative for.
-        direction = int(index[0])
+#        print "\nSpatialDerivative: derivative_expr: ", derivative_expr
+#        print "SpatialDerivative: index: ", index
 
-        # Append the derivative.
-        self._derivatives.append(direction)
+        # Get direction of derivative and check that we only get one return index
+        der = self.visit(index)
+        if len(der) != 1:
+            error("SpatialDerivative: expected only one direction index. " + str(der))
+
+        self._derivatives.append(der[0])
+#        print "SpatialDerivative: _directions: ", self._derivatives
 
         # Visit children to generate the derivative code.
         code = self.visit(derivative_expr)
-        debug("Spatial_derivative, code: " + str(code))
+
+        self._derivatives.pop()
+
+#        print "SpatialDerivative: code: ", code
+
         return code
 
     # -------------------------------------------------------------------------
     # Function (function.py).
     # -------------------------------------------------------------------------
     def function(self, o, *operands):
-        debug("\n\nVisiting Function: " + o.__repr__())
+        #print("\nVisiting Function: " + str(o))
 
-        # Safety checks.
+        # Safety check.
         if operands:
             error("Didn't expect any operands for Function: " + str(operands))
-        if not all(isinstance(c, FixedIndex) for c in self._components):
-            error("Function expects FixedIndex for its components: " + str(self._components))
 
         # Create aux. info.
-        component = []
-        derivatives = ()
+        component = self.component()
+        derivatives = self.derivatives()
 
-        # Handle derivatives and components.
-        if self._derivatives:
-            derivatives = self._derivatives[:]
-        if self._components:
-            component = [int(c) for c in self._components]
+#        print("component: " + str(component))
+#        print("derivatives: " + str(derivatives))
 
-        debug("\ncomponent: " + str(component))
-        debug("\nderivatives: " + str(derivatives))
+        # Check if function is already in cache
+        function_code = self.function_cache.get((o, component, derivatives), None)
+        if function_code is not None:
+#            print "function cache!"
+            return function_code
 
-        # Create code for basis function.
-        code = self.create_function(o, component, derivatives)
+        # Create code for function and add empty tuple to cache dict.
+        function_code = {(): self.create_function(o, component, derivatives)}
 
-        # Reset spatial derivatives.
-        # FIXME: (should this be handled by SpatialDerivative).
-        self._derivatives = []
+        self.function_cache[(o, component, derivatives)] = function_code
 
-        debug("function code: " + str(code))
-
-        return {(): code}
+        return function_code
 
     # -------------------------------------------------------------------------
     # Indexed (indexed.py).
     # -------------------------------------------------------------------------
     def indexed(self, o):
-        debug("\n\nVisiting Indexed:" + o.__repr__())
+#        #print("\n\nVisiting Indexed:" + o.__repr__())
 
         indexed_expr, index = o.operands()
+        self._components.push(self.visit(index))
+#        print "\nIndexed:"
+#        print "Indexed: indexed_expr: ", indexed_expr
+#        print "Indexed: index: ", repr(index)
+#        print "Indexed: comps: ", self._components
 
-        debug("\nwrap, indexed_expr: " + indexed_expr.__repr__())
-        debug("\nwrap, index.__repr__(): " + index.__repr__())
+#        #print("\nwrap, indexed_expr: " + indexed_expr.__repr__())
+#        #print("\nwrap, index.__repr__(): " + index.__repr__())
 
-        # Save copy of components to let parent delete them again.
-        old_components = self._components[:]
-        self._components = []
+#        # Save copy of components to let parent delete them again.
+#        old_components = self._components[:]
+#        self._components = []
 
-        # Loop multi indices and create components.
-        for indx in index:
-            self._components.append(indx)
+#        # Loop multi indices and create components.
+#        for indx in index:
+#            self._components.append(indx)
 
-        debug("\nnew components: " + str(self._components))
+#        #print("\nnew components: " + str(self._components))
 
         # Visit expression subtrees and generate code.
         code = self.visit(indexed_expr)
 
-        debug("\nindexed code: " + str(code))
+#        #print("\nindexed code: " + str(code))
 
-        # Set components equal to old components.
-        self._components = old_components[:]
+#        # Set components equal to old components.
+#        self._components = old_components[:]
+        self._components.pop()
 
-        debug("\nold components: " + str(self._components))
+#        #print("\nold components: " + str(self._components))
 
+        return code
+
+    # -------------------------------------------------------------------------
+    # MultiIndex (indexing.py).
+    # -------------------------------------------------------------------------
+    def multi_index(self, o):
+#        #print("\n\nVisiting MultiIndex:" + o.__repr__())
+#        print "\nMultiIndex: o: ", repr(o)
+#        print "\nMultiIndex: o: ", repr(operands)
+        subcomp = []
+        for i in o:
+            if isinstance(i, FixedIndex):
+                subcomp.append(i._value)
+            elif isinstance(i, Index):
+                subcomp.append(self._index2value[i])
+#        print "MultiIndex: subcomp: ", tuple(subcomp)
+        return tuple(subcomp)
+
+    # -------------------------------------------------------------------------
+    # IndexSum (indexsum.py).
+    # -------------------------------------------------------------------------
+    def index_sum(self, o):
+#        #print("\n\nVisiting IndexSum: " + o.__repr__())
+
+        summand, multiindex = o.operands()
+        index, = multiindex
+
+#        print "\nIndexSum: summand: ", summand
+#        print "IndexSum: multiind: ", repr(multiindex)
+#        print "IndexSum: index: ", repr(index)
+#        print "IndexSum: o.dim: ", o.dimension()
+
+        ops = []
+        for i in range(o.dimension()):
+#            print "IndexSum: i: ", i
+            self._index2value.push(index, i)
+#            print "IndexSum: ind2val: ", self._index2value
+            ops.append(self.visit(summand))
+            self._index2value.pop()
+
+        code = self.sum(o, *ops)
+
+#        print "IndexSum: code: ", code
         return code
 
     # -------------------------------------------------------------------------
     # MathFunctions (mathfunctions.py).
     # -------------------------------------------------------------------------
     def sqrt(self, o, *operands):
-        debug("\n\nVisiting Sqrt: " + o.__repr__() + "with operands: " + "\n".join(map(str,operands)))
+#        #print("\n\nVisiting Sqrt: " + o.__repr__() + "with operands: " + "\n".join(map(str,operands)))
         # Call common math function.
         return self._math_function(operands, self.format["sqrt"])
 
     def exp(self, o, *operands):
-        debug("\n\nVisiting Exp: " + o.__repr__() + "with operands: " + "\n".join(map(str,operands)))
+#        #print("\n\nVisiting Exp: " + o.__repr__() + "with operands: " + "\n".join(map(str,operands)))
         # Call common math function.
         return self._math_function(operands, self.format["exp"])
 
     def ln(self, o, *operands):
-        debug("\n\nVisiting Ln: " + o.__repr__() + "with operands: " + "\n".join(map(str,operands)))
+#        #print("\n\nVisiting Ln: " + o.__repr__() + "with operands: " + "\n".join(map(str,operands)))
         # Call common math function.
         return self._math_function(operands, self.format["ln"])
 
     def cos(self, o, *operands):
-        debug("\n\nVisiting Cos: " + o.__repr__() + "with operands: " + "\n".join(map(str,operands)))
+#        #print("\n\nVisiting Cos: " + o.__repr__() + "with operands: " + "\n".join(map(str,operands)))
         # Call common math function.
         return self._math_function(operands, self.format["cos"])
 
     def sin(self, o, *operands):
-        debug("\n\nVisiting Sin: " + o.__repr__() + "with operands: " + "\n".join(map(str,operands)))
+#        #print("\n\nVisiting Sin: " + o.__repr__() + "with operands: " + "\n".join(map(str,operands)))
         # Call common math function.
         return self._math_function(operands, self.format["sin"])
 
@@ -401,7 +468,7 @@ class QuadratureTransformerBase(Transformer):
     # PositiveRestricted and NegativeRestricted (restriction.py).
     # -------------------------------------------------------------------------
     def positive_restricted(self, o):
-        debug("\n\nVisiting PositiveRestricted: " + o.__repr__())
+#        #print("\n\nVisiting PositiveRestricted: " + o.__repr__())
 
         # Just get the first operand, there should only be one.
         restricted_expr = o.operands()
@@ -416,12 +483,10 @@ class QuadratureTransformerBase(Transformer):
         # TODO: Is this really necessary?
         self.restriction = None
 
-        debug("code: " + str(code))
-
         return code
 
     def negative_restricted(self, o):
-        debug("\n\nVisiting NegativeRestricted: " + o.__repr__())
+#        #print("\n\nVisiting NegativeRestricted: " + o.__repr__())
 
         # Just get the first operand, there should only be one.
         restricted_expr = o.operands()
@@ -436,45 +501,84 @@ class QuadratureTransformerBase(Transformer):
         # TODO: Is this really necessary?
         self.restriction = None
 
-        debug("code: " + str(code))
-
         return code
 
     # -------------------------------------------------------------------------
     # ComponentTensor (tensors.py).
     # -------------------------------------------------------------------------
     def component_tensor(self, o):
-        debug("\n\nVisiting ComponentTensor: " + o.__repr__())
+#        #print("\n\nVisiting ComponentTensor: " + o.__repr__())
 
-        component_expr, index = o.operands()
-        debug("component_expr: " + str(component_expr))
-        debug("index: " + index.__repr__())
+        component_expr, indices = o.operands()
+#        #print("component_expr: " + str(component_expr))
+#        #print("indices: " + repr(indices))
 
-        if not len(self._components) == len(index):
+        # Get current component(s)
+        comps = self.component()
+
+#        print "\nComponentTensor: component_expr: ", component_expr
+#        print "ComponentTensor: indices: ", repr(indices)
+#        print "ComponentTensor: comps: ", comps
+
+        if not len(comps) == len(indices):
             error("The number of known components must be equal to the number of components of the ComponentTensor for this to work.")
 
-        # Save copy of components to let parent delete them again.
-        old_components = self._components[:]
-        self._components = []
+        # Update the index dict (map index values of current known indices to
+        # those of the component tensor)
+        for i, v in izip(indices._indices, comps):
+            self._index2value.push(i, v)
 
-        debug("\nnew components: " + str(self._components))
+        # Push an empty component tuple
+        self._components.push(())
+
+#        print "ComponentTensor: _components: ", self._components
 
         # Visit expression subtrees and generate code.
         code = self.visit(component_expr)
 
-        debug("code: " + str(code))
+        # Remove the index map from the StackDict
+        for i in range(len(comps)):
+            self._index2value.pop()
 
-        # Set components equal to old components.
-        self._components = old_components[:]
+        # Remove the empty component tuple
+        self._components.pop()
 
-        debug("\nold components: " + str(self._components))
+#        print "ComponentTensor: _components (after pop): ", self._components
+
+#        print "ComponentTensor: code: ", code
 
         return code
+
+    def list_tensor(self, o):
+#        #print("\n\nVisiting ListTensor: " + o.__repr__())
+
+#        print "\nListTensor: o: ", repr(o)
+        component = self.component()
+#        print "ListTensor: component: ", component
+#        print "ListTensor: operands: ", o.operands()
+
+#        c = self.component()
+        c0, c1 = component[0], component[1:]
+#        print "ListTensor: c0 ", c0
+#        print "ListTensor: c1 ", c1
+
+        # Get first operand
+        op = o.operands()[c0]
+
+        # Evaluate subtensor with this subcomponent
+        self._components.push(c1)
+        code = self.visit(op)
+        self._components.pop()
+
+#        print "ListTensor: code ", code
+        return code
+
+#        return r
 
     # -------------------------------------------------------------------------
     # Variable (variable.py).
     # -------------------------------------------------------------------------
-#    def variable(self, o):
-#        debug("\n\nVisiting Variable: " + o.__repr__())
-#        return self.visit(o.expression())
+    def variable(self, o):
+#        #print("\n\nVisiting Variable: " + o.__repr__())
+        return self.visit(o.expression())
 
