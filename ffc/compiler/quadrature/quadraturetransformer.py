@@ -227,7 +227,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
         return code
 
     def division(self, o, *operands):
-        ##print("\n\nVisiting Division: " + o.__repr__() + "with operands: " + "\n".join(map(str,operands)))
+        #print("\n\nVisiting Division: " + o.__repr__() + "with operands: " + "\n".join(map(str,operands)))
 
         # Prefetch formats to speed up code generation.
         format_div      = self.format["division"]
@@ -238,8 +238,8 @@ class QuadratureTransformer(QuadratureTransformerBase):
 
         # Get the code from the operands.
         numerator_code, denominator_code = operands
-        ##print("\nnumerator: " + str(numerator_code))
-        ##print("\ndenominator: " + str(denominator_code))
+        #print("\nnumerator: " + str(numerator_code))
+        #print("\ndenominator: " + str(denominator_code))
 
         # TODO: Are these safety checks needed?
         if not () in denominator_code and len(denominator_code) != 1:
@@ -253,16 +253,16 @@ class QuadratureTransformer(QuadratureTransformerBase):
         return numerator_code
 
     def power(self, o):
-        ##print("\n\nVisiting Power: " + o.__repr__())
+        #print("\n\nVisiting Power: " + o.__repr__())
 
         # Get base and exponent.
         base, expo = o.operands()
-        ##print("\nbase: " + str(base))
-        ##print("\nexponent: " + str(expo))
+        #print("\nbase: " + str(base))
+        #print("\nexponent: " + str(expo))
 
         # Visit base to get base code.
         base_code = self.visit(base)
-        ##print("base_code: " + str(base_code))
+        #print("base_code: " + str(base_code))
 
         # TODO: Are these safety checks needed?
         if not () in base_code and len(base_code) != 1:
@@ -283,7 +283,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
             error("power does not support this exponent: " + repr(expo))
 
     def abs(self, o, *operands):
-        ##print("\n\nVisiting Abs: " + o.__repr__() + "with operands: " + "\n".join(map(str,operands)))
+        #print("\n\nVisiting Abs: " + o.__repr__() + "with operands: " + "\n".join(map(str,operands)))
 
         # Prefetch formats to speed up code generation.
         format_abs = self.format["absolute value"]
@@ -302,7 +302,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
     # -------------------------------------------------------------------------
     # Constant values (constantvalue.py).
     # -------------------------------------------------------------------------
-    def create_scalar_value(self, value):
+    def format_scalar_value(self, value):
         #print("create_scalar_value: %d" % value)
         if value is None:
             return {():None}
@@ -321,7 +321,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
     # FacetNormal (geometry.py).
     # -------------------------------------------------------------------------
     def facet_normal(self, o,  *operands):
-        ##print("Visiting FacetNormal:")
+        #print("Visiting FacetNormal:")
 
         # Get the component
         components = self.component()
@@ -335,7 +335,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
         # We get one component.
         normal_component = self.format["normal component"](self.restriction, components[0])
         self.trans_set.add(normal_component)
-        ##print("Facet Normal Component: " + normal_component)
+        #print("Facet Normal Component: " + normal_component)
         return {():normal_component}
 
     # -------------------------------------------------------------------------
@@ -708,9 +708,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
         basis_name = generate_psi_name(element_counter, facet, component, deriv)
         basis_name, non_zeros, zeros, ones = self.name_map[basis_name]
 
-        # If all basis are zero we just return "0".
-        # TODO: Handle this more elegantly such that all terms involving this
-        # zero factor is removed.
+        # If all basis are zero we just return None.
         if zeros and self.optimise_options["ignore zero tables"]:
             return None
 

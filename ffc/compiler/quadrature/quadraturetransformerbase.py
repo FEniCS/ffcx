@@ -285,8 +285,8 @@ class QuadratureTransformerBase(Transformer):
 
         # Only return a value if i==j
         if components[0] == components[1]:
-            return self.create_scalar_value(1.0)
-        return self.create_scalar_value(None)
+            return self.format_scalar_value(1.0)
+        return self.format_scalar_value(None)
 
     def scalar_value(self, o, *operands):
         "ScalarValue covers IntValue and FloatValue"
@@ -296,7 +296,7 @@ class QuadratureTransformerBase(Transformer):
         if operands:
             error("Did not expect any operands for ScalarValue: " + str((o, operands)))
 
-        return self.create_scalar_value(o.value())
+        return self.format_scalar_value(o.value())
 
     # -------------------------------------------------------------------------
     # SpatialDerivative (differentiation.py).
@@ -304,6 +304,7 @@ class QuadratureTransformerBase(Transformer):
     def spatial_derivative(self, o):
         #print("\n\nVisiting SpatialDerivative: " + o.__repr__())
 
+        # Get expression and index
         derivative_expr, index = o.operands()
 
         # Get direction of derivative and check that we only get one return index
@@ -419,38 +420,21 @@ class QuadratureTransformerBase(Transformer):
     # Indexed (indexed.py).
     # -------------------------------------------------------------------------
     def indexed(self, o):
-#        #print("\n\nVisiting Indexed:" + o.__repr__())
+        #print("\n\nVisiting Indexed:" + o.__repr__())
 
+        # Get indexed expression and index, map index to current value and update components
         indexed_expr, index = o.operands()
         self._components.push(self.visit(index))
-#        print "\nIndexed:"
-#        print "Indexed: indexed_expr: ", indexed_expr
-#        print "Indexed: index: ", repr(index)
-#        print "Indexed: comps: ", self._components
 
-#        #print("\nwrap, indexed_expr: " + indexed_expr.__repr__())
-#        #print("\nwrap, index.__repr__(): " + index.__repr__())
-
-#        # Save copy of components to let parent delete them again.
-#        old_components = self._components[:]
-#        self._components = []
-
-#        # Loop multi indices and create components.
-#        for indx in index:
-#            self._components.append(indx)
-
-#        #print("\nnew components: " + str(self._components))
+        #print "Indexed: indexed_expr: ", indexed_expr
+        #print "Indexed: index: ", repr(index)
+        #print "Indexed: comps: ", self._components
 
         # Visit expression subtrees and generate code.
         code = self.visit(indexed_expr)
 
-#        #print("\nindexed code: " + str(code))
-
-#        # Set components equal to old components.
-#        self._components = old_components[:]
+        # Remove component again
         self._components.pop()
-
-#        #print("\nold components: " + str(self._components))
 
         return code
 
@@ -458,43 +442,43 @@ class QuadratureTransformerBase(Transformer):
     # MultiIndex (indexing.py).
     # -------------------------------------------------------------------------
     def multi_index(self, o):
-#        #print("\n\nVisiting MultiIndex:" + o.__repr__())
-#        print "\nMultiIndex: o: ", repr(o)
-#        print "\nMultiIndex: o: ", repr(operands)
+        #print("\n\nVisiting MultiIndex:" + o.__repr__())
+
+        # Loop all indices in MultiIndex and get current values
         subcomp = []
         for i in o:
             if isinstance(i, FixedIndex):
                 subcomp.append(i._value)
             elif isinstance(i, Index):
                 subcomp.append(self._index2value[i])
-#        print "MultiIndex: subcomp: ", tuple(subcomp)
+        #print "MultiIndex: subcomp: ", tuple(subcomp)
         return tuple(subcomp)
 
     # -------------------------------------------------------------------------
     # IndexSum (indexsum.py).
     # -------------------------------------------------------------------------
     def index_sum(self, o):
-#        #print("\n\nVisiting IndexSum: " + o.__repr__())
+        #print("\n\nVisiting IndexSum: " + o.__repr__())
 
+        # Get expression and index that we're summing over
         summand, multiindex = o.operands()
         index, = multiindex
 
-#        print "\nIndexSum: summand: ", summand
-#        print "IndexSum: multiind: ", repr(multiindex)
-#        print "IndexSum: index: ", repr(index)
-#        print "IndexSum: o.dim: ", o.dimension()
+        #print "\nIndexSum: summand: ", summand
+        #print "IndexSum: multiind: ", repr(multiindex)
+        #print "IndexSum: index: ", repr(index)
+        #print "IndexSum: o.dim: ", o.dimension()
 
+        # Loop index range, update index/value dict and generate code
         ops = []
         for i in range(o.dimension()):
-#            print "IndexSum: i: ", i
             self._index2value.push(index, i)
-#            print "IndexSum: ind2val: ", self._index2value
             ops.append(self.visit(summand))
             self._index2value.pop()
 
+        # Call sum to generate summation
         code = self.sum(o, *ops)
 
-#        print "IndexSum: code: ", code
         return code
 
     # -------------------------------------------------------------------------
@@ -566,20 +550,19 @@ class QuadratureTransformerBase(Transformer):
     # ComponentTensor (tensors.py).
     # -------------------------------------------------------------------------
     def component_tensor(self, o):
-#        #print("\n\nVisiting ComponentTensor: " + o.__repr__())
+        #print("\n\nVisiting ComponentTensor: " + o.__repr__())
 
+        # Get expression and indices
         component_expr, indices = o.operands()
-#        #print("component_expr: " + str(component_expr))
-#        #print("indices: " + repr(indices))
 
         # Get current component(s)
-        comps = self.component()
+        components = self.component()
 
-#        print "\nComponentTensor: component_expr: ", component_expr
-#        print "ComponentTensor: indices: ", repr(indices)
-#        print "ComponentTensor: comps: ", comps
+        #print "\nComponentTensor: component_expr: ", component_expr
+        #print "ComponentTensor: indices: ", repr(indices)
+        #print "ComponentTensor: components: ", components
 
-        if not len(comps) == len(indices):
+        if len(components) != len(indices):
             error("The number of known components must be equal to the number of components of the ComponentTensor for this to work.")
 
         # Update the index dict (map index values of current known indices to
@@ -589,8 +572,6 @@ class QuadratureTransformerBase(Transformer):
 
         # Push an empty component tuple
         self._components.push(())
-
-#        print "ComponentTensor: _components: ", self._components
 
         # Visit expression subtrees and generate code.
         code = self.visit(component_expr)
@@ -602,42 +583,35 @@ class QuadratureTransformerBase(Transformer):
         # Remove the empty component tuple
         self._components.pop()
 
-#        print "ComponentTensor: _components (after pop): ", self._components
-
-#        print "ComponentTensor: code: ", code
-
         return code
 
     def list_tensor(self, o):
-#        #print("\n\nVisiting ListTensor: " + o.__repr__())
+        #print("\n\nVisiting ListTensor: " + o.__repr__())
 
-#        print "\nListTensor: o: ", repr(o)
+        # Get the component
         component = self.component()
-#        print "ListTensor: component: ", component
-#        print "ListTensor: operands: ", o.operands()
+        #print "ListTensor: component: ", component
 
-#        c = self.component()
+        # Extract first and the rest of the components
         c0, c1 = component[0], component[1:]
-#        print "ListTensor: c0 ", c0
-#        print "ListTensor: c1 ", c1
+        #print "ListTensor: c0 ", c0
+        #print "ListTensor: c1 ", c1
 
         # Get first operand
         op = o.operands()[c0]
+        #print "ListTensor: op ", op
 
         # Evaluate subtensor with this subcomponent
         self._components.push(c1)
         code = self.visit(op)
         self._components.pop()
 
-#        print "ListTensor: code ", code
         return code
-
-#        return r
 
     # -------------------------------------------------------------------------
     # Variable (variable.py).
     # -------------------------------------------------------------------------
     def variable(self, o):
-#        #print("\n\nVisiting Variable: " + o.__repr__())
+        #print("\n\nVisiting Variable: " + o.__repr__())
         return self.visit(o.expression())
 
