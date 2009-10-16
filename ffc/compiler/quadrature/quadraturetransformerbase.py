@@ -231,32 +231,6 @@ class QuadratureTransformerBase(Transformer):
         error("This object should be implemented by the child class.")
 
     # -------------------------------------------------------------------------
-    # Constant values (constantvalue.py).
-    # -------------------------------------------------------------------------
-    def identity(self, o):
-        print "\n\nVisiting Identity: ", o.__repr__()
-        error("This object should be implemented by the child class.")
-
-    def scalar_value(self, o, *operands):
-        print "\n\nVisiting ScalarValue: ", o.__repr__()
-        error("This object should be implemented by the child class.")
-
-    # -------------------------------------------------------------------------
-    # Function and Constants (function.py).
-    # -------------------------------------------------------------------------
-    def constant(self, o, *operands):
-        print "\n\nVisiting Constant: ", o.__repr__()
-        error("This object should be implemented by the child class.")
-
-    def vector_constant(self, o, *operands):
-        print "\n\nVisiting VectorConstant: ", o.__repr__()
-        error("This object should be implemented by the child class.")
-
-    def tensor_constant(self, o, *operands):
-        print "\n\nVisiting TensorConstant: ", o.__repr__()
-        error("This object should be implemented by the child class.")
-
-    # -------------------------------------------------------------------------
     # FacetNormal (geometry.py).
     # -------------------------------------------------------------------------
     def facet_normal(self, o,  *operands):
@@ -280,52 +254,75 @@ class QuadratureTransformerBase(Transformer):
         component = self.component()
         derivatives = self.derivatives()
 
-#        print ("BasisFunction: component: " + str(component))
-#        print ("BasisFunction: derivatives: " + str(derivatives))
+        #print ("BasisFunction: component: " + str(component))
+        #print ("BasisFunction: derivatives: " + str(derivatives))
 
         # Check if basis is already in cache
         basis = self.basis_function_cache.get((o, component, derivatives), None)
         if basis is not None:
             return basis
 
-        # Create mapping and code for basis function.
+        # Create mapping and code for basis function and add to dict.
         basis = self.create_basis_function(o, component, derivatives)
         self.basis_function_cache[(o, component, derivatives)] = basis
 
-#        print "BasisFunction: code: " + str(basis)
-
         return basis
+
+    # -------------------------------------------------------------------------
+    # Constant values (constantvalue.py).
+    # -------------------------------------------------------------------------
+    def identity(self, o):
+        #print "\n\nVisiting Identity: ", o.__repr__()
+
+        # Get components
+        components = self.component()
+
+        # Safety checks.
+        if o.operands():
+            error("Didn't expect any operands for Identity: " + str(o.operands()))
+        elif len(components) != 2:
+            error("Identity expect exactly two component indices: " + str(components))
+
+        # Only return a value if i==j
+        if components[0] == components[1]:
+            return self.create_scalar_value(1.0)
+        return self.create_scalar_value(None)
+
+    def scalar_value(self, o, *operands):
+        "ScalarValue covers IntValue and FloatValue"
+        #print "\n\nVisiting ScalarValue: ", o.__repr__()
+
+        # FIXME: Might be needed because it can be IndexAnnotated?
+        if operands:
+            error("Did not expect any operands for ScalarValue: " + str((o, operands)))
+
+        return self.create_scalar_value(o.value())
 
     # -------------------------------------------------------------------------
     # SpatialDerivative (differentiation.py).
     # -------------------------------------------------------------------------
     def spatial_derivative(self, o):
-#        #print("\n\nVisiting SpatialDerivative: " + o.__repr__())
+        #print("\n\nVisiting SpatialDerivative: " + o.__repr__())
 
         derivative_expr, index = o.operands()
-
-#        print "\nSpatialDerivative: derivative_expr: ", derivative_expr
-#        print "SpatialDerivative: index: ", index
 
         # Get direction of derivative and check that we only get one return index
         der = self.visit(index)
         if len(der) != 1:
             error("SpatialDerivative: expected only one direction index. " + str(der))
 
+        # Add direction to list of derivatives
         self._derivatives.append(der[0])
-#        print "SpatialDerivative: _directions: ", self._derivatives
 
         # Visit children to generate the derivative code.
         code = self.visit(derivative_expr)
 
+        # Remove the direction from list of derivatives
         self._derivatives.pop()
-
-#        print "SpatialDerivative: code: ", code
-
         return code
 
     # -------------------------------------------------------------------------
-    # Function (function.py).
+    # Function and Constants (function.py).
     # -------------------------------------------------------------------------
     def function(self, o, *operands):
         #print("\nVisiting Function: " + str(o))
@@ -338,13 +335,12 @@ class QuadratureTransformerBase(Transformer):
         component = self.component()
         derivatives = self.derivatives()
 
-#        print("component: " + str(component))
-#        print("derivatives: " + str(derivatives))
+        #print("component: " + str(component))
+        #print("derivatives: " + str(derivatives))
 
         # Check if function is already in cache
         function_code = self.function_cache.get((o, component, derivatives), None)
         if function_code is not None:
-#            print "function cache!"
             return function_code
 
         # Create code for function and add empty tuple to cache dict.
@@ -353,6 +349,71 @@ class QuadratureTransformerBase(Transformer):
         self.function_cache[(o, component, derivatives)] = function_code
 
         return function_code
+
+    def constant(self, o, *operands):
+        #print("\n\nVisiting Constant: " + o.__repr__())
+
+        # Safety checks.
+        if operands:
+            error("Didn't expect any operands for Constant: " + str(operands))
+        elif len(self.component()) > 0:
+            error("Constant does not expect component indices: " + str(self._components))
+        elif o.shape() != ():
+            error("Constant should not have a value shape: " + str(o.shape()))
+
+        # Component default is 0
+        component = 0
+
+        # Handle restriction.
+        if self.restriction == "-":
+            component += 1
+
+        # Let child class handle the constant coefficient
+        return self.create_constant_coefficient(o.count(), component)
+
+    def vector_constant(self, o, *operands):
+        #print("\n\nVisiting VectorConstant: " + o.__repr__())
+
+        # Get the component
+        components = self.component()
+
+        # Safety checks.
+        if operands:
+            error("Didn't expect any operands for VectorConstant: " + str(operands))
+        elif len(components) != 1:
+            error("VectorConstant expects 1 component index: " + str(components))
+
+        # We get one component.
+        component = components[0]
+
+        # Handle restriction.
+        if self.restriction == "-":
+            component += o.shape()[0]
+
+        # Let child class handle the constant coefficient
+        return self.create_constant_coefficient(o.count(), component)
+
+    def tensor_constant(self, o, *operands):
+        #print("\n\nVisiting TensorConstant: " + o.__repr__())
+
+        # Get the components
+        components = self.component()
+
+        # Safety checks.
+        if operands:
+            error("Didn't expect any operands for TensorConstant: " + str(operands))
+        elif len(components) != len(o.shape()):
+            error("The number of components '%s' must be equal to the number of shapes '%s' for TensorConstant." % (str(components), str(o.shape())))
+
+        # Let the UFL element handle the component map.
+        component = o.element()._sub_element_mapping[components]
+
+        # Handle restriction (offset by value shape).
+        if self.restriction == "-":
+            component += product(o.shape())
+
+        # Let child class handle the constant coefficient
+        return self.create_constant_coefficient(o.count(), component)
 
     # -------------------------------------------------------------------------
     # Indexed (indexed.py).
@@ -440,27 +501,27 @@ class QuadratureTransformerBase(Transformer):
     # MathFunctions (mathfunctions.py).
     # -------------------------------------------------------------------------
     def sqrt(self, o, *operands):
-#        #print("\n\nVisiting Sqrt: " + o.__repr__() + "with operands: " + "\n".join(map(str,operands)))
+        #print("\n\nVisiting Sqrt: " + o.__repr__() + "with operands: " + "\n".join(map(str,operands)))
         # Call common math function.
         return self._math_function(operands, self.format["sqrt"])
 
     def exp(self, o, *operands):
-#        #print("\n\nVisiting Exp: " + o.__repr__() + "with operands: " + "\n".join(map(str,operands)))
+        #print("\n\nVisiting Exp: " + o.__repr__() + "with operands: " + "\n".join(map(str,operands)))
         # Call common math function.
         return self._math_function(operands, self.format["exp"])
 
     def ln(self, o, *operands):
-#        #print("\n\nVisiting Ln: " + o.__repr__() + "with operands: " + "\n".join(map(str,operands)))
+        #print("\n\nVisiting Ln: " + o.__repr__() + "with operands: " + "\n".join(map(str,operands)))
         # Call common math function.
         return self._math_function(operands, self.format["ln"])
 
     def cos(self, o, *operands):
-#        #print("\n\nVisiting Cos: " + o.__repr__() + "with operands: " + "\n".join(map(str,operands)))
+        #print("\n\nVisiting Cos: " + o.__repr__() + "with operands: " + "\n".join(map(str,operands)))
         # Call common math function.
         return self._math_function(operands, self.format["cos"])
 
     def sin(self, o, *operands):
-#        #print("\n\nVisiting Sin: " + o.__repr__() + "with operands: " + "\n".join(map(str,operands)))
+        #print("\n\nVisiting Sin: " + o.__repr__() + "with operands: " + "\n".join(map(str,operands)))
         # Call common math function.
         return self._math_function(operands, self.format["sin"])
 
@@ -468,7 +529,7 @@ class QuadratureTransformerBase(Transformer):
     # PositiveRestricted and NegativeRestricted (restriction.py).
     # -------------------------------------------------------------------------
     def positive_restricted(self, o):
-#        #print("\n\nVisiting PositiveRestricted: " + o.__repr__())
+        #print("\n\nVisiting PositiveRestricted: " + o.__repr__())
 
         # Just get the first operand, there should only be one.
         restricted_expr = o.operands()
@@ -479,14 +540,13 @@ class QuadratureTransformerBase(Transformer):
         self.restriction = "+"
         code = self.visit(restricted_expr[0])
 
-        # Reset restriction.
-        # TODO: Is this really necessary?
+        # Reset restriction (not strictly necessary).
         self.restriction = None
 
         return code
 
     def negative_restricted(self, o):
-#        #print("\n\nVisiting NegativeRestricted: " + o.__repr__())
+        #print("\n\nVisiting NegativeRestricted: " + o.__repr__())
 
         # Just get the first operand, there should only be one.
         restricted_expr = o.operands()
@@ -497,8 +557,7 @@ class QuadratureTransformerBase(Transformer):
         self.restriction = "-"
         code = self.visit(restricted_expr[0])
 
-        # Reset restriction.
-        # TODO: Is this really necessary?
+        # Reset restriction (not strictly necessary).
         self.restriction = None
 
         return code

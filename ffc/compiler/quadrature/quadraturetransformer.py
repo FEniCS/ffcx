@@ -302,103 +302,19 @@ class QuadratureTransformer(QuadratureTransformerBase):
     # -------------------------------------------------------------------------
     # Constant values (constantvalue.py).
     # -------------------------------------------------------------------------
-    def identity(self, o):
-        ##print("\n\nVisiting Identity:" + o.__repr__())
-
-#        print "Identity: o:", repr(o)
-
-        # Get components
-        components = self.component()
-
-        # Safety checks.
-        if o.operands():
-            error("Didn't expect any operands for Identity: " + str(o.operands()))
-        if len(components) != 2:
-            error("Identity expect exactly two component indices: " + str(components))
-
-        # Only return a value if i==j
-        if components[0] == components[1]:
-           return {():self.format["floating point"](1.0)}
-        return {():None}
-
-    def scalar_value(self, o, *operands):
-        "ScalarValue covers IntValue and FloatValue"
-        ##print("\n\nVisiting FloatValue:" + o.__repr__())
-
-        # FIXME: Might be needed because it can be IndexAnnotated?
-        if operands:
-            error("Did not expect any operands for ScalarValue: " + str((o, operands)))
-
+    def create_scalar_value(self, value):
+        #print("create_scalar_value: %d" % value)
+        if value is None:
+            return {():None}
         # TODO: Handle value < 0 better such that we don't have + -2 in the code.
-        return {():self.format["floating point"](o.value())}
+        return {():self.format["floating point"](value)}
 
     # -------------------------------------------------------------------------
-    # Function and Constants (function.py).
+    # Constants (function.py).
     # -------------------------------------------------------------------------
-    def constant(self, o, *operands):
-        ##print("\n\nVisiting Constant: " + o.__repr__())
-
-        components = self.component()
-
-        # Safety checks.
-        if operands:
-            error("Didn't expect any operands for Constant: " + str(operands))
-        if len(components) > 0:
-            error("Constant does not expect component indices: " + str(self._components))
-        if o.shape() != ():
-            error("Constant should not have a value shape: " + str(o.shape()))
-
-        component = 0
-        # Handle restriction.
-        if self.restriction == "-":
-            component += 1
-
-        coefficient = self.format["coeff"] + self.format["matrix access"](str(o.count()), component)
-        ##print("Constant coefficient: " + coefficient)
-        return {():coefficient}
-
-    def vector_constant(self, o, *operands):
-        ##print("\n\nVisiting VectorConstant: " + o.__repr__())
-
-        # Get the component
-        components = self.component()
-
-        # Safety checks.
-        if operands:
-            error("Didn't expect any operands for VectorConstant: " + str(operands))
-        if len(self._components) != 1:
-            error("VectorConstant expects 1 component index: " + str(components))
-
-        # We get one component.
-        component = components[0]
-
-        # Handle restriction.
-        if self.restriction == "-":
-            component += o.shape()[0]
-
-        coefficient = self.format["coeff"] + self.format["matrix access"](str(o.count()), component)
-        ##print("VectorConstant coefficient: " + coefficient)
-        return {():coefficient}
-
-    def tensor_constant(self, o, *operands):
-        ##print("\n\nVisiting TensorConstant: " + o.__repr__())
-
-        # Safety checks.
-        if operands:
-            error("Didn't expect any operands for TensorConstant: " + str(operands))
-        if not all(isinstance(c, FixedIndex) for c in self._components):
-            error("TensorConstant expects FixedIndex as components: " + str(self._components))
-
-        # Compute the global component.
-        component = tuple([int(c) for c in self._components])
-        component = o.element()._sub_element_mapping[component]
-
-        # Handle restriction (offset by value shape).
-        if self.restriction == "-":
-            component += product(o.shape())
-
-        coefficient = self.format["coeff"] + self.format["matrix access"](str(o.count()), component)
-        ##print("TensorConstant coefficient: " + coefficient)
+    def create_constant_coefficient(self, count, component):
+        coefficient = self.format["coeff"] + self.format["matrix access"](count, component)
+        #print("create_constant_coefficient: " + coefficient)
         return {():coefficient}
 
     # -------------------------------------------------------------------------
@@ -894,6 +810,7 @@ def generate_code(integrand, transformer, Indent, format, interior):
     # In form.form_data().form, which we should be using, coefficients have
     # been mapped and derivatives expandes. So it should be enough to just
     # expand_indices and purge_list_tensors.
+    # FIXME: Is propagate restrictions required?
 #    t = time.time()
 #    print "\nIntegrand integrand\n" + repr(integrand)
 #    print "\nIntegrand integrand\n" + str(tree_format(integrand))
@@ -1006,8 +923,8 @@ def generate_code(integrand, transformer, Indent, format, interior):
 
         # Compute number of operations to compute entry and create comment
         # (add 1 because of += in assignment).
-        entry_ops = operation_count(value, format) + 1
-#        entry_ops = 0
+#        entry_ops = operation_count(value, format) + 1
+        entry_ops = 0
         entry_ops_comment = format_comment("Number of operations to compute entry: %d" % entry_ops)
         prim_ops = entry_ops
 
