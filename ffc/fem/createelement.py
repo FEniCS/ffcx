@@ -3,6 +3,8 @@ __date__ = "2009-03-06 -- 2009-08-26"
 __copyright__ = "Copyright (C) 2009 Kristian B. Oelgaard and Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
+# Modified by Garth N. Wells 2009
+
 # UFL modules
 from ufl import FiniteElement as UFLFiniteElement
 from ufl import MixedElement as UFLMixedElement
@@ -42,15 +44,14 @@ def create_element(ufl_element, domain=None):
 
     # Create equivalent FFC element
     if isinstance(ufl_element, UFLFiniteElement):
-        # Special handling for quadrature elements
         if ufl_element.family() == "Quadrature":
-            ffc_element = FFCQuadratureElement(ufl_element.cell().domain(), ufl_element.degree(), domain)
+            ffc_element = FFCQuadratureElement(ufl_element, domain)
         else:
-            ffc_element = FFCFiniteElement(ufl_element.__repr__(), ufl_element.family(), ufl_element.cell().domain(), ufl_element.degree(), domain)
+            ffc_element = FFCFiniteElement(ufl_element, domain)
     elif isinstance(ufl_element, UFLMixedElement):
         sub_elements = [create_element(e, domain) for e in ufl_element.sub_elements()]
-        ffc_element = FFCMixedElement(sub_elements, domain)
-        # FIXME: This is just a temporary hack to 'support' tensor elements
+        ffc_element = FFCMixedElement(sub_elements, repr(ufl_element), domain)
+        # FIXME: Temporary hack to 'support' tensor elements
         if isinstance(ufl_element, UFLTensorElement):
             ffc_element._rank = len(ufl_element._shape)
     else:

@@ -3,6 +3,8 @@ __date__ = "2007-12-10 -- 2009-08-26"
 __copyright__ = "Copyright (C) 2007-2008 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
+# Modified by Garth N. Wells 2006-2009
+
 # FFC fem modules
 from finiteelement import *
 from dofrepresentation import *
@@ -19,8 +21,11 @@ from ufl.classes import Cell, Measure
 class QuadratureElement(FiniteElement):
     """Write description of QuadratureElement"""
 
-    def __init__(self, shape, degree, domain=None):
+    def __init__(self, ufl_element, domain=None):
         "Create QuadratureElement"
+
+        # Save UFL string representation
+        self.__ufl_str = repr(ufl_element)
 
         # Handle restrictions
         if domain and isinstance(domain, Cell):
@@ -29,11 +34,11 @@ class QuadratureElement(FiniteElement):
             error("Restriction of QuadratureElement to Measure has not been implemented yet.")
 
         # Save incoming arguments
-        self.__cell_shape = string_to_shape[shape]
+        self.__cell_shape = string_to_shape[ufl_element.cell().domain()]
         self.__domain = domain
 
         # Compute number of points per axis from the degree of the element
-        self.__num_axis_points = (degree + 2) / 2
+        self.__num_axis_points = (ufl_element.degree() + 2) / 2
 
         # Save element family
         self.__family = "Quadrature"
@@ -109,12 +114,7 @@ class QuadratureElement(FiniteElement):
 
     def signature(self):
         "Return a string identifying the QuadratureElement"
-        s = ""
-        if self.cell_shape() > 1:
-            s = " (%s)" % "x".join([str(self.__num_axis_points) for i in range(self.__cell_shape)])
-
-        return "%s element with %d quadrature point(s)%s on a %s" % \
-               (self.__family, self.__num_quad_points, s, shape_to_string[self.__cell_shape])
+        return self.__ufl_str
 
     def space_dimension(self):
         "Return the total number of quadrature points"

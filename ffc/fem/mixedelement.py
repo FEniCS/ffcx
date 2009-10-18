@@ -3,7 +3,7 @@ __date__ = "2005-09-16 -- 2009-08-26"
 __copyright__ = "Copyright (C) 2005-2007 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Modified by Garth N. Wells 2006
+# Modified by Garth N. Wells 2006-2009
 # Modified by Marie E. Rognes (meg@math.uio.no) 2007
 # Modified by Kristian B. Oelgaard 2009
 
@@ -24,8 +24,11 @@ class MixedElement(FiniteElementBase):
     elements (mixed or simple) and may thus be recursively defined in
     terms of other mixed elements."""
     
-    def __init__(self, elements, domain=None):
+    def __init__(self, elements, ufl_str, domain=None):
         "Create MixedElement from a list of elements."
+
+        # Save UFL string representation
+        self.__ufl_str = ufl_str
 
         # Make sure we get a list of elements
         if not isinstance(elements, list):
@@ -132,7 +135,7 @@ class MixedElement(FiniteElementBase):
 
     def signature(self):
         "Return a string identifying the finite element"
-        return "MixedElement([%s])" % ", ".join([element.signature() for element in self.__elements])
+        return self.__ufl_str
 
     def space_dimension(self):
         "Return the dimension of the finite element function space"

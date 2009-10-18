@@ -69,17 +69,18 @@ class FiniteElement(FiniteElementBase):
     The shape and degree must match the chosen family of finite element.
     """
 
-    def __init__(self, ufl_str, family, shape, degree=None, domain=None):
+    def __init__(self, ufl_element, domain=None):
         "Create FiniteElement"
 
         # Save UFL string representation
-        self.__ufl_reprsentation_str = ufl_str
+        self.__ufl_str = repr(ufl_element)
 
         # Save element family
-        self.__family = family
+        self.__family = ufl_element.family()
 
         # Get FIAT element from string
-        (self.__fiat_element, self.__mapping) = self.__choose_element(family, shape, degree)
+        (self.__fiat_element, self.__mapping) = self.__choose_element(ufl_element.family(), \
+                                         ufl_element.cell().domain(), ufl_element.degree())
 
         # Get the transformed (according to mapping) function space:
         self.__transformed_space = self.__transformed_function_space()
@@ -229,15 +230,7 @@ class FiniteElement(FiniteElementBase):
 
     def signature(self):
         "Return a string identifying the finite element"
-        if self.__ufl_reprsentation_str:
-            return self.__ufl_reprsentation_str
-        else:
-            if self.domain():
-                return "FiniteElement('%s', '%s', %d)|_{%s}" % \
-                       (self.__family, shape_to_string[self.cell_shape()], self.degree(), str(self.domain()))
-            else:
-                return "FiniteElement('%s', '%s', %d)" % \
-                       (self.__family, shape_to_string[self.cell_shape()], self.degree())
+        return self.__ufl_str
 
     def space_dimension(self):
         "Return the dimension of the finite element function space"
