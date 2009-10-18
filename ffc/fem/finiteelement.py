@@ -69,8 +69,11 @@ class FiniteElement(FiniteElementBase):
     The shape and degree must match the chosen family of finite element.
     """
 
-    def __init__(self, family, shape, degree=None, domain=None):
+    def __init__(self, ufl_str, family, shape, degree=None, domain=None):
         "Create FiniteElement"
+
+        # Save UFL string representation
+        self.__ufl_reprsentation_str = ufl_str
 
         # Save element family
         self.__family = family
@@ -226,12 +229,15 @@ class FiniteElement(FiniteElementBase):
 
     def signature(self):
         "Return a string identifying the finite element"
-        if self.domain():
-            return "FiniteElement('%s', '%s', %d)|_{%s}" % \
-                   (self.__family, shape_to_string[self.cell_shape()], self.degree(), str(self.domain()))
+        if self.__ufl_reprsentation_str:
+            return self.__ufl_reprsentation_str
         else:
-            return "FiniteElement('%s', '%s', %d)" % \
-                   (self.__family, shape_to_string[self.cell_shape()], self.degree())
+            if self.domain():
+                return "FiniteElement('%s', '%s', %d)|_{%s}" % \
+                       (self.__family, shape_to_string[self.cell_shape()], self.degree(), str(self.domain()))
+            else:
+                return "FiniteElement('%s', '%s', %d)" % \
+                       (self.__family, shape_to_string[self.cell_shape()], self.degree())
 
     def space_dimension(self):
         "Return the dimension of the finite element function space"

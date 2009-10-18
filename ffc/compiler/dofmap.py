@@ -266,7 +266,7 @@ def __generate_tabulate_coordinates(dof_map, format):
         cell_shape = dof_map.element().cell_shape()
 
         # Create linear Lagrange element for the transformation
-        element = FiniteElement("Lagrange", shape_to_string[cell_shape], 1)
+        element = FiniteElement(None, "Lagrange", shape_to_string[cell_shape], 1)
 
         # Tabulate values of basisfunctions
         table = element.tabulate(0, coordinates)

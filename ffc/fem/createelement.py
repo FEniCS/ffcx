@@ -46,7 +46,7 @@ def create_element(ufl_element, domain=None):
         if ufl_element.family() == "Quadrature":
             ffc_element = FFCQuadratureElement(ufl_element.cell().domain(), ufl_element.degree(), domain)
         else:
-            ffc_element = FFCFiniteElement(ufl_element.family(), ufl_element.cell().domain(), ufl_element.degree(), domain)
+            ffc_element = FFCFiniteElement(ufl_element.__repr__(), ufl_element.family(), ufl_element.cell().domain(), ufl_element.degree(), domain)
     elif isinstance(ufl_element, UFLMixedElement):
         sub_elements = [create_element(e, domain) for e in ufl_element.sub_elements()]
         ffc_element = FFCMixedElement(sub_elements, domain)
