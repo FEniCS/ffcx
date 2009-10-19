@@ -17,6 +17,9 @@ from ffc.fem.finiteelement import *
 # FFC codegeneration common modules
 from codeutils import inner_product
 
+# UFL modules
+from ufl import FiniteElement as UFLFiniteElement
+
 def generate_dof_maps(form_data, format):
     "Generate code for dof maps, including recursively nested dof maps."
     
@@ -266,7 +269,8 @@ def __generate_tabulate_coordinates(dof_map, format):
         cell_shape = dof_map.element().cell_shape()
 
         # Create linear Lagrange element for the transformation
-        element = FiniteElement("Lagrange", shape_to_string[cell_shape], 1)
+        ufl_element = UFLFiniteElement("Lagrange", shape_to_string[cell_shape], 1)
+        element = FiniteElement(ufl_element)
 
         # Tabulate values of basisfunctions
         table = element.tabulate(0, coordinates)

@@ -736,6 +736,8 @@ def generate_code(integrand, transformer, Indent, format, interior):
     # Apply basic expansions.
 #    print "\nIntegrand integrand\n" + str(tree_format(integrand))
     # FIXME: Is propagate restrictions required?
+#    info("Transforming UFL integrand...")
+    t = time.time()
     # Only propagate restrictions if we have an interior integral.
 #    if interior:
 #        new_integrand = propagate_restrictions(integrand)
@@ -757,6 +759,8 @@ def generate_code(integrand, transformer, Indent, format, interior):
     loop_code = transformer.visit(integrand)
 #    loop_code = transformer.visit(new_integrand)
 #    info("done, time = %f" % (time.time() - t))
+#    info("Generate code...")
+#    t = time.time()
 
     # TODO: Verify that test and trial functions will ALWAYS be rearranged to 0 and 1.
     indices = {-2: format["first free index"], -1: format["second free index"],
@@ -921,6 +925,8 @@ def generate_code(integrand, transformer, Indent, format, interior):
         num_ops += ops
         code += ["", format_comment("Number of operations for primary indices: %d" % ops)]
         code += generate_loop(lines, loop, Indent, format)
+
+#    info("done, time = %f" % (time.time() - t))
 
     return (code, num_ops)
 

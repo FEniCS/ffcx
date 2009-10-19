@@ -1,3 +1,4 @@
+ - Added demo: HyperElasticity.ufl
 0.7.0
  - Move contents of TODO to: https://blueprints.launchpad.net/ffc
  - Support for restriction of finite elements to only consider facet dofs
