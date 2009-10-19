@@ -9,7 +9,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Python modules.
 from numpy import shape
-import hotshot, hotshot.stats
+#import hotshot, hotshot.stats
 
 # UFL common.
 from ufl.common import product, StackDict, Stack

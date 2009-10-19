@@ -48,11 +48,11 @@ def create_product(variables):
     # (Product and Sum) so the list 'variables' is probably already sorted.
 #    key = tuple(sorted(variables))
     key = tuple(variables)
-    if key in _product_cache:
+#    if key in _product_cache:
 #        print "found %s in cache" %str(key)
-        return _product_cache[key]
+#        return _product_cache[key]
     product = Product(key)
-    _product_cache[key] = product
+#    _product_cache[key] = product
     return product
 
 _sum_cache = {}
@@ -63,21 +63,21 @@ def create_sum(variables):
     # (Product and Sum) so the list 'variables' is probably already sorted.
 #    key = tuple(sorted(variables))
     key = tuple(variables)
-    if key in _sum_cache:
+#    if key in _sum_cache:
 #        print "found %s in cache" %str(key)
-        return _sum_cache[key]
+#        return _sum_cache[key]
     s = Sum(key)
-    _sum_cache[key] = s
+#    _sum_cache[key] = s
     return s
 
 _fraction_cache = {}
 def create_fraction(num, denom):
     key = (num, denom)
-    if key in _fraction_cache:
+#    if key in _fraction_cache:
 #        print "found %s in cache" %str(key)
-        return _fraction_cache[key]
+#        return _fraction_cache[key]
     fraction = Fraction(num, denom)
-    _fraction_cache[key] = fraction
+#    _fraction_cache[key] = fraction
     return fraction
 
 # Function to set global format to avoid passing around the dictionary 'format'.

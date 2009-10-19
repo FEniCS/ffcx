@@ -636,6 +636,11 @@ def generate_code(integrand, transformer, Indent, format, interior):
     loop_code = transformer.visit(integrand)
     info("done, time = %f" % (time.time() - t))
 
+    print "Deleting transformer cache"
+    # Reset cache
+    transformer.basis_function_cache = {}
+    transformer.function_cache = {}
+
     # TODO: Verify that test and trial functions will ALWAYS be rearranged to 0 and 1.
     indices = {-2: format["first free index"], -1: format["second free index"],
                 0: format["first free index"],  1: format["second free index"]}
