@@ -1,7 +1,7 @@
 "QuadratureTransformer for quadrature code generation to translate UFL expressions."
 
 __author__ = "Kristian B. Oelgaard (k.b.oelgaard@tudelft.nl)"
-__date__ = "2009-02-09 -- 2009-10-13"
+__date__ = "2009-02-09 -- 2009-10-19"
 __copyright__ = "Copyright (C) 2009 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
@@ -35,7 +35,7 @@ from ffc.common.log import info, debug, error
 from ffc.compiler.tensor.multiindex import MultiIndex as FFCMultiIndex
 
 # FFC fem modules.
-from ffc.fem.createelement import create_element
+#from ffc.fem.createelement import create_element
 from ffc.fem.finiteelement import AFFINE, CONTRAVARIANT_PIOLA, COVARIANT_PIOLA
 
 # Utility and optimisation functions for quadraturegenerator.
@@ -61,7 +61,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
     # AlgebraOperators (algebra.py).
     # -------------------------------------------------------------------------
     def sum(self, o, *operands):
-        #print("Visiting Sum: " + "\noperands: " + "\n".join(map(str, operands)))
+        #print("Visiting Sum: " + "\noperands: \n" + "\n".join(map(str, operands)))
 
         # Prefetch formats to speed up code generation.
         format_group  = self.format["grouping"]
@@ -70,7 +70,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
         format_float  = self.format["floating point"]
         code = {}
 
-        # Loop operands that has to be summend.
+        # Loop operands that has to be summed and sort according to map (j,k).
         for op in operands:
             # If entries does already exist we can add the code, otherwise just
             # dump them in the element tensor.
@@ -82,20 +82,11 @@ class QuadratureTransformer(QuadratureTransformerBase):
 
         # Add sums and group if necessary.
         for key, val in code.items():
-            if len(val) > 1:
 
-                value = [v for v in val if v]
+            # Exclude all zero valued terms from sum
+            value = [v for v in val if not v is None]
 
-#                value = []
-##                print "\nsum"
-#                for v in val:
-#                    if v is None:
-##                        print "v is None"
-#                        pass
-#                    elif not v:
-#                        raise RuntimeError("sum, should not happen")
-#                    else:
-#                        value.append(v)
+            if len(value) > 1:
                 # NOTE: Since we no longer call expand_indices, the following
                 # is needed to prevent the code from exploding for forms like
                 # HyperElasticity
@@ -113,29 +104,26 @@ class QuadratureTransformer(QuadratureTransformerBase):
                         # Pre-multiply expression with number of occurrences
                         expressions.append(format_mult([format_float(num_occur), expr]))
                         continue
-                    # Just add to expressions
+                    # Just add expression if there is only one
                     expressions.append(expr)
 
                 if not expressions:
-                    code[key] = None
-#                    print "expr is [] '%s'" % format_group(format_add(expressions))
+                    error("Where did the expressions go?")
+                if len(expressions) > 1:
+                    code[key] = format_group(format_add(expressions))
                     continue
-                code[key] = format_group(format_add(expressions))
-#                code[key] = format_group(format_add(value))
+                code[key] = expressions[0]
             else:
-#                print "\nsum val[0] '%s'" % val[0]
-                if val[0] is None:
-                    print "val[0] is None"
-                elif not val[0]:
-                    print "val[0] is not"
-
-                code[key] = val[0]
+                # Check for zero valued sum
+                if not value:
+                    code[key] = None
+                    continue
+                code[key] = value[0]
 
         return code
 
     def product(self, o, *operands):
-#        print("Visiting Product: " + str(tree_format(o)) + "with operands: " + "\n".join(map(str,operands)))
-        #print("Visiting Product: " + "with operands: " + "\n".join(map(str,operands)))
+        #print("Visiting Product with operands: \n" + "\n".join(map(str,operands)))
 
         # Prefetch formats to speed up code generation.
         format_mult = self.format["multiply"]
@@ -152,9 +140,9 @@ class QuadratureTransformer(QuadratureTransformerBase):
         # Create permutations.
         permutations = create_permutations(permute)
 
-        ##print("\npermute: " + str(permute))
-        ##print("\nnot_permute: " + str(not_permute))
-        ##print("\npermutations: " + str(permutations))
+        #print("\npermute: " + str(permute))
+        #print("\nnot_permute: " + str(not_permute))
+        #print("\npermutations: " + str(permutations))
 
         # Create code.
         code ={}
@@ -163,64 +151,65 @@ class QuadratureTransformer(QuadratureTransformerBase):
                 # Sort key in order to create a unique key.
                 l = list(key)
                 l.sort()
-                # TODO: I think this check can be removed for speed since we
-                # just have a list of objects we should never get any conflicts here.
-                value = [v for v in val + not_permute if v]
+
+#                value = [v for v in val + not_permute if v]
+#                value = [v for v in val + not_permute]
 #                value = [v for v in val + not_permute if v and v != "1"]
 
-#                value = []
-##                print "\nperm"
-#                zero = False
-#                for v in val + not_permute:
-#                    if v is None:
-##                        print "v is None"
-#                        if tuple(l) in code:
-#                            error("This key should not be in the code.")
-#                        code[tuple(l)] = None
-#                        zero = True
-#                        break
-#                    elif not v:
-#                        raise RuntimeError("should not happen")
-#                    elif v == "1":
-##                        print "v == 1:"
-#                        pass
-#                    else:
-#                        value.append(v)
-                if tuple(l) in code:
-                    error("This key should not be in the code.")
+                # Loop products, don't multiply by '1' and if we encounter a None the product is zero.
+                # TODO: Need to find a way to remove and J_inv00 terms that might
+                # disappear as a consequence of eliminating a zero valued term
+                value = []
+                zero = False
+                for v in val + not_permute:
+                    if v is None:
+                        #print "v is None"
+                        if tuple(l) in code:
+                            error("This key should not be in the code.")
+                        code[tuple(l)] = None
+                        zero = True
+                        break
+                    elif not v:
+                        print "v: '%s'" % str(v)
+                        raise RuntimeError("should not happen")
+                    elif v == "1":
+                        #print "v == 1:"
+                        pass
+                    else:
+                        value.append(v)
 
-#                if not value:
-##                    print "No values left: '%s'" % format_mult(value)
-#                    value = ["1"]
-#                if not zero:
-#                    code[tuple(l)] = format_mult(value)
-                code[tuple(l)] = format_mult(value)
+                if not value:
+                    #print "No values left: '%s'" % format_mult(value)
+                    value = ["1"]
+                if zero:
+                    code[tuple(l)] = None
+                else:
+                    code[tuple(l)] = format_mult(value)
         else:
-            value = [v for v in not_permute if v]
-
+#            value = [v for v in not_permute if v]
 #            value = [v for v in not_permute if v and v != "1"]
 
-#            value = []
-##            print "\nfunc"
-#            for v in not_permute:
-#                if v is None:
-##                    print "v is None"
-#                    code[()] = None
-#                    return code
-#                elif not v:
-#                    print "v: '%s'" % str(v)
-#                    raise RuntimeError("should not happen")
-#                elif v == "1":
-##                    print "v == 1: '%s'" % str(v)
-#                    pass
-#                else:
-#                    value.append(v)
-##            print "value: ", value
-##            print "value == []: ", value == []
+            # Loop products, don't multiply by '1' and if we encounter a None the product is zero.
+            # TODO: Need to find a way to remove terms from 'used sets' that might
+            # disappear as a consequence of eliminating a zero valued term
+            value = []
+            for v in not_permute:
+                if v is None:
+                    #print "v is None"
+                    code[()] = None
+                    return code
+                elif not v:
+                    print "v: '%s'" % str(v)
+                    raise RuntimeError("should not happen")
+                elif v == "1":
+                    #print "v == 1: '%s'" % str(v)
+                    pass
+                else:
+                    value.append(v)
 
-#            if value == []:
-##                print "No values left: '%s'" % format_mult(value)
-#                value = ["1"]
+            if value == []:
+                #print "No values left: '%s'" % format_mult(value)
+                value = ["1"]
 
             code[()] = format_mult(value)
 
@@ -241,12 +230,12 @@ class QuadratureTransformer(QuadratureTransformerBase):
         #print("\nnumerator: " + str(numerator_code))
         #print("\ndenominator: " + str(denominator_code))
 
-        # TODO: Are these safety checks needed?
+        # TODO: Are these safety checks needed? Need to check for None?
         if not () in denominator_code and len(denominator_code) != 1:
             error("Only support function type denominator: " + str(denominator_code))
 
         # Get denominator and create new values for the numerator.
-        denominator = denominator_code.pop(())
+        denominator = denominator_code[()]
         for key, val in numerator_code.items():
             numerator_code[key] = val + format_div + format_grouping(denominator)
 
@@ -257,19 +246,19 @@ class QuadratureTransformer(QuadratureTransformerBase):
 
         # Get base and exponent.
         base, expo = o.operands()
-        #print("\nbase: " + str(base))
+        #print("\nbase: " + repr(base))
         #print("\nexponent: " + str(expo))
 
         # Visit base to get base code.
         base_code = self.visit(base)
         #print("base_code: " + str(base_code))
 
-        # TODO: Are these safety checks needed?
+        # TODO: Are these safety checks needed? Need to check for None?
         if not () in base_code and len(base_code) != 1:
             error("Only support function type base: " + str(base_code))
 
         # Get the base code.
-        val = base_code.pop(())
+        val = base_code[()]
 
         # Handle different exponents
         if isinstance(expo, IntValue):
@@ -278,7 +267,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
             return {(): self.format["std power"](val, self.format["floating point"](expo.value()))}
         elif isinstance(expo, Function):
             exp = self.visit(expo)
-            return {(): self.format["std power"](val, exp.pop(()))}
+            return {(): self.format["std power"](val, exp[()])}
         else:
             error("power does not support this exponent: " + repr(expo))
 
@@ -288,7 +277,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
         # Prefetch formats to speed up code generation.
         format_abs = self.format["absolute value"]
 
-        # TODO: Are these safety checks needed?
+        # TODO: Are these safety checks needed? Need to check for None?
         if len(operands) != 1 and not () in operands[0] and len(operands[0]) != 1:
             error("Abs expects one operand of function type: " + str(operands))
 
@@ -349,13 +338,14 @@ class QuadratureTransformer(QuadratureTransformerBase):
         operand = operands[0]
         for key, val in operand.items():
             operand[key] = format_function(val)
-        ##print("operand: " + str(operand))
+        #print("operand: " + str(operand))
         return operand
 
     # -------------------------------------------------------------------------
     # Helper functions for BasisFunction and Function).
     # -------------------------------------------------------------------------
-    def create_basis_function(self, ufl_basis_function, component, derivatives):
+    def create_basis_function(self, ufl_basis_function, derivatives, component, local_comp,
+                  local_offset, ffc_element, transformation, multiindices):
         "Create code for basis functions, and update relevant tables of used basis."
 
         # Prefetch formats to speed up code generation.
@@ -366,60 +356,21 @@ class QuadratureTransformer(QuadratureTransformerBase):
         format_detJ          = self.format["determinant"]
         format_inv           = self.format["inverse"]
 
-        # Get local component (in case we have mixed elements).
-        local_comp, local_elem = ufl_basis_function.element().extract_component(tuple(component))
-
-        # Check that we don't take derivatives of QuadratureElements.
-        if derivatives and local_elem.family() == "Quadrature":
-            error("Derivatives of Quadrature elements are not supported: " + str(ufl_basis_function))
-
-        # Handle tensor elements.
-        if len(local_comp) > 1:
-            local_comp = local_elem._sub_element_mapping[local_comp]
-        elif local_comp:
-            local_comp = local_comp[0]
-        else:
-            local_comp = 0
-
-        local_offset = 0
-        if len(component) > 1:
-            component = ufl_basis_function.element()._sub_element_mapping[tuple(component)]
-        elif component:
-            component = component[0]
-
-        # Compute the local offset, needed for non-affine mappings because the
-        # elements are labeled with the global component number.
-        if component:
-            local_offset = component - local_comp
-
-        # Create FFC element.
-        ffc_element = create_element(ufl_basis_function.element())
-
         code = {}
-        # Set geo_dim.
-        # TODO: All terms REALLY have to be defined on cell with the same
-        # geometrical dimension so only do this once and exclude the check?
-        geo_dim = ufl_basis_function.element().cell().geometric_dimension()
-        if self.geo_dim:
-            if geo_dim != self.geo_dim:
-                error("All terms must be defined on cells with the same geometrical dimension.")
-        else:
-            self.geo_dim = geo_dim
-
-        # Generate FFC multi index for derivatives.
-        multiindices = FFCMultiIndex([range(geo_dim)]*len(derivatives)).indices
-
-        # Loop derivatives and get multi indices.
-        for multi in multiindices:
-            deriv = [multi.count(i) for i in range(geo_dim)]
-            if not any(deriv):
-                deriv = []
-            transformation = ffc_element.component_element(component)[0].mapping()
-            if transformation == AFFINE:
+        # Handle affine mappings.
+        if transformation == AFFINE:
+            # Loop derivatives and get multi indices.
+            for multi in multiindices:
+                deriv = [multi.count(i) for i in range(self.geo_dim)]
+                if not any(deriv):
+                    deriv = []
                 # Call function to create mapping and basis name.
                 mapping, basis = self.__create_mapping_basis(component, deriv, ufl_basis_function, ffc_element)
-                if basis == None:
+                if basis is None:
+                    if not mapping in code:
+                        code[mapping] = []
                     continue
+
                 # Add transformation if needed.
                 transforms = []
                 for i, direction in enumerate(derivatives):
@@ -437,12 +388,19 @@ class QuadratureTransformer(QuadratureTransformerBase):
                     code[mapping].append(format_mult(prods))
                 else:
                     code[mapping] = [format_mult(prods)]
-            # Handle non-affine mappings.
-            else:
-                for c in range(geo_dim):
+        # Handle non-affine mappings.
+        else:
+            # Loop derivatives and get multi indices.
+            for multi in multiindices:
+                deriv = [multi.count(i) for i in range(self.geo_dim)]
+                if not any(deriv):
+                    deriv = []
+                for c in range(self.geo_dim):
                     # Call function to create mapping and basis name.
                     mapping, basis = self.__create_mapping_basis(c + local_offset, deriv, ufl_basis_function, ffc_element)
-                    if basis == None:
+                    if basis is None:
+                        if not mapping in code:
+                            code[mapping] = []
                         continue
 
                     # Multiply basis by appropriate transform.
@@ -482,8 +440,12 @@ class QuadratureTransformer(QuadratureTransformerBase):
         for key, val in code.items():
             if len(val) > 1:
                 code[key] = format_group(format_add(val))
-            else:
+            elif val:
                 code[key] = val[0]
+            else:
+                # Return a None (zero) because val == []
+                code[key] = None
+
         return code
 
     def __create_mapping_basis(self, component, deriv, ufl_basis_function, ffc_element):
@@ -530,15 +492,15 @@ class QuadratureTransformer(QuadratureTransformerBase):
         name, non_zeros, zeros, ones = self.name_map[name]
         loop_index_range = shape(self.unique_tables[name])[1]
 
+        basis = "1"
         if zeros and self.optimise_options["ignore zero tables"]:
-            return (None, None)
+            basis = None
 
         # If the loop index range is one we can look up the first component
         # in the psi array. If we only have ones we don't need the basis.
-        basis = ""
         if self.optimise_options["ignore ones"] and loop_index_range == 1 and ones:
             loop_index = "0"
-        else:
+        elif not basis is None:
             # Add basis name to set of used tables and add matrix access.
             self.used_psi_tables.add(name)
             basis = name + basis_access
@@ -567,7 +529,8 @@ class QuadratureTransformer(QuadratureTransformerBase):
 
         return (mapping, basis)
 
-    def create_function(self, ufl_function, component, derivatives):
+    def create_function(self, ufl_function, derivatives, component, local_comp,
+                  local_offset, ffc_element, quad_element, transformation, multiindices):
         "Create code for basis functions, and update relevant tables of used basis."
 
         # Prefetch formats to speed up code generation.
@@ -576,57 +539,17 @@ class QuadratureTransformer(QuadratureTransformerBase):
         format_detJ          = self.format["determinant"]
         format_inv           = self.format["inverse"]
 
-        # Get local component (in case we have mixed elements).
-        local_comp, local_elem = ufl_function.element().extract_component(tuple(component))
-
-        # Check that we don't take derivatives of QuadratureElements.
-        quad_element = local_elem.family() == "Quadrature"
-        if derivatives and quad_element:
-            error("Derivatives of Quadrature elements are not supported: " + str(ufl_function))
-
-        # Handle tensor elements.
-        if len(local_comp) > 1:
-            local_comp = local_elem._sub_element_mapping[local_comp]
-        elif local_comp:
-            local_comp = local_comp[0]
-        else:
-            local_comp = 0
-
-        local_offset = 0
-        if len(component) > 1:
-            component = ufl_function.element()._sub_element_mapping[tuple(component)]
-        elif component:
-            component = component[0]
-
-        # Compute the local offset (needed for non-affine mappings).
-        if component:
-            local_offset = component - local_comp
-
-        # Create FFC element.
-        ffc_element = create_element(ufl_function.element())
         code = []
-
-        # Set geo_dim.
-        # TODO: All terms REALLY have to be defined on cell with the same
-        # geometrical dimension so only do this once and exclude the check?
-        geo_dim = ufl_function.element().cell().geometric_dimension()
-        if self.geo_dim:
-            if geo_dim != self.geo_dim:
-                error("All terms must be defined on cells with the same geometrical dimension.")
-        else:
-            self.geo_dim = geo_dim
-
-        # Generate FFC multi index for derivatives.
-        multiindices = FFCMultiIndex([range(geo_dim)]*len(derivatives)).indices
-        for multi in multiindices:
-            deriv = [multi.count(i) for i in range(geo_dim)]
-            if not any(deriv):
-                deriv = []
-            transformation = ffc_element.component_element(component)[0].mapping()
-            if transformation == AFFINE:
+        # Handle affine mappings.
+        if transformation == AFFINE:
+            # Loop derivatives and get multi indices.
+            for multi in multiindices:
+                deriv = [multi.count(i) for i in range(self.geo_dim)]
+                if not any(deriv):
+                    deriv = []
                 # Call other function to create function name.
                 function_name = self.__create_function_name(component, deriv, quad_element, ufl_function, ffc_element)
-                if not function_name:
+                if function_name is None:
                     continue
 
                 # Add transformation if needed.
@@ -640,10 +563,17 @@ class QuadratureTransformer(QuadratureTransformerBase):
                 # Multiply function value by the transformations and add to code.
                 code.append(format_mult(transforms + [function_name]))
 
-            # Handle non-affine mappings.
-            else:
-                for c in range(geo_dim):
+        # Handle non-affine mappings.
+        else:
+            # Loop derivatives and get multi indices.
+            for multi in multiindices:
+                deriv = [multi.count(i) for i in range(self.geo_dim)]
+                if not any(deriv):
+                    deriv = []
+                for c in range(self.geo_dim):
                     function_name = self.__create_function_name(c + local_offset, deriv, quad_element, ufl_function, ffc_element)
+                    if function_name is None:
+                        continue
 
                     # Multiply basis by appropriate transform.
                     if transformation == COVARIANT_PIOLA:
@@ -671,7 +601,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
                     code.append(format_mult(transforms + [function_name]))
 
         if not code:
-            return "0"
+            return None
         elif len(code) > 1:
             code = self.format["grouping"](self.format["add"](code))
         else:
@@ -804,28 +734,12 @@ def generate_code(integrand, transformer, Indent, format, interior):
     debug("\nQG, Using Transformer.")
 
     # Apply basic expansions.
-    # TODO: Figure out if there is a 'correct' order of doing this
-    # In form.form_data().form, which we should be using, coefficients have
-    # been mapped and derivatives expandes. So it should be enough to just
-    # expand_indices and purge_list_tensors.
-    # FIXME: Is propagate restrictions required?
-#    t = time.time()
-#    print "\nIntegrand integrand\n" + repr(integrand)
 #    print "\nIntegrand integrand\n" + str(tree_format(integrand))
-#    print "\ndublications\n", str(tree_format(mark_duplications(integrand)))
-#    print "\ndublications\n", str(tree_format(purge_duplications(integrand)))
-#    new_integrand = purge_duplications(integrand)
-
-#    new_integrand = strip_variables(integrand)
-#    new_integrand = expand_indices(integrand)
-#    info("expand_indices, time = %f" % (time.time() - t))
-#    t = time.time()
-#    new_integrand = purge_list_tensors(new_integrand)
-#    info("purge_tensors, time  = %f" % (time.time() - t))
+    # FIXME: Is propagate restrictions required?
     # Only propagate restrictions if we have an interior integral.
 #    if interior:
-#        new_integrand = propagate_restrictions(new_integrand)
-#    #print("\nExpanded integrand\n" + str(tree_format(new_integrand)))
+#        new_integrand = propagate_restrictions(integrand)
+    #print("\nExpanded integrand\n" + str(tree_format(new_integrand)))
 
     # Profiling
 #    name = "test.prof"
@@ -838,11 +752,11 @@ def generate_code(integrand, transformer, Indent, format, interior):
 #    raise RuntimeError
 
     # Let the Transformer create the loop code.
-    info("Transforming UFL integrand...")
-    t = time.time()
+#    info("Transforming UFL integrand...")
+#    t = time.time()
     loop_code = transformer.visit(integrand)
 #    loop_code = transformer.visit(new_integrand)
-    info("done, time = %f" % (time.time() - t))
+#    info("done, time = %f" % (time.time() - t))
 
     # TODO: Verify that test and trial functions will ALWAYS be rearranged to 0 and 1.
     indices = {-2: format["first free index"], -1: format["second free index"],
@@ -921,8 +835,8 @@ def generate_code(integrand, transformer, Indent, format, interior):
 
         # Compute number of operations to compute entry and create comment
         # (add 1 because of += in assignment).
-#        entry_ops = operation_count(value, format) + 1
-        entry_ops = 0
+        entry_ops = operation_count(value, format) + 1
+#        entry_ops = 0
         entry_ops_comment = format_comment("Number of operations to compute entry: %d" % entry_ops)
         prim_ops = entry_ops
 
@@ -985,6 +899,12 @@ def generate_code(integrand, transformer, Indent, format, interior):
             error("Only rank 0, 1 and 2 tensors are currently supported: " + str(key))
 
         # Generate the code line for the entry.
+        # Try to evaluate entry ("3*6 + 2" --> "20").
+        try:
+            entry = str(eval(entry))
+        except:
+            pass
+
         entry_code = format_add_equal( format_tensor + format_array_access(entry), value)
 
         if loop not in loops:

@@ -1,7 +1,7 @@
 "QuadratureTransformerBase, a common class for quadrature transformers to translate UFL expressions."
 
 __author__ = "Kristian B. Oelgaard (k.b.oelgaard@tudelft.nl)"
-__date__ = "2009-10-13 -- 2009-10-13"
+__date__ = "2009-10-13 -- 2009-10-19"
 __copyright__ = "Copyright (C) 2009 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
@@ -18,9 +18,16 @@ from ufl.common import Stack
 # UFL Algorithms.
 from ufl.algorithms.transformations import Transformer
 from ufl.algorithms.transformations import ReuseTransformer
+from ufl.algorithms.printing import tree_format
 
 # FFC common modules.
 from ffc.common.log import debug, error
+
+# FFC compiler modules.
+from ffc.compiler.tensor.multiindex import MultiIndex as FFCMultiIndex
+
+# FFC fem modules.
+from ffc.fem.createelement import create_element
 
 # Utility and optimisation functions for quadraturegenerator.
 from quadraturegenerator_utils import create_psi_tables
@@ -73,11 +80,19 @@ class QuadratureTransformerBase(Transformer):
         self.functions = {}
         self.function_count = 0
 
+        # Reset cache
+        self.basis_function_cache = {}
+        self.function_cache = {}
+
     def update_points(self, points):
         self.points = points
         # Reset functions everytime we move to a new quadrature loop
         # But not the functions count.
         self.functions = {}
+
+        # Reset cache
+        self.basis_function_cache = {}
+        self.function_cache = {}
 
     def reset(self):
         # Reset containers.
@@ -98,6 +113,10 @@ class QuadratureTransformerBase(Transformer):
         # It should be zero but clear just to be sure.
         self._components = Stack()
         self._index2value = StackDict()
+
+        # Reset cache
+        self.basis_function_cache = {}
+        self.function_cache = {}
 
     def disp(self):
         print "\n\n **** Displaying QuadratureTransformer ****"
@@ -238,6 +257,58 @@ class QuadratureTransformerBase(Transformer):
         error("This object should be implemented by the child class.")
 
     # -------------------------------------------------------------------------
+    # Common auxiliary functions.
+    # -------------------------------------------------------------------------
+    def get_auxiliary_variables(self, ufl_function, component, derivatives):
+        "Helper function for both Function and BasisFunction."
+
+        # Get local component (in case we have mixed elements).
+        local_comp, local_elem = ufl_function.element().extract_component(component)
+
+        # Check that we don't take derivatives of QuadratureElements.
+        quad_element = local_elem.family() == "Quadrature"
+        if derivatives and quad_element:
+            error("Derivatives of Quadrature elements are not supported: " + str(ufl_function))
+
+        # Handle tensor elements.
+        if len(local_comp) > 1:
+            local_comp = local_elem._sub_element_mapping[local_comp]
+        elif local_comp:
+            local_comp = local_comp[0]
+        else:
+            local_comp = 0
+
+        # Map component
+        if len(component) > 1:
+            component = ufl_function.element()._sub_element_mapping[tuple(component)]
+        elif component:
+            component = component[0]
+
+        # Compute the local offset (needed for non-affine mappings).
+        local_offset = 0
+        if component:
+            local_offset = component - local_comp
+
+        # Create FFC element and get transformation.
+        ffc_element = create_element(ufl_function.element())
+        transformation = ffc_element.component_element(component)[0].mapping()
+
+        # Set geo_dim.
+        # TODO: All terms REALLY have to be defined on cell with the same
+        # geometrical dimension so only do this once and exclude the check?
+        geo_dim = ufl_function.element().cell().geometric_dimension()
+        if self.geo_dim:
+            if geo_dim != self.geo_dim:
+                error("All terms must be defined on cells with the same geometrical dimension.")
+        else:
+            self.geo_dim = geo_dim
+
+        # Generate FFC multi index for derivatives.
+        multiindices = FFCMultiIndex([range(geo_dim)]*len(derivatives)).indices
+
+        return (component, local_comp, local_offset, ffc_element, quad_element, transformation, multiindices)
+
+    # -------------------------------------------------------------------------
     # Things that can be handled by the base class.
     # -------------------------------------------------------------------------
     # -------------------------------------------------------------------------
@@ -251,20 +322,26 @@ class QuadratureTransformerBase(Transformer):
             error("Didn't expect any operands for BasisFunction: " + str(operands))
 
         # Create aux. info.
-        component = self.component()
+        components = self.component()
         derivatives = self.derivatives()
 
-        #print ("BasisFunction: component: " + str(component))
+        #print ("BasisFunction: components: " + str(components))
         #print ("BasisFunction: derivatives: " + str(derivatives))
 
         # Check if basis is already in cache
-        basis = self.basis_function_cache.get((o, component, derivatives), None)
+        basis = self.basis_function_cache.get((o, components, derivatives, self.restriction), None)
         if basis is not None:
             return basis
 
+        # Get auxiliary variables to generate basis
+        component, local_comp, local_offset, ffc_element, quad_element, \
+        transformation, multiindices = self.get_auxiliary_variables(o, components, derivatives)
+
         # Create mapping and code for basis function and add to dict.
-        basis = self.create_basis_function(o, component, derivatives)
-        self.basis_function_cache[(o, component, derivatives)] = basis
+        basis = self.create_basis_function(o, derivatives, component, local_comp,
+                  local_offset, ffc_element, transformation, multiindices)
+
+        self.basis_function_cache[(o, components, derivatives, self.restriction)] = basis
 
         return basis
 
@@ -333,21 +410,29 @@ class QuadratureTransformerBase(Transformer):
             error("Didn't expect any operands for Function: " + str(operands))
 
         # Create aux. info.
-        component = self.component()
+        components = self.component()
         derivatives = self.derivatives()
 
-        #print("component: " + str(component))
+        #print("components: " + str(components))
         #print("derivatives: " + str(derivatives))
 
         # Check if function is already in cache
-        function_code = self.function_cache.get((o, component, derivatives), None)
+        function_code = self.function_cache.get((o, components, derivatives, self.restriction), None)
         if function_code is not None:
             return function_code
 
-        # Create code for function and add empty tuple to cache dict.
-        function_code = {(): self.create_function(o, component, derivatives)}
 
-        self.function_cache[(o, component, derivatives)] = function_code
+        # Get auxiliary variables to generate function
+        component, local_comp, local_offset, ffc_element, quad_element, \
+        transformation, multiindices = self.get_auxiliary_variables(o, components, derivatives)
+
+
+        # Create code for function and add empty tuple to cache dict.
+        function_code = {(): self.create_function(o, derivatives, component,
+                              local_comp, local_offset, ffc_element, quad_element,
+                              transformation, multiindices)}
+
+        self.function_cache[(o, components, derivatives, self.restriction)] = function_code
 
         return function_code
 
@@ -458,7 +543,7 @@ class QuadratureTransformerBase(Transformer):
     # IndexSum (indexsum.py).
     # -------------------------------------------------------------------------
     def index_sum(self, o):
-        #print("\n\nVisiting IndexSum: " + o.__repr__())
+        #print("\n\nVisiting IndexSum: " + str(tree_format(o)))
 
         # Get expression and index that we're summing over
         summand, multiindex = o.operands()
@@ -519,10 +604,13 @@ class QuadratureTransformerBase(Transformer):
         restricted_expr = o.operands()
         if len(restricted_expr) != 1:
             error("Only expected one operand for restriction: " + str(restricted_expr))
+
+        #print "PositiveRestricted expr: ", restricted_expr
  
         # Visit operand and generate restricted code.
         self.restriction = "+"
         code = self.visit(restricted_expr[0])
+        #print "PositiveRestricted code: ", code
 
         # Reset restriction (not strictly necessary).
         self.restriction = None
@@ -567,7 +655,7 @@ class QuadratureTransformerBase(Transformer):
 
         # Update the index dict (map index values of current known indices to
         # those of the component tensor)
-        for i, v in izip(indices._indices, comps):
+        for i, v in izip(indices._indices, components):
             self._index2value.push(i, v)
 
         # Push an empty component tuple
@@ -577,7 +665,7 @@ class QuadratureTransformerBase(Transformer):
         code = self.visit(component_expr)
 
         # Remove the index map from the StackDict
-        for i in range(len(comps)):
+        for i in range(len(components)):
             self._index2value.pop()
 
         # Remove the empty component tuple
@@ -613,5 +701,6 @@ class QuadratureTransformerBase(Transformer):
     # -------------------------------------------------------------------------
     def variable(self, o):
         #print("\n\nVisiting Variable: " + o.__repr__())
+        # Just get the expression associated with the variable
         return self.visit(o.expression())
 

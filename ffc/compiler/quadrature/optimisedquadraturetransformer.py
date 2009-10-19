@@ -1,7 +1,7 @@
 "QuadratureTransformer (optimised) for quadrature code generation to translate UFL expressions."
 
 __author__ = "Kristian B. Oelgaard (k.b.oelgaard@tudelft.nl)"
-__date__ = "2009-03-18 -- 2009-10-13"
+__date__ = "2009-03-18 -- 2009-10-19"
 __copyright__ = "Copyright (C) 2009 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
@@ -68,7 +68,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
     # AlgebraOperators (algebra.py).
     # -------------------------------------------------------------------------
     def sum(self, o, *operands):
-        debug("Visiting Sum: " + o.__repr__() + "\noperands: " + "\n".join(map(str, operands)))
+        #print("Visiting Sum: " + o.__repr__() + "\noperands: " + "\n".join(map(str, operands)))
 
         code = {}
         # Loop operands that has to be summend.
@@ -90,7 +90,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         return code
 
     def product(self, o, *operands):
-        debug("\n\nVisiting Product: " + o.__repr__() + "with operands: " + "\n".join(map(str,operands)))
+        #print("\n\nVisiting Product: " + o.__repr__() + "with operands: " + "\n".join(map(str,operands)))
 
         permute = []
         not_permute = []
@@ -107,9 +107,9 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         # ever get more than a list of entries and values.
         permutations = create_permutations(permute)
 
-        debug("\npermute: " + str(permute))
-        debug("\nnot_permute: " + str(not_permute))
-        debug("\npermutations: " + str(permutations))
+        #print("\npermute: " + str(permute))
+        #print("\nnot_permute: " + str(not_permute))
+        #print("\npermutations: " + str(permutations))
 
         # Create code.
         code ={}
@@ -129,48 +129,48 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         return code
 
     def division(self, o, *operands):
-        debug("\n\nVisiting Division: " + o.__repr__() + "with operands: " + "\n".join(map(str,operands)))
+        #print("\n\nVisiting Division: " + o.__repr__() + "with operands: " + "\n".join(map(str,operands)))
 
         if len(operands) != 2:
             error("Expected exactly two operands (numerator and denominator): " + operands.__repr__())
 
         # Get the code from the operands.
         numerator_code, denominator_code = operands
-        debug("\nnumerator: " + str(numerator_code))
-        debug("\ndenominator: " + str(denominator_code))
+        #print("\nnumerator: " + str(numerator_code))
+        #print("\ndenominator: " + str(denominator_code))
 
         # TODO: Are these safety checks needed?
         if not () in denominator_code and len(denominator_code) != 1:
             error("Only support function type denominator: " + str(denominator_code))
 
         # Get denominator and create new values for the numerator.
-        denominator = denominator_code.pop(())
+        denominator = denominator_code[()]
         for key, val in numerator_code.items():
-            debug("\nnum: " + repr(val))
-            debug("\nden: " + repr(denominator))
+            #print("\nnum: " + repr(val))
+            #print("\nden: " + repr(denominator))
             numerator_code[key] = create_fraction(val, denominator)
-            debug("\ncode: " + str(numerator_code[key]))
+            #print("\ncode: " + str(numerator_code[key]))
 
         return numerator_code
 
     def power(self, o):
-        debug("\n\nVisiting Power: " + o.__repr__())
+        #print("\n\nVisiting Power: " + o.__repr__())
 
         # Get base and exponent.
         base, expo = o.operands()
-        debug("\nbase: " + str(base))
-        debug("\nexponent: " + str(expo))
+        #print("\nbase: " + str(base))
+        #print("\nexponent: " + str(expo))
 
         # Visit base to get base code.
         base_code = self.visit(base)
-        debug("base_code: " + str(base_code))
+        #print("base_code: " + str(base_code))
 
         # TODO: Are these safety checks needed?
         if not () in base_code and len(base_code) != 1:
             error("Only support function type base: " + str(base_code))
 
         # Get the base code and create power.
-        val = base_code.pop(())
+        val = base_code[()]
 
         # Handle different exponents
         if isinstance(expo, IntValue):
@@ -183,7 +183,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
             return {(): sym}
         elif isinstance(expo, Function):
             exp = self.visit(expo)
-            sym = create_symbol(self.format["std power"](str(val), exp.pop(())), val.t)
+            sym = create_symbol(self.format["std power"](str(val), exp[()]), val.t)
             sym.base_expr = val
             sym.base_op = 1 # Add one operation for the pow() function.
             return {(): sym}
@@ -191,7 +191,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
             error("power does not support this exponent: " + repr(expo))
 
     def abs(self, o, *operands):
-        debug("\n\nVisiting Abs: " + o.__repr__() + "with operands: " + "\n".join(map(str,operands)))
+        #print("\n\nVisiting Abs: " + o.__repr__() + "with operands: " + "\n".join(map(str,operands)))
 
         # TODO: Are these safety checks needed?
         if len(operands) != 1 and not () in operands[0] and len(operands[0]) != 1:
@@ -209,102 +209,45 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
     # -------------------------------------------------------------------------
     # Constant values (constantvalue.py).
     # -------------------------------------------------------------------------
-    def scalar_value(self, o, *operands):
-        "ScalarValue covers IntValue and FloatValue"
-        debug("\n\nVisiting ScalarValue:" + o.__repr__())
-
-        # FIXME: Might be needed because it can be IndexAnnotated?
-        if operands:
-            error("Did not expect any operands for ScalarValue: " + str((o, operands)))
-
-        return {(): create_float(o.value())}
+    def format_scalar_value(self, value):
+        #print("create_scalar_value: %d" % value)
+        if value is None:
+            return {():create_float(0.0)}
+        return {():create_float(value)}
 
     # -------------------------------------------------------------------------
-    # Function and Constants (function.py).
+    # Constants (function.py).
     # -------------------------------------------------------------------------
-    def constant(self, o, *operands):
-        debug("\n\nVisiting Constant: " + o.__repr__())
-
-        # Safety checks.
-        if operands:
-            error("Didn't expect any operands for Constant: " + str(operands))
-        if len(self._components) > 0:
-            error("Constant does not expect component indices: " + str(self._components))
-        if o.shape() != ():
-            error("Constant should not have a value shape: " + str(o.shape()))
-
-        component = 0
-        # Handle restriction.
-        if self.restriction == "-":
-            component += 1
-
-        coefficient = self.format["coeff"] + self.format["matrix access"](str(o.count()), component)
-        debug("Constant coefficient: " + coefficient)
-        return {(): create_symbol(coefficient, GEO)}
-
-    def vector_constant(self, o, *operands):
-        debug("\n\nVisiting VectorConstant: " + o.__repr__())
-        # Safety checks.
-        if operands:
-            error("Didn't expect any operands for VectorConstant: " + str(operands))
-        if len(self._components) != 1 or not isinstance(self._components[0], FixedIndex):
-            error("VectorConstant expects 1 Fixed component index: " + str(self._components))
-
-        # We get one component.
-        component = int(self._components[0])
-
-        # Handle restriction.
-        if self.restriction == "-":
-            component += o.shape()[0]
-
-        coefficient = self.format["coeff"] + self.format["matrix access"](str(o.count()), component)
-        debug("VectorConstant coefficient: " + coefficient)
-        return {(): create_symbol(coefficient, GEO)}
-
-    def tensor_constant(self, o, *operands):
-        debug("\n\nVisiting TensorConstant: " + o.__repr__())
-
-        # Safety checks.
-        if operands:
-            error("Didn't expect any operands for TensorConstant: " + str(operands))
-        if not all(isinstance(c, FixedIndex) for c in self._components):
-            error("TensorConstant expects FixedIndex as components: " + str(self._components))
-
-        # Compute the global component.
-        component = tuple([int(c) for c in self._components])
-        component = o.element()._sub_element_mapping[component]
-
-        # Handle restriction (offset by value shape).
-        if self.restriction == "-":
-            component += product(o.shape())
-
-        coefficient = self.format["coeff"] + self.format["matrix access"](str(o.count()), component)
-        debug("TensorConstant coefficient: " + coefficient)
-        return {(): create_symbol(coefficient, GEO)}
+    def create_constant_coefficient(self, count, component):
+        coefficient = self.format["coeff"] + self.format["matrix access"](count, component)
+        #print("create_constant_coefficient: " + coefficient)
+        return {():create_symbol(coefficient, GEO)}
 
     # -------------------------------------------------------------------------
     # FacetNormal (geometry.py).
     # -------------------------------------------------------------------------
     def facet_normal(self, o,  *operands):
-        debug("Visiting FacetNormal:")
+        #print("Visiting FacetNormal:")
+
+        # Get the component
+        components = self.component()
+
         # Safety checks.
         if operands:
             error("Didn't expect any operands for FacetNormal: " + str(operands))
-        if len(self._components) != 1 or not isinstance(self._components[0], FixedIndex):
-            error("FacetNormal expects 1 Fixed component index: " + str(self._components))
+        if len(components) != 1:
+            error("FacetNormal expects 1 component index: " + str(components))
 
-        # We get one component.
-        component = int(self._components[0])
-        normal_component = self.format["normal component"](self.restriction, component)
-        self.trans_set.add(normal_component)
-        debug("Facet Normal Component: " + normal_component)
+        normal_component = self.format["normal component"](self.restriction, components[0])
+#        self.trans_set.add(normal_component)
+        #print("Facet Normal Component: " + normal_component)
         return {(): create_symbol(normal_component, GEO)}
 
     # -------------------------------------------------------------------------
     # MathFunctions (mathfunctions.py). (Let parent class handle call to _math_function)
     # -------------------------------------------------------------------------
     def _math_function(self, operands, format_function):
-        debug("Calling _math_function() of optimisedquadraturetransformer.")
+        #print("Calling _math_function() of optimisedquadraturetransformer.")
         # TODO: Are these safety checks needed?
         if len(operands) != 1 and not () in operands[0] and len(operands[0]) != 1:
             error("MathFunctions expect one operand of function type: " + str(operands))
@@ -315,70 +258,29 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
             new_val.base_expr = val
             new_val.base_op = 1 # Add one operation for the math function.
             operand[key] = new_val
-        debug("operand: " + str(operand))
+        #print("operand: " + str(operand))
         return operand
 
     # -------------------------------------------------------------------------
     # Helper functions for BasisFunction and Function).
     # -------------------------------------------------------------------------
-    def create_basis_function(self, ufl_basis_function, component, derivatives):
+    def create_basis_function(self, ufl_basis_function, derivatives, component, local_comp,
+                  local_offset, ffc_element, transformation, multiindices):
         "Create code for basis functions, and update relevant tables of used basis."
 
         # Prefetch formats to speed up code generation.
         format_transform     = self.format["transform"]
         format_detJ          = self.format["determinant"]
 
-        # Get local component (in case we have mixed elements).
-        local_comp, local_elem = ufl_basis_function.element().extract_component(tuple(component))
-
-        # Check that we don't take derivatives of QuadratureElements.
-        if derivatives and local_elem.family() == "Quadrature":
-            error("Derivatives of Quadrature elements are not supported: " + str(ufl_basis_function))
-
-        # Handle tensor elements.
-        if len(local_comp) > 1:
-            local_comp = local_elem._sub_element_mapping[local_comp]
-        elif local_comp:
-            local_comp = local_comp[0]
-        else:
-            local_comp = 0
-
-        local_offset = 0
-        if len(component) > 1:
-            component = ufl_basis_function.element()._sub_element_mapping[tuple(component)]
-        elif component:
-            component = component.pop()
-
-        # Compute the local offset, needed for non-affine mappings because the
-        # elements are labeled with the global component number.
-        if component:
-            local_offset = component - local_comp
-
-        # Create FFC element.
-        ffc_element = create_element(ufl_basis_function.element())
-
         code = {}
-        # Set geo_dim.
-        # TODO: All terms REALLY have to be defined on cell with the same
-        # geometrical dimension so only do this once and exclude the check?
-        geo_dim = ufl_basis_function.element().cell().geometric_dimension()
-        if self.geo_dim:
-            if geo_dim != self.geo_dim:
-                error("All terms must be defined on cells with the same geometrical dimension.")
-        else:
-            self.geo_dim = geo_dim
 
-        # Generate FFC multi index for derivatives.
-        multiindices = FFCMultiIndex([range(geo_dim)]*len(derivatives)).indices
-
-        # Loop derivatives and get multi indices.
-        for multi in multiindices:
-            deriv = [multi.count(i) for i in range(geo_dim)]
-            if not any(deriv):
-                deriv = []
-
-            transformation = ffc_element.component_element(component)[0].mapping()
-            if transformation == AFFINE:
+        # Affince mapping
+        if transformation == AFFINE:
+            # Loop derivatives and get multi indices.
+            for multi in multiindices:
+                deriv = [multi.count(i) for i in range(self.geo_dim)]
+                if not any(deriv):
+                    deriv = []
                 # Call function to create mapping and basis name.
                 mapping, basis = self.__create_mapping_basis(component, deriv, ufl_basis_function, ffc_element)
 
@@ -393,9 +295,14 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
                     code[mapping].append(create_product([create_symbol(t, GEO) for t in transforms] + [basis]))
                 else:
                     code[mapping] = [create_product([create_symbol(t, GEO) for t in transforms] + [basis])]
-            # Handle non-affine mappings.
-            else:
-                for c in range(geo_dim):
+        # Handle non-affine mappings.
+        else:
+            # Loop derivatives and get multi indices.
+            for multi in multiindices:
+                deriv = [multi.count(i) for i in range(self.geo_dim)]
+                if not any(deriv):
+                    deriv = []
+                for c in range(self.geo_dim):
                     # Call function to create mapping and basis name.
                     mapping, basis = self.__create_mapping_basis(c + local_offset, deriv, ufl_basis_function, ffc_element)
 
@@ -509,61 +416,23 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
 
         return (mapping, basis)
 
-    def create_function(self, ufl_function, component, derivatives):
+    def create_function(self, ufl_function, derivatives, component, local_comp,
+                  local_offset, ffc_element, quad_element, transformation, multiindices):
         "Create code for basis functions, and update relevant tables of used basis."
 
         # Prefetch formats to speed up code generation.
         format_transform     = self.format["transform"]
         format_detJ          = self.format["determinant"]
 
-        # Get local component (in case we have mixed elements).
-        local_comp, local_elem = ufl_function.element().extract_component(tuple(component))
-
-        # Check that we don't take derivatives of QuadratureElements.
-        quad_element = local_elem.family() == "Quadrature"
-        if derivatives and quad_element:
-            error("Derivatives of Quadrature elements are not supported: " + str(ufl_function))
-
-        # Handle tensor elements.
-        if len(local_comp) > 1:
-            local_comp = local_elem._sub_element_mapping[local_comp]
-        elif local_comp:
-            local_comp = local_comp[0]
-        else:
-            local_comp = 0
-
-        local_offset = 0
-        if len(component) > 1:
-            component = ufl_function.element()._sub_element_mapping[tuple(component)]
-        elif component:
-            component = component.pop()
-
-        # Compute the local offset (needed for non-affine mappings).
-        if component:
-            local_offset = component - local_comp
-
-        # Create FFC element.
-        ffc_element = create_element(ufl_function.element())
         code = []
 
-        # Set geo_dim.
-        # TODO: All terms REALLY have to be defined on cell with the same
-        # geometrical dimension so only do this once and exclude the check?
-        geo_dim = ufl_function.element().cell().geometric_dimension()
-        if self.geo_dim:
-            if geo_dim != self.geo_dim:
-                error("All terms must be defined on cells with the same geometrical dimension.")
-        else:
-            self.geo_dim = geo_dim
-
-        # Generate FFC multi index for derivatives.
-        multiindices = FFCMultiIndex([range(geo_dim)]*len(derivatives)).indices
-        for multi in multiindices:
-            deriv = [multi.count(i) for i in range(geo_dim)]
-            if not any(deriv):
-                deriv = []
-            transformation = ffc_element.component_element(component)[0].mapping()
-            if transformation == AFFINE:
+        # Handle affine mappings.
+        if transformation == AFFINE:
+            # Loop derivatives and get multi indices.
+            for multi in multiindices:
+                deriv = [multi.count(i) for i in range(self.geo_dim)]
+                if not any(deriv):
+                    deriv = []
                 # Call other function to create function name.
                 function_name = self.__create_function_name(component, deriv, quad_element, ufl_function, ffc_element)
                 if not function_name:
@@ -579,9 +448,14 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
                 # Multiply function value by the transformations and add to code.
                 code.append(create_product([create_symbol(t, GEO) for t in transforms] + [function_name]))
 
-            # Handle non-affine mappings.
-            else:
-                for c in range(geo_dim):
+        # Handle non-affine mappings.
+        else:
+            # Loop derivatives and get multi indices.
+            for multi in multiindices:
+                deriv = [multi.count(i) for i in range(self.geo_dim)]
+                if not any(deriv):
+                    deriv = []
+                for c in range(self.geo_dim):
                     function_name = self.__create_function_name(c + local_offset, deriv, quad_element, ufl_function, ffc_element)
 
                     # Multiply basis by appropriate transform.
@@ -753,7 +627,7 @@ def generate_code(integrand, transformer, Indent, format, interior):
     # Only propagate restrictions if we have an interior integral.
     if interior:
         new_integrand = propagate_restrictions(new_integrand)
-    debug("\nExpanded integrand\n" + str(tree_format(new_integrand)))
+    #print("\nExpanded integrand\n" + str(tree_format(new_integrand)))
     # Let the Transformer create the loop code.
     info("Transforming UFL integrand...")
     t = time.time()

@@ -51,7 +51,6 @@ class QuadratureGenerator:
         else:
             # These options should be safe and fast, but result in slow code.
             self.optimise_options = {"non zero columns": False,
-#            self.optimise_options = {"non zero columns": True,
                                      "ignore ones": False,
                                      "remove zero terms": False,
                                      "simplify expressions": False,
