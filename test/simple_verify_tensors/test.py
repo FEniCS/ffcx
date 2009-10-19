@@ -14,16 +14,17 @@ only_quadrature = ["FunctionOperators",
                    "PoissonDG",
                    "Biharmonic",
                    "Normals",
-                   "FacetIntegrals"]
+                   "FacetIntegrals",
+                   "HyperElasticity"]
 
 # Log file
 logfile = None
 
 # Set paths
-if not "PATH" in os.environ: os.environ["PATH"] = ""
-if not "PYTHONPATH" in os.environ: os.environ["PYTHONPATH"] = ""
-os.environ["PATH"] = "../../../scripts:" + os.environ["PATH"]
-os.environ["PYTHONPATH"] ="../../..:" + os.environ["PYTHONPATH"]
+#if not "PATH" in os.environ: os.environ["PATH"] = ""
+#if not "PYTHONPATH" in os.environ: os.environ["PYTHONPATH"] = ""
+#os.environ["PATH"] = "../../../scripts:" + os.environ["PATH"]
+#os.environ["PYTHONPATH"] ="../../..:" + os.environ["PYTHONPATH"]
 
 def tabulate_tensor(representation, integral, integral_type, header):
     "Generate code and tabulate tensor for integral."
@@ -36,7 +37,8 @@ def tabulate_tensor(representation, integral, integral_type, header):
     open("tabulate_tensor.cpp", "w").write(code)
     c = "g++ `pkg-config --cflags ufc-1` -Wall -Werror -o tabulate_tensor tabulate_tensor.cpp"
     (ok, output) = run_command(c, representation, integral)
-    if not ok: return "GCC compilation failed"
+    if not ok:
+        return "GCC compilation failed"
 
     # Run code and get results
     (ok, output) = run_command("./tabulate_tensor", representation, integral)
@@ -153,6 +155,7 @@ def main(args):
 
     # Iterate over all form files
     forms = commands.getoutput("ls *.ufl | cut -d'.' -f1").split("\n")
+
     values = {}
     for representation, option in [("quadrature", ""), ("tensor", ""), ("quadrature", " -O")]:
         vals = []

@@ -1155,6 +1155,8 @@ def generate_code(integrand, transformer, Indent, format, interior):
     # been mapped and derivatives expandes. So it should be enough to just
     # expand_indices and purge_list_tensors.
 #    t = time.time()
+#    info("Transforming UFL integrand...")
+    t = time.time()
     new_integrand = strip_variables(integrand)
     new_integrand = expand_indices(new_integrand)
 #    info("expand_indices, time = %f" % (time.time() - t))
@@ -1167,9 +1169,11 @@ def generate_code(integrand, transformer, Indent, format, interior):
     debug("\nExpanded integrand\n" + str(tree_format(new_integrand)))
 
     # Let the Transformer create the loop code.
-#    t = time.time()
     loop_code = transformer.visit(new_integrand)
-#    info("gen. loop_code, time = %f" % (time.time() - t))
+#    info("done, time = %f" % (time.time() - t))
+
+#    info("Generate code...")
+#    t = time.time()
 
     # TODO: Verify that test and trial functions will ALWAYS be rearranged to 0 and 1.
     indices = {-2: format["first free index"], -1: format["second free index"],
@@ -1328,5 +1332,7 @@ def generate_code(integrand, transformer, Indent, format, interior):
         code += ["", format_comment("Number of operations for primary indices = %d" % ops)]
         code += generate_loop(lines, loop, Indent, format)
 #    info("write code, time     = %f" % (time.time() - t))
+#    info("done, time = %f" % (time.time() - t))
+
     return (code, num_ops)
 
