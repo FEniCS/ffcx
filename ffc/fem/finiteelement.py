@@ -135,6 +135,7 @@ class FiniteElement(FiniteElementBase):
 
     def __add__(self, other):
         "Create mixed element"
+        error("ffc.FiniteElements cannot be added. Try adding UFL finite elements.")
         return mixedelement.MixedElement([self, other])
 
     def __repr__(self):
@@ -285,46 +286,38 @@ class FiniteElement(FiniteElementBase):
         # Choose FIAT function space
         if family == "Lagrange" or family == "CG":
             self.__family = "Lagrange"
-            return (Lagrange(fiat_shape, degree),
-                    AFFINE)
+            return (Lagrange(fiat_shape, degree), AFFINE)
 
         if family == "Discontinuous Lagrange" or family == "DG":
             self.__family = "Discontinuous Lagrange"
-            return (DiscontinuousLagrange(fiat_shape, degree),
-                    AFFINE)
+            return (DiscontinuousLagrange(fiat_shape, degree), AFFINE)
 
         if family == "Crouzeix-Raviart" or family == "CR":
             self.__family = "Crouzeix-Raviart"
-            return (CrouzeixRaviart(fiat_shape, degree),
-                    AFFINE)
+            return (CrouzeixRaviart(fiat_shape, degree), AFFINE)
 
         if family == "Raviart-Thomas" or family == "RT":
             self.__family = "Raviart-Thomas"
-            return (RaviartThomas(fiat_shape, degree),
-                    CONTRAVARIANT_PIOLA)
+            return (RaviartThomas(fiat_shape, degree), CONTRAVARIANT_PIOLA)
 
         if family == "Brezzi-Douglas-Marini" or family == "BDM":
             self.__family = "Brezzi-Douglas-Marini"
-            return (BDM(fiat_shape, degree),
-                    CONTRAVARIANT_PIOLA)
+            return (BDM(fiat_shape, degree), CONTRAVARIANT_PIOLA)
 
         if family == "Brezzi-Douglas-Fortin-Marini" or family == "BDFM":
             self.__family = "Brezzi-Douglas-Fortin-Marini"
-            return (BDFM(fiat_shape, degree),
-                    CONTRAVARIANT_PIOLA)
+            return (BDFM(fiat_shape, degree), CONTRAVARIANT_PIOLA)
 
         # FIXME: Temporary fix, remove "Nedelec"
         if family == "Nedelec" or "Nedelec 1st kind H(curl)" or"N1curl":
             self.__family = "Nedelec"
-            return (Nedelec(fiat_shape, degree),
-                    COVARIANT_PIOLA)
+            return (Nedelec(fiat_shape, degree), COVARIANT_PIOLA)
 
         if family == "Darcy-Stokes" or family == "KLMR":
             if not shape == "triangle":
                 error("Sorry, Darcy-Stokes element only available on triangles")
             self.__family = "Darcy-Stokes"
-            return (DarcyStokes(degree),
-                    CONTRAVARIANT_PIOLA)
+            return (DarcyStokes(degree), CONTRAVARIANT_PIOLA)
 
         # Unknown element
         error("Unknown finite element: " + str(family))
