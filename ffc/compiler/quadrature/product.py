@@ -49,6 +49,7 @@ class Product(Expr):
                 if var.val == 0.0:
                     self.val = 0.0
                     self.vrs = [create_float(0.0)]
+                    float_val = 0.0
                     break
 
                 # Collect floats into one variable

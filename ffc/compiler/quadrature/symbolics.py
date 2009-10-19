@@ -175,7 +175,8 @@ def optimise_code(expr, ip_consts, geo_consts, trans_set):
 #            error("Not equal")
 
         # If the ip expression doesn't contain any operations skip remainder.
-        if not ip_expr:
+#        if not ip_expr:
+        if not ip_expr or ip_expr.val == 0.0:
             basis_vals.append(basis)
             continue
         if not ip_expr.ops() > 0:
@@ -189,28 +190,51 @@ def optimise_code(expr, ip_consts, geo_consts, trans_set):
         if not isinstance(ip_expressions, list):
             ip_expressions = [ip_expressions]
 
+#        vals = []
+#        for ip in ip_expressions:
+#            ip_dec, geo = ip
+#            if ip_dec and geo:
+#                vals.append(Product([ip_dec, geo]))
+#            elif geo:
+#                vals.append(geo)
+#            elif ip_dec:
+#                vals.append(ip_dec)
+
+#        if Sum(vals).expand() != ip_expr.expand():
+##        if Sum([Product([ip, geo]) for ip, geo in ip_expressions]).expand() != ip_expr.expand():
+#            print "\nip_expr: ", repr(ip_expr)
+##            print "\nip_dec: ", repr(ip_dec)
+##            print "\ngeo: ", repr(geo)
+#            error("Not equal")
+
         ip_vals = []
         # Loop ip expressions.
         for ip in ip_expressions:
             ip_dec, geo = ip
 #            debug("\nip_dec: " + str(ip_dec))
 #            debug("\ngeo: " + str(geo))
-#            print "\nip_dec: " + str(ip_dec)
-#            print "\ngeo: " + str(geo)
+#            print "\nip_dec: " + repr(ip_dec)
+#            print "\ngeo: " + repr(geo)
+#            print "exp:  ", geo.expand()
+#            print "val:  ", geo.expand().val
+#            print "repx: ", repr(geo.expand())
             # NOTE: Useful for debugging to check that terms where properly reduced.
 #            if Product([ip_dec, geo]).expand() != ip_expr.expand():
 #                print "\nip_expr: ", repr(ip_expr)
-#                print "ip_dec: ", repr(ip_dec)
-#                print "geo: ", repr(geo)
+#                print "\nip_dec: ", repr(ip_dec)
+#                print "\ngeo: ", repr(geo)
 #                error("Not equal")
 
             # Update transformation set with those values that might be embedded in IP terms.
-            if ip_dec:
+#            if ip_dec:
+            if ip_dec and ip_dec.val != 0.0:
                 trans_set_update(map(lambda x: str(x), ip_dec.get_unique_vars(GEO)))
 
             # Append and continue if we did not have any geo values.
-            if not geo:
-                ip_vals.append(ip_dec)
+#            if not geo:
+            if not geo or geo.val == 0.0:
+                if ip_dec.val != 0.0:
+                    ip_vals.append(ip_dec)
                 continue
 
             # Update the transformation set with the variables in the geo term.
@@ -222,6 +246,7 @@ def optimise_code(expr, ip_consts, geo_consts, trans_set):
 #                debug("geo: " + str(geo))
 #                print "geo: " + str(geo)
                 # If the geo term is not in the dictionary append it.
+#                if not geo in geo_consts:
                 if not geo in geo_consts:
                     geo_consts[geo] = len(geo_consts)
 
@@ -230,7 +255,8 @@ def optimise_code(expr, ip_consts, geo_consts, trans_set):
 
             # If we did not have any ip_declarations use geo, else create a
             # product and append to the list of ip_values.
-            if not ip_dec:
+#            if not ip_dec:
+            if not ip_dec or ip_dec.val == 0.0:
                 ip_dec = geo
             else:
                 ip_dec = create_product([ip_dec, geo])
@@ -245,14 +271,20 @@ def optimise_code(expr, ip_consts, geo_consts, trans_set):
         # If we can save operations by declaring it as a constant do so, if it
         # is not in IP dictionary, add it and use new name.
 #        ip_expr = ip_expr.expand().reduce_ops()
-        if ip_expr.ops() > 0:
+#        if ip_expr.ops() > 0:
+        if ip_expr.ops() > 0 and ip_expr.val != 0.0:
+#            if not ip_expr in ip_consts:
             if not ip_expr in ip_consts:
                 ip_consts[ip_expr] = len(ip_consts)
 
             # Substitute ip expression.
+#            ip_expr = create_symbol(format_G + format_ip + str(ip_consts[ip_expr]), IP)
             ip_expr = create_symbol(format_G + format_ip + str(ip_consts[ip_expr]), IP)
 
         # Multiply by basis and append to basis vals.
+#        prod = create_product([basis, ip_expr])
+#        if prod.expand().val != 0.0:
+#            basis_vals.append(prod)
         basis_vals.append(create_product([basis, ip_expr]))
 
     # Return (possible) sum of basis values.

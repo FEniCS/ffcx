@@ -20,12 +20,6 @@ only_quadrature = ["FunctionOperators",
 # Log file
 logfile = None
 
-# Set paths
-#if not "PATH" in os.environ: os.environ["PATH"] = ""
-#if not "PYTHONPATH" in os.environ: os.environ["PYTHONPATH"] = ""
-#os.environ["PATH"] = "../../../scripts:" + os.environ["PATH"]
-#os.environ["PYTHONPATH"] ="../../..:" + os.environ["PYTHONPATH"]
-
 def tabulate_tensor(representation, integral, integral_type, header):
     "Generate code and tabulate tensor for integral."
 

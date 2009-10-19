@@ -20,6 +20,7 @@ from ufl.classes import Function
 # UFL Algorithms.
 from ufl.algorithms import purge_list_tensors
 from ufl.algorithms import expand_indices
+from ufl.algorithms import expand_derivatives
 from ufl.algorithms import propagate_restrictions
 from ufl.algorithms import strip_variables
 from ufl.algorithms.printing import tree_format
@@ -46,7 +47,7 @@ from symbolics import create_symbol
 from symbolics import create_product
 from symbolics import create_sum
 from symbolics import create_fraction
-from symbolics import BASIS, IP, GEO
+from symbolics import BASIS, IP, GEO, CONST
 from symbolics import optimise_code
 from symbolics import generate_aux_constants
 
@@ -85,8 +86,11 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         for key, val in code.items():
             if len(val) > 1:
                 code[key] = create_sum(val)
-            else:
+            elif val:
                 code[key] = val[0]
+            else:
+                error("Where did the values go?")
+
         return code
 
     def product(self, o, *operands):
@@ -124,8 +128,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
                     error("This key should not be in the code.")
                 code[tuple(l)] = create_product(val + not_permute)
         else:
-            code[()] = create_product(not_permute)
-
+            return {():create_product(not_permute)}
         return code
 
     def division(self, o, *operands):
@@ -221,7 +224,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
     def create_constant_coefficient(self, count, component):
         coefficient = self.format["coeff"] + self.format["matrix access"](count, component)
         #print("create_constant_coefficient: " + coefficient)
-        return {():create_symbol(coefficient, GEO)}
+        return {():create_symbol(coefficient, CONST)}
 
     # -------------------------------------------------------------------------
     # FacetNormal (geometry.py).
@@ -480,7 +483,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
                     # Multiply function value by the transformations and add to code.
                     code.append(create_product([create_symbol(t, GEO) for t in transforms] + [function_name]))
         if not code:
-            return "0"
+            return create_float(0.0)
         elif len(code) > 1:
             code = create_sum(code)
         else:
@@ -616,22 +619,21 @@ def generate_code(integrand, transformer, Indent, format, interior):
 
     debug("\nQG, Using Transformer.")
 
-    # Apply basic expansions.
-    # TODO: Figure out if there is a 'correct' order of doing this.
-    # In form.form_data().form, which we should be using, coefficients have
-    # been mapped and derivatives expanded. So it should be enough to just
-    # expand_indices and purge_list_tensors.
-    new_integrand = strip_variables(integrand)
-    new_integrand = expand_indices(new_integrand)
-    new_integrand = purge_list_tensors(new_integrand)
-    # Only propagate restrictions if we have an interior integral.
-    if interior:
-        new_integrand = propagate_restrictions(new_integrand)
-    #print("\nExpanded integrand\n" + str(tree_format(new_integrand)))
-    # Let the Transformer create the loop code.
     info("Transforming UFL integrand...")
     t = time.time()
-    loop_code = transformer.visit(new_integrand)
+
+    # Apply some algorithms to make code more efficient.
+    # Why does leaving this out not result in the same code?
+#    integrand = strip_variables(integrand)
+#    integrand = expand_indices(integrand)
+#    integrand = purge_list_tensors(integrand)
+    # Only propagate restrictions if we have an interior integral.
+#    if interior:
+#        integrand = propagate_restrictions(integrand)
+    #print("\nExpanded integrand\n" + str(tree_format(new_integrand)))
+    # Let the Transformer create the loop code.
+
+    loop_code = transformer.visit(integrand)
     info("done, time = %f" % (time.time() - t))
 
     # TODO: Verify that test and trial functions will ALWAYS be rearranged to 0 and 1.

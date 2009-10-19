@@ -604,6 +604,8 @@ class QuadratureTransformerBase(Transformer):
         restricted_expr = o.operands()
         if len(restricted_expr) != 1:
             error("Only expected one operand for restriction: " + str(restricted_expr))
+        if not self.restriction is None:
+            error("Expression is restricted twice: " + str(restricted_expr))
 
         #print "PositiveRestricted expr: ", restricted_expr
  
@@ -612,7 +614,7 @@ class QuadratureTransformerBase(Transformer):
         code = self.visit(restricted_expr[0])
         #print "PositiveRestricted code: ", code
 
-        # Reset restriction (not strictly necessary).
+        # Reset restriction
         self.restriction = None
 
         return code
@@ -625,11 +627,14 @@ class QuadratureTransformerBase(Transformer):
         if len(restricted_expr) != 1:
             error("Only expected one operand for restriction: " + str(restricted_expr))
  
+        if not self.restriction is None:
+            error("Expression is restricted twice: " + str(restricted_expr))
+
         # Visit operand and generate restricted code.
         self.restriction = "-"
         code = self.visit(restricted_expr[0])
 
-        # Reset restriction (not strictly necessary).
+        # Reset restriction
         self.restriction = None
 
         return code

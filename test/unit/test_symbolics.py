@@ -138,6 +138,7 @@ class Tests(unittest.TestCase):
         p11 = Product([f5, f0])
         p12 = Product([f6, f5])
         p13 = Product([f6, f5]).expand()
+        p14 = Product([f1, f2])
 
 #        print "\nTesting Products"
 #        print "\np0: [] '%s'" % (p0)
@@ -154,6 +155,7 @@ class Tests(unittest.TestCase):
 #        print "\np11: %s * %s = '%s'" % (f6, f1, p11)
 #        print "\np12: %s * %s = '%s'" % (f6, f5, p12)
 #        print "\np13: %s * %s = '%s'" % (f6, f5, p13)
+#        print "\np14: %s * %s = '%s'" % (f1, f2, p14)
 
         self.assertEqual(repr(p0), "Product([FloatValue(0)])")
         self.assertEqual(repr(p1), "Product([Symbol('x', BASIS)])")
@@ -173,6 +175,8 @@ class Tests(unittest.TestCase):
         self.assertEqual(str(p11), '1')
         self.assertEqual(str(p12), '-1')
         self.assertEqual(str(p13), '-1')
+        self.assertEqual(repr(p14), "Product([FloatValue(0)])")
+        self.assertEqual(repr(p14.expand()), "FloatValue(0)")
 
         self.assertEqual(p1 == p1, True)
         self.assertEqual(p1 == p7, False)
@@ -191,6 +195,7 @@ class Tests(unittest.TestCase):
         self.assertEqual(p8.ops(), 1)
         self.assertEqual(p9.ops(), 1)
         self.assertEqual(p10.ops(), 0)
+        self.assertEqual(p14.ops(), 0)
 
         # Test hash
         l = [p3]
@@ -2361,60 +2366,15 @@ class Tests(unittest.TestCase):
     def testSingle(self):
         "Run a single test"
 
-        expr = Product([
-                       Product([
-                                 Symbol('F1', IP),
-                                 Symbol('std::exp(1/(F0 + F1))', IP),
-                                 Fraction(
-                                          Product([
-                                                    FloatValue(-1),
-                                                    Symbol('FE0_C1[ip][j]', BASIS),
-                                                    Fraction(
-                                                             FloatValue(1),
-                                                             Sum([
-                                                                  Product([
-                                                                           Symbol('F0', IP)
-                                                                          ]),
-                                                                  Product([
-                                                                           Symbol('F1', IP)
-                                                                          ])
-                                                                 ])
-                                                             )
-                                                  ]),
-                                          Sum([
-                                               Product([
-                                                        Symbol('F0', IP)
-                                                       ]),
-                                               Product([
-                                                        Symbol('F1', IP)
-                                                       ])
-                                              ])
-                                          )
-                                ]),
-                ])
+        f0 = FloatValue(0)
+        f12 = FloatValue(12)
+        p0 = Product([f12, f0])
 
-        print expr
-        # Generate code
-        ip_consts = {}
-        geo_consts = {}
-        trans_set = set()
+        print repr(p0)
+        print p0.val
+        print repr(p0.expand())
+        print p0.expand().val
 
-        opt_code = optimise_code(expr, ip_consts, geo_consts, trans_set)
-        print "\nopt_code: ", opt_code
-        print "\nip_consts: ", ip_consts.keys()[0]
-        print "\ngeo_consts: ", geo_consts
-        print "\ntrans_set: ", trans_set
-
-        expr = Fraction(
-                        Symbol('F1', IP),
-                        Sum([
-                             Symbol('F0', IP),
-                             Symbol('F1', IP)
-                            ])
-                        )
-        print expr
-        print expr.reduce_vartype(IP)[0]
-        print expr.reduce_vartype(IP)[1]
 
 def suite():
 
