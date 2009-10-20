@@ -72,7 +72,7 @@ def generate_psi_name(counter, facet, component, derivatives):
     name = "FE%d" % counter
     if not facet is None:
         name += "_f%d" % facet
-    if component != ():
+    if component != () and component != []:
         name += "_C%d" % component
     if any(derivatives):
         name += "_D" + "".join([str(d) for d in derivatives])
@@ -403,7 +403,9 @@ def create_permutations(expr):
     if len(expr) == 1:
         new = {}
         for key, val in expr[0].items():
-            if not isinstance(key[0], tuple):
+            if key == ():
+                pass
+            elif not isinstance(key[0], tuple):
                 key = (key,)
             if not isinstance(val, list):
                 val = [val]
@@ -422,7 +424,9 @@ def create_permutations(expr):
             if not isinstance(val0, list):
                 val0 = [val0]
             for key1, val1 in expr[1].items():
-                if isinstance(key1[0], tuple):
+                if key1 == ():
+                    key1 = []
+                elif isinstance(key1[0], tuple):
                     key1 = list(key1)
                 if not isinstance(key1, list):
                     key1 = [key1]

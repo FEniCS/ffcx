@@ -223,10 +223,6 @@ class QuadratureTransformerBase(Transformer):
         print "\n\nVisiting IndexAnnotated:", o.__repr__()
         error("Only child classes of IndexAnnotated is supported.")
 
-    def zero(self, o):
-        print "\n\nVisiting Zero:", o.__repr__()
-        error("Zero is not supported (yet).")
-
     def constant_base(self, o):
         print "\n\nVisiting ConstantBase:", o.__repr__()
         error("This type of ConstantBase is not supported (yet).")
@@ -362,7 +358,8 @@ class QuadratureTransformerBase(Transformer):
 
         # Check if basis is already in cache
         basis = self.basis_function_cache.get((o, components, derivatives, self.restriction), None)
-        if basis is not None:
+        # FIXME: Why does using a code dict from cache make the expression manipulations blow (MemoryError) up later?
+        if basis is not None and not self.optimise_options["simplify expressions"]:
             return basis
 
         # Get auxiliary variables to generate basis
@@ -407,6 +404,13 @@ class QuadratureTransformerBase(Transformer):
 
         return self.format_scalar_value(o.value())
 
+    def zero(self, o, *operands):
+        #print "\n\nVisiting Zero:", o.__repr__()
+        # FIXME: Might be needed because it can be IndexAnnotated?
+        if operands:
+            error("Did not expect any operands for Zero: " + str((o, operands)))
+        return self.format_scalar_value(None)
+
     # -------------------------------------------------------------------------
     # SpatialDerivative (differentiation.py).
     # -------------------------------------------------------------------------
@@ -450,9 +454,9 @@ class QuadratureTransformerBase(Transformer):
 
         # Check if function is already in cache
         function_code = self.function_cache.get((o, components, derivatives, self.restriction), None)
-        if function_code is not None:
+        # FIXME: Why does using a code dict from cache make the expression manipulations blow (MemoryError) up later?
+        if function_code is not None and not self.optimise_options["simplify expressions"]:
             return function_code
-
 
         # Get auxiliary variables to generate function
         component, local_comp, local_offset, ffc_element, quad_element, \
@@ -549,6 +553,7 @@ class QuadratureTransformerBase(Transformer):
 
         # Visit expression subtrees and generate code.
         code = self.visit(indexed_expr)
+        #print "Indexed: code: ", code
 
         # Remove component again
         self._components.pop()
@@ -675,7 +680,7 @@ class QuadratureTransformerBase(Transformer):
     # ComponentTensor (tensors.py).
     # -------------------------------------------------------------------------
     def component_tensor(self, o):
-        #print("\n\nVisiting ComponentTensor: " + o.__repr__())
+        #print("\n\nVisiting ComponentTensor:\n" + str(tree_format(o)))
 
         # Get expression and indices
         component_expr, indices = o.operands()

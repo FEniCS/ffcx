@@ -94,7 +94,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         return code
 
     def product(self, o, *operands):
-        #print("\n\nVisiting Product: " + o.__repr__() + "with operands: " + "\n".join(map(str,operands)))
+        #print("\n\nVisiting Product:\n" + str(tree_format(o)))
 
         permute = []
         not_permute = []
@@ -630,16 +630,18 @@ def generate_code(integrand, transformer, Indent, format, interior):
     # Only propagate restrictions if we have an interior integral.
     if interior:
         integrand = propagate_restrictions(integrand)
+#        new_integrand = propagate_restrictions(new_integrand)
     #print("\nExpanded integrand\n" + str(tree_format(new_integrand)))
     # Let the Transformer create the loop code.
 
     loop_code = transformer.visit(integrand)
+#    loop_code = transformer.visit(new_integrand)
     info("done, time = %f" % (time.time() - t))
 
-    print "Deleting transformer cache"
-    # Reset cache
-    transformer.basis_function_cache = {}
-    transformer.function_cache = {}
+#    print "Deleting transformer cache"
+#    # Reset cache
+#    transformer.basis_function_cache = {}
+#    transformer.function_cache = {}
 
     # TODO: Verify that test and trial functions will ALWAYS be rearranged to 0 and 1.
     indices = {-2: format["first free index"], -1: format["second free index"],
