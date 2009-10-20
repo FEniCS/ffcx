@@ -628,8 +628,8 @@ def generate_code(integrand, transformer, Indent, format, interior):
 #    integrand = expand_indices(integrand)
 #    integrand = purge_list_tensors(integrand)
     # Only propagate restrictions if we have an interior integral.
-#    if interior:
-#        integrand = propagate_restrictions(integrand)
+    if interior:
+        integrand = propagate_restrictions(integrand)
     #print("\nExpanded integrand\n" + str(tree_format(new_integrand)))
     # Let the Transformer create the loop code.
 
