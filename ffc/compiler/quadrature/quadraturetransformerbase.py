@@ -156,7 +156,7 @@ class QuadratureTransformerBase(Transformer):
     # -------------------------------------------------------------------------
     # Things which should not be here (after expansion etc.) from:
     # algebra.py, differentiation.py, finiteelement.py,
-    # form.py, indexing.py, integral.py.
+    # form.py, geometry.py, indexing.py, integral.py, tensoralgebra.py, variable.py.
     # -------------------------------------------------------------------------
     def algebra_operator(self, o, *operands):
         print "\n\nVisiting AlgebraOperator: ", o.__repr__()
@@ -174,6 +174,14 @@ class QuadratureTransformerBase(Transformer):
         print "\n\nVisiting Form: ", o.__repr__()
         error("The transformer only work on a Form integrand, not the Form itself!!")
 
+    def space(self, o):
+        print "\n\nVisiting Space: ", o.__repr__()
+        error("A Space should not be present in the integrand.")
+
+    def cell(self, o):
+        print "\n\nVisiting Cell: ", o.__repr__()
+        error("A Cell should not be present in the integrand.")
+
     def index_base(self, o):
         print "\n\nVisiting IndexBase: ", o.__repr__()
         error("Indices should not be floating around freely in the integrand!!")
@@ -186,10 +194,18 @@ class QuadratureTransformerBase(Transformer):
         print "\n\nVisiting Measure: ", o.__repr__()
         error("Measure should not be present in the integrand!!")
 
+    def compound_tensor_operator(self, o):
+        print "\n\nVisiting CompoundTensorOperator: ", o.__repr__()
+        error("CompoundTensorOperator should have been expanded.")
+
+    def label(self, o):
+        print "\n\nVisiting Label: ", o.__repr__()
+        error("What is a Lable doing in the integrand?")
+
     # -------------------------------------------------------------------------
     # Things which are not supported yet, from:
-    # condition.py, constantvalue.py, function.py, geometry.py, mathfunctions.py,
-    # restriction.py, tensoralgebra.py, variable.py.
+    # condition.py, constantvalue.py, function.py, geometry.py, lifting.py,
+    # mathfunctions.py, restriction.py
     # -------------------------------------------------------------------------
     def condition(self, o):
         print "\n\nVisiting Condition:", o.__repr__()
@@ -199,21 +215,37 @@ class QuadratureTransformerBase(Transformer):
         print "\n\nVisiting Condition:", o.__repr__()
         error("Conditional is not supported (yet).")
 
-    def scalar_something(self, o):
-        print "\n\nVisiting ConstantSomething:", o.__repr__()
-        error("ConstantSomething is not supported (yet).")
+    def constant_value(self, o):
+        print "\n\nVisiting ConstantValue:", o.__repr__()
+        error("This type of ConstantValue is not supported (yet).")
+
+    def index_annotated(self, o):
+        print "\n\nVisiting IndexAnnotated:", o.__repr__()
+        error("Only child classes of IndexAnnotated is supported.")
 
     def zero(self, o):
         print "\n\nVisiting Zero:", o.__repr__()
         error("Zero is not supported (yet).")
 
+    def constant_base(self, o):
+        print "\n\nVisiting ConstantBase:", o.__repr__()
+        error("This type of ConstantBase is not supported (yet).")
+
     def geometric_quantity(self, o):
         print "\n\nVisiting GeometricQuantity:", o.__repr__()
-        error("GeometricQuantity is not supported (yet).")
+        error("This type of GeometricQuantity is not supported (yet).")
 
     def spatial_coordinate(self, o):
         print "\n\nVisiting SpatialCoordinate:", o.__repr__()
         error("SpatialCoordinate is not supported (yet).")
+
+    def lifting_result(self, o):
+        print "\n\nVisiting LiftingResult:", o.__repr__()
+        error("LiftingResult (and children) is not supported (yet).")
+
+    def terminal_operator(self, o):
+        print "\n\nVisiting TerminalOperator:", o.__repr__()
+        error("TerminalOperator (LiftingOperator and LiftingFunction) is not supported (yet).")
 
     def math_function(self, o):
         print "\n\nVisiting MathFunction:", o.__repr__()
@@ -221,7 +253,7 @@ class QuadratureTransformerBase(Transformer):
 
     def restricted(self, o):
         print "\n\nVisiting Restricted:", o.__repr__()
-        error("This type of Restricted is not supported (only positive and negative are supported).")
+        error("This type of Restricted is not supported (only positive and negative are currently supported).")
 
     # -------------------------------------------------------------------------
     # Things that should be implemented by child classes.
