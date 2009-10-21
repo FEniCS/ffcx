@@ -24,8 +24,8 @@ class QuadratureElement(FiniteElement):
     def __init__(self, ufl_element, domain=None):
         "Create QuadratureElement"
 
-        # Save UFL string representation
-        self.__ufl_str = repr(ufl_element)
+        # Save UFL element
+        self.__ufl_element = ufl_element
 
         # Handle restrictions
         if domain and isinstance(domain, Cell):
@@ -114,7 +114,7 @@ class QuadratureElement(FiniteElement):
 
     def signature(self):
         "Return a string identifying the QuadratureElement"
-        return self.__ufl_str
+        return repr(self.__ufl_element)
 
     def space_dimension(self):
         "Return the total number of quadrature points"
@@ -154,4 +154,8 @@ class QuadratureElement(FiniteElement):
     def value_rank(self):
         "Return the rank of the value space"
         return self._rank
+
+    def ufl_element(self):
+        "Return the UFL element"
+        return self.__ufl_element
 

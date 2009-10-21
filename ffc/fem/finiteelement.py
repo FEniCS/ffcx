@@ -72,8 +72,8 @@ class FiniteElement(FiniteElementBase):
     def __init__(self, ufl_element, domain=None):
         "Create FiniteElement"
 
-        # Save UFL string representation
-        self.__ufl_str = repr(ufl_element)
+        # Save UFL element
+        self.__ufl_element = ufl_element
 
         # Save element family
         self.__family = ufl_element.family()
@@ -231,7 +231,7 @@ class FiniteElement(FiniteElementBase):
 
     def signature(self):
         "Return a string identifying the finite element"
-        return self.__ufl_str
+        return repr(self.__ufl_element)
 
     def space_dimension(self):
         "Return the dimension of the finite element function space"
@@ -276,6 +276,10 @@ class FiniteElement(FiniteElementBase):
     def value_rank(self):
         "Return the rank of the value space"
         return self.basis().rank()
+
+    def ufl_element(self):
+        "Return the UFL element"
+        return self.__ufl_element
 
     def __choose_element(self, family, shape, degree):
         "Choose FIAT finite element from string"

@@ -49,7 +49,7 @@ class MixedElement(FiniteElementBase):
 
     def __repr__(self):
         "Pretty print"
-        return "Mixed finite element: " + str(self.__elements)
+        return self.signature()
 
     def basis(self):
         "Return basis of finite element space"
