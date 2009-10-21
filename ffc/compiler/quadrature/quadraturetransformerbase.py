@@ -439,7 +439,7 @@ class QuadratureTransformerBase(Transformer):
     # Function and Constants (function.py).
     # -------------------------------------------------------------------------
     def function(self, o, *operands):
-        #print("\nVisiting Function: " + str(o))
+        #print("\nVisiting Function: " + repr(o))
 
         # Safety check.
         if operands:

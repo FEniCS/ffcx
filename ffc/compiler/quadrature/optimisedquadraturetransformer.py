@@ -146,15 +146,16 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         if not () in denominator_code and len(denominator_code) != 1:
             error("Only support function type denominator: " + str(denominator_code))
 
+        code = {}
         # Get denominator and create new values for the numerator.
         denominator = denominator_code[()]
         for key, val in numerator_code.items():
             #print("\nnum: " + repr(val))
             #print("\nden: " + repr(denominator))
-            numerator_code[key] = create_fraction(val, denominator)
+            code[key] = create_fraction(val, denominator)
             #print("\ncode: " + str(numerator_code[key]))
 
-        return numerator_code
+        return code
 
     def power(self, o):
         #print("\n\nVisiting Power: " + o.__repr__())
@@ -201,13 +202,11 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
             error("Abs expects one operand of function type: " + str(operands))
 
         # Take absolute value of operand.
-        operand = operands[0]
-        for key, val in operand.items():
-            new_val = create_symbol(self.format["absolute value"](str(val)), val.t)
-            new_val.base_expr = val
-            new_val.base_op = 1 # Add one operation for taking the absolute value.
-            operand[key] = new_val
-        return operand
+        val = operands[0][()]
+        new_val = create_symbol(self.format["absolute value"](str(val)), val.t)
+        new_val.base_expr = val
+        new_val.base_op = 1 # Add one operation for taking the absolute value.
+        return {():new_val}
 
     # -------------------------------------------------------------------------
     # Constant values (constantvalue.py).
