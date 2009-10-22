@@ -126,8 +126,6 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
 
         # Get the code from the operands.
         numerator_code, denominator_code = operands
-        #print("\nnumerator: " + str(numerator_code))
-        #print("\ndenominator: " + str(denominator_code))
 
         # TODO: Are these safety checks needed?
         if not () in denominator_code and len(denominator_code) != 1:
@@ -137,10 +135,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         # Get denominator and create new values for the numerator.
         denominator = denominator_code[()]
         for key, val in numerator_code.items():
-            #print("\nnum: " + repr(val))
-            #print("\nden: " + repr(denominator))
             code[key] = create_fraction(val, denominator)
-            #print("\ncode: " + str(numerator_code[key]))
 
         return code
 
@@ -149,12 +144,9 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
 
         # Get base and exponent.
         base, expo = o.operands()
-        #print("\nbase: " + str(base))
-        #print("\nexponent: " + str(expo))
 
         # Visit base to get base code.
         base_code = self.visit(base)
-        #print("base_code: " + str(base_code))
 
         # TODO: Are these safety checks needed?
         if not () in base_code and len(base_code) != 1:
@@ -211,7 +203,6 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
             error("FacetNormal expects 1 component index: " + str(components))
 
         normal_component = self.format["normal component"](self.restriction, components[0])
-        #print("Facet Normal Component: " + normal_component)
         return {(): create_symbol(normal_component, GEO)}
 
     def create_basis_function(self, ufl_basis_function, derivatives, component, local_comp,
@@ -233,7 +224,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
                     deriv = []
 
                 # Call function to create mapping and basis name.
-                mapping, basis = self.__create_mapping_basis(component, deriv, ufl_basis_function, ffc_element)
+                mapping, basis = self._create_mapping_basis(component, deriv, ufl_basis_function, ffc_element)
 
                 # Add transformation if needed.
                 if mapping in code:
@@ -250,7 +241,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
                     deriv = []
                 for c in range(self.geo_dim):
                     # Call function to create mapping and basis name.
-                    mapping, basis = self.__create_mapping_basis(c + local_offset, deriv, ufl_basis_function, ffc_element)
+                    mapping, basis = self._create_mapping_basis(c + local_offset, deriv, ufl_basis_function, ffc_element)
 
                     # Multiply basis by appropriate transform.
                     if transformation == COVARIANT_PIOLA:
@@ -277,84 +268,6 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
                 code[key] = val[0]
 
         return code
-
-    def __create_mapping_basis(self, component, deriv, ufl_basis_function, ffc_element):
-        "Create basis name and mapping from given basis_info."
-
-        # Get string for integration point.
-        format_ip = self.format["integration points"]
-
-        # Only support test and trial functions.
-        # TODO: Verify that test and trial functions will ALWAYS be rearranged to 0 and 1.
-        indices = {-2: self.format["first free index"],
-                   -1: self.format["second free index"],
-                    0: self.format["first free index"],
-                    1: self.format["second free index"]}
-
-        # Check that we have a basis function.
-        if not ufl_basis_function.count() in indices:
-            error("Currently, BasisFunction index must be either -2, -1, 0 or 1: " + str(ufl_basis_function))
-
-        # Handle restriction through facet.
-        facet = {"+": self.facet0, "-": self.facet1, None: self.facet0}[self.restriction]
-
-        # Get element counter and loop index.
-        element_counter = self.element_map[self.points][ufl_basis_function.element()]
-        loop_index = indices[ufl_basis_function.count()]
-
-        # Create basis access, we never need to map the entry in the basis table
-        # since we will either loop the entire space dimension or the non-zeros.
-        if self.points == 1:
-            format_ip = "0"
-        basis_access = self.format["matrix access"](format_ip, loop_index)
-
-        # Offset element space dimension in case of negative restriction,
-        # need to use the complete element for offset in case of mixed element.
-        space_dim = ffc_element.space_dimension()
-        offset = {"+": "", "-": str(space_dim), None: ""}[self.restriction]
-
-        # If we have a restricted function multiply space_dim by two.
-        if self.restriction == "+" or self.restriction == "-":
-            space_dim *= 2
-
-        # Generate psi name and map to correct values.
-        name = generate_psi_name(element_counter, facet, component, deriv)
-        name, non_zeros, zeros, ones = self.name_map[name]
-        loop_index_range = shape(self.unique_tables[name])[1]
-
-        # Append the name to the set of used tables and create matrix access.
-        basis = "0"
-        if zeros and (self.optimise_options["ignore zero tables"] or self.optimise_options["remove zero terms"]):
-            basis = create_float(0)
-        elif self.optimise_options["ignore ones"] and loop_index_range == 1 and ones:
-            basis = create_float(1)
-            loop_index = "0"
-        else:
-            basis = create_symbol(name + basis_access, BASIS)
-            self.psi_tables_map[basis] = name
-
-        # Create the correct mapping of the basis function into the local element tensor.
-        basis_map = loop_index
-        if non_zeros and basis_map == "0":
-            basis_map = str(non_zeros[1][0])
-        elif non_zeros:
-            basis_map = self.format["nonzero columns"](non_zeros[0]) + self.format["array access"](basis_map)
-        if offset:
-            basis_map = self.format["grouping"](self.format["add"]([basis_map, offset]))
-
-        # Try to evaluate basis map ("3 + 2" --> "5").
-        try:
-            basis_map = str(eval(basis_map))
-        except:
-            pass
-
-        # Create mapping (index, map, loop_range, space_dim).
-        # Example dx and ds: (0, j, 3, 3)
-        # Example dS: (0, (j + 3), 3, 6), 6=2*space_dim
-        # Example dS optimised: (0, (nz2[j] + 3), 2, 6), 6=2*space_dim
-        mapping = ((ufl_basis_function.count(), basis_map, loop_index_range, space_dim),)
-
-        return (mapping, basis)
 
     def create_function(self, ufl_function, derivatives, component, local_comp,
                   local_offset, ffc_element, quad_element, transformation, multiindices):
@@ -456,7 +369,6 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
             new_val.base_expr = val
             new_val.base_op = 1 # Add one operation for the math function.
             operand[key] = new_val
-        #print("operand: " + str(operand))
         return operand
 
     # -------------------------------------------------------------------------
@@ -482,3 +394,6 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
 
         return value, zero
 
+    def _update_used_psi_tables(self):
+        # Nothing to be done for optimised transformer (handled in _create_entry_value)
+        pass

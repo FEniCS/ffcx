@@ -260,7 +260,7 @@ class QuadratureTransformerBase(Transformer):
         error("This type of Restricted is not supported (only positive and negative are currently supported).")
 
     # -------------------------------------------------------------------------
-    # Things that should be implemented by child classes.
+    # Handlers that should be implemented by child classes.
     # -------------------------------------------------------------------------
     # -------------------------------------------------------------------------
     # AlgebraOperators (algebra.py).
@@ -309,9 +309,6 @@ class QuadratureTransformerBase(Transformer):
         components = self.component()
         derivatives = self.derivatives()
 
-        #print ("BasisFunction: components: " + str(components))
-        #print ("BasisFunction: derivatives: " + str(derivatives))
-
         # Check if basis is already in cache
         basis = self.basis_function_cache.get((o, components, derivatives, self.restriction), None)
         # FIXME: Why does using a code dict from cache make the expression manipulations blow (MemoryError) up later?
@@ -358,7 +355,6 @@ class QuadratureTransformerBase(Transformer):
         # FIXME: Might be needed because it can be IndexAnnotated?
         if operands:
             error("Did not expect any operands for ScalarValue: " + str((o, operands)))
-
         return self._format_scalar_value(o.value())
 
     def zero(self, o, *operands):
@@ -406,14 +402,11 @@ class QuadratureTransformerBase(Transformer):
         components = self.component()
         derivatives = self.derivatives()
 
-        #print("components: " + str(components))
-        #print("derivatives: " + str(derivatives))
-
         # Check if function is already in cache
         function_code = self.function_cache.get((o, components, derivatives, self.restriction), None)
         # FIXME: Why does using a code dict from cache make the expression manipulations blow (MemoryError) up later?
-#        if function_code is not None:
         if function_code is not None and not self.optimise_options["simplify expressions"]:
+#        if function_code is not None:
             return function_code
 
         # Get auxiliary variables to generate function
@@ -508,13 +501,8 @@ class QuadratureTransformerBase(Transformer):
         indexed_expr, index = o.operands()
         self._components.push(self.visit(index))
 
-        #print "Indexed: indexed_expr: ", indexed_expr
-        #print "Indexed: index: ", repr(index)
-        #print "Indexed: comps: ", self._components
-
         # Visit expression subtrees and generate code.
         code = self.visit(indexed_expr)
-        #print "Indexed: code: ", code
 
         # Remove component again
         self._components.pop()
@@ -534,7 +522,7 @@ class QuadratureTransformerBase(Transformer):
                 subcomp.append(i._value)
             elif isinstance(i, Index):
                 subcomp.append(self._index2value[i])
-        #print "MultiIndex: subcomp: ", tuple(subcomp)
+
         return tuple(subcomp)
 
     # -------------------------------------------------------------------------
@@ -546,11 +534,6 @@ class QuadratureTransformerBase(Transformer):
         # Get expression and index that we're summing over
         summand, multiindex = o.operands()
         index, = multiindex
-
-        #print "\nIndexSum: summand: ", summand
-        #print "IndexSum: multiind: ", repr(multiindex)
-        #print "IndexSum: index: ", repr(index)
-        #print "IndexSum: o.dim: ", o.dimension()
 
         # Loop index range, update index/value dict and generate code
         ops = []
@@ -569,27 +552,22 @@ class QuadratureTransformerBase(Transformer):
     # -------------------------------------------------------------------------
     def sqrt(self, o, *operands):
         #print("\n\nVisiting Sqrt: " + o.__repr__() + "with operands: " + "\n".join(map(str,operands)))
-        # Call common math function.
         return self._math_function(operands, self.format["sqrt"])
 
     def exp(self, o, *operands):
         #print("\n\nVisiting Exp: " + o.__repr__() + "with operands: " + "\n".join(map(str,operands)))
-        # Call common math function.
         return self._math_function(operands, self.format["exp"])
 
     def ln(self, o, *operands):
         #print("\n\nVisiting Ln: " + o.__repr__() + "with operands: " + "\n".join(map(str,operands)))
-        # Call common math function.
         return self._math_function(operands, self.format["ln"])
 
     def cos(self, o, *operands):
         #print("\n\nVisiting Cos: " + o.__repr__() + "with operands: " + "\n".join(map(str,operands)))
-        # Call common math function.
         return self._math_function(operands, self.format["cos"])
 
     def sin(self, o, *operands):
         #print("\n\nVisiting Sin: " + o.__repr__() + "with operands: " + "\n".join(map(str,operands)))
-        # Call common math function.
         return self._math_function(operands, self.format["sin"])
 
     # -------------------------------------------------------------------------
@@ -604,15 +582,10 @@ class QuadratureTransformerBase(Transformer):
             error("Only expected one operand for restriction: " + str(restricted_expr))
         if not self.restriction is None:
             error("Expression is restricted twice: " + str(restricted_expr))
-
-        #print "PositiveRestricted expr: ", restricted_expr
  
-        # Visit operand and generate restricted code.
+        # Set restriction, visit operand and reset restriction
         self.restriction = "+"
         code = self.visit(restricted_expr[0])
-        #print "PositiveRestricted code: ", code
-
-        # Reset restriction
         self.restriction = None
 
         return code
@@ -628,11 +601,9 @@ class QuadratureTransformerBase(Transformer):
         if not self.restriction is None:
             error("Expression is restricted twice: " + str(restricted_expr))
 
-        # Visit operand and generate restricted code.
+        # Set restriction, visit operand and reset restriction
         self.restriction = "-"
         code = self.visit(restricted_expr[0])
-
-        # Reset restriction
         self.restriction = None
 
         return code
@@ -648,10 +619,6 @@ class QuadratureTransformerBase(Transformer):
 
         # Get current component(s)
         components = self.component()
-
-        #print "\nComponentTensor: component_expr: ", component_expr
-        #print "ComponentTensor: indices: ", repr(indices)
-        #print "ComponentTensor: components: ", components
 
         if len(components) != len(indices):
             error("The number of known components must be equal to the number of components of the ComponentTensor for this to work.")
@@ -681,16 +648,12 @@ class QuadratureTransformerBase(Transformer):
 
         # Get the component
         component = self.component()
-        #print "ListTensor: component: ", component
 
         # Extract first and the rest of the components
         c0, c1 = component[0], component[1:]
-        #print "ListTensor: c0 ", c0
-        #print "ListTensor: c1 ", c1
 
         # Get first operand
         op = o.operands()[c0]
-        #print "ListTensor: op ", op
 
         # Evaluate subtensor with this subcomponent
         self._components.push(c1)
@@ -708,7 +671,7 @@ class QuadratureTransformerBase(Transformer):
         return self.visit(o.expression())
 
     # -------------------------------------------------------------------------
-    # Functions that generates code from integrand
+    # Generate code from from integrand
     # -------------------------------------------------------------------------
     def generate_code(self, integrand, Indent, interior):
         "Generate code from integrand."
@@ -829,7 +792,7 @@ class QuadratureTransformerBase(Transformer):
             if val is None:
                 continue
 
-            # Create value, get number of operations and an indicator of zero valued value
+            # Create value, zero is True if value is zero
             value, zero = self._create_entry_value(val, weight, format_scale_factor)
 
             if zero:
@@ -941,6 +904,9 @@ class QuadratureTransformerBase(Transformer):
         # Reset ip constant declarations
         self.ip_consts = {}
 
+        # Update used psi tables
+        self._update_used_psi_tables()
+
         return code, num_ops
 
     # -------------------------------------------------------------------------
@@ -1007,6 +973,88 @@ class QuadratureTransformerBase(Transformer):
 
         return (component, local_comp, local_offset, ffc_element, quad_element, transformation, multiindices)
 
+    def _create_mapping_basis(self, component, deriv, ufl_basis_function, ffc_element):
+        "Create basis name and mapping from given basis_info."
+
+        # Get string for integration points.
+        format_ip = self.format["integration points"]
+
+        # Only support test and trial functions.
+        # TODO: Verify that test and trial functions will ALWAYS be rearranged to 0 and 1.
+        indices = {-2: self.format["first free index"],
+                   -1: self.format["second free index"],
+                    0: self.format["first free index"],
+                    1: self.format["second free index"]}
+
+        # Check that we have a basis function.
+        if not ufl_basis_function.count() in indices:
+            error("Currently, BasisFunction index must be either -2, -1, 0 or 1: " + str(ufl_basis_function))
+
+        # Handle restriction through facet.
+        facet = {"+": self.facet0, "-": self.facet1, None: self.facet0}[self.restriction]
+
+        # Get element counter and loop index.
+        element_counter = self.element_map[self.points][ufl_basis_function.element()]
+        loop_index = indices[ufl_basis_function.count()]
+
+        # Create basis access, we never need to map the entry in the basis table
+        # since we will either loop the entire space dimension or the non-zeros.
+        if self.points == 1:
+            format_ip = "0"
+        basis_access = self.format["matrix access"](format_ip, loop_index)
+
+        # Offset element space dimension in case of negative restriction,
+        # need to use the complete element for offset in case of mixed element.
+        space_dim = ffc_element.space_dimension()
+        offset = {"+": "", "-": str(space_dim), None: ""}[self.restriction]
+
+        # If we have a restricted function multiply space_dim by two.
+        if self.restriction == "+" or self.restriction == "-":
+            space_dim *= 2
+
+        # Generate psi name and map to correct values.
+        name = generate_psi_name(element_counter, facet, component, deriv)
+        name, non_zeros, zeros, ones = self.name_map[name]
+        loop_index_range = shape(self.unique_tables[name])[1]
+
+        basis = ""
+        # Ignore zeros if applicable
+        if zeros and (self.optimise_options["ignore zero tables"] or self.optimise_options["remove zero terms"]):
+            basis = self._format_scalar_value(None)[()]
+        # If the loop index range is one we can look up the first component
+        # in the psi array. If we only have ones we don't need the basis.
+        elif self.optimise_options["ignore ones"] and loop_index_range == 1 and ones:
+            loop_index = "0"
+            basis = self._format_scalar_value(1.0)[()]
+        else:
+            # Add basis name to the psi tables map for later use.
+            basis = self._create_symbol(name + basis_access, BASIS)[()]
+            self.psi_tables_map[basis] = name
+
+        # Create the correct mapping of the basis function into the local element tensor.
+        basis_map = loop_index
+        if non_zeros and basis_map == "0":
+            basis_map = str(non_zeros[1][0])
+        elif non_zeros:
+            basis_map = self.format["nonzero columns"](non_zeros[0]) +\
+                        self.format["array access"](basis_map)
+        if offset:
+            basis_map = self.format["grouping"](self.format["add"]([basis_map, offset]))
+
+        # Try to evaluate basis map ("3 + 2" --> "5").
+        try:
+            basis_map = str(eval(basis_map))
+        except:
+            pass
+
+        # Create mapping (index, map, loop_range, space_dim).
+        # Example dx and ds: (0, j, 3, 3)
+        # Example dS: (0, (j + 3), 3, 6), 6=2*space_dim
+        # Example dS optimised: (0, (nz2[j] + 3), 2, 6), 6=2*space_dim
+        mapping = ((ufl_basis_function.count(), basis_map, loop_index_range, space_dim),)
+
+        return (mapping, basis)
+
     def _create_function_name(self, component, deriv, quad_element, ufl_function, ffc_element):
 
         # Get string for integration points.
@@ -1053,6 +1101,9 @@ class QuadratureTransformerBase(Transformer):
             basis_name = ""
         elif not quad_element:
             # Add basis name to set of used tables and add matrix access.
+            # TODO: We should first add this table if the function is used later
+            # in the expressions. If some term is multiplied by zero and it falls
+            # away there is no need to compute the function value
             self.used_psi_tables.add(basis_name)
             basis_name += basis_access
 
@@ -1116,5 +1167,8 @@ class QuadratureTransformerBase(Transformer):
         error("This function should be implemented by the child class.")
 
     def _create_entry_value(self, val, weight, scale_factor):
+        error("This function should be implemented by the child class.")
+
+    def _update_used_psi_tables(self):
         error("This function should be implemented by the child class.")
 
