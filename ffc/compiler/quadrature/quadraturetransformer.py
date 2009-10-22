@@ -273,24 +273,6 @@ class QuadratureTransformer(QuadratureTransformerBase):
         return {():format_abs(operands[0][()])}
 
     # -------------------------------------------------------------------------
-    # Constant values (constantvalue.py).
-    # -------------------------------------------------------------------------
-    def format_scalar_value(self, value):
-        #print("create_scalar_value: %d" % value)
-        if value is None:
-            return {():None}
-        # TODO: Handle value < 0 better such that we don't have + -2 in the code.
-        return {():self.format["floating point"](value)}
-
-    # -------------------------------------------------------------------------
-    # Constants (function.py).
-    # -------------------------------------------------------------------------
-    def create_constant_coefficient(self, count, component):
-        coefficient = self.format["coeff"] + self.format["matrix access"](count, component)
-        #print("create_constant_coefficient: " + coefficient)
-        return {():coefficient}
-
-    # -------------------------------------------------------------------------
     # FacetNormal (geometry.py).
     # -------------------------------------------------------------------------
     def facet_normal(self, o,  *operands):
@@ -310,44 +292,6 @@ class QuadratureTransformer(QuadratureTransformerBase):
         self.trans_set.add(normal_component)
         #print("Facet Normal Component: " + normal_component)
         return {():normal_component}
-
-    # -------------------------------------------------------------------------
-    # MathFunctions (mathfunctions.py).
-    # -------------------------------------------------------------------------
-    def _math_function(self, operands, format_function):
-        # TODO: Are these safety checks needed?
-        if len(operands) != 1 and not () in operands[0] and len(operands[0]) != 1:
-            error("MathFunctions expect one operand of function type: " + str(operands))
-        # Use format function on value of operand.
-        operand = operands[0]
-        for key, val in operand.items():
-            operand[key] = format_function(val)
-        #print("operand: " + str(operand))
-        return operand
-
-    # -------------------------------------------------------------------------
-    # Helper functions for BasisFunction and Function).
-    # -------------------------------------------------------------------------
-    def __apply_transform(self, function, derivatives, multi):
-        "Apply transformation (from derivatives) to basis or function."
-        format_mult          = self.format["multiply"]
-        format_transform     = self.format["transform"]
-
-        # Add transformation if needed.
-        transforms = []
-        for i, direction in enumerate(derivatives):
-            ref = multi[i]
-            t = format_transform("JINV", ref, direction, self.restriction)
-            self.trans_set.add(t)
-            transforms.append(t)
-
-        # Only multiply by basis if it is present.
-        if function:
-            prods = transforms + [function]
-        else:
-            prods = transforms
-
-        return self.format["multiply"](prods)
 
     def create_basis_function(self, ufl_basis_function, derivatives, component, local_comp,
                   local_offset, ffc_element, transformation, multiindices):
@@ -529,7 +473,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
                 if not any(deriv):
                     deriv = []
                 # Call other function to create function name.
-                function_name = self.__create_function_name(component, deriv, quad_element, ufl_function, ffc_element)
+                function_name = self._create_function_name(component, deriv, quad_element, ufl_function, ffc_element)
                 if function_name is None:
                     continue
 
@@ -544,7 +488,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
                 if not any(deriv):
                     deriv = []
                 for c in range(self.geo_dim):
-                    function_name = self.__create_function_name(c + local_offset, deriv, quad_element, ufl_function, ffc_element)
+                    function_name = self._create_function_name(c + local_offset, deriv, quad_element, ufl_function, ffc_element)
                     if function_name is None:
                         continue
 
@@ -574,105 +518,56 @@ class QuadratureTransformer(QuadratureTransformerBase):
 
         return code
 
-    def __create_function_name(self, component, deriv, quad_element, ufl_function, ffc_element):
+    # -------------------------------------------------------------------------
+    # Helper functions for BasisFunction and Function).
+    # -------------------------------------------------------------------------
+    def __apply_transform(self, function, derivatives, multi):
+        "Apply transformation (from derivatives) to basis or function."
+        format_mult          = self.format["multiply"]
+        format_transform     = self.format["transform"]
 
-        # Get string for integration points.
-        format_ip = self.format["integration points"]
+        # Add transformation if needed.
+        transforms = []
+        for i, direction in enumerate(derivatives):
+            ref = multi[i]
+            t = format_transform("JINV", ref, direction, self.restriction)
+            self.trans_set.add(t)
+            transforms.append(t)
 
-        # Pick first free index of secondary type
-        # (could use primary indices, but it's better to avoid confusion).
-        loop_index = self.format["free secondary indices"][0]
-
-        # Create basis access, we never need to map the entry in the basis
-        # table since we will either loop the entire space dimension or the
-        # non-zeros.
-        if self.points == 1:
-            format_ip = "0"
-        basis_access = self.format["matrix access"](format_ip, loop_index)
-
-        # Handle restriction through facet.
-        facet = {"+": self.facet0, "-": self.facet1, None: self.facet0}[self.restriction]
-
-        # Get the element counter.
-        element_counter = self.element_map[self.points][ufl_function.element()]
-
-        # Offset by element space dimension in case of negative restriction.
-        offset = {"+": "", "-": str(ffc_element.space_dimension()), None: ""}[self.restriction]
-
-        # Create basis name and map to correct basis and get info.
-        basis_name = generate_psi_name(element_counter, facet, component, deriv)
-        basis_name, non_zeros, zeros, ones = self.name_map[basis_name]
-
-        # If all basis are zero we just return None.
-        if zeros and self.optimise_options["ignore zero tables"]:
-            return None
-
-        # Get the index range of the loop index.
-        loop_index_range = shape(self.unique_tables[basis_name])[1]
-
-        # Set default coefficient access.
-        coefficient_access = loop_index
-
-        # If the loop index range is one we can look up the first component
-        # in the coefficient array. If we only have ones we don't need the basis.
-        if self.optimise_options["ignore ones"] and loop_index_range == 1 and ones:
-            coefficient_access = "0"
-            basis_name = ""
-        elif not quad_element:
-            # Add basis name to set of used tables and add matrix access.
-            self.used_psi_tables.add(basis_name)
-            basis_name += basis_access
-
-        # If we have a quadrature element we can use the ip number to look
-        # up the value directly. Need to add offset in case of components.
-        if quad_element:
-            quad_offset = 0
-            if component:
-                for i in range(component):
-                    quad_offset += ffc_element.sub_element(i).space_dimension()
-            if quad_offset:
-                coefficient_access = self.format["add"]([format_ip, str(quad_offset)])
-            else:
-                coefficient_access = format_ip
-
-        # If we have non zero column mapping but only one value just pick it.
-        if non_zeros and coefficient_access == "0":
-            coefficient_access = str(non_zeros[1][0])
-        elif non_zeros and not quad_element:
-            coefficient_access = self.format["nonzero columns"](non_zeros[0]) +\
-                                 self.format["array access"](coefficient_access)
-        if offset:
-            coefficient_access = self.format["add"]([coefficient_access, offset])
-
-        # Try to evaluate coefficient access ("3 + 2" --> "5").
-        try:
-            coefficient_access = str(eval(coefficient_access))
-        except:
-            pass
-
-        coefficient = self.format["coeff"] +\
-                      self.format["matrix access"](str(ufl_function.count()), coefficient_access)
-        function_expr = coefficient
-        if basis_name:
-            function_expr = self.format["multiply"]([basis_name, coefficient])
-
-        # If we have a quadrature element (or if basis was deleted) we don't need the basis.
-        if quad_element or not basis_name:
-            function_name = coefficient
+        # Only multiply by basis if it is present.
+        if function:
+            prods = transforms + [function]
         else:
-            # Check if the expression to compute the function value is already in
-            # the dictionary of used function. If not, generate a new name and add.
-            function_name = self.format["function value"] + str(self.function_count)
-            if not function_expr in self.functions:
-                self.functions[function_expr] = (function_name, loop_index_range)
-                # Increase count.
-                self.function_count += 1
-            else:
-                function_name, index_r = self.functions[function_expr]
-                # Check just to make sure.
-                if not index_r == loop_index_range:
-                    error("Index ranges does not match.")
-        return function_name
+            prods = transforms
+
+        return self.format["multiply"](prods)
+
+    # -------------------------------------------------------------------------
+    # Helper functions for transformation of UFL objects in base class
+    # -------------------------------------------------------------------------
+    def _create_symbol(self, symbol, domain):
+        return {():symbol}
+
+    def _create_product(self, symbols):
+        return self.format["multiply"](symbols)
+
+    def _format_scalar_value(self, value):
+        #print("format_scalar_value: %d" % value)
+        if value is None:
+            return {():None}
+        # TODO: Handle value < 0 better such that we don't have + -2 in the code.
+        return {():self.format["floating point"](value)}
+
+    def _math_function(self, operands, format_function):
+        # TODO: Are these safety checks needed?
+        if len(operands) != 1 and not () in operands[0] and len(operands[0]) != 1:
+            error("MathFunctions expect one operand of function type: " + str(operands))
+        # Use format function on value of operand.
+        operand = operands[0]
+        for key, val in operand.items():
+            operand[key] = format_function(val)
+        #print("operand: " + str(operand))
+        return operand
 
     # -------------------------------------------------------------------------
     # Helper functions for code_generation()
@@ -680,14 +575,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
     def _count_operations(self, expression):
         return operation_count(expression, self.format)
 
-    def _weight(self):
-        # Create weight.
-        weight = self.format["weight"](self.points)
-        if self.points > 1:
-            weight += self.format["array access"](self.format["integration points"])
-        return weight
-
-    def _create_value(self, val, weight, scale_factor):
+    def _create_entry_value(self, val, weight, scale_factor):
         format_mult = self.format["multiply"]
         zero = False
 

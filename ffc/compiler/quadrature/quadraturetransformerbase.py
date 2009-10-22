@@ -8,6 +8,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Python modules
 from itertools import izip
 import time
+from numpy import shape
 
 # UFL Classes.
 from ufl.classes import MultiIndex
@@ -33,7 +34,9 @@ from ffc.fem.createelement import create_element
 # Utility and optimisation functions for quadraturegenerator.
 from quadraturegenerator_utils import create_psi_tables
 from quadraturegenerator_utils import generate_loop
+from quadraturegenerator_utils import generate_psi_name
 from symbolics import generate_aux_constants
+from symbolics import BASIS, IP, GEO, CONST
 
 class QuadratureTransformerBase(Transformer):
 #class QuadratureTransformerBase(ReuseTransformer):
@@ -290,58 +293,6 @@ class QuadratureTransformerBase(Transformer):
         error("This object should be implemented by the child class.")
 
     # -------------------------------------------------------------------------
-    # Common auxiliary functions.
-    # -------------------------------------------------------------------------
-    def get_auxiliary_variables(self, ufl_function, component, derivatives):
-        "Helper function for both Function and BasisFunction."
-
-        # Get local component (in case we have mixed elements).
-        local_comp, local_elem = ufl_function.element().extract_component(component)
-
-        # Check that we don't take derivatives of QuadratureElements.
-        quad_element = local_elem.family() == "Quadrature"
-        if derivatives and quad_element:
-            error("Derivatives of Quadrature elements are not supported: " + str(ufl_function))
-
-        # Handle tensor elements.
-        if len(local_comp) > 1:
-            local_comp = local_elem._sub_element_mapping[local_comp]
-        elif local_comp:
-            local_comp = local_comp[0]
-        else:
-            local_comp = 0
-
-        # Map component
-        if len(component) > 1:
-            component = ufl_function.element()._sub_element_mapping[tuple(component)]
-        elif component:
-            component = component[0]
-
-        # Compute the local offset (needed for non-affine mappings).
-        local_offset = 0
-        if component:
-            local_offset = component - local_comp
-
-        # Create FFC element and get transformation.
-        ffc_element = create_element(ufl_function.element())
-        transformation = ffc_element.component_element(component)[0].mapping()
-
-        # Set geo_dim.
-        # TODO: All terms REALLY have to be defined on cell with the same
-        # geometrical dimension so only do this once and exclude the check?
-        geo_dim = ufl_function.element().cell().geometric_dimension()
-        if self.geo_dim:
-            if geo_dim != self.geo_dim:
-                error("All terms must be defined on cells with the same geometrical dimension.")
-        else:
-            self.geo_dim = geo_dim
-
-        # Generate FFC multi index for derivatives.
-        multiindices = FFCMultiIndex([range(geo_dim)]*len(derivatives)).indices
-
-        return (component, local_comp, local_offset, ffc_element, quad_element, transformation, multiindices)
-
-    # -------------------------------------------------------------------------
     # Things that can be handled by the base class.
     # -------------------------------------------------------------------------
     # -------------------------------------------------------------------------
@@ -370,7 +321,7 @@ class QuadratureTransformerBase(Transformer):
 
         # Get auxiliary variables to generate basis
         component, local_comp, local_offset, ffc_element, quad_element, \
-        transformation, multiindices = self.get_auxiliary_variables(o, components, derivatives)
+        transformation, multiindices = self._get_auxiliary_variables(o, components, derivatives)
 
         # Create mapping and code for basis function and add to dict.
         basis = self.create_basis_function(o, derivatives, component, local_comp,
@@ -397,8 +348,8 @@ class QuadratureTransformerBase(Transformer):
 
         # Only return a value if i==j
         if components[0] == components[1]:
-            return self.format_scalar_value(1.0)
-        return self.format_scalar_value(None)
+            return self._format_scalar_value(1.0)
+        return self._format_scalar_value(None)
 
     def scalar_value(self, o, *operands):
         "ScalarValue covers IntValue and FloatValue"
@@ -408,14 +359,14 @@ class QuadratureTransformerBase(Transformer):
         if operands:
             error("Did not expect any operands for ScalarValue: " + str((o, operands)))
 
-        return self.format_scalar_value(o.value())
+        return self._format_scalar_value(o.value())
 
     def zero(self, o, *operands):
         #print "\n\nVisiting Zero:", o.__repr__()
         # FIXME: Might be needed because it can be IndexAnnotated?
         if operands:
             error("Did not expect any operands for Zero: " + str((o, operands)))
-        return self.format_scalar_value(None)
+        return self._format_scalar_value(None)
 
     # -------------------------------------------------------------------------
     # SpatialDerivative (differentiation.py).
@@ -467,7 +418,7 @@ class QuadratureTransformerBase(Transformer):
 
         # Get auxiliary variables to generate function
         component, local_comp, local_offset, ffc_element, quad_element, \
-        transformation, multiindices = self.get_auxiliary_variables(o, components, derivatives)
+        transformation, multiindices = self._get_auxiliary_variables(o, components, derivatives)
 
 
         # Create code for function and add empty tuple to cache dict.
@@ -497,8 +448,9 @@ class QuadratureTransformerBase(Transformer):
         if self.restriction == "-":
             component += 1
 
-        # Let child class handle the constant coefficient
-        return self.create_constant_coefficient(o.count(), component)
+        # Let child class create constant symbol
+        coefficient = self.format["coeff"] + self.format["matrix access"](o.count(), component)
+        return self._create_symbol(coefficient, CONST)
 
     def vector_constant(self, o, *operands):
         #print("\n\nVisiting VectorConstant: " + o.__repr__())
@@ -519,8 +471,9 @@ class QuadratureTransformerBase(Transformer):
         if self.restriction == "-":
             component += o.shape()[0]
 
-        # Let child class handle the constant coefficient
-        return self.create_constant_coefficient(o.count(), component)
+        # Let child class create constant symbol
+        coefficient = self.format["coeff"] + self.format["matrix access"](o.count(), component)
+        return self._create_symbol(coefficient, CONST)
 
     def tensor_constant(self, o, *operands):
         #print("\n\nVisiting TensorConstant: " + o.__repr__())
@@ -541,8 +494,9 @@ class QuadratureTransformerBase(Transformer):
         if self.restriction == "-":
             component += product(o.shape())
 
-        # Let child class handle the constant coefficient
-        return self.create_constant_coefficient(o.count(), component)
+        # Let child class create constant symbol
+        coefficient = self.format["coeff"] + self.format["matrix access"](o.count(), component)
+        return self._create_symbol(coefficient, CONST)
 
     # -------------------------------------------------------------------------
     # Indexed (indexed.py).
@@ -860,7 +814,12 @@ class QuadratureTransformerBase(Transformer):
             code += func_ops_comment + generate_loop(lines, [(format_r, 0, loop_range)], Indent, self.format)
 
         # Create weight.
-        weight = self._weight()
+        ACCESS = GEO
+        weight = self.format["weight"](self.points)
+        if self.points > 1:
+            weight += self.format["array access"](self.format["integration points"])
+            ACCESS = IP
+        weight = self._create_symbol(weight, ACCESS)[()]
 
         # Generate entries, multiply by weights and sort after primary loops.
         loops = {}
@@ -871,7 +830,7 @@ class QuadratureTransformerBase(Transformer):
                 continue
 
             # Create value, get number of operations and an indicator of zero valued value
-            value, zero = self._create_value(val, weight, format_scale_factor)
+            value, zero = self._create_entry_value(val, weight, format_scale_factor)
 
             if zero:
                 continue
@@ -984,12 +943,178 @@ class QuadratureTransformerBase(Transformer):
 
         return code, num_ops
 
+    # -------------------------------------------------------------------------
+    # Helper functions for transformation of UFL objects in base class
+    # -------------------------------------------------------------------------
+    def _create_symbol(self, symbol, domain):
+        error("This function should be implemented by the child class.")
+
+    def _create_product(self, symbols):
+        error("This function should be implemented by the child class.")
+
+    def _format_scalar_value(self, value):
+        error("This function should be implemented by the child class.")
+
+    def _math_function(self, operands, format_function):
+        error("This function should be implemented by the child class.")
+
+    def _get_auxiliary_variables(self, ufl_function, component, derivatives):
+        "Helper function for both Function and BasisFunction."
+
+        # Get local component (in case we have mixed elements).
+        local_comp, local_elem = ufl_function.element().extract_component(component)
+
+        # Check that we don't take derivatives of QuadratureElements.
+        quad_element = local_elem.family() == "Quadrature"
+        if derivatives and quad_element:
+            error("Derivatives of Quadrature elements are not supported: " + str(ufl_function))
+
+        # Handle tensor elements.
+        if len(local_comp) > 1:
+            local_comp = local_elem._sub_element_mapping[local_comp]
+        elif local_comp:
+            local_comp = local_comp[0]
+        else:
+            local_comp = 0
+
+        # Map component
+        if len(component) > 1:
+            component = ufl_function.element()._sub_element_mapping[tuple(component)]
+        elif component:
+            component = component[0]
+
+        # Compute the local offset (needed for non-affine mappings).
+        local_offset = 0
+        if component:
+            local_offset = component - local_comp
+
+        # Create FFC element and get transformation.
+        ffc_element = create_element(ufl_function.element())
+        transformation = ffc_element.component_element(component)[0].mapping()
+
+        # Set geo_dim.
+        # TODO: All terms REALLY have to be defined on cell with the same
+        # geometrical dimension so only do this once and exclude the check?
+        geo_dim = ufl_function.element().cell().geometric_dimension()
+        if self.geo_dim:
+            if geo_dim != self.geo_dim:
+                error("All terms must be defined on cells with the same geometrical dimension.")
+        else:
+            self.geo_dim = geo_dim
+
+        # Generate FFC multi index for derivatives.
+        multiindices = FFCMultiIndex([range(geo_dim)]*len(derivatives)).indices
+
+        return (component, local_comp, local_offset, ffc_element, quad_element, transformation, multiindices)
+
+    def _create_function_name(self, component, deriv, quad_element, ufl_function, ffc_element):
+
+        # Get string for integration points.
+        format_ip = self.format["integration points"]
+
+        # Pick first free index of secondary type
+        # (could use primary indices, but it's better to avoid confusion).
+        loop_index = self.format["free secondary indices"][0]
+
+        # Create basis access, we never need to map the entry in the basis
+        # table since we will either loop the entire space dimension or the
+        # non-zeros.
+        if self.points == 1:
+            format_ip = "0"
+        basis_access = self.format["matrix access"](format_ip, loop_index)
+
+        # Handle restriction through facet.
+        facet = {"+": self.facet0, "-": self.facet1, None: self.facet0}[self.restriction]
+
+        # Get the element counter.
+        element_counter = self.element_map[self.points][ufl_function.element()]
+
+        # Offset by element space dimension in case of negative restriction.
+        offset = {"+": "", "-": str(ffc_element.space_dimension()), None: ""}[self.restriction]
+
+        # Create basis name and map to correct basis and get info.
+        basis_name = generate_psi_name(element_counter, facet, component, deriv)
+        basis_name, non_zeros, zeros, ones = self.name_map[basis_name]
+
+        # If all basis are zero we just return None.
+        if zeros and self.optimise_options["ignore zero tables"]:
+            return self._format_scalar_value(None)[()]
+
+        # Get the index range of the loop index.
+        loop_index_range = shape(self.unique_tables[basis_name])[1]
+
+        # Set default coefficient access.
+        coefficient_access = loop_index
+
+        # If the loop index range is one we can look up the first component
+        # in the coefficient array. If we only have ones we don't need the basis.
+        if self.optimise_options["ignore ones"] and loop_index_range == 1 and ones:
+            coefficient_access = "0"
+            basis_name = ""
+        elif not quad_element:
+            # Add basis name to set of used tables and add matrix access.
+            self.used_psi_tables.add(basis_name)
+            basis_name += basis_access
+
+        # If we have a quadrature element we can use the ip number to look
+        # up the value directly. Need to add offset in case of components.
+        if quad_element:
+            quad_offset = 0
+            if component:
+                for i in range(component):
+                    quad_offset += ffc_element.sub_element(i).space_dimension()
+            if quad_offset:
+                coefficient_access = self.format["add"]([format_ip, str(quad_offset)])
+            else:
+                coefficient_access = format_ip
+
+        # If we have non zero column mapping but only one value just pick it.
+        if non_zeros and coefficient_access == "0":
+            coefficient_access = str(non_zeros[1][0])
+        elif non_zeros and not quad_element:
+            coefficient_access = self.format["nonzero columns"](non_zeros[0]) +\
+                                 self.format["array access"](coefficient_access)
+        if offset:
+            coefficient_access = self.format["add"]([coefficient_access, offset])
+
+        # Try to evaluate coefficient access ("3 + 2" --> "5").
+        ACCESS = IP
+        try:
+            coefficient_access = str(eval(coefficient_access))
+            ACCESS = GEO
+        except:
+            pass
+
+        coefficient = self.format["coeff"] +\
+                      self.format["matrix access"](str(ufl_function.count()), coefficient_access)
+        function_expr = self._create_symbol(coefficient, ACCESS)[()]
+        if basis_name:
+            function_expr = self._create_product([self._create_symbol(basis_name, ACCESS)[()], self._create_symbol(coefficient, ACCESS)[()]])
+
+        # If we have a quadrature element (or if basis was deleted) we don't need the basis.
+        if quad_element or not basis_name:
+            function_name = self._create_symbol(coefficient, ACCESS)[()]
+        else:
+            # Check if the expression to compute the function value is already in
+            # the dictionary of used function. If not, generate a new name and add.
+            function_name = self._create_symbol(self.format["function value"] + str(self.function_count), ACCESS)[()]
+            if not function_expr in self.functions:
+                self.functions[function_expr] = (function_name, loop_index_range)
+                # Increase count.
+                self.function_count += 1
+            else:
+                function_name, index_r = self.functions[function_expr]
+                # Check just to make sure.
+                if not index_r == loop_index_range:
+                    error("Index ranges does not match.")
+        return function_name
+
+    # -------------------------------------------------------------------------
+    # Helper functions for code_generation()
+    # -------------------------------------------------------------------------
     def _count_operations(self, expression):
         error("This function should be implemented by the child class.")
 
-    def _weight(self):
-        error("This function should be implemented by the child class.")
-
-    def _create_value(self, val, weight, scale_factor):
+    def _create_entry_value(self, val, weight, scale_factor):
         error("This function should be implemented by the child class.")
 
