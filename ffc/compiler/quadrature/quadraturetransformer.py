@@ -9,7 +9,6 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Python modules.
 from numpy import shape
-#import hotshot, hotshot.stats
 
 # UFL common.
 from ufl.common import product, StackDict, Stack
@@ -21,31 +20,19 @@ from ufl.classes import FloatValue
 from ufl.classes import Function
 
 # UFL Algorithms.
-from ufl.algorithms import purge_list_tensors
-from ufl.algorithms import expand_indices
-from ufl.algorithms import propagate_restrictions
-from ufl.algorithms import strip_variables
-from ufl.algorithms.transformations import *
 from ufl.algorithms.printing import tree_format
 
 # FFC common modules.
 from ffc.common.log import info, debug, error
 
-# FFC compiler modules.
-from ffc.compiler.tensor.multiindex import MultiIndex as FFCMultiIndex
-
 # FFC fem modules.
-#from ffc.fem.createelement import create_element
 from ffc.fem.finiteelement import AFFINE, CONTRAVARIANT_PIOLA, COVARIANT_PIOLA
 
 # Utility and optimisation functions for quadraturegenerator.
 from quadraturetransformerbase import QuadratureTransformerBase
-from quadraturegenerator_utils import generate_loop
 from quadraturegenerator_utils import generate_psi_name
 from quadraturegenerator_utils import create_permutations
 from reduce_operations import operation_count
-
-import time
 
 class QuadratureTransformer(QuadratureTransformerBase):
     "Transform UFL representation to quadrature code."
@@ -341,6 +328,27 @@ class QuadratureTransformer(QuadratureTransformerBase):
     # -------------------------------------------------------------------------
     # Helper functions for BasisFunction and Function).
     # -------------------------------------------------------------------------
+    def __apply_transform(self, function, derivatives, multi):
+        "Apply transformation (from derivatives) to basis or function."
+        format_mult          = self.format["multiply"]
+        format_transform     = self.format["transform"]
+
+        # Add transformation if needed.
+        transforms = []
+        for i, direction in enumerate(derivatives):
+            ref = multi[i]
+            t = format_transform("JINV", ref, direction, self.restriction)
+            self.trans_set.add(t)
+            transforms.append(t)
+
+        # Only multiply by basis if it is present.
+        if function:
+            prods = transforms + [function]
+        else:
+            prods = transforms
+
+        return self.format["multiply"](prods)
+
     def create_basis_function(self, ufl_basis_function, derivatives, component, local_comp,
                   local_offset, ffc_element, transformation, multiindices):
         "Create code for basis functions, and update relevant tables of used basis."
@@ -369,22 +377,11 @@ class QuadratureTransformer(QuadratureTransformerBase):
                     continue
 
                 # Add transformation if needed.
-                transforms = []
-                for i, direction in enumerate(derivatives):
-                    ref = multi[i]
-                    t = format_transform("JINV", ref, direction, self.restriction)
-                    self.trans_set.add(t)
-                    transforms.append(t)
-                # Only multiply by basis if it is present.
-                if basis:
-                    prods = transforms + [basis]
-                else:
-                    prods = transforms
-
                 if mapping in code:
-                    code[mapping].append(format_mult(prods))
+                    code[mapping].append(self.__apply_transform(basis, derivatives, multi))
                 else:
-                    code[mapping] = [format_mult(prods)]
+                    code[mapping] = [self.__apply_transform(basis, derivatives, multi)]
+
         # Handle non-affine mappings.
         else:
             # Loop derivatives and get multi indices.
@@ -415,23 +412,10 @@ class QuadratureTransformer(QuadratureTransformerBase):
                         error("Transformation is not supported: " + str(transformation))
 
                     # Add transformation if needed.
-                    transforms = []
-                    for i, direction in enumerate(derivatives):
-                        ref = multi[i]
-                        t = format_transform("JINV", ref, direction, self.restriction)
-                        self.trans_set.add(t)
-                        transforms.append(t)
-
-                    # Only multiply by basis if it is present.
-                    if basis:
-                        prods = transforms + [basis]
-                    else:
-                        prods = transforms
-
                     if mapping in code:
-                        code[mapping].append(format_mult(prods))
+                        code[mapping].append(self.__apply_transform(basis, derivatives, multi))
                     else:
-                        code[mapping] = [format_mult(prods)]
+                        code[mapping] = [self.__apply_transform(basis, derivatives, multi)]
 
         # Add sums and group if necessary.
         for key, val in code.items():
@@ -550,15 +534,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
                     continue
 
                 # Add transformation if needed.
-                transforms = []
-                for i, direction in enumerate(derivatives):
-                    ref = multi[i]
-                    t = format_transform("JINV", ref, direction, self.restriction)
-                    self.trans_set.add(t)
-                    transforms.append(t)
-
-                # Multiply function value by the transformations and add to code.
-                code.append(format_mult(transforms + [function_name]))
+                code.append(self.__apply_transform(function_name, derivatives, multi))
 
         # Handle non-affine mappings.
         else:
@@ -587,15 +563,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
                         error("Transformation is not supported: ", str(transformation))
 
                     # Add transformation if needed.
-                    transforms = []
-                    for i, direction in enumerate(derivatives):
-                        ref = multi[i]
-                        t = format_transform("JINV", ref, direction, self.restriction)
-                        self.trans_set.add(t)
-                        transforms.append(t)
-
-                    # Multiply function value by the transformations and add to code.
-                    code.append(format_mult(transforms + [function_name]))
+                    code.append(self.__apply_transform(function_name, derivatives, multi))
 
         if not code:
             return None
@@ -706,224 +674,25 @@ class QuadratureTransformer(QuadratureTransformerBase):
                     error("Index ranges does not match.")
         return function_name
 
-def generate_code(integrand, transformer, Indent, format, interior):
-    """Generate code from a UFL integral type. It generates all the code that
-    goes inside the quadrature loop."""
+    # -------------------------------------------------------------------------
+    # Helper functions for code_generation()
+    # -------------------------------------------------------------------------
+    def _count_operations(self, expression):
+        return operation_count(expression, self.format)
 
-    # Prefetch formats to speed up code generation.
-    format_comment      = format["comment"]
-    format_float_decl   = format["float declaration"]
-    format_F            = format["function value"]
-    format_float        = format["floating point"]
-    format_add_equal    = format["add equal"]
-    format_nzc          = format["nonzero columns"](0).split("0")[0]
-    format_r            = format["free secondary indices"][0]
-    format_mult         = format["multiply"]
-    format_scale_factor = format["scale factor"]
-    format_add          = format["add"]
-    format_tensor       = format["element tensor quad"]
-    format_array_access = format["array access"]
+    def _weight(self):
+        # Create weight.
+        weight = self.format["weight"](self.points)
+        if self.points > 1:
+            weight += self.format["array access"](self.format["integration points"])
+        return weight
 
-    # Initialise return values.
-    code = []
-    num_ops = 0
+    def _create_value(self, val, weight, scale_factor):
+        format_mult = self.format["multiply"]
+        zero = False
 
-    debug("\nQG, Using Transformer.")
+        # Multiply value by weight and determinant
+        value = format_mult([val, weight, scale_factor])
 
-#    info("Transforming UFL integrand...")
-#    t = time.time()
-    # Only propagate restrictions if we have an interior integral.
-    if interior:
-        integrand = propagate_restrictions(integrand)
-    #print("\nExpanded integrand\n" + str(tree_format(new_integrand)))
-#    new_integrand = strip_variables(integrand)
-#    new_integrand = expand_indices(new_integrand)
-#    new_integrand = purge_list_tensors(new_integrand)
-
-    # Profiling
-#    name = "test.prof"
-#    prof = hotshot.Profile(name)
-#    prof.runcall(transformer.visit, integrand)
-#    prof.close()
-#    stats = hotshot.stats.load(name)
-##    stats.strip_dirs()
-#    stats.sort_stats("time").print_stats(50)
-#    raise RuntimeError
-
-    # Let the Transformer create the loop code.
-    info("Transforming UFL integrand...")
-    t = time.time()
-    loop_code = transformer.visit(integrand)
-#    loop_code = transformer.visit(new_integrand)
-    info("done, time = %f" % (time.time() - t))
-    info("Generate code...")
-    t = time.time()
-
-    # TODO: Verify that test and trial functions will ALWAYS be rearranged to 0 and 1.
-    indices = {-2: format["first free index"], -1: format["second free index"],
-                0: format["first free index"],  1: format["second free index"]}
-
-    # Create the function declarations, we know that the code generator numbers
-    # functions from 0 to n.
-    if transformer.function_count:
-        code += ["", format_comment("Function declarations")]
-    for function_number in range(transformer.function_count):
-        code.append((format_float_decl + format_F + str(function_number), format_float(0)))
-
-    # Create code for computing function values, sort after loop ranges first.
-    functions = transformer.functions
-    function_list = {}
-    for key, val in functions.items():
-        if val[1] in function_list:
-            function_list[val[1]].append(key)
-        else:
-            function_list[val[1]] = [key]
-
-    # Loop ranges and get list of functions.
-    for loop_range, list_of_functions in function_list.items():
-        function_expr = {}
-        function_numbers = []
-        func_ops = 0
-        # Loop functions.
-        for function in list_of_functions:
-            # Get name and number.
-            name = functions[function][0]
-            number = int(name.strip(format_F))
-            # TODO: This check can be removed for speed later.
-            if number in function_numbers:
-                error("This is definitely not supposed to happen!")
-            function_numbers.append(number)
-            # Get number of operations to compute entry and add to function operations count.
-            f_ops = operation_count(function, format) + 1
-            func_ops += f_ops
-            entry = format_add_equal(name, function)
-            function_expr[number] = entry
-
-            # Extract non-zero column number if needed.
-            if format_nzc in entry:
-                transformer.used_nzcs.add(int(entry.split(format_nzc)[1].split("[")[0]))
-
-        # Multiply number of operations by the range of the loop index and add
-        # number of operations to compute function values to total count.
-        func_ops *= loop_range
-        func_ops_comment = ["", format_comment("Total number of operations to compute function values = %d" % func_ops)]
-        num_ops += func_ops
-
-        # Sort the functions according to name and create loop to compute the function values.
-        function_numbers.sort()
-        lines = []
-        for number in function_numbers:
-            lines.append(function_expr[number])
-        code += func_ops_comment + generate_loop(lines, [(format_r, 0, loop_range)], Indent, format)
-
-    # Create weight.
-    weight = format["weight"](transformer.points)
-    if transformer.points > 1:
-        weight += format_array_access(format["integration points"])
-
-    # Generate entries, multiply by weights and sort after primary loops.
-    loops = {}
-#    t = time.time()
-    for key, val in loop_code.items():
-
-        # If value was zero continue.
-        if val == None:
-            continue
-        # Multiply by weight and determinant, add both to set of used weights and transforms.
-        value = format_mult([val, weight, format_scale_factor])
-        transformer.used_weights.add(transformer.points)
-        transformer.trans_set.add(format_scale_factor)
-
-        # Compute number of operations to compute entry and create comment
-        # (add 1 because of += in assignment).
-        entry_ops = operation_count(value, format) + 1
-#        entry_ops = 0
-        entry_ops_comment = format_comment("Number of operations to compute entry: %d" % entry_ops)
-        prim_ops = entry_ops
-
-        # Create appropriate entries.
-        # FIXME: We only support rank 0, 1 and 2.
-        entry = ""
-        loop = ()
-        if len(key) == 0:
-            entry = "0"
-
-        elif len(key) == 1:
-            key = key[0]
-            # Checking if the basis was a test function.
-            # TODO: Make sure test function indices are always rearranged to 0.
-            if key[0] != -2 and key[0] != 0:
-                error("Linear forms must be defined using test functions only: " + str(key))
-
-            index_j, entry, range_j, space_dim_j = key
-            loop = ((indices[index_j], 0, range_j),)
-            if range_j == 1 and transformer.optimise_options["ignore ones"]:
-                loop = ()
-            # Multiply number of operations to compute entries by range of loop.
-            prim_ops *= range_j
-
-            # Extract non-zero column number if needed.
-            if format_nzc in entry:
-                transformer.used_nzcs.add(int(entry.split(format_nzc)[1].split("[")[0]))
-
-        elif len(key) == 2:
-            # Extract test and trial loops in correct order and check if for is legal.
-            key0, key1 = (0, 0)
-            for k in key:
-                if not k[0] in indices:
-                    error("Bilinear forms must be defined using test and trial functions (index -2, -1, 0, 1): " + str(k))
-                if k[0] == -2 or k[0] == 0:
-                    key0 = k
-                else:
-                    key1 = k
-            index_j, entry_j, range_j, space_dim_j = key0
-            index_k, entry_k, range_k, space_dim_k = key1
-
-            loop = []
-            if not (range_j == 1 and transformer.optimise_options["ignore ones"]):
-                loop.append((indices[index_j], 0, range_j))
-            if not (range_k == 1 and transformer.optimise_options["ignore ones"]):
-                loop.append((indices[index_k], 0, range_k))
-
-            entry = format_add([format_mult([entry_j, str(space_dim_k)]), entry_k])
-            loop = tuple(loop)
-
-            # Multiply number of operations to compute entries by range of loops.
-            prim_ops *= range_j*range_k
-
-            # Extract non-zero column number if needed.
-            if format_nzc in entry_j:
-                transformer.used_nzcs.add(int(entry_j.split(format_nzc)[1].split("[")[0]))
-            if format_nzc in entry_k:
-                transformer.used_nzcs.add(int(entry_k.split(format_nzc)[1].split("[")[0]))
-        else:
-            error("Only rank 0, 1 and 2 tensors are currently supported: " + str(key))
-
-        # Generate the code line for the entry.
-        # Try to evaluate entry ("3*6 + 2" --> "20").
-        try:
-            entry = str(eval(entry))
-        except:
-            pass
-
-        entry_code = format_add_equal( format_tensor + format_array_access(entry), value)
-
-        if loop not in loops:
-            loops[loop] = [prim_ops, [entry_ops_comment, entry_code]]
-        else:
-            loops[loop][0] += prim_ops
-            loops[loop][1] += [entry_ops_comment, entry_code]
-
-    # Write all the loops of basis functions.
-    for loop, ops_lines in loops.items():
-        ops, lines = ops_lines
-
-        # Add number of operations for current loop to total count.
-        num_ops += ops
-        code += ["", format_comment("Number of operations for primary indices: %d" % ops)]
-        code += generate_loop(lines, loop, Indent, format)
-
-    info("done, time = %f" % (time.time() - t))
-
-    return (code, num_ops)
+        return value, zero
 

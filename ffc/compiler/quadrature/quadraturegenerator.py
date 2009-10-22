@@ -19,9 +19,8 @@ from ffc.common.log import debug, info, error
 
 # Utility and optimisation functions for quadraturegenerator.
 from quadraturegenerator_utils import generate_loop
-from quadraturetransformer import generate_code, QuadratureTransformer
+from quadraturetransformer import QuadratureTransformer
 
-from optimisedquadraturetransformer import generate_code as generate_code_opt
 from optimisedquadraturetransformer import QuadratureTransformerOpt
 from symbolics import generate_aux_constants
 
@@ -339,13 +338,8 @@ class QuadratureGenerator:
             # Update transformer to the current number of quadrature points.
             transformer.update_points(points)
 
-            # Generate code for integrand and get number of operations.
-            if self.optimise_options["simplify expressions"]:
-                integral_code, num_ops =\
-                    generate_code_opt(integral.integrand(), transformer, Indent, format, interior)
-            else:
-                integral_code, num_ops =\
-                    generate_code(integral.integrand(), transformer, Indent, format, interior)
+            # Generate code and get number of operations
+            integral_code, num_ops = transformer.generate_code(integral.integrand(), Indent, interior)
 
             # Get number of operations to compute entries for all terms when
             # looping over all IPs and update tensor count.
