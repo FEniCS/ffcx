@@ -8,7 +8,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Anders Logg, 2009.
 
 # FFC common modules.
-from ffc.common.log import debug, info, error, begin, end
+from ffc.common.log import debug, info, ffc_assert, error
 
 # FFC fem modules.
 from ffc.fem.quadrature import make_quadrature
@@ -109,12 +109,10 @@ class QuadratureRepresentation:
             facet_shape = fiat_elements[0].facet_shape()
 
             # TODO: These safety check could be removed for speed (I think?)
-            if not all(shape == e.cell_shape() for e in fiat_elements):
-                print "elements: ", elements
-                error("The cell shape of all elements MUST be equal: ", + str(shape))
-            if not all(facet_shape == e.facet_shape() for e in fiat_elements):
-                print "elements: ", elements
-                error("The facet shape of all elements MUST be equal: " + str(facet_shape))
+            ffc_assert(all(shape == e.cell_shape() for e in fiat_elements), \
+                       "The cell shape of all elements MUST be equal: " + repr(elements))
+            ffc_assert(all(facet_shape == e.facet_shape() for e in fiat_elements), \
+                       "The facet shape of all elements MUST be equal: " + repr(elements))
 
             # Make quadrature rule and get points and weights.
             if integral_type == Measure.CELL:
@@ -127,16 +125,14 @@ class QuadratureRepresentation:
             # Add rules to dictionary.
             len_weights = len(weights) # The TOTAL number of weights/points
             # TODO: This check should not be needed, remove later.
-            if len_weights in self.quadrature_weights[integral_type]:
-                print "weights: ", self.quadrature_weights
-                error("This number of points is already present in the weight table: " + str(len_weights))
+            ffc_assert(len_weights not in self.quadrature_weights[integral_type], \
+                       "This number of points is already present in the weight table: " + repr(self.quadrature_weights))
             self.quadrature_weights[integral_type][len_weights] = (weights, points)
 
             # Add the number of points to the psi tables dictionary.
             # TODO: This check should not be needed, remove later.
-            if len_weights in self.psi_tables[integral_type]:
-                print "psi tables: ", self.psi_tables
-                error("This number of points is already present in the psi table: " + str(len_weights))
+            ffc_assert(len_weights not in self.psi_tables[integral_type], \
+                       "This number of points is already present in the psi table: " + repr(self.psi_tables))
             self.psi_tables[integral_type][len_weights] = {}
 
             # Sort the integrals according to subdomain and add to the return
@@ -144,10 +140,9 @@ class QuadratureRepresentation:
             for i in form.integrals():
                 subdomain = i.measure().domain_id()
                 if subdomain in return_integrals:
-                    if len_weights in return_integrals[subdomain]:
-                        error("There should only be one integral for any number of quadrature points on any given subdomain.")
-                    else:
-                        return_integrals[subdomain][len_weights] = i
+                    ffc_assert(len_weights not in return_integrals[subdomain], \
+                               "There should only be one integral for any number of quadrature points on any given subdomain.")
+                    return_integrals[subdomain][len_weights] = i
                 else:
                     return_integrals[subdomain] = {len_weights: i}
 
@@ -169,8 +164,7 @@ class QuadratureRepresentation:
                 # TODO: Safety check, SpatialDerivative only has one operand,
                 # and there should be only one element?!
                 elem = extract_elements(d.operands()[0])
-                if not len(elem) == 1:
-                    error("SpatialDerivative has more than one element: " + str(elem))
+                ffc_assert(len(elem) == 1, "SpatialDerivative has more than one element: " + repr(elem))
                 elem = elem[0]
                 # Set the number of derivatives to the highest value
                 # encountered so far.

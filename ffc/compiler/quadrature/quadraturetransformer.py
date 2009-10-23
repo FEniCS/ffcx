@@ -23,7 +23,7 @@ from ufl.classes import Function
 from ufl.algorithms.printing import tree_format
 
 # FFC common modules.
-from ffc.common.log import info, debug, error
+from ffc.common.log import info, debug, ffc_assert, error
 
 # FFC fem modules.
 from ffc.fem.finiteelement import AFFINE, CONTRAVARIANT_PIOLA, COVARIANT_PIOLA
@@ -48,7 +48,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
     # AlgebraOperators (algebra.py).
     # -------------------------------------------------------------------------
     def sum(self, o, *operands):
-        #print("Visiting Sum: " + "\noperands: \n" + "\n".join(map(str, operands)))
+        #print("Visiting Sum: " + "\noperands: \n" + "\n".join(map(repr, operands)))
 
         # Prefetch formats to speed up code generation.
         format_group  = self.format["grouping"]
@@ -93,9 +93,8 @@ class QuadratureTransformer(QuadratureTransformerBase):
                         continue
                     # Just add expression if there is only one
                     expressions.append(expr)
+                ffc_assert(expressions, "Where did the expressions go?")
 
-                if not expressions:
-                    error("Where did the expressions go?")
                 if len(expressions) > 1:
                     code[key] = format_group(format_add(expressions))
                     continue
@@ -110,7 +109,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
         return code
 
     def product(self, o, *operands):
-        #print("Visiting Product with operands: \n" + "\n".join(map(str,operands)))
+        #print("Visiting Product with operands: \n" + "\n".join(map(repr,operands)))
 
         # Prefetch formats to speed up code generation.
         format_mult = self.format["multiply"]
@@ -127,9 +126,9 @@ class QuadratureTransformer(QuadratureTransformerBase):
         # Create permutations.
         permutations = create_permutations(permute)
 
-        #print("\npermute: " + str(permute))
-        #print("\nnot_permute: " + str(not_permute))
-        #print("\npermutations: " + str(permutations))
+        #print("\npermute: " + repr(permute))
+        #print("\nnot_permute: " + repr(not_permute))
+        #print("\npermutations: " + repr(permutations))
 
         # Create code.
         code ={}
@@ -146,14 +145,13 @@ class QuadratureTransformer(QuadratureTransformerBase):
                 zero = False
                 for v in val + not_permute:
                     if v is None:
-                        if tuple(l) in code:
-                            error("This key should not be in the code.")
+                        ffc_assert(tuple(l) not in code, "This key should not be in the code.")
                         code[tuple(l)] = None
                         zero = True
                         break
                     elif not v:
-                        print "v: '%s'" % str(v)
-                        raise RuntimeError("should not happen")
+                        print "v: '%s'" % repr(v)
+                        error("should not happen")
                     elif v == "1":
                         pass
                     else:
@@ -175,8 +173,8 @@ class QuadratureTransformer(QuadratureTransformerBase):
                     code[()] = None
                     return code
                 elif not v:
-                    print "v: '%s'" % str(v)
-                    raise RuntimeError("should not happen")
+                    print "v: '%s'" % repr(v)
+                    error("should not happen")
                 elif v == "1":
                     pass
                 else:
@@ -189,21 +187,21 @@ class QuadratureTransformer(QuadratureTransformerBase):
         return code
 
     def division(self, o, *operands):
-        #print("\n\nVisiting Division: " + o.__repr__() + "with operands: " + "\n".join(map(str,operands)))
+        #print("\n\nVisiting Division: " + repr(o) + "with operands: " + "\n".join(map(repr,operands)))
 
         # Prefetch formats to speed up code generation.
         format_div      = self.format["division"]
         format_grouping = self.format["grouping"]
 
-        if len(operands) != 2:
-            error("Expected exactly two operands (numerator and denominator): " + operands.__repr__())
+        ffc_assert(len(operands) == 2, \
+                   "Expected exactly two operands (numerator and denominator): " + repr(operands))
 
         # Get the code from the operands.
         numerator_code, denominator_code = operands
 
         # TODO: Are these safety checks needed? Need to check for None?
-        if not () in denominator_code and len(denominator_code) != 1:
-            error("Only support function type denominator: " + str(denominator_code))
+        ffc_assert(() in denominator_code and len(denominator_code) == 1, \
+                   "Only support function type denominator: " + repr(denominator_code))
 
         code = {}
         # Get denominator and create new values for the numerator.
@@ -214,7 +212,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
         return code
 
     def power(self, o):
-        #print("\n\nVisiting Power: " + o.__repr__())
+        #print("\n\nVisiting Power: " + repr(o))
 
         # Get base and exponent.
         base, expo = o.operands()
@@ -223,8 +221,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
         base_code = self.visit(base)
 
         # TODO: Are these safety checks needed? Need to check for None?
-        if not () in base_code and len(base_code) != 1:
-            error("Only support function type base: " + str(base_code))
+        ffc_assert(() in base_code and len(base_code) == 1, "Only support function type base: " + repr(base_code))
 
         # Get the base code.
         val = base_code[()]
@@ -241,14 +238,14 @@ class QuadratureTransformer(QuadratureTransformerBase):
             error("power does not support this exponent: " + repr(expo))
 
     def abs(self, o, *operands):
-        #print("\n\nVisiting Abs: " + o.__repr__() + "with operands: " + "\n".join(map(str,operands)))
+        #print("\n\nVisiting Abs: " + repr(o) + "with operands: " + "\n".join(map(repr,operands)))
 
         # Prefetch formats to speed up code generation.
         format_abs = self.format["absolute value"]
 
         # TODO: Are these safety checks needed? Need to check for None?
-        if len(operands) != 1 and not () in operands[0] and len(operands[0]) != 1:
-            error("Abs expects one operand of function type: " + str(operands))
+        ffc_assert(len(operands) == 1 and () in operands[0] and len(operands[0]) == 1, \
+                   "Abs expects one operand of function type: " + repr(operands))
 
         # Take absolute value of operand.
         return {():format_abs(operands[0][()])}
@@ -263,10 +260,8 @@ class QuadratureTransformer(QuadratureTransformerBase):
         components = self.component()
 
         # Safety checks.
-        if operands:
-            error("Didn't expect any operands for FacetNormal: " + str(operands))
-        if len(components) != 1:
-            error("FacetNormal expects 1 component index: " + str(components))
+        ffc_assert(not operands, "Didn't expect any operands for FacetNormal: " + repr(operands))
+        ffc_assert(len(components) == 1, "FacetNormal expects 1 component index: " + repr(components))
 
         # We get one component.
         normal_component = self.format["normal component"](self.restriction, components[0])
@@ -334,7 +329,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
                         self.trans_set.add(dXdx)
                         basis = format_mult([detJ, dXdx, basis])
                     else:
-                        error("Transformation is not supported: " + str(transformation))
+                        error("Transformation is not supported: " + repr(transformation))
 
                     # Add transformation if needed.
                     if mapping in code:
@@ -404,7 +399,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
                         self.trans_set.add(dXdx)
                         function_name = format_mult([detJ, dXdx, function_name])
                     else:
-                        error("Transformation is not supported: ", str(transformation))
+                        error("Transformation is not supported: ", repr(transformation))
 
                     # Add transformation if needed.
                     code.append(self.__apply_transform(function_name, derivatives, multi))
@@ -460,8 +455,8 @@ class QuadratureTransformer(QuadratureTransformerBase):
 
     def _math_function(self, operands, format_function):
         # TODO: Are these safety checks needed?
-        if len(operands) != 1 and not () in operands[0] and len(operands[0]) != 1:
-            error("MathFunctions expect one operand of function type: " + str(operands))
+        ffc_assert(len(operands) == 1 and () in operands[0] and len(operands[0]) == 1, \
+                   "MathFunctions expect one operand of function type: " + repr(operands))
         # Use format function on value of operand.
         operand = operands[0]
         for key, val in operand.items():

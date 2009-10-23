@@ -15,7 +15,7 @@ from ffc.compiler.codeutils import tabulate_matrix, IndentControl
 from ffc.fem.createelement import create_element
 
 # FFC common modules.
-from ffc.common.log import debug, info, error
+from ffc.common.log import debug, info, ffc_assert
 
 # Utility and optimisation functions for quadraturegenerator.
 from quadraturegenerator_utils import generate_loop
@@ -383,8 +383,7 @@ class QuadratureGenerator:
 
             # FIXME: For now, raise error if we don't have weights.
             # We might want to change this later.
-            if not weights.any():
-                error(weights, "No weights.")
+            ffc_assert(weights.any(), "No weights.")
 
             # Create name and value for weight.
             name = format_table + format_weight(num_points)

@@ -9,7 +9,7 @@ __license__  = "GNU GPL version 3 or any later version"
 from numpy import transpose, sqrt, shape, array
 
 # FFC common modules.
-from ffc.common.log import debug, error
+from ffc.common.log import debug, ffc_assert, error
 
 def generate_loop(lines, loop_vars, Indent, format):
     "This function generates a loop over a vector or matrix."
@@ -136,13 +136,13 @@ def flatten_psi_tables(tables):
                                 debug("\nQG-utils, flatten_tables, psi_table:\n" + str(psi_table))
                                 # Verify shape of basis (can be omitted for speed
                                 # if needed I think).
-                                if shape(psi_table) != 2 and shape(psi_table)[1] != point:
-                                    error("Something is wrong with this table: " + str(psi_table))
+                                ffc_assert(len(shape(psi_table)) == 2 and shape(psi_table)[1] == point, \
+                                           "Something is wrong with this table: " + str(psi_table))
                                 # Generate the table name.
                                 name = generate_psi_name(counter, facet, num_comp, derivs)
                                 debug("Table name: " + name)
-                                if name in flat_tables:
-                                    error("Table name is not unique, something is wrong: " + name + str(flat_tables))
+                                ffc_assert(name not in flat_tables, \
+                                           "Table name is not unique, something is wrong: " + name + str(flat_tables))
                                 # Take transpose such that we get (ip_number, basis_number)
                                 # instead of (basis_number, ip_number).
                                 flat_tables[name] = transpose(psi_table)
@@ -156,13 +156,13 @@ def flatten_psi_tables(tables):
                             debug("\nQG-utils, flatten_tables, psi_table:\n" + str(psi_table))
                             # Verify shape of basis (can be omitted for speed
                             # if needed I think).
-                            if shape(psi_table) != 2 and shape(psi_table)[1] != point:
-                                error("Something is wrong with this table: " + str(psi_table))
+                            ffc_assert(len(shape(psi_table)) == 2 and shape(psi_table)[1] == point, \
+                                       "Something is wrong with this table: " + str(psi_table))
                             # Generate the table name.
                             name = generate_psi_name(counter, facet, (), derivs)
                             debug("Table name: " + name)
-                            if name in flat_tables:
-                                error("Table name is not unique, something is wrong: " + name + str(flat_tables))
+                            ffc_assert(name not in flat_tables, \
+                                       "Table name is not unique, something is wrong: " + name + str(flat_tables))
                             flat_tables[name] = transpose(psi_table)
             # Increase unique element counter.
             counter += 1
@@ -432,8 +432,7 @@ def create_permutations(expr):
                     key1 = [key1]
                 if not isinstance(val1, list):
                     val1 = [val1]
-                if tuple(key0 + key1) in new:
-                    error("This is not supposed to happen.")
+                ffc_assert(tuple(key0 + key1) not in new, "This is not supposed to happen.")
                 new[tuple(key0 + key1)] = val0 + val1
 
         return new
