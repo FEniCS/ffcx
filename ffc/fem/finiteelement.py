@@ -3,9 +3,9 @@ __date__ = "2004-10-04 -- 2008-08-26"
 __copyright__ = "Copyright (C) 2004-2008 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Modified by Garth N. Wells 2006
+# Modified by Garth N. Wells 2006-2009
 # Modified by Marie E. Rognes 2008
-# Modified by Andy R Terrel 2007
+# Modified by Andy R. Terrel 2007
 # Modified by Kristian B. Oelgaard 2009
 
 # Python modules
@@ -39,6 +39,7 @@ from finiteelementbase import *
 # UFL modules
 from ufl.classes import Cell, Measure
 from ufl.objects import dc
+from ufl.classes import FiniteElementBase
 
 # Dictionaries of basic element data
 shape_to_string = {VERTEX: "vertex", LINE: "interval", TRIANGLE: "triangle", TETRAHEDRON: "tetrahedron"}
@@ -74,9 +75,6 @@ class FiniteElement(FiniteElementBase):
 
         # Save UFL element
         self.__ufl_element = ufl_element
-
-        # Save element family
-        self.__family = ufl_element.family()
 
         # Get FIAT element from string
         (self.__fiat_element, self.__mapping) = self.__choose_element(ufl_element.family(), \
@@ -197,7 +195,7 @@ class FiniteElement(FiniteElementBase):
 
     def family(self):
         "Return a string indentifying the finite element family"
-        return self.__family
+        return self.__ufl_element.family()
 
     def geometric_dimension(self):
         "Return the geometric dimension of the finite element domain"
@@ -289,38 +287,29 @@ class FiniteElement(FiniteElementBase):
 
         # Choose FIAT function space
         if family == "Lagrange" or family == "CG":
-            self.__family = "Lagrange"
             return (Lagrange(fiat_shape, degree), AFFINE)
 
         if family == "Discontinuous Lagrange" or family == "DG":
-            self.__family = "Discontinuous Lagrange"
             return (DiscontinuousLagrange(fiat_shape, degree), AFFINE)
 
         if family == "Crouzeix-Raviart" or family == "CR":
-            self.__family = "Crouzeix-Raviart"
             return (CrouzeixRaviart(fiat_shape, degree), AFFINE)
 
         if family == "Raviart-Thomas" or family == "RT":
-            self.__family = "Raviart-Thomas"
             return (RaviartThomas(fiat_shape, degree), CONTRAVARIANT_PIOLA)
 
         if family == "Brezzi-Douglas-Marini" or family == "BDM":
-            self.__family = "Brezzi-Douglas-Marini"
             return (BDM(fiat_shape, degree), CONTRAVARIANT_PIOLA)
 
         if family == "Brezzi-Douglas-Fortin-Marini" or family == "BDFM":
-            self.__family = "Brezzi-Douglas-Fortin-Marini"
             return (BDFM(fiat_shape, degree), CONTRAVARIANT_PIOLA)
 
-        # FIXME: Temporary fix, remove "Nedelec"
-        if family == "Nedelec" or "Nedelec 1st kind H(curl)" or"N1curl":
-            self.__family = "Nedelec"
+        if family == "Nedelec 1st kind H(curl)" or family == "N1curl":
             return (Nedelec(fiat_shape, degree), COVARIANT_PIOLA)
 
         if family == "Darcy-Stokes" or family == "KLMR":
             if not shape == "triangle":
                 error("Sorry, Darcy-Stokes element only available on triangles")
-            self.__family = "Darcy-Stokes"
             return (DarcyStokes(degree), CONTRAVARIANT_PIOLA)
 
         # Unknown element
