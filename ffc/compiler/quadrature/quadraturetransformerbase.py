@@ -680,6 +680,8 @@ class QuadratureTransformerBase(Transformer):
         if interior:
             integrand = propagate_restrictions(integrand)
 
+        #print "Integrand:\n", str(tree_format(integrand))
+
         # Profiling
 #        name = "test.prof"
 #        prof = hotshot.Profile(name)

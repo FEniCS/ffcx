@@ -206,8 +206,18 @@ class QuadratureTransformer(QuadratureTransformerBase):
         code = {}
         # Get denominator and create new values for the numerator.
         denominator = denominator_code[()]
+        ffc_assert(denominator is not None, "Division by zero!")
+
         for key, val in numerator_code.items():
-            code[key] = val + format_div + format_grouping(denominator)
+            # If numerator is None the fraction is also None
+            if val is None:
+                code[key] = None
+            # If denominator is '1', just return numerator
+            elif denominator == "1":
+                code[key] = val
+            # Create fraction and add to code
+            else:
+                code[key] = val + format_div + format_grouping(denominator)
 
         return code
 
