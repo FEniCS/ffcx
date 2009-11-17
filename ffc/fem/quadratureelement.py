@@ -18,6 +18,9 @@ from ffc.common.log import error
 # UFL modules
 from ufl.classes import Cell, Measure
 
+# Default quadrature element degree
+default_quadrature_degree = 1
+
 class QuadratureElement(FiniteElement):
     """Write description of QuadratureElement"""
 
@@ -38,7 +41,10 @@ class QuadratureElement(FiniteElement):
         self.__domain = domain
 
         # Compute number of points per axis from the degree of the element
-        self.__num_axis_points = (ufl_element.degree() + 2) / 2
+        degree = ufl_element.degree()
+        if degree is None:
+            degree = default_quadrature_degree
+        self.__num_axis_points = (degree + 2) / 2
 
         # Save element family
         self.__family = "Quadrature"
@@ -140,11 +146,10 @@ class QuadratureElement(FiniteElement):
             print "\n*** WARNING: Derivatives are not defined on a QuadratureElement,"
             print   "             returning values of basisfunction.\n"
 
-        # Check if (the number of ) incoming points are equal to
-        # quadrature points... 
+        # Check that incoming points are as many as the quadrature points
         if not len(points) == self.__num_quad_points:
             error("Points must be equal to coordinates of quadrature points")
-            
+
         # Return the identity matrix of size __num_quad_points in a
         # suitable format for monomialintegration.
         values = numpy.identity(self.__num_quad_points, float)

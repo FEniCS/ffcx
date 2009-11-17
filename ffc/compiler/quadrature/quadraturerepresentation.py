@@ -183,19 +183,19 @@ class QuadratureRepresentation:
                 # dictionary based on UFL elements.
                 if integral_type == Measure.CELL:
                     self.psi_tables[integral_type][len_weights]\
-                         [elements[i]] = {None: element.tabulate(deriv_order, points)}
+                        [elements[i]] = {None: element.tabulate(deriv_order, points)}
                 elif integral_type == Measure.EXTERIOR_FACET:
                     self.psi_tables[integral_type][len_weights][elements[i]] = {}
                     for facet in range(element.num_facets()):
                         self.psi_tables[integral_type][len_weights]\
-                             [elements[i]][facet] =\
-                               element.tabulate(deriv_order, map_to_facet(points, facet))
+                            [elements[i]][facet] =\
+                            element.tabulate(deriv_order, map_to_facet(points, facet))
                 elif integral_type == Measure.INTERIOR_FACET:
                     self.psi_tables[integral_type][len_weights][elements[i]] = {}
                     for facet in range(element.num_facets()):
                         self.psi_tables[integral_type][len_weights]\
-                             [elements[i]][facet] =\
-                               element.tabulate(deriv_order, map_to_facet(points, facet))
+                            [elements[i]][facet] =\
+                            element.tabulate(deriv_order, map_to_facet(points, facet))
 
         return return_integrals
 
@@ -229,4 +229,3 @@ def _sort_integrals_quadrature_points(integrals, form_data):
             sorted_integrals[(num_points_per_axis, rule)] += Form([Integral(integral.integrand(), integral.measure().reconstruct(metadata={}))])
 
     return sorted_integrals
-

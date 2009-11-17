@@ -32,6 +32,7 @@ from ffc.common.constants import FFC_OPTIONS
 
 # FFC fem modules
 from ffc.fem import create_element, create_dof_map
+from ffc.fem.quadratureelement import default_quadrature_degree
 
 # FFC form representation modules
 from tensor.tensorrepresentation import TensorRepresentation
@@ -104,7 +105,7 @@ def compile(objects, prefix="Form", options=FFC_OPTIONS.copy()):
 
 def analyze_form(form_data, options):
     "Compiler stage 1."
-    
+
     begin("Compiler stage 1: Analyzing form")
     info(str(form_data))
 
@@ -113,6 +114,9 @@ def analyze_form(form_data, options):
 
     # Extract integral metadata
     form_data.metadata = _extract_metadata(form, options)
+
+    # Adjust quadrature degree for elements with unspecified degree
+    _adjust_quadrature_degree(form_data)
 
     # Attach FFC elements and dofmaps
     form_data.ffc_elements = [create_element(element) for element in form_data.elements]
@@ -152,19 +156,19 @@ def compute_form_representations(form_data, options):
     begin("Compiler stage 2: Computing form representation(s)")
     representations = [Representation(form_data) for Representation in Representations]
     end()
-    
+
     return representations
-    
+
 def optimize_form_representation(form_data):
     "Compiler stage 3."
-    
+
     begin("Compiler stage 3: Optimizing form representation")
     info("Optimization of tensor contraction representation currently broken (to be fixed).")
     end()
 
 def generate_form_code(form_data, representations, prefix, format, options):
     "Compiler stage 4."
-    
+
     begin("Compiler stage 4: Generating code")
 
     # Generate common code like finite elements, dof map etc.
@@ -195,7 +199,7 @@ def generate_element_code(elements, format):
 
 def format_code(generated_forms, prefix, format, options):
     "Compiler stage 5."
-    
+
     begin("Compiler stage 5: Formatting code")
     format.write(generated_forms, prefix, options)
     end()
@@ -224,7 +228,7 @@ def _extract_objects(objects):
     elements = []
     for object in objects:
         if isinstance(object, FiniteElementBase):
-            elements.append(object)        
+            elements.append(object)
         else:
             forms.append(object)
 
@@ -248,9 +252,9 @@ def _extract_metadata(form, options):
         quadrature_rule = options["quadrature_rule"]
 
         if quadrature_rule is None:
-            info("Quadrature rule:  default")
+            info("Quadrature rule: default")
         else:
-            info("Quadrature rule:  " + str(quadrature_rule))
+            info("Quadrature rule: " + str(quadrature_rule))
         info("Quadrature order: " + str(quadrature_order))
 
         # Get metadata for integral (if any)
@@ -264,7 +268,6 @@ def _extract_metadata(form, options):
                 quadrature_rule = integral_metadata["quadrature_rule"]
             else:
                 warning("Unrecognized option '%s' for integral metadata." % key)
-
 
         # Check metadata
         valid_representations = ["tensor", "quadrature", "auto"]
@@ -313,7 +316,7 @@ def _select_representation(form, options):
             info("no\n")
             warning("Form is is not multilinear, using quadrature representation")
             return QuadratureRepresentation
-        
+
     elif option == "quadrature":
         return QuadratureRepresentation
 
@@ -335,12 +338,30 @@ def _auto_select_quadrature_order(integral):
 
     # Otherwise, estimate polynomial degree (may not be a polymomial)
     if quadrature_degree is None:
-        quadrature_degree = estimate_max_polynomial_degree(integral)
+        quadrature_degree = estimate_max_polynomial_degree(integral, default_quadrature_degree)
 
     # Set quadrature order to polynomial degree
     quadrature_order = quadrature_degree
 
     return quadrature_order
+
+def _adjust_quadrature_degree(form_data):
+    "Adjust quadrature degree for elements with unspecified degree."
+
+    # Extract common quadrature degree
+    degrees = [metadata["quadrature_order"] for metadata in form_data.metadata.itervalues()]
+    degrees = [q for q in degrees if not q is None]
+    if degrees:
+        common_degree = max(degrees)
+    else:
+        common_degree = default_quadrature_degree
+
+    # Set element quadrature degree if missing
+    for element in form_data.elements:
+        q = element.degree()
+        if not q == common_degree:
+            info("Adjusting element quadrature degree from %s to %d" % (str(q), common_degree))
+            element.set_degree(common_degree)
 
 # FIXME: Old stuff below needs to be cleaned up
 # FIXME: KBO: Is the above FIXME still valid? The function and class below are
