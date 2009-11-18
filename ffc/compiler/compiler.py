@@ -359,7 +359,7 @@ def _adjust_quadrature_degree(form_data):
     # Set element quadrature degree if missing
     for element in form_data.elements:
         q = element.degree()
-        if not q == common_degree:
+        if element.family() == "Quadrature" and not q == common_degree:
             info("Adjusting element quadrature degree from %s to %d" % (str(q), common_degree))
             element.set_degree(common_degree)
 
