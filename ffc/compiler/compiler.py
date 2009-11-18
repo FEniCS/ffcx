@@ -24,6 +24,7 @@ __all__ = ["compile"]
 # UFL modules
 from ufl.algorithms import extract_max_quadrature_element_degree, estimate_max_polynomial_degree, extract_basis_functions
 from ufl.classes import FiniteElementBase, Integral
+from ufl.common import istr
 
 # FFC common modules
 from ffc.common.log import begin, end, debug, info, warning, error
@@ -115,8 +116,8 @@ def analyze_form(form_data, options):
     # Extract integral metadata
     form_data.metadata = _extract_metadata(form, options)
 
-    # Adjust quadrature degree for elements with unspecified degree
-    _adjust_quadrature_degree(form_data)
+    # Adjust cell and degree for quadrature elements when unspecified
+    _adjust_quadrature_elements(form_data)
 
     # Attach FFC elements and dofmaps
     form_data.ffc_elements = [create_element(element) for element in form_data.elements]
@@ -345,10 +346,15 @@ def _auto_select_quadrature_order(integral):
 
     return quadrature_order
 
-def _adjust_quadrature_degree(form_data):
-    "Adjust quadrature degree for elements with unspecified degree."
+def _adjust_quadrature_elements(form_data):
+    "Adjust cell and degree for quadrature elements when unspecified."
 
-    # Extract common quadrature degree
+    # Extract common cell
+    common_cell = form_data.cell
+    if common_cell.domain() is None:
+        error("Missing cell definition in form.")
+
+    # Extract common degree
     degrees = [metadata["quadrature_order"] for metadata in form_data.metadata.itervalues()]
     degrees = [q for q in degrees if not q is None]
     if degrees:
@@ -356,12 +362,22 @@ def _adjust_quadrature_degree(form_data):
     else:
         common_degree = default_quadrature_degree
 
-    # Set element quadrature degree if missing
+    # Set cell and degree if missing
     for element in form_data.elements:
-        q = element.degree()
-        if element.family() == "Quadrature" and not q == common_degree:
-            info("Adjusting element quadrature degree from %s to %d" % (str(q), common_degree))
+
+        # Only handle quadrature elements
+        if not element.family() == "Quadrature":
+            continue
+
+        # Check if cell and degree need to be adjusted
+        cell = element.cell()
+        degree = element.degree()
+        if not degree == common_degree:
+            info("Adjusting element quadrature degree from %s to %d" % (istr(degree), common_degree))
             element.set_degree(common_degree)
+        if not cell == common_cell:
+            info("Adjusting element cell from %s to %s." % (istr(cell), str(common_cell)))
+            element.set_cell(common_cell)
 
 # FIXME: Old stuff below needs to be cleaned up
 # FIXME: KBO: Is the above FIXME still valid? The function and class below are

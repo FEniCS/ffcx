@@ -163,4 +163,3 @@ class QuadratureElement(FiniteElement):
     def ufl_element(self):
         "Return the UFL element"
         return self.__ufl_element
-

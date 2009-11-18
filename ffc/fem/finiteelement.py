@@ -77,8 +77,8 @@ class FiniteElement(FiniteElementBase):
         self.__ufl_element = ufl_element
 
         # Get FIAT element from string
-        (self.__fiat_element, self.__mapping) = self.__choose_element(ufl_element.family(), \
-                                         ufl_element.cell().domain(), ufl_element.degree())
+        (self.__fiat_element, self.__mapping) = self.__choose_element(ufl_element.family(),
+                                                                      ufl_element.cell().domain(), ufl_element.degree())
 
         # Get the transformed (according to mapping) function space:
         self.__transformed_space = self.__transformed_function_space()
