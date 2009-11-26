@@ -27,7 +27,7 @@ from ufl.classes import FiniteElementBase, Integral
 from ufl.common import istr
 
 # FFC common modules
-from ffc.common.log import begin, end, debug, info, warning, error
+from ffc.common.log import begin, end, debug, info, warning, error, log
 from ffc.common.utils import product
 from ffc.common.constants import FFC_OPTIONS
 
@@ -117,7 +117,7 @@ def analyze_form(form_data, options):
     form_data.metadata = _extract_metadata(form, options)
 
     # Adjust cell and degree for elements when unspecified
-    _adjust__elements(form_data)
+    _adjust_elements(form_data)
 
     # Attach FFC elements and dofmaps
     form_data.ffc_elements = [create_element(element) for element in form_data.elements]
@@ -369,10 +369,12 @@ def _adjust_elements(form_data):
         cell = element.cell()
         degree = element.degree()
         if degree is None:
-            info("Adjusting element degree from %s to %d" % (istr(degree), common_degree))
+            #info("Adjusting element degree from %s to %d" % (istr(degree), common_degree))
+            log(30, "Adjusting element degree from %s to %d" % (istr(degree), common_degree))
             element.set_degree(common_degree)
         if cell.domain() is None:
-            info("Adjusting element cell from %s to %s." % (istr(cell), str(common_cell)))
+            #info("Adjusting element cell from %s to %s." % (istr(cell), str(common_cell)))
+            log(30, "Adjusting element cell from %s to %s." % (istr(cell), str(common_cell)))
             element.set_cell(common_cell)
 
 # FIXME: Old stuff below needs to be cleaned up
