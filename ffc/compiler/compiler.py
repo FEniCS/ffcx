@@ -116,8 +116,8 @@ def analyze_form(form_data, options):
     # Extract integral metadata
     form_data.metadata = _extract_metadata(form, options)
 
-    # Adjust cell and degree for quadrature elements when unspecified
-    _adjust_quadrature_elements(form_data)
+    # Adjust cell and degree for elements when unspecified
+    _adjust__elements(form_data)
 
     # Attach FFC elements and dofmaps
     form_data.ffc_elements = [create_element(element) for element in form_data.elements]
@@ -346,8 +346,8 @@ def _auto_select_quadrature_order(integral):
 
     return quadrature_order
 
-def _adjust_quadrature_elements(form_data):
-    "Adjust cell and degree for quadrature elements when unspecified."
+def _adjust_elements(form_data):
+    "Adjust cell and degree for elements when unspecified"
 
     # Extract common cell
     common_cell = form_data.cell
