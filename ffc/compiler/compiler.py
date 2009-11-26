@@ -369,7 +369,7 @@ def _adjust_quadrature_elements(form_data):
         cell = element.cell()
         degree = element.degree()
         if degree is None:
-            info("Adjusting element quadrature degree from %s to %d" % (istr(degree), common_degree))
+            info("Adjusting element degree from %s to %d" % (istr(degree), common_degree))
             element.set_degree(common_degree)
         if cell.domain() is None:
             info("Adjusting element cell from %s to %s." % (istr(cell), str(common_cell)))
