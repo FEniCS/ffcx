@@ -365,17 +365,13 @@ def _adjust_quadrature_elements(form_data):
     # Set cell and degree if missing
     for element in form_data.elements:
 
-        # Only handle quadrature elements
-        if not element.family() == "Quadrature":
-            continue
-
         # Check if cell and degree need to be adjusted
         cell = element.cell()
         degree = element.degree()
         if degree is None:
             info("Adjusting element quadrature degree from %s to %d" % (istr(degree), common_degree))
             element.set_degree(common_degree)
-        if not cell == common_cell:
+        if cell.domain() is None:
             info("Adjusting element cell from %s to %s." % (istr(cell), str(common_cell)))
             element.set_cell(common_cell)
 
