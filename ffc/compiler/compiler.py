@@ -22,7 +22,8 @@ __license__  = "GNU GPL version 3 or any later version"
 __all__ = ["compile"]
 
 # UFL modules
-from ufl.algorithms import extract_max_quadrature_element_degree, estimate_max_polynomial_degree, extract_basis_functions
+from ufl.algorithms import extract_basis_functions
+from ufl.algorithms import estimate_max_polynomial_degree, estimate_total_polynomial_degree
 from ufl.classes import FiniteElementBase, Integral
 from ufl.common import istr
 
@@ -285,11 +286,13 @@ def _extract_metadata(form, options):
                 error("Illegal quadrature order '%s' for integral, must be a nonnegative integer or 'auto'.",
                     str(quadrature_order))
 
+        # FIXME: Change from quadrature_order --> quadrature_degree
+
         # Automatically select metadata if "auto" is selected
         if representation == "auto":
             representation = _auto_select_representation(integral)
         if quadrature_order == "auto":
-            quadrature_order = _auto_select_quadrature_order(integral)
+            quadrature_order = _auto_select_quadrature_degree(integral, representation)
 
         # No quadrature rules have been implemented yet
         if quadrature_rule:
@@ -331,20 +334,17 @@ def _auto_select_representation(integral):
     info("Automatic selection of representation not implemented, defaulting to quadrature.")
     return "quadrature"
 
-def _auto_select_quadrature_order(integral):
-    "Automatically select the appropriate quadrature order for integral."
+def _auto_select_quadrature_degree(integral, representation):
+    "Automatically select the appropriate quadrature degree for integral."
 
-    # Use maximum degree of quadrature element if any
-    quadrature_degree = extract_max_quadrature_element_degree(integral)
+    # Use maximum polynomial degree for quadrature representation
+    if representation == "quadrature":
+        degree_estimator = estimate_max_polynomial_degree
+    # Use total polynomial degree for tensor representation
+    else:
+        degree_estimator = estimate_total_polynomial_degree
 
-    # Otherwise, estimate polynomial degree (may not be a polymomial)
-    if quadrature_degree is None:
-        quadrature_degree = estimate_max_polynomial_degree(integral, default_quadrature_degree)
-
-    # Set quadrature order to polynomial degree
-    quadrature_order = quadrature_degree
-
-    return quadrature_order
+    return degree_estimator(integral, default_quadrature_degree)
 
 def _adjust_elements(form_data):
     "Adjust cell and degree for elements when unspecified"
