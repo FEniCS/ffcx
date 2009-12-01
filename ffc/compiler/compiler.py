@@ -114,11 +114,11 @@ def analyze_form(form_data, options):
     # Extract form
     form = form_data.form
 
-    # Extract integral metadata
-    form_data.metadata = _extract_metadata(form, options)
-
     # Adjust cell and degree for elements when unspecified
     _adjust_elements(form_data)
+
+    # Extract integral metadata
+    form_data.metadata = _extract_metadata(form, options)
 
     # Attach FFC elements and dofmaps
     form_data.ffc_elements = [create_element(element) for element in form_data.elements]
@@ -293,6 +293,7 @@ def _extract_metadata(form, options):
             representation = _auto_select_representation(integral)
         if quadrature_order == "auto":
             quadrature_order = _auto_select_quadrature_degree(integral, representation)
+        log(30, "Integral quadrature degree is %d." % quadrature_order)
 
         # No quadrature rules have been implemented yet
         if quadrature_rule:
@@ -355,11 +356,8 @@ def _adjust_elements(form_data):
         error("Missing cell definition in form.")
 
     # Extract common degree
-    degrees = [metadata["quadrature_order"] for metadata in form_data.metadata.itervalues()]
-    degrees = [q for q in degrees if not q is None]
-    if degrees:
-        common_degree = max(degrees)
-    else:
+    common_degree = max([element.degree() for element in form_data.elements])
+    if common_degree is None:
         common_degree = default_quadrature_degree
 
     # Set cell and degree if missing
