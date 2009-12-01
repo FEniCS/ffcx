@@ -118,7 +118,7 @@ def analyze_form(form_data, options):
     _adjust_elements(form_data)
 
     # Extract integral metadata
-    form_data.metadata = _extract_metadata(form, options)
+    form_data.metadata = _extract_metadata(form, options, form_data.elements)
 
     # Attach FFC elements and dofmaps
     form_data.ffc_elements = [create_element(element) for element in form_data.elements]
@@ -240,7 +240,7 @@ def _extract_objects(objects):
 
     return (forms, elements)
 
-def _extract_metadata(form, options):
+def _extract_metadata(form, options, elements):
     "Check metadata for integral and return new integral with proper metadata."
 
     metadata = {}
@@ -292,7 +292,7 @@ def _extract_metadata(form, options):
         if representation == "auto":
             representation = _auto_select_representation(integral)
         if quadrature_order == "auto":
-            quadrature_order = _auto_select_quadrature_degree(integral, representation)
+            quadrature_order = _auto_select_quadrature_degree(integral, representation, elements)
         log(30, "Integral quadrature degree is %d." % quadrature_order)
 
         # No quadrature rules have been implemented yet
@@ -335,17 +335,18 @@ def _auto_select_representation(integral):
     info("Automatic selection of representation not implemented, defaulting to quadrature.")
     return "quadrature"
 
-def _auto_select_quadrature_degree(integral, representation):
+def _auto_select_quadrature_degree(integral, representation, elements):
     "Automatically select the appropriate quadrature degree for integral."
 
-    # Use maximum polynomial degree for quadrature representation
-    if representation == "quadrature":
-        degree_estimator = estimate_max_polynomial_degree
-    # Use total polynomial degree for tensor representation
-    else:
-        degree_estimator = estimate_total_polynomial_degree
+    # Estimate total degree of integrand
+    degree = estimate_total_polynomial_degree(integral, default_quadrature_degree)
 
-    return degree_estimator(integral, default_quadrature_degree)
+    # Use maximum quadrature element degree if any for quadrature representation
+    if representation == "quadrature":
+        quadrature_elements = [e for e in elements if e.family() == "Quadrature"]
+        degree = max([degree] + [e.degree() for e in quadrature_elements])
+
+    return degree
 
 def _adjust_elements(form_data):
     "Adjust cell and degree for elements when unspecified"
