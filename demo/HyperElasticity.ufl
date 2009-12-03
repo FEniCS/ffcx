@@ -13,10 +13,6 @@
 # Function spaces
 element = VectorElement("Lagrange", "tetrahedron", 1)
 
-# Re-define correct gradient
-def Grad(v):
-    return grad(v).T
-
 # Functions
 v  = TestFunction(element)      # Test function
 du = TrialFunction(element)     # Incremental displacement
@@ -27,7 +23,7 @@ T  = Function(element)          # Traction force on the boundary
 
 # Kinematics
 I = Identity(v.cell().d)        # Identity tensor
-F = I + Grad(u)                 # Deformation gradient
+F = I + grad(u)                 # Deformation gradient
 C = F.T*F                       # Right Cauchy-Green tensor
 E = (C - I)/2                   # Euler-Lagrange strain tensor
 E = variable(E)
@@ -43,6 +39,6 @@ S = diff(psi, E)                # Second Piola-Kirchhoff stress tensor
 P = F*S                         # First Piola-Kirchoff stress tensor
 
 # The variational problem corresponding to hyperelasticity
-L = inner(P, Grad(v))*dx - inner(B, v)*dx - inner(T, v)*ds
+L = inner(P, grad(v))*dx - inner(B, v)*dx - inner(T, v)*ds
 a  = derivative(L, u, du)
 
