@@ -28,7 +28,7 @@ from ufl.classes import FiniteElementBase, Integral
 from ufl.common import istr
 
 # FFC common modules
-from ffc.common.log import begin, end, debug, info, warning, error, log
+from ffc.common.log import begin, end, debug, info, warning, error, log, ffc_assert
 from ffc.common.utils import product
 from ffc.common.constants import FFC_OPTIONS
 
@@ -343,8 +343,14 @@ def _auto_select_quadrature_degree(integral, representation, elements):
 
     # Use maximum quadrature element degree if any for quadrature representation
     if representation == "quadrature":
-        quadrature_elements = [e for e in elements if e.family() == "Quadrature"]
-        degree = max([degree] + [e.degree() for e in quadrature_elements])
+        #quadrature_elements = [e for e in elements if e.family() == "Quadrature"]
+        #degree = max([degree] + [e.degree() for e in quadrature_elements])
+        quadrature_degrees = [e.degree() for e in elements if e.family() == "Quadrature"]
+        if quadrature_degrees != []:
+            ffc_assert(min(quadrature_degrees) == max(quadrature_degrees), \
+                       "All QuadratureElements in an integrand must have the same degree: %s" \
+                       % str(quadrature_degrees))
+            degree = quadrature_degrees[0]
 
     return degree
 
