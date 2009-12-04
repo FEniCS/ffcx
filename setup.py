@@ -8,7 +8,7 @@ from os.path import join, split
 scripts = [join("scripts", "ffc"), join("scripts", "ffc-clean")]
 
 if platform.system() == "Windows" or "bdist_wininst" in sys.argv:
-    # In the Windows command prompt we can't execute Python scripts 
+    # In the Windows command prompt we can't execute Python scripts
     # without a .py extension. A solution is to create batch files
     # that runs the different scripts.
     batch_files = []
@@ -21,10 +21,10 @@ if platform.system() == "Windows" or "bdist_wininst" in sys.argv:
     scripts.extend(batch_files)
 
 setup(name = "FFC",
-      version = "0.7.0",
+      version = "0.7.1",
       description = "The FEniCS Form Compiler",
       author = "Anders Logg and Kristian Oelgaard et al.",
-      author_email = "logg@simula.no",
+      author_email = "ffc@lists.launchpad.net",
       url = "http://www.fenics.org/ffc/",
       packages = ["ffc",
                   "ffc.common",

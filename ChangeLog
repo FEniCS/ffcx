@@ -1,3 +1,4 @@
+0.7.1
  - Handle setting quadrature degree when it is set to None in UFL form
  - Added demo: HyperElasticity.ufl
 0.7.0
