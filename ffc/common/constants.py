@@ -1,11 +1,11 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2005-05-20 -- 2009-09-24"
+__date__ = "2005-05-20 -- 2009-12-04"
 __copyright__ = "Copyright (C) 2005-2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 from log import INFO
 
-FFC_VERSION = "0.7.0"
+FFC_VERSION = "0.7.1"
 
 FFC_OPTIONS = {"representation":      "auto", # form representation / code generation strategy
                "format":              "ufc",  # code generation format
