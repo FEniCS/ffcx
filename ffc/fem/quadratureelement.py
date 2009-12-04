@@ -67,13 +67,6 @@ class QuadratureElement(FiniteElement):
         # Save number of quadrature points
         self.__num_quad_points = len(points)
 
-        print ""
-        print "--- CHECK 1 ---"
-        print "Here I think there are four points (on the cell)"
-        print "self.__num_quad_points =", len(points)
-        print "---------------"
-        print ""
-
         # Create entity IDs, ripped from FIAT/DiscontinuousLagrange.py
         # Used by formdata.py to create the DofMap
         entity_ids = {}
@@ -157,15 +150,6 @@ class QuadratureElement(FiniteElement):
             print   "             returning values of basisfunction.\n"
 
         # Check that incoming points are as many as the quadrature points
-
-        print ""
-        print "--- CHECK 3 ---"
-        print "This is where the check fails"
-        print "len(points) =", len(points)
-        print "self.__num_quad_points =", self.__num_quad_points
-        print "---------------"
-        print
-
         if not len(points) == self.__num_quad_points:
             error("Points must be equal to coordinates of quadrature points")
 

@@ -122,14 +122,6 @@ class QuadratureRepresentation:
             else:
                 error("Unknown integral type: " + str(integral_type))
 
-
-#            print ""
-#            print "--- CHECK 2 ---"
-#            print "But here I think there are only two points (on the facet)"
-#            print "number of points for cell integral:", len(make_quadrature(shape, num_points_per_axis, rule)[0])
-#            print "number of points for facet integral:", len(make_quadrature(facet_shape, num_points_per_axis, rule)[0])
-#            print "---------------------------"
-
             # Add rules to dictionary.
             len_weights = len(weights) # The TOTAL number of weights/points
             # TODO: This check should not be needed, remove later.
