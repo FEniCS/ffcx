@@ -1,9 +1,12 @@
 "Transformation of monomial representations of UFL forms."
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2009-03-06 -- 2009-03-06"
+__date__ = "2009-03-06"
 __copyright__ = "Copyright (C) 2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
+
+# Modified by Kristian B. Oelgaard, 2009
+# Last changed: 2009-12-08
 
 # UFL modules
 from ufl.classes import BasisFunction, Function, FixedIndex
@@ -225,7 +228,7 @@ class TransformedMonomial:
             element = create_element(f.element())
             vdim = element.value_dimension(0) # FIXME: rank dependent (meg)
             sdim = element.space_dimension()
-            gdim = element.geometric_dimension()
+            gdim = element.cell().geometric_dimension()
             cdim = element.num_sub_elements()
 
             # Extract basis function index and coefficients

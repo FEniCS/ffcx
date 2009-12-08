@@ -1,13 +1,14 @@
 "Code snippets for code generation"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-02-28 -- 2007-04-18"
+__date__ = "2007-02-28"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Modified by Kristian Oelgaard 2007
+# Modified by Kristian Oelgaard 2009
 # Modified by Marie Rognes 2007, 2008
 # Modified by Peter Brune 2009
+# Last changed: 2009-12-08
 
 # Code snippet for computing the Jacobian, its inverse and determinant in 1D
 jacobian_1D = """\
@@ -299,8 +300,8 @@ for (unsigned int j = 0; j < %d; j++)
 
 }"""
 
-# Inverse affine map from physical cell to UFC reference cell in 1D
-map_coordinates_1D = """\
+# Inverse affine map from physical cell to UFC reference cell (interval)
+map_coordinates_interval = """\
 // Extract vertex coordinates
 const double * const * element_coordinates = c.coordinates;
 
@@ -310,8 +311,8 @@ const double J_00 = element_coordinates[1][0] - element_coordinates[0][0];
 // Get coordinates and map to the reference (UFC) element
 double x = (coordinates[0] - element_coordinates[0][0]) / J_00;"""
 
-# Inverse affine map from physical cell to UFC reference cell in 2D
-map_coordinates_2D = """\
+# Inverse affine map from physical cell to UFC reference cell (triangle)
+map_coordinates_triangle = """\
 // Extract vertex coordinates
 const double * const * element_coordinates = c.coordinates;
 
@@ -338,8 +339,8 @@ double y = (element_coordinates[1][1]*element_coordinates[0][0] -\\
             element_coordinates[1][0]*element_coordinates[0][1] -\\
             J_10*coordinates[0] + J_00*coordinates[1]) / detJ;"""
 
-# Inverse affine map from physical cell to the UFC reference cell in 3D
-map_coordinates_3D = """\
+# Inverse affine map from physical cell to the UFC reference cell (tetrahedron)
+map_coordinates_tetrahedron = """\
 // Extract vertex coordinates
 const double * const * element_coordinates = c.coordinates;
 
@@ -502,7 +503,7 @@ for (unsigned int row = 1; row < %(num_derivatives)s; row++)
 }"""
 
 # Snippet to transform of derivatives of order n
-transform1D_snippet = """\
+transform_interval_snippet = """\
 // Compute inverse of Jacobian
 const double %(Jinv)s[1][1] =  {{1.0 / J_00}};
 
@@ -528,7 +529,7 @@ for (unsigned int row = 0; row < %(num_derivatives)s; row++)
 }"""
 
 # Snippet to transform of derivatives of order n
-transform2D_snippet = """\
+transform_triangle_snippet = """\
 // Compute inverse of Jacobian
 const double %(Jinv)s[2][2] =  {{J_11 / detJ, -J_01 / detJ}, {-J_10 / detJ, J_00 / detJ}};
 
@@ -553,7 +554,7 @@ for (unsigned int row = 0; row < %(num_derivatives)s; row++)
   }
 }"""
 
-transform3D_snippet = """\
+transform_tetrahedron_snippet = """\
 // Compute inverse of Jacobian
 const double %(Jinv)s[3][3] =\
 {{d00 / detJ, d10 / detJ, d20 / detJ},\

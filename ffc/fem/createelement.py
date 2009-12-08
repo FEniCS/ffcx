@@ -1,9 +1,10 @@
 __author__ = "Kristian B. Oelgaard (k.b.oelgaard@tudelft.nl) and Anders Logg (logg@simula.no)"
-__date__ = "2009-03-06 -- 2009-08-26"
+__date__ = "2009-03-06"
 __copyright__ = "Copyright (C) 2009 Kristian B. Oelgaard and Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Garth N. Wells 2009
+# Last changed: 2009-12-08
 
 # UFL modules
 from ufl import FiniteElement as UFLFiniteElement
@@ -35,7 +36,7 @@ def create_element(ufl_element, domain=None):
     if isinstance(ufl_element, UFLElementRestriction):
         # If we already have a domain, make sure that it is equal to the domain
         # of the restricted element
-        if domain and domain != ufl_element.domain():
+        if domain and domain != ufl_element.domain_restriction():
             error("Domain of restriction is not equal to the domain of the already restricted element. %s %s"\
                    %(str(domain), str(ufl_element.domain())))
         # Get element and domain
@@ -50,7 +51,7 @@ def create_element(ufl_element, domain=None):
             ffc_element = FFCFiniteElement(ufl_element, domain)
     elif isinstance(ufl_element, UFLMixedElement):
         sub_elements = [create_element(e, domain) for e in ufl_element.sub_elements()]
-        ffc_element = FFCMixedElement(sub_elements, repr(ufl_element), domain)
+        ffc_element = FFCMixedElement(sub_elements, repr(ufl_element), ufl_element.value_shape(), domain)
         # FIXME: Temporary hack to 'support' tensor elements
         if isinstance(ufl_element, UFLTensorElement):
             ffc_element._rank = len(ufl_element._shape)

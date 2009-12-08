@@ -1,11 +1,12 @@
 "Quadrature representation class for UFL"
 
 __author__ = "Kristian B. Oelgaard (k.b.oelgaard@tudelft.nl)"
-__date__ = "2009-01-07 -- 2009-08-25"
+__date__ = "2009-01-07"
 __copyright__ = "Copyright (C) 2009 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Anders Logg, 2009.
+# Last changed: 2009-12-08
 
 # FFC common modules.
 from ffc.common.log import debug, info, ffc_assert, error
@@ -105,20 +106,20 @@ class QuadratureRepresentation:
             fiat_elements = [create_element(e) for e in elements]
 
             # Get shape and facet shape.
-            shape = fiat_elements[0].cell_shape()
-            facet_shape = fiat_elements[0].facet_shape()
+            domain = fiat_elements[0].cell().domain()
+            facet_domain = fiat_elements[0].cell().facet_domain()
 
             # TODO: These safety check could be removed for speed (I think?)
-            ffc_assert(all(shape == e.cell_shape() for e in fiat_elements), \
+            ffc_assert(all(domain == e.cell().domain() for e in fiat_elements), \
                        "The cell shape of all elements MUST be equal: " + repr(elements))
-            ffc_assert(all(facet_shape == e.facet_shape() for e in fiat_elements), \
+            ffc_assert(all(facet_domain == e.cell().facet_domain() for e in fiat_elements), \
                        "The facet shape of all elements MUST be equal: " + repr(elements))
 
             # Make quadrature rule and get points and weights.
             if integral_type == Measure.CELL:
-                (points, weights) = make_quadrature(shape, num_points_per_axis, rule)
+                (points, weights) = make_quadrature(domain, num_points_per_axis, rule)
             elif integral_type == Measure.EXTERIOR_FACET or integral_type == Measure.INTERIOR_FACET:
-                (points, weights) = make_quadrature(facet_shape, num_points_per_axis, rule)
+                (points, weights) = make_quadrature(facet_domain, num_points_per_axis, rule)
             else:
                 error("Unknown integral type: " + str(integral_type))
 
@@ -186,16 +187,16 @@ class QuadratureRepresentation:
                         [elements[i]] = {None: element.tabulate(deriv_order, points)}
                 elif integral_type == Measure.EXTERIOR_FACET:
                     self.psi_tables[integral_type][len_weights][elements[i]] = {}
-                    for facet in range(element.num_facets()):
+                    for facet in range(element.cell().num_facets()):
                         self.psi_tables[integral_type][len_weights]\
                             [elements[i]][facet] =\
-                            element.tabulate(deriv_order, map_to_facet(points, facet))
+                            element.tabulate(deriv_order, map_to_facet(domain, points, facet))
                 elif integral_type == Measure.INTERIOR_FACET:
                     self.psi_tables[integral_type][len_weights][elements[i]] = {}
-                    for facet in range(element.num_facets()):
+                    for facet in range(element.cell().num_facets()):
                         self.psi_tables[integral_type][len_weights]\
                             [elements[i]][facet] =\
-                            element.tabulate(deriv_order, map_to_facet(points, facet))
+                            element.tabulate(deriv_order, map_to_facet(domain, points, facet))
 
         return return_integrals
 

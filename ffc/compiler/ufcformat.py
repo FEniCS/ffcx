@@ -1,7 +1,7 @@
 "Code generation for the UFC 1.0 format"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-01-08 -- 2009-08-21"
+__date__ = "2007-01-08"
 __copyright__ = "Copyright (C) 2007-2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
@@ -9,12 +9,13 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Dag Lindbo, 2008.
 # Modified by Johan Hake, 2009.
 # Modified by Garth N. Wells, 2009.
+# Last changed: 2009-12-08
 
 # Python modules
 import os, platform
 
 # UFC code templates
-from ufc_utils import *
+from ufc_utils import finite_element_combined, dof_map_combined, cell_integral_combined, exterior_facet_integral_combined, interior_facet_integral_combined, form_combined
 
 # DOLFIN wrapper generator
 try:
@@ -24,13 +25,19 @@ except:
     dolfin_utils_imported = False
 
 # FFC common modules
-from ffc.common.utils import *
+#from ffc.common.utils import *
 from ffc.common.log import info, error
-from ffc.common.constants import *
+from ffc.common.constants import FFC_VERSION
 
 # FFC format modules
+# TODO: Finish this import list
+#from codesnippets import evaluate_basis_dof_map, eta_interval_snippet, eta_triangle_snippet, eta_tetrahedron_snippet, combinations_snippet, calculate_dof, map_coordinates_interval, map_coordinates_triangle, map_coordinates_tetrahedron, transform_interval_snippet, transform_triangle_snippet, transform_tetrahedron_snippet, map_onto_physical_1D, map_onto_physical_2D, map_onto_physical_3D, jacobian_1D, jacobian_2D, jacobian_3D, facet_determinant_1D, facet_determinant_2D, facet_determinant_3D, scale_factor, normal_direction_2D
+
 from codesnippets import *
-from removeunused import *
+
+# FFC codegeneration common modules
+from codeutils import indent
+from removeunused import remove_unused
 
 # Choose map from restriction
 choose_map = {None: "", "+": "0", "-": 1}
@@ -187,7 +194,7 @@ class Format:
             "if": "if",
             "return": lambda v: "return %s;" % v,
             # snippets
-            "coordinate map": lambda d: eval("map_coordinates_%dD" % d),
+            "coordinate map": lambda s: eval("map_coordinates_%s" % s),
             "facet sign": lambda e: "sign_facet%d" % e,
             "snippet facet signs": lambda d: eval("facet_sign_snippet_%dD" % d),
             "snippet dof map": evaluate_basis_dof_map,
@@ -198,7 +205,7 @@ class Format:
             "snippet only jacobian": lambda d: eval("only_jacobian_%dD" % d),
             "snippet normal": lambda d: eval("facet_normal_%dD" %d),
             "snippet combinations": combinations_snippet,
-            "snippet transform": lambda d: eval("transform%dD_snippet" % d),
+            "snippet transform": lambda s: eval("transform_%s_snippet" % s),
             #           "snippet inverse 2D": inverse_jacobian_2D,
             #           "snippet inverse 3D": inverse_jacobian_3D,
             "snippet evaluate_dof": lambda d : eval("evaluate_dof_%dD" % d),
@@ -215,7 +222,9 @@ class Format:
             "pointer": "*",
             "new": "new ",
             "delete": "delete ",
-            "cell shape": lambda i: {1: "ufc::interval", 2: "ufc::triangle", 3: "ufc::tetrahedron"}[i],
+            "cell shape": lambda i: {"interval": "ufc::interval",
+                                     "triangle": "ufc::triangle",
+                                     "tetrahedron": "ufc::tetrahedron"}[i],
             "psi index names": {0: lambda i: "f%s" %(i), 1: lambda i: "p%s" %(i),\
                                 2: lambda i: "s%s" %(i), 4: lambda i: "fu%s" %(i),\
                                 5: lambda i: "pj%s" %(i), 6: lambda i: "c%s" %(i),\

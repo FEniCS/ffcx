@@ -1,30 +1,34 @@
 "Code generation for finite element"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-01-23 -- 2009-08-26"
+__date__ = "2007-01-23"
 __copyright__ = "Copyright (C) 2007-2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian Oelgaard 2009
 # Modified by Marie Rognes 2008
 # Modified by Garth N. Wells 2009
+# Last changed: 2009-12-08
 
 # FIAT modules
-from FIAT.shapes import LINE
+#from FIAT.shapes import LINE
 
 # FFC common modules
 from ffc.common.log import debug, error
+from ffc.common.utils import pick_first
 
 # FFC fem modules
-from ffc.fem.finiteelement import *
-from ffc.fem.vectorelement import *
-from ffc.fem.dofmap import *
-from ffc.fem.quadratureelement import *
+from ffc.fem.finiteelement import AFFINE, CONTRAVARIANT_PIOLA, COVARIANT_PIOLA, mapping_to_int
+#from ffc.fem.vectorelement import *
+from ffc.fem.dofmap import DofMap
+from ffc.fem.quadratureelement import QuadratureElement
+from ffc.fem import referencecell
+from ffc.fem.dofrepresentation import DofRepresentation
 
 # FFC code generation common modules
 from evaluatebasis import evaluate_basis
 from evaluatebasisderivatives import evaluate_basis_derivatives
-from codeutils import inner_product
+from codeutils import inner_product, indent
 
 def generate_finite_elements(form_data, format):
     "Generate code for finite elements, including recursively nested sub elements."
@@ -52,10 +56,10 @@ def generate_finite_element(element, format):
     code = {}
 
     # Generate code for signature
-    code["signature"] = element.signature()
+    code["signature"] = repr(element)
 
     # Generate code for cell_shape
-    code["cell_shape"] = format["cell shape"](element.cell_shape())
+    code["cell_shape"] = format["cell shape"](element.cell().domain())
     
     # Generate code for space_dimension
     code["space_dimension"] = "%d" % element.space_dimension()
@@ -164,7 +168,7 @@ def __generate_evaluate_dof(element, format):
          for dof in dofs]))
     code  += ["%sX[%d][%d][%d] = %s;" % (format["table declaration"],
                                          num_dofs, max_num_points,
-                                         element.cell_dimension(), s)]
+                                         element.cell().topological_dimension(), s)]
     s = block(separator.join(
         [block(separator.join([floating_point(w) for w in dof.weights]))
          for dof in dofs]))
@@ -206,7 +210,7 @@ def __generate_evaluate_dof(element, format):
         (tab, endloop, index) = (2, "\n} // End for", "j")
 
     # Map the points from the reference onto the physical element
-    code += [indent(format["snippet map_onto_physical"](element.cell_dimension())
+    code += [indent(format["snippet map_onto_physical"](element.cell().geometric_dimension())
                     % {"j": index}, tab)]
     
     # Evaluate the function at the physical points
@@ -272,12 +276,12 @@ def __map_function_values(num_values, element, format):
     # mappings. Otherwise, just add code for the vertex coordinates
     if contrapiola_present:
         # If contravariant piola: Will need J, det J and J^{-1}
-        precode += [format["snippet jacobian"](element.cell_dimension())
+        precode += [format["snippet jacobian"](element.cell().topological_dimension())
                  % {"restriction":""}]
         precode += ["\ndouble copyofvalues[%d];" % num_values]
     elif copiola_present:
         # If covariant piola: Will need J only
-        precode += [format["snippet only jacobian"](element.cell_dimension())
+        precode += [format["snippet only jacobian"](element.cell().topological_dimension())
                  % {"restriction":""}]
         precode += ["\ndouble copyofvalues[%d];" % num_values]
     else:
@@ -306,7 +310,7 @@ def __map_function_values(num_values, element, format):
 
 
     # Then it just remains to actually add the different mappings to the code:
-    n = element.cell_dimension()
+    n = element.cell().topological_dimension()
     mappings_code = {mapping_to_int[AFFINE]: __affine_map(),
                      mapping_to_int[CONTRAVARIANT_PIOLA]:
                      __contravariant_piola(n, offset),
@@ -380,13 +384,16 @@ def __generate_interpolate_vertex_values(element, format):
     # Generate code as a list of declarations
     code = []
 
-    # Set vertices (note that we need to use the FIAT reference cells)
-    if element.cell_shape() == LINE:
-        vertices = [(0,), (1,)]
-    elif element.cell_shape() == TRIANGLE:
-        vertices = [(0, 0), (1, 0), (0, 1)]
-    elif element.cell_shape() == TETRAHEDRON:
-        vertices =  [(0, 0, 0), (1, 0, 0), (0, 1, 0), (0, 0, 1)]
+    # Get reference cell vertices
+    vertices = referencecell.get_vertex_coordinates(element.cell().domain())
+
+#    # Set vertices (note that we need to use the FIAT reference cells)
+#    if element.cell().domain() == "interval":
+#        vertices = [(0,), (1,)]
+#    elif element.cell().domain() == "triangle":
+#        vertices = [(0, 0), (1, 0), (0, 1)]
+#    elif element.cell().domain() == "tetrahedron":
+#        vertices =  [(0, 0, 0), (1, 0, 0), (0, 1, 0), (0, 0, 1)]
 
     # Extract nested sub elements
     sub_elements = element.extract_elements()
@@ -417,7 +424,7 @@ def __generate_interpolate_vertex_values(element, format):
             # Handle scalars and vectors
             if sub_element.value_rank() == 0:
                 for v in range(len(vertices)):
-                    coefficients = table[0][sub_element.cell_dimension()*(0,)][:, v]
+                    coefficients = table[0][sub_element.cell().topological_dimension()*(0,)][:, v]
                     dof_values = [format["dof values"](offset_dof_values + n) for n in range(len(coefficients))]
                     name = format["vertex values"](size*v + offset_vertex_values)
                     value = inner_product(coefficients, dof_values, format)
@@ -425,7 +432,7 @@ def __generate_interpolate_vertex_values(element, format):
             else:
                 for dim in range(sub_element.value_dimension(0)):
                     for v in range(len(vertices)):
-                        coefficients = table[dim][0][sub_element.cell_dimension()*(0,)][:, v]
+                        coefficients = table[dim][0][sub_element.cell().topological_dimension()*(0,)][:, v]
                         dof_values = [format["dof values"](offset_dof_values + n) for n in range(len(coefficients))]
                         name = format["vertex values"](size*v + offset_vertex_values + dim)
                         value = inner_product(coefficients, dof_values, format)
@@ -439,7 +446,7 @@ def __generate_interpolate_vertex_values(element, format):
             need_jacobian = True
 
             # Check that dimension matches for Piola transform
-            if not sub_element.value_dimension(0) == sub_element.cell_dimension():
+            if not sub_element.value_dimension(0) == sub_element.cell().topological_dimension():
                 error("Vector dimension of basis function does not match for Piola transform.")
 
             # Get entities for the dofs
@@ -450,15 +457,15 @@ def __generate_interpolate_vertex_values(element, format):
                     terms = []
                     for n in range(sub_element.space_dimension()):
                         # Get basis function values at vertices
-                        coefficients = [table[j][0][sub_element.cell_dimension()*(0,)][n, v] for j in range(sub_element.value_dimension(0))]
+                        coefficients = [table[j][0][sub_element.cell().topological_dimension()*(0,)][n, v] for j in range(sub_element.value_dimension(0))]
 
                         if mapping == COVARIANT_PIOLA:
                             # Get row of inverse transpose Jacobian
-                            jacobian_row = [format["transform"]("JINV", j, dim, None) for j in range(sub_element.cell_dimension())]
+                            jacobian_row = [format["transform"]("JINV", j, dim, None) for j in range(sub_element.cell().topological_dimension())]
                         else:
                             # mapping == CONTRAVARIANT_PIOLA:
                             # Get row of Jacobian
-                            jacobian_row = [format["transform"]("J", j, dim, None) for j in range(sub_element.cell_dimension())]
+                            jacobian_row = [format["transform"]("J", j, dim, None) for j in range(sub_element.cell().topological_dimension())]
                             
                         # Multiply vector-valued basis function with Jacobian
                         basis_function = inner_product(coefficients, jacobian_row, format)
@@ -489,6 +496,6 @@ def __generate_interpolate_vertex_values(element, format):
 
     # Insert code for computing quantities needed for Piola mapping
     if need_jacobian:
-        code.insert(0, format["snippet jacobian"](element.cell_dimension()) % {"restriction": ""})        
+        code.insert(0, format["snippet jacobian"](element.cell().topological_dimension()) % {"restriction": ""})        
     
     return code

@@ -1,12 +1,17 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-11-27 -- 2007-11-29"
+__date__ = "2007-11-27"
 __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
+
+# Modified by Kristian B. Oelgaard, 2009
+# Last changed: 2009-12-08
 
 from numpy import array
 
 from FIAT.quadrature import make_quadrature as fiat_make_quadrature
 from FIAT.shapes import LINE, TRIANGLE, TETRAHEDRON
+
+ufl2fiat_shape = {"interval":LINE, "triangle":TRIANGLE, "tetrahedron":TETRAHEDRON}
 
 # FFC common modules
 from ffc.common.log import error
@@ -18,24 +23,24 @@ def make_quadrature(shape, n, quad_rule=None):
     using FIAT and then transformed and scaled to the UFC element"""
 
     # FIXME: Quadrature for vertices (shape == None)
-    if not shape:
+    if shape is None:
         return ([()], array([1.0,]))
 
     # Set scaling and transform
-    if shape == LINE:
+    if shape == "interval":
         offset = array((1.0,))
         scaling = 0.5
-    elif shape == TRIANGLE:
+    elif shape == "triangle":
         offset = array((1.0, 1.0))
         scaling = 0.25
-    elif shape == TETRAHEDRON:
+    elif shape == "tetrahedron":
         offset = array((1.0, 1.0, 1.0))
         scaling = 0.125
     else:
         error("Unknown shape")
 
     # Get quadrature from FIAT
-    q = fiat_make_quadrature(shape, n)
+    q = fiat_make_quadrature(ufl2fiat_shape[shape], n)
     points = q.get_points()
     weights = q.get_weights()
     
