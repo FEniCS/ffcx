@@ -16,7 +16,7 @@ element = FiniteElement("Discontinuous Lagrange", triangle, 1)
 # Test and trial functions
 v = TestFunction(element)
 u = TrialFunction(element)
-f = Function(element)
+f = Coefficient(element)
 
 # Normal component, mesh size and right-hand side
 n = element.cell().n
@@ -25,7 +25,7 @@ h = Constant(triangle)
 h_avg = (h('+') + h('-'))/2.0
 
 # Neumann boundary conditions
-gN = Function(element)
+gN = Coefficient(element)
 
 # Parameters
 alpha = 4.0

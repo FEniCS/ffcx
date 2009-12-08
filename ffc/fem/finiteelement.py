@@ -14,7 +14,7 @@ import sys
 import numpy
 
 # FIAT modules
-#from FIAT.shapes import *
+from FIAT.shapes import LINE, TRIANGLE, TETRAHEDRON
 
 from FIAT.transformedspace import *
 from FIAT.Lagrange import Lagrange
@@ -327,4 +327,3 @@ class FiniteElement(FiniteElementBase):
             return PiolaTransformedFunctionSpace(function_space, vertices, "curl")
         else:
             error(family, "Unknown transform")
-

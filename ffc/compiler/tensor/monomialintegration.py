@@ -45,13 +45,13 @@ def integrate(monomial, domain_type, facet0, facet1, quadrature_order):
     tic = time.time()
 
     # Initialize quadrature points and weights
-    (points, weights) = _init_quadrature(monomial.basis_functions, domain_type, quadrature_order)
+    (points, weights) = _init_quadrature(monomial.arguments, domain_type, quadrature_order)
 
     # Initialize quadrature table for basis functions
-    table = _init_table(monomial.basis_functions, domain_type, points, facet0, facet1)
+    table = _init_table(monomial.arguments, domain_type, points, facet0, facet1)
 
     # Compute table Psi for each factor
-    psis = [_compute_psi(v, table, len(points), domain_type) for v in monomial.basis_functions]
+    psis = [_compute_psi(v, table, len(points), domain_type) for v in monomial.arguments]
 
     # Compute product of all Psis
     A0 = _compute_product(psis, monomial.float_value * weights)
@@ -64,17 +64,17 @@ def integrate(monomial, domain_type, facet0, facet1, quadrature_order):
 
     return A0
 
-def _init_quadrature(basis_functions, domain_type, quadrature_order):
+def _init_quadrature(arguments, domain_type, quadrature_order):
     "Initialize quadrature for given monomial."
 
     # Get shapes (check first factor, should be the same for all)
-    element = basis_functions[0].element
+    element = arguments[0].element
     cell_shape = element.cell().domain()
     facet_shape = element.cell().facet_domain()
 
     # FIXME: KBO: Old, remove this?
     # Compute number of points to match the degree
-    #quadrature_order = _compute_degree(basis_functions)
+    #quadrature_order = _compute_degree(arguments)
 
     # Use the quadrature order given by metadata to compute the number of points
     # TODO: KBO: This might be suboptimal, since each monomial in the tensor
@@ -86,7 +86,7 @@ def _init_quadrature(basis_functions, domain_type, quadrature_order):
     # FIXME: KBO: This should be handled in compiler.py when computing the
     # quadrature order, so we can remove this.
     # Check if any basis functions are defined on a quadrature element
-    #for v in basis_functions:
+    #for v in arguments:
     #    if isinstance(v.element, QuadratureElement):
     #        num_points = v.element.num_axis_points()
     #        debug("Found quadrature element, adjusting number of points to %d.", num_points)
@@ -100,13 +100,13 @@ def _init_quadrature(basis_functions, domain_type, quadrature_order):
 
     return (points, weights)
 
-def _init_table(basis_functions, domain_type, points, facet0, facet1):
+def _init_table(arguments, domain_type, points, facet0, facet1):
     """Initialize table of basis functions and their derivatives at
     the given quadrature points for each element."""
 
     # Compute maximum number of derivatives for each element
     num_derivatives = {}
-    for v in basis_functions:
+    for v in arguments:
         element = v.element
         order = len(v.derivatives)
         if element in num_derivatives:

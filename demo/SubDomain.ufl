@@ -10,6 +10,6 @@ element = FiniteElement("CG", tetrahedron, 1)
 
 v = TestFunction(element)
 u = TrialFunction(element)
-f = Function(element)
+f = Coefficient(element)
 
 M = f*dx(2) + f*ds(5)

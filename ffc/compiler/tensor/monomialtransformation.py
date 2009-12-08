@@ -9,7 +9,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Last changed: 2009-12-08
 
 # UFL modules
-from ufl.classes import BasisFunction, Function, FixedIndex
+from ufl.classes import Argument, Coefficient, FixedIndex
 
 # FFC common modules
 from ffc.common.log import ffc_assert, error
@@ -177,7 +177,7 @@ class MonomialTransform:
         else:
             return "dX_%s/dx_%s%s" % (str(self.index0), str(self.index1), r)
 
-class MonomialBasisFunction:
+class MonomialArgument:
 
     def __init__(self, element, index, components, derivatives, restriction):
         self.element = element
@@ -213,7 +213,7 @@ class TransformedMonomial:
         self.determinant = MonomialDeterminant()
         self.coefficients = []
         self.transforms = []
-        self.basis_functions = []
+        self.arguments = []
 
         # Reset index counters
         reset_indices()
@@ -232,12 +232,12 @@ class TransformedMonomial:
             cdim = element.num_sub_elements()
 
             # Extract basis function index and coefficients
-            if isinstance(f.function, BasisFunction):
+            if isinstance(f.function, Argument):
                 vindex = MonomialIndex(index_type=MonomialIndex.PRIMARY,
                                        index_range=range(sdim),
                                        index_id=f.function.count())
 
-            elif isinstance(f.function, Function):
+            elif isinstance(f.function, Coefficient):
                 vindex = MonomialIndex(index_range=range(sdim))
                 coefficient = MonomialCoefficient(vindex, f.function.count())
                 self.coefficients.append(coefficient)
@@ -261,7 +261,7 @@ class TransformedMonomial:
 
                 # Add transforms where appropriate
                 if mapping == CONTRAVARIANT_PIOLA:
-                    # phi(x) = (det J)^{-1} J Phi(X) 
+                    # phi(x) = (det J)^{-1} J Phi(X)
                     index0 = component
                     index1 = MonomialIndex(index_range=range(gdim)) + offset
                     transform = MonomialTransform(index0, index1, MonomialTransform.J, f.restriction, offset)
@@ -274,7 +274,7 @@ class TransformedMonomial:
                     index1 = component
                     transform = MonomialTransform(index0, index1, MonomialTransform.JINV, f.restriction, offset)
                     self.transforms.append(transform)
-                    components[0] = index0                    
+                    components[0] = index0
 
             # Extract derivatives / transforms
             derivatives = []
@@ -297,12 +297,12 @@ class TransformedMonomial:
             restriction = f.restriction
 
             # Create basis function
-            v = MonomialBasisFunction(element, vindex, components, derivatives, restriction)
-            self.basis_functions.append(v)
+            v = MonomialArgument(element, vindex, components, derivatives, restriction)
+            self.arguments.append(v)
 
         # Figure out secondary and auxiliary indices
         internal_indices = self.extract_internal_indices(None)
-        external_indices = self.extract_external_indices(None)        
+        external_indices = self.extract_external_indices(None)
         for i in internal_indices + external_indices:
 
             # Skip already visited indices
@@ -312,7 +312,7 @@ class TransformedMonomial:
             # Set index type and id
             num_internal = len([j for j in internal_indices if j == i])
             num_external = len([j for j in external_indices if j == i])
-           
+
             if num_internal == 1 and num_external == 1:
                 i.index_type = MonomialIndex.SECONDARY
                 i.index_id   = next_secondary_index()
@@ -344,7 +344,7 @@ class TransformedMonomial:
     def extract_internal_indices(self, index_type=None):
         "Return list of indices appearing inside integral."
         indices = []
-        for v in self.basis_functions:
+        for v in self.arguments:
             indices += [v.index] + v.components + v.derivatives
         return [i for i in indices if i.index_type == index_type]
 
@@ -353,7 +353,7 @@ class TransformedMonomial:
         indices = [c.index for c in self.coefficients] + \
                   [t.index0 for t in self.transforms]  + \
                   [t.index1 for t in self.transforms]
-        return [i for i in indices if i.index_type == index_type]        
+        return [i for i in indices if i.index_type == index_type]
 
     def extract_indices(self, index_type=None):
         "Return all indices for monomial."
@@ -375,8 +375,8 @@ class TransformedMonomial:
         factors.append(self.determinant)
         factors += self.coefficients
         factors += self.transforms
-        return " * ".join([str(f) for f in factors]) + " | " + " * ".join([str(v) for v in self.basis_functions])
-    
+        return " * ".join([str(f) for f in factors]) + " | " + " * ".join([str(v) for v in self.arguments])
+
 def transform_monomial_form(monomial_form):
     "Transform monomial form to reference element."
 

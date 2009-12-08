@@ -10,16 +10,16 @@
 # Compile this form with FFC: ffc HyperElasticity.ufl.
 #
 
-# Function spaces
+# Coefficient spaces
 element = VectorElement("Lagrange", "tetrahedron", 1)
 
-# Functions
+# Coefficients
 v  = TestFunction(element)      # Test function
 du = TrialFunction(element)     # Incremental displacement
-u  = Function(element)          # Displacement from previous iteration
+u  = Coefficient(element)          # Displacement from previous iteration
 
-B  = Function(element)          # Body force per unit mass
-T  = Function(element)          # Traction force on the boundary
+B  = Coefficient(element)          # Body force per unit mass
+T  = Coefficient(element)          # Traction force on the boundary
 
 # Kinematics
 I = Identity(v.cell().d)        # Identity tensor

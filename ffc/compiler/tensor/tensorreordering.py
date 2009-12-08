@@ -1,9 +1,11 @@
 "Reordering of entries in reference tensor for interior facets"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2006-12-01 -- 2007-03-08"
-__copyright__ = "Copyright (C) 2006-2007 Anders Logg"
+__date__ = "2006-12-01"
+__copyright__ = "Copyright (C) 2006-2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
+
+# Last changed: 2009-12-08
 
 # Python modules
 import numpy
@@ -61,23 +63,23 @@ def __compute_restrictions(term):
     # Get dimensions for primary and secondary indices
     idims = term.A0.primary_multi_index.dims
     adims = term.A0.secondary_multi_index.dims
-        
+
     # Get basis functions for term
-    basisfunctions = term.monomial.basis_functions
+    arguments = term.monomial.arguments
 
     # Create empty list of restrictions for indices
     restrictions = [None for i in range(len(idims) + len(adims))]
 
     # Extract restrictions corresponding to primary indices at basis functions
     for i in range(len(idims)):
-        for v in basisfunctions:
+        for v in arguments:
             if v.index.index_type == MonomialIndex.PRIMARY and v.index.index_id == i:
                 restrictions[i] = v.restriction
                 break
 
     # Extract restrictions corresponding to secondary indices at basis functions
     for i in range(len(adims)):
-        for v in basisfunctions:
+        for v in arguments:
             if v.index.index_type == MonomialIndex.SECONDARY and v.index.index_id == i:
                 restrictions[len(idims) + i] = v.restriction
                 break

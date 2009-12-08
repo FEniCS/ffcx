@@ -22,7 +22,7 @@ def HodgeLaplaceGradCurl(element, felement):
 
     (tau, v) = TestFunctions(element)
     (sigma, u) = TrialFunctions(element)
-    f = Function(felement)
+    f = Coefficient(felement)
     a = (inner(tau, sigma) - inner(grad(tau), u) +
         inner(v, grad(sigma)) + inner(curl(v), curl(u)))*dx
     L = inner(v, f)*dx

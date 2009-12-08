@@ -77,7 +77,7 @@ class QuadratureTransformerBase(Transformer):
                                        self.format["epsilon"], self.optimise_options)
 
         # Cache.
-        self.basis_function_cache = {}
+        self.argument_cache = {}
         self.function_cache = {}
 
     def update_facets(self, facet0, facet1):
@@ -88,7 +88,7 @@ class QuadratureTransformerBase(Transformer):
         self.function_count = 0
 
         # Reset cache
-        self.basis_function_cache = {}
+        self.argument_cache = {}
         self.function_cache = {}
 
     def update_points(self, points):
@@ -98,7 +98,7 @@ class QuadratureTransformerBase(Transformer):
         self.functions = {}
 
         # Reset cache
-        self.basis_function_cache = {}
+        self.argument_cache = {}
         self.function_cache = {}
 
     def reset(self):
@@ -122,7 +122,7 @@ class QuadratureTransformerBase(Transformer):
         self._index2value = StackDict()
 
         # Reset cache
-        self.basis_function_cache = {}
+        self.argument_cache = {}
         self.function_cache = {}
 
     def disp(self):
@@ -175,7 +175,7 @@ class QuadratureTransformerBase(Transformer):
 
     def finite_element_base(self, o, *operands):
         print "\n\nVisiting FiniteElementBase: ", repr(o)
-        error("FiniteElements must be member of a BasisFunction or Function!!")
+        error("FiniteElements must be member of a Argument or Coefficient!!")
 
     def form(self, o, *operands):
         print "\n\nVisiting Form: ", repr(o)
@@ -295,20 +295,20 @@ class QuadratureTransformerBase(Transformer):
     # Things that can be handled by the base class.
     # -------------------------------------------------------------------------
     # -------------------------------------------------------------------------
-    # BasisFunction (basisfunction.py).
+    # Argument (basisfunction.py).
     # -------------------------------------------------------------------------
-    def basis_function(self, o, *operands):
-        #print("\nVisiting BasisFunction:" + repr(o))
+    def argument(self, o, *operands):
+        #print("\nVisiting Argument:" + repr(o))
 
         # Just checking that we don't get any operands.
-        ffc_assert(not operands, "Didn't expect any operands for BasisFunction: " + repr(operands))
+        ffc_assert(not operands, "Didn't expect any operands for Argument: " + repr(operands))
 
         # Create aux. info.
         components = self.component()
         derivatives = self.derivatives()
 
         # Check if basis is already in cache
-        basis = self.basis_function_cache.get((o, components, derivatives, self.restriction), None)
+        basis = self.argument_cache.get((o, components, derivatives, self.restriction), None)
         # FIXME: Why does using a code dict from cache make the expression manipulations blow (MemoryError) up later?
         if basis is not None and not self.optimise_options["simplify expressions"]:
 #        if basis is not None:
@@ -319,10 +319,10 @@ class QuadratureTransformerBase(Transformer):
         transformation, multiindices = self._get_auxiliary_variables(o, components, derivatives)
 
         # Create mapping and code for basis function and add to dict.
-        basis = self.create_basis_function(o, derivatives, component, local_comp,
+        basis = self.create_argument(o, derivatives, component, local_comp,
                   local_offset, ffc_element, transformation, multiindices)
 
-        self.basis_function_cache[(o, components, derivatives, self.restriction)] = basis
+        self.argument_cache[(o, components, derivatives, self.restriction)] = basis
 
         return basis
 
@@ -382,13 +382,13 @@ class QuadratureTransformerBase(Transformer):
         return code
 
     # -------------------------------------------------------------------------
-    # Function and Constants (function.py).
+    # Coefficient and Constants (function.py).
     # -------------------------------------------------------------------------
-    def function(self, o, *operands):
-        #print("\nVisiting Function: " + repr(o))
+    def coefficient(self, o, *operands):
+        #print("\nVisiting Coefficient: " + repr(o))
 
         # Safety check.
-        ffc_assert(not operands, "Didn't expect any operands for Function: " + repr(operands))
+        ffc_assert(not operands, "Didn't expect any operands for Coefficient: " + repr(operands))
 
         # Create aux. info.
         components = self.component()
@@ -566,7 +566,7 @@ class QuadratureTransformerBase(Transformer):
         restricted_expr = o.operands()
         ffc_assert(len(restricted_expr) == 1, "Only expected one operand for restriction: " + repr(restricted_expr))
         ffc_assert(self.restriction is None, "Expression is restricted twice: " + repr(restricted_expr))
- 
+
         # Set restriction, visit operand and reset restriction
         self.restriction = "+"
         code = self.visit(restricted_expr[0])
@@ -709,7 +709,7 @@ class QuadratureTransformerBase(Transformer):
         # Create the function declarations, we know that the code generator numbers
         # functions from 0 to n.
         if self.function_count:
-            code += ["", format_comment("Function declarations")]
+            code += ["", format_comment("Coefficient declarations")]
         for function_number in range(self.function_count):
             code.append((format_float_decl + format_F + str(function_number), format_float(0)))
 
@@ -909,7 +909,7 @@ class QuadratureTransformerBase(Transformer):
         error("This function should be implemented by the child class.")
 
     def _get_auxiliary_variables(self, ufl_function, component, derivatives):
-        "Helper function for both Function and BasisFunction."
+        "Helper function for both Coefficient and Argument."
 
         # Get local component (in case we have mixed elements).
         local_comp, local_elem = ufl_function.element().extract_component(component)
@@ -957,7 +957,7 @@ class QuadratureTransformerBase(Transformer):
 
         return (component, local_comp, local_offset, ffc_element, quad_element, transformation, multiindices)
 
-    def _create_mapping_basis(self, component, deriv, ufl_basis_function, ffc_element):
+    def _create_mapping_basis(self, component, deriv, ufl_argument, ffc_element):
         "Create basis name and mapping from given basis_info."
 
         # Get string for integration points.
@@ -971,15 +971,15 @@ class QuadratureTransformerBase(Transformer):
                     1: self.format["second free index"]}
 
         # Check that we have a basis function.
-        ffc_assert(ufl_basis_function.count() in indices, \
-                   "Currently, BasisFunction index must be either -2, -1, 0 or 1: " + repr(ufl_basis_function))
+        ffc_assert(ufl_argument.count() in indices, \
+                   "Currently, Argument index must be either -2, -1, 0 or 1: " + repr(ufl_argument))
 
         # Handle restriction through facet.
         facet = {"+": self.facet0, "-": self.facet1, None: self.facet0}[self.restriction]
 
         # Get element counter and loop index.
-        element_counter = self.element_map[self.points][ufl_basis_function.element()]
-        loop_index = indices[ufl_basis_function.count()]
+        element_counter = self.element_map[self.points][ufl_argument.element()]
+        loop_index = indices[ufl_argument.count()]
 
         # Create basis access, we never need to map the entry in the basis table
         # since we will either loop the entire space dimension or the non-zeros.
@@ -1035,7 +1035,7 @@ class QuadratureTransformerBase(Transformer):
         # Example dx and ds: (0, j, 3, 3)
         # Example dS: (0, (j + 3), 3, 6), 6=2*space_dim
         # Example dS optimised: (0, (nz2[j] + 3), 2, 6), 6=2*space_dim
-        mapping = ((ufl_basis_function.count(), basis_map, loop_index_range, space_dim),)
+        mapping = ((ufl_argument.count(), basis_map, loop_index_range, space_dim),)
 
         return (mapping, basis)
 

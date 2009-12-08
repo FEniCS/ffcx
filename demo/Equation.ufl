@@ -29,7 +29,7 @@ k = 0.1
 
 v = TestFunction(element)
 u = TrialFunction(element)
-u0 = Function(element)
+u0 = Coefficient(element)
 
 F = v*(u - u0)*dx + k*inner(grad(v), grad(0.5*(u0 + u)))*dx
 

@@ -43,7 +43,7 @@ class QuadratureRepresentation:
         quadrature_weights       - same story as the psi_tables.
     """
 
-    def __init__(self, form_data):
+    def __init__(self, form, form_data):
         "Create tensor representation for given form"
 
         # Save form.
@@ -59,12 +59,12 @@ class QuadratureRepresentation:
                            Measure.INTERIOR_FACET: {},
                            Measure.SURFACE: {}}
 
-        debug("\nQR, init(), form:\n" + str(form_data.form))
+        debug("\nQR, init(), form:\n" + str(form))
 
         # Get relevant integrals of all types.
-        cell_integrals = _extract_integrals(form_data.form.cell_integrals(), form_data)
-        exterior_facet_integrals = _extract_integrals(form_data.form.exterior_facet_integrals(), form_data)
-        interior_facet_integrals = _extract_integrals(form_data.form.interior_facet_integrals(), form_data)
+        cell_integrals = _extract_integrals(form.cell_integrals(), form_data)
+        exterior_facet_integrals = _extract_integrals(form.exterior_facet_integrals(), form_data)
+        interior_facet_integrals = _extract_integrals(form.interior_facet_integrals(), form_data)
 
         # Check number of integrals.
         self.num_integrals = len(cell_integrals) + len(exterior_facet_integrals) + len(interior_facet_integrals)

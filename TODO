@@ -6,3 +6,10 @@ Cleanups:
 
   self._foo or self.__foo
   order --> degree
+
+Things to fix:
+
+  Number of stages in compiler.py
+  Where to do optimizations
+  Remove FiniteElement classes?
+  Use new FIAT interface?

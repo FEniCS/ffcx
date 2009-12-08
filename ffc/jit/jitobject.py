@@ -1,7 +1,9 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2008-09-04 -- 2008-09-11"
+__date__ = "2008-09-04"
 __copyright__ = "Copyright (C) 2008 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
+
+# Last changed: 2009-12-08
 
 from hashlib import sha1
 from instant import get_swig_version
@@ -19,12 +21,13 @@ class JITObject:
     single instance of an application (at runtime). The signature is
     persistent and may be used for caching modules on disk."""
 
-    def __init__(self, form, options):
+    def __init__(self, form, form_data, options):
         "Create JITObject for given form and options"
-        assert(isinstance(form,ufl.Form))
+        assert(isinstance(form, ufl.Form))
 
-        # Pick out the renumbered form
+        # Store data
         self.form = form
+        self.form_data = form_data
         self.options = options
         self._hash = None
         self._signature = None
@@ -54,7 +57,7 @@ class JITObject:
             return self._signature
 
         # Compute form signature based on form stored in formdata
-        form_signature = repr(self.form.form_data().form)
+        form_signature = repr(self.form)
 
         # Build signature including form, options, FFC version and SWIG version
         options_signature = _options_signature(self.options)
