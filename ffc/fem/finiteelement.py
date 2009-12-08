@@ -372,4 +372,3 @@ class FiniteElement(FiniteElementBase):
             return PiolaTransformedFunctionSpace(function_space, vertices, "curl")
         else:
             error(family, "Unknown transform")
-

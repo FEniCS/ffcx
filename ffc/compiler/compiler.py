@@ -11,18 +11,19 @@ of forms and breaking the compilation into several sequential stages:
 """
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-02-05 -- 2009-08-24"
+__date__ = "2007-02-05"
 __copyright__ = "Copyright (C) 2007-2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian B. Oelgaard, 2009.
 # Modified by Dag Lindbo, 2008.
 # Modified by Garth N. Wells, 2009.
+# Last changed: 2009-12-08
 
 __all__ = ["compile"]
 
 # UFL modules
-from ufl.algorithms import extract_basis_functions
+from ufl.algorithms import preprocess, FormData
 from ufl.algorithms import estimate_max_polynomial_degree, estimate_total_polynomial_degree
 from ufl.classes import FiniteElementBase, Integral
 from ufl.common import istr
@@ -77,17 +78,19 @@ def compile(objects, prefix="Form", options=FFC_OPTIONS.copy()):
     format = Format(options)
 
     # Compile all forms
+    form_and_data = []
     generated_forms = []
     for form in forms:
 
         # Compiler stage 1: analyze form
-        form_data = analyze_form(form.form_data(), options)
+        form, form_data = analyze_form(form, options)
+        form_and_data.append((form, form_data))
 
         # Compiler stage 2: compute form representations
-        representations = compute_form_representations(form_data, options)
+        representations = compute_form_representations(form, form_data, options)
 
         # Compiler stage 3: optimize form representation
-        optimize_form_representation(form_data)
+        optimize_form_representation(form, form_data)
 
         # Compiler stage 4: generate form code
         form_code = generate_form_code(form_data, representations, prefix, format.format, options)
@@ -103,16 +106,20 @@ def compile(objects, prefix="Form", options=FFC_OPTIONS.copy()):
     format_code(generated_forms, prefix, format, options)
 
     info("Code generation complete.")
-    return
+    return form_and_data
 
-def analyze_form(form_data, options):
+def analyze_form(form, options):
     "Compiler stage 1."
 
     begin("Compiler stage 1: Analyzing form")
-    info(str(form_data))
 
-    # Extract form
-    form = form_data.form
+    # Preprocess form
+    if not form.is_preprocessed():
+        form = preprocess(form)
+
+    # Compute form data
+    form_data = FormData(form)
+    info(str(form_data))
 
     # Adjust cell and degree for elements when unspecified
     _adjust_elements(form_data)
@@ -125,12 +132,7 @@ def analyze_form(form_data, options):
     form_data.ffc_dof_maps = [create_dof_map(element) for element in form_data.elements]
 
     # Attach FFC coefficients
-    form_data.coefficients = create_ffc_coefficients(form_data.functions, form_data.function_names)
-
-    # FIXME: Consider adding the following to ufl.FormData
-    # FIXME: Also change num_functions --> num_coefficients to match UFC
-    # FIXME: Check that integrals are numbered 0, 1, 2 (not 0, 5, 6) in UFL
-    form_data.num_coefficients = form_data.num_functions
+    form_data.coefficients = create_ffc_coefficients(form_data.coefficients, form_data.coefficient_names)
 
     # Attach number of domains for all integral types
     form_data.num_cell_domains = max([-1] + [i.measure().domain_id() for i in form.cell_integrals()]) + 1
@@ -141,8 +143,8 @@ def analyze_form(form_data, options):
     form_data.signature = form.signature()
 
     # Attach number of entries in element tensor
-    dims = [create_element(v.element()).space_dimension() for v in extract_basis_functions(form)]
-    dims_interior = [create_element(v.element()).space_dimension()*2 for v in extract_basis_functions(form)]
+    dims = [create_element(v.element()).space_dimension() for v in form_data.arguments]
+    dims_interior = [create_element(v.element()).space_dimension()*2 for v in form_data.arguments]
     form_data.num_entries = product(dims)
     form_data.num_entries_interior = product(dims_interior)
 
@@ -150,18 +152,18 @@ def analyze_form(form_data, options):
     form_data.num_facets = form_data.ffc_elements[0].num_facets()
 
     end()
-    return form_data
+    return form, form_data
 
-def compute_form_representations(form_data, options):
+def compute_form_representations(form, form_data, options):
     "Compiler stage 2."
 
     begin("Compiler stage 2: Computing form representation(s)")
-    representations = [Representation(form_data) for Representation in Representations]
+    representations = [Representation(form, form_data) for Representation in Representations]
     end()
 
     return representations
 
-def optimize_form_representation(form_data):
+def optimize_form_representation(form, form_data):
     "Compiler stage 3."
 
     begin("Compiler stage 3: Optimizing form representation")
@@ -385,7 +387,7 @@ def _adjust_elements(form_data):
 # FIXME: Old stuff below needs to be cleaned up
 # FIXME: KBO: Is the above FIXME still valid? The function and class below are
 # both used, and they look up to date and clean to me.
-def create_ffc_coefficients(ufl_functions, ufl_function_names):
+def create_ffc_coefficients(ufl_coefficients, ufl_coefficient_names):
     "Try to convert UFL functions to FFC Coefficients"
 
     class Coefficient:
@@ -393,8 +395,8 @@ def create_ffc_coefficients(ufl_functions, ufl_function_names):
             self.element = element
             self.name = name
     ffc_coefficients = []
-    for i, f in enumerate(ufl_functions):
-        ffc_coefficients.append(Coefficient(create_element(f.element()), ufl_function_names[i]))
+    for i, f in enumerate(ufl_coefficients):
+        ffc_coefficients.append(Coefficient(create_element(f.element()), ufl_coefficient_names[i]))
 
     return ffc_coefficients
 

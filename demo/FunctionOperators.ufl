@@ -1,16 +1,16 @@
 # Copyright (C) 2007 Anders Logg (logg@simula.no)
 # Licensed under the GNU GPL version 3 or any later version
 #
-# Test form for operators on Functions.
+# Test form for operators on Coefficients.
 #
-# Compile this form with FFC: ffc FunctionOperators.ufl
+# Compile this form with FFC: ffc CoefficientOperators.ufl
 
 element = FiniteElement("Lagrange", triangle, 1)
 
 v = TestFunction(element)
 u = TrialFunction(element)
-f = Function(element)
-g = Function(element)
+f = Coefficient(element)
+g = Coefficient(element)
 
 a = sqrt(1/abs(1/f))*sqrt(g)*inner(grad(v), grad(u))*dx + v*u*sqrt(f*g)*g*dx
 

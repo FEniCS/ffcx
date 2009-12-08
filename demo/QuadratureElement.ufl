@@ -15,10 +15,10 @@ sig     = VectorElement("Quadrature", triangle, 3)
 
 v    = TestFunction(element)
 u    = TrialFunction(element)
-u0   = Function(element)
-C    = Function(QE)
-sig0 = Function(sig)
-f    = Function(element)
+u0   = Coefficient(element)
+C    = Coefficient(QE)
+sig0 = Coefficient(sig)
+f    = Coefficient(element)
 
 a = v.dx(i)*C*u.dx(i)*dx + v.dx(i)*2*u0*u*u0.dx(i)*dx
 L = v*f*dx - inner(grad(v), sig0)*dx

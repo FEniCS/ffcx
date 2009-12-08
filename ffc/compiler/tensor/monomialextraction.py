@@ -8,7 +8,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Martin Alnes, 2008
 
 # UFL modules
-from ufl.classes import Form, BasisFunction, Function, ScalarValue, IntValue
+from ufl.classes import Form, Argument, Coefficient, ScalarValue, IntValue
 from ufl.algorithms import purge_list_tensors, tree_format, apply_transformer, ReuseTransformer
 
 # FFC common modules
@@ -27,7 +27,7 @@ class MonomialFactor:
             self.components = arg.components
             self.derivatives = arg.derivatives
             self.restriction = arg.restriction
-        elif isinstance(arg, (BasisFunction, Function)):
+        elif isinstance(arg, (Argument, Coefficient)):
             self.function = arg
             self.components = []
             self.derivatives = []
@@ -77,13 +77,13 @@ class MonomialFactor:
         return d0 + str(self.function) + r + c + d1
 
 class Monomial:
-    
+
     def __init__(self, arg=None):
         if isinstance(arg, Monomial):
             self.float_value = arg.float_value
             self.factors = [MonomialFactor(v) for v in arg.factors]
             self.index_slots = arg.index_slots
-        elif isinstance(arg, (MonomialFactor, BasisFunction, Function)):
+        elif isinstance(arg, (MonomialFactor, Argument, Coefficient)):
             self.float_value = 1.0
             self.factors = [MonomialFactor(arg)]
             self.index_slots = None
@@ -107,7 +107,7 @@ class Monomial:
         if not self.index_slots is None:
             raise MonomialException, "Expecting scalar-valued expression."
         self.index_slots = indices
-    
+
     def apply_indices(self, indices):
         for v in self.factors:
             v.replace_indices(self.index_slots, indices)
@@ -202,7 +202,7 @@ class MonomialTransformer(ReuseTransformer):
 
     def __init__(self):
         ReuseTransformer.__init__(self)
-    
+
     def expr(self, o, *ops):
         raise MonomialException, ("No handler defined for expression %s." % o._uflclass.__name__)
 
@@ -225,7 +225,7 @@ class MonomialTransformer(ReuseTransformer):
     def index_sum(self, o, s, index):
         return s
 
-    def indexed(self, o, s, indices): 
+    def indexed(self, o, s, indices):
         s = MonomialSum(s)
         s.apply_indices(indices)
         return s
@@ -266,11 +266,11 @@ class MonomialTransformer(ReuseTransformer):
     def index(self, o):
         raise MonomialException, "Not expecting to see an Index terminal."
 
-    def basis_function(self, v):
+    def argument(self, v):
         s = MonomialSum(v)
         return s
 
-    def function(self, v):
+    def coefficient(self, v):
         s = MonomialSum(v)
         return s
 
@@ -278,7 +278,7 @@ class MonomialTransformer(ReuseTransformer):
         s = MonomialSum(x)
         return s
 
-def extract_monomial_form(form):
+def extract_monomial_form(form, form_data):
     """Extract monomial representation of form (if possible). When
     successful, the form is represented as a sum of products of scalar
     components of basis functions or derivatives of basis functions.
@@ -287,10 +287,6 @@ def extract_monomial_form(form):
 
     # Check that we get a Form
     ffc_assert(isinstance(form, Form), "Expecting a UFL form.")
-
-    # Extract processed form
-    form_data = form.form_data()
-    form = form_data.form
 
     # Purge list tensors from expression tree
     form = purge_list_tensors(form)

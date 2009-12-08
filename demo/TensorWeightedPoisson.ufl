@@ -11,9 +11,9 @@ P0 = TensorElement("Discontinuous Lagrange", triangle, 0, (2, 2))
 
 v = TestFunction(P1)
 u = TrialFunction(P1)
-f = Function(P1)
+f = Coefficient(P1)
 
-C = Function(P0)
+C = Coefficient(P0)
 
 a = inner(grad(v), C*grad(u))*dx
 #L = v*f*dx

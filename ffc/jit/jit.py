@@ -2,12 +2,13 @@
 It uses Instant to wrap the generated code into a Python module."""
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-07-20 -- 2009-08-29"
+__date__ = "2007-07-20"
 __copyright__ = "Copyright (C) 2007-2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Modified by Johan Hake, 2008 - 2009
+# Modified by Johan Hake, 2008-2009
 # Modified by Ilmar Wilbers, 2008
+# Last changed: 2009-12-08
 
 # Python modules
 import os
@@ -30,7 +31,7 @@ from ufl.classes import Form
 from ufl.classes import FiniteElementBase
 from ufl.classes import TestFunction
 from ufl.objects import dx
-from ufl.algorithms import as_form
+from ufl.algorithms import as_form, preprocess, FormData
 
 # FFC jit modules
 from jitobject import JITObject
@@ -70,14 +71,18 @@ def jit_form(form, options=None):
     set_level(options["log_level"])
     set_prefix(options["log_prefix"])
 
+    # Preprocess form and extract form data
+    form = preprocess(form)
+    form_data = FormData(form)
+
     # Wrap input
-    jit_object = JITObject(form, options)
+    jit_object = JITObject(form, form_data, options)
 
     # Check cache
     module = instant.import_module(jit_object, cache_dir=options["cache_dir"])
     if module:
         compiled_form = getattr(module, module.__name__ + "_form_0")()
-        return (compiled_form, module, form.form_data())
+        return (compiled_form, module, form_data)
 
     # Write a message
     if options["representation"] == "auto":
@@ -108,7 +113,7 @@ def jit_form(form, options=None):
     # Extract compiled form
     compiled_form = getattr(module, module.__name__ + "_form_0")()
 
-    return compiled_form, module, form.form_data()
+    return compiled_form, module, form_data
 
 def jit_element(element, options=None):
     "Just-in-time compile the given element"

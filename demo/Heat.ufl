@@ -10,9 +10,9 @@ element = FiniteElement("Lagrange", triangle, 1)
 
 v  = TestFunction(element)  # Test function
 u1 = TrialFunction(element) # Value at t_n
-u0 = Function(element)      # Value at t_n-1
-c  = Function(element)      # Heat conductivity
-f  = Function(element)      # Heat source
+u0 = Coefficient(element)      # Value at t_n-1
+c  = Coefficient(element)      # Heat conductivity
+f  = Coefficient(element)      # Heat source
 k  = Constant(triangle)   # Time step
 
 a = v*u1*dx + k*c*inner(grad(v), grad(u1))*dx

@@ -1,11 +1,13 @@
 "QuadratureTransformer for quadrature code generation to translate UFL expressions."
 
 __author__ = "Kristian B. Oelgaard (k.b.oelgaard@tudelft.nl)"
-__date__ = "2009-02-09 -- 2009-10-19"
+__date__ = "2009-02-09"
 __copyright__ = "Copyright (C) 2009 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Modified by Peter Brune 2009
+# Modified by Peter Brune, 2009
+# Modified by Anders Logg, 2009
+# Last changed: 2009-12-08
 
 # Python modules.
 from numpy import shape
@@ -17,7 +19,7 @@ from ufl.common import product, StackDict, Stack
 from ufl.classes import FixedIndex
 from ufl.classes import IntValue
 from ufl.classes import FloatValue
-from ufl.classes import Function
+from ufl.classes import Coefficient
 
 # UFL Algorithms.
 from ufl.algorithms.printing import tree_format
@@ -241,7 +243,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
             return {(): self.format["power"](val, expo.value())}
         elif isinstance(expo, FloatValue):
             return {(): self.format["std power"](val, self.format["floating point"](expo.value()))}
-        elif isinstance(expo, Function):
+        elif isinstance(expo, Coefficient):
             exp = self.visit(expo)
             return {(): self.format["std power"](val, exp[()])}
         else:
@@ -279,7 +281,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
 
         return {():normal_component}
 
-    def create_basis_function(self, ufl_basis_function, derivatives, component, local_comp,
+    def create_argument(self, ufl_argument, derivatives, component, local_comp,
                   local_offset, ffc_element, transformation, multiindices):
         "Create code for basis functions, and update relevant tables of used basis."
 
@@ -300,7 +302,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
                 if not any(deriv):
                     deriv = []
                 # Call function to create mapping and basis name.
-                mapping, basis = self._create_mapping_basis(component, deriv, ufl_basis_function, ffc_element)
+                mapping, basis = self._create_mapping_basis(component, deriv, ufl_argument, ffc_element)
                 if basis is None:
                     if not mapping in code:
                         code[mapping] = []
@@ -321,7 +323,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
                     deriv = []
                 for c in range(self.geo_dim):
                     # Call function to create mapping and basis name.
-                    mapping, basis = self._create_mapping_basis(c + local_offset, deriv, ufl_basis_function, ffc_element)
+                    mapping, basis = self._create_mapping_basis(c + local_offset, deriv, ufl_argument, ffc_element)
                     if basis is None:
                         if not mapping in code:
                             code[mapping] = []
@@ -424,7 +426,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
         return code
 
     # -------------------------------------------------------------------------
-    # Helper functions for BasisFunction and Function).
+    # Helper functions for Argument and Coefficient
     # -------------------------------------------------------------------------
     def __apply_transform(self, function, derivatives, multi):
         "Apply transformation (from derivatives) to basis or function."

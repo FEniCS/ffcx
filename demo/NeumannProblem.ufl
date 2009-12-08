@@ -10,8 +10,8 @@ element = VectorElement("Lagrange", triangle, 1)
 
 v = TestFunction(element)
 u = TrialFunction(element)
-f = Function(element)
-g = Function(element)
+f = Coefficient(element)
+g = Coefficient(element)
 
 a = inner(grad(v), grad(u))*dx
 L = inner(v, f)*dx + inner(v, g)*ds
