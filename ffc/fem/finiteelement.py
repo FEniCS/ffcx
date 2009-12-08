@@ -34,7 +34,6 @@ from ffc.common.log import error, warning
 import mixedelement
 import referencecell
 from dofrepresentation import *
-from finiteelementbase import *
 
 # UFL modules
 from ufl.classes import Cell, Measure
