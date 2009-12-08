@@ -14,7 +14,6 @@ from ffc.common.log import error
 # FFC fem modules
 from finiteelement import FiniteElement
 from quadratureelement import QuadratureElement
-#from mixedelement import *
 
 class DofMap:
     """A DofMap represents a description of the degrees of a freedom

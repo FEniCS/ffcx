@@ -43,12 +43,14 @@ class QuadratureElement(FiniteElement):
         degree = ufl_element.degree()
         if degree is None:
             degree = default_quadrature_degree
-        self.__num_axis_points = (degree + 2) / 2
+        self._num_axis_points = (degree + 2) / 2
 
         # Set rank (is rank = 0 for this element?)
         self._rank = 0
 
-        # Save element degree (constant)
+        # Set element degree to constant
+        # FIXME: Is this necessary? At this point we should already have computed
+        # the total degree of the form.
         self._degree = 0
 
         # FIXME: Do we really need to do this here? We just use the number of
@@ -56,10 +58,10 @@ class QuadratureElement(FiniteElement):
 
         # Create quadrature (only interested in points)
         # TODO: KBO: What should we do about quadrature functions that live on ds, dS?
-        points, weights = make_quadrature(self.cell().domain(), self.__num_axis_points)
+        points, weights = make_quadrature(self.cell().domain(), self._num_axis_points)
 
         # Save number of quadrature points
-        self.__num_quad_points = len(points)
+        self._num_quad_points = len(points)
 
         # Create entity IDs, ripped from FIAT/DiscontinuousLagrange.py
         # Used by formdata.py to create the DofMap
@@ -69,7 +71,7 @@ class QuadratureElement(FiniteElement):
             for e in range(num_entities[ufl_domain2fiat_domain[self.cell().domain()]][d]):
                 entity_ids[d][e] = []
         entity_ids[ self.cell().topological_dimension() ] = {}
-        entity_ids[ self.cell().topological_dimension() ][ 0 ] = range( self.__num_quad_points )
+        entity_ids[ self.cell().topological_dimension() ][ 0 ] = range( self._num_quad_points )
         self._entity_dofs = [entity_ids]
 
         # FIXME: We could change calls to element.dual_basis().pts to
@@ -81,11 +83,11 @@ class QuadratureElement(FiniteElement):
 
     def num_axis_points(self):
         "Return the number of quadrature points per axis as specified by user"
-        return self.__num_axis_points
+        return self._num_axis_points
 
     def space_dimension(self):
         "Return the total number of quadrature points"
-        return self.__num_quad_points
+        return self._num_quad_points
 
     def tabulate(self, order, points):
         """Return the identity matrix of size (num_quad_points, num_quad_points),
@@ -108,12 +110,12 @@ class QuadratureElement(FiniteElement):
             print   "             returning values of basisfunction.\n"
 
         # Check that incoming points are as many as the quadrature points
-        if not len(points) == self.__num_quad_points:
+        if not len(points) == self._num_quad_points:
             error("Points must be equal to coordinates of quadrature points")
 
         # Return the identity matrix of size __num_quad_points in a
         # suitable format for monomialintegration.
-        values = numpy.identity(self.__num_quad_points, float)
+        values = numpy.identity(self._num_quad_points, float)
         table = [{(0,)*self.cell().topological_dimension(): values}]
         return table
 

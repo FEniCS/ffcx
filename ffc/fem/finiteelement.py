@@ -15,8 +15,6 @@ import numpy
 
 # FIAT modules
 #from FIAT.shapes import *
-# FIXME: Move this somewhere else
-VERTEX = 0
 
 from FIAT.transformedspace import *
 from FIAT.Lagrange import Lagrange
@@ -42,7 +40,7 @@ from ufl.objects import dc
 from ufl.classes import FiniteElementBase
 
 # Dictionaries of basic element data
-ufl_domain2fiat_domain = {"vertex": VERTEX, "interval": LINE, "triangle": TRIANGLE, "tetrahedron": TETRAHEDRON}
+ufl_domain2fiat_domain = {"vertex": 0, "interval": LINE, "triangle": TRIANGLE, "tetrahedron": TETRAHEDRON}
 
 # Value mappings
 AFFINE = "affine"
@@ -85,7 +83,7 @@ class FiniteElement(FiniteElementBase):
 
         if ufl_element.family() not in ("Quadrature", "QE"):
             # Get the transformed (according to mapping) function space:
-            self.__transformed_space = self.__transformed_function_space()
+            self._transformed_space = self.__transformed_function_space()
 
             # Get entity dofs from FIAT element
             self._entity_dofs = [self._fiat_element.dual_basis().entity_ids]
@@ -93,8 +91,8 @@ class FiniteElement(FiniteElementBase):
             # Get the dof identifiers from FIAT element
             self._dual_basis = self.__create_dof_representation(self._fiat_element.dual_basis().get_dualbasis_types())
 
-            # Dofs that have been restricted (it is a subset of self.__entity_dofs)
-            self.__restricted_dofs = []
+            # Dofs that have been restricted (it is a subset of self._entity_dofs)
+            self._restricted_dofs = []
 
             # FIXME: This is just a temporary hack to 'support' tensor elements
             self._rank = self.basis().rank()
@@ -124,7 +122,7 @@ class FiniteElement(FiniteElementBase):
                         continue
                     # Add dofs to the list of dofs that are restricted (still active)
                     for k,v in val.items():
-                        self.__restricted_dofs.extend(v)
+                        self._restricted_dofs.extend(v)
 
         elif domain and isinstance(domain, Measure):
             # FIXME: Support for restriction to cracks (dc) is only experimental
@@ -137,7 +135,7 @@ class FiniteElement(FiniteElementBase):
         "Return basis of finite element space"
         # Should be safe w.r.t. restrictions, is only used in this module and
         # evaluate_basis and evaluate_basis_derivatives where it is not abused.
-        return self.__transformed_space
+        return self._transformed_space
 
     def component_element(self, component):
         "Return sub element and offset for given component."
@@ -153,7 +151,7 @@ class FiniteElement(FiniteElementBase):
         # FIXME: Experimental support for dc
         if self.domain_restriction() and self.domain_restriction() != dc:
             new_dofs = []
-            for d in self.__restricted_dofs:
+            for d in self._restricted_dofs:
                 new_dofs.append(self._dual_basis[d])
             return new_dofs
         return self._dual_basis
@@ -175,7 +173,7 @@ class FiniteElement(FiniteElementBase):
             # associated with the restricted dofs.
             coeffs = self.basis().get_coeffs()
             new_coeffs = []
-            for dof in self.__restricted_dofs:
+            for dof in self._restricted_dofs:
                 new_coeffs.append(coeffs[dof])
             return numpy.array(new_coeffs)
         return self.basis().get_coeffs()
@@ -192,7 +190,7 @@ class FiniteElement(FiniteElementBase):
         "Return the dimension of the finite element function space"
         # FIXME: Experimental support for dc
         if self.domain_restriction() and self.domain_restriction() != dc:
-            return len(self.__restricted_dofs)
+            return len(self._restricted_dofs)
         return len(self.basis())
 
     def sub_element(self, i):
@@ -212,7 +210,7 @@ class FiniteElement(FiniteElementBase):
             for b in basis_values:
                 for k,v in b.items():
                     new_vals = []
-                    for dof in self.__restricted_dofs:
+                    for dof in self._restricted_dofs:
                         new_vals.append(v[dof])
                     b[k] = numpy.array(new_vals)
                 new_basis.append(b)
