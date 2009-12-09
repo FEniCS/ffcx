@@ -5,7 +5,7 @@
 # Python module which is then executed.
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-10-14 -- 2009-08-25"
+__date__ = "2004-10-14"
 __copyright__ = "Copyright (C) 2004-2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
@@ -13,6 +13,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Ola Skavhaug, 2006.
 # Modified by Dag Lindbo, 2008.
 # Modified by Kristian B. Oelgaard 2009.
+# Last changed: 2009-12-09
 
 # Python modules.
 import sys
@@ -32,7 +33,7 @@ from ffc.log import DEBUG
 from ffc.log import ERROR
 from ffc.constants import FFC_OPTIONS
 from ffc.constants import FFC_VERSION
-from ffc.compiler import compile
+from ffc.compiler import compile_form, compile_element
 
 def error(msg):
     "Print error message (cannot use log system at top level)."
@@ -128,7 +129,8 @@ def main(argv):
     # Call parser and compiler for each file
     for filename in args:
 
-        # Get filename suffix
+        # Get filename prefix and suffix
+        prefix = filename.split(".")[0]
         suffix = filename.split(".")[-1]
 
         # Check file suffix and load ufl file
@@ -143,10 +145,16 @@ def main(argv):
 
         # Catch exceptions only when not in debug mode
         if options["log_level"] <= DEBUG:
-            compile(ufd.forms + ufd.elements, filename.split(".")[0], options)
+            if len(ufd.forms) > 0:
+                compile_form(ufd.forms, prefix, options)
+            else:
+                compile_element(ufd.elements, prefix, options)
         else:
             try:
-                compile(ufd.forms + ufd.elements, filename.split(".")[0], options)
+                if len(ufd.forms) > 0:
+                    compile_form(ufd.forms, prefix, options)
+                else:
+                    compile_element(ufd.elements, prefix, options)
             except UFLException, exception:
                 info("")
                 error(str(exception))

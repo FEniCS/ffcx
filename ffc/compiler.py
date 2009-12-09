@@ -60,24 +60,20 @@ from quadrature.quadraturegenerator import QuadratureGenerator
 Representations = (QuadratureRepresentation, TensorRepresentation)
 CodeGenerators  = (QuadratureGenerator, TensorGenerator)
 
-def compile(objects, prefix="Form", options=FFC_OPTIONS.copy()):
-    """This is the main interface to FFC. The input argument must be
-    either a single UFL Form object or a list of UFL Form objects.
-    For each form, FFC generates C++ code conforming to the UFC
-    interface. The generated code is collected in a single C++ header
-    file or, optionally, a pair of C++ header and implementation
-    files. For detailed documentation of available options, refer to
-    the FFC user manual."""
+def compile_form(forms, prefix="Form", options=FFC_OPTIONS.copy()):
+    """This function generates UFC code for a given UFL form or list
+    of UFL forms."""
 
     # Check options
     options = _check_options(options)
 
-    # Extract objects to compile
-    forms, elements = _extract_objects(objects)
+    # Check that we get a list of forms
+    if not isinstance(forms, (list, tuple)):
+        forms = [forms]
 
-    # Check that we have at least one object
-    if len(forms) == 0 and len(elements) == 0:
-        info("No forms or elements specified, nothing to do.")
+    # Check that we have at least one form
+    if len(forms) == 0:
+        info("No forms specified, nothing to do.")
         return
 
     # Create format
@@ -104,15 +100,38 @@ def compile(objects, prefix="Form", options=FFC_OPTIONS.copy()):
         # Add to list of codes
         generated_forms += [(form_code, form_data)]
 
-    # Generate code for elements, will only be generated if no forms were specified
-    if elements:
-        generated_forms += generate_element_code(elements, format.format)
-
     # Compiler stage 5: format code
     format_code(generated_forms, prefix, format, options)
 
     info("Code generation complete.")
     return form_and_data
+
+def compile_element(elements, prefix="Element", options=FFC_OPTIONS.copy()):
+    """This function generates UFC code for a given UFL element or
+    list of UFL elements."""
+
+    # Check options
+    options = _check_options(options)
+
+    # Check that we get a list of elements
+    if not isinstance(elements, (list, tuple)):
+        elements = [elements]
+
+    # Check that we have at least one element
+    if len(elements) == 0:
+        info("No elements specified, nothing to do.")
+        return
+
+    # Create format
+    format = Format(options)
+
+    # Compiler stage 4: generate element code
+    generated_elements = generate_element_code(elements, format.format)
+
+    # Compiler stage 5: format code
+    format_code(generated_elements, prefix, format, options)
+
+    info("Code generation complete.")
 
 def analyze_form(form, options):
     "Compiler stage 1."
@@ -225,28 +244,6 @@ def _check_options(options):
         warning("Option 'quadrature_points' has been replaced by 'quadrature_order'.")
 
     return options
-
-def _extract_objects(objects):
-    "Extract forms and elements from list of objects."
-
-    # Check that we get a list of objects
-    if not isinstance(objects, (list, tuple)):
-        objects = [objects]
-
-    # Iterate over objects and extract forms and elements
-    forms = []
-    elements = []
-    for object in objects:
-        if isinstance(object, FiniteElementBase):
-            elements.append(object)
-        else:
-            forms.append(object)
-
-    # Only compile element(s) when there are no forms
-    if len(forms) > 0 and len(elements) > 0:
-        elements = []
-
-    return (forms, elements)
 
 def _extract_metadata(form, options, elements):
     "Check metadata for integral and return new integral with proper metadata."

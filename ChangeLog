@@ -1,3 +1,6 @@
+ - Split compile() --> compile_form(), compile_element()
+ - Major cleanup and reorganization of code (flatter directories)
+ - Updates for changes in UFL: Argument, Coefficient, FormData
 0.7.1
  - Handle setting quadrature degree when it is set to None in UFL form
  - Added demo: HyperElasticity.ufl

@@ -37,7 +37,7 @@ from log import INFO
 from constants import FFC_OPTIONS
 from finiteelement import FiniteElement
 from mixedelement import MixedElement
-from compiler import compile
+from compiler import compile_form
 from jitobject import JITObject
 
 # Special Options for JIT-compilation
@@ -109,7 +109,7 @@ def jit_form(form, options=None):
 
     # Generate code
     signature = jit_object.signature()
-    preprocessed_form, form_data = compile(preprocessed_form, signature, options)[0]
+    preprocessed_form, form_data = compile_form(preprocessed_form, signature, options)[0]
 
     # Create python extension module using Instant (through UFC)
     debug("Creating Python extension (compiling and linking), this may take some time...")

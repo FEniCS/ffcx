@@ -9,8 +9,8 @@ numbering.numbering_scheme = "UFC"
 from FIAT import reference
 reference.reference_element = "default"
 
-# Import compiler
-from ffc.compiler import compile
+# Import compiler functions
+from ffc.compiler import compile_form, compile_element
 
 # Import JIT compiler
 from ffc.jit import jit
