@@ -102,7 +102,7 @@ def jit_form(form, options=None):
 
     # Generate code
     signature = jit_object.signature()
-    preprocessed_form, form_data = compile(form, signature, options)
+    preprocessed_form, form_data = compile(form, signature, options)[0]
 
     # Create python extension module using Instant (through UFC)
     debug("Creating Python extension (compiling and linking), this may take some time...")
