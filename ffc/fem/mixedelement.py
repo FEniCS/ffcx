@@ -1,22 +1,24 @@
 _author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2005-09-16 -- 2009-08-26"
+__date__ = "2005-09-16"
 __copyright__ = "Copyright (C) 2005-2007 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Garth N. Wells 2006-2009
 # Modified by Marie E. Rognes (meg@math.uio.no) 2007
 # Modified by Kristian B. Oelgaard 2009
+# Last changed: 2009-12-08
 
 # Python modules
 import numpy
 
 # FFC fem modules
-from dofrepresentation import *
-from finiteelementbase import *
+from dofrepresentation import DofRepresentation
 
 # FFC common modules
-from ffc.common.utils import *
 from ffc.common.log import error
+
+# UFL modules
+from ufl.classes import FiniteElementBase
 
 class MixedElement(FiniteElementBase):
     """A MixedElement represents a finite element defined as a tensor
@@ -24,21 +26,27 @@ class MixedElement(FiniteElementBase):
     elements (mixed or simple) and may thus be recursively defined in
     terms of other mixed elements."""
     
-    def __init__(self, elements, ufl_str, domain=None):
+    # TODO: KBO: change the argument list to get the ufl_element, modify
+    # create_element accordingly
+    def __init__(self, elements, ufl_str, value_shape, domain=None):
         "Create MixedElement from a list of elements."
 
+        # Initialise base class
+        degree = max(e.degree() for e in elements)
+        FiniteElementBase.__init__(self, "Mixed", elements[0].cell(),
+                                   degree, value_shape)
         # Save UFL string representation
-        self.__ufl_str = ufl_str
+        self._repr = ufl_str
 
         # Make sure we get a list of elements
         if not isinstance(elements, list):
             error(elements, "Mixed finite element must be created from a list of at least two elements.")
 
         # Save list of elements
-        self.__elements = elements
+        self._elements = elements
 
         # Save domain, no need to do any checks, that should be handled by the subelements
-        self.__domain = domain
+        self._domain = domain
 
         # FIXME: This is just a temporary hack to 'support' tensor elements
         self._rank = 1
@@ -47,21 +55,9 @@ class MixedElement(FiniteElementBase):
         "Create mixed element"
         return MixedElement([self, other])
 
-    def __repr__(self):
-        "Pretty print"
-        return self.signature()
-
     def basis(self):
         "Return basis of finite element space"
         error("Basis cannot be accessed explicitly for a mixed element.")
-
-    def cell_dimension(self):
-        "Return dimension of shape"
-        return pick_first([element.cell_dimension() for element in self.__elements])
-
-    def cell_shape(self):
-        "Return the cell shape"
-        return pick_first([element.cell_shape() for element in self.__elements])
 
     def component_element(self, component):
         "Return sub element and offset for given component."        
@@ -73,14 +69,6 @@ class MixedElement(FiniteElementBase):
             offset = next_offset
         error("Unable to extract sub element for component %s of %s." % (str(component), str(self)))
 
-    def degree(self):
-        "Return degree of polynomial basis"
-        return max([element.degree() for element in self.__elements])
-
-    def domain(self):
-        "Return the domain to which the element is restricted"
-        return self.__domain
-
     def dual_basis(self):
         """Return the representation of the dofs. We unnest the
         possibly nested dof types as for entity_dofs and shift the
@@ -88,14 +76,14 @@ class MixedElement(FiniteElementBase):
 
         # Calculate the shifts in components caused by the positioning
         # of the elements:
-        dims = [element.value_dimension(0) for element in self.__elements]
+        dims = [element.value_dimension(0) for element in self._elements]
         shifts = [sum(dims[:i]) for i in range(len(dims))]
         n = sum(dims)
 
         # Shift the components for the separate dofs
         dofs = []
-        for e in range(len(self.__elements)):
-            element = self.__elements[e]
+        for e in range(len(self._elements)):
+            element = self._elements[e]
             shift = shifts[e]
             for d in element.dual_basis():
                 dof = DofRepresentation(d)
@@ -107,58 +95,38 @@ class MixedElement(FiniteElementBase):
         """Return the mapping from entities to dofs. Note that we
         unnest the possibly recursively nested entity_dofs here to
         generate just a list of entity dofs for basic elements."""
-        return [entity_dofs for element in self.__elements for entity_dofs in element.entity_dofs()]
+        return [entity_dofs for element in self._elements for entity_dofs in element.entity_dofs()]
 
     def extract_elements(self):
         "Extract list of all recursively nested elements."
         return _extract_elements(self)
 
-    def facet_shape(self):
-        "Return shape of facet"
-        return pick_first([element.facet_shape() for element in self.__elements])
-
-    def family(self):
-        "Return a string indentifying the finite element family"
-        return "Mixed"
-
-    def geometric_dimension(self):
-        "Return the geometric dimension of the finite element domain"
-        return pick_first([element.geometric_dimension() for element in self.__elements])
-
-    def num_facets(self):
-        "Return number of facets for shape of element"
-        return pick_first([element.num_facets() for element in self.__elements])
-
     def num_sub_elements(self):
         "Return the number of sub elements"
-        return len(self.__elements)
-
-    def signature(self):
-        "Return a string identifying the finite element"
-        return self.__ufl_str
+        return len(self._elements)
 
     def space_dimension(self):
         "Return the dimension of the finite element function space"
-        return sum([element.space_dimension() for element in self.__elements])
+        return sum([element.space_dimension() for element in self._elements])
 
     def sub_element(self, i):
         "Return sub element i"
-        return self.__elements[i]
+        return self._elements[i]
 
     def tabulate(self, order, points):
         """Tabulate values on mixed element by appropriately reordering
         the tabulated values for the sub elements."""
 
         # Special case: only one element
-        if len(self.__elements) == 1:
+        if len(self._elements) == 1:
             return elements[0].tabulate(order, points)
 
         # Iterate over sub elements and build mixed table from element tables
         mixed_table = []
         offset = 0
-        for i in range(len(self.__elements)):
+        for i in range(len(self._elements)):
             # Get current element and table
-            element = self.__elements[i]
+            element = self._elements[i]
             table = element.tabulate(order, points)
             # Iterate over the components corresponding to the current element
             if element.value_rank() == 0:
@@ -175,7 +143,7 @@ class MixedElement(FiniteElementBase):
 
     def value_dimension(self, i):
         "Return the dimension of the value space for axis i"
-        return sum([element.value_dimension(i) for element in self.__elements])
+        return sum([element.value_dimension(i) for element in self._elements])
 
     def value_rank(self):
         "Return the rank of the value space"

@@ -227,7 +227,7 @@ class TransformedMonomial:
             element = create_element(f.element())
             vdim = element.value_dimension(0) # FIXME: rank dependent (meg)
             sdim = element.space_dimension()
-            gdim = element.geometric_dimension()
+            gdim = element.cell().geometric_dimension()
             cdim = element.num_sub_elements()
 
             # Extract basis function index and coefficients

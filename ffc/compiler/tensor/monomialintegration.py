@@ -1,7 +1,7 @@
 "This module implements efficient integration of monomial forms"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-11-03 -- 2009-08-25"
+__date__ = "2004-11-03"
 __copyright__ = "Copyright (C) 2004-2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
@@ -11,6 +11,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Garth N. Wells 2006
 # Modified by Marie E. Rognes (meg@math.uio.no) 2008
 # Modified by Kristian B. Oelgaard, 2009
+# Last changed: 2009-12-08
 
 # Python modules
 import numpy
@@ -68,8 +69,8 @@ def _init_quadrature(arguments, domain_type, quadrature_order):
 
     # Get shapes (check first factor, should be the same for all)
     element = arguments[0].element
-    cell_shape = element.cell_shape()
-    facet_shape = element.facet_shape()
+    cell_shape = element.cell().domain()
+    facet_shape = element.cell().facet_domain()
 
     # FIXME: KBO: Old, remove this?
     # Compute number of points to match the degree
@@ -121,10 +122,10 @@ def _init_table(arguments, domain_type, points, facet0, facet1):
         if domain_type == Measure.CELL:
             table[(element, None)] = element.tabulate(order, points)
         elif domain_type == Measure.EXTERIOR_FACET:
-            table[(element, None)] = element.tabulate(order, map_to_facet(points, facet0))
+            table[(element, None)] = element.tabulate(order, map_to_facet(element.cell().domain(), points, facet0))
         elif domain_type == Measure.INTERIOR_FACET:
-            table[(element, "+")] = element.tabulate(order, map_to_facet(points, facet0))
-            table[(element, "-")] = element.tabulate(order, map_to_facet(points, facet1))
+            table[(element, "+")] = element.tabulate(order, map_to_facet(element.cell().domain(), points, facet0))
+            table[(element, "-")] = element.tabulate(order, map_to_facet(element.cell().domain(), points, facet1))
 
     return table
 
@@ -147,7 +148,7 @@ def _compute_psi(v, table, num_points, domain_type):
     # later when we sum over these dimensions.
 
     # Get cell dimension
-    cell_dimension = v.element.cell_dimension()
+    cell_dimension = v.element.cell().topological_dimension()
 
     # Get indices and shapes for components
     if len(v.components) ==  0:

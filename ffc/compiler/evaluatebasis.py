@@ -3,25 +3,24 @@ code which is more or less a C++ representation of FIAT code. More specifically 
 functions from the modules expansion.py and jacobi.py are translated into C++"""
 
 __author__ = "Kristian B. Oelgaard (k.b.oelgaard@tudelft.nl)"
-__date__ = "2007-04-04 -- 2009-08-26"
+__date__ = "2007-04-04"
 __copyright__ = "Copyright (C) 2007 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Anders Logg 2007
+# Last changed: 2009-12-08
 
 # FFC common modules
 from ffc.common.log import error
 
 # FFC fem modules
-from ffc.fem.finiteelement import *
-from ffc.fem.mixedelement import *
+from ffc.fem.finiteelement import CONTRAVARIANT_PIOLA, COVARIANT_PIOLA
 
 # FFC format modules
 from removeunused import remove_unused
 
 # FFC code generation common modules
-from codeutils import *
-
+from codeutils import IndentControl, inner_product, tabulate_matrix
 
 # Python modules
 import math
@@ -99,9 +98,9 @@ def generate_map(element, Indent, format):
     format_epsilon        = format["epsilon"]
 
     # Get coordinates and map to the UFC reference element from codesnippets.py
-    code += [Indent.indent(format["coordinate map"](element.cell_shape()))] + [""]
+    code += [Indent.indent(format["coordinate map"](element.cell().domain()))] + [""]
 
-    if (element.cell_shape() == LINE):
+    if (element.cell().domain() == "interval"):
 
         # Map coordinates to the reference interval
         code += [Indent.indent(format_comment("Map coordinates to the reference interval"))]
@@ -109,7 +108,7 @@ def generate_map(element, Indent, format):
         # Code snippet reproduced from FIAT: reference.py: eta_line(xi)
         code += [Indent.indent(format["snippet eta_interval"])]
 
-    elif (element.cell_shape() == TRIANGLE):
+    elif (element.cell().domain() == "triangle"):
 
         # Map coordinates to the reference square
         code += [Indent.indent(format_comment("Map coordinates to the reference square"))]
@@ -117,7 +116,7 @@ def generate_map(element, Indent, format):
         # Code snippet reproduced from FIAT: reference.py: eta_triangle(xi)
         code += [Indent.indent(format["snippet eta_triangle"]) %(format_floating_point(format_epsilon))]
 
-    elif (element.cell_shape() == TETRAHEDRON):
+    elif (element.cell().domain() == "tetrahedron"):
 
         # Map coordinates to the reference cube
         code += [Indent.indent(format_comment("Map coordinates to the reference cube"))]
@@ -126,7 +125,7 @@ def generate_map(element, Indent, format):
         code += [Indent.indent(format["snippet eta_tetrahedron"]) %(format_floating_point(format_epsilon),\
                        format_floating_point(format_epsilon))]
     else:
-        error("Cannot generate map for shape: %d" %(element.cell_shape()))
+        error("Cannot generate map for shape: %d" %(element.cell().domain()))
  
     return code + [""]
 
@@ -245,17 +244,17 @@ def generate_basisvalues(element, Indent, format):
     code += compute_scaling(element, Indent, format)
 
     # Compute auxilliary functions
-    if (element.cell_shape() == LINE):
+    if element.cell().domain() == "interval":
         code += compute_psitilde_a(element, Indent, format)
-    elif (element.cell_shape() == TRIANGLE):
+    elif element.cell().domain() == "triangle":
         code += compute_psitilde_a(element, Indent, format)
         code += compute_psitilde_b(element, Indent, format)
-    elif (element.cell_shape() == TETRAHEDRON):
+    elif element.cell().domain() == "tetrahedron":
         code += compute_psitilde_a(element, Indent, format)
         code += compute_psitilde_b(element, Indent, format)
         code += compute_psitilde_c(element, Indent, format)
     else:
-        error("Cannot compute auxilliary functions for shape: %d" %(element.cell_shape()))
+        error("Cannot compute auxilliary functions for shape: %d" %(element.cell().domain()))
 
     # Compute the basisvalues
     code += compute_basisvalues(element, Indent, format)
@@ -394,16 +393,16 @@ def compute_values(element, sum_value_dim, vector, Indent, format):
             # Use Piola transform to map basisfunctions back to physical element if needed
             if mapping == CONTRAVARIANT_PIOLA:
                 code.insert(i+1,(Indent.indent(format_tmp(0, i)), value))
-                basis_col = [format_tmp_access(0, j) for j in range(element.cell_dimension())]
-                jacobian_row = [format["transform"]("J", j, i, None) for j in range(element.cell_dimension())]
-                inner = [format_mult([jacobian_row[j], basis_col[j]]) for j in range(element.cell_dimension())]
+                basis_col = [format_tmp_access(0, j) for j in range(element.cell().topological_dimension())]
+                jacobian_row = [format["transform"]("J", j, i, None) for j in range(element.cell().topological_dimension())]
+                inner = [format_mult([jacobian_row[j], basis_col[j]]) for j in range(element.cell().topological_dimension())]
                 sum = format_group(format_add(inner))
                 value = format_mult([format_inv(format_det(None)), sum])
             elif mapping == COVARIANT_PIOLA:
                 code.insert(i+1,(Indent.indent(format_tmp(0, i)), value))
-                basis_col = [format_tmp_access(0, j) for j in range(element.cell_dimension())]
-                inverse_jacobian_column = [format["transform"]("JINV", j, i, None) for j in range(element.cell_dimension())]
-                inner = [format_mult([inverse_jacobian_column[j], basis_col[j]]) for j in range(element.cell_dimension())]
+                basis_col = [format_tmp_access(0, j) for j in range(element.cell().topological_dimension())]
+                inverse_jacobian_column = [format["transform"]("JINV", j, i, None) for j in range(element.cell().topological_dimension())]
+                inner = [format_mult([inverse_jacobian_column[j], basis_col[j]]) for j in range(element.cell().topological_dimension())]
                 sum = format_group(format_add(inner))
                 value = format_mult([sum])
                 
@@ -435,23 +434,23 @@ def compute_scaling(element, Indent, format):
     # Get the element degree
     degree = element.degree()
 
-    # Get the element shape
-    element_shape = element.cell_shape()
+    # Get the element cell domain
+    element_cell_domain = element.cell().domain()
 
     # For 1D scalings are not needed
-    if (element_shape == LINE):
+    if element_cell_domain == "interval":
         code += [Indent.indent(format["comment"]("Generate scalings not needed for 1D"))]
         return code + [""]
-    elif (element_shape == TRIANGLE):
+    elif element_cell_domain == "triangle":
         scalings = [format_y]
         # Scale factor, for triangles 1/2*(1-y)^i i being the order of the element
         factors = [format_grouping(format_subtract(["0.5", format_multiply(["0.5", format_y])]))]
-    elif (element_shape == TETRAHEDRON):
+    elif element_cell_domain == "tetrahedron":
         scalings = [format_y, format_z]
         factors = [format_grouping(format_subtract(["0.5", format_multiply(["0.5", format_y])])),\
                    format_grouping(format_subtract(["0.5", format_multiply(["0.5", format_z])]))]
     else:
-        error("Cannot compute scaling for shape: %d" %(element_shape))
+        error("Cannot compute scaling for shape: %d" %(element_cell_domain))
 
     code += [Indent.indent(format["comment"]("Generate scalings"))]
 
@@ -623,11 +622,11 @@ def compute_basisvalues(element, Indent, format):
     # Get polynomial dimension of base
     poly_dim = len(element.basis().fspace.base.bs)
 
-    # Get the element shape
-    element_shape = element.cell_shape()
+    # Get the element cell domain
+    element_cell_domain = element.cell().domain()
 
     # 1D
-    if (element_shape == LINE):
+    if (element_cell_domain == "interval"):
         count = 0
         for i in range(0, element.degree() + 1):
 
@@ -646,7 +645,7 @@ def compute_basisvalues(element, Indent, format):
             error("The number of basis values must be the same as the polynomium dimension of the base")
 
     # 2D
-    elif (element_shape == TRIANGLE):
+    elif (element_cell_domain == "triangle"):
         count = 0
         for k in range(0,element.degree() + 1):
             for i in range(0,k + 1):
@@ -669,7 +668,7 @@ def compute_basisvalues(element, Indent, format):
             error("The number of basis values must be the same as the polynomium dimension of the base")
 
     # 3D
-    elif (element_shape == TETRAHEDRON):
+    elif (element_cell_domain == "tetrahedron"):
         count = 0
         for k in range(0, element.degree()+1):  # loop over degree
             for i in range(0, k+1):
@@ -695,7 +694,7 @@ def compute_basisvalues(element, Indent, format):
         if (count != poly_dim):
             error("The number of basis values must be the same as the polynomium dimension of the base")
     else:
-        error("Cannot compute basis values for shape: %d" % elemet_shape)
+        error("Cannot compute basis values for shape: %d" % elemet_cell_domain)
 
     return code + [""]
 

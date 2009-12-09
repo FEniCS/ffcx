@@ -149,7 +149,7 @@ def analyze_form(form, options):
     form_data.num_entries_interior = product(dims_interior)
 
     # Attach number of facets
-    form_data.num_facets = form_data.ffc_elements[0].num_facets()
+    form_data.num_facets = form_data.ffc_elements[0].cell().num_facets()
 
     end()
     return form, form_data

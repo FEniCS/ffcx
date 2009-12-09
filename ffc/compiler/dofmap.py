@@ -1,11 +1,12 @@
 "Code generation for dof map"
 
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-01-24 -- 2009-08-08"
+__date__ = "2007-01-24"
 __copyright__ = "Copyright (C) 2007-2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian Oelgaard 2009
+# Last changed: 2009-12-08
 
 # FFC common modules
 from ffc.common.log import debug
@@ -211,7 +212,7 @@ def __generate_tabulate_facet_dofs(dof_map, format):
     "Generate code for tabulate_dofs"
 
     # Get the number of facets
-    num_facets = dof_map.element().num_facets()
+    num_facets = dof_map.element().cell().num_facets()
 
     # Get incidence
     incidence = dof_map.incidence()
@@ -265,15 +266,15 @@ def __generate_tabulate_coordinates(dof_map, format):
         #code += [format["comment"]("Get cell vertices")]
         code += [format["get cell vertices"]]
 
-        # Get the cell shape
-        cell_shape = dof_map.element().cell_shape()
-
         # Create linear Lagrange element for the transformation
-        ufl_element = UFLFiniteElement("Lagrange", shape_to_string[cell_shape], 1)
+        ufl_element = UFLFiniteElement("Lagrange", dof_map.element().cell().domain(), 1)
         element = FiniteElement(ufl_element)
 
         # Tabulate values of basisfunctions
         table = element.tabulate(0, coordinates)
+
+        # Get the cell shape TODO: KBO: should it be topological_dimension?
+        cell_shape = dof_map.element().cell().topological_dimension()
 
         # Get matrix of values of basisfunctions at points (dof, values at dofs on linear element)
         transformed_values = numpy.transpose(table[0][(0,)*cell_shape])

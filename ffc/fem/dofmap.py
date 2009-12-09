@@ -1,19 +1,19 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-01-24 -- 2008-05-08"
+__date__ = "2007-01-24"
 __copyright__ = "Copyright (C) 2007-2008 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Marie E. Rognes (meg@math.uio.no), 2007
-# Modified by Kristian Oelgaard, 2007
+# Modified by Kristian Oelgaard, 2007 - 2009
+# Last changed: 2009-12-08
 
 # FFC common modules
-from ffc.common.utils import *
+from ffc.common.utils import pick_first, compute_permutations
 from ffc.common.log import error
 
 # FFC fem modules
-from finiteelement import *
-from quadratureelement import *
-from mixedelement import *
+from finiteelement import FiniteElement
+from quadratureelement import QuadratureElement
 
 class DofMap:
     """A DofMap represents a description of the degrees of a freedom
@@ -27,14 +27,14 @@ class DofMap:
         entity_dofs = element.entity_dofs()
 
         # Generate dof map data
-        self.__signature           = "FFC dof map for " + element.signature()
+        self.__signature           = "FFC dof map for " + repr(element)
         self.__local_dimension     = element.space_dimension()
-        self.__geometric_dimension = element.geometric_dimension()
+        self.__geometric_dimension = element.cell().geometric_dimension()
         self.__entity_dofs         = entity_dofs
         self.__num_dofs_per_dim    = self.__compute_num_dofs_per_dim(entity_dofs)
-        self.__num_facet_dofs      = self.__compute_num_facet_dofs(entity_dofs, element.cell_shape())
+        self.__num_facet_dofs      = self.__compute_num_facet_dofs(entity_dofs, element.cell().domain())
         self.__dof_entities        = self.__compute_dof_entities(entity_dofs)
-        self.__incidence           = self.__compute_incidence(element.cell_shape())
+        self.__incidence           = self.__compute_incidence(element.cell().domain())
         self.__dof_maps            = self.__compute_dof_maps(element)
         self.__element             = element
 
@@ -133,7 +133,7 @@ class DofMap:
         "Compute the number of dofs on each cell facet"
 
         # Number of entites of each dimension incident with a facet
-        num_facet_entities = {LINE: [1, 0], TRIANGLE: [2, 1, 0], TETRAHEDRON: [3, 3, 1, 0]}
+        num_facet_entities = {"interval": [1, 0], "triangle": [2, 1, 0], "tetrahedron": [3, 3, 1, 0]}
 
         # Get total number of dofs per dimension
         num_dofs_per_dim = self.num_dofs_per_dim()
@@ -161,11 +161,11 @@ class DofMap:
         "Compute which entities are incident with which"
 
         # Set topological dimension of simplex
-        if cell_shape == LINE:
+        if cell_shape == "interval":
             D = 1
-        elif cell_shape == TRIANGLE:
+        elif cell_shape == "triangle":
             D = 2
-        elif cell_shape == TETRAHEDRON:
+        elif cell_shape == "tetrahedron":
             D = 3
         else:
             error("Cannot handle cell shape: " + str(cell_shape))

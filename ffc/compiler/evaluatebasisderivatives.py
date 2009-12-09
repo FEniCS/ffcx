@@ -3,16 +3,18 @@ module generates code which is more or less a C++ representation of FIAT code. M
 specifically the functions from the modules expansion.py and jacobi.py are translated into C++"""
 
 __author__ = "Kristian B. Oelgaard (k.b.oelgaard@tudelft.nl)"
-__date__ = "2007-04-16 -- 2009-08-08"
+__date__ = "2007-04-16"
 __copyright__ = "Copyright (C) 2007-2009 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
+
+# Last changed: 2009-12-08
 
 # FFC common modules
 from ffc.common.log import error
 
 # FFC fem modules
-from ffc.fem.finiteelement import *
-from ffc.fem.mixedelement import *
+from ffc.fem.finiteelement import CONTRAVARIANT_PIOLA, COVARIANT_PIOLA
+#from ffc.fem.mixedelement import *
 
 # FFC code generation common modules
 from evaluatebasis import generate_map, dof_map, generate_basisvalues, tabulate_coefficients
@@ -22,6 +24,9 @@ from codeutils import tabulate_matrix, IndentControl
 
 # FFC format modules
 from removeunused import remove_unused
+
+## UFL modules
+#from ufl.geometry import 
 
 # Python modules
 import math
@@ -108,7 +113,7 @@ def compute_num_derivatives(element, Indent, format):
     # Increase indentation
     Indent.increase()
 
-    code += [Indent.indent(format["times equal"](format_num_derivatives, element.cell_shape()))] + [""]
+    code += [Indent.indent(format["times equal"](format_num_derivatives, element.cell().topological_dimension()))] + [""]
 
     # Decrease indentation
     Indent.decrease()
@@ -120,7 +125,7 @@ def generate_combinations(element, Indent, format):
 
     code = []
 
-    shape = element.cell_shape() - 1
+    shape = element.cell().geometric_dimension() - 1
 
     # Use code from codesnippets.py
     code += [Indent.indent(format["snippet combinations"])\
@@ -136,14 +141,14 @@ def generate_transform(element, Indent, format):
     code = []
 
     # Generate code to construct the inverse of the Jacobian, use code from codesnippets.py
-    cell_shape = element.cell_shape()
-    if (cell_shape in [LINE, TRIANGLE, TETRAHEDRON]):
-        code += [Indent.indent(format["snippet transform"](cell_shape))\
+    cell_domain = element.cell().domain()
+    if (cell_domain in ["interval", "triangle", "tetrahedron"]):
+        code += [Indent.indent(format["snippet transform"](cell_domain))\
         % {"transform": format["transform matrix"], "num_derivatives" : format["num derivatives"],\
            "n": format["argument derivative order"], "combinations": format["derivative combinations"],\
            "Jinv":format["transform Jinv"]}]
     else:
-        error("Cannot generate transform for shape: %d" %(element.cell_shape()))
+        error("Cannot generate transform for shape: %d" %(element.cell().domain()))
 
     return code + [""]
 
@@ -262,13 +267,10 @@ def tabulate_dmats(element, Indent, format):
     # Get derivative matrices (coefficients) of basis functions, computed by FIAT at compile time
     derivative_matrices = element.basis().get_dmats()
 
-    # Get the shape of the element
-    cell_shape = element.cell_shape()
-
     code += [Indent.indent(format["comment"]("Tables of derivatives of the polynomial base (transpose)"))]
 
     # Generate tables for each spatial direction
-    for i in range(cell_shape):
+    for i in range(element.cell().geometric_dimension()):
 
         # Extract derivatives for current direction (take transpose, FIAT ScalarPolynomialSet.deriv_all())
         matrix = numpy.transpose(derivative_matrices[i])
@@ -322,9 +324,6 @@ def compute_reference_derivatives(element, Indent, format):
 
     # Get polynomial dimension of basis
     poly_dim = len(element.basis().fspace.base.bs)
-
-    # Get element shape
-    cell_shape = element.cell_shape()
 
     code += [Indent.indent(format_comment("Compute reference derivatives"))]
 
@@ -416,16 +415,16 @@ def compute_reference_derivatives(element, Indent, format):
         # Use Piola transform to map basisfunctions back to physical element if needed
         if mapping == CONTRAVARIANT_PIOLA:
             value_code.insert(i,(Indent.indent(format_tmp(0, i)), value))
-            basis_col = [format_tmp_access(0, j) for j in range(element.cell_dimension())]
-            jacobian_row = [format["transform"]("J", j, i, None) for j in range(element.cell_dimension())]
-            inner = [format_multiply([jacobian_row[j], basis_col[j]]) for j in range(element.cell_dimension())]
+            basis_col = [format_tmp_access(0, j) for j in range(element.cell().topological_dimension())]
+            jacobian_row = [format["transform"]("J", j, i, None) for j in range(element.cell().topological_dimension())]
+            inner = [format_multiply([jacobian_row[j], basis_col[j]]) for j in range(element.cell().topological_dimension())]
             sum = format_group(format_add(inner))
             value = format_multiply([format_inv(format_det(None)), sum])
         elif mapping == COVARIANT_PIOLA:
             value_code.insert(i,(Indent.indent(format_tmp(0, i)), value))
-            basis_col = [format_tmp_access(0, j) for j in range(element.cell_dimension())]
-            inverse_jacobian_column = [format["transform"]("JINV", j, i, None) for j in range(element.cell_dimension())]
-            inner = [format_multiply([inverse_jacobian_column[j], basis_col[j]]) for j in range(element.cell_dimension())]
+            basis_col = [format_tmp_access(0, j) for j in range(element.cell().topological_dimension())]
+            inverse_jacobian_column = [format["transform"]("JINV", j, i, None) for j in range(element.cell().topological_dimension())]
+            inner = [format_multiply([inverse_jacobian_column[j], basis_col[j]]) for j in range(element.cell().topological_dimension())]
             sum = format_group(format_add(inner))
             value = format_multiply([sum])
 
@@ -463,12 +462,9 @@ def multiply_coeffs(element, Indent, format):
     # Get polynomial dimension of basis
     poly_dim = len(element.basis().fspace.base.bs)
 
-    # Get the shape of the element
-    cell_shape = element.cell_shape()
-
-    for i in range(cell_shape):
-
-# not language-independent
+    # Loop the geometric dimension and multiply coefficients
+    for i in range(element.cell().geometric_dimension()):
+        # not language-independent
         code += [Indent.indent(format_if + format_group( format_combinations + \
                  format_matrix_access("deriv_num","j") + format_isequal + "%d" %(i) ) )]
         code += [Indent.indent(format_block_begin)]

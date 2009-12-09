@@ -1,5 +1,5 @@
 __author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2004-10-04 -- 2008-08-26"
+__date__ = "2004-10-04"
 __copyright__ = "Copyright (C) 2004-2008 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
@@ -7,15 +7,14 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Marie E. Rognes 2008
 # Modified by Andy R. Terrel 2007
 # Modified by Kristian B. Oelgaard 2009
+# Last changed: 2009-12-08
 
 # Python modules
 import sys
 import numpy
 
 # FIAT modules
-from FIAT.shapes import *
-# FIXME: Move this somewhere else
-VERTEX = 0
+from FIAT.shapes import LINE, TRIANGLE, TETRAHEDRON
 
 from FIAT.transformedspace import *
 from FIAT.Lagrange import Lagrange
@@ -33,7 +32,7 @@ from ffc.common.log import error, warning
 # FFC fem modules
 import mixedelement
 import referencecell
-from dofrepresentation import *
+from dofrepresentation import DofRepresentation
 
 # UFL modules
 from ufl.classes import Cell, Measure
@@ -41,11 +40,7 @@ from ufl.objects import dc
 from ufl.classes import FiniteElementBase
 
 # Dictionaries of basic element data
-shape_to_string = {VERTEX: "vertex", LINE: "interval", TRIANGLE: "triangle", TETRAHEDRON: "tetrahedron"}
-string_to_shape = {"vertex": VERTEX, "interval": LINE, "triangle": TRIANGLE, "tetrahedron": TETRAHEDRON}
-shape_to_dim = {VERTEX: 0, LINE: 1, TRIANGLE: 2, TETRAHEDRON: 3}
-shape_to_facet = {VERTEX: None, LINE: VERTEX, TRIANGLE: LINE, TETRAHEDRON: TRIANGLE}
-shape_to_num_facets = {VERTEX: 0, LINE: 2, TRIANGLE: 3, TETRAHEDRON: 4}
+ufl_domain2fiat_domain = {"vertex": 0, "interval": LINE, "triangle": TRIANGLE, "tetrahedron": TETRAHEDRON}
 
 # Value mappings
 AFFINE = "affine"
@@ -69,34 +64,46 @@ class FiniteElement(FiniteElementBase):
     The shape and degree must match the chosen family of finite element.
     """
 
+    # TODO: KBO: Look at domain argument in create_element, get from ufl_element and check
     def __init__(self, ufl_element, domain=None):
         "Create FiniteElement"
 
-        # Save UFL element
-        self.__ufl_element = ufl_element
+        # Initialise base class
+        FiniteElementBase.__init__(self, ufl_element.family(), ufl_element.cell(),
+                                   ufl_element.degree(), ufl_element.value_shape())
+        # Save string
+        self._repr = repr(ufl_element)
+
+        # Save the domain
+        self._domain = domain
 
         # Get FIAT element from string
-        (self.__fiat_element, self.__mapping) = self.__choose_element(ufl_element.family(),
+        (self._fiat_element, self._mapping) = self.__choose_element(ufl_element.family(),
                                                                       ufl_element.cell().domain(), ufl_element.degree())
 
-        # Get the transformed (according to mapping) function space:
-        self.__transformed_space = self.__transformed_function_space()
+        if ufl_element.family() not in ("Quadrature", "QE"):
+            # Get the transformed (according to mapping) function space:
+            self._transformed_space = self.__transformed_function_space()
 
-        # Get entity dofs from FIAT element
-        self.__entity_dofs = [self.__fiat_element.dual_basis().entity_ids]
+            # Get entity dofs from FIAT element
+            self._entity_dofs = [self._fiat_element.dual_basis().entity_ids]
 
-        # Get the dof identifiers from FIAT element
-        self.__dual_basis = self.__create_dof_representation(self.__fiat_element.dual_basis().get_dualbasis_types())
+            # Get the dof identifiers from FIAT element
+            self._dual_basis = self.__create_dof_representation(self._fiat_element.dual_basis().get_dualbasis_types())
 
-        # Dofs that have been restricted (it is a subset of self.__entity_dofs)
-        self.__restricted_dofs = []
+            # Dofs that have been restricted (it is a subset of self._entity_dofs)
+            self._restricted_dofs = []
+
+            # FIXME: This is just a temporary hack to 'support' tensor elements
+            self._rank = self.basis().rank()
+
 
         # Handle restrictions
         if domain and isinstance(domain, Cell):
             # Some fair warnings and errors
             # Only restrictions to facets are currently supported
             # TODO: This will not handle quadrilateral, hexahedron and the like.
-            if string_to_shape[domain.domain()] != self.facet_shape():
+            if domain.domain() != self.cell().facet_domain():
                 error("Restriction of FiniteElement to topological entities other than facets is not supported yet.")
             elif self.family() == "Discontinuous Lagrange":
                 error("Restriction of Discontinuous Lagrange elements is not supported because all dofs are internal to the element.")
@@ -107,7 +114,7 @@ class FiniteElement(FiniteElementBase):
             # TODO: This must of course change if we will support restrictions
             # to other topological entities than facets.
             # Loop dictionaries (there should be only one here?)
-            for entity_dict in self.__entity_dofs:
+            for entity_dict in self._entity_dofs:
                 for key, val in entity_dict.items():
                     if key > domain.topological_dimension():
                         for k,v in val.items():
@@ -115,7 +122,7 @@ class FiniteElement(FiniteElementBase):
                         continue
                     # Add dofs to the list of dofs that are restricted (still active)
                     for k,v in val.items():
-                        self.__restricted_dofs.extend(v)
+                        self._restricted_dofs.extend(v)
 
         elif domain and isinstance(domain, Measure):
             # FIXME: Support for restriction to cracks (dc) is only experimental
@@ -124,46 +131,15 @@ class FiniteElement(FiniteElementBase):
             else:
                 error("Restriction of FiniteElement to Measure has not been implemented yet.")
 
-        # Save the domain
-        self.__domain = domain
-
-        # FIXME: This is just a temporary hack to 'support' tensor elements
-        self._rank = self.basis().rank()
-
-    def __add__(self, other):
-        "Create mixed element"
-        error("ffc.FiniteElements cannot be added. Try adding UFL finite elements.")
-        return mixedelement.MixedElement([self, other])
-
-    def __repr__(self):
-        "Pretty print"
-        return self.signature()
-
     def basis(self):
         "Return basis of finite element space"
         # Should be safe w.r.t. restrictions, is only used in this module and
         # evaluate_basis and evaluate_basis_derivatives where it is not abused.
-        return self.__transformed_space
-
-    def cell_dimension(self):
-        "Return dimension of shape"
-        return shape_to_dim[self.cell_shape()]
-
-    def cell_shape(self):
-        "Return the cell shape"
-        return self.__fiat_element.domain_shape()
+        return self._transformed_space
 
     def component_element(self, component):
         "Return sub element and offset for given component."
         return (self, 0)
-
-    def degree(self):
-        "Return degree of polynomial basis"
-        return self.basis().degree()
-
-    def domain(self):
-        "Return the domain to which the element is restricted"
-        return self.__domain
 
     def dual_basis(self):
         "Return the representation dual basis of finite element space"
@@ -173,68 +149,48 @@ class FiniteElement(FiniteElementBase):
         # Assuming same numbering as in entity_dofs (as far as I can tell from
         # FIAT, this should be safe fiat/lagrange.py LagrangeDual())
         # FIXME: Experimental support for dc
-        if self.domain() and self.domain() != dc:
+        if self.domain_restriction() and self.domain_restriction() != dc:
             new_dofs = []
-            for d in self.__restricted_dofs:
-                new_dofs.append(self.__dual_basis[d])
+            for d in self._restricted_dofs:
+                new_dofs.append(self._dual_basis[d])
             return new_dofs
-        return self.__dual_basis
+        return self._dual_basis
 
     def entity_dofs(self):
         "Return the mapping from entities to dofs"
-        return self.__entity_dofs
+        return self._entity_dofs
 
     def extract_elements(self):
         "Extract list of all recursively nested elements."
         return [self]
 
-    def facet_shape(self):
-        "Return shape of facet"
-        return shape_to_facet[self.cell_shape()]
-
-    def family(self):
-        "Return a string indentifying the finite element family"
-        return self.__ufl_element.family()
-
-    def geometric_dimension(self):
-        "Return the geometric dimension of the finite element domain"
-        return shape_to_dim[self.cell_shape()]
-
     def get_coeffs(self):
         "Return the expansion coefficients from FIAT"
         # TODO: Might be able to propagate this to FIAT?
         # FIXME: Experimental support for dc
-        if self.domain() and self.domain() != dc:
+        if self.domain_restriction() and self.domain_restriction() != dc:
             # Get coefficients and create new table with only the values
             # associated with the restricted dofs.
             coeffs = self.basis().get_coeffs()
             new_coeffs = []
-            for dof in self.__restricted_dofs:
+            for dof in self._restricted_dofs:
                 new_coeffs.append(coeffs[dof])
             return numpy.array(new_coeffs)
         return self.basis().get_coeffs()
 
     def mapping(self):
         "Return the type of mapping associated with the element."
-        return self.__mapping
-
-    def num_facets(self):
-        "Return number of facets for shape of element"
-        return shape_to_num_facets[self.cell_shape()]
+        return self._mapping
 
     def num_sub_elements(self):
         "Return the number of sub elements"
         return 1
 
-    def signature(self):
-        "Return a string identifying the finite element"
-        return repr(self.__ufl_element)
-
     def space_dimension(self):
         "Return the dimension of the finite element function space"
         # FIXME: Experimental support for dc
-        if self.domain() and self.domain() != dc:
-            return len(self.__restricted_dofs)
+        if self.domain_restriction() and self.domain_restriction() != dc:
+            return len(self._restricted_dofs)
         return len(self.basis())
 
     def sub_element(self, i):
@@ -246,7 +202,7 @@ class FiniteElement(FiniteElementBase):
         basis functions at given points."""
         # TODO: Might be able to propagate this to FIAT?
         # FIXME: Experimental support for dc
-        if self.domain() and self.domain() != dc:
+        if self.domain_restriction() and self.domain_restriction() != dc:
             # Get basis values and create new table where only the values
             # associated with the restricted dofs are present
             basis_values = self.basis().tabulate_jet(order, points)
@@ -254,7 +210,7 @@ class FiniteElement(FiniteElementBase):
             for b in basis_values:
                 for k,v in b.items():
                     new_vals = []
-                    for dof in self.__restricted_dofs:
+                    for dof in self._restricted_dofs:
                         new_vals.append(v[dof])
                     b[k] = numpy.array(new_vals)
                 new_basis.append(b)
@@ -274,15 +230,11 @@ class FiniteElement(FiniteElementBase):
         "Return the rank of the value space"
         return self.basis().rank()
 
-    def ufl_element(self):
-        "Return the UFL element"
-        return self.__ufl_element
-
     def __choose_element(self, family, shape, degree):
         "Choose FIAT finite element from string"
 
         # Get FIAT shape from string
-        fiat_shape = string_to_shape[shape]
+        fiat_shape = ufl_domain2fiat_domain[shape]
 
         # Choose FIAT function space
         if family == "Lagrange" or family == "CG":
@@ -311,6 +263,9 @@ class FiniteElement(FiniteElementBase):
                 error("Sorry, Darcy-Stokes element only available on triangles")
             return (DarcyStokes(degree), CONTRAVARIANT_PIOLA)
 
+        if family == "Quadrature" or family == "QE":
+            return (None, AFFINE)
+
         # Unknown element
         error("Unknown finite element: " + str(family))
 
@@ -331,9 +286,9 @@ class FiniteElement(FiniteElementBase):
         # used in this code.
         pushforward = self.basis().pushforward
         fiat_J = self.basis().get_jacobian()
-        if self.__mapping == CONTRAVARIANT_PIOLA:
+        if self._mapping == CONTRAVARIANT_PIOLA:
             J = 1.0/numpy.linalg.det(fiat_J)*numpy.transpose(fiat_J)
-        elif self.__mapping == COVARIANT_PIOLA:
+        elif self._mapping == COVARIANT_PIOLA:
             J = numpy.linalg.inv(fiat_J)
 
         for fiat_dof_repr in list_of_fiat_dofs:
@@ -362,13 +317,13 @@ class FiniteElement(FiniteElementBase):
     def __transformed_function_space(self):
         """ Transform the function space onto the chosen reference
         cell according to the given mapping of the finite element."""
-        function_space = self.__fiat_element.function_space()
-        vertices = referencecell.get_vertex_coordinates(self.cell_dimension())
-        if self.__mapping == AFFINE:
+        function_space = self._fiat_element.function_space()
+        vertices = referencecell.get_vertex_coordinates(self.cell().domain())
+        if self._mapping == AFFINE:
             return AffineTransformedFunctionSpace(function_space, vertices)
-        elif self.__mapping == CONTRAVARIANT_PIOLA:
+        elif self._mapping == CONTRAVARIANT_PIOLA:
             return PiolaTransformedFunctionSpace(function_space, vertices, "div")
-        elif self.__mapping == COVARIANT_PIOLA:
+        elif self._mapping == COVARIANT_PIOLA:
             return PiolaTransformedFunctionSpace(function_space, vertices, "curl")
         else:
             error(family, "Unknown transform")
