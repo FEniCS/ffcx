@@ -5,11 +5,11 @@ __date__ = "2009-03-07"
 __copyright__ = "Copyright (C) 2009 Kristian Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2009-12-08
+# Last changed: 2009-12-09
 
 import unittest
 from ufl.finiteelement import *
-from ffc.fem.createelement import *
+from ffc.createelement import *
 
 class CreateElementTests(unittest.TestCase):
 

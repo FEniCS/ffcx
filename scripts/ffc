@@ -14,19 +14,25 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Dag Lindbo, 2008.
 # Modified by Kristian B. Oelgaard 2009.
 
-# Python modules
+# Python modules.
 import sys
 import getopt
-from os import curdir, path, getcwd
+from os import curdir
+from os import path
+from os import getcwd
 
-# UFL modules
+# UFL modules.
 from ufl.log import UFLException
 from ufl.algorithms import load_ufl_file
 
-# FFC modules
-from ffc.common.log import info, set_level, DEBUG, ERROR
-from ffc.common.constants import FFC_OPTIONS, FFC_VERSION
-from ffc.compiler.compiler import compile
+# FFC modules.
+from ffc.log import info
+from ffc.log import set_level
+from ffc.log import DEBUG
+from ffc.log import ERROR
+from ffc.constants import FFC_OPTIONS
+from ffc.constants import FFC_VERSION
+from ffc.compiler import compile
 
 def error(msg):
     "Print error message (cannot use log system at top level)."

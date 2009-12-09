@@ -15,7 +15,7 @@ from time import time
 sys.path.append(os.path.join(os.pardir, os.pardir))
 
 from ufl import *
-from ffc.fem.finiteelement import FiniteElement as FFCElement
+from ffc.finiteelement import FiniteElement as FFCElement
 from ffc import jit
 
 interval = [(0,), (1,)]

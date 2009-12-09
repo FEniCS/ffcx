@@ -10,7 +10,7 @@ from FIAT import reference
 reference.reference_element = "default"
 
 # Import compiler
-from ffc.compiler.compiler import compile
+from ffc.compiler import compile
 
 # Import JIT compiler
-from ffc.jit.jit import jit
+from ffc.jit import jit

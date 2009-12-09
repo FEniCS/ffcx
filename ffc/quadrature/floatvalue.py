@@ -1,0 +1,143 @@
+"This file implements a class to represent a float."
+
+__author__ = "Kristian B. Oelgaard (k.b.oelgaard@tudelft.nl)"
+__date__ = "2009-07-12"
+__copyright__ = "Copyright (C) 2009 Kristian B. Oelgaard"
+__license__  = "GNU GPL version 3 or any later version"
+
+# Last changed: 2009-12-09
+
+# FFC modules.
+from ffc.log import error
+
+# FFC quadrature modules.
+from symbolics import CONST
+from symbolics import format
+from symbolics import create_float
+from symbolics import create_product
+from symbolics import create_fraction
+from expr import Expr
+
+# TODO: This function is needed to avoid passing around the 'format', but could
+# it be done differently?
+def set_format(_format):
+    global format
+    format = _format
+    global format_float
+    format_float = format["floating point"]
+    global EPS
+    EPS = format["epsilon"]
+
+class FloatValue(Expr):
+    def __init__(self, value):
+        """Initialise a FloatValue object, it derives from Expr and contains
+        no additional variables.
+
+        NOTE: self._prec = 0."""
+
+        # Initialise value, type and class.
+        self.val = float(value)
+        self.t = CONST
+        self._prec = 0
+
+        # Handle 0.0, 1.0 and -1.0 values explicitly.
+        if abs(value) <  EPS:
+            self.val = 0.0
+        elif abs(value - 1.0) <  EPS:
+            self.val = 1.0
+        elif abs(value + 1.0) <  EPS:
+            self.val = -1.0
+
+        # Compute the representation now, such that we can use it directly
+        # in the __eq__ and __ne__ methods (improves performance a bit, but
+        # only when objects are cached).
+        self._repr = "FloatValue(%s)" % format_float(self.val)
+
+        # Use repr as hash value
+        self._hash = hash(self._repr)
+
+    # Print function.
+    def __str__(self):
+        "Simple string representation which will appear in the generated code."
+        return format_float(self.val)
+
+    # Binary operators.
+    def __add__(self, other):
+        "Addition by other objects."
+        # NOTE: We expect expanded objects here.
+        # This is only well-defined if other is a float or if self.val == 0.
+        if other._prec == 0: # float
+            return create_float(self.val+other.val)
+        elif self.val == 0.0:
+            return other
+        # Addition is not defined if self is not zero.
+        # TODO: We could just return a Sum?
+        error("Can only add two floats, or other to zero.")
+
+    def __mul__(self, other):
+        "Multiplication by other objects."
+        # NOTE: We expect expanded objects here i.e., Product([FloatValue])
+        # should not be present.
+        # Only handle case where other is a float, else let the other
+        # object handle the multiplication.
+        if other._prec == 0: # float
+            return create_float(self.val*other.val)
+        return other.__mul__(self)
+
+    def __div__(self, other):
+        "Division by other objects."
+        # If division is illegal (this should definitely not happen).
+        if other.val == 0.0:
+            error("Division by zero")
+
+        # TODO: Should we also support division by fraction for generality?
+        # It should not be needed by this module.
+        if other._prec == 4: # frac
+            error("Did not expected to divide by fraction")
+
+        # If fraction will be zero.
+        if self.val == 0.0:
+            return self
+
+        # NOTE: We expect expanded objects here i.e., Product([FloatValue])
+        # should not be present.
+        # Handle types appropriately.
+        if other._prec == 0: # float
+            return create_float(self.val/other.val)
+        # If other is a symbol, return a simple fraction.
+        elif other._prec == 1: # sym
+            return create_fraction(self, other)
+        # Don't handle division by sum.
+        elif other._prec == 3: # sum
+            # TODO: Here we could do: 4 / (2*x + 4*y) -> 2/(x + 2*y).
+            return create_fraction(self, other)
+
+        # If other is a product, remove any float value to avoid
+        # 4 / (2*x), this will return 2/x.
+        val = 1.0
+        for v in other.vrs:
+            if v._prec == 0: # float
+                val *= v.val
+
+        # If we had any floats, create new numerator and only use 'real' variables
+        # from the product in the denominator.
+        if val != 1.0:
+            # Check if we need to create a new denominator.
+            # TODO: Just use other.vrs[1:] instead.
+            if len(other.get_vrs()) > 1:
+                return create_fraction(create_float(self.val/val), create_product(other.get_vrs()))
+            # TODO: Because we expect all products to be expanded we shouldn't need
+            # to check for this case, just use other.vrs[1].
+            elif len(other.get_vrs()) == 1:
+                return create_fraction(create_float(self.val/val), other.vrs[1])
+            error("No variables left in denominator")
+
+        # Nothing left to do.
+        return create_fraction(self, other)
+
+# FFC quadrature modules.
+from symbol     import Symbol
+from product    import Product
+from sumobj    import Sum
+from fraction   import Fraction
+
