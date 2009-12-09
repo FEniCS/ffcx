@@ -27,7 +27,6 @@ from ufl.algorithms import preprocess
 from ufl.algorithms import FormData
 from ufl.algorithms import estimate_max_polynomial_degree
 from ufl.algorithms import estimate_total_polynomial_degree
-from ufl.classes import FiniteElementBase
 from ufl.classes import Integral
 from ufl.common import istr
 
@@ -163,9 +162,6 @@ def analyze_form(form, options):
     form_data.num_cell_domains = max([-1] + [i.measure().domain_id() for i in form.cell_integrals()]) + 1
     form_data.num_exterior_facet_domains = max([-1] + [i.measure().domain_id() for i in form.exterior_facet_integrals()]) + 1
     form_data.num_interior_facet_domains = max([-1] + [i.measure().domain_id() for i in form.interior_facet_integrals()]) + 1
-
-    # Attach signature for convenience and reuse
-    form_data.signature = form.signature()
 
     # Attach number of entries in element tensor
     dims = [create_element(v.element()).space_dimension() for v in form_data.arguments]
@@ -431,4 +427,3 @@ class ElementData:
 
 # FFC format modules
 from ufcformat import Format
-
