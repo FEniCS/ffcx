@@ -9,17 +9,51 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Dag Lindbo, 2008.
 # Modified by Johan Hake, 2009.
 # Modified by Garth N. Wells, 2009.
-# Last changed: 2009-12-08
+# Last changed: 2009-12-09
 
 # Python modules
-import os, platform
+import os
+import platform
 
 # UFC code templates
-from ufc_utils import finite_element_combined, dof_map_combined, cell_integral_combined, exterior_facet_integral_combined, interior_facet_integral_combined, form_combined
+# UFC build
+from ufc_utils import build_ufc_module
+
+# UFC function
+from ufc_utils import function_combined
+from ufc_utils import function_header
+from ufc_utils import function_implementation
+
+# UFC finite_element
+from ufc_utils import finite_element_combined
+from ufc_utils import finite_element_header
+from ufc_utils import finite_element_implementation
+
+# UFC dof_map
+from ufc_utils import dof_map_combined
+from ufc_utils import dof_map_header
+from ufc_utils import dof_map_implementation
+
+# UFC integrals
+from ufc_utils import cell_integral_combined
+from ufc_utils import cell_integral_header
+from ufc_utils import cell_integral_implementation
+from ufc_utils import exterior_facet_integral_combined
+from ufc_utils import exterior_facet_integral_header
+from ufc_utils import exterior_facet_integral_implementation
+from ufc_utils import interior_facet_integral_combined
+from ufc_utils import interior_facet_integral_header
+from ufc_utils import interior_facet_integral_implementation
+
+# UFC form
+from ufc_utils import form_combined
+from ufc_utils import form_header
+from ufc_utils import form_implementation
 
 # DOLFIN wrapper generator
 try:
-    from dolfin_utils.wrappers import generate_dolfin_code, UFCFormNames
+    from dolfin_utils.wrappers import generate_dolfin_code
+    from dolfin_utils.wrappers import UFCFormNames
     dolfin_utils_imported = True
 except:
     dolfin_utils_imported = False
@@ -38,6 +72,7 @@ from codesnippets import *
 # FFC codegeneration common modules
 from codeutils import indent
 from removeunused import remove_unused
+from compiler import ElementData
 
 # Choose map from restriction
 choose_map = {None: "", "+": "0", "-": 1}
@@ -654,7 +689,7 @@ def _generate_dolfin_wrappers(generated_forms, prefix, options, format):
     info("Writing DOLFIN wrappers.")
 
     # Special case: single element
-    if len(generated_forms) == 1 and generated_forms[0][1].form is None:
+    if len(generated_forms) == 1 and isinstance(generated_forms[0][1], ElementData):
         fn = UFCFormNames("0",
                           [],
                           format["classname form"](prefix, 0),
@@ -928,3 +963,4 @@ def _generate_code(format_string, code, options, format):
 
     # Generate code
     return format_string % code
+

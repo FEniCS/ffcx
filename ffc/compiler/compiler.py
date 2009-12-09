@@ -47,8 +47,6 @@ from integrals import generate_combined_code
 from tensor.tensorgenerator import TensorGenerator
 from quadrature.quadraturegenerator import QuadratureGenerator
 
-# FFC format modules
-from ufcformat import Format
 
 # Form representations and code generators
 Representations = (QuadratureRepresentation, TensorRepresentation)
@@ -410,7 +408,6 @@ class ElementData:
 
         debug("Extracting element data...")
 
-        self.form                         = None
         self.signature                    = None
         self.rank                         = -1
         self.num_coefficients             = 0
@@ -426,3 +423,7 @@ class ElementData:
         self.coefficients                 = []
 
         debug("done")
+
+# FFC format modules
+from ufcformat import Format
+
