@@ -250,14 +250,18 @@ class JITTests(unittest.TestCase):
         jit(a1, options)
         dt1 = time() - t
 
+        # Good values
+        dt0_good = 0.0001
+        dt1_good = 0.01
+
         print ""
         print "JIT in-memory cache:", dt0
         print "JIT disk cache:     ", dt1
-        print "Reasonable values are 0.002 and 0.03"
+        print "Reasonable values are %g and %g" % (dt0_good, dt1_good)
 
         # Check times
-        self.assertTrue(dt0 < 0.001)
-        self.assertTrue(dt1 < 0.5)
+        self.assertTrue(dt0 < 10*dt0_good)
+        self.assertTrue(dt1 < 10*dt1_good)
 
 if __name__ == "__main__":
     os.system("python testcreateelement.py")

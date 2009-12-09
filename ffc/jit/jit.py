@@ -8,7 +8,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Johan Hake, 2008-2009
 # Modified by Ilmar Wilbers, 2008
-# Last changed: 2009-12-08
+# Last changed: 2009-12-09
 
 # Python modules
 import os
@@ -43,6 +43,9 @@ FFC_OPTIONS_JIT["no-evaluate_basis_derivatives"] = True
 # Set debug level for Instant
 instant.set_logging_level("warning")
 
+# Form data cache
+_form_data_cache = {}
+
 def jit(object, options=None):
     """Just-in-time compile the given form or element
 
@@ -61,6 +64,7 @@ def jit(object, options=None):
 def jit_form(form, options=None):
     "Just-in-time compile the given form"
 
+    # Check that we get a Form
     if not isinstance(form, Form):
         form = as_form(form)
 
@@ -71,17 +75,22 @@ def jit_form(form, options=None):
     set_level(options["log_level"])
     set_prefix(options["log_prefix"])
 
-    # Preprocess form and extract form data
-    form = preprocess(form)
-    form_data = FormData(form)
-
     # Wrap input
-    jit_object = JITObject(form, form_data, options)
+    jit_object = JITObject(form, options)
 
     # Check cache
     module = instant.import_module(jit_object, cache_dir=options["cache_dir"])
     if module:
+
+        # Get compiled form from Instant cache
         compiled_form = getattr(module, module.__name__ + "_form_0")()
+
+        # Get form data from in-memory cache or create it
+        if form in _form_data_cache:
+            form_data = _form_data_cache[form]
+        else:
+            form_data = FormData(form)
+            _form_data_cache[form] = form_data
         return (compiled_form, module, form_data)
 
     # Write a message
@@ -93,7 +102,7 @@ def jit_form(form, options=None):
 
     # Generate code
     signature = jit_object.signature()
-    compile(form, signature, options)
+    preprocessed_form, form_data = compile(form, signature, options)
 
     # Create python extension module using Instant (through UFC)
     debug("Creating Python extension (compiling and linking), this may take some time...")
@@ -112,6 +121,9 @@ def jit_form(form, options=None):
 
     # Extract compiled form
     compiled_form = getattr(module, module.__name__ + "_form_0")()
+
+    # Store form data in cache
+    _form_data_cache[form] = form_data
 
     return compiled_form, module, form_data
 

@@ -3,7 +3,7 @@ __date__ = "2008-09-04"
 __copyright__ = "Copyright (C) 2008 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2009-12-08
+# Last changed: 2009-12-09
 
 from hashlib import sha1
 from instant import get_swig_version
@@ -21,13 +21,12 @@ class JITObject:
     single instance of an application (at runtime). The signature is
     persistent and may be used for caching modules on disk."""
 
-    def __init__(self, form, form_data, options):
+    def __init__(self, form, options):
         "Create JITObject for given form and options"
         assert(isinstance(form, ufl.Form))
 
         # Store data
         self.form = form
-        self.form_data = form_data
         self.options = options
         self._hash = None
         self._signature = None
@@ -35,15 +34,13 @@ class JITObject:
     def __hash__(self):
         "Return unique integer for form + options"
 
-        # Check if we have computed the hash before
+        # Compute hash if not computed before
         if self._hash is None:
-            # Compute hash
             string = str(id(self.form)) + _options_signature(self.options)
             hexdigest = sha1(string).hexdigest()
             self._hash = int(hexdigest, 16)
 
         return self._hash
-
 
     def __eq__(self, other):
         "Check for equality"
