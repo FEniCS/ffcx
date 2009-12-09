@@ -158,15 +158,6 @@ def analyze_form(form, options):
     # Attach FFC coefficients
     form_data.coefficients = create_ffc_coefficients(form_data.coefficients, form_data.coefficient_names)
 
-    # Attach number of entries in element tensor
-    dims = [create_element(v.element()).space_dimension() for v in form_data.arguments]
-    dims_interior = [create_element(v.element()).space_dimension()*2 for v in form_data.arguments]
-    form_data.num_entries = product(dims)
-    form_data.num_entries_interior = product(dims_interior)
-
-    # Attach number of facets
-    form_data.num_facets = form_data.ffc_elements[0].cell().num_facets()
-
     end()
     return form, form_data
 

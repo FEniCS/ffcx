@@ -15,9 +15,11 @@ import numpy
 # FFC modules.
 from log import debug
 from log import error
+from utils import product
 from quadratureelement import QuadratureElement
 from evaluatebasis import evaluate_basis
 from evaluatebasisderivatives import evaluate_basis_derivatives
+from createelement import create_element
 
 # Utility functions.
 from codegenerators_utils import inner_product
@@ -36,7 +38,6 @@ from codegenerators_utils import __generate_global_dimension
 from codegenerators_utils import __generate_tabulate_dofs
 from codegenerators_utils import __generate_tabulate_facet_dofs
 from codegenerators_utils import __generate_tabulate_coordinates
-
 
 #------------------------------------------------------------------------------
 # From codegenerator.py
@@ -76,7 +77,7 @@ def generate_finite_elements(form_data, format):
         # Generate code for each element
         for (label, sub_element) in sub_elements:
             code += [(label, _generate_finite_element(sub_element, format))]
-                
+
     debug("done")
     return code
 
@@ -91,7 +92,7 @@ def _generate_finite_element(element, format):
 
     # Generate code for cell_shape
     code["cell_shape"] = format["cell shape"](element.cell().domain())
-    
+
     # Generate code for space_dimension
     code["space_dimension"] = "%d" % element.space_dimension()
 
@@ -148,7 +149,7 @@ def _generate_finite_element(element, format):
 # From dofmap.py
 def generate_dof_maps(form_data, format):
     "Generate code for dof maps, including recursively nested dof maps."
-    
+
     debug("Generating code for finite dof maps...")
     code = []
 
@@ -161,7 +162,7 @@ def generate_dof_maps(form_data, format):
         # Generate code for each dof map
         for (label, sub_dof_map) in sub_dof_maps:
             code += [(label, _generate_dof_map(sub_dof_map, format))]
-                
+
     debug("done")
     return code
 
@@ -181,7 +182,7 @@ def _generate_dof_map(dof_map, format):
     code["global_dimension"] = __generate_global_dimension(dof_map, format)
 
     # Generate code for local_dimension
-    code["local_dimension"] = "%d" % dof_map.local_dimension() 
+    code["local_dimension"] = "%d" % dof_map.local_dimension()
 
     # Generate code for geometric_dimension
     code["geometric_dimension"] = "%d" % dof_map.geometric_dimension()
@@ -226,10 +227,10 @@ def generate_form(form_data, format):
 
     # Generate code for num_exterior_facet_integrals
     code["num_exterior_facet_integrals"] = "%d" % form_data.num_exterior_facet_domains
-    
+
     # Generate code for num_interior_facet_integrals
     code["num_interior_facet_integrals"] = "%d" % form_data.num_interior_facet_domains
-    
+
     return code
 #------------------------------------------------------------------------------
 
@@ -294,9 +295,11 @@ def _generate_total_integral(integral_type, contributions, form_data, prefix, fo
     # Reset all entries
     code["tabulate_tensor"] = []
     if integral_type == "interior_facet_integral":
-        code["tabulate_tensor"] += _generate_reset_tensor(form_data.num_entries_interior, format)
+        dims = [create_element(v.element()).space_dimension()*2 for v in form_data.arguments]
     else:
-        code["tabulate_tensor"] += _generate_reset_tensor(form_data.num_entries, format)
+        dims = [create_element(v.element()).space_dimension() for v in form_data.arguments]
+    num_entries = product(dims)
+    code["tabulate_tensor"] += _generate_reset_tensor(num_entries, format)
 
     # Sum contributions
     code["tabulate_tensor"].append("")
@@ -316,7 +319,7 @@ def _generate_reset_tensor(num_entries, format):
     "Generate code for resetting the entries of the local element tensor."
 
     # Generate code as a list of declarations
-    code = []    
+    code = []
 
     # Comment
     code.append(format["comment"]("Reset values of the element tensor block"))
