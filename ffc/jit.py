@@ -79,8 +79,11 @@ def jit_form(form, options=None):
     set_level(options["log_level"])
     set_prefix(options["log_prefix"])
 
+    # Preprocess form
+    preprocessed_form = preprocess(form)
+
     # Wrap input
-    jit_object = JITObject(form, options)
+    jit_object = JITObject(preprocessed_form, options)
 
     # Check cache
     module = instant.import_module(jit_object, cache_dir=options["cache_dir"])
@@ -93,7 +96,7 @@ def jit_form(form, options=None):
         if form in _form_data_cache:
             form_data = _form_data_cache[form]
         else:
-            form_data = FormData(form)
+            form_data = FormData(preprocessed_form)
             _form_data_cache[form] = form_data
         return (compiled_form, module, form_data)
 
@@ -106,7 +109,7 @@ def jit_form(form, options=None):
 
     # Generate code
     signature = jit_object.signature()
-    preprocessed_form, form_data = compile(form, signature, options)[0]
+    compile(preprocessed_form, signature, options)[0]
 
     # Create python extension module using Instant (through UFC)
     debug("Creating Python extension (compiling and linking), this may take some time...")
