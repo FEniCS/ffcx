@@ -6,7 +6,7 @@ __date__ = "2009-12-09"
 __copyright__ = "Copyright (C) 2009 Anders Logg and Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2009-12-09
+# Last changed: 2009-12-10
 
 # Python modules.
 import numpy
@@ -50,7 +50,7 @@ def inner_product(a, b, format):
     format_multiply       = format["multiply"]
     format_floating_point = format["floating point"]
     format_epsilon        = format["epsilon"]
-    
+
     # Add all entries
     value = None
     for i in range(len(a)):
@@ -140,7 +140,7 @@ def __extract_sub_elements(element, parent):
     """Recursively extract sub elements as a list of tuples where
     each tuple consists of a tuple labeling the sub element and
     the sub element itself."""
-    
+
     if element.num_sub_elements() == 1:
         return [(parent, element)]
     sub_elements = []
@@ -161,7 +161,7 @@ def __generate_evaluate_dof(element, format):
     floating_point = format["floating point"]
     comment = format["comment"]
 
-    # Generate dof map and get _copy_ of dof representations. 
+    # Generate dof map and get _copy_ of dof representations.
     dof_map = DofMap(element)
     dofs = [DofRepresentation(dof) for dof in dof_map.dual_basis()]
     num_dofs = len(dofs)
@@ -230,18 +230,18 @@ def __generate_evaluate_dof(element, format):
         num_points_per_dof_code = block(separator.join([str(n) for n in num_points_per_dof]))
         code += ["%sns[%d] = %s;" % (format["static const uint declaration"],
                                       num_dofs, num_points_per_dof_code)]
-        code += ["%s%s" % (format["loop"]("j", "0", "ns[i]"), " {")]  
+        code += ["%s%s" % (format["loop"]("j", "0", "ns[i]"), " {")]
         (tab, endloop, index) = (2, "\n} // End for", "j")
 
     # Map the points from the reference onto the physical element
     code += [indent(format["snippet map_onto_physical"](element.cell().geometric_dimension())
                     % {"j": index}, tab)]
-    
+
     # Evaluate the function at the physical points
     code += [indent(comment("Evaluate function at physical points"), tab)]
     code += [indent("double values[%d];" % num_values, tab)]
     code += [indent("f.evaluate(values, y, c);\n", tab)]
-    
+
     # Map the function values according to the given mapping(s)
     code += [indent(comment("Map function values using appropriate mapping"),
                     tab)]
@@ -256,9 +256,9 @@ def __generate_evaluate_dof(element, format):
     # multiply by the weights:
     code += [indent(format["snippet calculate dof"] % {"dim": value_dim,
                                                        "index": index}, tab)]
-    # End possible loop 
+    # End possible loop
     code += [endloop]
-    
+
     # Return the calculated value
     code += [format["return"]("result")]
     return code
@@ -290,7 +290,7 @@ def __map_function_values(num_values, element, format):
         precode += ["%smappings[%d] = %s;" %
                     (format["static const uint declaration"], len(mappings),
                      block(separator.join(([str(m) for m in mappings]))))]
-        
+
     # Check whether we will need a piola
     contrapiola_present = mapping_to_int[CONTRAVARIANT_PIOLA] in whichmappings
     copiola_present = mapping_to_int[COVARIANT_PIOLA] in whichmappings
@@ -310,7 +310,7 @@ def __map_function_values(num_values, element, format):
         precode += ["\ndouble copyofvalues[%d];" % num_values]
     else:
         precode += [format["get cell vertices"]]
-    
+
     # We have to add offsets to the code if there are mixed
     # piola-mapped elements with an offset. (Ex: DG0 + RT)
     offset = ""
@@ -448,7 +448,7 @@ def __generate_interpolate_vertex_values(element, format):
             # Handle scalars and vectors
             if sub_element.value_rank() == 0:
                 for v in range(len(vertices)):
-                    coefficients = table[0][sub_element.cell().topological_dimension()*(0,)][:, v]
+                    coefficients = table[0][sub_element.cell().geometric_dimension()*(0,)][:, v]
                     dof_values = [format["dof values"](offset_dof_values + n) for n in range(len(coefficients))]
                     name = format["vertex values"](size*v + offset_vertex_values)
                     value = inner_product(coefficients, dof_values, format)
@@ -456,7 +456,7 @@ def __generate_interpolate_vertex_values(element, format):
             else:
                 for dim in range(sub_element.value_dimension(0)):
                     for v in range(len(vertices)):
-                        coefficients = table[dim][0][sub_element.cell().topological_dimension()*(0,)][:, v]
+                        coefficients = table[dim][0][sub_element.cell().geometric_dimension()*(0,)][:, v]
                         dof_values = [format["dof values"](offset_dof_values + n) for n in range(len(coefficients))]
                         name = format["vertex values"](size*v + offset_vertex_values + dim)
                         value = inner_product(coefficients, dof_values, format)
@@ -481,16 +481,16 @@ def __generate_interpolate_vertex_values(element, format):
                     terms = []
                     for n in range(sub_element.space_dimension()):
                         # Get basis function values at vertices
-                        coefficients = [table[j][0][sub_element.cell().topological_dimension()*(0,)][n, v] for j in range(sub_element.value_dimension(0))]
+                        coefficients = [table[j][0][sub_element.cell().geometric_dimension()*(0,)][n, v] for j in range(sub_element.value_dimension(0))]
 
                         if mapping == COVARIANT_PIOLA:
                             # Get row of inverse transpose Jacobian
-                            jacobian_row = [format["transform"]("JINV", j, dim, None) for j in range(sub_element.cell().topological_dimension())]
+                            jacobian_row = [format["transform"]("JINV", j, dim, None) for j in range(sub_element.cell().geometric_dimension())]
                         else:
                             # mapping == CONTRAVARIANT_PIOLA:
                             # Get row of Jacobian
-                            jacobian_row = [format["transform"]("J", j, dim, None) for j in range(sub_element.cell().topological_dimension())]
-                            
+                            jacobian_row = [format["transform"]("J", j, dim, None) for j in range(sub_element.cell().geometric_dimension())]
+
                         # Multiply vector-valued basis function with Jacobian
                         basis_function = inner_product(coefficients, jacobian_row, format)
                         # Add paranthesis if necessary
@@ -508,7 +508,7 @@ def __generate_interpolate_vertex_values(element, format):
                     name = format["vertex values"](size*v + offset_vertex_values + dim)
                     if mapping == CONTRAVARIANT_PIOLA:
                         value = format["multiply"]([format["inverse"](format["determinant"](None)), sum])
-                    else: 
+                    else:
                         value = format["multiply"]([sum])
                     code += [(name, value)]
 
@@ -520,8 +520,8 @@ def __generate_interpolate_vertex_values(element, format):
 
     # Insert code for computing quantities needed for Piola mapping
     if need_jacobian:
-        code.insert(0, format["snippet jacobian"](element.cell().topological_dimension()) % {"restriction": ""})        
-    
+        code.insert(0, format["snippet jacobian"](element.cell().topological_dimension()) % {"restriction": ""})
+
     return code
 #------------------------------------------------------------------------------
 
@@ -531,7 +531,7 @@ def __extract_sub_dof_maps(dof_map, parent):
     """Recursively extract sub dof maps as a list of tuples where
     each tuple consists of a tuple labeling the sub dof map and
     the sub dof map itself."""
-    
+
     if dof_map.num_sub_dof_maps() == 1:
         return [(parent, dof_map)]
     sub_dof_maps = []
@@ -555,7 +555,7 @@ def __generate_global_dimension(dof_map, format):
 
     # Get total number of dofs per dimension
     num_dofs_per_dim = dof_map.num_dofs_per_dim()
-    
+
     # Sum the number of dofs for each dimension
     terms = []
     for dim in range(len(num_dofs_per_dim)):
@@ -617,7 +617,7 @@ def __generate_tabulate_dofs(dof_map, format, skip=[]):
                         value = format["multiply"](["%d" % num_dofs_per_dim[dim], format["entity index"](dim, entity)])
                     else:
                         value = format["entity index"](dim, entity)
-                    
+
                     # Add position on entity if any
                     if pos > 0:
                         value = format["add"]([value, "%d" % pos])
@@ -649,11 +649,11 @@ def __generate_tabulate_dofs(dof_map, format, skip=[]):
                 else:
                     name = format["offset access"]
                     value = format["add"]([name, value])
-                
+
                 offset_code = [(name, value)]
 
         # Add to local offset
-        local_offset += num_dofs 
+        local_offset += num_dofs
 
     return code
 
