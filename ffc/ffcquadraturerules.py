@@ -27,7 +27,7 @@ def make_quadrature(shape, n, quad_rule=None):
     using FIAT and then transformed and scaled to the UFC element"""
 
     # FIXME: Quadrature for vertices (shape == None)
-    if shape is None:
+    if shape is None or shape is "vertex":
         return ([()], array([1.0,]))
 
     # Set scaling and transform
