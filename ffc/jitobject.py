@@ -44,8 +44,6 @@ class JITObject:
             hexdigest = sha1(string).hexdigest()
             self._hash = int(hexdigest, 16)
 
-        print "hash:", self._hash
-
         return self._hash
 
     def __eq__(self, other):

@@ -227,8 +227,10 @@ class JITTests(unittest.TestCase):
         element = FiniteElement("Lagrange", "triangle", 1)
         v = TestFunction(element)
         u = TrialFunction(element)
-        a0 = dot(grad(v), grad(u))*dx
-        a1 = dot(grad(v), grad(u))*dx
+        f = Coefficient(element)
+        g = Coefficient(element)
+        a0 = f*dot(grad(v), grad(u))*dx
+        a1 = g*dot(grad(v), grad(u))*dx
 
         # Strange this needs to be done twice
 
