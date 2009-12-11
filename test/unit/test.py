@@ -249,7 +249,7 @@ class JITTests(unittest.TestCase):
         dt1 = time() - t
 
         # Good values
-        dt0_good = 0.0001
+        dt0_good = 0.005
         dt1_good = 0.01
 
         print ""

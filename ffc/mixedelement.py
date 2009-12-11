@@ -6,7 +6,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Garth N. Wells 2006-2009
 # Modified by Marie E. Rognes (meg@math.uio.no) 2007
 # Modified by Kristian B. Oelgaard 2009
-# Last changed: 2009-12-09
+# Last changed: 2009-12-11
 
 # Python modules.
 import numpy
@@ -23,7 +23,7 @@ class MixedElement(FiniteElementBase):
     product of finite elements. It is represented as a list of finite
     elements (mixed or simple) and may thus be recursively defined in
     terms of other mixed elements."""
-    
+
     # TODO: KBO: change the argument list to get the ufl_element, modify
     # create_element accordingly
     def __init__(self, elements, ufl_str, value_shape, domain=None):
@@ -58,7 +58,7 @@ class MixedElement(FiniteElementBase):
         error("Basis cannot be accessed explicitly for a mixed element.")
 
     def component_element(self, component):
-        "Return sub element and offset for given component."        
+        "Return sub element and offset for given component."
         offset = 0
         for element in self.extract_elements():
             next_offset = offset + element.value_dimension(0)
@@ -148,6 +148,11 @@ class MixedElement(FiniteElementBase):
         return 1
 
 def _compute_component_table(table, offset, space_dimension):
+
+    print "TABLE"
+    print table
+    print "END TABLE"
+
     "Compute subtable for given component"
     component_table = []
     # Iterate over derivative orders
@@ -161,6 +166,9 @@ def _compute_component_table(table, offset, space_dimension):
             mixed_subtable = numpy.zeros((space_dimension, num_points), dtype = numpy.float)
             # Iterate over element basis functions and fill in non-zero values
             for i in range(len(element_subtable)):
+                print "CHECK --------------"
+                print "CHECK", element_subtable[i]
+                print "CHECK", mixed_subtable[offset + i]
                 mixed_subtable[offset + i] = element_subtable[i]
             # Add to dictionary
             component_table[dorder][dtuple] = mixed_subtable
@@ -194,7 +202,7 @@ def _extract_elements(element):
     # Import here to avoid cyclic dependency
     from finiteelement import FiniteElement
 
-    # If the element is not mixed (a basis element, add to list)        
+    # If the element is not mixed (a basis element, add to list)
     if isinstance(element, FiniteElement):
         elements += [element]
     # Else call this function again for each subelement

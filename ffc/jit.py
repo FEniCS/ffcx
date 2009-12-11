@@ -9,7 +9,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Johan Hake, 2008-2009
 # Modified by Ilmar Wilbers, 2008
 # Modified by Kristian B. Oelgaard, 2009
-# Last changed: 2009-12-09
+# Last changed: 2009-12-11
 
 # Python modules.
 import os
@@ -83,7 +83,7 @@ def jit_form(form, options=None):
     preprocessed_form = preprocess(form)
 
     # Wrap input
-    jit_object = JITObject(preprocessed_form, options)
+    jit_object = JITObject(form, preprocessed_form, options)
 
     # Check cache
     module = instant.import_module(jit_object, cache_dir=options["cache_dir"])

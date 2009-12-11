@@ -3,7 +3,7 @@ __date__ = "2008-09-04"
 __copyright__ = "Copyright (C) 2008 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2009-12-09
+# Last changed: 2009-12-11
 
 # Python modules.
 from hashlib import sha1
@@ -24,12 +24,13 @@ class JITObject:
     single instance of an application (at runtime). The signature is
     persistent and may be used for caching modules on disk."""
 
-    def __init__(self, form, options):
+    def __init__(self, form, preprocessed_form, options):
         "Create JITObject for given form and options"
         assert(isinstance(form, ufl.Form))
 
         # Store data
         self.form = form
+        self.preprocessed_form = preprocessed_form
         self.options = options
         self._hash = None
         self._signature = None
@@ -42,6 +43,8 @@ class JITObject:
             string = str(id(self.form)) + _options_signature(self.options)
             hexdigest = sha1(string).hexdigest()
             self._hash = int(hexdigest, 16)
+
+        print "hash:", self._hash
 
         return self._hash
 
@@ -57,7 +60,7 @@ class JITObject:
             return self._signature
 
         # Compute form signature based on form stored in formdata
-        form_signature = repr(self.form)
+        form_signature = repr(self.preprocessed_form)
 
         # Build signature including form, options, FFC version and SWIG version
         options_signature = _options_signature(self.options)
