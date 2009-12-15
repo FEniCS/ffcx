@@ -9,7 +9,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Johan Hake, 2008-2009
 # Modified by Ilmar Wilbers, 2008
 # Modified by Kristian B. Oelgaard, 2009
-# Last changed: 2009-12-11
+# Last changed: 2009-12-15
 
 # Python modules.
 import os
@@ -94,10 +94,10 @@ def jit_form(form, options=None):
 
         # Get form data from in-memory cache or create it
         if form in _form_data_cache:
-            form_data = _form_data_cache[form]
+            form_data = _form_data_cache[id(form)]
         else:
             form_data = FormData(preprocessed_form)
-            _form_data_cache[form] = form_data
+            _form_data_cache[id(form)] = form_data
         return (compiled_form, module, form_data)
 
     # Write a message
@@ -130,7 +130,7 @@ def jit_form(form, options=None):
     compiled_form = getattr(module, module.__name__ + "_form_0")()
 
     # Store form data in cache
-    _form_data_cache[form] = form_data
+    _form_data_cache[id(form)] = form_data
 
     return compiled_form, module, form_data
 
