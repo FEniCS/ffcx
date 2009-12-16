@@ -34,49 +34,94 @@ def element_representation(ufl_element):
     # Create FIAT element
     fiat_element = create_fiat_element(ufl_element)
 
+    # Compute data for each function
     ir = {}
 
     ir["signature"] = repr(ufl_element)
     ir["cell_shape"] = ufl_element.cell().domain()
-    ir["space_dimension"] = None
-    ir["value_rank"] = None
-    ir["value_dimension"] = None
-    ir["evaluate_basis"] = None
-    ir["evaluate_basis_all"] = None
-    ir["evaluate_basis_derivatives"] = None
-    ir["evaluate_basis_derivatives_all"] = None
+    ir["space_dimension"] = fiat_element.space_dimension()
+    ir["value_rank"] = fiat_element.value_rank()
+    ir["value_dimension"] = fiat_element.value_shape()
+    ir["evaluate_basis"] = fiat_element.get_coeffs()
+    ir["evaluate_basis_all"] = fiat_element.get_coeffs()
+    ir["evaluate_basis_derivatives"] = fiat_element.get_coeffs()
+    ir["evaluate_basis_derivatives_all"] = fiat_element.get_coeffs()
     ir["evaluate_dof"] = None
     ir["evaluate_dofs"] = None
     ir["interpolate_vertex_values"] = None
-    ir["num_sub_elements"] = None
+    ir["num_sub_elements"] = fiat_element.num_sub_elements()
     ir["create_sub_element"] = None
 
+    print "element representation"
+    print "----------------------"
     for (key, value) in ir.iteritems():
         print key, value
+    print
 
     return ir
 
 def dofmap_representation(ufl_element):
     "Compute and return intermediate representation of dofmap."
 
-    ir = {}
+    # Create FIAT element
+    fiat_element = create_fiat_element(ufl_element)
 
-    ir["signature"] = None
+    # Compute data for each function
+    ir = {}
+    ir["signature"] = "FFC dofmap for " + repr(ufl_element)
     ir["needs_mesh_entities"] = None
     ir["init_mesh"] = None
     ir["init_cell"] = None
     ir["init_cell_finalize"] = None
     ir["global_dimension"] = None
-    ir["local_dimension"] = None
-    ir["max_local_dimension"] = None
-    ir["geometric_dimension"] = None
-    ir["num_facet_dofs"] = None
+    ir["local_dimension"] = fiat_element.space_dimension()
+    ir["max_local_dimension"] = fiat_element.space_dimension()
+    ir["geometric_dimension"] = fiat_element.geometric_dimension()
+    ir["num_facet_dofs"] = _num_facet_dofs(fiat_element)
     ir["num_entity_dofs"] = None
     ir["tabulate_dofs"] = None
     ir["tabulate_facet_dofs"] = None
     ir["tabulate_entity_dofs"] = None
     ir["tabulate_coordinates"] = None
-    ir["num_sub_dof_maps"] = None
+    ir["num_sub_dof_maps"] = fiat_element.num_sub_elements()
     ir["dof_map* create_sub_dof_map"] = None
 
+    print "dofmap representation"
+    print "---------------------"
+    for (key, value) in ir.iteritems():
+        print key, value
+    print
+
     return {}
+
+#--- Utility functions ---
+
+def _num_facet_dofs(fiat_element):
+    "Compute the number of dofs on each cell facet."
+
+    # FIXME: Seems to need updating for new FIAT interface
+    return 1
+
+    num_facet_entities = {"interval": (1, 0),
+                          "triangle": (2, 1, 0),
+                          "tetrahedron": (3, 3, 1, 0)}
+    num_dofs_per_dim = _num_dofs_per_dim(fiat_element)
+    num_facet_dofs = 0
+    for dim in range(len(num_dofs_per_dim)):
+        num_facet_dofs += num_facet_entities[cell_shape][dim]*num_dofs_per_dim[dim]
+
+    return num_facet_dofs
+
+def _num_dofs_per_dim(fiat_element):
+    "Compute the number of dofs associated with each topological dimension."
+    num_dofs_per_dim = []
+    for sub_entity_dofs in fiat_element.entity_dofs():
+        sub_num_dofs_per_dim = {}
+        for dim in sub_entity_dofs:
+            num_dofs = [len(sub_entity_dofs[dim][e]) for e in sub_entity_dofs[dim]]
+            if dim in sub_num_dofs_per_dim:
+                sub_num_dofs_per_dim[dim] += pick_first(num_dofs)
+            else:
+                sub_num_dofs_per_dim[dim] = pick_first(num_dofs)
+        num_dofs_per_dim += [sub_num_dofs_per_dim]
+    return num_dofs_per_dim
