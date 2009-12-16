@@ -718,40 +718,6 @@ def _generate_interior_facet_integral(code, form_data, options, prefix, i, label
     elif code_section == "implementation":
         return _generate_code(interior_facet_integral_implementation, ufc_code, options, format)
 
-def _generate_switch(variable, cases, default = ""):
-    "Generate switch statement from given variable and cases"
-
-    # Special case: no cases
-    if len(cases) == 0:
-        return default
-
-    # Special case: one case
-    if len(cases) == 1:
-        return cases[0]
-
-    # Create switch
-    code = "switch ( %s )\n{\n" % variable
-    for i in range(len(cases)):
-        code += "case %d:\n%s\n  break;\n" % (i, indent(cases[i], 2))
-    code += "}"
-    if not default == "":
-        code += "\n" + default
-
-    return code
-
-def _generate_body(declarations):
-    "Generate function body from list of declarations or statements."
-
-    if not isinstance(declarations, list):
-        declarations = [declarations]
-    lines = []
-    for declaration in declarations:
-        if isinstance(declaration, tuple):
-            lines += ["%s = %s;" % declaration]
-        else:
-            lines += ["%s" % declaration]
-    return "\n".join(lines)
-
 def _generate_code(format_string, code, options, format):
     "Generate code according to format string and code dictionary"
 
@@ -765,4 +731,3 @@ def _generate_code(format_string, code, options, format):
 
     # Generate code
     return format_string % code
-

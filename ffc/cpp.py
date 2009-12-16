@@ -201,3 +201,37 @@ else:
     self.format["floating point"] = floating_point
 
 self.format["epsilon"] = 10.0*eval("1e-%s" % precision)
+
+def _generate_switch(variable, cases, default = ""):
+    "Generate switch statement from given variable and cases"
+
+    # Special case: no cases
+    if len(cases) == 0:
+        return default
+
+    # Special case: one case
+    if len(cases) == 1:
+        return cases[0]
+
+    # Create switch
+    code = "switch ( %s )\n{\n" % variable
+    for i in range(len(cases)):
+        code += "case %d:\n%s\n  break;\n" % (i, indent(cases[i], 2))
+    code += "}"
+    if not default == "":
+        code += "\n" + default
+
+    return code
+
+def _generate_body(declarations):
+    "Generate function body from list of declarations or statements."
+
+    if not isinstance(declarations, list):
+        declarations = [declarations]
+    lines = []
+    for declaration in declarations:
+        if isinstance(declaration, tuple):
+            lines += ["%s = %s;" % declaration]
+        else:
+            lines += ["%s" % declaration]
+    return "\n".join(lines)
