@@ -31,12 +31,13 @@ def form_representation(form, form_data, method):
 def element_representation(ufl_element):
     "Compute and return intermediate representation of element."
 
+    # Note to developers: oneliners or call a _function
+
     # Create FIAT element
     fiat_element = create_fiat_element(ufl_element)
 
     # Compute data for each function
     ir = {}
-
     ir["signature"] = repr(ufl_element)
     ir["cell_shape"] = ufl_element.cell().domain()
     ir["space_dimension"] = fiat_element.space_dimension()
@@ -62,6 +63,8 @@ def element_representation(ufl_element):
 
 def dofmap_representation(ufl_element):
     "Compute and return intermediate representation of dofmap."
+
+    # Note to developers: oneliners or call a _function
 
     # Create FIAT element
     fiat_element = create_fiat_element(ufl_element)
