@@ -9,7 +9,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Johan Hake, 2008-2009
 # Modified by Ilmar Wilbers, 2008
 # Modified by Kristian B. Oelgaard, 2009
-# Last changed: 2009-12-11
+# Last changed: 2009-12-16
 
 # Python modules.
 import os
@@ -35,7 +35,6 @@ from log import set_level
 from log import set_prefix
 from log import INFO
 from constants import FFC_OPTIONS
-from finiteelement import FiniteElement
 from mixedelement import MixedElement
 from compiler import compile_form
 from jitobject import JITObject

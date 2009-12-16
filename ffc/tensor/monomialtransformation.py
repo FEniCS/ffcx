@@ -18,9 +18,6 @@ from ffc.log import ffc_assert
 from ffc.log import error
 from ffc.utils import pick_first
 from ffc.createelement import create_element
-from ffc.finiteelement import AFFINE
-from ffc.finiteelement import CONTRAVARIANT_PIOLA
-from ffc.finiteelement import COVARIANT_PIOLA
 
 # FFC tensor representation modules
 from monomialextraction import MonomialForm

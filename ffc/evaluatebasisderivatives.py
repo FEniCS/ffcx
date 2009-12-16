@@ -7,7 +7,7 @@ __date__ = "2007-04-16"
 __copyright__ = "Copyright (C) 2007-2009 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2009-12-09
+# Last changed: 2009-12-16
 
 # Python modules
 import math
@@ -15,8 +15,6 @@ import numpy
 
 # FFC modules
 from log import error
-from finiteelement import CONTRAVARIANT_PIOLA
-from finiteelement import COVARIANT_PIOLA
 from evaluatebasis import generate_map
 from evaluatebasis import dof_map
 from evaluatebasis import generate_basisvalues
@@ -124,7 +122,7 @@ def generate_combinations(element, Indent, format):
     code += [Indent.indent(format["snippet combinations"])\
             % {"combinations": format["derivative combinations"], "shape-1": shape,\
                "num_derivatives" : format["num derivatives"], "n": format["argument derivative order"]}]
-    
+
     return code + [""]
 
 def generate_transform(element, Indent, format):
@@ -186,7 +184,7 @@ def generate_element_code(element, sum_value_dim, Indent, format):
     # Tabulate coefficients for derivatives
     code += tabulate_dmats(element, Indent, format)
 
-    # Compute the derivatives of the basisfunctions on the reference (FIAT) element, 
+    # Compute the derivatives of the basisfunctions on the reference (FIAT) element,
     # as the dot product of the new coefficients and basisvalues
     code += compute_reference_derivatives(element, Indent, format)
 
@@ -486,7 +484,7 @@ def transform_derivatives(element, sum_value_dim, Indent, format):
     format_loop             = format["loop"]
     format_num_derivatives  = format["num derivatives"]
     format_derivatives      = format["reference derivatives"]
-    format_values           = format["argument values"] 
+    format_values           = format["argument values"]
     format_multiply         = format["multiply"]
     format_add              = format["add"]
     format_array_access     = format["array access"]
@@ -494,7 +492,7 @@ def transform_derivatives(element, sum_value_dim, Indent, format):
     format_transform        = format["transform matrix"]
 
     code += [Indent.indent(format["comment"]("Transform derivatives back to physical element"))]
-    
+
     code += [Indent.indent(format_loop("row", 0, format_num_derivatives))]
     code += [Indent.indent(format["block begin"])]
     # Increase indentation

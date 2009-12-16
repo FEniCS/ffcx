@@ -11,7 +11,6 @@ __license__  = "GNU GPL version 3 or any later version"
 from utils import pick_first
 from utils import compute_permutations
 from log import error
-from finiteelement import FiniteElement
 from quadratureelement import QuadratureElement
 
 class DofMap:

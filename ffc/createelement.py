@@ -22,7 +22,6 @@ from log import debug
 from log import error
 
 # FFC fem modules
-#from finiteelement import FiniteElement as FFCFiniteElement
 from mixedelement import MixedElement as FFCMixedElement
 from quadratureelement import QuadratureElement as FFCQuadratureElement
 
@@ -81,3 +80,11 @@ def create_element(ufl_element, domain=None):
 
     return ffc_element
 
+def extract_elements(element):
+    elements = []
+    if isinstance(element, FFCMixedElement):
+        for i in range(element.num_sub_elements()):
+            elements += [extract_elements(element.sub_element(i))]
+    else:
+        elements += [element]
+    return elements

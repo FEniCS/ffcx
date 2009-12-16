@@ -17,14 +17,6 @@ from ufl import FiniteElement as UFLFiniteElement
 # FFC modules.
 from utils import pick_first
 from log import error
-from referencecell import get_vertex_coordinates
-from finiteelement import FiniteElement
-from finiteelement import AFFINE
-from finiteelement import CONTRAVARIANT_PIOLA
-from finiteelement import COVARIANT_PIOLA
-from finiteelement import mapping_to_int
-from dofmap import DofMap
-from dofrepresentation import DofRepresentation
 
 #------------------------------------------------------------------------------
 # From utils.py.

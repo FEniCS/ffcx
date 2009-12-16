@@ -21,7 +21,7 @@ from log import error
 from finiteelement import ufl_domain2fiat_domain
 from dofrepresentation import DofRepresentation
 from ffcquadraturerules import make_quadrature
-from finiteelement import FiniteElement
+#from finiteelement import FiniteElement
 #from finiteelement import AFFINE
 #from finiteelement import CONTRAVARIANT_PIOLA
 #from finiteelement import COVARIANT_PIOLA
@@ -29,7 +29,7 @@ from finiteelement import FiniteElement
 # Default quadrature element degree
 default_quadrature_degree = 1
 
-class QuadratureElement(FiniteElement):
+class QuadratureElement:
     """Write description of QuadratureElement"""
 
     def __init__(self, ufl_element, domain=None):

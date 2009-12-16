@@ -6,7 +6,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Garth N. Wells 2006-2009
 # Modified by Marie E. Rognes (meg@math.uio.no) 2007
 # Modified by Kristian B. Oelgaard 2009
-# Last changed: 2009-12-11
+# Last changed: 2009-12-16
 
 # Python modules.
 import numpy
@@ -184,30 +184,30 @@ def _compute_mixed_entity_dofs(elements):
             mixed_entity_dofs += [element.entity_dofs()]
     return mixed_entity_dofs
 
-def _extract_elements(element):
-    """This function extracts the basis elements recursively from vector elements and mixed elements.
-    Example, the following mixed element:
+# def _extract_elements(element):
+#     """This function extracts the basis elements recursively from vector elements and mixed elements.
+#     Example, the following mixed element:
 
-    element1 = FiniteElement("Lagrange", "triangle", 1)
-    element2 = VectorElement("Lagrange", "triangle", 2)
+#     element1 = FiniteElement("Lagrange", "triangle", 1)
+#     element2 = VectorElement("Lagrange", "triangle", 2)
 
-    element  = element2 + element1, has the structure:
-    mixed-element[mixed-element[Lagrange order 2, Lagrange order 2], Lagrange order 1]
+#     element  = element2 + element1, has the structure:
+#     mixed-element[mixed-element[Lagrange order 2, Lagrange order 2], Lagrange order 1]
 
-    This function returns the list of basis elements:
-    elements = [Lagrange order 2, Lagrange order 2, Lagrange order 1]"""
+#     This function returns the list of basis elements:
+#     elements = [Lagrange order 2, Lagrange order 2, Lagrange order 1]"""
 
-    elements = []
+#     elements = []
 
-    # Import here to avoid cyclic dependency
-    from finiteelement import FiniteElement
+#     # Import here to avoid cyclic dependency
+#     #from finiteelement import FiniteElement
 
-    # If the element is not mixed (a basis element, add to list)
-    if isinstance(element, FiniteElement):
-        elements += [element]
-    # Else call this function again for each subelement
-    else:
-        for i in range(element.num_sub_elements()):
-            elements += _extract_elements(element.sub_element(i))
+#     # If the element is not mixed (a basis element, add to list)
+#     if isinstance(element, FiniteElement):
+#         elements += [element]
+#     # Else call this function again for each subelement
+#     else:
+#         for i in range(element.num_sub_elements()):
+#             elements += _extract_elements(element.sub_element(i))
 
-    return elements
+#     return elements

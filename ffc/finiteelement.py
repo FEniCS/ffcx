@@ -43,13 +43,7 @@ from dofrepresentation import DofRepresentation
 ufl_domain2fiat_domain = {"vertex": 0, "interval": LINE, "triangle": TRIANGLE, "tetrahedron": TETRAHEDRON}
 element_string_to_class = {"Lagrange": Lagrange}
 
-# Remove me
-AFFINE = None
-CONTRAVARIANT_PIOLA = None
-COVARIANT_PIOLA = None
-mapping_to_int = None
-
-class FiniteElement(FiniteElementBase):
+class OldFiniteElement(FiniteElementBase):
     """A FiniteElement represents a finite element in the classical
     sense as defined by Ciarlet. The actual work is done by FIAT and
     this class serves as the interface to FIAT finite elements from

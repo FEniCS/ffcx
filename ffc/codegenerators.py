@@ -19,7 +19,7 @@ from utils import product
 from quadratureelement import QuadratureElement
 from evaluatebasis import evaluate_basis
 from evaluatebasisderivatives import evaluate_basis_derivatives
-from createelement import create_element
+from createelement import create_element, extract_elements
 
 # Utility functions.
 from codegenerators_utils import inner_product
@@ -38,6 +38,7 @@ from codegenerators_utils import __generate_global_dimension
 from codegenerators_utils import __generate_tabulate_dofs
 from codegenerators_utils import __generate_tabulate_facet_dofs
 from codegenerators_utils import __generate_tabulate_coordinates
+
 
 #------------------------------------------------------------------------------
 # From codegenerator.py
@@ -97,16 +98,18 @@ def _generate_finite_element(element, format):
     code["space_dimension"] = "%d" % element.space_dimension()
 
     # Generate code for value_rank
-    # FIXME: This is just a temporary hack to 'support' tensor elements
-    code["value_rank"] = "%d" % element.value_dimension(0)
-    #code["value_rank"] = "%d" % element._rank
+    code["value_rank"] = "%d" % element.value_rank()
 
     # Generate code for value_dimension
-    code["value_dimension"] = ["%d" % element.value_dimension(i) for i in range(max(element.value_rank(), 1))]
+    # Marie: I don't understand this one:
+    code["value_dimension"] = ["%d" % element.value_dimension(i)
+                               for i in range(max(element.value_rank(), 1))]
 
     # Disable code generation for unsupported functions of QuadratureElement,
     # (or MixedElements including QuadratureElements)
-    if not True in [isinstance(e, QuadratureElement) for e in element.extract_elements()]:
+    sub_elements = extract_elements(element)
+    if not True in [isinstance(e, QuadratureElement) for e in sub_elements]:
+
         # Generate code for evaluate_basis
         code["evaluate_basis"] = []#evaluate_basis(element, format)
 
@@ -120,7 +123,7 @@ def _generate_finite_element(element, format):
           format["exception"]("The vectorised version of evaluate_basis_derivatives() is not yet implemented.")
 
         # Generate code for interpolate_vertex_values
-        code["interpolate_vertex_values"] = __generate_interpolate_vertex_values(element, format)
+        code["interpolate_vertex_values"] = []#__generate_interpolate_vertex_values(element, format)
     else:
         code["evaluate_basis"] =\
           format["exception"]("evaluate_basis() is not supported for QuadratureElement")

@@ -6,7 +6,7 @@ __copyright__ = "Copyright (C) 2009 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Anders Logg, 2009
-# Last changed: 2009-12-09
+# Last changed: 2009-12-16
 
 # Python modules.
 from numpy import shape
@@ -28,9 +28,6 @@ from ffc.log import info
 from ffc.log import debug
 from ffc.log import ffc_assert
 from ffc.log import error
-from ffc.finiteelement import AFFINE
-from ffc.finiteelement import CONTRAVARIANT_PIOLA
-from ffc.finiteelement import COVARIANT_PIOLA
 
 # Utility and optimisation functions for quadraturegenerator.
 from quadraturetransformerbase import QuadratureTransformerBase

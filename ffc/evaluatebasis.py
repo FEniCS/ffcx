@@ -16,8 +16,6 @@ import numpy
 
 # FFC modules
 from log import error
-from finiteelement import CONTRAVARIANT_PIOLA
-from finiteelement import COVARIANT_PIOLA
 from removeunused import remove_unused
 from codegenerators_utils import IndentControl
 from codegenerators_utils import inner_product
