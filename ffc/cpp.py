@@ -177,7 +177,7 @@ format = {
     "classname interior_facet_integral": \
         lambda prefix, i, label: "%s_%d_interior_facet_integral_%s" % (prefix.lower(), i, label),
     "classname exterior_facet_integral": \
-        lambda prefix, i, label: "%s_%d_exterior_facet_integral_%s" % (prefix.lower(), i, label)|}
+        lambda prefix, i, label: "%s_%d_exterior_facet_integral_%s" % (prefix.lower(), i, label)}
 
 # Set number of digits for floating point and machine precision
 precision = int(options["precision"])
