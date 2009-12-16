@@ -16,6 +16,8 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Last changed: 2009-12-16
 
+from fiatinterface import create_fiat_element
+
 def form_representation(form, form_data, method):
     "Compute and return intermediate representation of form."
 
@@ -29,10 +31,13 @@ def form_representation(form, form_data, method):
 def element_representation(ufl_element):
     "Compute and return intermediate representation of element."
 
+    # Create FIAT element
+    fiat_element = create_fiat_element(ufl_element)
+
     ir = {}
 
     ir["signature"] = repr(ufl_element)
-    ir["cell_shape"] = None
+    ir["cell_shape"] = ufl_element.cell().domain()
     ir["space_dimension"] = None
     ir["value_rank"] = None
     ir["value_dimension"] = None
@@ -45,6 +50,9 @@ def element_representation(ufl_element):
     ir["interpolate_vertex_values"] = None
     ir["num_sub_elements"] = None
     ir["create_sub_element"] = None
+
+    for (key, value) in ir.iteritems():
+        print key, value
 
     return ir
 
