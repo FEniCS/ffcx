@@ -8,7 +8,7 @@ __copyright__ = "Copyright (C) 2007 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Anders Logg 2007
-# Last changed: 2009-12-09
+# Last changed: 2009-12-16
 
 # Python modules
 import math
@@ -46,7 +46,7 @@ from ffc.common.log import error, warning
 
     Raviart-Thomas ? (not tested since it is broken in FFC, but should work)
     Nedelec (broken?)
-    
+
     Tensor valued elements!"""
 
     code = []
@@ -95,9 +95,9 @@ def generate_map(element, Indent, format):
     format_epsilon        = format["epsilon"]
 
     # Get coordinates and map to the UFC reference element from codesnippets.py
-    code += [Indent.indent(format["coordinate map"](element.cell().domain()))] + [""]
+    code += [Indent.indent(format["coordinate map"](element.cell_domain()))] + [""]
 
-    if (element.cell().domain() == "interval"):
+    if (element.cell_domain() == "interval"):
 
         # Map coordinates to the reference interval
         code += [Indent.indent(format_comment("Map coordinates to the reference interval"))]
@@ -105,15 +105,15 @@ def generate_map(element, Indent, format):
         # Code snippet reproduced from FIAT: reference.py: eta_line(xi)
         code += [Indent.indent(format["snippet eta_interval"])]
 
-    elif (element.cell().domain() == "triangle"):
+    elif (element.cell_domain() == "triangle"):
 
         # Map coordinates to the reference square
         code += [Indent.indent(format_comment("Map coordinates to the reference square"))]
- 
+
         # Code snippet reproduced from FIAT: reference.py: eta_triangle(xi)
         code += [Indent.indent(format["snippet eta_triangle"]) %(format_floating_point(format_epsilon))]
 
-    elif (element.cell().domain() == "tetrahedron"):
+    elif (element.cell_domain() == "tetrahedron"):
 
         # Map coordinates to the reference cube
         code += [Indent.indent(format_comment("Map coordinates to the reference cube"))]
@@ -122,8 +122,8 @@ def generate_map(element, Indent, format):
         code += [Indent.indent(format["snippet eta_tetrahedron"]) %(format_floating_point(format_epsilon),\
                        format_floating_point(format_epsilon))]
     else:
-        error("Cannot generate map for shape: %d" %(element.cell().domain()))
- 
+        error("Cannot generate map for shape: %d" %(element.cell_domain()))
+
     return code + [""]
 
 def reset_values(num_components, vector, Indent, format):
@@ -241,17 +241,17 @@ def generate_basisvalues(element, Indent, format):
     code += compute_scaling(element, Indent, format)
 
     # Compute auxilliary functions
-    if element.cell().domain() == "interval":
+    if element.cell_domain() == "interval":
         code += compute_psitilde_a(element, Indent, format)
-    elif element.cell().domain() == "triangle":
+    elif element.cell_domain() == "triangle":
         code += compute_psitilde_a(element, Indent, format)
         code += compute_psitilde_b(element, Indent, format)
-    elif element.cell().domain() == "tetrahedron":
+    elif element.cell_domain() == "tetrahedron":
         code += compute_psitilde_a(element, Indent, format)
         code += compute_psitilde_b(element, Indent, format)
         code += compute_psitilde_c(element, Indent, format)
     else:
-        error("Cannot compute auxilliary functions for shape: %d" %(element.cell().domain()))
+        error("Cannot compute auxilliary functions for shape: %d" %(element.cell_domain()))
 
     # Compute the basisvalues
     code += compute_basisvalues(element, Indent, format)
@@ -290,8 +290,9 @@ def tabulate_coefficients(element, Indent, format):
 
     # Get polynomial dimension of basis
     # TODO: Get poly_dim and num_dofs as the shape of coefficients, this Must work
-    poly_dim = len(element.basis().fspace.base.bs)
+    poly_dim = element.space_dimension()
 
+    # Marie says: Que?
     # Get the number of dofs from element
     num_dofs = element.space_dimension()
 
@@ -328,7 +329,7 @@ def relevant_coefficients(element, Indent, format):
 
     # Get polynomial dimension of basis
     # TODO: Can we simply use element.space_dimension() here?
-    poly_dim = len(element.basis().fspace.base.bs)
+    poly_dim = element.space_dimension()
 
     # Extract relevant coefficients and declare as floats
     code += [Indent.indent(format_comment("Extract relevant coefficients"))]
@@ -370,7 +371,7 @@ def compute_values(element, sum_value_dim, vector, Indent, format):
     num_components = element.value_dimension(0)
 
     # Get polynomial dimension of base
-    poly_dim = len(element.basis().fspace.base.bs)
+    poly_dim = element.space_dimension()
 
     # Check which transform we should use to map the basis functions
     mapping = element.mapping()
@@ -402,7 +403,7 @@ def compute_values(element, sum_value_dim, vector, Indent, format):
                 inner = [format_mult([inverse_jacobian_column[j], basis_col[j]]) for j in range(element.cell().topological_dimension())]
                 sum = format_group(format_add(inner))
                 value = format_mult([sum])
-                
+
             code += [(Indent.indent(name), value)]
     else:
          name = format_pointer + format_values
@@ -432,7 +433,7 @@ def compute_scaling(element, Indent, format):
     degree = element.degree()
 
     # Get the element cell domain
-    element_cell_domain = element.cell().domain()
+    element_cell_domain = element.cell_domain()
 
     # For 1D scalings are not needed
     if element_cell_domain == "interval":
@@ -530,7 +531,7 @@ def compute_psitilde_b(element, Indent, format):
         a = 2*i+1
         b = 0
         n = degree - i
-            
+
         # Create list of variable names
         variables = [format_y, format_psitilde_bs(i)]
 
@@ -556,7 +557,7 @@ def compute_psitilde_c(element, Indent, format):
     psitilde_cs_(n-1)[0] = 1.0
     psitilde_cs_(n-1)[1] = a + b * y
     psitilde_cs_n[0] = 1.0
-    where a, b and c are coefficients computed by 
+    where a, b and c are coefficients computed by
 
     [[jacobi.eval_jacobi_batch(2*(i+j+1),0, n-i-j) for j in range(0,n+1-i)] for i in range(0,n+1)]"""
 
@@ -580,7 +581,7 @@ def compute_psitilde_c(element, Indent, format):
             a = 2*(i+j+1)
             b = 0
             n = degree - i - j
-            
+
             # Create list of variable names
             variables = [format_z, format_psitilde_cs(i,j)]
 
@@ -617,10 +618,10 @@ def compute_basisvalues(element, Indent, format):
     code += [Indent.indent(format["comment"]("Compute basisvalues"))]
 
     # Get polynomial dimension of base
-    poly_dim = len(element.basis().fspace.base.bs)
+    poly_dim = element.space_dimension()
 
     # Get the element cell domain
-    element_cell_domain = element.cell().domain()
+    element_cell_domain = element.cell_domain()
 
     # 1D
     if (element_cell_domain == "interval"):
@@ -702,7 +703,7 @@ def eval_jacobi_batch_scalar(a, b, n, variables, format):
     format_secondary_index  = format["secondary index"]
     format_float            = format["floating point"]
     format_epsilon          = format["epsilon"]
-    
+
     # Format variables
     access = lambda i: variables[1] + format_secondary_index(i)
     coord = variables[0]

@@ -4,7 +4,7 @@ __copyright__ = "Copyright (C) 2009 Kristian B. Oelgaard and Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Garth N. Wells 2009
-# Last changed: 2009-12-09
+# Last changed: 2009-12-16
 
 # UFL modules
 from ufl import FiniteElement as UFLFiniteElement
@@ -12,17 +12,32 @@ from ufl import MixedElement as UFLMixedElement
 from ufl import ElementRestriction as UFLElementRestriction
 from ufl import TensorElement as UFLTensorElement
 
+# FIAT modules
+from FIAT.shapes import LINE, TRIANGLE, TETRAHEDRON
+from FIAT_NEW.lagrange import Lagrange
+from FIAT_NEW.reference_element import ufc_simplex
+
 # FFC modules
 from log import debug
 from log import error
 
 # FFC fem modules
-from finiteelement import FiniteElement as FFCFiniteElement
+#from finiteelement import FiniteElement as FFCFiniteElement
 from mixedelement import MixedElement as FFCMixedElement
 from quadratureelement import QuadratureElement as FFCQuadratureElement
 
 # Cache for computed elements
 _cache = {}
+
+# Dictionaries of basic element data
+ufl_domain_dimension = {"vertex": 0, "interval": 1, "triangle": 2, "tetrahedron": 3}
+element_string_to_class = {"Lagrange": Lagrange}
+
+def create_fiat_element(ufl_element, domain):
+    # Set up FIAT element:
+    Element = element_string_to_class[ufl_element.family()]
+    reference_cell = ufc_simplex(ufl_domain_dimension[ufl_element.cell().domain()])
+    return Element(reference_cell, ufl_element.degree())
 
 def create_element(ufl_element, domain=None):
     "Create FFC element (wrapper for FIAT element) from UFL element."
@@ -49,7 +64,9 @@ def create_element(ufl_element, domain=None):
         if ufl_element.family() == "Quadrature":
             ffc_element = FFCQuadratureElement(ufl_element, domain)
         else:
-            ffc_element = FFCFiniteElement(ufl_element, domain)
+            #ffc_element = FFCFiniteElement(ufl_element, domain)
+            ffc_element = create_fiat_element(ufl_element, domain)
+
     elif isinstance(ufl_element, UFLMixedElement):
         sub_elements = [create_element(e, domain) for e in ufl_element.sub_elements()]
         ffc_element = FFCMixedElement(sub_elements, repr(ufl_element), ufl_element.value_shape(), domain)

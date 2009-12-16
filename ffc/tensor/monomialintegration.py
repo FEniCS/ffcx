@@ -11,7 +11,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Garth N. Wells 2006
 # Modified by Marie E. Rognes (meg@math.uio.no) 2008
 # Modified by Kristian B. Oelgaard, 2009
-# Last changed: 2009-12-09
+# Last changed: 2009-12-16
 
 # Python modules.
 import numpy
@@ -35,6 +35,8 @@ from ffc.quadratureelement import QuadratureElement
 from multiindex import build_indices
 from monomialextraction import MonomialException
 from monomialtransformation import MonomialIndex
+
+geometric_dimension_to_string = {0: "vertex", 1: "interval", 2: "triangle", 3: "tetrahedron"}
 
 def integrate(monomial, domain_type, facet0, facet1, quadrature_order):
     """Compute the reference tensor for a given monomial term of a
@@ -67,8 +69,8 @@ def _init_quadrature(arguments, domain_type, quadrature_order):
 
     # Get shapes (check first factor, should be the same for all)
     element = arguments[0].element
-    cell_shape = element.cell().domain()
-    facet_shape = element.cell().facet_domain()
+    cell_shape = geometric_dimension_to_string[element.geometric_dimension()]
+    facet_shape = geometric_dimension_to_string[element.geometric_dimension() - 1]
 
     # FIXME: KBO: Old, remove this?
     # Compute number of points to match the degree
@@ -119,11 +121,12 @@ def _init_table(arguments, domain_type, points, facet0, facet1):
         # Tabulate for different integral types
         if domain_type == Measure.CELL:
             table[(element, None)] = element.tabulate(order, points)
+            print table[(element, None)]
         elif domain_type == Measure.EXTERIOR_FACET:
-            table[(element, None)] = element.tabulate(order, map_to_facet(element.cell().domain(), points, facet0))
+            table[(element, None)] = element.tabulate(order, map_to_facet(element.cell_domain(), points, facet0))
         elif domain_type == Measure.INTERIOR_FACET:
-            table[(element, "+")] = element.tabulate(order, map_to_facet(element.cell().domain(), points, facet0))
-            table[(element, "-")] = element.tabulate(order, map_to_facet(element.cell().domain(), points, facet1))
+            table[(element, "+")] = element.tabulate(order, map_to_facet(element.cell_domain(), points, facet0))
+            table[(element, "-")] = element.tabulate(order, map_to_facet(element.cell_domain(), points, facet1))
 
     return table
 
@@ -146,7 +149,8 @@ def _compute_psi(v, table, num_points, domain_type):
     # later when we sum over these dimensions.
 
     # Get cell dimension
-    cell_dimension = v.element.cell().topological_dimension()
+    cell_dimension = v.element.geometric_dimension()
+    print "cell_dimension = ", cell_dimension
 
     # Get indices and shapes for components
     if len(v.components) ==  0:
@@ -185,7 +189,9 @@ def _compute_psi(v, table, num_points, domain_type):
                 # Get values from table
                 Psi[component][tuple(dlist)] = etable[cindex[0].index_range[component]][dorder][dtuple]
     else:
-        etable = table[(v.element, v.restriction)][dorder]
+        print "key = (v.element, v.restriction)", (v.element, v.restriction)
+        print "table.keys() = ", table.keys()
+        etable = table[(v.element, v.restriction)]#[dorder]
         for dlist in dlists:
             # Translate derivative multiindex to lookup tuple
             dtuple = _multiindex_to_tuple(dlist, cell_dimension)

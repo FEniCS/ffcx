@@ -4,7 +4,7 @@ __copyright__ = "Copyright (C) 2007-2008 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Garth N. Wells 2006-2009
-# Last changed: 2009-12-09
+# Last changed: 2009-12-16
 
 # Python modules.
 import numpy
@@ -22,9 +22,9 @@ from finiteelement import ufl_domain2fiat_domain
 from dofrepresentation import DofRepresentation
 from ffcquadraturerules import make_quadrature
 from finiteelement import FiniteElement
-from finiteelement import AFFINE
-from finiteelement import CONTRAVARIANT_PIOLA
-from finiteelement import COVARIANT_PIOLA
+#from finiteelement import AFFINE
+#from finiteelement import CONTRAVARIANT_PIOLA
+#from finiteelement import COVARIANT_PIOLA
 
 # Default quadrature element degree
 default_quadrature_degree = 1

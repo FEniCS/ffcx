@@ -7,7 +7,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Marie E. Rognes, 2008
 # Modified by Andy R. Terrel, 2007
 # Modified by Kristian B. Oelgaard, 2009
-# Last changed: 2009-12-09
+# Last changed: 2009-12-16
 
 # Python modules.
 import sys
@@ -41,12 +41,13 @@ from dofrepresentation import DofRepresentation
 
 # Dictionaries of basic element data
 ufl_domain2fiat_domain = {"vertex": 0, "interval": LINE, "triangle": TRIANGLE, "tetrahedron": TETRAHEDRON}
+element_string_to_class = {"Lagrange": Lagrange}
 
-# Value mappings
-AFFINE = "affine"
-CONTRAVARIANT_PIOLA = "contravariant Piola"
-COVARIANT_PIOLA = "covariant Piola"
-mapping_to_int = {AFFINE:0, CONTRAVARIANT_PIOLA:1, COVARIANT_PIOLA:2}
+# Remove me
+AFFINE = None
+CONTRAVARIANT_PIOLA = None
+COVARIANT_PIOLA = None
+mapping_to_int = None
 
 class FiniteElement(FiniteElementBase):
     """A FiniteElement represents a finite element in the classical
@@ -77,25 +78,25 @@ class FiniteElement(FiniteElementBase):
         # Save the domain
         self._domain = domain
 
-        # Get FIAT element from string
-        (self._fiat_element, self._mapping) = self.__choose_element(ufl_element.family(),
-                                                                      ufl_element.cell().domain(), ufl_element.degree())
+        # Set up FIAT element:
+        Element = element_string_to_class[ufl_element.family()]
+        domain = ufl_domain2fiat_domain[ufl_element.cell().domain()]
+        self._fiat_element = Element(ufl_element.family(), domain, ufl_element.degree())
+
 
         if ufl_element.family() not in ("Quadrature", "QE"):
-            # Get the transformed (according to mapping) function space:
-            self._transformed_space = self.__transformed_function_space()
 
             # Get entity dofs from FIAT element
-            self._entity_dofs = [self._fiat_element.dual_basis().entity_ids]
+            #self._entity_dofs = [self._fiat_element.dual_basis().entity_ids]
 
             # Get the dof identifiers from FIAT element
-            self._dual_basis = self.__create_dof_representation(self._fiat_element.dual_basis().get_dualbasis_types())
+            #self._dual_basis = self.__create_dof_representation(self._fiat_element.dual_basis().get_dualbasis_types())
 
             # Dofs that have been restricted (it is a subset of self._entity_dofs)
             self._restricted_dofs = []
 
             # FIXME: This is just a temporary hack to 'support' tensor elements
-            self._rank = self.basis().rank()
+            #self._rank = self.basis().rank()
 
 
         # Handle restrictions
@@ -131,11 +132,11 @@ class FiniteElement(FiniteElementBase):
             else:
                 error("Restriction of FiniteElement to Measure has not been implemented yet.")
 
-    def basis(self):
-        "Return basis of finite element space"
-        # Should be safe w.r.t. restrictions, is only used in this module and
-        # evaluate_basis and evaluate_basis_derivatives where it is not abused.
-        return self._transformed_space
+    #def basis(self):
+    #    "Return basis of finite element space"
+    #    # Should be safe w.r.t. restrictions, is only used in this module and
+    #    # evaluate_basis and evaluate_basis_derivatives where it is not abused.
+    #    #return self._transformed_space
 
     def component_element(self, component):
         "Return sub element and offset for given component."
@@ -269,61 +270,3 @@ class FiniteElement(FiniteElementBase):
         # Unknown element
         error("Unknown finite element: " + str(family))
 
-    def __create_dof_representation(self, list_of_fiat_dofs):
-        """ Take the FIAT dof representation and convert it to the ffc
-        dof representation including transforming the points from one
-        reference element onto the other."""
-
-        # TODO: Modify this for restrictions? See dual_basis(), might be able
-        # to propagate this to FIAT
-        dofs = []
-
-        # In order to convert from the FIAT geometry to the UFC
-        # geometry we need the pushforward and the jacobian of the
-        # geometry mapping. Note that the Jacobian returned by FIAT is
-        # the one of the mapping from the physical to the reference
-        # element. This is the inverse of the nomenclature usually
-        # used in this code.
-        pushforward = self.basis().pushforward
-        fiat_J = self.basis().get_jacobian()
-        if self._mapping == CONTRAVARIANT_PIOLA:
-            J = 1.0/numpy.linalg.det(fiat_J)*numpy.transpose(fiat_J)
-        elif self._mapping == COVARIANT_PIOLA:
-            J = numpy.linalg.inv(fiat_J)
-
-        for fiat_dof_repr in list_of_fiat_dofs:
-            (name, fiat_pts, fiat_dirs, fiat_weights) = fiat_dof_repr
-            directions = []
-            weights = []
-
-            # The points on the FIAT reference element are pushed onto
-            # the UFC reference element:
-            points = [tuple(pushforward(p)) for p in fiat_pts]
-
-            # The direction map according to inverse tranpose of the
-            # mapping of the element space
-            if not fiat_dirs == None:
-                directions = [tuple(numpy.dot(J, d)) for d in fiat_dirs]
-
-            # The integrals are not preserved, so we keep the FIAT
-            # weights (for now).
-            if not fiat_weights == None:
-                weights = [w for w in fiat_weights]
-
-            dofs += [DofRepresentation(name, points, directions, weights)]
-
-        return dofs
-
-    def __transformed_function_space(self):
-        """ Transform the function space onto the chosen reference
-        cell according to the given mapping of the finite element."""
-        function_space = self._fiat_element.function_space()
-        vertices = referencecell.get_vertex_coordinates(self.cell().domain())
-        if self._mapping == AFFINE:
-            return AffineTransformedFunctionSpace(function_space, vertices)
-        elif self._mapping == CONTRAVARIANT_PIOLA:
-            return PiolaTransformedFunctionSpace(function_space, vertices, "div")
-        elif self._mapping == COVARIANT_PIOLA:
-            return PiolaTransformedFunctionSpace(function_space, vertices, "curl")
-        else:
-            error(family, "Unknown transform")

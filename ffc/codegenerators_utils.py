@@ -6,7 +6,7 @@ __date__ = "2009-12-09"
 __copyright__ = "Copyright (C) 2009 Anders Logg and Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2009-12-10
+# Last changed: 2009-12-16
 
 # Python modules.
 import numpy
@@ -192,7 +192,7 @@ def __generate_evaluate_dof(element, format):
          for dof in dofs]))
     code  += ["%sX[%d][%d][%d] = %s;" % (format["table declaration"],
                                          num_dofs, max_num_points,
-                                         element.cell().topological_dimension(), s)]
+                                         element.geometric_dimension(), s)]
     s = block(separator.join(
         [block(separator.join([floating_point(w) for w in dof.weights]))
          for dof in dofs]))
@@ -234,7 +234,7 @@ def __generate_evaluate_dof(element, format):
         (tab, endloop, index) = (2, "\n} // End for", "j")
 
     # Map the points from the reference onto the physical element
-    code += [indent(format["snippet map_onto_physical"](element.cell().geometric_dimension())
+    code += [indent(format["snippet map_onto_physical"](element.geometric_dimension())
                     % {"j": index}, tab)]
 
     # Evaluate the function at the physical points
@@ -300,12 +300,12 @@ def __map_function_values(num_values, element, format):
     # mappings. Otherwise, just add code for the vertex coordinates
     if contrapiola_present:
         # If contravariant piola: Will need J, det J and J^{-1}
-        precode += [format["snippet jacobian"](element.cell().topological_dimension())
+        precode += [format["snippet jacobian"](element.geometric_dimension())
                  % {"restriction":""}]
         precode += ["\ndouble copyofvalues[%d];" % num_values]
     elif copiola_present:
         # If covariant piola: Will need J only
-        precode += [format["snippet only jacobian"](element.cell().topological_dimension())
+        precode += [format["snippet only jacobian"](element.geometric_dimension())
                  % {"restriction":""}]
         precode += ["\ndouble copyofvalues[%d];" % num_values]
     else:
@@ -334,7 +334,7 @@ def __map_function_values(num_values, element, format):
 
 
     # Then it just remains to actually add the different mappings to the code:
-    n = element.cell().topological_dimension()
+    n = element.geometric_dimension()
     mappings_code = {mapping_to_int[AFFINE]: __affine_map(),
                      mapping_to_int[CONTRAVARIANT_PIOLA]:
                      __contravariant_piola(n, offset),
@@ -409,7 +409,7 @@ def __generate_interpolate_vertex_values(element, format):
     code = []
 
     # Get reference cell vertices
-    vertices = get_vertex_coordinates(element.cell().domain())
+    vertices = get_vertex_coordinates(element.cell_domain())
 
 #    # Set vertices (note that we need to use the FIAT reference cells)
 #    if element.cell().domain() == "interval":
@@ -470,7 +470,7 @@ def __generate_interpolate_vertex_values(element, format):
             need_jacobian = True
 
             # Check that dimension matches for Piola transform
-            if not sub_element.value_dimension(0) == sub_element.cell().topological_dimension():
+            if not sub_element.value_dimension(0) == sub_element.geometric_dimension():
                 error("Vector dimension of basis function does not match for Piola transform.")
 
             # Get entities for the dofs
@@ -520,7 +520,7 @@ def __generate_interpolate_vertex_values(element, format):
 
     # Insert code for computing quantities needed for Piola mapping
     if need_jacobian:
-        code.insert(0, format["snippet jacobian"](element.cell().topological_dimension()) % {"restriction": ""})
+        code.insert(0, format["snippet jacobian"](element.geometric_dimension()) % {"restriction": ""})
 
     return code
 #------------------------------------------------------------------------------
@@ -723,7 +723,7 @@ def __generate_tabulate_coordinates(dof_map, format):
         table = element.tabulate(0, coordinates)
 
         # Get the cell shape TODO: KBO: should it be topological_dimension?
-        cell_shape = dof_map.element().cell().topological_dimension()
+        cell_shape = dof_map.element().geometric_dimension()
 
         # Get matrix of values of basisfunctions at points (dof, values at dofs on linear element)
         transformed_values = numpy.transpose(table[0][(0,)*cell_shape])

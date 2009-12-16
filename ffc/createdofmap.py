@@ -4,7 +4,7 @@ __copyright__ = "Copyright (C) 2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian B. Oelgaard
-# Last changed: 2009-12-09
+# Last changed: 2009-12-16
 
 # FFC modules
 from log import debug
@@ -24,7 +24,8 @@ def create_dof_map(ufl_element):
 
     # Create equivalent FFC element and dof map
     ffc_element = create_element(ufl_element)
-    ffc_dof_map = DofMap(ffc_element)
+    ffc_dof_map = ffc_element.dual
+    #ffc_dof_map = DofMap(ffc_element)
 
     # Add dof map to cache
     _cache[ufl_element] = ffc_dof_map

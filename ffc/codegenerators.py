@@ -7,7 +7,7 @@ __date__ = "2009-12-09"
 __copyright__ = "Copyright (C) 2009 Anders Logg and Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2009-12-09
+# Last changed: 2009-12-16
 
 # Python modules.
 import numpy
@@ -50,12 +50,12 @@ def generate_common_code(form_data, format):
     code["finite_elements"] = generate_finite_elements(form_data, format)
 
     # Generate code for dof maps
-    code["dof_maps"] = generate_dof_maps(form_data, format)
+    code["dof_maps"] = ""#generate_dof_maps(form_data, format)
 
     # Generate code for form
-    debug("Generating code for form...")
-    code["form"] = generate_form(form_data, format)
-    debug("done")
+    #debug("Generating code for form...")
+    #code["form"] = generate_form(form_data, format)
+    #debug("done")
 
     return code
 #------------------------------------------------------------------------------
@@ -91,15 +91,15 @@ def _generate_finite_element(element, format):
     code["signature"] = repr(element)
 
     # Generate code for cell_shape
-    code["cell_shape"] = format["cell shape"](element.cell().domain())
+    code["cell_shape"] = format["cell shape"](element.cell_domain())
 
     # Generate code for space_dimension
     code["space_dimension"] = "%d" % element.space_dimension()
 
     # Generate code for value_rank
     # FIXME: This is just a temporary hack to 'support' tensor elements
-    code["value_rank"] = "%d" % element.value_rank()
-    code["value_rank"] = "%d" % element._rank
+    code["value_rank"] = "%d" % element.value_dimension(0)
+    #code["value_rank"] = "%d" % element._rank
 
     # Generate code for value_dimension
     code["value_dimension"] = ["%d" % element.value_dimension(i) for i in range(max(element.value_rank(), 1))]
@@ -108,10 +108,10 @@ def _generate_finite_element(element, format):
     # (or MixedElements including QuadratureElements)
     if not True in [isinstance(e, QuadratureElement) for e in element.extract_elements()]:
         # Generate code for evaluate_basis
-        code["evaluate_basis"] = evaluate_basis(element, format)
+        code["evaluate_basis"] = []#evaluate_basis(element, format)
 
         # Generate code for evaluate_basis_derivatives
-        code["evaluate_basis_derivatives"] = evaluate_basis_derivatives(element, format)
+        code["evaluate_basis_derivatives"] = []#evaluate_basis_derivatives(element, format)
 
         # Generate vectorised version of evaluate functions
         code["evaluate_basis_all"] =\
@@ -137,7 +137,7 @@ def _generate_finite_element(element, format):
           format["exception"]("interpolate_vertex_values() is not supported for QuadratureElement")
 
     # Generate code for evaluate_dof
-    code["evaluate_dof"] = __generate_evaluate_dof(element, format)
+    code["evaluate_dof"] = []#__generate_evaluate_dof(element, format)
 
     # Generate code for num_sub_elements
     code["num_sub_elements"] = "%d" % element.num_sub_elements()

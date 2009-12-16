@@ -5,7 +5,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Marie E. Rognes (meg@math.uio.no), 2007
 # Modified by Kristian Oelgaard, 2007 - 2009
-# Last changed: 2009-12-09
+# Last changed: 2009-12-16
 
 # FFC modules
 from utils import pick_first
@@ -29,7 +29,7 @@ class DofMap:
         self.__signature           = "FFC dof map for " + repr(element)
         self.__local_dimension     = element.space_dimension()
         self.__geometric_dimension = element.cell().geometric_dimension()
-        self.__entity_dofs         = entity_dofs
+        #self.__entity_dofs         = entity_dofs
         self.__num_dofs_per_dim    = self.__compute_num_dofs_per_dim(entity_dofs)
         self.__num_facet_dofs      = self.__compute_num_facet_dofs(entity_dofs, element.cell().domain())
         self.__dof_entities        = self.__compute_dof_entities(entity_dofs)
@@ -53,7 +53,7 @@ class DofMap:
         """Return a dictionary mapping the mesh entities of the
         reference cell to the degrees of freedom associated with the
         entity"""
-        return self.__entity_dofs
+        return self.__element.entity_dofs()
 
     def num_facet_dofs(self):
         "Return the number of dofs on each cell facet"
@@ -66,7 +66,7 @@ class DofMap:
     def get_max_num_of_points(self):
         "Return the maximal number of points associated with the dofs"
         return max(self.get_num_of_points())
-       
+
     def dof_coordinates(self):
         "Return the coordinates associated with each dof"
         # FIXME meg: Now returns the first coordinate associated with
@@ -143,7 +143,7 @@ class DofMap:
             num_facet_dofs += num_facet_entities[cell_shape][dim]*num_dofs_per_dim[dim]
 
         return num_facet_dofs
-        
+
     def __compute_dof_entities(self, entity_dofs):
         "Compute the entities associated with each dof"
         dof_entities = {}
@@ -230,7 +230,7 @@ class DofMap:
         return families[:-1] == families[1:] and \
                dimensions[:-1] == dimensions[1:]  and \
                families[0] in ["Lagrange", "Discontinuous Lagrange"]
-        
+
     def __repr__(self):
         "Pretty print"
         return self.signature()

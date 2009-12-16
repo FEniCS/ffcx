@@ -6,7 +6,7 @@ __copyright__ = "Copyright (C) 2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian B. Oelgaard, 2009
-# Last changed: 2009-12-09
+# Last changed: 2009-12-16
 
 # UFL modules
 from ufl.classes import Argument
@@ -232,7 +232,7 @@ class TransformedMonomial:
             element = create_element(f.element())
             vdim = element.value_dimension(0) # FIXME: rank dependent (meg)
             sdim = element.space_dimension()
-            gdim = element.cell().geometric_dimension()
+            gdim = element.geometric_dimension()
             cdim = element.num_sub_elements()
 
             # Extract basis function index and coefficients
