@@ -1,13 +1,72 @@
 """This is the compiler, acting as the main interface for compilation
-of forms and breaking the compilation into several sequential stages:
+of forms and breaking the compilation into several sequential stages.
+The output of each stage is the input of the next stage.
 
-   0. language        -  expressing the form in the form language (UFL)
-   1. analysis        -  simplifying and preprocessing the form (UFL)
-   2. representation  -  computing a representation of the form (FIAT/FFC)
-   3. optimization    -  optimizing the form representation (FErari)
-   4. codegeneration  -  generating code according to a format (FFC)
-   5. format          -  writing the generated code to file (FFC -> UFC)
+Stage 0: Language, parsing
+--------------------------
 
+  Input:  Python code or .ufl file
+  Output: UFL form
+
+  This stage consists of parsing and expressing a form in the
+  UFL form language.
+
+  This stage is completely handled by UFL.
+
+Stage 1: Analysis
+-----------------
+
+  Input:  UFL form
+  Output: Preprocessed UFL form and FormData (metadata)
+
+  This stage preprocesses the UFL form and extracts form metadata.
+  It may also perform simplifications on the form.
+
+Stage 2: Code representation
+----------------------------
+
+  Input:  Preprocessed UFL form and FormData (metadata)
+  Output: Intermediate Representation (IR)
+
+  This stage examines the input and generates all data needed for code
+  generation. This includes generation of finite element basis
+  functions, extraction of data for mapping of degrees of freedom and
+  possible precomputation of integrals.
+
+  Most of the complexity of compilation is handled in this stage.
+
+  The IR is stored as a dictionary, mapping names of UFC functions to
+  data needed for generation of the corresponding code.
+
+Stage 3: Code optimization
+--------------------------
+
+  Input:  Intermediate Representation (IR)
+  Output: Optimized Intermediate Representation (OIR)
+
+  This stage examines the IR and performs optimizations.
+
+Stage 4: Code generation
+------------------------
+
+  Input:  Optimized Intermediate Representation (OIR)
+  Output: C++ code
+
+  This stage examines the OIR and generates the actual C++ code for
+  the body of each UFC function.
+
+  The code is stored as a dictionary, mapping names of UFC functions
+  to strings containing the C++ code of the body of each function.
+
+Stage 5: Code formatting
+------------------------
+
+  Input:  C++ code
+  Output: C++ code files
+
+  This stage examines the generated C++ code and formats it according
+  to the UFC format, generating as output one or more .h/.cpp files
+  conforming to the UFC format.
 """
 
 __author__ = "Anders Logg (logg@simula.no)"
