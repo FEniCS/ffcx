@@ -68,6 +68,19 @@ Stage 5: Code formatting
   This stage examines the generated C++ code and formats it according
   to the UFC format, generating as output one or more .h/.cpp files
   conforming to the UFC format.
+
+The main interface is defined by the following two functions:
+
+  compile_form
+  compile_element
+
+The compiler stages are implemented by the following functions:
+
+  analyze_form  (stage 1)
+  generate_ir   (stage 2)
+  optimize_ir   (stage 3)
+  generate_code (stage 4)
+  format_code   (stage 5)
 """
 
 __author__ = "Anders Logg (logg@simula.no)"
@@ -91,15 +104,7 @@ from ufl.classes import Integral
 from ufl.common import istr
 
 # FFC modules.
-from log import log
-from log import begin
-from log import end
-from log import debug
-from log import info
-from log import warning
-from log import error
-from log import ffc_assert
-from utils import product
+from log import log, begin, end, debug, info, warning, error, ffc_assert
 from constants import FFC_OPTIONS
 from createelement import create_element
 from createdofmap import create_dof_map
@@ -123,44 +128,36 @@ def compile_form(forms, prefix="Form", options=FFC_OPTIONS.copy()):
     """This function generates UFC code for a given UFL form or list
     of UFL forms."""
 
-    # Check options
+    # Check input arguments
+    forms = _check_forms(forms)
     options = _check_options(options)
+    if not forms: return
 
-    # Check that we get a list of forms
-    if not isinstance(forms, (list, tuple)):
-        forms = [forms]
-
-    # Check that we have at least one form
-    if len(forms) == 0:
-        info("No forms specified, nothing to do.")
-        return
-
-    # Create format
-    format = Format(options)
-
-    # Compile all forms
+    # Storage for generated data
     form_and_data = []
-    generated_forms = []
+    code = []
+
+    # Enter compiler stages 1-4 for each form
     for form in forms:
 
-        # Compiler stage 1: analyze form
-        form, form_data = analyze_form(form, options)
-        form_and_data.append((form, form_data))
+        # Stage 1: analysis
+        preprocessed_form, form_data = analyze_form(form, options)
 
-        # Compiler stage 2: compute form representations
-        representations = compute_form_representations(form, form_data, options)
+        # Stage 2: intermediate representation
+        ir = compute_representation(preprocessed_form, form_data, options)
 
-        # Compiler stage 3: optimize form representation
-        optimize_form_representation(form, form_data)
+        # Stage 3: optimization
+        oir = optimize_representation(ir, options)
 
-        # Compiler stage 4: generate form code
-        form_code = generate_form_code(form_data, representations, prefix, format.format, options)
+        # Stage 4: code generation
+        code = generate_code(oir, options)
 
-        # Add to list of codes
-        generated_forms += [(form_code, form_data)]
+        # Store data
+        form_and_data.append((preprocessed_form, form_data))
+        codes.append(code)
 
-    # Compiler stage 5: format code
-    format_code(generated_forms, prefix, format, options)
+    # Stage 5: format code
+    format_code(codes, options)
 
     info("Code generation complete.")
     return form_and_data
@@ -221,26 +218,30 @@ def analyze_form(form, options):
     end()
     return form, form_data
 
-def compute_form_representations(form, form_data, options):
+def compute_representation(form, form_data, options):
     "Compiler stage 2."
 
-    begin("Compiler stage 2: Computing form representation(s)")
-    representations = [Representation(form, form_data) for Representation in Representations]
+    begin("Compiler stage 2: Computing intermediate representation")
+    representations = [R(form, form_data) for R in Representations]
     end()
 
     return representations
 
-def optimize_form_representation(form, form_data):
+def optimize_representation(ir, form_data):
     "Compiler stage 3."
 
-    begin("Compiler stage 3: Optimizing form representation")
-    info("Optimization of tensor contraction representation currently broken (to be fixed).")
+    begin("Compiler stage 3: Optimizing intermediate representation")
+    info("Optimization is currently missing")
     end()
 
-def generate_form_code(form_data, representations, prefix, format, options):
+    return ir
+
+def generate_code(ir, options):
     "Compiler stage 4."
 
     begin("Compiler stage 4: Generating code")
+
+    # FIXME: Needs to be fixed
 
     # Generate common code like finite elements, dof map etc.
     common_code = generate_common_code(form_data, format)
@@ -268,18 +269,24 @@ def generate_element_code(elements, format):
     form_data = ElementData(elements)
     return [(generate_common_code(form_data, format), form_data)]
 
-def format_code(generated_forms, prefix, format, options):
+def format_code(codes, options):
     "Compiler stage 5."
 
     begin("Compiler stage 5: Formatting code")
-    format.write(generated_forms, prefix, options)
+    format.write(codes, options)
     end()
+
+def _check_forms(forms):
+    "Initial check of forms."
+
+    if not isinstance(forms, (list, tuple)):
+        forms = (forms,)
+
+    return forms
 
 def _check_options(options):
     "Initial check of options."
 
-    #if "optimize" in options:
-    #    warning("Optimization unavailable (will return in a future version).")
     if "blas" in options:
         warning("BLAS mode unavailable (will return in a future version).")
     if "quadrature_points" in options:
