@@ -1,4 +1,5 @@
-"""This is the compiler, acting as the main interface for compilation
+"""
+This is the compiler, acting as the main interface for compilation
 of forms and breaking the compilation into several sequential stages.
 The output of each stage is the input of the next stage.
 
@@ -79,7 +80,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Garth N. Wells, 2009.
 # Last changed: 2009-12-09
 
-__all__ = ["compile"]
+__all__ = ["compile_form", "compile_element"]
 
 # UFL modules.
 from ufl.algorithms import preprocess

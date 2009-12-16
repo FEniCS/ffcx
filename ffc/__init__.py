@@ -1,13 +1,15 @@
-# Start by setting the FIAT numbering scheme for entities and the
-# reference element. This differs between FFC and FIAT but may change
-# in future versions of FIAT. It's important that we do this first
-# before any other FIAT modules are loaded
+"""
+FEniCS Form Compiler (FFC)
+--------------------------
 
-from FIAT import numbering
-numbering.numbering_scheme = "UFC"
+FFC compiles finite element variational forms into C++ code.
 
-from FIAT import reference
-reference.reference_element = "default"
+The interface consists of the following three functions:
+
+  compile_form    - Compilation of forms
+  compile_element - Compilation of finite elements
+  jit             - Just-In-Time compilation of forms and elements
+"""
 
 # Import compiler functions
 from ffc.compiler import compile_form, compile_element
