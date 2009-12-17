@@ -68,18 +68,21 @@ def compute_dofmap_ir(ufl_element):
     # Create FIAT element
     fiat_element = create_fiat_element(ufl_element)
 
+    # Precompute frequently used list: number of dofs per dimension:
+    num_dofs_per_dim = _num_dofs_per_dim(fiat_element)
+
     # Compute data for each function
     ir = {}
     ir["dof_map* create_sub_dof_map"] = not_implemented
-    ir["init_cell"] = not_implemented
-    ir["init_cell_finalize"] = not_implemented
-    ir["init_mesh"] = not_implemented
+    ir["init_cell"] = None
+    ir["init_cell_finalize"] = None
+    ir["init_mesh"] = num_dofs_per_dim
     ir["local_dimension"] = fiat_element.space_dimension()
     ir["geometric_dimension"] = fiat_element.geometric_dimension()
-    ir["global_dimension"] = not_implemented
+    ir["global_dimension"] = num_dofs_per_dim
     ir["max_local_dimension"] = fiat_element.space_dimension()
-    ir["needs_mesh_entities"] = _needs_mesh_entities(fiat_element)
-    ir["num_entity_dofs"] = _num_dofs_per_dim(fiat_element)
+    ir["needs_mesh_entities"] = [d > 0 for d in num_dofs_per_dim]
+    ir["num_entity_dofs"] = num_dofs_per_dim
     ir["num_facet_dofs"] = _num_facet_dofs(fiat_element)
     ir["num_sub_dof_maps"] =  fiat_element.num_sub_elements()
     ir["signature"] = "FFC dofmap for " + repr(ufl_element)
@@ -93,14 +96,6 @@ def compute_dofmap_ir(ufl_element):
     return ir
 
 #--- Utility functions ---
-
-def _needs_mesh_entities(fiat_element):
-    """
-    Returns tuple (bool, ..., bool) with item i being true/false
-    depending on whether mesh entity of dimension i is needed.
-    """
-
-    return [d > 0 for d in _num_dofs_per_dim(fiat_element)]
 
 def _num_dofs_per_dim(element):
     """Compute the number of dofs associated with each topological
