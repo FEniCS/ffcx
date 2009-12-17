@@ -21,6 +21,10 @@ def generate_element_code(ir):
 
     # Generate code
     code = {}
+    code["classname"] = "FooClass"
+    code["members"] = ""
+    code["constructor"] = ""
+    code["destructor"] = ""
     code["signature"] = ret('"%s"' % ir["signature"])
     code["cell_shape"] = ""
     code["space_dimension"] = ret(ir["space_dimension"])
@@ -48,6 +52,10 @@ def generate_dofmap_code(ir):
 
     # Generate code
     code = {}
+    code["classname"] = "FooClass"
+    code["members"] = ""
+    code["constructor"] = ""
+    code["destructor"] = ""
     code["signature"] = ret(ir["signature"])
     code["needs_mesh_entities"] = ""
     code["init_mesh"] = ""
@@ -64,7 +72,7 @@ def generate_dofmap_code(ir):
     code["tabulate_entity_dofs"] = ""
     code["tabulate_coordinates"] = ""
     code["num_sub_dof_maps"] = ret(ir["num_sub_dof_maps"])
-    code["dof_map* create_sub_dof_map"] = ""
+    code["create_sub_dof_map"] = ""
 
     debug_code(code, "dofmap")
 

@@ -2,6 +2,11 @@
 
 format = {"return": lambda v: "return %s;" % str(v)}
 
+def indent(block, num_spaces):
+    "Indent each row of the given string block with n spaces."
+    indentation = " " * num_spaces
+    return indentation + ("\n" + indentation).join(block.split("\n"))
+
 # FIXME: Major cleanup needed, remove as much as possible
 
 # Old dictionary, move the stuff we need to the new dictionary above

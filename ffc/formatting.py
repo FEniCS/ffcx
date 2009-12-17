@@ -29,6 +29,7 @@ from ufc_utils import dof_map_implementation
 
 # FFC modules
 from ffc.log import info
+from ffc.cpp import indent
 
 def format_ufc(codes, prefix, options):
     "Format given code in UFC format."
@@ -40,6 +41,16 @@ def format_ufc(codes, prefix, options):
         # Extract generated code
         code_forms, code_elements, code_dofmaps = code
 
+        # Generate code for elements
+        for code_element in code_elements:
+            output += _format_code(finite_element_combined,
+                                   code_element, options)
+
+        # Generate code for dofmaps
+        for code_dofmap in code_dofmaps:
+            output += _format_code(dof_map_combined,
+                                   code_dofmap, options)
+
     # Write generated code to file
     prefix = prefix.split(os.path.join(' ',' ').split()[0])[-1]
     full_prefix = os.path.join(options["output_dir"], prefix)
@@ -48,3 +59,17 @@ def format_ufc(codes, prefix, options):
     file.write(output)
     file.close()
     info("Output written to " + filename + ".")
+
+def _format_code(template, code, options):
+    "Format code according to template and code dictionary."
+
+    # Fix indentation
+    for key in code:
+        flag = "no-" + key
+        if flag in options and options[flag]:
+            code[key] = format["exception"]("// Function %s not generated (compiled with -f%s)" % (key, flag))
+        if not key in ["classname", "members"]:
+            code[key] = indent(code[key], 4)
+
+    # Generate code
+    return template % code
