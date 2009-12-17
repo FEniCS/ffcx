@@ -110,18 +110,13 @@ def _num_dofs_per_dim(element):
     return [sum(len(dof_indices) for dof_indices in entity_dof.values())
             for (i, entity_dof) in element.entity_dofs().iteritems()]
 
-def _num_facet_dofs(fiat_element):
-    "Compute the number of dofs on each cell facet."
 
-    # FIXME: Seems to need updating for new FIAT interface
-    return 1
+def _num_facet_dofs(element):
+    "Compute the number of dofs on associated with each cell facet."
 
-    num_facet_entities = {"interval": (1, 0),
-                          "triangle": (2, 1, 0),
-                          "tetrahedron": (3, 3, 1, 0)}
-    num_dofs_per_dim = _num_dofs_per_dim(fiat_element)
-    num_facet_dofs = 0
-    for dim in range(len(num_dofs_per_dim)):
-        num_facet_dofs += num_facet_entities[cell_shape][dim]*num_dofs_per_dim[dim]
+    dim = element.geometric_dimension()
+    num_facet_entities = {1: (1, 0), 2: (2, 1, 0), 3: (3, 3, 1, 0)}[dim]
+    entity_dofs = element.entity_dofs()
 
-    return num_facet_dofs
+    return sum(len(entity_dofs[entity][0])*num
+               for (entity, num) in enumerate(num_facet_entities))
