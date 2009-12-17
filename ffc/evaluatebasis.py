@@ -80,7 +80,7 @@ from ffc.common.log import error, warning
 
     lines = format["generate body"](code)
     code = remove_unused(lines)
-    return [code]
+    return code
 
 def generate_map(fiat_element, Indent, format):
     """Generates map from physical element to the UFC reference element, and from this element
