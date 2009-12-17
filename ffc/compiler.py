@@ -77,7 +77,7 @@ The main interface is defined by the following two functions:
 The compiler stages are implemented by the following functions:
 
   analyze_form  (stage 1)
-  generate_ir   (stage 2)
+  compute_ir    (stage 2)
   optimize_ir   (stage 3)
   generate_code (stage 4)
   format_code   (stage 5)
@@ -96,30 +96,28 @@ __license__  = "GNU GPL version 3 or any later version"
 __all__ = ["compile_form", "compile_element"]
 
 # UFL modules.
+from ufl.common import istr
 from ufl.algorithms import preprocess
 from ufl.algorithms import FormData
 from ufl.algorithms import estimate_max_polynomial_degree
 from ufl.algorithms import estimate_total_polynomial_degree
-from ufl.classes import Integral
-from ufl.common import istr
 
 # FFC modules.
 from log import log, begin, end, debug, info, warning, error, ffc_assert
 from constants import FFC_OPTIONS
-from createelement import create_element
-from createdofmap import create_dof_map
 from quadratureelement import default_quadrature_degree
 
 # FFC representation modules
-from representation import form_representation
-from representation import element_representation
-from representation import dofmap_representation
+from representation import compute_form_ir
+from representation import compute_element_ir
+from representation import compute_dofmap_ir
 
-# FFC code generation modules.
-from codegenerators import generate_common_code
-from codegenerators import generate_combined_code
-from tensor.tensorgenerator import TensorGenerator
-from quadrature.quadraturegenerator import QuadratureGenerator
+# FFC code generation modules
+from codegeneration import generate_element_code
+from codegeneration import generate_dofmap_code
+
+# FFC formatting modules
+from formatting import format_ufc
 
 # Representation methods
 methods = ("quadrature", "tensor")
@@ -144,10 +142,10 @@ def compile_form(forms, prefix="Form", options=FFC_OPTIONS.copy()):
         preprocessed_form, form_data = analyze_form(form, options)
 
         # Stage 2: intermediate representation
-        ir = compute_representation(preprocessed_form, form_data, options)
+        ir = compute_ir(preprocessed_form, form_data, options)
 
         # Stage 3: optimization
-        oir = optimize_representation(ir, options)
+        oir = optimize_ir(ir, options)
 
         # Stage 4: code generation
         code = generate_code(oir, options)
@@ -182,7 +180,7 @@ def compile_element(elements, prefix="Element", options=FFC_OPTIONS.copy()):
     format = Format(options)
 
     # Compiler stage 4: generate element code
-    generated_elements = generate_element_code(elements, format.format)
+    #generated_elements = generate_element_code(elements, format.format)
 
     # Compiler stage 5: format code
     format_code(generated_elements, prefix, format, options)
@@ -208,17 +206,10 @@ def analyze_form(form, options):
     # Extract integral metadata
     form_data.metadata = _extract_metadata(form, options, form_data.elements)
 
-    # Attach FFC elements and dofmaps
-    form_data.ffc_elements = [create_element(element) for element in form_data.elements]
-    form_data.ffc_dof_maps = [create_dof_map(element) for element in form_data.elements]
-
-    # Attach FFC coefficients
-    form_data.coefficients = create_ffc_coefficients(form_data.coefficients, form_data.coefficient_names)
-
     end()
     return form, form_data
 
-def compute_representation(form, form_data, options):
+def compute_ir(form, form_data, options):
     """Compiler stage 2.
 
     This stage generates an intermediate representation of the given
@@ -232,24 +223,24 @@ def compute_representation(form, form_data, options):
 
     # Generate representations for form
     begin("Computing form representations")
-    form_representations = [form_representation(form, form_data, m) for m in methods]
+    ir_forms = [compute_form_ir(form, form_data, m) for m in methods]
     end()
 
     # Generate representations for finite elements
     begin("Computing element representations")
-    element_representations = [element_representation(e) for e in form_data.elements]
+    ir_elements = [compute_element_ir(e) for e in form_data.elements]
     end()
 
     # Generate representations for dofmaps
     begin("Computing dofmap representations")
-    dofmap_representations = [dofmap_representation(e) for e in form_data.elements]
+    ir_dofmaps = [compute_dofmap_ir(e) for e in form_data.elements]
     end()
 
     end()
 
-    return form_representations, element_representations, dofmap_representations
+    return ir_forms, ir_elements, ir_dofmaps
 
-def optimize_representation(ir, form_data):
+def optimize_ir(ir, form_data):
     "Compiler stage 3."
 
     begin("Compiler stage 3: Optimizing intermediate representation")
@@ -262,6 +253,18 @@ def generate_code(ir, options):
     "Compiler stage 4."
 
     begin("Compiler stage 4: Generating code")
+
+    # Extract intermediate representations
+    ir_forms, ir_elements, ir_dofmaps = ir
+
+    # Generate code for forms
+    # FIXME: Not implemented
+
+    # Generate code for elements
+    code_elements = [generate_element_code(ir) for ir in ir_elements]
+
+    # Generate code for dofmaps
+    code_dofmaps = [generate_dofmap_code(ir) for ir in ir_dofmaps]
 
     # Generate common code like finite elements, dof map etc.
     #common_code = generate_common_code(form_data, format)
@@ -283,11 +286,11 @@ def generate_code(ir, options):
     end()
     return code
 
-def generate_element_code(elements, format):
-    "Compiler stage 4."
-    # Create element_data and common code
-    form_data = ElementData(elements)
-    return [(generate_common_code(form_data, format), form_data)]
+#def generate_element_code(elements, format):
+#    "Compiler stage 4."
+#    # Create element_data and common code
+#    form_data = ElementData(elements)
+#    return [(generate_common_code(form_data, format), form_data)]
 
 def format_code(codes, options):
     "Compiler stage 5."
@@ -457,48 +460,3 @@ def _adjust_elements(form_data):
             #info("Adjusting element cell from %s to %s." % (istr(cell), str(common_cell)))
             log(30, "Adjusting element cell from %s to %s." % (istr(cell), str(common_cell)))
             element.set_cell(common_cell)
-
-# FIXME: Old stuff below needs to be cleaned up
-# FIXME: KBO: Is the above FIXME still valid? The function and class below are
-# both used, and they look up to date and clean to me.
-def create_ffc_coefficients(ufl_coefficients, ufl_coefficient_names):
-    "Try to convert UFL functions to FFC Coefficients"
-
-    class Coefficient:
-        def __init__(self, element, name):
-            self.element = element
-            self.name = name
-    ffc_coefficients = []
-    for i, f in enumerate(ufl_coefficients):
-        ffc_coefficients.append(Coefficient(create_element(f.element()), ufl_coefficient_names[i]))
-
-    return ffc_coefficients
-
-class ElementData:
-    """This class holds meta data for a list of elements. It has the
-    same attributes as FormData, but only the elements and their dof
-    maps are available."""
-
-    def __init__(self, elements):
-        "Create element for list of elements"
-
-        debug("Extracting element data...")
-
-        self.signature                    = None
-        self.rank                         = -1
-        self.num_coefficients             = 0
-        self.num_arguments                = len(elements)
-        self.num_terms                    = 0
-        self.num_cell_domains             = 0
-        self.num_exterior_facet_domains   = 0
-        self.num_interior_facet_domains   = 0
-        self.elements                     = [create_element(element) for element in elements]
-        self.dof_maps                     = [create_dof_map(element) for element in elements]
-        self.ffc_elements                 = self.elements
-        self.ffc_dof_maps                 = self.dof_maps
-        self.coefficients                 = []
-
-        debug("done")
-
-# FFC format modules
-from ufcformat import Format

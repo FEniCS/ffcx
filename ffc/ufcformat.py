@@ -9,7 +9,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Dag Lindbo, 2008.
 # Modified by Johan Hake, 2009.
 # Modified by Garth N. Wells, 2009.
-# Last changed: 2009-12-16
+# Last changed: 2009-12-17
 
 # Python modules.
 import os

@@ -11,14 +11,14 @@ in the intermediate representation under the key "foo".
 
 __author__ = "Anders Logg (logg@simula.no) and friends"
 __date__ = "2009-12-16"
-__copyright__ = "Copyright (C) 2009 Anders Logg"
+__copyright__ = "Copyright (C) 2009 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2009-12-16
+# Last changed: 2009-12-17
 
 from fiatinterface import create_fiat_element
 
-def form_representation(form, form_data, method):
+def compute_form_ir(form, form_data, method):
     "Compute and return intermediate representation of form."
 
     # FIXME: Call correct method in quadrature or tensor module
@@ -28,7 +28,7 @@ def form_representation(form, form_data, method):
     else:
         return {}
 
-def element_representation(ufl_element):
+def compute_element_ir(ufl_element):
     "Compute and return intermediate representation of element."
 
     # Note to developers: oneliners or call a _function
@@ -61,7 +61,7 @@ def element_representation(ufl_element):
 
     return ir
 
-def dofmap_representation(ufl_element):
+def compute_dofmap_ir(ufl_element):
     "Compute and return intermediate representation of dofmap."
 
     # Note to developers: oneliners or call a _function
