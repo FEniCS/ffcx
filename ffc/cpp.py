@@ -1,6 +1,12 @@
 "This module defines rules and algorithms for generating C++ code."
 
-format = {"return": lambda v: "return %s;" % v}
+format = {"return": lambda v: "return %s;" % str(v),
+          "exception": lambda v: "throw std::runtime_error(\"%s\");" % v}
+
+def indent(block, num_spaces):
+    "Indent each row of the given string block with n spaces."
+    indentation = " " * num_spaces
+    return indentation + ("\n" + indentation).join(block.split("\n"))
 
 # FIXME: Major cleanup needed, remove as much as possible
 from codesnippets import *

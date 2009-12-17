@@ -34,19 +34,27 @@ def ffc_assert(condition, *message):
 
 # Specialized FFC debugging tools
 
-def debug_ir(ir, name=""):
-    "Debug intermediate representation."
-
-    title = "Intermediate representation"
-    if name: title += " (%s)" % str(name)
-
+def debug_dict(d, title=""):
+    "Pretty-print dictionary."
+    if not title: title = "Dictionary"
     info("")
     begin(title)
     info("")
-    for (key, value) in ir.iteritems():
+    for (key, value) in d.iteritems():
         info(key)
         info("-"*len(key))
         info(str(value))
         info("")
     end()
 
+def debug_ir(ir, name=""):
+    "Debug intermediate representation."
+    title = "Intermediate representation"
+    if name: title += " (%s)" % str(name)
+    debug_dict(ir, title)
+
+def debug_code(code, name=""):
+    "Debug generated code."
+    title = "Generated code"
+    if name: title += " (%s)" % str(name)
+    debug_dict(code, title)
