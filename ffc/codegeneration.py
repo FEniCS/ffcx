@@ -10,6 +10,8 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Last changed: 2009-12-17
 
+from log import debug_code
+
 def generate_element_code(ir):
     "Generate code for finite element from intermediate representation."
 
@@ -28,6 +30,8 @@ def generate_element_code(ir):
     code["interpolate_vertex_values"] = ""
     code["num_sub_elements"] = ""
     code["create_sub_element"] = ""
+
+    debug_code(code, "finite_element")
 
     return code
 
@@ -53,10 +57,6 @@ def generate_dofmap_code(ir):
     code["num_sub_dof_maps"] = ""
     code["dof_map* create_sub_dof_map"] = ""
 
-    print "dofmap representation"
-    print "---------------------"
-    for (key, value) in ir.iteritems():
-        print key, value
-    print
+    debug_code(code, "dofmap")
 
     return code

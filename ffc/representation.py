@@ -102,7 +102,6 @@ def _needs_mesh_entities(fiat_element):
 
     return [d > 0 for d in _num_dofs_per_dim(fiat_element)]
 
-
 def _num_dofs_per_dim(element):
     """Compute the number of dofs associated with each topological
     dimension.  Currently only handles non-mixed elements.
@@ -126,4 +125,3 @@ def _num_facet_dofs(fiat_element):
         num_facet_dofs += num_facet_entities[cell_shape][dim]*num_dofs_per_dim[dim]
 
     return num_facet_dofs
-
