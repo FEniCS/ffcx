@@ -17,7 +17,8 @@ __license__  = "GNU GPL version 3 or any later version"
 # Last changed: 2009-12-17
 
 from log import debug_ir
-from fiatinterface import create_fiat_element
+from fiatinterface import create_element
+from mixedelement import MixedElement
 
 not_implemented = None
 
@@ -37,23 +38,23 @@ def compute_element_ir(ufl_element):
     # Note to developers: oneliners or call a _function
 
     # Create FIAT element
-    fiat_element = create_fiat_element(ufl_element)
+    element = create_element(ufl_element)
 
     # Compute data for each function
     ir = {}
     ir["signature"] = repr(ufl_element)
     ir["cell_shape"] = ufl_element.cell().domain()
-    ir["space_dimension"] = fiat_element.space_dimension()
-    ir["value_rank"] = fiat_element.value_rank()
-    ir["value_dimension"] = fiat_element.value_shape()
-    ir["evaluate_basis"] = fiat_element
-    ir["evaluate_basis_all"] = not_implemented #fiat_element.get_coeffs()
-    ir["evaluate_basis_derivatives"] = fiat_element
-    ir["evaluate_basis_derivatives_all"] = not_implemented #fiat_element.get_coeffs()
+    ir["space_dimension"] = element.space_dimension()
+    ir["value_rank"] = element.value_rank()
+    ir["value_dimension"] = ufl_element.value_shape()
+    ir["evaluate_basis"] = element
+    ir["evaluate_basis_all"] = not_implemented #element.get_coeffs()
+    ir["evaluate_basis_derivatives"] = element
+    ir["evaluate_basis_derivatives_all"] = not_implemented #element.get_coeffs()
     ir["evaluate_dof"] = None
     ir["evaluate_dofs"] = None
     ir["interpolate_vertex_values"] = None
-    ir["num_sub_elements"] = fiat_element.num_sub_elements()
+    ir["num_sub_elements"] = element.num_sub_elements()
     ir["create_sub_element"] = None
 
     debug_ir(ir, "finite_element")
@@ -66,10 +67,10 @@ def compute_dofmap_ir(ufl_element):
     # Note to developers: oneliners or call a _function
 
     # Create FIAT element
-    fiat_element = create_fiat_element(ufl_element)
+    element = create_element(ufl_element)
 
     # Precompute frequently used list: number of dofs per mesh entity:
-    num_dofs_per_entity = _num_dofs_per_entity(fiat_element)
+    num_dofs_per_entity = _num_dofs_per_entity(element)
 
     # Compute data for each function
     ir = {}
@@ -77,14 +78,14 @@ def compute_dofmap_ir(ufl_element):
     ir["init_cell"] = None
     ir["init_cell_finalize"] = None
     ir["init_mesh"] = num_dofs_per_entity
-    ir["local_dimension"] = fiat_element.space_dimension()
-    ir["geometric_dimension"] = fiat_element.geometric_dimension()
+    ir["local_dimension"] = element.space_dimension()
+    ir["geometric_dimension"] = ufl_element.cell().domain()
     ir["global_dimension"] = None
-    ir["max_local_dimension"] = fiat_element.space_dimension()
+    ir["max_local_dimension"] = element.space_dimension()
     ir["needs_mesh_entities"] = [d > 0 for d in num_dofs_per_entity]
-    ir["num_entity_dofs"] = _num_dofs_per_dim(fiat_element)
-    ir["num_facet_dofs"] = _num_facet_dofs(fiat_element)
-    ir["num_sub_dof_maps"] =  fiat_element.num_sub_elements()
+    ir["num_entity_dofs"] = _num_dofs_per_dim(element)
+    ir["num_facet_dofs"] = _num_facet_dofs(element)
+    ir["num_sub_dof_maps"] =  element.num_sub_elements()
     ir["signature"] = "FFC dofmap for " + repr(ufl_element)
     ir["tabulate_dofs"] = not_implemented
     ir["tabulate_facet_dofs"] = not_implemented
@@ -106,7 +107,7 @@ def _num_dofs_per_dim(element):
 
     entity_dofs = element.entity_dofs()
     return [sum(len(dof_indices) for dof_indices in entity_dofs[e].values())
-            for e in range(element.geometric_dimension()+1)]
+            for e in range(len(entity_dofs.keys()))]
 
 def _num_dofs_per_entity(element):
     """
@@ -116,7 +117,7 @@ def _num_dofs_per_entity(element):
     Example: Lagrange of degree 3 on triangle: [1, 2, 1]
     """
     entity_dofs = element.entity_dofs()
-    return [len(entity_dofs[e][0]) for e in range(element.geometric_dimension()+1)]
+    return [len(entity_dofs[e][0]) for e in range(len(entity_dofs.keys()))]
 
 
 def _num_facet_dofs(element):
@@ -125,9 +126,9 @@ def _num_facet_dofs(element):
     Example: Lagrange of degree 3 on triangle: 4
     """
 
-    dim = element.geometric_dimension()
-    num_facet_entities = {1: (1, 0), 2: (2, 1, 0), 3: (3, 3, 1, 0)}[dim]
     entity_dofs = element.entity_dofs()
+    dim = len(entity_dofs.keys()) - 1
+    num_facet_entities = {1: (1, 0), 2: (2, 1, 0), 3: (3, 3, 1, 0)}[dim]
 
     return sum(len(entity_dofs[entity][0])*num
                for (entity, num) in enumerate(num_facet_entities))

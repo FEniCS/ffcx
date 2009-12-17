@@ -5,7 +5,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Garth N. Wells, 2009.
 # Modified by Marie Rognes, 2009.
-# Last changed: 2009-12-16
+# Last changed: 2009-12-17
 
 # UFL modules
 from ufl import FiniteElement as UFLFiniteElement
@@ -23,7 +23,7 @@ from log import debug
 from log import error
 
 # FFC fem modules
-from mixedelement import MixedElement as FFCMixedElement
+#from mixedelement import MixedElement as FFCMixedElement
 from quadratureelement import QuadratureElement as FFCQuadratureElement
 
 # Cache for computed elements
@@ -38,20 +38,32 @@ domain2dim = {"vertex": 0,
 # Mapping from family name to class
 family2class = {"Lagrange": Lagrange}
 
-def create_fiat_element(ufl_element):
-    "Create FIAT element corresponding to given UFL element."
+def create_element(ufl_element):
 
-    # Check if element is in cache
+    # Use element from cache if in cache
     if ufl_element in _cache:
         print "Reusing element from cache!"
         return _cache[ufl_element]
 
+    # FIXME: hack to avoid circular importing
+    from mixedelement import MixedElement as FFCMixedElement
+
     # Create element
-    ElementClass = family2class[ufl_element.family()]
-    reference_cell = ufc_simplex(domain2dim[ufl_element.cell().domain()])
-    fiat_element = ElementClass(reference_cell, ufl_element.degree())
+    if isinstance(ufl_element, UFLMixedElement):
+        element = FFCMixedElement(ufl_element)
+    else:
+        element = create_fiat_element(ufl_element)
 
     # Store in cache
-    _cache[ufl_element] = fiat_element
+    _cache[ufl_element] = element
 
-    return fiat_element
+    return element
+
+def create_fiat_element(ufl_element):
+    "Create FIAT element corresponding to given UFL finite element."
+
+    ElementClass = family2class[ufl_element.family()]
+    reference_cell = ufc_simplex(domain2dim[ufl_element.cell().domain()])
+    element = ElementClass(reference_cell, ufl_element.degree())
+
+    return element
