@@ -11,7 +11,7 @@ __copyright__ = "Copyright (C) 2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian B. Oelgaard, 2009
-# Last changed: 2009-12-09
+# Last changed: 2009-12-17
 
 # UFL modules.
 from ufl.log import Logger
@@ -31,3 +31,22 @@ for foo in log_functions:
 def ffc_assert(condition, *message):
     "Assert that condition is true and otherwise issue an error with given message."
     condition or error(*message)
+
+# Specialized FFC debugging tools
+
+def debug_ir(ir, name=""):
+    "Debug intermediate representation."
+
+    title = "Intermediate representation"
+    if name: title += " (%s)" % str(name)
+
+    info("")
+    begin(title)
+    info("")
+    for (key, value) in ir.iteritems():
+        info(key)
+        info("-"*len(key))
+        info(str(value))
+        info("")
+    end()
+

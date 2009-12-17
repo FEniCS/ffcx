@@ -1,8 +1,11 @@
 "This module defines rules and algorithms for generating C++ code."
 
+format = {"return": lambda v: "return %s;" % v}
+
 # FIXME: Major cleanup needed, remove as much as possible
 
-format = {
+# Old dictionary, move the stuff we need to the new dictionary above
+format_old = {
     # Operators
     #
     "times equal": lambda i, j: "%s *= %s;" %(i, j),
@@ -124,7 +127,6 @@ format = {
                                                                 self.format["argument basis num"], self.format["argument basis num"], j),
     "loop": lambda i,j,k: "for (unsigned int %s = %s; %s < %s; %s++)"% (i, j, i, k, i),
     "if": "if",
-    "return": lambda v: "return %s;" % v,
     # snippets
     "coordinate map": lambda s: eval("map_coordinates_%s" % s),
     "facet sign": lambda e: "sign_facet%d" % e,

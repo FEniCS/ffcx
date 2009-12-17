@@ -16,6 +16,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Last changed: 2009-12-17
 
+from log import debug_ir
 from fiatinterface import create_fiat_element
 
 def compute_form_ir(form, form_data, method):
@@ -53,11 +54,7 @@ def compute_element_ir(ufl_element):
     ir["num_sub_elements"] = fiat_element.num_sub_elements()
     ir["create_sub_element"] = None
 
-    print "element representation"
-    print "----------------------"
-    for (key, value) in ir.iteritems():
-        print key, value
-    print
+    debug_ir(ir, "finite_element")
 
     return ir
 
@@ -89,11 +86,7 @@ def compute_dofmap_ir(ufl_element):
     ir["num_sub_dof_maps"] = fiat_element.num_sub_elements()
     ir["dof_map* create_sub_dof_map"] = None
 
-    print "dofmap representation"
-    print "---------------------"
-    for (key, value) in ir.iteritems():
-        print key, value
-    print
+    debug_ir(ir, "dofmap")
 
     return {}
 
