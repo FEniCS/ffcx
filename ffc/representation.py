@@ -90,7 +90,7 @@ def compute_dofmap_ir(ufl_element):
 
     debug_ir(ir, "dofmap")
 
-    return {}
+    return ir
 
 #--- Utility functions ---
 

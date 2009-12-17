@@ -11,15 +11,16 @@ __license__  = "GNU GPL version 3 or any later version"
 # Last changed: 2009-12-17
 
 from log import debug_code
+from cpp import format
 
 def generate_element_code(ir):
     "Generate code for finite element from intermediate representation."
 
     code = {}
-    code["signature"] = ""
+    code["signature"] = format["return"]('"%s"' % ir["signature"])
     code["cell_shape"] = ""
-    code["space_dimension"] = ""
-    code["value_rank"] = ""
+    code["space_dimension"] = format["return"](ir["space_dimension"])
+    code["value_rank"] = format["return"](ir["value_rank"])
     code["value_dimension"] = ""
     code["evaluate_basis"] = ""
     code["evaluate_basis_all"] = ""
@@ -38,17 +39,19 @@ def generate_element_code(ir):
 def generate_dofmap_code(ir):
     "Generate code for dofmap from intermediate representation."
 
+    print ir
+
     code = {}
-    code["signature"] = ""
+    code["signature"] = format["return"](ir["signature"])
     code["needs_mesh_entities"] = ""
     code["init_mesh"] = ""
     code["init_cell"] = ""
     code["init_cell_finalize"] = ""
     code["global_dimension"] = ""
-    code["local_dimension"] = ""
+    code["local_dimension"] = format["return"](ir["local_dimension"])
     code["max_local_dimension"] = ""
-    code["geometric_dimension"] = ""
-    code["num_facet_dofs"] = ""
+    code["geometric_dimension"] = format["return"](ir["geometric_dimension"])
+    code["num_facet_dofs"] = format["return"](ir["local_dimension"])
     code["num_entity_dofs"] = ""
     code["tabulate_dofs"] = ""
     code["tabulate_facet_dofs"] = ""
