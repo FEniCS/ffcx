@@ -50,3 +50,18 @@ def debug_ir(ir, name=""):
         info("")
     end()
 
+def debug_code(ir, name=""):
+    "Debug intermediate representation."
+
+    title = "Intermediate representation"
+    if name: title += " (%s)" % str(name)
+
+    info("")
+    begin(title)
+    info("")
+    for (key, value) in ir.iteritems():
+        info(key)
+        info("-"*len(key))
+        info(str(value))
+        info("")
+    end()
