@@ -102,22 +102,22 @@ from ufl.algorithms import FormData
 from ufl.algorithms import estimate_max_polynomial_degree
 from ufl.algorithms import estimate_total_polynomial_degree
 
-# FFC modules.
-from log import log, begin, end, debug, info, warning, error, ffc_assert
-from constants import FFC_OPTIONS
-from quadratureelement import default_quadrature_degree
+# FFC modules
+from ffc.log import log, begin, end, debug, info, warning, error, ffc_assert
+from ffc.constants import FFC_OPTIONS
+from ffc.quadratureelement import default_quadrature_degree
 
 # FFC representation modules
-from representation import compute_form_ir
-from representation import compute_element_ir
-from representation import compute_dofmap_ir
+from ffc.representation import compute_form_ir
+from ffc.representation import compute_element_ir
+from ffc.representation import compute_dofmap_ir
 
 # FFC code generation modules
-from codegeneration import generate_element_code
-from codegeneration import generate_dofmap_code
+from ffc.codegeneration import generate_element_code
+from ffc.codegeneration import generate_dofmap_code
 
 # FFC formatting modules
-from formatting import format_ufc
+from ffc.formatting import format_ufc
 
 # Representation methods
 methods = ("quadrature", "tensor")
@@ -155,7 +155,7 @@ def compile_form(forms, prefix="Form", options=FFC_OPTIONS.copy()):
         codes.append(code)
 
     # Stage 5: format code
-    format_code(codes, options)
+    format_code(codes, prefix, options)
 
     info("Code generation complete.")
     return form_and_data
@@ -259,12 +259,15 @@ def generate_code(ir, options):
 
     # Generate code for forms
     # FIXME: Not implemented
+    code_forms = []
 
     # Generate code for elements
     code_elements = [generate_element_code(ir) for ir in ir_elements]
 
     # Generate code for dofmaps
     code_dofmaps = [generate_dofmap_code(ir) for ir in ir_dofmaps]
+
+    return code_forms, code_elements, code_dofmaps
 
     # Generate common code like finite elements, dof map etc.
     #common_code = generate_common_code(form_data, format)
@@ -292,13 +295,13 @@ def generate_code(ir, options):
 #    form_data = ElementData(elements)
 #    return [(generate_common_code(form_data, format), form_data)]
 
-def format_code(codes, options):
+def format_code(codes, prefix, options):
     "Compiler stage 5."
 
     # FIXME: Needs to be updated
 
     begin("Compiler stage 5: Formatting code")
-    #format.write(codes, options)
+    format_ufc(codes, prefix, options)
     end()
 
 def _check_forms(forms):
