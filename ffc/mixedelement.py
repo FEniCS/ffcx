@@ -16,7 +16,7 @@ from ufl.classes import FiniteElementBase
 
 # FFC modules.
 from log import error
-from dofrepresentation import DofRepresentation
+#from dofrepresentation import DofRepresentation
 
 class MixedElement(FiniteElementBase):
     """A MixedElement represents a finite element defined as a tensor

@@ -18,8 +18,8 @@ from ufl.classes import Measure
 
 # FFC modules.
 from log import error
-from finiteelement import ufl_domain2fiat_domain
-from dofrepresentation import DofRepresentation
+#from finiteelement import ufl_domain2fiat_domain
+#from dofrepresentation import DofRepresentation
 from ffcquadraturerules import make_quadrature
 #from finiteelement import FiniteElement
 #from finiteelement import AFFINE
