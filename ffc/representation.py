@@ -19,6 +19,8 @@ __license__  = "GNU GPL version 3 or any later version"
 from log import debug_ir
 from fiatinterface import create_fiat_element
 
+not_implemented = None
+
 def compute_form_ir(form, form_data, method):
     "Compute and return intermediate representation of form."
 
@@ -68,29 +70,46 @@ def compute_dofmap_ir(ufl_element):
 
     # Compute data for each function
     ir = {}
-    ir["signature"] = "FFC dofmap for " + repr(ufl_element)
-    ir["needs_mesh_entities"] = None
-    ir["init_mesh"] = None
-    ir["init_cell"] = None
-    ir["init_cell_finalize"] = None
-    ir["global_dimension"] = None
+    ir["dof_map* create_sub_dof_map"] = not_implemented
+    ir["init_cell"] = not_implemented
+    ir["init_cell_finalize"] = not_implemented
+    ir["init_mesh"] = not_implemented
     ir["local_dimension"] = fiat_element.space_dimension()
-    ir["max_local_dimension"] = fiat_element.space_dimension()
     ir["geometric_dimension"] = fiat_element.geometric_dimension()
+    ir["global_dimension"] = not_implemented
+    ir["max_local_dimension"] = fiat_element.space_dimension()
+    ir["needs_mesh_entities"] = _needs_mesh_entities(fiat_element)
+    ir["num_entity_dofs"] = _num_dofs_per_dim(fiat_element)
     ir["num_facet_dofs"] = _num_facet_dofs(fiat_element)
-    ir["num_entity_dofs"] = None
-    ir["tabulate_dofs"] = None
-    ir["tabulate_facet_dofs"] = None
-    ir["tabulate_entity_dofs"] = None
-    ir["tabulate_coordinates"] = None
-    ir["num_sub_dof_maps"] = fiat_element.num_sub_elements()
-    ir["dof_map* create_sub_dof_map"] = None
+    ir["num_sub_dof_maps"] =  fiat_element.num_sub_elements()
+    ir["signature"] = "FFC dofmap for " + repr(ufl_element)
+    ir["tabulate_dofs"] = not_implemented
+    ir["tabulate_facet_dofs"] = not_implemented
+    ir["tabulate_entity_dofs"] = not_implemented
+    ir["tabulate_coordinates"] = not_implemented
 
     debug_ir(ir, "dofmap")
 
     return {}
 
 #--- Utility functions ---
+
+def _needs_mesh_entities(fiat_element):
+    """
+    Returns tuple (bool, ..., bool) with item i being true/false
+    depending on whether mesh entity of dimension i is needed.
+    """
+
+    return [d > 0 for d in _num_dofs_per_dim(fiat_element)]
+
+
+def _num_dofs_per_dim(element):
+    """Compute the number of dofs associated with each topological
+    dimension.  Currently only handles non-mixed elements.
+    """
+
+    return [sum(len(dof_indices) for dof_indices in entity_dof.values())
+            for (i, entity_dof) in element.entity_dofs().iteritems()]
 
 def _num_facet_dofs(fiat_element):
     "Compute the number of dofs on each cell facet."
@@ -108,16 +127,3 @@ def _num_facet_dofs(fiat_element):
 
     return num_facet_dofs
 
-def _num_dofs_per_dim(fiat_element):
-    "Compute the number of dofs associated with each topological dimension."
-    num_dofs_per_dim = []
-    for sub_entity_dofs in fiat_element.entity_dofs():
-        sub_num_dofs_per_dim = {}
-        for dim in sub_entity_dofs:
-            num_dofs = [len(sub_entity_dofs[dim][e]) for e in sub_entity_dofs[dim]]
-            if dim in sub_num_dofs_per_dim:
-                sub_num_dofs_per_dim[dim] += pick_first(num_dofs)
-            else:
-                sub_num_dofs_per_dim[dim] = pick_first(num_dofs)
-        num_dofs_per_dim += [sub_num_dofs_per_dim]
-    return num_dofs_per_dim
