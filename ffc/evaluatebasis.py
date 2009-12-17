@@ -1,14 +1,12 @@
 """Code generation for evaluation of finite element basis values. This module generates
-code which is more or less a C++ representation of FIAT code. More specifically the
-functions from the modules expansion.py and jacobi.py are translated into C++"""
+code which is more or less a C++ representation of FIAT code."""
 
 __author__ = "Kristian B. Oelgaard (k.b.oelgaard@tudelft.nl)"
-__date__ = "2007-04-04"
-__copyright__ = "Copyright (C) 2007 Kristian B. Oelgaard"
+__date__ = "2009-12-14"
+__copyright__ = "Copyright (C) 2009 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Modified by Anders Logg 2007
-# Last changed: 2009-12-16
+# Last changed: 2009-12-17
 
 # Python modules
 import math
@@ -21,8 +19,12 @@ from codegenerators_utils import IndentControl
 from codegenerators_utils import inner_product
 from codegenerators_utils import tabulate_matrix
 
-def evaluate_basis(element, format):
-    """Evaluate an element basisfunction at a point. The value(s) of the basisfunction is/are
+# Temporary import
+from cpp import format_old as format
+
+def _evaluate_basis(fiat_element):
+    """Generate run time code to evaluate an element basisfunction at an
+    arbitrary point. The value(s) of the basisfunction is/are
     computed as in FIAT as the dot product of the coefficients (computed at compile time)
     and basisvalues which are dependent on the coordinate and thus have to be computed at
     run time.
@@ -52,34 +54,35 @@ from ffc.common.log import error, warning
     Indent = IndentControl()
 
     # Get coordinates and generate map
-    code += generate_map(element, Indent, format)
+    code += generate_map(fiat_element, Indent, format)
 
     # Check if we have just one element
-    if (element.num_sub_elements() == 1):
+    if (fiat_element.num_sub_elements() == 1):
 
         # Reset values, change for tensor valued elements
-        code += reset_values(element.value_dimension(0), False, Indent, format)
+        code += reset_values(fiat_element.value_dimension(0), False, Indent, format)
 
         # Map degree of freedom to local degree of freedom for current element
         code += dof_map(0, Indent, format)
 
         # Generate element code
-        code += generate_element_code(element, 0, False, Indent, format)
+        code += generate_element_code(fiat_element, 0, False, Indent, format)
 
     # If the element is of type VectorElement or MixedElement
     else:
+        # FIXME: KBO: Only support scalar elements for now
+        error("Only scalar elements are supported.")
+#        # Reset values, change for tensor valued elements
+#        code += reset_values(fiat_element.value_dimension(0), True, Indent, format)
 
-        # Reset values, change for tensor valued elements
-        code += reset_values(element.value_dimension(0), True, Indent, format)
-
-        # Generate element code, for all sub-elements
-        code += mixed_elements(element, Indent, format)
+#        # Generate element code, for all sub-elements
+#        code += mixed_elements(fiat_element, Indent, format)
 
     lines = format["generate body"](code)
     code = remove_unused(lines)
     return [code]
 
-def generate_map(element, Indent, format):
+def generate_map(fiat_element, Indent, format):
     """Generates map from physical element to the UFC reference element, and from this element
     to reference square/cube. An affine map is assumed for the first mapping and for the second
     map this function implements the UFC version of the FIAT functions, eta_triangle( xi )
@@ -93,9 +96,9 @@ def generate_map(element, Indent, format):
     format_epsilon        = format["epsilon"]
 
     # Get coordinates and map to the UFC reference element from codesnippets.py
-    code += [Indent.indent(format["coordinate map"](element.cell_domain()))] + [""]
+    code += [Indent.indent(format["coordinate map"](fiat_element.cell_domain()))] + [""]
 
-    if (element.cell_domain() == "interval"):
+    if (fiat_element.cell_domain() == "interval"):
 
         # Map coordinates to the reference interval
         code += [Indent.indent(format_comment("Map coordinates to the reference interval"))]
@@ -103,7 +106,7 @@ def generate_map(element, Indent, format):
         # Code snippet reproduced from FIAT: reference.py: eta_line(xi)
         code += [Indent.indent(format["snippet eta_interval"])]
 
-    elif (element.cell_domain() == "triangle"):
+    elif (fiat_element.cell_domain() == "triangle"):
 
         # Map coordinates to the reference square
         code += [Indent.indent(format_comment("Map coordinates to the reference square"))]
@@ -111,7 +114,7 @@ def generate_map(element, Indent, format):
         # Code snippet reproduced from FIAT: reference.py: eta_triangle(xi)
         code += [Indent.indent(format["snippet eta_triangle"]) %(format_floating_point(format_epsilon))]
 
-    elif (element.cell_domain() == "tetrahedron"):
+    elif (fiat_element.cell_domain() == "tetrahedron"):
 
         # Map coordinates to the reference cube
         code += [Indent.indent(format_comment("Map coordinates to the reference cube"))]
@@ -120,7 +123,7 @@ def generate_map(element, Indent, format):
         code += [Indent.indent(format["snippet eta_tetrahedron"]) %(format_floating_point(format_epsilon),\
                        format_floating_point(format_epsilon))]
     else:
-        error("Cannot generate map for shape: %d" %(element.cell_domain()))
+        error("Cannot generate map for shape: %d" %(fiat_element.cell_domain()))
 
     return code + [""]
 
@@ -161,7 +164,7 @@ def dof_map(sum_space_dim, Indent, format):
 
     return code + [""]
 
-def mixed_elements(element, Indent, format):
+def mixed_elements(fiat_element, Indent, format):
     "Generate code for each sub-element in the event of vector valued elements or mixed elements"
 
     code = []
@@ -172,7 +175,7 @@ def mixed_elements(element, Indent, format):
     format_dof_map_if = format["dof map if"]
 
     # Extract basis elements, and determine number of elements
-    elements = element.extract_elements()
+    elements = fiat_element.extract_elements()
     num_elements = len(elements)
 
     sum_value_dim = 0
@@ -210,53 +213,53 @@ def mixed_elements(element, Indent, format):
 
     return code
 
-def generate_element_code(element, sum_value_dim, vector, Indent, format):
+def generate_element_code(fiat_element, sum_value_dim, vector, Indent, format):
     "Generate code for a single basis element"
 
     code = []
 
     # Generate basisvalues
-    code += generate_basisvalues(element, Indent, format)
+    code += generate_basisvalues(fiat_element, Indent, format)
 
     # Tabulate coefficients
-    code += tabulate_coefficients(element, Indent, format)
+    code += tabulate_coefficients(fiat_element, Indent, format)
 
     # Extract relevant coefficients
-    code += relevant_coefficients(element, Indent, format)
+    code += relevant_coefficients(fiat_element, Indent, format)
 
     # Compute the value of the basisfunction as the dot product of the coefficients
     # and basisvalues
-    code += compute_values(element, sum_value_dim, vector, Indent, format)
+    code += compute_values(fiat_element, sum_value_dim, vector, Indent, format)
 
     return code
 
-def generate_basisvalues(element, Indent, format):
+def generate_basisvalues(fiat_element, Indent, format):
     "Generate code to compute basis values"
 
     code = []
 
     # Compute scaling of y and z 1/2(1-y)^n and 1/2(1-z)^n
-    code += compute_scaling(element, Indent, format)
+    code += compute_scaling(fiat_element, Indent, format)
 
     # Compute auxilliary functions
-    if element.cell_domain() == "interval":
-        code += compute_psitilde_a(element, Indent, format)
-    elif element.cell_domain() == "triangle":
-        code += compute_psitilde_a(element, Indent, format)
-        code += compute_psitilde_b(element, Indent, format)
-    elif element.cell_domain() == "tetrahedron":
-        code += compute_psitilde_a(element, Indent, format)
-        code += compute_psitilde_b(element, Indent, format)
-        code += compute_psitilde_c(element, Indent, format)
+    if fiat_element.cell_domain() == "interval":
+        code += compute_psitilde_a(fiat_element, Indent, format)
+    elif fiat_element.cell_domain() == "triangle":
+        code += compute_psitilde_a(fiat_element, Indent, format)
+        code += compute_psitilde_b(fiat_element, Indent, format)
+    elif fiat_element.cell_domain() == "tetrahedron":
+        code += compute_psitilde_a(fiat_element, Indent, format)
+        code += compute_psitilde_b(fiat_element, Indent, format)
+        code += compute_psitilde_c(fiat_element, Indent, format)
     else:
-        error("Cannot compute auxilliary functions for shape: %d" %(element.cell_domain()))
+        error("Cannot compute auxilliary functions for shape: %d" %(fiat_element.cell_domain()))
 
     # Compute the basisvalues
-    code += compute_basisvalues(element, Indent, format)
+    code += compute_basisvalues(fiat_element, Indent, format)
 
     return code
 
-def tabulate_coefficients(element, Indent, format):
+def tabulate_coefficients(fiat_element, Indent, format):
     """This function tabulates the element coefficients that are generated by FIAT at
     compile time."""
 
@@ -270,29 +273,29 @@ def tabulate_coefficients(element, Indent, format):
     format_const_float        = format["const float declaration"]
 
     # Get coefficients from basis functions, computed by FIAT at compile time
-    coefficients = element.get_coeffs()
+    coefficients = fiat_element.get_coeffs()
 
     # Scalar valued basis element [Lagrange, Discontinuous Lagrange, Crouzeix-Raviart]
-    if (element.value_rank() == 0):
+    if (fiat_element.value_rank() == 0):
         coefficients = [coefficients]
 
     # Vector valued basis element [Raviart-Thomas, Brezzi-Douglas-Marini (BDM)]
-    elif (element.value_rank() == 1):
+    elif (fiat_element.value_rank() == 1):
         coefficients = numpy.transpose(coefficients, [1,0,2])
 
     else:
         error("Tensor elements not supported!")
 
     # Get number of components, must change for tensor valued elements
-    num_components = element.value_dimension(0)
+    num_components = fiat_element.value_dimension(0)
 
     # Get polynomial dimension of basis
     # TODO: Get poly_dim and num_dofs as the shape of coefficients, this Must work
-    poly_dim = element.space_dimension()
+    poly_dim = fiat_element.space_dimension()
 
     # Marie says: Que?
     # Get the number of dofs from element
-    num_dofs = element.space_dimension()
+    num_dofs = fiat_element.space_dimension()
 
     code += [Indent.indent(format_comment("Table(s) of coefficients"))]
 
@@ -308,7 +311,7 @@ def tabulate_coefficients(element, Indent, format):
 
     return code
 
-def relevant_coefficients(element, Indent, format):
+def relevant_coefficients(fiat_element, Indent, format):
     "Declare relevant coefficients as const floats"
 
     code = []
@@ -323,11 +326,11 @@ def relevant_coefficients(element, Indent, format):
     format_local_dof          = format["local dof"]
 
     # Get number of components, must change for tensor valued elements
-    num_components = element.value_dimension(0)
+    num_components = fiat_element.value_dimension(0)
 
     # Get polynomial dimension of basis
     # TODO: Can we simply use element.space_dimension() here?
-    poly_dim = element.space_dimension()
+    poly_dim = fiat_element.space_dimension()
 
     # Extract relevant coefficients and declare as floats
     code += [Indent.indent(format_comment("Extract relevant coefficients"))]
@@ -340,7 +343,7 @@ def relevant_coefficients(element, Indent, format):
 
     return code + [""]
 
-def compute_values(element, sum_value_dim, vector, Indent, format):
+def compute_values(fiat_element, sum_value_dim, vector, Indent, format):
     """This function computes the value of the basisfunction as the dot product of the
     coefficients and basisvalues """
 
@@ -366,17 +369,18 @@ def compute_values(element, sum_value_dim, vector, Indent, format):
     code += [Indent.indent(format["comment"]("Compute value(s)"))]
 
     # Get number of components, change for tensor valued elements
-    num_components = element.value_dimension(0)
+    num_components = fiat_element.value_dimension(0)
 
     # Get polynomial dimension of base
-    poly_dim = element.space_dimension()
+    poly_dim = fiat_element.space_dimension()
 
     # Check which transform we should use to map the basis functions
-    mapping = element.mapping()
-    if mapping == CONTRAVARIANT_PIOLA:
-        code += [Indent.indent(format["comment"]("Using contravariant Piola transform to map values back to the physical element"))]
-    elif mapping == COVARIANT_PIOLA:
-        code += [Indent.indent(format["comment"]("Using covariant Piola transform to map values back to the physical element"))]
+    # FIXME: KBO: Only support affine mapping for now
+#    mapping = fiat_element.mapping()
+#    if mapping == CONTRAVARIANT_PIOLA:
+#        code += [Indent.indent(format["comment"]("Using contravariant Piola transform to map values back to the physical element"))]
+#    elif mapping == COVARIANT_PIOLA:
+#        code += [Indent.indent(format["comment"]("Using covariant Piola transform to map values back to the physical element"))]
 
     if (vector or num_components != 1):
 
@@ -386,19 +390,19 @@ def compute_values(element, sum_value_dim, vector, Indent, format):
             value = format_add([format_multiply([format_coefficients(i) + format_secondary_index(j),\
                     format_basisvalue(j)]) for j in range(poly_dim)])
 
-            # Use Piola transform to map basisfunctions back to physical element if needed
+            # Use Piola transform to map basisfunctions back to physical fiat_element if needed
             if mapping == CONTRAVARIANT_PIOLA:
                 code.insert(i+1,(Indent.indent(format_tmp(0, i)), value))
-                basis_col = [format_tmp_access(0, j) for j in range(element.cell().topological_dimension())]
-                jacobian_row = [format["transform"]("J", j, i, None) for j in range(element.cell().topological_dimension())]
-                inner = [format_mult([jacobian_row[j], basis_col[j]]) for j in range(element.cell().topological_dimension())]
+                basis_col = [format_tmp_access(0, j) for j in range(fiat_element.cell().topological_dimension())]
+                jacobian_row = [format["transform"]("J", j, i, None) for j in range(fiat_element.cell().topological_dimension())]
+                inner = [format_mult([jacobian_row[j], basis_col[j]]) for j in range(fiat_element.cell().topological_dimension())]
                 sum = format_group(format_add(inner))
                 value = format_mult([format_inv(format_det(None)), sum])
             elif mapping == COVARIANT_PIOLA:
                 code.insert(i+1,(Indent.indent(format_tmp(0, i)), value))
-                basis_col = [format_tmp_access(0, j) for j in range(element.cell().topological_dimension())]
-                inverse_jacobian_column = [format["transform"]("JINV", j, i, None) for j in range(element.cell().topological_dimension())]
-                inner = [format_mult([inverse_jacobian_column[j], basis_col[j]]) for j in range(element.cell().topological_dimension())]
+                basis_col = [format_tmp_access(0, j) for j in range(fiat_element.cell().topological_dimension())]
+                inverse_jacobian_column = [format["transform"]("JINV", j, i, None) for j in range(fiat_element.cell().topological_dimension())]
+                inner = [format_mult([inverse_jacobian_column[j], basis_col[j]]) for j in range(fiat_element.cell().topological_dimension())]
                 sum = format_group(format_add(inner))
                 value = format_mult([sum])
 
@@ -412,7 +416,7 @@ def compute_values(element, sum_value_dim, vector, Indent, format):
 
     return code
 
-def compute_scaling(element, Indent, format):
+def compute_scaling(fiat_element, Indent, format):
     """Generate the scalings of y and z coordinates. This function is an implementation of
     the FIAT function make_scalings( etas ) from expansions.py"""
 
@@ -428,10 +432,10 @@ def compute_scaling(element, Indent, format):
     format_scalings     = format["scalings"]
 
     # Get the element degree
-    degree = element.degree()
+    degree = fiat_element.degree()
 
     # Get the element cell domain
-    element_cell_domain = element.cell_domain()
+    element_cell_domain = fiat_element.cell_domain()
 
     # For 1D scalings are not needed
     if element_cell_domain == "interval":
@@ -464,7 +468,7 @@ def compute_scaling(element, Indent, format):
 
     return code + [""]
 
-def compute_psitilde_a(element, Indent, format):
+def compute_psitilde_a(fiat_element, Indent, format):
     """Compute Legendre functions in x-direction. The function relies on
     eval_jacobi_batch(a,b,n) to compute the coefficients.
 
@@ -478,7 +482,7 @@ def compute_psitilde_a(element, Indent, format):
     code = []
 
     # Get the element degree
-    degree = element.degree()
+    degree = fiat_element.degree()
 
     code += [Indent.indent(format["comment"]("Compute psitilde_a"))]
 
@@ -496,7 +500,7 @@ def compute_psitilde_a(element, Indent, format):
 
     return code + [""]
 
-def compute_psitilde_b(element, Indent, format):
+def compute_psitilde_b(fiat_element, Indent, format):
     """Compute Legendre functions in y-direction. The function relies on
     eval_jacobi_batch(a,b,n) to compute the coefficients.
 
@@ -519,7 +523,7 @@ def compute_psitilde_b(element, Indent, format):
     format_secondary_index  = format["secondary index"]
 
     # Get the element degree
-    degree = element.degree()
+    degree = fiat_element.degree()
 
     code += [Indent.indent(format["comment"]("Compute psitilde_bs"))]
 
@@ -544,7 +548,7 @@ def compute_psitilde_b(element, Indent, format):
 
     return code + [""]
 
-def compute_psitilde_c(element, Indent, format):
+def compute_psitilde_c(fiat_element, Indent, format):
     """Compute Legendre functions in y-direction. The function relies on
     eval_jacobi_batch(a,b,n) to compute the coefficients.
 
@@ -568,7 +572,7 @@ def compute_psitilde_c(element, Indent, format):
     format_secondary_index  = format["secondary index"]
 
     # Get the element degree
-    degree = element.degree()
+    degree = fiat_element.degree()
 
     code += [Indent.indent(format["comment"]("Compute psitilde_cs"))]
 
@@ -594,7 +598,7 @@ def compute_psitilde_c(element, Indent, format):
 
     return code + [""]
 
-def compute_basisvalues(element, Indent, format):
+def compute_basisvalues(fiat_element, Indent, format):
     """This function is an implementation of the loops inside the FIAT functions
     tabulate_phis_triangle( n , xs ) and tabulate_phis_tetrahedron( n , xs ) in
     expansions.py. It computes the basis values from all the previously tabulated variables."""
@@ -616,15 +620,15 @@ def compute_basisvalues(element, Indent, format):
     code += [Indent.indent(format["comment"]("Compute basisvalues"))]
 
     # Get polynomial dimension of base
-    poly_dim = element.space_dimension()
+    poly_dim = fiat_element.space_dimension()
 
     # Get the element cell domain
-    element_cell_domain = element.cell_domain()
+    element_cell_domain = fiat_element.cell_domain()
 
     # 1D
     if (element_cell_domain == "interval"):
         count = 0
-        for i in range(0, element.degree() + 1):
+        for i in range(0, fiat_element.degree() + 1):
 
             factor = math.sqrt(1.0*i + 0.5)
             symbol = format_psitilde_a + format_secondary_index(i)
@@ -643,7 +647,7 @@ def compute_basisvalues(element, Indent, format):
     # 2D
     elif (element_cell_domain == "triangle"):
         count = 0
-        for k in range(0,element.degree() + 1):
+        for k in range(0,fiat_element.degree() + 1):
             for i in range(0,k + 1):
                 ii = k-i
                 jj = i
@@ -666,7 +670,7 @@ def compute_basisvalues(element, Indent, format):
     # 3D
     elif (element_cell_domain == "tetrahedron"):
         count = 0
-        for k in range(0, element.degree()+1):  # loop over degree
+        for k in range(0, fiat_element.degree()+1):  # loop over degree
             for i in range(0, k+1):
                 for j in range(0, k - i + 1):
                     ii = k-i-j

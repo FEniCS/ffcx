@@ -9,6 +9,7 @@ __copyright__ = "Copyright (C) 2009 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
 # Last changed: 2009-12-17
+from evaluatebasis import _evaluate_basis
 
 def generate_element_code(ir):
     "Generate code for finite element from intermediate representation."
@@ -19,7 +20,8 @@ def generate_element_code(ir):
     code["space_dimension"] = ""
     code["value_rank"] = ""
     code["value_dimension"] = ""
-    code["evaluate_basis"] = ""
+    code["evaluate_basis"] = _evaluate_basis(ir["evaluate_basis"])
+#    print "CODE:\n", code["evaluate_basis"]
     code["evaluate_basis_all"] = ""
     code["evaluate_basis_derivatives"] = ""
     code["evaluate_basis_derivatives_all"] = ""

@@ -46,10 +46,10 @@ def compute_element_ir(ufl_element):
     ir["space_dimension"] = fiat_element.space_dimension()
     ir["value_rank"] = fiat_element.value_rank()
     ir["value_dimension"] = fiat_element.value_shape()
-    ir["evaluate_basis"] = fiat_element.get_coeffs()
-    ir["evaluate_basis_all"] = fiat_element.get_coeffs()
-    ir["evaluate_basis_derivatives"] = fiat_element.get_coeffs()
-    ir["evaluate_basis_derivatives_all"] = fiat_element.get_coeffs()
+    ir["evaluate_basis"] = fiat_element
+    ir["evaluate_basis_all"] = not_implemented #fiat_element.get_coeffs()
+    ir["evaluate_basis_derivatives"] = fiat_element
+    ir["evaluate_basis_derivatives_all"] = not_implemented #fiat_element.get_coeffs()
     ir["evaluate_dof"] = None
     ir["evaluate_dofs"] = None
     ir["interpolate_vertex_values"] = None

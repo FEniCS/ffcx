@@ -3,6 +3,12 @@
 format = {"return": lambda v: "return %s;" % v}
 
 # FIXME: Major cleanup needed, remove as much as possible
+from codesnippets import *
+
+# FIXME: KBO: temporary hack to get dictionary working.
+from constants import FFC_OPTIONS
+import platform
+options=FFC_OPTIONS.copy()
 
 # Old dictionary, move the stuff we need to the new dictionary above
 format_old = {
@@ -198,11 +204,11 @@ def floating_point_windows(v):
     return floating_point(v).replace("e-0", "e-").replace("e+0", "e+")
 
 if platform.system() == "Windows":
-    self.format["floating point"] = floating_point_windows
+    format_old["floating point"] = floating_point_windows
 else:
-    self.format["floating point"] = floating_point
+    format_old["floating point"] = floating_point
 
-self.format["epsilon"] = 10.0*eval("1e-%s" % precision)
+format_old["epsilon"] = 10.0*eval("1e-%s" % precision)
 
 def _generate_switch(variable, cases, default = ""):
     "Generate switch statement from given variable and cases"

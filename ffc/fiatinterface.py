@@ -14,7 +14,7 @@ from ufl import ElementRestriction as UFLElementRestriction
 from ufl import TensorElement as UFLTensorElement
 
 # FIAT modules
-from FIAT.shapes import LINE, TRIANGLE, TETRAHEDRON
+#from FIAT.shapes import LINE, TRIANGLE, TETRAHEDRON
 from FIAT_NEW.lagrange import Lagrange
 from FIAT_NEW.reference_element import ufc_simplex
 
