@@ -54,6 +54,7 @@ def generate_dofmap_code(ir, options):
 
     # Prefetch formatting to speedup code generation
     ret = format["return"]
+    switch = format["switch"]
 
     # Generate code
     code = {}
@@ -62,16 +63,16 @@ def generate_dofmap_code(ir, options):
     code["constructor"] = ""
     code["destructor"] = ""
     code["signature"] = ret(ir["signature"])
-    code["needs_mesh_entities"] = ""
-    code["init_mesh"] = ""
-    code["init_cell"] = ""
-    code["init_cell_finalize"] = ""
-    code["global_dimension"] = ret("_global_dimension")
+    code["needs_mesh_entities"] = _needs_mesh_entities(ir["needs_mesh_entities"])
+    code["init_mesh"] = _init_mesh(ir["init_mesh"])
+    code["init_cell"] = "// Do nothing"
+    code["init_cell_finalize"] = "// Do nothing"
+    code["global_dimension"] = ret("__global_dimension")
     code["local_dimension"] = ret(ir["local_dimension"])
     code["max_local_dimension"] = ret(ir["max_local_dimension"])
     code["geometric_dimension"] = ret(ir["geometric_dimension"])
-    code["num_facet_dofs"] = ret(ir["local_dimension"])
-    code["num_entity_dofs"] = ""
+    code["num_facet_dofs"] = ret(ir["num_facet_dofs"])
+    code["num_entity_dofs"] = "// Marie does not know what this should return"
     code["tabulate_dofs"] = ""
     code["tabulate_facet_dofs"] = ""
     code["tabulate_entity_dofs"] = ""
@@ -85,6 +86,16 @@ def generate_dofmap_code(ir, options):
     debug_code(code, "dofmap")
 
     return code
+
+def _needs_mesh_entities(num_dofs_per_entity):
+    return format["switch"]("d", [format["return"](format["bool"](c))
+                                  for c in num_dofs_per_entity])
+
+def _init_mesh(num_dofs_per_entity):
+    terms = [format["multiply"](["%d" % num, "m.num_entities[%d]" % dim])
+             for (dim, num) in enumerate(num_dofs_per_entity)]
+    dimension = format["add"](terms)
+    return "__global_dimension = %s;\n return false;" % dimension
 
 def _postprocess_code(code, options):
     "Postprocess generated code."

@@ -68,21 +68,21 @@ def compute_dofmap_ir(ufl_element):
     # Create FIAT element
     fiat_element = create_fiat_element(ufl_element)
 
-    # Precompute frequently used list: number of dofs per dimension:
-    num_dofs_per_dim = _num_dofs_per_dim(fiat_element)
+    # Precompute frequently used list: number of dofs per mesh entity:
+    num_dofs_per_entity = _num_dofs_per_entity(fiat_element)
 
     # Compute data for each function
     ir = {}
     ir["dof_map* create_sub_dof_map"] = not_implemented
     ir["init_cell"] = None
     ir["init_cell_finalize"] = None
-    ir["init_mesh"] = num_dofs_per_dim
+    ir["init_mesh"] = num_dofs_per_entity
     ir["local_dimension"] = fiat_element.space_dimension()
     ir["geometric_dimension"] = fiat_element.geometric_dimension()
-    ir["global_dimension"] = num_dofs_per_dim
+    ir["global_dimension"] = None
     ir["max_local_dimension"] = fiat_element.space_dimension()
-    ir["needs_mesh_entities"] = [d > 0 for d in num_dofs_per_dim]
-    ir["num_entity_dofs"] = num_dofs_per_dim
+    ir["needs_mesh_entities"] = [d > 0 for d in num_dofs_per_entity]
+    ir["num_entity_dofs"] = _num_dofs_per_dim(fiat_element)
     ir["num_facet_dofs"] = _num_facet_dofs(fiat_element)
     ir["num_sub_dof_maps"] =  fiat_element.num_sub_elements()
     ir["signature"] = "FFC dofmap for " + repr(ufl_element)
@@ -100,14 +100,30 @@ def compute_dofmap_ir(ufl_element):
 def _num_dofs_per_dim(element):
     """Compute the number of dofs associated with each topological
     dimension.  Currently only handles non-mixed elements.
+
+    Example: Lagrange of degree 3 on triangle:  [3, 6, 1]
     """
 
-    return [sum(len(dof_indices) for dof_indices in entity_dof.values())
-            for (i, entity_dof) in element.entity_dofs().iteritems()]
+    entity_dofs = element.entity_dofs()
+    return [sum(len(dof_indices) for dof_indices in entity_dofs[e].values())
+            for e in range(element.geometric_dimension()+1)]
+
+def _num_dofs_per_entity(element):
+    """
+    A list of integers representing the number of dofs associated with
+    a single mesh entity
+
+    Example: Lagrange of degree 3 on triangle: [1, 2, 1]
+    """
+    entity_dofs = element.entity_dofs()
+    return [len(entity_dofs[e][0]) for e in range(element.geometric_dimension()+1)]
 
 
 def _num_facet_dofs(element):
-    "Compute the number of dofs on associated with each cell facet."
+    """Compute the number of dofs on associated with each cell facet.
+
+    Example: Lagrange of degree 3 on triangle: 4
+    """
 
     dim = element.geometric_dimension()
     num_facet_entities = {1: (1, 0), 2: (2, 1, 0), 3: (3, 3, 1, 0)}[dim]

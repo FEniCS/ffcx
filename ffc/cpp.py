@@ -1,7 +1,46 @@
 "This module defines rules and algorithms for generating C++ code."
 
-format = {"return": lambda v: "return %s;" % str(v),
-          "exception": lambda v: "throw std::runtime_error(\"%s\");" % v}
+format = {"add": lambda v: _add(v),
+          "bool": lambda v: {True: "true", False: "false"}[v],
+          "exception": lambda v: "throw std::runtime_error(\"%s\");" % v,
+          "return": lambda v: "return %s;" % str(v),
+          "multiply": lambda v: _multiply(v),
+          "switch": lambda d, cases: _generate_switch(d, cases)}
+
+def _multiply(list):
+    non_zero_factors = []
+    for e in list:
+        if e == "0":
+            return ""
+        elif e == "1":
+            pass
+        else:
+            non_zero_factors += [e]
+    return "*".join(non_zero_factors)
+
+def _add(list):
+    return " + ".join([e for e in list if (e != "0" and e != "")])
+
+def _generate_switch(variable, cases, default = ""):
+    "Generate switch statement from given variable and cases"
+
+    # Special case: no cases
+    if len(cases) == 0:
+        return default
+
+    # Special case: one case
+    if len(cases) == 1:
+        return cases[0]
+
+    # Create switch
+    code = "switch ( %s )\n{\n" % variable
+    for i in range(len(cases)):
+        code += "case %d:\n%s\n  break;\n" % (i, indent(cases[i], 2))
+    code += "}"
+    if not default == "":
+        code += "\n" + default
+
+    return code
 
 def indent(block, num_spaces):
     "Indent each row of the given string block with n spaces."
@@ -215,27 +254,6 @@ else:
     format_old["floating point"] = floating_point
 
 format_old["epsilon"] = 10.0*eval("1e-%s" % precision)
-
-def _generate_switch(variable, cases, default = ""):
-    "Generate switch statement from given variable and cases"
-
-    # Special case: no cases
-    if len(cases) == 0:
-        return default
-
-    # Special case: one case
-    if len(cases) == 1:
-        return cases[0]
-
-    # Create switch
-    code = "switch ( %s )\n{\n" % variable
-    for i in range(len(cases)):
-        code += "case %d:\n%s\n  break;\n" % (i, indent(cases[i], 2))
-    code += "}"
-    if not default == "":
-        code += "\n" + default
-
-    return code
 
 def _generate_body(declarations):
     "Generate function body from list of declarations or statements."
