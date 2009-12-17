@@ -11,9 +11,9 @@ __license__  = "GNU GPL version 3 or any later version"
 # Last changed: 2009-12-17
 
 from log import debug_code
-from cpp import format
+from cpp import format, indent
 
-def generate_element_code(ir):
+def generate_element_code(ir, options):
     "Generate code for finite element from intermediate representation."
 
     # Prefetch formatting to speedup code generation
@@ -40,11 +40,14 @@ def generate_element_code(ir):
     code["num_sub_elements"] = ret(ir["num_sub_elements"])
     code["create_sub_element"] = ""
 
+    # Postprocess code
+    _postprocess_code(code, options)
+
     debug_code(code, "finite_element")
 
     return code
 
-def generate_dofmap_code(ir):
+def generate_dofmap_code(ir, options):
     "Generate code for dofmap from intermediate representation."
 
     # Prefetch formatting to speedup code generation
@@ -74,6 +77,28 @@ def generate_dofmap_code(ir):
     code["num_sub_dof_maps"] = ret(ir["num_sub_dof_maps"])
     code["create_sub_dof_map"] = ""
 
+    # Postprocess code
+    _postprocess_code(code, options)
+
     debug_code(code, "dofmap")
 
     return code
+
+def _postprocess_code(code, options):
+    "Postprocess generated code."
+    _indent_code(code)
+    _remove_code(code, options)
+
+def _indent_code(code):
+    "Indent code that should be indented."
+    for key in code:
+        if not key in ("classname", "members"):
+            code[key] = indent(code[key], 4)
+
+def _remove_code(code, options):
+    "Remove code that should not be generated."
+    for key in code:
+        flag = "no-" + key
+        if flag in options and options[flag]:
+            msg = "// Function %s not generated (compiled with -f%s)" % (key, flag)
+            code[key] = format["exception"](msg)

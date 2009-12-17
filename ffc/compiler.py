@@ -262,10 +262,11 @@ def generate_code(ir, options):
     code_forms = []
 
     # Generate code for elements
-    code_elements = [generate_element_code(ir) for ir in ir_elements]
+    code_elements = [generate_element_code(ir, options) for ir in ir_elements]
 
     # Generate code for dofmaps
-    code_dofmaps = [generate_dofmap_code(ir) for ir in ir_dofmaps]
+    code_dofmaps = [generate_dofmap_code(ir, options) for ir in ir_dofmaps]
+
 
     return code_forms, code_elements, code_dofmaps
 

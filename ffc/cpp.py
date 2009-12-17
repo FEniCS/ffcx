@@ -1,6 +1,7 @@
 "This module defines rules and algorithms for generating C++ code."
 
-format = {"return": lambda v: "return %s;" % str(v)}
+format = {"return": lambda v: "return %s;" % str(v),
+          "exception": lambda v: "throw std::runtime_error(\"%s\");" % v}
 
 def indent(block, num_spaces):
     "Indent each row of the given string block with n spaces."
