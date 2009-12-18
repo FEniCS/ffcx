@@ -8,7 +8,7 @@ __date__ = "2009-12-16"
 __copyright__ = "Copyright (C) 2009 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2009-12-17
+# Last changed: 2009-12-18
 from evaluatebasis import _evaluate_basis
 
 from log import debug_code
@@ -72,7 +72,7 @@ def generate_dofmap_code(ir, options):
     code["max_local_dimension"] = ret(ir["max_local_dimension"])
     code["geometric_dimension"] = ret(ir["geometric_dimension"])
     code["num_facet_dofs"] = ret(ir["num_facet_dofs"])
-    code["num_entity_dofs"] = "// Marie does not know what this should return"
+    code["num_entity_dofs"] = "// Marie does not know what this should return // AL: Should return number of dofs associated with the entity of a given topological dimension, so 0 --> 1, 1 --> 2, 2 --> 1 for P3 triangles"
     code["tabulate_dofs"] = ""
     code["tabulate_facet_dofs"] = ""
     code["tabulate_entity_dofs"] = ""
@@ -88,10 +88,12 @@ def generate_dofmap_code(ir, options):
     return code
 
 def _needs_mesh_entities(num_dofs_per_entity):
+    "Generate code for needs_mesh_entities."
     return format["switch"]("d", [format["return"](format["bool"](c))
                                   for c in num_dofs_per_entity])
 
 def _init_mesh(num_dofs_per_entity):
+    "Generate code for init_mesh."
     terms = [format["multiply"](["%d" % num, "m.num_entities[%d]" % dim])
              for (dim, num) in enumerate(num_dofs_per_entity)]
     dimension = format["add"](terms)
