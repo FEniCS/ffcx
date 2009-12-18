@@ -1,11 +1,17 @@
 "This module defines rules and algorithms for generating C++ code."
 
-format = {"add": lambda v: _add(v),
-          "bool": lambda v: {True: "true", False: "false"}[v],
-          "exception": lambda v: "throw std::runtime_error(\"%s\");" % v,
-          "return": lambda v: "return %s;" % str(v),
-          "multiply": lambda v: _multiply(v),
-          "switch": lambda d, cases: _generate_switch(d, cases)}
+# Formatting rules
+format = {}
+
+# Operator formatting
+format.update({"add": lambda v: _add(v),
+               "multiply": lambda v: _multiply(v),
+               "bool": lambda v: {True: "true", False: "false"}[v]})
+
+# Program flow
+format.update({"return": lambda v: "return %s;" % str(v),
+               "switch": lambda d, cases: _generate_switch(d, cases),
+               "exception": lambda v: "throw std::runtime_error(\"%s\");" % v})
 
 def _multiply(factors):
     non_zero_factors = []
