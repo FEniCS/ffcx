@@ -14,7 +14,7 @@ __date__ = "2009-12-16"
 __copyright__ = "Copyright (C) 2009 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2009-12-17
+# Last changed: 2009-12-18
 
 from log import debug_ir
 from fiatinterface import create_element
@@ -99,7 +99,8 @@ def compute_dofmap_ir(ufl_element):
 #--- Utility functions ---
 
 def _num_dofs_per_dim(element):
-    """Compute the number of dofs associated with each topological
+    """
+    Compute the number of dofs associated with each topological
     dimension.  Currently only handles non-mixed elements.
 
     Example: Lagrange of degree 3 on triangle:  [3, 6, 1]
@@ -111,17 +112,17 @@ def _num_dofs_per_dim(element):
 
 def _num_dofs_per_entity(element):
     """
-    A list of integers representing the number of dofs associated with
-    a single mesh entity
+    Compute list of integers representing the number of dofs
+    associated with a single mesh entity.
 
     Example: Lagrange of degree 3 on triangle: [1, 2, 1]
     """
     entity_dofs = element.entity_dofs()
     return [len(entity_dofs[e][0]) for e in range(len(entity_dofs.keys()))]
 
-
 def _num_facet_dofs(element):
-    """Compute the number of dofs on associated with each cell facet.
+    """
+    Compute the number of dofs on associated with each cell facet.
 
     Example: Lagrange of degree 3 on triangle: 4
     """
