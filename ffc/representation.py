@@ -45,7 +45,7 @@ def compute_element_ir(ufl_element):
     ir["signature"] = repr(ufl_element)
     ir["cell_shape"] = ufl_element.cell().domain()
     ir["space_dimension"] = element.space_dimension()
-    ir["value_rank"] = element.value_rank()
+    ir["value_rank"] = len(ufl_element.value_shape())
     ir["value_dimension"] = ufl_element.value_shape()
     ir["evaluate_basis"] = element
     ir["evaluate_basis_all"] = not_implemented #element.get_coeffs()

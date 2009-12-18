@@ -6,7 +6,7 @@ __date__ = "2009-12-14"
 __copyright__ = "Copyright (C) 2009 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2009-12-17
+# Last changed: 2009-12-18
 
 # Python modules
 import math
@@ -57,11 +57,13 @@ def _evaluate_basis(fiat_element):
     code += _generate_map(fiat_element, Indent, format)
 
     # Check if we have just one element
+
     if (fiat_element.num_sub_elements() == 1):
 
         # Reset values, change for tensor valued elements
         # FIXME: KBO: If this remains simple, inline function here.
-        code += _reset_values(fiat_element.value_dimension(0), False, Indent, format)
+        rank = len(fiat_element.value_shape())
+        code += _reset_values(rank, False, Indent, format)
 
         # Map degree of freedom to local degree of freedom for current element
         code += _map_dof(0, Indent, format)
@@ -99,11 +101,14 @@ def _generate_map(fiat_element, Indent, format):
     format_floating_point = format["floating point"]
     format_epsilon        = format["epsilon"]
 
+    cell_domain = "triangle"
 #    # Get coordinates and map to the UFC reference element from codesnippets.py
 #    code += [Indent.indent(format["coordinate map FIAT"](fiat_element.cell_domain()))] + [""]
 
+
+
     # Get coordinates and map to the FIAT reference element from codesnippets.py
-    code += [Indent.indent(format["coordinate map FIAT"](fiat_element.cell_domain()))] + [""]
+    code += [Indent.indent(format["coordinate map FIAT"](cell_domain))] + [""]
 
     # FIXME: Verify that we don't need to apply additional transformations once we're on the reference element
 #    if (fiat_element.cell_domain() == "interval"):
@@ -196,7 +201,7 @@ def _mixed_elements(fiat_element, Indent, format):
         basis_element = elements[i]
 
         # Get value and space dimension
-        value_dim = basis_element.value_dimension(0)
+        value_dim = basis_element.value_shape()[0]
         space_dim = basis_element.space_dimension()
 
         # Determine if the element has a value, for the given dof
@@ -281,12 +286,13 @@ def _tabulate_coefficients(fiat_element, Indent, format):
     coefficients = fiat_element.get_coeffs()
 
     # Scalar valued basis element [Lagrange, Discontinuous Lagrange, Crouzeix-Raviart]
-    if (fiat_element.value_rank() == 0):
+    rank = len(fiat_element.value_shape())
+    if (rank == 0):
         coefficients = [coefficients]
 
     # Vector valued basis element [Raviart-Thomas, Brezzi-Douglas-Marini (BDM)]
     # FIXME: KBO: Verify that coefficients still look this way
-    elif (fiat_element.value_rank() == 1):
+    elif (rank == 1):
         error("Broken!")
         coefficients = numpy.transpose(coefficients, [1,0,2])
     else:
@@ -338,7 +344,11 @@ def _compute_values(fiat_element, sum_value_dim, vector, Indent, format):
     code += [Indent.indent(format["comment"]("Compute value(s)"))]
 
     # Get number of components, change for tensor valued elements
-    num_components = fiat_element.value_dimension(0)
+    shape = fiat_element.value_shape()
+    if len(shape) > 0:
+        num_components = shape[0]
+    else:
+        num_components = 1
 
     # Check which transform we should use to map the basis functions
     # FIXME: KBO: Only support affine mapping for now
@@ -376,7 +386,7 @@ def _compute_values(fiat_element, sum_value_dim, vector, Indent, format):
         # Get number of members of the expansion set
         # FIXME: KBO: Might be able to get this more elegantly, maybe move to
         # fiat_element or simply take the second value of the shape of the coefficients
-        num_mem = fiat_element.get_nodal_basis().get_expansion_set().get_num_members(fiat_element.degree())
+        num_mem = fiat_element.get_nodal_basis().get_expansion_set().get_num_members(fiat_element.get_order())
         loop_vars = [(format_j, 0, num_mem)]
 
         name = format_pointer + format_values
