@@ -9,10 +9,13 @@ __copyright__ = "Copyright (C) 2009 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
 # Last changed: 2009-12-18
-from evaluatebasis import _evaluate_basis
 
+# FFC modules
 from log import debug_code
 from cpp import format, indent
+
+# FFC code generation modules
+from evaluatebasis import _evaluate_basis
 
 def generate_element_code(ir, options):
     "Generate code for finite element from intermediate representation."
