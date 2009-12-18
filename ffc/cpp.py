@@ -7,19 +7,19 @@ format = {"add": lambda v: _add(v),
           "multiply": lambda v: _multiply(v),
           "switch": lambda d, cases: _generate_switch(d, cases)}
 
-def _multiply(list):
+def _multiply(factors):
     non_zero_factors = []
-    for e in list:
-        if e == "0":
+    for f in factors:
+        if f == "0":
             return ""
-        elif e == "1":
+        elif f == "1":
             pass
         else:
-            non_zero_factors += [e]
+            non_zero_factors += [f]
     return "*".join(non_zero_factors)
 
-def _add(list):
-    return " + ".join([e for e in list if (e != "0" and e != "")])
+def _add(terms):
+    return " + ".join([t for t in terms if (t != "0" and t != "")])
 
 def _generate_switch(variable, cases, default = ""):
     "Generate switch statement from given variable and cases"
