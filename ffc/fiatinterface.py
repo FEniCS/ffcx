@@ -15,15 +15,16 @@ from ufl import TensorElement as UFLTensorElement
 
 # FIAT modules
 #from FIAT.shapes import LINE, TRIANGLE, TETRAHEDRON
-from FIAT_NEW.lagrange import Lagrange
 from FIAT_NEW.reference_element import ufc_simplex
+from FIAT_NEW.lagrange import Lagrange
+from FIAT_NEW.brezzi_douglas_marini import BrezziDouglasMarini
+from FIAT_NEW.discontinuous_lagrange import DiscontinuousLagrange
 
 # FFC modules
 from log import debug
 from log import error
 
 # FFC fem modules
-#from mixedelement import MixedElement as FFCMixedElement
 from quadratureelement import QuadratureElement as FFCQuadratureElement
 
 # Cache for computed elements
@@ -36,7 +37,9 @@ domain2dim = {"vertex": 0,
               "tetrahedron": 3}
 
 # Mapping from family name to class
-family2class = {"Lagrange": Lagrange}
+family2class = {"Lagrange": Lagrange,
+                "Brezzi-Douglas-Marini": BrezziDouglasMarini,
+                "Discontinuous Lagrange": DiscontinuousLagrange}
 
 def create_element(ufl_element):
 

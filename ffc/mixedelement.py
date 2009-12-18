@@ -6,26 +6,48 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Garth N. Wells 2006-2009
 # Modified by Marie E. Rognes (meg@math.uio.no) 2007
 # Modified by Kristian B. Oelgaard 2009
-# Last changed: 2009-12-17
+# Last changed: 2009-12-18
 
 # Python modules.
 import numpy
-
-# UFL modules.
-#from ufl.classes import FiniteElementBase
 
 # FFC modules.
 from log import error
 from fiatinterface import create_fiat_element
 
-#from dofrepresentation import DofRepresentation
-
 def combine_entity_dofs(elements):
-    # FIXME
-    return elements[0].entity_dofs()
+    """
+    Combine the entity_dofs from a list of elements into a combined
+    entity_dof containing the information for all the elements.
+    """
+
+    # Initialize entity_dofs dictionary
+    entity_dofs = dict((key, {}) for key in elements[0].entity_dofs())
+    for dim in elements[0].entity_dofs():
+        for entity in elements[0].entity_dofs()[dim]:
+            entity_dofs[dim][entity] = []
+
+    offset = 0
+
+    # Insert dofs from each element into the mixed entity_dof.
+    for e in elements:
+        dofs = e.entity_dofs()
+        for dim in dofs:
+            for entity in dofs[dim]:
+
+                # Must take offset into account
+                shifted_dofs = [v + offset for v in dofs[dim][entity]]
+
+                # Insert dofs from this element into the entity_dofs
+                entity_dofs[dim][entity] += shifted_dofs
+
+        # Adjust offset
+        offset += e.space_dimension()
+    return entity_dofs
 
 def extract_elements(ufl_element):
     # Q: Are UFL subelements nested?
+    # Q: Vector elements pose some interesting issues...
     return [create_fiat_element(sub_element)
             for sub_element in ufl_element.sub_elements()]
 
@@ -41,11 +63,9 @@ class MixedElement:
     def space_dimension(self):
         return sum(e.space_dimension() for e in self._elements)
 
-    def value_rank(self):
-        return 3
-
-    def num_sub_elements(self):
-        return len(self._elements)
+    def value_shape(self):
+        # Remove me? (Use ufl value_shape if possible)
+        return None
 
     def entity_dofs(self):
         return self._entity_dofs

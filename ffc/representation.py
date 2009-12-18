@@ -16,6 +16,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Last changed: 2009-12-18
 
+from ufl.finiteelement import FiniteElement as UFLFiniteElement
 from ufl.algorithms.analysis import extract_sub_elements
 
 from log import debug_ir
@@ -67,7 +68,7 @@ def compute_element_ir(ufl_element):
     ir["evaluate_dof"] = None
     ir["evaluate_dofs"] = None
     ir["interpolate_vertex_values"] = None
-    ir["num_sub_elements"] = element.num_sub_elements()
+    ir["num_sub_elements"] = _num_sub_elements(ufl_element)
     ir["create_sub_element"] = None
 
     debug_ir(ir, "finite_element")
@@ -98,7 +99,7 @@ def compute_dofmap_ir(ufl_element):
     ir["needs_mesh_entities"] = [d > 0 for d in num_dofs_per_entity]
     ir["num_entity_dofs"] = _num_dofs_per_dim(element)
     ir["num_facet_dofs"] = _num_facet_dofs(element)
-    ir["num_sub_dof_maps"] =  element.num_sub_elements()
+    ir["num_sub_dof_maps"] =  _num_sub_elements(ufl_element)
     ir["signature"] = "FFC dofmap for " + repr(ufl_element)
     ir["tabulate_dofs"] = not_implemented
     ir["tabulate_facet_dofs"] = not_implemented
@@ -110,6 +111,16 @@ def compute_dofmap_ir(ufl_element):
     return ir
 
 #--- Utility functions ---
+
+def _num_sub_elements(ufl_element):
+    """
+    Return the number of sub_elements for a ufl_element. Would work
+    better if an UFL element had a member num_sub_elements()
+    """
+    if isinstance(ufl_element, UFLFiniteElement):
+        return 0
+    else:
+        return len(ufl_element.sub_elements())
 
 def _num_dofs_per_dim(element):
     """
