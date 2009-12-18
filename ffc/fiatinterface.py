@@ -5,7 +5,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Garth N. Wells, 2009.
 # Modified by Marie Rognes, 2009.
-# Last changed: 2009-12-17
+# Last changed: 2009-12-18
 
 # UFL modules
 from ufl import FiniteElement as UFLFiniteElement

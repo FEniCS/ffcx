@@ -16,6 +16,8 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Last changed: 2009-12-18
 
+from ufl.algorithms.analysis import extract_sub_elements
+
 from log import debug_ir
 from fiatinterface import create_element
 from mixedelement import MixedElement
@@ -32,6 +34,17 @@ def compute_form_ir(form, form_data, method):
     else:
         return {}
 
+def compute_elements_ir(ufl_element):
+    """
+    Compute and return intermediate representation for every element
+    in the 'element tree' spanned by the ufl_element.
+    """
+    ir = {}
+    elements = extract_sub_elements(ufl_element)
+    for element in elements:
+        ir[element] = compute_element_ir(ufl_element)
+    return ir
+
 def compute_element_ir(ufl_element):
     "Compute and return intermediate representation of element."
 
@@ -40,8 +53,8 @@ def compute_element_ir(ufl_element):
     # Create FIAT element
     element = create_element(ufl_element)
 
-    # Compute data for each function
     ir = {}
+    # Compute data for each function
     ir["signature"] = repr(ufl_element)
     ir["cell_shape"] = ufl_element.cell().domain()
     ir["space_dimension"] = element.space_dimension()
