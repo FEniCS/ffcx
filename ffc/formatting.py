@@ -12,7 +12,7 @@ __date__ = "2009-12-16"
 __copyright__ = "Copyright (C) 2009 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2009-12-17
+# Last changed: 2009-12-18
 
 # Python modules
 import os
@@ -28,21 +28,17 @@ from ufc_utils import dof_map_header
 from ufc_utils import dof_map_implementation
 
 # FFC modules
-from ffc.log import info
+from ffc import codesnippets
+from ffc.log import info, error
+from ffc.constants import FFC_VERSION
 
 def format_ufc(codes, prefix, options):
     "Format given code in UFC format."
 
     # Generate code for header
-    #output = _generate_header(prefix, options)
-    #if self.output_format == "ufc":
-    #    output += _generate_header(prefix, options)
-    #elif self.output_format == "dolfin":
-    #    output += _generate_dolfin_header(prefix, options)
-    #    output += "\n"
+    output = _generate_header(prefix, options)
 
     # Iterate over codes
-    output = ""
     for (i, code) in enumerate(codes):
 
         # Extract generated code
@@ -56,7 +52,14 @@ def format_ufc(codes, prefix, options):
         for code_dofmap in code_dofmaps:
             output += dof_map_combined % code_dofmap
 
+    # Generate code for footer
+    output += _generate_footer()
+
     # Write generated code to file
+    _write_file(output, prefix, options)
+
+def _write_file(output, prefix, options):
+    "Write generated code to file."
     prefix = prefix.split(os.path.join(' ',' ').split()[0])[-1]
     full_prefix = os.path.join(options["output_dir"], prefix)
     filename = "%s.h" % full_prefix
@@ -64,3 +67,17 @@ def format_ufc(codes, prefix, options):
     file.write(output)
     file.close()
     info("Output written to " + filename + ".")
+
+def _generate_header(prefix, options):
+    "Generate code for header."
+    args = {"version": FFC_VERSION, "prefix_upper": prefix.upper()}
+    if options["format"] == "ufc":
+        return codesnippets.header_ufc % args
+    elif options["format"] == "dolfin":
+        return codesnippets.header_dolfin % args
+    else:
+        error("Unable to format code, unknown format \"%s\".", options["format"])
+
+def _generate_footer():
+    "Generate code for footer."
+    return codesnippets.footer
