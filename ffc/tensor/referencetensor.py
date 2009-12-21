@@ -13,7 +13,7 @@ from ffc.log import debug
 # FFC tensor representation modules.
 from monomialintegration import integrate
 from monomialtransformation import MonomialIndex
-from multiindex import create_multi_index
+from multiindex import create_multiindex
 
 class ReferenceTensor:
     """
@@ -27,13 +27,15 @@ class ReferenceTensor:
         # Compute reference tensor
         self.A0 = integrate(monomial, domain_type, facet0, facet1, quadrature_order)
 
-        # Create primary, secondary and auxiliary multi indices
-        self.primary_multi_index   = create_multi_index(monomial,
-                                                        MonomialIndex.PRIMARY)
-        self.secondary_multi_index = create_multi_index(monomial,
-                                                        MonomialIndex.SECONDARY)
-        self.internal_multi_index  = create_multi_index(monomial,
-                                                        MonomialIndex.INTERNAL)
+        # Extract indices
+        primary_indices   = monomial.extract_unique_indices(MonomialIndex.PRIMARY)
+        secondary_indices = monomial.extract_unique_indices(MonomialIndex.SECONDARY)
+        internal_indices  = monomial.extract_unique_indices(MonomialIndex.INTERNAL)
+
+        # Create multiindices
+        self.primary_multi_index   = create_multiindex(primary_indices)
+        self.secondary_multi_index = create_multiindex(secondary_indices)
+        self.internal_multi_index  = create_multiindex(internal_indices)
 
         debug("Primary multi index:   " + str(self.primary_multi_index))
         debug("Secondary multi index: " + str(self.secondary_multi_index))

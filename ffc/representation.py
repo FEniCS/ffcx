@@ -29,15 +29,17 @@ from ffc.mixedelement import MixedElement
 
 not_implemented = None
 
-def compute_form_ir(form, form_data, method):
+def compute_form_ir(form, form_data, representation_type):
     "Compute and return intermediate representation of form."
 
-    if method == "quadrature":
-        return {}
-    elif method == "tensor":
-        return TensorRepresentation(form, form_data)
+    if representation_type == "quadrature":
+        ir = None
+    elif representation_type == "tensor":
+        ir = TensorRepresentation(form, form_data)
     else:
-        error("Unknown form representation: \"%s\".", str(method))
+        error("Unknown form representation: \"%s\".", str(representation_type))
+
+    return ir
 
 def compute_element_ir(ufl_element):
     "Compute and return intermediate representation of element."

@@ -236,12 +236,22 @@ class TransformedMonomial:
         # Iterate over factors
         for f in monomial.factors:
 
-            # Extract element and dimensions
-            element = create_element(f.element())
-            vdim = element.value_dimension(0) # FIXME: rank dependent (meg)
-            sdim = element.space_dimension()
-            gdim = element.geometric_dimension()
-            cdim = element.num_sub_elements()
+            # FIXME: Can't handle tensor-valued elements: vdim = shape[0]
+
+            # Create FIAT element
+            ufl_element = f.element()
+            fiat_element = create_element(f.element())
+
+            # Get number of components
+            shape = ufl_element.value_shape()
+            if len(shape) == 0:
+                vdim = 1
+            else:
+                vdim = shape[0]
+
+            # Extract dimensions
+            sdim = fiat_element.space_dimension()
+            gdim = ufl_element.cell().geometric_dimension()
 
             # Extract basis function index and coefficients
             if isinstance(f.function, Argument):
@@ -265,10 +275,10 @@ class TransformedMonomial:
                 # Get sub element, offset and mapping
                 component = components[0]
                 if len(component.index_range) > 1:
-                    same = element.component_element(component.index_range[0])[0].mapping()
-                    if not all([element.component_element(c)[0].mapping() is same for c in component.index_range]):
+                    same = ufl_element.component_element(component.index_range[0])[0].mapping()
+                    if not all([ufl_element.component_element(c)[0].mapping() is same for c in component.index_range]):
                         raise MonomialException, "Unable to handle different mappings for index range."
-                (sub_element, offset) = element.component_element(component.index_range[0])
+                (sub_element, offset) = ufl_element.component_element(component.index_range[0])
                 mapping = sub_element.mapping()
 
                 # Add transforms where appropriate
@@ -309,12 +319,12 @@ class TransformedMonomial:
             restriction = f.restriction
 
             # Create basis function
-            v = MonomialArgument(element, vindex, components, derivatives, restriction)
+            v = MonomialArgument(ufl_element, vindex, components, derivatives, restriction)
             self.arguments.append(v)
 
         # Figure out secondary and auxiliary indices
-        internal_indices = self.extract_internal_indices(None)
-        external_indices = self.extract_external_indices(None)
+        internal_indices = self._extract_internal_indices(None)
+        external_indices = self._extract_external_indices(None)
         for i in internal_indices + external_indices:
 
             # Skip already visited indices
@@ -336,6 +346,14 @@ class TransformedMonomial:
                 i.index_id   = _next_external_index()
             else:
                 error("Summation index does not appear exactly twice: " + str(i))
+
+    def extract_unique_indices(self, index_type=None):
+        "Return all unique indices for monomial w.r.t. type and id (not range)."
+        indices = []
+        for index in self._extract_indices(index_type):
+            if not index in indices:
+                indices.append(index)
+        return indices
 
     def _extract_components(self, f, index_map, vdim):
         "Return list of components."
@@ -369,16 +387,8 @@ class TransformedMonomial:
 
     def _extract_indices(self, index_type=None):
         "Return all indices for monomial."
-        return self.extract_internal_indices(index_type) + \
-               self.extract_external_indices(index_type)
-
-    def _extract_unique_indices(self, index_type=None):
-        "Return all unique indices for monomial w.r.t. type and id (not range)."
-        indices = []
-        for index in self.extract_indices(index_type):
-            if not index in indices:
-                indices.append(index)
-        return indices
+        return self._extract_internal_indices(index_type) + \
+               self._extract_external_indices(index_type)
 
     def __str__(self):
         "Return informal string representation (pretty-print)."

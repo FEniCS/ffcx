@@ -30,14 +30,11 @@ def outer_join(a, b):
             outer += [a[i] + [b[j]]]
     return outer
 
-def create_multi_index(monomial, index_type):
-    "Find dimensions and create multi index for monomial of given index type."
-
-    # Get sorted unique monomial indices
-    indices = monomial.extract_unique_indices(index_type)
-    indices.sort()
+def create_multiindex(indices):
+    "Create multiindex for given list of indices."
 
     # Check that we got all indices correctly
+    indices = sorted(indices)
     for (i, index) in enumerate(indices):
         if not i == index.index_id:
             error("Unable to extract all indices.")
@@ -58,7 +55,7 @@ class MultiIndex:
     """
 
     def __init__(self, dims):
-        "Create multi index from given list of ranges"
+        "Create multiindex from given list of ranges"
         self.rank = len(dims)
         self.dims = [len(dim) for dim in dims]
         self.indices = build_indices(dims)

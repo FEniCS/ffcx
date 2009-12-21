@@ -19,11 +19,12 @@ import time
 
 # UFL modules
 from ufl.classes import Measure
+from ufl.geometry import domain2facet
 
 # FFC modules
-from ffc.log import debug, error
+from ffc.log import info, debug, error
 from ffc.ffcquadraturerules import make_quadrature
-from ffc.quadratureelement import QuadratureElement
+from ffc.fiatinterface import create_element
 
 # FFC tensor representation modules.
 from multiindex import build_indices
@@ -36,6 +37,9 @@ def integrate(monomial, domain_type, facet0, facet1, quadrature_degree):
     """Compute the reference tensor for a given monomial term of a
     multilinear form"""
 
+    info("Precomputing integrals on reference element")
+
+    # Start timing
     tic = time.time()
 
     # Initialize quadrature points and weights
@@ -53,7 +57,7 @@ def integrate(monomial, domain_type, facet0, facet1, quadrature_degree):
     # Report elapsed time and number of entries
     toc = time.time() - tic
     num_entries = numpy.prod(numpy.shape(A0))
-    debug("%d entries computed in %.3g seconds" % (num_entries, toc))
+    info("%d entries computed in %.3g seconds" % (num_entries, toc))
     debug("Shape of reference tensor: " + str(numpy.shape(A0)))
 
     return A0
@@ -62,9 +66,9 @@ def _init_quadrature(arguments, domain_type, quadrature_degree):
     "Initialize quadrature for given monomial."
 
     # Get shapes (check first factor, should be the same for all)
-    element = arguments[0].element
-    cell_shape = geometric_dimension_to_string[element.geometric_dimension()]
-    facet_shape = geometric_dimension_to_string[element.geometric_dimension() - 1]
+    ufl_element = arguments[0].element
+    cell_shape = ufl_element.cell().domain()
+    facet_shape = domain2facet[cell_shape]
 
     # Use the quadrature order given by metadata to compute the number of points
     num_points = (quadrature_degree + 2) / 2
@@ -84,29 +88,27 @@ def _init_table(arguments, domain_type, points, facet0, facet1):
     # Compute maximum number of derivatives for each element
     num_derivatives = {}
     for v in arguments:
-        element = v.element
+        ufl_element = v.element
         order = len(v.derivatives)
-        if element in num_derivatives:
-            num_derivatives[element] = max(order, num_derivatives[element])
+        if ufl_element in num_derivatives:
+            num_derivatives[ufl_element] = max(order, num_derivatives[ufl_element])
         else:
-            num_derivatives[element] = order
+            num_derivatives[ufl_element] = order
 
     # Call FIAT to tabulate the basis functions for each element
     table = {}
-    for element in num_derivatives:
-        order = num_derivatives[element]
-        # Tabulate for different integral types
+    for (ufl_element, order) in num_derivatives.items():
+        fiat_element = create_element(ufl_element)
         if domain_type == Measure.CELL:
-            table[(element, None)] = element.tabulate(order, points)
-            print table[(element, None)]
+            table[(ufl_element, None)] = fiat_element.tabulate(order, points)
         elif domain_type == Measure.EXTERIOR_FACET:
-            x = map_to_facet(element.cell_domain(), points, facet0)
-            table[(element, None)] = element.tabulate(order, x)
+            x = map_to_facet(fiat_element.cell_domain(), points, facet0)
+            table[(ufl_element, None)] = fiat_element.tabulate(order, x)
         elif domain_type == Measure.INTERIOR_FACET:
-            x0 = map_to_facet(element.cell_domain(), points, facet0)
-            x1 = map_to_facet(element.cell_domain(), points, facet1)
-            table[(element, "+")] = element.tabulate(order, x0)
-            table[(element, "-")] = element.tabulate(order, x1)
+            x0 = map_to_facet(fiat_element.cell_domain(), points, facet0)
+            x1 = map_to_facet(fiat_element.cell_domain(), points, facet1)
+            table[(ufl_element, "+")] = fiat_element.tabulate(order, x0)
+            table[(ufl_element, "-")] = fiat_element.tabulate(order, x1)
 
     return table
 
@@ -129,8 +131,8 @@ def _compute_psi(v, table, num_points, domain_type):
     # later when we sum over these dimensions.
 
     # Get cell dimension
-    cell_dimension = v.element.geometric_dimension()
-    print "cell_dimension = ", cell_dimension
+    ufl_element = v.element
+    cell_dimension = ufl_element.cell().geometric_dimension()
 
     # Get indices and shapes for components
     if len(v.components) ==  0:

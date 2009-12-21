@@ -223,8 +223,7 @@ def compute_ir(form, form_data, options):
 
     # Generate representations for form
     begin("Computing form representations")
-    #ir_forms = [compute_form_ir(form, form_data, m) for m in methods]
-    ir_forms = []
+    ir_forms = [compute_form_ir(form, form_data, m) for m in methods]
     end()
 
     # Generate representations for finite elements (unique sub elements)

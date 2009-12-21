@@ -51,8 +51,7 @@ class TensorRepresentation:
                                    one for each sub domain and facet
 
         interior_facet_integrals - list of list of list of list of terms,
-                                   one for each sub domain and facet
-                                   pair
+                                   one for each sub domain and facet pair
 
         geometric_dimension      - geometric dimension of form
 
@@ -96,6 +95,10 @@ class TensorRepresentation:
         # Extract form data needed by code generation
         self.geometric_dimension = form_data.geometric_dimension
         self.num_facets = form_data.num_facets
+
+    def __str__(self):
+        "Return informal string representation (pretty-print)."
+        return "Tensor representation of form with %d integrals" % self.num_integrals
 
 def _extract_tensor_integrals(form, form_data):
     "Extract form containing only tensor representation integrals."
