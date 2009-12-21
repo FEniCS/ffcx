@@ -16,23 +16,28 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Last changed: 2009-12-21
 
+# UFL modules
 from ufl.finiteelement import FiniteElement as UFLFiniteElement
 
-from log import debug_ir
-from fiatinterface import create_element
-from mixedelement import MixedElement
+# FFC representation modules
+from ffc.tensor import TensorRepresentation
+
+# FFC modules
+from ffc.log import error, debug_ir
+from ffc.fiatinterface import create_element
+from ffc.mixedelement import MixedElement
 
 not_implemented = None
 
 def compute_form_ir(form, form_data, method):
     "Compute and return intermediate representation of form."
 
-    # FIXME: Call correct method in quadrature or tensor module
-
     if method == "quadrature":
         return {}
+    elif method == "tensor":
+        return TensorRepresentation(form, form_data)
     else:
-        return {}
+        error("Unknown form representation: \"%s\".", str(method))
 
 def compute_element_ir(ufl_element):
     "Compute and return intermediate representation of element."
