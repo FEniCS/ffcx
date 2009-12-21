@@ -25,12 +25,12 @@ from ufl.classes import Integral
 from ffc.log import info
 
 # FFC tensor representation modules
-from monomialextraction import extract_monomial_form
-from monomialextraction import MonomialForm
-from monomialtransformation import transform_monomial_form
-from referencetensor import ReferenceTensor
-from geometrytensor import GeometryTensor
-from tensorreordering import reorder_entries
+from ffc.tensor.monomialextraction import extract_monomial_form
+from ffc.tensor.monomialextraction import MonomialForm
+from ffc.tensor.monomialtransformation import transform_monomial_form
+from ffc.tensor.referencetensor import ReferenceTensor
+from ffc.tensor.geometrytensor import GeometryTensor
+from ffc.tensor.tensorreordering import reorder_entries
 
 class TensorRepresentation:
     """

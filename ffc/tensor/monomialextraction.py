@@ -7,9 +7,9 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Martin Alnes, 2008
 # Modified by Kristian B. Oelgaard
-# Last changed: 2009-12-09
+# Last changed: 2009-12-21
 
-# UFL modules.
+# UFL modules
 from ufl.classes import Form
 from ufl.classes import Argument
 from ufl.classes import Coefficient
@@ -20,15 +20,47 @@ from ufl.algorithms import tree_format
 from ufl.algorithms import apply_transformer
 from ufl.algorithms import ReuseTransformer
 
-# FFC modules.
+# FFC modules
 from ffc.log import ffc_assert
 
-# Exception raised when monomial extraction fails
+def extract_monomial_form(form, form_data):
+    """
+    Extract monomial representation of form (if possible). When
+    successful, the form is represented as a sum of products of scalar
+    components of basis functions or derivatives of basis functions.
+    If unsuccessful, MonomialException is raised.
+    """
+
+    # Check that we get a UFL form
+    ffc_assert(isinstance(form, Form), "Expecting a UFL form.")
+
+    # Purge list tensors from expression tree
+    form = purge_list_tensors(form)
+
+    # Iterate over all integrals
+    monomial_form = MonomialForm()
+    for integral in form.integrals():
+
+        # Get measure and integrand
+        measure = integral.measure()
+        integrand = integral.integrand()
+
+        # Extract monomial representation if possible
+        integrand = apply_transformer(integrand, MonomialTransformer())
+        monomial_form.append(integrand, measure)
+
+    return monomial_form
+
 class MonomialException(Exception):
+    "Exception raised when monomial extraction fails."
     def __init__(self, *args, **kwargs):
         Exception.__init__(self, *args, **kwargs)
 
 class MonomialFactor:
+    """
+    This class represents a monomial factor, that is, a derivative of
+    a scalar component of a basis function.
+    """
 
     def __init__(self, arg=None):
         if isinstance(arg, MonomialFactor):
@@ -86,6 +118,7 @@ class MonomialFactor:
         return d0 + str(self.function) + r + c + d1
 
 class Monomial:
+    "This class represents a product of monomial factors."
 
     def __init__(self, arg=None):
         if isinstance(arg, Monomial):
@@ -140,6 +173,7 @@ class Monomial:
         return float_value + " * ".join(str(v) for v in self.factors)
 
 class MonomialSum:
+    "This class represents a sum of monomials."
 
     def __init__(self, arg=None):
         if isinstance(arg, MonomialSum):
@@ -166,8 +200,10 @@ class MonomialSum:
             m.apply_restriction(restriction)
 
     def __add__(self, other):
+        m0 = [Monomial(m) for m in self.monomials]
+        m1 = [Monomial(m) for m in other.monomials]
         sum = MonomialSum()
-        sum.monomials = [Monomial(m) for m in self.monomials] + [Monomial(m) for m in other.monomials]
+        sum.monomials = m0 + m1
         return sum
 
     def __mul__(self, other):
@@ -181,6 +217,10 @@ class MonomialSum:
         return " + ".join(str(m) for m in self.monomials)
 
 class MonomialForm:
+    """
+    This class represents a monomial form, that is, a sum of
+    integrals, each represented as a MonomialSum.
+    """
 
     def __init__(self):
         self.integrals = []
@@ -208,6 +248,10 @@ class MonomialForm:
         return s
 
 class MonomialTransformer(ReuseTransformer):
+    """
+    This class defines the transformation rules for extraction of a
+    monomial form represented as a MonomialSum from a UFL integral.
+    """
 
     def __init__(self):
         ReuseTransformer.__init__(self)
@@ -286,33 +330,6 @@ class MonomialTransformer(ReuseTransformer):
     def scalar_value(self, x):
         s = MonomialSum(x)
         return s
-
-def extract_monomial_form(form, form_data):
-    """Extract monomial representation of form (if possible). When
-    successful, the form is represented as a sum of products of scalar
-    components of basis functions or derivatives of basis functions.
-    The sum of products is represented as a tuple of tuples of basis
-    functions. If unsuccessful, MonomialException is raised."""
-
-    # Check that we get a Form
-    ffc_assert(isinstance(form, Form), "Expecting a UFL form.")
-
-    # Purge list tensors from expression tree
-    form = purge_list_tensors(form)
-
-    # Iterate over all integrals
-    monomial_form = MonomialForm()
-    for integral in form.integrals():
-
-        # Get measure and integrand
-        measure = integral.measure()
-        integrand = integral.integrand()
-
-        # Extract monomial representation if possible
-        integrand = apply_transformer(integrand, MonomialTransformer())
-        monomial_form.append(integrand, measure)
-
-    return monomial_form
 
 def _replace_indices(indices, old_indices, new_indices):
     "Handle replacement of subsets of multi indices."
