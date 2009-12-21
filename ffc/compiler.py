@@ -319,7 +319,7 @@ def _check_options(options):
     if "blas" in options:
         warning("BLAS mode unavailable (will return in a future version).")
     if "quadrature_points" in options:
-        warning("Option 'quadrature_points' has been replaced by 'quadrature_order'.")
+        warning("Option 'quadrature_points' has been replaced by 'quadrature_degree'.")
 
     return options
 
@@ -333,22 +333,22 @@ def _extract_metadata(form, options, elements):
 
         # Set default values for metadata
         representation = options["representation"]
-        quadrature_order = options["quadrature_order"]
+        quadrature_degree = options["quadrature_degree"]
         quadrature_rule = options["quadrature_rule"]
 
         if quadrature_rule is None:
             info("Quadrature rule: default")
         else:
             info("Quadrature rule: " + str(quadrature_rule))
-        info("Quadrature order: " + str(quadrature_order))
+        info("Quadrature order: " + str(quadrature_degree))
 
         # Get metadata for integral (if any)
         integral_metadata = integral.measure().metadata() or {}
         for (key, value) in integral_metadata.iteritems():
             if key == "ffc_representation":
                 representation = integral_metadata["ffc_representation"]
-            elif key == "quadrature_order":
-                quadrature_order = integral_metadata["quadrature_order"]
+            elif key == "quadrature_degree":
+                quadrature_degree = integral_metadata["quadrature_degree"]
             elif key == "quadrature_rule":
                 quadrature_rule = integral_metadata["quadrature_rule"]
             else:
@@ -359,31 +359,29 @@ def _extract_metadata(form, options, elements):
         if not representation in valid_representations:
             error("Unrecognized form representation '%s', must be one of %s.",
                   representation, ", ".join("'%s'" % r for r in valid_representations))
-        if quadrature_order != "auto":
+        if quadrature_degree != "auto":
             try:
-                quadrature_order = int(quadrature_order)
-                if not quadrature_order >= 0:
+                quadrature_degree = int(quadrature_degree)
+                if not quadrature_degree >= 0:
                     error("Illegal quadrature order '%s' for integral, must be a nonnegative integer.",
-                        str(quadrature_order))
+                        str(quadrature_degree))
             except:
                 error("Illegal quadrature order '%s' for integral, must be a nonnegative integer or 'auto'.",
-                    str(quadrature_order))
-
-        # FIXME: Change from quadrature_order --> quadrature_degree
+                    str(quadrature_degree))
 
         # Automatically select metadata if "auto" is selected
         if representation == "auto":
             representation = _auto_select_representation(integral)
-        if quadrature_order == "auto":
-            quadrature_order = _auto_select_quadrature_degree(integral, representation, elements)
-        log(30, "Integral quadrature degree is %d." % quadrature_order)
+        if quadrature_degree == "auto":
+            quadrature_degree = _auto_select_quadrature_degree(integral, representation, elements)
+        log(30, "Integral quadrature degree is %d." % quadrature_degree)
 
         # No quadrature rules have been implemented yet
         if quadrature_rule:
             warning("No quadrature rules have been implemented yet, using the default from FIAT.")
 
         # Set metadata for integral
-        metadata[integral] = {"quadrature_order": quadrature_order,
+        metadata[integral] = {"quadrature_degree": quadrature_degree,
                               "ffc_representation": representation,
                               "quadrature_rule":quadrature_rule}
 
