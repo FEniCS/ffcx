@@ -1,21 +1,30 @@
+"""This module implements the representation of a multilinear form as
+a sum of tensor contractions.
+
+The following possible optimizations are currently not implemented but
+might be (re-)implemented in a future version of FFC
+
+  1. Factorization of common reference tensors
+  2. FErari optimizations
+"""
+
 __author__ = "Anders Logg (logg@simula.no)"
 __date__ = "2007-02-05"
 __copyright__ = "Copyright (C) 2007-2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian B. Oelgaard, 2009.
-# Last changed: 2009-12-09
+# Last changed: 2009-12-21
 
-# UFL modules.
+# UFL modules
 from ufl.classes import Form
 from ufl.classes import Measure
 from ufl.classes import Integral
 
-# FFC modules.
+# FFC modules
 from ffc.log import info
-from ffc.createelement import create_element
 
-# FFC tensor representation modules.
+# FFC tensor representation modules
 from monomialextraction import extract_monomial_form
 from monomialextraction import MonomialForm
 from monomialtransformation import transform_monomial_form
@@ -23,20 +32,11 @@ from referencetensor import ReferenceTensor
 from geometrytensor import GeometryTensor
 from tensorreordering import reorder_entries
 
-class TensorContraction:
-    "This class represents a tensor contraction A^K = A^0 : G_K."
-
-    def __init__(self, monomial, domain_type, quadrature_order, facet0=None, facet1=None):
-        "Create tensor contraction for given monomial."
-        self.monomial = monomial
-        self.A0 = ReferenceTensor(monomial, domain_type, facet0, facet1, quadrature_order)
-        # FIXME: Does not need to be list if we find that factorization is not needed
-        self.GK = [GeometryTensor(monomial)]
-
 class TensorRepresentation:
-    """This class represents a given multilinear form as a tensor
-    contraction, or more precisely, a sum of tensor contractions for
-    each type of integral: cell, exterior facet and interior facet.
+    """
+    This class represents a multilinear form as a tensor contraction,
+    or more precisely, a sum of tensor contractions for each type of
+    integral: cell, exterior facet and interior facet.
 
     Attributes:
 
@@ -44,25 +44,30 @@ class TensorRepresentation:
 
     Attributes added only when num_integrals is nonzero:
 
-        cell_integrals           - list of list of terms for sub domains
-        exterior_facet_integrals - list of list of list of terms for sub domains and facets
-        interior_facet_integrals - list of list of list of list of terms for sub domains and facet combinations
-        geometric_dimension      - geometric dimension of form
-        num_facets               - number of cell facets
+        cell_integrals           - list of list of terms,
+                                   one for each sub domain
 
-    Each term is represented as a TensorContraction.
+        exterior_facet_integrals - list of list of list of terms,
+                                   one for each sub domain and facet
+
+        interior_facet_integrals - list of list of list of list of terms,
+                                   one for each sub domain and facet
+                                   pair
+
+        geometric_dimension      - geometric dimension of form
+
+        num_facets               - number of cell facets
     """
 
     def __init__(self, form, form_data):
         "Create tensor representation for given form."
 
-        # Extract integrals integrals for tensor representation
+        # Extract integrals that should be computed by tensor representation
         form = _extract_tensor_integrals(form, form_data)
 
         # Check number of integrals
         self.num_integrals = len(form.integrals())
-        if self.num_integrals == 0:
-            return
+        if self.num_integrals == 0: return
 
         info("Computing tensor representation")
 
@@ -71,18 +76,22 @@ class TensorRepresentation:
 
         # Transform monomial form to reference element
         transform_monomial_form(monomial_form)
+        m = monomial_form
 
         # Compute representation of cell tensor
         n = form_data.num_cell_domains
-        self.cell_integrals = [_compute_cell_tensor(monomial_form, form_data, i) for i in range(n)]
+        self.cell_integrals = \
+            [_compute_cell_tensor(m, form_data, i) for i in range(n)]
 
         # Compute representation of exterior facet tensors
         n = form_data.num_exterior_facet_domains
-        self.exterior_facet_integrals = [_compute_exterior_facet_tensors(monomial_form, form_data, i) for i in range(n)]
+        self.exterior_facet_integrals = \
+            [_compute_exterior_facet_tensors(m, form_data, i) for i in range(n)]
 
         # Compute representation of interior facet tensors
         n = form_data.num_interior_facet_domains
-        self.interior_facet_integrals = [_compute_interior_facet_tensors(monomial_form, form_data, i) for i in range(n)]
+        self.interior_facet_integrals = \
+            [_compute_interior_facet_tensors(m, form_data, i) for i in range(n)]
 
         # Extract form data needed by code generation
         self.geometric_dimension = form_data.geometric_dimension
@@ -90,15 +99,16 @@ class TensorRepresentation:
 
 def _extract_tensor_integrals(form, form_data):
     "Extract form containing only tensor representation integrals."
-
     new_form = Form([])
     for integral in form.integrals():
         if form_data.metadata[integral]["ffc_representation"] == "tensor":
             # Get quadrature order and create new integral attaching the order
             # as metadata such that the monomial integration will be aware of
-            # quadrature_order specified by the user on the command line or in forms
-            quadrature_order = form_data.metadata[integral]["quadrature_order"]
-            integral = Integral(integral.integrand(), integral.measure().reconstruct(metadata={"quadrature_order":quadrature_order}))
+            # quadrature_degree specified by the user on the command line or in forms
+            quadrature_degree = form_data.metadata[integral]["quadrature_degree"]
+            metadata = {"quadrature_degree": quadrature_degree}
+            measure = integral.measure().reconstruct(metadata=metadata)
+            integral = Integral(integral.integrand(), measure)
             new_form += Form([integral])
     return new_form
 
@@ -106,7 +116,10 @@ def _compute_cell_tensor(monomial_form, form_data, sub_domain):
     "Compute representation of cell tensor."
 
     # Extract cell integrals
-    monomial_form = _extract_integrals(monomial_form, form_data, Measure.CELL, sub_domain)
+    monomial_form = _extract_integrals(monomial_form,
+                                       form_data,
+                                       Measure.CELL,
+                                       sub_domain)
 
     # Compute sum of tensor representations
     terms = _compute_terms(monomial_form, Measure.CELL, None, None)
@@ -117,12 +130,18 @@ def _compute_exterior_facet_tensors(monomial_form, form_data, sub_domain):
     "Compute representation of exterior facet tensors."
 
     # Extract exterior facet integrals
-    monomial_form = _extract_integrals(monomial_form, form_data, Measure.EXTERIOR_FACET, sub_domain)
+    monomial_form = _extract_integrals(monomial_form,
+                                       form_data,
+                                       Measure.EXTERIOR_FACET,
+                                       sub_domain)
 
     # Compute sum of tensor representations for each facet
-    terms = [None for i in range(form_data.num_facets)]
-    for i in range(form_data.num_facets):
-        terms[i] = _compute_terms(monomial_form, Measure.EXTERIOR_FACET, i, None)
+    num_facets = form_data.num_facets
+    terms = [None for i in range(num_facets)]
+    for i in range(num_facets):
+        terms[i] = _compute_terms(monomial_form,
+                                  Measure.EXTERIOR_FACET,
+                                  i, None)
 
     return terms
 
@@ -130,13 +149,19 @@ def _compute_interior_facet_tensors(monomial_form, form_data, sub_domain):
     "Compute representation of interior facet tensors."
 
     # Extract interior facet integrals
-    monomial_form = _extract_integrals(monomial_form, form_data, Measure.INTERIOR_FACET, sub_domain)
+    monomial_form = _extract_integrals(monomial_form,
+                                       form_data,
+                                       Measure.INTERIOR_FACET,
+                                       sub_domain)
 
-    # Compute sum of tensor representations for each facet-facet combination
-    terms = [[None for j in range(form_data.num_facets)] for i in range(form_data.num_facets)]
-    for i in range(form_data.num_facets):
-        for j in range(form_data.num_facets):
-            terms[i][j] = _compute_terms(monomial_form, Measure.INTERIOR_FACET, i, j)
+    # Compute sum of tensor representations for each facet-facet pair
+    num_facets = form_data.num_facets
+    terms = [[None for j in range(num_facets)] for i in range(num_facets)]
+    for i in range(num_facets):
+        for j in range(num_facets):
+            terms[i][j] = _compute_terms(monomial_form,
+                                         Measure.INTERIOR_FACET,
+                                         i, j)
             reorder_entries(terms[i][j])
 
     return terms
@@ -162,10 +187,21 @@ def _compute_terms(monomial_form, domain_type, facet0, facet1):
             continue
 
         # Get quadrature order and pass it on to monomial integration
-        quadrature_order = measure.metadata()["quadrature_order"]
+        quadrature_degree = measure.metadata()["quadrature_degree"]
 
         # Iterate over monomials of integrand
         for monomial in integrand.monomials:
-            terms.append(TensorContraction(monomial, domain_type, quadrature_order, facet0, facet1))
+
+            # Compute reference tensor
+            A0 = ReferenceTensor(monomial,
+                                 domain_type,
+                                 facet0, facet1,
+                                 quadrature_degree)
+
+            # Compute geometry tensor
+            GK = GeometryTensor(monomial)
+
+            # Append term
+            terms.append((A0, GK))
 
     return terms
