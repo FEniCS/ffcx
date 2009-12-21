@@ -1,3 +1,4 @@
+ - Change quadrature_order --> quadrature_degree
  - Split compile() --> compile_form(), compile_element()
  - Major cleanup and reorganization of code (flatter directories)
  - Updates for changes in UFL: Argument, Coefficient, FormData
