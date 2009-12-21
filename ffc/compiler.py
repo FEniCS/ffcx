@@ -109,7 +109,7 @@ from ffc.quadratureelement import default_quadrature_degree
 
 # FFC representation modules
 from ffc.representation import compute_form_ir
-from ffc.representation import compute_elements_ir
+from ffc.representation import compute_element_ir
 from ffc.representation import compute_dofmap_ir
 
 # FFC code generation modules
@@ -226,14 +226,14 @@ def compute_ir(form, form_data, options):
     ir_forms = [compute_form_ir(form, form_data, m) for m in methods]
     end()
 
-    # Generate representations for finite elements
+    # Generate representations for finite elements (unique sub elements)
     begin("Computing element representations")
-    ir_elements = [compute_elements_ir(e) for e in form_data.elements]
+    ir_elements = [compute_element_ir(e) for e in form_data.unique_sub_elements]
     end()
 
-    # Generate representations for dofmaps
+    # Generate representations for dofmaps (unique sub dofmaps)
     begin("Computing dofmap representations")
-    ir_dofmaps = [compute_dofmap_ir(e) for e in form_data.elements]
+    ir_dofmaps = [compute_dofmap_ir(e) for e in form_data.unique_sub_elements]
     end()
 
     end()

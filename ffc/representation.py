@@ -14,10 +14,9 @@ __date__ = "2009-12-16"
 __copyright__ = "Copyright (C) 2009 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2009-12-18
+# Last changed: 2009-12-21
 
 from ufl.finiteelement import FiniteElement as UFLFiniteElement
-from ufl.algorithms.analysis import extract_sub_elements
 
 from log import debug_ir
 from fiatinterface import create_element
@@ -34,17 +33,6 @@ def compute_form_ir(form, form_data, method):
         return {}
     else:
         return {}
-
-def compute_elements_ir(ufl_element):
-    """
-    Compute and return intermediate representation for every element
-    in the 'element tree' spanned by the ufl_element.
-    """
-    ir = {}
-    elements = extract_sub_elements(ufl_element)
-    for element in elements:
-        ir[element] = compute_element_ir(ufl_element)
-    return ir
 
 def compute_element_ir(ufl_element):
     "Compute and return intermediate representation of element."
