@@ -1,22 +1,22 @@
-"Reordering of entries in reference tensor for interior facets"
+"Reordering of entries in reference tensor for interior facets."
 
 __author__ = "Anders Logg (logg@simula.no)"
 __date__ = "2006-12-01"
 __copyright__ = "Copyright (C) 2006-2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2009-12-09
+# Last changed: 2009-12-21
 
-# Python modules.
+# Python modules
 import numpy
 
-# FFC tensor representation modules.
+# FFC tensor representation modules
 from monomialtransformation import MonomialIndex
 from multiindex import MultiIndex
 
 def reorder_entries(terms):
-    """Reorder entries to compute the reference tensor for an
-    interior facet from the the reduced reference tensor"""
+    """Reorder entries to compute the reference tensor for an interior
+    facet from the the reduced reference tensor."""
 
     # Iterate over terms
     for term in terms:
