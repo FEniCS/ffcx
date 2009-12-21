@@ -12,10 +12,15 @@ __date__ = "2009-12-16"
 __copyright__ = "Copyright (C) 2009 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2009-12-18
+# Last changed: 2009-12-21
 
 # Python modules
 import os
+
+# UFC form templates
+from ufc_utils import form_combined
+from ufc_utils import form_header
+from ufc_utils import form_implementation
 
 # UFC finite_element templates
 from ufc_utils import finite_element_combined
@@ -51,6 +56,10 @@ def format_ufc(codes, prefix, options):
         # Generate code for dofmaps
         for code_dofmap in code_dofmaps:
             output += dof_map_combined % code_dofmap
+
+        # Generate code for forms
+        for code_form in code_forms:
+            output += form_combined % code_form
 
     # Generate code for footer
     output += _generate_footer()

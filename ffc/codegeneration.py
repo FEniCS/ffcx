@@ -8,7 +8,7 @@ __date__ = "2009-12-16"
 __copyright__ = "Copyright (C) 2009 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2009-12-18
+# Last changed: 2009-12-21
 
 # FFC modules
 from log import debug_code
@@ -16,6 +16,34 @@ from cpp import format, indent
 
 # FFC code generation modules
 from evaluatebasis import _evaluate_basis
+
+def generate_form_code(ir, options):
+    "Generate code for form from intermediate representation."
+
+    # Generate code
+    code = {}
+    code["classname"] = "FooForm"
+    code["members"] = ""
+    code["constructor"] = ""
+    code["destructor"] = ""
+    code["signature"] = ""
+    code["rank"] = ""
+    code["num_coefficients"] = ""
+    code["num_cell_integrals"] = ""
+    code["num_exterior_facet_integrals"] = ""
+    code["num_interior_facet_integrals"] = ""
+    code["create_finite_element"] = ""
+    code["create_dof_map"] = ""
+    code["create_cell_integral"] = ""
+    code["create_exterior_facet_integral"] = ""
+    code["create_interior_facet_integral"] = ""
+
+    # Postprocess code
+    _postprocess_code(code, options)
+
+    debug_code(code, "form")
+
+    return code
 
 def generate_element_code(ir, options):
     "Generate code for finite element from intermediate representation."
@@ -25,7 +53,7 @@ def generate_element_code(ir, options):
 
     # Generate code
     code = {}
-    code["classname"] = "FooClass"
+    code["classname"] = "FooFiniteElement"
     code["members"] = ""
     code["constructor"] = ""
     code["destructor"] = ""
@@ -61,7 +89,7 @@ def generate_dofmap_code(ir, options):
 
     # Generate code
     code = {}
-    code["classname"] = "FooClass"
+    code["classname"] = "FooDofMap"
     code["members"] = ""
     code["constructor"] = ""
     code["destructor"] = ""
