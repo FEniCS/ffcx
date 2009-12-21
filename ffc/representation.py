@@ -86,7 +86,7 @@ def compute_dofmap_ir(ufl_element):
     ir["init_cell_finalize"] = None
     ir["init_mesh"] = num_dofs_per_entity
     ir["local_dimension"] = element.space_dimension()
-    ir["geometric_dimension"] = ufl_element.cell().domain()
+    ir["geometric_dimension"] = ufl_element.cell().geometric_dimension()
     ir["global_dimension"] = None
     ir["max_local_dimension"] = element.space_dimension()
     ir["needs_mesh_entities"] = [d > 0 for d in num_dofs_per_entity]
