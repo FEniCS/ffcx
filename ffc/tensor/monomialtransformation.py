@@ -14,9 +14,7 @@ from ufl.classes import Coefficient
 from ufl.classes import FixedIndex
 
 # FFC modules
-from ffc.log import ffc_assert
-from ffc.log import error
-from ffc.utils import pick_first
+from ffc.log import info, error, ffc_assert
 from ffc.createelement import create_element
 
 # FFC tensor representation modules
@@ -25,6 +23,8 @@ from ffc.tensor.monomialextraction import MonomialException
 
 def transform_monomial_form(monomial_form):
     "Transform monomial form to reference element."
+
+    info("Transforming monomial form to reference element")
 
     # Check that we get a monomial form
     ffc_assert(isinstance(monomial_form, MonomialForm),
@@ -228,7 +228,7 @@ class TransformedMonomial:
         self.arguments = []
 
         # Reset index counters
-        reset_indices()
+        _reset_indices()
 
         # Initialize index map
         index_map = {}

@@ -21,7 +21,7 @@ from ufl.algorithms import apply_transformer
 from ufl.algorithms import ReuseTransformer
 
 # FFC modules
-from ffc.log import ffc_assert
+from ffc.log import info, ffc_assert
 
 def extract_monomial_form(form, form_data):
     """
@@ -30,6 +30,8 @@ def extract_monomial_form(form, form_data):
     components of basis functions or derivatives of basis functions.
     If unsuccessful, MonomialException is raised.
     """
+
+    info("Extracting monomial form representation from UFL form")
 
     # Check that we get a UFL form
     ffc_assert(isinstance(form, Form), "Expecting a UFL form.")
