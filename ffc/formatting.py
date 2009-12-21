@@ -47,7 +47,7 @@ def format_ufc(codes, prefix, options):
     for (i, code) in enumerate(codes):
 
         # Extract generated code
-        code_forms, code_elements, code_dofmaps = code
+        code_form, code_elements, code_dofmaps = code
 
         # Generate code for elements
         for code_element in code_elements:
@@ -57,9 +57,8 @@ def format_ufc(codes, prefix, options):
         for code_dofmap in code_dofmaps:
             output += dof_map_combined % code_dofmap
 
-        # Generate code for forms
-        for code_form in code_forms:
-            output += form_combined % code_form
+        # Generate code for form
+        output += form_combined % code_form
 
     # Generate code for footer
     output += _generate_footer()

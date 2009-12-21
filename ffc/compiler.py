@@ -120,8 +120,8 @@ from ffc.codegeneration import generate_dofmap_code
 # FFC formatting modules
 from ffc.formatting import format_ufc
 
-# Representation methods
-methods = ("quadrature", "tensor")
+# Representation types
+representation_types = ("quadrature", "tensor")
 
 def compile_form(forms, prefix="Form", options=FFC_OPTIONS.copy()):
     """This function generates UFC code for a given UFL form or list
@@ -222,24 +222,24 @@ def compute_ir(form, form_data, options):
 
     begin("Compiler stage 2: Computing intermediate representation")
 
-    # Generate representations for form
-    begin("Computing form representations")
-    ir_forms = [compute_form_ir(form, form_data, m) for m in methods]
+    # Compute form representation
+    begin("Computing form representation")
+    ir_form = compute_form_ir(form, form_data)
     end()
 
-    # Generate representations for finite elements (unique sub elements)
+    # Compute representations for finite elements (unique sub elements)
     begin("Computing element representations")
     ir_elements = [compute_element_ir(e) for e in form_data.unique_sub_elements]
     end()
 
-    # Generate representations for dofmaps (unique sub dofmaps)
+    # Compute representations for dofmaps (unique sub dofmaps)
     begin("Computing dofmap representations")
     ir_dofmaps = [compute_dofmap_ir(e) for e in form_data.unique_sub_elements]
     end()
 
     end()
 
-    return ir_forms, ir_elements, ir_dofmaps
+    return ir_form, ir_elements, ir_dofmaps
 
 def optimize_ir(ir, form_data):
     "Compiler stage 3."
@@ -256,10 +256,10 @@ def generate_code(ir, options):
     begin("Compiler stage 4: Generating code")
 
     # Extract intermediate representations
-    ir_forms, ir_elements, ir_dofmaps = ir
+    ir_form, ir_elements, ir_dofmaps = ir
 
     # Generate code for forms
-    code_forms = [generate_form_code(ir, options) for ir in ir_elements]
+    code_form = generate_form_code(ir_form, options)
 
     # Generate code for elements
     code_elements = [generate_element_code(ir, options) for ir in ir_elements]
@@ -267,7 +267,7 @@ def generate_code(ir, options):
     # Generate code for dofmaps
     code_dofmaps = [generate_dofmap_code(ir, options) for ir in ir_dofmaps]
 
-    return code_forms, code_elements, code_dofmaps
+    return code_form, code_elements, code_dofmaps
 
     # Generate common code like finite elements, dof map etc.
     #common_code = generate_common_code(form_data, format)

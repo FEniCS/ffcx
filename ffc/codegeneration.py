@@ -20,18 +20,21 @@ from evaluatebasis import _evaluate_basis
 def generate_form_code(ir, options):
     "Generate code for form from intermediate representation."
 
+    # Prefetch formatting to speedup code generation
+    ret = format["return"]
+
     # Generate code
     code = {}
     code["classname"] = "FooForm"
     code["members"] = ""
     code["constructor"] = ""
     code["destructor"] = ""
-    code["signature"] = ""
-    code["rank"] = ""
-    code["num_coefficients"] = ""
-    code["num_cell_integrals"] = ""
-    code["num_exterior_facet_integrals"] = ""
-    code["num_interior_facet_integrals"] = ""
+    code["signature"] = ret('"%s"' % ir["signature"])
+    code["rank"] = ret(ir["rank"])
+    code["num_coefficients"] = ret(ir["num_coefficients"])
+    code["num_cell_integrals"] = ret(ir["num_cell_integrals"])
+    code["num_exterior_facet_integrals"] = ret(ir["num_exterior_facet_integrals"])
+    code["num_interior_facet_integrals"] = ret(ir["num_interior_facet_integrals"])
     code["create_finite_element"] = ""
     code["create_dof_map"] = ""
     code["create_cell_integral"] = ""

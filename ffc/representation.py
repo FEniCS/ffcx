@@ -14,7 +14,7 @@ __date__ = "2009-12-16"
 __copyright__ = "Copyright (C) 2009 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2009-12-21
+# Last changed: 2009-12-22
 
 # UFL modules
 from ufl.finiteelement import FiniteElement as UFLFiniteElement
@@ -29,15 +29,26 @@ from ffc.mixedelement import MixedElement
 
 not_implemented = None
 
-def compute_form_ir(form, form_data, representation_type):
+def compute_form_ir(form, form_data):
     "Compute and return intermediate representation of form."
 
-    if representation_type == "quadrature":
-        ir = None
-    elif representation_type == "tensor":
-        ir = TensorRepresentation(form, form_data)
-    else:
-        error("Unknown form representation: \"%s\".", str(representation_type))
+    # Compute common data
+    ir = {}
+    ir["classname"] = "FooForm"
+    ir["members"] = not_implemented
+    ir["constructor"] = not_implemented
+    ir["destructor"] = not_implemented
+    ir["signature"] = repr(form)
+    ir["rank"] = form_data.rank
+    ir["num_coefficients"] = form_data.num_coefficients
+    ir["num_cell_integrals"] = form_data.num_cell_integrals
+    ir["num_exterior_facet_integrals"] = form_data.num_exterior_facet_integrals
+    ir["num_interior_facet_integrals"] = form_data.num_interior_facet_integrals
+    ir["create_finite_element"] = not_implemented
+    ir["create_dof_map"] = not_implemented
+    ir["create_cell_integral"] = not_implemented
+    ir["create_exterior_facet_integral"] = not_implemented
+    ir["create_interior_facet_integral"] = not_implemented
 
     return ir
 
@@ -49,8 +60,8 @@ def compute_element_ir(ufl_element):
     # Create FIAT element
     element = create_element(ufl_element)
 
-    ir = {}
     # Compute data for each function
+    ir = {}
     ir["signature"] = repr(ufl_element)
     ir["cell_shape"] = ufl_element.cell().domain()
     ir["space_dimension"] = element.space_dimension()
