@@ -31,8 +31,6 @@ from multiindex import build_indices
 from monomialextraction import MonomialException
 from monomialtransformation import MonomialIndex
 
-geometric_dimension_to_string = {0: "vertex", 1: "interval", 2: "triangle", 3: "tetrahedron"}
-
 def integrate(monomial, domain_type, facet0, facet1, quadrature_degree):
     """Compute the reference tensor for a given monomial term of a
     multilinear form"""
