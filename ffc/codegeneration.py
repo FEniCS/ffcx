@@ -11,7 +11,7 @@ __date__ = "2009-12-16"
 __copyright__ = "Copyright (C) 2009 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2009-12-22
+# Last changed: 2009-12-23
 
 # FFC modules
 from ffc.log import begin, end, debug_code
@@ -40,7 +40,7 @@ def generate_code(ir, options):
 
     end()
 
-    return code_form, code_elements, code_dofmaps, code_integrals
+    return code_elements, code_dofmaps, code_integrals, code_form
 
     # Generate common code like finite elements, dof map etc.
     #common_code = generate_common_code(form_data, format)

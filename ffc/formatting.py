@@ -15,25 +15,18 @@ __date__ = "2009-12-16"
 __copyright__ = "Copyright (C) 2009 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2009-12-22
+# Last changed: 2009-12-23
 
 # Python modules
 import os
 
-# UFC form templates
-from ufc_utils import form_combined
-from ufc_utils import form_header
-from ufc_utils import form_implementation
-
-# UFC finite_element templates
+# UFC code generation templates
 from ufc_utils import finite_element_combined
-from ufc_utils import finite_element_header
-from ufc_utils import finite_element_implementation
-
-# UFC dof_map templates
 from ufc_utils import dof_map_combined
-from ufc_utils import dof_map_header
-from ufc_utils import dof_map_implementation
+from ufc_utils import cell_integral_combined
+from ufc_utils import exterior_facet_integral_combined
+from ufc_utils import interior_facet_integral_combined
+from ufc_utils import form_combined
 
 # FFC modules
 from ffc import codesnippets
@@ -49,10 +42,10 @@ def format_code(codes, prefix, options):
     output = _generate_header(prefix, options)
 
     # Iterate over codes
-    for (i, code) in enumerate(codes):
+    for code in codes:
 
         # Extract generated code
-        code_form, code_elements, code_dofmaps, code_integrals = code
+        code_elements, code_dofmaps, code_integrals, code_form = code
 
         # Generate code for elements
         for code_element in code_elements:
@@ -61,6 +54,18 @@ def format_code(codes, prefix, options):
         # Generate code for dofmaps
         for code_dofmap in code_dofmaps:
             output += dof_map_combined % code_dofmap
+
+        # Generate code for cell integrals
+        for code_integral in code_integrals[0]:
+            output += cell_integral_combined % code_integral
+
+        # Generate code for exterior facet integrals
+        for code_integral in code_integrals[1]:
+            output += exterior_facet_integral_combined % code_integral
+
+        # Generate code for interior facet integrals
+        for code_integral in code_integrals[2]:
+            output += interior_facet_integral_combined % code_integral
 
         # Generate code for form
         output += form_combined % code_form
@@ -78,9 +83,9 @@ def _write_file(output, prefix, options):
     prefix = prefix.split(os.path.join(' ',' ').split()[0])[-1]
     full_prefix = os.path.join(options["output_dir"], prefix)
     filename = "%s.h" % full_prefix
-    file = open(filename, "w")
-    file.write(output)
-    file.close()
+    hfile = open(filename, "w")
+    hfile.write(output)
+    hfile.close()
     info("Output written to " + filename + ".")
 
 def _generate_header(prefix, options):

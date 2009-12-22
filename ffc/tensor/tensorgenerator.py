@@ -8,7 +8,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Kristian B. Oelgaard, 2009
 # Modified by Marie Rognes (meg@math.uio.no), 2007
 # Modified by Garth N. Wells, 2009
-# Last changed: 2009-12-22
+# Last changed: 2009-12-23
 
 # FFC modules
 from ffc.log import info
@@ -36,32 +36,43 @@ def generate_tensor_integrals(ir, options):
     incremental = True
 
     # Generate code for cell integrals
+    code_cell_integrals = []
     for (sub_domain, terms) in enumerate(ir.cell_integrals):
         if len(terms) > 0:
             I = _generate_cell_integral(terms, ir, incremental, format)
-            code[("cell_integral", sub_domain)] = I
+            code_cell_integrals.append(I)
 
     # Generate code for exterior facet integrals
+    code_exterior_facet_integrals = []
     for (sub_domain, terms) in enumerate(ir.exterior_facet_integrals):
         if len(terms) > 0:
             I = _generate_exterior_facet_integral(terms, ir, incremental, format)
-            code[("exterior_facet_integral", sub_domain)] = I
+            code_exterior_facet_integrals.append(I)
 
     # Generate code for interior facet integrals
+    code_interior_facet_integrals = []
     for (sub_domain, terms) in enumerate(ir.interior_facet_integrals):
         if len(terms) > 0:
             I = _generate_interior_facet_integral(terms, ir, incremental, format)
-            code[("interior_facet_integral", sub_domain)] = I
+            code_interior_facet_integrals.append(I)
 
-    return code
+    return code_cell_integrals, code_exterior_facet_integrals, code_interior_facet_integrals
 
 def _generate_cell_integral(terms, ir, incremental, format):
     "Generate code for cell integral."
 
-    code = []
-
     # Prefetch formats to speed up code generation
     format_comment = format["comment"]
+
+    # Generate code
+    code = {}
+    code["classname"] = "FooCellIntegral"
+    code["members"] = ""
+    code["constructor"] = ""
+    code["destructor"] = ""
+    code["tabulate_tensor"] = ""
+
+    return code
 
     # Special case: zero contribution
     if len(terms) == 0:
@@ -100,7 +111,15 @@ def _generate_cell_integral(terms, ir, incremental, format):
 def _generate_exterior_facet_integral(terms, ir, incremental, format):
     "Generate code for exterior facet integral."
 
-    code = []
+    # Generate code
+    code = {}
+    code["classname"] = "FooExteriorFacetIntegral"
+    code["members"] = ""
+    code["constructor"] = ""
+    code["destructor"] = ""
+    code["tabulate_tensor"] = ""
+
+    return code
 
     # Special case: zero contribution
     if all([len(t) == 0 for t in terms]):
@@ -144,7 +163,15 @@ def _generate_exterior_facet_integral(terms, ir, incremental, format):
 def _generate_interior_facet_integral(terms, ir, incremental, format):
     "Generate code for interior facet integral."
 
-    code = []
+    # Generate code
+    code = {}
+    code["classname"] = "FooInteriorFacetIntegral"
+    code["members"] = ""
+    code["constructor"] = ""
+    code["destructor"] = ""
+    code["tabulate_tensor"] = ""
+
+    return code
 
     # Special case: zero contribution
     if all([len(t) == 0 for tt in terms for t in tt]):
