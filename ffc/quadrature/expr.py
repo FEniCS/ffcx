@@ -5,7 +5,7 @@ __date__ = "2009-08-08"
 __copyright__ = "Copyright (C) 2009 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2009-12-09
+# Last changed: 2009-12-22
 
 # FFC quadrature modules.
 from symbolics import create_float

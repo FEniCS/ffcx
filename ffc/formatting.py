@@ -1,4 +1,7 @@
 """
+Compiler stage 5: Code formatting
+---------------------------------
+
 This module implements the formatting of UFC code from a given
 dictionary of generated C++ code for the body of each UFC function.
 
@@ -12,7 +15,7 @@ __date__ = "2009-12-16"
 __copyright__ = "Copyright (C) 2009 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2009-12-21
+# Last changed: 2009-12-22
 
 # Python modules
 import os

@@ -1,4 +1,7 @@
 """
+Compiler stage 2: Code representation
+-------------------------------------
+
 This module computes intermediate representations of forms,
 elements and dofmaps. For each UFC function, we extract the
 data needed for code generation at a later stage.

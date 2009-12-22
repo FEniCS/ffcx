@@ -3,8 +3,8 @@ This is the compiler, acting as the main interface for compilation
 of forms and breaking the compilation into several sequential stages.
 The output of each stage is the input of the next stage.
 
-Stage 0: Language, parsing
---------------------------
+Compiler stage 0: Language, parsing
+-----------------------------------
 
   Input:  Python code or .ufl file
   Output: UFL form
@@ -14,8 +14,8 @@ Stage 0: Language, parsing
 
   This stage is completely handled by UFL.
 
-Stage 1: Analysis
------------------
+Compiler stage 1: Analysis
+--------------------------
 
   Input:  UFL form
   Output: Preprocessed UFL form and FormData (metadata)
@@ -23,8 +23,8 @@ Stage 1: Analysis
   This stage preprocesses the UFL form and extracts form metadata.
   It may also perform simplifications on the form.
 
-Stage 2: Code representation
-----------------------------
+Compiler stage 2: Code representation
+-------------------------------------
 
   Input:  Preprocessed UFL form and FormData (metadata)
   Output: Intermediate Representation (IR)
@@ -39,16 +39,20 @@ Stage 2: Code representation
   The IR is stored as a dictionary, mapping names of UFC functions to
   data needed for generation of the corresponding code.
 
-Stage 3: Code optimization
---------------------------
+Compiler stage 3: Code optimization
+-----------------------------------
 
   Input:  Intermediate Representation (IR)
   Output: Optimized Intermediate Representation (OIR)
 
   This stage examines the IR and performs optimizations.
 
-Stage 4: Code generation
-------------------------
+  Optimization is currently disabled as a separate stage
+  but is implemented as part of the code generation for
+  quadrature representation.
+
+Compiler stage 4: Code generation
+---------------------------------
 
   Input:  Optimized Intermediate Representation (OIR)
   Output: C++ code
@@ -59,8 +63,8 @@ Stage 4: Code generation
   The code is stored as a dictionary, mapping names of UFC functions
   to strings containing the C++ code of the body of each function.
 
-Stage 5: Code formatting
-------------------------
+Compiler stage 5: Code formatting
+---------------------------------
 
   Input:  C++ code
   Output: C++ code files
@@ -85,7 +89,7 @@ The compiler stages are implemented by the following functions:
 
 __author__ = "Anders Logg (logg@simula.no)"
 __date__ = "2007-02-05"
-__copyright__ = "Copyright (C) 2007-2009 Anders Logg"
+__copyright__ = "Copyright (C) 2007-2009 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian B. Oelgaard, 2009.
@@ -95,17 +99,12 @@ __license__  = "GNU GPL version 3 or any later version"
 
 __all__ = ["compile_form", "compile_element"]
 
-# UFL modules.
-from ufl.common import istr
-from ufl.algorithms import preprocess
-from ufl.algorithms import FormData
-from ufl.algorithms import estimate_max_polynomial_degree
-from ufl.algorithms import estimate_total_polynomial_degree
-
 # FFC modules
 from ffc.log import log, begin, end, debug, info, warning, error, ffc_assert
 from ffc.constants import FFC_OPTIONS
-from ffc.quadratureelement import default_quadrature_degree
+
+# FFC analysis modules
+from ffc.analysis import analyze_form
 
 # FFC representation modules
 from ffc.representation import compute_form_ir
@@ -188,28 +187,6 @@ def compile_element(elements, prefix="Element", options=FFC_OPTIONS.copy()):
 
     info("Code generation complete.")
 
-def analyze_form(form, options):
-    "Compiler stage 1."
-
-    begin("Compiler stage 1: Analyzing form")
-
-    # Preprocess form
-    if not form.is_preprocessed():
-        form = preprocess(form)
-
-    # Compute form data
-    form_data = FormData(form)
-    info(str(form_data))
-
-    # Adjust cell and degree for elements when unspecified
-    _adjust_elements(form_data)
-
-    # Extract integral metadata
-    form_data.metadata = _extract_metadata(form, options, form_data.elements)
-
-    end()
-    return form, form_data
-
 def compute_ir(form, form_data, options):
     """Compiler stage 2.
 
@@ -289,12 +266,6 @@ def generate_code(ir, options):
     end()
     return code
 
-#def generate_element_code(elements, format):
-#    "Compiler stage 4."
-#    # Create element_data and common code
-#    form_data = ElementData(elements)
-#    return [(generate_common_code(form_data, format), form_data)]
-
 def format_code(codes, prefix, options):
     "Compiler stage 5."
 
@@ -321,143 +292,3 @@ def _check_options(options):
         warning("Option 'quadrature_points' has been replaced by 'quadrature_degree'.")
 
     return options
-
-def _extract_metadata(form, options, elements):
-    "Check metadata for integral and return new integral with proper metadata."
-
-    metadata = {}
-
-    # Iterate over integrals
-    for integral in form.integrals():
-
-        # Set default values for metadata
-        representation = options["representation"]
-        quadrature_degree = options["quadrature_degree"]
-        quadrature_rule = options["quadrature_rule"]
-
-        if quadrature_rule is None:
-            info("Quadrature rule: default")
-        else:
-            info("Quadrature rule: " + str(quadrature_rule))
-        info("Quadrature order: " + str(quadrature_degree))
-
-        # Get metadata for integral (if any)
-        integral_metadata = integral.measure().metadata() or {}
-        for (key, value) in integral_metadata.iteritems():
-            if key == "ffc_representation":
-                representation = integral_metadata["ffc_representation"]
-            elif key == "quadrature_degree":
-                quadrature_degree = integral_metadata["quadrature_degree"]
-            elif key == "quadrature_rule":
-                quadrature_rule = integral_metadata["quadrature_rule"]
-            else:
-                warning("Unrecognized option '%s' for integral metadata." % key)
-
-        # Check metadata
-        valid_representations = ["tensor", "quadrature", "auto"]
-        if not representation in valid_representations:
-            error("Unrecognized form representation '%s', must be one of %s.",
-                  representation, ", ".join("'%s'" % r for r in valid_representations))
-        if quadrature_degree != "auto":
-            try:
-                quadrature_degree = int(quadrature_degree)
-                if not quadrature_degree >= 0:
-                    error("Illegal quadrature order '%s' for integral, must be a nonnegative integer.",
-                        str(quadrature_degree))
-            except:
-                error("Illegal quadrature order '%s' for integral, must be a nonnegative integer or 'auto'.",
-                    str(quadrature_degree))
-
-        # Automatically select metadata if "auto" is selected
-        if representation == "auto":
-            representation = _auto_select_representation(integral)
-        if quadrature_degree == "auto":
-            quadrature_degree = _auto_select_quadrature_degree(integral, representation, elements)
-        log(30, "Integral quadrature degree is %d." % quadrature_degree)
-
-        # No quadrature rules have been implemented yet
-        if quadrature_rule:
-            warning("No quadrature rules have been implemented yet, using the default from FIAT.")
-
-        # Set metadata for integral
-        metadata[integral] = {"quadrature_degree": quadrature_degree,
-                              "ffc_representation": representation,
-                              "quadrature_rule":quadrature_rule}
-
-    return metadata
-
-def _select_representation(form, options):
-    "Select form representation"
-
-    option = options["representation"]
-    if option == "tensor":
-
-        # Check if form is multilinear
-        info("Checking if form is multilinear...")
-        if is_multilinear(form):
-            info("yes\n")
-            return TensorRepresentation
-        else:
-            info("no\n")
-            warning("Form is is not multilinear, using quadrature representation")
-            return QuadratureRepresentation
-
-    elif option == "quadrature":
-        return QuadratureRepresentation
-
-    else:
-        error('Unknown form representation: "%s"' % option)
-
-def _auto_select_representation(integral):
-    "Automatically select the best representation for integral."
-
-    # FIXME: Implement this
-    info("Automatic selection of representation not implemented, defaulting to quadrature.")
-    return "quadrature"
-
-def _auto_select_quadrature_degree(integral, representation, elements):
-    "Automatically select the appropriate quadrature degree for integral."
-
-    # Estimate total degree of integrand
-    degree = estimate_total_polynomial_degree(integral, default_quadrature_degree)
-
-    # Use maximum quadrature element degree if any for quadrature representation
-    if representation == "quadrature":
-        #quadrature_elements = [e for e in elements if e.family() == "Quadrature"]
-        #degree = max([degree] + [e.degree() for e in quadrature_elements])
-        quadrature_degrees = [e.degree() for e in elements if e.family() == "Quadrature"]
-        if quadrature_degrees != []:
-            ffc_assert(min(quadrature_degrees) == max(quadrature_degrees), \
-                       "All QuadratureElements in an integrand must have the same degree: %s" \
-                       % str(quadrature_degrees))
-            degree = quadrature_degrees[0]
-
-    return degree
-
-def _adjust_elements(form_data):
-    "Adjust cell and degree for elements when unspecified"
-
-    # Extract common cell
-    common_cell = form_data.cell
-    if common_cell.domain() is None:
-        error("Missing cell definition in form.")
-
-    # Extract common degree
-    common_degree = max([element.degree() for element in form_data.elements])
-    if common_degree is None:
-        common_degree = default_quadrature_degree
-
-    # Set cell and degree if missing
-    for element in form_data.elements:
-
-        # Check if cell and degree need to be adjusted
-        cell = element.cell()
-        degree = element.degree()
-        if degree is None:
-            #info("Adjusting element degree from %s to %d" % (istr(degree), common_degree))
-            log(30, "Adjusting element degree from %s to %d" % (istr(degree), common_degree))
-            element.set_degree(common_degree)
-        if cell.domain() is None:
-            #info("Adjusting element cell from %s to %s." % (istr(cell), str(common_cell)))
-            log(30, "Adjusting element cell from %s to %s." % (istr(cell), str(common_cell)))
-            element.set_cell(common_cell)
