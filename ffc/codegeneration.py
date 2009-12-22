@@ -14,11 +14,15 @@ __license__  = "GNU GPL version 3 or any later version"
 # Last changed: 2009-12-22
 
 # FFC modules
-from log import begin, end, debug_code
-from cpp import format, indent
+from ffc.log import begin, end, debug_code
+from ffc.cpp import format, indent
 
 # FFC code generation modules
-from evaluatebasis import _evaluate_basis
+from ffc.evaluatebasis import _evaluate_basis
+
+# FFC specialized code generation modules
+#from ffc.quadrature import generate_quadrature_integrals
+from ffc.tensor import generate_tensor_integrals
 
 def generate_code(ir, options):
     "Generate code from intermediate representation."
@@ -31,8 +35,8 @@ def generate_code(ir, options):
     # Generate code for elements, dofmaps, forms and integrals
     code_elements  = [generate_element_code(ir, options) for ir in ir_elements]
     code_dofmaps   = [generate_dofmap_code(ir, options) for ir in ir_dofmaps]
+    code_integrals = generate_integrals_code(ir_integrals, options)
     code_form      = generate_form_code(ir_form, options)
-    code_integrals = {}
 
     end()
 
@@ -56,37 +60,6 @@ def generate_code(ir, options):
     #code.update(combined_code)
 
     end()
-    return code
-
-def generate_form_code(ir, options):
-    "Generate code for form from intermediate representation."
-
-    # Prefetch formatting to speedup code generation
-    ret = format["return"]
-
-    # Generate code
-    code = {}
-    code["classname"] = "FooForm"
-    code["members"] = ""
-    code["constructor"] = ""
-    code["destructor"] = ""
-    code["signature"] = ret('"%s"' % ir["signature"])
-    code["rank"] = ret(ir["rank"])
-    code["num_coefficients"] = ret(ir["num_coefficients"])
-    code["num_cell_integrals"] = ret(ir["num_cell_integrals"])
-    code["num_exterior_facet_integrals"] = ret(ir["num_exterior_facet_integrals"])
-    code["num_interior_facet_integrals"] = ret(ir["num_interior_facet_integrals"])
-    code["create_finite_element"] = ""
-    code["create_dof_map"] = ""
-    code["create_cell_integral"] = ""
-    code["create_exterior_facet_integral"] = ""
-    code["create_interior_facet_integral"] = ""
-
-    # Postprocess code
-    _postprocess_code(code, options)
-
-    debug_code(code, "form")
-
     return code
 
 def generate_element_code(ir, options):
@@ -159,6 +132,48 @@ def generate_dofmap_code(ir, options):
     _postprocess_code(code, options)
 
     debug_code(code, "dofmap")
+
+    return code
+
+def generate_integrals_code(ir, options):
+    "Generate code for integrals from intermediate representation."
+
+    # FIXME: Handle multiple representations here
+
+    code = generate_tensor_integrals(ir, options)
+
+    print code
+
+    return code
+
+def generate_form_code(ir, options):
+    "Generate code for form from intermediate representation."
+
+    # Prefetch formatting to speedup code generation
+    ret = format["return"]
+
+    # Generate code
+    code = {}
+    code["classname"] = "FooForm"
+    code["members"] = ""
+    code["constructor"] = ""
+    code["destructor"] = ""
+    code["signature"] = ret('"%s"' % ir["signature"])
+    code["rank"] = ret(ir["rank"])
+    code["num_coefficients"] = ret(ir["num_coefficients"])
+    code["num_cell_integrals"] = ret(ir["num_cell_integrals"])
+    code["num_exterior_facet_integrals"] = ret(ir["num_exterior_facet_integrals"])
+    code["num_interior_facet_integrals"] = ret(ir["num_interior_facet_integrals"])
+    code["create_finite_element"] = ""
+    code["create_dof_map"] = ""
+    code["create_cell_integral"] = ""
+    code["create_exterior_facet_integral"] = ""
+    code["create_interior_facet_integral"] = ""
+
+    # Postprocess code
+    _postprocess_code(code, options)
+
+    debug_code(code, "form")
 
     return code
 

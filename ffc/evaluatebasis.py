@@ -6,7 +6,7 @@ __date__ = "2009-12-14"
 __copyright__ = "Copyright (C) 2009 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2009-12-18
+# Last changed: 2009-12-22
 
 # Python modules
 import math
@@ -329,6 +329,9 @@ def _compute_values(fiat_element, sum_value_dim, vector, Indent, format):
     format_array_access     = format["array access"]
     format_matrix_access     = format["matrix access"]
 #    format_add              = format["add"]
+
+    print format
+
     format_multiply         = format["multiply"]
     format_coefficients     = format["coefficients table"]
     format_basisvalues      = format["basisvalues table"]
@@ -672,7 +675,7 @@ def _compute_basisvalues(fiat_element, Indent, format):
             code += [(format_float_decl + bn, format_float(0))]
             code += [(format_float_decl + cn, format_float(0))]
 
-            # FIXME: KBO: Use format to compute 
+            # FIXME: KBO: Use format to compute
             code += [(format_float_decl + f1, "(1.0+2*x+y)/2.0")]
             code += [(format_float_decl + f2, "(1.0 - y) / 2.0")]
             code += [(format_float_decl + f3, "f2*f2")]

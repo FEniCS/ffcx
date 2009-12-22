@@ -9,7 +9,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Dag Lindbo, 2008.
 # Modified by Johan Hake, 2009.
 # Modified by Garth N. Wells, 2009.
-# Last changed: 2009-12-18
+# Last changed: 2009-12-22
 
 # Python modules.
 import os
@@ -555,7 +555,6 @@ def _generate_jacobian(cell_dimension, integral_type):
         code += facet_determinant % {"restriction": choose_map["+"], "facet": "facet0"}
 
     return code
-
 
 def _generate_normal(cell_dimension, integral_type, reference_normal=False):
     "Generate code for computing normal"

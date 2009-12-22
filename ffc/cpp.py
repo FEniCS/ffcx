@@ -18,14 +18,26 @@ from log import debug
 format = {}
 
 # Operator formatting
-format.update({"add": lambda v: _add(v),
-               "multiply": lambda v: _multiply(v),
-               "bool": lambda v: {True: "true", False: "false"}[v]})
+format.update({"add":      lambda v: _add(v),
+               "iadd":     lambda v, w: "%s += %s;" % (v, w),
+               "subtract": lambda v: " - ".join(v),
+               "multiply": lambda v: _multiply(v)})
 
 # Program flow
-format.update({"return": lambda v: "return %s;" % str(v),
-               "switch": lambda d, cases: _generate_switch(d, cases),
-               "exception": lambda v: "throw std::runtime_error(\"%s\");" % v})
+format.update({"return":    lambda v: "return %s;" % str(v),
+               "switch":    lambda v, cases: _generate_switch(v, cases),
+               "exception": lambda v: "throw std::runtime_error(\"%s\");" % v,
+               "comment":   lambda v: "// %s" % v})
+
+# Formatting used in tabulate_tensor
+format.update({"element tensor":    lambda i: "A[%d]" % i,
+              "geometry tensor":    lambda j, a: "G%d_%s" % (j, "_".join(["%d" % i for i in a])),
+               "scale factor":      "det"})
+
+# Misc
+format.update({"bool":   lambda v: {True: "true", False: "false"}[v],
+               "float":  lambda v: "<float not defined>",
+               "epsilon": lambda v: "<epsilon not defined>"})
 
 def _multiply(factors):
     non_zero_factors = []
@@ -80,14 +92,13 @@ options=FFC_OPTIONS.copy()
 format_old = {
     # Operators
     #
+    "multiply": lambda v: _multiply(v),
     "times equal": lambda i, j: "%s *= %s;" %(i, j),
     "add equal": lambda i, j: "%s += %s;" % (i, j),
     "inverse": lambda v: "(1.0/%s)" % v,
     "absolute value": lambda v: "std::abs(%s)" % v,
     "sqrt": lambda v: "std::sqrt(%s)" % v,
     "add": lambda v: " + ".join(v),
-    "subtract": lambda v: " - ".join(v),
-    "multiply": lambda v: "*".join(v),
     "division": "/",
     "power": lambda base, exp: power_options[exp >= 0](self.format["multiply"]([str(base)]*abs(exp))),
     "std power": lambda base, exp: "std::pow(%s, %s)" % (base, exp),
@@ -104,8 +115,6 @@ format_old = {
     "greater than": " > ",
     "bool": lambda v: {True: "true", False: "false"}[v],
     # formating
-    "floating point": lambda v: "<not defined>",
-    "epsilon": "<not defined>",
     "grouping": lambda v: "(%s)" % v,
     "block": lambda v: "{%s}" % v,
     "block begin": "{",
@@ -180,10 +189,7 @@ format_old = {
     "transform": lambda type, j, k, r: "%s" % (transform_options[type](choose_map[r], j, k)),
     "transform_ufl": lambda type, j, k, r: "%s" % (transform_options_ufl[type](choose_map[r], j, k)),
     "reference tensor" : lambda j, i, a: None,
-    "geometry tensor declaration": lambda j, a: "const double " + self.format["geometry tensor access"](j, a),
-    "geometry tensor access": lambda j, a: "G%d_%s" % (j, "_".join(["%d" % index for index in a])),
     "geometry tensor": "G",
-    "element tensor": lambda i: "A[%d]" % i,
     "sign tensor": lambda type, i, k: "S%s%s_%d" % (type, i, k),
     "sign tensor declaration": lambda s: "const int " + s,
     "signs": "S",
@@ -226,7 +232,6 @@ format_old = {
     #           "snippet delete_representation": delete_representation,
     "snippet calculate dof": calculate_dof,
     "get cell vertices" : "const double * const * x = c.coordinates;",
-    "generate jacobian": lambda d, i: _generate_jacobian(d, i),
     "generate normal": lambda d, i: _generate_normal(d, i),
     "generate body": lambda d: _generate_body(d),
     # misc

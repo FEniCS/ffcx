@@ -5,7 +5,7 @@ __date__ = "2009-01-07"
 __copyright__ = "Copyright (C) 2009 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2009-12-09
+# Last changed: 2009-12-22
 
 # Python modules.
 from numpy import shape
@@ -30,6 +30,15 @@ from quadraturetransformer import QuadratureTransformer
 
 from optimisedquadraturetransformer import QuadratureTransformerOpt
 from symbolics import generate_aux_constants
+
+def generate_quadrature_integrals(self, ir, options):
+    "Generate code for integrals from intermediate representation."
+
+    # Note to Kristian: move code in here, class no longer needed
+
+    info("Not implemented")
+
+    return {}
 
 class QuadratureGenerator:
     "Code generator for quadrature representation."
@@ -72,7 +81,7 @@ class QuadratureGenerator:
 
         # Generate code for exterior facet integrals.
         code.update(self.generate_exterior_facet_integrals(form_representation, format))
-        
+
         # Generate code for interior facet integrals.
         code.update(self.generate_interior_facet_integrals(form_representation, format))
 
@@ -206,7 +215,7 @@ class QuadratureGenerator:
 
             # Update treansformer with facets.
             transformer.update_facets(i, None)
-            
+
             case = [format["block begin"]]
             c, members_code, num_ops =\
                 self.__generate_element_tensor(form_representation, transformer,\
@@ -228,7 +237,7 @@ class QuadratureGenerator:
 
         # Remove unused declarations.
         common = self.__remove_unused(jacobi_code, transformer.trans_set, format)
-        
+
         # Tabulate weights at quadrature points.
         common += self.__tabulate_weights(transformer, Indent, format)
 
@@ -249,7 +258,7 @@ class QuadratureGenerator:
                  format["comment"]("Optimisations: %s" % ", ".join([str(i) for i in self.optimise_options.items()]))]
 
         return {"tabulate_tensor": (common, cases), "members": members_code}
-    
+
     def generate_interior_facet_integral(self, form_representation, transformer, integrals, format):
         """Generate dictionary of code for interior facet integral from the given
         form representation according to the given format."""
