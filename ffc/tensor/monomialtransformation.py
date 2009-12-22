@@ -15,7 +15,7 @@ from ufl.classes import FixedIndex
 
 # FFC modules
 from ffc.log import info, error, ffc_assert
-from ffc.createelement import create_element
+from ffc.fiatinterface import create_element
 
 # FFC tensor representation modules
 from ffc.tensor.monomialextraction import MonomialForm
