@@ -105,6 +105,31 @@ def tabulate_matrix(matrix, format):
 
     return value
 
+def tabulate_vector(vector, format):
+    "Function that tabulates the values of a vector, into a one dimensional array."
+
+    # Check input
+    if not len(numpy.shape(vector)) == 1:
+        error("This is not a vector.")
+
+    # Prefetch formats to speed up code generation
+    format_block          = format["block"]
+    format_separator      = format["separator"]
+    format_floating_point = format["floating point"]
+    format_epsilon        = format["epsilon"]
+
+    # Get size of matrix
+    num_cols = numpy.shape(vector)[0]
+
+    # Set vector entries equal to zero if their absolute values is smaller than format_epsilon
+    for i in range(num_cols):
+        if abs(vector[i]) < format_epsilon:
+            vector[i] = 0.0
+
+    value = format_block(format_separator.join([format_floating_point(val) for val in vector]))
+
+    return value
+
 class IndentControl:
     "Class to control the indentation of code"
 

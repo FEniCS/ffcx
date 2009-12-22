@@ -1,5 +1,19 @@
 "This module defines rules and algorithms for generating C++ code."
 
+__author__ = "Anders Logg (logg@simula.no) and friends"
+__date__ = "2009-12-16"
+__copyright__ = "Copyright (C) 2009 " + __author__
+__license__  = "GNU GPL version 3 or any later version"
+
+# Modified by Kristian B. Oelgaard 2009
+# Last changed: 2009-12-22
+
+# Python modules.
+import re
+
+# FFC modules.
+from log import debug
+
 # Formatting rules
 format = {}
 
@@ -48,6 +62,7 @@ def _generate_switch(variable, cases, default = ""):
 
     return code
 
+# FIXME: KBO: We have an identical function in codegenerators_utils.py
 def indent(block, num_spaces):
     "Indent each row of the given string block with n spaces."
     indentation = " " * num_spaces
@@ -137,7 +152,8 @@ format_old = {
     "fiat z coordinate": "fiat_z",
     "scalings": lambda i,j: "scalings_%s_%d" %(i,j),
     "coefficients table": lambda i: "coefficients%d" %(i),
-    "basisvalues table": lambda i: "basisvalues%d" %(i),
+    "basisvalues table": "basisvalues",
+    "basisvalues": lambda i: "basisvalues"  + format_old["array access"](i),
     "dmats table": lambda i: "dmats%d" %(i),
     "coefficient scalar": lambda i: "coeff%d" %(i),
     "new coefficient scalar": lambda i: "new_coeff%d" %(i),
@@ -278,3 +294,92 @@ def _generate_body(declarations):
         else:
             lines += ["%s" % declaration]
     return "\n".join(lines)
+
+# Declarations to examine
+types = [["double"],
+         ["const", "double"],
+         ["const", "double", "*", "const", "*"],
+         ["int"],
+         ["const", "int"],
+         ["unsigned", "int"],
+         ["bool"],
+         ["const", "bool"]]
+
+# Special characters and delimiters
+special_characters = ["+", "-", "*", "/", "=", ".", " ", ";", "(", ")", "\\", "{", "}", "[","]"]
+
+def remove_unused(code):
+    """Remove unused variables from a given C++ code. This is useful
+    when generating code that will be compiled with gcc and options
+    -Wall -Werror, in which case gcc returns an error when seeing a
+    variable declaration for a variable that is never used."""
+
+    # Dictionary of (declaration_line, used_lines) for variables
+    variables = {}
+
+    # List of variable names (so we can search them in order)
+    variable_names = []
+
+    # Examine code line by line
+    lines = code.split("\n")
+    for line_number in range(len(lines)):
+
+        # Split words
+        line = lines[line_number]
+        words = [word for word in line.split(" ") if not word == ""]
+
+        # Remember line where variable is declared
+        for type in [type for type in types if len(words) > len(type)]:
+            variable_type = words[0:len(type)]
+            variable_name = words[len(type)]
+
+            if variable_name in special_characters:
+                continue
+            if variable_type == type:
+
+                # Test if any of the special characters are present in the variable name
+                # If this is the case, then remove these by assuming that the 'real' name
+                # is the first entry in the return list. This is implemented to prevent
+                # removal of e.g. 'double array[6]' if it is later used in a loop as 'array[i]'
+                var = [variable_name.split(sep)[0] for sep in special_characters\
+                       if str(variable_name) != variable_name.split(sep)[0]]
+                if (var):
+                    variable_name = var[0]
+                variables[variable_name] = (line_number, [])
+                if not variable_name in variable_names:
+                    variable_names += [variable_name]
+
+        # Mark line for used variables
+        for variable_name in variables:
+            (declaration_line, used_lines) = variables[variable_name]
+            if __variable_in_line(variable_name, line) and line_number > declaration_line:
+                variables[variable_name] = (declaration_line, used_lines + [line_number])
+
+    # Reverse the order of the variable names (to catch variables used
+    # only by variables that are removed)
+    variable_names.reverse()
+
+    # Remove declarations that are not used (need to search backwards)
+    removed_lines = []
+    for variable_name in variable_names:
+        (declaration_line, used_lines) = variables[variable_name]
+        for line in removed_lines:
+            if line in used_lines:
+                used_lines.remove(line)
+        if used_lines == []:
+            debug("Removing unused variable: %s" % variable_name)
+            #lines[declaration_line] = "// " + lines[declaration_line]
+            lines[declaration_line] = None
+            removed_lines += [declaration_line]
+
+    return "\n".join([line for line in lines if not line == None])
+
+def __variable_in_line(variable_name, line):
+    "Check if variable name is used in line"
+    if not variable_name in line:
+        return False
+    for character in special_characters:
+        line = line.replace(character, "\\" + character)
+    delimiter = "[" + ",".join(["\\" + c for c in special_characters]) + "]"
+    return not re.search(delimiter + variable_name + delimiter, line) == None
+
