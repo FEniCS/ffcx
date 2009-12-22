@@ -5,7 +5,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Garth N. Wells, 2009.
 # Modified by Marie Rognes, 2009.
-# Last changed: 2009-12-18
+# Last changed: 2009-12-22
 
 # UFL modules
 from ufl import FiniteElement as UFLFiniteElement
@@ -21,8 +21,7 @@ from FIAT_NEW.brezzi_douglas_marini import BrezziDouglasMarini
 from FIAT_NEW.discontinuous_lagrange import DiscontinuousLagrange
 
 # FFC modules
-from log import debug
-from log import error
+from log import debug, error
 
 # FFC fem modules
 from quadratureelement import QuadratureElement as FFCQuadratureElement
@@ -45,7 +44,7 @@ def create_element(ufl_element):
 
     # Use element from cache if in cache
     if ufl_element in _cache:
-        print "Reusing element from cache!"
+        debug("Reusing element from cache")
         return _cache[ufl_element]
 
     # FIXME: hack to avoid circular importing

@@ -25,19 +25,18 @@ def generate_code(ir, options):
 
     begin("Compiler stage 4: Generating code")
 
-    # Extract intermediate representations
-    ir_form, ir_elements, ir_dofmaps = ir
+    # Extract representations
+    ir_form, ir_elements, ir_dofmaps, ir_integrals = ir
 
-    # Generate code for forms
-    code_form = generate_form_code(ir_form, options)
+    # Generate code for elements, dofmaps, forms and integrals
+    code_elements  = [generate_element_code(ir, options) for ir in ir_elements]
+    code_dofmaps   = [generate_dofmap_code(ir, options) for ir in ir_dofmaps]
+    code_form      = generate_form_code(ir_form, options)
+    code_integrals = {}
 
-    # Generate code for elements
-    code_elements = [generate_element_code(ir, options) for ir in ir_elements]
+    end()
 
-    # Generate code for dofmaps
-    code_dofmaps = [generate_dofmap_code(ir, options) for ir in ir_dofmaps]
-
-    return code_form, code_elements, code_dofmaps
+    return code_form, code_elements, code_dofmaps, code_integrals
 
     # Generate common code like finite elements, dof map etc.
     #common_code = generate_common_code(form_data, format)

@@ -22,13 +22,11 @@ __license__  = "GNU GPL version 3 or any later version"
 # UFL modules
 from ufl.finiteelement import FiniteElement as UFLFiniteElement
 
-# FFC representation modules
-from ffc.tensor import TensorRepresentation
-
 # FFC modules
-from ffc.log import error, begin, end, debug_ir
+from ffc.log import info, error, begin, end, debug_ir
 from ffc.fiatinterface import create_element
 from ffc.mixedelement import MixedElement
+from ffc.tensor import TensorRepresentation
 
 not_implemented = None
 
@@ -40,52 +38,20 @@ def compute_ir(form, form_data, options):
 
     begin("Compiler stage 2: Computing intermediate representation")
 
-    # Compute form representation
-    begin("Computing form representation")
-    ir_form = compute_form_ir(form, form_data)
-    end()
-
-    # Compute representations for finite elements (unique sub elements)
-    begin("Computing element representations")
-    ir_elements = [compute_element_ir(e) for e in form_data.unique_sub_elements]
-    end()
-
-    # Compute representations for dofmaps (unique sub dofmaps)
-    begin("Computing dofmap representations")
-    ir_dofmaps = [compute_dofmap_ir(e) for e in form_data.unique_sub_elements]
-    end()
+    # Compute representation of elements, dofmaps, forms and integrals
+    ir_elements  = [compute_element_ir(e) for e in form_data.unique_sub_elements]
+    ir_dofmaps   = [compute_dofmap_ir(e) for e in form_data.unique_sub_elements]
+    ir_form      = compute_form_ir(form, form_data)
+    ir_integrals = compute_integrals_ir(form, form_data)
 
     end()
 
-    return ir_form, ir_elements, ir_dofmaps
-
-def compute_form_ir(form, form_data):
-    "Compute and return intermediate representation of form."
-
-    # Compute common data
-    ir = {}
-    ir["classname"] = "FooForm"
-    ir["members"] = not_implemented
-    ir["constructor"] = not_implemented
-    ir["destructor"] = not_implemented
-    ir["signature"] = repr(form)
-    ir["rank"] = form_data.rank
-    ir["num_coefficients"] = form_data.num_coefficients
-    ir["num_cell_integrals"] = form_data.num_cell_integrals
-    ir["num_exterior_facet_integrals"] = form_data.num_exterior_facet_integrals
-    ir["num_interior_facet_integrals"] = form_data.num_interior_facet_integrals
-    ir["create_finite_element"] = not_implemented
-    ir["create_dof_map"] = not_implemented
-    ir["create_cell_integral"] = not_implemented
-    ir["create_exterior_facet_integral"] = not_implemented
-    ir["create_interior_facet_integral"] = not_implemented
-
-    return ir
+    return ir_form, ir_elements, ir_dofmaps, ir_integrals
 
 def compute_element_ir(ufl_element):
     "Compute and return intermediate representation of element."
 
-    # Note to developers: oneliners or call a _function
+    info("Computing element representation")
 
     # Create FIAT element
     element = create_element(ufl_element)
@@ -114,7 +80,7 @@ def compute_element_ir(ufl_element):
 def compute_dofmap_ir(ufl_element):
     "Compute and return intermediate representation of dofmap."
 
-    # Note to developers: oneliners or call a _function
+    info("Computing dofmap representation")
 
     # Create FIAT element
     element = create_element(ufl_element)
@@ -143,6 +109,40 @@ def compute_dofmap_ir(ufl_element):
     ir["tabulate_coordinates"] = not_implemented
 
     debug_ir(ir, "dofmap")
+
+    return ir
+
+def compute_form_ir(form, form_data):
+    "Compute and return intermediate representation of form."
+
+    info("Computing form representation")
+
+    # Compute common data
+    ir = {}
+    ir["classname"] = "FooForm"
+    ir["members"] = not_implemented
+    ir["constructor"] = not_implemented
+    ir["destructor"] = not_implemented
+    ir["signature"] = repr(form)
+    ir["rank"] = form_data.rank
+    ir["num_coefficients"] = form_data.num_coefficients
+    ir["num_cell_integrals"] = form_data.num_cell_integrals
+    ir["num_exterior_facet_integrals"] = form_data.num_exterior_facet_integrals
+    ir["num_interior_facet_integrals"] = form_data.num_interior_facet_integrals
+    ir["create_finite_element"] = not_implemented
+    ir["create_dof_map"] = not_implemented
+    ir["create_cell_integral"] = not_implemented
+    ir["create_exterior_facet_integral"] = not_implemented
+    ir["create_interior_facet_integral"] = not_implemented
+
+    return ir
+
+def compute_integrals_ir(form, form_data):
+    "Compute and return intermediate represention of integrals."
+
+    # FIXME: Handle multiple representations here
+
+    ir = TensorRepresentation(form, form_data)
 
     return ir
 

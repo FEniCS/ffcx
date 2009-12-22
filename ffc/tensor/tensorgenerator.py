@@ -5,10 +5,10 @@ __date__ = "2004-11-03"
 __copyright__ = "Copyright (C) 2004-2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Modified by Kristian B. Oelgaard 2009
-# Modified by Marie Rognes (meg@math.uio.no) 2007
-# Modified by Garth N. Wells 2009
-# Last changed: 2009-12-09
+# Modified by Kristian B. Oelgaard, 2009
+# Modified by Marie Rognes (meg@math.uio.no), 2007
+# Modified by Garth N. Wells, 2009
+# Last changed: 2009-12-22
 
 # FFC modules
 from ffc.log import info
@@ -18,47 +18,42 @@ from ffc.removeunused import remove_unused
 # FFC tensor representation modules.
 from ffc.tensor.monomialtransformation import MonomialIndex
 
-class TensorGenerator:
+def generate_integrals(self, form_representation, format):
+    "Generate code for all integrals."
 
-    def __init__(self, options):
-        pass
-    
-    def generate_integrals(self, form_representation, format):
-        "Generate code for all integrals."
+    code = {}
 
-        code = {}
+    # Check if code needs to be generated
+    if form_representation.num_integrals == 0:
+        return {}
 
-        # Check if code needs to be generated
-        if form_representation.num_integrals == 0:
-            return {}
+    info("Generating code using tensor representation")
 
-        info("Generating code using tensor representation")
+    # Set represenation
+    code["representation"] = "tensor"
 
-        # Set represenation
-        code["representation"] = "tensor"
+    # Generate incremental code for now, might be an option later
+    incremental = True
 
-        # Generate incremental code for now, might be an option later
-        incremental = True
+    # Generate code for cell integrals
+    for (sub_domain, terms) in enumerate(form_representation.cell_integrals):
+        if len(terms) > 0:
+            I = _generate_cell_integral(terms, form_representation, incremental, format)
+            code[("cell_integral", sub_domain)] = I
 
-        # Generate code for cell integrals
-        for (sub_domain, terms) in enumerate(form_representation.cell_integrals):
-            if len(terms) > 0:
-                I = _generate_cell_integral(terms, form_representation, incremental, format)
-                code[("cell_integral", sub_domain)] = I
+    # Generate code for exterior facet integrals
+    for (sub_domain, terms) in enumerate(form_representation.exterior_facet_integrals):
+        if len(terms) > 0:
+            I = _generate_exterior_facet_integral(terms, form_representation, incremental, format)
+            code[("exterior_facet_integral", sub_domain)] = I
 
-        # Generate code for exterior facet integrals
-        for (sub_domain, terms) in enumerate(form_representation.exterior_facet_integrals):
-            if len(terms) > 0:
-                I = _generate_exterior_facet_integral(terms, form_representation, incremental, format)
-                code[("exterior_facet_integral", sub_domain)] = I
+    # Generate code for interior facet integrals
+    for (sub_domain, terms) in enumerate(form_representation.interior_facet_integrals):
+        if len(terms) > 0:
+            I = _generate_interior_facet_integral(terms, form_representation, incremental, format)
+            code[("interior_facet_integral", sub_domain)] = I
 
-        # Generate code for interior facet integrals
-        for (sub_domain, terms) in enumerate(form_representation.interior_facet_integrals):
-            if len(terms) > 0:
-                I = _generate_interior_facet_integral(terms, form_representation, incremental, format)
-                code[("interior_facet_integral", sub_domain)] = I
-
-        return code
+    return code
 
 def _generate_cell_integral(terms, form_representation, incremental, format):
     "Generate code for cell integral."
@@ -111,12 +106,12 @@ def _generate_exterior_facet_integral(terms, form_representation, incremental, f
     cases = [None for i in range(num_facets)]
     geometry_set = set()
     tensor_ops = 0
-    for i in range(form_representation.num_facets):        
+    for i in range(form_representation.num_facets):
         cases[i], t_ops, g_set = _generate_element_tensor(terms[i], incremental, format)
         geometry_set = geometry_set.union(g_set)
         tensor_ops += t_ops
     tensor_ops = float(tensor_ops) / float(form_representation.num_facets)
-    
+
     # Generate geometry code + set of used jacobi terms (should be the same, so pick first)
     geometry_code, geometry_ops, jacobi_set = _generate_geometry_tensors(terms[0], geometry_set, format)
 
@@ -144,7 +139,7 @@ def _generate_exterior_facet_integral(terms, form_representation, incremental, f
 def _generate_interior_facet_integral(terms, form_representation, incremental, format):
     "Generate code for interior facet integral."
 
-    code = []    
+    code = []
 
     # Special case: zero contribution
     if all([len(t) == 0 for tt in terms for t in tt]):
@@ -155,7 +150,7 @@ def _generate_interior_facet_integral(terms, form_representation, incremental, f
 
     # Generate tensor code + set of used geometry terms
     num_facets = form_representation.num_facets
-    cases = [[None for j in range(num_facets)] for i in range(num_facets)]    
+    cases = [[None for j in range(num_facets)] for i in range(num_facets)]
     geometry_set = set()
     tensor_ops = 0
     for i in range(num_facets):
@@ -169,7 +164,7 @@ def _generate_interior_facet_integral(terms, form_representation, incremental, f
     geometry_code, geometry_ops, jacobi_set = _generate_geometry_tensors(terms[0][0], geometry_set, format)
 
     # Generate code for Jacobian
-    jacobi_code = [format["generate jacobian"](form_representation.geometric_dimension, "interior facet")]    
+    jacobi_code = [format["generate jacobian"](form_representation.geometric_dimension, "interior facet")]
     jacobi_code = _remove_unused(jacobi_code, jacobi_set, format)
 
     # Compute total number of operations
@@ -227,7 +222,7 @@ def _generate_element_tensor(terms, incremental, format):
         value = None
         for (gka, j) in gk_tensor:
             A0 = terms[j].A0
-            for (gk, a) in gka:                
+            for (gk, a) in gka:
                 a0 = A0.A0[tuple(i + a)]
                 if abs(a0) > format_epsilon:
                     if value and a0 < 0.0:
@@ -257,7 +252,7 @@ def _generate_geometry_tensors(terms, geometry_set, format):
     "Generate list of declarations for computation of geometry tensors"
 
     # Generate code as a list of declarations
-    code = []    
+    code = []
 
     # Iterate over all terms
     j = 0
@@ -332,8 +327,8 @@ def _generate_entry(GK, a, i, format):
         if not (t.index0.index_type == MonomialIndex.EXTERNAL or t.index1.index_type == MonomialIndex.EXTERNAL):
             trans = format["transform_ufl"](t.transform_type,
                                             t.index0(secondary=a),
-                                            t.index1(secondary=a), 
-                                            t.restriction)            
+                                            t.index1(secondary=a),
+                                            t.restriction)
             factors += [trans]
             jacobi_set.add(trans)
 
@@ -402,7 +397,7 @@ def _remove_unused(code, set, format):
     # may grow to considerable size, we make an exception and remove
     # unused variables here when we know the names of the used
     # variables. No searching necessary and much, much, much faster.
-    
+
     if code:
         # Generate body of code, using the format
         lines = format["generate body"](code)

@@ -52,7 +52,7 @@ def format_code(codes, prefix, options):
     for (i, code) in enumerate(codes):
 
         # Extract generated code
-        code_form, code_elements, code_dofmaps = code
+        code_form, code_elements, code_dofmaps, code_integrals = code
 
         # Generate code for elements
         for code_element in code_elements:
