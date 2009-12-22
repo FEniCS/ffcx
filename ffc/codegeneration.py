@@ -14,11 +14,50 @@ __license__  = "GNU GPL version 3 or any later version"
 # Last changed: 2009-12-22
 
 # FFC modules
-from log import debug_code
+from log import begin, end, debug_code
 from cpp import format, indent
 
 # FFC code generation modules
 from evaluatebasis import _evaluate_basis
+
+def generate_code(ir, options):
+    "Generate code from intermediate representation."
+
+    begin("Compiler stage 4: Generating code")
+
+    # Extract intermediate representations
+    ir_form, ir_elements, ir_dofmaps = ir
+
+    # Generate code for forms
+    code_form = generate_form_code(ir_form, options)
+
+    # Generate code for elements
+    code_elements = [generate_element_code(ir, options) for ir in ir_elements]
+
+    # Generate code for dofmaps
+    code_dofmaps = [generate_dofmap_code(ir, options) for ir in ir_dofmaps]
+
+    return code_form, code_elements, code_dofmaps
+
+    # Generate common code like finite elements, dof map etc.
+    #common_code = generate_common_code(form_data, format)
+
+    # Generate code for integrals
+    #codes = []
+    #for (i, CodeGenerator) in enumerate(CodeGenerators):
+    #    code_generator = CodeGenerator(options)
+    #    codes.append(code_generator.generate_integrals(representations[i], format))
+
+    # Loop all subdomains of integral types and combine code
+    #combined_code = generate_combined_code(codes, form_data, prefix, format)
+
+    # Collect generated code
+    code = {}
+    #code.update(common_code)
+    #code.update(combined_code)
+
+    end()
+    return code
 
 def generate_form_code(ir, options):
     "Generate code for form from intermediate representation."

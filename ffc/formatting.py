@@ -37,11 +37,13 @@ from ufc_utils import dof_map_implementation
 
 # FFC modules
 from ffc import codesnippets
-from ffc.log import info, error
+from ffc.log import info, error, begin, end
 from ffc.constants import FFC_VERSION
 
-def format_ufc(codes, prefix, options):
+def format_code(codes, prefix, options):
     "Format given code in UFC format."
+
+    begin("Compiler stage 5: Formatting code")
 
     # Generate code for header
     output = _generate_header(prefix, options)
@@ -68,6 +70,8 @@ def format_ufc(codes, prefix, options):
 
     # Write generated code to file
     _write_file(output, prefix, options)
+
+    end()
 
 def _write_file(output, prefix, options):
     "Write generated code to file."

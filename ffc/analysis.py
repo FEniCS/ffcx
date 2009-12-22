@@ -19,11 +19,13 @@ from ufl.algorithms import estimate_max_polynomial_degree
 from ufl.algorithms import estimate_total_polynomial_degree
 
 # FFC modules
-from ffc.log import log, info
+from ffc.log import log, info, begin, end
 from ffc.quadratureelement import default_quadrature_degree
 
 def analyze_form(form, options):
     "Analyze form, returning preprocessed form and form data."
+
+    begin("Compiler stage 1: Analyzing form")
 
     # Preprocess form
     if not form.is_preprocessed():
@@ -38,6 +40,8 @@ def analyze_form(form, options):
 
     # Extract integral metadata
     form_data.metadata = _extract_metadata(form, options, form_data.elements)
+
+    end()
 
     return form, form_data
 

@@ -26,11 +26,38 @@ from ufl.finiteelement import FiniteElement as UFLFiniteElement
 from ffc.tensor import TensorRepresentation
 
 # FFC modules
-from ffc.log import error, debug_ir
+from ffc.log import error, begin, end, debug_ir
 from ffc.fiatinterface import create_element
 from ffc.mixedelement import MixedElement
 
 not_implemented = None
+
+def compute_ir(form, form_data, options):
+    """
+    Compute and return intermediate representation of form, including
+    all associated elements, dofmaps and integrals.
+    """
+
+    begin("Compiler stage 2: Computing intermediate representation")
+
+    # Compute form representation
+    begin("Computing form representation")
+    ir_form = compute_form_ir(form, form_data)
+    end()
+
+    # Compute representations for finite elements (unique sub elements)
+    begin("Computing element representations")
+    ir_elements = [compute_element_ir(e) for e in form_data.unique_sub_elements]
+    end()
+
+    # Compute representations for dofmaps (unique sub dofmaps)
+    begin("Computing dofmap representations")
+    ir_dofmaps = [compute_dofmap_ir(e) for e in form_data.unique_sub_elements]
+    end()
+
+    end()
+
+    return ir_form, ir_elements, ir_dofmaps
 
 def compute_form_ir(form, form_data):
     "Compute and return intermediate representation of form."
