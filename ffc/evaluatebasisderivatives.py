@@ -19,8 +19,8 @@ from evaluatebasis import generate_map
 from evaluatebasis import dof_map
 from evaluatebasis import generate_basisvalues
 from evaluatebasis import tabulate_coefficients
-from codegenerators_utils import tabulate_matrix
-from codegenerators_utils import IndentControl
+from codegeneratorsutils import tabulate_matrix
+from codegeneratorsutils import IndentControl
 from removeunused import remove_unused
 
 def evaluate_basis_derivatives(element, format):

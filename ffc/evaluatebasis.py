@@ -15,8 +15,8 @@ import numpy
 # FFC modules
 from log import error, debug_code
 from cpp import remove_unused
-from codegenerators_utils import IndentControl
-from codegenerators_utils import inner_product, tabulate_matrix, tabulate_vector
+from codegeneratorsutils import IndentControl
+from codegeneratorsutils import inner_product, tabulate_matrix, tabulate_vector
 from quadrature.quadraturegenerator_utils import generate_loop
 
 # Temporary import

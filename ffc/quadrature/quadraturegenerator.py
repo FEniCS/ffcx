@@ -16,8 +16,8 @@ from ufl.algorithms.analysis import extract_unique_elements
 from ufl.algorithms.printing import tree_format
 
 # FFC modules.
-from ffc.codegenerators_utils import tabulate_matrix
-from ffc.codegenerators_utils import IndentControl
+from ffc.codegeneratorsutils import tabulate_matrix
+from ffc.codegeneratorsutils import IndentControl
 from ffc.createelement import create_element
 from ffc.log import debug
 from ffc.log import info

@@ -1,6 +1,6 @@
 """This module contains all the code generators that used to be in the modules:
 codegenerator, finiteelement, dofmap, form and integrals. The helper functions
- (__foo_bar()) for these modules are located in codegenerators_utils"""
+ (__foo_bar()) for these modules are located in codegeneratorsutils"""
 
 __author__ = "Anders Logg (logg@simula.no) and Kristian B. Oelgaard (k.b.oelgard@gmail.com)"
 __date__ = "2009-12-09"
@@ -22,22 +22,22 @@ from evaluatebasisderivatives import evaluate_basis_derivatives
 from createelement import create_element, extract_elements
 
 # Utility functions.
-from codegenerators_utils import inner_product
-from codegenerators_utils import indent
-from codegenerators_utils import IndentControl
+from codegeneratorsutils import inner_product
+from codegeneratorsutils import indent
+from codegeneratorsutils import IndentControl
 
 # For finite_element.
-from codegenerators_utils import __extract_sub_elements
-from codegenerators_utils import __generate_interpolate_vertex_values
-from codegenerators_utils import __generate_evaluate_dof
+from codegeneratorsutils import __extract_sub_elements
+from codegeneratorsutils import __generate_interpolate_vertex_values
+from codegeneratorsutils import __generate_evaluate_dof
 
 # For dof_map.
-from codegenerators_utils import __extract_sub_dof_maps
-from codegenerators_utils import __generate_needs_mesh_entities
-from codegenerators_utils import __generate_global_dimension
-from codegenerators_utils import __generate_tabulate_dofs
-from codegenerators_utils import __generate_tabulate_facet_dofs
-from codegenerators_utils import __generate_tabulate_coordinates
+from codegeneratorsutils import __extract_sub_dof_maps
+from codegeneratorsutils import __generate_needs_mesh_entities
+from codegeneratorsutils import __generate_global_dimension
+from codegeneratorsutils import __generate_tabulate_dofs
+from codegeneratorsutils import __generate_tabulate_facet_dofs
+from codegeneratorsutils import __generate_tabulate_coordinates
 
 
 #------------------------------------------------------------------------------
