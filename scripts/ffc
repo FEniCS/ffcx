@@ -146,13 +146,13 @@ def main(argv):
         # Catch exceptions only when not in debug mode
         if options["log_level"] <= DEBUG:
             if len(ufd.forms) > 0:
-                compile_form(ufd.forms, prefix, options)
+                compile_form(ufd.forms, ufd.object_names, prefix, options)
             else:
                 compile_element(ufd.elements, prefix, options)
         else:
             try:
                 if len(ufd.forms) > 0:
-                    compile_form(ufd.forms, prefix, options)
+                    compile_form(ufd.forms, ufd.object_names, prefix, options)
                 else:
                     compile_element(ufd.elements, prefix, options)
             except UFLException, exception:

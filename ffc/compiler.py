@@ -59,7 +59,7 @@ from quadrature.quadraturegenerator import QuadratureGenerator
 Representations = (QuadratureRepresentation, TensorRepresentation)
 CodeGenerators  = (QuadratureGenerator, TensorGenerator)
 
-def compile_form(forms, prefix="Form", options=FFC_OPTIONS.copy()):
+def compile_form(forms, object_names, prefix="Form", options=FFC_OPTIONS.copy()):
     """This function generates UFC code for a given UFL form or list
     of UFL forms."""
 
@@ -84,7 +84,7 @@ def compile_form(forms, prefix="Form", options=FFC_OPTIONS.copy()):
     for form in forms:
 
         # Compiler stage 1: analyze form
-        form, form_data = analyze_form(form, options)
+        form, form_data = analyze_form(form, object_names, options)
         form_and_data.append((form, form_data))
 
         # Compiler stage 2: compute form representations
@@ -132,7 +132,7 @@ def compile_element(elements, prefix="Element", options=FFC_OPTIONS.copy()):
 
     info("Code generation complete.")
 
-def analyze_form(form, options):
+def analyze_form(form, object_names, options):
     "Compiler stage 1."
 
     begin("Compiler stage 1: Analyzing form")
@@ -142,7 +142,7 @@ def analyze_form(form, options):
         form = preprocess(form)
 
     # Compute form data
-    form_data = FormData(form)
+    form_data = FormData(form, object_names=object_names)
     info(str(form_data))
 
     # Adjust cell and degree for elements when unspecified
