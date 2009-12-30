@@ -99,6 +99,7 @@ format_old = {
     "absolute value": lambda v: "std::abs(%s)" % v,
     "sqrt": lambda v: "std::sqrt(%s)" % v,
     "add": lambda v: " + ".join(v),
+    "subtract": lambda v: " - ".join(v),
     "division": "/",
     "power": lambda base, exp: power_options[exp >= 0](self.format["multiply"]([str(base)]*abs(exp))),
     "std power": lambda base, exp: "std::pow(%s, %s)" % (base, exp),

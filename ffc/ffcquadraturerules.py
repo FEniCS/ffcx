@@ -9,12 +9,14 @@ __license__  = "GNU GPL version 3 or any later version"
 # Python modules.
 from numpy import array
 
+# FIXME: KBO: Use modules from NEW
 # FIAT modules.
 from FIAT.quadrature import make_quadrature as fiat_make_quadrature
 from FIAT.shapes import LINE
 from FIAT.shapes import TRIANGLE
 from FIAT.shapes import TETRAHEDRON
 
+# FIXME: KBO: Move to fiatinterface
 # Glue dictionary
 ufl2fiat_shape = {"interval":LINE, "triangle":TRIANGLE, "tetrahedron":TETRAHEDRON}
 

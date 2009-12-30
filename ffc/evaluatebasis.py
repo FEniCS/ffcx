@@ -590,19 +590,49 @@ def _compute_values(fiat_element, sum_value_dim, vector, Indent, format):
 
 #    return code + [""]
 
+# FIAT_NEW code (compute index function)
+# def idx(p,q):
+#    return (p+q)*(p+q+1)/2 + q
+def _idx(p, q):
+    return "((%s) + (%s))*((%s) + (%s) + 1) / 2 + (%s)" % (p, q, p, q, q)
+
+# FIAT_NEW code (helper variables)
+# def jrc( a , b , n ):
+#    an = float( ( 2*n+1+a+b)*(2*n+2+a+b)) \
+#        / float( 2*(n+1)*(n+1+a+b))
+#    bn = float( (a*a-b*b) * (2*n+1+a+b) ) \
+#        / float( 2*(n+1)*(2*n+a+b)*(n+1+a+b) )
+#    cn = float( (n+a)*(n+b)*(2*n+2+a+b)  ) \
+#        / float( (n+1)*(n+1+a+b)*(2*n+a+b) )
+#    return an,bn,cn
+def _jrc(a, b, n):
+
+    an = "( ( 2*(%s)+1+(%s)+(%s))*(2*(%s)+2+(%s)+(%s)) ) / ( 2*((%s)+1)*((%s)+1+(%s)+(%s)))" % (n,a,b,n,a,b)
+    bn = "( ((%s)*(%s)-(%s)*(%s)) * (2*(%s)+1+(%s)+(%s))  ) / ( 2*((%s)+1)*(2*(%s)+(%s)+(%s))*((%s)+1+(%s)+(%s)) )" % (a,a,b,b,n,a,b)
+    cn = "( ((%s)+(%s))*((%s)+(%s))*(2*(%s)+2+(%s)+(%s))  ) /  ( ((%s)+1)*((%s)+1+(%s)+(%s))*(2*(%s)+(%s)+(%s)) )"  % (n,a,n,b,n,a,b)
+
+    return (an, bn, cn)
+
+
 def _compute_basisvalues(fiat_element, Indent, format):
     """From FIAT_NEW.expansions."""
 
     code = []
 
     # Prefetch formats to speed up code generation
-#    format_multiply         = format["multiply"]
+    format_add         = format["add"]
+    format_multiply         = format["multiply"]
+    format_subtract         = format["subtract"]
+    format_division         = format["division"]
+    format_grouping         = format["grouping"]
+    format_sqrt      = format["sqrt"]
+
 #    format_secondary_index  = format["secondary index"]
 #    format_psitilde_a       = format["psitilde_a"]
 #    format_psitilde_bs      = format["psitilde_bs"]
 #    format_psitilde_cs      = format["psitilde_cs"]
 #    format_scalings         = format["scalings"]
-#    format_y                = format["y coordinate"]
+    format_y                = format["y coordinate"]
 #    format_z                = format["z coordinate"]
 #    format_const_float      = format["const float declaration"]
     format_float_decl      = format["float declaration"]
@@ -612,6 +642,8 @@ def _compute_basisvalues(fiat_element, Indent, format):
     format_float      = format["floating point"]
     format_uint      = format["uint declaration"]
     format_free_indices      = format["free secondary indices"]
+    format_r = format_free_indices[0]
+    format_s = format_free_indices[1]
 
     code += [Indent.indent(format["comment"]("Compute basisvalues"))]
 
@@ -653,7 +685,10 @@ def _compute_basisvalues(fiat_element, Indent, format):
         # FIXME: KBO: Move common stuff to general functions
 
         count = 0
-        # The initial value of the first basis value is always 1.0
+        # The initial value basisvalue 0 is always 1.0
+        # FIAT_NEW code
+        # for ii in range( results.shape[1] ):
+        #    results[0,ii] = 1.0 + apts[ii,0]-apts[ii,0]+apts[ii,1]-apts[ii,1]
         code += [(format_basisvalue(0), format_float(1.0))]
 
         # Only continue if the embedded degree is larger than zero
@@ -680,17 +715,86 @@ def _compute_basisvalues(fiat_element, Indent, format):
             code += [(format_float_decl + f2, "(1.0 - y) / 2.0")]
             code += [(format_float_decl + f3, "f2*f2")]
 
-#            def idx(p,q):
-#                return (p+q)*(p+q+1)/2 + q
+            # The initial value of basisfunction 1 is equal to f1
+            # FIAT_NEW code
+            # results[idx(1,0),:] = f1
+            code += [(format_basisvalue(1), f1)]
 
-#            def jrc( a , b , n ):
-#                an = float( ( 2*n+1+a+b)*(2*n+2+a+b)) \
-#                    / float( 2*(n+1)*(n+1+a+b))
-#                bn = float( (a*a-b*b) * (2*n+1+a+b) ) \
-#                    / float( 2*(n+1)*(2*n+a+b)*(n+1+a+b) )
-#                cn = float( (n+a)*(n+b)*(2*n+2+a+b)  ) \
-#                    / float( (n+1)*(n+1+a+b)*(2*n+a+b) )
-#                return an,bn,cn
+            # Only active is embedded_degree > 1
+            if embedded_degree > 1:
+                # FIAT_NEW code
+                # for p in range(1,n):
+                #    a = (2.0*p+1)/(1.0+p)
+                #    b = p / (p+1.0)
+                #    results[idx(p+1,0)] = a * f1 * results[idx(p,0),:] \
+                #        - p/(1.0+p) * f3 *results[idx(p-1,0),:]
+                lines = []
+                loop_vars = [(format_r, 1, embedded_degree)]
+                lines.append((idx0, _idx("%s + 1" % format_r, 0)))
+                lines.append((idx1, _idx(format_r, 0)))
+                lines.append((idx2, _idx("%s - 1" % format_r, 0)))
+                lines.append((an, "(2.0*%s+1)/(1.0+%s)" % (format_r, format_r)))
+                lines.append((bn, "%s/(%s + 1.0)" % (format_r, format_r)))
+                fac0 = format_multiply([an, f1, format_basisvalue(idx1)])
+                fac1 = format_multiply([format_r + format_division + \
+                                        format_grouping(format_add(["1.0", format_r])),\
+                                        f3, format_basisvalue(idx2)])
+                lines.append((format_basisvalue(idx0), format_subtract([fac0, fac1])))
+                code += generate_loop(lines, loop_vars, Indent, format)
+
+                # FIAT_NEW code
+                # for p in range(n-1):
+                #    for q in range(1,n-p):
+                #        (a1,a2,a3) = jrc(2*p+1,0,q)
+                #        results[idx(p,q+1),:] \
+                #            = ( a1 * y + a2 ) * results[idx(p,q)] \
+                #            - a3 * results[idx(p,q-1)]
+                lines = []
+                loop_vars = [(format_r, 0, embedded_degree - 1),\
+                             (format_s, 1, format_subtract([format_float(embedded_degree), format_r]))]
+                lines.append((idx0, _idx(format_r, format_add([format_s, format_float(1.0)]))))
+                lines.append((idx1, _idx(format_r, format_s)))
+                lines.append((idx2, _idx(format_r, format_subtract([format_s, format_float(1.0)]))))
+                jrc = _jrc(format_add([format_multiply([format_float(2.0), format_r]), format_float(1.0)]),\
+                           format_float(0), format_s)
+                lines.append((an, jrc[0]))
+                lines.append((bn, jrc[1]))
+                lines.append((cn, jrc[2]))
+                fac0 = format_multiply([format_grouping(format_add([ \
+                        format_multiply([an, format_y]), bn])), format_basisvalue(idx1)])
+                fac1 = format_multiply([cn, format_basisvalue(idx2)])
+                lines.append((format_basisvalue(idx0), format_subtract([fac0, fac1])))
+                code += generate_loop(lines, loop_vars, Indent, format)
+
+
+            # FIAT_NEW code
+            # for p in range(n):
+            #    results[idx(p,1),:] = 0.5 * (1+2.0*p+(3.0+2.0*p)*y) \
+            #        * results[idx(p,0)]
+            lines = []
+            loop_vars = [(format_r, 0, embedded_degree)]
+            lines.append((idx0, _idx(format_r, 1)))
+            lines.append((idx1, _idx(format_r, 0)))
+            fac0 = format_multiply([format_float(2.0), format_r])
+            fac1 = format_multiply([format_grouping(format_add([format_float(3.0), fac0])), format_y])
+            fac2 = format_grouping(format_add([format_float(1.0), fac0, fac1]))
+            fac3 = format_multiply([format_float(0.5), fac2, format_basisvalue(idx1)])
+            lines.append((format_basisvalue(idx0), fac3))
+            code += generate_loop(lines, loop_vars, Indent, format)
+
+            # FIAT_NEW code
+            # for p in range(n+1):
+            #    for q in range(n-p+1):
+            #        results[idx(p,q),:] *= math.sqrt((p+0.5)*(p+q+1.0))
+            lines = []
+            loop_vars = [(format_r, 0, embedded_degree + 1), \
+                         (format_s, 0, format_subtract([format_float(embedded_degree + 1), format_r]))]
+            lines.append((idx0, _idx(format_r, format_s)))
+            fac0 = format_grouping(format_add([format_r, format_float(0.5)]))
+            fac1 = format_grouping(format_add([format_r, format_s, format_float(1.0)]))
+            fac3 = format_multiply([format_basisvalue(idx0), format_sqrt(format_multiply([fac0, fac1]))])
+            lines.append((format_basisvalue(idx0), fac3))
+            code += generate_loop(lines, loop_vars, Indent, format)
 
     # 3D
     elif (element_cell_domain == "tetrahedron"):
