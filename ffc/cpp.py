@@ -319,17 +319,22 @@ types = [["double"],
 # Special characters and delimiters
 special_characters = ["+", "-", "*", "/", "=", ".", " ", ";", "(", ")", "\\", "{", "}", "[","]"]
 
-def remove_unused(code):
-    """Remove unused variables from a given C++ code. This is useful
-    when generating code that will be compiled with gcc and options
-    -Wall -Werror, in which case gcc returns an error when seeing a
-    variable declaration for a variable that is never used."""
+def remove_unused(code, used_set=set()):
+    """
+    Remove unused variables from a given C++ code. This is useful when
+    generating code that will be compiled with gcc and options -Wall
+    -Werror, in which case gcc returns an error when seeing a variable
+    declaration for a variable that is never used.
+
+    Optionally, a set may be specified to indicate a set of variables
+    names that are known to be used a priori.
+    """
 
     # Dictionary of (declaration_line, used_lines) for variables
     variables = {}
 
     # List of variable names (so we can search them in order)
-    variable_names = []
+    variable_names = [variable_name for variable_name in used_set]
 
     # Examine code line by line
     lines = code.split("\n")
@@ -344,14 +349,15 @@ def remove_unused(code):
             variable_type = words[0:len(type)]
             variable_name = words[len(type)]
 
+            # Skip special characters
             if variable_name in special_characters:
                 continue
-            if variable_type == type:
 
-                # Test if any of the special characters are present in the variable name
-                # If this is the case, then remove these by assuming that the 'real' name
-                # is the first entry in the return list. This is implemented to prevent
-                # removal of e.g. 'double array[6]' if it is later used in a loop as 'array[i]'
+            # Test if any of the special characters are present in the variable name
+            # If this is the case, then remove these by assuming that the 'real' name
+            # is the first entry in the return list. This is implemented to prevent
+            # removal of e.g. 'double array[6]' if it is later used in a loop as 'array[i]'
+            if variable_type == type:
                 var = [variable_name.split(sep)[0] for sep in special_characters\
                        if str(variable_name) != variable_name.split(sep)[0]]
                 if (var):
@@ -393,4 +399,3 @@ def __variable_in_line(variable_name, line):
         line = line.replace(character, "\\" + character)
     delimiter = "[" + ",".join(["\\" + c for c in special_characters]) + "]"
     return not re.search(delimiter + variable_name + delimiter, line) == None
-

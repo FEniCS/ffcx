@@ -8,7 +8,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Kristian B. Oelgaard, 2009
 # Modified by Marie Rognes (meg@math.uio.no), 2007
 # Modified by Garth N. Wells, 2009
-# Last changed: 2009-12-23
+# Last changed: 2010-01-04
 
 # FFC modules
 from ffc.log import info
@@ -420,17 +420,18 @@ def _multiply_value_by_det(value, det, format, is_sum):
         v = [value]
     return format["multiply"](d + [format["scale factor"]] + v)
 
-def _remove_unused(code, set, format):
-    "Remove unused variables so that the compiler will not complain"
+def _remove_unused(code, set):
+    """
+    Remove unused variables so that the compiler will not complain.
 
-    # FIXME: Not implemented
+    Normally, the removal of unused variables should happen at the
+    formatting stage, but since the code for the tensor contraction
+    may grow to considerable size, we make an exception and remove
+    unused variables here when we know the names of the used
+    variables. No searching necessary and much, much, much faster.
+    """
+
     return code
-
-    # Normally, the removal of unused variables should happen at the
-    # formatting stage, but since the code for the tensor contraction
-    # may grow to considerable size, we make an exception and remove
-    # unused variables here when we know the names of the used
-    # variables. No searching necessary and much, much, much faster.
 
     if not code: return code
 
