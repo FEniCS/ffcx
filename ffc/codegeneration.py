@@ -19,6 +19,8 @@ from ffc.cpp import format, indent
 
 # FFC code generation modules
 from ffc.evaluatebasis import _evaluate_basis
+from ffc.evaluatedof import _evaluate_dof, _evaluate_dofs
+
 
 # FFC specialized code generation modules
 #from ffc.quadrature import generate_quadrature_integrals
@@ -83,8 +85,8 @@ def generate_element_code(ir, options):
     code["evaluate_basis_all"] = ""
     code["evaluate_basis_derivatives"] = ""
     code["evaluate_basis_derivatives_all"] = ""
-    code["evaluate_dof"] = ""
-    code["evaluate_dofs"] = ""
+    code["evaluate_dof"] = _evaluate_dof(ir["evaluate_dof"])
+    code["evaluate_dofs"] = _evaluate_dofs(ir["evaluate_dofs"])
     code["interpolate_vertex_values"] = ""
     code["num_sub_elements"] = ret(ir["num_sub_elements"])
     code["create_sub_element"] = ""
@@ -195,6 +197,7 @@ def _init_mesh(num_dofs_per_entity):
              for (dim, num) in enumerate(num_dofs_per_entity)]
     dimension = format["add"](terms)
     return "__global_dimension = %s;\n return false;" % dimension
+
 
 def _tabulate_facet_dofs(tabulate_facet_dofs_ir):
     """
