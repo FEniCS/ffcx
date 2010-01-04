@@ -21,16 +21,10 @@ from ffc.tensor.monomialtransformation import MonomialIndex
 def generate_tensor_integrals(ir, options):
     "Generate code for integrals from intermediate representation."
 
-    code = {}
-
     # Check if code needs to be generated
-    if ir.num_integrals == 0:
-        return {}
+    if ir.num_integrals == 0: return {}, {}, {}
 
     info("Generating code using tensor representation")
-
-    # Set represenation
-    code["representation"] = "tensor"
 
     # Generate incremental code for now, might be an option later
     incremental = True
@@ -46,47 +40,42 @@ def generate_tensor_integrals(ir, options):
     code_exterior_facet_integrals = []
     for (sub_domain, terms) in enumerate(ir.exterior_facet_integrals):
         if len(terms) > 0:
-            I = _generate_exterior_facet_integral(terms, ir, incremental, format)
+            I = _generate_exterior_facet_integral(terms, ir, incremental)
             code_exterior_facet_integrals.append(I)
 
     # Generate code for interior facet integrals
     code_interior_facet_integrals = []
     for (sub_domain, terms) in enumerate(ir.interior_facet_integrals):
         if len(terms) > 0:
-            I = _generate_interior_facet_integral(terms, ir, incremental, format)
+            I = _generate_interior_facet_integral(terms, ir, incremental)
             code_interior_facet_integrals.append(I)
 
     return code_cell_integrals, code_exterior_facet_integrals, code_interior_facet_integrals
 
-def _generate_cell_integral(terms, ir, incremental, format):
+def _generate_cell_integral(terms, ir, incremental):
     "Generate code for cell integral."
 
     # Prefetch formats to speed up code generation
     format_comment = format["comment"]
 
-    # Generate code
+    # Generate code for everything except tabulate_tensor
     code = {}
     code["classname"] = "FooCellIntegral"
     code["members"] = ""
     code["constructor"] = ""
     code["destructor"] = ""
+
     code["tabulate_tensor"] = ""
 
     return code
 
-    # Special case: zero contribution
-    if len(terms) == 0:
-        return {"tabulate_tensor": [format_comment("Do nothing")], "members": ""}
-
-    # Generate tensor code + set of used geometry terms
-    tensor_code, tensor_ops, geometry_set = _generate_element_tensor(terms, incremental, format)
-
-    # Generate geometry code + set of used jacobi terms
-    geometry_code, geometry_ops, jacobi_set = _generate_geometry_tensors(terms, geometry_set, format)
-
-    # Generate code for Jacobian
+    # Generate code for element tensor, geometry tensor and Jacobian
+    tensor_code, tensor_ops, geometry_set   = _generate_element_tensor(terms, incremental)
+    geometry_code, geometry_ops, jacobi_set = _generate_geometry_tensors(terms, geometry_set)
     jacobi_code = codesnippets.jacobian[ir.geometric_dimension]
-    jacobi_code = _remove_unused(jacobi_code, jacobi_set, format)
+
+    # Remove unused declarations from Jacobian code
+    jacobi_code = _remove_unused(jacobi_code, jacobi_set)
 
     # FIXME: Missing stuff from old generate_jacobian
 
@@ -108,7 +97,7 @@ def _generate_cell_integral(terms, ir, incremental, format):
 
     return {"tabulate_tensor": code, "members": ""}
 
-def _generate_exterior_facet_integral(terms, ir, incremental, format):
+def _generate_exterior_facet_integral(terms, ir, incremental):
     "Generate code for exterior facet integral."
 
     # Generate code
@@ -160,7 +149,7 @@ def _generate_exterior_facet_integral(terms, ir, incremental, format):
 
     return {"tabulate_tensor": (code, cases), "members": ""}
 
-def _generate_interior_facet_integral(terms, ir, incremental, format):
+def _generate_interior_facet_integral(terms, ir, incremental):
     "Generate code for interior facet integral."
 
     # Generate code
