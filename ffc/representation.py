@@ -75,7 +75,7 @@ def compute_element_ir(ufl_element):
     ir["evaluate_basis_all"] = not_implemented #element.get_coeffs()
     ir["evaluate_basis_derivatives"] = element
     ir["evaluate_basis_derivatives_all"] = not_implemented #element.get_coeffs()
-    ir["evaluate_dof"] = None
+    ir["evaluate_dof"] = [d.pt_dict for d in element.dual_basis()]
     ir["evaluate_dofs"] = None
     ir["interpolate_vertex_values"] = None
     ir["num_sub_elements"] = _num_sub_elements(ufl_element)
