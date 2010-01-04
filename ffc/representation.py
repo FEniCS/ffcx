@@ -113,7 +113,7 @@ def compute_dofmap_ir(ufl_element):
     ir["global_dimension"] = None
     ir["max_local_dimension"] = element.space_dimension()
     ir["needs_mesh_entities"] = [d > 0 for d in num_dofs_per_entity]
-    ir["num_entity_dofs"] = _num_dofs_per_dim(element)
+    ir["num_entity_dofs"] = num_dofs_per_entity
     ir["num_facet_dofs"] = len(facet_dofs[0])
     ir["num_sub_dof_maps"] =  _num_sub_elements(ufl_element)
     ir["signature"] = "FFC dofmap for " + repr(ufl_element)
@@ -171,18 +171,6 @@ def _num_sub_elements(ufl_element):
         return 0
     else:
         return len(ufl_element.sub_elements())
-
-def _num_dofs_per_dim(element):
-    """
-    Compute the number of dofs associated with each topological
-    dimension.  Currently only handles non-mixed elements.
-
-    Example: Lagrange of degree 3 on triangle:  [3, 6, 1]
-    """
-
-    entity_dofs = element.entity_dofs()
-    return [sum(len(dof_indices) for dof_indices in entity_dofs[e].values())
-            for e in range(len(entity_dofs.keys()))]
 
 def _num_dofs_per_entity(element):
     """

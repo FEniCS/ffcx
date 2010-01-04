@@ -99,7 +99,7 @@ def generate_element_code(ir, options):
 def generate_dofmap_code(ir, options):
     "Generate code for dofmap from intermediate representation."
 
-    not_implemented = "NotImplementedYet"
+    not_implemented = "// NotImplementedYet"
 
     # Prefetch formatting to speedup code generation
     ret = format["return"]
@@ -121,11 +121,11 @@ def generate_dofmap_code(ir, options):
     code["max_local_dimension"] = ret(ir["max_local_dimension"])
     code["geometric_dimension"] = ret(ir["geometric_dimension"])
     code["num_facet_dofs"] = ret(ir["num_facet_dofs"])
-    code["num_entity_dofs"] = "// Marie does not know what this should return // AL: Should return number of dofs associated with the entity of a given topological dimension, so 0 --> 1, 1 --> 2, 2 --> 1 for P3 triangles"
+    code["num_entity_dofs"] = format["switch"]("d", [ret(num) for num in ir["num_entity_dofs"]])
     code["tabulate_dofs"] = _tabulate_dofs(ir["tabulate_dofs"])
     code["tabulate_facet_dofs"] = _tabulate_facet_dofs(ir["tabulate_facet_dofs"])
-    code["tabulate_entity_dofs"] = not_implemented
-    code["tabulate_coordinates"] = not_implemented
+    code["tabulate_entity_dofs"] = "// Marie doesn't know what this function should do."
+    code["tabulate_coordinates"] = "// Marie doesn't believe in this function."
     code["num_sub_dof_maps"] = ret(ir["num_sub_dof_maps"])
     code["create_sub_dof_map"] = not_implemented
 
@@ -190,7 +190,6 @@ def _init_mesh(num_dofs_per_entity):
              for (dim, num) in enumerate(num_dofs_per_entity)]
     dimension = format["add"](terms)
     return "__global_dimension = %s;\n return false;" % dimension
-
 
 def _tabulate_facet_dofs(tabulate_facet_dofs_ir):
     """
