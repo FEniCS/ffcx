@@ -6,7 +6,8 @@ __copyright__ = "Copyright (C) 2009 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian B. Oelgaard 2009
-# Last changed: 2009-12-22
+# Modified by Marie E. Rognes 2010
+# Last changed: 2010-01-04
 
 # Python modules.
 import re
@@ -31,8 +32,12 @@ format.update({"return":    lambda v: "return %s;" % str(v),
 
 # Formatting used in tabulate_tensor
 format.update({"element tensor":    lambda i: "A[%d]" % i,
-              "geometry tensor":    lambda j, a: "G%d_%s" % (j, "_".join(["%d" % i for i in a])),
+               "geometry tensor":    lambda j, a: "G%d_%s" % (j, "_".join(["%d" % i for i in a])),
                "scale factor":      "det"})
+
+# Mesh entity variable names
+format.update({"entity index": lambda d, i: "c.entity_indices[%d][%d]" % (d, i),
+               "num entities": lambda dim : "m.num_entities[%d]" % dim})
 
 # Misc
 format.update({"bool":   lambda v: {True: "true", False: "false"}[v],

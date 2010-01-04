@@ -17,14 +17,15 @@ __date__ = "2009-12-16"
 __copyright__ = "Copyright (C) 2009 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2009-12-22
+# Modified by Marie E. Rognes 2010
+# Last changed: 2010-01-04
 
 # UFL modules
 from ufl.finiteelement import FiniteElement as UFLFiniteElement
 
 # FFC modules
 from ffc.log import info, error, begin, end, debug_ir
-from ffc.fiatinterface import create_element
+from ffc.fiatinterface import create_element, entities_per_dim
 from ffc.mixedelement import MixedElement
 
 # FFC specialized representation modules
@@ -90,6 +91,13 @@ def compute_dofmap_ir(ufl_element):
 
     # Precompute frequently used list: number of dofs per mesh entity:
     num_dofs_per_entity = _num_dofs_per_entity(element)
+    geometric_dimension = ufl_element.cell().geometric_dimension()
+
+    # Get list of subelements
+    if _num_sub_elements(ufl_element) == 0:
+        sub_elements = [element]
+    else:
+        sub_elements = element._elements
 
     # Compute data for each function
     ir = {}
@@ -98,7 +106,7 @@ def compute_dofmap_ir(ufl_element):
     ir["init_cell_finalize"] = None
     ir["init_mesh"] = num_dofs_per_entity
     ir["local_dimension"] = element.space_dimension()
-    ir["geometric_dimension"] = ufl_element.cell().geometric_dimension()
+    ir["geometric_dimension"] = geometric_dimension
     ir["global_dimension"] = None
     ir["max_local_dimension"] = element.space_dimension()
     ir["needs_mesh_entities"] = [d > 0 for d in num_dofs_per_entity]
@@ -106,7 +114,7 @@ def compute_dofmap_ir(ufl_element):
     ir["num_facet_dofs"] = _num_facet_dofs(element)
     ir["num_sub_dof_maps"] =  _num_sub_elements(ufl_element)
     ir["signature"] = "FFC dofmap for " + repr(ufl_element)
-    ir["tabulate_dofs"] = not_implemented
+    ir["tabulate_dofs"] = _generate_tabulate_dofs(sub_elements, geometric_dimension)
     ir["tabulate_facet_dofs"] = not_implemented
     ir["tabulate_entity_dofs"] = not_implemented
     ir["tabulate_coordinates"] = not_implemented
@@ -114,6 +122,12 @@ def compute_dofmap_ir(ufl_element):
     debug_ir(ir, "dofmap")
 
     return ir
+
+def _generate_tabulate_dofs(sub_elements, dim):
+    return [{"entites_per_dim": entities_per_dim[dim],
+             "num_dofs_per_entity": _num_dofs_per_entity(e)}
+            for e in sub_elements]
+
 
 def compute_integrals_ir(form, form_data, options):
     "Compute and return intermediate represention of integrals."
@@ -148,7 +162,8 @@ def compute_form_ir(form, form_data):
 
     return ir
 
-#--- Utility functions ---
+#--- Utility functions -
+
 
 def _num_sub_elements(ufl_element):
     """
