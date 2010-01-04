@@ -18,6 +18,7 @@ __copyright__ = "Copyright (C) 2009 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Marie E. Rognes 2010
+# Modified by Kristian B. Oelgaard 2010
 # Last changed: 2010-01-04
 
 # UFL modules
@@ -25,7 +26,7 @@ from ufl.finiteelement import FiniteElement as UFLFiniteElement
 
 # FFC modules
 from ffc.utils import compute_permutations
-from ffc.log import info, error, begin, end, debug_ir
+from ffc.log import info, error, begin, end, debug_ir, ffc_assert
 from ffc.fiatinterface import create_element, entities_per_dim
 from ffc.mixedelement import MixedElement
 
@@ -68,11 +69,12 @@ def compute_element_ir(ufl_element):
     ir["space_dimension"] = element.space_dimension()
     ir["value_rank"] = len(ufl_element.value_shape())
     ir["value_dimension"] = ufl_element.value_shape()
-    ir["evaluate_basis"] = element
+#    ir["evaluate_basis"] = _evaluate_basis_data(ufl_element, element)
+    ir["evaluate_basis"] = not_implemented
     ir["evaluate_basis_all"] = not_implemented #element.get_coeffs()
     ir["evaluate_basis_derivatives"] = element
     ir["evaluate_basis_derivatives_all"] = not_implemented #element.get_coeffs()
-    ir["evaluate_dof"] = None
+    ir["evaluate_dof"] = [d.pt_dict for d in element.dual_basis()]
     ir["evaluate_dofs"] = None
     ir["interpolate_vertex_values"] = None
     ir["num_sub_elements"] = _num_sub_elements(ufl_element)
@@ -96,7 +98,7 @@ def compute_dofmap_ir(ufl_element):
     facet_dofs = _generate_tabulate_facet_dofs(element, cell)
 
     # Get list of subelements
-    if _num_sub_elements(ufl_element) == 0:
+    if _num_sub_elements(ufl_element) == 1:
         sub_elements = [element]
     else:
         sub_elements = element._elements
@@ -112,7 +114,7 @@ def compute_dofmap_ir(ufl_element):
     ir["global_dimension"] = None
     ir["max_local_dimension"] = element.space_dimension()
     ir["needs_mesh_entities"] = [d > 0 for d in num_dofs_per_entity]
-    ir["num_entity_dofs"] = _num_dofs_per_dim(element)
+    ir["num_entity_dofs"] = num_dofs_per_entity
     ir["num_facet_dofs"] = len(facet_dofs[0])
     ir["num_sub_dof_maps"] =  _num_sub_elements(ufl_element)
     ir["signature"] = "FFC dofmap for " + repr(ufl_element)
@@ -160,28 +162,15 @@ def compute_form_ir(form, form_data):
 
 #--- Utility functions -
 
-
 def _num_sub_elements(ufl_element):
     """
     Return the number of sub_elements for a ufl_element. Would work
     better if an UFL element had a member num_sub_elements()
     """
     if isinstance(ufl_element, UFLFiniteElement):
-        return 0
+        return 1
     else:
         return len(ufl_element.sub_elements())
-
-def _num_dofs_per_dim(element):
-    """
-    Compute the number of dofs associated with each topological
-    dimension.  Currently only handles non-mixed elements.
-
-    Example: Lagrange of degree 3 on triangle:  [3, 6, 1]
-    """
-
-    entity_dofs = element.entity_dofs()
-    return [sum(len(dof_indices) for dof_indices in entity_dofs[e].values())
-            for e in range(len(entity_dofs.keys()))]
 
 def _num_dofs_per_entity(element):
     """
@@ -282,3 +271,26 @@ def __compute_sub_simplices(D, d):
         sub_simplices += [vertices]
 
     return sub_simplices
+
+def _evaluate_basis_data(ufl_element, fiat_element):
+    "Helper function to extract relevant data for evaluate_basis* functions."
+
+    # TODO: KBO: Remove if never triggered.
+    ffc_assert(fiat_element.get_nodal_basis().get_embedded_degree() == \
+               ufl_element.degree(),\
+               "Degrees do not match: %s, %s" % (repr(fiat_element), repr(ufl_element)))
+    # FIXME: KBO: Does not support mixed elements yet.
+    data = {
+          "num_sub_elements" : _num_sub_elements(ufl_element),
+          "value_shape" : fiat_element.value_shape(),
+          "embedded_degree" : ufl_element.degree(),
+          "cell_domain" : ufl_element.cell().domain(),
+          "coeffs" : fiat_element.get_coeffs(),
+          "value_rank" : len(ufl_element.value_shape())
+          }
+
+    data["num_expansion_members"] = \
+      fiat_element.get_nodal_basis().get_expansion_set().get_num_members(data["embedded_degree"])
+
+    return data
+

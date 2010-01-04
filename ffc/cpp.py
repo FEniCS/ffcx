@@ -77,7 +77,7 @@ def _generate_switch(variable, cases, default = ""):
 
     # Special case: one case
     if len(cases) == 1:
-        return cases[0]
+        return format["return"](cases[0])
 
     # Create switch
     code = "switch ( %s )\n{\n" % variable

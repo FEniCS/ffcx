@@ -19,6 +19,7 @@ from ffc.cpp import format, indent
 
 # FFC code generation modules
 from ffc.evaluatebasis import _evaluate_basis
+from ffc.evaluatedof import _evaluate_dof, _evaluate_dofs
 
 # FFC specialized code generation modules
 #from ffc.quadrature import generate_quadrature_integrals
@@ -75,16 +76,16 @@ def generate_element_code(ir, options):
     code["constructor"] = ""
     code["destructor"] = ""
     code["signature"] = ret('"%s"' % ir["signature"])
-    code["cell_shape"] = ""
+    code["cell_shape"] = ret("ufc:%s" % ir["cell_shape"])
     code["space_dimension"] = ret(ir["space_dimension"])
     code["value_rank"] = ret(ir["value_rank"])
-    code["value_dimension"] = ""
+    code["value_dimension"] = _value_dimension(ir["value_dimension"])
     code["evaluate_basis"] = _evaluate_basis(ir["evaluate_basis"])
     code["evaluate_basis_all"] = ""
     code["evaluate_basis_derivatives"] = ""
     code["evaluate_basis_derivatives_all"] = ""
-    code["evaluate_dof"] = ""
-    code["evaluate_dofs"] = ""
+    code["evaluate_dof"] = _evaluate_dof(ir["evaluate_dof"])
+    code["evaluate_dofs"] = _evaluate_dofs(ir["evaluate_dofs"])
     code["interpolate_vertex_values"] = ""
     code["num_sub_elements"] = ret(ir["num_sub_elements"])
     code["create_sub_element"] = ""
@@ -96,14 +97,19 @@ def generate_element_code(ir, options):
 
     return code
 
+def _value_dimension(ir):
+    print "ir: ", ir
+    if ir == ():
+        return format["return"]("1")
+    return format["switch"]("i", [n for n in ir])
+
 def generate_dofmap_code(ir, options):
     "Generate code for dofmap from intermediate representation."
 
-    not_implemented = "NotImplementedYet"
+    not_implemented = "// NotImplementedYet"
 
     # Prefetch formatting to speedup code generation
     ret = format["return"]
-    switch = format["switch"]
 
     # Generate code
     code = {}
@@ -111,7 +117,7 @@ def generate_dofmap_code(ir, options):
     code["members"] = ""
     code["constructor"] = ""
     code["destructor"] = ""
-    code["signature"] = ret(ir["signature"])
+    code["signature"] = ret('"%s"' % ir["signature"])
     code["needs_mesh_entities"] = _needs_mesh_entities(ir["needs_mesh_entities"])
     code["init_mesh"] = _init_mesh(ir["init_mesh"])
     code["init_cell"] = "// Do nothing"
@@ -121,11 +127,11 @@ def generate_dofmap_code(ir, options):
     code["max_local_dimension"] = ret(ir["max_local_dimension"])
     code["geometric_dimension"] = ret(ir["geometric_dimension"])
     code["num_facet_dofs"] = ret(ir["num_facet_dofs"])
-    code["num_entity_dofs"] = "// Marie does not know what this should return // AL: Should return number of dofs associated with the entity of a given topological dimension, so 0 --> 1, 1 --> 2, 2 --> 1 for P3 triangles"
+    code["num_entity_dofs"] = format["switch"]("d", [ret(num) for num in ir["num_entity_dofs"]])
     code["tabulate_dofs"] = _tabulate_dofs(ir["tabulate_dofs"])
     code["tabulate_facet_dofs"] = _tabulate_facet_dofs(ir["tabulate_facet_dofs"])
-    code["tabulate_entity_dofs"] = not_implemented
-    code["tabulate_coordinates"] = not_implemented
+    code["tabulate_entity_dofs"] = "// Marie doesn't know what this function should do."
+    code["tabulate_coordinates"] = "// Marie doesn't believe in this function."
     code["num_sub_dof_maps"] = ret(ir["num_sub_dof_maps"])
     code["create_sub_dof_map"] = not_implemented
 
@@ -136,7 +142,6 @@ def generate_dofmap_code(ir, options):
 
     return code
 
-
 def generate_integrals_code(ir, options):
     "Generate code for integrals from intermediate representation."
 
@@ -144,7 +149,10 @@ def generate_integrals_code(ir, options):
 
     code = generate_tensor_integrals(ir, options)
 
-    print code
+    # Postprocess code
+    for integral_type_code in code:
+        for sub_domain_code in integral_type_code:
+            _postprocess_code(sub_domain_code, options)
 
     return code
 
@@ -247,6 +255,8 @@ def _indent_code(code):
     "Indent code that should be indented."
     for key in code:
         if not key in ("classname", "members"):
+            print "key: ", key
+            print "code: ", code[key]
             code[key] = indent(code[key], 4)
 
 def _remove_code(code, options):

@@ -36,8 +36,6 @@ def generate_tensor_integrals(ir, options):
         I = generate_cell_integral_code(terms, ir, incremental, options)
         code_cell_integrals.append(I)
 
-    return
-
     # Generate code for exterior facet integrals
     code_exterior_facet_integrals = []
     for (sub_domain, terms) in enumerate(ir.exterior_facet_integrals):
@@ -112,10 +110,10 @@ def generate_exterior_facet_integral_code(terms, ir, incremental):
 
     # Add generated code
     code += jacobi_code
-    code += [format_comment("Compute geometry tensor")]
+    code += format_comment("Compute geometry tensor")
     code += geometry_code
     code += [""]
-    code += [format_comment("Compute element tensor")]
+    code += format_comment("Compute element tensor")
 
     return {"tabulate_tensor": (code, cases), "members": ""}
 
@@ -202,7 +200,8 @@ def _tabulate_tensor(terms, ir, incremental, options):
     # Add generated code
     code = ""
     code += j_code
-    code += format_comment("Compute geometry tensor")
+    code += "\n"
+    code += format_comment("Compute geometry tensor") + "\n"
     code += g_code
     code += "\n"
     code += format_comment("Compute element tensor")
@@ -270,9 +269,9 @@ def _generate_element_tensor(terms, incremental, options):
                     num_dropped += 1
         value = value or zero
         if incremental:
-            code += format_iadd(name, value)
+            code += format_iadd(name, value) + "\n"
         else:
-            code += format_assign(name, value)
+            code += format_assign(name, value) + "\n"
         k += 1
 
     return (code, num_ops, geometry_set)
@@ -338,7 +337,7 @@ def _generate_geometry_tensors(terms, geometry_set):
             #!    jacobi_set.add(format["multiply"](d0))
 
             # Add code
-            code += format_declaration(name, value)
+            code += format_declaration(name, value) + "\n"
 
         j += len(GKs)
 
