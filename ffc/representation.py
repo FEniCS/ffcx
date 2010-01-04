@@ -18,6 +18,7 @@ __copyright__ = "Copyright (C) 2009 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Marie E. Rognes 2010
+# Modified by Kristian B. Oelgaard 2010
 # Last changed: 2010-01-04
 
 # UFL modules
@@ -25,7 +26,7 @@ from ufl.finiteelement import FiniteElement as UFLFiniteElement
 
 # FFC modules
 from ffc.utils import compute_permutations
-from ffc.log import info, error, begin, end, debug_ir
+from ffc.log import info, error, begin, end, debug_ir, ffc_assert
 from ffc.fiatinterface import create_element, entities_per_dim
 from ffc.mixedelement import MixedElement
 
@@ -69,7 +70,8 @@ def compute_element_ir(ufl_element):
     ir["space_dimension"] = element.space_dimension()
     ir["value_rank"] = len(ufl_element.value_shape())
     ir["value_dimension"] = ufl_element.value_shape()
-    ir["evaluate_basis"] = element
+#    ir["evaluate_basis"] = _evaluate_basis_data(ufl_element, element)
+    ir["evaluate_basis"] = not_implemented
     ir["evaluate_basis_all"] = not_implemented #element.get_coeffs()
     ir["evaluate_basis_derivatives"] = element
     ir["evaluate_basis_derivatives_all"] = not_implemented #element.get_coeffs()
@@ -270,3 +272,26 @@ def __compute_sub_simplices(D, d):
         sub_simplices += [vertices]
 
     return sub_simplices
+
+def _evaluate_basis_data(ufl_element, fiat_element):
+    "Helper function to extract relevant data for evaluate_basis* functions."
+
+    # TODO: KBO: Remove if never triggered.
+    ffc_assert(fiat_element.get_nodal_basis().get_embedded_degree() == \
+               ufl_element.degree(),\
+               "Degrees do not match: %s, %s" % (repr(fiat_element), repr(ufl_element)))
+    # FIXME: KBO: Does not support mixed elements yet.
+    data = {
+          "num_sub_elements" : _num_sub_elements(ufl_element),
+          "value_shape" : fiat_element.value_shape(),
+          "embedded_degree" : ufl_element.degree(),
+          "cell_domain" : ufl_element.cell().domain(),
+          "coeffs" : fiat_element.get_coeffs(),
+          "value_rank" : len(ufl_element.value_shape())
+          }
+
+    data["num_expansion_members"] = \
+      fiat_element.get_nodal_basis().get_expansion_set().get_num_members(data["embedded_degree"])
+
+    return data
+

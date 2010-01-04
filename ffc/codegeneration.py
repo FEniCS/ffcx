@@ -97,7 +97,7 @@ def generate_element_code(ir, options):
     return code
 
 def _value_dimension(ir):
-
+    print "ir: ", ir
     if ir == ():
         return format["return"]("1")
     return format["switch"]("i", [n for n in ir])
@@ -116,7 +116,7 @@ def generate_dofmap_code(ir, options):
     code["members"] = ""
     code["constructor"] = ""
     code["destructor"] = ""
-    code["signature"] = ret(ir["signature"])
+    code["signature"] = ret('"%s"' % ir["signature"])
     code["needs_mesh_entities"] = _needs_mesh_entities(ir["needs_mesh_entities"])
     code["init_mesh"] = _init_mesh(ir["init_mesh"])
     code["init_cell"] = "// Do nothing"
@@ -258,6 +258,8 @@ def _indent_code(code):
     "Indent code that should be indented."
     for key in code:
         if not key in ("classname", "members"):
+            print "key: ", key
+            print "code: ", code[key]
             code[key] = indent(code[key], 4)
 
 def _remove_code(code, options):
