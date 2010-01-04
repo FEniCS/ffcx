@@ -191,21 +191,17 @@ def _init_mesh(num_dofs_per_entity):
     dimension = format["add"](terms)
     return "__global_dimension = %s;\n return false;" % dimension
 
-
 def _tabulate_facet_dofs(tabulate_facet_dofs_ir):
-    """
-    Code generation for tabulate facet dofs.
-    """
+    "Generate code for tabulate_facet_dofs."
 
     return "\n".join([format["switch"]("facet", ["\n".join(["dofs[%d] = %d;" % (i, dof)
                                                             for (i, dof) in enumerate(tabulate_facet_dofs_ir[facet])])
                                                  for facet in range(len(tabulate_facet_dofs_ir))])])
 
 def _tabulate_dofs(tabulate_dofs_ir):
-    """Code generation for tabulate dofs.
+    "Generate code for for tabulate_dofs."
 
-    Not quite c++ independent, and not optimized.
-    """
+    # Note:  Not quite C++ independent, and not optimized.
 
     # Prefetch add and multiply
     add = format["add"]
@@ -241,9 +237,6 @@ def _tabulate_dofs(tabulate_dofs_ir):
                 code += [format["iadd"]("offset", multiply(["%d" % num_dofs, format["num entities"](d)]))]
 
     return "\n".join(code)
-
-
-
 
 def _postprocess_code(code, options):
     "Postprocess generated code."

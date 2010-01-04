@@ -29,7 +29,6 @@ from ffc.log import info, error, begin, end, debug_ir
 from ffc.fiatinterface import create_element, entities_per_dim
 from ffc.mixedelement import MixedElement
 
-
 # FFC specialized representation modules
 #from ffc.quadrature import QuadratureRepresentation
 from ffc.tensor import TensorRepresentation

@@ -18,31 +18,36 @@ from log import debug
 # Formatting rules
 format = {}
 
-# Operator formatting
+# Program flow
+format.update({"return":    lambda v: "return %s;" % str(v),
+               "grouping":  lambda v: "(%s)" % v,
+               "switch":    lambda v, cases: _generate_switch(v, cases),
+               "exception": lambda v: "throw std::runtime_error(\"%s\");" % v,
+               "comment":   lambda v: "// %s" % v})
+
+# Declarations
+format.update({"const float declaration": lambda v, w: "const double %s = %s;" % (v, w)})
+
+# Operators
 format.update({"add":      lambda v: _add(v),
                "iadd":     lambda v, w: "%s += %s;" % (v, w),
                "subtract": lambda v: " - ".join(v),
                "multiply": lambda v: _multiply(v)})
 
-# Program flow
-format.update({"return":    lambda v: "return %s;" % str(v),
-               "switch":    lambda v, cases: _generate_switch(v, cases),
-               "exception": lambda v: "throw std::runtime_error(\"%s\");" % v,
-               "comment":   lambda v: "// %s" % v})
-
 # Formatting used in tabulate_tensor
-format.update({"element tensor":    lambda i: "A[%d]" % i,
-               "geometry tensor":    lambda j, a: "G%d_%s" % (j, "_".join(["%d" % i for i in a])),
-               "scale factor":      "det"})
+format.update({"element tensor":  lambda i: "A[%d]" % i,
+               "geometry tensor": lambda j, a: "G%d_%s" % (j, "_".join(["%d" % i for i in a])),
+               "coefficient":     lambda j, k: "w[%d][%d]" % (j, k),
+               "scale factor":    "det",
+               "transform":       lambda t, j, k, r: _transform(t, j, k, r)})
 
 # Mesh entity variable names
 format.update({"entity index": lambda d, i: "c.entity_indices[%d][%d]" % (d, i),
                "num entities": lambda dim : "m.num_entities[%d]" % dim})
 
 # Misc
-format.update({"bool":   lambda v: {True: "true", False: "false"}[v],
-               "float":  lambda v: "<float not defined>",
-               "epsilon": lambda v: "<epsilon not defined>"})
+format.update({"bool":    lambda v: {True: "true", False: "false"}[v],
+               "float":   lambda v: "%g" % v})
 
 def _multiply(factors):
     non_zero_factors = []
@@ -57,6 +62,11 @@ def _multiply(factors):
 
 def _add(terms):
     return " + ".join([t for t in terms if (t != "0" and t != "")])
+
+def _transform(type, j, k, r):
+    # FIXME: j, k might need to be swapped for J or JINV
+    map_name = type + {None: "", "+": "0", "-": 1}[r]
+    return (map_name + "_%d%d") % (j, k)
 
 def _generate_switch(variable, cases, default = ""):
     "Generate switch statement from given variable and cases"
@@ -384,6 +394,7 @@ def remove_unused(code, used_set=set()):
             if line in used_lines:
                 used_lines.remove(line)
         if used_lines == []:
+            print variable_name
             debug("Removing unused variable: %s" % variable_name)
             #lines[declaration_line] = "// " + lines[declaration_line]
             lines[declaration_line] = None

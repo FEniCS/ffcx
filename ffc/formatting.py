@@ -15,7 +15,7 @@ __date__ = "2009-12-16"
 __copyright__ = "Copyright (C) 2009 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2009-12-23
+# Last changed: 2010-01-04
 
 # Python modules
 import os
