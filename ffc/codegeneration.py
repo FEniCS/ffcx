@@ -75,10 +75,10 @@ def generate_element_code(ir, options):
     code["constructor"] = ""
     code["destructor"] = ""
     code["signature"] = ret('"%s"' % ir["signature"])
-    code["cell_shape"] = ""
+    code["cell_shape"] = ret("ufc:%s" % ir["cell_shape"])
     code["space_dimension"] = ret(ir["space_dimension"])
     code["value_rank"] = ret(ir["value_rank"])
-    code["value_dimension"] = ""
+    code["value_dimension"] = _value_dimension(ir["value_dimension"])
     code["evaluate_basis"] = _evaluate_basis(ir["evaluate_basis"])
     code["evaluate_basis_all"] = ""
     code["evaluate_basis_derivatives"] = ""
@@ -96,6 +96,12 @@ def generate_element_code(ir, options):
 
     return code
 
+def _value_dimension(ir):
+
+    if ir == ():
+        return format["return"]("1")
+    return format["switch"]("i", [n for n in ir])
+
 def generate_dofmap_code(ir, options):
     "Generate code for dofmap from intermediate representation."
 
@@ -103,7 +109,6 @@ def generate_dofmap_code(ir, options):
 
     # Prefetch formatting to speedup code generation
     ret = format["return"]
-    switch = format["switch"]
 
     # Generate code
     code = {}

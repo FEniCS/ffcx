@@ -97,7 +97,7 @@ def compute_dofmap_ir(ufl_element):
     facet_dofs = _generate_tabulate_facet_dofs(element, cell)
 
     # Get list of subelements
-    if _num_sub_elements(ufl_element) == 0:
+    if _num_sub_elements(ufl_element) == 1:
         sub_elements = [element]
     else:
         sub_elements = element._elements
@@ -161,14 +161,13 @@ def compute_form_ir(form, form_data):
 
 #--- Utility functions -
 
-
 def _num_sub_elements(ufl_element):
     """
     Return the number of sub_elements for a ufl_element. Would work
     better if an UFL element had a member num_sub_elements()
     """
     if isinstance(ufl_element, UFLFiniteElement):
-        return 0
+        return 1
     else:
         return len(ufl_element.sub_elements())
 
