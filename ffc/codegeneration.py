@@ -11,7 +11,7 @@ __date__ = "2009-12-16"
 __copyright__ = "Copyright (C) 2009 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2009-12-23
+# Last changed: 2010-01-04
 
 # FFC modules
 from ffc.log import begin, end, debug_code
@@ -80,7 +80,6 @@ def generate_element_code(ir, options):
     code["value_rank"] = ret(ir["value_rank"])
     code["value_dimension"] = ""
     code["evaluate_basis"] = _evaluate_basis(ir["evaluate_basis"])
-#    print "CODE:\n", code["evaluate_basis"]
     code["evaluate_basis_all"] = ""
     code["evaluate_basis_derivatives"] = ""
     code["evaluate_basis_derivatives_all"] = ""
@@ -99,6 +98,8 @@ def generate_element_code(ir, options):
 
 def generate_dofmap_code(ir, options):
     "Generate code for dofmap from intermediate representation."
+
+    not_implemented = "NotImplementedYet"
 
     # Prefetch formatting to speedup code generation
     ret = format["return"]
@@ -121,12 +122,12 @@ def generate_dofmap_code(ir, options):
     code["geometric_dimension"] = ret(ir["geometric_dimension"])
     code["num_facet_dofs"] = ret(ir["num_facet_dofs"])
     code["num_entity_dofs"] = "// Marie does not know what this should return // AL: Should return number of dofs associated with the entity of a given topological dimension, so 0 --> 1, 1 --> 2, 2 --> 1 for P3 triangles"
-    code["tabulate_dofs"] = ""
-    code["tabulate_facet_dofs"] = ""
-    code["tabulate_entity_dofs"] = ""
-    code["tabulate_coordinates"] = ""
+    code["tabulate_dofs"] = _tabulate_dofs(ir["tabulate_dofs"])
+    code["tabulate_facet_dofs"] = _tabulate_facet_dofs(ir["tabulate_facet_dofs"])
+    code["tabulate_entity_dofs"] = not_implemented
+    code["tabulate_coordinates"] = not_implemented
     code["num_sub_dof_maps"] = ret(ir["num_sub_dof_maps"])
-    code["create_sub_dof_map"] = ""
+    code["create_sub_dof_map"] = not_implemented
 
     # Postprocess code
     _postprocess_code(code, options)
@@ -134,6 +135,7 @@ def generate_dofmap_code(ir, options):
     debug_code(code, "dofmap")
 
     return code
+
 
 def generate_integrals_code(ir, options):
     "Generate code for integrals from intermediate representation."
@@ -188,6 +190,60 @@ def _init_mesh(num_dofs_per_entity):
              for (dim, num) in enumerate(num_dofs_per_entity)]
     dimension = format["add"](terms)
     return "__global_dimension = %s;\n return false;" % dimension
+
+
+def _tabulate_facet_dofs(tabulate_facet_dofs_ir):
+    """
+    Code generation for tabulate facet dofs.
+    """
+
+    return "\n".join([format["switch"]("facet", ["\n".join(["dofs[%d] = %d;" % (i, dof)
+                                                            for (i, dof) in enumerate(tabulate_facet_dofs_ir[facet])])
+                                                 for facet in range(len(tabulate_facet_dofs_ir))])])
+
+def _tabulate_dofs(tabulate_dofs_ir):
+    """Code generation for tabulate dofs.
+
+    Not quite c++ independent, and not optimized.
+    """
+
+    # Prefetch add and multiply
+    add = format["add"]
+    multiply = format["multiply"]
+
+    # Declare offset
+    code = ["unsigned int offset = 0;"]
+
+    # Total dof counter
+    i = 0
+
+    # Generate code for each element
+    for element_ir in tabulate_dofs_ir:
+
+        # Representation contains number of dofs per mesh entity and
+        # number of mesh entities per geometric dimension
+        dofs_per_entity = element_ir["num_dofs_per_entity"]
+        entities_per_dim = element_ir["entites_per_dim"]
+
+        # For each dimension, generate code for each dof
+        for (d, num_dofs) in enumerate(dofs_per_entity):
+            if num_dofs > 0:
+                for k in range(entities_per_dim[d]):
+                    for j in range(num_dofs):
+
+                        name = "dofs[%d]" % i
+                        value = multiply(["%d" % num_dofs, format["entity index"](d, k)])
+                        value = add(["offset", value, "%d" % j])
+                        code += [name + " = " + value + ";"]
+                        i += 1
+
+                # Set offset corresponding to mesh entity:
+                code += [format["iadd"]("offset", multiply(["%d" % num_dofs, format["num entities"](d)]))]
+
+    return "\n".join(code)
+
+
+
 
 def _postprocess_code(code, options):
     "Postprocess generated code."

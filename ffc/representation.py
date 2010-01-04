@@ -17,15 +17,18 @@ __date__ = "2009-12-16"
 __copyright__ = "Copyright (C) 2009 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2009-12-22
+# Modified by Marie E. Rognes 2010
+# Last changed: 2010-01-04
 
 # UFL modules
 from ufl.finiteelement import FiniteElement as UFLFiniteElement
 
 # FFC modules
+from ffc.utils import compute_permutations
 from ffc.log import info, error, begin, end, debug_ir
-from ffc.fiatinterface import create_element
+from ffc.fiatinterface import create_element, entities_per_dim
 from ffc.mixedelement import MixedElement
+
 
 # FFC specialized representation modules
 #from ffc.quadrature import QuadratureRepresentation
@@ -44,7 +47,7 @@ def compute_ir(form, form_data, options):
     # Compute representation of elements, dofmaps, forms and integrals
     ir_elements  = [compute_element_ir(e) for e in form_data.unique_sub_elements]
     ir_dofmaps   = [compute_dofmap_ir(e) for e in form_data.unique_sub_elements]
-    ir_integrals = compute_integrals_ir(form, form_data)
+    ir_integrals = compute_integrals_ir(form, form_data, options)
     ir_form      = compute_form_ir(form, form_data)
 
     end()
@@ -87,9 +90,17 @@ def compute_dofmap_ir(ufl_element):
 
     # Create FIAT element
     element = create_element(ufl_element)
+    cell = ufl_element.cell()
 
-    # Precompute frequently used list: number of dofs per mesh entity:
+    # Precompute repeatedly used items
     num_dofs_per_entity = _num_dofs_per_entity(element)
+    facet_dofs = _generate_tabulate_facet_dofs(element, cell)
+
+    # Get list of subelements
+    if _num_sub_elements(ufl_element) == 0:
+        sub_elements = [element]
+    else:
+        sub_elements = element._elements
 
     # Compute data for each function
     ir = {}
@@ -98,16 +109,16 @@ def compute_dofmap_ir(ufl_element):
     ir["init_cell_finalize"] = None
     ir["init_mesh"] = num_dofs_per_entity
     ir["local_dimension"] = element.space_dimension()
-    ir["geometric_dimension"] = ufl_element.cell().geometric_dimension()
+    ir["geometric_dimension"] = cell.geometric_dimension()
     ir["global_dimension"] = None
     ir["max_local_dimension"] = element.space_dimension()
     ir["needs_mesh_entities"] = [d > 0 for d in num_dofs_per_entity]
     ir["num_entity_dofs"] = _num_dofs_per_dim(element)
-    ir["num_facet_dofs"] = _num_facet_dofs(element)
+    ir["num_facet_dofs"] = len(facet_dofs[0])
     ir["num_sub_dof_maps"] =  _num_sub_elements(ufl_element)
     ir["signature"] = "FFC dofmap for " + repr(ufl_element)
-    ir["tabulate_dofs"] = not_implemented
-    ir["tabulate_facet_dofs"] = not_implemented
+    ir["tabulate_dofs"] = _generate_tabulate_dofs(sub_elements, cell)
+    ir["tabulate_facet_dofs"] = facet_dofs
     ir["tabulate_entity_dofs"] = not_implemented
     ir["tabulate_coordinates"] = not_implemented
 
@@ -115,11 +126,10 @@ def compute_dofmap_ir(ufl_element):
 
     return ir
 
-def compute_integrals_ir(form, form_data):
+def compute_integrals_ir(form, form_data, options):
     "Compute and return intermediate represention of integrals."
 
     # FIXME: Handle multiple representations here
-
     ir = TensorRepresentation(form, form_data)
 
     return ir
@@ -149,7 +159,8 @@ def compute_form_ir(form, form_data):
 
     return ir
 
-#--- Utility functions ---
+#--- Utility functions -
+
 
 def _num_sub_elements(ufl_element):
     """
@@ -183,16 +194,92 @@ def _num_dofs_per_entity(element):
     entity_dofs = element.entity_dofs()
     return [len(entity_dofs[e][0]) for e in range(len(entity_dofs.keys()))]
 
-def _num_facet_dofs(element):
-    """
-    Compute the number of dofs on associated with each cell facet.
 
-    Example: Lagrange of degree 3 on triangle: 4
-    """
+def _generate_tabulate_dofs(sub_elements, cell):
+    ""
 
+    return [{"entites_per_dim": entities_per_dim[cell.geometric_dimension()],
+             "num_dofs_per_entity": _num_dofs_per_entity(e)}
+            for e in sub_elements]
+
+
+def _generate_tabulate_facet_dofs(element, cell):
+    ""
+
+    # Compute incidences
+    incidence = __compute_incidence(cell.geometric_dimension())
+
+    # Get topological dimension
+    D = max([pair[0][0] for pair in incidence])
+
+    # Get the number of facets
+    num_facets = cell.num_facets()
+
+    # Find out which entities are incident to each facet
+    incident = num_facets*[[]]
+    for facet in range(num_facets):
+        incident[facet] = [pair[1] for pair in incidence if incidence[pair] == True and pair[0] == (D - 1, facet)]
+
+    # Make list of dofs
+    facet_dofs = []
     entity_dofs = element.entity_dofs()
-    dim = len(entity_dofs.keys()) - 1
-    num_facet_entities = {1: (1, 0), 2: (2, 1, 0), 3: (3, 3, 1, 0)}[dim]
 
-    return sum(len(entity_dofs[entity][0])*num
-               for (entity, num) in enumerate(num_facet_entities))
+    for facet in range(num_facets):
+        facet_dofs += [[]]
+        for dim in entity_dofs:
+            for entity in entity_dofs[dim]:
+                if (dim, entity) in incident[facet]:
+                    facet_dofs[facet] += entity_dofs[dim][entity]
+
+    return facet_dofs
+
+
+# These two are copied from old ffc
+def __compute_incidence(D):
+    "Compute which entities are incident with which"
+
+    # Compute the incident vertices for each entity
+    sub_simplices = []
+    for dim in range(D + 1):
+        sub_simplices += [__compute_sub_simplices(D, dim)]
+
+    # Check which entities are incident, d0 --> d1 for d0 >= d1
+    incidence = {}
+    for d0 in range(0, D + 1):
+        for i0 in range(len(sub_simplices[d0])):
+            for d1 in range(d0 + 1):
+                for i1 in range(len(sub_simplices[d1])):
+                    if min([v in sub_simplices[d0][i0] for v in sub_simplices[d1][i1]]) == True:
+                        incidence[((d0, i0), (d1, i1))] = True
+                    else:
+                        incidence[((d0, i0), (d1, i1))] = False
+
+    return incidence
+
+def __compute_sub_simplices(D, d):
+    "Compute vertices for all sub simplices of dimension d (code taken from Exterior)"
+
+    # Number of vertices
+    num_vertices = D + 1
+
+    # Special cases: d = 0 and d = D
+    if d == 0:
+        return [[i] for i in range(num_vertices)]
+    elif d == D:
+        return [range(num_vertices)]
+
+    # Compute all permutations of num_vertices - (d + 1)
+    permutations = compute_permutations(num_vertices - d - 1, num_vertices)
+
+    # Iterate over sub simplices
+    sub_simplices = []
+    for i in range(len(permutations)):
+
+        # Pick tuple i among permutations (non-incident vertices)
+        remove = permutations[i]
+
+        # Remove vertices, keeping d + 1 vertices
+        vertices = [v for v in range(num_vertices) if not v in remove]
+        sub_simplices += [vertices]
+
+    return sub_simplices

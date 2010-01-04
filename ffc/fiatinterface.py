@@ -4,8 +4,8 @@ __copyright__ = "Copyright (C) 2009 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Garth N. Wells, 2009.
-# Modified by Marie Rognes, 2009.
-# Last changed: 2009-12-22
+# Modified by Marie Rognes, 2009-2010.
+# Last changed: 2010-01-04
 
 # UFL modules
 from ufl import FiniteElement as UFLFiniteElement
@@ -39,6 +39,11 @@ domain2dim = {"vertex": 0,
 family2class = {"Lagrange": Lagrange,
                 "Brezzi-Douglas-Marini": BrezziDouglasMarini,
                 "Discontinuous Lagrange": DiscontinuousLagrange}
+
+
+# Mapping from dimension to number of mesh sub-entities:
+entities_per_dim = {1: [2, 1], 2: [3, 3, 1], 3: [4, 6, 4, 1]}
+
 
 def create_element(ufl_element):
 
