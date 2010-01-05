@@ -79,7 +79,7 @@ def compute_element_ir(ufl_element):
     ir["evaluate_dofs"] = None
     ir["interpolate_vertex_values"] = None
     ir["num_sub_elements"] = ufl_element.num_sub_elements()
-    ir["create_sub_element"] = None
+    ir["create_sub_element"] = [element_map[(e, i)] for (i, e) in enumerate(ufl_element.sub_elements())]
 
     debug_ir(ir, "finite_element")
 
@@ -107,23 +107,23 @@ def compute_dofmap_ir(ufl_element):
 
     # Compute data for each function
     ir = {}
-    ir["dof_map* create_sub_dof_map"] = not_implemented
+    ir["signature"] = "FFC dofmap for " + repr(ufl_element)
+    ir["needs_mesh_entities"] = [d > 0 for d in num_dofs_per_entity]
+    ir["init_mesh"] = num_dofs_per_entity
     ir["init_cell"] = None
     ir["init_cell_finalize"] = None
-    ir["init_mesh"] = num_dofs_per_entity
-    ir["local_dimension"] = element.space_dimension()
-    ir["geometric_dimension"] = cell.geometric_dimension()
     ir["global_dimension"] = None
+    ir["local_dimension"] = element.space_dimension()
     ir["max_local_dimension"] = element.space_dimension()
-    ir["needs_mesh_entities"] = [d > 0 for d in num_dofs_per_entity]
-    ir["num_entity_dofs"] = num_dofs_per_entity
+    ir["geometric_dimension"] = cell.geometric_dimension()
     ir["num_facet_dofs"] = len(facet_dofs[0])
-    ir["num_sub_dof_maps"] = ufl_element.num_sub_elements()
-    ir["signature"] = "FFC dofmap for " + repr(ufl_element)
+    ir["num_entity_dofs"] = num_dofs_per_entity
     ir["tabulate_dofs"] = _tabulate_dofs_ir(sub_elements, cell)
     ir["tabulate_facet_dofs"] = facet_dofs
     ir["tabulate_entity_dofs"] = not_implemented
     ir["tabulate_coordinates"] = not_implemented
+    ir["num_sub_dof_maps"] = ufl_element.num_sub_elements()
+    ir["dof_map* create_sub_dof_map"] = not_implemented
 
     debug_ir(ir, "dofmap")
 
@@ -322,4 +322,3 @@ def _evaluate_basis_data(ufl_element, fiat_element):
       fiat_element.get_nodal_basis().get_expansion_set().get_num_members(data["embedded_degree"])
 
     return data
-
