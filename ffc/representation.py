@@ -40,15 +40,15 @@ not_implemented = None
 
 def compute_ir(form, form_data, options):
     """
-    Compute and return intermediate representation of form, including
-    all associated elements, dofmaps and integrals.
+    Compute intermediate representation of form, including all
+    associated elements, dofmaps and integrals.
     """
 
     begin("Compiler stage 2: Computing intermediate representation")
 
     # Compute representation of elements, dofmaps, forms and integrals
-    ir_elements  = [compute_element_ir(e) for e in form_data.unique_sub_elements]
-    ir_dofmaps   = [compute_dofmap_ir(e) for e in form_data.unique_sub_elements]
+    ir_elements  = [compute_element_ir(e, form_data) for e in form_data.unique_sub_elements]
+    ir_dofmaps   = [compute_dofmap_ir(e, form_data) for e in form_data.unique_sub_elements]
     ir_integrals = compute_integrals_ir(form, form_data, options)
     ir_form      = compute_form_ir(form, form_data)
 
@@ -56,8 +56,8 @@ def compute_ir(form, form_data, options):
 
     return ir_form, ir_elements, ir_dofmaps, ir_integrals
 
-def compute_element_ir(ufl_element):
-    "Compute and return intermediate representation of element."
+def compute_element_ir(ufl_element, form_data):
+    "Compute intermediate representation of element."
 
     info("Computing element representation")
 
@@ -71,7 +71,7 @@ def compute_element_ir(ufl_element):
     ir["space_dimension"] = element.space_dimension()
     ir["value_rank"] = len(ufl_element.value_shape())
     ir["value_dimension"] = ufl_element.value_shape()
-    ir["evaluate_basis"] = _evaluate_basis_data(ufl_element, element)
+    ir["evaluate_basis"] = _evaluate_basis_ir(ufl_element, element)
     ir["evaluate_basis_all"] = not_implemented #element.get_coeffs()
     ir["evaluate_basis_derivatives"] = element
     ir["evaluate_basis_derivatives_all"] = not_implemented #element.get_coeffs()
@@ -79,14 +79,14 @@ def compute_element_ir(ufl_element):
     ir["evaluate_dofs"] = None
     ir["interpolate_vertex_values"] = None
     ir["num_sub_elements"] = ufl_element.num_sub_elements()
-    ir["create_sub_element"] = [element_map[(e, i)] for (i, e) in enumerate(ufl_element.sub_elements())]
+    ir["create_sub_element"] = _create_sub_element_ir(ufl_element, form_data)
 
     debug_ir(ir, "finite_element")
 
     return ir
 
-def compute_dofmap_ir(ufl_element):
-    "Compute and return intermediate representation of dofmap."
+def compute_dofmap_ir(ufl_element, form_data):
+    "Compute intermediate representation of dofmap."
 
     info("Computing dofmap representation")
 
@@ -123,14 +123,14 @@ def compute_dofmap_ir(ufl_element):
     ir["tabulate_entity_dofs"] = not_implemented
     ir["tabulate_coordinates"] = not_implemented
     ir["num_sub_dof_maps"] = ufl_element.num_sub_elements()
-    ir["dof_map* create_sub_dof_map"] = not_implemented
+    ir["dof_map* create_sub_dof_map"] = _create_sub_element_ir(ufl_element, form_data)
 
     debug_ir(ir, "dofmap")
 
     return ir
 
 def compute_integrals_ir(form, form_data, options):
-    "Compute and return intermediate represention of integrals."
+    "Compute intermediate represention of integrals."
 
     # FIXME: Handle multiple representations here
     ir = TensorRepresentation(form, form_data)
@@ -138,7 +138,7 @@ def compute_integrals_ir(form, form_data, options):
     return ir
 
 def compute_form_ir(form, form_data):
-    "Compute and return intermediate representation of form."
+    "Compute intermediate representation of form."
 
     info("Computing form representation")
 
@@ -162,20 +162,41 @@ def compute_form_ir(form, form_data):
 
     return ir
 
-#--- Utility functions -
+#--- Computation of intermediate representation for non-trivial functions ---
 
-def _num_dofs_per_entity(element):
-    """
-    Compute list of integers representing the number of dofs
-    associated with a single mesh entity.
+def _evaluate_basis_ir(ufl_element, fiat_element):
+    "Compute intermediate representation for evaluate_basis."
 
-    Example: Lagrange of degree 3 on triangle: [1, 2, 1]
-    """
-    entity_dofs = element.entity_dofs()
-    return [len(entity_dofs[e][0]) for e in range(len(entity_dofs.keys()))]
+    # FIXME: KBO: No support for Mixed-, Vector-, TensorElement
+    if isinstance(ufl_element, UFLMixedElement):
+        return not_implemented
 
+
+    # TODO: KBO: Remove if never triggered.
+    ffc_assert(fiat_element.get_nodal_basis().get_embedded_degree() == \
+               ufl_element.degree(),\
+               "Degrees do not match: %s, %s" % (repr(fiat_element), repr(ufl_element)))
+
+    # FIXME: AL: ufl_element.num_sub_elements() + 1 is strange here!
+    # FIXME: AL: note changed meaning of num_sub_elements
+
+    # FIXME: KBO: Does not support mixed elements yet.
+    data = {
+          "num_sub_elements" : ufl_element.num_sub_elements() + 1,
+          "value_shape" : fiat_element.value_shape(),
+          "embedded_degree" : ufl_element.degree(),
+          "cell_domain" : ufl_element.cell().domain(),
+          "coeffs" : fiat_element.get_coeffs(),
+          "value_rank" : len(ufl_element.value_shape())
+          }
+
+    data["num_expansion_members"] = \
+      fiat_element.get_nodal_basis().get_expansion_set().get_num_members(data["embedded_degree"])
+
+    return data
 
 def _evaluate_dof_ir(element, cell):
+    "Compute intermediate representation of evaluate_dof."
 
     if element.value_shape() == ():
         value_dim = 1
@@ -202,17 +223,19 @@ def _evaluate_dof_ir(element, cell):
             "dofs": [L.pt_dict for L in element.dual_basis()],
             "offsets": offsets}
 
+def _create_sub_element_ir(ufl_element, form_data):
+    "Compute intermediate representation for create_sub_element."
+    return [form_data.element_map[(e, i)]
+            for (i, e) in enumerate(ufl_element.sub_elements())]
 
 def _tabulate_dofs_ir(sub_elements, cell):
-    ""
-
+    "Compute intermediate representation of tabulate_dofs."
     return [{"entites_per_dim": entities_per_dim[cell.geometric_dimension()],
              "num_dofs_per_entity": _num_dofs_per_entity(e)}
             for e in sub_elements]
 
-
 def _tabulate_facet_dofs_ir(element, cell):
-    ""
+    "Compute intermediate representation of tabulate_facet_dofs."
 
     # Compute incidences
     incidence = __compute_incidence(cell.geometric_dimension())
@@ -241,6 +264,17 @@ def _tabulate_facet_dofs_ir(element, cell):
 
     return facet_dofs
 
+#--- Utility functions ---
+
+def _num_dofs_per_entity(element):
+    """
+    Compute list of integers representing the number of dofs
+    associated with a single mesh entity.
+
+    Example: Lagrange of degree 3 on triangle: [1, 2, 1]
+    """
+    entity_dofs = element.entity_dofs()
+    return [len(entity_dofs[e][0]) for e in range(len(entity_dofs.keys()))]
 
 # These two are copied from old ffc
 def __compute_incidence(D):
@@ -291,34 +325,3 @@ def __compute_sub_simplices(D, d):
         sub_simplices += [vertices]
 
     return sub_simplices
-
-def _evaluate_basis_data(ufl_element, fiat_element):
-    "Helper function to extract relevant data for evaluate_basis* functions."
-
-    # FIXME: KBO: No support for Mixed-, Vector-, TensorElement
-    if isinstance(ufl_element, UFLMixedElement):
-        return not_implemented
-
-
-    # TODO: KBO: Remove if never triggered.
-    ffc_assert(fiat_element.get_nodal_basis().get_embedded_degree() == \
-               ufl_element.degree(),\
-               "Degrees do not match: %s, %s" % (repr(fiat_element), repr(ufl_element)))
-
-    # FIXME: AL: ufl_element.num_sub_elements() + 1 is strange here!
-    # FIXME: AL: note changed meaning of num_sub_elements
-
-    # FIXME: KBO: Does not support mixed elements yet.
-    data = {
-          "num_sub_elements" : ufl_element.num_sub_elements() + 1,
-          "value_shape" : fiat_element.value_shape(),
-          "embedded_degree" : ufl_element.degree(),
-          "cell_domain" : ufl_element.cell().domain(),
-          "coeffs" : fiat_element.get_coeffs(),
-          "value_rank" : len(ufl_element.value_shape())
-          }
-
-    data["num_expansion_members"] = \
-      fiat_element.get_nodal_basis().get_expansion_set().get_num_members(data["embedded_degree"])
-
-    return data

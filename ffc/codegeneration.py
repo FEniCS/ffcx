@@ -106,7 +106,6 @@ def generate_element_code(i, ir, prefix, options):
     return code
 
 def _value_dimension(ir):
-    print "ir: ", ir
     if ir == ():
     # FIXME: KBO: Use format instead of "1" and str(n)
         return format["return"]("1")
@@ -264,8 +263,6 @@ def _indent_code(code):
     "Indent code that should be indented."
     for key in code:
         if not key in ("classname", "members"):
-            print "key: ", key
-            print "code: ", code[key]
             code[key] = indent(code[key], 4)
 
 def _remove_code(code, options):
