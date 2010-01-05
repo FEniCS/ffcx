@@ -23,13 +23,12 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # UFL modules
 from ufl.finiteelement import FiniteElement as UFLFiniteElement
+from ufl.finiteelement import MixedElement as UFLMixedElement
 
 # FFC modules
 from ffc.utils import compute_permutations
 from ffc.log import info, error, begin, end, debug_ir, ffc_assert
 from ffc.fiatinterface import create_element, entities_per_dim
-from ffc.mixedelement import MixedElement
-
 
 # FFC specialized representation modules
 #from ffc.quadrature import QuadratureRepresentation
@@ -70,8 +69,7 @@ def compute_element_ir(ufl_element):
     ir["space_dimension"] = element.space_dimension()
     ir["value_rank"] = len(ufl_element.value_shape())
     ir["value_dimension"] = ufl_element.value_shape()
-#    ir["evaluate_basis"] = _evaluate_basis_data(ufl_element, element)
-    ir["evaluate_basis"] = not_implemented
+    ir["evaluate_basis"] = _evaluate_basis_data(ufl_element, element)
     ir["evaluate_basis_all"] = not_implemented #element.get_coeffs()
     ir["evaluate_basis_derivatives"] = element
     ir["evaluate_basis_derivatives_all"] = not_implemented #element.get_coeffs()
@@ -275,6 +273,11 @@ def __compute_sub_simplices(D, d):
 
 def _evaluate_basis_data(ufl_element, fiat_element):
     "Helper function to extract relevant data for evaluate_basis* functions."
+
+    # FIXME: KBO: No support for Mixed-, Vector-, TensorElement
+    if isinstance(ufl_element, UFLMixedElement):
+        return not_implemented
+
 
     # TODO: KBO: Remove if never triggered.
     ffc_assert(fiat_element.get_nodal_basis().get_embedded_degree() == \

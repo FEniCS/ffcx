@@ -101,8 +101,9 @@ def generate_element_code(ir, options):
 def _value_dimension(ir):
     print "ir: ", ir
     if ir == ():
+    # FIXME: KBO: Use format instead of "1" and str(n)
         return format["return"]("1")
-    return format["switch"]("i", [n for n in ir])
+    return format["switch"]("i", [format["return"](str(n)) for n in ir])
 
 def generate_dofmap_code(ir, options):
     "Generate code for dofmap from intermediate representation."

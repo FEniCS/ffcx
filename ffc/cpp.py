@@ -67,7 +67,7 @@ def _generate_switch(variable, cases, default = ""):
 
     # Special case: one case
     if len(cases) == 1:
-        return format["return"](cases[0])
+        return cases[0]
 
     # Create switch
     code = "switch ( %s )\n{\n" % variable
@@ -176,6 +176,9 @@ format_old = {
     "psitilde_bs": lambda i: "psitilde_bs_%d" %(i),
     "psitilde_cs": lambda i,j: "psitilde_cs_%d%d" %(i,j),
     "basisvalue": lambda i: "basisvalue%d" %(i),
+    "evaluate_basis aux index": lambda i: "idx%d" %(i),
+    "evaluate_basis aux factor": lambda i: "f%d" %(i),
+    "evaluate_basis aux value": lambda i: "n%d" %(i),
     "num derivatives": "num_derivatives",
     "reference derivatives": "derivatives",
     "derivative combinations": "combinations",

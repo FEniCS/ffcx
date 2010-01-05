@@ -13,11 +13,18 @@ import math
 import numpy
 
 # FFC modules
-from log import error, debug_code
-from cpp import remove_unused
-from codegeneratorsutils import IndentControl
-from codegeneratorsutils import inner_product, tabulate_matrix, tabulate_vector
-from quadrature.quadraturegenerator_utils import generate_loop
+from ffc.log import error, debug_code
+from ffc.cpp import remove_unused
+from ffc.codegeneratorsutils import IndentControl
+from ffc.codegeneratorsutils import inner_product, tabulate_matrix, tabulate_vector
+from ffc.quadrature.quadraturegenerator_utils import generate_loop
+from ffc.quadrature.symbolics import create_float
+from ffc.quadrature.symbolics import create_symbol
+from ffc.quadrature.symbolics import create_sum
+from ffc.quadrature.symbolics import create_product
+from ffc.quadrature.symbolics import create_fraction
+from ffc.quadrature.symbolics import set_format
+from ffc.quadrature.symbolics import CONST
 
 # Temporary import
 from cpp import format_old as format
@@ -47,6 +54,9 @@ def _evaluate_basis(data):
     Nedelec (broken?)
 
     Tensor valued elements!"""
+
+    set_format(format)
+    # FIXME: KBO: Remove when everyting is working
     if data is None:
         return ""
     code = []
@@ -595,7 +605,11 @@ def _compute_values(data, sum_value_dim, vector, Indent, format):
 # def idx(p,q):
 #    return (p+q)*(p+q+1)/2 + q
 def _idx(p, q):
-    return "((%s) + (%s))*((%s) + (%s) + 1) / 2 + (%s)" % (p, q, p, q, q)
+    f1 = create_float(1)
+    f2 = create_float(2)
+    idx = create_sum([create_fraction(create_product([create_sum([p, q]), create_sum([p, q, f1])]), f2),  q])
+#    return "((%s) + (%s))*((%s) + (%s) + 1) / 2 + (%s)" % (p, q, p, q, q)
+    return idx#.expand().reduce_ops()
 
 # FIAT_NEW code (helper variables)
 # def jrc( a , b , n ):
@@ -608,9 +622,9 @@ def _idx(p, q):
 #    return an,bn,cn
 def _jrc(a, b, n):
 
-    an = "( ( 2*(%s)+1+(%s)+(%s))*(2*(%s)+2+(%s)+(%s)) ) / ( 2*((%s)+1)*((%s)+1+(%s)+(%s)))" % (n,a,b,n,a,b)
-    bn = "( ((%s)*(%s)-(%s)*(%s)) * (2*(%s)+1+(%s)+(%s))  ) / ( 2*((%s)+1)*(2*(%s)+(%s)+(%s))*((%s)+1+(%s)+(%s)) )" % (a,a,b,b,n,a,b)
-    cn = "( ((%s)+(%s))*((%s)+(%s))*(2*(%s)+2+(%s)+(%s))  ) /  ( ((%s)+1)*((%s)+1+(%s)+(%s))*(2*(%s)+(%s)+(%s)) )"  % (n,a,n,b,n,a,b)
+    an = "( ( 2*(%s)+1+(%s)+(%s))*(2*(%s)+2+(%s)+(%s)) ) / ( 2*((%s)+1)*((%s)+1+(%s)+(%s)))" % (n,a,b,n,a,b,n,n,a,b)
+    bn = "( ((%s)*(%s)-(%s)*(%s)) * (2*(%s)+1+(%s)+(%s))  ) / ( 2*((%s)+1)*(2*(%s)+(%s)+(%s))*((%s)+1+(%s)+(%s)) )" % (a,a,b,b,n,a,b,n,n,a,b,n,a,b)
+    cn = "( ((%s)+(%s))*((%s)+(%s))*(2*(%s)+2+(%s)+(%s))  ) /  ( ((%s)+1)*((%s)+1+(%s)+(%s))*(2*(%s)+(%s)+(%s)) )"  % (n,a,n,b,n,a,b,n,n,a,b,n,a,b)
 
     return (an, bn, cn)
 
@@ -645,6 +659,16 @@ def _compute_basisvalues(data, Indent, format):
     format_free_indices      = format["free secondary indices"]
     format_r = format_free_indices[0]
     format_s = format_free_indices[1]
+    idx0, idx1, idx2 = [format["evaluate_basis aux index"](i) for i in range(1,4)]
+    f1, f2, f3 = [format["evaluate_basis aux factor"](i) for i in range(1,4)]
+    an, bn, cn = [format["evaluate_basis aux value"](i) for i in range(3)]
+
+    # Create helper symbols
+    symbol_r = create_symbol(format_r, CONST)
+    symbol_s = create_symbol(format_s, CONST)
+    float_0 = create_float(0)
+    float_1 = create_float(1)
+    float_m1 = create_float(-1)
 
     code += [Indent.indent(format["comment"]("Compute basisvalues"))]
 
@@ -656,6 +680,7 @@ def _compute_basisvalues(data, Indent, format):
     num_mem = data["num_expansion_members"]
     name = format_float_decl + format_basis_table + format_array_access(num_mem)
     value = tabulate_vector([0.0]*num_mem, format)
+    code += [Indent.indent(format["comment"]("Array of basisvalues"))]
     code += [(name, value)]
 
     # Get the element cell domain
@@ -695,16 +720,7 @@ def _compute_basisvalues(data, Indent, format):
 
         # Only continue if the embedded degree is larger than zero
         if embedded_degree > 0:
-            # Declare helper variables
-            idx0 = "idx0"
-            idx1 = "idx1"
-            idx2 = "idx2"
-            an = "an"
-            bn = "bn"
-            cn = "cn"
-            f1 = "f1"
-            f2 = "f2"
-            f3 = "f3"
+            code += [Indent.indent(format["comment"]("Declare helper variables"))]
             code += [(format_uint + idx0, 0)]
             code += [(format_uint + idx1, 0)]
             code += [(format_uint + idx2, 0)]
@@ -732,9 +748,12 @@ def _compute_basisvalues(data, Indent, format):
                 #        - p/(1.0+p) * f3 *results[idx(p-1,0),:]
                 lines = []
                 loop_vars = [(format_r, 1, embedded_degree)]
-                lines.append((idx0, _idx("%s + 1" % format_r, 0)))
-                lines.append((idx1, _idx(format_r, 0)))
-                lines.append((idx2, _idx("%s - 1" % format_r, 0)))
+#                lines.append((idx0, _idx("%s + 1" % format_r, 0)))
+#                lines.append((idx1, _idx(format_r, 0)))
+#                lines.append((idx2, _idx("%s - 1" % format_r, 0)))
+                lines.append((idx0, _idx(create_sum([symbol_r, float_1]), float_0)))
+                lines.append((idx1, _idx(symbol_r, float_0)))
+                lines.append((idx2, _idx(create_sum([symbol_r, float_m1]), float_0)))
                 lines.append((an, "(2.0*%s+1)/(1.0+%s)" % (format_r, format_r)))
                 lines.append((bn, "%s/(%s + 1.0)" % (format_r, format_r)))
                 fac0 = format_multiply([an, f1, format_basisvalue(idx1)])
@@ -754,9 +773,12 @@ def _compute_basisvalues(data, Indent, format):
                 lines = []
                 loop_vars = [(format_r, 0, embedded_degree - 1),\
                              (format_s, 1, format_subtract([format_float(embedded_degree), format_r]))]
-                lines.append((idx0, _idx(format_r, format_add([format_s, format_float(1.0)]))))
-                lines.append((idx1, _idx(format_r, format_s)))
-                lines.append((idx2, _idx(format_r, format_subtract([format_s, format_float(1.0)]))))
+#                lines.append((idx0, _idx(format_r, format_add([format_s, format_float(1.0)]))))
+#                lines.append((idx1, _idx(format_r, format_s)))
+#                lines.append((idx2, _idx(format_r, format_subtract([format_s, format_float(1.0)]))))
+                lines.append((idx0, _idx(symbol_r, create_sum([symbol_s, float_1]))))
+                lines.append((idx1, _idx(symbol_r, symbol_s)))
+                lines.append((idx2, _idx(symbol_r, create_sum([symbol_s, float_m1]))))
                 jrc = _jrc(format_add([format_multiply([format_float(2.0), format_r]), format_float(1.0)]),\
                            format_float(0), format_s)
                 lines.append((an, jrc[0]))
@@ -775,8 +797,10 @@ def _compute_basisvalues(data, Indent, format):
             #        * results[idx(p,0)]
             lines = []
             loop_vars = [(format_r, 0, embedded_degree)]
-            lines.append((idx0, _idx(format_r, 1)))
-            lines.append((idx1, _idx(format_r, 0)))
+#            lines.append((idx0, _idx(format_r, 1)))
+#            lines.append((idx1, _idx(format_r, 0)))
+            lines.append((idx0, _idx(symbol_r, float_1)))
+            lines.append((idx1, _idx(symbol_r, float_0)))
             fac0 = format_multiply([format_float(2.0), format_r])
             fac1 = format_multiply([format_grouping(format_add([format_float(3.0), fac0])), format_y])
             fac2 = format_grouping(format_add([format_float(1.0), fac0, fac1]))
@@ -791,7 +815,8 @@ def _compute_basisvalues(data, Indent, format):
             lines = []
             loop_vars = [(format_r, 0, embedded_degree + 1), \
                          (format_s, 0, format_subtract([format_float(embedded_degree + 1), format_r]))]
-            lines.append((idx0, _idx(format_r, format_s)))
+#            lines.append((idx0, _idx(format_r, format_s)))
+            lines.append((idx0, _idx(symbol_r, symbol_s)))
             fac0 = format_grouping(format_add([format_r, format_float(0.5)]))
             fac1 = format_grouping(format_add([format_r, format_s, format_float(1.0)]))
             fac3 = format_multiply([format_basisvalue(idx0), format_sqrt(format_multiply([fac0, fac1]))])
