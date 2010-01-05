@@ -75,10 +75,10 @@ def compute_element_ir(ufl_element):
     ir["evaluate_basis_all"] = not_implemented #element.get_coeffs()
     ir["evaluate_basis_derivatives"] = element
     ir["evaluate_basis_derivatives_all"] = not_implemented #element.get_coeffs()
-    ir["evaluate_dof"] = [d.pt_dict for d in element.dual_basis()]
+    ir["evaluate_dof"] = _evaluate_dof_ir(element, ufl_element.cell())
     ir["evaluate_dofs"] = None
     ir["interpolate_vertex_values"] = None
-    ir["num_sub_elements"] = _num_sub_elements(ufl_element)
+    ir["num_sub_elements"] = ufl_element.num_sub_elements()
     ir["create_sub_element"] = None
 
     debug_ir(ir, "finite_element")
@@ -96,10 +96,11 @@ def compute_dofmap_ir(ufl_element):
 
     # Precompute repeatedly used items
     num_dofs_per_entity = _num_dofs_per_entity(element)
-    facet_dofs = _generate_tabulate_facet_dofs(element, cell)
+    facet_dofs = _tabulate_facet_dofs_ir(element, cell)
 
     # Get list of subelements
-    if _num_sub_elements(ufl_element) == 1:
+    # FIXME: This is strange!
+    if ufl_element.num_sub_elements() == 0:
         sub_elements = [element]
     else:
         sub_elements = element._elements
@@ -117,9 +118,9 @@ def compute_dofmap_ir(ufl_element):
     ir["needs_mesh_entities"] = [d > 0 for d in num_dofs_per_entity]
     ir["num_entity_dofs"] = num_dofs_per_entity
     ir["num_facet_dofs"] = len(facet_dofs[0])
-    ir["num_sub_dof_maps"] =  _num_sub_elements(ufl_element)
+    ir["num_sub_dof_maps"] = ufl_element.num_sub_elements()
     ir["signature"] = "FFC dofmap for " + repr(ufl_element)
-    ir["tabulate_dofs"] = _generate_tabulate_dofs(sub_elements, cell)
+    ir["tabulate_dofs"] = _tabulate_dofs_ir(sub_elements, cell)
     ir["tabulate_facet_dofs"] = facet_dofs
     ir["tabulate_entity_dofs"] = not_implemented
     ir["tabulate_coordinates"] = not_implemented
@@ -163,16 +164,6 @@ def compute_form_ir(form, form_data):
 
 #--- Utility functions -
 
-def _num_sub_elements(ufl_element):
-    """
-    Return the number of sub_elements for a ufl_element. Would work
-    better if an UFL element had a member num_sub_elements()
-    """
-    if isinstance(ufl_element, UFLFiniteElement):
-        return 1
-    else:
-        return len(ufl_element.sub_elements())
-
 def _num_dofs_per_entity(element):
     """
     Compute list of integers representing the number of dofs
@@ -184,7 +175,35 @@ def _num_dofs_per_entity(element):
     return [len(entity_dofs[e][0]) for e in range(len(entity_dofs.keys()))]
 
 
-def _generate_tabulate_dofs(sub_elements, cell):
+def _evaluate_dof_ir(element, cell):
+
+    if element.value_shape() == ():
+        value_dim = 1
+    else:
+        value_dim = element.value_shape()[0]
+
+    # Get list of subelements
+    if isinstance(element, MixedElement):
+        sub_elements = element._elements
+    else:
+        sub_elements = [element]
+
+    # Generate offsets
+    offsets = []
+    a = 0
+    for i in range(len(sub_elements)):
+        space_dim = sub_elements[i].space_dimension()
+        offsets += [a]*space_dim
+        a += space_dim
+
+    return {"mappings": list(element.mapping()),
+            "value_dim": value_dim,
+            "cell_dimension": cell.geometric_dimension(),
+            "dofs": [L.pt_dict for L in element.dual_basis()],
+            "offsets": offsets}
+
+
+def _tabulate_dofs_ir(sub_elements, cell):
     ""
 
     return [{"entites_per_dim": entities_per_dim[cell.geometric_dimension()],
@@ -192,7 +211,7 @@ def _generate_tabulate_dofs(sub_elements, cell):
             for e in sub_elements]
 
 
-def _generate_tabulate_facet_dofs(element, cell):
+def _tabulate_facet_dofs_ir(element, cell):
     ""
 
     # Compute incidences
@@ -285,9 +304,13 @@ def _evaluate_basis_data(ufl_element, fiat_element):
     ffc_assert(fiat_element.get_nodal_basis().get_embedded_degree() == \
                ufl_element.degree(),\
                "Degrees do not match: %s, %s" % (repr(fiat_element), repr(ufl_element)))
+
+    # FIXME: AL: ufl_element.num_sub_elements() + 1 is strange here!
+    # FIXME: AL: note changed meaning of num_sub_elements
+
     # FIXME: KBO: Does not support mixed elements yet.
     data = {
-          "num_sub_elements" : _num_sub_elements(ufl_element),
+          "num_sub_elements" : ufl_element.num_sub_elements() + 1,
           "value_shape" : fiat_element.value_shape(),
           "embedded_degree" : ufl_element.degree(),
           "cell_domain" : ufl_element.cell().domain(),

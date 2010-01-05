@@ -6,7 +6,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Garth N. Wells 2006-2009
 # Modified by Marie E. Rognes (meg@math.uio.no) 2007
 # Modified by Kristian B. Oelgaard 2009
-# Last changed: 2009-12-18
+# Last changed: 2010-01-05
 
 # Python modules.
 import numpy
@@ -59,17 +59,28 @@ class MixedElement:
     def __init__(self, ufl_element):
         self._elements = extract_elements(ufl_element)
         self._entity_dofs = combine_entity_dofs(self._elements)
+        self._value_shape = ufl_element.value_shape()
 
     def space_dimension(self):
         return sum(e.space_dimension() for e in self._elements)
 
     def value_shape(self):
-        # Remove me? (Use ufl value_shape if possible)
-        return None
+        return self._value_shape
 
     def entity_dofs(self):
         return self._entity_dofs
 
+    def mapping(self):
+        mappings = []
+        for e in self._elements:
+            mappings += [e.mapping()]*e.space_dimension()
+        return mappings
+
+    def dual_basis(self):
+        dofs = []
+        for e in self._elements:
+            dofs += [L.pt_dict for L in e.dual_basis()]
+        return dofs
 
 # class MixedElement(FiniteElementBase):
 #     """A MixedElement represents a finite element defined as a tensor
