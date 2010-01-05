@@ -136,7 +136,7 @@ def compile_form(forms, prefix="Form", options=FFC_OPTIONS.copy()):
         oir = optimize_ir(ir, options)
 
         # Stage 4: code generation
-        code = generate_code(oir, options)
+        code = generate_code(oir, prefix, options)
 
         # Store data
         form_and_data.append((preprocessed_form, form_data))
