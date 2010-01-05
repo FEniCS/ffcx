@@ -7,7 +7,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian B. Oelgaard 2009
 # Modified by Marie E. Rognes 2010
-# Last changed: 2010-01-04
+# Last changed: 2010-01-05
 
 # Python modules.
 import re
@@ -80,7 +80,7 @@ def _generate_switch(variable, cases, default = ""):
         return cases[0]
 
     # Create switch
-    code = "switch ( %s )\n{\n" % variable
+    code = "switch (%s)\n{\n" % variable
     for i in range(len(cases)):
         code += "case %d:\n%s\n  break;\n" % (i, indent(cases[i], 2))
     code += "}"
