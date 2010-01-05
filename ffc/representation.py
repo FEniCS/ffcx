@@ -212,10 +212,13 @@ def _evaluate_dof(element, cell):
     # Generate offsets
     offsets = []
     a = 0
-    for i in range(len(sub_elements)):
-        space_dim = sub_elements[i].space_dimension()
-        offsets += [a]*space_dim
-        a += space_dim
+    for e in sub_elements:
+        if e.value_shape() == ():
+            sub_value_dim = 1
+        else:
+            sub_value_dim = e.value_shape()[0]
+        offsets += [a]*e.space_dimension()
+        a += sub_value_dim
 
     return {"mappings": list(element.mapping()),
             "value_dim": value_dim,
