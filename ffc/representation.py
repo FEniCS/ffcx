@@ -123,7 +123,7 @@ def compute_dofmap_ir(ufl_element, form_data):
     ir["tabulate_entity_dofs"] = not_implemented
     ir["tabulate_coordinates"] = not_implemented
     ir["num_sub_dof_maps"] = ufl_element.num_sub_elements()
-    ir["dof_map* create_sub_dof_map"] = _create_sub_element(ufl_element, form_data)
+    ir["create_sub_dof_map"] = _create_sub_element(ufl_element, form_data)
 
     debug_ir(ir, "dofmap")
 

@@ -135,7 +135,7 @@ def generate_dofmap_code(i, ir, prefix, options):
     code["tabulate_entity_dofs"] = "// Marie doesn't know what this function should do."
     code["tabulate_coordinates"] = "// Marie doesn't believe in this function."
     code["num_sub_dof_maps"] = ret(ir["num_sub_dof_maps"])
-    code["create_sub_dof_map"] = not_implemented
+    code["create_sub_dof_map"] = _create_sub_dof_map(ir["create_sub_dof_map"], prefix)
 
     # Postprocess code
     _postprocess_code(code, options)
@@ -263,6 +263,14 @@ def _tabulate_dofs(ir):
                 code += [format["iadd"]("offset", multiply(["%d" % num_dofs, format["num entities"](d)]))]
 
     return "\n".join(code)
+
+def _create_sub_dof_map(ir, prefix):
+    "Generate code for create_sub_dof_map."
+    class_names = ["%s_dof_map_%d" % (prefix, i) for i in ir]
+    cases = [format["return"]("new " + name) for name in class_names]
+    return format["switch"]("i", cases)
+
+#--- Utility functioins ---
 
 def _postprocess_code(code, options):
     "Postprocess generated code."
