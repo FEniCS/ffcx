@@ -192,18 +192,25 @@ def generate_form_code(ir, prefix, options):
 #--- Code generation for non-trivial functions ---
 
 def _value_dimension(ir):
+    "Generate code for value_dimension."
     if ir == ():
     # FIXME: KBO: Use format instead of "1" and str(n)
         return format["return"]("1")
     return format["switch"]("i", [format["return"](str(n)) for n in ir])
 
-def _needs_mesh_entities(num_dofs_per_entity):
+def _create_sub_element(ir):
+    "Generate code for create_sub_element."
+
+
+def _needs_mesh_entities(ir):
     "Generate code for needs_mesh_entities."
+    num_dofs_per_entity = ir
     return format["switch"]("d", [format["return"](format["bool"](c))
                                   for c in num_dofs_per_entity])
 
-def _init_mesh(num_dofs_per_entity):
+def _init_mesh(ir):
     "Generate code for init_mesh."
+    num_dofs_per_entity = ir
     terms = [format["multiply"](["%d" % num, "m.num_entities[%d]" % dim])
              for (dim, num) in enumerate(num_dofs_per_entity)]
     dimension = format["add"](terms)
@@ -211,12 +218,11 @@ def _init_mesh(num_dofs_per_entity):
 
 def _tabulate_facet_dofs(tabulate_facet_dofs_ir):
     "Generate code for tabulate_facet_dofs."
-
     return "\n".join([format["switch"]("facet", ["\n".join(["dofs[%d] = %d;" % (i, dof)
-                                                            for (i, dof) in enumerate(tabulate_facet_dofs_ir[facet])])
-                                                 for facet in range(len(tabulate_facet_dofs_ir))])])
+                                                            for (i, dof) in enumerate(ir[facet])])
+                                                 for facet in range(len(ir))])])
 
-def _tabulate_dofs(tabulate_dofs_ir):
+def _tabulate_dofs(ir):
     "Generate code for for tabulate_dofs."
 
     # Note:  Not quite C++ independent, and not optimized.
@@ -232,7 +238,7 @@ def _tabulate_dofs(tabulate_dofs_ir):
     i = 0
 
     # Generate code for each element
-    for element_ir in tabulate_dofs_ir:
+    for element_ir in ir:
 
         # Representation contains number of dofs per mesh entity and
         # number of mesh entities per geometric dimension
