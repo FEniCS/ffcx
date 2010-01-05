@@ -11,7 +11,7 @@ __date__ = "2009-12-16"
 __copyright__ = "Copyright (C) 2009 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-04
+# Last changed: 2010-01-05
 
 # FFC modules
 from ffc.log import begin, end, debug_code
@@ -25,7 +25,7 @@ from ffc.evaluatedof import _evaluate_dof, _evaluate_dofs
 #from ffc.quadrature import generate_quadrature_integrals
 from ffc.tensor import generate_tensor_integrals
 
-def generate_code(ir, options):
+def generate_code(ir, prefix, options):
     "Generate code from intermediate representation."
 
     begin("Compiler stage 4: Generating code")
@@ -33,11 +33,19 @@ def generate_code(ir, options):
     # Extract representations
     ir_form, ir_elements, ir_dofmaps, ir_integrals = ir
 
-    # Generate code for elements, dofmaps, forms and integrals
-    code_elements  = [generate_element_code(ir, options) for ir in ir_elements]
-    code_dofmaps   = [generate_dofmap_code(ir, options) for ir in ir_dofmaps]
-    code_integrals = generate_integrals_code(ir_integrals, options)
-    code_form      = generate_form_code(ir_form, options)
+    # Generate code for elements
+    code_elements = [generate_element_code(i, ir, prefix, options)
+                     for (i, ir) in enumerate(ir_elements)]
+
+    # Geneate code for dofmaps
+    code_dofmaps = [generate_dofmap_code(i, ir, prefix, options)
+                    for (i, ir) in enumerate(ir_dofmaps)]
+
+    # Generate code for integrals
+    code_integrals = generate_integrals_code(ir_integrals, prefix, options)
+
+    # Generate code for form
+    code_form = generate_form_code(ir_form, prefix, options)
 
     end()
 
@@ -63,7 +71,7 @@ def generate_code(ir, options):
     end()
     return code
 
-def generate_element_code(ir, options):
+def generate_element_code(i, ir, prefix, options):
     "Generate code for finite element from intermediate representation."
 
     # Prefetch formatting to speedup code generation
@@ -71,7 +79,7 @@ def generate_element_code(ir, options):
 
     # Generate code
     code = {}
-    code["classname"] = "FooFiniteElement"
+    code["classname"] = prefix.lower() + "_finite_element_" + str(i)
     code["members"] = ""
     code["constructor"] = ""
     code["destructor"] = ""
@@ -97,13 +105,7 @@ def generate_element_code(ir, options):
 
     return code
 
-def _value_dimension(ir):
-    if ir == ():
-    # FIXME: KBO: Use format instead of "1" and str(n)
-        return format["return"]("1")
-    return format["switch"]("i", [format["return"](str(n)) for n in ir])
-
-def generate_dofmap_code(ir, options):
+def generate_dofmap_code(i, ir, prefix, options):
     "Generate code for dofmap from intermediate representation."
 
     not_implemented = "// NotImplementedYet"
@@ -113,7 +115,7 @@ def generate_dofmap_code(ir, options):
 
     # Generate code
     code = {}
-    code["classname"] = "FooDofMap"
+    code["classname"] = prefix.lower() + "_dof_map_" + str(i)
     code["members"] = ""
     code["constructor"] = ""
     code["destructor"] = ""
@@ -142,7 +144,7 @@ def generate_dofmap_code(ir, options):
 
     return code
 
-def generate_integrals_code(ir, options):
+def generate_integrals_code(ir, prefix, options):
     "Generate code for integrals from intermediate representation."
 
     # FIXME: Handle multiple representations here
@@ -156,7 +158,7 @@ def generate_integrals_code(ir, options):
 
     return code
 
-def generate_form_code(ir, options):
+def generate_form_code(ir, prefix, options):
     "Generate code for form from intermediate representation."
 
     # Prefetch formatting to speedup code generation
@@ -164,7 +166,7 @@ def generate_form_code(ir, options):
 
     # Generate code
     code = {}
-    code["classname"] = "FooForm"
+    code["classname"] = prefix.lower() + "_form"
     code["members"] = ""
     code["constructor"] = ""
     code["destructor"] = ""
@@ -186,6 +188,14 @@ def generate_form_code(ir, options):
     debug_code(code, "form")
 
     return code
+
+#--- Code generation for non-trivial functions ---
+
+def _value_dimension(ir):
+    if ir == ():
+    # FIXME: KBO: Use format instead of "1" and str(n)
+        return format["return"]("1")
+    return format["switch"]("i", [format["return"](str(n)) for n in ir])
 
 def _needs_mesh_entities(num_dofs_per_entity):
     "Generate code for needs_mesh_entities."
