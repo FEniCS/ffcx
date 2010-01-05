@@ -1,12 +1,12 @@
 """Code generation for evaluation of finite element basis values. This module generates
-code which is more or less a C++ representation of FIAT code."""
+code which is more or less a C++ representation of the code found in FIAT_NEW."""
 
 __author__ = "Kristian B. Oelgaard (k.b.oelgaard@tudelft.nl)"
 __date__ = "2009-12-14"
-__copyright__ = "Copyright (C) 2009 Kristian B. Oelgaard"
+__copyright__ = "Copyright (C) 2009-2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2009-12-22
+# Last changed: 2010-01-05
 
 # Python modules
 import math
@@ -341,8 +341,6 @@ def _compute_values(data, sum_value_dim, vector, Indent, format):
     format_matrix_access     = format["matrix access"]
 #    format_add              = format["add"]
 
-    print format
-
     format_multiply         = format["multiply"]
     format_coefficients     = format["coefficients table"]
     format_basisvalues      = format["basisvalues table"]
@@ -608,23 +606,39 @@ def _idx(p, q):
     f1 = create_float(1)
     f2 = create_float(2)
     idx = create_sum([create_fraction(create_product([create_sum([p, q]), create_sum([p, q, f1])]), f2),  q])
-#    return "((%s) + (%s))*((%s) + (%s) + 1) / 2 + (%s)" % (p, q, p, q, q)
-    return idx#.expand().reduce_ops()
+    return idx
 
 # FIAT_NEW code (helper variables)
 # def jrc( a , b , n ):
 #    an = float( ( 2*n+1+a+b)*(2*n+2+a+b)) \
 #        / float( 2*(n+1)*(n+1+a+b))
+
 #    bn = float( (a*a-b*b) * (2*n+1+a+b) ) \
 #        / float( 2*(n+1)*(2*n+a+b)*(n+1+a+b) )
+
 #    cn = float( (n+a)*(n+b)*(2*n+2+a+b)  ) \
 #        / float( (n+1)*(n+1+a+b)*(2*n+a+b) )
 #    return an,bn,cn
 def _jrc(a, b, n):
+#    an = "( ( 2*(%s)+1+(%s)+(%s))*(2*(%s)+2+(%s)+(%s)) ) / ( 2*((%s)+1)*((%s)+1+(%s)+(%s)))" % (n,a,b,n,a,b,n,n,a,b)
+#    bn = "( ((%s)*(%s)-(%s)*(%s)) * (2*(%s)+1+(%s)+(%s))  ) / ( 2*((%s)+1)*(2*(%s)+(%s)+(%s))*((%s)+1+(%s)+(%s)) )" % (a,a,b,b,n,a,b,n,n,a,b,n,a,b)
+#    cn = "( ((%s)+(%s))*((%s)+(%s))*(2*(%s)+2+(%s)+(%s))  ) /  ( ((%s)+1)*((%s)+1+(%s)+(%s))*(2*(%s)+(%s)+(%s)) )"  % (n,a,n,b,n,a,b,n,n,a,b,n,a,b)
 
-    an = "( ( 2*(%s)+1+(%s)+(%s))*(2*(%s)+2+(%s)+(%s)) ) / ( 2*((%s)+1)*((%s)+1+(%s)+(%s)))" % (n,a,b,n,a,b,n,n,a,b)
-    bn = "( ((%s)*(%s)-(%s)*(%s)) * (2*(%s)+1+(%s)+(%s))  ) / ( 2*((%s)+1)*(2*(%s)+(%s)+(%s))*((%s)+1+(%s)+(%s)) )" % (a,a,b,b,n,a,b,n,n,a,b,n,a,b)
-    cn = "( ((%s)+(%s))*((%s)+(%s))*(2*(%s)+2+(%s)+(%s))  ) /  ( ((%s)+1)*((%s)+1+(%s)+(%s))*(2*(%s)+(%s)+(%s)) )"  % (n,a,n,b,n,a,b,n,n,a,b,n,a,b)
+    f1 = create_float(1)
+    f2 = create_float(2)
+    fm1 = create_float(-1)
+
+    an_num   = create_product([ create_sum([f2*n, f1, a, b]), create_sum([f2*n, f2, a, b]) ])
+    an_denom = create_product([ f2, create_sum([n, f1]), create_sum([n, f1, a, b]) ])
+    an = create_fraction(an_num, an_denom)
+
+    bn_num   = create_product([ create_sum([a*a, fm1*b*b]), create_sum([f2*n, f1, a, b]) ])
+    bn_denom = create_product([ f2, create_sum([n, f1]), create_sum([f2*n, a, b]), create_sum([n, f1, a, b])])
+    bn = create_fraction(bn_num, bn_denom)
+
+    cn_num   = create_product([ create_sum([n, a]), create_sum([n, b]), create_sum([f2*n, f2, a, b]) ])
+    cn_denom = create_product([ create_sum([n, f1]), create_sum([n, f1, a, b]), create_sum([f2*n, a, b]) ])
+    cn = create_fraction(cn_num, cn_denom)
 
     return (an, bn, cn)
 
@@ -647,8 +661,9 @@ def _compute_basisvalues(data, Indent, format):
 #    format_psitilde_bs      = format["psitilde_bs"]
 #    format_psitilde_cs      = format["psitilde_cs"]
 #    format_scalings         = format["scalings"]
+    format_x                = format["x coordinate"]
     format_y                = format["y coordinate"]
-#    format_z                = format["z coordinate"]
+    format_z                = format["z coordinate"]
 #    format_const_float      = format["const float declaration"]
     format_float_decl      = format["float declaration"]
     format_basis_table       = format["basisvalues table"]
@@ -659,15 +674,22 @@ def _compute_basisvalues(data, Indent, format):
     format_free_indices      = format["free secondary indices"]
     format_r = format_free_indices[0]
     format_s = format_free_indices[1]
+
     idx0, idx1, idx2 = [format["evaluate_basis aux index"](i) for i in range(1,4)]
-    f1, f2, f3 = [format["evaluate_basis aux factor"](i) for i in range(1,4)]
-    an, bn, cn = [format["evaluate_basis aux value"](i) for i in range(3)]
+    f1, f2, f3 = [create_symbol(format["evaluate_basis aux factor"](i), CONST) for i in range(1,4)]
+    an, bn, cn = [create_symbol(format["evaluate_basis aux value"](i), CONST) for i in range(3)]
 
     # Create helper symbols
     symbol_r = create_symbol(format_r, CONST)
     symbol_s = create_symbol(format_s, CONST)
+    symbol_x = create_symbol(format_x, CONST)
+    symbol_y = create_symbol(format_y, CONST)
+    symbol_z = create_symbol(format_z, CONST)
     float_0 = create_float(0)
     float_1 = create_float(1)
+    float_2 = create_float(2)
+    float_3 = create_float(3)
+    float_0_5 = create_float(0.5)
     float_m1 = create_float(-1)
 
     code += [Indent.indent(format["comment"]("Compute basisvalues"))]
@@ -724,14 +746,19 @@ def _compute_basisvalues(data, Indent, format):
             code += [(format_uint + idx0, 0)]
             code += [(format_uint + idx1, 0)]
             code += [(format_uint + idx2, 0)]
-            code += [(format_float_decl + an, format_float(0))]
-            code += [(format_float_decl + bn, format_float(0))]
-            code += [(format_float_decl + cn, format_float(0))]
+            code += [(format_float_decl + str(an), format_float(0))]
+            code += [(format_float_decl + str(bn), format_float(0))]
+            code += [(format_float_decl + str(cn), format_float(0))]
 
-            # FIXME: KBO: Use format to compute
-            code += [(format_float_decl + f1, "(1.0+2*x+y)/2.0")]
-            code += [(format_float_decl + f2, "(1.0 - y) / 2.0")]
-            code += [(format_float_decl + f3, "f2*f2")]
+            # FIAT_NEW code
+            # f1 = (1.0+2*x+y)/2.0
+            # f2 = (1.0 - y) / 2.0
+            # f3 = f2**2
+            fac1 = create_fraction(create_sum([float_1, float_2*symbol_x, symbol_y]), float_2)
+            fac2 = create_fraction(create_sum([float_1, float_m1*symbol_y]), float_2)
+            code += [(format_float_decl + str(f1), fac1)]
+            code += [(format_float_decl + str(f2), fac2)]
+            code += [(format_float_decl + str(f3), f2*f2)]
 
             # The initial value of basisfunction 1 is equal to f1
             # FIAT_NEW code
@@ -746,21 +773,23 @@ def _compute_basisvalues(data, Indent, format):
                 #    b = p / (p+1.0)
                 #    results[idx(p+1,0)] = a * f1 * results[idx(p,0),:] \
                 #        - p/(1.0+p) * f3 *results[idx(p-1,0),:]
+                # FIXME: KBO: Is there an error in FIAT? why is b not used?
+
                 lines = []
                 loop_vars = [(format_r, 1, embedded_degree)]
-#                lines.append((idx0, _idx("%s + 1" % format_r, 0)))
-#                lines.append((idx1, _idx(format_r, 0)))
-#                lines.append((idx2, _idx("%s - 1" % format_r, 0)))
                 lines.append((idx0, _idx(create_sum([symbol_r, float_1]), float_0)))
                 lines.append((idx1, _idx(symbol_r, float_0)))
                 lines.append((idx2, _idx(create_sum([symbol_r, float_m1]), float_0)))
-                lines.append((an, "(2.0*%s+1)/(1.0+%s)" % (format_r, format_r)))
-                lines.append((bn, "%s/(%s + 1.0)" % (format_r, format_r)))
-                fac0 = format_multiply([an, f1, format_basisvalue(idx1)])
-                fac1 = format_multiply([format_r + format_division + \
-                                        format_grouping(format_add(["1.0", format_r])),\
-                                        f3, format_basisvalue(idx2)])
-                lines.append((format_basisvalue(idx0), format_subtract([fac0, fac1])))
+                num = create_sum([create_product([float_2, symbol_r]), float_1])
+                denom = create_sum([symbol_r, float_1])
+                lines.append((str(an), create_fraction(num, denom).expand().reduce_ops()))
+                fac0 = create_product([an, f1, create_symbol(format_basisvalue(idx1), CONST)])
+
+                fac1 = create_product([float_m1, create_fraction(symbol_r, create_sum([float_1, symbol_r])),\
+                                       f3, create_symbol(format_basisvalue(idx2), CONST)])
+                lines.append((format_basisvalue(idx0), create_sum([fac0, fac1])))
+
+                # Create loop (block of lines)
                 code += generate_loop(lines, loop_vars, Indent, format)
 
                 # FIAT_NEW code
@@ -773,23 +802,18 @@ def _compute_basisvalues(data, Indent, format):
                 lines = []
                 loop_vars = [(format_r, 0, embedded_degree - 1),\
                              (format_s, 1, format_subtract([format_float(embedded_degree), format_r]))]
-#                lines.append((idx0, _idx(format_r, format_add([format_s, format_float(1.0)]))))
-#                lines.append((idx1, _idx(format_r, format_s)))
-#                lines.append((idx2, _idx(format_r, format_subtract([format_s, format_float(1.0)]))))
                 lines.append((idx0, _idx(symbol_r, create_sum([symbol_s, float_1]))))
                 lines.append((idx1, _idx(symbol_r, symbol_s)))
                 lines.append((idx2, _idx(symbol_r, create_sum([symbol_s, float_m1]))))
-                jrc = _jrc(format_add([format_multiply([format_float(2.0), format_r]), format_float(1.0)]),\
-                           format_float(0), format_s)
-                lines.append((an, jrc[0]))
-                lines.append((bn, jrc[1]))
-                lines.append((cn, jrc[2]))
-                fac0 = format_multiply([format_grouping(format_add([ \
-                        format_multiply([an, format_y]), bn])), format_basisvalue(idx1)])
-                fac1 = format_multiply([cn, format_basisvalue(idx2)])
-                lines.append((format_basisvalue(idx0), format_subtract([fac0, fac1])))
+                jrc = _jrc(create_sum([float_2*symbol_r, float_1]), float_0, symbol_s)
+                lines.append((str(an), jrc[0]))
+                lines.append((str(bn), jrc[1]))
+                lines.append((str(cn), jrc[2]))
+                fac0 = create_product([ create_sum([an, symbol_y, bn]),\
+                                        create_symbol(format_basisvalue(idx1), CONST)])
+                fac1 = create_product([float_m1, cn, create_symbol(format_basisvalue(idx2), CONST)])
+                lines.append((format_basisvalue(idx0), create_sum([fac0, fac1])))
                 code += generate_loop(lines, loop_vars, Indent, format)
-
 
             # FIAT_NEW code
             # for p in range(n):
@@ -797,15 +821,13 @@ def _compute_basisvalues(data, Indent, format):
             #        * results[idx(p,0)]
             lines = []
             loop_vars = [(format_r, 0, embedded_degree)]
-#            lines.append((idx0, _idx(format_r, 1)))
-#            lines.append((idx1, _idx(format_r, 0)))
             lines.append((idx0, _idx(symbol_r, float_1)))
             lines.append((idx1, _idx(symbol_r, float_0)))
-            fac0 = format_multiply([format_float(2.0), format_r])
-            fac1 = format_multiply([format_grouping(format_add([format_float(3.0), fac0])), format_y])
-            fac2 = format_grouping(format_add([format_float(1.0), fac0, fac1]))
-            fac3 = format_multiply([format_float(0.5), fac2, format_basisvalue(idx1)])
-            lines.append((format_basisvalue(idx0), fac3))
+            fac0 = float_2*symbol_r
+            fac1 = create_sum([float_3, fac0])*symbol_y
+            fac2 = create_product([float_0_5, create_sum([float_1, fac0, fac1])])
+            fac3 = create_product([fac2, create_symbol(format_basisvalue(idx1), CONST)])
+            lines.append((format_basisvalue(idx0), fac3.expand().reduce_ops()))
             code += generate_loop(lines, loop_vars, Indent, format)
 
             # FIAT_NEW code
@@ -815,11 +837,11 @@ def _compute_basisvalues(data, Indent, format):
             lines = []
             loop_vars = [(format_r, 0, embedded_degree + 1), \
                          (format_s, 0, format_subtract([format_float(embedded_degree + 1), format_r]))]
-#            lines.append((idx0, _idx(format_r, format_s)))
             lines.append((idx0, _idx(symbol_r, symbol_s)))
-            fac0 = format_grouping(format_add([format_r, format_float(0.5)]))
-            fac1 = format_grouping(format_add([format_r, format_s, format_float(1.0)]))
-            fac3 = format_multiply([format_basisvalue(idx0), format_sqrt(format_multiply([fac0, fac1]))])
+            fac0 = create_sum([symbol_r, float_0_5])
+            fac1 = create_sum([symbol_r, symbol_s, float_1])
+            fac2 = create_symbol( format_sqrt( str( create_product([fac0, fac1]) ) ), CONST )
+            fac3 = create_product([create_symbol(format_basisvalue(idx0), CONST), fac2])
             lines.append((format_basisvalue(idx0), fac3))
             code += generate_loop(lines, loop_vars, Indent, format)
 
