@@ -71,15 +71,15 @@ def compute_element_ir(ufl_element, form_data):
     ir["space_dimension"] = element.space_dimension()
     ir["value_rank"] = len(ufl_element.value_shape())
     ir["value_dimension"] = ufl_element.value_shape()
-    ir["evaluate_basis"] = _evaluate_basis_ir(ufl_element, element)
+    ir["evaluate_basis"] = _evaluate_basis(ufl_element, element)
     ir["evaluate_basis_all"] = not_implemented #element.get_coeffs()
     ir["evaluate_basis_derivatives"] = element
     ir["evaluate_basis_derivatives_all"] = not_implemented #element.get_coeffs()
-    ir["evaluate_dof"] = _evaluate_dof_ir(element, ufl_element.cell())
+    ir["evaluate_dof"] = _evaluate_dof(element, ufl_element.cell())
     ir["evaluate_dofs"] = None
     ir["interpolate_vertex_values"] = None
     ir["num_sub_elements"] = ufl_element.num_sub_elements()
-    ir["create_sub_element"] = _create_sub_element_ir(ufl_element, form_data)
+    ir["create_sub_element"] = _create_sub_element(ufl_element, form_data)
 
     debug_ir(ir, "finite_element")
 
@@ -96,7 +96,7 @@ def compute_dofmap_ir(ufl_element, form_data):
 
     # Precompute repeatedly used items
     num_dofs_per_entity = _num_dofs_per_entity(element)
-    facet_dofs = _tabulate_facet_dofs_ir(element, cell)
+    facet_dofs = _tabulate_facet_dofs(element, cell)
 
     # Get list of subelements
     # FIXME: This is strange!
@@ -118,12 +118,12 @@ def compute_dofmap_ir(ufl_element, form_data):
     ir["geometric_dimension"] = cell.geometric_dimension()
     ir["num_facet_dofs"] = len(facet_dofs[0])
     ir["num_entity_dofs"] = num_dofs_per_entity
-    ir["tabulate_dofs"] = _tabulate_dofs_ir(sub_elements, cell)
+    ir["tabulate_dofs"] = _tabulate_dofs(sub_elements, cell)
     ir["tabulate_facet_dofs"] = facet_dofs
     ir["tabulate_entity_dofs"] = not_implemented
     ir["tabulate_coordinates"] = not_implemented
     ir["num_sub_dof_maps"] = ufl_element.num_sub_elements()
-    ir["dof_map* create_sub_dof_map"] = _create_sub_element_ir(ufl_element, form_data)
+    ir["dof_map* create_sub_dof_map"] = _create_sub_element(ufl_element, form_data)
 
     debug_ir(ir, "dofmap")
 
@@ -164,7 +164,7 @@ def compute_form_ir(form, form_data):
 
 #--- Computation of intermediate representation for non-trivial functions ---
 
-def _evaluate_basis_ir(ufl_element, fiat_element):
+def _evaluate_basis(ufl_element, fiat_element):
     "Compute intermediate representation for evaluate_basis."
 
     # FIXME: KBO: No support for Mixed-, Vector-, TensorElement
@@ -195,7 +195,7 @@ def _evaluate_basis_ir(ufl_element, fiat_element):
 
     return data
 
-def _evaluate_dof_ir(element, cell):
+def _evaluate_dof(element, cell):
     "Compute intermediate representation of evaluate_dof."
 
     if element.value_shape() == ():
@@ -223,18 +223,18 @@ def _evaluate_dof_ir(element, cell):
             "dofs": [L.pt_dict for L in element.dual_basis()],
             "offsets": offsets}
 
-def _create_sub_element_ir(ufl_element, form_data):
+def _create_sub_element(ufl_element, form_data):
     "Compute intermediate representation for create_sub_element."
     return [form_data.element_map[(e, i)]
             for (i, e) in enumerate(ufl_element.sub_elements())]
 
-def _tabulate_dofs_ir(sub_elements, cell):
+def _tabulate_dofs(sub_elements, cell):
     "Compute intermediate representation of tabulate_dofs."
     return [{"entites_per_dim": entities_per_dim[cell.geometric_dimension()],
              "num_dofs_per_entity": _num_dofs_per_entity(e)}
             for e in sub_elements]
 
-def _tabulate_facet_dofs_ir(element, cell):
+def _tabulate_facet_dofs(element, cell):
     "Compute intermediate representation of tabulate_facet_dofs."
 
     # Compute incidences

@@ -105,12 +105,6 @@ def generate_element_code(i, ir, prefix, options):
 
     return code
 
-def _value_dimension(ir):
-    if ir == ():
-    # FIXME: KBO: Use format instead of "1" and str(n)
-        return format["return"]("1")
-    return format["switch"]("i", [format["return"](str(n)) for n in ir])
-
 def generate_dofmap_code(i, ir, prefix, options):
     "Generate code for dofmap from intermediate representation."
 
@@ -194,6 +188,14 @@ def generate_form_code(ir, prefix, options):
     debug_code(code, "form")
 
     return code
+
+#--- Code generation for non-trivial functions ---
+
+def _value_dimension(ir):
+    if ir == ():
+    # FIXME: KBO: Use format instead of "1" and str(n)
+        return format["return"]("1")
+    return format["switch"]("i", [format["return"](str(n)) for n in ir])
 
 def _needs_mesh_entities(num_dofs_per_entity):
     "Generate code for needs_mesh_entities."
