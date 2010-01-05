@@ -82,9 +82,9 @@ def _generate_body(dof, mapping, cell_dim, value_dim, offset=0):
         values = []
         for (i, tokens) in enumerate(dof[point]):
             if tokens[1] == ():
-                values += ["values[0]"]
+                values += ["values[%d]" % offset]
             else:
-                values += ["values[%d]" % tokens[1]]
+                values += ["values[%d]" % tokens[1] + offset]
 
         # Multiply by weights and sum
         weights = [precision(c[0]) for c in dof[point]]

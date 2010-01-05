@@ -73,13 +73,13 @@ class MixedElement:
     def mapping(self):
         mappings = []
         for e in self._elements:
-            mappings += [e.mapping()]*e.space_dimension()
+            mappings += e.mapping()
         return mappings
 
     def dual_basis(self):
         dofs = []
         for e in self._elements:
-            dofs += [L.pt_dict for L in e.dual_basis()]
+            dofs += [L for L in e.dual_basis()]
         return dofs
 
 # class MixedElement(FiniteElementBase):
