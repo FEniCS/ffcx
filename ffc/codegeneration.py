@@ -216,7 +216,7 @@ def _init_mesh(ir):
     dimension = format["add"](terms)
     return "__global_dimension = %s;\n return false;" % dimension
 
-def _tabulate_facet_dofs(tabulate_facet_dofs_ir):
+def _tabulate_facet_dofs(ir):
     "Generate code for tabulate_facet_dofs."
     return "\n".join([format["switch"]("facet", ["\n".join(["dofs[%d] = %d;" % (i, dof)
                                                             for (i, dof) in enumerate(ir[facet])])
