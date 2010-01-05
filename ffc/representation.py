@@ -29,6 +29,8 @@ from ufl.finiteelement import MixedElement as UFLMixedElement
 from ffc.utils import compute_permutations
 from ffc.log import info, error, begin, end, debug_ir, ffc_assert
 from ffc.fiatinterface import create_element, entities_per_dim
+from ffc.mixedelement import MixedElement
+
 
 # FFC specialized representation modules
 #from ffc.quadrature import QuadratureRepresentation

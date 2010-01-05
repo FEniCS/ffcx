@@ -39,7 +39,7 @@ Compiler stage 2: Code representation
   The IR is stored as a dictionary, mapping names of UFC functions to
   data needed for generation of the corresponding code.
 
-Compiler stage 3: optimization
+Compiler stage 3: Optimization
 ------------------------------
 
   Input:  Intermediate Representation (IR)

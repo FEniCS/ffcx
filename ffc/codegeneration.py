@@ -21,7 +21,6 @@ from ffc.cpp import format, indent
 from ffc.evaluatebasis import _evaluate_basis
 from ffc.evaluatedof import _evaluate_dof, _evaluate_dofs
 
-
 # FFC specialized code generation modules
 #from ffc.quadrature import generate_quadrature_integrals
 from ffc.tensor import generate_tensor_integrals
@@ -144,7 +143,6 @@ def generate_dofmap_code(ir, options):
 
     return code
 
-
 def generate_integrals_code(ir, options):
     "Generate code for integrals from intermediate representation."
 
@@ -152,7 +150,10 @@ def generate_integrals_code(ir, options):
 
     code = generate_tensor_integrals(ir, options)
 
-    print code
+    # Postprocess code
+    for integral_type_code in code:
+        for sub_domain_code in integral_type_code:
+            _postprocess_code(sub_domain_code, options)
 
     return code
 
@@ -199,21 +200,17 @@ def _init_mesh(num_dofs_per_entity):
     dimension = format["add"](terms)
     return "__global_dimension = %s;\n return false;" % dimension
 
-
 def _tabulate_facet_dofs(tabulate_facet_dofs_ir):
-    """
-    Code generation for tabulate facet dofs.
-    """
+    "Generate code for tabulate_facet_dofs."
 
     return "\n".join([format["switch"]("facet", ["\n".join(["dofs[%d] = %d;" % (i, dof)
                                                             for (i, dof) in enumerate(tabulate_facet_dofs_ir[facet])])
                                                  for facet in range(len(tabulate_facet_dofs_ir))])])
 
 def _tabulate_dofs(tabulate_dofs_ir):
-    """Code generation for tabulate dofs.
+    "Generate code for for tabulate_dofs."
 
-    Not quite c++ independent, and not optimized.
-    """
+    # Note:  Not quite C++ independent, and not optimized.
 
     # Prefetch add and multiply
     add = format["add"]
@@ -249,9 +246,6 @@ def _tabulate_dofs(tabulate_dofs_ir):
                 code += [format["iadd"]("offset", multiply(["%d" % num_dofs, format["num entities"](d)]))]
 
     return "\n".join(code)
-
-
-
 
 def _postprocess_code(code, options):
     "Postprocess generated code."
