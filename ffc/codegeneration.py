@@ -96,7 +96,7 @@ def generate_element_code(i, ir, prefix, options):
     code["evaluate_dofs"] = _evaluate_dofs(ir["evaluate_dofs"])
     code["interpolate_vertex_values"] = ""
     code["num_sub_elements"] = ret(ir["num_sub_elements"])
-    code["create_sub_element"] = ""
+    code["create_sub_element"] = _create_sub_element(ir["create_sub_element"], prefix)
 
     # Postprocess code
     _postprocess_code(code, options)
@@ -198,9 +198,11 @@ def _value_dimension(ir):
         return format["return"]("1")
     return format["switch"]("i", [format["return"](str(n)) for n in ir])
 
-def _create_sub_element(ir):
+def _create_sub_element(ir, prefix):
     "Generate code for create_sub_element."
-
+    class_names = ["%s_finite_element_%d" % (prefix, i) for i in ir]
+    cases = [format["return"]("new " + name) for name in class_names]
+    return format["switch"]("i", cases)
 
 def _needs_mesh_entities(ir):
     "Generate code for needs_mesh_entities."
