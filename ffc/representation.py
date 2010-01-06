@@ -79,7 +79,7 @@ def compute_element_ir(ufl_element, form_data):
     ir["evaluate_dofs"] = None
     ir["interpolate_vertex_values"] = None
     ir["num_sub_elements"] = ufl_element.num_sub_elements()
-    ir["create_sub_element"] = _create_sub_element(ufl_element, form_data)
+    ir["create_sub_element"] = [form_data.element_map[e] for e in ufl_element.sub_elements()]
 
     debug_ir(ir, "finite_element")
 
@@ -123,7 +123,7 @@ def compute_dofmap_ir(ufl_element, form_data):
     ir["tabulate_entity_dofs"] = not_implemented
     ir["tabulate_coordinates"] = not_implemented
     ir["num_sub_dof_maps"] = ufl_element.num_sub_elements()
-    ir["create_sub_dof_map"] = _create_sub_element(ufl_element, form_data)
+    ir["create_sub_dof_map"] = [form_data.element_map[e] for e in ufl_element.sub_elements()]
 
     debug_ir(ir, "dofmap")
 
@@ -225,11 +225,6 @@ def _evaluate_dof(element, cell):
             "cell_dimension": cell.geometric_dimension(),
             "dofs": [L.pt_dict for L in element.dual_basis()],
             "offsets": offsets}
-
-def _create_sub_element(ufl_element, form_data):
-    "Compute intermediate representation for create_sub_element."
-    return [form_data.element_map[(e, i)]
-            for (i, e) in enumerate(ufl_element.sub_elements())]
 
 def _tabulate_dofs(sub_elements, cell):
     "Compute intermediate representation of tabulate_dofs."
