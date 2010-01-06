@@ -25,6 +25,9 @@ from ffc.evaluatedof import _evaluate_dof, _evaluate_dofs
 #from ffc.quadrature import generate_quadrature_integrals
 from ffc.tensor import generate_tensor_integrals
 
+# FIXME: Temporary
+not_implemented = "// Not implemented, please fix me!"
+
 def generate_code(ir, prefix, options):
     "Generate code from intermediate representation."
 
@@ -90,12 +93,12 @@ def generate_element_code(i, ir, prefix, options):
     code["value_rank"] = ret(ir["value_rank"])
     code["value_dimension"] = _value_dimension(ir["value_dimension"])
     code["evaluate_basis"] = _evaluate_basis(ir["evaluate_basis"])
-    code["evaluate_basis_all"] = ""
-    code["evaluate_basis_derivatives"] = ""
-    code["evaluate_basis_derivatives_all"] = ""
+    code["evaluate_basis_all"] = not_implemented
+    code["evaluate_basis_derivatives"] = not_implemented
+    code["evaluate_basis_derivatives_all"] = not_implemented
     code["evaluate_dof"] = _evaluate_dof(ir["evaluate_dof"])
     code["evaluate_dofs"] = _evaluate_dofs(ir["evaluate_dofs"])
-    code["interpolate_vertex_values"] = ""
+    code["interpolate_vertex_values"] = not_implemented
     code["num_sub_elements"] = ret(ir["num_sub_elements"])
     code["create_sub_element"] = _create_foo(ir["create_sub_element"], prefix, "finite_element")
 
@@ -108,8 +111,6 @@ def generate_element_code(i, ir, prefix, options):
 
 def generate_dofmap_code(i, ir, prefix, options):
     "Generate code for dofmap from intermediate representation."
-
-    not_implemented = "// NotImplementedYet"
 
     # Prefetch formatting to speedup code generation
     ret = format["return"]
@@ -134,8 +135,8 @@ def generate_dofmap_code(i, ir, prefix, options):
     code["num_entity_dofs"] = format["switch"]("d", [ret(num) for num in ir["num_entity_dofs"]])
     code["tabulate_dofs"] = _tabulate_dofs(ir["tabulate_dofs"])
     code["tabulate_facet_dofs"] = _tabulate_facet_dofs(ir["tabulate_facet_dofs"])
-    code["tabulate_entity_dofs"] = "// Marie doesn't know what this function should do."
-    code["tabulate_coordinates"] = "// Marie doesn't believe in this function."
+    code["tabulate_entity_dofs"] = not_implemented # Marie doesn't know what this function should do
+    code["tabulate_coordinates"] = not_implemented # Marie doesn't believe in this function
     code["num_sub_dof_maps"] = ret(ir["num_sub_dof_maps"])
     code["create_sub_dof_map"] = _create_foo(ir["create_sub_dof_map"], prefix, "dof_map")
 
