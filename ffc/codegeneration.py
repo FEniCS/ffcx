@@ -163,6 +163,7 @@ def generate_form_code(ir, prefix, options):
 
     # Prefetch formatting to speedup code generation
     ret = format["return"]
+    do_nothing = format["do nothing"]
 
     # Generate code
     code = {}
@@ -178,9 +179,9 @@ def generate_form_code(ir, prefix, options):
     code["num_interior_facet_integrals"] = ret(ir["num_interior_facet_integrals"])
     code["create_finite_element"] = _create_foo(ir["create_finite_element"], prefix, "finite_element")
     code["create_dof_map"] = _create_foo(ir["create_dof_map"], prefix, "dof_map")
-    code["create_cell_integral"] = ""
-    code["create_exterior_facet_integral"] = ""
-    code["create_interior_facet_integral"] = ""
+    code["create_cell_integral"] = _create_foo(ir["create_cell_integral"], prefix, "cell_integral")
+    code["create_exterior_facet_integral"] = _create_foo(ir["create_exterior_facet_integral"], prefix, "exterior_facet_integral")
+    code["create_interior_facet_integral"] = _create_foo(ir["create_interior_facet_integral"], prefix, "interior_facet_integral")
 
     # Postprocess code
     _postprocess_code(code, options)
