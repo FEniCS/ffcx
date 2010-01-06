@@ -76,13 +76,14 @@ def generate_element_code(i, ir, prefix, options):
 
     # Prefetch formatting to speedup code generation
     ret = format["return"]
+    do_nothing = format["do nothing"]
 
     # Generate code
     code = {}
     code["classname"] = prefix.lower() + "_finite_element_" + str(i)
     code["members"] = ""
-    code["constructor"] = ""
-    code["destructor"] = ""
+    code["constructor"] = do_nothing
+    code["destructor"] = do_nothing
     code["signature"] = ret('"%s"' % ir["signature"])
     code["cell_shape"] = ret("ufc:%s" % ir["cell_shape"])
     code["space_dimension"] = ret(ir["space_dimension"])
@@ -112,18 +113,19 @@ def generate_dofmap_code(i, ir, prefix, options):
 
     # Prefetch formatting to speedup code generation
     ret = format["return"]
+    do_nothing = format["do nothing"]
 
     # Generate code
     code = {}
     code["classname"] = prefix.lower() + "_dof_map_" + str(i)
     code["members"] = ""
-    code["constructor"] = ""
-    code["destructor"] = ""
+    code["constructor"] = do_nothing
+    code["destructor"] = do_nothing
     code["signature"] = ret('"%s"' % ir["signature"])
     code["needs_mesh_entities"] = _needs_mesh_entities(ir["needs_mesh_entities"])
     code["init_mesh"] = _init_mesh(ir["init_mesh"])
-    code["init_cell"] = "// Do nothing"
-    code["init_cell_finalize"] = "// Do nothing"
+    code["init_cell"] = do_nothing
+    code["init_cell_finalize"] = do_nothing
     code["global_dimension"] = ret("__global_dimension")
     code["local_dimension"] = ret(ir["local_dimension"])
     code["max_local_dimension"] = ret(ir["max_local_dimension"])
@@ -169,8 +171,8 @@ def generate_form_code(ir, prefix, options):
     code = {}
     code["classname"] = prefix.lower() + "_form"
     code["members"] = ""
-    code["constructor"] = ""
-    code["destructor"] = ""
+    code["constructor"] = do_nothing
+    code["destructor"] = do_nothing
     code["signature"] = ret('"%s"' % ir["signature"])
     code["rank"] = ret(ir["rank"])
     code["num_coefficients"] = ret(ir["num_coefficients"])
