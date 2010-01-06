@@ -4,9 +4,9 @@ __copyright__ = "Copyright (C) 2005-2007 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Garth N. Wells 2006-2009
-# Modified by Marie E. Rognes (meg@math.uio.no) 2007
+# Modified by Marie E. Rognes (meg@math.uio.no) 2007-2010
 # Modified by Kristian B. Oelgaard 2009
-# Last changed: 2010-01-05
+# Last changed: 2010-01-06
 
 # Python modules.
 import numpy
@@ -60,6 +60,9 @@ class MixedElement:
         self._elements = extract_elements(ufl_element)
         self._entity_dofs = combine_entity_dofs(self._elements)
         self._value_shape = ufl_element.value_shape()
+
+    def elements(self):
+        return self._elements
 
     def space_dimension(self):
         return sum(e.space_dimension() for e in self._elements)

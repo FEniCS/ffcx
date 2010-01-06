@@ -98,13 +98,6 @@ def compute_dofmap_ir(ufl_element, form_data):
     num_dofs_per_entity = _num_dofs_per_entity(element)
     facet_dofs = _tabulate_facet_dofs(element, cell)
 
-    # Get list of subelements
-    # FIXME: This is strange!
-    if ufl_element.num_sub_elements() == 0:
-        sub_elements = [element]
-    else:
-        sub_elements = element._elements
-
     # Compute data for each function
     ir = {}
     ir["signature"] = "FFC dofmap for " + repr(ufl_element)
@@ -118,7 +111,7 @@ def compute_dofmap_ir(ufl_element, form_data):
     ir["geometric_dimension"] = cell.geometric_dimension()
     ir["num_facet_dofs"] = len(facet_dofs[0])
     ir["num_entity_dofs"] = num_dofs_per_entity
-    ir["tabulate_dofs"] = _tabulate_dofs(sub_elements, cell)
+    ir["tabulate_dofs"] = _tabulate_dofs(element, cell)
     ir["tabulate_facet_dofs"] = facet_dofs
     ir["tabulate_entity_dofs"] = not_implemented
     ir["tabulate_coordinates"] = not_implemented
@@ -195,42 +188,52 @@ def _evaluate_basis(ufl_element, fiat_element):
 
     return data
 
+def _value_dimension(element):
+    "Compute value dimension of element."
+
+    # FIXME: Arbitrary tensor elements?
+    # FIXME: Move to FiniteElement/MixedElement
+    shape = element.value_shape()
+    if shape == ():
+        return 1
+    else:
+        return shape[0]
+
 def _evaluate_dof(element, cell):
     "Compute intermediate representation of evaluate_dof."
 
-    if element.value_shape() == ():
-        value_dim = 1
+    # Setup ir
+    ir = {"mappings": element.mapping(),
+          "value_dim": _value_dimension(element),
+          "cell_dimension": cell.geometric_dimension(),
+          "dofs": [L.pt_dict for L in element.dual_basis()]}
+
+    # Generate offsets: i.e value offset for each basis function
+    if not isinstance(element, MixedElement):
+        ir["offsets"] = [0]*element.space_dimension()
     else:
-        value_dim = element.value_shape()[0]
+        offsets = []
+        offset = 0
+        for e in element.elements():
+            offsets += [offset]*e.space_dimension()
+            offset += _value_dimension(e)
+        ir["offsets"] = offsets
 
-    # Get list of subelements
-    if isinstance(element, MixedElement):
-        sub_elements = element._elements
-    else:
-        sub_elements = [element]
+    return ir
 
-    # Generate offsets
-    offsets = []
-    a = 0
-    for e in sub_elements:
-        if e.value_shape() == ():
-            sub_value_dim = 1
-        else:
-            sub_value_dim = e.value_shape()[0]
-        offsets += [a]*e.space_dimension()
-        a += sub_value_dim
-
-    return {"mappings": list(element.mapping()),
-            "value_dim": value_dim,
-            "cell_dimension": cell.geometric_dimension(),
-            "dofs": [L.pt_dict for L in element.dual_basis()],
-            "offsets": offsets}
-
-def _tabulate_dofs(sub_elements, cell):
+def _tabulate_dofs(element, cell):
     "Compute intermediate representation of tabulate_dofs."
-    return [{"entites_per_dim": entities_per_dim[cell.geometric_dimension()],
-             "num_dofs_per_entity": _num_dofs_per_entity(e)}
-            for e in sub_elements]
+
+    if isinstance(element, MixedElement):
+        ir = [{"entites_per_dim": entities_per_dim[cell.geometric_dimension()],
+               "num_dofs_per_entity": _num_dofs_per_entity(e)}
+              for e in element.elements()]
+    else:
+        ir = [{"entites_per_dim": entities_per_dim[cell.geometric_dimension()],
+               "num_dofs_per_entity": _num_dofs_per_entity(element)}]
+
+    return ir
+
 
 def _tabulate_facet_dofs(element, cell):
     "Compute intermediate representation of tabulate_facet_dofs."
