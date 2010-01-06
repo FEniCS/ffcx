@@ -114,7 +114,7 @@ def compute_dofmap_ir(ufl_element, form_data):
     ir["tabulate_dofs"] = _tabulate_dofs(element, cell)
     ir["tabulate_facet_dofs"] = facet_dofs
     ir["tabulate_entity_dofs"] = not_implemented
-    ir["tabulate_coordinates"] = not_implemented
+    ir["tabulate_coordinates"] = _tabulate_coordinates(element)
     ir["num_sub_dof_maps"] = ufl_element.num_sub_elements()
     ir["create_sub_dof_map"] = [form_data.element_map[e] for e in ufl_element.sub_elements()]
 
@@ -221,6 +221,12 @@ def _evaluate_dof(element, cell):
 
     return ir
 
+def _tabulate_coordinates(element):
+    "Compute intermediate representation of tabulate_coordinates."
+    if uses_integral_moments(element):
+        return None
+    return [L.pt_dict.keys()[0] for L in element.dual_basis()]
+
 def _tabulate_dofs(element, cell):
     "Compute intermediate representation of tabulate_dofs."
 
@@ -326,3 +332,11 @@ def __compute_sub_simplices(D, d):
         sub_simplices += [vertices]
 
     return sub_simplices
+
+def uses_integral_moments(element):
+
+    integrals = set(["IntegralMoment", "FrobeniusIntegralMoment"])
+    tags = set([L.get_type_tag() for L in element.dual_basis()])
+    return len(integrals & tags) > 0
+
+

@@ -19,7 +19,7 @@ from ffc.cpp import format, indent
 
 # FFC code generation modules
 from ffc.evaluatebasis import _evaluate_basis
-from ffc.evaluatedof import _evaluate_dof, _evaluate_dofs
+from ffc.evaluatedof import _evaluate_dof, _evaluate_dofs, affine_weights
 
 # FFC specialized code generation modules
 #from ffc.quadrature import generate_quadrature_integrals
@@ -136,7 +136,7 @@ def generate_dofmap_code(i, ir, prefix, options):
     code["tabulate_dofs"] = _tabulate_dofs(ir["tabulate_dofs"])
     code["tabulate_facet_dofs"] = _tabulate_facet_dofs(ir["tabulate_facet_dofs"])
     code["tabulate_entity_dofs"] = not_implemented # Marie doesn't know what this function should do
-    code["tabulate_coordinates"] = not_implemented # Marie doesn't believe in this function
+    code["tabulate_coordinates"] = _tabulate_coordinates(ir["tabulate_coordinates"])
     code["num_sub_dof_maps"] = ret(ir["num_sub_dof_maps"])
     code["create_sub_dof_map"] = _create_foo(ir["create_sub_dof_map"], prefix, "dof_map")
 
@@ -260,6 +260,33 @@ def _tabulate_dofs(ir):
                 # Set offset corresponding to mesh entity:
                 code += [format["iadd"]("offset", multiply(["%d" % num_dofs, format["num entities"](d)]))]
 
+    return "\n".join(code)
+
+def _tabulate_coordinates(ir):
+
+    if ir is None:
+        return "// Raise error here"
+
+    # Extract formats:
+    add = format["add"]
+    multiply = format["multiply"]
+    precision = format["float"]
+
+    # Extract coordinates and cell dimension
+    coordinates = ir
+    cell_dim = len(coordinates[0])
+
+    # Aid mapping points from reference to physical element
+    coefficients = affine_weights(cell_dim)
+
+    code = ["const double * const * x = c.coordinates;"]
+
+    for (i, c) in enumerate(coordinates):
+        w = coefficients(c)
+        for j in range(cell_dim):
+            value = add([multiply([precision(w[k]), "x[%d][%d]" % (k, j)])
+                         for k in range(cell_dim + 1)])
+            code += ["coordinates[%d][%d] = %s;" % (i, j, value)]
     return "\n".join(code)
 
 #--- Utility functioins ---
