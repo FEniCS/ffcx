@@ -7,7 +7,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian B. Oelgaard 2009
 # Modified by Marie E. Rognes 2010
-# Last changed: 2010-01-05
+# Last changed: 2010-01-06
 
 # Python modules.
 import re
@@ -68,12 +68,8 @@ def _transform(type, j, k, r):
     map_name = type + {None: "", "+": "0", "-": 1}[r]
     return (map_name + "_%d%d") % (j, k)
 
-def _generate_switch(variable, cases, default = ""):
+def _generate_switch(variable, cases):
     "Generate switch statement from given variable and cases"
-
-    # Special case: no cases
-    if len(cases) == 0:
-        return default
 
     # Special case: one case
     if len(cases) == 1:
@@ -84,8 +80,6 @@ def _generate_switch(variable, cases, default = ""):
     for i in range(len(cases)):
         code += "case %d:\n%s\n  break;\n" % (i, indent(cases[i], 2))
     code += "}"
-    if not default == "":
-        code += "\n" + default
 
     return code
 

@@ -11,7 +11,7 @@ __date__ = "2009-12-16"
 __copyright__ = "Copyright (C) 2009 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-05
+# Last changed: 2010-01-06
 
 # FFC modules
 from ffc.log import begin, end, debug_code
@@ -96,7 +96,7 @@ def generate_element_code(i, ir, prefix, options):
     code["evaluate_dofs"] = _evaluate_dofs(ir["evaluate_dofs"])
     code["interpolate_vertex_values"] = ""
     code["num_sub_elements"] = ret(ir["num_sub_elements"])
-    code["create_sub_element"] = _create_sub_element(ir["create_sub_element"], prefix)
+    code["create_sub_element"] = _create_foo(ir["create_sub_element"], prefix, "finite_element")
 
     # Postprocess code
     _postprocess_code(code, options)
@@ -135,7 +135,7 @@ def generate_dofmap_code(i, ir, prefix, options):
     code["tabulate_entity_dofs"] = "// Marie doesn't know what this function should do."
     code["tabulate_coordinates"] = "// Marie doesn't believe in this function."
     code["num_sub_dof_maps"] = ret(ir["num_sub_dof_maps"])
-    code["create_sub_dof_map"] = _create_sub_dof_map(ir["create_sub_dof_map"], prefix)
+    code["create_sub_dof_map"] = _create_foo(ir["create_sub_dof_map"], prefix, "dof_map")
 
     # Postprocess code
     _postprocess_code(code, options)
@@ -176,8 +176,8 @@ def generate_form_code(ir, prefix, options):
     code["num_cell_integrals"] = ret(ir["num_cell_integrals"])
     code["num_exterior_facet_integrals"] = ret(ir["num_exterior_facet_integrals"])
     code["num_interior_facet_integrals"] = ret(ir["num_interior_facet_integrals"])
-    code["create_finite_element"] = ""
-    code["create_dof_map"] = ""
+    code["create_finite_element"] = _create_foo(ir["create_finite_element"], prefix, "finite_element")
+    code["create_dof_map"] = _create_foo(ir["create_dof_map"], prefix, "dof_map")
     code["create_cell_integral"] = ""
     code["create_exterior_facet_integral"] = ""
     code["create_interior_facet_integral"] = ""
@@ -197,12 +197,6 @@ def _value_dimension(ir):
     # FIXME: KBO: Use format instead of "1" and str(n)
         return format["return"]("1")
     return format["switch"]("i", [format["return"](str(n)) for n in ir])
-
-def _create_sub_element(ir, prefix):
-    "Generate code for create_sub_element."
-    class_names = ["%s_finite_element_%d" % (prefix, i) for i in ir]
-    cases = [format["return"]("new " + name) for name in class_names]
-    return format["switch"]("i", cases)
 
 def _needs_mesh_entities(ir):
     "Generate code for needs_mesh_entities."
@@ -264,13 +258,13 @@ def _tabulate_dofs(ir):
 
     return "\n".join(code)
 
-def _create_sub_dof_map(ir, prefix):
-    "Generate code for create_sub_dof_map."
-    class_names = ["%s_dof_map_%d" % (prefix, i) for i in ir]
-    cases = [format["return"]("new " + name) for name in class_names]
-    return format["switch"]("i", cases)
-
 #--- Utility functioins ---
+
+def _create_foo(numbers, prefix, class_name):
+    "Generate code for create_<foo>."
+    class_names = ["%s_%s_%d" % (prefix, class_name, i) for i in numbers]
+    cases = [format["return"]("new " + name + "()") for name in class_names]
+    return format["switch"]("i", cases)
 
 def _postprocess_code(code, options):
     "Postprocess generated code."
