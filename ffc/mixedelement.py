@@ -74,16 +74,10 @@ class MixedElement:
         return self._entity_dofs
 
     def mapping(self):
-        mappings = []
-        for e in self._elements:
-            mappings += e.mapping()
-        return mappings
+        return [m for e in self._elements for m in e.mapping()]
 
     def dual_basis(self):
-        dofs = []
-        for e in self._elements:
-            dofs += [L for L in e.dual_basis()]
-        return dofs
+        return [L for e in self._elements for L in e.dual_basis()]
 
 # class MixedElement(FiniteElementBase):
 #     """A MixedElement represents a finite element defined as a tensor
