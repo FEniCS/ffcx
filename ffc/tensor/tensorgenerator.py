@@ -176,9 +176,11 @@ def _tabulate_tensor(terms, ir, incremental, options):
     format_comment = format["comment"]
 
     # Generate code for element tensor, geometry tensor and Jacobian
+    print "geo"
+    print ir.geometric_dimension
+    j_code = codesnippets.jacobian[ir.geometric_dimension] % {"restriction": ""}
     t_code, g_set = _generate_element_tensor(terms, incremental, options)
     g_code, j_set = _generate_geometry_tensors(terms, g_set)
-    j_code = codesnippets.jacobian[ir.geometric_dimension]
 
     # Remove unused declarations from Jacobian code
     #jacobi_code = remove_unused(j_code, j_set)
