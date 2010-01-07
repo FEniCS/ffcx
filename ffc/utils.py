@@ -4,7 +4,7 @@ __copyright__ = "Copyright (C) 2005-2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian B. Oelgaard, 2009
-# Last changed: 2010-01-04
+# Last changed: 2010-01-07
 
 # Python modules.
 import operator
@@ -45,38 +45,3 @@ def compute_permutations(k, n, skip = []):
            if i < p[0]:
                permutations += [(i, ) + p]
    return permutations
-
-# FIXME: KBO: These functions appears not to be used, remove?
-#def permutations(l):
-#    "Return a list of all permutations of the given list"
-#    if len(l) < 1:
-#        yield l
-#    for i in range(len(l)):
-#        pivot = l[i]
-#        other = l[:i] + l[i+1:]
-#        for p in permutations(other):
-#            yield [pivot] + p
-#    return
-
-
-#def is_empty(elements):
-#    """ Takes a possibly nested list of lists and returns true if all
-#    are empty."""
-#    # meg: If there is an easier/prettier way of doing this already,
-#    # please replace this.
-#    empty = True
-#    for element in elements:
-#        if isinstance(element, list):
-#            empty = is_empty(element)
-#        else:
-#            if element: empty = False
-#        if not empty: return False
-#    return empty
-
-#def abbreviate(dict):
-#    """ Removes key-value pairs of dictionaries where the value is a
-#    False value such as []. Use with caution."""
-#    d = dict.copy()
-#    for key in d.keys():
-#        if not d[key]: del d[key]
-#    return d
