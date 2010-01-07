@@ -560,7 +560,7 @@ def remove_unused(code, used_set=set()):
         # Mark line for used variables
         for variable_name in variables:
             (declaration_line, used_lines) = variables[variable_name]
-            if __variable_in_line(variable_name, line) and line_number > declaration_line:
+            if _variable_in_line(variable_name, line) and line_number > declaration_line:
                 variables[variable_name] = (declaration_line, used_lines + [line_number])
 
     # Reverse the order of the variable names (to catch variables used
@@ -583,7 +583,13 @@ def remove_unused(code, used_set=set()):
 
     return "\n".join([line for line in lines if not line == None])
 
-def __variable_in_line(variable_name, line):
+def count_ops(code):
+    "Count the number of operations in code (multiply-add pairs)."
+    num_add = code.count("+") + code.count("-")
+    num_multiply = code.count("*") + code.count("/")
+    return (num_add + num_multiply) / 2
+
+def _variable_in_line(variable_name, line):
     "Check if variable name is used in line"
     if not variable_name in line:
         return False

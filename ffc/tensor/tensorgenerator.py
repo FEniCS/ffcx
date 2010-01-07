@@ -8,11 +8,11 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Kristian B. Oelgaard, 2009
 # Modified by Marie Rognes (meg@math.uio.no), 2007
 # Modified by Garth N. Wells, 2009
-# Last changed: 2010-01-04
+# Last changed: 2010-01-07
 
 # FFC modules
 from ffc.log import info
-from ffc.cpp import format, remove_unused
+from ffc.cpp import format, remove_unused, count_ops
 from ffc import codesnippets
 
 # FFC tensor representation modules
@@ -86,22 +86,18 @@ def generate_exterior_facet_integral_code(terms, ir, incremental):
     num_facets = form_representation.num_facets
     cases = [None for i in range(num_facets)]
     geometry_set = set()
-    tensor_ops = 0
     for i in range(form_representation.num_facets):
-        cases[i], t_ops, g_set = _generate_element_tensor(terms[i], incremental)
+        cases[i], g_set = _generate_element_tensor(terms[i], incremental)
         geometry_set = geometry_set.union(g_set)
-        tensor_ops += t_ops
-    tensor_ops = float(tensor_ops) / float(form_representation.num_facets)
 
     # Generate geometry code + set of used jacobi terms (should be the same, so pick first)
-    geometry_code, geometry_ops, jacobi_set = _generate_geometry_tensors(terms[0], geometry_set)
+    geometry_code, jacobi_set = _generate_geometry_tensors(terms[0], geometry_set)
 
     # Generate code for Jacobian
     jacobi_code = [format["generate jacobian"](form_representation.geometric_dimension, "exterior facet")]
     jacobi_code = _remove_unused(jacobi_code, jacobi_set, format)
 
     # Compute total number of operations
-    total_ops = tensor_ops + geometry_ops
     code += [format_comment("Number of operations to compute geometry tensor:     %d" % geometry_ops)]
     code += [format_comment("Number of operations to compute tensor contraction:  %d" % tensor_ops)]
     code += [format_comment("Total number of operations to compute facet tensor:  %d" % total_ops)]
@@ -180,31 +176,33 @@ def _tabulate_tensor(terms, ir, incremental, options):
     format_comment = format["comment"]
 
     # Generate code for element tensor, geometry tensor and Jacobian
-    t_code, t_ops, g_set = _generate_element_tensor(terms, incremental, options)
-    g_code, g_ops, j_set = _generate_geometry_tensors(terms, g_set)
-    j_code = codesnippets.jacobian[ir.geometric_dimension]
+    print "geo"
+    print ir.geometric_dimension
+    j_code = codesnippets.jacobian[ir.geometric_dimension] % {"restriction": ""}
+    t_code, g_set = _generate_element_tensor(terms, incremental, options)
+    g_code, j_set = _generate_geometry_tensors(terms, g_set)
 
     # Remove unused declarations from Jacobian code
-    #jacobi_code = remove_unused(jacobi_code, jacobi_set)
+    #jacobi_code = remove_unused(j_code, j_set)
 
     # FIXME: Missing stuff from old generate_jacobian
 
     # Compute total number of operations
-    #total_ops = tensor_ops + geometry_ops
-    #code += [format_comment("Number of operations to compute geometry tensor:     %d" % geometry_ops)]
-    #code += [format_comment("Number of operations to compute tensor contraction:  %d" % tensor_ops)]
-    #code += [format_comment("Total number of operations to compute cell tensor:   %d" % total_ops)]
-    #code += [""]
-    #info("Number of operations to compute tensor: %d" % total_ops)
+    j_ops, g_ops, t_ops = [count_ops(c) for c in (j_code, g_code, t_code)]
+    total_ops = j_ops + g_ops + t_ops
 
     # Add generated code
     code = ""
+    code += format_comment("Number of operations (multiply-add pairs) for Jacobian data:      %d\n" % j_ops)
+    code += format_comment("Number of operations (multiply-add pairs) for geometry tensor:    %d\n" % g_ops)
+    code += format_comment("Number of operations (multiply-add pairs) for tensor contraction: %d\n" % t_ops)
+    code += format_comment("Total number of operations (multiply-add pairs):                  %d\n" % total_ops)
     code += j_code
     code += "\n"
-    code += format_comment("Compute geometry tensor") + "\n"
+    code += format_comment("Compute geometry tensor\n")
     code += g_code
     code += "\n"
-    code += format_comment("Compute element tensor")
+    code += format_comment("Compute element tensor\n")
     code += t_code
 
     return code
@@ -239,7 +237,6 @@ def _generate_element_tensor(terms, incremental, options):
     # Reset variables
     k = 0
     num_dropped = 0
-    num_ops = 0
     zero = format_float(0.0)
     geometry_set = set()
     code = ""
@@ -256,25 +253,24 @@ def _generate_element_tensor(terms, incremental, options):
                     if value and a0 < 0.0:
                         value = format_subtract([value, format_multiply([format_float(-a0), gk])])
                         geometry_set.add(gk)
-                        num_ops += 1
                     elif value:
                         value = format_add([value, format_multiply([format_float(a0), gk])])
                         geometry_set.add(gk)
-                        num_ops += 1
                     else:
                         value = format_multiply([format_float(a0), gk])
                         geometry_set.add(gk)
-                    num_ops += 1
                 else:
                     num_dropped += 1
         value = value or zero
+        if len(code) > 0:
+            code += "\n"
         if incremental:
-            code += format_iadd(name, value) + "\n"
+            code += format_iadd(name, value)
         else:
-            code += format_assign(name, value) + "\n"
+            code += format_assign(name, value)
         k += 1
 
-    return (code, num_ops, geometry_set)
+    return (code, geometry_set)
 
 def _generate_geometry_tensors(terms, geometry_set):
     "Generate list of declarations for computation of geometry tensors"
@@ -288,7 +284,6 @@ def _generate_geometry_tensors(terms, geometry_set):
     # Reset variables
     j = 0
     jacobi_set = set()
-    num_ops = 0
     code = ""
 
     # Iterate over all terms
@@ -313,22 +308,18 @@ def _generate_geometry_tensors(terms, geometry_set):
             values = []
             jj = j
             for GK in GKs:
-                val, entry_ops, t_set = _generate_entry(GK, a, jj, format)
+                val, t_set = _generate_entry(GK, a, jj, format)
                 values += [val]
-                num_ops += entry_ops
                 jacobi_set = jacobi_set | t_set
                 jj += 1
 
             # Sum factorized values
-            if values:
-                num_ops += len(values) - 1
             name = format_geometry_tensor(i, a) # FIXME: Need declaration here
             value = format_add(values)
 
             # Multiply with determinant factor
             det = GK.determinant
             value = _multiply_value_by_det(value, GK.determinant, format, len(values) > 1)
-            num_ops += 1
 
             # Add determinant to transformation set
             #!if dets:
@@ -344,7 +335,7 @@ def _generate_geometry_tensors(terms, geometry_set):
     # Add scale factor
     jacobi_set.add(format_scale_factor)
 
-    return (code, num_ops, jacobi_set)
+    return (code, jacobi_set)
 
 def _generate_entry(GK, a, i, format):
     "Generate code for the value of entry a of geometry tensor G"
@@ -358,7 +349,6 @@ def _generate_entry(GK, a, i, format):
 
     # Reset variables
     factors = []
-    num_ops = 0
     jacobi_set = set()
 
     # Compute product of factors outside sum
@@ -376,9 +366,6 @@ def _generate_entry(GK, a, i, format):
                                      t.restriction)
             factors += [trans]
             jacobi_set.add(trans)
-
-    if factors:
-        num_ops += len(factors) - 1
 
     monomial = format["multiply"](factors)
     if monomial: f0 = [monomial]
@@ -401,12 +388,7 @@ def _generate_entry(GK, a, i, format):
                                          t.restriction)
                 factors += [trans]
                 jacobi_set.add(trans)
-        if factors:
-            num_ops += len(factors) - 1
         terms += [format_multiply(factors)]
-
-    if terms:
-        num_ops += len(terms) - 1
 
     sum = format_add(terms)
     if sum: sum = format_grouping(sum)
@@ -415,11 +397,9 @@ def _generate_entry(GK, a, i, format):
 
     fs = f0 + f1
     if not fs: fs = ["1.0"]
-    else:
-        num_ops += len(fs) - 1
 
     # Compute product of all factors
-    return (format_multiply(fs), num_ops, jacobi_set)
+    return (format_multiply(fs), jacobi_set)
 
 def _multiply_value_by_det(value, det, format, is_sum):
     if not det.power == 0:
