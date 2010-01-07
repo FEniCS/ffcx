@@ -8,11 +8,11 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Kristian B. Oelgaard, 2009
 # Modified by Marie Rognes (meg@math.uio.no), 2007
 # Modified by Garth N. Wells, 2009
-# Last changed: 2010-01-04
+# Last changed: 2010-01-07
 
 # FFC modules
 from ffc.log import info
-from ffc.cpp import format, remove_unused
+from ffc.cpp import format, remove_unused, count_ops
 from ffc import codesnippets
 
 # FFC tensor representation modules
@@ -190,6 +190,7 @@ def _tabulate_tensor(terms, ir, incremental, options):
     # FIXME: Missing stuff from old generate_jacobian
 
     # Compute total number of operations
+    t_ops, g_ops, j_ops = [count_ops(c) for c in (j_code, g_code, j_code)]
     #total_ops = tensor_ops + geometry_ops
     #code += [format_comment("Number of operations to compute geometry tensor:     %d" % geometry_ops)]
     #code += [format_comment("Number of operations to compute tensor contraction:  %d" % tensor_ops)]
