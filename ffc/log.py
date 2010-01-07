@@ -19,6 +19,7 @@ from ufl.log import log_functions
 from ufl.log import DEBUG
 from ufl.log import INFO
 from ufl.log import ERROR
+from ufl.log import CRITICAL
 
 # Create FFC logger
 ffc_logger = Logger("FFC")
