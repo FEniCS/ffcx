@@ -14,7 +14,9 @@ import re
 import numpy
 
 # FFC modules.
-from log import debug
+from ffc.log import debug
+from ffc.constants import FFC_OPTIONS
+
 
 # Formatting rules
 format = {}
@@ -24,18 +26,22 @@ format.update({"return":     lambda v: "return %s;" % str(v),
                "grouping":   lambda v: "(%s)" % v,
                "switch":     lambda v, cases: _generate_switch(v, cases),
                "exception":  lambda v: "throw std::runtime_error(\"%s\");" % v,
-               "comment":    lambda v: "// %s" % v,
+               "comment":    lambda v: "\n// %s\n" % v,
                "do nothing": "// Do nothing"})
 
 # Declarations
-format.update({"const float declaration":
+format.update({"declaration": lambda t, n, v=None: _declaration(t, n, v),
+               "const float declaration":
                lambda v, w: "const double %s = %s;" % (v, w)})
 
 # Operators
 format.update({"add":      lambda v: _add(v),
-               "iadd":     lambda v, w: "%s += %s;" % (v, w),
+               "iadd":     lambda v, w: "%s += %s;\n" % (str(v), str(w)),
                "subtract": lambda v: " - ".join(v),
-               "multiply": lambda v: _multiply(v)})
+               "multiply": lambda v: _multiply(v),
+               "inner product": lambda v, w: _inner_product(v, w),
+               "assign": lambda v, w: "%s = %s;\n" % (v, str(w)),
+               "component": lambda v, k: _component(v, k)})
 
 # Formatting used in tabulate_tensor
 format.update({"element tensor":  lambda i: "A[%d]" % i,
@@ -46,26 +52,71 @@ format.update({"element tensor":  lambda i: "A[%d]" % i,
                "transform":       lambda t, j, k, r: _transform(t, j, k, r)})
 
 # Mesh entity variable names
-format.update({"entity index": lambda d, i: "c.entity_indices[%d][%d]" % (d, i),
-               "num entities": lambda dim : "m.num_entities[%d]" % dim})
+format.update({"entity index": "c.entity_indices",
+               "num entities": "m.num_entities"})
 
 # Misc
 format.update({"bool":    lambda v: {True: "true", False: "false"}[v],
-               "float":   lambda v: "%g" % v})
+               "float":   lambda v: "%g" % v,
+               "str":     lambda v: "%s" % str(v),
+               "epsilon": FFC_OPTIONS["epsilon"]})
 
+
+def _declaration(type, name, value=None):
+    if value is None:
+        return "%s %s;\n" % (type, name);
+    return "%s %s = %s;\n" % (type, name, str(value));
+
+def _component(var, k):
+    if not isinstance(k, (list, tuple)):
+        k = [k]
+    return "%s" % var + "".join("[%s]" % str(i) for i in k)
+
+# Utility functions for arithmetic operations
 def _multiply(factors):
+    """
+    Generate string multiplying a list of numbers or strings.  If a
+    factor is zero, the whole product is zero. Any factors equal to
+    one are ignored.
+    """
+
+    # FIXME: Paranthesise negative numbers and fix ad-hoc solutions
+
+    cpp_str = format["str"]
     non_zero_factors = []
     for f in factors:
+        if isinstance(f, (int, float)):
+            if f < format["epsilon"]:
+                return cpp_str(0)
+
+        # Convert to string
+        f = cpp_str(f)
+
         if f == "0":
-            return ""
-        elif f == "1":
+            return cpp_str(0)
+        if f == "1" or f == "1.0":
             pass
         else:
             non_zero_factors += [f]
+
     return "*".join(non_zero_factors)
 
 def _add(terms):
-    return " + ".join([t for t in terms if (t != "0" and t != "")])
+    "Generate string summing a list of strings."
+
+    # FIXME: Subtract absolute value of negative numbers
+    return " + ".join([str(t) for t in terms if (str(t) != "0")])
+
+def _inner_product(v, w):
+    "Generate string for v[0]*w[0] + ... + v[n]*w[n]."
+
+    # Check that v and w have same length
+    assert(len(v) == len(w)), \
+                  "Sizes differ (%d, %d) in inner-product!" % (len(v), len(w))
+
+    return format["add"]([format["multiply"]([v[i], w[i]])
+                          for i in range(len(v))])
+
 
 def _transform(type, j, k, r):
     # FIXME: j, k might need to be swapped for J or JINV
@@ -75,6 +126,9 @@ def _transform(type, j, k, r):
 def _generate_switch(variable, cases):
     "Generate switch statement from given variable and cases"
 
+    # Special case: no cases:
+    if len(cases) == 0:
+        return format["do nothing"]
     # Special case: one case
     if len(cases) == 1:
         return cases[0]

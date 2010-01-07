@@ -17,7 +17,7 @@ __date__ = "2009-12-16"
 __copyright__ = "Copyright (C) 2009 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-# Modified by Marie E. Rognes 2010
+# Modifie<d by Marie E. Rognes 2010
 # Modified by Kristian B. Oelgaard 2010
 # Last changed: 2010-01-04
 
@@ -277,9 +277,7 @@ def _interpolate_vertex_values(element, cell):
     # Compute data for each constituent element
     extract = lambda values: [a for a in values[(0, 0)]]
 
-
-    ir["element_data"] = [{"space_dim": e.space_dimension(),
-                           "value_dim": _value_dimension(e),
+    ir["element_data"] = [{"value_dim": _value_dimension(e),
                            "basis_values": extract(e.tabulate(0, vertices)),
                            "mapping": e.mapping()}
                           for e in all_elements(element)]
