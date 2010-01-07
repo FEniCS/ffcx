@@ -28,7 +28,7 @@ from ufl.finiteelement import MixedElement as UFLMixedElement
 # FFC modules
 from ffc.utils import compute_permutations
 from ffc.log import info, error, begin, end, debug_ir, ffc_assert
-from ffc.fiatinterface import create_element, entities_per_dim
+from ffc.fiatinterface import create_element, entities_per_dim, reference_cell
 from ffc.mixedelement import MixedElement
 
 
@@ -63,11 +63,12 @@ def compute_element_ir(ufl_element, form_data):
 
     # Create FIAT element
     element = create_element(ufl_element)
+    cell = ufl_element.cell()
 
     # Compute data for each function
     ir = {}
     ir["signature"] = repr(ufl_element)
-    ir["cell_shape"] = ufl_element.cell().domain()
+    ir["cell_shape"] = cell.domain()
     ir["space_dimension"] = element.space_dimension()
     ir["value_rank"] = len(ufl_element.value_shape())
     ir["value_dimension"] = ufl_element.value_shape()
@@ -75,11 +76,12 @@ def compute_element_ir(ufl_element, form_data):
     ir["evaluate_basis_all"] = not_implemented #element.get_coeffs()
     ir["evaluate_basis_derivatives"] = element
     ir["evaluate_basis_derivatives_all"] = not_implemented #element.get_coeffs()
-    ir["evaluate_dof"] = _evaluate_dof(element, ufl_element.cell())
-    ir["evaluate_dofs"] = None
-    ir["interpolate_vertex_values"] = None
+    ir["evaluate_dof"] = _evaluate_dof(element, cell)
+    ir["evaluate_dofs"] = not_implemented
+    ir["interpolate_vertex_values"] = _interpolate_vertex_values(element, cell)
     ir["num_sub_elements"] = ufl_element.num_sub_elements()
-    ir["create_sub_element"] = [form_data.element_map[e] for e in ufl_element.sub_elements()]
+    ir["create_sub_element"] = [form_data.element_map[e]
+                                for e in ufl_element.sub_elements()]
 
     debug_ir(ir, "finite_element")
 
@@ -116,7 +118,8 @@ def compute_dofmap_ir(ufl_element, form_data):
     ir["tabulate_entity_dofs"] = not_implemented
     ir["tabulate_coordinates"] = _tabulate_coordinates(element)
     ir["num_sub_dof_maps"] = ufl_element.num_sub_elements()
-    ir["create_sub_dof_map"] = [form_data.element_map[e] for e in ufl_element.sub_elements()]
+    ir["create_sub_dof_map"] = [form_data.element_map[e]
+                                for e in ufl_element.sub_elements()]
 
     debug_ir(ir, "dofmap")
 
@@ -202,24 +205,18 @@ def _value_dimension(element):
 def _evaluate_dof(element, cell):
     "Compute intermediate representation of evaluate_dof."
 
-    # Setup ir
-    ir = {"mappings": element.mapping(),
-          "value_dim": _value_dimension(element),
-          "cell_dimension": cell.geometric_dimension(),
-          "dofs": [L.pt_dict for L in element.dual_basis()]}
-
     # Generate offsets: i.e value offset for each basis function
-    if not isinstance(element, MixedElement):
-        ir["offsets"] = [0]*element.space_dimension()
-    else:
-        offsets = []
-        offset = 0
-        for e in element.elements():
-            offsets += [offset]*e.space_dimension()
-            offset += _value_dimension(e)
-        ir["offsets"] = offsets
+    offsets = []
+    offset = 0
+    for e in all_elements(element):
+        offsets += [offset]*e.space_dimension()
+        offset += _value_dimension(e)
 
-    return ir
+    return {"mappings": element.mapping(),
+            "value_dim": _value_dimension(element),
+            "cell_dimension": cell.geometric_dimension(),
+            "dofs": [L.pt_dict for L in element.dual_basis()],
+            "offsets": offsets}
 
 def _tabulate_coordinates(element):
     "Compute intermediate representation of tabulate_coordinates."
@@ -230,16 +227,10 @@ def _tabulate_coordinates(element):
 def _tabulate_dofs(element, cell):
     "Compute intermediate representation of tabulate_dofs."
 
-    if isinstance(element, MixedElement):
-        ir = [{"entites_per_dim": entities_per_dim[cell.geometric_dimension()],
+    elements = all_elements(element)
+    return [{"entites_per_dim": entities_per_dim[cell.geometric_dimension()],
                "num_dofs_per_entity": _num_dofs_per_entity(e)}
-              for e in element.elements()]
-    else:
-        ir = [{"entites_per_dim": entities_per_dim[cell.geometric_dimension()],
-               "num_dofs_per_entity": _num_dofs_per_entity(element)}]
-
-    return ir
-
+              for e in elements]
 
 def _tabulate_facet_dofs(element, cell):
     "Compute intermediate representation of tabulate_facet_dofs."
@@ -271,7 +262,38 @@ def _tabulate_facet_dofs(element, cell):
 
     return facet_dofs
 
+def _interpolate_vertex_values(element, cell):
+
+    ir = {}
+    ir["cell_dim"] = cell.geometric_dimension()
+
+    # Check whether computing the Jacobian is necessary
+    mappings = element.mapping()
+    ir["needs_jacobian"] = any("piola" in m for m in mappings)
+
+    # Get vertices of reference cell
+    vertices = reference_cell(cell.domain()).get_vertices()
+
+    # Compute data for each constituent element
+    extract = lambda values: [a for a in values[(0, 0)]]
+
+
+    ir["element_data"] = [{"space_dim": e.space_dimension(),
+                           "value_dim": _value_dimension(e),
+                           "basis_values": extract(e.tabulate(0, vertices)),
+                           "mapping": e.mapping()}
+                          for e in all_elements(element)]
+
+    return ir
+
+
 #--- Utility functions ---
+
+def all_elements(element):
+    try:
+        return element.elements()
+    except:
+        return [element]
 
 def _num_dofs_per_entity(element):
     """

@@ -5,7 +5,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Garth N. Wells, 2009.
 # Modified by Marie Rognes, 2009-2010.
-# Last changed: 2010-01-04
+# Last changed: 2010-01-07
 
 # UFL modules
 from ufl import FiniteElement as UFLFiniteElement
@@ -44,6 +44,11 @@ family2class = {"Lagrange": Lagrange,
 # Mapping from dimension to number of mesh sub-entities:
 entities_per_dim = {1: [2, 1], 2: [3, 3, 1], 3: [4, 6, 4, 1]}
 
+def reference_cell(dim):
+    if isinstance(dim, int):
+        return ufc_simplex(dim)
+    else:
+        return ufc_simplex(domain2dim[dim])
 
 def create_element(ufl_element):
 
@@ -70,7 +75,7 @@ def create_fiat_element(ufl_element):
     "Create FIAT element corresponding to given UFL finite element."
 
     ElementClass = family2class[ufl_element.family()]
-    reference_cell = ufc_simplex(domain2dim[ufl_element.cell().domain()])
-    element = ElementClass(reference_cell, ufl_element.degree())
+    cell = reference_cell(ufl_element.cell().domain())
+    element = ElementClass(cell, ufl_element.degree())
 
     return element

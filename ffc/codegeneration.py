@@ -11,7 +11,7 @@ __date__ = "2009-12-16"
 __copyright__ = "Copyright (C) 2009 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-06
+# Last changed: 2010-01-07
 
 # FFC modules
 from ffc.log import begin, end, debug_code
@@ -20,6 +20,7 @@ from ffc.cpp import format, indent
 # FFC code generation modules
 from ffc.evaluatebasis import _evaluate_basis
 from ffc.evaluatedof import _evaluate_dof, _evaluate_dofs, affine_weights
+from ffc.codesnippets import jacobian
 
 # FFC specialized code generation modules
 #from ffc.quadrature import generate_quadrature_integrals
@@ -98,7 +99,7 @@ def generate_element_code(i, ir, prefix, options):
     code["evaluate_basis_derivatives_all"] = not_implemented
     code["evaluate_dof"] = _evaluate_dof(ir["evaluate_dof"])
     code["evaluate_dofs"] = _evaluate_dofs(ir["evaluate_dofs"])
-    code["interpolate_vertex_values"] = not_implemented
+    code["interpolate_vertex_values"] = _interpolate_vertex_values(ir["interpolate_vertex_values"])
     code["num_sub_elements"] = ret(ir["num_sub_elements"])
     code["create_sub_element"] = _create_foo(ir["create_sub_element"], prefix, "finite_element")
 
@@ -264,29 +265,62 @@ def _tabulate_dofs(ir):
 
 def _tabulate_coordinates(ir):
 
+    # Raise error if tabulate_coordinates is ill-defined
     if ir is None:
         return "// Raise error here"
 
     # Extract formats:
-    add = format["add"]
-    multiply = format["multiply"]
+    add, multiply = format["add"], format["multiply"]
     precision = format["float"]
 
     # Extract coordinates and cell dimension
-    coordinates = ir
-    cell_dim = len(coordinates[0])
+    cell_dim = len(ir[0])
 
     # Aid mapping points from reference to physical element
     coefficients = affine_weights(cell_dim)
 
+    # Generate code for each point and each component
     code = ["const double * const * x = c.coordinates;"]
-
-    for (i, c) in enumerate(coordinates):
-        w = coefficients(c)
+    for (i, coordinate) in enumerate(ir):
+        w = coefficients(coordinate)
         for j in range(cell_dim):
             value = add([multiply([precision(w[k]), "x[%d][%d]" % (k, j)])
                          for k in range(cell_dim + 1)])
             code += ["coordinates[%d][%d] = %s;" % (i, j, value)]
+    return "\n".join(code)
+
+def _interpolate_vertex_values(ir):
+
+    code = []
+
+    # Add code for Jacobian if necessary
+    if ir["needs_jacobian"]:
+        code += [jacobian(ir["cell_dim"])]
+
+    # Extract formats
+    add, multiply = format["add"], format["multiply"]
+    precision = format["float"]
+
+    # Iterate over the elements
+    for (k, data) in enumerate(ir["element_data"]):
+
+        # Extract vertex values for all basis functions
+        vertex_values = data["basis_values"]
+
+        # Create code for each vertex
+        for j in range(len(vertex_values)):
+
+            # Map basis values according to mapping
+            vertex_value = [precision(v) for v in vertex_values[j]]
+
+            # Contract basis values and coefficients
+            value = add([multiply(["dof_values[%d]" % i, v])
+                         for (i, v) in enumerate(vertex_value)])
+
+            # Construct correct vertex value label
+            name = "vertex_values[%d]" % j
+            code += [name + " = " +  value + ";"]
+
     return "\n".join(code)
 
 #--- Utility functioins ---
