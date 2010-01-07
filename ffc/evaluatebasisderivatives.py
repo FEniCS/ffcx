@@ -7,7 +7,7 @@ __date__ = "2007-04-16"
 __copyright__ = "Copyright (C) 2007-2009 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2009-12-16
+# Last changed: 2010-01-07
 
 # Python modules
 import math
@@ -19,8 +19,8 @@ from evaluatebasis import generate_map
 from evaluatebasis import dof_map
 from evaluatebasis import generate_basisvalues
 from evaluatebasis import tabulate_coefficients
-from codegeneratorsutils import tabulate_matrix
-from codegeneratorsutils import IndentControl
+from cpp import tabulate_matrix
+from cpp import IndentControl
 from removeunused import remove_unused
 
 def evaluate_basis_derivatives(element, format):

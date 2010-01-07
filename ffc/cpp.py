@@ -7,10 +7,11 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian B. Oelgaard 2009
 # Modified by Marie E. Rognes 2010
-# Last changed: 2010-01-06
+# Last changed: 2010-01-07
 
 # Python modules.
 import re
+import numpy
 
 # FFC modules.
 from log import debug
@@ -27,7 +28,8 @@ format.update({"return":     lambda v: "return %s;" % str(v),
                "do nothing": "// Do nothing"})
 
 # Declarations
-format.update({"const float declaration": lambda v, w: "const double %s = %s;" % (v, w)})
+format.update({"const float declaration":
+               lambda v, w: "const double %s = %s;" % (v, w)})
 
 # Operators
 format.update({"add":      lambda v: _add(v),
@@ -37,7 +39,8 @@ format.update({"add":      lambda v: _add(v),
 
 # Formatting used in tabulate_tensor
 format.update({"element tensor":  lambda i: "A[%d]" % i,
-               "geometry tensor": lambda j, a: "G%d_%s" % (j, "_".join(["%d" % i for i in a])),
+               "geometry tensor":
+               lambda j, a: "G%d_%s" % (j, "_".join(["%d" % i for i in a])),
                "coefficient":     lambda j, k: "w[%d][%d]" % (j, k),
                "scale factor":    "det",
                "transform":       lambda t, j, k, r: _transform(t, j, k, r)})
@@ -84,11 +87,137 @@ def _generate_switch(variable, cases):
 
     return code
 
-# FIXME: KBO: We have an identical function in codegenerators_utils.py
+def inner_product(a, b, format):
+    """Generate code for inner product of a and b, where a is a list
+    of floating point numbers and b is a list of symbols."""
+
+    # Check input
+    if not len(a) == len(b):
+        error("Dimensions don't match for inner product.")
+
+    # Prefetch formats to speed up code generation
+    format_add            = format["add"]
+    format_subtract       = format["subtract"]
+    format_multiply       = format["multiply"]
+    format_floating_point = format["floating point"]
+    format_epsilon        = format["epsilon"]
+
+    # Add all entries
+    value = None
+    for i in range(len(a)):
+
+        # Skip terms where a is almost zero
+        if abs(a[i]) <= format_epsilon:
+            continue
+
+        # Fancy handling of +, -, +1, -1
+        if value:
+            if abs(a[i] - 1.0) < format_epsilon:
+                value = format_add([value, b[i]])
+            elif abs(a[i] + 1.0) < format_epsilon:
+                value = format_subtract([value, b[i]])
+            elif a[i] > 0.0:
+                value = format_add([value, format_multiply([format_floating_point(a[i]), b[i]])])
+            else:
+                value = format_subtract([value, format_multiply([format_floating_point(-a[i]), b[i]])])
+        else:
+            if abs(a[i] - 1.0) < format_epsilon or abs(a[i] + 1.0) < format_epsilon:
+                value = b[i]
+            else:
+                value = format_multiply([format_floating_point(a[i]), b[i]])
+
+    return value or format_floating_point(0.0)
+
+
+def tabulate_matrix(matrix, format):
+    "Function that tabulates the values of a matrix, into a two dimensional array."
+
+    # Check input
+    if not len(numpy.shape(matrix)) == 2:
+        error("This is not a matrix.")
+
+    # Prefetch formats to speed up code generation
+    format_block          = format["block"]
+    format_separator      = format["separator"]
+    format_floating_point = format["floating point"]
+    format_epsilon        = format["epsilon"]
+
+    # Get size of matrix
+    num_rows = numpy.shape(matrix)[0]
+    num_cols = numpy.shape(matrix)[1]
+
+    # Set matrix entries equal to zero if their absolute values is smaller than format_epsilon
+    for i in range(num_rows):
+        for j in range(num_cols):
+            if abs(matrix[i][j]) < format_epsilon:
+                matrix[i][j] = 0.0
+
+    # Generate array of values
+    value = format["new line"] + format["block begin"]
+    rows = []
+
+    for i in range(num_rows):
+        rows += [format_block(format_separator.join([format_floating_point(matrix[i,j])\
+                 for j in range(num_cols)]))]
+
+    value += format["block separator"].join(rows)
+    value += format["block end"]
+
+    return value
+
+def tabulate_vector(vector, format):
+    "Function that tabulates the values of a vector, into a one dimensional array."
+
+    # Check input
+    if not len(numpy.shape(vector)) == 1:
+        error("This is not a vector.")
+
+    # Prefetch formats to speed up code generation
+    format_block          = format["block"]
+    format_separator      = format["separator"]
+    format_floating_point = format["floating point"]
+    format_epsilon        = format["epsilon"]
+
+    # Get size of matrix
+    num_cols = numpy.shape(vector)[0]
+
+    # Set vector entries equal to zero if their absolute values is smaller than format_epsilon
+    for i in range(num_cols):
+        if abs(vector[i]) < format_epsilon:
+            vector[i] = 0.0
+
+    value = format_block(format_separator.join([format_floating_point(val) for val in vector]))
+
+    return value
+
+
+# ---- Indentation control ----
+class IndentControl:
+    "Class to control the indentation of code"
+
+    def __init__(self):
+        "Constructor"
+        self.size = 0
+        self.increment = 2
+
+    def increase(self):
+        "Increase indentation by increment"
+        self.size += self.increment
+
+    def decrease(self):
+        "Decrease indentation by increment"
+        self.size -= self.increment
+
+    def indent(self, a):
+        "Indent string input string by size"
+        return indent(a, self.size)
+
 def indent(block, num_spaces):
     "Indent each row of the given string block with n spaces."
     indentation = " " * num_spaces
     return indentation + ("\n" + indentation).join(block.split("\n"))
+
+
 
 # FIXME: Major cleanup needed, remove as much as possible
 from codesnippets import *

@@ -6,7 +6,7 @@ __date__ = "2009-12-14"
 __copyright__ = "Copyright (C) 2009-2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-05
+# Last changed: 2010-01-07
 
 # Python modules
 import math
@@ -15,8 +15,8 @@ import numpy
 # FFC modules
 from ffc.log import error, debug_code
 from ffc.cpp import remove_unused
-from ffc.codegeneratorsutils import IndentControl
-from ffc.codegeneratorsutils import inner_product, tabulate_matrix, tabulate_vector
+from ffc.cpp import IndentControl
+from ffc.cpp import inner_product, tabulate_matrix, tabulate_vector
 from ffc.quadrature.quadraturegenerator_utils import generate_loop
 from ffc.quadrature.symbolics import create_float
 from ffc.quadrature.symbolics import create_symbol

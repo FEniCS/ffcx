@@ -5,7 +5,7 @@ __date__ = "2009-01-07"
 __copyright__ = "Copyright (C) 2009 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2009-12-22
+# Last changed: 2010-01-07
 
 # Python modules.
 from numpy import shape
@@ -16,8 +16,8 @@ from ufl.algorithms.analysis import extract_unique_elements
 from ufl.algorithms.printing import tree_format
 
 # FFC modules.
-from ffc.codegeneratorsutils import tabulate_matrix
-from ffc.codegeneratorsutils import IndentControl
+from ffc.cpp import tabulate_matrix
+from ffc.cpp import IndentControl
 from ffc.createelement import create_element
 from ffc.log import debug
 from ffc.log import info
