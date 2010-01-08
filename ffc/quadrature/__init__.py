@@ -1,2 +1,2 @@
 #from quadraturerepresentation import QuadratureRepresentation
-#from quadraturegenerator import generate_quadrature_integrals
+#from quadraturegenerator import generate_integrals_code

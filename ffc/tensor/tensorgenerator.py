@@ -18,7 +18,7 @@ from ffc import codesnippets
 # FFC tensor representation modules
 from ffc.tensor.monomialtransformation import MonomialIndex
 
-def generate_tensor_integrals(ir, options):
+def generate_integrals_code(ir, options):
     "Generate code for integrals from intermediate representation."
 
     # Check if code needs to be generated

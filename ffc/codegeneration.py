@@ -11,7 +11,7 @@ __date__ = "2009-12-16"
 __copyright__ = "Copyright (C) 2009 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-07
+# Last changed: 2010-01-08
 
 # FFC modules
 from ffc.log import begin, end, debug_code
@@ -23,8 +23,8 @@ from ffc.evaluatedof import _evaluate_dof, _evaluate_dofs, affine_weights
 from ffc.codesnippets import jacobian, cell_coordinates
 
 # FFC specialized code generation modules
-#from ffc.quadrature import generate_quadrature_integrals
-from ffc.tensor import generate_tensor_integrals
+from ffc import quadrature
+from ffc import tensor
 
 # FIXME: Temporary
 not_implemented = "// Not implemented, please fix me!"
@@ -133,7 +133,7 @@ def generate_integrals_code(ir, prefix, options):
 
     # FIXME: Handle multiple representations here
 
-    code = generate_tensor_integrals(ir, options)
+    code = tensor.generate_integrals_code(ir, options)
 
     # Postprocess code
     for integral_type_code in code:

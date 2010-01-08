@@ -1,2 +1,2 @@
 from tensorrepresentation import TensorRepresentation
-from tensorgenerator import generate_tensor_integrals
+from tensorgenerator import generate_integrals_code
