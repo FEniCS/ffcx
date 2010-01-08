@@ -607,16 +607,30 @@ def _compute_values(data, sum_value_dim, vector, Indent, format):
 
 #    return code + [""]
 
-# FIAT_NEW code (compute index function)
+# FIAT_NEW code (compute index function) TriangleExpansionSet
 # def idx(p,q):
 #    return (p+q)*(p+q+1)/2 + q
-def _idx(p, q):
+def _idx2D(p, q):
     f1 = create_float(1)
     f2 = create_float(2)
     idx = create_fraction(create_product([(p+q).expand(), (p+q+f1).expand()]), f2) + q
     return idx
 
-# FIAT_NEW code (helper variables)
+# FIAT_NEW code (compute index function) TetrahedronExpansionSet
+# def idx(p,q,r):
+#     return (p+q+r)*(p+q+r+1)*(p+q+r+2)/6 + (q+r)*(q+r+1)/2 + r
+def _idx3D(p, q, r):
+    f1 = create_float(1)
+    f2 = create_float(2)
+    f6 = create_float(6)
+    fac1 = create_fraction( (p + q + r + f2).expand(), f6)
+    fac2 = create_fraction( (q + r + f1).expand(), f2)
+    fac3 = create_product([(p + q + r).expand(), (p + q + r + f1).expand(), fac1])
+    fac4 = create_product([(q + r).expand(), (q + r + f1).expand(), fac2])
+    idx = fac3 + fac4 + r
+    return idx
+
+# FIAT_NEW code (helper variables) TriangleExpansionSet and TetrahedronExpansionSet
 # def jrc( a , b , n ):
 #    an = float( ( 2*n+1+a+b)*(2*n+2+a+b)) \
 #        / float( 2*(n+1)*(n+1+a+b))
@@ -644,7 +658,6 @@ def _jrc(a, b, n):
 
     return (an, bn, cn)
 
-
 def _compute_basisvalues(data, Indent, format):
     """From FIAT_NEW.expansions."""
 
@@ -667,17 +680,19 @@ def _compute_basisvalues(data, Indent, format):
     format_free_indices = format["free secondary indices"]
     format_r            = format_free_indices[0]
     format_s            = format_free_indices[1]
+    format_t            = format_free_indices[2]
 
     idx0, idx1, idx2    = [format["evaluate_basis aux index"](i) for i in range(1,4)]
-    f1, f2, f3          = [create_symbol(format["evaluate_basis aux factor"](i), CONST) for i in range(1,4)]
+    f1, f2, f3, f4, f5  = [create_symbol(format["evaluate_basis aux factor"](i), CONST) for i in range(1,6)]
     an, bn, cn          = [create_symbol(format["evaluate_basis aux value"](i), CONST) for i in range(3)]
 
     # Get embedded degree
     embedded_degree = data["embedded_degree"]
 
     # Create helper symbols
-    symbol_r = create_symbol(format_r, CONST)
-    symbol_s = create_symbol(format_s, CONST)
+    symbol_p = create_symbol(format_r, CONST)
+    symbol_q = create_symbol(format_s, CONST)
+    symbol_r = create_symbol(format_t, CONST)
     symbol_x = create_symbol(format_x, CONST)
     symbol_y = create_symbol(format_y, CONST)
     symbol_z = create_symbol(format_z, CONST)
@@ -690,7 +705,10 @@ def _compute_basisvalues(data, Indent, format):
     float_3 = create_float(3)
     float_n = create_float(embedded_degree)
     float_n1 = create_float(embedded_degree + 1)
+    float_nm1 = create_float(embedded_degree - 1)
+    float_1_5 = create_float(1.5)
     float_0_5 = create_float(0.5)
+    float_0_25 = create_float(0.25)
 
     # Init return code
     code = []
@@ -704,7 +722,7 @@ def _compute_basisvalues(data, Indent, format):
     code += [(name, value)]
 
     # Declare helper variables, will be removed if not used.
-    code += [Indent.indent(format["comment"]("Declare helper variables"))]
+    code += ["", Indent.indent(format["comment"]("Declare helper variables"))]
     code += [(format_uint + idx0, 0)]
     code += [(format_uint + idx1, 0)]
     code += [(format_uint + idx2, 0)]
@@ -719,6 +737,7 @@ def _compute_basisvalues(data, Indent, format):
     # 1D
     if (element_cell_domain == "interval"):
         count = 0
+        error("1D is not implemented")
 #        for i in range(0, data.degree() + 1):
 
 #            factor = math.sqrt(1.0*i + 0.5)
@@ -738,27 +757,27 @@ def _compute_basisvalues(data, Indent, format):
     # 2D
     elif (element_cell_domain == "triangle"):
         # FIAT_NEW.expansions.TriangleExpansionSet
-        # FIXME: KBO: Move common stuff to general functions
+
+        # Compute helper factors
+        # FIAT_NEW code
+        # f1 = (1.0+2*x+y)/2.0
+        # f2 = (1.0 - y) / 2.0
+        # f3 = f2**2
+        fac1 = create_fraction(float_1 + float_2*symbol_x + symbol_y, float_2)
+        fac2 = create_fraction(float_1 - symbol_y, float_2)
+        code += [(format_float_decl + str(f1), fac1)]
+        code += [(format_float_decl + str(f2), fac2)]
+        code += [(format_float_decl + str(f3), f2*f2)]
+
+        code += ["", Indent.indent(format["comment"]("Compute basisvalues"))]
+        # The initial value basisvalue 0 is always 1.0
+        # FIAT_NEW code
+        # for ii in range( results.shape[1] ):
+        #    results[0,ii] = 1.0 + apts[ii,0]-apts[ii,0]+apts[ii,1]-apts[ii,1]
+        code += [(format_basisvalue(0), format_float(1.0))]
 
         # Only continue if the embedded degree is larger than zero
         if embedded_degree > 0:
-
-            # FIAT_NEW code
-            # f1 = (1.0+2*x+y)/2.0
-            # f2 = (1.0 - y) / 2.0
-            # f3 = f2**2
-            fac1 = create_fraction(float_1 + float_2*symbol_x + symbol_y, float_2)
-            fac2 = create_fraction(float_1 - symbol_y, float_2)
-            code += [(format_float_decl + str(f1), fac1)]
-            code += [(format_float_decl + str(f2), fac2)]
-            code += [(format_float_decl + str(f3), f2*f2)]
-
-            code += ["", Indent.indent(format["comment"]("Compute basisvalues"))]
-            # The initial value basisvalue 0 is always 1.0
-            # FIAT_NEW code
-            # for ii in range( results.shape[1] ):
-            #    results[0,ii] = 1.0 + apts[ii,0]-apts[ii,0]+apts[ii,1]-apts[ii,1]
-            code += [(format_basisvalue(0), format_float(1.0))]
 
             # The initial value of basisfunction 1 is equal to f1
             # FIAT_NEW code
@@ -775,16 +794,16 @@ def _compute_basisvalues(data, Indent, format):
                 #        - p/(1.0+p) * f3 *results[idx(p-1,0),:]
                 # FIXME: KBO: Is there an error in FIAT? why is b not used?
                 lines = []
-                loop_vars = [(format_r, 1, embedded_degree)]
+                loop_vars = [(str(symbol_p), 1, embedded_degree)]
                 # Compute indices
-                lines.append((idx0, _idx(symbol_r + float_1, float_0)))
-                lines.append((idx1, _idx(symbol_r, float_0)))
-                lines.append((idx2, _idx(symbol_r - float_1, float_0)))
+                lines.append((idx0, _idx2D(symbol_p + float_1, float_0)))
+                lines.append((idx1, _idx2D(symbol_p, float_0)))
+                lines.append((idx2, _idx2D(symbol_p - float_1, float_0)))
                 # Compute single helper variable an
-                lines.append((str(an), create_fraction(float_2*symbol_r + float_1, symbol_r + float_1)))
+                lines.append((str(an), create_fraction(float_2*symbol_p + float_1, symbol_p + float_1)))
                 # Compute value
                 fac0 = create_product([an, f1, basis_idx1])
-                fac1 = create_product([create_fraction(symbol_r, float_1 + symbol_r), f3, basis_idx2])
+                fac1 = create_product([create_fraction(symbol_p, float_1 + symbol_p), f3, basis_idx2])
                 lines.append((str(basis_idx0), fac0 - fac1))
                 # Create loop (block of lines)
                 code += generate_loop(lines, loop_vars, Indent, format)
@@ -797,21 +816,21 @@ def _compute_basisvalues(data, Indent, format):
                 #            = ( a1 * y + a2 ) * results[idx(p,q)] \
                 #            - a3 * results[idx(p,q-1)]
                 lines = []
-                loop_vars = [(format_r, 0, embedded_degree - 1),\
-                             (format_s, 1, float_n - symbol_r)]
+                loop_vars = [(str(symbol_p), 0, embedded_degree - 1),\
+                             (str(symbol_q), 1, float_n - symbol_p)]
                 # Compute indices
-                lines.append((idx0, _idx(symbol_r, symbol_s + float_1)))
-                lines.append((idx1, _idx(symbol_r, symbol_s)))
-                lines.append((idx2, _idx(symbol_r, symbol_s - float_1)))
+                lines.append((idx0, _idx2D(symbol_p, symbol_q + float_1)))
+                lines.append((idx1, _idx2D(symbol_p, symbol_q)))
+                lines.append((idx2, _idx2D(symbol_p, symbol_q - float_1)))
                 # Comute all helper variables
-                jrc = _jrc(float_2*symbol_r + float_1, float_0, symbol_s)
+                jrc = _jrc(float_2*symbol_p + float_1, float_0, symbol_q)
                 lines.append((str(an), jrc[0]))
                 lines.append((str(bn), jrc[1]))
                 lines.append((str(cn), jrc[2]))
                 # Compute value
                 fac0 = create_product([an * symbol_y + bn, basis_idx1])
                 fac1 = cn * basis_idx2
-                lines.append((format_basisvalue(idx0), fac0 - fac1))
+                lines.append((str(basis_idx0), fac0 - fac1))
                 # Create loop (block of lines)
                 code += generate_loop(lines, loop_vars, Indent, format)
 
@@ -820,14 +839,14 @@ def _compute_basisvalues(data, Indent, format):
             #    results[idx(p,1),:] = 0.5 * (1+2.0*p+(3.0+2.0*p)*y) \
             #        * results[idx(p,0)]
             lines = []
-            loop_vars = [(format_r, 0, embedded_degree)]
+            loop_vars = [(str(symbol_p), 0, embedded_degree)]
             # Compute indices
-            lines.append((idx0, _idx(symbol_r, float_1)))
-            lines.append((idx1, _idx(symbol_r, float_0)))
+            lines.append((idx0, _idx2D(symbol_p, float_1)))
+            lines.append((idx1, _idx2D(symbol_p, float_0)))
             # Compute value
-            fac0 = create_product([float_3 + float_2*symbol_r, symbol_y])
-            fac1 = create_product([float_0_5, float_1 + float_2*symbol_r + fac0, basis_idx1])
-            lines.append((format_basisvalue(idx0), fac1.expand().reduce_ops()))
+            fac0 = create_product([float_3 + float_2*symbol_p, symbol_y])
+            fac1 = create_product([float_0_5, float_1 + float_2*symbol_p + fac0, basis_idx1])
+            lines.append((str(basis_idx0), fac1.expand().reduce_ops()))
             # Create loop (block of lines)
             code += generate_loop(lines, loop_vars, Indent, format)
 
@@ -836,43 +855,186 @@ def _compute_basisvalues(data, Indent, format):
             #    for q in range(n-p+1):
             #        results[idx(p,q),:] *= math.sqrt((p+0.5)*(p+q+1.0))
             lines = []
-            loop_vars = [(format_r, 0, embedded_degree + 1), \
-                         (format_s, 0, float_n1 - symbol_r)]
+            loop_vars = [(str(symbol_p), 0, embedded_degree + 1), \
+                         (str(symbol_q), 0, float_n1 - symbol_p)]
             # Compute indices
-            lines.append((idx0, _idx(symbol_r, symbol_s)))
+            lines.append((idx0, _idx2D(symbol_p, symbol_q)))
             # Compute value
-            fac0 = create_product([symbol_r + float_0_5, symbol_r + symbol_s + float_1])
+            fac0 = create_product([symbol_p + float_0_5, symbol_p + symbol_q + float_1])
             fac2 = create_symbol( format_sqrt(str(fac0)), CONST )
-            lines.append((format_basisvalue(idx0), create_product([basis_idx0, fac2])))
+            lines.append((str(basis_idx0), create_product([basis_idx0, fac2])))
             # Create loop (block of lines)
             code += generate_loop(lines, loop_vars, Indent, format)
 
     # 3D
     elif (element_cell_domain == "tetrahedron"):
-        count = 0
-#        for k in range(0, data.degree()+1):  # loop over degree
-#            for i in range(0, k+1):
-#                for j in range(0, k - i + 1):
-#                    ii = k-i-j
-#                    jj = j
-#                    kk = i
-#                    factor = math.sqrt( (ii+0.5) * (ii+jj+1.0) * (ii+jj+kk+1.5) )
+        # FIAT_NEW.expansions.TetrahedronExpansionSet
 
-#                    symbol = format_multiply([format_psitilde_a + format_secondary_index(ii),\
-#                             format_scalings(format_y, ii), format_psitilde_bs(ii) + format_secondary_index(jj),\
-#                             format_scalings(format_z, (ii+jj)),\
-#                             format_psitilde_cs(ii, jj) + format_secondary_index(kk)])
+        # Compute helper factors
+        # FIAT_NEW code
+        # factor1 = 0.5 * ( 2.0 + 2.0*x + y + z )
+        # factor2 = (0.5*(y+z))**2
+        # factor3 = 0.5 * ( 1 + 2.0 * y + z )
+        # factor4 = 0.5 * ( 1 - z )
+        # factor5 = factor4 ** 2
+        fac1 = create_product([float_0_5, float_2 + float_2*symbol_x + symbol_y + symbol_z])
+        fac2 = create_product([float_0_25, symbol_y + symbol_z, symbol_y + symbol_z])
+        fac3 = create_product([float_0_5, float_1 + float_2*symbol_y + symbol_z])
+        fac4 = create_product([float_0_5, float_1 - symbol_z])
+        code += [(format_float_decl + str(f1), fac1)]
+        code += [(format_float_decl + str(f2), fac2)]
+        code += [(format_float_decl + str(f3), fac3)]
+        code += [(format_float_decl + str(f4), fac4)]
+        code += [(format_float_decl + str(f5), f4*f4)]
 
-#                    # Declare variable
-#                    name = format_const_float + format_basisvalue(count)
+        code += ["", Indent.indent(format["comment"]("Compute basisvalues"))]
+        # The initial value basisvalue 0 is always 1.0
+        # FIAT_NEW code
+        # for ii in range( results.shape[1] ):
+        #    results[0,ii] = 1.0 + apts[ii,0]-apts[ii,0]+apts[ii,1]-apts[ii,1]
+        code += [(format_basisvalue(0), format_float(1.0))]
 
-#                    # Let inner_product handle format of factor
-#                    value = inner_product([factor],[symbol], format)
+        # Only continue if the embedded degree is larger than zero
+        if embedded_degree > 0:
 
-#                    code += [(Indent.indent(name), value)]
-#                    count += 1
-#        if (count != poly_dim):
-#            error("The number of basis values must be the same as the polynomium dimension of the base")
+            # The initial value of basisfunction 1 is equal to f1
+            # FIAT_NEW code
+            # results[idx(1,0),:] = f1
+            code += [(format_basisvalue(1), str(f1))]
+
+            # Only active is embedded_degree > 1
+            if embedded_degree > 1:
+
+                # FIAT_NEW code
+                # for p in range(1,n):
+                #    a1 = ( 2.0 * p + 1.0 ) / ( p + 1.0 )
+                #    a2 = p / (p + 1.0)
+                #    results[idx(p+1,0,0)] = a1 * factor1 * results[idx(p,0,0)] \
+                #        -a2 * factor2 * results[ idx(p-1,0,0) ]
+                lines = []
+                loop_vars = [(str(symbol_p), 1, embedded_degree)]
+                # Compute indices
+                lines.append((idx0, _idx3D(symbol_p + float_1, float_0, float_0)))
+                lines.append((idx1, _idx3D(symbol_p          , float_0, float_0)))
+                lines.append((idx2, _idx3D(symbol_p - float_1, float_0, float_0)))
+                # Compute value
+                fac1 = create_fraction(float_2*symbol_p + float_1, symbol_p + float_1)
+                fac2 = create_fraction(symbol_p, symbol_p + float_1)
+                fac3 = create_product([fac1, f1, basis_idx1]) - create_product([fac2, f2, basis_idx2]) 
+                lines.append((str(basis_idx0), fac3))
+                # Create loop (block of lines)
+                code += generate_loop(lines, loop_vars, Indent, format)
+
+                # FIAT_NEW code
+                # for p in range(0,n-1):
+                #    for q in range(1,n-p):
+                #        (aq,bq,cq) = jrc(2*p+1,0,q)
+                #        qmcoeff = aq * factor3 + bq * factor4
+                #        qm1coeff = cq * factor5
+                #        results[idx(p,q+1,0)] = qmcoeff * results[idx(p,q,0)] \
+                #            - qm1coeff * results[idx(p,q-1,0)]
+                lines = []
+                loop_vars = [(str(symbol_p), 0, embedded_degree - 1),\
+                             (str(symbol_q), 1, float_n - symbol_p)]
+                # Compute indices
+                lines.append((idx0, _idx3D(symbol_p, symbol_q + float_1, float_0)))
+                lines.append((idx1, _idx3D(symbol_p, symbol_q          , float_0)))
+                lines.append((idx2, _idx3D(symbol_p, symbol_q - float_1, float_0)))
+                # Comute all helper variables
+                jrc = _jrc(float_2*symbol_p + float_1, float_0, symbol_q)
+                lines.append((str(an), jrc[0]))
+                lines.append((str(bn), jrc[1]))
+                lines.append((str(cn), jrc[2]))
+                # Compute value
+                fac1 = create_product([an*f3 + bn*f4, basis_idx1]) - cn*f5*basis_idx2
+                lines.append((str(basis_idx0), fac1))
+                # Create loop (block of lines)
+                code += generate_loop(lines, loop_vars, Indent, format)
+
+                # FIAT_NEW code
+                # general r by recurrence
+                # for p in range(n-1):
+                #     for q in range(0,n-p-1):
+                #         for r in range(1,n-p-q):
+                #             ar,br,cr = jrc(2*p+2*q+2,0,r)
+                #             results[idx(p,q,r+1)] = \
+                #                         (ar * z + br) * results[idx(p,q,r) ] \
+                #                         - cr * results[idx(p,q,r-1) ]
+                lines = []
+                loop_vars = [(str(symbol_p), 0, embedded_degree - 1),\
+                             (str(symbol_q), 0, float_nm1 - symbol_p),\
+                             (str(symbol_r), 1, float_n - symbol_p - symbol_q)]
+                # Compute indices
+                lines.append((idx0, _idx3D(symbol_p, symbol_q, symbol_r + float_1)))
+                lines.append((idx1, _idx3D(symbol_p, symbol_q, symbol_r)))
+                lines.append((idx2, _idx3D(symbol_p, symbol_q, symbol_r - float_1)))
+                # Comute all helper variables
+                jrc = _jrc(float_2*symbol_p + float_2*symbol_q, float_0, symbol_r)
+                lines.append((str(an), jrc[0]))
+                lines.append((str(bn), jrc[1]))
+                lines.append((str(cn), jrc[2]))
+                # Compute value
+                fac1 = create_product([an*symbol_z + bn, basis_idx1]) - cn*basis_idx2
+                lines.append((str(basis_idx0), fac1))
+                # Create loop (block of lines)
+                code += generate_loop(lines, loop_vars, Indent, format)
+
+            # FIAT_NEW code
+            # q = 1
+            # for p in range(0,n):
+            #    results[idx(p,1,0)] = results[idx(p,0,0)] \
+            #        * ( p * (1.0 + y) + ( 2.0 + 3.0 * y + z ) / 2 )
+            lines = []
+            loop_vars = [(str(symbol_p), 0, embedded_degree)]
+            # Compute indices
+            lines.append((idx0, _idx3D(symbol_p, float_1, float_0)))
+            lines.append((idx1, _idx3D(symbol_p, float_0, float_0)))
+            # Compute value
+            fac1 = create_fraction(float_2 + float_3*symbol_y + symbol_z, float_2)
+            fac2 = create_product([symbol_p, float_1 + symbol_y])
+            fac3 = create_product([basis_idx1, fac2 + fac1])
+            lines.append((str(basis_idx0), fac3))
+            # Create loop (block of lines)
+            code += generate_loop(lines, loop_vars, Indent, format)
+                
+            # FIAT_NEW code
+            # now handle r=1
+            # for p in range(n):
+            #    for q in range(n-p):
+            #        results[idx(p,q,1)] = results[idx(p,q,0)] \
+            #            * ( 1.0 + p + q + ( 2.0 + q + p ) * z )
+            lines = []
+            loop_vars = [(str(symbol_p), 0, embedded_degree),\
+                         (str(symbol_q), 0, float_n - symbol_p)]
+            # Compute indices
+            lines.append((idx0, _idx3D(symbol_p, symbol_q, float_1)))
+            lines.append((idx1, _idx3D(symbol_p, symbol_q, float_0)))
+            # Compute value
+            fac1 = create_product([float_2 + symbol_p + symbol_q, symbol_z])
+            fac2 = create_product([basis_idx1, float_1 + symbol_p + symbol_q + fac1])
+            lines.append((str(basis_idx0), fac2))
+            # Create loop (block of lines)
+            code += generate_loop(lines, loop_vars, Indent, format)
+
+            # FIAT_NEW code
+            # for p in range(n+1):
+            #    for q in range(n-p+1):
+            #        for r in range(n-p-q+1):
+            #            results[idx(p,q,r)] *= math.sqrt((p+0.5)*(p+q+1.0)*(p+q+r+1.5))
+            lines = []
+            loop_vars = [(str(symbol_p), 0, float_n1),\
+                         (str(symbol_q), 0, float_n1 - symbol_p),\
+                         (str(symbol_r), 0, float_n1 - symbol_p - symbol_q)]
+            # Compute indices
+            lines.append((idx0, _idx3D(symbol_p, symbol_q, symbol_r)))
+            # Compute value
+            fac0 = create_product([symbol_p + float_0_5,\
+                                   symbol_p + symbol_q + float_1,\
+                                   symbol_p + symbol_q + symbol_r + float_1_5])
+            fac2 = create_symbol( format_sqrt(str(fac0)), CONST )
+            lines.append((str(basis_idx0), create_product([basis_idx0, fac2])))
+            # Create loop (block of lines)
+            code += generate_loop(lines, loop_vars, Indent, format)
     else:
         error("Cannot compute basis values for shape: %d" % elemet_cell_domain)
 
