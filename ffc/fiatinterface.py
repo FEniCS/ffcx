@@ -7,25 +7,13 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Marie Rognes, 2009-2010.
 # Last changed: 2010-01-08
 
-# UFL modules
-from ufl import FiniteElement as UFLFiniteElement
-from ufl import MixedElement as UFLMixedElement
-from ufl import ElementRestriction as UFLElementRestriction
-from ufl import TensorElement as UFLTensorElement
-
-# FIAT modules
-#from FIAT.shapes import LINE, TRIANGLE, TETRAHEDRON
-from FIAT_NEW.reference_element import ufc_simplex
-from FIAT_NEW.lagrange import Lagrange
-from FIAT_NEW.brezzi_douglas_marini import BrezziDouglasMarini
-from FIAT_NEW.discontinuous_lagrange import DiscontinuousLagrange
-from FIAT_NEW.quadrature import make_quadrature
+# Import UFL and FIAT
+import ufl
+import FIAT_NEW as FIAT
 
 # FFC modules
-from log import debug, error
-
-# FFC fem modules
-from quadratureelement import QuadratureElement as FFCQuadratureElement
+from ffc.log import debug, error
+from ffc.quadratureelement import QuadratureElement as FFCQuadratureElement
 
 # Cache for computed elements
 _cache = {}
@@ -36,19 +24,14 @@ domain2dim = {"vertex": 0,
               "triangle": 2,
               "tetrahedron": 3}
 
-# Mapping from family name to class
-family2class = {"Lagrange": Lagrange,
-                "Brezzi-Douglas-Marini": BrezziDouglasMarini,
-                "Discontinuous Lagrange": DiscontinuousLagrange}
-
 # Mapping from dimension to number of mesh sub-entities:
 entities_per_dim = {1: [2, 1], 2: [3, 3, 1], 3: [4, 6, 4, 1]}
 
 def reference_cell(dim):
     if isinstance(dim, int):
-        return ufc_simplex(dim)
+        return FIAT.reference_element.ufc_simplex(dim)
     else:
-        return ufc_simplex(domain2dim[dim])
+        return FIAT.reference_element.ufc_simplex(domain2dim[dim])
 
 def create_element(ufl_element):
 
@@ -61,7 +44,7 @@ def create_element(ufl_element):
     from mixedelement import MixedElement as FFCMixedElement
 
     # Create element
-    if isinstance(ufl_element, UFLMixedElement):
+    if isinstance(ufl_element, ufl.MixedElement):
         element = FFCMixedElement(ufl_element)
     else:
         element = create_fiat_element(ufl_element)
@@ -72,9 +55,15 @@ def create_element(ufl_element):
     return element
 
 def create_fiat_element(ufl_element):
-    "Create FIAT element corresponding to given UFL finite element."
+    "Create FIAT element corresponding to given finite element."
 
-    ElementClass = family2class[ufl_element.family()]
+    # Check if finite element family is supported by FIAT
+    family = ufl_element.family()
+    if not family in FIAT.element_classes:
+        error("Sorry, finite element of type \"%s\" are not supported by FIAT.", family)
+
+    # Create FIAT finite element
+    ElementClass = FIAT.element_classes[family]
     cell = reference_cell(ufl_element.cell().domain())
     element = ElementClass(cell, ufl_element.degree())
 
@@ -85,7 +74,7 @@ def create_quadrature(shape, num_points):
     Generate quadrature rule (points, weights) for given shape with
     num_points points in each direction.
     """
-    quad_rule = make_quadrature(reference_cell(shape), num_points)
+    quad_rule = FIAT.make_quadrature(reference_cell(shape), num_points)
     return quad_rule.get_points(), quad_rule.get_weights()
 
 def map_facet_points(points, facet):
