@@ -96,6 +96,7 @@ def generate_dofmap_code(i, ir, prefix, options):
     # Prefetch formatting to speedup code generation
     ret = format["return"]
     do_nothing = format["do nothing"]
+    switch = format["switch"]
 
     # Generate code
     code = {}
@@ -113,7 +114,7 @@ def generate_dofmap_code(i, ir, prefix, options):
     code["max_local_dimension"] = ret(ir["max_local_dimension"])
     code["geometric_dimension"] = ret(ir["geometric_dimension"])
     code["num_facet_dofs"] = ret(ir["num_facet_dofs"])
-    code["num_entity_dofs"] = format["switch"]("d", [ret(num) for num in ir["num_entity_dofs"]])
+    code["num_entity_dofs"] = switch("d", [ret(num) for num in ir["num_entity_dofs"]])
     code["tabulate_dofs"] = _tabulate_dofs(ir["tabulate_dofs"])
     code["tabulate_facet_dofs"] = _tabulate_facet_dofs(ir["tabulate_facet_dofs"])
     code["tabulate_entity_dofs"] = not_implemented
@@ -203,12 +204,10 @@ def _value_dimension(ir):
         return format["return"](1)
     return format["switch"]("i", [format["return"](n) for n in ir])
 
-
 def _needs_mesh_entities(ir):
     "Generate code for needs_mesh_entities. ir is a list of num dofs per entity"
     return format["switch"]("d", [format["return"](format["bool"](c))
                                   for c in ir])
-
 
 def _init_mesh(ir):
     "Generate code for init_mesh. ir is a list of num dofs per entity."
@@ -232,7 +231,6 @@ def _tabulate_facet_dofs(ir):
              for facet in range(len(ir))]
 
     return format["switch"]("facet", cases)
-
 
 def _tabulate_dofs(ir):
     "Generate code for tabulate_dofs."
