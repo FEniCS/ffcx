@@ -11,7 +11,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Garth N. Wells 2006
 # Modified by Marie E. Rognes (meg@math.uio.no) 2008
 # Modified by Kristian B. Oelgaard, 2009
-# Last changed: 2009-12-21
+# Last changed: 2010-01-08
 
 # Python modules
 import numpy
@@ -23,7 +23,7 @@ from ufl.geometry import domain2facet
 
 # FFC modules
 from ffc.log import info, debug, error
-from ffc.ffcquadraturerules import make_quadrature
+from ffc.ffcquadraturerules import make_quadrature, map_facet_points
 from ffc.fiatinterface import create_element
 
 # FFC tensor representation modules.
@@ -100,11 +100,11 @@ def _init_table(arguments, domain_type, points, facet0, facet1):
         if domain_type == Measure.CELL:
             table[(ufl_element, None)] = fiat_element.tabulate(order, points)
         elif domain_type == Measure.EXTERIOR_FACET:
-            x = map_to_facet(fiat_element.cell_domain(), points, facet0)
+            x = map_facet_points(points, facet0)
             table[(ufl_element, None)] = fiat_element.tabulate(order, x)
         elif domain_type == Measure.INTERIOR_FACET:
-            x0 = map_to_facet(fiat_element.cell_domain(), points, facet0)
-            x1 = map_to_facet(fiat_element.cell_domain(), points, facet1)
+            x0 = map_facet_points(points, facet0)
+            x1 = map_facet_points(points, facet1)
             table[(ufl_element, "+")] = fiat_element.tabulate(order, x0)
             table[(ufl_element, "-")] = fiat_element.tabulate(order, x1)
 

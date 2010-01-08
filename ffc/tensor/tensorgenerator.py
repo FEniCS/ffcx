@@ -8,7 +8,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Kristian B. Oelgaard, 2009
 # Modified by Marie Rognes (meg@math.uio.no), 2007
 # Modified by Garth N. Wells, 2009
-# Last changed: 2010-01-07
+# Last changed: 2010-01-08
 
 # FFC modules
 from ffc.log import info
@@ -176,8 +176,6 @@ def _tabulate_tensor(terms, ir, incremental, options):
     format_comment = format["comment"]
 
     # Generate code for element tensor, geometry tensor and Jacobian
-    print "geo"
-    print ir.geometric_dimension
     j_code = codesnippets.jacobian[ir.geometric_dimension] % {"restriction": ""}
     t_code, g_set = _generate_element_tensor(terms, incremental, options)
     g_code, j_set = _generate_geometry_tensors(terms, g_set)
