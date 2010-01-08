@@ -40,14 +40,14 @@ def generate_integrals_code(ir, options):
     code_exterior_facet_integrals = []
     for (sub_domain, terms) in enumerate(ir.exterior_facet_integrals):
         if not terms: continue
-        I = _generate_exterior_facet_integral_code(terms, ir, incremental)
+        I = generate_exterior_facet_integral_code(terms, ir, incremental)
         code_exterior_facet_integrals.append(I)
 
     # Generate code for interior facet integrals
     code_interior_facet_integrals = []
     for (sub_domain, terms) in enumerate(ir.interior_facet_integrals):
         if not terms: continue
-        I = _generate_interior_facet_integral_code(terms, ir, incremental)
+        I = generate_interior_facet_integral_code(terms, ir, incremental)
         code_interior_facet_integrals.append(I)
 
     return code_cell_integrals, code_exterior_facet_integrals, code_interior_facet_integrals
