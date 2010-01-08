@@ -105,8 +105,16 @@ class Fraction(Expr):
         # (expanded) sum of their numerators.
         if other._prec == 4 and self.denom == other.denom: # frac
             return create_fraction(create_sum([self.num, other.num]).expand(), self.denom)
-        else:
-            error("Not implemented.")
+        return create_sum([self, other])
+
+    def __sub__(self, other):
+        "Subtract other objects."
+        # Return a new sum
+        if other._prec == 4 and self.denom == other.denom: # frac
+            num = create_sum([self.num, create_product([FloatValue(-1), other.num])]).expand()
+            return create_fraction(num, self.denom)
+        return create_sum([self, create_product([FloatValue(-1), other])])
+
 
     def __mul__(self, other):
         "Multiplication by other objects."

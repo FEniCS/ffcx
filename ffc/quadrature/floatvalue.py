@@ -15,6 +15,7 @@ from symbolics import CONST
 from symbolics import format
 from symbolics import create_float
 from symbolics import create_product
+from symbolics import create_sum
 from symbolics import create_fraction
 from expr import Expr
 
@@ -70,9 +71,19 @@ class FloatValue(Expr):
             return create_float(self.val+other.val)
         elif self.val == 0.0:
             return other
-        # Addition is not defined if self is not zero.
-        # TODO: We could just return a Sum?
-        error("Can only add two floats, or other to zero.")
+        # Return a new sum
+        return create_sum([self, other])
+
+    def __sub__(self, other):
+        "Subtract other objects."
+        # NOTE: We expect expanded objects here.
+        if other._prec == 0: # float
+            return create_float(self.val-other.val)
+        # Multiply other by -1
+        elif self.val == 0.0:
+            return create_product([create_float(-1), other])
+        # Return a new sum where other is multiplied by -1
+        return create_sum([self, create_product([create_float(-1), other])])
 
     def __mul__(self, other):
         "Multiplication by other objects."
