@@ -272,10 +272,11 @@ def _interpolate_vertex_values(element, cell):
     ir["needs_jacobian"] = any("piola" in m for m in mappings)
 
     # Get vertices of reference cell
-    vertices = reference_cell(cell.domain()).get_vertices()
-
+    fiat_ref_cell = reference_cell(cell.domain())
+    vertices = fiat_ref_cell.get_vertices()
     # Compute data for each constituent element
-    extract = lambda values: [a for a in values[(0, 0)]]
+    # FIXME: KBO: Does the below still work if we decide to support say R^2 elements in R^3
+    extract = lambda values: [a for a in values[(0,)*fiat_ref_cell.get_spatial_dimension()]]
 
     ir["element_data"] = [{"value_dim": _value_dimension(e),
                            "basis_values": extract(e.tabulate(0, vertices)),
