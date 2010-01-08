@@ -7,7 +7,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian B. Oelgaard 2009
 # Modified by Marie E. Rognes 2010
-# Last changed: 2010-01-07
+# Last changed: 2010-01-08
 
 # Python modules.
 import re
@@ -27,6 +27,7 @@ format.update({"return":     lambda v: "return %s;" % str(v),
                "switch":     lambda v, cases: _generate_switch(v, cases),
                "exception":  lambda v: "throw std::runtime_error(\"%s\");" % v,
                "comment":    lambda v: "\n// %s\n" % v,
+               "if":         lambda c, v: "if (%s) {\n%s\n}\n" % (c, v),
                "do nothing": "// Do nothing"})
 
 # Declarations

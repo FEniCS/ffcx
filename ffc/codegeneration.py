@@ -117,7 +117,7 @@ def generate_dofmap_code(i, ir, prefix, options):
     code["num_entity_dofs"] = switch("d", [ret(num) for num in ir["num_entity_dofs"]])
     code["tabulate_dofs"] = _tabulate_dofs(ir["tabulate_dofs"])
     code["tabulate_facet_dofs"] = _tabulate_facet_dofs(ir["tabulate_facet_dofs"])
-    code["tabulate_entity_dofs"] = not_implemented
+    code["tabulate_entity_dofs"] = _tabulate_entity_dofs(ir["tabulate_entity_dofs"])
     code["tabulate_coordinates"] = _tabulate_coordinates(ir["tabulate_coordinates"])
     code["num_sub_dof_maps"] = ret(ir["num_sub_dof_maps"])
     code["create_sub_dof_map"] = _create_foo(ir["create_sub_dof_map"], prefix, "dof_map")
@@ -126,6 +126,46 @@ def generate_dofmap_code(i, ir, prefix, options):
     _postprocess_code(code, options)
 
     debug_code(code, "dofmap")
+
+    return code
+
+def _tabulate_entity_dofs(ir):
+    "Generate code for tabulate_entity_dofs."
+
+    # Extract variables from ir
+    entity_dofs, num_dofs_per_entity = ir
+
+    # Prefetch formats
+    assign, component = format["assign"], format["component"]
+
+    # Add check that dimension and number of mesh entities is valid
+    dim = len(num_dofs_per_entity)
+    excpt = format["exception"]("d is larger than dimension (%d)" % (dim - 1))
+    code = format["if"]("d > %d" % (dim-1), excpt)
+
+    # Generate cases for each dimension:
+    all_cases = ["" for d in range(dim)]
+    for d in range(dim):
+
+        # Ignore if no entities for this dimension
+        if num_dofs_per_entity[d] == 0: continue
+
+        # Add check that given entity is valid:
+        num_entities = len(entity_dofs[d].keys())
+        excpt = format["exception"]("i is larger than number of entities (%d)"
+                                    % (num_entities - 1))
+        check = format["if"]("i > %d" % (num_entities - 1), excpt)
+
+        # Generate cases for each mesh entity
+        cases = ["".join([assign(component("dofs", j), dof)
+                          for (j, dof) in enumerate(entity_dofs[d][entity])])
+                 for entity in range(num_entities)]
+
+        # Generate inner switch with preceding check
+        all_cases[d] = "\n".join([check, format["switch"]("i", cases)])
+
+    # Generate outer switch
+    code += format["switch"]("d", all_cases)
 
     return code
 
