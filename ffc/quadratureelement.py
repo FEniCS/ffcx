@@ -4,7 +4,7 @@ __copyright__ = "Copyright (C) 2007-2008 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Garth N. Wells 2006-2009
-# Last changed: 2009-12-16
+# Last changed: 2010-01-08
 
 # Python modules.
 import numpy
@@ -20,7 +20,7 @@ from ufl.classes import Measure
 from log import error
 #from finiteelement import ufl_domain2fiat_domain
 #from dofrepresentation import DofRepresentation
-from ffcquadraturerules import make_quadrature
+#from ffcquadraturerules import make_quadrature
 #from finiteelement import FiniteElement
 #from finiteelement import AFFINE
 #from finiteelement import CONTRAVARIANT_PIOLA
