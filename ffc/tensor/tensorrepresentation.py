@@ -14,7 +14,7 @@ __copyright__ = "Copyright (C) 2007-2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian B. Oelgaard, 2009.
-# Last changed: 2009-12-21
+# Last changed: 2010-01-08
 
 # UFL modules
 from ufl.classes import Form
@@ -53,9 +53,12 @@ class TensorRepresentation:
         interior_facet_integrals - list of list of list of list of terms,
                                    one for each sub domain and facet pair
 
+        integral_irs             - tuple of the above integral
+
         geometric_dimension      - geometric dimension of form
 
         num_facets               - number of cell facets
+
     """
 
     def __init__(self, form, form_data):
@@ -91,6 +94,11 @@ class TensorRepresentation:
         n = form_data.num_interior_facet_domains
         self.interior_facet_integrals = \
             [_compute_interior_facet_tensors(m, form_data, i) for i in range(n)]
+
+        # Store representations as a tuple
+        self.integral_irs = (self.cell_integrals,
+                             self.exterior_facet_integrals,
+                             self.interior_facet_integrals)
 
         # Extract form data needed by code generation
         self.geometric_dimension = form_data.geometric_dimension

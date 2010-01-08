@@ -132,13 +132,25 @@ def generate_integrals_code(ir, prefix, options):
     "Generate code for integrals from intermediate representation."
 
     # FIXME: Handle multiple representations here
+    rep = tensor
 
-    code = tensor.generate_integrals_code(ir, options)
+    # Generate a list of code for each integral type
+    code = ([], [], [])
 
-    # Postprocess code
-    for integral_type_code in code:
-        for sub_domain_code in integral_type_code:
-            _postprocess_code(sub_domain_code, options)
+    # Iterate over integral types
+    for i in range(3):
+
+        # Iterate over sub domains for integral
+        for (sub_domain, integral_ir) in enumerate(ir.integral_irs[i]):
+
+            # Generate code for integral
+            integral_code = rep.generate_integral_code(integral_ir, ir, options)
+
+            # Post process generated code
+            _postprocess_code(integral_code, options)
+
+            # Store generated code
+            code[i].append(integral_code)
 
     return code
 
