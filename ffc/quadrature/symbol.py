@@ -14,6 +14,7 @@ from ffc.log import error
 from symbolics import type_to_string
 from symbolics import create_float
 from symbolics import create_product
+from symbolics import create_sum
 from symbolics import create_fraction
 from expr import Expr
 
@@ -76,15 +77,25 @@ class Symbol(Expr):
     # Binary operators.
     def __add__(self, other):
         "Addition by other objects."
-        # NOTE: We expect expanded objects and we only expect to add equal
+        # NOTE: We expect expanded objects
         # symbols, if other is a product, try to let product handle the addition.
-        # TODO: Should we also support addition by other objects for generality?
         # Returns x + x -> 2*x, x + 2*x -> 3*x.
         if self._repr == other._repr:
             return create_product([create_float(2), self])
         elif other._prec == 2: # prod
             return other.__add__(self)
-        error("Not implemented.")
+        return create_sum([self, other])
+
+    def __sub__(self, other):
+        "Subtract other objects."
+        # NOTE: We expect expanded objects
+        # symbols, if other is a product, try to let product handle the addition.
+        if self._repr == other._repr:
+            return create_float(0)
+        elif other._prec == 2: # prod
+            if other.get_vrs() == (self,):
+                return create_product([create_float(1.0 - other.val), self]).expand()
+        return create_sum([self, create_product([create_float(-1), other])])
 
     def __mul__(self, other):
         "Multiplication by other objects."

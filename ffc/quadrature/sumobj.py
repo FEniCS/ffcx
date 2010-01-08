@@ -112,6 +112,16 @@ class Sum(Expr):
         return s
 
     # Binary operators.
+    def __add__(self, other):
+        "Addition by other objects."
+        # Return a new sum
+        return create_sum([self, other])
+
+    def __sub__(self, other):
+        "Subtract other objects."
+        # Return a new sum
+        return create_sum([self, create_product([FloatValue(-1), other])])
+
     def __mul__(self, other):
         "Multiplication by other objects."
         # If product will be zero.

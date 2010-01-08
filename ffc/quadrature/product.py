@@ -148,8 +148,7 @@ class Product(Expr):
         # If we have more than one variable and the first float is -1 exlude the 1.
         if len(self.vrs) > 1 and self.vrs[0]._prec == 0 and self.vrs[0].val == -1.0:
             # Join string representation of members by multiplication
-            return   format["subtract"](["",""]).split()[0]\
-                   + format["multiply"]([str(v) for v in self.vrs[1:]])
+            return   format["subtract"](["", format["multiply"]([str(v) for v in self.vrs[1:]])])
         return format["multiply"]([str(v) for v in self.vrs])
 
     # Binary operators.
@@ -165,11 +164,21 @@ class Product(Expr):
             if self.get_vrs() == (other,):
                 # Return expanded product, to get rid of -x + x -> 0, not product(0).
                 return create_product([create_float(self.val + 1.0), other]).expand()
-            else:
-                # Can't do 2*x + y, not needed by this module.
-                error("Not implemented.")
-        else:
-            error("Not implemented.")
+        # Return sum
+        return create_sum([self, other])
+
+    def __sub__(self, other):
+        "Subtract other objects."
+        if other._prec == 2 and self.get_vrs() == other.get_vrs():
+            # Return expanded product, to get rid of 3*x + -2*x -> x, not 1*x.
+            return create_product([create_float(self.val - other.val)] + list(self.get_vrs())).expand()
+        # if self == 2*x and other == x return 3*x.
+        elif other._prec == 1: # sym
+            if self.get_vrs() == (other,):
+                # Return expanded product, to get rid of -x + x -> 0, not product(0).
+                return create_product([create_float(self.val - 1.0), other]).expand()
+        # Return sum
+        return create_sum([self, create_product([FloatValue(-1), other])])
 
     def __mul__(self, other):
         "Multiplication by other objects."
