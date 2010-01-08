@@ -6,9 +6,9 @@ __copyright__ = "Copyright (C) 2007 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian Oelgaard 2009
-# Modified by Marie Rognes 2007, 2008
+# Modified by Marie Rognes 2007 -- 2010
 # Modified by Peter Brune 2009
-# Last changed: 2009-12-22
+# Last changed: 2010-01-07
 
 # Code snippets
 
@@ -47,6 +47,9 @@ footer = \
 
 #endif
 """
+
+cell_coordinates = "const double * const * x = c.coordinates;\n"
+evaluate_f = "f.evaluate(values, y, c);\n"
 
 jacobian_1D = \
 """
@@ -222,96 +225,6 @@ facet_normal_3D = \
 const double n%(restriction)s0 = %(direction)sdirection ? a0 / det : -a0 / det;
 const double n%(restriction)s1 = %(direction)sdirection ? a1 / det : -a1 / det;
 const double n%(restriction)s2 = %(direction)sdirection ? a2 / det : -a2 / det;
-"""
-
-evaluate_dof_1D = \
-"""
-double values[%d];
-double coordinates[1];
-
-// Nodal coordinates on reference cell
-static double X[%d][1] = %s;
-
-// Components for each dof
-static unsigned int components[%d] = %s;
-
-// Extract vertex coordinates
-const double * const * x = c.coordinates;
-
-// Evaluate basis functions for affine mapping
-const double w0 = 1.0 - X[i][0];
-const double w1 = X[i][0];
-
-// Compute affine mapping x = F(X)
-coordinates[0] = w0*x[0][0] + w1*x[1][0];
-
-// Evaluate function at coordinates
-f.evaluate(values, coordinates, c);
-
-// Pick component for evaluation
-return values[components[i]];
-"""
-
-evaluate_dof_2D = \
-"""
-double values[%d];
-double coordinates[2];
-
-// Nodal coordinates on reference cell
-static double X[%d][2] = %s;
-
-// Components for each dof
-static unsigned int components[%d] = %s;
-
-// Extract vertex coordinates
-const double * const * x = c.coordinates;
-
-// Evaluate basis functions for affine mapping
-const double w0 = 1.0 - X[i][0] - X[i][1];
-const double w1 = X[i][0];
-const double w2 = X[i][1];
-
-// Compute affine mapping x = F(X)
-coordinates[0] = w0*x[0][0] + w1*x[1][0] + w2*x[2][0];
-coordinates[1] = w0*x[0][1] + w1*x[1][1] + w2*x[2][1];
-
-// Evaluate function at coordinates
-f.evaluate(values, coordinates, c);
-
-// Pick component for evaluation
-return values[components[i]];
-"""
-
-evaluate_dof_3D = \
-"""
-double values[%d];
-double coordinates[3];
-
-// Nodal coordinates on reference cell
-static double X[%d][3] = %s;
-
-// Components for each dof
-static unsigned int components[%d] = %s;
-
-// Extract vertex coordinates
-const double * const * x = c.coordinates;
-
-// Evaluate basis functions for affine mapping
-const double w0 = 1.0 - X[i][0] - X[i][1] - X[i][2];
-const double w1 = X[i][0];
-const double w2 = X[i][1];
-const double w3 = X[i][2];
-
-// Compute affine mapping x = F(X)
-coordinates[0] = w0*x[0][0] + w1*x[1][0] + w2*x[2][0] + w3*x[3][0];
-coordinates[1] = w0*x[0][1] + w1*x[1][1] + w2*x[2][1] + w3*x[3][1];
-coordinates[2] = w0*x[0][2] + w1*x[1][2] + w2*x[2][2] + w3*x[3][2];
-
-// Evaluate function at coordinates
-f.evaluate(values, coordinates, c);
-
-// Pick component for evaluation
-return values[components[i]];
 """
 
 eta_interval_snippet = \

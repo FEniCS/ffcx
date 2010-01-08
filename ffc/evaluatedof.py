@@ -4,18 +4,15 @@ __author__ = "Marie E. Rognes (meg@simula.no)"
 __copyright__ = "Copyright (C) 2009"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-05
+# Last changed: 2010-01-07
 
-from ffc.codesnippets import jacobian
+from ffc.codesnippets import jacobian, evaluate_f
 from ffc.cpp import format
 
-# Note: Needs cpp clean-up
 # Note: Heavily relies on remove_unused to do its job
 
 def _evaluate_dof(ir):
     "Generate code for evaluate_dof"
-
-    code = []
 
     # Extract degrees of freedom, function mappings and offsets.
     dofs = ir["dofs"]
@@ -25,38 +22,39 @@ def _evaluate_dof(ir):
     # Define possibly necessary geometry information
     value_dim = ir["value_dim"]
     cell_dim = ir["cell_dimension"]
-    code += [jacobian[cell_dim] % {"restriction": ""}]
+    code = jacobian[cell_dim] % {"restriction": ""}
 
     # Declare variable for physical coordinates
-    code += ["\n" + format["comment"]("Declare variable for physical coordinates")]
-    code += ["double y[%d];" % cell_dim]
+    code += format["comment"]("Declare variable for physical coordinates")
+    code += format["declaration"]("double", "y[%d]" % cell_dim)
 
     # Declare variables for storing the result
-    code += ["\n" + format["comment"]("Declare variables for result of evaluation")]
-    code += ["double values[%d];" % value_dim]
-    code += ["double copy[%d];" % value_dim]
-    code += ["double result = 0;"]
+    code += format["comment"]("Declare variables for result of evaluation")
+    code += format["declaration"]("double", "values[%d]" % value_dim)
+    code += format["declaration"]("double", "copy[%d]" % value_dim)
+    code += format["declaration"]("double", "result", 0.0)
 
     # Generate switch bodies for each degree of freedom
     cases = [_generate_body(dof, mappings[i], cell_dim, value_dim, offsets[i])
              for (i, dof) in enumerate(dofs)]
 
     # Define switch
-    code += ["\n" + format["comment"]("Evaluate degree of freedom of function")]
-    code += [format["switch"]("i", cases)]
+    code += format["comment"]("Evaluate degree of freedom of function")
+    code += format["switch"]("i", cases)
 
     # Return code as string
-    return "\n".join(code)
+    return code
 
 def _generate_body(dof, mapping, cell_dim, value_dim, offset=0):
     "Generate code for a certain dof"
 
-    code = []
+    code = ""
 
     # Prefetch formats
-    add = format["add"]
     iadd = format["iadd"]
-    multiply = format["multiply"]
+    inner_product = format["inner product"]
+    component = format["component"]
+    assign = format["assign"]
     precision = format["float"]
 
     # Aid mapping points from reference to physical element
@@ -67,66 +65,94 @@ def _generate_body(dof, mapping, cell_dim, value_dim, offset=0):
 
         # Map point onto physical element: y = F(x)
         w = coefficients(point)
+
         for j in range(cell_dim):
-            value = add([multiply([precision(w[k]), "x[%d][%d]" % (k, j)])
-                         for k in range(cell_dim + 1)])
-            code += ["y[%d] = %s;" % (j, value)]
+            # Compute contraction of weights and coordinates
+            value = inner_product(w, [component("x", (k, j))
+                                      for k in range(cell_dim + 1)])
+
+            # Assign component j of physical coordinate
+            code += assign(component("y", j), value)
 
         # Evaluate function at physical point
-        code += ["f.evaluate(values, y, c);"]
+        code += evaluate_f
 
         # Map function values to the reference element
-        code += [_generate_mapping(mapping, cell_dim, offset)]
+        code += _generate_mapping(mapping, cell_dim, offset)
 
         # Take directional components
         values = []
         for (i, tokens) in enumerate(dof[point]):
             if tokens[1] == ():
-                values += ["values[%d]" % offset]
+                values += [component("values", offset)]
             else:
-                values += ["values[%d]" % tokens[1] + offset]
+                values += [component("values" , tokens[1] + offset)]
 
         # Multiply by weights and sum
-        weights = [precision(c[0]) for c in dof[point]]
-        value = add([multiply([weights[i], values[i]]) for i in range(len(values))])
+        weights = [c[0] for c in dof[point]]
+        value = inner_product(weights, values)
 
         # Add value to result
-        code += [iadd("result", value)]
+        code += iadd("result", value)
 
     # Return result
-    code += ["return result;"]
+    code += format["return"]("result")
 
-    return "\n".join(code)
+
+    return code
 
 def _generate_mapping(mapping, dim, offset):
     "Generate code for mapping function values according to 'mapping'"
 
-    add = format["add"]
     multiply = format["multiply"]
+    inner_product = format["inner product"]
+    assign = format["assign"]
+    component = format["component"]
 
-    code = []
+    code = ""
+
     if mapping == "affine":
-        pass
+        return code
     elif mapping == "contravariant piola":
-        code += [format["comment"]("Take inverse of contravariant Piola")]
-        code += ["copy[%d] = values[%d];" % (i, i+offset) for i in range(dim)]
-        values = ["detJ*(" + add([multiply(["Jinv_%d%d" % (i, j), "copy[%d]" % j])
-                                  for j in range(dim)]) + ")"
+
+        code += format["comment"]("Take inverse of contravariant Piola")
+
+        # Copy of appropriate values
+        copies = [assign(component("copy", i), component("values", i+offset))
                   for i in range(dim)]
-        code += ["values[%d] = %s;" % (i + offset, values[i]) for i in range(dim)]
+        code += "".join(copies)
+
+        for i in range(dim):
+
+            # Compute inverse piola for this row
+            inv_jacobian_row = ["Jinv_%d%d" % (i, j) for j in range(dim)]
+            copies = [component("copy", j) for j in range(dim)]
+            values = multiply("detJ", inner_product(inv_jacobian_row, copies))
+
+            # Assign values
+            code += assign(component("values", i+offset), values)
 
     elif mapping == "covariant piola":
-        code += [format["comment"]("Take inverse of covariant Piola")]
-        code += ["copy[%d] = values[%d]" % (i, i+offset) for i in range(dim)]
 
-        values = [add([multiply(["J_%d%d" % (j, i), "copy[%d]" % j])
-                       for j in range(dim)]) + ")"
+        code += format["comment"]("Take inverse of covariant Piola")
+
+        # Copy of appropriate values
+        copies = [assign(component("copy", i), component("values", i+offset))
                   for i in range(dim)]
-        code += ["values[%d] = %s;" % (i + offset, values[i]) for i in range(dim)]
+        code += "".join(copies)
+
+        for i in range(dim):
+            jacobian_row = ["J_%d%d" % (j, i) for j in range(dim)]
+            copies = [component("copy", j) for j in range(dim)]
+            values = inner_product(jacobian_row, copies)
+
+            # Assign values
+            code += assign(component("values", i+offset), values)
+
     else:
         raise Exception
 
-    return "\n".join(code)
+    return code
 
 def affine_weights(dim):
     "Compute coefficents for mapping from reference to physical element"
