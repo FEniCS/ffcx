@@ -18,17 +18,19 @@ from ffc import codesnippets
 # FFC tensor representation modules
 from ffc.tensor.monomialtransformation import MonomialIndex
 
-def generate_integral_code(integral_ir, ir, options):
+def generate_integral_code(integral_ir,
+                           integral_type,
+                           sub_domain,
+                           ir, prefix, options):
     "Generate code for integral from intermediate representation."
 
     # Generate code
     code = {}
-    code["classname"] = "FooCellIntegral"
+    code["classname"] = "%s_%s_%d" % (prefix.lower(), integral_type, sub_domain)
     code["members"] = ""
     code["constructor"] = ""
     code["destructor"] = ""
-    code["tabulate_tensor"] = ""
-    #_tabulate_tensor(terms, ir, incremental, options)
+    code["tabulate_tensor"] = ""#_tabulate_tensor(terms, ir, incremental, options)
 
     return code
 

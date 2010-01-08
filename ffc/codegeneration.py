@@ -137,14 +137,23 @@ def generate_integrals_code(ir, prefix, options):
     # Generate a list of code for each integral type
     code = ([], [], [])
 
+    integral_types = ("cell_integral",
+                      "interior_facet_integral",
+                      "exterior_facet_integral")
+
     # Iterate over integral types
-    for i in range(3):
+    for (i, integral_type) in enumerate(integral_types):
 
         # Iterate over sub domains for integral
         for (sub_domain, integral_ir) in enumerate(ir.integral_irs[i]):
 
             # Generate code for integral
-            integral_code = rep.generate_integral_code(integral_ir, ir, options)
+            integral_code = rep.generate_integral_code(integral_ir,
+                                                       integral_type,
+                                                       sub_domain,
+                                                       ir,
+                                                       prefix,
+                                                       options)
 
             # Post process generated code
             _postprocess_code(integral_code, options)
