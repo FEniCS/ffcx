@@ -17,7 +17,7 @@ __date__ = "2009-12-16"
 __copyright__ = "Copyright (C) 2009 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-# Modifie<d by Marie E. Rognes 2010
+# Modified by Marie E. Rognes 2010
 # Modified by Kristian B. Oelgaard 2010
 # Last changed: 2010-01-04
 
@@ -95,6 +95,9 @@ def compute_dofmap_ir(ufl_element, form_data):
     # Create FIAT element
     element = create_element(ufl_element)
     cell = ufl_element.cell()
+
+    print "\nelement.entity_dofs():"
+    print element.entity_dofs()
 
     # Precompute repeatedly used items
     num_dofs_per_entity = _num_dofs_per_entity(element)
@@ -272,11 +275,11 @@ def _interpolate_vertex_values(element, cell):
     ir["needs_jacobian"] = any("piola" in m for m in mappings)
 
     # Get vertices of reference cell
-    fiat_ref_cell = reference_cell(cell.domain())
-    vertices = fiat_ref_cell.get_vertices()
+    cell = reference_cell(cell.domain())
+    vertices = cell.get_vertices()
+
     # Compute data for each constituent element
-    # FIXME: KBO: Does the below still work if we decide to support say R^2 elements in R^3
-    extract = lambda values: [a for a in values[(0,)*fiat_ref_cell.get_spatial_dimension()]]
+    extract = lambda values: values[values.keys()[0]].transpose()
 
     ir["element_data"] = [{"value_dim": _value_dimension(e),
                            "basis_values": extract(e.tabulate(0, vertices)),
