@@ -6,9 +6,12 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Marie E. Rognes (meg@simula.no) 2007--2010
 # Modified by Kristian B. Oelgaard 2009
 
-# Last changed: 2010-01-07
+# Last changed: 2010-01-11
 
-# FFC modules.
+# UFL modules
+from ufl import MixedElement as UFLMixedElement
+
+# FFC modules
 from fiatinterface import create_fiat_element
 
 class MixedElement:
@@ -73,8 +76,14 @@ def combine_entity_dofs(elements):
     return entity_dofs
 
 def extract_elements(ufl_element):
-    # Q: Are UFL subelements nested?
-    # Q: Vector elements pose some interesting issues...
-    return [create_fiat_element(sub_element)
-            for sub_element in ufl_element.sub_elements()]
+    "Recursively extract un-nested list of (component) elements."
+
+    elements = []
+    if isinstance(ufl_element, UFLMixedElement):
+        for sub_element in ufl_element.sub_elements():
+            elements += extract_elements(sub_element)
+        return elements
+
+    elements += [create_fiat_element(ufl_element)]
+    return elements
 
