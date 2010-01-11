@@ -7,7 +7,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian B. Oelgaard 2009
 # Modified by Marie E. Rognes 2010
-# Last changed: 2010-01-08
+# Last changed: 2010-01-11
 
 # Python modules.
 import re
@@ -54,7 +54,8 @@ format.update({"element tensor":  lambda i: "A[%d]" % i,
 
 # Mesh entity variable names
 format.update({"entity index": "c.entity_indices",
-               "num entities": "m.num_entities"})
+               "num entities": "m.num_entities",
+               "cell": lambda s: "ufc::%s" % s})
 
 # Misc
 format.update({"bool":    lambda v: {True: "true", False: "false"}[v],
@@ -137,7 +138,7 @@ def _generate_switch(variable, cases):
     # Create switch
     code = "switch (%s)\n{\n" % variable
     for i in range(len(cases)):
-        code += "case %d:\n%s\n  break;\n" % (i, indent(cases[i], 2))
+        code += "case %d:\n%s break;\n" % (i, indent(cases[i], 2))
     code += "}"
 
     return code

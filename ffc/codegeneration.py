@@ -11,7 +11,7 @@ __date__ = "2009-12-16"
 __copyright__ = "Copyright (C) 2009 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-08
+# Last changed: 2010-01-11
 
 # FFC modules
 from ffc.log import begin, end, debug_code
@@ -69,7 +69,7 @@ def generate_element_code(i, ir, prefix, options):
     code["constructor"] = do_nothing
     code["destructor"] = do_nothing
     code["signature"] = ret('"%s"' % ir["signature"])
-    code["cell_shape"] = ret("ufc:%s" % ir["cell_shape"])
+    code["cell_shape"] = ret(format["cell"](ir["cell_shape"]))
     code["space_dimension"] = ret(ir["space_dimension"])
     code["value_rank"] = ret(ir["value_rank"])
     code["value_dimension"] = _value_dimension(ir["value_dimension"])
@@ -379,6 +379,7 @@ def _interpolate_vertex_values(ir):
         for (j, vertex_value) in enumerate(vertex_values):
 
             # FIXME: Map basis values according to mapping
+            code += format["comment"]("Evaluate at vertices and map")
 
             # Contract basis values and coefficients
             dof_values = [component("dof_values", i)
