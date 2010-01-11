@@ -73,9 +73,11 @@ def compute_element_ir(ufl_element, form_data):
     ir["value_rank"] = len(ufl_element.value_shape())
     ir["value_dimension"] = ufl_element.value_shape()
     ir["evaluate_basis"] = _evaluate_basis(ufl_element, element)
-    ir["evaluate_basis_all"] = not_implemented #element.get_coeffs()
-    ir["evaluate_basis_derivatives"] = element
-    ir["evaluate_basis_derivatives_all"] = not_implemented #element.get_coeffs()
+    # TODO: KBO: The representation for evaluate_basis might be all there is
+    # needed for the other functions as well.
+    # ir["evaluate_basis_all"] = not_implemented #element.get_coeffs()
+    # ir["evaluate_basis_derivatives"] = not_implemented
+    # ir["evaluate_basis_derivatives_all"] = not_implemented #element.get_coeffs()
     ir["evaluate_dof"] = _evaluate_dof(element, cell)
     ir["evaluate_dofs"] = not_implemented
     ir["interpolate_vertex_values"] = _interpolate_vertex_values(element, cell)

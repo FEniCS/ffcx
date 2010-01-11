@@ -19,6 +19,7 @@ from ffc.cpp import format, indent
 
 # FFC code generation modules
 from ffc.evaluatebasis import _evaluate_basis
+from ffc.evaluatebasisderivatives import _evaluate_basis_derivatives
 from ffc.evaluatedof import _evaluate_dof, _evaluate_dofs, affine_weights
 from ffc.codesnippets import jacobian, cell_coordinates
 
@@ -75,7 +76,8 @@ def generate_element_code(i, ir, prefix, options):
     code["value_dimension"] = _value_dimension(ir["value_dimension"])
     code["evaluate_basis"] = _evaluate_basis(ir["evaluate_basis"])
     code["evaluate_basis_all"] = not_implemented
-    code["evaluate_basis_derivatives"] = not_implemented
+#    code["evaluate_basis_derivatives"] = do_nothing
+    code["evaluate_basis_derivatives"] = _evaluate_basis_derivatives(ir["evaluate_basis"])
     code["evaluate_basis_derivatives_all"] = not_implemented
     code["evaluate_dof"] = _evaluate_dof(ir["evaluate_dof"])
     code["evaluate_dofs"] = _evaluate_dofs(ir["evaluate_dofs"])

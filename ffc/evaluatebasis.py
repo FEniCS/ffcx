@@ -2,11 +2,11 @@
 code which is more or less a C++ representation of the code found in FIAT_NEW."""
 
 __author__ = "Kristian B. Oelgaard (k.b.oelgaard@tudelft.nl)"
-__date__ = "2009-12-14"
-__copyright__ = "Copyright (C) 2009-2010 Kristian B. Oelgaard"
+__date__ = "2007-04-04"
+__copyright__ = "Copyright (C) 2007-2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-07
+# Last changed: 2010-01-08
 
 # Python modules
 import math
@@ -862,7 +862,7 @@ def _compute_basisvalues(data, Indent, format):
             # Compute value
             fac0 = create_product([symbol_p + float_0_5, symbol_p + symbol_q + float_1])
             fac2 = create_symbol( format_sqrt(str(fac0)), CONST )
-            lines.append((str(basis_idx0), create_product([basis_idx0, fac2])))
+            lines += [format["times equal"](str(basis_idx0), fac2)]
             # Create loop (block of lines)
             code += generate_loop(lines, loop_vars, Indent, format)
 
@@ -1032,7 +1032,7 @@ def _compute_basisvalues(data, Indent, format):
                                    symbol_p + symbol_q + float_1,\
                                    symbol_p + symbol_q + symbol_r + float_1_5])
             fac2 = create_symbol( format_sqrt(str(fac0)), CONST )
-            lines.append((str(basis_idx0), create_product([basis_idx0, fac2])))
+            lines += [format["times equal"](str(basis_idx0), fac2)]
             # Create loop (block of lines)
             code += generate_loop(lines, loop_vars, Indent, format)
     else:
