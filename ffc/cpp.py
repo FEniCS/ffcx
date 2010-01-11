@@ -22,7 +22,7 @@ from ffc.constants import FFC_OPTIONS
 format = {}
 
 # Program flow
-format.update({"return":     lambda v: "return %s;" % str(v),
+format.update({"return":     lambda v: "return %s;\n" % str(v),
                "grouping":   lambda v: "(%s)" % v,
                "switch":     lambda v, cases: _generate_switch(v, cases),
                "exception":  lambda v: "throw std::runtime_error(\"%s\");" % v,

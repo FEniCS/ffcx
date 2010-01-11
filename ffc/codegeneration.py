@@ -47,9 +47,11 @@ def generate_code(ir, prefix, options):
                     for (i, ir) in enumerate(ir_dofmaps)]
 
     # Generate code for integrals
+    #code_integrals =  ([], [], [])
     code_integrals = generate_integrals_code(ir_integrals, prefix, options)
 
     # Generate code for form
+    #code_form = ""
     code_form = generate_form_code(ir_form, prefix, options)
 
     end()
@@ -377,11 +379,12 @@ def _interpolate_vertex_values(ir):
         # Extract vertex values for all basis functions
         vertex_values = data["basis_values"]
 
+        code += format["comment"]("Evaluate at vertices and map")
+
         # Create code for each vertex
         for (j, vertex_value) in enumerate(vertex_values):
 
             # FIXME: Map basis values according to mapping
-            code += format["comment"]("Evaluate at vertices and map")
 
             # Contract basis values and coefficients
             dof_values = [component("dof_values", i)
