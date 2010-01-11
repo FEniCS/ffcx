@@ -4,7 +4,7 @@ __author__ = "Marie E. Rognes (meg@simula.no)"
 __copyright__ = "Copyright (C) 2009"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-07
+# Last changed: 2010-01-11
 
 from ffc.codesnippets import jacobian, evaluate_f
 from ffc.cpp import format
@@ -86,7 +86,7 @@ def _generate_body(dof, mapping, cell_dim, value_dim, offset=0):
             if tokens[1] == ():
                 values += [component("values", offset)]
             else:
-                values += [component("values" , tokens[1] + offset)]
+                values += [component("values" , tokens[1][0] + offset)]
 
         # Multiply by weights and sum
         weights = [c[0] for c in dof[point]]
@@ -127,7 +127,7 @@ def _generate_mapping(mapping, dim, offset):
             # Compute inverse piola for this row
             inv_jacobian_row = ["Jinv_%d%d" % (i, j) for j in range(dim)]
             copies = [component("copy", j) for j in range(dim)]
-            values = multiply("detJ", inner_product(inv_jacobian_row, copies))
+            values = multiply(["detJ", inner_product(inv_jacobian_row, copies)])
 
             # Assign values
             code += assign(component("values", i+offset), values)

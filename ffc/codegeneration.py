@@ -365,7 +365,7 @@ def _interpolate_vertex_values(ir):
 
     # Add code for Jacobian if necessary
     if ir["needs_jacobian"]:
-        code += jacobian(ir["cell_dim"])
+        code += jacobian[ir["cell_dim"]]
 
     # Extract formats
     inner_product = format["inner product"]
