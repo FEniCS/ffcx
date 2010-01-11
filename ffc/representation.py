@@ -264,7 +264,7 @@ def _tabulate_facet_dofs(element, cell):
             for entity in entity_dofs[dim]:
                 if (dim, entity) in incident[facet]:
                     facet_dofs[facet] += entity_dofs[dim][entity]
-
+        facet_dofs[facet].sort()
     return facet_dofs
 
 def _interpolate_vertex_values(element, cell):
