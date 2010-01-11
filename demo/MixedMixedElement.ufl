@@ -5,6 +5,13 @@
 #
 # Compile this form with FFC: ffc MixedMixedElement.ufl
 
-P3 = FiniteElement("Lagrange", triangle, 3)
+cell = triangle
 
-element = (P3 + P3) + (P3 + P3)
+DG = VectorElement("DG", cell, 0)
+CG = FiniteElement("Lagrange", cell, 2)
+RT = FiniteElement("RT", cell, 3)
+
+element = DG + CG + RT
+
+v = TestFunction(element)
+a = v[0]*dx
