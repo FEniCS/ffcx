@@ -703,6 +703,7 @@ def _compute_basisvalues(data, Indent, format):
     float_1 = create_float(1)
     float_2 = create_float(2)
     float_3 = create_float(3)
+    float_4 = create_float(4)
     float_n = create_float(embedded_degree)
     float_n1 = create_float(embedded_degree + 1)
     float_nm1 = create_float(embedded_degree - 1)
@@ -736,24 +737,80 @@ def _compute_basisvalues(data, Indent, format):
 
     # 1D
     if (element_cell_domain == "interval"):
-        count = 0
-        error("1D is not implemented")
-#        for i in range(0, data.degree() + 1):
+        # FIAT_NEW.expansions.LineExpansionSet
+        # FIAT_NEW code
+        # psitilde_as = jacobi.eval_jacobi_batch(0,0,n,ref_pts)
+        # FIAT_NEW.jacobi.eval_jacobi_batch(a,b,n,xs)
+        # The initial value basisvalue 0 is always 1.0
+        # FIAT_NEW code
+        # for ii in range(result.shape[1]):
+        #    result[0,ii] = 1.0 + xs[ii,0] - xs[ii,0]
+        code += [(format_basisvalue(0), format_float(1.0))]
 
-#            factor = math.sqrt(1.0*i + 0.5)
-#            symbol = format_psitilde_a + format_secondary_index(i)
+        # Only continue if the embedded degree is larger than zero
+        if embedded_degree > 0:
 
-#            # Declare variable
-#            name = format_const_float + format_basisvalue(count)
+            # FIAT_NEW.jacobi.eval_jacobi_batch(a,b,n,xs)
+            # result[1,:] = 0.5 * ( a - b + ( a + b + 2.0 ) * xsnew )
+            # The initial value basisvalue 1 is always x
+            code += [(format_basisvalue(1), format_x)]
+        
+            # Only active is embedded_degree > 1
+            if embedded_degree > 1:
+                # FIAT_NEW.jacobi.eval_jacobi_batch(a,b,n,xs)
+                # apb = a + b (equal to 0 because of function arguments)
+                # for k in range(2,n+1):
+                #    a1 = 2.0 * k * ( k + apb ) * ( 2.0 * k + apb - 2.0 )
+                #    a2 = ( 2.0 * k + apb - 1.0 ) * ( a * a - b * b )
+                #    a3 = ( 2.0 * k + apb - 2.0 )  \
+                #        * ( 2.0 * k + apb - 1.0 ) \
+                #        * ( 2.0 * k + apb )
+                #    a4 = 2.0 * ( k + a - 1.0 ) * ( k + b - 1.0 ) \
+                #        * ( 2.0 * k + apb )
+                #    a2 = a2 / a1
+                #    a3 = a3 / a1
+                #    a4 = a4 / a1
+                #    result[k,:] = ( a2 + a3 * xsnew ) * result[k-1,:] \
+                #        - a4 * result[k-2,:]
+                # Declare helper variables (Note the a2 is always zero and therefore left out)
+                code += [(format_float_decl + str(f1), float_0)]
+                code += [(format_float_decl + str(f2), float_0)]
+                code += [(format_float_decl + str(f3), float_0)]
+                lines = []
+                loop_vars = [(str(symbol_p), 2, float_n1)]
+                # Create names
+                basis_k = create_symbol(format_basisvalue(str(symbol_p)), CONST)
+                basis_km1 = create_symbol(format_basisvalue(str(symbol_p - float_1)), CONST)
+                basis_km2 = create_symbol(format_basisvalue(str(symbol_p - float_2)), CONST)
+                # Compute helper variables
+                a1 = create_product([float_2, symbol_p, symbol_p, float_2*symbol_p - float_2])
+                a3 = create_fraction(create_product([float_2*symbol_p,\
+                                                     float_2*symbol_p - float_2,
+                                                     float_2*symbol_p - float_1]), a1)
+                a4 = create_fraction(create_product([float_4*symbol_p, symbol_p - float_1, symbol_p - float_1]), a1)
+                lines.append((str(f1), a1 ))
+                lines.append((str(f2), a3 ))
+                lines.append((str(f3), a4 ))
+                # Compute value
+                lines.append((str(basis_k), create_product([f2, symbol_x*basis_km1]) - f3*basis_km2))
+                # Create loop (block of lines)
+                code += generate_loop(lines, loop_vars, Indent, format)
 
-#            # Let inner_product handle format of factor
-#            value = inner_product([factor],[symbol], format)
-
-#            code += [(Indent.indent(name), value)]
-#            count += 1
-#        if (count != poly_dim):
-#            error("The number of basis values must be the same as the polynomium dimension of the base")
-
+        # Scale values
+        # FIAT_NEW.expansions.LineExpansionSet
+        # FIAT_NEW code
+        # results = numpy.zeros( ( n+1 , len(pts) ) , type( pts[0][0] ) )
+        # for k in range( n + 1 ):
+        #    results[k,:] = psitilde_as[k,:] * math.sqrt( k + 0.5 )
+        lines = []
+        loop_vars = [(str(symbol_p), 0, float_n1)]
+        # Create names
+        basis_k = create_symbol(format_basisvalue(str(symbol_p)), CONST)
+        # Compute value
+        fac1 = create_symbol( format_sqrt(str(symbol_p + float_0_5)), CONST )
+        lines += [format["times equal"](str(basis_k), str(fac1))]
+        # Create loop (block of lines)
+        code += generate_loop(lines, loop_vars, Indent, format)
     # 2D
     elif (element_cell_domain == "triangle"):
         # FIAT_NEW.expansions.TriangleExpansionSet

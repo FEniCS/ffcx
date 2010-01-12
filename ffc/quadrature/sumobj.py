@@ -104,7 +104,7 @@ class Sum(Expr):
         "Simple string representation which will appear in the generated code."
         # First add all the positive variables using plus, then add all
         # negative variables.
-        s = format["add"]([str(v) for v in self.vrs if not v.val < 0]) + \
+        s = format["add"]([str(v) for v in self.vrs if not v.val < 0]) + " " +\
             "".join([str(v) for v in self.vrs if v.val < 0])
         # Group only if we have more that one variable.
         if len(self.vrs) > 1:
