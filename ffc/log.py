@@ -43,12 +43,7 @@ def debug_dict(d, title=""):
     for (key, value) in d.iteritems():
         info(key)
         info("-"*len(key))
-
-        try:
-            info(str(value))
-        except:
-            # FIXME
-            info("Mysterious error here")
+        info(str(value))
         info("")
     end()
 

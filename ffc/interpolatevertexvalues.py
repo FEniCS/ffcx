@@ -32,7 +32,7 @@ def _interpolate_vertex_values(ir):
     # Add code for Jacobian if necessary
     dim = ir["cell_dim"]
     if ir["needs_jacobian"]:
-        code += jacobian[dim]
+        code += jacobian[dim] % {"restriction": ""}
 
     # Compute total value dimension for (mixed) element
     total_value_dim = sum(data["value_dim"] for data in ir["element_data"])
