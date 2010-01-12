@@ -77,10 +77,11 @@ def generate_element_code(i, ir, prefix, options):
     code["space_dimension"] = ret(ir["space_dimension"])
     code["value_rank"] = ret(ir["value_rank"])
     code["value_dimension"] = _value_dimension(ir["value_dimension"])
+    #code["evaluate_basis"] = ""
     code["evaluate_basis"] = _evaluate_basis(ir["evaluate_basis"])
     code["evaluate_basis_all"] = not_implemented
     #code["evaluate_basis_derivatives"] = do_nothing
-    code["evaluate_basis_derivatives"] = _evaluate_basis_derivatives(ir["evaluate_basis"])
+    code["evaluate_basis_derivatives"] = ""#_evaluate_basis_derivatives(ir["evaluate_basis"])
     code["evaluate_basis_derivatives_all"] = not_implemented
     code["evaluate_dof"] = _evaluate_dof(ir["evaluate_dof"])
     code["evaluate_dofs"] = _evaluate_dofs(ir["evaluate_dofs"])
@@ -210,7 +211,9 @@ def _value_dimension(ir):
     return format["switch"]("i", [format["return"](n) for n in ir])
 
 def _needs_mesh_entities(ir):
-    "Generate code for needs_mesh_entities. ir is a list of num dofs per entity"
+    """Generate code for needs_mesh_entities. ir is a list of num dofs
+    per entity.
+    """
     return format["switch"]("d", [format["return"](format["bool"](c))
                                   for c in ir])
 
@@ -247,9 +250,14 @@ def _tabulate_dofs(ir):
     entity_index = format["entity index"]
     num_entities = format["num entities"]
 
-    # Declare offset
-    offset_name = "offset"
-    code = format["declaration"]("unsigned int", offset_name, 0)
+    # Declare offset if more than one element:
+    need_offset = len(ir) > 1
+    if need_offset:
+        offset_name = "offset"
+        code = format["declaration"]("unsigned int", offset_name, 0)
+    else:
+        offset_name = "0"
+        code = ""
 
     # Generate code for each element
     i = 0
@@ -263,8 +271,7 @@ def _tabulate_dofs(ir):
         # Generate code for each degree of freedom for each dimension
         for (d, num_dofs) in enumerate(dofs_per_entity):
 
-            if num_dofs == 0:
-                continue
+            if num_dofs == 0: continue
 
             for k in range(entities_per_dim[d]):
                 for j in range(num_dofs):
@@ -273,9 +280,10 @@ def _tabulate_dofs(ir):
                     code += assign(component("dofs", i), value)
                     i += 1
 
-            # Set offset corresponding to mesh entity:
-            addition = multiply([num_dofs, component(num_entities, d)])
-            code += format["iadd"](offset_name, addition)
+            # Update offset corresponding to mesh entity:
+            if need_offset:
+                addition = multiply([num_dofs, component(num_entities, d)])
+                code += format["iadd"](offset_name, addition)
 
     return code
 
