@@ -24,8 +24,8 @@ invdetJ = "1.0/%s" % format["det(J)"]
 def _interpolate_vertex_values(ir):
     "Generate code for interpolate_vertex_values."
 
-    # meg: Note: I think this works, but it might be more elegant to
-    # give mixed element a tabulate function
+    # Note: I think this works, but it might be more elegant to give
+    # mixed element a tabulate function
 
     code = ""
 
@@ -42,7 +42,7 @@ def _interpolate_vertex_values(ir):
     space_offset = 0
     for data in ir["element_data"]:
 
-        code += format["comment"]("Evaluate at vertices and map")
+        code += format["comment"]("Evaluate at vertices and change_variables")
         code += _interpolate_vertex_values_element(data, dim, total_value_dim,
                                                    value_offset, space_offset)
 
@@ -62,6 +62,10 @@ def _interpolate_vertex_values_element(data, dim, total_value_dim,
     space_dim = data["space_dim"]
     mapping = data["mapping"]
 
+    # Map basis values according to element mapping. Assumes single
+    # mapping for each (non-mixed) element
+    change_of_variables = _change_variables(data["mapping"], dim, space_dim)
+
     # Create code for each value dimension:
     code = ""
     for k in range(value_dim):
@@ -71,23 +75,10 @@ def _interpolate_vertex_values_element(data, dim, total_value_dim,
 
             if value_dim == 1: values_at_vertex = [values_at_vertex]
 
-            # Map basis values according to element mapping
-            if mapping is "affine":
-                components = values_at_vertex[k]
+            # Map basis functions using appropriate mapping
+            components = change_of_variables(values_at_vertex, k)
 
-            elif mapping == "contravariant piola":
-                contraction = lambda i: inner_product([J(k, l) for l in range(dim)],
-                                                      [values_at_vertex[l][i] for l in range(dim)])
-                components = [multiply([invdetJ, contraction(i)]) for i in range(space_dim)]
-
-            elif mapping == "covariant piola":
-                components = [inner_product([Jinv(k, l) for l in range(dim)],
-                                            [values_at_vertex[l][i] for l in range(dim)])
-                              for i in range(space_dim)]
-            else:
-                raise Exception, "No such mapping: %s accepted" % mapiping
-
-            # Contract coefficents and basis functions
+            # Contract coefficients and basis functions
             dof_values = [component("dof_values", i + space_offset) for i in range(space_dim)]
             value = inner_product(dof_values, components)
 
@@ -96,3 +87,20 @@ def _interpolate_vertex_values_element(data, dim, total_value_dim,
             code += assign(component("vertex_values", index), value)
 
     return code
+
+
+def _change_variables(mapping, dim, space_dim):
+
+    if mapping is "affine":
+        change_of_variables = lambda v, k: v[k]
+    elif mapping == "contravariant piola":
+        change_of_variables = lambda v, k: [multiply([invdetJ, inner_product([J(k, l) for l in range(dim)],
+                                                                             [v[l][i] for l in range(dim)])])
+                                            for i in range(space_dim)]
+    elif mapping == "covariant piola":
+        change_of_variables = lambda v, k: [inner_product([Jinv(k, l) for l in range(dim)],
+                                                          [v[l][i] for l in range(dim)])
+                                            for i in range(space_dim)]
+    else:
+        raise Exception, "No such mapping: %s accepted" % mapiping
+    return change_of_variables
