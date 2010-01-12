@@ -374,6 +374,18 @@ double y = (C1 + d01*coordinates[0] + d11*coordinates[1] + d21*coordinates[2]) /
 double z = (C2 + d02*coordinates[0] + d12*coordinates[1] + d22*coordinates[2]) / detJ;
 """
 
+map_coordinates_FIAT_interval = \
+"""
+// Extract vertex coordinates
+const double * const * element_coordinates = c.coordinates;
+
+// Compute Jacobian of affine map from reference cell
+const double J_00 = element_coordinates[1][0] - element_coordinates[0][0];
+
+// Get coordinates and map to the reference (FIAT) element
+double x = (2.0*coordinates[0] - element_coordinates[0][0] - element_coordinates[1][0]) / J_00;
+"""
+
 map_coordinates_FIAT_triangle = \
 """
 // Extract vertex coordinates
