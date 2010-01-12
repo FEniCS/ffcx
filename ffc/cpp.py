@@ -7,7 +7,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian B. Oelgaard 2009
 # Modified by Marie E. Rognes 2010
-# Last changed: 2010-01-11
+# Last changed: 2010-01-12
 
 # Python modules.
 import re
@@ -52,10 +52,13 @@ format.update({"element tensor":  lambda i: "A[%d]" % i,
                "scale factor":    "det",
                "transform":       lambda t, j, k, r: _transform(t, j, k, r)})
 
-# Mesh entity variable names
+# Geometry related variable names
 format.update({"entity index": "c.entity_indices",
                "num entities": "m.num_entities",
-               "cell": lambda s: "ufc::%s" % s})
+               "cell": lambda s: "ufc::%s" % s,
+               "det(J)": "detJ",
+               "J": lambda i, j: "J_%d%d" % (i, j),
+               "Jinv" : lambda i, j: "Jinv_%d%d" % (i, j)})
 
 # Misc
 format.update({"bool":    lambda v: {True: "true", False: "false"}[v],
@@ -82,24 +85,36 @@ def _multiply(factors):
     one are ignored.
     """
 
-    # FIXME: Paranthesise negative numbers and fix ad-hoc solutions
+    # FIXME: This could probably be way more robust and elegant.
 
     cpp_str = format["str"]
     non_zero_factors = []
     for f in factors:
+
+        # Round-off if f is smaller than epsilon
         if isinstance(f, (int, float)):
-            if f < format["epsilon"]:
+            if abs(f) < format["epsilon"]:
                 return cpp_str(0)
 
         # Convert to string
         f = cpp_str(f)
 
+        # Return zero if any factor is zero
         if f == "0":
             return cpp_str(0)
+
+        # Ignore 1 factors
         if f == "1" or f == "1.0":
-            pass
-        else:
-            non_zero_factors += [f]
+            continue
+
+        # If sum-like, parentheseze factor
+        if "+" in f or "-" in f:
+            f = "(%s)" % f
+
+        non_zero_factors += [f]
+
+    if len(non_zero_factors) == 0:
+        return cpp_str(1.0)
 
     return "*".join(non_zero_factors)
 
@@ -107,7 +122,10 @@ def _add(terms):
     "Generate string summing a list of strings."
 
     # FIXME: Subtract absolute value of negative numbers
-    return " + ".join([str(t) for t in terms if (str(t) != "0")])
+    result = " + ".join([str(t) for t in terms if (str(t) != "0")])
+    if result == "":
+        return format["str"](0)
+    return result
 
 def _inner_product(v, w):
     "Generate string for v[0]*w[0] + ... + v[n]*w[n]."

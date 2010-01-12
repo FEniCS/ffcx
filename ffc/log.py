@@ -11,7 +11,7 @@ __copyright__ = "Copyright (C) 2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian B. Oelgaard, 2009
-# Last changed: 2009-12-17
+# Last changed: 2010-01-12
 
 # UFL modules.
 from ufl.log import Logger
@@ -43,7 +43,12 @@ def debug_dict(d, title=""):
     for (key, value) in d.iteritems():
         info(key)
         info("-"*len(key))
-        info(str(value))
+
+        try:
+            info(str(value))
+        except:
+            # FIXME
+            info("Mysterious error here")
         info("")
     end()
 

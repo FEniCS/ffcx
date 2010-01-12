@@ -98,9 +98,6 @@ def compute_dofmap_ir(ufl_element, form_data):
     element = create_element(ufl_element)
     cell = ufl_element.cell()
 
-    print "\nelement.entity_dofs():"
-    print element.entity_dofs()
-
     # Precompute repeatedly used items
     num_dofs_per_entity = _num_dofs_per_entity(element)
     facet_dofs = _tabulate_facet_dofs(element, cell)
@@ -201,6 +198,7 @@ def _value_dimension(element):
 
     # FIXME: Arbitrary tensor elements?
     # FIXME: Move to FiniteElement/MixedElement
+
     shape = element.value_shape()
     if shape == ():
         return 1
@@ -282,12 +280,11 @@ def _interpolate_vertex_values(element, cell):
 
     # Compute data for each constituent element
     extract = lambda values: values[values.keys()[0]].transpose()
-
     ir["element_data"] = [{"value_dim": _value_dimension(e),
                            "basis_values": extract(e.tabulate(0, vertices)),
-                           "mapping": e.mapping()}
+                           "mapping": e.mapping()[0],
+                           "space_dim": e.space_dimension()}
                           for e in all_elements(element)]
-
     return ir
 
 

@@ -11,7 +11,7 @@ __date__ = "2009-12-16"
 __copyright__ = "Copyright (C) 2009 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-11
+# Last changed: 2010-01-12
 
 # FFC modules
 from ffc.log import begin, end, debug_code
@@ -21,6 +21,7 @@ from ffc.cpp import format, indent
 from ffc.evaluatebasis import _evaluate_basis
 from ffc.evaluatebasisderivatives import _evaluate_basis_derivatives
 from ffc.evaluatedof import _evaluate_dof, _evaluate_dofs, affine_weights
+from ffc.interpolatevertexvalues import _interpolate_vertex_values
 from ffc.codesnippets import jacobian, cell_coordinates
 
 # FFC specialized code generation modules
@@ -78,7 +79,7 @@ def generate_element_code(i, ir, prefix, options):
     code["value_dimension"] = _value_dimension(ir["value_dimension"])
     code["evaluate_basis"] = _evaluate_basis(ir["evaluate_basis"])
     code["evaluate_basis_all"] = not_implemented
-#    code["evaluate_basis_derivatives"] = do_nothing
+    #code["evaluate_basis_derivatives"] = do_nothing
     code["evaluate_basis_derivatives"] = _evaluate_basis_derivatives(ir["evaluate_basis"])
     code["evaluate_basis_derivatives_all"] = not_implemented
     code["evaluate_dof"] = _evaluate_dof(ir["evaluate_dof"])
@@ -130,46 +131,6 @@ def generate_dofmap_code(i, ir, prefix, options):
     _postprocess_code(code, options)
 
     debug_code(code, "dofmap")
-
-    return code
-
-def _tabulate_entity_dofs(ir):
-    "Generate code for tabulate_entity_dofs."
-
-    # Extract variables from ir
-    entity_dofs, num_dofs_per_entity = ir
-
-    # Prefetch formats
-    assign, component = format["assign"], format["component"]
-
-    # Add check that dimension and number of mesh entities is valid
-    dim = len(num_dofs_per_entity)
-    excpt = format["exception"]("d is larger than dimension (%d)" % (dim - 1))
-    code = format["if"]("d > %d" % (dim-1), excpt)
-
-    # Generate cases for each dimension:
-    all_cases = ["" for d in range(dim)]
-    for d in range(dim):
-
-        # Ignore if no entities for this dimension
-        if num_dofs_per_entity[d] == 0: continue
-
-        # Add check that given entity is valid:
-        num_entities = len(entity_dofs[d].keys())
-        excpt = format["exception"]("i is larger than number of entities (%d)"
-                                    % (num_entities - 1))
-        check = format["if"]("i > %d" % (num_entities - 1), excpt)
-
-        # Generate cases for each mesh entity
-        cases = ["".join([assign(component("dofs", j), dof)
-                          for (j, dof) in enumerate(entity_dofs[d][entity])])
-                 for entity in range(num_entities)]
-
-        # Generate inner switch with preceding check
-        all_cases[d] = "\n".join([check, format["switch"]("i", cases)])
-
-    # Generate outer switch
-    code += format["switch"]("d", all_cases)
 
     return code
 
@@ -357,44 +318,47 @@ def _tabulate_coordinates(ir):
 
     return code
 
+def _tabulate_entity_dofs(ir):
+    "Generate code for tabulate_entity_dofs."
 
-def _interpolate_vertex_values(ir):
-    "Generate code for interpolate_vertex_values."
+    # Extract variables from ir
+    entity_dofs, num_dofs_per_entity = ir
 
-    code = ""
+    # Prefetch formats
+    assign, component = format["assign"], format["component"]
 
-    # Add code for Jacobian if necessary
-    if ir["needs_jacobian"]:
-        code += jacobian[ir["cell_dim"]]
+    # Add check that dimension and number of mesh entities is valid
+    dim = len(num_dofs_per_entity)
+    excpt = format["exception"]("d is larger than dimension (%d)" % (dim - 1))
+    code = format["if"]("d > %d" % (dim-1), excpt)
 
-    # Extract formats
-    inner_product = format["inner product"]
-    component = format["component"]
-    precision = format["float"]
-    assign = format["assign"]
+    # Generate cases for each dimension:
+    all_cases = ["" for d in range(dim)]
+    for d in range(dim):
 
-    # Iterate over the elements
-    for (k, data) in enumerate(ir["element_data"]):
+        # Ignore if no entities for this dimension
+        if num_dofs_per_entity[d] == 0: continue
 
-        # Extract vertex values for all basis functions
-        vertex_values = data["basis_values"]
+        # Add check that given entity is valid:
+        num_entities = len(entity_dofs[d].keys())
+        excpt = format["exception"]("i is larger than number of entities (%d)"
+                                    % (num_entities - 1))
+        check = format["if"]("i > %d" % (num_entities - 1), excpt)
 
-        code += format["comment"]("Evaluate at vertices and map")
+        # Generate cases for each mesh entity
+        cases = ["".join([assign(component("dofs", j), dof)
+                          for (j, dof) in enumerate(entity_dofs[d][entity])])
+                 for entity in range(num_entities)]
 
-        # Create code for each vertex
-        for (j, vertex_value) in enumerate(vertex_values):
+        # Generate inner switch with preceding check
+        all_cases[d] = "\n".join([check, format["switch"]("i", cases)])
 
-            # FIXME: Map basis values according to mapping
-
-            # Contract basis values and coefficients
-            dof_values = [component("dof_values", i)
-                          for i in range(len(vertex_value))]
-            value = inner_product(dof_values, vertex_value)
-
-            # Construct assign value to correct vertex_value
-            code += assign(component("vertex_values", j), value)
+    # Generate outer switch
+    code += format["switch"]("d", all_cases)
 
     return code
+
+
 
 #--- Utility functioins ---
 
