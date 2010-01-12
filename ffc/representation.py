@@ -19,11 +19,10 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Marie E. Rognes 2010
 # Modified by Kristian B. Oelgaard 2010
-# Last changed: 2010-01-04
+# Last changed: 2010-01-12
 
-# UFL modules
-from ufl.finiteelement import FiniteElement as UFLFiniteElement
-from ufl.finiteelement import MixedElement as UFLMixedElement
+# Import UFL
+import ufl
 
 # FFC modules
 from ffc.utils import compute_permutations
@@ -129,7 +128,7 @@ def compute_dofmap_ir(ufl_element, form_data):
 
 def compute_integrals_ir(form, form_data, options):
     "Compute intermediate represention of integrals."
-
+    #return None
     # FIXME: Handle multiple representations here
     ir = TensorRepresentation(form, form_data)
 
@@ -165,33 +164,33 @@ def compute_form_ir(form, form_data):
 def _evaluate_basis(ufl_element, fiat_element):
     "Compute intermediate representation for evaluate_basis."
 
-    # FIXME: KBO: No support for Mixed-, Vector-, TensorElement
-    if isinstance(ufl_element, UFLMixedElement):
-        return not_implemented
-
+    # Handle MixedElements recursively.
+    # TODO: KBO: Is this OK if done consistently in FFC (for TensorElements)?
+    if isinstance(ufl_element, ufl.MixedElement):
+        data = []
+        for element in ufl_element.sub_elements():
+            data += _evaluate_basis(element, create_element(element))
+        return data
 
     # TODO: KBO: Remove if never triggered.
     ffc_assert(fiat_element.get_nodal_basis().get_embedded_degree() == \
                ufl_element.degree(),\
                "Degrees do not match: %s, %s" % (repr(fiat_element), repr(ufl_element)))
 
-    # FIXME: AL: ufl_element.num_sub_elements() + 1 is strange here!
-    # FIXME: AL: note changed meaning of num_sub_elements
-
     # FIXME: KBO: Does not support mixed elements yet.
     data = {
-          "num_sub_elements" : ufl_element.num_sub_elements() + 1,
           "value_shape" : fiat_element.value_shape(),
           "embedded_degree" : ufl_element.degree(),
           "cell_domain" : ufl_element.cell().domain(),
           "coeffs" : fiat_element.get_coeffs(),
-          "value_rank" : len(ufl_element.value_shape())
+          "value_rank" : len(ufl_element.value_shape()),
+          "space_dimension" : fiat_element.space_dimension()
           }
 
     data["num_expansion_members"] = \
       fiat_element.get_nodal_basis().get_expansion_set().get_num_members(data["embedded_degree"])
 
-    return data
+    return [data]
 
 def _value_dimension(element):
     "Compute value dimension of element."

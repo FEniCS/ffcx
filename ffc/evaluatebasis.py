@@ -13,7 +13,7 @@ import math
 import numpy
 
 # FFC modules
-from ffc.log import error, debug_code
+from ffc.log import error, debug_code, ffc_assert
 from ffc.cpp import remove_unused
 from ffc.cpp import IndentControl
 from ffc.cpp import inner_product, tabulate_matrix, tabulate_vector
@@ -29,7 +29,7 @@ from ffc.quadrature.symbolics import CONST
 # Temporary import
 from cpp import format_old as format
 
-def _evaluate_basis(data):
+def _evaluate_basis(data_list):
     """Generate run time code to evaluate an element basisfunction at an
     arbitrary point. The value(s) of the basisfunction is/are
     computed as in FIAT as the dot product of the coefficients (computed at compile time)
@@ -57,27 +57,32 @@ def _evaluate_basis(data):
 
     set_format(format)
     # FIXME: KBO: Remove when everyting is working
-    if data is None:
+    if data_list == []:
         return ""
 
     # Init return code and indent object
     code = []
     Indent = IndentControl()
 
-    # Get coordinates and generate map
-    # FIXME: KBO: If this remains simple, inline function here.
-    code += _generate_map(data, Indent, format)
-
     # Check if we have just one element
+    # Get coordinates and generate map
+    element_cell_domain = data_list[0]["cell_domain"]
+    # FIXME: KBO: This should already be checked elsewhere.
+    ffc_assert(all(element_cell_domain == data["cell_domain"] for data in data_list),\
+               "The element cell domain must be the same for all sub elements: " + repr(data_list))
+    # FIXME: KBO: If this remains simple, inline function here.
+    code += _generate_map(element_cell_domain, Indent, format)
 
-    if (data["num_sub_elements"] == 1):
+    # Get value shape, should also work for TensorElement, scalar are empty tuples, therefore (1,)
+    value_shape = sum(sum(data["value_shape"] or (1,)) for data in data_list)
+    # Reset values, change for tensor valued elements
+    # FIXME: KBO: If this remains simple, inline function here.
+    code += _reset_values(value_shape, Indent, format)
 
-        # Reset values, change for tensor valued elements
-        # FIXME: KBO: If this remains simple, inline function here.
-        value_shape = data["value_shape"]
-        code += _reset_values(value_shape, False, Indent, format)
+    if len(data_list) == 1:
+        data = data_list[0]
 
-        # Map degree of freedom to local degree    # Get the element cell domain
+        # Map degree of freedom to local degree
         code += _map_dof(0, Indent, format)
 
         # Generate element code
@@ -86,13 +91,8 @@ def _evaluate_basis(data):
     # If the element is of type MixedElement (including Vector- and TensorElement)
     else:
         # FIXME: KBO: Only support scalar elements for now
-        error("Only scalar elements are supported.")
-#        # Reset values, change for tensor valued elements
-        # FIXME: KBO: If this remains simple, inline function here.
-#        code += _reset_values(data.value_dimension(0), True, Indent, format)
-
-#        # Generate element code, for all sub-elements
-#        code += _mixed_elements(data, Indent, format)
+        # Generate element code, for all sub-elements
+        code += _mixed_elements(data_list, Indent, format)
 
     lines = format["generate body"](code)
 
@@ -100,7 +100,7 @@ def _evaluate_basis(data):
     code = remove_unused(lines)
     return code
 
-def _generate_map(data, Indent, format):
+def _generate_map(element_cell_domain, Indent, format):
     """Generates map from physical element to the UFC reference element, and from this element
     to reference square/cube. An affine map is assumed for the first mapping and for the second
     map this function implements the UFC version of the FIAT functions, eta_triangle( xi )
@@ -113,7 +113,6 @@ def _generate_map(data, Indent, format):
 
     # Get the element cell domain
     # FIXME: KBO: Change this when supporting R^2 in R^3 elements.
-    element_cell_domain = data["cell_domain"]
 #    # Get coordinates and map to the UFC reference element from codesnippets.py
 #    code += [Indent.indent(format["coordinate map FIAT"](data.cell_domain()))] + [""]
 
@@ -153,17 +152,16 @@ def _generate_map(data, Indent, format):
 
     return code
 
-def _reset_values(num_components, vector, Indent, format):
+def _reset_values(value_shape, Indent, format):
     "Reset all components of the 'values' array as it is a pointer to an array."
 
     # Init return code
     code = []
-
-    if (vector or num_components != ()):
+    if value_shape != 1:
         # Reset values as it is a pointer
         code += [Indent.indent(format["comment"]("Reset values"))]
         code += [(Indent.indent(format["argument values"] + format["array access"](i)),\
-                                format["floating point"](0.0)) for i in range(num_components)]
+                                format["floating point"](0.0)) for i in range(value_shape)]
     else:
         code += [Indent.indent(format["comment"]("Reset values"))]
         code += [(Indent.indent(format["pointer"] + format["argument values"]), format["floating point"](0.0))]
@@ -191,17 +189,13 @@ def _map_dof(sum_space_dim, Indent, format):
 
     return code + [""]
 
-def _mixed_elements(data, Indent, format):
+def _mixed_elements(data_list, Indent, format):
     "Generate code for each sub-element in the event of vector valued elements or mixed elements"
 
     # Prefetch formats to speed up code generation
     format_block_begin = format["block begin"]
     format_block_end = format["block end"]
     format_dof_map_if = format["dof map if"]
-
-    # Extract basis elements, and determine number of elements
-    elements = data.extract_elements()
-    num_elements = len(elements)
 
     sum_value_dim = 0
     sum_space_dim = 0
@@ -210,14 +204,11 @@ def _mixed_elements(data, Indent, format):
     code = []
 
     # Generate code for each element
-    for i in range(num_elements):
+    for data in data_list:
 
-        # Get sub element
-        basis_element = elements[i]
-
-        # Get value and space dimension
-        value_dim = basis_element.value_shape()[0]
-        space_dim = basis_element.space_dimension()
+        # Get value and space dimension (should be tensor ready)
+        value_dim = sum(data["value_shape"] or (1,))
+        space_dim = data["space_dimension"]
 
         # Determine if the element has a value, for the given dof
         code += [Indent.indent(format_dof_map_if(sum_space_dim, sum_space_dim + space_dim -1))]
@@ -229,7 +220,7 @@ def _mixed_elements(data, Indent, format):
         code += _map_dof(sum_space_dim, Indent, format)
 
         # Generate code for basis element
-        code += _generate_element_code(basis_element, sum_value_dim, True, Indent, format)
+        code += _generate_element_code(data, sum_value_dim, True, Indent, format)
 
         # Decrease indentation, finish block - end element code
         Indent.decrease()
@@ -382,13 +373,15 @@ def _compute_values(data, sum_value_dim, vector, Indent, format):
 #    elif mapping == COVARIANT_PIOLA:
 #        code += [Indent.indent(format["comment"]("Using covariant Piola transform to map values back to the physical element"))]
 
+    lines = []
     if (vector or num_components != 1):
         # Loop number of components
         for i in range(num_components):
             name = format_values + format_array_access(i + sum_value_dim)
-#            value = format_add([format_multiply([format_coefficients(i) + format_secondary_index(j),\
-#                    format_basisvalue(j)]) for j in range(poly_dim)])
 
+            value = format_multiply([format_coefficients(i) + format_matrix_access(format_dof, format_j),\
+                    format_basisvalues + format_array_access(format_j)])
+            lines += [format["add equal"](name, value)]
 #            # Use Piola transform to map basisfunctions back to physical data if needed
 #            if mapping == CONTRAVARIANT_PIOLA:
 #                code.insert(i+1,(Indent.indent(format_tmp(0, i)), value))
@@ -407,20 +400,16 @@ def _compute_values(data, sum_value_dim, vector, Indent, format):
 
 #            code += [(Indent.indent(name), value)]
     else:
-        # Get number of members of the expansion set
-        # FIXME: KBO: Might be able to get this more elegantly, maybe move to
-        # data or simply take the second value of the shape of the coefficients
-        num_mem = data["num_expansion_members"]
-        loop_vars = [(format_j, 0, num_mem)]
-
+        # Generate name and value to create matrix vector multiply
         name = format_pointer + format_values
-
         value = format_multiply([format_coefficients(0) + format_matrix_access(format_dof, format_j),\
                 format_basisvalues + format_array_access(format_j)])
+        lines = [format["add equal"](name, value)]
 
-        line = [format["add equal"](name, value)]
-
-        code += generate_loop(line, loop_vars, Indent, format)
+    # Get number of members of the expansion set
+    num_mem = data["num_expansion_members"]
+    loop_vars = [(format_j, 0, num_mem)]
+    code += generate_loop(lines, loop_vars, Indent, format)
 
     return code
 

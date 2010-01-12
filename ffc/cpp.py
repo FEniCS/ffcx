@@ -424,7 +424,7 @@ format_old = {
     "secondary index": lambda i: "_%s" %(i),
     # program flow
     "dof map if": lambda i,j: "if (%d <= %s && %s <= %d)" %(i,\
-                                                                self.format["argument basis num"], self.format["argument basis num"], j),
+                                                                format_old["argument basis num"], format_old["argument basis num"], j),
     "loop": lambda i,j,k: "for (unsigned int %s = %s; %s < %s; %s++)"% (i, j, i, k, i),
     "if": "if",
     # snippets
