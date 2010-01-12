@@ -156,7 +156,7 @@ def _generate_switch(variable, cases):
     # Create switch
     code = "switch (%s)\n{\n" % variable
     for i in range(len(cases)):
-        code += "case %d:\n%s break;\n" % (i, indent(cases[i], 2))
+        code += "case %d:\n%sbreak;\n" % (i, indent(cases[i], 2))
     code += "}"
 
     return code
