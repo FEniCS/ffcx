@@ -151,7 +151,7 @@ def _generate_tensor_contraction(terms, options, g_set):
                 a0 = A0.A0[tuple(i + a)]
 
                 # Skip small values
-                if abs(a0) > epsilon: continue
+                if abs(a0) < epsilon: continue
 
                 # Compute value
                 if value and a0 < 0.0:
