@@ -177,14 +177,20 @@ def _evaluate_basis(ufl_element, fiat_element):
                ufl_element.degree(),\
                "Degrees do not match: %s, %s" % (repr(fiat_element), repr(ufl_element)))
 
-    # FIXME: KBO: Does not support mixed elements yet.
+    # Get mapping for element, must be the same for all DOFs for evaluate_basis
+    # to work in its current implementation
+    mapping = fiat_element.mapping()[0]
+    ffc_assert(all(mapping == m for m in fiat_element.mapping()),\
+               "Mapping is not the same for all dofs of this element: %s" % str(fiat_element))
     data = {
           "value_shape" : fiat_element.value_shape(),
           "embedded_degree" : ufl_element.degree(),
           "cell_domain" : ufl_element.cell().domain(),
           "coeffs" : fiat_element.get_coeffs(),
-          "value_rank" : len(ufl_element.value_shape()),
-          "space_dimension" : fiat_element.space_dimension()
+          "family" : ufl_element.family(),
+          "mapping" : mapping,
+          "space_dimension" : fiat_element.space_dimension(),
+          "topological_dimension" : ufl_element.cell().topological_dimension()
           }
 
     data["num_expansion_members"] = \

@@ -120,7 +120,7 @@ def _generate_map(element_cell_domain, Indent, format):
     code = []
 
     # Get coordinates and map to the FIAT reference element from codesnippets.py
-    code += [Indent.indent(format["coordinate map FIAT"](element_cell_domain))] + [""]
+    code += [Indent.indent(format["coordinate map FIAT"](element_cell_domain))]
 
     # FIXME: Verify that we don't need to apply additional transformations once we're on the reference element
 #    if (data.cell_domain() == "interval"):
@@ -296,17 +296,17 @@ def _tabulate_coefficients(data, Indent, format):
     coefficients = data["coeffs"]
 
     # Scalar valued basis element [Lagrange, Discontinuous Lagrange, Crouzeix-Raviart]
-    rank = data["value_rank"]
-    if (rank == 0):
-        coefficients = [coefficients]
+    family = data["family"]
 
+    # Scalar elements
+    if family in ("Lagrange", "Discontinuous Lagrange", "P0"):
+        coefficients = [coefficients]
     # Vector valued basis element [Raviart-Thomas, Brezzi-Douglas-Marini (BDM)]
-    # FIXME: KBO: Verify that coefficients still look this way
-    elif (rank == 1):
-        error("Broken!")
+    elif family in ("Brezzi-Douglas-Marini", "Raviart-Thomas", "Nedelec 1st kind H(curl)"):
         coefficients = numpy.transpose(coefficients, [1,0,2])
+    # Tensor and other elements
     else:
-        error("Tensor elements not supported!")
+        error("This finite element family is currently not supported: %s" % family)
 
     # Init return code
     code = []
@@ -317,14 +317,12 @@ def _tabulate_coefficients(data, Indent, format):
 
         # Get number of dofs and number of members of the expansion set
         num_dofs, num_mem = numpy.shape(coeffs)
-
         # Declare varable name for coefficients
         name = format_table_declaration + format_coefficients(i) + format_matrix_access(num_dofs, num_mem)
         value = tabulate_matrix(coeffs, format)
 
         # Generate array of values
         code += [(Indent.indent(name), Indent.indent(value))] + [""]
-
     return code
 
 def _compute_values(data, sum_value_dim, vector, Indent, format):
@@ -335,7 +333,7 @@ def _compute_values(data, sum_value_dim, vector, Indent, format):
     format_values           = format["argument values"]
     format_array_access     = format["array access"]
     format_matrix_access     = format["matrix access"]
-#    format_add              = format["add"]
+    format_add              = format["add"]
 
     format_multiply         = format["multiply"]
     format_coefficients     = format["coefficients table"]
@@ -345,13 +343,13 @@ def _compute_values(data, sum_value_dim, vector, Indent, format):
 #    format_secondary_index  = format["secondary index"]
 #    format_basisvalue       = format["basisvalue"]
     format_pointer          = format["pointer"]
-#    format_det              = format["determinant"]
-#    format_inv              = format["inverse"]
+    format_det              = format["determinant"]
+    format_inv              = format["inverse"]
 #    format_add              = format["add"]
-#    format_mult             = format["multiply"]
-#    format_group            = format["grouping"]
-#    format_tmp              = format["tmp declaration"]
-#    format_tmp_access       = format["tmp access"]
+    format_mult             = format["multiply"]
+    format_group            = format["grouping"]
+    format_tmp              = format["tmp declaration"]
+    format_tmp_access       = format["tmp access"]
 
     # Init return code
     code = []
@@ -360,18 +358,12 @@ def _compute_values(data, sum_value_dim, vector, Indent, format):
 
     # Get number of components, change for tensor valued elements
     shape = data["value_shape"]
-    if len(shape) > 0:
+    if shape == ():
+        num_components = 1
+    elif len(shape) == 1:
         num_components = shape[0]
     else:
-        num_components = 1
-
-    # Check which transform we should use to map the basis functions
-    # FIXME: KBO: Only support affine mapping for now
-#    mapping = data.mapping()
-#    if mapping == CONTRAVARIANT_PIOLA:
-#        code += [Indent.indent(format["comment"]("Using contravariant Piola transform to map values back to the physical element"))]
-#    elif mapping == COVARIANT_PIOLA:
-#        code += [Indent.indent(format["comment"]("Using covariant Piola transform to map values back to the physical element"))]
+        error("Tensor valued elements are not supported yet: %s" % data["family"])
 
     lines = []
     if (vector or num_components != 1):
@@ -382,23 +374,6 @@ def _compute_values(data, sum_value_dim, vector, Indent, format):
             value = format_multiply([format_coefficients(i) + format_matrix_access(format_dof, format_j),\
                     format_basisvalues + format_array_access(format_j)])
             lines += [format["add equal"](name, value)]
-#            # Use Piola transform to map basisfunctions back to physical data if needed
-#            if mapping == CONTRAVARIANT_PIOLA:
-#                code.insert(i+1,(Indent.indent(format_tmp(0, i)), value))
-#                basis_col = [format_tmp_access(0, j) for j in range(data.cell().topological_dimension())]
-#                jacobian_row = [format["transform"]("J", j, i, None) for j in range(data.cell().topological_dimension())]
-#                inner = [format_mult([jacobian_row[j], basis_col[j]]) for j in range(data.cell().topological_dimension())]
-#                sum = format_group(format_add(inner))
-#                value = format_mult([format_inv(format_det(None)), sum])
-#            elif mapping == COVARIANT_PIOLA:
-#                code.insert(i+1,(Indent.indent(format_tmp(0, i)), value))
-#                basis_col = [format_tmp_access(0, j) for j in range(data.cell().topological_dimension())]
-#                inverse_jacobian_column = [format["transform"]("JINV", j, i, None) for j in range(data.cell().topological_dimension())]
-#                inner = [format_mult([inverse_jacobian_column[j], basis_col[j]]) for j in range(data.cell().topological_dimension())]
-#                sum = format_group(format_add(inner))
-#                value = format_mult([sum])
-
-#            code += [(Indent.indent(name), value)]
     else:
         # Generate name and value to create matrix vector multiply
         name = format_pointer + format_values
@@ -410,6 +385,51 @@ def _compute_values(data, sum_value_dim, vector, Indent, format):
     num_mem = data["num_expansion_members"]
     loop_vars = [(format_j, 0, num_mem)]
     code += generate_loop(lines, loop_vars, Indent, format)
+
+    # Apply transformatin if applicable
+    mapping = data["mapping"]
+    if mapping == "affine":
+        pass
+    elif mapping == "contravariant piola":
+        code += ["", Indent.indent(format["comment"]\
+                ("Using contravariant Piola transform to map values back to the physical element"))]
+        # Get temporary values before mapping
+        code += [(Indent.indent(format_tmp(0, i)),\
+                  format_values + format_array_access(i + sum_value_dim)) for i in range(num_components)]
+
+        # Create names for inner product.
+        topological_dimension = data["topological_dimension"]
+        basis_col = [format_tmp_access(0, j) for j in range(topological_dimension)]
+        for i in range(num_components):
+            # Create Jacobian.
+            jacobian_row = [format["transform"]("J", j, i, None) for j in range(topological_dimension)]
+
+            # Create inner product and multiply by inverse of Jacobian.
+            inner = [format_mult([jacobian_row[j], basis_col[j]]) for j in range(topological_dimension)]
+            sum_ = format_group(format_add(inner))
+            value = format_mult([format_inv(format_det(None)), sum_])
+            name = format_values + format_array_access(i + sum_value_dim)
+            code += [(name, value)]
+    elif mapping == "covariant piola":
+        code += ["", Indent.indent(format["comment"]\
+                ("Using covariant Piola transform to map values back to the physical element"))]
+        # Get temporary values before mapping
+        code += [(Indent.indent(format_tmp(0, i)),\
+                  format_values + format_array_access(i + sum_value_dim)) for i in range(num_components)]
+        # Create names for inner product.
+        topological_dimension = data["topological_dimension"]
+        basis_col = [format_tmp_access(0, j) for j in range(topological_dimension)]
+        for i in range(num_components):
+            # Create inverse of Jacobian.
+            inv_jacobian_row = [format["transform"]("JINV", j, i, None) for j in range(topological_dimension)]
+
+            # Create inner product of basis values and inverse of Jacobian.
+            inner = [format_mult([inv_jacobian_row[j], basis_col[j]]) for j in range(topological_dimension)]
+            value = format_group(format_add(inner))
+            name = format_values + format_array_access(i + sum_value_dim)
+            code += [(name, value)]
+    else:
+        error("Unknown mapping: %s" % mapping)
 
     return code
 
