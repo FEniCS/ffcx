@@ -544,7 +544,7 @@ def remove_unused(code, used_set=set()):
     variables = {}
 
     # List of variable names (so we can search them in order)
-    variable_names = [variable_name for variable_name in used_set]
+    variable_names = []
 
     # Examine code line by line
     lines = code.split("\n")
@@ -582,19 +582,18 @@ def remove_unused(code, used_set=set()):
             if _variable_in_line(variable_name, line) and line_number > declaration_line:
                 variables[variable_name] = (declaration_line, used_lines + [line_number])
 
-    # Reverse the order of the variable names (to catch variables used
-    # only by variables that are removed)
+    # Reverse the order of the variable names to catch variables used
+    # only by variables that are removed
     variable_names.reverse()
 
-    # Remove declarations that are not used (need to search backwards)
+    # Remove declarations that are not used
     removed_lines = []
     for variable_name in variable_names:
         (declaration_line, used_lines) = variables[variable_name]
         for line in removed_lines:
             if line in used_lines:
                 used_lines.remove(line)
-        if used_lines == []:
-            print variable_name
+        if used_lines == [] and not variable_name in used_set:
             debug("Removing unused variable: %s" % variable_name)
             #lines[declaration_line] = "// " + lines[declaration_line]
             lines[declaration_line] = None

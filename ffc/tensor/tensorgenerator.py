@@ -84,7 +84,7 @@ def _tabulate_tensor(integral_ir, integral_type, ir, options):
     j_code = codesnippets.jacobian[ir.geometric_dimension] % {"restriction": ""}
 
     # Remove unused declarations from Jacobian code
-    #jacobi_code = remove_unused(j_code, j_set)
+    jacobi_code = remove_unused(j_code, j_set)
 
     # FIXME: Missing stuff from old generate_jacobian
 
