@@ -37,6 +37,9 @@ def _evaluate_dof(ir):
     cases = [_generate_body(dof, mappings[i], cell_dim, offsets[i])
              for (i, dof) in enumerate(ir["dofs"])]
 
+    # Combine with return statements:
+    cases = [c + format["return"](r) for (c, r) in cases]
+
     # Define switch
     code += comment("Evaluate degree of freedom of function")
     code += format["switch"]("i", cases)
@@ -46,7 +49,25 @@ def _evaluate_dof(ir):
 
 def _evaluate_dofs(ir):
     "Generate code for evaluate_dofs"
-    return "// NotImplementedYet"
+
+    # Define necessary geometry information based on the ir
+    code = _required_declarations(ir)
+
+    # Extract variables
+    mappings = ir["mappings"]
+    offsets = ir["offsets"]
+    cell_dim = ir["cell_dimension"]
+
+    # Generate code for each degree of freedom
+    cases = [_generate_body(dof, mappings[i], cell_dim, offsets[i])
+             for (i, dof) in enumerate(ir["dofs"])]
+
+    # Combine with assignments:
+    cases = [c + format["assign"]("values[%d]" % i, r)
+             for (i, (c, r)) in enumerate(cases)]
+
+    code += "\n".join(cases)
+    return code
 
 
 def _required_declarations(ir):
@@ -56,7 +77,7 @@ def _required_declarations(ir):
 
     # Declare variable for storing the result
     code = comment("Declare variables for result of evaluation")
-    code += declaration("double", "values[%d]" % ir["value_dim"])
+    code += declaration("double", "vals[%d]" % ir["value_dim"])
 
     # Declare variable for physical coordinates
     cell_dim = ir["cell_dimension"]
@@ -67,24 +88,29 @@ def _required_declarations(ir):
     needs_jacobian = any(["piola" in m for m in ir["mappings"]])
     if needs_jacobian:
         code += jacobian[cell_dim] % {"restriction": ""}
-        code += declaration("double", "result", 0.0)
+        code += declaration("double", "result")
     else:
         code += cell_coordinates
 
     return code
 
 
-def _generate_body(dof, mapping, cell_dim, offset=0):
+def _generate_body(dof, mapping, cell_dim, offset=0, result="result"):
     "Generate code for a single dof."
 
     code = ""
+
+    # Make adjustments if multiple points
+    points = dof.keys()
+    multiple_points = len(points) > 1
+    code += assign(result, 0.0) if multiple_points else ""
+    compute_result = iadd if multiple_points else assign
 
     # Aid mapping points from reference to physical element
     coefficients = affine_weights(cell_dim)
 
     # Iterate over the points for this dof. (Integral moments may have several.)
-    compute_result = assign if len(dof.keys()) == 1 else iadd
-    for x in dof.keys():
+    for x in points:
 
         # Map point onto physical element: y = F_K(x)
         w = coefficients(x)
@@ -99,20 +125,18 @@ def _generate_body(dof, mapping, cell_dim, offset=0):
         F = _change_variables(mapping, cell_dim, offset)
 
         # Simple affine functions deserve special case:
-        if len(F) == 1 and len(dof.keys()) == 1:
-            code += format["return"](F[0])
-            return code
+        if len(F) == 1 and not multiple_points:
+            return (code, F[0])
 
         # Take inner product between components and weights
         value = add([multiply([w, F[k[0]] if not k == () else F[0]])
                      for (w, k) in dof[x]])
 
         # Add value to result variable
-        code += compute_result("result", value)
+        code += compute_result(result, value)
 
     # Return result
-    code += format["return"]("result")
-    return code
+    return (code, result)
 
 def _change_variables(mapping, dim, offset):
     """Generate code for mapping function values according to
@@ -123,7 +147,7 @@ def _change_variables(mapping, dim, offset):
     # interpolate_vertex_values. Could this be abstracted out?
 
     if mapping == "affine":
-        return [component("values", offset)]
+        return [component("vals", offset)]
 
     elif mapping == "contravariant piola":
         # Map each component from physical to reference using inverse
@@ -131,7 +155,7 @@ def _change_variables(mapping, dim, offset):
         values = []
         for i in range(dim):
             inv_jacobian_row = [Jinv(i, j) for j in range(dim)]
-            components = [component("values", j + offset) for j in range(dim)]
+            components = [component("vals", j + offset) for j in range(dim)]
             values += [multiply([detJ, inner(inv_jacobian_row, components)])]
         return values
 
@@ -141,7 +165,7 @@ def _change_variables(mapping, dim, offset):
         values = []
         for i in range(dim):
             jacobian_column = [J(j, i) for j in range(dim)]
-            components = [component("values", j + offset) for j in range(dim)]
+            components = [component("vals", j + offset) for j in range(dim)]
             values += [inner(jacobian_column, components)]
         return values
     else:
