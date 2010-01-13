@@ -1,4 +1,28 @@
-"Code generation for evaluate_dof."
+"""Code generation for evaluate_dof.
+
+This module generates the functions evaluate_dof and evaluate_dofs.
+These evaluate the degree of freedom (dof) number i and all degrees of
+freedom for an element respectively.
+
+Each dof L is assumed to act on a field f in the following manner:
+
+  L(f) = w_{j, k} f_k(x_j)
+
+where w is a set of weights, j is an index set corresponding to the
+number of points involved in the evaluation of the functional, and k
+is a multi-index set with rank corresponding to the value rank of the
+function f.
+
+For common degrees of freedom such as point evaluations and
+directional component evaluations, there is just one point. However,
+for various integral moments, the integrals are evaluated using
+quadrature. The number of points therefore correspond to the
+quadrature points.
+
+The points x_j, weights w_{j, k} and components k are extracted from
+FIAT (functional.pt_dict) in the intermediate representation stage.
+
+"""
 
 __author__ = "Marie E. Rognes (meg@simula.no)"
 __copyright__ = "Copyright (C) 2009"
@@ -8,6 +32,8 @@ __license__  = "GNU GPL version 3 or any later version"
 
 from ffc.codesnippets import jacobian, evaluate_f, cell_coordinates
 from ffc.cpp import format
+
+__all__ = ["evaluate_dof", "evaluate_dofs", "affine_weights"]
 
 # Prefetch formats:
 comment = format["comment"]
@@ -22,7 +48,7 @@ J = format["J"]
 Jinv = format["Jinv"]
 detJ = format["det(J)"]
 
-def _evaluate_dof(ir):
+def evaluate_dof(ir):
     "Generate code for evaluate_dof"
 
     # Define necessary geometry information based on the ir
@@ -47,7 +73,7 @@ def _evaluate_dof(ir):
     return code
 
 
-def _evaluate_dofs(ir):
+def evaluate_dofs(ir):
     "Generate code for evaluate_dofs"
 
     # Define necessary geometry information based on the ir
