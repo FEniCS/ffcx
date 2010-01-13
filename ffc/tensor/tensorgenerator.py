@@ -173,7 +173,7 @@ def _generate_tensor_contraction(terms, options, g_set):
 
     return code
 
-def _generate_geometry_tensors(terms, geometry_set):
+def _generate_geometry_tensors(terms, g_set):
     "Generate code for computation of geometry tensors."
 
     # Prefetch formats to speed up code generation
@@ -183,14 +183,14 @@ def _generate_geometry_tensors(terms, geometry_set):
     format_declaration     = format["const float declaration"]
 
     # Reset variables
-    j = 0
     jacobi_set = set()
     code = ""
+    offset = 0
 
     # Iterate over all terms
     for (i, term) in enumerate(terms):
 
-        # Get list of secondary indices (should be the same so pick first)
+        # Get secondary indices
         A0, GK = term
         secondary_indices = GK.secondary_multi_index.indices
 
@@ -202,17 +202,15 @@ def _generate_geometry_tensors(terms, geometry_set):
         for a in secondary_indices:
 
             # Skip code generation if term is not used
-            if not format["geometry tensor"](i, a) in geometry_set:
+            if not format["geometry tensor"](i, a) in g_set:
                 continue
 
             # Compute factorized values
             values = []
-            jj = j
-            for GK in GKs:
-                val, t_set = _generate_entry(GK, a, jj, format)
+            for (j, GK) in enumerate(GKs):
+                val, t_set = _generate_entry(GK, a, offset + j, format)
                 values += [val]
                 jacobi_set = jacobi_set | t_set
-                jj += 1
 
             # Sum factorized values
             name = format_geometry_tensor(i, a) # FIXME: Need declaration here
@@ -231,7 +229,8 @@ def _generate_geometry_tensors(terms, geometry_set):
             # Add code
             code += format_declaration(name, value) + "\n"
 
-        j += len(GKs)
+        # Add to offset
+        offset += len(GKs)
 
     # Add scale factor
     jacobi_set.add(format_scale_factor)
