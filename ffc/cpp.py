@@ -7,7 +7,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian B. Oelgaard 2009
 # Modified by Marie E. Rognes 2010
-# Last changed: 2010-01-12
+# Last changed: 2010-01-13
 
 # Python modules.
 import re
@@ -22,11 +22,11 @@ from ffc.constants import FFC_OPTIONS
 format = {}
 
 # Program flow
-format.update({"return":     lambda v: "return %s;\n" % str(v),
+format.update({"return":     lambda v: "return %s;" % str(v),
                "grouping":   lambda v: "(%s)" % v,
                "switch":     lambda v, cases: _generate_switch(v, cases),
                "exception":  lambda v: "throw std::runtime_error(\"%s\");" % v,
-               "comment":    lambda v: "\n// %s\n" % v,
+               "comment":    lambda v: "\n// %s" % v,
                "if":         lambda c, v: "if (%s) {\n%s\n}\n" % (c, v),
                "do nothing": "// Do nothing"})
 
@@ -37,11 +37,11 @@ format.update({"declaration": lambda t, n, v=None: _declaration(t, n, v),
 
 # Operators
 format.update({"add":      lambda v: _add(v),
-               "iadd":     lambda v, w: "%s += %s;\n" % (str(v), str(w)),
+               "iadd":     lambda v, w: "%s += %s;" % (str(v), str(w)),
                "subtract": lambda v: " - ".join(v),
                "multiply": lambda v: _multiply(v),
                "inner product": lambda v, w: _inner_product(v, w),
-               "assign": lambda v, w: "%s = %s;\n" % (v, str(w)),
+               "assign": lambda v, w: "%s = %s;" % (v, str(w)),
                "component": lambda v, k: _component(v, k)})
 
 # Formatting used in tabulate_tensor
