@@ -8,7 +8,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Kristian B. Oelgaard, 2009
 # Modified by Marie Rognes (meg@math.uio.no), 2007
 # Modified by Garth N. Wells, 2009
-# Last changed: 2010-01-08
+# Last changed: 2010-01-13
 
 # FFC modules
 from ffc.log import info

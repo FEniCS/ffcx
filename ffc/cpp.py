@@ -17,7 +17,6 @@ import numpy
 from ffc.log import debug
 from ffc.constants import FFC_OPTIONS
 
-
 # Formatting rules
 format = {}
 
@@ -58,7 +57,7 @@ format.update({"entity index": "c.entity_indices",
                "cell": lambda s: "ufc::%s" % s,
                "det(J)": "detJ",
                "J": lambda i, j: "J_%d%d" % (i, j),
-               "Jinv" : lambda i, j: "Jinv_%d%d" % (i, j)})
+               "Jinv" : lambda i, j: "K_%d%d" % (i, j)})
 
 # Misc
 format.update({"bool":    lambda v: {True: "true", False: "false"}[v],
@@ -140,7 +139,7 @@ def _inner_product(v, w):
 
 def _transform(type, j, k, r):
     # FIXME: j, k might need to be swapped for J or JINV
-    map_name = type + {None: "", "+": "0", "-": 1}[r]
+    map_name = {"J": "J", "JINV": "K"}[type] + {None: "", "+": "0", "-": 1}[r]
     return (map_name + "_%d%d") % (j, k)
 
 def _generate_switch(variable, cases):

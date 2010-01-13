@@ -63,7 +63,7 @@ const double J%(restriction)s_00 = x%(restriction)s[1][0] - x%(restriction)s[0][
 double detJ%(restriction)s = J%(restriction)s_00;
 
 // Compute inverse of Jacobian
-const double Jinv%(restriction)s_00 =  1.0 / detJ%(restriction)s;
+const double K%(restriction)s_00 =  1.0 / detJ%(restriction)s;
 """
 
 jacobian_2D = \
@@ -81,10 +81,10 @@ const double J%(restriction)s_11 = x%(restriction)s[2][1] - x%(restriction)s[0][
 double detJ%(restriction)s = J%(restriction)s_00*J%(restriction)s_11 - J%(restriction)s_01*J%(restriction)s_10;
 
 // Compute inverse of Jacobian
-const double Jinv%(restriction)s_00 =  J%(restriction)s_11 / detJ%(restriction)s;
-const double Jinv%(restriction)s_01 = -J%(restriction)s_01 / detJ%(restriction)s;
-const double Jinv%(restriction)s_10 = -J%(restriction)s_10 / detJ%(restriction)s;
-const double Jinv%(restriction)s_11 =  J%(restriction)s_00 / detJ%(restriction)s;
+const double K%(restriction)s_00 =  J%(restriction)s_11 / detJ%(restriction)s;
+const double K%(restriction)s_01 = -J%(restriction)s_01 / detJ%(restriction)s;
+const double K%(restriction)s_10 = -J%(restriction)s_10 / detJ%(restriction)s;
+const double K%(restriction)s_11 =  J%(restriction)s_00 / detJ%(restriction)s;
 """
 
 jacobian_3D = \
@@ -120,15 +120,15 @@ const double d%(restriction)s_22 = J%(restriction)s_00*J%(restriction)s_11 - J%(
 double detJ%(restriction)s = J%(restriction)s_00*d%(restriction)s_00 + J%(restriction)s_10*d%(restriction)s_10 + J%(restriction)s_20*d%(restriction)s_20;
 
 // Compute inverse of Jacobian
-const double Jinv%(restriction)s_00 = d%(restriction)s_00 / detJ%(restriction)s;
-const double Jinv%(restriction)s_01 = d%(restriction)s_10 / detJ%(restriction)s;
-const double Jinv%(restriction)s_02 = d%(restriction)s_20 / detJ%(restriction)s;
-const double Jinv%(restriction)s_10 = d%(restriction)s_01 / detJ%(restriction)s;
-const double Jinv%(restriction)s_11 = d%(restriction)s_11 / detJ%(restriction)s;
-const double Jinv%(restriction)s_12 = d%(restriction)s_21 / detJ%(restriction)s;
-const double Jinv%(restriction)s_20 = d%(restriction)s_02 / detJ%(restriction)s;
-const double Jinv%(restriction)s_21 = d%(restriction)s_12 / detJ%(restriction)s;
-const double Jinv%(restriction)s_22 = d%(restriction)s_22 / detJ%(restriction)s;"""
+const double K%(restriction)s_00 = d%(restriction)s_00 / detJ%(restriction)s;
+const double K%(restriction)s_01 = d%(restriction)s_10 / detJ%(restriction)s;
+const double K%(restriction)s_02 = d%(restriction)s_20 / detJ%(restriction)s;
+const double K%(restriction)s_10 = d%(restriction)s_01 / detJ%(restriction)s;
+const double K%(restriction)s_11 = d%(restriction)s_11 / detJ%(restriction)s;
+const double K%(restriction)s_12 = d%(restriction)s_21 / detJ%(restriction)s;
+const double K%(restriction)s_20 = d%(restriction)s_02 / detJ%(restriction)s;
+const double K%(restriction)s_21 = d%(restriction)s_12 / detJ%(restriction)s;
+const double K%(restriction)s_22 = d%(restriction)s_22 / detJ%(restriction)s;"""
 
 scale_factor = \
 """
@@ -298,10 +298,10 @@ const double J_11 = element_coordinates[2][1] - element_coordinates[0][1];
 const double detJ = J_00*J_11 - J_01*J_10;
 
 // Compute inverse of Jacobian
-const double Jinv_00 =  J_11 / detJ;
-const double Jinv_01 = -J_01 / detJ;
-const double Jinv_10 = -J_10 / detJ;
-const double Jinv_11 =  J_00 / detJ;
+const double K_00 =  J_11 / detJ;
+const double K_01 = -J_01 / detJ;
+const double K_10 = -J_10 / detJ;
+const double K_11 =  J_00 / detJ;
 
 // Get coordinates and map to the reference (UFC) element
 double x = (element_coordinates[0][1]*element_coordinates[2][0] -\\
@@ -345,15 +345,15 @@ const double d22 = J_00*J_11 - J_01*J_10;
 double detJ = J_00*d00 + J_10*d10 + J_20*d20;
 
 // Compute inverse of Jacobian
-const double Jinv_00 = d00 / detJ;
-const double Jinv_01 = d10 / detJ;
-const double Jinv_02 = d20 / detJ;
-const double Jinv_10 = d01 / detJ;
-const double Jinv_11 = d11 / detJ;
-const double Jinv_12 = d21 / detJ;
-const double Jinv_20 = d02 / detJ;
-const double Jinv_21 = d12 / detJ;
-const double Jinv_22 = d22 / detJ;
+const double K_00 = d00 / detJ;
+const double K_01 = d10 / detJ;
+const double K_02 = d20 / detJ;
+const double K_10 = d01 / detJ;
+const double K_11 = d11 / detJ;
+const double K_12 = d21 / detJ;
+const double K_20 = d02 / detJ;
+const double K_21 = d12 / detJ;
+const double K_22 = d22 / detJ;
 
 // Compute constants
 const double C0 = d00*(element_coordinates[0][0] - element_coordinates[2][0] - element_coordinates[3][0]) \\
@@ -493,7 +493,7 @@ for (unsigned int row = 1; row < %(num_derivatives)s; row++)
 transform_interval_snippet = \
 """
 // Compute inverse of Jacobian
-const double %(Jinv)s[1][1] =  {{1.0 / J_00}};
+const double %(K)s[1][1] =  {{1.0 / J_00}};
 
 // Declare transformation matrix
 // Declare pointer to two dimensional array and initialise
@@ -512,7 +512,7 @@ for (unsigned int row = 0; row < %(num_derivatives)s; row++)
   for (unsigned int col = 0; col < %(num_derivatives)s; col++)
   {
     for (unsigned int k = 0; k < %(n)s; k++)
-      %(transform)s[row][col] *= %(Jinv)s[%(combinations)s[col][k]][%(combinations)s[row][k]];
+      %(transform)s[row][col] *= %(K)s[%(combinations)s[col][k]][%(combinations)s[row][k]];
   }
 }
 """
@@ -520,7 +520,7 @@ for (unsigned int row = 0; row < %(num_derivatives)s; row++)
 transform_triangle_snippet = \
 """
 // Compute inverse of Jacobian
-const double %(Jinv)s[2][2] =  {{J_11 / detJ, -J_01 / detJ}, {-J_10 / detJ, J_00 / detJ}};
+const double %(K)s[2][2] =  {{J_11 / detJ, -J_01 / detJ}, {-J_10 / detJ, J_00 / detJ}};
 
 // Declare transformation matrix
 // Declare pointer to two dimensional array and initialise
@@ -539,7 +539,7 @@ for (unsigned int row = 0; row < %(num_derivatives)s; row++)
   for (unsigned int col = 0; col < %(num_derivatives)s; col++)
   {
     for (unsigned int k = 0; k < %(n)s; k++)
-      %(transform)s[row][col] *= %(Jinv)s[%(combinations)s[col][k]][%(combinations)s[row][k]];
+      %(transform)s[row][col] *= %(K)s[%(combinations)s[col][k]][%(combinations)s[row][k]];
   }
 }
 """
@@ -547,7 +547,7 @@ for (unsigned int row = 0; row < %(num_derivatives)s; row++)
 transform_tetrahedron_snippet = \
 """
 // Compute inverse of Jacobian
-const double %(Jinv)s[3][3] =\
+const double %(K)s[3][3] =\
 {{d00 / detJ, d10 / detJ, d20 / detJ},\
  {d01 / detJ, d11 / detJ, d21 / detJ},\
  {d02 / detJ, d12 / detJ, d22 / detJ}};
@@ -569,7 +569,7 @@ for (unsigned int row = 0; row < %(num_derivatives)s; row++)
   for (unsigned int col = 0; col < %(num_derivatives)s; col++)
   {
     for (unsigned int k = 0; k < %(n)s; k++)
-      %(transform)s[row][col] *= %(Jinv)s[%(combinations)s[col][k]][%(combinations)s[row][k]];
+      %(transform)s[row][col] *= %(K)s[%(combinations)s[col][k]][%(combinations)s[row][k]];
   }
 }
 """
@@ -577,7 +577,7 @@ for (unsigned int row = 0; row < %(num_derivatives)s; row++)
 transform2D_FIAT_snippet = \
 """
 // Compute inverse of Jacobian, components are scaled because of difference in FFC/FIAT reference elements
-const double %(Jinv)s[2][2] =  {{2*J_11 / detJ, -2*J_01 / detJ}, {-2*J_10 / detJ, 2*J_00 / detJ}};
+const double %(K)s[2][2] =  {{2*J_11 / detJ, -2*J_01 / detJ}, {-2*J_10 / detJ, 2*J_00 / detJ}};
 
 // Declare transformation matrix
 // Declare pointer to two dimensional array and initialise
@@ -596,7 +596,7 @@ for (unsigned int row = 0; row < %(num_derivatives)s; row++)
   for (unsigned int col = 0; col < %(num_derivatives)s; col++)
   {
     for (unsigned int k = 0; k < %(n)s; k++)
-      %(transform)s[row][col] *= %(Jinv)s[%(combinations)s[col][k]][%(combinations)s[row][k]];
+      %(transform)s[row][col] *= %(K)s[%(combinations)s[col][k]][%(combinations)s[row][k]];
   }
 }
 """
@@ -604,7 +604,7 @@ for (unsigned int row = 0; row < %(num_derivatives)s; row++)
 transform3D_FIAT_snippet = \
 """
 // Compute inverse of Jacobian, components are scaled because of difference in FFC/FIAT reference elements
-const double %(Jinv)s[3][3] =\
+const double %(K)s[3][3] =\
 {{2*d00 / detJ, 2*d10 / detJ, 2*d20 / detJ},\
  {2*d01 / detJ, 2*d11 / detJ, 2*d21 / detJ},\
  {2*d02 / detJ, 2*d12 / detJ, 2*d22 / detJ}};
@@ -626,7 +626,7 @@ for (unsigned int row = 0; row < %(num_derivatives)s; row++)
   for (unsigned int col = 0; col < %(num_derivatives)s; col++)
   {
     for (unsigned int k = 0; k < %(n)s; k++)
-      %(transform)s[row][col] *= %(Jinv)s[%(combinations)s[col][k]][%(combinations)s[row][k]];
+      %(transform)s[row][col] *= %(K)s[%(combinations)s[col][k]][%(combinations)s[row][k]];
   }
 }
 """
@@ -637,10 +637,10 @@ inverse_jacobian_2D = \
 double detJ%(restriction)s = J%(restriction)s_00*J%(restriction)s_11 - J%(restriction)s_01*J%(restriction)s_10;
 
 // Compute inverse of Jacobian
-const double Jinv%(restriction)s_00 =  J%(restriction)s_11 / detJ%(restriction)s;
-const double Jinv%(restriction)s_01 = -J%(restriction)s_01 / detJ%(restriction)s;
-const double Jinv%(restriction)s_10 = -J%(restriction)s_10 / detJ%(restriction)s;
-const double Jinv%(restriction)s_11 =  J%(restriction)s_00 / detJ%(restriction)s;"""
+const double K%(restriction)s_00 =  J%(restriction)s_11 / detJ%(restriction)s;
+const double K%(restriction)s_01 = -J%(restriction)s_01 / detJ%(restriction)s;
+const double K%(restriction)s_10 = -J%(restriction)s_10 / detJ%(restriction)s;
+const double K%(restriction)s_11 =  J%(restriction)s_00 / detJ%(restriction)s;"""
 
 inverse_jacobian_3D = """\
 // Compute sub determinants
@@ -660,15 +660,15 @@ const double d22 = J%(restriction)s_00*J%(restriction)s_11 - J%(restriction)s_01
 double detJ%(restriction)s = J%(restriction)s_00*d00 + J%(restriction)s_10*d10 + J%(restriction)s_20*d20;
 
 // Compute inverse of Jacobian
-const double Jinv%(restriction)s_00 = d00 / detJ%(restriction)s;
-const double Jinv%(restriction)s_01 = d10 / detJ%(restriction)s;
-const double Jinv%(restriction)s_02 = d20 / detJ%(restriction)s;
-const double Jinv%(restriction)s_10 = d01 / detJ%(restriction)s;
-const double Jinv%(restriction)s_11 = d11 / detJ%(restriction)s;
-const double Jinv%(restriction)s_12 = d21 / detJ%(restriction)s;
-const double Jinv%(restriction)s_20 = d02 / detJ%(restriction)s;
-const double Jinv%(restriction)s_21 = d12 / detJ%(restriction)s;
-const double Jinv%(restriction)s_22 = d22 / detJ%(restriction)s;
+const double K%(restriction)s_00 = d00 / detJ%(restriction)s;
+const double K%(restriction)s_01 = d10 / detJ%(restriction)s;
+const double K%(restriction)s_02 = d20 / detJ%(restriction)s;
+const double K%(restriction)s_10 = d01 / detJ%(restriction)s;
+const double K%(restriction)s_11 = d11 / detJ%(restriction)s;
+const double K%(restriction)s_12 = d21 / detJ%(restriction)s;
+const double K%(restriction)s_20 = d02 / detJ%(restriction)s;
+const double K%(restriction)s_21 = d12 / detJ%(restriction)s;
+const double K%(restriction)s_22 = d22 / detJ%(restriction)s;
 """
 
 map_onto_physical_1D = \
