@@ -26,7 +26,7 @@ format.update({"return":     lambda v: "return %s;" % str(v),
                "grouping":   lambda v: "(%s)" % v,
                "switch":     lambda v, cases: _generate_switch(v, cases),
                "exception":  lambda v: "throw std::runtime_error(\"%s\");" % v,
-               "comment":    lambda v: "\n// %s" % v,
+               "comment":    lambda v: "// %s" % v,
                "if":         lambda c, v: "if (%s) {\n%s\n}\n" % (c, v),
                "do nothing": "// Do nothing"})
 
