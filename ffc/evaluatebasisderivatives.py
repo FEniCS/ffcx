@@ -15,9 +15,9 @@ import numpy
 
 # FFC modules
 from ffc.log import error
-from ffc.evaluatebasis import _generate_map
+#from ffc.evaluatebasis import _generate_map
 from ffc.evaluatebasis import _map_dof
-from ffc.evaluatebasis import _generate_basisvalues
+from ffc.evaluatebasis import _compute_basisvalues
 from ffc.evaluatebasis import _tabulate_coefficients
 from ffc.cpp import tabulate_matrix, IndentControl, remove_unused
 from ffc.quadrature.quadraturegenerator_utils import generate_loop
