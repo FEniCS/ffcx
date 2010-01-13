@@ -99,6 +99,9 @@ __license__  = "GNU GPL version 3 or any later version"
 
 __all__ = ["compile_form", "compile_element"]
 
+# Python modules
+from time import time
+
 # FFC modules
 from ffc.log import log, begin, end, debug, info, warning, error, ffc_assert
 from ffc.constants import FFC_OPTIONS
@@ -126,24 +129,33 @@ def compile_form(forms, prefix="Form", options=FFC_OPTIONS.copy()):
     # Enter compiler stages 1-4 for each form
     for form in forms:
 
+        # Reset timing
+        cpu_time = time()
+
         # Stage 1: analysis
         preprocessed_form, form_data = analyze_form(form, options)
+        _print_timing(1, time() - cpu_time)
 
         # Stage 2: intermediate representation
         ir = compute_ir(preprocessed_form, form_data, options)
+        _print_timing(2, time() - cpu_time)
 
         # Stage 3: optimization
         oir = optimize_ir(ir, options)
+        _print_timing(3, time() - cpu_time)
 
         # Stage 4: code generation
         code = generate_code(oir, prefix, options)
+        _print_timing(4, time() - cpu_time)
 
         # Store data
         form_and_data.append((preprocessed_form, form_data))
         codes.append(code)
 
     # Stage 5: format code
+    cpu_time = time()
     format_code(codes, prefix, options)
+    _print_timing(4, time() - cpu_time)
 
     info("Code generation complete.")
     return form_and_data
@@ -192,3 +204,7 @@ def _check_options(options):
         warning("Option 'quadrature_points' has been replaced by 'quadrature_degree'.")
 
     return options
+
+def _print_timing(stage, timing):
+    "Print timing results."
+    info("Compiler stage %d finished in %g seconds.\n" % (stage, timing))
