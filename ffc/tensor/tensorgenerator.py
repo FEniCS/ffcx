@@ -11,7 +11,6 @@ __license__  = "GNU GPL version 3 or any later version"
 # Last changed: 2010-01-13
 
 # FFC modules
-from ffc.log import info
 from ffc.cpp import format, remove_unused, count_ops
 from ffc import codesnippets
 
@@ -48,7 +47,7 @@ def _tabulate_tensor(integral_ir, integral_type, ir, options):
     j_set = set()
     g_set = set()
 
-    # Generate code for tensor contraction and geometry tensor
+    # Check integral typpe and generate code
     if integral_type == "cell_integral":
 
         # Generate code for one single tensor contraction
@@ -56,6 +55,10 @@ def _tabulate_tensor(integral_ir, integral_type, ir, options):
 
         # Generate code for geometry tensors
         g_code = _generate_geometry_tensors(integral_ir, j_set, g_set)
+
+        # Generate code for Jacobian
+        j_code  = codesnippets.jacobian[ir.geometric_dimension] % {"restriction": ""}
+        j_code += "\n\n" + codesnippets.scale_factor
 
     elif integral_type == "interior_facet_integral":
 
@@ -67,6 +70,12 @@ def _tabulate_tensor(integral_ir, integral_type, ir, options):
 
         # Generate code for geometry tensors
         g_code = _generate_geometry_tensors(integral_ir[0], j_set, g_set)
+
+        # FIXME: This won't work
+
+        # Generate code for Jacobian
+        j_code  = codesnippets.jacobian[ir.geometric_dimension] % {"restriction": ""}
+        j_code += codesnippets.facetdeterminant
 
     elif integral_type == "exterior_facet_integral":
 
@@ -80,8 +89,11 @@ def _tabulate_tensor(integral_ir, integral_type, ir, options):
         # Generate code for geometry tensors
         g_code = _generate_geometry_tensors(integral_ir[0][0], j_set, g_set)
 
-    # Generate code for element tensor, geometry tensor and Jacobian
-    j_code = codesnippets.jacobian[ir.geometric_dimension] % {"restriction": ""}
+        # FIXME: This won't work
+
+        # Generate code for Jacobian
+        j_code  = codesnippets.jacobian[ir.geometric_dimension] % {"restriction": ""}
+        j_code += codesnippets.facetdeterminant
 
     # Remove unused declarations from Jacobian code
     jacobi_code = remove_unused(j_code, j_set)
