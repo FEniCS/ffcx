@@ -112,13 +112,14 @@ def _generate_tensor_contraction(terms, options, g_set):
     "Generate code for computation of tensor contraction."
 
     # Prefetch formats to speed up code generation
-    format_add             = format["add"]
-    format_iadd            = format["iadd"]
-    format_subtract        = format["subtract"]
-    format_multiply        = format["multiply"]
-    format_element_tensor  = format["element tensor"]
-    format_geometry_tensor = format["geometry tensor"]
-    format_float           = format["float"]
+    add             = format["add"]
+    iadd            = format["iadd"]
+    subtract        = format["subtract"]
+    multiply        = format["multiply"]
+    element_tensor  = format["element tensor"]
+    geometry_tensor = format["geometry tensor"]
+    format_float    = format["float"]
+    zero            = format_float(0)
 
     # Generate incremental code for now, might be an option later
     incremental = True
@@ -135,43 +136,44 @@ def _generate_tensor_contraction(terms, options, g_set):
     for (j, (A0, GK)) in enumerate(terms):
         gk_tensor_j = []
         for a in A0.secondary_multi_index.indices:
-            gk_tensor_j.append((format_geometry_tensor(j, a), a))
+            gk_tensor_j.append((geometry_tensor(j, a), a))
         gk_tensor.append((gk_tensor_j, j))
 
-    # Reset variables
-    k = 0
-    num_dropped = 0
-    zero = format_float(0.0)
-    code = ""
-
     # Generate code for computing the element tensor
-    for i in primary_indices:
-        name = format_element_tensor(k)
+    code = ""
+    for (k, i) in enumerate(primary_indices):
+        name = element_tensor(k)
         value = None
         for (gka, j) in gk_tensor:
             (A0, GK) = terms[j]
             for (gk, a) in gka:
                 a0 = A0.A0[tuple(i + a)]
-                if abs(a0) > epsilon:
-                    if value and a0 < 0.0:
-                        value = format_subtract([value, format_multiply([format_float(-a0), gk])])
-                        g_set.add(gk)
-                    elif value:
-                        value = format_add([value, format_multiply([format_float(a0), gk])])
-                        g_set.add(gk)
-                    else:
-                        value = format_multiply([format_float(a0), gk])
-                        g_set.add(gk)
+
+                # Skip small values
+                if abs(a0) > epsilon: continue
+
+                # Compute value
+                if value and a0 < 0.0:
+                    value = subtract([value, multiply([format_float(-a0), gk])])
+                elif value:
+                    value = add([value, multiply([format_float(a0), gk])])
                 else:
-                    num_dropped += 1
+                    value = multiply([format_float(a0), gk])
+
+                # Remember that gk has been used
+                g_set.add(gk)
+
+        # Add newline where needed
+        if len(code) > 0: code += "\n"
+
+        # Handle special case
         value = value or zero
-        if len(code) > 0:
-            code += "\n"
+
+        # Add value
         if incremental:
-            code += format_iadd(name, value)
+            code += iadd(name, value)
         else:
-            code += format_assign(name, value)
-        k += 1
+            code += assign(name, value)
 
     return code
 
@@ -201,8 +203,7 @@ def _generate_geometry_tensors(terms, j_set, g_set):
         for a in secondary_indices:
 
             # Skip code generation if term is not used
-            if not format["geometry tensor"](i, a) in g_set:
-                continue
+            if not format["geometry tensor"](i, a) in g_set: continue
 
             # Compute factorized values
             values = [_generate_entry(GK, a, offset + j, j_set) for (j, GK) in enumerate(GKs)]
@@ -214,12 +215,6 @@ def _generate_geometry_tensors(terms, j_set, g_set):
             # Multiply with determinant factor
             det = GK.determinant
             value = _multiply_value_by_det(value, GK.determinant, len(values) > 1)
-
-            # Add determinant to transformation set
-            #!if dets:
-            #!    d0 = [format["power"](format["determinant"](det.restriction),
-            #!                          det.power) for det in dets]
-            #!    jacobi_set.add(format["multiply"](d0))
 
             # Add code
             code += format_declaration(name, value) + "\n"
@@ -236,9 +231,9 @@ def _generate_entry(GK, a, i, j_set):
     "Generate code for the value of a GK entry."
 
     # Prefetch formats to speed up code generation
-    grouping    = format["grouping"]
-    add         = format["add"]
-    multiply    = format["multiply"]
+    grouping = format["grouping"]
+    add      = format["add"]
+    multiply = format["multiply"]
 
     # Compute product of factors outside sum
     factors = _extract_factors(GK, a, None, j_set, MonomialIndex.INTERNAL)
@@ -273,8 +268,8 @@ def _extract_factors(GK, a, b, j_set, index_type):
     "Extract factors of given index type in GK entry."
 
     # Prefetch formats to speed up code generation
-    format_coefficient = format["coefficient"]
-    format_transform   = format["transform"]
+    coefficient = format["coefficient"]
+    transform   = format["transform"]
 
     # List of factors
     factors = []
@@ -282,15 +277,15 @@ def _extract_factors(GK, a, b, j_set, index_type):
     # Compute product of coefficients
     for c in GK.coefficients:
         if index_type == c.index.index_type:
-            factors.append(format_coefficient(c.number, c.index(secondary=a)))
+            factors.append(coefficient(c.number, c.index(secondary=a)))
 
     # Compute product of transforms
     for t in GK.transforms:
         if index_type in (t.index0.index_type, t.index1.index_type):
-            factors.append(format_transform(t.transform_type,
-                                            t.index0(secondary=a, external=b),
-                                            t.index1(secondary=a, external=b),
-                                            t.restriction))
+            factors.append(transform(t.transform_type,
+                                     t.index0(secondary=a, external=b),
+                                     t.index1(secondary=a, external=b),
+                                     t.restriction))
             j_set.add(factors[-1])
 
     return factors
