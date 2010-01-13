@@ -93,20 +93,20 @@ def _tabulate_tensor(integral_ir, integral_type, ir, options):
     total_ops = j_ops + g_ops + t_ops
 
     # Add generated code
-    code = ""
-    code += comment("Number of operations (multiply-add pairs) for Jacobian data:      %d\n" % j_ops)
-    code += comment("Number of operations (multiply-add pairs) for geometry tensor:    %d\n" % g_ops)
-    code += comment("Number of operations (multiply-add pairs) for tensor contraction: %d\n" % t_ops)
-    code += comment("Total number of operations (multiply-add pairs):                  %d\n" % total_ops)
-    code += j_code
-    code += "\n"
-    code += comment("Compute geometry tensor\n")
-    code += g_code
-    code += "\n"
-    code += comment("Compute element tensor\n")
-    code += t_code
+    lines = []
+    lines.append(comment("Number of operations (multiply-add pairs) for Jacobian data:      %d" % j_ops))
+    lines.append(comment("Number of operations (multiply-add pairs) for geometry tensor:    %d" % g_ops))
+    lines.append(comment("Number of operations (multiply-add pairs) for tensor contraction: %d" % t_ops))
+    lines.append(comment("Total number of operations (multiply-add pairs):                  %d" % total_ops))
+    lines.append(j_code)
+    lines.append("")
+    lines.append(comment("Compute geometry tensor"))
+    lines.append(g_code)
+    lines.append("")
+    lines.append(comment("Compute element tensor"))
+    lines.append(t_code)
 
-    return code
+    return "\n".join(lines)
 
 def _generate_tensor_contraction(terms, options, g_set):
     "Generate code for computation of tensor contraction."
@@ -140,7 +140,7 @@ def _generate_tensor_contraction(terms, options, g_set):
         gk_tensor.append((gk_tensor_j, j))
 
     # Generate code for computing the element tensor
-    code = ""
+    lines = []
     for (k, i) in enumerate(primary_indices):
         name = element_tensor(k)
         value = None
@@ -163,19 +163,16 @@ def _generate_tensor_contraction(terms, options, g_set):
                 # Remember that gk has been used
                 g_set.add(gk)
 
-        # Add newline where needed
-        if len(code) > 0: code += "\n"
-
         # Handle special case
         value = value or zero
 
         # Add value
         if incremental:
-            code += iadd(name, value)
+            lines.append(iadd(name, value))
         else:
-            code += assign(name, value)
+            lines.append(assign(name, value))
 
-    return code
+    return "\n".join(lines)
 
 def _generate_geometry_tensors(terms, j_set, g_set):
     "Generate code for computation of geometry tensors."
@@ -187,7 +184,7 @@ def _generate_geometry_tensors(terms, j_set, g_set):
     format_declaration     = format["const float declaration"]
 
     # Iterate over all terms
-    code = ""
+    lines = []
     offset = 0
     for (i, term) in enumerate(terms):
 
@@ -217,7 +214,7 @@ def _generate_geometry_tensors(terms, j_set, g_set):
             value = _multiply_value_by_det(value, GK.determinant, len(values) > 1)
 
             # Add code
-            code += format_declaration(name, value) + "\n"
+            lines.append(format_declaration(name, value))
 
         # Add to offset
         offset += len(GKs)
@@ -225,7 +222,7 @@ def _generate_geometry_tensors(terms, j_set, g_set):
     # Add scale factor
     j_set.add(format_scale_factor)
 
-    return code
+    return "\n".join(lines)
 
 def _generate_entry(GK, a, i, j_set):
     "Generate code for the value of a GK entry."

@@ -63,8 +63,7 @@ const double J%(restriction)s_00 = x%(restriction)s[1][0] - x%(restriction)s[0][
 double detJ%(restriction)s = J%(restriction)s_00;
 
 // Compute inverse of Jacobian
-const double K%(restriction)s_00 =  1.0 / detJ%(restriction)s;
-"""
+const double K%(restriction)s_00 =  1.0 / detJ%(restriction)s;"""
 
 jacobian_2D = \
 """
@@ -84,8 +83,7 @@ double detJ%(restriction)s = J%(restriction)s_00*J%(restriction)s_11 - J%(restri
 const double K%(restriction)s_00 =  J%(restriction)s_11 / detJ%(restriction)s;
 const double K%(restriction)s_01 = -J%(restriction)s_01 / detJ%(restriction)s;
 const double K%(restriction)s_10 = -J%(restriction)s_10 / detJ%(restriction)s;
-const double K%(restriction)s_11 =  J%(restriction)s_00 / detJ%(restriction)s;
-"""
+const double K%(restriction)s_11 =  J%(restriction)s_00 / detJ%(restriction)s;"""
 
 jacobian_3D = \
 """
