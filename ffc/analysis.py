@@ -90,7 +90,7 @@ def _extract_metadata(form, options, elements):
             info("Quadrature rule: default")
         else:
             info("Quadrature rule: " + str(quadrature_rule))
-        info("Quadrature order: " + str(quadrature_degree))
+        info("Quadrature degree: " + str(quadrature_degree))
 
         # Get metadata for integral (if any)
         integral_metadata = integral.measure().metadata() or {}
@@ -113,10 +113,10 @@ def _extract_metadata(form, options, elements):
             try:
                 quadrature_degree = int(quadrature_degree)
                 if not quadrature_degree >= 0:
-                    error("Illegal quadrature order '%s' for integral, must be a nonnegative integer.",
+                    error("Illegal quadrature degree '%s' for integral, must be a nonnegative integer.",
                         str(quadrature_degree))
             except:
-                error("Illegal quadrature order '%s' for integral, must be a nonnegative integer or 'auto'.",
+                error("Illegal quadrature degree '%s' for integral, must be a nonnegative integer or 'auto'.",
                     str(quadrature_degree))
 
         # Automatically select metadata if "auto" is selected

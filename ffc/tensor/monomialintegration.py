@@ -54,7 +54,7 @@ def integrate(monomial, domain_type, facet0, facet1, quadrature_degree):
     # Report elapsed time and number of entries
     toc = time.time() - tic
     num_entries = numpy.prod(numpy.shape(A0))
-    info("%d entries computed in %.3g seconds" % (num_entries, toc))
+    debug("%d entries computed in %.3g seconds" % (num_entries, toc))
     debug("Shape of reference tensor: " + str(numpy.shape(A0)))
 
     return A0

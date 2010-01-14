@@ -14,7 +14,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Last changed: 2010-01-14
 
 # FFC modules
-from ffc.log import begin, end, debug_code
+from ffc.log import info, begin, end, debug_code
 from ffc.cpp import format, indent
 
 # FFC code generation modules
@@ -40,17 +40,21 @@ def generate_code(ir, prefix, options):
     ir_form, ir_elements, ir_dofmaps, ir_integrals = ir
 
     # Generate code for elements
+    info("Generating code for %d elements" % len(ir_elements))
     code_elements = [generate_element_code(i, ir, prefix, options)
                      for (i, ir) in enumerate(ir_elements)]
 
     # Geneate code for dofmaps
+    info("Generating code for %d dofmaps" % len(ir_dofmaps))
     code_dofmaps = [generate_dofmap_code(i, ir, prefix, options)
                     for (i, ir) in enumerate(ir_dofmaps)]
 
     # Generate code for integrals
+    info("Generating code for integrals")
     code_integrals = generate_integrals_code(ir_integrals, prefix, options)
 
     # Generate code for form
+    info("Generating code for form")
     code_form = generate_form_code(ir_form, prefix, options)
 
     end()
@@ -189,8 +193,7 @@ def generate_form_code(ir, prefix, options):
 
     # Postprocess code
     _postprocess_code(code, options)
-
-    debug_code(code, "form")
+    #debug_code(code, "form")
 
     return code
 

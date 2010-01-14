@@ -90,7 +90,6 @@ class MonomialIndex:
     def __add__(self, offset):
         "Add offset to index range."
         index = MonomialIndex(self)
-        print "offset =", offset
         index.index_range = [offset + i for i in index.index_range]
         return index
 
@@ -295,7 +294,6 @@ class TransformedMonomial:
                     offset = component_index[0]
 
                 # Add transforms where appropriate
-                print mapping
                 if mapping == "contravariant piola":
                     # phi(x) = (det J)^{-1} J Phi(X)
                     index0 = component

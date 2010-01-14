@@ -30,7 +30,6 @@ from ffc.log import info, error, begin, end, debug_ir, ffc_assert
 from ffc.fiatinterface import create_element, entities_per_dim, reference_cell
 from ffc.mixedelement import MixedElement
 
-
 # FFC specialized representation modules
 #from ffc.quadrature import QuadratureRepresentation
 from ffc.tensor import TensorRepresentation
@@ -45,11 +44,21 @@ def compute_ir(form, form_data, options):
 
     begin("Compiler stage 2: Computing intermediate representation")
 
-    # Compute representation of elements, dofmaps, forms and integrals
-    ir_elements  = [compute_element_ir(e, form_data) for e in form_data.unique_sub_elements]
-    ir_dofmaps   = [compute_dofmap_ir(e, form_data) for e in form_data.unique_sub_elements]
+    # Compute representation of elements
+    info("Computing representation of %d elements" % len(form_data.unique_sub_elements))
+    ir_elements = [compute_element_ir(e, form_data) for e in form_data.unique_sub_elements]
+
+    # Compute representation of dofmaps
+    info("Computing representation of %d dofmaps" % len(form_data.unique_sub_elements))
+    ir_dofmaps = [compute_dofmap_ir(e, form_data) for e in form_data.unique_sub_elements]
+
+    # Compute representation of integrals
+    info("Computing representation of integrals")
     ir_integrals = compute_integrals_ir(form, form_data, options)
-    ir_form      = compute_form_ir(form, form_data)
+
+    # Compute representation of form
+    info("Computing representation of form")
+    ir_form = compute_form_ir(form, form_data)
 
     end()
 
@@ -57,8 +66,6 @@ def compute_ir(form, form_data, options):
 
 def compute_element_ir(ufl_element, form_data):
     "Compute intermediate representation of element."
-
-    info("Computing element representation")
 
     # Create FIAT element
     element = create_element(ufl_element)
@@ -84,14 +91,12 @@ def compute_element_ir(ufl_element, form_data):
     ir["create_sub_element"] = [form_data.element_map[e]
                                 for e in ufl_element.sub_elements()]
 
-    debug_ir(ir, "finite_element")
+    #debug_ir(ir, "finite_element")
 
     return ir
 
 def compute_dofmap_ir(ufl_element, form_data):
     "Compute intermediate representation of dofmap."
-
-    info("Computing dofmap representation")
 
     # Create FIAT element
     element = create_element(ufl_element)
@@ -122,7 +127,7 @@ def compute_dofmap_ir(ufl_element, form_data):
     ir["create_sub_dof_map"] = [form_data.element_map[e]
                                 for e in ufl_element.sub_elements()]
 
-    debug_ir(ir, "dofmap")
+    #debug_ir(ir, "dofmap")
 
     return ir
 
@@ -135,8 +140,6 @@ def compute_integrals_ir(form, form_data, options):
 
 def compute_form_ir(form, form_data):
     "Compute intermediate representation of form."
-
-    info("Computing form representation")
 
     # Compute common data
     ir = {}

@@ -155,7 +155,7 @@ def compile_form(forms, prefix="Form", options=FFC_OPTIONS.copy()):
     # Stage 5: format code
     cpu_time = time()
     format_code(codes, prefix, options)
-    _print_timing(4, time() - cpu_time)
+    _print_timing(5, time() - cpu_time)
 
     info("Code generation complete.")
     return form_and_data
