@@ -6,7 +6,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Marie E. Rognes (meg@simula.no) 2007--2010
 # Modified by Kristian B. Oelgaard 2009
 
-# Last changed: 2010-01-11
+# Last changed: 2010-01-14
 
 # UFL modules
 from ufl import MixedElement as UFLMixedElement
@@ -20,8 +20,8 @@ class MixedElement:
     """
 
     def __init__(self, ufl_element):
-        self._elements = extract_elements(ufl_element)
-        self._entity_dofs = combine_entity_dofs(self._elements)
+        self._elements = _extract_elements(ufl_element)
+        self._entity_dofs = _combine_entity_dofs(self._elements)
         self._value_shape = ufl_element.value_shape()
 
     def elements(self):
@@ -42,10 +42,9 @@ class MixedElement:
     def dual_basis(self):
         return [L for e in self._elements for L in e.dual_basis()]
 
+#--- Utility functions ---
 
-# ---- Utility functions ----
-
-def combine_entity_dofs(elements):
+def _combine_entity_dofs(elements):
     """
     Combine the entity_dofs from a list of elements into a combined
     entity_dof containing the information for all the elements.
@@ -75,15 +74,14 @@ def combine_entity_dofs(elements):
         offset += e.space_dimension()
     return entity_dofs
 
-def extract_elements(ufl_element):
+def _extract_elements(ufl_element):
     "Recursively extract un-nested list of (component) elements."
 
     elements = []
     if isinstance(ufl_element, UFLMixedElement):
         for sub_element in ufl_element.sub_elements():
-            elements += extract_elements(sub_element)
+            elements += _extract_elements(sub_element)
         return elements
 
     elements += [create_fiat_element(ufl_element)]
     return elements
-

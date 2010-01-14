@@ -1,10 +1,10 @@
 __author__ = "Anders Logg (logg@simula.no)"
 __date__ = "2005-02-04"
-__copyright__ = "Copyright (C) 2005-2009 Anders Logg"
+__copyright__ = "Copyright (C) 2005-2010 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian B. Oelgaard, 2009
-# Last changed: 2010-01-07
+# Last changed: 2010-01-14
 
 # Python modules.
 import operator
@@ -17,19 +17,19 @@ def product(sequence):
     # Copied from UFL
     return reduce(operator.__mul__, sequence, 1)
 
-def pick_first(values):
+def pick_first(sequence):
     "Check that all values are equal and return the value."
-    if not values[:-1] == values[1:]:
+    if not sequence[:-1] == sequence[1:]:
         error("Values differ: " + str(values))
-    return values[0]
+    return sequence[0]
 
-def listcopy(l):
+def listcopy(sequence):
     """Create a copy of the list, calling the copy constructor on each
     object in the list (problems when using copy.deepcopy)."""
-    if not l:
+    if not sequence:
         return []
     else:
-        return [object.__class__(object) for object in l]
+        return [object.__class__(object) for object in sequence]
 
 def compute_permutations(k, n, skip = []):
    """Compute all permutations of k elements from (0, n) in rising order.
