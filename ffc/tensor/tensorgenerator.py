@@ -117,7 +117,7 @@ def _tabulate_tensor(integral_ir, integral_type, ir, options):
     lines.append(comment("Number of operations (multiply-add pairs) for tensor contraction: %d" % t_ops))
     lines.append(comment("Total number of operations (multiply-add pairs):                  %d" % total_ops))
     lines.append("")
-    lines.append(j_code)
+    lines.append(jacobi_code)
     lines.append("")
     lines.append(comment("Compute geometry tensor"))
     lines.append(g_code)

@@ -549,12 +549,10 @@ def remove_unused(code, used_set=set()):
     # List of variable names (so we can search them in order)
     variable_names = []
 
-    # Examine code line by line
     lines = code.split("\n")
-    for line_number in range(len(lines)):
+    for (line_number, line) in enumerate(lines):
 
         # Split words
-        line = lines[line_number]
         words = [word for word in line.split(" ") if not word == ""]
 
         # Remember line where variable is declared
@@ -571,10 +569,15 @@ def remove_unused(code, used_set=set()):
             # is the first entry in the return list. This is implemented to prevent
             # removal of e.g. 'double array[6]' if it is later used in a loop as 'array[i]'
             if variable_type == type:
-                var = [variable_name.split(sep)[0] for sep in special_characters\
-                       if str(variable_name) != variable_name.split(sep)[0]]
-                if (var):
-                    variable_name = var[0]
+
+                # Create correct variable name (e.g. y instead of
+                # y[2]) for variables with separators
+                seps_present = [sep for sep in special_characters if sep in variable_name]
+                if seps_present:
+                    variable_name = [variable_name.split(sep)[0] for sep in seps_present]
+                    variable_name.sort()
+                    variable_name = variable_name[0]
+
                 variables[variable_name] = (line_number, [])
                 if not variable_name in variable_names:
                     variable_names += [variable_name]
@@ -596,7 +599,7 @@ def remove_unused(code, used_set=set()):
         for line in removed_lines:
             if line in used_lines:
                 used_lines.remove(line)
-        if used_lines == [] and not variable_name in used_set:
+        if not used_lines and not variable_name in used_set:
             debug("Removing unused variable: %s" % variable_name)
             #lines[declaration_line] = "// " + lines[declaration_line]
             lines[declaration_line] = None
