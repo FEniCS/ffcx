@@ -7,7 +7,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian B. Oelgaard 2009
 # Modified by Marie E. Rognes 2010
-# Last changed: 2010-01-13
+# Last changed: 2010-01-14
 
 # Python modules.
 import re
@@ -139,7 +139,7 @@ def _inner_product(v, w):
 
 def _transform(type, j, k, r):
     # FIXME: j, k might need to be swapped for J or JINV
-    map_name = {"J": "J", "JINV": "K"}[type] + {None: "", "+": "0", "-": 1}[r]
+    map_name = {"J": "J", "JINV": "K"}[type] + {None: "", "+": "0", "-": "1"}[r]
     return (map_name + "_%d%d") % (j, k)
 
 def _generate_switch(variable, cases):
