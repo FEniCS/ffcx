@@ -13,7 +13,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Ola Skavhaug, 2006.
 # Modified by Dag Lindbo, 2008.
 # Modified by Kristian B. Oelgaard 2009.
-# Last changed: 2009-12-09
+# Last changed: 2010-01-14
 
 # Python modules.
 import sys
@@ -155,7 +155,7 @@ def main(argv):
                     compile_form(ufd.forms, prefix, options)
                 else:
                     compile_element(ufd.elements, prefix, options)
-            except UFLException, exception:
+            except Exception, exception:
                 info("")
                 error(str(exception))
                 error("To get more information about this error, rerun FFC with --debug.")
