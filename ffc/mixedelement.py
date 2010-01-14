@@ -149,10 +149,6 @@ class MixedElement(FiniteElementBase):
 
 def _compute_component_table(table, offset, space_dimension):
 
-    print "TABLE"
-    print table
-    print "END TABLE"
-
     "Compute subtable for given component"
     component_table = []
     # Iterate over derivative orders
@@ -166,9 +162,6 @@ def _compute_component_table(table, offset, space_dimension):
             mixed_subtable = numpy.zeros((space_dimension, num_points), dtype = numpy.float)
             # Iterate over element basis functions and fill in non-zero values
             for i in range(len(element_subtable)):
-                print "CHECK --------------"
-                print "CHECK", element_subtable[i]
-                print "CHECK", mixed_subtable[offset + i]
                 mixed_subtable[offset + i] = element_subtable[i]
             # Add to dictionary
             component_table[dorder][dtuple] = mixed_subtable
