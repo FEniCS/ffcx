@@ -15,7 +15,7 @@ __date__ = "2009-12-16"
 __copyright__ = "Copyright (C) 2009 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-08
+# Last changed: 2010-01-14
 
 # Python modules
 import os
@@ -39,7 +39,7 @@ def format_code(codes, prefix, options):
     begin("Compiler stage 5: Formatting code")
 
     # Generate code for header
-    output = _generate_header(prefix, options)
+    output = _generate_header(prefix, options) + "\n\n"
 
     # Iterate over codes
     for code in codes:
@@ -49,23 +49,23 @@ def format_code(codes, prefix, options):
 
         # Generate code for elements
         for code_element in code_elements:
-            output += finite_element_combined % code_element
+            output += finite_element_combined % code_element + "\n"
 
         # Generate code for dofmaps
         for code_dofmap in code_dofmaps:
-            output += dof_map_combined % code_dofmap
+            output += dof_map_combined % code_dofmap + "\n"
 
         # Generate code for cell integrals
         for code_integral in code_integrals[0]:
-            output += cell_integral_combined % code_integral
+            output += cell_integral_combined % code_integral + "\n"
 
         # Generate code for exterior facet integrals
         for code_integral in code_integrals[1]:
-            output += exterior_facet_integral_combined % code_integral
+            output += exterior_facet_integral_combined % code_integral + "\n"
 
         # Generate code for interior facet integrals
         for code_integral in code_integrals[2]:
-            output += interior_facet_integral_combined % code_integral
+            output += interior_facet_integral_combined % code_integral + "\n"
 
         # Generate code for form
         output += form_combined % code_form
