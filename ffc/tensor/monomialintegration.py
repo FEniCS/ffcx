@@ -144,7 +144,6 @@ def _compute_psi(v, table, num_points, domain_type):
     # Get indices and shapes for derivatives
     dindex = [d for d in v.derivatives]
     dshape = [len(d.index_range) for d in v.derivatives]
-    dorder = len(dindex)
 
     # Get indices and shapes for basis functions
     vindex = [v.index]
@@ -166,7 +165,7 @@ def _compute_psi(v, table, num_points, domain_type):
                 # Translate derivative multiindex to lookup tuple
                 dtuple = _multiindex_to_tuple(dlist, cell_dimension)
                 # Get values from table
-                Psi[component][tuple(dlist)] = etable[cindex[0].index_range[component]][dorder][dtuple]
+                Psi[component][tuple(dlist)] = etable[cindex[0].index_range[component]][dtuple]
     else:
         etable = table[(v.element, v.restriction)]
         for dlist in dlists:
