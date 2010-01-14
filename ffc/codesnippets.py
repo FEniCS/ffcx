@@ -8,7 +8,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Kristian Oelgaard 2009
 # Modified by Marie Rognes 2007 -- 2010
 # Modified by Peter Brune 2009
-# Last changed: 2010-01-13
+# Last changed: 2010-01-14
 
 # Code snippets
 
@@ -44,7 +44,7 @@ footer = """\
 
 cell_coordinates = "const double * const * x = c.coordinates;\n"
 
-evaluate_f = "f.evaluate(vals, y, c);\n"
+evaluate_f = "f.evaluate(vals, y, c);"
 
 jacobian_1D = """\
 // Extract vertex coordinates

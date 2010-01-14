@@ -4,10 +4,10 @@ __author__ = "Marie E. Rognes (meg@simula.no)"
 __copyright__ = "Copyright (C) 2009"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-13
+# Last changed: 2010-01-14
 
 from ffc.codesnippets import jacobian
-from ffc.cpp import format
+from ffc.cpp import format, remove_unused
 
 # Extract code manipulation formats
 inner_product = format["inner product"]
@@ -24,33 +24,34 @@ invdetJ = "1.0/%s" % format["det(J)"]
 def interpolate_vertex_values(ir):
     "Generate code for interpolate_vertex_values."
 
-    # Note: I think this works, but it might be more elegant to give
-    # mixed element a tabulate function
-
-    code = ""
-
     # Add code for Jacobian if necessary
+    code = []
     dim = ir["cell_dim"]
     if ir["needs_jacobian"]:
-        code += jacobian[dim] % {"restriction": ""}
+        code.append(jacobian[dim] % {"restriction": ""})
 
     # Compute total value dimension for (mixed) element
-    total_value_dim = sum(data["value_dim"] for data in ir["element_data"])
+    total_dim = sum(data["value_dim"] for data in ir["element_data"])
 
     # Generate code for each element
     value_offset = 0
     space_offset = 0
     for data in ir["element_data"]:
-
-        code += format["comment"]("Evaluate at vertices and change_variables")
-        code += _interpolate_vertex_values_element(data, dim, total_value_dim,
-                                                   value_offset, space_offset)
+        # Add vertex interpolation for this element
+        code.append(format["comment"]("Evaluate function and change variables"))
+        code.append(_interpolate_vertex_values_element(data, dim, total_dim,
+                                                       value_offset,
+                                                       space_offset))
 
         # Update offsets for value- and space dimension
         value_offset += data["value_dim"]
         space_offset += data["space_dim"]
 
-    return code
+    # Remove unused variables. (Not tracking set of used variables in
+    # order to keep this code clean. Since generated code is of
+    # limited size, this should be ok.)
+    clean_code = remove_unused("\n".join(code))
+    return clean_code
 
 
 def _interpolate_vertex_values_element(data, dim, total_value_dim,
@@ -67,7 +68,7 @@ def _interpolate_vertex_values_element(data, dim, total_value_dim,
     change_of_variables = _change_variables(data["mapping"], dim, space_dim)
 
     # Create code for each value dimension:
-    code = ""
+    code = []
     for k in range(value_dim):
 
         # Create code for each vertex x_j
@@ -79,14 +80,15 @@ def _interpolate_vertex_values_element(data, dim, total_value_dim,
             components = change_of_variables(values_at_vertex, k)
 
             # Contract coefficients and basis functions
-            dof_values = [component("dof_values", i + space_offset) for i in range(space_dim)]
+            dof_values = [component("dof_values", i + space_offset)
+                          for i in range(space_dim)]
             value = inner_product(dof_values, components)
 
             # Assign value to correct vertex
             index = j*total_value_dim + (k + value_offset)
-            code += assign(component("vertex_values", index), value)
+            code.append(assign(component("vertex_values", index), value))
 
-    return code
+    return "\n".join(code)
 
 
 def _change_variables(mapping, dim, space_dim):

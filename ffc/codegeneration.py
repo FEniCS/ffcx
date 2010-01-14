@@ -11,7 +11,7 @@ __date__ = "2009-12-16"
 __copyright__ = "Copyright (C) 2009 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-13
+# Last changed: 2010-01-14
 
 # FFC modules
 from ffc.log import begin, end, debug_code
@@ -48,11 +48,9 @@ def generate_code(ir, prefix, options):
                     for (i, ir) in enumerate(ir_dofmaps)]
 
     # Generate code for integrals
-    #code_integrals =  ([], [], [])
     code_integrals = generate_integrals_code(ir_integrals, prefix, options)
 
     # Generate code for form
-    #code_form = ""
     code_form = generate_form_code(ir_form, prefix, options)
 
     end()
@@ -77,8 +75,8 @@ def generate_element_code(i, ir, prefix, options):
     code["space_dimension"] = ret(ir["space_dimension"])
     code["value_rank"] = ret(ir["value_rank"])
     code["value_dimension"] = _value_dimension(ir["value_dimension"])
-    #code["evaluate_basis"] = ""
-    code["evaluate_basis"] = _evaluate_basis(ir["evaluate_basis"])
+    code["evaluate_basis"] = ""
+    #code["evaluate_basis"] = _evaluate_basis(ir["evaluate_basis"])
     code["evaluate_basis_all"] = not_implemented
     #code["evaluate_basis_derivatives"] = do_nothing
     code["evaluate_basis_derivatives"] = ""#_evaluate_basis_derivatives(ir["evaluate_basis"])
@@ -91,8 +89,6 @@ def generate_element_code(i, ir, prefix, options):
 
     # Postprocess code
     _postprocess_code(code, options)
-
-    debug_code(code, "finite_element")
 
     return code
 
@@ -130,8 +126,6 @@ def generate_dofmap_code(i, ir, prefix, options):
 
     # Postprocess code
     _postprocess_code(code, options)
-
-    debug_code(code, "dofmap")
 
     return code
 
@@ -206,27 +200,32 @@ def generate_form_code(ir, prefix, options):
 
 def _value_dimension(ir):
     "Generate code for value_dimension."
+
+    ret = format["return"]
     if ir == ():
-        return format["return"](1)
-    return format["switch"]("i", [format["return"](n) for n in ir])
+        return ret(1)
+    return format["switch"]("i", [ret(n) for n in ir])
+
 
 def _needs_mesh_entities(ir):
     """Generate code for needs_mesh_entities. ir is a list of num dofs
     per entity.
     """
-    return format["switch"]("d", [format["return"](format["bool"](c))
-                                  for c in ir])
+
+    ret = format["return"]
+    boolean = format["bool"]
+    return format["switch"]("d", [ret(boolean(c)) for c in ir])
+
 
 def _init_mesh(ir):
     "Generate code for init_mesh. ir is a list of num dofs per entity."
 
     component = format["component"]
-    num_entities = [component(format["num entities"], dim)
-                    for dim in range(len(ir))]
-    dimension = format["inner product"](ir, num_entities)
-
-    return format["assign"]("__global_dimension", dimension) \
-           + format["return"](format["bool"](False))
+    entities = format["num entities"]
+    dimension = format["inner product"](ir, [component(entities, d)
+                                             for d in ir])
+    return "\n".join([format["assign"]("__global_dimension", dimension),
+                      format["return"](format["bool"](False))])
 
 
 def _tabulate_facet_dofs(ir):
@@ -234,30 +233,29 @@ def _tabulate_facet_dofs(ir):
 
     assign = format["assign"]
     component = format["component"]
-    cases = ["".join([assign(component("dofs", i), dof)
-                      for (i, dof) in enumerate(ir[facet])])
-             for facet in range(len(ir))]
-
+    cases = ["\n".join(assign(component("dofs", i), dof)
+                       for (i, dof) in enumerate(facet))
+             for facet in ir]
     return format["switch"]("facet", cases)
 
 def _tabulate_dofs(ir):
     "Generate code for tabulate_dofs."
 
     # Prefetch formats
-    add, multiply = format["add"], format["multiply"]
+    add = format["add"]
+    iadd = format["iadd"]
+    multiply = format["multiply"]
     assign = format["assign"]
     component = format["component"]
     entity_index = format["entity index"]
     num_entities = format["num entities"]
 
+    code = []
+
     # Declare offset if more than one element:
     need_offset = len(ir) > 1
     if need_offset:
-        offset_name = "offset"
-        code = format["declaration"]("unsigned int", offset_name, 0)
-    else:
-        offset_name = "0"
-        code = ""
+        code.append(format["declaration"]("unsigned int", "offset", 0))
 
     # Generate code for each element
     i = 0
@@ -274,25 +272,25 @@ def _tabulate_dofs(ir):
             if num_dofs == 0: continue
 
             for k in range(entities_per_dim[d]):
+                v = multiply([num_dofs, component(entity_index,(d, k))])
                 for j in range(num_dofs):
-                    value = multiply([num_dofs, component(entity_index,(d, k))])
-                    value = add([offset_name, value, j])
-                    code += assign(component("dofs", i), value)
+                    value = add(["offset", v, j])
+                    code.append(assign(component("dofs", i), value))
                     i += 1
 
             # Update offset corresponding to mesh entity:
             if need_offset:
                 addition = multiply([num_dofs, component(num_entities, d)])
-                code += format["iadd"](offset_name, addition)
+                code.append(iadd("offset", addition))
 
-    return code
+    return "\n".join(code)
 
 
 def _tabulate_coordinates(ir):
     "Generate code for tabulate_coordinates."
 
     # Raise error if tabulate_coordinates is ill-defined
-    if ir is None:
+    if not ir:
         msg = "tabulate_coordinates is not defined for this element"
         return format["exception"](msg)
 
@@ -300,6 +298,7 @@ def _tabulate_coordinates(ir):
     inner_product = format["inner product"]
     component = format["component"]
     precision = format["float"]
+    assign = format["assign"]
 
     # Extract coordinates and cell dimension
     cell_dim = len(ir[0])
@@ -308,7 +307,7 @@ def _tabulate_coordinates(ir):
     coefficients = affine_weights(cell_dim)
 
     # Start with code for coordinates for vertices of cell
-    code = cell_coordinates
+    code = [cell_coordinates]
 
     # Generate code for each point and each component
     for (i, coordinate) in enumerate(ir):
@@ -322,9 +321,9 @@ def _tabulate_coordinates(ir):
             value = inner_product(weights, coords)
 
             # Assign coordinate
-            code += format["assign"](component("coordinates", (i, j)), value)
+            code.append(assign(component("coordinates", (i, j)), value))
 
-    return code
+    return "\n".join(code)
 
 def _tabulate_entity_dofs(ir):
     "Generate code for tabulate_entity_dofs."
@@ -333,12 +332,13 @@ def _tabulate_entity_dofs(ir):
     entity_dofs, num_dofs_per_entity = ir
 
     # Prefetch formats
-    assign, component = format["assign"], format["component"]
+    assign = format["assign"]
+    component = format["component"]
 
     # Add check that dimension and number of mesh entities is valid
     dim = len(num_dofs_per_entity)
     excpt = format["exception"]("d is larger than dimension (%d)" % (dim - 1))
-    code = format["if"]("d > %d" % (dim-1), excpt)
+    code = [format["if"]("d > %d" % (dim-1), excpt)]
 
     # Generate cases for each dimension:
     all_cases = ["" for d in range(dim)]
@@ -354,17 +354,17 @@ def _tabulate_entity_dofs(ir):
         check = format["if"]("i > %d" % (num_entities - 1), excpt)
 
         # Generate cases for each mesh entity
-        cases = ["".join([assign(component("dofs", j), dof)
-                          for (j, dof) in enumerate(entity_dofs[d][entity])])
+        cases = ["\n".join(assign(component("dofs", j), dof)
+                           for (j, dof) in enumerate(entity_dofs[d][entity]))
                  for entity in range(num_entities)]
 
         # Generate inner switch with preceding check
         all_cases[d] = "\n".join([check, format["switch"]("i", cases)])
 
     # Generate outer switch
-    code += format["switch"]("d", all_cases)
+    code.append(format["switch"]("d", all_cases))
 
-    return code
+    return "\n".join(code)
 
 
 
