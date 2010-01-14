@@ -44,7 +44,7 @@ footer = """\
 
 cell_coordinates = "const double * const * x = c.coordinates;\n"
 
-evaluate_f = "f.evaluate(vals, y, c);\n"
+evaluate_f = "f.evaluate(vals, y, c);"
 
 jacobian_1D = """\
 // Extract vertex coordinates

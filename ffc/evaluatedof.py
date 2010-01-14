@@ -31,7 +31,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Last changed: 2010-01-13
 
 from ffc.codesnippets import jacobian, evaluate_f, cell_coordinates
-from ffc.cpp import format
+from ffc.cpp import format, remove_unused
 
 __all__ = ["evaluate_dof", "evaluate_dofs", "affine_weights"]
 
@@ -51,49 +51,55 @@ detJ = format["det(J)"]
 def evaluate_dof(ir):
     "Generate code for evaluate_dof"
 
-    # Define necessary geometry information based on the ir
-    code  = _required_declarations(ir)
+    (reqs, cases) = _generate_common_code(ir)
 
-    # Extract variables
-    mappings = ir["mappings"]
-    offsets = ir["offsets"]
-    cell_dim = ir["cell_dimension"]
+    # Combine each case with return statements:
+    cases = ["%s\n%s" % (c, format["return"](r)) for (c, r) in cases]
 
-    # Generate switch bodies for each degree of freedom
-    cases = [_generate_body(dof, mappings[i], cell_dim, offsets[i])
-             for (i, dof) in enumerate(ir["dofs"])]
+    # Generate required declarations and switch for each dof
+    code = []
+    code.append(reqs)
+    code.append(comment("Evaluate degree of freedom of function"))
+    code.append(format["switch"]("i", cases))
 
-    # Combine with return statements:
-    cases = [c + format["return"](r) for (c, r) in cases]
-
-    # Define switch
-    code += comment("Evaluate degree of freedom of function")
-    code += format["switch"]("i", cases)
-
-    return code
-
+    # Removed unused variables from code (Add computation of set of
+    # used variables if ever bottle-neck)
+    return remove_unused("\n".join(code))
 
 def evaluate_dofs(ir):
     "Generate code for evaluate_dofs"
 
+    (reqs, cases) = _generate_common_code(ir)
+
+    # Combine with assignments:
+    all_cases = "\n".join("%s\n%s" % (c, format["assign"]("values[%d]" % i, r))
+                          for (i, (c, r)) in enumerate(cases))
+
+    # Create code for all degrees of freedom
+    code = []
+    code.append(reqs)
+    code.append(comment("Evaluate all degrees of freedom"))
+    code.append(all_cases)
+
+    # Removed unused variables from code (Add computation of set of
+    # used variables if ever bottle-neck)
+    return remove_unused("\n".join(code))
+
+
+def _generate_common_code(ir):
+
     # Define necessary geometry information based on the ir
-    code = _required_declarations(ir)
+    reqs = _required_declarations(ir)
 
     # Extract variables
     mappings = ir["mappings"]
     offsets = ir["offsets"]
     cell_dim = ir["cell_dimension"]
 
-    # Generate code for each degree of freedom
+    # Generate bodies for each degree of freedom
     cases = [_generate_body(dof, mappings[i], cell_dim, offsets[i])
              for (i, dof) in enumerate(ir["dofs"])]
-
-    # Combine with assignments:
-    cases = [c + format["assign"]("values[%d]" % i, r)
-             for (i, (c, r)) in enumerate(cases)]
-
-    code += "\n".join(cases)
-    return code
+    return (reqs, cases,)
 
 
 def _required_declarations(ir):
@@ -101,35 +107,36 @@ def _required_declarations(ir):
     information.
     """
 
-    # Declare variable for storing the result
-    code = comment("Declare variables for result of evaluation")
-    code += declaration("double", "vals[%d]" % ir["value_dim"])
+    code = []
 
-    # Declare variable for physical coordinates
+    # Declare variable for storing the result and physical coordinates
     cell_dim = ir["cell_dimension"]
-    code += comment("Declare variable for physical coordinates")
-    code += declaration("double", "y[%d]" % cell_dim)
+    code.append(comment("Declare variables for result of evaluation"))
+    code.append(declaration("double", "vals[%d]" % ir["value_dim"]))
+    code.append(comment("Declare variable for physical coordinates"))
+    code.append(declaration("double", "y[%d]" % cell_dim))
 
     # Add Jacobian and extra result variable if needed
     needs_jacobian = any(["piola" in m for m in ir["mappings"]])
     if needs_jacobian:
-        code += jacobian[cell_dim] % {"restriction": ""}
-        code += declaration("double", "result")
+        code.append(jacobian[cell_dim] % {"restriction": ""})
+        code.append(declaration("double", "result"))
     else:
-        code += cell_coordinates
+        code.append(cell_coordinates)
 
-    return code
+    return "\n".join(code)
 
 
-def _generate_body(dof, mapping, cell_dim, offset=0, result="result"):
+def _generate_body(dof, mapping, cell_dim,
+                   j_set, offset=0, result="result"):
     "Generate code for a single dof."
 
-    code = ""
+    code = []
 
     # Make adjustments if multiple points
     points = dof.keys()
     multiple_points = len(points) > 1
-    code += assign(result, 0.0) if multiple_points else ""
+    code.append(assign(result, 0.0) if multiple_points else "")
     compute_result = iadd if multiple_points else assign
 
     # Aid mapping points from reference to physical element
@@ -142,27 +149,26 @@ def _generate_body(dof, mapping, cell_dim, offset=0, result="result"):
         w = coefficients(x)
         for j in range(cell_dim):
             y = inner(w, [component("x", (k, j)) for k in range(cell_dim + 1)])
-            code += assign(component("y", j), y)
+            code.append(assign(component("y", j), y))
 
         # Evaluate function at physical point
-        code += evaluate_f
+        code.append(evaluate_f)
 
         # Map function values to the reference element
         F = _change_variables(mapping, cell_dim, offset)
 
         # Simple affine functions deserve special case:
         if len(F) == 1 and not multiple_points:
-            return (code, F[0])
+            return ("\n".join(code), F[0])
 
         # Take inner product between components and weights
-        value = add([multiply([w, F[k[0]] if not k == () else F[0]])
-                     for (w, k) in dof[x]])
+        value = add([multiply([w, F[k[0]]]) for (w, k) in dof[x]])
 
         # Add value to result variable
-        code += compute_result(result, value)
+        code.append(compute_result(result, value))
 
     # Return result
-    return (code, result)
+    return ("\n".join(code), result)
 
 def _change_variables(mapping, dim, offset):
     """Generate code for mapping function values according to
