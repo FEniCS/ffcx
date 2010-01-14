@@ -8,6 +8,9 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Last changed: 2010-01-14
 
+# Python modules
+import numpy
+
 # UFL modules
 from ufl import MixedElement as UFLMixedElement
 
@@ -16,7 +19,7 @@ from fiatinterface import create_fiat_element
 
 class MixedElement:
     """
-    Create a FFC mixed element from a UFL mixed element
+    Create a FFC mixed element from a UFL mixed element.
     """
 
     def __init__(self, ufl_element):
@@ -41,6 +44,37 @@ class MixedElement:
 
     def dual_basis(self):
         return [L for e in self._elements for L in e.dual_basis()]
+
+    def tabulate(self, order, points):
+        """Tabulate values on mixed element by appropriately reordering
+        the tabulated values for the sub elements."""
+
+        # Special case: only one element
+        if len(self._elements) == 1:
+            return elements[0].tabulate(order, points)
+
+        # Iterate over sub elements and build mixed table from element tables
+        mixed_table = []
+        offset = 0
+        for element in self._elements:
+
+            # Tabulate element
+            element_table = element.tabulate(order, points)
+
+            # Iterate over the components corresponding to the current element
+            value_rank = len(element.value_shape())
+            if value_rank == 0:
+                component_table = _compute_component_table(element_table, offset, self.space_dimension())
+                mixed_table.append(component_table)
+            else:
+                for i in range(element.value_dimension(0)):
+                    component_table = _compute_component_table(element_table[i], offset, self.space_dimension())
+                    mixed_table.append(component_table)
+
+            # Add to offset, the number of the first basis function for the current element
+            offset += element.space_dimension()
+
+        return mixed_table
 
 #--- Utility functions ---
 
@@ -85,3 +119,27 @@ def _extract_elements(ufl_element):
 
     elements += [create_fiat_element(ufl_element)]
     return elements
+
+def _compute_component_table(table, offset, space_dimension):
+    "Compute subtable for given component."
+
+    component_table = {}
+
+    # Iterate over derivative tuples
+    for dtuple in table:
+
+        # Get subtable for derivative tuple
+        element_subtable = table[dtuple]
+
+        # Initialize mixed subtable with zeros
+        num_points = numpy.shape(element_subtable)[1]
+        mixed_subtable = numpy.zeros((space_dimension, num_points), dtype = numpy.float)
+
+        # Iterate over element basis functions and fill in non-zero values
+        for i in range(len(element_subtable)):
+            mixed_subtable[offset + i] = element_subtable[i]
+
+        # Add to dictionary
+        component_table[dtuple] = mixed_subtable
+
+    return component_table
