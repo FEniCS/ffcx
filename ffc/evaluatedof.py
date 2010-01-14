@@ -45,8 +45,8 @@ inner = format["inner product"]
 add = format["add"]
 multiply = format["multiply"]
 J = format["J"]
-Jinv = format["Jinv"]
-detJ = format["det(J)"]
+Jinv = format["inv(J)"]
+detJ = format["det(J)"]("")
 
 def evaluate_dof(ir):
     "Generate code for evaluate_dof"

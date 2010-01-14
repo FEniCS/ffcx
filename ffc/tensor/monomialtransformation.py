@@ -90,6 +90,7 @@ class MonomialIndex:
     def __add__(self, offset):
         "Add offset to index range."
         index = MonomialIndex(self)
+        print "offset =", offset
         index.index_range = [offset + i for i in index.index_range]
         return index
 
@@ -284,8 +285,14 @@ class TransformedMonomial:
                     mappings.append(fiat_sub_element.mapping())
                 mapping = pick_first(pick_first(mappings))
 
-                # Get sub element and offset
-                (offset, sub_element) = ufl_element.extract_component(component.index_range[0])
+                # Get component index and sub element
+                (component_index, sub_element) = ufl_element.extract_component(component.index_range[0])
+
+                # Get offset
+                if len(component_index) == 0:
+                    offset = 0
+                else:
+                    offset = component_index[0]
 
                 # Add transforms where appropriate
                 print mapping

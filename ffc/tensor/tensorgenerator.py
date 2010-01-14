@@ -269,7 +269,7 @@ def _generate_entry(GK, a, i, j_set):
 def _multiply_value_by_det(value, det, is_sum):
     "Generate code for multiplication of value by determinant."
     if not det.power == 0:
-        d = [format["power"](format["determinant"](det.restriction), det.power)]
+        d = [format["power"](format["det(J)"](det.restriction), det.power)]
     else:
         d = []
     if value == "1.0":

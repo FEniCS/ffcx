@@ -165,7 +165,7 @@ def _compute_psi(v, table, num_points, domain_type):
                 # Translate derivative multiindex to lookup tuple
                 dtuple = _multiindex_to_tuple(dlist, cell_dimension)
                 # Get values from table
-                Psi[component][tuple(dlist)] = etable[cindex[0].index_range[component]][dtuple]
+                Psi[component][tuple(dlist)] = etable[dtuple][:, cindex[0].index_range[component], :]
     else:
         etable = table[(v.element, v.restriction)]
         for dlist in dlists:

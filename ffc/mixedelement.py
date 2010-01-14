@@ -15,6 +15,7 @@ import numpy
 from ufl import MixedElement as UFLMixedElement
 
 # FFC modules
+from log import error
 from fiatinterface import create_fiat_element
 
 class MixedElement:
@@ -45,34 +46,52 @@ class MixedElement:
     def dual_basis(self):
         return [L for e in self._elements for L in e.dual_basis()]
 
+    def num_components(self):
+        return sum(_num_components(e) for e in self._elements)
+
     def tabulate(self, order, points):
-        """Tabulate values on mixed element by appropriately reordering
-        the tabulated values for the sub elements."""
+        """
+        Tabulate values on mixed element by appropriately reordering
+        the tabulated values for the nested elements.
+
+        The table of values is organized as follows:
+
+          D^a v_i[j](x_k) = table[a][i][j][k]
+
+        where a is a multi-index (tuple) representing the derivative.
+        For example, a = (1, 1) represents d/dx d/dy.
+        """
 
         # Special case: only one element
         if len(self._elements) == 1:
             return elements[0].tabulate(order, points)
 
-        # Iterate over sub elements and build mixed table from element tables
-        mixed_table = []
-        offset = 0
+        # Zeros for insertion into mixed table
+        table_shape = (self.space_dimension(), self.num_components(), len(points))
+        zeros = numpy.zeros(table_shape)
+
+        # Iterate over elements and fill in non-zero values
+        irange = (0, 0)
+        crange = (0, 0)
+        mixed_table = {}
         for element in self._elements:
 
             # Tabulate element
-            element_table = element.tabulate(order, points)
+            table = element.tabulate(order, points)
 
-            # Iterate over the components corresponding to the current element
-            value_rank = len(element.value_shape())
-            if value_rank == 0:
-                component_table = _compute_component_table(element_table, offset, self.space_dimension())
-                mixed_table.append(component_table)
-            else:
-                for i in range(element.value_dimension(0)):
-                    component_table = _compute_component_table(element_table[i], offset, self.space_dimension())
-                    mixed_table.append(component_table)
+            # Compute range for insertion into mixed table
+            irange = (irange[1], irange[1] + element.space_dimension())
+            crange = (crange[1], crange[1] + _num_components(element))
 
-            # Add to offset, the number of the first basis function for the current element
-            offset += element.space_dimension()
+            # Insert table into mixed table
+            for dtuple in table.keys():
+
+                # Insert zeros if necessary (should only happen first time)
+                if not dtuple in mixed_table:
+                    mixed_table[dtuple] = zeros
+
+                # Insert non-zero values
+                mixed_table[dtuple][irange[0]:irange[1], crange[0]:crange[1]] = table[dtuple]
 
         return mixed_table
 
@@ -120,26 +139,14 @@ def _extract_elements(ufl_element):
     elements += [create_fiat_element(ufl_element)]
     return elements
 
-def _compute_component_table(table, offset, space_dimension):
-    "Compute subtable for given component."
-
-    component_table = {}
-
-    # Iterate over derivative tuples
-    for dtuple in table:
-
-        # Get subtable for derivative tuple
-        element_subtable = table[dtuple]
-
-        # Initialize mixed subtable with zeros
-        num_points = numpy.shape(element_subtable)[1]
-        mixed_subtable = numpy.zeros((space_dimension, num_points), dtype = numpy.float)
-
-        # Iterate over element basis functions and fill in non-zero values
-        for i in range(len(element_subtable)):
-            mixed_subtable[offset + i] = element_subtable[i]
-
-        # Add to dictionary
-        component_table[dtuple] = mixed_subtable
-
-    return component_table
+def _num_components(element):
+    "Compute number of components for element."
+    num_components = 0
+    value_shape = element.value_shape()
+    if len(value_shape) == 0:
+        num_components += 1
+    elif len(value_shape) == 1:
+        num_components += value_shape[0]
+    else:
+        error("Cannot handle tensor-valued elements.")
+    return num_components

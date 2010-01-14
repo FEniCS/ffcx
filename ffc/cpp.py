@@ -34,14 +34,15 @@ format.update({"declaration": lambda t, n, v=None: _declaration(t, n, v),
                "const float declaration":
                lambda v, w: "const double %s = %s;" % (v, w)})
 
-# Operators
-format.update({"add":      lambda v: _add(v),
-               "iadd":     lambda v, w: "%s += %s;" % (str(v), str(w)),
-               "subtract": lambda v: " - ".join(v),
-               "multiply": lambda v: _multiply(v),
+# Mathematical operators
+format.update({"add":           lambda v: _add(v),
+               "iadd":          lambda v, w: "%s += %s;" % (str(v), str(w)),
+               "subtract":      lambda v: " - ".join(v),
+               "multiply":      lambda v: _multiply(v),
+               "power":         lambda base, exp: _power(base, exp),
                "inner product": lambda v, w: _inner_product(v, w),
-               "assign": lambda v, w: "%s = %s;" % (v, str(w)),
-               "component": lambda v, k: _component(v, k)})
+               "assign":        lambda v, w: "%s = %s;" % (v, str(w)),
+               "component":     lambda v, k: _component(v, k)})
 
 # Formatting used in tabulate_tensor
 format.update({"element tensor":  lambda i: "A[%d]" % i,
@@ -54,17 +55,16 @@ format.update({"element tensor":  lambda i: "A[%d]" % i,
 # Geometry related variable names
 format.update({"entity index": "c.entity_indices",
                "num entities": "m.num_entities",
-               "cell": lambda s: "ufc::%s" % s,
-               "det(J)": "detJ",
-               "J": lambda i, j: "J_%d%d" % (i, j),
-               "Jinv" : lambda i, j: "K_%d%d" % (i, j)})
+               "cell":   lambda s: "ufc::%s" % s,
+               "J":      lambda i, j: "J_%d%d" % (i, j),
+               "inv(J)": lambda i, j: "K_%d%d" % (i, j),
+               "det(J)": lambda r: "detJ_%s" % r})
 
 # Misc
 format.update({"bool":    lambda v: {True: "true", False: "false"}[v],
                "float":   lambda v: "%g" % v,
                "str":     lambda v: "%s" % str(v),
                "epsilon": FFC_OPTIONS["epsilon"]})
-
 
 def _declaration(type, name, value=None):
     if value is None:
@@ -126,6 +126,13 @@ def _add(terms):
         return format["str"](0)
     return result
 
+def _power(base, exponent):
+    "Generate code for base^exponent."
+    if exponent >= 0:
+        return _multiply(exponent*(base,))
+    else:
+        return "1.0 / (%s)" % _power(base, -exponent)
+
 def _inner_product(v, w):
     "Generate string for v[0]*w[0] + ... + v[n]*w[n]."
 
@@ -135,7 +142,6 @@ def _inner_product(v, w):
 
     return format["add"]([format["multiply"]([v[i], w[i]])
                           for i in range(len(v))])
-
 
 def _transform(type, j, k, r):
     # FIXME: j, k might need to be swapped for J or JINV

@@ -18,7 +18,7 @@ multiply = format["multiply"]
 
 # Extract formats for the Jacobians
 J = format["J"]
-Jinv = format["Jinv"]
+Jinv = format["inv(J)"]
 invdetJ = "1.0/%s" % format["det(J)"]
 
 def interpolate_vertex_values(ir):
