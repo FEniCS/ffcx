@@ -6,7 +6,7 @@ __copyright__ = "Copyright (C) 2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian B. Oelgaard, 2009
-# Last changed: 2009-12-21
+# Last changed: 2010-01-14
 
 # UFL modules
 from ufl.classes import Argument
@@ -15,6 +15,7 @@ from ufl.classes import FixedIndex
 
 # FFC modules
 from ffc.log import info, error, ffc_assert
+from ffc.utils import pick_first
 from ffc.fiatinterface import create_element
 
 # FFC tensor representation modules
@@ -272,17 +273,23 @@ class TransformedMonomial:
             # Handle non-affine mappings (Piola)
             if len(components) > 0:
 
-                # Get sub element, offset and mapping
+                # We can only handle rank 1 elements for now
                 component = components[0]
-                if len(component.index_range) > 1:
-                    same = ufl_element.component_element(component.index_range[0])[0].mapping()
-                    if not all([ufl_element.component_element(c)[0].mapping() is same for c in component.index_range]):
-                        raise MonomialException, "Unable to handle different mappings for index range."
-                (sub_element, offset) = ufl_element.component_element(component.index_range[0])
-                mapping = sub_element.mapping()
+
+                # Get mapping (all need to be equal)
+                mappings = []
+                for i in component.index_range:
+                    (offset, ufl_sub_element) = ufl_element.extract_component(i)
+                    fiat_sub_element = create_element(ufl_sub_element)
+                    mappings.append(fiat_sub_element.mapping())
+                mapping = pick_first(pick_first(mappings))
+
+                # Get sub element and offset
+                (offset, sub_element) = ufl_element.extract_component(component.index_range[0])
 
                 # Add transforms where appropriate
-                if mapping == CONTRAVARIANT_PIOLA:
+                print mapping
+                if mapping == "contravariant piola":
                     # phi(x) = (det J)^{-1} J Phi(X)
                     index0 = component
                     index1 = MonomialIndex(index_range=range(gdim)) + offset
@@ -290,7 +297,7 @@ class TransformedMonomial:
                     self.transforms.append(transform)
                     self.determinant.power -= 1
                     components[0] = index1
-                elif mapping == COVARIANT_PIOLA:
+                elif mapping == "covariant piola":
                     # phi(x) = J^{-T} Phi(X)
                     index0 = MonomialIndex(index_range=range(gdim)) + offset
                     index1 = component

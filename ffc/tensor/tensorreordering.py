@@ -5,7 +5,7 @@ __date__ = "2006-12-01"
 __copyright__ = "Copyright (C) 2006-2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2009-12-21
+# Last changed: 2010-01-14
 
 # Python modules
 import numpy
@@ -37,17 +37,17 @@ def reorder_entries(terms):
                 position = position + [slice(0, dim)]
 
         # Initialize empty reference tensor of double size in each dimension
-        A0 = numpy.zeros(dims, dtype=numpy.float)
+        tensor = numpy.zeros(dims, dtype=numpy.float)
 
         # Insert reduced reference tensor into reference tensor
-        A0[position] = term.A0.A0
-        term.A0.A0 = A0
+        (A0, GK) = term
+        tensor[position] = A0.A0
+        A0.A0 = tensor
 
         # Reinitialize indices to new size
-        term.A0.primary_multi_index = MultiIndex([range(idim) for idim in idims])
-        term.A0.secondary_multi_index = MultiIndex([range(adim) for adim in adims])
-        for G in term.GK:
-            G.secondary_multi_index = term.A0.secondary_multi_index
+        A0.primary_multi_index = MultiIndex([range(idim) for idim in idims])
+        A0.secondary_multi_index = MultiIndex([range(adim) for adim in adims])
+        GK.secondary_multi_index = A0.secondary_multi_index
 
 def __compute_restrictions(term):
     """Compute restrictions corresponding to indices for given
@@ -57,11 +57,12 @@ def __compute_restrictions(term):
     and derivatives, the size remains the same."""
 
     # Get dimensions for primary and secondary indices
-    idims = term.A0.primary_multi_index.dims
-    adims = term.A0.secondary_multi_index.dims
+    A0, GK = term
+    idims = A0.primary_multi_index.dims
+    adims = A0.secondary_multi_index.dims
 
     # Get basis functions for term
-    arguments = term.monomial.arguments
+    arguments = A0.monomial.arguments
 
     # Create empty list of restrictions for indices
     restrictions = [None for i in range(len(idims) + len(adims))]

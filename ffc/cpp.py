@@ -139,7 +139,7 @@ def _inner_product(v, w):
 
 def _transform(type, j, k, r):
     # FIXME: j, k might need to be swapped for J or JINV
-    map_name = {"J": "J", "JINV": "K"}[type] + {None: "", "+": "0", "-": 1}[r]
+    map_name = {"J": "J", "JINV": "K"}[type] + {None: "", "+": "0", "-": "1"}[r]
     return (map_name + "_%d%d") % (j, k)
 
 def _generate_switch(variable, cases):
@@ -301,6 +301,9 @@ import platform
 options=FFC_OPTIONS.copy()
 
 # Old dictionary, move the stuff we need to the new dictionary above
+choose_map = {None: "", "+": "0", "-": 1}
+transform_options = {"JINV": lambda m, j, k: "Jinv%s_%d%d" % (m, j, k),
+                     "J": lambda m, j, k: "J%s_%d%d" % (m, k, j)}
 format_old = {
     # Operators
     #
@@ -392,7 +395,7 @@ format_old = {
     "transform matrix": "transform",
     "transform Jinv": "Jinv",
     "normal component": lambda r, j: "n%s%s" % (choose_map[r], j),
-    "tmp declaration": lambda j, k: "const double " + self.format["tmp access"](j, k),
+    "tmp declaration": lambda j, k: "const double " + format_old["tmp access"](j, k),
     "tmp access": lambda j, k: "tmp%d_%d" % (j, k),
     "determinant": lambda r: "detJ%s" % choose_map[r],
     "scale factor": "det",
