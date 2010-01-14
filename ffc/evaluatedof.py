@@ -159,7 +159,7 @@ def _generate_body(dof, mapping, cell_dim,
 
         # Simple affine functions deserve special case:
         if len(F) == 1 and not multiple_points:
-            return ("\n".join(code), F[0])
+            return ("\n".join(code), multiply([dof[x][0][0], F[0]]))
 
         # Take inner product between components and weights
         value = add([multiply([w, F[k[0]]]) for (w, k) in dof[x]])
@@ -173,6 +173,33 @@ def _generate_body(dof, mapping, cell_dim,
 def _change_variables(mapping, dim, offset):
     """Generate code for mapping function values according to
     'mapping' and offset.
+
+    The basics of how to map a field from a physical to the reference
+    domain. (For the inverse approach -- see interpolatevertexvalues)
+
+    Let g be a field defined on a physical domain T with physical
+    coordinates x. Let T_0 be a reference domain with coordinates
+    X. Assume that F: T_0 -> T such that
+
+      x = F(X)
+
+    Let J be the Jacobian of F, i.e J = dx/dX and let K denote the
+    inverse of the Jacobian K = J^{-1}. Then we (currently) have the
+    following three types of mappings:
+
+    'affine' mapping for g:
+
+      G(X) = g(x)
+
+    For vector fields g:
+
+    'contravariant piola' mapping for g:
+
+      G(X) = det(J) K g(x)   i.e  G_i(X) = det(J) K_ij g_j(x)
+
+    'covariant piola' mapping for g:
+
+      G(X) = J g(x)          i.e  G_i(X) = J_ij g_j(x)
     """
 
     # meg: Various mappings must be handled both here and in
@@ -196,9 +223,9 @@ def _change_variables(mapping, dim, offset):
         # covariant piola
         values = []
         for i in range(dim):
-            jacobian_column = [J(j, i) for j in range(dim)]
+            jacobian_row = [J(i, j) for j in range(dim)]
             components = [component("vals", j + offset) for j in range(dim)]
-            values += [inner(jacobian_column, components)]
+            values += [inner(jacobian_row, components)]
         return values
     else:
         raise Exception, "The mapping (%s) is not allowed" % mapping
