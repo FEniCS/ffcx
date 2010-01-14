@@ -4,7 +4,7 @@ __author__ = "Marie E. Rognes (meg@simula.no)"
 __copyright__ = "Copyright (C) 2009"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-12
+# Last changed: 2010-01-13
 
 from ffc.codesnippets import jacobian
 from ffc.cpp import format
@@ -21,7 +21,7 @@ J = format["J"]
 Jinv = format["Jinv"]
 invdetJ = "1.0/%s" % format["det(J)"]
 
-def _interpolate_vertex_values(ir):
+def interpolate_vertex_values(ir):
     "Generate code for interpolate_vertex_values."
 
     # Note: I think this works, but it might be more elegant to give

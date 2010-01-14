@@ -8,10 +8,9 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Kristian B. Oelgaard, 2009
 # Modified by Marie Rognes (meg@math.uio.no), 2007
 # Modified by Garth N. Wells, 2009
-# Last changed: 2010-01-08
+# Last changed: 2010-01-14
 
 # FFC modules
-from ffc.log import info
 from ffc.cpp import format, remove_unused, count_ops
 from ffc import codesnippets
 
@@ -44,18 +43,25 @@ def _tabulate_tensor(integral_ir, integral_type, ir, options):
     comment = format["comment"]
     switch = format["switch"]
 
+    # Set of used variables for Jacobian and geometry tensor
+    j_set = set()
     g_set = set()
 
-    # Generate code for tensor contraction and geometry tensor
+    # Check integral typpe and generate code
     if integral_type == "cell_integral":
 
         # Generate code for one single tensor contraction
         t_code = _generate_tensor_contraction(integral_ir, options, g_set)
 
         # Generate code for geometry tensors
-        g_code, j_set = _generate_geometry_tensors(integral_ir, g_set)
+        g_code = _generate_geometry_tensors(integral_ir, j_set, g_set)
 
-    elif integral_type == "interior_facet_integral":
+        # Generate code for Jacobian
+        r = {"restriction": ""}
+        j_code  = codesnippets.jacobian[ir.geometric_dimension] % r
+        j_code += "\n\n" + codesnippets.scale_factor
+
+    elif integral_type == "exterior_facet_integral":
 
         # Generate code for num_facets tensor contractions
         cases = [None for i in range(ir.num_facets)]
@@ -64,9 +70,16 @@ def _tabulate_tensor(integral_ir, integral_type, ir, options):
         t_code = switch("i", cases)
 
         # Generate code for geometry tensors
-        g_code, j_set = _generate_geometry_tensors(integral_ir[0], g_set)
+        g_code = _generate_geometry_tensors(integral_ir[0], j_set, g_set)
 
-    elif integral_type == "exterior_facet_integral":
+        # FIXME: This won't work
+
+        # Generate code for Jacobian
+        r = {"restriction": ""}
+        j_code  = codesnippets.jacobian[ir.geometric_dimension] % r
+        j_code += "\n\n" + codesnippets.facet_determinant[ir.geometric_dimension] % r
+
+    elif integral_type == "interior_facet_integral":
 
         # Generate code for num_facets x num_facets tensor contractions
         cases = [[None for j in range(ir.num_facets)] for i in range(ir.num_facets)]
@@ -76,13 +89,20 @@ def _tabulate_tensor(integral_ir, integral_type, ir, options):
         t_code = switch("i", [switch("j", cases[i]) for i in range(len(cases))])
 
         # Generate code for geometry tensors
-        g_code, j_set = _generate_geometry_tensors(integral_ir[0][0], g_set)
+        g_code = _generate_geometry_tensors(integral_ir[0][0], j_set, g_set)
 
-    # Generate code for element tensor, geometry tensor and Jacobian
-    j_code = codesnippets.jacobian[ir.geometric_dimension] % {"restriction": ""}
+        # FIXME: This won't work
+
+        # Generate code for Jacobian
+        r = {"restriction": ""}
+        j_code  = codesnippets.jacobian[ir.geometric_dimension] % r
+        j_code += "\n\n" + codesnippets.facet_determinant[ir.geometric_dimension] % r
+
+    else:
+        error("Unhandled integral type: " + str(integral_type))
 
     # Remove unused declarations from Jacobian code
-    #jacobi_code = remove_unused(j_code, j_set)
+    jacobi_code = remove_unused(j_code, j_set)
 
     # FIXME: Missing stuff from old generate_jacobian
 
@@ -91,32 +111,34 @@ def _tabulate_tensor(integral_ir, integral_type, ir, options):
     total_ops = j_ops + g_ops + t_ops
 
     # Add generated code
-    code = ""
-    code += comment("Number of operations (multiply-add pairs) for Jacobian data:      %d\n" % j_ops)
-    code += comment("Number of operations (multiply-add pairs) for geometry tensor:    %d\n" % g_ops)
-    code += comment("Number of operations (multiply-add pairs) for tensor contraction: %d\n" % t_ops)
-    code += comment("Total number of operations (multiply-add pairs):                  %d\n" % total_ops)
-    code += j_code
-    code += "\n"
-    code += comment("Compute geometry tensor\n")
-    code += g_code
-    code += "\n"
-    code += comment("Compute element tensor\n")
-    code += t_code
+    lines = []
+    lines.append(comment("Number of operations (multiply-add pairs) for Jacobian data:      %d" % j_ops))
+    lines.append(comment("Number of operations (multiply-add pairs) for geometry tensor:    %d" % g_ops))
+    lines.append(comment("Number of operations (multiply-add pairs) for tensor contraction: %d" % t_ops))
+    lines.append(comment("Total number of operations (multiply-add pairs):                  %d" % total_ops))
+    lines.append("")
+    lines.append(j_code)
+    lines.append("")
+    lines.append(comment("Compute geometry tensor"))
+    lines.append(g_code)
+    lines.append("")
+    lines.append(comment("Compute element tensor"))
+    lines.append(t_code)
 
-    return code
+    return "\n".join(lines)
 
 def _generate_tensor_contraction(terms, options, g_set):
     "Generate code for computation of tensor contraction."
 
     # Prefetch formats to speed up code generation
-    format_add             = format["add"]
-    format_iadd            = format["iadd"]
-    format_subtract        = format["subtract"]
-    format_multiply        = format["multiply"]
-    format_element_tensor  = format["element tensor"]
-    format_geometry_tensor = format["geometry tensor"]
-    format_float           = format["float"]
+    add             = format["add"]
+    iadd            = format["iadd"]
+    subtract        = format["subtract"]
+    multiply        = format["multiply"]
+    element_tensor  = format["element tensor"]
+    geometry_tensor = format["geometry tensor"]
+    format_float    = format["float"]
+    zero            = format_float(0)
 
     # Generate incremental code for now, might be an option later
     incremental = True
@@ -133,47 +155,45 @@ def _generate_tensor_contraction(terms, options, g_set):
     for (j, (A0, GK)) in enumerate(terms):
         gk_tensor_j = []
         for a in A0.secondary_multi_index.indices:
-            gk_tensor_j.append((format_geometry_tensor(j, a), a))
+            gk_tensor_j.append((geometry_tensor(j, a), a))
         gk_tensor.append((gk_tensor_j, j))
 
-    # Reset variables
-    k = 0
-    num_dropped = 0
-    zero = format_float(0.0)
-    code = ""
-
     # Generate code for computing the element tensor
-    for i in primary_indices:
-        name = format_element_tensor(k)
+    lines = []
+    for (k, i) in enumerate(primary_indices):
+        name = element_tensor(k)
         value = None
         for (gka, j) in gk_tensor:
             (A0, GK) = terms[j]
             for (gk, a) in gka:
                 a0 = A0.A0[tuple(i + a)]
-                if abs(a0) > epsilon:
-                    if value and a0 < 0.0:
-                        value = format_subtract([value, format_multiply([format_float(-a0), gk])])
-                        g_set.add(gk)
-                    elif value:
-                        value = format_add([value, format_multiply([format_float(a0), gk])])
-                        g_set.add(gk)
-                    else:
-                        value = format_multiply([format_float(a0), gk])
-                        g_set.add(gk)
+
+                # Skip small values
+                if abs(a0) < epsilon: continue
+
+                # Compute value
+                if value and a0 < 0.0:
+                    value = subtract([value, multiply([format_float(-a0), gk])])
+                elif value:
+                    value = add([value, multiply([format_float(a0), gk])])
                 else:
-                    num_dropped += 1
+                    value = multiply([format_float(a0), gk])
+
+                # Remember that gk has been used
+                g_set.add(gk)
+
+        # Handle special case
         value = value or zero
-        if len(code) > 0:
-            code += "\n"
+
+        # Add value
         if incremental:
-            code += format_iadd(name, value)
+            lines.append(iadd(name, value))
         else:
-            code += format_assign(name, value)
-        k += 1
+            lines.append(assign(name, value))
 
-    return code
+    return "\n".join(lines)
 
-def _generate_geometry_tensors(terms, geometry_set):
+def _generate_geometry_tensors(terms, j_set, g_set):
     "Generate code for computation of geometry tensors."
 
     # Prefetch formats to speed up code generation
@@ -182,15 +202,12 @@ def _generate_geometry_tensors(terms, geometry_set):
     format_scale_factor    = format["scale factor"]
     format_declaration     = format["const float declaration"]
 
-    # Reset variables
-    j = 0
-    jacobi_set = set()
-    code = ""
-
     # Iterate over all terms
+    lines = []
+    offset = 0
     for (i, term) in enumerate(terms):
 
-        # Get list of secondary indices (should be the same so pick first)
+        # Get secondary indices
         A0, GK = term
         secondary_indices = GK.secondary_multi_index.indices
 
@@ -202,107 +219,55 @@ def _generate_geometry_tensors(terms, geometry_set):
         for a in secondary_indices:
 
             # Skip code generation if term is not used
-            if not format["geometry tensor"](i, a) in geometry_set:
-                continue
+            if not format["geometry tensor"](i, a) in g_set: continue
 
             # Compute factorized values
-            values = []
-            jj = j
-            for GK in GKs:
-                val, t_set = _generate_entry(GK, a, jj, format)
-                values += [val]
-                jacobi_set = jacobi_set | t_set
-                jj += 1
+            values = [_generate_entry(GK, a, offset + j, j_set) for (j, GK) in enumerate(GKs)]
 
             # Sum factorized values
-            name = format_geometry_tensor(i, a) # FIXME: Need declaration here
+            name = format_geometry_tensor(i, a)
             value = format_add(values)
 
             # Multiply with determinant factor
             det = GK.determinant
-            value = _multiply_value_by_det(value, GK.determinant, format, len(values) > 1)
-
-            # Add determinant to transformation set
-            #!if dets:
-            #!    d0 = [format["power"](format["determinant"](det.restriction),
-            #!                          det.power) for det in dets]
-            #!    jacobi_set.add(format["multiply"](d0))
+            value = _multiply_value_by_det(value, GK.determinant, len(values) > 1)
 
             # Add code
-            code += format_declaration(name, value) + "\n"
+            lines.append(format_declaration(name, value))
 
-        j += len(GKs)
+        # Add to offset
+        offset += len(GKs)
 
     # Add scale factor
-    jacobi_set.add(format_scale_factor)
+    j_set.add(format_scale_factor)
 
-    return (code, jacobi_set)
+    return "\n".join(lines)
 
-def _generate_entry(GK, a, i, format):
-    "Generate code for the value of entry a of geometry tensor G."
+def _generate_entry(GK, a, i, j_set):
+    "Generate code for the value of a GK entry."
 
     # Prefetch formats to speed up code generation
-    format_grouping    = format["grouping"]
-    format_add         = format["add"]
-    format_multiply    = format["multiply"]
-    format_coefficient = format["coefficient"]
-    format_transform   = format["transform"]
-
-    # Reset variables
-    factors = []
-    jacobi_set = set()
+    grouping = format["grouping"]
+    add      = format["add"]
+    multiply = format["multiply"]
 
     # Compute product of factors outside sum
-    for j in range(len(GK.coefficients)):
-        c = GK.coefficients[j]
-        if not c.index.index_type == MonomialIndex.EXTERNAL:
-            coefficient = format_coefficient(c.number, c.index(secondary=a))
-            factors += [coefficient]
+    factors = _extract_factors(GK, a, None, j_set, MonomialIndex.INTERNAL)
 
-    for t in GK.transforms:
-        if not (t.index0.index_type == MonomialIndex.EXTERNAL or t.index1.index_type == MonomialIndex.EXTERNAL):
-            trans = format_transform(t.transform_type,
-                                     t.index0(secondary=a),
-                                     t.index1(secondary=a),
-                                     t.restriction)
-            factors += [trans]
-            jacobi_set.add(trans)
+    # Compute sum of products of factors inside sum
+    terms = [multiply(_extract_factors(GK, a, b, j_set, MonomialIndex.EXTERNAL))
+             for b in GK.external_multi_index.indices]
 
-    monomial = format["multiply"](factors)
-    if monomial: f0 = [monomial]
-    else: f0 = []
+    # Compute product
+    if factors:
+        entry = multiply(factors + [grouping(add(terms))])
+    else:
+        entry = add(terms)
 
-    # Compute sum of monomials inside sum
-    terms = []
-    for b in GK.external_multi_index.indices:
-        factors = []
-        for j in range(len(GK.coefficients)):
-            c = GK.coefficients[j]
-            if c.index.index_type == MonomialIndex.EXTERNAL:
-                coefficient = format_coefficient(c.number, c.index(secondary=a))
-                factors += [coefficient]
-        for t in GK.transforms:
-            if t.index0.index_type == MonomialIndex.EXTERNAL or t.index1.index_type == MonomialIndex.EXTERNAL:
-                trans = format_transform(t.transform_type,
-                                         t.index0(secondary=a, external=b),
-                                         t.index1(secondary=a, external=b),
-                                         t.restriction)
-                factors += [trans]
-                jacobi_set.add(trans)
-        terms += [format_multiply(factors)]
+    return entry
 
-    sum = format_add(terms)
-    if sum: sum = format_grouping(sum)
-    if sum: f1 = [sum]
-    else: f1 = []
-
-    fs = f0 + f1
-    if not fs: fs = ["1.0"]
-
-    # Compute product of all factors
-    return (format_multiply(fs), jacobi_set)
-
-def _multiply_value_by_det(value, det, format, is_sum):
+def _multiply_value_by_det(value, det, is_sum):
+    "Generate code for multiplication of value by determinant."
     if not det.power == 0:
         d = [format["power"](format["determinant"](det.restriction), det.power)]
     else:
@@ -314,3 +279,29 @@ def _multiply_value_by_det(value, det, format, is_sum):
     else:
         v = [value]
     return format["multiply"](d + [format["scale factor"]] + v)
+
+def _extract_factors(GK, a, b, j_set, index_type):
+    "Extract factors of given index type in GK entry."
+
+    # Prefetch formats to speed up code generation
+    coefficient = format["coefficient"]
+    transform   = format["transform"]
+
+    # List of factors
+    factors = []
+
+    # Compute product of coefficients
+    for c in GK.coefficients:
+        if index_type == c.index.index_type:
+            factors.append(coefficient(c.number, c.index(secondary=a)))
+
+    # Compute product of transforms
+    for t in GK.transforms:
+        if index_type in (t.index0.index_type, t.index1.index_type):
+            factors.append(transform(t.transform_type,
+                                     t.index0(secondary=a, external=b),
+                                     t.index1(secondary=a, external=b),
+                                     t.restriction))
+            j_set.add(factors[-1])
+
+    return factors

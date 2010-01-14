@@ -78,7 +78,7 @@ def compute_element_ir(ufl_element, form_data):
     # ir["evaluate_basis_derivatives"] = not_implemented
     # ir["evaluate_basis_derivatives_all"] = not_implemented #element.get_coeffs()
     ir["evaluate_dof"] = _evaluate_dof(element, cell)
-    ir["evaluate_dofs"] = not_implemented
+    ir["evaluate_dofs"] = ir["evaluate_dof"]
     ir["interpolate_vertex_values"] = _interpolate_vertex_values(element, cell)
     ir["num_sub_elements"] = ufl_element.num_sub_elements()
     ir["create_sub_element"] = [form_data.element_map[e]

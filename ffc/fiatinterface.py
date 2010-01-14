@@ -5,9 +5,12 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Garth N. Wells, 2009.
 # Modified by Marie Rognes, 2009-2010.
-# Last changed: 2010-01-08
+# Last changed: 2010-01-14
 
-# Import UFL and FIAT
+# Python modules
+from numpy import array
+
+# UFL and FIAT modules
 import ufl
 import FIAT_NEW as FIAT
 

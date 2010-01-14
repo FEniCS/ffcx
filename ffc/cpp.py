@@ -7,7 +7,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian B. Oelgaard 2009
 # Modified by Marie E. Rognes 2010
-# Last changed: 2010-01-12
+# Last changed: 2010-01-14
 
 # Python modules.
 import re
@@ -17,16 +17,15 @@ import numpy
 from ffc.log import debug
 from ffc.constants import FFC_OPTIONS
 
-
 # Formatting rules
 format = {}
 
 # Program flow
-format.update({"return":     lambda v: "return %s;\n" % str(v),
+format.update({"return":     lambda v: "return %s;" % str(v),
                "grouping":   lambda v: "(%s)" % v,
                "switch":     lambda v, cases: _generate_switch(v, cases),
                "exception":  lambda v: "throw std::runtime_error(\"%s\");" % v,
-               "comment":    lambda v: "\n// %s\n" % v,
+               "comment":    lambda v: "// %s" % v,
                "if":         lambda c, v: "if (%s) {\n%s\n}\n" % (c, v),
                "do nothing": "// Do nothing"})
 
@@ -37,11 +36,11 @@ format.update({"declaration": lambda t, n, v=None: _declaration(t, n, v),
 
 # Operators
 format.update({"add":      lambda v: _add(v),
-               "iadd":     lambda v, w: "%s += %s;\n" % (str(v), str(w)),
+               "iadd":     lambda v, w: "%s += %s;" % (str(v), str(w)),
                "subtract": lambda v: " - ".join(v),
                "multiply": lambda v: _multiply(v),
                "inner product": lambda v, w: _inner_product(v, w),
-               "assign": lambda v, w: "%s = %s;\n" % (v, str(w)),
+               "assign": lambda v, w: "%s = %s;" % (v, str(w)),
                "component": lambda v, k: _component(v, k)})
 
 # Formatting used in tabulate_tensor
@@ -58,7 +57,7 @@ format.update({"entity index": "c.entity_indices",
                "cell": lambda s: "ufc::%s" % s,
                "det(J)": "detJ",
                "J": lambda i, j: "J_%d%d" % (i, j),
-               "Jinv" : lambda i, j: "Jinv_%d%d" % (i, j)})
+               "Jinv" : lambda i, j: "K_%d%d" % (i, j)})
 
 # Misc
 format.update({"bool":    lambda v: {True: "true", False: "false"}[v],
@@ -140,7 +139,7 @@ def _inner_product(v, w):
 
 def _transform(type, j, k, r):
     # FIXME: j, k might need to be swapped for J or JINV
-    map_name = type + {None: "", "+": "0", "-": 1}[r]
+    map_name = {"J": "J", "JINV": "K"}[type] + {None: "", "+": "0", "-": "1"}[r]
     return (map_name + "_%d%d") % (j, k)
 
 def _generate_switch(variable, cases):
@@ -548,7 +547,7 @@ def remove_unused(code, used_set=set()):
     variables = {}
 
     # List of variable names (so we can search them in order)
-    variable_names = [variable_name for variable_name in used_set]
+    variable_names = []
 
     # Examine code line by line
     lines = code.split("\n")
@@ -586,19 +585,18 @@ def remove_unused(code, used_set=set()):
             if _variable_in_line(variable_name, line) and line_number > declaration_line:
                 variables[variable_name] = (declaration_line, used_lines + [line_number])
 
-    # Reverse the order of the variable names (to catch variables used
-    # only by variables that are removed)
+    # Reverse the order of the variable names to catch variables used
+    # only by variables that are removed
     variable_names.reverse()
 
-    # Remove declarations that are not used (need to search backwards)
+    # Remove declarations that are not used
     removed_lines = []
     for variable_name in variable_names:
         (declaration_line, used_lines) = variables[variable_name]
         for line in removed_lines:
             if line in used_lines:
                 used_lines.remove(line)
-        if used_lines == []:
-            print variable_name
+        if used_lines == [] and not variable_name in used_set:
             debug("Removing unused variable: %s" % variable_name)
             #lines[declaration_line] = "// " + lines[declaration_line]
             lines[declaration_line] = None
