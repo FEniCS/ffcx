@@ -8,7 +8,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Kristian Oelgaard 2009
 # Modified by Marie Rognes 2007 -- 2010
 # Modified by Peter Brune 2009
-# Last changed: 2010-01-13
+# Last changed: 2010-01-14
 
 # Code snippets
 
@@ -135,12 +135,10 @@ facet_normal_1D = """\
 // FIXME: not implemented"""
 
 facet_determinant_2D = """\
-// Vertices on edges
+// Get vertices on edge
 static unsigned int edge_vertices[3][2] = {{1, 2}, {0, 2}, {0, 1}};
-
-// Get vertices
-const unsigned int v0 = edge_vertices[%(facet)s][0];
-const unsigned int v1 = edge_vertices[%(facet)s][1];
+const unsigned int v0 = edge_vertices[facet][0];
+const unsigned int v1 = edge_vertices[facet][1];
 
 // Compute scale factor (length of edge scaled by length of reference interval)
 const double dx0 = x%(restriction)s[v1][0] - x%(restriction)s[v0][0];
@@ -156,12 +154,10 @@ const double n%(restriction)s0 = %(direction)sdirection ? dx1 / det : -dx1 / det
 const double n%(restriction)s1 = %(direction)sdirection ? -dx0 / det : dx0 / det;"""
 
 facet_determinant_3D = """\
-// Vertices on faces
+// Get vertices on face
 static unsigned int face_vertices[4][3] = {{1, 2, 3}, {0, 2, 3}, {0, 1, 3}, {0, 1, 2}};
-
-// Get vertices
-const unsigned int v0 = face_vertices[%(facet)s][0];
-const unsigned int v1 = face_vertices[%(facet)s][1];
+const unsigned int v0 = face_vertices[facet][0];
+const unsigned int v1 = face_vertices[facet][1];
 const unsigned int v2 = face_vertices[%(facet)s][2];
 
 // Compute scale factor (area of face scaled by area of reference triangle)
@@ -699,3 +695,4 @@ tabulate_tensor_quadrature(A, w, c0, c1, facet0, facet1);"""
 
 # Mappings to code snippetes
 jacobian = {1: jacobian_1D, 2: jacobian_2D, 3: jacobian_3D}
+facet_determinant = {1: facet_determinant_1D, 2: facet_determinant_2D, 3: facet_determinant_3D}

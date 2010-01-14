@@ -11,7 +11,7 @@ __date__ = "2009-12-16"
 __copyright__ = "Copyright (C) 2009 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-13
+# Last changed: 2010-01-14
 
 # FFC modules
 from ffc.log import begin, end, debug_code
@@ -145,8 +145,8 @@ def generate_integrals_code(ir, prefix, options):
     code = ([], [], [])
 
     integral_types = ("cell_integral",
-                      "interior_facet_integral",
-                      "exterior_facet_integral")
+                      "exterior_facet_integral",
+                      "interior_facet_integral")
 
     # Iterate over integral types
     for (i, integral_type) in enumerate(integral_types):

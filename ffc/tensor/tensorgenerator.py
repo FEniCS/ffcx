@@ -8,7 +8,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Kristian B. Oelgaard, 2009
 # Modified by Marie Rognes (meg@math.uio.no), 2007
 # Modified by Garth N. Wells, 2009
-# Last changed: 2010-01-13
+# Last changed: 2010-01-14
 
 # FFC modules
 from ffc.cpp import format, remove_unused, count_ops
@@ -57,10 +57,11 @@ def _tabulate_tensor(integral_ir, integral_type, ir, options):
         g_code = _generate_geometry_tensors(integral_ir, j_set, g_set)
 
         # Generate code for Jacobian
-        j_code  = codesnippets.jacobian[ir.geometric_dimension] % {"restriction": ""}
+        r = {"restriction": ""}
+        j_code  = codesnippets.jacobian[ir.geometric_dimension] % r
         j_code += "\n\n" + codesnippets.scale_factor
 
-    elif integral_type == "interior_facet_integral":
+    elif integral_type == "exterior_facet_integral":
 
         # Generate code for num_facets tensor contractions
         cases = [None for i in range(ir.num_facets)]
@@ -74,10 +75,11 @@ def _tabulate_tensor(integral_ir, integral_type, ir, options):
         # FIXME: This won't work
 
         # Generate code for Jacobian
-        j_code  = codesnippets.jacobian[ir.geometric_dimension] % {"restriction": ""}
-        j_code += codesnippets.facetdeterminant
+        r = {"restriction": ""}
+        j_code  = codesnippets.jacobian[ir.geometric_dimension] % r
+        j_code += "\n\n" + codesnippets.facet_determinant[ir.geometric_dimension] % r
 
-    elif integral_type == "exterior_facet_integral":
+    elif integral_type == "interior_facet_integral":
 
         # Generate code for num_facets x num_facets tensor contractions
         cases = [[None for j in range(ir.num_facets)] for i in range(ir.num_facets)]
@@ -92,8 +94,12 @@ def _tabulate_tensor(integral_ir, integral_type, ir, options):
         # FIXME: This won't work
 
         # Generate code for Jacobian
-        j_code  = codesnippets.jacobian[ir.geometric_dimension] % {"restriction": ""}
-        j_code += codesnippets.facetdeterminant
+        r = {"restriction": ""}
+        j_code  = codesnippets.jacobian[ir.geometric_dimension] % r
+        j_code += "\n\n" + codesnippets.facet_determinant[ir.geometric_dimension] % r
+
+    else:
+        error("Unhandled integral type: " + str(integral_type))
 
     # Remove unused declarations from Jacobian code
     jacobi_code = remove_unused(j_code, j_set)
