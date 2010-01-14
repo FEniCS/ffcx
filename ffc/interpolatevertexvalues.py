@@ -10,7 +10,7 @@ from ffc.codesnippets import jacobian
 from ffc.cpp import format, remove_unused
 
 # Extract code manipulation formats
-inner_product = format["inner product"]
+inner = format["inner product"]
 component = format["component"]
 precision = format["float"]
 assign = format["assign"]
@@ -82,7 +82,8 @@ def _interpolate_vertex_values_element(data, dim, total_value_dim,
             # Contract coefficients and basis functions
             dof_values = [component("dof_values", i + space_offset)
                           for i in range(space_dim)]
-            value = inner_product(dof_values, components)
+
+            value = inner(dof_values, components)
 
             # Assign value to correct vertex
             index = j*total_value_dim + (k + value_offset)
@@ -92,17 +93,46 @@ def _interpolate_vertex_values_element(data, dim, total_value_dim,
 
 
 def _change_variables(mapping, dim, space_dim):
+    """
+
+    How to map a field G from the reference domain to a physical
+    domain: For the converse approach -- see evaluatedof.py
+
+    Let g be a field defined on the reference domain domain T_0 with
+    reference coordinates X. Let T be a a physical domain with
+    coordinates x. Assume that F: T_0 -> T such that
+
+      x = F(X)
+
+    Let J be the Jacobian of F, i.e J = dx/dX and let K denote the
+    inverse of the Jacobian K = J^{-1}. Then we (currently) have the
+    following three types of mappings:
+
+    'affine' mapping for G:
+
+      g(x) = G(X)
+
+    For vector fields G:
+
+    'contravariant piola' mapping for f:
+
+      g(x) = 1.0/det(J) J G(X)   i.e   g_i(x) = 1.0/det(J) J_ij G_j(X)
+
+    'covariant piola' mapping for f:
+
+      g(x) = K G(X)              i.e   g_i(x) = K_ij G_j(X)
+    """
 
     if mapping is "affine":
-        change_of_variables = lambda v, k: v[k]
+        change_of_variables = lambda G, i: G[i]
     elif mapping == "contravariant piola":
-        change_of_variables = lambda v, k: [multiply([invdetJ, inner_product([J(k, l) for l in range(dim)],
-                                                                             [v[l][i] for l in range(dim)])])
-                                            for i in range(space_dim)]
+        change_of_variables = lambda G, i: [multiply([invdetJ, inner([J(i, j) for j in range(dim)],
+                                                                     [G[j][index] for j in range(dim)])])
+                                            for index in range(space_dim)]
     elif mapping == "covariant piola":
-        change_of_variables = lambda v, k: [inner_product([Jinv(k, l) for l in range(dim)],
-                                                          [v[l][i] for l in range(dim)])
-                                            for i in range(space_dim)]
+        change_of_variables = lambda G, i: [inner([Jinv(i, j) for j in range(dim)],
+                                                  [G[j][index] for j in range(dim)])
+                                            for index in range(space_dim)]
     else:
         raise Exception, "No such mapping: %s accepted" % mapiping
     return change_of_variables
