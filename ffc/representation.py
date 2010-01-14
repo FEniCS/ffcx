@@ -128,7 +128,7 @@ def compute_dofmap_ir(ufl_element, form_data):
 
 def compute_integrals_ir(form, form_data, options):
     "Compute intermediate represention of integrals."
-    #return None
+    return None
     # FIXME: Handle multiple representations here
     ir = TensorRepresentation(form, form_data)
 

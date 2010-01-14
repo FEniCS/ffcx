@@ -18,7 +18,7 @@ from ffc.log import begin, end, debug_code
 from ffc.cpp import format, indent
 
 # FFC code generation modules
-from ffc.evaluatebasis import _evaluate_basis
+from ffc.evaluatebasis import _evaluate_basis, _evaluate_basis_all
 from ffc.evaluatebasisderivatives import _evaluate_basis_derivatives
 from ffc.evaluatedof import _evaluate_dof, _evaluate_dofs, affine_weights
 from ffc.interpolatevertexvalues import _interpolate_vertex_values
@@ -48,8 +48,8 @@ def generate_code(ir, prefix, options):
                     for (i, ir) in enumerate(ir_dofmaps)]
 
     # Generate code for integrals
-    #code_integrals =  ([], [], [])
-    code_integrals = generate_integrals_code(ir_integrals, prefix, options)
+    code_integrals =  ([], [], [])
+    #code_integrals = generate_integrals_code(ir_integrals, prefix, options)
 
     # Generate code for form
     #code_form = ""
@@ -79,7 +79,7 @@ def generate_element_code(i, ir, prefix, options):
     code["value_dimension"] = _value_dimension(ir["value_dimension"])
     #code["evaluate_basis"] = ""
     code["evaluate_basis"] = _evaluate_basis(ir["evaluate_basis"])
-    code["evaluate_basis_all"] = not_implemented
+    code["evaluate_basis_all"] = _evaluate_basis_all(ir["evaluate_basis"])
     #code["evaluate_basis_derivatives"] = do_nothing
     code["evaluate_basis_derivatives"] = ""#_evaluate_basis_derivatives(ir["evaluate_basis"])
     code["evaluate_basis_derivatives_all"] = not_implemented

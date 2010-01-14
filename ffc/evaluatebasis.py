@@ -29,6 +29,76 @@ from ffc.quadrature.symbolics import CONST
 # Temporary import
 from cpp import format_old as format
 
+def _evaluate_basis_all(data_list):
+    """Like evaluate_basis, but return the values of all basis functions (dofs)."""
+
+    format_free_indices = format["free secondary indices"]
+    format_r            = format_free_indices[0]
+    format_s            = format_free_indices[1]
+
+    # Initialise objects
+    Indent = IndentControl()
+    code = []
+
+    # FIXME: KBO: Can we remove this?
+    set_format(format)
+
+    # FIXME: KBO: Figure out how the return format should be, either:
+    # [d0_x, d0_y, d1_x, d1_y, ...] or [d0_x, d1_x, ..., d0_y, d1_y, ...]
+
+    # FIXME: KBO: For now, just call evaluate_basis and map values accordingly,
+    # this will keep the amount of code at a minimum. If it turns out that speed
+    # is an issue (overhead from calling evaluate_basis), we can easily generate
+    # all the code
+
+    # Get total value shape and space dimension for entire element (possibly mixed).
+    value_shape = sum(sum(data["value_shape"] or (1,)) for data in data_list)
+    space_dimension = sum(data["space_dimension"] for data in data_list)
+
+    # Special case where space dimension is one (constant elements)
+    if space_dimension == 1:
+        code += [format["comment"]("Element is constant, calling evaluate_basis.")]
+        code += ["evaluate_basis(0, %s, coordinates, c);" % format["argument values"]]
+        return format["generate body"](code)
+
+    # Declare helper value to hold single dof values
+    code += [format["comment"]("Helper variable to hold values of a single dof.")]
+    if value_shape == 1:
+        code += [(format["float declaration"] + "dof_values", format["floating point"](0.0))]
+    else:
+        code += [(format["float declaration"] + "dof_values" + format["array access"](value_shape),\
+                 tabulate_vector([0.0]*value_shape, format))]
+
+    # Create loop over dofs that calls evaluate_basis for a single dof and
+    # inserts the values into the global array.
+    code += ["", format["comment"]("Loop dofs and call evaluate_basis.")]
+    lines_r = []
+    loop_vars_r = [(format_r, 0, space_dimension)]
+
+    # FIXME: KBO: Move evaluate_basis string to cpp.py
+    if value_shape == 1:
+        lines_r += ["evaluate_basis(%s, &dof_values, coordinates, c);" % format_r]
+    else:
+        lines_r += ["evaluate_basis(%s, dof_values, coordinates, c);" % format_r]
+
+    if value_shape ==  1:
+        lines_r += [(format["argument values"] + format["array access"](format_r), "dof_values")]
+    else:
+        loop_vars_s = [(format_s, 0, value_shape)]
+        index = format["add"]([format["multiply"]([format_r, str(value_shape)]), format_s])
+        name = format["argument values"] + format["array access"](index)
+        value = "dof_values" + format["array access"](format_s)
+        lines_s = [(name, value)]
+        lines_r += generate_loop(lines_s, loop_vars_s, Indent, format)
+
+    code += generate_loop(lines_r, loop_vars_r, Indent, format)
+
+    # Remove unused variables (from transformations and mappings) in code.
+    return format["generate body"](code)
+#    lines = format["generate body"](code)
+#    code = remove_unused(lines)
+#    return code
+
 # From FIAT_NEW.polynomial_set.tabulate()
 def _evaluate_basis(data_list):
     """Generate run time code to evaluate an element basisfunction at an
