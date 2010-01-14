@@ -28,6 +28,12 @@ from ufc_utils import exterior_facet_integral_combined
 from ufc_utils import interior_facet_integral_combined
 from ufc_utils import form_combined
 
+# DOLFIN code generation templates
+try:
+    from dolfin_utils.wrappers import generate_dolfin_code, UFCFormNames
+except:
+    generate_dolfin_code = None
+
 # FFC modules
 from ffc import codesnippets
 from ffc.log import info, error, begin, end
@@ -37,6 +43,10 @@ def format_code(codes, prefix, options):
     "Format given code in UFC format."
 
     begin("Compiler stage 5: Formatting code")
+
+    # Check for DOLFIN wrappers
+    if options["format"] == "dolfin" and generate_dolfin_code is None:
+        error("Unable to generate wrapper code for DOLFIN, module dolfin_utils not found.")
 
     # Generate code for header
     output = _generate_header(prefix, options) + "\n\n"
