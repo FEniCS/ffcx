@@ -15,7 +15,7 @@ __date__ = "2009-12-16"
 __copyright__ = "Copyright (C) 2009 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-14
+# Last changed: 2010-01-15
 
 # Python modules
 import os
@@ -55,7 +55,10 @@ def format_code(codes, prefix, options):
     for code in codes:
 
         # Extract generated code
-        code_elements, code_dofmaps, code_integrals, code_form = code
+        if len(code) == 4:
+            code_elements, code_dofmaps, code_integrals, code_form = code
+        else:
+            code_elements, code_dofmaps = code
 
         # Generate code for elements
         for code_element in code_elements:
@@ -64,6 +67,10 @@ def format_code(codes, prefix, options):
         # Generate code for dofmaps
         for code_dofmap in code_dofmaps:
             output += dof_map_combined % code_dofmap + "\n"
+
+        # Skip form formatting if no form code generated
+        if len(code) == 2:
+            continue
 
         # Generate code for cell integrals
         for code_integral in code_integrals[0]:

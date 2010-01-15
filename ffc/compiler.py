@@ -164,6 +164,11 @@ def compile_element(elements, prefix="Element", options=FFC_OPTIONS.copy()):
     """This function generates UFC code for a given UFL element or
     list of UFL elements."""
 
+    from ffc.representation import compute_element_ir
+    from ffc.representation import compute_dofmap_ir
+    from ffc.codegeneration import generate_element_code
+    from ffc.codegeneration import generate_dofmap_code
+
     # Check options
     options = _check_options(options)
 
@@ -176,16 +181,25 @@ def compile_element(elements, prefix="Element", options=FFC_OPTIONS.copy()):
         info("No elements specified, nothing to do.")
         return
 
-    # Create format
-    format = Format(options)
+    # FIXME:
+    form_data = None
 
-    # Compiler stage 4: generate element code
-    #generated_elements = generate_element_code(elements, format.format)
+    codes = []
+    for e in elements:
+
+        # Compute intermediate representation
+        element_ir = compute_element_ir(e, form_data)
+        dofmap_ir = compute_dofmap_ir(e, form_data)
+
+        # Generate code
+        codes += [([generate_element_code(0, element_ir, prefix, options)],
+                   [generate_dofmap_code(0, dofmap_ir, prefix, options)])]
 
     # Compiler stage 5: format code
-    format_code(generated_elements, prefix, format, options)
+    format_code(codes, prefix, options)
 
     info("Code generation complete.")
+
 
 def _check_forms(forms):
     "Initial check of forms."

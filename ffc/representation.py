@@ -88,8 +88,7 @@ def compute_element_ir(ufl_element, form_data):
     ir["evaluate_dofs"] = ir["evaluate_dof"]
     ir["interpolate_vertex_values"] = _interpolate_vertex_values(element, cell)
     ir["num_sub_elements"] = ufl_element.num_sub_elements()
-    ir["create_sub_element"] = [form_data.element_map[e]
-                                for e in ufl_element.sub_elements()]
+    ir["create_sub_element"] = _create_sub_foo(ufl_element, form_data)
 
     #debug_ir(ir, "finite_element")
 
@@ -124,12 +123,19 @@ def compute_dofmap_ir(ufl_element, form_data):
     ir["tabulate_entity_dofs"] = (element.entity_dofs(), num_dofs_per_entity)
     ir["tabulate_coordinates"] = _tabulate_coordinates(element)
     ir["num_sub_dof_maps"] = ufl_element.num_sub_elements()
-    ir["create_sub_dof_map"] = [form_data.element_map[e]
-                                for e in ufl_element.sub_elements()]
+    ir["create_sub_dof_map"] = _create_sub_foo(ufl_element, form_data)
 
     #debug_ir(ir, "dofmap")
 
     return ir
+
+def _create_sub_foo(ufl_element, form_data):
+    if form_data is None:
+        return [0]*ufl_element.num_sub_elements()
+
+    return [form_data.element_map[e] for e in ufl_element.sub_elements()]
+
+
 
 def compute_integrals_ir(form, form_data, options):
     "Compute intermediate represention of integrals."
