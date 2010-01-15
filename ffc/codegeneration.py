@@ -11,7 +11,7 @@ __date__ = "2009-12-16"
 __copyright__ = "Copyright (C) 2009 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-14
+# Last changed: 2010-01-15
 
 # FFC modules
 from ffc.log import info, begin, end, debug_code
@@ -79,7 +79,7 @@ def generate_element_code(i, ir, prefix, options):
     code["space_dimension"] = ret(ir["space_dimension"])
     code["value_rank"] = ret(ir["value_rank"])
     code["value_dimension"] = _value_dimension(ir["value_dimension"])
-    code["evaluate_basis"] = _evaluate_basis(ir["evaluate_basis"])
+    code["evaluate_basis"] = ""#_evaluate_basis(ir["evaluate_basis"])
     code["evaluate_basis_all"] = _evaluate_basis_all(ir["evaluate_basis"])
     code["evaluate_basis_derivatives"] = ""#_evaluate_basis_derivatives(ir["evaluate_basis"])
     code["evaluate_basis_derivatives_all"] = not_implemented
@@ -110,10 +110,10 @@ def generate_dofmap_code(i, ir, prefix, options):
     code["destructor"] = do_nothing
     code["signature"] = ret('"%s"' % ir["signature"])
     code["needs_mesh_entities"] = _needs_mesh_entities(ir["needs_mesh_entities"])
-    code["init_mesh"] = _init_mesh(ir["init_mesh"])
+    code["init_mesh"] = ret("false")#"_init_mesh(ir["init_mesh"])
     code["init_cell"] = do_nothing
     code["init_cell_finalize"] = do_nothing
-    code["global_dimension"] = ret("__global_dimension")
+    code["global_dimension"] = ""#ret("__global_dimension")
     code["local_dimension"] = ret(ir["local_dimension"])
     code["max_local_dimension"] = ret(ir["max_local_dimension"])
     code["geometric_dimension"] = ret(ir["geometric_dimension"])
@@ -254,9 +254,11 @@ def _tabulate_dofs(ir):
     code = []
 
     # Declare offset if more than one element:
+    offset_name = "0"
     need_offset = len(ir) > 1
     if need_offset:
-        code.append(format["declaration"]("unsigned int", "offset", 0))
+        offset_name = "offset"
+        code.append(format["declaration"]("unsigned int", offset_name, 0))
 
     # Generate code for each element
     i = 0
@@ -275,7 +277,7 @@ def _tabulate_dofs(ir):
             for k in range(entities_per_dim[d]):
                 v = multiply([num_dofs, component(entity_index,(d, k))])
                 for j in range(num_dofs):
-                    value = add(["offset", v, j])
+                    value = add([offset_name, v, j])
                     code.append(assign(component("dofs", i), value))
                     i += 1
 

@@ -8,7 +8,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Kristian Oelgaard 2009
 # Modified by Marie Rognes 2007 -- 2010
 # Modified by Peter Brune 2009
-# Last changed: 2010-01-14
+# Last changed: 2010-01-15
 
 # Code snippets
 
@@ -54,10 +54,10 @@ const double * const * x%(restriction)s = c%(restriction)s.coordinates;
 const double J%(restriction)s_00 = x%(restriction)s[1][0] - x%(restriction)s[0][0];
 
 // Compute determinant of Jacobian
-double detJ%(restriction)s = J%(restriction)s_00;
+double detJ_%(restriction)s = J%(restriction)s_00;
 
 // Compute inverse of Jacobian
-const double K%(restriction)s_00 =  1.0 / detJ%(restriction)s;"""
+const double K%(restriction)s_00 =  1.0 / detJ_%(restriction)s;"""
 
 jacobian_2D = """\
 // Extract vertex coordinates
@@ -70,13 +70,13 @@ const double J%(restriction)s_10 = x%(restriction)s[1][1] - x%(restriction)s[0][
 const double J%(restriction)s_11 = x%(restriction)s[2][1] - x%(restriction)s[0][1];
 
 // Compute determinant of Jacobian
-double detJ%(restriction)s = J%(restriction)s_00*J%(restriction)s_11 - J%(restriction)s_01*J%(restriction)s_10;
+double detJ_%(restriction)s = J%(restriction)s_00*J%(restriction)s_11 - J%(restriction)s_01*J%(restriction)s_10;
 
 // Compute inverse of Jacobian
-const double K%(restriction)s_00 =  J%(restriction)s_11 / detJ%(restriction)s;
-const double K%(restriction)s_01 = -J%(restriction)s_01 / detJ%(restriction)s;
-const double K%(restriction)s_10 = -J%(restriction)s_10 / detJ%(restriction)s;
-const double K%(restriction)s_11 =  J%(restriction)s_00 / detJ%(restriction)s;"""
+const double K%(restriction)s_00 =  J%(restriction)s_11 / detJ_%(restriction)s;
+const double K%(restriction)s_01 = -J%(restriction)s_01 / detJ_%(restriction)s;
+const double K%(restriction)s_10 = -J%(restriction)s_10 / detJ_%(restriction)s;
+const double K%(restriction)s_11 =  J%(restriction)s_00 / detJ_%(restriction)s;"""
 
 jacobian_3D = """\
 // Extract vertex coordinates
@@ -107,22 +107,22 @@ const double d%(restriction)s_21 = J%(restriction)s_02*J%(restriction)s_10 - J%(
 const double d%(restriction)s_22 = J%(restriction)s_00*J%(restriction)s_11 - J%(restriction)s_01*J%(restriction)s_10;
 
 // Compute determinant of Jacobian
-double detJ%(restriction)s = J%(restriction)s_00*d%(restriction)s_00 + J%(restriction)s_10*d%(restriction)s_10 + J%(restriction)s_20*d%(restriction)s_20;
+double detJ_%(restriction)s = J%(restriction)s_00*d%(restriction)s_00 + J%(restriction)s_10*d%(restriction)s_10 + J%(restriction)s_20*d%(restriction)s_20;
 
 // Compute inverse of Jacobian
-const double K%(restriction)s_00 = d%(restriction)s_00 / detJ%(restriction)s;
-const double K%(restriction)s_01 = d%(restriction)s_10 / detJ%(restriction)s;
-const double K%(restriction)s_02 = d%(restriction)s_20 / detJ%(restriction)s;
-const double K%(restriction)s_10 = d%(restriction)s_01 / detJ%(restriction)s;
-const double K%(restriction)s_11 = d%(restriction)s_11 / detJ%(restriction)s;
-const double K%(restriction)s_12 = d%(restriction)s_21 / detJ%(restriction)s;
-const double K%(restriction)s_20 = d%(restriction)s_02 / detJ%(restriction)s;
-const double K%(restriction)s_21 = d%(restriction)s_12 / detJ%(restriction)s;
-const double K%(restriction)s_22 = d%(restriction)s_22 / detJ%(restriction)s;"""
+const double K%(restriction)s_00 = d%(restriction)s_00 / detJ_%(restriction)s;
+const double K%(restriction)s_01 = d%(restriction)s_10 / detJ_%(restriction)s;
+const double K%(restriction)s_02 = d%(restriction)s_20 / detJ_%(restriction)s;
+const double K%(restriction)s_10 = d%(restriction)s_01 / detJ_%(restriction)s;
+const double K%(restriction)s_11 = d%(restriction)s_11 / detJ_%(restriction)s;
+const double K%(restriction)s_12 = d%(restriction)s_21 / detJ_%(restriction)s;
+const double K%(restriction)s_20 = d%(restriction)s_02 / detJ_%(restriction)s;
+const double K%(restriction)s_21 = d%(restriction)s_12 / detJ_%(restriction)s;
+const double K%(restriction)s_22 = d%(restriction)s_22 / detJ_%(restriction)s;"""
 
 scale_factor = """\
 // Set scale factor
-const double det = std::abs(detJ);"""
+const double det = std::abs(detJ_);"""
 
 facet_determinant_1D = """\
 // Facet determinant 1D (vertex)
@@ -250,21 +250,21 @@ const double J_10 = element_coordinates[1][1] - element_coordinates[0][1];
 const double J_11 = element_coordinates[2][1] - element_coordinates[0][1];
 
 // Compute determinant of Jacobian
-const double detJ = J_00*J_11 - J_01*J_10;
+const double detJ_ = J_00*J_11 - J_01*J_10;
 
 // Compute inverse of Jacobian
-const double K_00 =  J_11 / detJ;
-const double K_01 = -J_01 / detJ;
-const double K_10 = -J_10 / detJ;
-const double K_11 =  J_00 / detJ;
+const double K_00 =  J_11 / detJ_;
+const double K_01 = -J_01 / detJ_;
+const double K_10 = -J_10 / detJ_;
+const double K_11 =  J_00 / detJ_;
 
 // Get coordinates and map to the reference (UFC) element
 double x = (element_coordinates[0][1]*element_coordinates[2][0] -\\
             element_coordinates[0][0]*element_coordinates[2][1] +\\
-            J_11*coordinates[0] - J_01*coordinates[1]) / detJ;
+            J_11*coordinates[0] - J_01*coordinates[1]) / detJ_;
 double y = (element_coordinates[1][1]*element_coordinates[0][0] -\\
             element_coordinates[1][0]*element_coordinates[0][1] -\\
-            J_10*coordinates[0] + J_00*coordinates[1]) / detJ;"""
+            J_10*coordinates[0] + J_00*coordinates[1]) / detJ_;"""
 
 map_coordinates_tetrahedron = """\
 // Extract vertex coordinates
@@ -295,18 +295,18 @@ const double d21 = J_02*J_10 - J_00*J_12;
 const double d22 = J_00*J_11 - J_01*J_10;
 
 // Compute determinant of Jacobian
-double detJ = J_00*d00 + J_10*d10 + J_20*d20;
+double detJ_ = J_00*d00 + J_10*d10 + J_20*d20;
 
 // Compute inverse of Jacobian
-const double K_00 = d00 / detJ;
-const double K_01 = d10 / detJ;
-const double K_02 = d20 / detJ;
-const double K_10 = d01 / detJ;
-const double K_11 = d11 / detJ;
-const double K_12 = d21 / detJ;
-const double K_20 = d02 / detJ;
-const double K_21 = d12 / detJ;
-const double K_22 = d22 / detJ;
+const double K_00 = d00 / detJ_;
+const double K_01 = d10 / detJ_;
+const double K_02 = d20 / detJ_;
+const double K_10 = d01 / detJ_;
+const double K_11 = d11 / detJ_;
+const double K_12 = d21 / detJ_;
+const double K_20 = d02 / detJ_;
+const double K_21 = d12 / detJ_;
+const double K_22 = d22 / detJ_;
 
 // Compute constants
 const double C0 = d00*(element_coordinates[0][0] - element_coordinates[2][0] - element_coordinates[3][0]) \\
@@ -322,9 +322,9 @@ const double C2 = d02*(element_coordinates[0][0] - element_coordinates[1][0] - e
                 + d22*(element_coordinates[0][2] - element_coordinates[1][2] - element_coordinates[2][2]);
 
 // Get coordinates and map to the UFC reference element
-double x = (C0 + d00*coordinates[0] + d10*coordinates[1] + d20*coordinates[2]) / detJ;
-double y = (C1 + d01*coordinates[0] + d11*coordinates[1] + d21*coordinates[2]) / detJ;
-double z = (C2 + d02*coordinates[0] + d12*coordinates[1] + d22*coordinates[2]) / detJ;"""
+double x = (C0 + d00*coordinates[0] + d10*coordinates[1] + d20*coordinates[2]) / detJ_;
+double y = (C1 + d01*coordinates[0] + d11*coordinates[1] + d21*coordinates[2]) / detJ_;
+double z = (C2 + d02*coordinates[0] + d12*coordinates[1] + d22*coordinates[2]) / detJ_;"""
 
 map_coordinates_FIAT_interval = """\
 // Extract vertex coordinates
@@ -347,15 +347,15 @@ const double J_10 = element_coordinates[1][1] - element_coordinates[0][1];
 const double J_11 = element_coordinates[2][1] - element_coordinates[0][1];
 
 // Compute determinant of Jacobian
-const double detJ = J_00*J_11 - J_01*J_10;
+const double detJ_ = J_00*J_11 - J_01*J_10;
 
 // Compute constants
 const double C0 = element_coordinates[1][0] + element_coordinates[2][0];
 const double C1 = element_coordinates[1][1] + element_coordinates[2][1];
 
 // Get coordinates and map to the reference (FIAT) element
-double x = (J_01*C1 - J_11*C0 + 2.0*J_11*coordinates[0] - 2.0*J_01*coordinates[1]) / detJ;
-double y = (J_10*C0 - J_00*C1 - 2.0*J_10*coordinates[0] + 2.0*J_00*coordinates[1]) / detJ;"""
+double x = (J_01*C1 - J_11*C0 + 2.0*J_11*coordinates[0] - 2.0*J_01*coordinates[1]) / detJ_;
+double y = (J_10*C0 - J_00*C1 - 2.0*J_10*coordinates[0] + 2.0*J_00*coordinates[1]) / detJ_;"""
 
 map_coordinates_FIAT_tetrahedron = """\
 // Extract vertex coordinates
@@ -386,7 +386,7 @@ const double d21 = J_02*J_10 - J_00*J_12;
 const double d22 = J_00*J_11 - J_01*J_10;
 
 // Compute determinant of Jacobian
-double detJ = J_00*d00 + J_10*d10 + J_20*d20;
+double detJ_ = J_00*d00 + J_10*d10 + J_20*d20;
 
 // Compute constants
 const double C0 = element_coordinates[3][0] + element_coordinates[2][0] \\
@@ -401,9 +401,9 @@ double x = coordinates[0];
 double y = coordinates[1];
 double z = coordinates[2];
 
-x = (2.0*d00*x + 2.0*d10*y + 2.0*d20*z - d00*C0 - d10*C1 - d20*C2) / detJ;
-y = (2.0*d01*x + 2.0*d11*y + 2.0*d21*z - d01*C0 - d11*C1 - d21*C2) / detJ;
-z = (2.0*d02*x + 2.0*d12*y + 2.0*d22*z - d02*C0 - d12*C1 - d22*C2) / detJ;"""
+x = (2.0*d00*x + 2.0*d10*y + 2.0*d20*z - d00*C0 - d10*C1 - d20*C2) / detJ_;
+y = (2.0*d01*x + 2.0*d11*y + 2.0*d21*z - d01*C0 - d11*C1 - d21*C2) / detJ_;
+z = (2.0*d02*x + 2.0*d12*y + 2.0*d22*z - d02*C0 - d12*C1 - d22*C2) / detJ_;"""
 
 combinations_snippet = """\
 // Declare pointer to two dimensional array that holds combinations of derivatives and initialise
@@ -461,7 +461,7 @@ for (unsigned int row = 0; row < %(num_derivatives)s; row++)
 
 transform_triangle_snippet = """\
 // Compute inverse of Jacobian
-const double %(K)s[2][2] =  {{J_11 / detJ, -J_01 / detJ}, {-J_10 / detJ, J_00 / detJ}};
+const double %(K)s[2][2] =  {{J_11 / detJ_, -J_01 / detJ_}, {-J_10 / detJ_, J_00 / detJ_}};
 
 // Declare transformation matrix
 // Declare pointer to two dimensional array and initialise
@@ -487,9 +487,9 @@ for (unsigned int row = 0; row < %(num_derivatives)s; row++)
 transform_tetrahedron_snippet = """\
 // Compute inverse of Jacobian
 const double %(K)s[3][3] =\
-{{d00 / detJ, d10 / detJ, d20 / detJ},\
- {d01 / detJ, d11 / detJ, d21 / detJ},\
- {d02 / detJ, d12 / detJ, d22 / detJ}};
+{{d00 / detJ_, d10 / detJ_, d20 / detJ_},\
+ {d01 / detJ_, d11 / detJ_, d21 / detJ_},\
+ {d02 / detJ_, d12 / detJ_, d22 / detJ_}};
 
 // Declare transformation matrix
 // Declare pointer to two dimensional array and initialise
@@ -514,7 +514,7 @@ for (unsigned int row = 0; row < %(num_derivatives)s; row++)
 
 transform2D_FIAT_snippet = """\
 // Compute inverse of Jacobian, components are scaled because of difference in FFC/FIAT reference elements
-const double %(K)s[2][2] =  {{2*J_11 / detJ, -2*J_01 / detJ}, {-2*J_10 / detJ, 2*J_00 / detJ}};
+const double %(K)s[2][2] =  {{2*J_11 / detJ_, -2*J_01 / detJ_}, {-2*J_10 / detJ_, 2*J_00 / detJ_}};
 
 // Declare transformation matrix
 // Declare pointer to two dimensional array and initialise
@@ -540,9 +540,9 @@ for (unsigned int row = 0; row < %(num_derivatives)s; row++)
 transform3D_FIAT_snippet = """\
 // Compute inverse of Jacobian, components are scaled because of difference in FFC/FIAT reference elements
 const double %(K)s[3][3] =\
-{{2*d00 / detJ, 2*d10 / detJ, 2*d20 / detJ},\
- {2*d01 / detJ, 2*d11 / detJ, 2*d21 / detJ},\
- {2*d02 / detJ, 2*d12 / detJ, 2*d22 / detJ}};
+{{2*d00 / detJ_, 2*d10 / detJ_, 2*d20 / detJ_},\
+ {2*d01 / detJ_, 2*d11 / detJ_, 2*d21 / detJ_},\
+ {2*d02 / detJ_, 2*d12 / detJ_, 2*d22 / detJ_}};
 
 // Declare transformation matrix
 // Declare pointer to two dimensional array and initialise
@@ -567,13 +567,13 @@ for (unsigned int row = 0; row < %(num_derivatives)s; row++)
 
 inverse_jacobian_2D = """\
 // Compute determinant of Jacobian
-double detJ%(restriction)s = J%(restriction)s_00*J%(restriction)s_11 - J%(restriction)s_01*J%(restriction)s_10;
+double detJ_%(restriction)s = J%(restriction)s_00*J%(restriction)s_11 - J%(restriction)s_01*J%(restriction)s_10;
 
 // Compute inverse of Jacobian
-const double K%(restriction)s_00 =  J%(restriction)s_11 / detJ%(restriction)s;
-const double K%(restriction)s_01 = -J%(restriction)s_01 / detJ%(restriction)s;
-const double K%(restriction)s_10 = -J%(restriction)s_10 / detJ%(restriction)s;
-const double K%(restriction)s_11 =  J%(restriction)s_00 / detJ%(restriction)s;"""
+const double K%(restriction)s_00 =  J%(restriction)s_11 / detJ_%(restriction)s;
+const double K%(restriction)s_01 = -J%(restriction)s_01 / detJ_%(restriction)s;
+const double K%(restriction)s_10 = -J%(restriction)s_10 / detJ_%(restriction)s;
+const double K%(restriction)s_11 =  J%(restriction)s_00 / detJ_%(restriction)s;"""
 
 inverse_jacobian_3D = """\
 // Compute sub determinants
@@ -590,18 +590,18 @@ const double d21 = J%(restriction)s_02*J%(restriction)s_10 - J%(restriction)s_00
 const double d22 = J%(restriction)s_00*J%(restriction)s_11 - J%(restriction)s_01*J%(restriction)s_10;
 
 // Compute determinant of Jacobian
-double detJ%(restriction)s = J%(restriction)s_00*d00 + J%(restriction)s_10*d10 + J%(restriction)s_20*d20;
+double detJ_%(restriction)s = J%(restriction)s_00*d00 + J%(restriction)s_10*d10 + J%(restriction)s_20*d20;
 
 // Compute inverse of Jacobian
-const double K%(restriction)s_00 = d00 / detJ%(restriction)s;
-const double K%(restriction)s_01 = d10 / detJ%(restriction)s;
-const double K%(restriction)s_02 = d20 / detJ%(restriction)s;
-const double K%(restriction)s_10 = d01 / detJ%(restriction)s;
-const double K%(restriction)s_11 = d11 / detJ%(restriction)s;
-const double K%(restriction)s_12 = d21 / detJ%(restriction)s;
-const double K%(restriction)s_20 = d02 / detJ%(restriction)s;
-const double K%(restriction)s_21 = d12 / detJ%(restriction)s;
-const double K%(restriction)s_22 = d22 / detJ%(restriction)s;"""
+const double K%(restriction)s_00 = d00 / detJ_%(restriction)s;
+const double K%(restriction)s_01 = d10 / detJ_%(restriction)s;
+const double K%(restriction)s_02 = d20 / detJ_%(restriction)s;
+const double K%(restriction)s_10 = d01 / detJ_%(restriction)s;
+const double K%(restriction)s_11 = d11 / detJ_%(restriction)s;
+const double K%(restriction)s_12 = d21 / detJ_%(restriction)s;
+const double K%(restriction)s_20 = d02 / detJ_%(restriction)s;
+const double K%(restriction)s_21 = d12 / detJ_%(restriction)s;
+const double K%(restriction)s_22 = d22 / detJ_%(restriction)s;"""
 
 map_onto_physical_1D = """\
 // Evaluate basis functions for affine mapping
