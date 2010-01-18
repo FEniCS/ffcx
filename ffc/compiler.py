@@ -137,7 +137,7 @@ def compile_form(forms, prefix="Form", options=FFC_OPTIONS.copy()):
         _print_timing(1, time() - cpu_time)
 
         # Stage 2: intermediate representation
-        ir = compute_ir(preprocessed_form, form_data, options)
+        ir = compute_ir(preprocessed_form, None, form_data, options)
         _print_timing(2, time() - cpu_time)
 
         # Stage 3: optimization
@@ -164,59 +164,54 @@ def compile_element(elements, prefix="Element", options=FFC_OPTIONS.copy()):
     """This function generates UFC code for a given UFL element or
     list of UFL elements."""
 
-    from ffc.representation import compute_element_ir
-    from ffc.representation import compute_dofmap_ir
-    from ffc.codegeneration import generate_element_code
-    from ffc.codegeneration import generate_dofmap_code
-
-    # Check options
+    # Check input arguments
+    elements = _check_elements(elements)
     options = _check_options(options)
+    if not elements: return
 
-    # Check that we get a list of elements
-    if not isinstance(elements, (list, tuple)):
-        elements = [elements]
+    # Reset timing
+    cpu_time = time()
 
-    # Check that we have at least one element
-    if len(elements) == 0:
-        info("No elements specified, nothing to do.")
-        return
+    # Stage 1: analysis
+    begin("Compiler stage 1: Skipping form analysis")
+    end()
 
-    # FIXME:
-    form_data = None
+    # Stage 2: intermediate representation
+    ir = compute_ir(None, elements, None, options)
+    _print_timing(2, time() - cpu_time)
 
-    codes = []
-    for e in elements:
+    # Stage 3: optimization
+    oir = optimize_ir(ir, options)
+    _print_timing(3, time() - cpu_time)
 
-        # Compute intermediate representation
-        element_ir = compute_element_ir(e, form_data)
-        dofmap_ir = compute_dofmap_ir(e, form_data)
+    # Stage 4: code generation
+    code = generate_code(oir, prefix, options)
+    _print_timing(4, time() - cpu_time)
 
-        # Generate code
-        codes += [([generate_element_code(0, element_ir, prefix, options)],
-                   [generate_dofmap_code(0, dofmap_ir, prefix, options)])]
-
-    # Compiler stage 5: format code
-    format_code(codes, prefix, options)
+    # Stage 5: format code
+    format_code([code], prefix, options)
+    _print_timing(5, time() - cpu_time)
 
     info("Code generation complete.")
 
-
 def _check_forms(forms):
     "Initial check of forms."
-
     if not isinstance(forms, (list, tuple)):
         forms = (forms,)
-
     return forms
+
+def _check_elements(elements):
+    "Initial check of elements."
+    if not isinstance(elements, (list, tuple)):
+        elements = (elements,)
+    return elements
 
 def _check_options(options):
     "Initial check of options."
-
     if "blas" in options:
         warning("BLAS mode unavailable (will return in a future version).")
     if "quadrature_points" in options:
         warning("Option 'quadrature_points' has been replaced by 'quadrature_degree'.")
-
     return options
 
 def _print_timing(stage, timing):

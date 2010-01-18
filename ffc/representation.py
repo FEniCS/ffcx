@@ -36,35 +36,58 @@ from ffc.tensor import TensorRepresentation
 
 not_implemented = None
 
-def compute_ir(form, form_data, options):
+def compute_ir(form, elements, form_data, options):
     """
     Compute intermediate representation of form, including all
-    associated elements, dofmaps and integrals.
+    associated elements, dofmaps and integrals (if form is not
+    None); or, compute intermediate representation of elements,
+    including all associated dofmaps (if elements is not None).
     """
 
     begin("Compiler stage 2: Computing intermediate representation")
 
-    # Compute representation of elements
-    info("Computing representation of %d elements" % len(form_data.unique_sub_elements))
-    ir_elements = [compute_element_ir(e, form_data) for e in form_data.unique_sub_elements]
+    if form is not None:
 
-    # Compute representation of dofmaps
-    info("Computing representation of %d dofmaps" % len(form_data.unique_sub_elements))
-    ir_dofmaps = [compute_dofmap_ir(e, form_data) for e in form_data.unique_sub_elements]
+        # Compute representation of elements
+        info("Computing representation of %d elements" % len(form_data.unique_sub_elements))
+        ir_elements = [_compute_element_ir(e, form_data) for e in form_data.unique_sub_elements]
 
-    # Compute representation of integrals
-    info("Computing representation of integrals")
-    ir_integrals = compute_integrals_ir(form, form_data, options)
+        # Compute representation of dofmaps
+        info("Computing representation of %d dofmaps" % len(form_data.unique_sub_elements))
+        ir_dofmaps = [_compute_dofmap_ir(e, form_data) for e in form_data.unique_sub_elements]
 
-    # Compute representation of form
-    info("Computing representation of form")
-    ir_form = compute_form_ir(form, form_data)
+        # Compute representation of integrals
+        info("Computing representation of integrals")
+        ir_integrals = _compute_integral_ir(form, form_data, options)
+
+        # Compute representation of form
+        info("Computing representation of form")
+        ir_form = _compute_form_ir(form, form_data)
+
+        # Compute representation of wrappers
+        info("Computing representation of wrappers")
+        ir_wrappers = _compute_wrapper_ir(form_data)
+
+    elif elements is not None:
+
+        # Compute representation of elements
+        info("Computing representation of %d elements" % len(elements))
+        ir_elements = [_compute_element_ir(e, form_data) for e in elements]
+
+        # Compute representation of dofmaps
+        info("Computing representation of %d dofmaps" % len(elements))
+        ir_dofmaps = [_compute_dofmap_ir(e, form_data) for e in elements]
+
+        # No forms and integrals
+        ir_integrals = None
+        ir_form = None
+        ir_wrappers = None
 
     end()
 
-    return ir_form, ir_elements, ir_dofmaps, ir_integrals
+    return ir_form, ir_elements, ir_dofmaps, ir_integrals, ir_wrappers
 
-def compute_element_ir(ufl_element, form_data):
+def _compute_element_ir(ufl_element, form_data):
     "Compute intermediate representation of element."
 
     # Create FIAT element
@@ -94,7 +117,7 @@ def compute_element_ir(ufl_element, form_data):
 
     return ir
 
-def compute_dofmap_ir(ufl_element, form_data):
+def _compute_dofmap_ir(ufl_element, form_data):
     "Compute intermediate representation of dofmap."
 
     # Create FIAT element
@@ -135,16 +158,14 @@ def _create_sub_foo(ufl_element, form_data):
 
     return [form_data.element_map[e] for e in ufl_element.sub_elements()]
 
-
-
-def compute_integrals_ir(form, form_data, options):
+def _compute_integral_ir(form, form_data, options):
     "Compute intermediate represention of integrals."
     # FIXME: Handle multiple representations here
     ir = TensorRepresentation(form, form_data)
 
     return ir
 
-def compute_form_ir(form, form_data):
+def _compute_form_ir(form, form_data):
     "Compute intermediate representation of form."
 
     # Compute common data
@@ -164,6 +185,13 @@ def compute_form_ir(form, form_data):
     ir["create_cell_integral"] = range(form_data.num_cell_integrals)
     ir["create_exterior_facet_integral"] = range(form_data.num_exterior_facet_integrals)
     ir["create_interior_facet_integral"] = range(form_data.num_interior_facet_integrals)
+
+    return ir
+
+def _compute_wrapper_ir(form_data):
+    "Compute representation of wrappers."
+
+    ir = {}
 
     return ir
 
@@ -374,5 +402,3 @@ def uses_integral_moments(element):
     integrals = set(["IntegralMoment", "FrobeniusIntegralMoment"])
     tags = set([L.get_type_tag() for L in element.dual_basis()])
     return len(integrals & tags) > 0
-
-

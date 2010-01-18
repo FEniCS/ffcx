@@ -11,7 +11,7 @@ __date__ = "2009-12-16"
 __copyright__ = "Copyright (C) 2009 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-15
+# Last changed: 2010-01-18
 
 # FFC modules
 from ffc.log import info, begin, end, debug_code
@@ -37,7 +37,7 @@ def generate_code(ir, prefix, options):
     begin("Compiler stage 4: Generating code")
 
     # Extract representations
-    ir_form, ir_elements, ir_dofmaps, ir_integrals = ir
+    ir_form, ir_elements, ir_dofmaps, ir_integrals, ir_wrappers = ir
 
     # Generate code for elements
     info("Generating code for %d elements" % len(ir_elements))
@@ -51,18 +51,25 @@ def generate_code(ir, prefix, options):
 
     # Generate code for integrals
     info("Generating code for integrals")
-    code_integrals = generate_integrals_code(ir_integrals, prefix, options)
+    code_integrals = generate_integral_code(ir_integrals, prefix, options)
 
     # Generate code for form
     info("Generating code for form")
     code_form = generate_form_code(ir_form, prefix, options)
 
+    # Generate code for wrappers
+    info("Generating wrapper code (if any)")
+    code_wrappers = generate_wrapper_code(ir_wrappers, prefix, options)
+
     end()
 
-    return code_elements, code_dofmaps, code_integrals, code_form
+    return code_elements, code_dofmaps, code_integrals, code_form, code_wrappers
 
 def generate_element_code(i, ir, prefix, options):
     "Generate code for finite element from intermediate representation."
+
+    # Skip code generation if ir is None
+    if ir is None: return None
 
     # Prefetch formatting to speedup code generation
     ret = format["return"]
@@ -96,6 +103,9 @@ def generate_element_code(i, ir, prefix, options):
 
 def generate_dofmap_code(i, ir, prefix, options):
     "Generate code for dofmap from intermediate representation."
+
+    # Skip code generation if ir is None
+    if ir is None: return None
 
     # Prefetch formatting to speedup code generation
     ret = format["return"]
@@ -131,8 +141,11 @@ def generate_dofmap_code(i, ir, prefix, options):
 
     return code
 
-def generate_integrals_code(ir, prefix, options):
+def generate_integral_code(ir, prefix, options):
     "Generate code for integrals from intermediate representation."
+
+    # Skip code generation if ir is None
+    if ir is None: return None
 
     # FIXME: Handle multiple representations here
     rep = tensor
@@ -169,6 +182,9 @@ def generate_integrals_code(ir, prefix, options):
 def generate_form_code(ir, prefix, options):
     "Generate code for form from intermediate representation."
 
+    # Skip code generation if ir is None
+    if ir is None: return None
+
     # Prefetch formatting to speedup code generation
     ret = format["return"]
     do_nothing = format["do nothing"]
@@ -196,6 +212,11 @@ def generate_form_code(ir, prefix, options):
     #debug_code(code, "form")
 
     return code
+
+def generate_wrapper_code(ir, prefix, options):
+    "Generate code for wrappers."
+
+    return ""
 
 #--- Code generation for non-trivial functions ---
 
