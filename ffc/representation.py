@@ -140,11 +140,12 @@ def _compute_dofmap_ir(ufl_element, element_id, element_map):
 def _compute_integral_ir(form, form_data, form_id, options):
     "Compute intermediate represention of form integrals."
 
-    # FIXME: Handle multiple representations here
-    rep = tensor
-    ir = rep.compute_integral_ir(form, form_data, form_id, options)
+    # Iterate over representations
+    ir = []
+    for r in (quadrature, tensor):
+        ir.append(r.compute_integral_ir(form, form_data, form_id, options))
 
-    return ir
+    return ir[1]
 
 def _compute_form_ir(form, form_data, form_id):
     "Compute intermediate representation of form."

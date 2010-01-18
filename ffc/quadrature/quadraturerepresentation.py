@@ -6,20 +6,22 @@ __copyright__ = "Copyright (C) 2009 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Anders Logg, 2009.
-# Last changed: 2009-12-09
+# Last changed: 2010-01-18
 
-# UFL modules.
+# UFL modules
 from ufl.classes import Form, Integral, SpatialDerivative, Measure
 from ufl.algorithms import extract_elements, extract_unique_elements, extract_type
 
-# FFC modules.
-from ffc.log import debug
+# FFC modules
 from ffc.log import info
-from ffc.log import ffc_assert
-from ffc.log import error
-from ffc.ffcquadraturerules import make_quadrature
-from ffc.referencecell import map_to_facet
-from ffc.createelement import create_element
+
+def compute_integral_ir(form, form_data, form_id, options):
+    "Compute intermediate represention of form integrals."
+
+    # Note to Kristian: move code in here, class no longer needed
+    info("Quadrature representation not implemented")
+
+    return [[{}]]
 
 class QuadratureRepresentation:
     """This class initialises some data structures that are used by the

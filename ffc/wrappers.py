@@ -43,9 +43,6 @@ def generate_wrapper_code(analysis, prefix, options):
     form_names = []
     for (i, (form, form_data)) in enumerate(form_and_data):
         element_numbers = [element_map[e] for e in form_data.elements]
-
-        print form_data.coefficient_names
-
         form_names.append(UFCFormNames("%d" % i,
                                        form_data.coefficient_names,
                                        format["classname form"](prefix, i),

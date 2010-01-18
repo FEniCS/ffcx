@@ -5,7 +5,7 @@ __date__ = "2009-01-07"
 __copyright__ = "Copyright (C) 2009 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-07
+# Last changed: 2010-01-18
 
 # Python modules.
 from numpy import shape
@@ -16,29 +16,24 @@ from ufl.algorithms.analysis import extract_unique_elements
 from ufl.algorithms.printing import tree_format
 
 # FFC modules.
+from ffc.log import info, debug, ffc_assert
 from ffc.cpp import tabulate_matrix
 from ffc.cpp import IndentControl
-from ffc.createelement import create_element
-from ffc.log import debug
-from ffc.log import info
-from ffc.log import ffc_assert
-from ffc.removeunused import remove_unused
 
 # Utility and optimisation functions for quadraturegenerator.
-from quadraturegenerator_utils import generate_loop
-from quadraturetransformer import QuadratureTransformer
+#from quadraturegenerator_utils import generate_loop
+#from quadraturetransformer import QuadratureTransformer
 
-from optimisedquadraturetransformer import QuadratureTransformerOpt
-from symbolics import generate_aux_constants
+#from optimisedquadraturetransformer import QuadratureTransformerOpt
+#from symbolics import generate_aux_constants
 
-def generate_quadrature_integrals(self, ir, options):
-    "Generate code for integrals from intermediate representation."
+def generate_integral_code(ir, prefix, options):
+    "Generate code for integral from intermediate representation."
 
     # Note to Kristian: move code in here, class no longer needed
+    info("Quadrature code generator not implemented")
 
-    info("Not implemented")
-
-    return {}
+    return ""
 
 class QuadratureGenerator:
     "Code generator for quadrature representation."
