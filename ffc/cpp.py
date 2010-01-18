@@ -66,11 +66,11 @@ format.update({"classname finite_element": \
                "classname dof_map": \
                    lambda prefix, i: "%s_dof_map_%d" % (prefix.lower(), i),
                "classname cell_integral": \
-                   lambda prefix, i, sub_domain: "%s_%s_%d" % (prefix.lower(), "cell_integral", sub_domain),
+                   lambda prefix, form_id, sub_domain: "%s_cell_integral_%d_%d" % (prefix.lower(), form_id, sub_domain),
                "classname exterior_facet_integral": \
-                   lambda prefix, i, sub_domain: "%s_%s_%d" % (prefix.lower(), "exterior_facet_integral", sub_domain),
+                   lambda prefix, form_id, sub_domain: "%s_exterior_facet_integral_%d_%d" % (prefix.lower(), form_id, sub_domain),
                "classname interior_facet_integral": \
-                   lambda prefix, i, sub_domain: "%s_%s_%d" % (prefix.lower(), "interior_facet_integral", sub_domain),
+                   lambda prefix, form_id, sub_domain: "%s_interior_facet_integral_%d_%d" % (prefix.lower(), form_id, sub_domain),
                "classname form": \
                    lambda prefix, i: "%s_form_%d" % (prefix.lower(), i)})
 

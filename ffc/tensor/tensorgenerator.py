@@ -17,26 +17,26 @@ from ffc import codesnippets
 # FFC tensor representation modules
 from ffc.tensor.monomialtransformation import MonomialIndex
 
-def generate_integral_code(integral_ir,
-                           integral_type,
-                           sub_domain,
-                           ir, prefix, options):
+def generate_integral_code(ir, prefix, options):
     "Generate code for integral from intermediate representation."
+
+    print ir
 
     # Prefetch formatting to speedup code generation
     do_nothing = format["do nothing"]
+    classname = format["classname " + ir["integral_type"]]
 
     # Generate code
     code = {}
-    code["classname"] = "%s_%s_%d" % (prefix.lower(), integral_type, sub_domain)
+    code["classname"] = classname(prefix, ir["form_id"], ir["sub_domain"])
     code["members"] = ""
     code["constructor"] = do_nothing
     code["destructor"] = do_nothing
-    code["tabulate_tensor"] = _tabulate_tensor(integral_ir, integral_type, ir, options)
+    code["tabulate_tensor"] = _tabulate_tensor(ir, options)
 
     return code
 
-def _tabulate_tensor(integral_ir, integral_type, ir, options):
+def _tabulate_tensor(ir, options):
     "Generate code for tabulate_tensor."
 
     # Prefetch formats to speed up code generation
@@ -47,51 +47,53 @@ def _tabulate_tensor(integral_ir, integral_type, ir, options):
     j_set = set()
     g_set = set()
 
+    # Extract data from intermediate representation
+    AK = ir["AK"]
+    integral_type = ir["integral_type"]
+    geometric_dimension = ir["geometric_dimension"]
+    num_facets = ir["num_facets"]
+
     # Check integral typpe and generate code
     if integral_type == "cell_integral":
 
         # Generate code for one single tensor contraction
-        t_code = _generate_tensor_contraction(integral_ir, options, g_set)
+        t_code = _generate_tensor_contraction(AK, options, g_set)
 
         # Generate code for geometry tensors
-        g_code = _generate_geometry_tensors(integral_ir, j_set, g_set)
+        g_code = _generate_geometry_tensors(AK, j_set, g_set)
 
         # Generate code for Jacobian
         r = {"restriction": ""}
-        j_code  = codesnippets.jacobian[ir.geometric_dimension] % r
+        j_code  = codesnippets.jacobian[geometric_dimension] % r
         j_code += "\n\n" + codesnippets.scale_factor
 
     elif integral_type == "exterior_facet_integral":
 
         # Generate code for num_facets tensor contractions
-        cases = [None for i in range(ir.num_facets)]
-        for i in range(ir.num_facets):
-            cases[i] = _generate_tensor_contraction(integral_ir[i], options, g_set)
+        cases = [None for i in range(num_facets)]
+        for i in range(num_facets):
+            cases[i] = _generate_tensor_contraction(AK[i], options, g_set)
         t_code = switch("i", cases)
 
         # Generate code for geometry tensors
-        g_code = _generate_geometry_tensors(integral_ir[0], j_set, g_set)
-
-        # FIXME: This won't work
+        g_code = _generate_geometry_tensors(AK[0], j_set, g_set)
 
         # Generate code for Jacobian
         r = {"restriction": ""}
-        j_code  = codesnippets.jacobian[ir.geometric_dimension] % r
-        j_code += "\n\n" + codesnippets.facet_determinant[ir.geometric_dimension] % r
+        j_code  = codesnippets.jacobian[geometric_dimension] % r
+        j_code += "\n\n" + codesnippets.facet_determinant[geometric_dimension] % r
 
     elif integral_type == "interior_facet_integral":
 
         # Generate code for num_facets x num_facets tensor contractions
-        cases = [[None for j in range(ir.num_facets)] for i in range(ir.num_facets)]
-        for i in range(ir.num_facets):
-            for j in range(ir.num_facets):
-                cases[i][j] = _generate_tensor_contraction(integral_ir[i][j], options, g_set)
+        cases = [[None for j in range(num_facets)] for i in range(num_facets)]
+        for i in range(num_facets):
+            for j in range(num_facets):
+                cases[i][j] = _generate_tensor_contraction(AK[i][j], options, g_set)
         t_code = switch("i", [switch("j", cases[i]) for i in range(len(cases))])
 
         # Generate code for geometry tensors
-        g_code = _generate_geometry_tensors(integral_ir[0][0], j_set, g_set)
-
-        # FIXME: This won't work
+        g_code = _generate_geometry_tensors(AK[0][0], j_set, g_set)
 
         # Generate code for Jacobian
         r = {"restriction": ""}

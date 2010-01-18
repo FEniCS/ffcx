@@ -37,31 +37,29 @@ def generate_code(ir, prefix, options):
     begin("Compiler stage 4: Generating code")
 
     # Extract representations
-    ir_form, ir_elements, ir_dofmaps, ir_integrals = ir
+    ir_elements, ir_dofmaps, ir_integrals, ir_forms = ir
 
     # Generate code for elements
     info("Generating code for %d elements" % len(ir_elements))
-    code_elements = [generate_element_code(i, ir, prefix, options)
-                     for (i, ir) in enumerate(ir_elements)]
+    code_elements = [generate_element_code(ir, prefix, options) for ir in ir_elements]
 
-    # Geneate code for dofmaps
+    # Generate code for dofmaps
     info("Generating code for %d dofmaps" % len(ir_dofmaps))
-    code_dofmaps = [generate_dofmap_code(i, ir, prefix, options)
-                    for (i, ir) in enumerate(ir_dofmaps)]
+    code_dofmaps = [generate_dofmap_code(ir, prefix, options) for ir in ir_dofmaps]
 
     # Generate code for integrals
     info("Generating code for integrals")
-    code_integrals = generate_integral_code(ir_integrals, prefix, options)
+    code_integrals = [generate_integral_code(ir, prefix, options) for ir in ir_integrals]
 
-    # Generate code for form
-    info("Generating code for form")
-    code_form = generate_form_code(ir_form, prefix, options)
+    # Generate code for forms
+    info("Generating code for forms")
+    code_forms = [generate_form_code(ir, prefix, options) for ir in ir_forms]
 
     end()
 
-    return code_elements, code_dofmaps, code_integrals, code_form
+    return code_elements, code_dofmaps, code_integrals, code_forms
 
-def generate_element_code(i, ir, prefix, options):
+def generate_element_code(ir, prefix, options):
     "Generate code for finite element from intermediate representation."
 
     # Skip code generation if ir is None
@@ -74,7 +72,7 @@ def generate_element_code(i, ir, prefix, options):
 
     # Generate code
     code = {}
-    code["classname"] = classname(prefix, i)
+    code["classname"] = classname(prefix, ir["id"])
     code["members"] = ""
     code["constructor"] = do_nothing
     code["destructor"] = do_nothing
@@ -98,7 +96,7 @@ def generate_element_code(i, ir, prefix, options):
 
     return code
 
-def generate_dofmap_code(i, ir, prefix, options):
+def generate_dofmap_code(ir, prefix, options):
     "Generate code for dofmap from intermediate representation."
 
     # Skip code generation if ir is None
@@ -106,6 +104,7 @@ def generate_dofmap_code(i, ir, prefix, options):
 
     # Prefetch formatting to speedup code generation
     ret = format["return"]
+    classname = format["classname dof_map"]
     declare = format["declaration"]
     assign = format["assign"]
     do_nothing = format["do nothing"]
@@ -113,7 +112,7 @@ def generate_dofmap_code(i, ir, prefix, options):
 
     # Generate code
     code = {}
-    code["classname"] = prefix.lower() + "_dof_map_" + str(i)
+    code["classname"] = classname(prefix, ir["id"])
     code["members"] = "\nprivate:\n\n  " + declare("unsigned int", "_global_dimension")
     code["constructor"] = assign("_global_dimension", "0")
     code["destructor"] = do_nothing
@@ -148,33 +147,7 @@ def generate_integral_code(ir, prefix, options):
 
     # FIXME: Handle multiple representations here
     rep = tensor
-
-    # Generate a list of code for each integral type
-    code = ([], [], [])
-
-    integral_types = ("cell_integral",
-                      "exterior_facet_integral",
-                      "interior_facet_integral")
-
-    # Iterate over integral types
-    for (i, integral_type) in enumerate(integral_types):
-
-        # Iterate over sub domains for integral
-        for (sub_domain, integral_ir) in enumerate(ir.integral_irs[i]):
-
-            # Generate code for integral
-            integral_code = rep.generate_integral_code(integral_ir,
-                                                       integral_type,
-                                                       sub_domain,
-                                                       ir,
-                                                       prefix,
-                                                       options)
-
-            # Post process generated code
-            _postprocess_code(integral_code, options)
-
-            # Store generated code
-            code[i].append(integral_code)
+    code = rep.generate_integral_code(ir, prefix, options)
 
     return code
 
@@ -186,11 +159,12 @@ def generate_form_code(ir, prefix, options):
 
     # Prefetch formatting to speedup code generation
     ret = format["return"]
+    classname = format["classname form"]
     do_nothing = format["do nothing"]
 
     # Generate code
     code = {}
-    code["classname"] = prefix.lower() + "_form"
+    code["classname"] = classname(prefix, ir["id"])
     code["members"] = ""
     code["constructor"] = do_nothing
     code["destructor"] = do_nothing

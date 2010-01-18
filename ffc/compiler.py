@@ -107,7 +107,7 @@ from ffc.log import log, begin, end, debug, info, warning, error, ffc_assert
 from ffc.constants import FFC_OPTIONS
 
 # FFC modules
-from ffc.analysis import analyze_form
+from ffc.analysis import analyze_forms
 from ffc.representation import compute_ir
 from ffc.optimization import optimize_ir
 from ffc.codegeneration import generate_code
@@ -123,46 +123,35 @@ def compile_form(forms, prefix="Form", options=FFC_OPTIONS.copy()):
     options = _check_options(options)
     if not forms: return
 
-    # Storage for generated data
-    form_and_data = []
-    codes = []
+    # Reset timing
+    cpu_time = time()
 
-    # Enter compiler stages 1-4 for each form
-    for form in forms:
+    # Stage 1: analysis
+    analysis = analyze_forms(forms, options)
+    _print_timing(1, time() - cpu_time)
 
-        # Reset timing
-        cpu_time = time()
+    # Stage 2: intermediate representation
+    ir = compute_ir(analysis, options)
+    _print_timing(2, time() - cpu_time)
 
-        # Stage 1: analysis
-        preprocessed_form, form_data = analyze_form(form, options)
-        _print_timing(1, time() - cpu_time)
+    # Stage 3: optimization
+    oir = optimize_ir(ir, options)
+    _print_timing(3, time() - cpu_time)
 
-        # Stage 2: intermediate representation
-        ir = compute_ir(preprocessed_form, None, form_data, options)
-        _print_timing(2, time() - cpu_time)
+    # Stage 4: code generation
+    code = generate_code(oir, prefix, options)
+    _print_timing(4, time() - cpu_time)
 
-        # Stage 3: optimization
-        oir = optimize_ir(ir, options)
-        _print_timing(3, time() - cpu_time)
-
-        # Stage 4: code generation
-        code = generate_code(oir, prefix, options)
-        _print_timing(4, time() - cpu_time)
-
-        # Store data
-        form_and_data.append((preprocessed_form, form_data))
-        codes.append(code)
-
-    # Generate wrappers
-    wrapper_code = generate_wrapper_code(form_and_data, prefix, options)
+    # Stage 4.1: generate wrappers
+    wrapper_code = generate_wrapper_code(analysis[0], prefix, options)
+    _print_timing(4.1, time() - cpu_time)
 
     # Stage 5: format code
-    cpu_time = time()
-    format_code(codes, wrapper_code, prefix, options)
+    format_code(code, wrapper_code, prefix, options)
     _print_timing(5, time() - cpu_time)
 
     info("Code generation complete.")
-    return form_and_data
+    return analysis
 
 def compile_element(elements, prefix="Element", options=FFC_OPTIONS.copy()):
     """This function generates UFC code for a given UFL element or
@@ -220,4 +209,4 @@ def _check_options(options):
 
 def _print_timing(stage, timing):
     "Print timing results."
-    info("Compiler stage %d finished in %g seconds.\n" % (stage, timing))
+    info("Compiler stage %s finished in %g seconds.\n" % (str(stage), timing))

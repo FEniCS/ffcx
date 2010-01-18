@@ -32,7 +32,7 @@ from ffc import codesnippets
 from ffc.log import info, error, begin, end
 from ffc.constants import FFC_VERSION, UFC_VERSION
 
-def format_code(codes, wrapper_code, prefix, options):
+def format_code(code, wrapper_code, prefix, options):
     "Format given code in UFC format."
 
     begin("Compiler stage 5: Formatting code")
@@ -40,30 +40,32 @@ def format_code(codes, wrapper_code, prefix, options):
     # Generate code for header
     output = _generate_header(prefix, options) + "\n\n"
 
-    # Iterate over codes
-    for code_elements, code_dofmaps, code_integrals, code_form in codes:
+    # Extract code
+    code_elements, code_dofmaps, code_integrals, code_forms = code
 
-        # Generate code for elements
-        if code_elements:
-            for code_element in code_elements:
-                output += finite_element_combined % code_element + "\n"
+    # Generate code for elements
+    if code_elements:
+        for code_element in code_elements:
+            output += finite_element_combined % code_element + "\n"
 
-        # Generate code for dofmaps
-        if code_dofmaps:
-            for code_dofmap in code_dofmaps:
-                output += dof_map_combined % code_dofmap + "\n"
+    # Generate code for dofmaps
+    if code_dofmaps:
+        for code_dofmap in code_dofmaps:
+            output += dof_map_combined % code_dofmap + "\n"
 
-        # Generate code for integrals
-        if code_integrals:
-            for code_integral in code_integrals[0]:
+    # Generate code for integrals
+    if code_integrals:
+        for code_integral in code_integrals:
+            if "cell_integral" in code_integral["classname"]:
                 output += cell_integral_combined % code_integral + "\n"
-            for code_integral in code_integrals[1]:
+            elif "exterior_facet_integral" in code_integral["classname"]:
                 output += exterior_facet_integral_combined % code_integral + "\n"
-            for code_integral in code_integrals[2]:
+            elif "interior_facet_integral" in code_integral["classname"]:
                 output += interior_facet_integral_combined % code_integral + "\n"
 
-        # Generate code for form
-        if code_form:
+    # Generate code for form
+    if code_forms:
+        for code_form in code_forms:
             output += form_combined % code_form
 
     # Add wrapper code

@@ -14,7 +14,7 @@ __copyright__ = "Copyright (C) 2007-2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian B. Oelgaard, 2009.
-# Last changed: 2010-01-08
+# Last changed: 2010-01-18
 
 # UFL modules
 from ufl.classes import Form
@@ -31,6 +31,60 @@ from ffc.tensor.monomialtransformation import transform_monomial_form
 from ffc.tensor.referencetensor import ReferenceTensor
 from ffc.tensor.geometrytensor import GeometryTensor
 from ffc.tensor.tensorreordering import reorder_entries
+
+def compute_integral_ir(form, form_data, form_id, options):
+    "Compute intermediate represention of form integrals."
+
+    # Extract integrals that should be computed by tensor representation
+    form = _extract_tensor_integrals(form, form_data)
+
+    # Check number of integrals
+    num_integrals = len(form.integrals())
+    if num_integrals == 0: return
+
+    info("Computing tensor representation")
+
+    # Extract monomial representation
+    monomial_form = extract_monomial_form(form, form_data)
+
+    # Transform monomial form to reference element
+    transform_monomial_form(monomial_form)
+    m = monomial_form
+
+    # List of representations, one for each integral
+    ir = []
+
+    # Compute representation of cell tensors
+    for i in range(form_data.num_cell_domains):
+        AK = _compute_cell_tensor(m, form_data, i)
+        ir.append({"AK": AK,
+                   "integral_type": "cell_integral",
+                   "form_id": form_id,
+                   "sub_domain": i,
+                   "geometric_dimension": form_data.geometric_dimension,
+                   "num_facets": form_data.num_facets})
+
+    # Compute representation of exterior facet tensors
+    for i in range(form_data.num_exterior_facet_domains):
+        AK = _compute_exterior_facet_tensors(m, form_data, i)
+        ir.append({"AK": AK,
+                   "integral_type": "exterior_facet_integral",
+                   "form_id": form_id,
+                   "sub_domain": i,
+                   "geometric_dimension": form_data.geometric_dimension,
+                   "num_facets": form_data.num_facets})
+
+    # Compute representation of interior facet tensors
+    for i in range(form_data.num_interior_facet_domains):
+        AK = _compute_interior_facet_tensors(m, form_data, i)
+        ir.append({"AK": AK,
+                   "integral_type": "interior_facet_integral",
+                   "form_id": form_id,
+                   "sub_domain": i,
+                   "geometric_dimension": form_data.geometric_dimension,
+                   "num_facets": form_data.num_facets})
+
+    return ir
 
 class TensorRepresentation:
     """
@@ -53,7 +107,7 @@ class TensorRepresentation:
         interior_facet_integrals - list of list of list of list of terms,
                                    one for each sub domain and facet pair
 
-        integral_irs             - tuple of the above integral
+        integral_irs             - tuple of the above integrals
 
         geometric_dimension      - geometric dimension of form
 
@@ -96,9 +150,9 @@ class TensorRepresentation:
             [_compute_interior_facet_tensors(m, form_data, i) for i in range(n)]
 
         # Store representations as a tuple
-        self.integral_irs = (self.cell_integrals,
-                             self.exterior_facet_integrals,
-                             self.interior_facet_integrals)
+        self.integral_irs = tuple(self.cell_integrals +
+                                  self.exterior_facet_integrals +
+                                  self.interior_facet_integrals)
 
         # Extract form data needed by code generation
         self.geometric_dimension = form_data.geometric_dimension

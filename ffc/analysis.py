@@ -22,10 +22,35 @@ from ufl.algorithms import estimate_total_polynomial_degree
 from ffc.log import log, info, begin, end
 from ffc.quadratureelement import default_quadrature_degree
 
+def analyze_forms(forms, options):
+    """
+    Analyze form(s), returning
+
+       form_and_data   - a tuple of pairs (forms, form_data)
+       unique_elements - a tuple of unique elements across all forms
+       element_map     - a map from elements to unique numbers
+    """
+
+    begin("Compiler stage 1: Analyzing form(s)")
+
+    # Analyze forms
+    form_and_data = [analyze_form(form, options) for form in forms]
+
+    # Extract unique elements
+    unique_elements = []
+    element_map = {}
+    for (form, form_data) in form_and_data:
+        for element in form_data.unique_elements:
+            if not element in element_map:
+                unique_elements.append(element)
+                element_map[element] = len(unique_elements)
+
+    end()
+
+    return form_and_data, unique_elements, element_map
+
 def analyze_form(form, options):
     "Analyze form, returning preprocessed form and form data."
-
-    begin("Compiler stage 1: Analyzing form")
 
     # Preprocess form
     if not form.is_preprocessed():
@@ -40,8 +65,6 @@ def analyze_form(form, options):
 
     # Extract integral metadata
     form_data.metadata = _extract_metadata(form, options, form_data.elements)
-
-    end()
 
     return form, form_data
 

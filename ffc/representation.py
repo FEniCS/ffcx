@@ -21,6 +21,9 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Kristian B. Oelgaard 2010
 # Last changed: 2010-01-12
 
+# Python modules
+from itertools import chain
+
 # Import UFL
 import ufl
 
@@ -31,66 +34,51 @@ from ffc.fiatinterface import create_element, entities_per_dim, reference_cell
 from ffc.mixedelement import MixedElement
 
 # FFC specialized representation modules
-#from ffc.quadrature import QuadratureRepresentation
-from ffc.tensor import TensorRepresentation
+from ffc import quadrature
+from ffc import tensor
 
 not_implemented = None
 
-def compute_ir(form, elements, form_data, options):
-    """
-    Compute intermediate representation of form, including all
-    associated elements, dofmaps and integrals (if form is not
-    None); or, compute intermediate representation of elements,
-    including all associated dofmaps (if elements is not None).
-    """
+def compute_ir(analysis, options):
+    "Compute intermediate representation."
 
     begin("Compiler stage 2: Computing intermediate representation")
 
-    if form is not None:
+    # Extract data from analysis
+    form_and_data, elements, element_map = analysis
 
-        # Compute representation of elements
-        info("Computing representation of %d elements" % len(form_data.unique_sub_elements))
-        ir_elements = [_compute_element_ir(e, form_data) for e in form_data.unique_sub_elements]
+    # Compute representation of elements
+    info("Computing representation of %d elements" % len(elements))
+    ir_elements = [_compute_element_ir(e, i, element_map) for (i, e) in enumerate(elements)]
 
-        # Compute representation of dofmaps
-        info("Computing representation of %d dofmaps" % len(form_data.unique_sub_elements))
-        ir_dofmaps = [_compute_dofmap_ir(e, form_data) for e in form_data.unique_sub_elements]
+    # Compute representation of dofmaps
+    info("Computing representation of %d dofmaps" % len(elements))
+    ir_dofmaps = [_compute_dofmap_ir(e, i, element_map) for (i, e) in enumerate(elements)]
 
-        # Compute representation of integrals
-        info("Computing representation of integrals")
-        ir_integrals = _compute_integral_ir(form, form_data, options)
+    # Compute and flatten representation of integrals
+    info("Computing representation of integrals")
+    irs = [_compute_integral_ir(f, d, i, options) for (i, (f, d)) in enumerate(form_and_data)]
+    ir_integrals = [ir for ir in chain(*irs)]
 
-        # Compute representation of form
-        info("Computing representation of form")
-        ir_form = _compute_form_ir(form, form_data)
-
-    elif elements is not None:
-
-        # Compute representation of elements
-        info("Computing representation of %d elements" % len(elements))
-        ir_elements = [_compute_element_ir(e, form_data) for e in elements]
-
-        # Compute representation of dofmaps
-        info("Computing representation of %d dofmaps" % len(elements))
-        ir_dofmaps = [_compute_dofmap_ir(e, form_data) for e in elements]
-
-        # No forms and integrals
-        ir_integrals = None
-        ir_form = None
+    # Compute representation of forms
+    info("Computing representation of forms")
+    ir_forms = [_compute_form_ir(f, d, i) for (i, (f, d)) in enumerate(form_and_data)]
 
     end()
 
-    return ir_form, ir_elements, ir_dofmaps, ir_integrals
+    return ir_elements, ir_dofmaps, ir_integrals, ir_forms
 
-def _compute_element_ir(ufl_element, form_data):
+def _compute_element_ir(ufl_element, element_id, element_map):
     "Compute intermediate representation of element."
 
     # Create FIAT element
     element = create_element(ufl_element)
     cell = ufl_element.cell()
 
+    # Store id
+    ir = {"id": element_id}
+
     # Compute data for each function
-    ir = {}
     ir["signature"] = repr(ufl_element)
     ir["cell_shape"] = cell.domain()
     ir["space_dimension"] = element.space_dimension()
@@ -106,13 +94,13 @@ def _compute_element_ir(ufl_element, form_data):
     ir["evaluate_dofs"] = ir["evaluate_dof"]
     ir["interpolate_vertex_values"] = _interpolate_vertex_values(element, cell)
     ir["num_sub_elements"] = ufl_element.num_sub_elements()
-    ir["create_sub_element"] = _create_sub_foo(ufl_element, form_data)
+    ir["create_sub_element"] = _create_sub_foo(ufl_element, element_map)
 
     #debug_ir(ir, "finite_element")
 
     return ir
 
-def _compute_dofmap_ir(ufl_element, form_data):
+def _compute_dofmap_ir(ufl_element, element_id, element_map):
     "Compute intermediate representation of dofmap."
 
     # Create FIAT element
@@ -123,8 +111,10 @@ def _compute_dofmap_ir(ufl_element, form_data):
     num_dofs_per_entity = _num_dofs_per_entity(element)
     facet_dofs = _tabulate_facet_dofs(element, cell)
 
+    # Store id
+    ir = {"id": element_id}
+
     # Compute data for each function
-    ir = {}
     ir["signature"] = "FFC dofmap for " + repr(ufl_element)
     ir["needs_mesh_entities"] = [d > 0 for d in num_dofs_per_entity]
     ir["init_mesh"] = num_dofs_per_entity
@@ -141,29 +131,28 @@ def _compute_dofmap_ir(ufl_element, form_data):
     ir["tabulate_entity_dofs"] = (element.entity_dofs(), num_dofs_per_entity)
     ir["tabulate_coordinates"] = _tabulate_coordinates(element)
     ir["num_sub_dof_maps"] = ufl_element.num_sub_elements()
-    ir["create_sub_dof_map"] = _create_sub_foo(ufl_element, form_data)
+    ir["create_sub_dof_map"] = _create_sub_foo(ufl_element, element_map)
 
     #debug_ir(ir, "dofmap")
 
     return ir
 
-def _create_sub_foo(ufl_element, form_data):
-    if form_data is None:
-        return [0]*ufl_element.num_sub_elements()
-    return [form_data.element_map[e] for e in ufl_element.sub_elements()]
+def _compute_integral_ir(form, form_data, form_id, options):
+    "Compute intermediate represention of form integrals."
 
-def _compute_integral_ir(form, form_data, options):
-    "Compute intermediate represention of integrals."
     # FIXME: Handle multiple representations here
-    ir = TensorRepresentation(form, form_data)
+    rep = tensor
+    ir = rep.compute_integral_ir(form, form_data, form_id, options)
 
     return ir
 
-def _compute_form_ir(form, form_data):
+def _compute_form_ir(form, form_data, form_id):
     "Compute intermediate representation of form."
 
+    # Store id
+    ir = {"id": form_id}
+
     # Compute common data
-    ir = {}
     ir["classname"] = "FooForm"
     ir["members"] = not_implemented
     ir["constructor"] = not_implemented
@@ -294,6 +283,7 @@ def _tabulate_facet_dofs(element, cell):
     return facet_dofs
 
 def _interpolate_vertex_values(element, cell):
+    "Compute intermediate representation of interpolate_vertex_values."
 
     ir = {}
     ir["cell_dim"] = cell.geometric_dimension()
@@ -315,6 +305,9 @@ def _interpolate_vertex_values(element, cell):
                           for e in all_elements(element)]
     return ir
 
+def _create_sub_foo(ufl_element, element_map):
+    "Compute intermediate representation of create_sub_element/dofmap."
+    return [element_map[e] for e in ufl_element.sub_elements()]
 
 #--- Utility functions ---
 
