@@ -210,7 +210,7 @@ def _init_mesh(ir):
 
     component = format["component"]
     entities = format["num entities"]
-    dimension = format["inner product"](ir, [component(entities, d)
+    dimension = format["inner product"](ir, [component(entities, d-1)
                                              for d in ir])
     return "\n".join([format["assign"]("_global_dimension", dimension),
                       format["return"](format["bool"](False))])
