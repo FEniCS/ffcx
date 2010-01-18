@@ -41,25 +41,25 @@ def generate_code(ir, prefix, options):
 
     # Generate code for elements
     info("Generating code for %d elements" % len(ir_elements))
-    code_elements = [generate_element_code(ir, prefix, options) for ir in ir_elements]
+    code_elements = [_generate_element_code(ir, prefix, options) for ir in ir_elements]
 
     # Generate code for dofmaps
     info("Generating code for %d dofmaps" % len(ir_dofmaps))
-    code_dofmaps = [generate_dofmap_code(ir, prefix, options) for ir in ir_dofmaps]
+    code_dofmaps = [_generate_dofmap_code(ir, prefix, options) for ir in ir_dofmaps]
 
     # Generate code for integrals
     info("Generating code for integrals")
-    code_integrals = [generate_integral_code(ir, prefix, options) for ir in ir_integrals]
+    code_integrals = [_generate_integral_code(ir, prefix, options) for ir in ir_integrals]
 
     # Generate code for forms
     info("Generating code for forms")
-    code_forms = [generate_form_code(ir, prefix, options) for ir in ir_forms]
+    code_forms = [_generate_form_code(ir, prefix, options) for ir in ir_forms]
 
     end()
 
     return code_elements, code_dofmaps, code_integrals, code_forms
 
-def generate_element_code(ir, prefix, options):
+def _generate_element_code(ir, prefix, options):
     "Generate code for finite element from intermediate representation."
 
     # Skip code generation if ir is None
@@ -96,7 +96,7 @@ def generate_element_code(ir, prefix, options):
 
     return code
 
-def generate_dofmap_code(ir, prefix, options):
+def _generate_dofmap_code(ir, prefix, options):
     "Generate code for dofmap from intermediate representation."
 
     # Skip code generation if ir is None
@@ -139,7 +139,7 @@ def generate_dofmap_code(ir, prefix, options):
 
     return code
 
-def generate_integral_code(ir, prefix, options):
+def _generate_integral_code(ir, prefix, options):
     "Generate code for integrals from intermediate representation."
 
     # Skip code generation if ir is None
@@ -151,7 +151,7 @@ def generate_integral_code(ir, prefix, options):
 
     return code
 
-def generate_form_code(ir, prefix, options):
+def _generate_form_code(ir, prefix, options):
     "Generate code for form from intermediate representation."
 
     # Skip code generation if ir is None
