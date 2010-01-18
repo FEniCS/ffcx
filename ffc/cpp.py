@@ -168,6 +168,7 @@ def _generate_switch(variable, cases):
     # Special case: no cases:
     if len(cases) == 0:
         return format["do nothing"]
+
     # Special case: one case
     if len(cases) == 1:
         return cases[0]
