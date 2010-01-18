@@ -106,12 +106,13 @@ from time import time
 from ffc.log import log, begin, end, debug, info, warning, error, ffc_assert
 from ffc.constants import FFC_OPTIONS
 
-# FFC analysis modules
+# FFC modules
 from ffc.analysis import analyze_form
 from ffc.representation import compute_ir
 from ffc.optimization import optimize_ir
 from ffc.codegeneration import generate_code
 from ffc.formatting import format_code
+from ffc.wrappers import generate_wrapper_code
 
 def compile_form(forms, prefix="Form", options=FFC_OPTIONS.copy()):
     """This function generates UFC code for a given UFL form or list
@@ -152,9 +153,12 @@ def compile_form(forms, prefix="Form", options=FFC_OPTIONS.copy()):
         form_and_data.append((preprocessed_form, form_data))
         codes.append(code)
 
+    # Generate wrappers
+    wrapper_code = generate_wrapper_code(form_and_data, options)
+
     # Stage 5: format code
     cpu_time = time()
-    format_code(codes, prefix, options)
+    format_code(codes, wrapper_code, prefix, options)
     _print_timing(5, time() - cpu_time)
 
     info("Code generation complete.")

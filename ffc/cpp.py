@@ -7,7 +7,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian B. Oelgaard 2009
 # Modified by Marie E. Rognes 2010
-# Last changed: 2010-01-14
+# Last changed: 2010-01-18
 
 # Python modules.
 import re
@@ -59,6 +59,20 @@ format.update({"entity index": "c.entity_indices",
                "J":      lambda i, j: "J_%d%d" % (i, j),
                "inv(J)": lambda i, j: "K_%d%d" % (i, j),
                "det(J)": lambda r: "detJ_%s" % r})
+
+# Class names
+format.update({"classname finite_element": \
+                   lambda prefix, i: "%s_finite_element_%d" % (prefix.lower(), i),
+               "classname dof_map": \
+                   lambda prefix, i: "%s_dof_map_%d" % (prefix.lower(), i),
+               "classname cell_integral": \
+                   lambda prefix, i, sub_domain: "%s_%s_%d" % (prefix.lower(), "cell_integral", sub_domain),
+               "classname exterior_facet_integral": \
+                   lambda prefix, i, sub_domain: "%s_%s_%d" % (prefix.lower(), "exterior_facet_integral", sub_domain),
+               "classname interior_facet_integral": \
+                   lambda prefix, i, sub_domain: "%s_%s_%d" % (prefix.lower(), "interior_facet_integral", sub_domain),
+               "classname form": \
+                   lambda prefix, i: "%s_form_%d" % (prefix.lower(), i)})
 
 # Misc
 format.update({"bool":    lambda v: {True: "true", False: "false"}[v],
