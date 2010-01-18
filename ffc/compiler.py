@@ -154,7 +154,7 @@ def compile_form(forms, prefix="Form", options=FFC_OPTIONS.copy()):
         codes.append(code)
 
     # Generate wrappers
-    wrapper_code = generate_wrapper_code(form_and_data, options)
+    wrapper_code = generate_wrapper_code(form_and_data, prefix, options)
 
     # Stage 5: format code
     cpu_time = time()

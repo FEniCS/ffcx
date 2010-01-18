@@ -150,7 +150,6 @@ def _compute_dofmap_ir(ufl_element, form_data):
 def _create_sub_foo(ufl_element, form_data):
     if form_data is None:
         return [0]*ufl_element.num_sub_elements()
-
     return [form_data.element_map[e] for e in ufl_element.sub_elements()]
 
 def _compute_integral_ir(form, form_data, options):

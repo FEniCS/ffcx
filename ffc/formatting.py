@@ -67,7 +67,8 @@ def format_code(codes, wrapper_code, prefix, options):
             output += form_combined % code_form
 
     # Add wrapper code
-    output += wrapper_code
+    if wrapper_code:
+        output += "\n" + wrapper_code
 
     # Generate code for footer
     output += _generate_footer()
