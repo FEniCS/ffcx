@@ -23,7 +23,7 @@ format = {}
 # Program flow
 format.update({"return":     lambda v: "return %s;" % str(v),
                "grouping":   lambda v: "(%s)" % v,
-               "switch":     lambda v, cases: _generate_switch(v, cases),
+               "switch":     lambda v, cases, default=None: _generate_switch(v, cases, default),
                "exception":  lambda v: "throw std::runtime_error(\"%s\");" % v,
                "comment":    lambda v: "// %s" % v,
                "if":         lambda c, v: "if (%s) {\n%s\n}\n" % (c, v),
@@ -162,7 +162,7 @@ def _transform(type, j, k, r):
     map_name = {"J": "J", "JINV": "K"}[type] + {None: "", "+": "0", "-": "1"}[r]
     return (map_name + "_%d%d") % (j, k)
 
-def _generate_switch(variable, cases):
+def _generate_switch(variable, cases, default=None):
     "Generate switch statement from given variable and cases"
 
     # Special case: no cases:
@@ -177,7 +177,11 @@ def _generate_switch(variable, cases):
     code = "switch (%s)\n{\n" % variable
     for i in range(len(cases)):
         code += "case %d:\n%s\n  break;\n" % (i, indent(cases[i], 2))
-    code += "}"
+    code += "}\n"
+
+    # Default value
+    if default:
+        code += "\n" + default
 
     return code
 

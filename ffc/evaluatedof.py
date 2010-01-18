@@ -60,7 +60,7 @@ def evaluate_dof(ir):
     code = []
     code.append(reqs)
     code.append(comment("Evaluate degree of freedom of function"))
-    code.append(format["switch"]("i", cases))
+    code.append(format["switch"]("i", cases, format["return"]("0.0")))
 
     # Removed unused variables from code (Add computation of set of
     # used variables if ever bottle-neck)

@@ -13,7 +13,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Ola Skavhaug, 2006.
 # Modified by Dag Lindbo, 2008.
 # Modified by Kristian B. Oelgaard 2009.
-# Last changed: 2010-01-14
+# Last changed: 2010-01-18
 
 # Python modules.
 import sys
@@ -146,15 +146,15 @@ def main(argv):
         # Catch exceptions only when not in debug mode
         if options["log_level"] <= DEBUG:
             if len(ufd.forms) > 0:
-                compile_form(ufd.forms, prefix, options)
+                compile_form(ufd.forms, ufd.object_names, prefix, options)
             else:
-                compile_element(ufd.elements, prefix, options)
+                compile_element(ufd.elements, ufd.object_names, prefix, options)
         else:
             try:
                 if len(ufd.forms) > 0:
-                    compile_form(ufd.forms, prefix, options)
+                    compile_form(ufd.forms, ufd.object_names, prefix, options)
                 else:
-                    compile_element(ufd.elements, prefix, options)
+                    compile_element(ufd.elements, ufd.object_names, prefix, options)
             except Exception, exception:
                 info("")
                 error(str(exception))

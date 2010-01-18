@@ -20,8 +20,6 @@ from ffc.tensor.monomialtransformation import MonomialIndex
 def generate_integral_code(ir, prefix, options):
     "Generate code for integral from intermediate representation."
 
-    print ir
-
     # Prefetch formatting to speedup code generation
     do_nothing = format["do nothing"]
     classname = format["classname " + ir["integral_type"]]
@@ -73,7 +71,7 @@ def _tabulate_tensor(ir, options):
         cases = [None for i in range(num_facets)]
         for i in range(num_facets):
             cases[i] = _generate_tensor_contraction(AK[i], options, g_set)
-        t_code = switch("i", cases)
+        t_code = switch("facet", cases)
 
         # Generate code for geometry tensors
         g_code = _generate_geometry_tensors(AK[0], j_set, g_set)
@@ -90,7 +88,7 @@ def _tabulate_tensor(ir, options):
         for i in range(num_facets):
             for j in range(num_facets):
                 cases[i][j] = _generate_tensor_contraction(AK[i][j], options, g_set)
-        t_code = switch("i", [switch("j", cases[i]) for i in range(len(cases))])
+        t_code = switch("facet0", [switch("facet1", cases[i]) for i in range(len(cases))])
 
         # Generate code for geometry tensors
         g_code = _generate_geometry_tensors(AK[0][0], j_set, g_set)

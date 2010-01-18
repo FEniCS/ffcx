@@ -114,7 +114,7 @@ from ffc.codegeneration import generate_code
 from ffc.formatting import format_code
 from ffc.wrappers import generate_wrapper_code
 
-def compile_form(forms, prefix="Form", options=FFC_OPTIONS.copy()):
+def compile_form(forms, object_names={}, prefix="Form", options=FFC_OPTIONS.copy()):
     """This function generates UFC code for a given UFL form or list
     of UFL forms."""
 
@@ -127,7 +127,7 @@ def compile_form(forms, prefix="Form", options=FFC_OPTIONS.copy()):
     cpu_time = time()
 
     # Stage 1: analysis
-    analysis = analyze_forms(forms, options)
+    analysis = analyze_forms(forms, object_names, options)
     _print_timing(1, time() - cpu_time)
 
     # Stage 2: intermediate representation
@@ -143,7 +143,7 @@ def compile_form(forms, prefix="Form", options=FFC_OPTIONS.copy()):
     _print_timing(4, time() - cpu_time)
 
     # Stage 4.1: generate wrappers
-    wrapper_code = generate_wrapper_code(analysis[0], prefix, options)
+    wrapper_code = generate_wrapper_code(analysis, prefix, options)
     _print_timing(4.1, time() - cpu_time)
 
     # Stage 5: format code
@@ -153,7 +153,7 @@ def compile_form(forms, prefix="Form", options=FFC_OPTIONS.copy()):
     info("Code generation complete.")
     return analysis
 
-def compile_element(elements, prefix="Element", options=FFC_OPTIONS.copy()):
+def compile_element(elements, object_names={}, prefix="Element", options=FFC_OPTIONS.copy()):
     """This function generates UFC code for a given UFL element or
     list of UFL elements."""
 

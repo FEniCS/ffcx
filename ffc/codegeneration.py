@@ -126,7 +126,7 @@ def _generate_dofmap_code(ir, prefix, options):
     code["max_local_dimension"] = ret(ir["max_local_dimension"])
     code["geometric_dimension"] = ret(ir["geometric_dimension"])
     code["num_facet_dofs"] = ret(ir["num_facet_dofs"])
-    code["num_entity_dofs"] = switch("d", [ret(num) for num in ir["num_entity_dofs"]])
+    code["num_entity_dofs"] = switch("d", [ret(num) for num in ir["num_entity_dofs"]], ret("0"))
     code["tabulate_dofs"] = _tabulate_dofs(ir["tabulate_dofs"])
     code["tabulate_facet_dofs"] = _tabulate_facet_dofs(ir["tabulate_facet_dofs"])
     code["tabulate_entity_dofs"] = _tabulate_entity_dofs(ir["tabulate_entity_dofs"])
@@ -176,9 +176,9 @@ def _generate_form_code(ir, prefix, options):
     code["num_interior_facet_integrals"] = ret(ir["num_interior_facet_integrals"])
     code["create_finite_element"] = _create_foo(ir["create_finite_element"], prefix, "finite_element")
     code["create_dof_map"] = _create_foo(ir["create_dof_map"], prefix, "dof_map")
-    code["create_cell_integral"] = _create_foo(ir["create_cell_integral"], prefix, "cell_integral")
-    code["create_exterior_facet_integral"] = _create_foo(ir["create_exterior_facet_integral"], prefix, "exterior_facet_integral")
-    code["create_interior_facet_integral"] = _create_foo(ir["create_interior_facet_integral"], prefix, "interior_facet_integral")
+    code["create_cell_integral"] = _create_foo_integral(ir, "cell", prefix)
+    code["create_exterior_facet_integral"] = _create_foo_integral(ir, "exterior_facet", prefix)
+    code["create_interior_facet_integral"] = _create_foo_integral(ir, "interior_facet", prefix)
 
     # Postprocess code
     _postprocess_code(code, options)
@@ -197,13 +197,13 @@ def _value_dimension(ir):
     return format["switch"]("i", [ret(n) for n in ir])
 
 def _needs_mesh_entities(ir):
-    """Generate code for needs_mesh_entities. ir is a list of num dofs
+    """
+    Generate code for needs_mesh_entities. ir is a list of num dofs
     per entity.
     """
-
     ret = format["return"]
     boolean = format["bool"]
-    return format["switch"]("d", [ret(boolean(c)) for c in ir])
+    return format["switch"]("d", [ret(boolean(c)) for c in ir], ret(boolean(False)))
 
 def _init_mesh(ir):
     "Generate code for init_mesh. ir is a list of num dofs per entity."
@@ -359,9 +359,15 @@ def _tabulate_entity_dofs(ir):
 def _create_foo(numbers, prefix, class_name):
     "Generate code for create_<foo>."
     class_names = ["%s_%s_%d" % (prefix.lower(), class_name, i) for i in numbers]
-    cases  = [format["return"]("new " + name + "()") for name in class_names]
-    cases += [format["return"](0)]
-    return format["switch"]("i", cases)
+    cases = [format["return"]("new " + name + "()") for name in class_names]
+    default = format["return"](0)
+    return format["switch"]("i", cases + [default], default)
+
+def _create_foo_integral(ir, integral_type, prefix):
+    "Generate code for create_<foo>_integral."
+    class_name = integral_type + "_integral_" + str(ir["id"])
+    numbers = ir["create_" + integral_type + "_integral"]
+    return _create_foo(numbers, prefix, class_name)
 
 def _postprocess_code(code, options):
     "Postprocess generated code."

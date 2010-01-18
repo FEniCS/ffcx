@@ -13,7 +13,7 @@ from ffc.log import begin, end, info, error
 from ffc.utils import all_equal
 from ffc.cpp import format
 
-def generate_wrapper_code(form_and_data, prefix, options):
+def generate_wrapper_code(analysis, prefix, options):
     "Generate code for additional wrappers."
 
     # Skip if wrappers not requested
@@ -27,6 +27,9 @@ def generate_wrapper_code(form_and_data, prefix, options):
 
     begin("Compiler stage 4.1: Generating additional wrapper code")
 
+    # Extract data from analysis
+    form_and_data, elements, element_map = analysis
+
     # Special case: single element
     #if len(generated_forms) == 1 and generated_forms[0][1].form is None:
     #    fn = UFCFormNames("0",
@@ -39,7 +42,10 @@ def generate_wrapper_code(form_and_data, prefix, options):
     # Generate name data for each form
     form_names = []
     for (i, (form, form_data)) in enumerate(form_and_data):
-        element_numbers = [form_data.element_map[e] for e in form_data.elements]
+        element_numbers = [element_map[e] for e in form_data.elements]
+
+        print form_data.coefficient_names
+
         form_names.append(UFCFormNames("%d" % i,
                                        form_data.coefficient_names,
                                        format["classname form"](prefix, i),
@@ -47,7 +53,7 @@ def generate_wrapper_code(form_and_data, prefix, options):
                                        [format["classname dof_map"](prefix, j) for j in element_numbers]))
 
     # Check if all elements are equal
-    if all_equal([e for e in chain([form_data.elements for (form, form_data) in form_and_data])]):
+    if all_equal(elements):
         common_space = (0, 0)
     else:
         common_space = None
