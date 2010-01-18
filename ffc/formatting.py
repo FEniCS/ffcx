@@ -30,7 +30,7 @@ from ufc_utils import form_combined
 # FFC modules
 from ffc import codesnippets
 from ffc.log import info, error, begin, end
-from ffc.constants import FFC_VERSION
+from ffc.constants import FFC_VERSION, UFC_VERSION
 
 def format_code(codes, wrapper_code, prefix, options):
     "Format given code in UFC format."
@@ -90,7 +90,7 @@ def _write_file(output, prefix, options):
 
 def _generate_header(prefix, options):
     "Generate code for header."
-    args = {"version": FFC_VERSION, "prefix_upper": prefix.upper()}
+    args = {"ffc_version": FFC_VERSION, "ufc_version": UFC_VERSION, "prefix_upper": prefix.upper()}
     if options["format"] == "ufc":
         return codesnippets.header_ufc % args
     elif options["format"] == "dolfin":

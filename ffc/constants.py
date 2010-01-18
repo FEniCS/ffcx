@@ -1,10 +1,10 @@
 __author__ = "Anders Logg (logg@simula.no)"
 __date__ = "2005-05-20"
-__copyright__ = "Copyright (C) 2005-2009 Anders Logg"
+__copyright__ = "Copyright (C) 2005-2010 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian B. Oelgaard, 2009
-# Last changed: 2010-01-04
+# Last changed: 2010-01-18
 
 from log import INFO
 
@@ -24,3 +24,6 @@ FFC_OPTIONS = {"representation":      "auto", # form representation / code gener
                "log_level":            INFO,  # log level, displaying only messages with level >= log_level
                "log_prefix":           "",    # log prefix
                "epsilon":              1e-14} # machine precision, used for dropping zero terms
+
+# FIXME: Change to 1.2 when we support UFC 1.2
+UFC_VERSION = "1.0"
