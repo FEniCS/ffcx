@@ -384,7 +384,7 @@ def _tabulate_entity_dofs(ir):
 
 def _create_foo(numbers, prefix, class_name):
     "Generate code for create_<foo>."
-    class_names = ["%s_%s_%d" % (prefix, class_name, i) for i in numbers]
+    class_names = ["%s_%s_%d" % (prefix.lower(), class_name, i) for i in numbers]
     cases  = [format["return"]("new " + name + "()") for name in class_names]
     cases += [format["return"](0)]
     return format["switch"]("i", cases)
