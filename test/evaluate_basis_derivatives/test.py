@@ -5,7 +5,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Last changed: 2010-01-18
 
-from cppcode import evaluate_basis_code
+from cppcode import evaluate_basis_derivatives_code
 from ufl import FiniteElement, MixedElement
 
 import sys, os, commands, pickle, numpy, shutil
@@ -72,28 +72,30 @@ def check_results(values, reference):
     diffs = []
     num_ok = 0
     print ""
-    for element, vals in values.items():
+    for element, deriv_orders in values.items():
         print "\nResults for %s:" % element
 
-        if vals is None:
-            print "Error"
-            continue
+        for deriv_order, vals in deriv_orders.items():
+            if vals is None:
+                print "Error"
+                continue
 
-        # Get reference values
-        if not element in reference:
-            missing_refs.append(element)
-            print "Missing reference"
-            continue
-        refs = reference[element]
-        tol = 1e-12
+            # Get reference values
+            if not element in reference or not deriv_order in reference[element]:
+                missing_refs.append(element + "order %d" % deriv_order)
+                print "Missing reference"
+                continue
 
-        e = max(abs(vals - refs))
-        if e < tol:
-            num_ok += 1
-            print "OK: (diff = %g)" % e
-        else:
-            print "*** (diff = %g)" % e
-            diffs.append(element)
+            refs = reference[element][deriv_order]
+            tol = 1e-12
+
+            e = max(abs(vals - refs))
+            if e < tol:
+                num_ok += 1
+                print "Derivative order: %d, OK: (diff = %g)" % (deriv_order, e)
+            else:
+                print "*** (Derivative order: %d, diff = %g)" % (deriv_order, e)
+                diffs.append(element + "order %d" % deriv_order)
 
     if ffc_failed == gcc_failed == run_failed == missing_refs == diffs:
         print "\nAll %d elements verified OK" % len(reference)
@@ -138,28 +140,29 @@ def get_element_name(ufl_element):
         raise RuntimeError("No finite element class found")
     return name.split()[1][:-1]
 
-def compute_values(ufl_element):
+def compute_values(ufl_element, deriv_order):
     "Compute values of basis functions for given element."
 
     # Get relevant element name
     element_name = get_element_name(ufl_element)
 
     # Create g++ code
-    options = {"element": element_name}
-    code = evaluate_basis_code % options
-    f = open("evaluate_basis.cpp", "w")
+    num_derivs = ufl_element.cell().topological_dimension()**deriv_order
+    options = {"element": element_name, "derivative_order":deriv_order, "num_derivatives":num_derivs}
+    code = evaluate_basis_derivatives_code % options
+    f = open("evaluate_basis_derivatives.cpp", "w")
     f.write(code)
     f.close()
 
     # Compile g++ code
-    c = "g++ `pkg-config --cflags ufc-1` -Wall -Werror -o evaluate_basis evaluate_basis.cpp"
+    c = "g++ `pkg-config --cflags ufc-1` -Wall -Werror -o evaluate_basis_derivatives evaluate_basis_derivatives.cpp"
     error, output = commands.getstatusoutput(c)
     if error:
         gcc_failed.append(repr(ufl_element))
         return None
 
     # Run compiled code and get values
-    error, output = commands.getstatusoutput("./evaluate_basis")
+    error, output = commands.getstatusoutput("./evaluate_basis_derivatives")
     if error:
         run_failed.append(repr(ufl_element))
         return None
@@ -169,15 +172,17 @@ def compute_values(ufl_element):
 def print_refs():
     if os.path.isfile("reference.pickle"):
         reference = pickle.load(open("reference.pickle", "r"))
-        for elem, vals in reference.items():
-            print
-            print elem
-            print vals
+        for elem, derivs in reference.items():
+            for deriv_order, vals in derivs.items():
+                print
+                print elem
+                print deriv_order
+                print vals
     else:
         raise RuntimeError("No references to print")
 
 def main(args):
-    "Call evaluate basis for a range of different elements."
+    "Call evaluate basis derivatives for a range of different elements."
 
     if "refs" in args:
         print_refs()
@@ -190,7 +195,7 @@ def main(args):
 
     values = {}
     # Evaluate basis for single elements
-    print "\nComputing evaluate_basis for single elements"
+    print "\nComputing evaluate_basis_derivatives for single elements"
     for element in single_elements:
         for shape in element["shapes"]:
             for order in element["orders"]:
@@ -200,17 +205,21 @@ def main(args):
                 if error:
                     continue
                 print "Computing values"
-                values[repr(ufl_element)] = compute_values(ufl_element)
+                values[repr(ufl_element)] = {}
+                for deriv_order in range(1,4):
+                    values[repr(ufl_element)][deriv_order] = compute_values(ufl_element, deriv_order)
 
-    # Evaluate basis for mixed elements
-    print "\nComputing evaluate_basis for mixed elements"
+    # Evaluate basis for single elements
+    print "\nComputing evaluate_basis_derivatives for mixed elements"
     for ufl_element in mixed_elements:
         print "Compiling element: ", str(ufl_element)
         error = compile_element(ufl_element)
         if error:
             continue
         print "Computing values"
-        values[repr(ufl_element)] = compute_values(ufl_element)
+        values[repr(ufl_element)] = {}
+        for deriv_order in range(1,4):
+            values[repr(ufl_element)][deriv_order] = compute_values(ufl_element, deriv_order)
 
     # Load or update reference values
     os.chdir(os.pardir)
@@ -227,7 +236,6 @@ def main(args):
     if not error:
         # Remove temporary directory
         shutil.rmtree("tmp")
-
     return error
 
 if __name__ == "__main__":
