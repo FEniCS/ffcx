@@ -32,7 +32,7 @@ from ffc import codesnippets
 from ffc.log import info, error, begin, end
 from ffc.constants import FFC_VERSION
 
-def format_code(codes, prefix, options):
+def format_code(codes, wrapper_code, prefix, options):
     "Format given code in UFC format."
 
     begin("Compiler stage 5: Formatting code")
@@ -41,7 +41,7 @@ def format_code(codes, prefix, options):
     output = _generate_header(prefix, options) + "\n\n"
 
     # Iterate over codes
-    for code_elements, code_dofmaps, code_integrals, code_form, extra in codes:
+    for code_elements, code_dofmaps, code_integrals, code_form in codes:
 
         # Generate code for elements
         if code_elements:
@@ -65,6 +65,10 @@ def format_code(codes, prefix, options):
         # Generate code for form
         if code_form:
             output += form_combined % code_form
+
+    # Add wrapper code
+    if wrapper_code:
+        output += "\n" + wrapper_code
 
     # Generate code for footer
     output += _generate_footer()

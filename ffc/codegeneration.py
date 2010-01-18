@@ -37,7 +37,7 @@ def generate_code(ir, prefix, options):
     begin("Compiler stage 4: Generating code")
 
     # Extract representations
-    ir_form, ir_elements, ir_dofmaps, ir_integrals, ir_wrappers = ir
+    ir_form, ir_elements, ir_dofmaps, ir_integrals = ir
 
     # Generate code for elements
     info("Generating code for %d elements" % len(ir_elements))
@@ -57,13 +57,9 @@ def generate_code(ir, prefix, options):
     info("Generating code for form")
     code_form = generate_form_code(ir_form, prefix, options)
 
-    # Generate code for wrappers
-    info("Generating wrapper code (if any)")
-    code_wrappers = generate_wrapper_code(ir_wrappers, prefix, options)
-
     end()
 
-    return code_elements, code_dofmaps, code_integrals, code_form, code_wrappers
+    return code_elements, code_dofmaps, code_integrals, code_form
 
 def generate_element_code(i, ir, prefix, options):
     "Generate code for finite element from intermediate representation."
@@ -73,11 +69,12 @@ def generate_element_code(i, ir, prefix, options):
 
     # Prefetch formatting to speedup code generation
     ret = format["return"]
+    classname = format["classname finite_element"]
     do_nothing = format["do nothing"]
 
     # Generate code
     code = {}
-    code["classname"] = prefix.lower() + "_finite_element_" + str(i)
+    code["classname"] = classname(prefix, i)
     code["members"] = ""
     code["constructor"] = do_nothing
     code["destructor"] = do_nothing
@@ -213,11 +210,6 @@ def generate_form_code(ir, prefix, options):
 
     return code
 
-def generate_wrapper_code(ir, prefix, options):
-    "Generate code for wrappers."
-
-    return ""
-
 #--- Code generation for non-trivial functions ---
 
 def _value_dimension(ir):
@@ -228,7 +220,6 @@ def _value_dimension(ir):
         return ret(1)
     return format["switch"]("i", [ret(n) for n in ir])
 
-
 def _needs_mesh_entities(ir):
     """Generate code for needs_mesh_entities. ir is a list of num dofs
     per entity.
@@ -237,7 +228,6 @@ def _needs_mesh_entities(ir):
     ret = format["return"]
     boolean = format["bool"]
     return format["switch"]("d", [ret(boolean(c)) for c in ir])
-
 
 def _init_mesh(ir):
     "Generate code for init_mesh. ir is a list of num dofs per entity."
@@ -248,7 +238,6 @@ def _init_mesh(ir):
                                              for d in ir])
     return "\n".join([format["assign"]("__global_dimension", dimension),
                       format["return"](format["bool"](False))])
-
 
 def _tabulate_facet_dofs(ir):
     "Generate code for tabulate_facet_dofs."
@@ -308,7 +297,6 @@ def _tabulate_dofs(ir):
                 code.append(iadd("offset", addition))
 
     return "\n".join(code)
-
 
 def _tabulate_coordinates(ir):
     "Generate code for tabulate_coordinates."
@@ -389,8 +377,6 @@ def _tabulate_entity_dofs(ir):
     code.append(format["switch"]("d", all_cases))
 
     return "\n".join(code)
-
-
 
 #--- Utility functioins ---
 

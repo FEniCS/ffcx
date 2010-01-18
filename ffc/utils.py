@@ -4,7 +4,7 @@ __copyright__ = "Copyright (C) 2005-2010 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian B. Oelgaard, 2009
-# Last changed: 2010-01-14
+# Last changed: 2010-01-18
 
 # Python modules.
 import operator
@@ -17,9 +17,13 @@ def product(sequence):
     # Copied from UFL
     return reduce(operator.__mul__, sequence, 1)
 
+def all_equal(sequence):
+    "Check that all items in list are equal."
+    return sequence[:-1] == sequence[1:]
+
 def pick_first(sequence):
     "Check that all values are equal and return the value."
-    if not sequence[:-1] == sequence[1:]:
+    if not all_equal(sequence):
         error("Values differ: " + str(values))
     return sequence[0]
 

@@ -64,10 +64,6 @@ def compute_ir(form, elements, form_data, options):
         info("Computing representation of form")
         ir_form = _compute_form_ir(form, form_data)
 
-        # Compute representation of wrappers
-        info("Computing representation of wrappers")
-        ir_wrappers = _compute_wrapper_ir(form_data)
-
     elif elements is not None:
 
         # Compute representation of elements
@@ -81,11 +77,10 @@ def compute_ir(form, elements, form_data, options):
         # No forms and integrals
         ir_integrals = None
         ir_form = None
-        ir_wrappers = None
 
     end()
 
-    return ir_form, ir_elements, ir_dofmaps, ir_integrals, ir_wrappers
+    return ir_form, ir_elements, ir_dofmaps, ir_integrals
 
 def _compute_element_ir(ufl_element, form_data):
     "Compute intermediate representation of element."
@@ -155,7 +150,6 @@ def _compute_dofmap_ir(ufl_element, form_data):
 def _create_sub_foo(ufl_element, form_data):
     if form_data is None:
         return [0]*ufl_element.num_sub_elements()
-
     return [form_data.element_map[e] for e in ufl_element.sub_elements()]
 
 def _compute_integral_ir(form, form_data, options):
@@ -185,13 +179,6 @@ def _compute_form_ir(form, form_data):
     ir["create_cell_integral"] = range(form_data.num_cell_integrals)
     ir["create_exterior_facet_integral"] = range(form_data.num_exterior_facet_integrals)
     ir["create_interior_facet_integral"] = range(form_data.num_interior_facet_integrals)
-
-    return ir
-
-def _compute_wrapper_ir(form_data):
-    "Compute representation of wrappers."
-
-    ir = {}
 
     return ir
 
