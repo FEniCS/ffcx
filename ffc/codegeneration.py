@@ -386,4 +386,3 @@ def _remove_code(code, options):
         if flag in options and options[flag]:
             msg = "// Function %s not generated (compiled with -f%s)" % (key, flag)
             code[key] = format["exception"](msg)
-h
