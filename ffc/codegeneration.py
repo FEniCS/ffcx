@@ -106,21 +106,23 @@ def generate_dofmap_code(i, ir, prefix, options):
 
     # Prefetch formatting to speedup code generation
     ret = format["return"]
+    declare = format["declaration"]
+    assign = format["assign"]
     do_nothing = format["do nothing"]
     switch = format["switch"]
 
     # Generate code
     code = {}
     code["classname"] = prefix.lower() + "_dof_map_" + str(i)
-    code["members"] = ""
-    code["constructor"] = do_nothing
+    code["members"] = "\nprivate:\n\n  " + declare("unsigned int", "_global_dimension")
+    code["constructor"] = assign("_global_dimension", "0")
     code["destructor"] = do_nothing
     code["signature"] = ret('"%s"' % ir["signature"])
     code["needs_mesh_entities"] = _needs_mesh_entities(ir["needs_mesh_entities"])
-    code["init_mesh"] = ret("false")#"_init_mesh(ir["init_mesh"])
+    code["init_mesh"] = _init_mesh(ir["init_mesh"])
     code["init_cell"] = do_nothing
     code["init_cell_finalize"] = do_nothing
-    code["global_dimension"] = ""#ret("__global_dimension")
+    code["global_dimension"] = ret("_global_dimension")
     code["local_dimension"] = ret(ir["local_dimension"])
     code["max_local_dimension"] = ret(ir["max_local_dimension"])
     code["geometric_dimension"] = ret(ir["geometric_dimension"])
@@ -236,7 +238,7 @@ def _init_mesh(ir):
     entities = format["num entities"]
     dimension = format["inner product"](ir, [component(entities, d)
                                              for d in ir])
-    return "\n".join([format["assign"]("__global_dimension", dimension),
+    return "\n".join([format["assign"]("_global_dimension", dimension),
                       format["return"](format["bool"](False))])
 
 def _tabulate_facet_dofs(ir):
