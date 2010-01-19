@@ -11,7 +11,7 @@ __date__ = "2009-12-16"
 __copyright__ = "Copyright (C) 2009 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-18
+# Last changed: 2010-01-19
 
 # FFC modules
 from ffc.log import info, begin, end, debug_code
@@ -148,6 +148,9 @@ def _generate_integral_code(ir, prefix, options):
     # FIXME: Handle multiple representations here
     rep = tensor
     code = rep.generate_integral_code(ir, prefix, options)
+
+    # Indent code (unused variables should already be removed)
+    _indent_code(code)
 
     return code
 

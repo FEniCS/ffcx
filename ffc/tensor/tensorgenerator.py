@@ -8,7 +8,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Kristian B. Oelgaard, 2009
 # Modified by Marie Rognes (meg@math.uio.no), 2007
 # Modified by Garth N. Wells, 2009
-# Last changed: 2010-01-18
+# Last changed: 2010-01-19
 
 # FFC modules
 from ffc.cpp import format, remove_unused, count_ops
@@ -135,13 +135,14 @@ def _generate_tensor_contraction(terms, options, g_set):
     iadd            = format["iadd"]
     subtract        = format["subtract"]
     multiply        = format["multiply"]
+    assign          = format["assign"]
     element_tensor  = format["element tensor"]
     geometry_tensor = format["geometry tensor"]
     format_float    = format["float"]
     zero            = format_float(0)
 
-    # Generate incremental code for now, might be an option later
-    incremental = True
+    # FIXME: This should be an option
+    incremental = False
 
     # Get machine precision
     epsilon = options["epsilon"]
@@ -252,10 +253,10 @@ def _generate_entry(GK, a, i, j_set):
     multiply = format["multiply"]
 
     # Compute product of factors outside sum
-    factors = _extract_factors(GK, a, None, j_set, MonomialIndex.INTERNAL)
+    factors = _extract_factors(GK, a, None, j_set, index_type=MonomialIndex.SECONDARY)
 
     # Compute sum of products of factors inside sum
-    terms = [multiply(_extract_factors(GK, a, b, j_set, MonomialIndex.EXTERNAL))
+    terms = [multiply(_extract_factors(GK, a, b, j_set, index_type=MonomialIndex.EXTERNAL))
              for b in GK.external_multi_index.indices]
 
     # Compute product
@@ -292,12 +293,20 @@ def _extract_factors(GK, a, b, j_set, index_type):
 
     # Compute product of coefficients
     for c in GK.coefficients:
-        if index_type == c.index.index_type:
+        if c.index.index_type == index_type:
             factors.append(coefficient(c.number, c.index(secondary=a)))
 
     # Compute product of transforms
     for t in GK.transforms:
-        if index_type in (t.index0.index_type, t.index1.index_type):
+
+        # Note non-trivial logic here
+        if index_type == MonomialIndex.EXTERNAL:
+            include_index = MonomialIndex.EXTERNAL in (t.index0.index_type, t.index1.index_type)
+        else:
+            include_index = not (MonomialIndex.EXTERNAL in (t.index0.index_type, t.index1.index_type))
+
+        # Add factor
+        if include_index:
             factors.append(transform(t.transform_type,
                                      t.index0(secondary=a, external=b),
                                      t.index1(secondary=a, external=b),
