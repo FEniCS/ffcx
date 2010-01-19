@@ -9,7 +9,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Johan Hake, 2008-2009
 # Modified by Ilmar Wilbers, 2008
 # Modified by Kristian B. Oelgaard, 2009
-# Last changed: 2009-12-16
+# Last changed: 2010-01-19
 
 # Python modules.
 import os
@@ -108,7 +108,8 @@ def jit_form(form, options=None):
 
     # Generate code
     signature = jit_object.signature()
-    preprocessed_form, form_data = compile_form(preprocessed_form, signature, options)[0]
+    analysis = compile_form(preprocessed_form, prefix=signature, options=options)
+    form_data = analysis[0][1]
 
     # Create python extension module using Instant (through UFC)
     debug("Creating Python extension (compiling and linking), this may take some time...")
