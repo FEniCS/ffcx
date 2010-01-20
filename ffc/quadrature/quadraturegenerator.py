@@ -30,10 +30,24 @@ from ffc.cpp import IndentControl
 def generate_integral_code(ir, prefix, options):
     "Generate code for integral from intermediate representation."
 
-    # Note to Kristian: move code in here, class no longer needed
-    info("Quadrature code generator not implemented")
+    # Prefetch formatting to speedup code generation
+    #do_nothing = format["do nothing"]
+    #classname = format["classname " + ir["integral_type"]]
 
-    return ""
+    # Generate code
+    code = {}
+#    code["classname"] = classname(prefix, ir["form_id"], ir["sub_domain"])
+#    code["members"] = ""
+#    code["constructor"] = do_nothing
+#    code["destructor"] = do_nothing
+#    code["tabulate_tensor"] = _tabulate_tensor(ir, options)
+    code["classname"] = ""
+    code["members"] = ""
+    code["constructor"] = ""
+    code["destructor"] = ""
+    code["tabulate_tensor"] = ""
+
+    return code
 
 class QuadratureGenerator:
     "Code generator for quadrature representation."

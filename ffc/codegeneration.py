@@ -145,9 +145,12 @@ def _generate_integral_code(ir, prefix, options):
     # Skip code generation if ir is None
     if ir is None: return None
 
-    # FIXME: Handle multiple representations here
-    rep = tensor
-    code = rep.generate_integral_code(ir, prefix, options)
+    if ir["representation"] == "tensor":
+        code = tensor.generate_integral_code(ir, prefix, options)
+    elif ir["representation"] == "quadrature":
+        code = quadrature.generate_integral_code(ir, prefix, options)
+    else:
+        error("Unknown representation: %s" % ir["representation"])
 
     # Indent code (unused variables should already be removed)
     _indent_code(code)

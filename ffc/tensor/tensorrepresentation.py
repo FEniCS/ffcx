@@ -40,7 +40,7 @@ def compute_integral_ir(form, form_data, form_id, options):
 
     # Check number of integrals
     num_integrals = len(form.integrals())
-    if num_integrals == 0: return
+    if num_integrals == 0: return []
 
     info("Computing tensor representation")
 
@@ -58,6 +58,7 @@ def compute_integral_ir(form, form_data, form_id, options):
     for i in range(form_data.num_cell_domains):
         AK = _compute_cell_tensor(m, form_data, i)
         ir.append({"AK": AK,
+                   "representation": "tensor",
                    "integral_type": "cell_integral",
                    "form_id": form_id,
                    "sub_domain": i,
@@ -68,6 +69,7 @@ def compute_integral_ir(form, form_data, form_id, options):
     for i in range(form_data.num_exterior_facet_domains):
         AK = _compute_exterior_facet_tensors(m, form_data, i)
         ir.append({"AK": AK,
+                   "representation": "tensor",
                    "integral_type": "exterior_facet_integral",
                    "form_id": form_id,
                    "sub_domain": i,
@@ -78,6 +80,7 @@ def compute_integral_ir(form, form_data, form_id, options):
     for i in range(form_data.num_interior_facet_domains):
         AK = _compute_interior_facet_tensors(m, form_data, i)
         ir.append({"AK": AK,
+                   "representation": "tensor",
                    "integral_type": "interior_facet_integral",
                    "form_id": form_id,
                    "sub_domain": i,

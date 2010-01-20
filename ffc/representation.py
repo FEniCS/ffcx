@@ -58,7 +58,7 @@ def compute_ir(analysis, options):
     # Compute and flatten representation of integrals
     info("Computing representation of integrals")
     irs = [_compute_integral_ir(f, d, i, options) for (i, (f, d)) in enumerate(form_and_data)]
-    ir_integrals = [ir for ir in chain(*irs)]
+    ir_integrals = [ir for ir in chain(*irs) if not ir is None]
 
     # Compute representation of forms
     info("Computing representation of forms")
@@ -143,9 +143,8 @@ def _compute_integral_ir(form, form_data, form_id, options):
     # Iterate over representations
     ir = []
     for r in (quadrature, tensor):
-        ir.append(r.compute_integral_ir(form, form_data, form_id, options))
-
-    return ir[1]
+        ir += r.compute_integral_ir(form, form_data, form_id, options)
+    return ir
 
 def _compute_form_ir(form, form_data, form_id):
     "Compute intermediate representation of form."
