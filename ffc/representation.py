@@ -203,7 +203,8 @@ def _evaluate_basis(ufl_element, fiat_element):
           "family" : ufl_element.family(),
           "mapping" : mapping,
           "space_dimension" : fiat_element.space_dimension(),
-          "topological_dimension" : ufl_element.cell().topological_dimension()
+          "topological_dimension" : ufl_element.cell().topological_dimension(),
+          "dmats" : fiat_element.get_nodal_basis().get_dmats()
           }
 
     data["num_expansion_members"] = \

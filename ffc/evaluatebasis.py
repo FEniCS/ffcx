@@ -93,11 +93,8 @@ def _evaluate_basis_all(data_list):
 
     code += generate_loop(lines_r, loop_vars_r, Indent, format)
 
-    # Remove unused variables (from transformations and mappings) in code.
+    # Generate bode (no need to remove unused)
     return format["generate body"](code)
-#    lines = format["generate body"](code)
-#    code = remove_unused(lines)
-#    return code
 
 # From FIAT_NEW.polynomial_set.tabulate()
 def _evaluate_basis(data_list):
@@ -127,7 +124,6 @@ def _evaluate_basis(data_list):
     # (from codesnippets.py).
     # FIXME: KBO: Change this when supporting R^2 in R^3 elements.
     code += [Indent.indent(format["coordinate map FIAT"](element_cell_domain))]
-
 
     # Get value shape and reset values. This should also work for TensorElement,
     # scalar are empty tuples, therefore (1,) in which case value_shape = 1.

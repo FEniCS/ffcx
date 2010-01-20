@@ -407,12 +407,11 @@ z = (2.0*d02*x + 2.0*d12*y + 2.0*d22*z - d02*C0 - d12*C1 - d22*C2) / detJ_;"""
 combinations_snippet = """\
 // Declare pointer to two dimensional array that holds combinations of derivatives and initialise
 unsigned int **%(combinations)s = new unsigned int *[%(num_derivatives)s];
-
-for (unsigned int j = 0; j < %(num_derivatives)s; j++)
+for (unsigned int row = 0; row < %(num_derivatives)s; row++)
 {
-  %(combinations)s[j] = new unsigned int [%(n)s];
-  for (unsigned int k = 0; k < %(n)s; k++)
-    %(combinations)s[j][k] = 0;
+  %(combinations)s[row] = new unsigned int [%(n)s];
+  for (unsigned int col = 0; col < %(n)s; col++)
+    %(combinations)s[row][col] = 0;
 }
 
 // Generate combinations of derivatives
@@ -422,7 +421,7 @@ for (unsigned int row = 1; row < %(num_derivatives)s; row++)
   {
     for (unsigned int col = %(n)s-1; col+1 > 0; col--)
     {
-      if (%(combinations)s[row][col] + 1 > %(shape-1)s)
+      if (%(combinations)s[row][col] + 1 > %(topological_dimension-1)s)
         %(combinations)s[row][col] = 0;
       else
       {

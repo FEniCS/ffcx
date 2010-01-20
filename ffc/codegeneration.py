@@ -83,7 +83,7 @@ def _generate_element_code(ir, prefix, options):
     code["value_dimension"] = _value_dimension(ir["value_dimension"])
     code["evaluate_basis"] = ""#_evaluate_basis(ir["evaluate_basis"])
     code["evaluate_basis_all"] = _evaluate_basis_all(ir["evaluate_basis"])
-    code["evaluate_basis_derivatives"] = ""#_evaluate_basis_derivatives(ir["evaluate_basis"])
+    code["evaluate_basis_derivatives"] = _evaluate_basis_derivatives(ir["evaluate_basis"])
     code["evaluate_basis_derivatives_all"] = not_implemented
     code["evaluate_dof"] = evaluate_dof(ir["evaluate_dof"])
     code["evaluate_dofs"] = evaluate_dofs(ir["evaluate_dofs"])
