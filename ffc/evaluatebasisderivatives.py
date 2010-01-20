@@ -7,7 +7,7 @@ __date__ = "2007-04-16"
 __copyright__ = "Copyright (C) 2007-2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-08
+# Last changed: 2010-01-20
 
 # Python modules
 import math
@@ -87,7 +87,7 @@ def _evaluate_basis_derivatives_all(data_list):
     loop_vars_r = [(format_r, 0, space_dimension)]
 
     # FIXME: KBO: Move evaluate_basis_derivatives string to cpp.py
-    lines_r += ["evaluate_basis(%s, n, dof_values, coordinates, c);" % format_r]
+    lines_r += ["evaluate_basis_derivatives(%s, n, dof_values, coordinates, c);" % format_r]
 
     loop_vars_s = [(format_s, 0, num_vals)]
     index = format["add"]([format["multiply"]([format_r, num_vals]), format_s])
