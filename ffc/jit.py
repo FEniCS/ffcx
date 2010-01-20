@@ -9,23 +9,19 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Johan Hake, 2008-2009
 # Modified by Ilmar Wilbers, 2008
 # Modified by Kristian B. Oelgaard, 2009
-# Last changed: 2010-01-19
+# Last changed: 2010-01-20
 
-# Python modules.
+# Python modules
 import os
 import instant
 import ufc_utils
 
-# UFL modules.
-from ufl.classes import Form
-from ufl.classes import FiniteElementBase
-from ufl.classes import TestFunction
+# UFL modules
+from ufl.classes import Form, FiniteElementBase, TestFunction
 from ufl.objects import dx
-from ufl.algorithms import as_form
-from ufl.algorithms import preprocess
-from ufl.algorithms import FormData
+from ufl.algorithms import as_form, preprocess, FormData
 
-# FFC modules.
+# FFC modules
 from log import log
 from log import info
 from log import warning
@@ -109,7 +105,8 @@ def jit_form(form, options=None):
     # Generate code
     signature = jit_object.signature()
     analysis = compile_form(preprocessed_form, prefix=signature, options=options)
-    form_data = analysis[0][1]
+    # FIXME: Make this more sane, less cryptic
+    form_data = analysis[0][0][1]
 
     # Create python extension module using Instant (through UFC)
     debug("Creating Python extension (compiling and linking), this may take some time...")

@@ -28,7 +28,7 @@ def analyze_forms(forms, object_names, options):
 
        form_and_data   - a tuple of pairs (forms, form_data)
        unique_elements - a tuple of unique elements across all forms
-       element_map     - a map from elements to unique numbers
+       element_map     - a map from elements to unique element numbers
     """
 
     begin("Compiler stage 1: Analyzing form(s)")
@@ -165,7 +165,7 @@ def _auto_select_representation(integral):
 
     # FIXME: Implement this
     info("Automatic selection of representation not implemented, defaulting to quadrature.")
-    return "quadrature"
+    return "tensor"
 
 def _auto_select_quadrature_degree(integral, representation, elements):
     "Automatically select the appropriate quadrature degree for integral."
