@@ -18,12 +18,91 @@ from ffc.log import error, ffc_assert
 from ffc.evaluatebasis import _map_dof
 from ffc.evaluatebasis import _compute_basisvalues
 from ffc.evaluatebasis import _tabulate_coefficients
-from ffc.cpp import tabulate_matrix, IndentControl, remove_unused
+from ffc.cpp import tabulate_matrix, IndentControl, remove_unused, tabulate_vector
 from ffc.quadrature.quadraturegenerator_utils import generate_loop
 #from ffc.quadrature.symbolics import set_format
 
 # Temporary import
 from cpp import format_old as format
+
+def _evaluate_basis_derivatives_all(data_list):
+    """Like evaluate_basis, but return the values of all basis functions (dofs)."""
+
+    format_free_indices = format["free secondary indices"]
+    format_r            = format_free_indices[0]
+    format_s            = format_free_indices[1]
+
+    # Initialise objects
+    Indent = IndentControl()
+    code = []
+
+    # FIXME: KBO: Figure out which return format to use, either:
+    # [dN0[0]/dx, dN0[0]/dy, dN0[1]/dx, dN0[1]/dy, dN1[0]/dx, dN1[0]/dy, dN1[1]/dx, dN1[1]/dy, ...]
+    # or
+    # [dN0[0]/dx, dN1[0]/dx, ..., dN0[1]/dx, dN1[1]/dx, ..., dN0[0]/dy, dN1[0]/dy, ..., dN0[1]/dy, dN1[1]/dy, ...]
+    # or
+    # [dN0[0]/dx, dN0[1]/dx, ..., dN1[0]/dx, dN1[1]/dx, ..., dN0[0]/dy, dN0[1]/dy, ..., dN1[0]/dy, dN1[1]/dy, ...]
+    # for vector (tensor elements), currently returning option 1.
+
+    # FIXME: KBO: For now, just call evaluate_basis_derivatives and map values
+    # accordingly, this will keep the amount of code at a minimum. If it turns
+    # out that speed is an issue (overhead from calling evaluate_basis), we can
+    # easily generate all the code.
+
+    # Get total value shape and space dimension for entire element (possibly mixed).
+    value_shape = sum(sum(data["value_shape"] or (1,)) for data in data_list)
+    space_dimension = sum(data["space_dimension"] for data in data_list)
+
+    # Special case where space dimension is one (constant elements)
+    if space_dimension == 1:
+        code += [format["comment"]("Element is constant, calling evaluate_basis_derivatives.")]
+        code += ["evaluate_basis_derivatives(0, %s, coordinates, c);" % format["argument values"]]
+        return format["generate body"](code)
+
+    # Compute number of derivatives
+    # Get the topological dimension.
+    # FIXME: If the elements are defined on the same cell domain they also have
+    # the same topological dimension so there is no need to check this.
+    topological_dimension = data_list[0]["topological_dimension"]
+    ffc_assert(all(topological_dimension == data["topological_dimension"] for data in data_list),\
+               "The topological dimension must be the same for all sub elements: " + repr(data_list))
+    code += _compute_num_derivatives(topological_dimension, Indent, format)
+
+    # Declare helper value to hold single dof values and reset
+    code += ["", format["comment"]("Helper variable to hold values of a single dof.")]
+    if (value_shape == 1):
+        num_vals = format["num derivatives"]
+    else:
+        num_vals = format["multiply"]([format["floating point"](value_shape), format["num derivatives"]])
+    code += [(Indent.indent(format["float declaration"] + format["pointer"] + "dof_values"),\
+              format["new"] + format["float declaration"] + format["array access"](num_vals))]
+    loop_vars = [(format_r, 0, num_vals)]
+    line = [("dof_values" + format["array access"](format_r), format["floating point"](0.0))]
+    code += generate_loop(line, loop_vars, Indent, format)
+
+    # Create loop over dofs that calls evaluate_basis_derivatives for a single dof and
+    # inserts the values into the global array.
+    code += ["", format["comment"]("Loop dofs and call evaluate_basis_derivatives.")]
+    lines_r = []
+    loop_vars_r = [(format_r, 0, space_dimension)]
+
+    # FIXME: KBO: Move evaluate_basis_derivatives string to cpp.py
+    lines_r += ["evaluate_basis(%s, n, dof_values, coordinates, c);" % format_r]
+
+    loop_vars_s = [(format_s, 0, num_vals)]
+    index = format["add"]([format["multiply"]([format_r, num_vals]), format_s])
+    name = format["argument values"] + format["array access"](index)
+    value = "dof_values" + format["array access"](format_s)
+    lines_s = [(name, value)]
+    lines_r += generate_loop(lines_s, loop_vars_s, Indent, format)
+    code += generate_loop(lines_r, loop_vars_r, Indent, format)
+
+    code += ["", format["comment"]("Delete pointer.")]
+    code += [Indent.indent(format["delete"] + format["array access"]("") + " " +\
+                           "dof_values" + format["end line"])]
+
+    # Generate bode (no need to remove unused)
+    return format["generate body"](code)
 
 def _evaluate_basis_derivatives(data_list):
     """Evaluate the derivatives of an element basisfunction at a point. The values are
@@ -73,6 +152,7 @@ def _evaluate_basis_derivatives(data_list):
 
     # Compute number of derivatives that has to be computed, and declare an array to hold
     # the values of the derivatives on the reference element
+    code += [""]
     code += _compute_num_derivatives(topological_dimension, Indent, format)
 
     # Generate all possible combinations of derivatives
@@ -106,7 +186,7 @@ def _evaluate_basis_derivatives(data_list):
 def _compute_num_derivatives(topological_dimension, Indent, format):
     "Computes the number of derivatives of order 'n' as: element.cell_shape()^n."
 
-    code = ["", format["comment"]("Compute number of derivatives.")]
+    code = [format["comment"]("Compute number of derivatives.")]
     code += [(Indent.indent(format["uint declaration"] + format["num derivatives"]),\
               format["floating point"](1))]
 

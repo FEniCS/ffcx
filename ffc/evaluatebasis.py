@@ -44,7 +44,10 @@ def _evaluate_basis_all(data_list):
     set_format(format)
 
     # FIXME: KBO: Figure out how the return format should be, either:
-    # [d0_x, d0_y, d1_x, d1_y, ...] or [d0_x, d1_x, ..., d0_y, d1_y, ...]
+    # [N0[0], N0[1], N1[0], N1[1], ...]
+    # or
+    # [N0[0], N1[0], ..., N0[1], N1[1], ...]
+    # for vector (tensor elements), currently returning option 1.
 
     # FIXME: KBO: For now, just call evaluate_basis and map values accordingly,
     # this will keep the amount of code at a minimum. If it turns out that speed
