@@ -332,7 +332,8 @@ transform_options = {"JINV": lambda m, j, k: "Jinv%s_%d%d" % (m, j, k),
 format_old = {
     # Operators
     #
-    "multiply": lambda v: _multiply(v),
+#    "multiply": lambda v: _multiply(v),
+    "multiply": lambda v: "*".join(v),
     "times equal": lambda i, j: "%s *= %s;" %(i, j),
     "add equal": lambda i, j: "%s += %s;" % (i, j),
     "inverse": lambda v: "(1.0/%s)" % v,
