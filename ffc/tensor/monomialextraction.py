@@ -55,7 +55,6 @@ def extract_monomial_integrand(integrand):
 
     # Check cache
     if integrand in _cache:
-        print "Reusing monomial integrand from cache"
         debug("Reusing monomial integrand from cache")
         return _cache[integrand]
 

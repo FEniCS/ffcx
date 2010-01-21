@@ -23,7 +23,7 @@ from ufl.algorithms import estimate_total_polynomial_degree
 from ufl.algorithms import extract_unique_elements
 
 # FFC modules
-from ffc.log import log, info, begin, end, warning
+from ffc.log import log, info, begin, end, warning, debug
 from ffc.quadratureelement import default_quadrature_degree
 from ffc.tensor import estimate_cost
 
@@ -190,13 +190,22 @@ def _extract_metadata(form, options, elements):
 def _auto_select_representation(integral):
     "Automatically select the best representation for integral."
 
+    # Estimate cost of tensor representation
+    tensor_cost = estimate_cost(integral)
+    debug("Cost of tensor representation is %d" % tensor_cost)
 
-    cost = estimate_cost(integral)
-    print "Estimated cost:", cost
+    # Use quadrature if tensor representation is not possible
+    if tensor_cost == -1:
+        info("Tensor representation not possible, selecting quadrature representation")
+        return "quadrature"
 
-    # FIXME: Implement this
-    info("Automatic selection of representation not implemented, defaulting to quadrature.")
-    return "tensor"
+    # Otherwise, select quadrature when cost is high
+    if tensor_cost <= 3:
+        info("Tensor representation seems to be a suitable choice for integrand")
+        return "tensor"
+    else:
+        info("Quadrature representation seems to be a suitable choice for integrand")
+        return "quadrature"
 
 def _auto_select_quadrature_degree(integral, representation, elements):
     "Automatically select the appropriate quadrature degree for integral."
