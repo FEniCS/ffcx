@@ -97,7 +97,7 @@ def _analyze_form(form, object_names, options):
     return form, form_data
 
 def _adjust_elements(form_data):
-    "Adjust cell and degree for elements when unspecified"
+    "Adjust cell and degree for elements when unspecified."
 
     # Extract common cell
     common_cell = form_data.cell
@@ -116,12 +116,10 @@ def _adjust_elements(form_data):
         cell = element.cell()
         degree = element.degree()
         if degree is None:
-            #info("Adjusting element degree from %s to %d" % (istr(degree), common_degree))
-            log(30, "Adjusting element degree from %s to %d" % (istr(degree), common_degree))
+            info("Adjusting element degree from %s to %d" % (istr(degree), common_degree))
             element.set_degree(common_degree)
         if cell.domain() is None:
-            #info("Adjusting element cell from %s to %s." % (istr(cell), str(common_cell)))
-            log(30, "Adjusting element cell from %s to %s." % (istr(cell), str(common_cell)))
+            info("Adjusting element cell from %s to %s." % (istr(cell), str(common_cell)))
             element.set_cell(common_cell)
 
 def _extract_metadata(form, options, elements):
@@ -175,7 +173,7 @@ def _extract_metadata(form, options, elements):
             representation = _auto_select_representation(integral)
         if quadrature_degree == "auto":
             quadrature_degree = _auto_select_quadrature_degree(integral, representation, elements)
-        log(30, "Integral quadrature degree is %d." % quadrature_degree)
+        info("Integral quadrature degree is %d." % quadrature_degree)
 
         # No quadrature rules have been implemented yet
         if quadrature_rule:

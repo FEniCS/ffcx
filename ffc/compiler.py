@@ -103,7 +103,7 @@ __all__ = ["compile_form", "compile_element"]
 from time import time
 
 # FFC modules
-from ffc.log import log, begin, end, debug, info, warning, error, ffc_assert
+from ffc.log import info, info_green, warning
 from ffc.constants import FFC_OPTIONS
 
 # FFC modules
@@ -150,7 +150,7 @@ def compile_form(forms, object_names={}, prefix="Form", options=FFC_OPTIONS.copy
     format_code(code, wrapper_code, prefix, options)
     _print_timing(5, time() - cpu_time)
 
-    info("Code generation complete.")
+    info_green("Code generation complete.")
     return analysis
 
 def compile_element(elements, object_names={}, prefix="Element", options=FFC_OPTIONS.copy()):
@@ -189,7 +189,7 @@ def compile_element(elements, object_names={}, prefix="Element", options=FFC_OPT
     format_code(code, wrapper_code, prefix, options)
     _print_timing(5, time() - cpu_time)
 
-    info("Code generation complete.")
+    info_green("Code generation complete.")
 
 def _check_forms(forms):
     "Initial check of forms."
