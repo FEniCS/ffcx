@@ -19,6 +19,8 @@ from ufl.algorithms.printing import tree_format
 from ffc.log import info, debug, ffc_assert
 from ffc.cpp import tabulate_matrix
 from ffc.cpp import IndentControl
+from ffc.cpp import format as format_new
+from ffc.cpp import format_old as format
 
 # Utility and optimisation functions for quadraturegenerator.
 #from quadraturegenerator_utils import generate_loop
@@ -30,92 +32,126 @@ from ffc.cpp import IndentControl
 def generate_integral_code(ir, prefix, options):
     "Generate code for integral from intermediate representation."
 
-    # Prefetch formatting to speedup code generation
-    #do_nothing = format["do nothing"]
-    #classname = format["classname " + ir["integral_type"]]
-
     # Generate code
     code = {}
-#    code["classname"] = classname(prefix, ir["form_id"], ir["sub_domain"])
-#    code["members"] = ""
-#    code["constructor"] = do_nothing
-#    code["destructor"] = do_nothing
-#    code["tabulate_tensor"] = _tabulate_tensor(ir, options)
-    code["classname"] = ""
+    code["classname"] = format_new["classname " + ir["integral_type"]](prefix, ir["form_id"], ir["sub_domain"])
     code["members"] = ""
-    code["constructor"] = ""
-    code["destructor"] = ""
-    code["tabulate_tensor"] = ""
+    code["constructor"] = format_new["do nothing"]
+    code["destructor"] = format_new["do nothing"]
+    code["tabulate_tensor"] = _tabulate_tensor(ir, options)
 
     return code
+
+def _tabulate_tensor(ir, options):
+    "Generate code for a single integral (tabulate_tensor())."
+
+    if options["optimize"]:
+        # These options results in fast code, but compiles slower and there
+        # might still be bugs.
+        optimise_options = {"non zero columns": True,
+                            "ignore ones": True,
+                            "remove zero terms": True,
+                            "simplify expressions": True,
+                            "ignore zero tables": True}
+    else:
+        # These options should be safe and fast, but result in slow code.
+        optimise_options = {"non zero columns": False,
+                            "ignore ones": False,
+                            "remove zero terms": False,
+                            "simplify expressions": False,
+                            "ignore zero tables": False}
+
+#    def generate_cell_integrals(self, form_representation, format):
+#        code = {}
+#        if not form_representation.cell_integrals:
+#            return code
+
+#        # Create transformer.
+#        if self.optimise_options["simplify expressions"]:
+#            transformer = QuadratureTransformerOpt(form_representation, Measure.CELL,\
+#                                                self.optimise_options, format)
+#        else:
+#            transformer = QuadratureTransformer(form_representation, Measure.CELL,\
+#                                                self.optimise_options, format)
+
+#        # Generate code for cell integral.
+#        info("\nGenerating code for cell integrals.")
+#        for subdomain, integrals in form_representation.cell_integrals.items():
+#            transformer.reset()
+#            code[("cell_integral", subdomain)] =\
+#                 self.generate_cell_integral(form_representation, transformer, integrals, format)
+#        return code
+
+
+    return ""
 
 class QuadratureGenerator:
     "Code generator for quadrature representation."
 
-    def __init__(self, options):
-        "Constructor"
+#    def __init__(self, options):
+#        "Constructor"
 
-        if options["optimize"]:
-            # These options results in fast code, but compiles slower and there
-            # might still be bugs.
-            self.optimise_options = {"non zero columns": True,
-                                     "ignore ones": True,
-                                     "remove zero terms": True,
-                                     "simplify expressions": True,
-                                     "ignore zero tables": True}
-        else:
-            # These options should be safe and fast, but result in slow code.
-            self.optimise_options = {"non zero columns": False,
-                                     "ignore ones": False,
-                                     "remove zero terms": False,
-                                     "simplify expressions": False,
-                                     "ignore zero tables": False}
+#        if options["optimize"]:
+#            # These options results in fast code, but compiles slower and there
+#            # might still be bugs.
+#            self.optimise_options = {"non zero columns": True,
+#                                     "ignore ones": True,
+#                                     "remove zero terms": True,
+#                                     "simplify expressions": True,
+#                                     "ignore zero tables": True}
+#        else:
+#            # These options should be safe and fast, but result in slow code.
+#            self.optimise_options = {"non zero columns": False,
+#                                     "ignore ones": False,
+#                                     "remove zero terms": False,
+#                                     "simplify expressions": False,
+#                                     "ignore zero tables": False}
 
-    def generate_integrals(self, form_representation, format):
-        "Generate code for all integrals."
+#    def generate_integrals(self, form_representation, format):
+#        "Generate code for all integrals."
 
-        code = {}
+#        code = {}
 
-        # Check if code needs to be generated.
-        if form_representation.num_integrals == 0:
-            return {}
+#        # Check if code needs to be generated.
+#        if form_representation.num_integrals == 0:
+#            return {}
 
-        info("Generating code using quadrature representation.")
+#        info("Generating code using quadrature representation.")
 
-        # Set represenation.
-        code["representation"] = "quadrature"
+#        # Set represenation.
+#        code["representation"] = "quadrature"
 
-        # Generate code for cell integrals.
-        code.update(self.generate_cell_integrals(form_representation, format))
+#        # Generate code for cell integrals.
+#        code.update(self.generate_cell_integrals(form_representation, format))
 
-        # Generate code for exterior facet integrals.
-        code.update(self.generate_exterior_facet_integrals(form_representation, format))
+#        # Generate code for exterior facet integrals.
+#        code.update(self.generate_exterior_facet_integrals(form_representation, format))
 
-        # Generate code for interior facet integrals.
-        code.update(self.generate_interior_facet_integrals(form_representation, format))
+#        # Generate code for interior facet integrals.
+#        code.update(self.generate_interior_facet_integrals(form_representation, format))
 
-        return code
+#        return code
 
-    def generate_cell_integrals(self, form_representation, format):
-        code = {}
-        if not form_representation.cell_integrals:
-            return code
+#    def generate_cell_integrals(self, form_representation, format):
+#        code = {}
+#        if not form_representation.cell_integrals:
+#            return code
 
-        # Create transformer.
-        if self.optimise_options["simplify expressions"]:
-            transformer = QuadratureTransformerOpt(form_representation, Measure.CELL,\
-                                                self.optimise_options, format)
-        else:
-            transformer = QuadratureTransformer(form_representation, Measure.CELL,\
-                                                self.optimise_options, format)
+#        # Create transformer.
+#        if self.optimise_options["simplify expressions"]:
+#            transformer = QuadratureTransformerOpt(form_representation, Measure.CELL,\
+#                                                self.optimise_options, format)
+#        else:
+#            transformer = QuadratureTransformer(form_representation, Measure.CELL,\
+#                                                self.optimise_options, format)
 
-        # Generate code for cell integral.
-        info("\nGenerating code for cell integrals.")
-        for subdomain, integrals in form_representation.cell_integrals.items():
-            transformer.reset()
-            code[("cell_integral", subdomain)] =\
-                 self.generate_cell_integral(form_representation, transformer, integrals, format)
-        return code
+#        # Generate code for cell integral.
+#        info("\nGenerating code for cell integrals.")
+#        for subdomain, integrals in form_representation.cell_integrals.items():
+#            transformer.reset()
+#            code[("cell_integral", subdomain)] =\
+#                 self.generate_cell_integral(form_representation, transformer, integrals, format)
+#        return code
 
     def generate_exterior_facet_integrals(self, form_representation, format):
         code = {}
