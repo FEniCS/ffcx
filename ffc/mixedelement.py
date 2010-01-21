@@ -6,7 +6,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Marie E. Rognes (meg@simula.no) 2007--2010
 # Modified by Kristian B. Oelgaard 2009
 
-# Last changed: 2010-01-14
+# Last changed: 2010-01-21
 
 # Python modules
 import numpy
@@ -70,11 +70,16 @@ class MixedElement:
         table_shape = (self.space_dimension(), self.num_components(), len(points))
         zeros = numpy.zeros(table_shape)
 
+        print "shape =", table_shape
+
         # Iterate over elements and fill in non-zero values
         irange = (0, 0)
         crange = (0, 0)
         mixed_table = {}
         for element in self._elements:
+
+            print element
+            print order
 
             # Tabulate element
             table = element.tabulate(order, points)
@@ -83,15 +88,23 @@ class MixedElement:
             irange = (irange[1], irange[1] + element.space_dimension())
             crange = (crange[1], crange[1] + _num_components(element))
 
+            print "irange =", irange
+            print "crange =", crange
+
             # Insert table into mixed table
             for dtuple in table.keys():
+
+                print "shape  =", numpy.shape(table[dtuple])
 
                 # Insert zeros if necessary (should only happen first time)
                 if not dtuple in mixed_table:
                     mixed_table[dtuple] = zeros
 
                 # Insert non-zero values
-                mixed_table[dtuple][irange[0]:irange[1], crange[0]:crange[1]] = table[dtuple]
+                if (crange[1] - crange[0]) > 1:
+                    mixed_table[dtuple][irange[0]:irange[1], crange[0]:crange[1]] = table[dtuple]
+                else:
+                    mixed_table[dtuple][irange[0]:irange[1], crange[0]] = table[dtuple]
 
         return mixed_table
 

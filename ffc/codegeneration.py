@@ -11,7 +11,7 @@ __date__ = "2009-12-16"
 __copyright__ = "Copyright (C) 2009 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-19
+# Last changed: 2010-01-21
 
 # FFC modules
 from ffc.log import info, begin, end, debug_code

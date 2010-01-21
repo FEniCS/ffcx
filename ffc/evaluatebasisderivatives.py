@@ -272,32 +272,26 @@ def _generate_element_code(data, sum_value_dim, Indent, format):
 
     return code
 
-def _mixed_elements(data, Indent, format):
+def _mixed_elements(data_list, Indent, format):
     "Generate code for each sub-element in the event of vector valued elements or mixed elements"
-
-    code = []
 
     # Prefetch formats to speed up code generation
     format_block_begin  = format["block begin"]
     format_block_end    = format["block end"]
     format_dof_map_if   = format["dof map if"]
 
-    # Extract basis elements, and determine number of elements
-    elements = data.extract_elements()
-    num_elements = len(datas)
-
     sum_value_dim = 0
     sum_space_dim = 0
 
+    # Init return code.
+    code = []
+
     # Generate code for each element
-    for i in range(num_elements):
+    for data in data_list:
 
-        # Get sub element
-        basis_element = elements[i]
-
-        # FIXME: This must most likely change for tensor valued elements
-        value_dim = basis_element.value_dimension(0)
-        space_dim = basis_element.space_dimension()
+        # Get value and space dimension (should be tensor ready).
+        value_dim = sum(data["value_shape"] or (1,))
+        space_dim = data["space_dimension"]
 
         # Determine if the element has a value, for the given dof
         code += [Indent.indent(format_dof_map_if(sum_space_dim, sum_space_dim + space_dim -1))]
@@ -306,10 +300,10 @@ def _mixed_elements(data, Indent, format):
         Indent.increase()
 
         # Generate map from global to local dof
-        code += _dof_map(sum_space_dim, Indent, format)
+        code += _map_dof(sum_space_dim, Indent, format)
 
         # Generate code for basis element
-        code += _generate_element_code(basis_element, sum_value_dim, Indent, format)
+        code += _generate_element_code(data, sum_value_dim, Indent, format)
 
         # Decrease indentation, finish block - end element code
         Indent.decrease()

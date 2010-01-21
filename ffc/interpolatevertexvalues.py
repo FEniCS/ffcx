@@ -4,7 +4,7 @@ __author__ = "Marie E. Rognes (meg@simula.no)"
 __copyright__ = "Copyright (C) 2009"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-15
+# Last changed: 2010-01-21
 
 from ffc.codesnippets import jacobian
 from ffc.cpp import format, remove_unused
@@ -120,7 +120,7 @@ def _change_variables(mapping, dim, space_dim):
 
     'covariant piola' mapping for f:
 
-      g(x) = K G(X)              i.e   g_i(x) = K_ij G_j(X)
+      g(x) = K^T G(X)              i.e   g_i(x) = K^T_ij G_j(X) = K_ji G_j(X)
     """
 
     if mapping is "affine":
@@ -130,7 +130,7 @@ def _change_variables(mapping, dim, space_dim):
                                                                      [G[j][index] for j in range(dim)])])
                                             for index in range(space_dim)]
     elif mapping == "covariant piola":
-        change_of_variables = lambda G, i: [inner([Jinv(i, j) for j in range(dim)],
+        change_of_variables = lambda G, i: [inner([Jinv(j, i) for j in range(dim)],
                                                   [G[j][index] for j in range(dim)])
                                             for index in range(space_dim)]
     else:

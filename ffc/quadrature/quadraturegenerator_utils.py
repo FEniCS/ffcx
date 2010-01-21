@@ -90,8 +90,6 @@ def create_psi_tables(tables, format_epsilon, options):
     "Create names and maps for tables and non-zero entries if appropriate."
 
     debug("\nQG-utils, psi_tables:\n" + str(tables))
-    print "tabe"
-    print tables
     # Create element map {points:{element:number,},}
     # and a plain dictionary {name:values,}.
     element_map, flat_tables = flatten_psi_tables(tables)
@@ -117,15 +115,12 @@ def flatten_psi_tables(tables):
     flat_tables = {}
     element_map = {}
     counter = 0
-
     # Loop quadrature points and get element dictionary {elem: {tables}}.
     for point in sorted(tables.keys()):
-        print point
         elem_dict = tables[point]
         element_map[point] = {}
         debug("\nQG-utils, flatten_tables, points:\n" + str(point))
         debug("\nQG-utils, flatten_tables, elem_dict:\n" + str(elem_dict))
-
         # Loop all elements and get all their tables.
         for elem in sorted(elem_dict.keys(), lambda x, y: cmp(str(x), str(y))):
             facet_tables = elem_dict[elem]

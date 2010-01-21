@@ -44,7 +44,7 @@ def analyze_forms(forms, object_names, options):
     unique_elements = []
     element_map = {}
     for (form, form_data) in form_and_data:
-        for element in form_data.unique_elements + form_data.unique_sub_elements:
+        for element in form_data.unique_sub_elements:
             if not element in element_map:
                 element_map[element] = len(unique_elements)
                 unique_elements.append(element)
@@ -57,6 +57,8 @@ def analyze_elements(elements):
 
     # Empty form and data
     form_and_data = []
+
+    # FIXME: This looks unecessarily complex
 
     # Extract unique elements
     unique_elements = []
