@@ -9,20 +9,22 @@ import os, sys, shutil, commands
 # Parameters
 output_directory = "output"
 
-def generate_tests():
+def generate_test_cases():
     "Generate form files for all test cases."
 
     begin("Generating test cases")
 
-    # Create output directory if it does not exist
-    if not os.path.isdir(output_directory):
-        os.mkdir(output_directory)
-
     # Copy demos files
-    demo_files = [f for f in os.listdir("../../demo/") if f.endswith(".ufl")]
+    demo_files = [f for f in os.listdir("../../../demo/") if f.endswith(".ufl")]
     for f in demo_files:
-        shutil.copy("../../demo/%s" % f, output_directory)
+        shutil.copy("../../../demo/%s" % f, ".")
     info_green("Copied %d demo files" % len(demo_files))
+
+    # Generate form files for forms
+    info("Not implemented")
+
+    # Generate form files for elements
+    info("Not implemented")
 
     end()
 
@@ -32,14 +34,14 @@ def generate_code():
     begin("Generating code")
 
     # Get a list of all files
-    form_files = [f for f in os.listdir(output_directory)]
+    form_files = [f for f in os.listdir(".") if f.endswith(".ufl")]
 
     # Iterate over all files
     for f in form_files:
 
         # Generate code
         info("Generating code for %s" % f)
-        status, output = commands.getstatusoutput("ffc %s/%s" % (output_directory, f))
+        status, output = commands.getstatusoutput("ffc %s" % f)
 
         # Check status
         if status == 0:
@@ -49,14 +51,56 @@ def generate_code():
 
     end()
 
+def validate_code():
+    "Validate generated code against references."
+
+    begin("Validating generated code")
+
+    info("Not implemented")
+
+    end()
+
+def build_programs():
+    "Build test programs for all test cases."
+
+    begin("Building test programs")
+
+    # Get a list of all files
+    header_files = [f for f in os.listdir(".") if f.endswith(".h")]
+
+    # Iterate over all files
+    for f in header_files:
+        info("Building test for %s" % f)
+
+    end()
+
+def validate_programs():
+    "Validate generated programs against references."
+
+    begin("Validating generated programs")
+
+    info("Not implemented")
+
+    end()
+
 def main(args):
     "Run all regression tests."
 
-    # Generate form files for all test cases
-    generate_tests()
+    # Enter output directory
+    if not os.path.isdir(output_directory):
+        os.mkdir(output_directory)
+    os.chdir(output_directory)
 
-    # Generate code for all test cases
+    # Generate test cases
+    generate_test_cases()
+
+    # Generate and validate code
     generate_code()
+    validate_code()
+
+    # Build and validate programs
+    build_programs()
+    validate_programs()
 
     return 0
 
