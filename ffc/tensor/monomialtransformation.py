@@ -31,10 +31,17 @@ def transform_monomial_form(monomial_form):
     ffc_assert(isinstance(monomial_form, MonomialForm),
                "Expecting a MonomialForm.")
 
+    # Note that we check if each monomial has been transformed before
+    # and if so we leave it untouched. This is to prevent repeated
+    # transformation (which fails) which may sometimes happen as a
+    # result of extracted integrands being cached by the monomial
+    # extraction.
+
     # Transform each integral
     for (integrand, measure) in monomial_form:
         for (i, monomial) in enumerate(integrand.monomials):
-            integrand.monomials[i] = TransformedMonomial(monomial)
+            if not isinstance(monomial, TransformedMonomial):
+                integrand.monomials[i] = TransformedMonomial(monomial)
 
 class MonomialIndex:
     """

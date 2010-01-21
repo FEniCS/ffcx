@@ -7,21 +7,17 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Martin Alnes, 2008
 # Modified by Kristian B. Oelgaard
-# Last changed: 2009-12-21
+# Last changed: 2010-01-21
 
 # UFL modules
-from ufl.classes import Form
-from ufl.classes import Argument
-from ufl.classes import Coefficient
-from ufl.classes import ScalarValue
-from ufl.classes import IntValue
-from ufl.algorithms import purge_list_tensors
-from ufl.algorithms import tree_format
-from ufl.algorithms import apply_transformer
-from ufl.algorithms import ReuseTransformer
+from ufl.classes import Form, Argument, Coefficient, ScalarValue, IntValue
+from ufl.algorithms import purge_list_tensors, apply_transformer, ReuseTransformer
 
 # FFC modules
-from ffc.log import info, ffc_assert
+from ffc.log import info, debug, ffc_assert
+
+# Cache for computed integrand representations
+_cache = {}
 
 def extract_monomial_form(form, form_data):
     """
@@ -37,6 +33,7 @@ def extract_monomial_form(form, form_data):
     ffc_assert(isinstance(form, Form), "Expecting a UFL form.")
 
     # Purge list tensors from expression tree
+    original_form = form
     form = purge_list_tensors(form)
 
     # Iterate over all integrals
@@ -48,10 +45,52 @@ def extract_monomial_form(form, form_data):
         integrand = integral.integrand()
 
         # Extract monomial representation if possible
-        integrand = apply_transformer(integrand, MonomialTransformer())
+        integrand = extract_monomial_integrand(integrand)
         monomial_form.append(integrand, measure)
 
     return monomial_form
+
+def extract_monomial_integrand(integrand):
+    "Extract monomial integrand (if possible)."
+
+    # Check cache
+    if integrand in _cache:
+        print "Reusing monomial integrand from cache"
+        debug("Reusing monomial integrand from cache")
+        return _cache[integrand]
+
+    # Apply monomial transformer
+    monomial_integrand = apply_transformer(integrand, MonomialTransformer())
+
+    # Store in cache
+    _cache[integrand] = monomial_integrand
+
+    return monomial_integrand
+
+def estimate_cost(integral):
+    """
+    Estimate cost of tensor representation for integrand. The cost is
+    computed as the sum of the number of coefficients and derivatives,
+    if the integrand can be represented as a monomial, and -1 if not.
+    """
+
+    # Extract monomial integrand
+    try:
+        monomial_integrand = extract_monomial_integrand(integral.integrand())
+    except:
+        return -1
+
+    # Compute cost
+    cost = 0
+    for monomial in monomial_integrand.monomials:
+        monomial_cost = 0
+        for factor in monomial.factors:
+            if not factor.function is None:
+                monomial_cost += 1
+            monomial_cost += len(factor.derivatives)
+        cost = max(cost, monomial_cost)
+
+    return cost
 
 class MonomialException(Exception):
     "Exception raised when monomial extraction fails."

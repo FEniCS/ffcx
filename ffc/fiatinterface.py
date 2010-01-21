@@ -38,7 +38,7 @@ def reference_cell(dim):
 
 def create_element(ufl_element):
 
-    # Use element from cache if in cache
+    # Check cache
     if ufl_element in _cache:
         debug("Reusing element from cache")
         return _cache[ufl_element]

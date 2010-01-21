@@ -25,6 +25,7 @@ from ufl.algorithms import extract_unique_elements
 # FFC modules
 from ffc.log import log, info, begin, end, warning
 from ffc.quadratureelement import default_quadrature_degree
+from ffc.tensor import estimate_cost
 
 def analyze_forms(forms, object_names, options):
     """
@@ -188,6 +189,10 @@ def _extract_metadata(form, options, elements):
 
 def _auto_select_representation(integral):
     "Automatically select the best representation for integral."
+
+
+    cost = estimate_cost(integral)
+    print "Estimated cost:", cost
 
     # FIXME: Implement this
     info("Automatic selection of representation not implemented, defaulting to quadrature.")
