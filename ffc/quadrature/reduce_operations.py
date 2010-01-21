@@ -1,11 +1,11 @@
 "Some simple functions for manipulating expressions symbolically"
 
-__author__ = "Kristian B. Oelgaard (k.b.oelgaard@tudelft.nl)"
+__author__ = "Kristian B. Oelgaard (k.b.oelgaard@gmail.com)"
 __date__ = "2008-04-24"
-__copyright__ = "Copyright (C) 2008-2009 Kristian B. Oelgaard"
+__copyright__ = "Copyright (C) 2008-2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2009-12-09
+# Last changed: 2010-01-21
 
 # FFC modules
 from ffc.log import error

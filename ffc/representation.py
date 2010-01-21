@@ -14,12 +14,12 @@ in the intermediate representation under the key "foo".
 
 __author__ = "Anders Logg (logg@simula.no) and friends"
 __date__ = "2009-12-16"
-__copyright__ = "Copyright (C) 2009 " + __author__
+__copyright__ = "Copyright (C) 2009-2010 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Marie E. Rognes 2010
 # Modified by Kristian B. Oelgaard 2010
-# Last changed: 2010-01-12
+# Last changed: 2010-01-21
 
 # Python modules
 from itertools import chain
@@ -85,11 +85,6 @@ def _compute_element_ir(ufl_element, element_id, element_map):
     ir["value_rank"] = len(ufl_element.value_shape())
     ir["value_dimension"] = ufl_element.value_shape()
     ir["evaluate_basis"] = _evaluate_basis(ufl_element, element)
-    # TODO: KBO: The representation for evaluate_basis might be all there is
-    # needed for the other functions as well.
-    # ir["evaluate_basis_all"] = not_implemented #element.get_coeffs()
-    # ir["evaluate_basis_derivatives"] = not_implemented
-    # ir["evaluate_basis_derivatives_all"] = not_implemented #element.get_coeffs()
     ir["evaluate_dof"] = _evaluate_dof(element, cell)
     ir["evaluate_dofs"] = ir["evaluate_dof"]
     ir["interpolate_vertex_values"] = _interpolate_vertex_values(element, cell)

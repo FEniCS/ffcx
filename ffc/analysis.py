@@ -7,7 +7,7 @@ forms, including automatic selection of elements, degrees and
 form representation type.
 """
 
-__author__ = "Anders Logg (logg@simula.no) and Kristian B. Oelgaard (k.b.oelgaard@tudelft.nl)"
+__author__ = "Anders Logg (logg@simula.no) and Kristian B. Oelgaard (k.b.oelgaard@gmail.com)"
 __date__ = "2007-02-05"
 __copyright__ = "Copyright (C) 2007-2010 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
@@ -23,7 +23,7 @@ from ufl.algorithms import estimate_total_polynomial_degree
 from ufl.algorithms import extract_unique_elements
 
 # FFC modules
-from ffc.log import log, info, begin, end
+from ffc.log import log, info, begin, end, warning
 from ffc.quadratureelement import default_quadrature_degree
 
 def analyze_forms(forms, object_names, options):

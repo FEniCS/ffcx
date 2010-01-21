@@ -89,13 +89,13 @@ The compiler stages are implemented by the following functions:
 
 __author__ = "Anders Logg (logg@simula.no)"
 __date__ = "2007-02-05"
-__copyright__ = "Copyright (C) 2007-2009 " + __author__
+__copyright__ = "Copyright (C) 2007-2010 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-# Modified by Kristian B. Oelgaard, 2009.
+# Modified by Kristian B. Oelgaard, 2010.
 # Modified by Dag Lindbo, 2008.
 # Modified by Garth N. Wells, 2009.
-# Last changed: 2009-12-09
+# Last changed: 2010-01-21
 
 __all__ = ["compile_form", "compile_element"]
 

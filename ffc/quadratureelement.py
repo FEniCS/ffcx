@@ -1,10 +1,10 @@
-__author__ = "Kristian B. Oelgaard (k.b.oelgaard@tudelft.nl)"
+__author__ = "Kristian B. Oelgaard (k.b.oelgaard@gmail.com)"
 __date__ = "2007-12-10"
-__copyright__ = "Copyright (C) 2007-2008 Kristian B. Oelgaard"
+__copyright__ = "Copyright (C) 2007-2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Garth N. Wells 2006-2009
-# Last changed: 2010-01-08
+# Last changed: 2010-01-21
 
 # Python modules.
 import numpy

@@ -1,9 +1,11 @@
 "This file implements a base class to represent an expression."
 
-__author__ = "Kristian B. Oelgaard (k.b.oelgaard@tudelft.nl)"
-__date__ = "2009-08-08 -- 2009-08-08"
-__copyright__ = "Copyright (C) 2009 Kristian B. Oelgaard"
+__author__ = "Kristian B. Oelgaard (k.b.oelgaard@gmail.com)"
+__date__ = "2009-08-08"
+__copyright__ = "Copyright (C) 2009-2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
+
+# Last changed: 2010-01-21
 
 # FFC common modules.
 #from ffc.common.log import error

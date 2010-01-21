@@ -2,10 +2,12 @@
 
 "Test suite for FFC: Compile all forms in the demo directory using different representations"
 
-__author__ = "Kristian B. Oelgaard (k.b.oelgaard@tudelft.nl)"
-__date__ = "2009-03-10 -- 2009-03-10"
-__copyright__ = "Copyright (C) 2009 Kristian B. Oelgaard"
+__author__ = "Kristian B. Oelgaard (k.b.oelgaard@gmail.com)"
+__date__ = "2009-03-10"
+__copyright__ = "Copyright (C) 2009-2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
+
+# Last changed: 2010-01-21
 
 import sys
 import getopt

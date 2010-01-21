@@ -2,12 +2,12 @@
 
 __author__ = "Anders Logg (logg@simula.no) and friends"
 __date__ = "2009-12-16"
-__copyright__ = "Copyright (C) 2009 " + __author__
+__copyright__ = "Copyright (C) 2009-2010 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-# Modified by Kristian B. Oelgaard 2009
+# Modified by Kristian B. Oelgaard 2010
 # Modified by Marie E. Rognes 2010
-# Last changed: 2010-01-18
+# Last changed: 2010-01-21
 
 # Python modules.
 import re
@@ -363,6 +363,7 @@ format_old = {
     "block end": "}",
     "separator": ", ",
     "block separator": ",\n",
+    "generate jacobian": lambda d, i: _generate_jacobian(d, i),
     #           "block separator": ",",
     "new line": "\\\n",
     "end line": ";",
@@ -649,3 +650,36 @@ def _variable_in_line(variable_name, line):
         line = line.replace(character, "\\" + character)
     delimiter = "[" + ",".join(["\\" + c for c in special_characters]) + "]"
     return not re.search(delimiter + variable_name + delimiter, line) == None
+
+def _generate_jacobian(cell_dimension, integral_type):
+    "Generate code for computing jacobian"
+
+    # Choose space dimension
+    if cell_dimension == 1:
+        jacobian = jacobian_1D
+        facet_determinant = facet_determinant_1D
+    elif cell_dimension == 2:
+        jacobian = jacobian_2D
+        facet_determinant = facet_determinant_2D
+    else:
+        jacobian = jacobian_3D
+        facet_determinant = facet_determinant_3D
+        
+    # Check if we need to compute more than one Jacobian
+    if integral_type == "cell":
+        code  = jacobian % {"restriction":  ""}
+        code += "\n\n"
+        code += scale_factor
+    elif integral_type == "exterior facet":
+        code  = jacobian % {"restriction":  ""}
+        code += "\n\n"
+        code += facet_determinant % {"restriction": "", "facet" : "facet"}
+    elif integral_type == "interior facet":
+        code  = jacobian % {"restriction": choose_map["+"]}
+        code += "\n\n"
+        code += jacobian % {"restriction": choose_map["-"]}
+        code += "\n\n"
+        code += facet_determinant % {"restriction": choose_map["+"], "facet": "facet0"}
+        
+    return code
+
