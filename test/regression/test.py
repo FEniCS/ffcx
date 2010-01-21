@@ -65,11 +65,18 @@ def validate_code():
         generated_code = open(f).read()
 
         # Get reference code
-        reference_file = "../reference/%s" % f
+        reference_file = "../references/%s" % f
         if os.path.isfile(reference_file):
             reference_code = open(reference_file).read()
         else:
             info_blue("Missing reference for %s" % f)
+            continue
+
+        # Compare with reference
+        if generated_code == reference_code:
+            info_green("%s OK" % f)
+        else:
+            info_red("%s differs" % f)
 
     end()
 
@@ -108,7 +115,7 @@ def main(args):
     generate_test_cases()
 
     # Generate and validate code
-    #generate_code()
+    generate_code()
     validate_code()
 
     # Build and validate programs
