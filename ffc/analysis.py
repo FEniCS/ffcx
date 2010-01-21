@@ -23,7 +23,7 @@ from ufl.algorithms import estimate_total_polynomial_degree
 from ufl.algorithms import extract_unique_elements
 
 # FFC modules
-from ffc.log import log, info, begin, end, warning, debug
+from ffc.log import log, info, begin, end, warning, debug, error
 from ffc.quadratureelement import default_quadrature_degree
 from ffc.tensor import estimate_cost
 
@@ -146,7 +146,7 @@ def _extract_metadata(form, options, elements):
         if not r in ("quadrature", "tensor", "auto"):
             info("Valid choices are 'tensor', 'quadrature' or 'auto'.")
             error("Illegal choice of representation for integral: " + str(r))
-        if not ((isinstance(q, int) and q < 0) or q == "auto"):
+        if not ((isinstance(q, int) and q >= 0) or q == "auto"):
             info("Valid choices are nonnegative integers or 'auto'.")
             error("Illegal quadrature degree for integral: " + str(q))
 
@@ -156,7 +156,7 @@ def _extract_metadata(form, options, elements):
             info("representation:    auto --> %s" % r)
             integral_metadata["representation"] = r
         else:
-            info("representation:    %s" % s)
+            info("representation:    %s" % r)
 
         # Automatic selection of quadrature degree
         if q == "auto":
@@ -177,7 +177,13 @@ def _extract_metadata(form, options, elements):
     return metadata
 
 def _auto_select_representation(integral):
-    "Automatically select a suitable representation for integral."
+    """
+    Automatically select a suitable representation for integral.
+    Note that the selection is made for each integral, not for
+    each term. This means that terms which are grouped by UFL
+    into the same integral (if their measures are equal) will
+    necessarily get the same representation.
+    """
 
     # Estimate cost of tensor representation
     tensor_cost = estimate_cost(integral)
