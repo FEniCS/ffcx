@@ -39,9 +39,10 @@ from reduce_operations import operation_count
 class QuadratureTransformer(QuadratureTransformerBase):
     "Transform UFL representation to quadrature code."
 
-    def __init__(self, form_representation, domain_type, optimise_options, format):
+    def __init__(self, ir, optimise_options, format):
 
-        QuadratureTransformerBase.__init__(self, form_representation, domain_type, optimise_options, format)
+        # Initialise base class.
+        QuadratureTransformerBase.__init__(self, ir, optimise_options, format)
 
     # -------------------------------------------------------------------------
     # Start handling UFL classes.
@@ -295,7 +296,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
 
         code = {}
         # Handle affine mappings.
-        if transformation == AFFINE:
+        if transformation == "affine":
             # Loop derivatives and get multi indices.
             for multi in multiindices:
                 deriv = [multi.count(i) for i in range(self.geo_dim)]
@@ -373,7 +374,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
 
         code = []
         # Handle affine mappings.
-        if transformation == AFFINE:
+        if transformation == "affine":
             # Loop derivatives and get multi indices.
             for multi in multiindices:
                 deriv = [multi.count(i) for i in range(self.geo_dim)]

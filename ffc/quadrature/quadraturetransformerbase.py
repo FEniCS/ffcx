@@ -28,7 +28,7 @@ from ufl.algorithms.printing import tree_format
 from ffc.log import ffc_assert
 from ffc.log import error
 from ffc.log import info
-from ffc.createelement import create_element
+from ffc.fiatinterface import create_element
 
 # FFC tensor modules.
 from ffc.tensor.multiindex import MultiIndex as FFCMultiIndex
@@ -44,14 +44,18 @@ class QuadratureTransformerBase(Transformer):
 #class QuadratureTransformerBase(ReuseTransformer):
     "Transform UFL representation to quadrature code."
 
-    def __init__(self, form_representation, domain_type, optimise_options, format):
+    def __init__(self, ir, optimise_options, format):
 
         Transformer.__init__(self)
+
+        # Get weights and psi tables
+        quadrature_weights = ir["quadrature_weights"]
+        psi_tables = ir["psi_tables"]
 
         # Save format, optimise_options, weights and fiat_elements_map.
         self.format = format
         self.optimise_options = optimise_options
-        self.quadrature_weights = form_representation.quadrature_weights[domain_type]
+        self.quadrature_weights = quadrature_weights
 
         # Create containers and variables.
         self.used_psi_tables = set()
@@ -75,8 +79,9 @@ class QuadratureTransformerBase(Transformer):
         self._components = Stack()
         self.trans_set = set()
         self.element_map, self.name_map, self.unique_tables =\
-              create_psi_tables(form_representation.psi_tables[domain_type],\
+              create_psi_tables(psi_tables,\
                                        self.format["epsilon"], self.optimise_options)
+        print "map: ", self.element_map
 
         # Cache.
         self.argument_cache = {}
@@ -921,6 +926,14 @@ class QuadratureTransformerBase(Transformer):
         ffc_assert(not (derivatives and quad_element), \
                    "Derivatives of Quadrature elements are not supported: " + repr(ufl_function))
 
+        # Create FFC element.
+        ffc_element = create_element(ufl_function.element())
+
+        # Get relevant sub element and mapping.
+        sub_element = create_element(ufl_function.element().extract_component(tuple(component))[1])
+        # Assuming that mappings for all basisfunctions are equal (they should be).
+        transformation = sub_element.mapping()[0]
+
         # Handle tensor elements.
         if len(local_comp) > 1:
             local_comp = local_elem._sub_element_mapping[local_comp]
@@ -939,10 +952,6 @@ class QuadratureTransformerBase(Transformer):
         local_offset = 0
         if component:
             local_offset = component - local_comp
-
-        # Create FFC element and get transformation.
-        ffc_element = create_element(ufl_function.element())
-        transformation = ffc_element.component_element(component)[0].mapping()
 
         # Set geo_dim.
         # TODO: All terms REALLY have to be defined on cell with the same

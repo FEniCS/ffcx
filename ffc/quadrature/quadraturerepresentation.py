@@ -38,8 +38,10 @@ def compute_integral_ir(form, form_data, form_id, options):
                    "representation":      "quadrature",
                    "form_id":             form_id,
                    "sub_domain":          i,
-                   "quadrature weights":  quad_weights,
+                   "quadrature_weights":  quad_weights,
                    "psi_tables":          psi_tables,
+                   "geometric_dimension": form_data.geometric_dimension,
+                   "num_facets":          form_data.num_facets,
                    "integrals":           sorted_integrals})
 
     # Compute representation of exterior facet tensors.
@@ -52,8 +54,10 @@ def compute_integral_ir(form, form_data, form_id, options):
                    "representation":      "quadrature",
                    "form_id":             form_id,
                    "sub_domain":          i,
-                   "quadrature weights":  quad_weights,
+                   "quadrature_weights":  quad_weights,
                    "psi_tables":          psi_tables,
+                   "geometric_dimension": form_data.geometric_dimension,
+                   "num_facets":          form_data.num_facets,
                    "integrals":           sorted_integrals})
 
     # Compute representation of interior facet tensors.
@@ -66,8 +70,10 @@ def compute_integral_ir(form, form_data, form_id, options):
                    "representation":      "quadrature",
                    "form_id":             form_id,
                    "sub_domain":          i,
-                   "quadrature weights":  quad_weights,
+                   "quadrature_weights":  quad_weights,
                    "psi_tables":          psi_tables,
+                   "geometric_dimension": form_data.geometric_dimension,
+                   "num_facets":          form_data.num_facets,
                    "integrals":           sorted_integrals})
 
     return ir
@@ -84,7 +90,7 @@ def _tabulate_basis(sorted_integrals, integral_type):
         return (None, None)
 
     # Loop the quadrature points and tabulate the basis values.
-    for pr, form in sorted_integrals.iteritems():
+    for pr, integral in sorted_integrals.iteritems():
 
         # Extract number of points and the rule.
         # TODO: The rule is currently unused because the fiatinterface does not
@@ -92,10 +98,11 @@ def _tabulate_basis(sorted_integrals, integral_type):
         num_points_per_axis, rule = pr
 
         # Get all unique elements in integrals and convert to list.
-        elements = set()
-        for i in form.integrals():
-            elements.update(extract_unique_elements(i))
-        elements = list(elements)
+#        elements = set()
+#        for i in form.integrals():
+#            elements.update(extract_unique_elements(i))
+#        elements = list(elements)
+        elements = extract_unique_elements(integral)
 
         # Create a list of equivalent FIAT elements.
         fiat_elements = [create_element(e) for e in elements]
@@ -137,9 +144,10 @@ def _tabulate_basis(sorted_integrals, integral_type):
         # Initialise dictionary of elements and the number of derivatives.
         num_derivatives = dict([(e, 0) for e in elements])
         # Extract the derivatives from all integrals.
-        derivatives = set()
-        for i in form.integrals():
-            derivatives.update(extract_type(i, SpatialDerivative))
+#        derivatives = set()
+#        for i in form.integrals():
+#            derivatives.update(extract_type(i, SpatialDerivative))
+        derivatives = set(extract_type(integral, SpatialDerivative))
 
         # Loop derivatives and extract multiple derivatives.
         for d in list(derivatives):
@@ -170,7 +178,7 @@ def _tabulate_basis(sorted_integrals, integral_type):
                     psi_tables[len_weights][elements[i]][facet] =\
                         element.tabulate(deriv_order, map_to_facet(cell_domain, points, facet))
 
-    return (quadrature_weights, psi_tables)
+    return (psi_tables, quadrature_weights)
 
 def _extract_quadrature_integrals(integrals, form_data):
     "Extract relevant integrals (that needs quadrature representation) for the QuadratureGenerator."
@@ -206,5 +214,11 @@ def _sort_integrals(integrals, domain_id, form_data):
             sorted_integrals[(num_points_per_axis, rule)] = form
         else:
             sorted_integrals[(num_points_per_axis, rule)] += form
+
+    # Extract integrals form forms.
+    for key, val in sorted_integrals.items():
+        if len(val.integrals()) != 1:
+            error("Only expected one integral over one subdomain: %s" % repr(val))
+        sorted_integrals[key] = val.integrals()[0]
 
     return sorted_integrals

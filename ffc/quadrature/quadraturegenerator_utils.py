@@ -90,7 +90,8 @@ def create_psi_tables(tables, format_epsilon, options):
     "Create names and maps for tables and non-zero entries if appropriate."
 
     debug("\nQG-utils, psi_tables:\n" + str(tables))
-
+    print "tabe"
+    print tables
     # Create element map {points:{element:number,},}
     # and a plain dictionary {name:values,}.
     element_map, flat_tables = flatten_psi_tables(tables)
@@ -119,6 +120,7 @@ def flatten_psi_tables(tables):
 
     # Loop quadrature points and get element dictionary {elem: {tables}}.
     for point in sorted(tables.keys()):
+        print point
         elem_dict = tables[point]
         element_map[point] = {}
         debug("\nQG-utils, flatten_tables, points:\n" + str(point))
@@ -131,46 +133,43 @@ def flatten_psi_tables(tables):
             debug("\nQG-utils, flatten_tables, facet_tables:\n" + str(facet_tables))
             element_map[point][elem] = counter
             for facet in sorted(facet_tables.keys()):
-                elem_tables = facet_tables[facet]
+                elem_table = facet_tables[facet]
                 # If the element value rank != 0, we must loop the components.
                 # before the derivatives (that's the way the values are tabulated).
                 if len(elem.value_shape()) != 0:
-                    for num_comp, comp in enumerate(elem_tables):
-                        for num_deriv in comp:
-                            for derivs in sorted(num_deriv.keys()):
-                                psi_table = num_deriv[derivs]
-                                debug("\nQG-utils, flatten_tables, derivs:\n" + str(derivs))
-                                debug("\nQG-utils, flatten_tables, psi_table:\n" + str(psi_table))
-                                # Verify shape of basis (can be omitted for speed
-                                # if needed I think).
-                                ffc_assert(len(shape(psi_table)) == 2 and shape(psi_table)[1] == point, \
-                                           "Something is wrong with this table: " + str(psi_table))
-                                # Generate the table name.
-                                name = generate_psi_name(counter, facet, num_comp, derivs)
-                                debug("Table name: " + name)
-                                ffc_assert(name not in flat_tables, \
-                                           "Table name is not unique, something is wrong: " + name + str(flat_tables))
-                                # Take transpose such that we get (ip_number, basis_number)
-                                # instead of (basis_number, ip_number).
-                                flat_tables[name] = transpose(psi_table)
-                # If we don't have any components.
-                else:
-                    # TODO: Do we need to sort elem_tables too?
-                    for num_deriv in elem_tables:
-                        for derivs in sorted(num_deriv.keys()):
+                    for num_comp, comp_table in enumerate(elem_table):
+                        for derivs in sorted(comp_table.keys()):
                             psi_table = num_deriv[derivs]
                             debug("\nQG-utils, flatten_tables, derivs:\n" + str(derivs))
                             debug("\nQG-utils, flatten_tables, psi_table:\n" + str(psi_table))
                             # Verify shape of basis (can be omitted for speed
                             # if needed I think).
                             ffc_assert(len(shape(psi_table)) == 2 and shape(psi_table)[1] == point, \
-                                       "Something is wrong with this table: " + str(psi_table))
+                                        "Something is wrong with this table: " + str(psi_table))
                             # Generate the table name.
-                            name = generate_psi_name(counter, facet, (), derivs)
+                            name = generate_psi_name(counter, facet, num_comp, derivs)
                             debug("Table name: " + name)
                             ffc_assert(name not in flat_tables, \
-                                       "Table name is not unique, something is wrong: " + name + str(flat_tables))
+                                        "Table name is not unique, something is wrong: " + name + str(flat_tables))
+                            # Take transpose such that we get (ip_number, basis_number)
+                            # instead of (basis_number, ip_number).
                             flat_tables[name] = transpose(psi_table)
+                # If we don't have any components.
+                else:
+                    for derivs in sorted(elem_table.keys()):
+                        psi_table = elem_table[derivs]
+                        debug("\nQG-utils, flatten_tables, derivs:\n" + str(derivs))
+                        debug("\nQG-utils, flatten_tables, psi_table:\n" + str(psi_table))
+                        # Verify shape of basis (can be omitted for speed
+                        # if needed I think).
+                        ffc_assert(len(shape(psi_table)) == 2 and shape(psi_table)[1] == point, \
+                                    "Something is wrong with this table: " + str(psi_table))
+                        # Generate the table name.
+                        name = generate_psi_name(counter, facet, (), derivs)
+                        debug("Table name: " + name)
+                        ffc_assert(name not in flat_tables, \
+                                    "Table name is not unique, something is wrong: " + name + str(flat_tables))
+                        flat_tables[name] = transpose(psi_table)
             # Increase unique element counter.
             counter += 1
 

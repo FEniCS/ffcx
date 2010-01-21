@@ -363,6 +363,7 @@ format_old = {
     "block end": "}",
     "separator": ", ",
     "block separator": ",\n",
+    "generate jacobian": lambda d, i: _generate_jacobian(d, i),
     #           "block separator": ",",
     "new line": "\\\n",
     "end line": ";",
@@ -649,3 +650,36 @@ def _variable_in_line(variable_name, line):
         line = line.replace(character, "\\" + character)
     delimiter = "[" + ",".join(["\\" + c for c in special_characters]) + "]"
     return not re.search(delimiter + variable_name + delimiter, line) == None
+
+def _generate_jacobian(cell_dimension, integral_type):
+    "Generate code for computing jacobian"
+
+    # Choose space dimension
+    if cell_dimension == 1:
+        jacobian = jacobian_1D
+        facet_determinant = facet_determinant_1D
+    elif cell_dimension == 2:
+        jacobian = jacobian_2D
+        facet_determinant = facet_determinant_2D
+    else:
+        jacobian = jacobian_3D
+        facet_determinant = facet_determinant_3D
+        
+    # Check if we need to compute more than one Jacobian
+    if integral_type == "cell":
+        code  = jacobian % {"restriction":  ""}
+        code += "\n\n"
+        code += scale_factor
+    elif integral_type == "exterior facet":
+        code  = jacobian % {"restriction":  ""}
+        code += "\n\n"
+        code += facet_determinant % {"restriction": "", "facet" : "facet"}
+    elif integral_type == "interior facet":
+        code  = jacobian % {"restriction": choose_map["+"]}
+        code += "\n\n"
+        code += jacobian % {"restriction": choose_map["-"]}
+        code += "\n\n"
+        code += facet_determinant % {"restriction": choose_map["+"], "facet": "facet0"}
+        
+    return code
+

@@ -50,10 +50,10 @@ from symbolics import optimise_code
 class QuadratureTransformerOpt(QuadratureTransformerBase):
     "Transform UFL representation to quadrature code."
 
-    def __init__(self, form_representation, domain_type, optimise_options, format):
+    def __init__(self, ir, optimise_options, format):
 
         # Initialise base class.
-        QuadratureTransformerBase.__init__(self, form_representation, domain_type, optimise_options, format)
+        QuadratureTransformerBase.__init__(self, ir, optimise_options, format)
         set_format(format)
 
     # -------------------------------------------------------------------------
@@ -220,7 +220,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         code = {}
 
         # Affince mapping
-        if transformation == AFFINE:
+        if transformation == "affine":
             # Loop derivatives and get multi indices.
             for multi in multiindices:
                 deriv = [multi.count(i) for i in range(self.geo_dim)]
@@ -284,7 +284,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         code = []
 
         # Handle affine mappings.
-        if transformation == AFFINE:
+        if transformation == "affine":
             # Loop derivatives and get multi indices.
             for multi in multiindices:
                 deriv = [multi.count(i) for i in range(self.geo_dim)]
