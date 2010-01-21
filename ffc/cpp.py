@@ -683,3 +683,26 @@ def _generate_jacobian(cell_dimension, integral_type):
         
     return code
 
+def _generate_normal(cell_dimension, integral_type, reference_normal=False):
+    "Generate code for computing normal"
+
+    # Choose space dimension
+    if cell_dimension == 1:
+        normal_direction = normal_direction_1D
+        facet_normal = facet_normal_1D
+    elif cell_dimension == 2:
+        normal_direction = normal_direction_2D
+        facet_normal = facet_normal_2D
+    else:
+        normal_direction = normal_direction_3D
+        facet_normal = facet_normal_3D
+
+    if integral_type == "exterior facet":
+        code = normal_direction % {"restriction": "", "facet" : "facet"}
+        code += facet_normal % {"direction" : "", "restriction": ""}
+    elif integral_type == "interior facet":
+        code = normal_direction % {"restriction": choose_map["+"], "facet": "facet0"}
+        code += facet_normal % {"direction" : "", "restriction": choose_map["+"]}
+        code += facet_normal % {"direction" : "!", "restriction": choose_map["-"]}
+    return code
+

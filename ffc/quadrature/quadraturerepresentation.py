@@ -15,7 +15,7 @@ from ufl.algorithms import extract_unique_elements, extract_type, extract_elemen
 
 # FFC modules
 from ffc.log import ffc_assert
-from ffc.fiatinterface import create_element, create_quadrature
+from ffc.fiatinterface import create_element, create_quadrature, map_facet_points
 
 def compute_integral_ir(form, form_data, form_id, options):
     "Compute intermediate represention of form integrals."
@@ -31,7 +31,7 @@ def compute_integral_ir(form, form_data, form_id, options):
     # Compute representation of cell tensors.
     for i in range(form_data.num_cell_domains):
         sorted_integrals = _sort_integrals(cell_integrals, i, form_data)
-        psi_tables, quad_weights = _tabulate_basis(sorted_integrals, "cell_integral")
+        psi_tables, quad_weights = _tabulate_basis(sorted_integrals, "cell_integral", form_data.num_facets)
         if psi_tables is None and quad_weights is None:
             continue
         ir.append({"integral_type":       "cell_integral",
@@ -47,7 +47,7 @@ def compute_integral_ir(form, form_data, form_id, options):
     # Compute representation of exterior facet tensors.
     for i in range(form_data.num_exterior_facet_domains):
         sorted_integrals = _sort_integrals(ext_facet_integrals, i, form_data)
-        psi_tables, quad_weights = _tabulate_basis(sorted_integrals, "exterior_facet_integral")
+        psi_tables, quad_weights = _tabulate_basis(sorted_integrals, "exterior_facet_integral", form_data.num_facets)
         if psi_tables is None and quad_weights is None:
             continue
         ir.append({"integral_type":       "exterior_facet_integral",
@@ -63,7 +63,7 @@ def compute_integral_ir(form, form_data, form_id, options):
     # Compute representation of interior facet tensors.
     for i in range(form_data.num_interior_facet_domains):
         sorted_integrals = _sort_integrals(int_facet_integrals, i, form_data)
-        psi_tables, quad_weights = _tabulate_basis(sorted_integrals, "interior_facet_integral")
+        psi_tables, quad_weights = _tabulate_basis(sorted_integrals, "interior_facet_integral", form_data.num_facets)
         if psi_tables is None and quad_weights is None:
             continue
         ir.append({"integral_type":       "interior_facet_integral",
@@ -78,7 +78,7 @@ def compute_integral_ir(form, form_data, form_id, options):
 
     return ir
 
-def _tabulate_basis(sorted_integrals, integral_type):
+def _tabulate_basis(sorted_integrals, integral_type, num_facets):
     "Tabulate the basisfunctions and derivatives."
 
     # Initialise return values.
@@ -122,7 +122,7 @@ def _tabulate_basis(sorted_integrals, integral_type):
         if integral_type == "cell_integral":
             (points, weights) = create_quadrature(cell_domain, num_points_per_axis)
         elif integral_type == "exterior_facet_integral" or integral_type == "interior_facet_integral":
-            (points, weights) = make_quadrature(facet_domain, num_points_per_axis, rule)
+            (points, weights) = create_quadrature(facet_domain, num_points_per_axis)
         else:
             error("Unknown integral type: " + str(integral_type))
 
@@ -174,9 +174,9 @@ def _tabulate_basis(sorted_integrals, integral_type):
                 {None: element.tabulate(deriv_order, points)}
             else:# integral_type == "exterior_facet_integral" or integral_type == "interior_facet_integral":
                 psi_tables[len_weights][elements[i]] = {}
-                for facet in range(element.cell().num_facets()):
+                for facet in range(num_facets):
                     psi_tables[len_weights][elements[i]][facet] =\
-                        element.tabulate(deriv_order, map_to_facet(cell_domain, points, facet))
+                        element.tabulate(deriv_order, map_facet_points(points, facet))
 
     return (psi_tables, quadrature_weights)
 
