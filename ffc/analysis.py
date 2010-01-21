@@ -15,7 +15,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Last changed: 2010-01-21
 
 # UFL modules
-from ufl.common import istr
+from ufl.common import istr, tstr
 from ufl.finiteelement import MixedElement
 from ufl.algorithms import preprocess, FormData
 from ufl.algorithms import estimate_max_polynomial_degree
@@ -128,100 +128,82 @@ def _extract_metadata(form, options, elements):
 
     metadata = {}
 
+    # Recognized metadata keys
+    metadata_keys = ("representation", "quadrature_degree")
+
     # Iterate over integrals
     for integral in form.integrals():
 
-        # Set default values for metadata
-        representation = options["representation"]
-        quadrature_degree = options["quadrature_degree"]
-        quadrature_rule = options["quadrature_rule"]
-
-        if quadrature_rule is None:
-            info("Quadrature rule: default")
-        else:
-            info("Quadrature rule: " + str(quadrature_rule))
-        info("Quadrature degree: " + str(quadrature_degree))
-
-        # Get metadata for integral (if any)
+        # Get metadata for integral
         integral_metadata = integral.measure().metadata() or {}
-        for (key, value) in integral_metadata.iteritems():
-            if key == "ffc_representation":
-                representation = integral_metadata["ffc_representation"]
-            elif key == "quadrature_degree":
-                quadrature_degree = integral_metadata["quadrature_degree"]
-            elif key == "quadrature_rule":
-                quadrature_rule = integral_metadata["quadrature_rule"]
-            else:
-                warning("Unrecognized option '%s' for integral metadata." % key)
+        for key in metadata_keys:
+            if not key in integral_metadata:
+                integral_metadata[key] = options[key]
 
         # Check metadata
-        valid_representations = ["tensor", "quadrature", "auto"]
-        if not representation in valid_representations:
-            error("Unrecognized form representation '%s', must be one of %s.",
-                  representation, ", ".join("'%s'" % r for r in valid_representations))
-        if quadrature_degree != "auto":
-            try:
-                quadrature_degree = int(quadrature_degree)
-                if not quadrature_degree >= 0:
-                    error("Illegal quadrature degree '%s' for integral, must be a nonnegative integer.",
-                        str(quadrature_degree))
-            except:
-                error("Illegal quadrature degree '%s' for integral, must be a nonnegative integer or 'auto'.",
-                    str(quadrature_degree))
+        r = integral_metadata["representation"]
+        q = integral_metadata["quadrature_degree"]
+        if not r in ("quadrature", "tensor", "auto"):
+            info("Valid choices are 'tensor', 'quadrature' or 'auto'.")
+            error("Illegal choice of representation for integral: " + str(r))
+        if not ((isinstance(q, int) and q < 0) or q == "auto"):
+            info("Valid choices are nonnegative integers or 'auto'.")
+            error("Illegal quadrature degree for integral: " + str(q))
 
-        # Automatically select metadata if "auto" is selected
-        if representation == "auto":
-            representation = _auto_select_representation(integral)
-        if quadrature_degree == "auto":
-            quadrature_degree = _auto_select_quadrature_degree(integral, representation, elements)
-        info("Integral quadrature degree is %d." % quadrature_degree)
+        # Automatic selection of representation
+        if r == "auto":
+            r = _auto_select_representation(integral)
+            info("representation:    auto --> %s" % r)
+            integral_metadata["representation"] = r
+        else:
+            info("representation:    %s" % s)
 
-        # No quadrature rules have been implemented yet
-        if quadrature_rule:
-            warning("No quadrature rules have been implemented yet, using the default from FIAT.")
+        # Automatic selection of quadrature degree
+        if q == "auto":
+            q = _auto_select_quadrature_degree(integral, r, elements)
+            info("quadrature_degree: auto --> %d" % q)
+            integral_metadata["quadrature_degree"] = q
+        else:
+            info("quadrature_degree: %d" % q)
+
+        info("")
+
+        # Quadrature rule selection not supported
+        integral_metadata["quadrature_rule"] = "auto"
 
         # Set metadata for integral
-        metadata[integral] = {"quadrature_degree": quadrature_degree,
-                              "ffc_representation": representation,
-                              "quadrature_rule":quadrature_rule}
+        metadata[integral] = integral_metadata
 
     return metadata
 
 def _auto_select_representation(integral):
-    "Automatically select the best representation for integral."
+    "Automatically select a suitable representation for integral."
 
     # Estimate cost of tensor representation
     tensor_cost = estimate_cost(integral)
-    debug("Cost of tensor representation is %d" % tensor_cost)
+    debug("Estimated cost of tensor representation: " + str(tensor_cost))
 
     # Use quadrature if tensor representation is not possible
     if tensor_cost == -1:
-        info("Tensor representation not possible, selecting quadrature representation")
         return "quadrature"
 
     # Otherwise, select quadrature when cost is high
     if tensor_cost <= 3:
-        info("Tensor representation seems to be a suitable choice for integrand")
         return "tensor"
     else:
-        info("Quadrature representation seems to be a suitable choice for integrand")
         return "quadrature"
 
 def _auto_select_quadrature_degree(integral, representation, elements):
-    "Automatically select the appropriate quadrature degree for integral."
-
-    # Estimate total degree of integrand
-    degree = estimate_total_polynomial_degree(integral, default_quadrature_degree)
+    "Automatically select a suitable quadrature degree for integral."
 
     # Use maximum quadrature element degree if any for quadrature representation
     if representation == "quadrature":
-        #quadrature_elements = [e for e in elements if e.family() == "Quadrature"]
-        #degree = max([degree] + [e.degree() for e in quadrature_elements])
         quadrature_degrees = [e.degree() for e in elements if e.family() == "Quadrature"]
-        if quadrature_degrees != []:
+        if quadrature_degrees:
             ffc_assert(min(quadrature_degrees) == max(quadrature_degrees), \
                        "All QuadratureElements in an integrand must have the same degree: %s" \
                        % str(quadrature_degrees))
-            degree = quadrature_degrees[0]
+            return quadrature_degrees[0]
 
-    return degree
+    # Otherwise estimate total degree of integrand
+    return estimate_total_polynomial_degree(integral, default_quadrature_degree)

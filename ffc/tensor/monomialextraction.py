@@ -84,7 +84,7 @@ def estimate_cost(integral):
     for monomial in monomial_integrand.monomials:
         monomial_cost = 0
         for factor in monomial.factors:
-            if not factor.function is None:
+            if isinstance(factor.function, Coefficient):
                 monomial_cost += 1
             monomial_cost += len(factor.derivatives)
         cost = max(cost, monomial_cost)

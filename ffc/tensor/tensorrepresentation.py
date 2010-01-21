@@ -93,7 +93,7 @@ def _extract_tensor_integrals(form, form_data):
     "Extract form containing only tensor representation integrals."
     new_form = Form([])
     for integral in form.integrals():
-        if form_data.metadata[integral]["ffc_representation"] == "tensor":
+        if form_data.metadata[integral]["representation"] == "tensor":
             # Get quadrature order and create new integral attaching the order
             # as metadata such that the monomial integration will be aware of
             # quadrature_degree specified by the user on the command line or in forms

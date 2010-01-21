@@ -183,7 +183,7 @@ def _tabulate_basis(sorted_integrals, integral_type, num_facets):
 def _extract_quadrature_integrals(integrals, form_data):
     "Extract relevant integrals (that needs quadrature representation) for the QuadratureGenerator."
     return [i for i in integrals\
-            if form_data.metadata[i]["ffc_representation"] == "quadrature"]
+            if form_data.metadata[i]["representation"] == "quadrature"]
 
 def _sort_integrals(integrals, domain_id, form_data):
     """Sort integrals according to the number of quadrature points needed per axis.
