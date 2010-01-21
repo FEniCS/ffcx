@@ -179,8 +179,7 @@ def _evaluate_basis_derivatives(data_list):
         code += _mixed_elements(data_list, Indent, format)
 
     lines = format["generate body"](code)
-#    code = remove_unused(lines)
-    return lines
+    code = remove_unused(lines)
     return code
 
 def _compute_num_derivatives(topological_dimension, Indent, format):
