@@ -11,7 +11,7 @@ __date__ = "2009-12-16"
 __copyright__ = "Copyright (C) 2009 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-19
+# Last changed: 2010-01-21
 
 # FFC modules
 from ffc.log import info, begin, end, debug_code
@@ -83,7 +83,7 @@ def _generate_element_code(ir, prefix, options):
     code["value_dimension"] = _value_dimension(ir["value_dimension"])
     code["evaluate_basis"] = _evaluate_basis(ir["evaluate_basis"])
     code["evaluate_basis_all"] = _evaluate_basis_all(ir["evaluate_basis"])
-    code["evaluate_basis_derivatives"] = _evaluate_basis_derivatives(ir["evaluate_basis"])
+    code["evaluate_basis_derivatives"] = not_implemented #_evaluate_basis_derivatives(ir["evaluate_basis"])
     code["evaluate_basis_derivatives_all"] = _evaluate_basis_derivatives_all(ir["evaluate_basis"])
     code["evaluate_dof"] = evaluate_dof(ir["evaluate_dof"])
     code["evaluate_dofs"] = evaluate_dofs(ir["evaluate_dofs"])
