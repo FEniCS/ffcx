@@ -1,6 +1,0 @@
-This directory contains the regression test cases.
-
-The test cases include all demos found in ffc/demo and all
-forms and elements defined in forms.py and elements.py.
-
-To update the test cases, run the script generate.py.

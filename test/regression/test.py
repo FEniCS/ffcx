@@ -40,14 +40,13 @@ def generate_code():
     for f in form_files:
 
         # Generate code
-        info("Generating code for %s" % f)
         status, output = commands.getstatusoutput("ffc %s" % f)
 
         # Check status
         if status == 0:
-            info_green("OK")
+            info_green("%s OK" % f)
         else:
-            info_red("Failed")
+            info_red("%s failed" % f)
 
     end()
 
@@ -56,7 +55,21 @@ def validate_code():
 
     begin("Validating generated code")
 
-    info("Not implemented")
+    # Get a list of all files
+    header_files = [f for f in os.listdir(".") if f.endswith(".h")]
+
+    # Iterate over all files
+    for f in header_files:
+
+        # Get generated code
+        generated_code = open(f).read()
+
+        # Get reference code
+        reference_file = "../reference/%s" % f
+        if os.path.isfile(reference_file):
+            reference_code = open(reference_file).read()
+        else:
+            info_blue("Missing reference for %s" % f)
 
     end()
 
@@ -95,7 +108,7 @@ def main(args):
     generate_test_cases()
 
     # Generate and validate code
-    generate_code()
+    #generate_code()
     validate_code()
 
     # Build and validate programs

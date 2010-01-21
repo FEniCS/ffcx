@@ -72,7 +72,7 @@ if __name__ == "__main__":
 
     cells = ['triangle', 'tetrahedron']
     families = ["DG", "CG", "RT", "BDM", "N1curl"]
-    max_degree = 0
+    max_degree = 1
     elements = []
 
     # List of basic elements to be tested

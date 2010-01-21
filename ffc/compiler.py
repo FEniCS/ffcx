@@ -107,7 +107,7 @@ from ffc.log import log, begin, end, debug, info, warning, error, ffc_assert
 from ffc.constants import FFC_OPTIONS
 
 # FFC modules
-from ffc.analysis import analyze_forms
+from ffc.analysis import analyze_forms, analyze_elements
 from ffc.representation import compute_ir
 from ffc.optimization import optimize_ir
 from ffc.codegeneration import generate_code
@@ -166,11 +166,11 @@ def compile_element(elements, object_names={}, prefix="Element", options=FFC_OPT
     cpu_time = time()
 
     # Stage 1: analysis
-    begin("Compiler stage 1: Skipping form analysis")
-    end()
+    analysis = analyze_elements(elements)
+    _print_timing(1, time() - cpu_time)
 
     # Stage 2: intermediate representation
-    ir = compute_ir(None, elements, None, options)
+    ir = compute_ir(analysis, options)
     _print_timing(2, time() - cpu_time)
 
     # Stage 3: optimization
@@ -181,8 +181,12 @@ def compile_element(elements, object_names={}, prefix="Element", options=FFC_OPT
     code = generate_code(oir, prefix, options)
     _print_timing(4, time() - cpu_time)
 
+    # Stage 4.1: generate wrappers
+    wrapper_code = generate_wrapper_code(analysis, prefix, options)
+    _print_timing(4.1, time() - cpu_time)
+
     # Stage 5: format code
-    format_code([code], prefix, options)
+    format_code(code, wrapper_code, prefix, options)
     _print_timing(5, time() - cpu_time)
 
     info("Code generation complete.")

@@ -199,7 +199,7 @@ def _change_variables(mapping, dim, offset):
 
     'covariant piola' mapping for g:
 
-      G(X) = J g(x)          i.e  G_i(X) = J_ij g_j(x)
+      G(X) = J^T g(x)          i.e  G_i(X) = J^T_ij g(x) = J_ji g_j(x)
     """
 
     # meg: Various mappings must be handled both here and in
@@ -223,9 +223,9 @@ def _change_variables(mapping, dim, offset):
         # covariant piola
         values = []
         for i in range(dim):
-            jacobian_row = [J(i, j) for j in range(dim)]
+            jacobian_column = [J(j, i) for j in range(dim)]
             components = [component("vals", j + offset) for j in range(dim)]
-            values += [inner(jacobian_row, components)]
+            values += [inner(jacobian_column, components)]
         return values
     else:
         raise Exception, "The mapping (%s) is not allowed" % mapping
