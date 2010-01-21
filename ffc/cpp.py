@@ -2,12 +2,12 @@
 
 __author__ = "Anders Logg (logg@simula.no) and friends"
 __date__ = "2009-12-16"
-__copyright__ = "Copyright (C) 2009 " + __author__
+__copyright__ = "Copyright (C) 2009-2010 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-# Modified by Kristian B. Oelgaard 2009
+# Modified by Kristian B. Oelgaard 2010
 # Modified by Marie E. Rognes 2010
-# Last changed: 2010-01-18
+# Last changed: 2010-01-21
 
 # Python modules.
 import re

@@ -10,11 +10,11 @@ might be (re-)implemented in a future version of FFC
 
 __author__ = "Anders Logg (logg@simula.no)"
 __date__ = "2007-02-05"
-__copyright__ = "Copyright (C) 2007-2009 Anders Logg"
+__copyright__ = "Copyright (C) 2007-2010 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Modified by Kristian B. Oelgaard, 2009.
-# Last changed: 2010-01-18
+# Modified by Kristian B. Oelgaard, 2010.
+# Last changed: 2010-01-21
 
 # UFL modules
 from ufl.classes import Form

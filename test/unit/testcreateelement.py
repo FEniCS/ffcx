@@ -1,11 +1,11 @@
 "Unit tests for FFC - ffc/fem/createelement.py"
 
-__author__ = "Kristian Oelgaard (k.b.oelgaard@tudelft.nl)"
+__author__ = "Kristian Oelgaard (k.b.oelgaard@gmail.com)"
 __date__ = "2009-03-07"
-__copyright__ = "Copyright (C) 2009 Kristian Oelgaard"
+__copyright__ = "Copyright (C) 2009-2010 Kristian Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2009-12-09
+# Last changed: 2010-01-21
 
 import unittest
 from ufl.finiteelement import *

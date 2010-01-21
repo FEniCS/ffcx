@@ -1,13 +1,13 @@
 "QuadratureTransformer for quadrature code generation to translate UFL expressions."
 
-__author__ = "Kristian B. Oelgaard (k.b.oelgaard@tudelft.nl)"
+__author__ = "Kristian B. Oelgaard (k.b.oelgaard@gmail.com)"
 __date__ = "2009-02-09"
-__copyright__ = "Copyright (C) 2009 Kristian B. Oelgaard"
+__copyright__ = "Copyright (C) 2009-2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Peter Brune, 2009
 # Modified by Anders Logg, 2009
-# Last changed: 2009-12-16
+# Last changed: 2010-01-21
 
 # Python modules.
 from numpy import shape

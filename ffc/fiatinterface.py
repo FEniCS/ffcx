@@ -1,11 +1,11 @@
-__author__ = "Kristian B. Oelgaard (k.b.oelgaard@tudelft.nl) and Anders Logg (logg@simula.no)"
+__author__ = "Kristian B. Oelgaard (k.b.oelgaard@gmail.com) and Anders Logg (logg@simula.no)"
 __date__ = "2009-03-06"
-__copyright__ = "Copyright (C) 2009 " + __author__
+__copyright__ = "Copyright (C) 2009-2010 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Garth N. Wells, 2009.
 # Modified by Marie Rognes, 2009-2010.
-# Last changed: 2010-01-14
+# Last changed: 2010-01-21
 
 # Python modules
 from numpy import array

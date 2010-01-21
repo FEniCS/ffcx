@@ -1,12 +1,12 @@
 """Code generation for evaluation of finite element basis values. This module generates
 code which is more or less a C++ representation of the code found in FIAT_NEW."""
 
-__author__ = "Kristian B. Oelgaard (k.b.oelgaard@tudelft.nl)"
+__author__ = "Kristian B. Oelgaard (k.b.oelgaard@gmail.com)"
 __date__ = "2007-04-04"
 __copyright__ = "Copyright (C) 2007-2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-13
+# Last changed: 2010-01-21
 
 # Python modules
 import math
