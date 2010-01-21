@@ -148,12 +148,10 @@ def _evaluate_dof(element):
 
     # Evaluate_dof code
     code += ["double result;"]
-    dofs_code = ["""\
-result = element.evaluate_dof(%d, f, cell);
-std::cout << result << std::endl;""" % i
-                 for i in range(element.space_dimension())]
+    for i in range(element.space_dimension()):
+        code += ["result = element.evaluate_dof(%d, f, cell);" % i]
+        code += ["printf(\"%0.5g, \", result);"]
 
-    code += dofs_code
     return template % (dolfin_includes, "\n".join(code))
 
 
@@ -180,7 +178,7 @@ def _interpolate_vertex_values(element):
 
     # Print resulting vertex values
     for i in range(N*(d+1)):
-        code += ["std::cout << vertex_values[%d] << std::endl;" % i]
+        code += ["printf(\"%0.5g, \"" + ", vertex_values[%d]);" % i]
 
     return template % (dolfin_includes, "\n".join(code))
 
@@ -242,7 +240,6 @@ def _tabulate_dofs(element):
     code += ["unsigned int dofs[%d];" % n]
 
     # Tabulate dofs
-    code += ["std::cout << 1 << std::endl;"]
     code += ["dofmap.tabulate_dofs(dofs, mesh, cell);"]
 
     # Print dofs
@@ -269,7 +266,7 @@ def _tabulate_coordinates(element):
     code += ["dofmap.tabulate_coordinates(coords, cell);"]
     for i in range(n):
         for j in range(d):
-            code += ["std::cout << coords[%d][%d] << std::endl;" % (i, j)]
+            code += ["printf(\"%0.5g, \"" +", coords[%d][%d]);" % (i, j)]
 
     return dof_template % (dolfin_includes, "\n".join(code))
 
