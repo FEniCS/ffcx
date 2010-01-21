@@ -70,16 +70,11 @@ class MixedElement:
         table_shape = (self.space_dimension(), self.num_components(), len(points))
         zeros = numpy.zeros(table_shape)
 
-        print "shape =", table_shape
-
         # Iterate over elements and fill in non-zero values
         irange = (0, 0)
         crange = (0, 0)
         mixed_table = {}
         for element in self._elements:
-
-            print element
-            print order
 
             # Tabulate element
             table = element.tabulate(order, points)
@@ -88,13 +83,8 @@ class MixedElement:
             irange = (irange[1], irange[1] + element.space_dimension())
             crange = (crange[1], crange[1] + _num_components(element))
 
-            print "irange =", irange
-            print "crange =", crange
-
             # Insert table into mixed table
             for dtuple in table.keys():
-
-                print "shape  =", numpy.shape(table[dtuple])
 
                 # Insert zeros if necessary (should only happen first time)
                 if not dtuple in mixed_table:

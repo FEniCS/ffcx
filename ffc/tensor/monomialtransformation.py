@@ -6,7 +6,7 @@ __copyright__ = "Copyright (C) 2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian B. Oelgaard, 2009
-# Last changed: 2010-01-14
+# Last changed: 2010-01-21
 
 # UFL modules
 from ufl.classes import Argument
@@ -291,7 +291,11 @@ class TransformedMonomial:
                 if len(component_index) == 0:
                     offset = 0
                 else:
-                    offset = component_index[0]
+                    offset = component_index[0] - component.index_range[0]
+
+                if offset == 2:
+                    import sys
+                    sys.exit(1)
 
                 # Add transforms where appropriate
                 if mapping == "contravariant piola":
