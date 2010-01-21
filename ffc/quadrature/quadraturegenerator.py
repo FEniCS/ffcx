@@ -24,7 +24,7 @@ from ffc.cpp import format_old as format
 from ffc.cpp import remove_unused
 
 # Utility and optimisation functions for quadraturegenerator.
-#from quadraturegenerator_utils import generate_loop
+from quadraturegenerator_utils import generate_loop
 from quadraturetransformer import QuadratureTransformer
 
 from optimisedquadraturetransformer import QuadratureTransformerOpt
@@ -69,12 +69,15 @@ def _tabulate_tensor(ir, options):
     Indent = IndentControl()
     integrals = ir["integrals"]
 
+    switch = format_new["switch"]
+
+    # Create transformer.
+    if optimise_options["simplify expressions"]:
+        transformer = QuadratureTransformerOpt(ir, optimise_options, format)
+    else:
+        transformer = QuadratureTransformer(ir, optimise_options, format)
+
     if integral_type == "cell_integral":
-        # Create transformer.
-        if optimise_options["simplify expressions"]:
-            transformer = QuadratureTransformerOpt(ir, optimise_options, format)
-        else:
-            transformer = QuadratureTransformer(ir, optimise_options, format)
 
         # Update treansformer with facets.
         transformer.update_facets(None, None)
@@ -112,14 +115,95 @@ def _tabulate_tensor(ir, options):
 
         info("Number of operations to compute tensor: %d" % num_ops)
 
-#        # Generate code for cell integral.
-#        info("\nGenerating code for cell integrals.")
-#        for subdomain, integrals in form_representation.cell_integrals.items():
-#            transformer.reset()
-#            code[("cell_integral", subdomain)] =\
-#                 self.generate_cell_integral(form_representation, transformer, integrals, format)
-#        return code
+    if integral_type == "exterior_facet_integral":
+        cases = [None for i in range(num_facets)]
+        for i in range(num_facets):
 
+            # Update treansformer with facets.
+            transformer.update_facets(i, None)
+
+            c, members_code, num_ops = _generate_element_tensor(ir["integrals"], transformer, Indent, format)
+
+            case = [format["comment"]("Total number of operations to compute element tensor (from this point): %d" %num_ops)] + c
+            cases[i] = format["generate body"](case)
+            info("Number of operations to compute tensor for facet %d: %d" % (i, num_ops))
+
+        # Get Jacobian snippet.
+        # FIXME: This will most likely have to change if we support e.g., 2D elements in 3D space.
+        jacobi_code = [format["generate jacobian"](transformer.geo_dim, "exterior facet")]
+        jacobi_code += [format["generate normal"](transformer.geo_dim, "exterior facet")]
+
+
+        # After we have generated the element code for all facets we can remove
+        # the unused transformations and tabulate the used psi tables and weights.
+
+        # Remove unused declarations.
+        common = _remove_unused(jacobi_code, transformer.trans_set, format)
+
+        # Tabulate weights at quadrature points.
+        common += _tabulate_weights(transformer, Indent, format)
+
+        # Tabulate values of basis functions and their derivatives.
+        common += _tabulate_psis(transformer, Indent, format)
+
+        # Create the constant geometry declarations (only generated if simplify expressions are enabled).
+        geo_ops, geo_code = generate_aux_constants(transformer.geo_consts, format["geometry tensor"], format["const float declaration"])
+        if geo_code:
+            num_ops += geo_ops
+            common += ["", format["comment"]("Number of operations to compute geometry constants: %d" %geo_ops)]
+            common += [format["comment"]("Should be added to total operation count.")]
+            common += geo_code
+            info("Number of operations to compute geometry terms: %s, should be added to facet count." % geo_ops)
+
+        # Add comments.
+        common += ["", format["comment"]("Compute element tensor using UFL quadrature representation"),\
+                 format["comment"]("Optimisations: %s" % ", ".join([str(i) for i in optimise_options.items()]))]
+
+        code = common + [format_new["switch"]("facet", cases)]
+
+    if integral_type == "interior_facet_integral":
+        cases = [[None for j in range(num_facets)] for i in range(num_facets)]
+        for i in range(num_facets):
+            for j in range(num_facets):
+                # Update treansformer with facets.
+                transformer.update_facets(i, j)
+
+                c, members_code, num_ops = _generate_element_tensor(ir["integrals"], transformer, Indent, format, interior=True)
+                case = [format["comment"]("Total number of operations to compute element tensor (from this point): %d" %num_ops)] + c
+                cases[i][j] = format["generate body"](case)
+                info("Number of operations to compute tensor for facets (%d, %d): %d" % (i, j, num_ops))
+
+        # Get Jacobian snippet.
+        # FIXME: This will most likely have to change if we support e.g., 2D elements in 3D space.
+        jacobi_code = [format["generate jacobian"](transformer.geo_dim, "interior facet")]
+        jacobi_code += [format["generate normal"](transformer.geo_dim, "interior facet")]
+
+        # After we have generated the element code for all facets we can remove
+        # the unused transformations and tabulate the used psi tables and weights.
+
+        # Remove unused declarations.
+        common = _remove_unused(jacobi_code, transformer.trans_set, format)
+
+        # Tabulate weights at quadrature points.
+        common += _tabulate_weights(transformer, Indent, format)
+
+        # Tabulate values of basis functions and their derivatives.
+        common += _tabulate_psis(transformer, Indent, format)
+
+        # Create the constant geometry declarations (only generated if simplify expressions are enabled).
+        geo_ops, geo_code = generate_aux_constants(transformer.geo_consts, format["geometry tensor"], format["const float declaration"])
+        if geo_code:
+            num_ops += geo_ops
+            common += ["", format["comment"]("Number of operations to compute geometry constants: %d" %geo_ops)]
+            common += [format["comment"]("Should be added to total operation count.")]
+            common += geo_code
+            info("Number of operations to compute geometry terms: %s, should be added to facet count." % geo_ops)
+
+        # Add comments.
+        common += ["", format["comment"]("Compute element tensor using UFL quadrature representation"),\
+                 format["comment"]("Optimisations: %s" % ", ".join([str(i) for i in optimise_options.items()]))]
+
+        code = common + [switch("facet0", [switch("facet1", cases[i]) for i in range(len(cases))])]
 
     return format["generate body"](code)
 
@@ -359,222 +443,6 @@ def _remove_unused(code, trans_set, format):
 class QuadratureGenerator:
     "Code generator for quadrature representation."
 
-#    def __init__(self, options):
-#        "Constructor"
-
-#        if options["optimize"]:
-#            # These options results in fast code, but compiles slower and there
-#            # might still be bugs.
-#            self.optimise_options = {"non zero columns": True,
-#                                     "ignore ones": True,
-#                                     "remove zero terms": True,
-#                                     "simplify expressions": True,
-#                                     "ignore zero tables": True}
-#        else:
-#            # These options should be safe and fast, but result in slow code.
-#            self.optimise_options = {"non zero columns": False,
-#                                     "ignore ones": False,
-#                                     "remove zero terms": False,
-#                                     "simplify expressions": False,
-#                                     "ignore zero tables": False}
-
-#    def generate_integrals(self, form_representation, format):
-#        "Generate code for all integrals."
-
-#        code = {}
-
-#        # Check if code needs to be generated.
-#        if form_representation.num_integrals == 0:
-#            return {}
-
-#        info("Generating code using quadrature representation.")
-
-#        # Set represenation.
-#        code["representation"] = "quadrature"
-
-#        # Generate code for cell integrals.
-#        code.update(self.generate_cell_integrals(form_representation, format))
-
-#        # Generate code for exterior facet integrals.
-#        code.update(self.generate_exterior_facet_integrals(form_representation, format))
-
-#        # Generate code for interior facet integrals.
-#        code.update(self.generate_interior_facet_integrals(form_representation, format))
-
-#        return code
-
-#    def generate_cell_integrals(self, form_representation, format):
-#        code = {}
-#        if not form_representation.cell_integrals:
-#            return code
-
-#        # Create transformer.
-#        if self.optimise_options["simplify expressions"]:
-#            transformer = QuadratureTransformerOpt(form_representation, Measure.CELL,\
-#                                                self.optimise_options, format)
-#        else:
-#            transformer = QuadratureTransformer(form_representation, Measure.CELL,\
-#                                                self.optimise_options, format)
-
-#        # Generate code for cell integral.
-#        info("\nGenerating code for cell integrals.")
-#        for subdomain, integrals in form_representation.cell_integrals.items():
-#            transformer.reset()
-#            code[("cell_integral", subdomain)] =\
-#                 self.generate_cell_integral(form_representation, transformer, integrals, format)
-#        return code
-
-    def generate_exterior_facet_integrals(self, form_representation, format):
-        code = {}
-        if not form_representation.exterior_facet_integrals:
-            return code
-
-        # Create transformer.
-        if self.optimise_options["simplify expressions"]:
-            transformer = QuadratureTransformerOpt(form_representation, Measure.EXTERIOR_FACET,\
-                                                self.optimise_options, format)
-        else:
-            transformer = QuadratureTransformer(form_representation, Measure.EXTERIOR_FACET,\
-                                                self.optimise_options, format)
-
-        # Generate code for cell integral.
-        info("\nGenerating code for exterior facet integrals.")
-        for subdomain, integrals in form_representation.exterior_facet_integrals.items():
-            transformer.reset()
-            code[("exterior_facet_integral", subdomain)] =\
-                 self.generate_exterior_facet_integral(form_representation, transformer, integrals, format)
-        return code
-
-    def generate_interior_facet_integrals(self, form_representation, format):
-        code = {}
-        if not form_representation.interior_facet_integrals:
-            return code
-
-        # Create transformer.
-        if self.optimise_options["simplify expressions"]:
-            transformer = QuadratureTransformerOpt(form_representation, Measure.INTERIOR_FACET,\
-                                                self.optimise_options, format)
-        else:
-            transformer = QuadratureTransformer(form_representation, Measure.INTERIOR_FACET,\
-                                                self.optimise_options, format)
-
-        # Generate code for cell integral.
-        info("\nGenerating code for interior facet integrals.")
-        for subdomain, integrals in form_representation.interior_facet_integrals.items():
-            transformer.reset()
-            code[("interior_facet_integral", subdomain)] =\
-                 self.generate_interior_facet_integral(form_representation, transformer, integrals, format)
-        return code
-
-    def generate_cell_integral(self, form_representation, transformer, integrals, format):
-        """Generate dictionary of code for cell integrals on a given subdomain
-        from the given form representation according to the given format."""
-
-        debug("\nQG, cell_integral, integrals:\n" + str(integrals))
-
-        # Object to control the code indentation.
-        Indent = IndentControl()
-
-        # Update treansformer with facets.
-        transformer.update_facets(None, None)
-
-        # Generate element code + set of used geometry terms.
-        element_code, members_code, num_ops =\
-          self.__generate_element_tensor(form_representation, transformer,\
-                                         integrals, Indent, format)
-        # Get Jacobian snippet.
-        # FIXME: This will most likely have to change if we support e.g., 2D elements in 3D space.
-        jacobi_code = [format["generate jacobian"](transformer.geo_dim, "cell")]
-
-        # After we have generated the element code we can remove the unused
-        # transformations and tabulate the used psi tables and weights.
-
-        # Remove unused declarations.
-        code = self.__remove_unused(jacobi_code, transformer.trans_set, format)
-
-        # Tabulate weights at quadrature points.
-        code += self.__tabulate_weights(transformer, Indent, format)
-
-        # Tabulate values of basis functions and their derivatives.
-        code += self.__tabulate_psis(transformer, Indent, format)
-
-        # Create the constant geometry declarations (only generated if simplify expressions are enabled).
-        geo_ops, geo_code = generate_aux_constants(transformer.geo_consts, format["geometry tensor"], format["const float declaration"])
-        if geo_code:
-            num_ops += geo_ops
-            code += ["", format["comment"]("Number of operations to compute geometry constants: %d" %geo_ops)]
-            code += geo_code
-
-        # Add element code.
-        code += ["", format["comment"]("Compute element tensor using UFL quadrature representation"),\
-                 format["comment"]("Optimisations: %s" % ", ".join([str(i) for i in self.optimise_options.items()])),\
-                 format["comment"]("Total number of operations to compute element tensor: %d" %num_ops)]
-        code += element_code
-
-        info("Number of operations to compute tensor: %d" % num_ops)
-
-        return {"tabulate_tensor": code, "members": members_code}
-
-
-    def generate_exterior_facet_integral(self, form_representation, transformer, integrals, format):
-        """Generate dictionary of code for exterior facet integral from the given
-        form representation according to the given format."""
-
-        debug("\nQG, exterior_facet_integral, integral:\n" + str(integrals))
-
-        # Object to control the code indentation.
-        Indent = IndentControl()
-
-        num_facets = form_representation.form_data.num_facets
-        cases = [None for i in range(num_facets)]
-        for i in range(num_facets):
-
-            # Update treansformer with facets.
-            transformer.update_facets(i, None)
-
-            case = [format["block begin"]]
-            c, members_code, num_ops =\
-                self.__generate_element_tensor(form_representation, transformer,\
-                                               integrals, Indent, format)
-
-            case += [format["comment"]("Total number of operations to compute element tensor (from this point): %d" %num_ops)] + c
-            case += [format["block end"]]
-            cases[i] = case
-            info("Number of operations to compute tensor for facet %d: %d" % (i, num_ops))
-
-        # Get Jacobian snippet.
-        # FIXME: This will most likely have to change if we support e.g., 2D elements in 3D space.
-        jacobi_code = [format["generate jacobian"](transformer.geo_dim, "exterior facet")]
-        jacobi_code += [format["generate normal"](transformer.geo_dim, "exterior facet")]
-
-
-        # After we have generated the element code for all facets we can remove
-        # the unused transformations and tabulate the used psi tables and weights.
-
-        # Remove unused declarations.
-        common = self.__remove_unused(jacobi_code, transformer.trans_set, format)
-
-        # Tabulate weights at quadrature points.
-        common += self.__tabulate_weights(transformer, Indent, format)
-
-        # Tabulate values of basis functions and their derivatives.
-        common += self.__tabulate_psis(transformer, Indent, format)
-
-        # Create the constant geometry declarations (only generated if simplify expressions are enabled).
-        geo_ops, geo_code = generate_aux_constants(transformer.geo_consts, format["geometry tensor"], format["const float declaration"])
-        if geo_code:
-            num_ops += geo_ops
-            common += ["", format["comment"]("Number of operations to compute geometry constants: %d" %geo_ops)]
-            common += [format["comment"]("Should be added to total operation count.")]
-            common += geo_code
-            info("Number of operations to compute geometry terms: %s, should be added to facet count." % geo_ops)
-
-        # Add comments.
-        common += ["", format["comment"]("Compute element tensor using UFL quadrature representation"),\
-                 format["comment"]("Optimisations: %s" % ", ".join([str(i) for i in self.optimise_options.items()]))]
-
-        return {"tabulate_tensor": (common, cases), "members": members_code}
-
     def generate_interior_facet_integral(self, form_representation, transformer, integrals, format):
         """Generate dictionary of code for interior facet integral from the given
         form representation according to the given format."""
@@ -584,52 +452,6 @@ class QuadratureGenerator:
         # Object to control the code indentation.
         Indent = IndentControl()
         num_facets = form_representation.form_data.num_facets
-        cases = [[None for j in range(num_facets)] for i in range(num_facets)]
-        for i in range(num_facets):
-            for j in range(num_facets):
-                # Update treansformer with facets.
-                transformer.update_facets(i, j)
-
-                case = [format["block begin"]]
-                c, members_code, num_ops =\
-                    self.__generate_element_tensor(form_representation, transformer,\
-                                                   integrals, Indent, format, interior=True)
-                case += [format["comment"]("Total number of operations to compute element tensor (from this point): %d" %num_ops)] + c
-                case += [format["block end"]]
-                cases[i][j] = case
-                info("Number of operations to compute tensor for facets (%d, %d): %d" % (i, j, num_ops))
-
-        # Get Jacobian snippet.
-        # FIXME: This will most likely have to change if we support e.g., 2D elements in 3D space.
-        jacobi_code = [format["generate jacobian"](transformer.geo_dim, "interior facet")]
-        jacobi_code += [format["generate normal"](transformer.geo_dim, "interior facet")]
-
-        # After we have generated the element code for all facets we can remove
-        # the unused transformations and tabulate the used psi tables and weights.
-
-        # Remove unused declarations.
-        common = self.__remove_unused(jacobi_code, transformer.trans_set, format)
-
-        # Tabulate weights at quadrature points.
-        common += self.__tabulate_weights(transformer, Indent, format)
-
-        # Tabulate values of basis functions and their derivatives.
-        common += self.__tabulate_psis(transformer, Indent, format)
-
-        # Create the constant geometry declarations (only generated if simplify expressions are enabled).
-        geo_ops, geo_code = generate_aux_constants(transformer.geo_consts, format["geometry tensor"], format["const float declaration"])
-        if geo_code:
-            num_ops += geo_ops
-            common += ["", format["comment"]("Number of operations to compute geometry constants: %d" %geo_ops)]
-            common += [format["comment"]("Should be added to total operation count.")]
-            common += geo_code
-            info("Number of operations to compute geometry terms: %s, should be added to facet count." % geo_ops)
-
-        # Add comments.
-        common += ["", format["comment"]("Compute element tensor using UFL quadrature representation"),\
-                 format["comment"]("Optimisations: %s" % ", ".join([str(i) for i in self.optimise_options.items()]))]
-
-        return {"tabulate_tensor": (common, cases), "constructor":"// Do nothing", "members":members_code}
 
     def __generate_element_tensor(self, form_representation, transformer, integrals, Indent, format, interior=False):
         "Construct quadrature code for element tensors."
