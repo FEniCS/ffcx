@@ -9,14 +9,18 @@ form representation type.
 
 __author__ = "Anders Logg (logg@simula.no) and Kristian B. Oelgaard (k.b.oelgaard@tudelft.nl)"
 __date__ = "2007-02-05"
-__copyright__ = "Copyright (C) 2007-2009 " + __author__
+__copyright__ = "Copyright (C) 2007-2010 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
+
+# Last changed: 2009-01-21
 
 # UFL modules
 from ufl.common import istr
+from ufl.finiteelement import MixedElement
 from ufl.algorithms import preprocess, FormData
 from ufl.algorithms import estimate_max_polynomial_degree
 from ufl.algorithms import estimate_total_polynomial_degree
+from ufl.algorithms import extract_unique_elements
 
 # FFC modules
 from ffc.log import log, info, begin, end
@@ -34,22 +38,44 @@ def analyze_forms(forms, object_names, options):
     begin("Compiler stage 1: Analyzing form(s)")
 
     # Analyze forms
-    form_and_data = [analyze_form(form, object_names, options) for form in forms]
+    form_and_data = [_analyze_form(form, object_names, options) for form in forms]
 
     # Extract unique elements
     unique_elements = []
     element_map = {}
     for (form, form_data) in form_and_data:
-        for element in form_data.unique_elements:
+        for element in form_data.unique_elements + form_data.unique_sub_elements:
             if not element in element_map:
                 element_map[element] = len(unique_elements)
                 unique_elements.append(element)
-
     end()
-
     return form_and_data, unique_elements, element_map
 
-def analyze_form(form, object_names, options):
+def analyze_elements(elements):
+
+    begin("Compiler stage 1: Analyzing form(s)")
+
+    # Empty form and data
+    form_and_data = []
+
+    # Extract unique elements
+    unique_elements = []
+    element_map = {}
+    for element in elements:
+        # Check if element is present
+        if not element in element_map:
+            element_map[element] = len(unique_elements)
+            unique_elements.append(element)
+        # Check sub elements if any
+        if isinstance(element, MixedElement):
+            for sub_element in element.sub_elements():
+                if not sub_element in element_map:
+                    element_map[sub_element] = len(unique_elements)
+                    unique_elements.append(sub_element)
+    end()
+    return form_and_data, unique_elements, element_map
+
+def _analyze_form(form, object_names, options):
     "Analyze form, returning preprocessed form and form data."
 
     # Preprocess form
