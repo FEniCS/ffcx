@@ -56,7 +56,7 @@ def _evaluate_basis_derivatives_all(data_list):
     # Special case where space dimension is one (constant elements)
     if space_dimension == 1:
         code += [format["comment"]("Element is constant, calling evaluate_basis_derivatives.")]
-        code += ["evaluate_basis_derivatives(0, %s, coordinates, c);" % format["argument values"]]
+        code += ["evaluate_basis_derivatives(0, n, %s, coordinates, c);" % format["argument values"]]
         return format["generate body"](code)
 
     # Compute number of derivatives
