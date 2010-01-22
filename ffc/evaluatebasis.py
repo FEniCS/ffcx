@@ -140,7 +140,7 @@ def _evaluate_basis(data_list):
         data = data_list[0]
 
         # Map degree of freedom to local degree.
-        code += _map_dof(0, Indent, format)
+        code += [_map_dof(0, Indent, format)]
 
         # Generate element code.
         code += _generate_element_code(data, 0, False, Indent, format)
@@ -167,7 +167,6 @@ def _map_dof(sum_space_dim, Indent, format):
     # In case of only one element or the first element in a series then we don't subtract anything.
     if sum_space_dim == 0:
         code = [Indent.indent(format["comment"]("Map degree of freedom to element degree of freedom"))]
-        print format["const uint declaration"]
         code += [Indent.indent(format["const uint declaration"](format["local dof"], format["argument basis num"]))]
     else:
         code = [Indent.indent(format["comment"]("Map degree of freedom to element degree of freedom"))]
@@ -298,7 +297,7 @@ def _compute_values(data, sum_value_dim, vector, Indent, format):
     format_inv              = format["inverse"]
     format_mult             = format["multiply"]
     format_group            = format["grouping"]
-    format_tmp              = format["tmp value"]
+    format_tmp              = format["tmp ref value"]
     format_assign           = format["assign"]
 
     # Init return code.
@@ -345,12 +344,12 @@ def _compute_values(data, sum_value_dim, vector, Indent, format):
         code += ["", Indent.indent(format["comment"]\
                 ("Using contravariant Piola transform to map values back to the physical element"))]
         # Get temporary values before mapping.
-        code += [format_assign(Indent.indent(format_tmp(0, i)),\
-                  format_values + format_component(i + sum_value_dim)) for i in range(num_components)]
+        code += [format_assign(Indent.indent(format_tmp(i)),\
+                  format_component(format_values, i + sum_value_dim)) for i in range(num_components)]
 
         # Create names for inner product.
         topological_dimension = data["topological_dimension"]
-        basis_col = [format_tmp_access(0, j) for j in range(topological_dimension)]
+        basis_col = [format_tmp(j) for j in range(topological_dimension)]
         for i in range(num_components):
             # Create Jacobian.
             jacobian_row = [format["transform"]("J", j, i, None) for j in range(topological_dimension)]
@@ -365,11 +364,11 @@ def _compute_values(data, sum_value_dim, vector, Indent, format):
         code += ["", Indent.indent(format["comment"]\
                 ("Using covariant Piola transform to map values back to the physical element"))]
         # Get temporary values before mapping.
-        code += [format_assign(Indent.indent(format_tmp(0, i)),\
+        code += [format_assign(Indent.indent(format_tmp(i)),\
                   format_component(format_values, i + sum_value_dim)) for i in range(num_components)]
         # Create names for inner product.
         topological_dimension = data["topological_dimension"]
-        basis_col = [format_tmp_access(0, j) for j in range(topological_dimension)]
+        basis_col = [format_tmp(j) for j in range(topological_dimension)]
         for i in range(num_components):
             # Create inverse of Jacobian.
             inv_jacobian_row = [format["transform"]("JINV", j, i, None) for j in range(topological_dimension)]

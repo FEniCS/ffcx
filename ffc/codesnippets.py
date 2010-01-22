@@ -346,21 +346,21 @@ const double J_10 = element_coordinates[1][1] - element_coordinates[0][1];
 const double J_11 = element_coordinates[2][1] - element_coordinates[0][1];
 
 // Compute determinant of Jacobian
-const double detJ = J_00*J_11 - J_01*J_10;
+const double detJ_ = J_00*J_11 - J_01*J_10;
 
 // Compute inverse of Jacobian
-const double Jinv_00 =  J_11 / detJ;
-const double Jinv_01 = -J_01 / detJ;
-const double Jinv_10 = -J_10 / detJ;
-const double Jinv_11 =  J_00 / detJ;
+const double Jinv_00 =  J_11 / detJ_;
+const double Jinv_01 = -J_01 / detJ_;
+const double Jinv_10 = -J_10 / detJ_;
+const double Jinv_11 =  J_00 / detJ_;
 
 // Compute constants
 const double C0 = element_coordinates[1][0] + element_coordinates[2][0];
 const double C1 = element_coordinates[1][1] + element_coordinates[2][1];
 
 // Get coordinates and map to the reference (FIAT) element
-double x = (J_01*C1 - J_11*C0 + 2.0*J_11*coordinates[0] - 2.0*J_01*coordinates[1]) / detJ;
-double y = (J_10*C0 - J_00*C1 - 2.0*J_10*coordinates[0] + 2.0*J_00*coordinates[1]) / detJ;"""
+double x = (J_01*C1 - J_11*C0 + 2.0*J_11*coordinates[0] - 2.0*J_01*coordinates[1]) / detJ_;
+double y = (J_10*C0 - J_00*C1 - 2.0*J_10*coordinates[0] + 2.0*J_00*coordinates[1]) / detJ_;"""
 
 map_coordinates_FIAT_tetrahedron = """\
 // Extract vertex coordinates
@@ -391,18 +391,18 @@ const double d21 = J_02*J_10 - J_00*J_12;
 const double d22 = J_00*J_11 - J_01*J_10;
 
 // Compute determinant of Jacobian
-double detJ = J_00*d00 + J_10*d10 + J_20*d20;
+double detJ_ = J_00*d00 + J_10*d10 + J_20*d20;
 
 // Compute inverse of Jacobian
-const double Jinv_00 = d00 / detJ;
-const double Jinv_01 = d10 / detJ;
-const double Jinv_02 = d20 / detJ;
-const double Jinv_10 = d01 / detJ;
-const double Jinv_11 = d11 / detJ;
-const double Jinv_12 = d21 / detJ;
-const double Jinv_20 = d02 / detJ;
-const double Jinv_21 = d12 / detJ;
-const double Jinv_22 = d22 / detJ;
+const double Jinv_00 = d00 / detJ_;
+const double Jinv_01 = d10 / detJ_;
+const double Jinv_02 = d20 / detJ_;
+const double Jinv_10 = d01 / detJ_;
+const double Jinv_11 = d11 / detJ_;
+const double Jinv_12 = d21 / detJ_;
+const double Jinv_20 = d02 / detJ_;
+const double Jinv_21 = d12 / detJ_;
+const double Jinv_22 = d22 / detJ_;
 
 // Compute constants
 const double C0 = element_coordinates[3][0] + element_coordinates[2][0] \\
@@ -417,9 +417,9 @@ double x = coordinates[0];
 double y = coordinates[1];
 double z = coordinates[2];
 
-x = (2.0*d00*x + 2.0*d10*y + 2.0*d20*z - d00*C0 - d10*C1 - d20*C2) / detJ;
-y = (2.0*d01*x + 2.0*d11*y + 2.0*d21*z - d01*C0 - d11*C1 - d21*C2) / detJ;
-z = (2.0*d02*x + 2.0*d12*y + 2.0*d22*z - d02*C0 - d12*C1 - d22*C2) / detJ;"""
+x = (2.0*d00*x + 2.0*d10*y + 2.0*d20*z - d00*C0 - d10*C1 - d20*C2) / detJ_;
+y = (2.0*d01*x + 2.0*d11*y + 2.0*d21*z - d01*C0 - d11*C1 - d21*C2) / detJ_;
+z = (2.0*d02*x + 2.0*d12*y + 2.0*d22*z - d02*C0 - d12*C1 - d22*C2) / detJ_;"""
 
 combinations_snippet = """\
 // Declare pointer to two dimensional array that holds combinations of derivatives and initialise
@@ -476,7 +476,7 @@ for (unsigned int row = 0; row < %(num_derivatives)s; row++)
 
 transform_triangle_snippet = """\
 // Compute inverse of Jacobian
-const double %(K)s[2][2] =  {{J_11 / detJ, -J_01 / detJ}, {-J_10 / detJ, J_00 / detJ}};
+const double %(K)s[2][2] =  {{J_11 / detJ_, -J_01 / detJ_}, {-J_10 / detJ_, J_00 / detJ_}};
 
 // Declare transformation matrix
 // Declare pointer to two dimensional array and initialise
@@ -502,9 +502,9 @@ for (unsigned int row = 0; row < %(num_derivatives)s; row++)
 transform_tetrahedron_snippet = """\
 // Compute inverse of Jacobian
 const double %(K)s[3][3] =\
-{{d00 / detJ, d10 / detJ, d20 / detJ},\
- {d01 / detJ, d11 / detJ, d21 / detJ},\
- {d02 / detJ, d12 / detJ, d22 / detJ}};
+{{d00 / detJ_, d10 / detJ_, d20 / detJ_},\
+ {d01 / detJ_, d11 / detJ_, d21 / detJ_},\
+ {d02 / detJ_, d12 / detJ_, d22 / detJ_}};
 
 // Declare transformation matrix
 // Declare pointer to two dimensional array and initialise
@@ -714,4 +714,7 @@ facet_determinant = {1: facet_determinant_1D, 2: facet_determinant_2D, 3: facet_
 fiat_coordinate_map = {"interval": map_coordinates_FIAT_interval,
                        "triangle": map_coordinates_FIAT_triangle,
                        "tetrahedron": map_coordinates_FIAT_tetrahedron}
+transform_snippet = {"interval": transform_interval_snippet,
+                       "triangle": transform_triangle_snippet,
+                       "tetrahedron": transform_tetrahedron_snippet}
 
