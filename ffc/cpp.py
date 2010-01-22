@@ -18,6 +18,7 @@ from ffc.log import debug
 from ffc.constants import FFC_OPTIONS
 
 # Formatting rules
+# FIXME: KBO: format is a builtin_function, i.e., we should use a different name.
 format = {}
 
 # Program flow
@@ -35,9 +36,18 @@ format.update({"declaration": lambda t, n, v=None: _declaration(t, n, v),
                lambda v, w: "const double %s = %s;" % (v, w)})
 
 # Mathematical operators
-format.update({"add":           lambda v: _add(v),
+format.update({"add":           lambda v: " + ".join(v),
                "iadd":          lambda v, w: "%s += %s;" % (str(v), str(w)),
-               "subtract":      lambda v: " - ".join(v),
+               "sub":           lambda v: " - ".join(v),
+               "mul":           lambda v: "*".join(v),
+               "imul":          lambda v, w: "%s *= %s;" % (str(v), str(w)),
+               "div":           lambda v, w: "%s/%s" % (str(v), str(w)),
+               "std power":     lambda base, exp: "std::pow(%s, %s)" % (base, exp),
+               "exp":           lambda v: "std::exp(%s)" % str(v),
+               "ln":            lambda v: "std::log(%s)" % str(v),
+               "cos":           lambda v: "std::cos(%s)" % str(v),
+               "sin":           lambda v: "std::sin(%s)" % str(v),
+               "addition":      lambda v: _add(v),
                "multiply":      lambda v: _multiply(v),
                "power":         lambda base, exp: _power(base, exp),
                "inner product": lambda v, w: _inner_product(v, w),
@@ -47,7 +57,7 @@ format.update({"add":           lambda v: _add(v),
 # Formatting used in tabulate_tensor
 format.update({"element tensor":  lambda i: "A[%d]" % i,
                "geometry tensor":
-               lambda j, a: "G%d_%s" % (j, "_".join(["%d" % i for i in a])),
+                                  lambda j, a: "G%d_%s" % (j, "_".join(["%d" % i for i in a])),
                "coefficient":     lambda j, k: "w[%d][%d]" % (j, k),
                "scale factor":    "det",
                "transform":       lambda t, j, k, r: _transform(t, j, k, r)})
@@ -59,6 +69,10 @@ format.update({"entity index": "c.entity_indices",
                "J":      lambda i, j: "J_%d%d" % (i, j),
                "inv(J)": lambda i, j: "K_%d%d" % (i, j),
                "det(J)": lambda r: "detJ_%s" % r})
+
+# Stuff from format_old used by KBO, should be moved around and possibly renamed.
+format.update({"geometry constant": "G",
+               "integration points": "ip"})
 
 # Class names
 format.update({"classname finite_element": \
@@ -76,6 +90,7 @@ format.update({"classname finite_element": \
 
 # Misc
 format.update({"bool":    lambda v: {True: "true", False: "false"}[v],
+               # FIXME: KBO: Will float be equal to the old 'floating point'?
                "float":   lambda v: "%g" % v,
                "str":     lambda v: "%s" % str(v),
                "epsilon": FFC_OPTIONS["epsilon"]})
@@ -154,7 +169,7 @@ def _inner_product(v, w):
     assert(len(v) == len(w)), \
                   "Sizes differ (%d, %d) in inner-product!" % (len(v), len(w))
 
-    return format["add"]([format["multiply"]([v[i], w[i]])
+    return format["addition"]([format["multiply"]([v[i], w[i]])
                           for i in range(len(v))])
 
 def _transform(type, j, k, r):
@@ -194,7 +209,7 @@ def inner_product(a, b, format):
         error("Dimensions don't match for inner product.")
 
     # Prefetch formats to speed up code generation
-    format_add            = format["add"]
+    format_add            = format["addition"]
     format_subtract       = format["subtract"]
     format_multiply       = format["multiply"]
     format_floating_point = format["floating point"]
@@ -529,11 +544,14 @@ def floating_point_windows(v):
     return floating_point(v).replace("e-0", "e-").replace("e+0", "e+")
 
 if platform.system() == "Windows":
+    format["floating point"] = floating_point_windows
     format_old["floating point"] = floating_point_windows
 else:
     format_old["floating point"] = floating_point
+    format["floating point"] = floating_point
 
 format_old["epsilon"] = 10.0*eval("1e-%s" % precision)
+format["epsilon"] = 10.0*eval("1e-%s" % precision)
 
 def _generate_body(declarations):
     "Generate function body from list of declarations or statements."

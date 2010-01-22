@@ -16,7 +16,7 @@ def split_expression(expression, format, operator, allow_split = False):
     of double operations which can be in (), but in [] we only have integer operations."""
 
     # Get formats
-    access = format["array access"]("")
+    access = format["component"]("", [""])
     group = format["grouping"]("")
     la = access[0]
     ra = access[1]

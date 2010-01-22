@@ -23,8 +23,6 @@ from expr import Expr
 def set_format(_format):
     global format
     format = _format
-    global EPS
-    EPS = format["epsilon"]
 
 class Symbol(Expr):
     __slots__ = ("v", "base_expr", "base_op")

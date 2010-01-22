@@ -9,6 +9,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # FFC modules.
 from ffc.log import error
+from ffc.cpp import format
 
 # FFC quadrature modules.
 from symbolics import create_float
@@ -22,8 +23,6 @@ from expr import Expr
 def set_format(_format):
     global format
     format = _format
-    global EPS
-    EPS = format["epsilon"]
 
 class Fraction(Expr):
     __slots__ = ("num", "denom", "_expanded", "_reduced")
@@ -96,7 +95,8 @@ class Fraction(Expr):
         # NOTE: This will be removed by the optimisations later before writing any code.
         if self.denom._prec in (2, 4) or self.denom.val < 0.0: # prod or frac
             denom = format["grouping"](denom)
-        return num + format["division"] + denom
+#        return num + format["division"] + denom
+        return format["div"](num, denom)
 
     # Binary operators.
     def __add__(self, other):

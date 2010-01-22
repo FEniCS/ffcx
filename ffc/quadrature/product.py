@@ -9,6 +9,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # FFC modules.
 from ffc.log import error
+from ffc.cpp import format
 
 # FFC quadrature modules.
 from symbolics import create_float
@@ -24,6 +25,7 @@ def set_format(_format):
     format = _format
     global EPS
     EPS = format["epsilon"]
+EPS = format["epsilon"]
 
 #class Product(object):
 class Product(Expr):
@@ -148,8 +150,8 @@ class Product(Expr):
         # If we have more than one variable and the first float is -1 exlude the 1.
         if len(self.vrs) > 1 and self.vrs[0]._prec == 0 and self.vrs[0].val == -1.0:
             # Join string representation of members by multiplication
-            return   format["subtract"](["", format["multiply"]([str(v) for v in self.vrs[1:]])])
-        return format["multiply"]([str(v) for v in self.vrs])
+            return   format["sub"](["", format["mul"]([str(v) for v in self.vrs[1:]])])
+        return format["mul"]([str(v) for v in self.vrs])
 
     # Binary operators.
     def __add__(self, other):

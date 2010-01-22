@@ -16,9 +16,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # UFL modules
 from ufl.log import Logger
 from ufl.log import log_functions
-from ufl.log import DEBUG
-from ufl.log import INFO
-from ufl.log import ERROR
+from ufl.log import INFO, DEBUG, ERROR, CRITICAL
 
 # Create FFC logger
 ffc_logger = Logger("FFC")

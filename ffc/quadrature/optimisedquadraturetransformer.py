@@ -35,7 +35,7 @@ from quadraturegenerator_utils import generate_psi_name
 from quadraturegenerator_utils import create_permutations
 
 # Symbolics functions
-from symbolics import set_format
+#from symbolics import set_format
 from symbolics import create_float
 from symbolics import create_symbol
 from symbolics import create_product
@@ -54,7 +54,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
 
         # Initialise base class.
         QuadratureTransformerBase.__init__(self, ir, optimise_options, format)
-        set_format(format)
+#        set_format(format)
 
     # -------------------------------------------------------------------------
     # Start handling UFL classes.

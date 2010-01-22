@@ -23,7 +23,7 @@ from ffc.quadrature.symbolics import create_symbol
 from ffc.quadrature.symbolics import create_sum
 from ffc.quadrature.symbolics import create_product
 from ffc.quadrature.symbolics import create_fraction
-from ffc.quadrature.symbolics import set_format
+#from ffc.quadrature.symbolics import set_format
 from ffc.quadrature.symbolics import CONST
 
 # Temporary import
@@ -41,7 +41,7 @@ def _evaluate_basis_all(data_list):
     code = []
 
     # FIXME: KBO: Can we remove this?
-    set_format(format)
+#    set_format(format)
 
     # FIXME: KBO: Figure out how the return format should be, either:
     # [N0[0], N0[1], N1[0], N1[1], ...]
@@ -111,7 +111,7 @@ def _evaluate_basis(data_list):
     untested for tensor valued element."""
 
     # FIXME: KBO: Can we remove this?
-    set_format(format)
+#    set_format(format)
 
     # Init return code and indent object
     code = []

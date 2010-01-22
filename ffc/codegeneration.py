@@ -234,7 +234,7 @@ def _tabulate_dofs(ir):
     "Generate code for tabulate_dofs."
 
     # Prefetch formats
-    add = format["add"]
+    add = format["addition"]
     iadd = format["iadd"]
     multiply = format["multiply"]
     assign = format["assign"]

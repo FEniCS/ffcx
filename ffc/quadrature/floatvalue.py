@@ -9,10 +9,11 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # FFC modules.
 from ffc.log import error
+from ffc.cpp import format
 
 # FFC quadrature modules.
 from symbolics import CONST
-from symbolics import format
+#from symbolics import format
 from symbolics import create_float
 from symbolics import create_product
 from symbolics import create_sum
@@ -28,6 +29,9 @@ def set_format(_format):
     format_float = format["floating point"]
     global EPS
     EPS = format["epsilon"]
+
+format_float = format["floating point"]
+EPS = format["epsilon"]
 
 class FloatValue(Expr):
     def __init__(self, value):

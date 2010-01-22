@@ -8,8 +8,8 @@ __license__  = "GNU GPL version 3 or any later version"
 # Last changed: 2010-01-21
 
 # FFC modules
-from ffc.log import debug
-from ffc.log import error
+from ffc.log import debug, error
+from ffc.cpp import format
 
 # TODO: Use proper errors, not just RuntimeError.
 # TODO: Change all if value == 0.0 to something more safe.
@@ -20,7 +20,7 @@ IP  = 1
 GEO = 2
 CONST = 3
 type_to_string = {BASIS:"BASIS", IP:"IP",GEO:"GEO", CONST:"CONST"}
-format = None
+#format = None
 
 # Functions and dictionaries for cache implementation.
 # Increases speed and should also reduce memory consumption.
@@ -87,16 +87,16 @@ def create_fraction(num, denom):
     return fraction
 
 # Function to set global format to avoid passing around the dictionary 'format'.
-def set_format(_format):
-    global format
-    format = _format
-    set_format_float(format)
-    set_format_sym(format)
-    set_format_prod(format)
-    set_format_sum(format)
-    set_format_frac(format)
-    global format_comment
-    format_comment = format["comment"]
+#def set_format(_format):
+#    global format
+#    format = _format
+#    set_format_float(format)
+#    set_format_sym(format)
+#    set_format_prod(format)
+#    set_format_sum(format)
+#    set_format_frac(format)
+#    global format_comment
+#    format_comment = format["comment"]
 
 def get_format():
     return format
@@ -135,7 +135,7 @@ def optimise_code(expr, ip_consts, geo_consts, trans_set):
     The function will update the dictionaries ip_const and geo_consts with new
     declarations and update the trans_set (used transformations)."""
 
-    format_G  = format["geometry tensor"]
+    format_G  = format["geometry constant"]
     format_ip = format["integration points"]
     trans_set_update = trans_set.update
 

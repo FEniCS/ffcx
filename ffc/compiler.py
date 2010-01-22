@@ -118,78 +118,90 @@ def compile_form(forms, object_names={}, prefix="Form", options=FFC_OPTIONS.copy
     """This function generates UFC code for a given UFL form or list
     of UFL forms."""
 
+    # Reset timing
+    cpu_time_0 = time()
+
     # Check input arguments
     forms = _check_forms(forms)
     options = _check_options(options)
     if not forms: return
 
-    # Reset timing
-    cpu_time = time()
-
     # Stage 1: analysis
+    cpu_time = time()
     analysis = analyze_forms(forms, object_names, options)
     _print_timing(1, time() - cpu_time)
 
     # Stage 2: intermediate representation
+    cpu_time = time()
     ir = compute_ir(analysis, options)
     _print_timing(2, time() - cpu_time)
 
     # Stage 3: optimization
+    cpu_time = time()
     oir = optimize_ir(ir, options)
     _print_timing(3, time() - cpu_time)
 
     # Stage 4: code generation
+    cpu_time = time()
     code = generate_code(oir, prefix, options)
     _print_timing(4, time() - cpu_time)
 
     # Stage 4.1: generate wrappers
+    cpu_time = time()
     wrapper_code = generate_wrapper_code(analysis, prefix, options)
     _print_timing(4.1, time() - cpu_time)
 
     # Stage 5: format code
+    cpu_time = time()
     format_code(code, wrapper_code, prefix, options)
     _print_timing(5, time() - cpu_time)
 
-    info_green("Code generation complete.")
+    info_green("FFC finished in %g seconds.", time() - cpu_time_0)
     return analysis
 
 def compile_element(elements, object_names={}, prefix="Element", options=FFC_OPTIONS.copy()):
     """This function generates UFC code for a given UFL element or
     list of UFL elements."""
 
+    # Reset timing
+    cpu_time_0 = time()
+
     # Check input arguments
     elements = _check_elements(elements)
     options = _check_options(options)
     if not elements: return
 
-    # Reset timing
-    cpu_time = time()
-
     # Stage 1: analysis
+    cpu_time = time()
     analysis = analyze_elements(elements)
     _print_timing(1, time() - cpu_time)
 
     # Stage 2: intermediate representation
+    cpu_time = time()
     ir = compute_ir(analysis, options)
     _print_timing(2, time() - cpu_time)
 
     # Stage 3: optimization
+    cpu_time = time()
     oir = optimize_ir(ir, options)
     _print_timing(3, time() - cpu_time)
 
     # Stage 4: code generation
+    cpu_time = time()
     code = generate_code(oir, prefix, options)
     _print_timing(4, time() - cpu_time)
 
     # Stage 4.1: generate wrappers
+    cpu_time = time()
     wrapper_code = generate_wrapper_code(analysis, prefix, options)
     _print_timing(4.1, time() - cpu_time)
 
     # Stage 5: format code
+    cpu_time = time()
     format_code(code, wrapper_code, prefix, options)
     _print_timing(5, time() - cpu_time)
 
-    info_green("Code generation complete.")
+    info_green("FFC finished in %g seconds.", time() - cpu_time_0)
 
 def _check_forms(forms):
     "Initial check of forms."

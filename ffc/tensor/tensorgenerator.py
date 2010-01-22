@@ -131,9 +131,9 @@ def _generate_tensor_contraction(terms, options, g_set):
     "Generate code for computation of tensor contraction."
 
     # Prefetch formats to speed up code generation
-    add             = format["add"]
+    add             = format["addition"]
     iadd            = format["iadd"]
-    subtract        = format["subtract"]
+    subtract        = format["sub"]
     multiply        = format["multiply"]
     assign          = format["assign"]
     element_tensor  = format["element tensor"]
@@ -198,7 +198,7 @@ def _generate_geometry_tensors(terms, j_set, g_set):
     "Generate code for computation of geometry tensors."
 
     # Prefetch formats to speed up code generation
-    format_add             = format["add"]
+    format_add             = format["addition"]
     format_geometry_tensor = format["geometry tensor"]
     format_scale_factor    = format["scale factor"]
     format_declaration     = format["const float declaration"]
@@ -249,7 +249,7 @@ def _generate_entry(GK, a, i, j_set):
 
     # Prefetch formats to speed up code generation
     grouping = format["grouping"]
-    add      = format["add"]
+    add      = format["addition"]
     multiply = format["multiply"]
 
     # Compute product of factors outside sum
