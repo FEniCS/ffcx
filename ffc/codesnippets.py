@@ -711,3 +711,7 @@ tabulate_tensor_quadrature(A, w, c0, c1, facet0, facet1);"""
 # Mappings to code snippetes
 jacobian = {1: jacobian_1D, 2: jacobian_2D, 3: jacobian_3D}
 facet_determinant = {1: facet_determinant_1D, 2: facet_determinant_2D, 3: facet_determinant_3D}
+fiat_coordinate_map = {"interval": map_coordinates_FIAT_interval,
+                       "triangle": map_coordinates_FIAT_triangle,
+                       "tetrahedron": map_coordinates_FIAT_tetrahedron}
+

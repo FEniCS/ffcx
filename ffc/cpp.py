@@ -22,18 +22,27 @@ from ffc.constants import FFC_OPTIONS
 format = {}
 
 # Program flow
-format.update({"return":     lambda v: "return %s;" % str(v),
-               "grouping":   lambda v: "(%s)" % v,
-               "switch":     lambda v, cases, default=None: _generate_switch(v, cases, default),
-               "exception":  lambda v: "throw std::runtime_error(\"%s\");" % v,
-               "comment":    lambda v: "// %s" % v,
-               "if":         lambda c, v: "if (%s) {\n%s\n}\n" % (c, v),
-               "do nothing": "// Do nothing"})
+format.update({"return":      lambda v: "return %s;" % str(v),
+               "grouping":    lambda v: "(%s)" % v,
+               "block":       lambda v: "{%s}" % v,
+               "block begin": "{",
+               "block end":   "}",
+               "switch":      lambda v, cases, default=None: _generate_switch(v, cases, default),
+               "exception":   lambda v: "throw std::runtime_error(\"%s\");" % v,
+               "comment":     lambda v: "// %s" % v,
+               "if":          lambda c, v: "if (%s) {\n%s\n}\n" % (c, v),
+               "loop":        lambda i, j, k: "for (unsigned int %s = %s; %s < %s; %s++)"% (i, j, i, k, i),
+               "do nothing":  "// Do nothing"})
 
 # Declarations
 format.update({"declaration": lambda t, n, v=None: _declaration(t, n, v),
+               "float declaration": "double ",
+               "uint declaration": "unsigned int ",
+               "static const float declaration": "static const double ",
                "const float declaration":
-               lambda v, w: "const double %s = %s;" % (v, w)})
+                   lambda v, w: "const double %s = %s;" % (v, w),
+               "const uint declaration":
+                   lambda v, w: "const unsigned int %s = %s;" % (v, w)})
 
 # Mathematical operators
 format.update({"add":           lambda v: " + ".join(v),
@@ -42,11 +51,14 @@ format.update({"add":           lambda v: " + ".join(v),
                "mul":           lambda v: "*".join(v),
                "imul":          lambda v, w: "%s *= %s;" % (str(v), str(w)),
                "div":           lambda v, w: "%s/%s" % (str(v), str(w)),
+               "inverse":       lambda v: "(1.0/%s)" % v,
                "std power":     lambda base, exp: "std::pow(%s, %s)" % (base, exp),
                "exp":           lambda v: "std::exp(%s)" % str(v),
                "ln":            lambda v: "std::log(%s)" % str(v),
                "cos":           lambda v: "std::cos(%s)" % str(v),
                "sin":           lambda v: "std::sin(%s)" % str(v),
+               "absolute value":lambda v: "std::abs(%s)" % str(v),
+               "sqrt":          lambda v: "std::sqrt(%s)" % str(v),
                "addition":      lambda v: _add(v),
                "multiply":      lambda v: _multiply(v),
                "power":         lambda base, exp: _power(base, exp),
@@ -71,8 +83,35 @@ format.update({"entity index": "c.entity_indices",
                "det(J)": lambda r: "detJ_%s" % r})
 
 # Stuff from format_old used by KBO, should be moved around and possibly renamed.
-format.update({"geometry constant": "G",
-               "integration points": "ip"})
+format.update({# Loop indices
+               "integration points": "ip",
+               "free indices":  ["r","s","t","u"],
+               "tmp value": lambda i: "tmp%d" % i,
+               # Snippet variable names
+               "x coordinate": "x",
+               "y coordinate": "y",
+               "z coordinate": "z",
+               # Random variable names
+               "local dof": "dof",
+               "basisvalues": "basisvalues",
+               "geometry constant": "G",
+               "coefficients": lambda i: "coefficients%d" %(i),
+               # UFC argument names
+               "argument values": "values",
+               "argument coordinates": "coordinates",
+               "argument basis num": "i",
+               "argument derivative order": "n",
+               # Convenience formats
+               "dof map if": lambda i,j: "%d <= %s && %s <= %d" %(i,\
+                 format["argument basis num"], format["argument basis num"], j),
+               # Misc
+               "pointer": "*",
+               "new": "new ",
+               "delete": "delete ",
+               "separator": ", ",
+               "block separator": ",\n",
+               "new line": "\\\n"
+})
 
 # Class names
 format.update({"classname finite_element": \
@@ -390,7 +429,7 @@ format_old = {
     "const float declaration": "const double ",
     "static float declaration": "static double ",
     "uint declaration": "unsigned int ",
-    "const uint declaration": "const unsigned int ",
+#    "const uint declaration": "const unsigned int ",
     "static const uint declaration": "static const unsigned int ",
     "static uint declaration": "static unsigned int ",
     "table declaration": "static const double ",
