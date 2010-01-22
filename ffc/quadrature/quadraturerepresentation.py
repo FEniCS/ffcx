@@ -214,12 +214,11 @@ def _sort_integrals(integrals, domain_id, form_data):
             continue
         order = form_data.metadata[integral]["quadrature_degree"]
         rule  = form_data.metadata[integral]["quadrature_rule"]
-        print "Order: ", order
 
         # FIXME: This could take place somewhere else?
         # Compute the required number of points for each axis (exact integration).
         num_points_per_axis = (order + 1 + 1) / 2 # integer division gives 2m - 1 >= q.
-        print "points: ", num_points_per_axis
+
         # Create new form and add to dictionary accordingly.
         form = Form([Integral(integral.integrand(), integral.measure().reconstruct(metadata={}))])
         if not (num_points_per_axis, rule) in sorted_integrals:

@@ -940,7 +940,8 @@ class QuadratureTransformerBase(Transformer):
         else:
             local_comp = 0
 
-        # Map component
+        # Map component using UFL map
+        # NOTE: We rely implicitly on a similar ordering of sub elements of mixed elements in UFL and FFC.
         if len(component) > 1:
             component = ufl_function.element()._sub_element_mapping[tuple(component)]
         elif component:

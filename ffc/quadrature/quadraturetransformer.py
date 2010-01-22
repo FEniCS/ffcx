@@ -331,11 +331,11 @@ class QuadratureTransformer(QuadratureTransformerBase):
                         continue
 
                     # Multiply basis by appropriate transform.
-                    if transformation == COVARIANT_PIOLA:
+                    if transformation == "covariant piola":
                         dxdX = format_transform("JINV", c, local_comp, self.restriction)
                         self.trans_set.add(dxdX)
                         basis = format_mult([dxdX, basis])
-                    elif transformation == CONTRAVARIANT_PIOLA:
+                    elif transformation == "contravariant piola":
                         self.trans_set.add(format_detJ(self.restriction))
                         detJ = format_inv(format_detJ(self.restriction))
                         dXdx = format_transform("J", c, local_comp, self.restriction)
@@ -401,11 +401,11 @@ class QuadratureTransformer(QuadratureTransformerBase):
                         continue
 
                     # Multiply basis by appropriate transform.
-                    if transformation == COVARIANT_PIOLA:
+                    if transformation == "covariant piola":
                         dxdX = format_transform("JINV", c, local_comp, self.restriction)
                         self.trans_set.add(dxdX)
                         function_name = format_mult([dxdX, function_name])
-                    elif transformation == CONTRAVARIANT_PIOLA:
+                    elif transformation == "contravariant piola":
                         self.trans_set.add(format_detJ(self.restriction))
                         detJ = format_inv(format_detJ(self.restriction))
                         dXdx = format_transform("J", c, local_comp, self.restriction)

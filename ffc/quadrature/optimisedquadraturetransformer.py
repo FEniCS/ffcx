@@ -248,10 +248,10 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
                     mapping, basis = self._create_mapping_basis(c + local_offset, deriv, ufl_argument, ffc_element)
 
                     # Multiply basis by appropriate transform.
-                    if transformation == COVARIANT_PIOLA:
+                    if transformation == "covariant piola":
                         dxdX = create_symbol(format_transform("JINV", c, local_comp, self.restriction), GEO)
                         basis = create_product([dxdX, basis])
-                    elif transformation == CONTRAVARIANT_PIOLA:
+                    elif transformation == "contravariant piola":
                         detJ = create_fraction(create_float(1), create_symbol(format_detJ(self.restriction), GEO))
                         dXdx = create_symbol(format_transform("J", c, local_comp, self.restriction), GEO)
                         basis = create_product([detJ, dXdx, basis])
@@ -309,10 +309,10 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
                     function_name = self._create_function_name(c + local_offset, deriv, quad_element, ufl_function, ffc_element)
 
                     # Multiply basis by appropriate transform.
-                    if transformation == COVARIANT_PIOLA:
+                    if transformation == "covariant piola":
                         dxdX = create_symbol(format_transform("JINV", c, local_comp, self.restriction), GEO)
                         function_name = create_product([dxdX, function_name])
-                    elif transformation == CONTRAVARIANT_PIOLA:
+                    elif transformation == "contravariant piola":
                         detJ = create_fraction(create_float(1), create_symbol(format_detJ(self.restriction), GEO))
                         dXdx = create_symbol(format_transform("J", c, local_comp, self.restriction), GEO)
                         function_name = create_product([detJ, dXdx, function_name])
