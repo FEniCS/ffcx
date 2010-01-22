@@ -226,8 +226,8 @@ def _generate_element_tensor(integrals, transformer, Indent, format, interior=Fa
 
     # We receive a dictionary {num_points: form,}.
     # Loop points and forms.
-    for pr, integral in integrals.items():
-        points, inegration_rule = pr
+    for points, integral in integrals.items():
+
         debug("Looping points: " + str(points))
         debug("integral: " + str(integral))
         debug("\nIntegral tree_format: " + str(tree_format(integral)))

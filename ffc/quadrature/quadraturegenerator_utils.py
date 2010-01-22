@@ -89,6 +89,8 @@ def generate_psi_name(counter, facet, component, derivatives):
 def create_psi_tables(tables, format_epsilon, options):
     "Create names and maps for tables and non-zero entries if appropriate."
 
+    print tables
+
     debug("\nQG-utils, psi_tables:\n" + str(tables))
     # Create element map {points:{element:number,},}
     # and a plain dictionary {name:values,}.
@@ -132,9 +134,14 @@ def flatten_psi_tables(tables):
                 # If the element value rank != 0, we must loop the components.
                 # before the derivatives (that's the way the values are tabulated).
                 if len(elem.value_shape()) != 0:
-                    for num_comp, comp_table in enumerate(elem_table):
-                        for derivs in sorted(comp_table.keys()):
-                            psi_table = num_deriv[derivs]
+#                    for num_comp, comp_table in enumerate(elem_table):
+#                        for derivs in sorted(comp_table.keys()):
+                    print elem_table
+                    for derivs in sorted(elem_table.keys()):
+                        comp_table = elem_table[derivs]
+
+                        for num_comp, psi_table in enumerate(comp_table):
+#                            psi_table = num_deriv[derivs]
                             debug("\nQG-utils, flatten_tables, derivs:\n" + str(derivs))
                             debug("\nQG-utils, flatten_tables, psi_table:\n" + str(psi_table))
                             # Verify shape of basis (can be omitted for speed

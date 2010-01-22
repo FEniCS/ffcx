@@ -28,10 +28,14 @@ def compute_integral_ir(form, form_data, form_id, options):
     ext_facet_integrals = _extract_quadrature_integrals(form.exterior_facet_integrals(), form_data)
     int_facet_integrals = _extract_quadrature_integrals(form.interior_facet_integrals(), form_data)
 
+    # Get number of facets and geometric dimension
+    num_facets = form_data.num_facets
+    geometric_dimension = form_data.geometric_dimension
+
     # Compute representation of cell tensors.
     for i in range(form_data.num_cell_domains):
         sorted_integrals = _sort_integrals(cell_integrals, i, form_data)
-        psi_tables, quad_weights = _tabulate_basis(sorted_integrals, "cell_integral", form_data.num_facets)
+        integrals, psi_tables, quad_weights = _tabulate_basis(sorted_integrals, "cell_integral", num_facets)
         if psi_tables is None and quad_weights is None:
             continue
         ir.append({"integral_type":       "cell_integral",
@@ -40,14 +44,14 @@ def compute_integral_ir(form, form_data, form_id, options):
                    "sub_domain":          i,
                    "quadrature_weights":  quad_weights,
                    "psi_tables":          psi_tables,
-                   "geometric_dimension": form_data.geometric_dimension,
-                   "num_facets":          form_data.num_facets,
-                   "integrals":           sorted_integrals})
+                   "geometric_dimension": geometric_dimension,
+                   "num_facets":          num_facets,
+                   "integrals":           integrals})
 
     # Compute representation of exterior facet tensors.
     for i in range(form_data.num_exterior_facet_domains):
         sorted_integrals = _sort_integrals(ext_facet_integrals, i, form_data)
-        psi_tables, quad_weights = _tabulate_basis(sorted_integrals, "exterior_facet_integral", form_data.num_facets)
+        integrals, psi_tables, quad_weights = _tabulate_basis(sorted_integrals, "exterior_facet_integral", num_facets)
         if psi_tables is None and quad_weights is None:
             continue
         ir.append({"integral_type":       "exterior_facet_integral",
@@ -56,14 +60,14 @@ def compute_integral_ir(form, form_data, form_id, options):
                    "sub_domain":          i,
                    "quadrature_weights":  quad_weights,
                    "psi_tables":          psi_tables,
-                   "geometric_dimension": form_data.geometric_dimension,
-                   "num_facets":          form_data.num_facets,
-                   "integrals":           sorted_integrals})
+                   "geometric_dimension": geometric_dimension,
+                   "num_facets":          num_facets,
+                   "integrals":           integrals})
 
     # Compute representation of interior facet tensors.
     for i in range(form_data.num_interior_facet_domains):
         sorted_integrals = _sort_integrals(int_facet_integrals, i, form_data)
-        psi_tables, quad_weights = _tabulate_basis(sorted_integrals, "interior_facet_integral", form_data.num_facets)
+        integrals, psi_tables, quad_weights = _tabulate_basis(sorted_integrals, "interior_facet_integral", num_facets)
         if psi_tables is None and quad_weights is None:
             continue
         ir.append({"integral_type":       "interior_facet_integral",
@@ -72,9 +76,9 @@ def compute_integral_ir(form, form_data, form_id, options):
                    "sub_domain":          i,
                    "quadrature_weights":  quad_weights,
                    "psi_tables":          psi_tables,
-                   "geometric_dimension": form_data.geometric_dimension,
-                   "num_facets":          form_data.num_facets,
-                   "integrals":           sorted_integrals})
+                   "geometric_dimension": geometric_dimension,
+                   "num_facets":          num_facets,
+                   "integrals":           integrals})
 
     return ir
 
@@ -84,10 +88,11 @@ def _tabulate_basis(sorted_integrals, integral_type, num_facets):
     # Initialise return values.
     quadrature_weights = {}
     psi_tables = {}
+    integrals = {}
 
     # If we don't get any integrals there's nothing to do.
     if not sorted_integrals:
-        return (None, None)
+        return (None, None, None)
 
     # Loop the quadrature points and tabulate the basis values.
     for pr, integral in sorted_integrals.iteritems():
@@ -139,6 +144,12 @@ def _tabulate_basis(sorted_integrals, integral_type, num_facets):
                     "This number of points is already present in the psi table: " + repr(psi_tables))
         psi_tables[len_weights] = {}
 
+        # Add the integral with the number of points as a key to the return integrals.
+        # TODO: This check should not be needed, remove later.
+        ffc_assert(len_weights not in integrals, \
+                    "This number of points is already present in the integrals: " + repr(integrals))
+        integrals[len_weights] = integral
+
         # TODO: This is most likely not the best way to get the highest
         # derivative of an element.
         # Initialise dictionary of elements and the number of derivatives.
@@ -178,7 +189,7 @@ def _tabulate_basis(sorted_integrals, integral_type, num_facets):
                     psi_tables[len_weights][elements[i]][facet] =\
                         element.tabulate(deriv_order, map_facet_points(points, facet))
 
-    return (psi_tables, quadrature_weights)
+    return (integrals, psi_tables, quadrature_weights)
 
 def _extract_quadrature_integrals(integrals, form_data):
     "Extract relevant integrals (that needs quadrature representation) for the QuadratureGenerator."
@@ -203,11 +214,12 @@ def _sort_integrals(integrals, domain_id, form_data):
             continue
         order = form_data.metadata[integral]["quadrature_degree"]
         rule  = form_data.metadata[integral]["quadrature_rule"]
+        print "Order: ", order
 
         # FIXME: This could take place somewhere else?
         # Compute the required number of points for each axis (exact integration).
         num_points_per_axis = (order + 1 + 1) / 2 # integer division gives 2m - 1 >= q.
-
+        print "points: ", num_points_per_axis
         # Create new form and add to dictionary accordingly.
         form = Form([Integral(integral.integrand(), integral.measure().reconstruct(metadata={}))])
         if not (num_points_per_axis, rule) in sorted_integrals:

@@ -81,8 +81,6 @@ class QuadratureTransformerBase(Transformer):
         self.element_map, self.name_map, self.unique_tables =\
               create_psi_tables(psi_tables,\
                                        self.format["epsilon"], self.optimise_options)
-        print "map: ", self.element_map
-
         # Cache.
         self.argument_cache = {}
         self.function_cache = {}
