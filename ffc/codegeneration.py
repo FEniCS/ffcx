@@ -11,7 +11,7 @@ __date__ = "2009-12-16"
 __copyright__ = "Copyright (C) 2009 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-21
+# Last changed: 2010-01-22
 
 # FFC modules
 from ffc.log import info, begin, end, debug_code
@@ -240,41 +240,38 @@ def _tabulate_dofs(ir):
     assign = format["assign"]
     component = format["component"]
     entity_index = format["entity index"]
-    num_entities = format["num entities"]
+    num_entities_format = format["num entities"]
 
+    # Extract representation
+    (num_dofs_per_element, num_entities, need_offset) = ir
+
+    # Declare offset if needed
     code = []
-
-    # Declare offset if more than one element:
     offset_name = "0"
-    need_offset = len(ir) > 1
     if need_offset:
         offset_name = "offset"
         code.append(format["declaration"]("unsigned int", offset_name, 0))
 
     # Generate code for each element
     i = 0
-    for element_ir in ir:
-
-        # Extract number of dofs per mesh entity and number of mesh
-        # entities per geometric dimension
-        dofs_per_entity = element_ir["num_dofs_per_entity"]
-        entities_per_dim = element_ir["entites_per_dim"]
+    for num_dofs in num_dofs_per_element:
 
         # Generate code for each degree of freedom for each dimension
-        for (d, num_dofs) in enumerate(dofs_per_entity):
+        for (dim, num) in enumerate(num_dofs):
 
-            if num_dofs == 0: continue
+            # Ignore if no dofs for this dimension
+            if num == 0: continue
 
-            for k in range(entities_per_dim[d]):
-                v = multiply([num_dofs, component(entity_index,(d, k))])
-                for j in range(num_dofs):
+            for k in range(num_entities[dim]):
+                v = multiply([num, component(entity_index, (dim, k))])
+                for j in range(num):
                     value = add([offset_name, v, j])
                     code.append(assign(component("dofs", i), value))
                     i += 1
 
             # Update offset corresponding to mesh entity:
             if need_offset:
-                addition = multiply([num_dofs, component(num_entities, d)])
+                addition = multiply([num, component(num_entities_format, dim)])
                 code.append(iadd("offset", addition))
 
     return "\n".join(code)

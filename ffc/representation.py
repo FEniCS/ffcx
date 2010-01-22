@@ -243,10 +243,20 @@ def _tabulate_coordinates(element):
 def _tabulate_dofs(element, cell):
     "Compute intermediate representation of tabulate_dofs."
 
+    # Extract number of enties for each dimension for this cell
+    num_entities = entities_per_dim[cell.geometric_dimension()]
+
+    # Extract number of dofs per entity for each element
     elements = all_elements(element)
-    return [{"entites_per_dim": entities_per_dim[cell.geometric_dimension()],
-               "num_dofs_per_entity": _num_dofs_per_entity(e)}
-              for e in elements]
+    num_dofs_per_element = [_num_dofs_per_entity(e) for e in elements]
+
+    # Check whether we need offset
+    multiple_entities =  any([sum(n > 0 for n in num_dofs) - 1
+                              for num_dofs in num_dofs_per_element])
+    need_offset = len(elements) > 1 or multiple_entities
+
+    return (num_dofs_per_element, num_entities, need_offset)
+
 
 def _tabulate_facet_dofs(element, cell):
     "Compute intermediate representation of tabulate_facet_dofs."
