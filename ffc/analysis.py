@@ -59,24 +59,25 @@ def analyze_elements(elements):
     # Empty form and data
     form_and_data = []
 
-    # FIXME: This looks unecessarily complex
-
     # Extract unique elements
     unique_elements = []
     element_map = {}
     for element in elements:
-        # Check if element is present
-        if not element in element_map:
-            element_map[element] = len(unique_elements)
-            unique_elements.append(element)
-        # Check sub elements if any
-        if isinstance(element, MixedElement):
-            for sub_element in element.sub_elements():
-                if not sub_element in element_map:
-                    element_map[sub_element] = len(unique_elements)
-                    unique_elements.append(sub_element)
+        # Get all (unique) nested elements.
+        for e in _get_nested_elements(element):
+            # Check if element is present
+            if not e in element_map:
+                element_map[e] = len(unique_elements)
+                unique_elements.append(e)
     end()
     return form_and_data, unique_elements, element_map
+
+def _get_nested_elements(element):
+    "Get unique nested elements (including self)."
+    nested_elements = [element]
+    for e in element.sub_elements():
+        nested_elements += _get_nested_elements(e)
+    return set(nested_elements)
 
 def _analyze_form(form, object_names, options):
     "Analyze form, returning preprocessed form and form data."
