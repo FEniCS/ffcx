@@ -29,7 +29,7 @@ import ufl
 
 # FFC modules
 from ffc.utils import compute_permutations
-from ffc.log import info, error, begin, end, debug_ir, ffc_assert
+from ffc.log import info, error, begin, end, debug_ir, ffc_assert, warning
 from ffc.fiatinterface import create_element, entities_per_dim, reference_cell
 from ffc.mixedelement import MixedElement
 
@@ -57,7 +57,7 @@ def compute_ir(analysis, options):
 
     # Compute and flatten representation of integrals
     info("Computing representation of integrals")
-    irs = [_compute_integral_ir(f, d, i, options) for (i, (f, d)) in enumerate(form_and_data)]
+    irs = [_compute_integral_ir(f, d, i) for (i, (f, d)) in enumerate(form_and_data)]
     ir_integrals = [ir for ir in chain(*irs) if not ir is None]
 
     # Compute representation of forms
@@ -132,14 +132,34 @@ def _compute_dofmap_ir(ufl_element, element_id, element_map):
 
     return ir
 
-def _compute_integral_ir(form, form_data, form_id, options):
+def _compute_integral_ir(form, form_data, form_id):
     "Compute intermediate represention of form integrals."
 
-    # Iterate over representations
-    ir = []
-    for r in (quadrature, tensor):
-        ir += r.compute_integral_ir(form, form_data, form_id, options)
-    return ir
+    irs = []
+
+    # Iterate over integrals
+    for (domain_type, domain_id, integrals, metadata) in form_data.integral_data:
+
+        # Select representation
+        if metadata["representation"] == "quadrature":
+            r = quadrature
+        elif metadata["representation"] == "tensor":
+            r = tensor
+        else:
+            error("Unknown representation: " + str(metadata["representation"]))
+
+        # Compute representation
+        ir = r.compute_integral_ir(domain_type,
+                                   domain_id,
+                                   integrals,
+                                   metadata,
+                                   form_data,
+                                   form_id)
+
+        # Append representation
+        irs.append(ir)
+
+    return irs
 
 def _compute_form_ir(form, form_data, form_id):
     "Compute intermediate representation of form."

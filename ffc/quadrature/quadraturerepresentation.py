@@ -6,7 +6,7 @@ __copyright__ = "Copyright (C) 2009-2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Anders Logg, 2009.
-# Last changed: 2010-01-21
+# Last changed: 2010-01-23
 
 # UFL modules
 from ufl.classes import Form, Integral, SpatialDerivative
@@ -17,7 +17,12 @@ from ufl.algorithms import extract_unique_elements, extract_type, extract_elemen
 from ffc.log import ffc_assert
 from ffc.fiatinterface import create_element, create_quadrature, map_facet_points
 
-def compute_integral_ir(form, form_data, form_id, options):
+def compute_integral_ir(domain_type, domain_id, integrals, metadata, form_data, form_id):
+    "Compute intermediate represention of integral."
+
+    return "not implemented"
+
+def compute_old_integral_ir(form, form_data, form_id, options):
     "Compute intermediate represention of form integrals."
 
     # Initialise return value

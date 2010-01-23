@@ -8,7 +8,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Kristian B. Oelgaard, 2009
 # Modified by Marie Rognes (meg@math.uio.no), 2007
 # Modified by Garth N. Wells, 2009
-# Last changed: 2010-01-19
+# Last changed: 2010-01-23
 
 # FFC modules
 from ffc.cpp import format, remove_unused, count_ops
@@ -22,11 +22,11 @@ def generate_integral_code(ir, prefix, options):
 
     # Prefetch formatting to speedup code generation
     do_nothing = format["do nothing"]
-    classname = format["classname " + ir["integral_type"]]
+    classname = format["classname " + ir["domain_type"] + "_integral"]
 
     # Generate code
     code = {}
-    code["classname"] = classname(prefix, ir["form_id"], ir["sub_domain"])
+    code["classname"] = classname(prefix, ir["form_id"], ir["domain_id"])
     code["members"] = ""
     code["constructor"] = do_nothing
     code["destructor"] = do_nothing
@@ -47,12 +47,12 @@ def _tabulate_tensor(ir, options):
 
     # Extract data from intermediate representation
     AK = ir["AK"]
-    integral_type = ir["integral_type"]
+    domain_type = ir["domain_type"]
     geometric_dimension = ir["geometric_dimension"]
     num_facets = ir["num_facets"]
 
     # Check integral typpe and generate code
-    if integral_type == "cell_integral":
+    if domain_type == "cell":
 
         # Generate code for one single tensor contraction
         t_code = _generate_tensor_contraction(AK, options, g_set)
@@ -65,7 +65,7 @@ def _tabulate_tensor(ir, options):
         j_code  = codesnippets.jacobian[geometric_dimension] % r
         j_code += "\n\n" + codesnippets.scale_factor
 
-    elif integral_type == "exterior_facet_integral":
+    elif domain_type == "exterior_facet":
 
         # Generate code for num_facets tensor contractions
         cases = [None for i in range(num_facets)]
@@ -81,7 +81,7 @@ def _tabulate_tensor(ir, options):
         j_code  = codesnippets.jacobian[geometric_dimension] % r
         j_code += "\n\n" + codesnippets.facet_determinant[geometric_dimension] % r
 
-    elif integral_type == "interior_facet_integral":
+    elif domain_type == "exterior_facet":
 
         # Generate code for num_facets x num_facets tensor contractions
         cases = [[None for j in range(num_facets)] for i in range(num_facets)]
