@@ -155,14 +155,14 @@ def _compute_form_ir(form, form_data, form_id):
     ir["signature"] = repr(form)
     ir["rank"] = form_data.rank
     ir["num_coefficients"] = form_data.num_coefficients
-    ir["num_cell_integrals"] = form_data.num_cell_integrals
-    ir["num_exterior_facet_integrals"] = form_data.num_exterior_facet_integrals
-    ir["num_interior_facet_integrals"] = form_data.num_interior_facet_integrals
+    ir["num_cell_integrals"] = form_data.num_cell_domains
+    ir["num_exterior_facet_integrals"] = form_data.num_exterior_facet_domains
+    ir["num_interior_facet_integrals"] = form_data.num_interior_facet_domains
     ir["create_finite_element"] = [form_data.element_map[e] for e in form_data.elements]
     ir["create_dof_map"] = [form_data.element_map[e] for e in form_data.elements]
-    ir["create_cell_integral"] = range(form_data.num_cell_integrals)
-    ir["create_exterior_facet_integral"] = range(form_data.num_exterior_facet_integrals)
-    ir["create_interior_facet_integral"] = range(form_data.num_interior_facet_integrals)
+    ir["create_cell_integral"] = range(form_data.num_cell_domains)
+    ir["create_exterior_facet_integral"] = range(form_data.num_exterior_facet_domains)
+    ir["create_interior_facet_integral"] = range(form_data.num_interior_facet_domains)
 
     return ir
 
