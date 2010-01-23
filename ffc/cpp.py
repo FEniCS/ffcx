@@ -117,7 +117,7 @@ format.update({# Loop indices
                "pointer": "*",
                "new": "new ",
 #               "delete": "delete ",
-               "delete pointer": lambda v: "delete [] %s;" % (v),
+               "delete pointer": lambda v, w: "delete [] %s%s;" % (v, w),
                "separator": ", ",
                "block separator": ",\n",
                "new line": "\\\n"

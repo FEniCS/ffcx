@@ -59,7 +59,7 @@ def _evaluate_basis_derivatives_all(data_list):
     if space_dimension == 1:
         code += [format["comment"]("Element is constant, calling evaluate_basis_derivatives.")]
         code += ["evaluate_basis_derivatives(0, n, %s, coordinates, c);" % format["argument values"]]
-        return format["generate body"](code)
+        return "\n".join(code)
 
     # Compute number of derivatives
     # Get the topological dimension.
@@ -100,7 +100,7 @@ def _evaluate_basis_derivatives_all(data_list):
     code += generate_loop(lines_r, loop_vars_r, Indent, format)
 
     code += ["", format["comment"]("Delete pointer.")]
-    code += [Indent.indent(format["delete pointer"]("dof_values"))]
+    code += [Indent.indent(format["delete pointer"]("dof_values", ""))]
 
     # Generate bode (no need to remove unused)
     return "\n".join(code)
@@ -298,7 +298,7 @@ def _mixed_elements(data_list, Indent, format):
 
         # Increase indentation, indent code and decrease indentation.
         Indent.increase()
-        if_code = Indent.indent("\n".join(element_code))
+        if_code = remove_unused(Indent.indent("\n".join(element_code)))
         Indent.decrease()
 
         # Create if statement and add to code.
@@ -415,7 +415,7 @@ def _compute_component(shape_dmats, index, component, indices, Indent, format):
 
     name = format["component"](format["reference derivatives"], access)
     coeffs = format["component"](format["coefficients"](component), [format["local dof"], indices[0]])
-    dmats = format["component"](format["dmats"], [indices[0], indices[1]])
+    dmats = format["component"](format["dmats"](""), [indices[0], indices[1]])
     basis = format["component"](format["basisvalues"], indices[1])
     value = format["multiply"]([coeffs, dmats, basis])
     return generate_loop([format["iadd"](name, value)], loop_vars, Indent, format)
@@ -519,7 +519,7 @@ def _compute_reference_derivatives(data, Indent, format):
         code += ["", Indent.indent(format["comment"]\
                 ("Using contravariant Piola transform to map values back to the physical element"))]
         # Get temporary values before mapping.
-        code += [format_assign(Indent.indent(format_tmp(i)),\
+        code += [format["const float declaration"](Indent.indent(format_tmp(i)),\
                   format_component(format["reference derivatives"], i)) for i in range(num_components)]
 
         # Create names for inner product.
@@ -539,7 +539,7 @@ def _compute_reference_derivatives(data, Indent, format):
         code += ["", Indent.indent(format["comment"]\
                 ("Using covariant Piola transform to map values back to the physical element"))]
         # Get temporary values before mapping.
-        code += [format_assign(Indent.indent(format_tmp(i)),\
+        code += [format["const float declaration"](Indent.indent(format_tmp(i)),\
                   format_component(format["reference derivatives"], i)) for i in range(num_components)]
         # Create names for inner product.
         topological_dimension = data["topological_dimension"]
@@ -633,19 +633,21 @@ def _delete_pointers(data, Indent, format):
     "Delete the pointers to arrays."
 
     code = []
+    format_r = format["free indices"][0]
+
 
     # Delete pointers
     code += ["", Indent.indent(format["comment"]("Delete pointer to array of derivatives on FIAT element"))]
-    code += [Indent.indent(format["delete pointer"](format["reference derivatives"])), ""]
+    code += [Indent.indent(format["delete pointer"](format["reference derivatives"], "")), ""]
 
     code += [Indent.indent(format["comment"]("Delete pointer to array of combinations of derivatives and transform"))]
-    loop_vars = [(format["free indices"][0], 0, format["num derivatives"])]
-    lines =  [Indent.indent(format["component"](format["delete pointer"](format["derivative combinations"]), "row"))]
-    lines += [Indent.indent(format["component"](format["delete pointer"](format["transform matrix"]), "row"))]
+    loop_vars = [(format_r, 0, format["num derivatives"])]
+    lines =  [format["delete pointer"](format["derivative combinations"], format["component"]("", format_r))]
+    lines += [format["delete pointer"](format["transform matrix"], format["component"]("", format_r))]
     code += generate_loop(lines, loop_vars, Indent, format)
 
-    code += [Indent.indent(format["delete pointer"](format["derivative combinations"]))]
-    code += [Indent.indent(format["delete pointer"](format["transform matrix"]))]
+    code += [Indent.indent(format["delete pointer"](format["derivative combinations"], ""))]
+    code += [Indent.indent(format["delete pointer"](format["transform matrix"], ""))]
 
     return code
 

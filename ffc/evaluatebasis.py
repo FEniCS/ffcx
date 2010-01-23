@@ -58,14 +58,14 @@ def _evaluate_basis_all(data_list):
     if space_dimension == 1:
         code += [format["comment"]("Element is constant, calling evaluate_basis.")]
         code += ["evaluate_basis(0, %s, coordinates, c);" % format["argument values"]]
-        return format["generate body"](code)
+        return "\n".join(code)
 
     # Declare helper value to hold single dof values
     code += [format["comment"]("Helper variable to hold values of a single dof.")]
     if value_shape == 1:
         code += [format_assign(format["float declaration"] + "dof_values", format["floating point"](0.0))]
     else:
-        code += [format["component"](format_assign(format["float declaration"] + "dof_values", value_shape),\
+        code += [format_assign(format["component"](format["float declaration"] + "dof_values", value_shape),\
                  tabulate_vector([0.0]*value_shape, format))]
 
     # Create loop over dofs that calls evaluate_basis for a single dof and
@@ -151,7 +151,12 @@ def _evaluate_basis(data_list):
         code += _mixed_elements(data_list, Indent, format)
 
     # Remove unused variables (from transformations and mappings) in code.
+#    for c in code:
+#        print c
     code = remove_unused("\n".join(code))
+#    print "\nhere\n", code
+#    raise RuntimeError
+
     return code
 
 def _map_dof(sum_space_dim, Indent, format):
@@ -203,7 +208,7 @@ def _mixed_elements(data_list, Indent, format):
 
         # Increase indentation, indent code and decrease indentation.
         Indent.increase()
-        if_code = Indent.indent("\n".join(element_code))
+        if_code = remove_unused(Indent.indent("\n".join(element_code)))
         Indent.decrease()
 
         # Create if statement and add to code.
@@ -344,7 +349,7 @@ def _compute_values(data, sum_value_dim, vector, Indent, format):
         code += ["", Indent.indent(format["comment"]\
                 ("Using contravariant Piola transform to map values back to the physical element"))]
         # Get temporary values before mapping.
-        code += [format_assign(Indent.indent(format_tmp(i)),\
+        code += [format["const float declaration"](Indent.indent(format_tmp(i)),\
                   format_component(format_values, i + sum_value_dim)) for i in range(num_components)]
 
         # Create names for inner product.
@@ -357,14 +362,14 @@ def _compute_values(data, sum_value_dim, vector, Indent, format):
             # Create inner product and multiply by inverse of Jacobian.
             inner = [format_mult([jacobian_row[j], basis_col[j]]) for j in range(topological_dimension)]
             sum_ = format_group(format_add(inner))
-            value = format_mult([format_inv(format_det(None)), sum_])
+            value = format_mult([format_inv(format_det("")), sum_])
             name = format_component(format_values, i + sum_value_dim)
             code += [format_assign(name, value)]
     elif mapping == "covariant piola":
         code += ["", Indent.indent(format["comment"]\
                 ("Using covariant Piola transform to map values back to the physical element"))]
         # Get temporary values before mapping.
-        code += [format_assign(Indent.indent(format_tmp(i)),\
+        code += [format["const float declaration"](Indent.indent(format_tmp(i)),\
                   format_component(format_values, i + sum_value_dim)) for i in range(num_components)]
         # Create names for inner product.
         topological_dimension = data["topological_dimension"]
@@ -527,7 +532,7 @@ def _compute_basisvalues(data, Indent, format):
         # FIAT_NEW code
         # for ii in range(result.shape[1]):
         #    result[0,ii] = 1.0 + xs[ii,0] - xs[ii,0]
-        code += [format_assign(format_basisvalue(0), format_float(1.0))]
+        code += [format_assign(format_component(format_basisvalue, 0), format_float(1.0))]
 
         # Only continue if the embedded degree is larger than zero
         if embedded_degree > 0:
@@ -535,7 +540,7 @@ def _compute_basisvalues(data, Indent, format):
             # FIAT_NEW.jacobi.eval_jacobi_batch(a,b,n,xs)
             # result[1,:] = 0.5 * ( a - b + ( a + b + 2.0 ) * xsnew )
             # The initial value basisvalue 1 is always x
-            code += [(format_basisvalue(1), format_x)]
+            code += [format_assign(format_component(format_basisvalue, 1), format_x)]
         
             # Only active is embedded_degree > 1
             if embedded_degree > 1:
@@ -561,9 +566,9 @@ def _compute_basisvalues(data, Indent, format):
                 lines = []
                 loop_vars = [(str(symbol_p), 2, float_n1)]
                 # Create names
-                basis_k = create_symbol(format_basisvalue(str(symbol_p)), CONST)
-                basis_km1 = create_symbol(format_basisvalue(str(symbol_p - float_1)), CONST)
-                basis_km2 = create_symbol(format_basisvalue(str(symbol_p - float_2)), CONST)
+                basis_k = create_symbol(format_component(format_basisvalue, str(symbol_p)), CONST)
+                basis_km1 = create_symbol(format_component(format_basisvalue, str(symbol_p - float_1)), CONST)
+                basis_km2 = create_symbol(format_component(format_basisvalue, str(symbol_p - float_2)), CONST)
                 # Compute helper variables
                 a1 = create_product([float_2, symbol_p, symbol_p, float_2*symbol_p - float_2])
                 a3 = create_fraction(create_product([float_2*symbol_p,\
@@ -587,7 +592,7 @@ def _compute_basisvalues(data, Indent, format):
         lines = []
         loop_vars = [(str(symbol_p), 0, float_n1)]
         # Create names
-        basis_k = create_symbol(format_basisvalue(str(symbol_p)), CONST)
+        basis_k = create_symbol(format_component(format_basisvalue, str(symbol_p)), CONST)
         # Compute value
         fac1 = create_symbol( format_sqrt(str(symbol_p + float_0_5)), CONST )
         lines += [format["imul"](str(basis_k), str(fac1))]
@@ -731,7 +736,7 @@ def _compute_basisvalues(data, Indent, format):
         # FIAT_NEW code
         # for ii in range( results.shape[1] ):
         #    results[0,ii] = 1.0 + apts[ii,0]-apts[ii,0]+apts[ii,1]-apts[ii,1]
-        code += [format_assign(format_basisvalue(0), format_float(1.0))]
+        code += [format_assign(format_component(format_basisvalue, 0), format_float(1.0))]
 
         # Only continue if the embedded degree is larger than zero
         if embedded_degree > 0:
@@ -739,7 +744,7 @@ def _compute_basisvalues(data, Indent, format):
             # The initial value of basisfunction 1 is equal to f1
             # FIAT_NEW code
             # results[idx(1,0),:] = f1
-            code += [format_assign(format_basisvalue(1), str(f1))]
+            code += [format_assign(format_component(format_basisvalue, 1), str(f1))]
 
             # Only active is embedded_degree > 1
             if embedded_degree > 1:

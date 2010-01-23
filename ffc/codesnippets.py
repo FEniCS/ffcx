@@ -349,10 +349,10 @@ const double J_11 = element_coordinates[2][1] - element_coordinates[0][1];
 const double detJ_ = J_00*J_11 - J_01*J_10;
 
 // Compute inverse of Jacobian
-const double Jinv_00 =  J_11 / detJ_;
-const double Jinv_01 = -J_01 / detJ_;
-const double Jinv_10 = -J_10 / detJ_;
-const double Jinv_11 =  J_00 / detJ_;
+const double K_00 =  J_11 / detJ_;
+const double K_01 = -J_01 / detJ_;
+const double K_10 = -J_10 / detJ_;
+const double K_11 =  J_00 / detJ_;
 
 // Compute constants
 const double C0 = element_coordinates[1][0] + element_coordinates[2][0];
@@ -394,15 +394,15 @@ const double d22 = J_00*J_11 - J_01*J_10;
 double detJ_ = J_00*d00 + J_10*d10 + J_20*d20;
 
 // Compute inverse of Jacobian
-const double Jinv_00 = d00 / detJ_;
-const double Jinv_01 = d10 / detJ_;
-const double Jinv_02 = d20 / detJ_;
-const double Jinv_10 = d01 / detJ_;
-const double Jinv_11 = d11 / detJ_;
-const double Jinv_12 = d21 / detJ_;
-const double Jinv_20 = d02 / detJ_;
-const double Jinv_21 = d12 / detJ_;
-const double Jinv_22 = d22 / detJ_;
+const double K_00 = d00 / detJ_;
+const double K_01 = d10 / detJ_;
+const double K_02 = d20 / detJ_;
+const double K_10 = d01 / detJ_;
+const double K_11 = d11 / detJ_;
+const double K_12 = d21 / detJ_;
+const double K_20 = d02 / detJ_;
+const double K_21 = d12 / detJ_;
+const double K_22 = d22 / detJ_;
 
 // Compute constants
 const double C0 = element_coordinates[3][0] + element_coordinates[2][0] \\
