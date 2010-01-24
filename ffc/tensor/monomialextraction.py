@@ -7,7 +7,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Martin Alnes, 2008
 # Modified by Kristian B. Oelgaard
-# Last changed: 2010-01-23
+# Last changed: 2010-01-25
 
 # UFL modules
 from ufl.classes import Form, Argument, Coefficient, ScalarValue, IntValue
@@ -29,13 +29,12 @@ def extract_monomial_form(integrals):
 
     info("Extracting monomial form representation from UFL form")
 
-    # Purge list tensors from expression tree
-    #original_form = form
-    #form = purge_list_tensors(form)
-
     # Iterate over all integrals
     monomial_form = MonomialForm()
     for integral in integrals:
+
+        # Purge list tensors
+        integral = purge_list_tensors(integral)
 
         # Get measure and integrand
         measure = integral.measure()
