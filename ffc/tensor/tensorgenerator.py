@@ -11,6 +11,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Last changed: 2010-01-25
 
 # FFC modules
+from ffc.log import error
 from ffc.cpp import format, remove_unused, count_ops
 from ffc import codesnippets
 
@@ -82,7 +83,7 @@ def _tabulate_tensor(ir, options):
         print codesnippets.facet_determinant[geometric_dimension]
         j_code += "\n\n" + codesnippets.facet_determinant[geometric_dimension] % r
 
-    elif domain_type == "exterior_facet":
+    elif domain_type == "interior_facet":
 
         # Generate code for num_facets x num_facets tensor contractions
         cases = [[None for j in range(num_facets)] for i in range(num_facets)]
@@ -96,11 +97,11 @@ def _tabulate_tensor(ir, options):
 
         # Generate code for Jacobian
         r = {"restriction": ""}
-        j_code  = codesnippets.jacobian[ir.geometric_dimension] % r
-        j_code += "\n\n" + codesnippets.facet_determinant[ir.geometric_dimension] % r
+        j_code  = codesnippets.jacobian[geometric_dimension] % r
+        j_code += "\n\n" + codesnippets.facet_determinant[geometric_dimension] % r
 
     else:
-        error("Unhandled integral type: " + str(integral_type))
+        error("Unhandled integral type: " + str(domain_type))
 
     # Remove unused declarations from Jacobian code
     jacobi_code = remove_unused(j_code, j_set)
