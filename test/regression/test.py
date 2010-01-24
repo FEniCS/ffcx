@@ -118,9 +118,9 @@ def build_programs():
 
         # Check status
         if ok:
-            info_green("%s OK" % f)
+            info_green("%s OK" % prefix)
         else:
-            info_red("%s failed" % f)
+            info_red("%s failed" % prefix)
 
     end()
 
