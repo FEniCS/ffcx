@@ -86,7 +86,6 @@ def _compute_element_ir(ufl_element, element_id, element_map):
     ir["value_dimension"] = ufl_element.value_shape()
     ir["evaluate_basis"] = _evaluate_basis(ufl_element, element)
     ir["evaluate_dof"] = _evaluate_dof(element, cell)
-    ir["evaluate_dofs"] = ir["evaluate_dof"]
     ir["interpolate_vertex_values"] = _interpolate_vertex_values(element, cell)
     ir["num_sub_elements"] = ufl_element.num_sub_elements()
     ir["create_sub_element"] = _create_sub_foo(ufl_element, element_map)

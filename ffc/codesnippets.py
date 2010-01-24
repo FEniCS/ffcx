@@ -8,7 +8,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Kristian B. Oelgaard 2010
 # Modified by Marie Rognes 2007 -- 2010
 # Modified by Peter Brune 2009
-# Last changed: 2010-01-21
+# Last changed: 2010-01-24
 
 # Code snippets
 
@@ -620,33 +620,30 @@ const double K%(restriction)s_22 = d22 / detJ_%(restriction)s;"""
 
 map_onto_physical_1D = """\
 // Evaluate basis functions for affine mapping
-const double w0 = 1.0 - X[i][%(j)s][0];
-const double w1 = X[i][%(j)s][0];
+const double w0 = 1.0 - X_%(i)d[%(j)s][0];
+const double w1 = X_%(i)d[%(j)s][0];
 
 // Compute affine mapping y = F(X)
-double y[1];
 y[0] = w0*x[0][0] + w1*x[1][0];"""
 
 map_onto_physical_2D = """\
 // Evaluate basis functions for affine mapping
-const double w0 = 1.0 - X[i][%(j)s][0] - X[i][%(j)s][1];
-const double w1 = X[i][%(j)s][0];
-const double w2 = X[i][%(j)s][1];
+const double w0 = 1.0 - X_%(i)d[%(j)s][0] - X_%(i)d[%(j)s][1];
+const double w1 = X_%(i)d[%(j)s][0];
+const double w2 = X_%(i)d[%(j)s][1];
 
 // Compute affine mapping y = F(X)
-double y[2];
 y[0] = w0*x[0][0] + w1*x[1][0] + w2*x[2][0];
 y[1] = w0*x[0][1] + w1*x[1][1] + w2*x[2][1];"""
 
 map_onto_physical_3D = """\
 // Evaluate basis functions for affine mapping
-const double w0 = 1.0 - X[i][%(j)s][0] - X[i][%(j)s][1] - X[i][%(j)s][2];
-const double w1 = X[i][%(j)s][0];
-const double w2 = X[i][%(j)s][1];
-const double w3 = X[i][%(j)s][2];
+const double w0 = 1.0 - X_%(i)d[%(j)s][0] - X_%(i)d[%(j)s][1] - X_%(i)d[%(j)s][2];
+const double w1 = X_%(i)d[%(j)s][0];
+const double w2 = X_%(i)d[%(j)s][1];
+const double w3 = X_%(i)d[%(j)s][2];
 
 // Compute affine mapping y = F(X)
-double y[3];
 y[0] = w0*x[0][0] + w1*x[1][0] + w2*x[2][0] + w3*x[3][0];
 y[1] = w0*x[0][1] + w1*x[1][1] + w2*x[2][1] + w3*x[3][1];
 y[2] = w0*x[0][2] + w1*x[1][2] + w2*x[2][2] + w3*x[3][2];"""
@@ -710,4 +707,5 @@ tabulate_tensor_quadrature(A, w, c0, c1, facet0, facet1);"""
 
 # Mappings to code snippetes
 jacobian = {1: jacobian_1D, 2: jacobian_2D, 3: jacobian_3D}
+map_onto_physical = {1: map_onto_physical_1D, 2: map_onto_physical_2D, 3: map_onto_physical_3D}
 facet_determinant = {1: facet_determinant_1D, 2: facet_determinant_2D, 3: facet_determinant_3D}
