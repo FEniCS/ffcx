@@ -72,7 +72,8 @@ def estimate_cost(integral):
     # Extract monomial integrand
     try:
         monomial_integrand = extract_monomial_integrand(integral.integrand())
-    except:
+    except Exception, exception:
+        debug("Monomial extraction failed: " + str(exception))
         return -1
 
     # Compute cost

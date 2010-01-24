@@ -13,7 +13,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Ola Skavhaug, 2006.
 # Modified by Dag Lindbo, 2008.
 # Modified by Kristian B. Oelgaard 2009.
-# Last changed: 2010-01-18
+# Last changed: 2010-01-25
 
 # Python modules.
 import sys
