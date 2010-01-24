@@ -19,8 +19,7 @@ from ufl.algorithms.printing import tree_format
 from ffc.log import info, debug, ffc_assert
 from ffc.cpp import tabulate_matrix
 from ffc.cpp import IndentControl
-from ffc.cpp import format as format_new
-from ffc.cpp import format_old as format
+from ffc.cpp import format
 from ffc.cpp import remove_unused
 
 # Utility and optimisation functions for quadraturegenerator.
@@ -35,10 +34,10 @@ def generate_integral_code(ir, prefix, options):
 
     # Generate code
     code = {}
-    code["classname"] = format_new["classname " + ir["integral_type"]](prefix, ir["form_id"], ir["sub_domain"])
+    code["classname"] = format["classname " + ir["integral_type"]](prefix, ir["form_id"], ir["sub_domain"])
     code["members"] = ""
-    code["constructor"] = format_new["do nothing"]
-    code["destructor"] = format_new["do nothing"]
+    code["constructor"] = format["do nothing"]
+    code["destructor"] = format["do nothing"]
     code["tabulate_tensor"] = _tabulate_tensor(ir, options)
 
     return code
@@ -69,7 +68,7 @@ def _tabulate_tensor(ir, options):
     Indent = IndentControl()
     integrals = ir["integrals"]
 
-    switch = format_new["switch"]
+    switch = format["switch"]
 
     # Create transformer.
     if optimise_options["simplify expressions"]:
@@ -159,7 +158,7 @@ def _tabulate_tensor(ir, options):
         common += ["", format["comment"]("Compute element tensor using UFL quadrature representation"),\
                  format["comment"]("Optimisations: %s" % ", ".join([str(i) for i in optimise_options.items()]))]
 
-        code = common + [format_new["switch"]("facet", cases)]
+        code = common + [format["switch"]("facet", cases)]
 
     if integral_type == "interior_facet_integral":
         cases = [[None for j in range(num_facets)] for i in range(num_facets)]
