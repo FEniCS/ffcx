@@ -33,9 +33,6 @@ def extract_monomial_form(integrals):
     monomial_form = MonomialForm()
     for integral in integrals:
 
-        # Purge list tensors
-        integral = purge_list_tensors(integral)
-
         # Get measure and integrand
         measure = integral.measure()
         integrand = integral.integrand()
@@ -53,6 +50,9 @@ def extract_monomial_integrand(integrand):
     if integrand in _cache:
         debug("Reusing monomial integrand from cache")
         return _cache[integrand]
+
+    # Purge list tensors
+    integrand = purge_list_tensors(integrand)
 
     # Apply monomial transformer
     monomial_integrand = apply_transformer(integrand, MonomialTransformer())
