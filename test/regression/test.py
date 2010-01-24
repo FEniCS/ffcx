@@ -54,7 +54,7 @@ def generate_code():
     for f in form_files:
 
         # Generate code
-        ok = run_command("ffc %s" % f)
+        ok = run_command("ffc -d %s" % f)
 
         # Check status
         if ok:
