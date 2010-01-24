@@ -7,7 +7,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian B. Oelgaard 2010
 # Modified by Marie E. Rognes 2010
-# Last changed: 2010-01-21
+# Last changed: 2010-01-24
 
 # Python modules.
 import re
@@ -28,6 +28,7 @@ format.update({"return":     lambda v: "return %s;" % str(v),
                "exception":  lambda v: "throw std::runtime_error(\"%s\");" % v,
                "comment":    lambda v: "// %s" % v,
                "if":         lambda c, v: "if (%s) {\n%s\n}\n" % (c, v),
+               "list":       lambda l: "{%s}" % ",".join([str(i) for i in l]),
                "do nothing": "// Do nothing"})
 
 # Declarations
@@ -682,7 +683,7 @@ def _generate_jacobian(cell_dimension, integral_type):
     else:
         jacobian = jacobian_3D
         facet_determinant = facet_determinant_3D
-        
+
     # Check if we need to compute more than one Jacobian
     if integral_type == "cell":
         code  = jacobian % {"restriction":  ""}
@@ -698,7 +699,7 @@ def _generate_jacobian(cell_dimension, integral_type):
         code += jacobian % {"restriction": choose_map["-"]}
         code += "\n\n"
         code += facet_determinant % {"restriction": choose_map["+"], "facet": "facet0"}
-        
+
     return code
 
 def _generate_normal(cell_dimension, integral_type, reference_normal=False):
