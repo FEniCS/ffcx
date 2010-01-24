@@ -11,7 +11,7 @@ __date__ = "2009-12-16"
 __copyright__ = "Copyright (C) 2009 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-22
+# Last changed: 2010-01-24
 
 # FFC modules
 from ffc.log import info, begin, end, debug_code
@@ -20,7 +20,7 @@ from ffc.cpp import format, indent
 # FFC code generation modules
 from ffc.evaluatebasis import _evaluate_basis, _evaluate_basis_all
 from ffc.evaluatebasisderivatives import _evaluate_basis_derivatives, _evaluate_basis_derivatives_all
-from ffc.evaluatedof import evaluate_dof, evaluate_dofs, affine_weights
+from ffc.evaluatedof import evaluate_dof_and_dofs, affine_weights
 from ffc.interpolatevertexvalues import interpolate_vertex_values
 from ffc.codesnippets import jacobian, cell_coordinates
 
@@ -85,8 +85,9 @@ def _generate_element_code(ir, prefix, options):
     code["evaluate_basis_all"] = _evaluate_basis_all(ir["evaluate_basis"])
     code["evaluate_basis_derivatives"] = _evaluate_basis_derivatives(ir["evaluate_basis"])
     code["evaluate_basis_derivatives_all"] = _evaluate_basis_derivatives_all(ir["evaluate_basis"])
-    code["evaluate_dof"] = evaluate_dof(ir["evaluate_dof"])
-    code["evaluate_dofs"] = evaluate_dofs(ir["evaluate_dofs"])
+    (evaluate_dof_code, evaluate_dofs_code) = evaluate_dof_and_dofs(ir["evaluate_dof"])
+    code["evaluate_dof"] = evaluate_dof_code
+    code["evaluate_dofs"] = evaluate_dofs_code
     code["interpolate_vertex_values"] = interpolate_vertex_values(ir["interpolate_vertex_values"])
     code["num_sub_elements"] = ret(ir["num_sub_elements"])
     code["create_sub_element"] = _create_foo(ir["create_sub_element"], prefix, "finite_element")

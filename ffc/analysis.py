@@ -12,7 +12,7 @@ __date__ = "2007-02-05"
 __copyright__ = "Copyright (C) 2007-2010 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-21
+# Last changed: 2010-01-23
 
 # UFL modules
 from ufl.common import istr, tstr
@@ -94,7 +94,7 @@ def _analyze_form(form, object_names, options):
     _adjust_elements(form_data)
 
     # Extract integral metadata
-    form_data.metadata = _extract_metadata(form, options, form_data.elements)
+    _extract_metadata(form_data, options)
 
     return form, form_data
 
@@ -124,56 +124,80 @@ def _adjust_elements(form_data):
             info("Adjusting element cell from %s to %s." % (istr(cell), str(common_cell)))
             element.set_cell(common_cell)
 
-def _extract_metadata(form, options, elements):
-    "Check metadata for integral and return new integral with proper metadata."
-
-    metadata = {}
+def _extract_metadata(form_data, options):
+    "Attach and group meta data for each subdomain integral collection."
 
     # Recognized metadata keys
     metadata_keys = ("representation", "quadrature_degree")
 
-    # Iterate over integrals
-    for integral in form.integrals():
+    # Iterate over integral collections
+    for (domain_type, domain_id, integrals, metadata) in form_data.integral_data:
 
-        # Get metadata for integral
-        integral_metadata = integral.measure().metadata() or {}
-        for key in metadata_keys:
-            if not key in integral_metadata:
-                integral_metadata[key] = options[key]
+        # Iterate over integrals
+        integral_metadatas = []
+        for integral in integrals:
 
-        # Check metadata
-        r = integral_metadata["representation"]
-        q = integral_metadata["quadrature_degree"]
-        if not r in ("quadrature", "tensor", "auto"):
-            info("Valid choices are 'tensor', 'quadrature' or 'auto'.")
-            error("Illegal choice of representation for integral: " + str(r))
-        if not ((isinstance(q, int) and q >= 0) or q == "auto"):
-            info("Valid choices are nonnegative integers or 'auto'.")
-            error("Illegal quadrature degree for integral: " + str(q))
+            # Get metadata for integral
+            integral_metadata = integral.measure().metadata() or {}
+            for key in metadata_keys:
+                if not key in integral_metadata:
+                    integral_metadata[key] = options[key]
 
-        # Automatic selection of representation
-        if r == "auto":
-            r = _auto_select_representation(integral)
-            info("representation:    auto --> %s" % r)
-            integral_metadata["representation"] = r
+            # Check metadata
+            r = integral_metadata["representation"]
+            q = integral_metadata["quadrature_degree"]
+            if not r in ("quadrature", "tensor", "auto"):
+                info("Valid choices are 'tensor', 'quadrature' or 'auto'.")
+                error("Illegal choice of representation for integral: " + str(r))
+            if not ((isinstance(q, int) and q >= 0) or q == "auto"):
+                info("Valid choices are nonnegative integers or 'auto'.")
+                error("Illegal quadrature degree for integral: " + str(q))
+
+            # Automatic selection of representation
+            if r == "auto":
+                r = _auto_select_representation(integral)
+                info("representation:    auto --> %s" % r)
+                integral_metadata["representation"] = r
+            else:
+                info("representation:    %s" % r)
+
+            # Automatic selection of quadrature degree
+            if q == "auto":
+                q = _auto_select_quadrature_degree(integral, r, form_data.elements)
+                info("quadrature_degree: auto --> %d" % q)
+                integral_metadata["quadrature_degree"] = q
+            else:
+                info("quadrature_degree: %d" % q)
+
+                info("")
+
+            # Append to list of metadata
+            integral_metadatas.append(integral_metadata)
+
+        # Extract common metadata for integral collection
+        if len(integrals) == 1:
+            metadata.update(integral_metadatas[0])
         else:
-            info("representation:    %s" % r)
 
-        # Automatic selection of quadrature degree
-        if q == "auto":
-            q = _auto_select_quadrature_degree(integral, r, elements)
-            info("quadrature_degree: auto --> %d" % q)
-            integral_metadata["quadrature_degree"] = q
-        else:
-            info("quadrature_degree: %d" % q)
+            # Check that representation is the same
+            representations = [md["representation"] for md in integral_metadatas]
+            if not all_equal(representations):
+                r = "quadrature"
+                info("Integral representation must be equal within each sub domain, using %s representation." % r)
+            else:
+                r = representations[0]
 
-        info("")
+            # Check that quadrature degree is the same
+            quadrature_degrees = [md["quadrature_degree"] for md in integral_metadatas]
+            if not all_equal(quadrature_degrees):
+                q = max(quadrature_degrees)
+                info("Quadrature degree must be equal within each sub domain, using degree %d." % q)
+            else:
+                q = quadrature_degrees[0]
 
-        # Quadrature rule selection not supported
-        integral_metadata["quadrature_rule"] = "auto"
-
-        # Set metadata for integral
-        metadata[integral] = integral_metadata
+            # Update common metadata
+            metadata["representation"] = r
+            metadata["quadrature_degree"] = q
 
     return metadata
 

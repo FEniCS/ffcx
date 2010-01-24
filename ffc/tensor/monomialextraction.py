@@ -7,7 +7,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Martin Alnes, 2008
 # Modified by Kristian B. Oelgaard
-# Last changed: 2010-01-21
+# Last changed: 2010-01-23
 
 # UFL modules
 from ufl.classes import Form, Argument, Coefficient, ScalarValue, IntValue
@@ -19,7 +19,7 @@ from ffc.log import info, debug, ffc_assert
 # Cache for computed integrand representations
 _cache = {}
 
-def extract_monomial_form(form, form_data):
+def extract_monomial_form(integrals):
     """
     Extract monomial representation of form (if possible). When
     successful, the form is represented as a sum of products of scalar
@@ -29,16 +29,13 @@ def extract_monomial_form(form, form_data):
 
     info("Extracting monomial form representation from UFL form")
 
-    # Check that we get a UFL form
-    ffc_assert(isinstance(form, Form), "Expecting a UFL form.")
-
     # Purge list tensors from expression tree
-    original_form = form
-    form = purge_list_tensors(form)
+    #original_form = form
+    #form = purge_list_tensors(form)
 
     # Iterate over all integrals
     monomial_form = MonomialForm()
-    for integral in form.integrals():
+    for integral in integrals:
 
         # Get measure and integrand
         measure = integral.measure()
