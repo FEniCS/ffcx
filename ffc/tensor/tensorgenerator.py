@@ -8,7 +8,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Kristian B. Oelgaard, 2009
 # Modified by Marie Rognes (meg@math.uio.no), 2007
 # Modified by Garth N. Wells, 2009
-# Last changed: 2010-01-23
+# Last changed: 2010-01-25
 
 # FFC modules
 from ffc.cpp import format, remove_unused, count_ops
@@ -79,6 +79,7 @@ def _tabulate_tensor(ir, options):
         # Generate code for Jacobian
         r = {"restriction": ""}
         j_code  = codesnippets.jacobian[geometric_dimension] % r
+        print codesnippets.facet_determinant[geometric_dimension]
         j_code += "\n\n" + codesnippets.facet_determinant[geometric_dimension] % r
 
     elif domain_type == "exterior_facet":

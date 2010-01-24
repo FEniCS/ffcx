@@ -20,7 +20,7 @@ def run_command(command):
     global logfile
     if logfile is None:
         logfile = open("../error.log", "w")
-    logfile.write(output)
+    logfile.write(output + "\n")
     return False
 
 def generate_test_cases():

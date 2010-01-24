@@ -8,7 +8,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Kristian B. Oelgaard 2010
 # Modified by Marie Rognes 2007 -- 2010
 # Modified by Peter Brune 2009
-# Last changed: 2010-01-24
+# Last changed: 2010-01-25
 
 # Code snippets
 
@@ -145,7 +145,7 @@ const double dx1 = x%(restriction)s[v1][1] - x%(restriction)s[v0][1];
 const double det = std::sqrt(dx0*dx0 + dx1*dx1);"""
 
 normal_direction_2D = """\
-const bool direction = dx1*(x%(restriction)s[%(facet)s][0] - x%(restriction)s[v0][0]) - dx0*(x%(restriction)s[%(facet)s][1] - x%(restriction)s[v0][1]) < 0;"""
+const bool direction = dx1*(x%(restriction)s[facet][0] - x%(restriction)s[v0][0]) - dx0*(x%(restriction)s[facet][1] - x%(restriction)s[v0][1]) < 0;"""
 
 facet_normal_2D = """\
 // Compute facet normals from the facet scale factor constants
@@ -157,7 +157,7 @@ facet_determinant_3D = """\
 static unsigned int face_vertices[4][3] = {{1, 2, 3}, {0, 2, 3}, {0, 1, 3}, {0, 1, 2}};
 const unsigned int v0 = face_vertices[facet][0];
 const unsigned int v1 = face_vertices[facet][1];
-const unsigned int v2 = face_vertices[%(facet)s][2];
+const unsigned int v2 = face_vertices[facet][2];
 
 // Compute scale factor (area of face scaled by area of reference triangle)
 const double a0 = (x%(restriction)s[v0][1]*x%(restriction)s[v1][2]
