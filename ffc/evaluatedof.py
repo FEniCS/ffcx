@@ -48,43 +48,22 @@ J = format["J"]
 Jinv = format["inv(J)"]
 detJ = format["det(J)"]("")
 
-def evaluate_dof(ir):
-    "Generate code for evaluate_dof"
+def evaluate_dof_and_dofs(ir):
+    "Generate code for evaluate_dof and evaluate_dof."
 
+    # Generate common code
     (reqs, cases) = _generate_common_code(ir)
 
-    # Combine each case with return statements:
-    cases = ["%s\n%s" % (c, format["return"](r)) for (c, r) in cases]
+    # Combine each case with returns for evaluate_dof and switch
+    dof_cases = ["%s\n%s" % (c, format["return"](r)) for (c, r) in cases]
+    dof_code = reqs + format["switch"]("i", dof_cases, format["return"]("0.0"))
 
-    # Generate required declarations and switch for each dof
-    code = []
-    code.append(reqs)
-    code.append(comment("Evaluate degree of freedom of function"))
-    code.append(format["switch"]("i", cases, format["return"]("0.0")))
+    # Combine each case with assignments for evaluate_dofs
+    dofs_cases = "\n".join("%s\n%s" % (c, format["assign"]("values[%d]" % i, r))
+                           for (i, (c, r)) in enumerate(cases))
+    dofs_code = reqs + dofs_cases
 
-    # Removed unused variables from code (Add computation of set of
-    # used variables if ever bottle-neck)
-    return remove_unused("\n".join(code))
-
-def evaluate_dofs(ir):
-    "Generate code for evaluate_dofs"
-
-    (reqs, cases) = _generate_common_code(ir)
-
-    # Combine with assignments:
-    all_cases = "\n".join("%s\n%s" % (c, format["assign"]("values[%d]" % i, r))
-                          for (i, (c, r)) in enumerate(cases))
-
-    # Create code for all degrees of freedom
-    code = []
-    code.append(reqs)
-    code.append(comment("Evaluate all degrees of freedom"))
-    code.append(all_cases)
-
-    # Removed unused variables from code (Add computation of set of
-    # used variables if ever bottle-neck)
-    return remove_unused("\n".join(code))
-
+    return (dof_code, dofs_code)
 
 def _generate_common_code(ir):
 
@@ -99,7 +78,8 @@ def _generate_common_code(ir):
     # Generate bodies for each degree of freedom
     cases = [_generate_body(dof, mappings[i], cell_dim, offsets[i])
              for (i, dof) in enumerate(ir["dofs"])]
-    return (reqs, cases,)
+
+    return (reqs, cases)
 
 
 def _required_declarations(ir):
@@ -117,14 +97,27 @@ def _required_declarations(ir):
     code.append(declaration("double", "y[%d]" % cell_dim))
 
     # Add Jacobian and extra result variable if needed
-    needs_jacobian = any(["piola" in m for m in ir["mappings"]])
-    if needs_jacobian:
+    needs_inverse_jacobian = any(["contravariant piola" in m for m in ir["mappings"]])
+    needs_jacobian = any(["covariant piola" in m for m in ir["mappings"]])
+
+    if needs_inverse_jacobian:
         code.append(jacobian[cell_dim] % {"restriction": ""})
         code.append(declaration("double", "result"))
+        return "\n".join(code)
+
+    elif needs_jacobian:
+        code.append(jacobian[cell_dim] % {"restriction": ""})
+        code.append(declaration("double", "result"))
+
+        # Remove inverse jacobian
+        jacobians = [J(i, j) for i in range(cell_dim) for j in range(cell_dim)]
+        used_set = set(jacobians + ["result", "vals", "y"])
+        return remove_unused("\n".join(code), used_set)
+
     else:
         code.append(cell_coordinates)
+        return "\n".join(code)
 
-    return "\n".join(code)
 
 
 def _generate_body(dof, mapping, cell_dim,
