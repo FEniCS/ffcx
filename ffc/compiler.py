@@ -118,6 +118,8 @@ def compile_form(forms, object_names={}, prefix="Form", options=FFC_OPTIONS.copy
     """This function generates UFC code for a given UFL form or list
     of UFL forms."""
 
+    info("Compiling form %s\n" % prefix)
+
     # Reset timing
     cpu_time_0 = time()
 
@@ -162,6 +164,8 @@ def compile_form(forms, object_names={}, prefix="Form", options=FFC_OPTIONS.copy
 def compile_element(elements, object_names={}, prefix="Element", options=FFC_OPTIONS.copy()):
     """This function generates UFC code for a given UFL element or
     list of UFL elements."""
+
+    info("Compiling element %s\n" % prefix)
 
     # Reset timing
     cpu_time_0 = time()
