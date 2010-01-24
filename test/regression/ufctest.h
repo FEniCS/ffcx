@@ -16,7 +16,7 @@
 typedef unsigned int uint;
 
 // Function for printing single value result
-template <value_type>
+template <class value_type>
 void print_value(std::string name, value_type value, int i=-1, int j=-1)
 {
   std::stringstream s(name);
@@ -26,7 +26,7 @@ void print_value(std::string name, value_type value, int i=-1, int j=-1)
 }
 
 // Function for printing array value result
-template <value_type>
+template <class value_type>
 void print_array(std::string name, unsigned int n, value_type* values, int i=-1, int j=-1)
 {
   std::stringstream s(name);
@@ -43,7 +43,7 @@ class test_mesh : public ufc::mesh
 {
 public:
 
-  test_mesh(ufc::cell_shape cell_shape)
+  test_mesh(ufc::shape cell_shape)
   {
     // Store dimensions
     switch (cell_shape)
@@ -65,7 +65,7 @@ public:
     }
 
     // Set some random sizes
-    num_entities = new int[4];
+    num_entities = new uint[4];
     num_entities[0] = 10001;
     num_entities[1] = 10002;
     num_entities[2] = 10003;
@@ -84,7 +84,7 @@ class test_cell : public ufc::cell
 {
 public:
 
-  test_cell(ufc::cell_shape cell_shape, int offset=0)
+  test_cell(ufc::shape cell_shape, int offset=0)
   {
     // Store cell shape
     this->cell_shape = cell_shape;
@@ -109,10 +109,10 @@ public:
     }
 
     // Generate some "random" entity indices
-    entity_indices = new int * [4];
+    entity_indices = new uint * [4];
     for (uint i = 0; i < 4; i++)
     {
-      entity_indices[i] = new int[6];
+      entity_indices[i] = new uint[6];
       for (uint j = 0; j < 6; j++)
         entity_indices[i][j] = i*j + offset;
     }
@@ -147,7 +147,7 @@ public:
 
   test_function(uint value_size) : value_size(value_size) {}
 
-  void evaluate(double* values, const double* coordinates, const cell& c) const
+  void evaluate(double* values, const double* coordinates, const ufc::cell& c) const
   {
     for (uint i = 0; i < value_size; i++)
     {
@@ -164,7 +164,7 @@ private:
 };
 
 // Function for testing ufc::element objects
-void test_element(ufc::element& element)
+void test_finite_element(ufc::finite_element& element)
 {
   std::cout << std::endl;
   std::cout << "Testing finite_element" << std::endl;
@@ -175,16 +175,16 @@ void test_element(ufc::element& element)
 
   // Prepare arguments
   test_cell c(element.cell_shape());
-  test_function f;
   uint value_size = 1;
   for (uint i = 0; i < element.value_rank(); i++)
     value_size *= element.value_dimension(i);
   uint derivative_size = 1;
   for (uint i = 0; i < max_derivative; i++)
-    derivative_size *= element.geometric_dimension;
+    derivative_size *= c.geometric_dimension;
   double* values = new double[element.space_dimension()*value_size*derivative_size];
   double* vertex_values = new double[(c.topological_dimension + 1)*value_size];
-  double* coordinates = new double[element.geometric_dimension()];
+  double* coordinates = new double[c.geometric_dimension];
+  test_function f(value_size);
 
   // signature
   print_value("signature", element.signature());
@@ -206,12 +206,12 @@ void test_element(ufc::element& element)
   for (uint i = 0; i < element.space_dimension(); i++)
   {
     element.evaluate_basis(i, values, coordinates, c);
-    print_array("evaluate_basis:", size, values, i);
+    print_array("evaluate_basis:", value_size, values, i);
   }
 
   // evaluate_basis all
   element.evaluate_basis_all(values, coordinates, c);
-  print_array("evaluate_basis_all", element.space_dimension()*size, values);
+  print_array("evaluate_basis_all", element.space_dimension()*value_size, values);
 
   // evaluate_basis_derivatives
   for (uint i = 0; i < element.space_dimension(); i++)
@@ -243,13 +243,13 @@ void test_element(ufc::element& element)
   print_array("interpolate_vertex_values", (c.topological_dimension + 1)*value_size, vertex_values);
 
   // num_sub_dof_elements
-  print_value("num_sub_elements ", dofmap.num_sub_elements());
+  print_value("num_sub_elements", element.num_sub_elements());
 
   // create_sub_element
   for (uint i = 0; i < element.num_sub_elements(); i++)
   {
     ufc::finite_element* sub_element = element.create_sub_element(i);
-    test_element(*sub_element);
+    test_finite_element(*sub_element);
     delete sub_element;
   }
 
@@ -260,7 +260,7 @@ void test_element(ufc::element& element)
 }
 
 // Function for testing ufc::element objects
-void test_dofmap(ufc::dof_map& dofmap, ufc::cell_shape cell_shape)
+void test_dofmap(ufc::dof_map& dofmap, ufc::shape cell_shape)
 {
   std::cout << std::endl;
   std::cout << "Testing dof_map" << std::endl;
@@ -269,6 +269,12 @@ void test_dofmap(ufc::dof_map& dofmap, ufc::cell_shape cell_shape)
   // Prepare arguments
   test_mesh m(cell_shape);
   test_cell c(cell_shape);
+  uint n = dofmap.max_local_dimension();
+  uint* dofs = new uint[n];
+  uint num_facets = c.topological_dimension + 1;
+  double** coordinates = new double * [n];
+  for (uint i = 0; i < n; i++)
+    coordinates[i] = new double[c.geometric_dimension];
 
   // signature
   print_value("signature", dofmap.signature());
@@ -278,7 +284,7 @@ void test_dofmap(ufc::dof_map& dofmap, ufc::cell_shape cell_shape)
     print_value("needs_mesh_entities", dofmap.needs_mesh_entities(d), d);
 
   // init_mesh
-  print_value("init_mesh", dofmap.init_mesh());
+  print_value("init_mesh", dofmap.init_mesh(m));
 
   // init_cell not tested
   print_value("init_cell", "not used by FFC");
@@ -310,8 +316,11 @@ void test_dofmap(ufc::dof_map& dofmap, ufc::cell_shape cell_shape)
   print_array("tabulate_dofs", dofmap.local_dimension(c), dofs);
 
   // tabulate_facet_dofs
-  dofmap.tabulate_facet_dofs(dofs, facet);
-  print_array("tabulate_dofs", dofmap.local_dimension(c), dofs);
+  for (uint facet = 0; facet < num_facets; facet++)
+  {
+    dofmap.tabulate_facet_dofs(dofs, facet);
+    print_array("tabulate_dofs", dofmap.num_facet_dofs(), dofs, facet);
+  }
 
   // tabulate_entity_dofs
   for (uint d = 0; d <= c.topological_dimension; d++)
@@ -319,7 +328,7 @@ void test_dofmap(ufc::dof_map& dofmap, ufc::cell_shape cell_shape)
     for (uint i = 0; i < dofmap.num_entity_dofs(i); i++)
     {
       dofmap.tabulate_entity_dofs(dofs, d, i);
-      print_array("tabulate_entity_dofs", dofmap.num_entity_dofs(d), d, i);
+      print_array("tabulate_entity_dofs", dofmap.num_entity_dofs(d), dofs, d, i);
     }
   }
 
@@ -335,14 +344,20 @@ void test_dofmap(ufc::dof_map& dofmap, ufc::cell_shape cell_shape)
   for (uint i = 0; i < dofmap.num_sub_dof_maps(); i++)
   {
     ufc::dof_map* sub_dofmap = dofmap.create_sub_dof_map(i);
-    test_dofmap(*sub_dofmap);
+    test_dofmap(*sub_dofmap, cell_shape);
     delete sub_dofmap;
   }
+
+  // Cleanup
+  delete [] dofs;
+  for (uint i = 0; i < n; i++)
+    delete [] coordinates[i];
+  delete [] coordinates;
 }
 
 // Function for testing ufc::cell_integral objects
 void test_cell_integral(ufc::cell_integral& integral,
-                        ufc::cell_shape cell_shape,
+                        ufc::shape cell_shape,
                         int tensor_size,
                         double** w)
 {
@@ -352,11 +367,11 @@ void test_cell_integral(ufc::cell_integral& integral,
 
   // Prepare arguments
   test_cell c(cell_shape);
-  double* A = new double[size];
+  double* A = new double[tensor_size];
 
   // Call tabulate_tensor
   integral.tabulate_tensor(A, w, c);
-  print_array("tabulate_tensor", size, A);
+  print_array("tabulate_tensor", tensor_size, A);
 
   // Cleanup
   delete [] A;
@@ -364,9 +379,8 @@ void test_cell_integral(ufc::cell_integral& integral,
 
 // Function for testing ufc::exterior_facet_integral objects
 void test_exterior_facet_integral(ufc::exterior_facet_integral& integral,
-                                  ufc::cell_shape cell_shape,
+                                  ufc::shape cell_shape,
                                   uint tensor_size,
-                                  uint num_facets,
                                   double** w)
 {
   std::cout << std::endl;
@@ -375,6 +389,7 @@ void test_exterior_facet_integral(ufc::exterior_facet_integral& integral,
 
   // Prepare arguments
   test_cell c(cell_shape);
+  uint num_facets = c.topological_dimension + 1;
   double* A = new double[tensor_size];
 
   // Call tabulate_tensor for each facet
@@ -385,13 +400,14 @@ void test_exterior_facet_integral(ufc::exterior_facet_integral& integral,
   }
 
   // Cleanup
-  delete [] A:
+  delete [] A;
 }
 
 // Function for testing ufc::interior_facet_integral objects
-void test_interior_facet_integral(ufc::exterior_facet_integral& integral,
-                                  ufc::cell_shape cell_shape,
-                                  uint macro_cell_size, double** w)
+void test_interior_facet_integral(ufc::interior_facet_integral& integral,
+                                  ufc::shape cell_shape,
+                                  uint macro_tensor_size,
+                                  double** w)
 {
   std::cout << std::endl;
   std::cout << "Testing interior_facet_integral" << std::endl;
@@ -400,7 +416,8 @@ void test_interior_facet_integral(ufc::exterior_facet_integral& integral,
   // Prepare arguments
   test_cell c0(cell_shape, 0);
   test_cell c1(cell_shape, 1);
-  double* A = new double[macro_cell_size];
+  uint num_facets = c0.topological_dimension + 1;
+  double* A = new double[macro_tensor_size];
 
   // Call tabulate_tensor for each facet-facet combination
   for (uint facet0 = 0; facet0 < num_facets; facet0++)
@@ -408,13 +425,13 @@ void test_interior_facet_integral(ufc::exterior_facet_integral& integral,
     for (uint facet1 = 0; facet1 < num_facets; facet1++)
     {
       integral.tabulate_tensor(A, w, c0, c1, facet0, facet1);
-      print_array("tabulate_tensor", macro_cell_size, A, facet0, facet1);
+      print_array("tabulate_tensor", macro_tensor_size, A, facet0, facet1);
     }
   }
 }
 
 // Function for testing ufc::form objects
-void test_form(ufc::form)
+void test_form(ufc::form& form)
 {
   std::cout << std::endl;
   std::cout << "Testing form" << std::endl;
@@ -425,9 +442,9 @@ void test_form(ufc::form)
   int macro_tensor_size = 1;
   for (uint i = 0; i < form.rank(); i++)
   {
-    ufc::element* element = form.create_element(i);
-    tensor_size *= element.space_dimension();
-    macro_tensor_size *= 2*element.space_dimension();
+    ufc::finite_element* element = form.create_finite_element(i);
+    tensor_size *= element->space_dimension();
+    macro_tensor_size *= 2*element->space_dimension();
     delete element;
   }
 
@@ -435,16 +452,16 @@ void test_form(ufc::form)
   double** w = new double * [form.num_coefficients()];
   for (uint i = form.rank(); i < form.rank() + form.num_coefficients(); i++)
   {
-    ufc::element* element = form.create_element(i);
-    w[i] = new double[element.space_dimension()];
-    for (uint j = 0; j < element.space_dimension(); j++)
+    ufc::finite_element* element = form.create_finite_element(i);
+    w[i] = new double[element->space_dimension()];
+    for (uint j = 0; j < element->space_dimension(); j++)
       w[i][j] = 0.1*static_cast<double>(i*j);
     delete [] element;
   }
 
   // Get cell shape
-  ufc::element* element = form.create_element(i);
-  ufc::cell_shape cell_shape = element.cell_shape();
+  ufc::finite_element* element = form.create_finite_element(0);
+  ufc::shape cell_shape = element->cell_shape();
   delete element;
   element = 0;
 
@@ -470,7 +487,7 @@ void test_form(ufc::form)
   for (uint i = 0; i < form.rank() + form.num_coefficients(); i++)
   {
     ufc::finite_element* element = form.create_finite_element(i);
-    test_elment(*element);
+    test_finite_element(*element);
     delete element;
   }
 
@@ -486,15 +503,15 @@ void test_form(ufc::form)
   for (uint i = 0; i < form.num_cell_integrals(); i++)
   {
     ufc::cell_integral* integral = form.create_cell_integral(i);
-    test_cell_integral(integral, cell_shape, tensor_size, w);
-    delete cell_integral;
+    test_cell_integral(*integral, cell_shape, tensor_size, w);
+    delete integral;
   }
 
   // create_exterior_facet_integral
   for (uint i = 0; i < form.num_exterior_facet_integrals(); i++)
   {
     ufc::exterior_facet_integral* integral = form.create_exterior_facet_integral(i);
-    test_exterior_facet_integral(integral, cell_shape, tensor_size, w);
+    test_exterior_facet_integral(*integral, cell_shape, tensor_size, w);
     delete integral;
   }
 
@@ -502,7 +519,7 @@ void test_form(ufc::form)
   for (uint i = 0; i < form.num_interior_facet_integrals(); i++)
   {
     ufc::interior_facet_integral* integral = form.create_interior_facet_integral(i);
-    test_interior_facet_integral(integral, cell_shape, macro_tensor_size, w);
+    test_interior_facet_integral(*integral, cell_shape, macro_tensor_size, w);
     delete integral;
   }
 

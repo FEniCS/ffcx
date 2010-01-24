@@ -6,8 +6,22 @@ __license__  = "GNU GPL version 3 or any later version"
 from ffc.log import begin, end, info, info_red, info_green, info_blue
 import os, sys, shutil, commands
 
+from ufctest import form_test_code, element_test_code
+
 # Parameters
 output_directory = "output"
+logfile = None
+
+def run_command(command):
+    "Run command and collect errors in log file."
+    (status, output) = commands.getstatusoutput(command)
+    if status == 0:
+        return True
+    global logfile
+    if logfile is None:
+        logfile = open("../error.log", "w")
+    logfile.write(output)
+    return False
 
 def generate_test_cases():
     "Generate form files for all test cases."
@@ -40,10 +54,10 @@ def generate_code():
     for f in form_files:
 
         # Generate code
-        status, output = commands.getstatusoutput("ffc %s" % f)
+        ok = run_command("ffc %s" % f)
 
         # Check status
-        if status == 0:
+        if ok:
             info_green("%s OK" % f)
         else:
             info_red("%s failed" % f)
@@ -90,7 +104,23 @@ def build_programs():
 
     # Iterate over all files
     for f in header_files:
-        info("Building test for %s" % f)
+
+        # Generate test code
+        prefix = f.split(".h")[0]
+        num_forms = open(f).read().count("class %s_form_" % prefix.lower())
+        test_file = open(prefix + ".cpp", "w")
+        test_file.write(form_test_code(prefix, num_forms))
+        test_file.close()
+
+        # Compile test code
+        command = "g++ `pkg-config --cflags ufc-1` -Wall -Werror -o %s %s.cpp" % (prefix, prefix)
+        ok = run_command(command)
+
+        # Check status
+        if ok:
+            info_green("%s OK" % f)
+        else:
+            info_red("%s failed" % f)
 
     end()
 
@@ -112,11 +142,11 @@ def main(args):
     os.chdir(output_directory)
 
     # Generate test cases
-    generate_test_cases()
+    #generate_test_cases()
 
     # Generate and validate code
-    generate_code()
-    validate_code()
+    #generate_code()
+    #validate_code()
 
     # Build and validate programs
     build_programs()
