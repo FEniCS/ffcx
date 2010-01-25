@@ -215,7 +215,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
 
         # Prefetch formats to speed up code generation.
         format_transform     = self.format["transform"]
-        format_detJ          = self.format["determinant"]
+        format_detJ          = self.format["det(J)"]
 
         code = {}
 

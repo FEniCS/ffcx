@@ -80,11 +80,13 @@ The main interface is defined by the following two functions:
 
 The compiler stages are implemented by the following functions:
 
-  analyze_form  (stage 1)
-  compute_ir    (stage 2)
-  optimize_ir   (stage 3)
-  generate_code (stage 4)
-  format_code   (stage 5)
+  analyze_forms
+  or
+  analyze_elements  (stage 1)
+  compute_ir        (stage 2)
+  optimize_ir       (stage 3)
+  generate_code     (stage 4)
+  format_code       (stage 5)
 """
 
 __author__ = "Anders Logg (logg@simula.no)"
@@ -95,7 +97,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Kristian B. Oelgaard, 2010.
 # Modified by Dag Lindbo, 2008.
 # Modified by Garth N. Wells, 2009.
-# Last changed: 2010-01-21
+# Last changed: 2010-01-24
 
 __all__ = ["compile_form", "compile_element"]
 

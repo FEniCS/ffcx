@@ -291,7 +291,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
         format_add           = self.format["add"]
         format_mult          = self.format["multiply"]
         format_transform     = self.format["transform"]
-        format_detJ          = self.format["determinant"]
+        format_detJ          = self.format["det(J)"]
         format_inv           = self.format["inverse"]
 
         code = {}

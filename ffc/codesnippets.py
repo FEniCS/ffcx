@@ -136,8 +136,8 @@ facet_normal_1D = """\
 facet_determinant_2D = """\
 // Get vertices on edge
 static unsigned int edge_vertices[3][2] = {{1, 2}, {0, 2}, {0, 1}};
-const unsigned int v0 = edge_vertices[facet][0];
-const unsigned int v1 = edge_vertices[facet][1];
+const unsigned int v0 = edge_vertices[facet%(restriction)s][0];
+const unsigned int v1 = edge_vertices[facet%(restriction)s][1];
 
 // Compute scale factor (length of edge scaled by length of reference interval)
 const double dx0 = x%(restriction)s[v1][0] - x%(restriction)s[v0][0];
@@ -145,7 +145,7 @@ const double dx1 = x%(restriction)s[v1][1] - x%(restriction)s[v0][1];
 const double det = std::sqrt(dx0*dx0 + dx1*dx1);"""
 
 normal_direction_2D = """\
-const bool direction = dx1*(x%(restriction)s[facet][0] - x%(restriction)s[v0][0]) - dx0*(x%(restriction)s[facet][1] - x%(restriction)s[v0][1]) < 0;"""
+const bool direction = dx1*(x%(restriction)s[%(facet)s][0] - x%(restriction)s[v0][0]) - dx0*(x%(restriction)s[%(facet)s][1] - x%(restriction)s[v0][1]) < 0;"""
 
 facet_normal_2D = """\
 // Compute facet normals from the facet scale factor constants
@@ -155,9 +155,9 @@ const double n%(restriction)s1 = %(direction)sdirection ? -dx0 / det : dx0 / det
 facet_determinant_3D = """\
 // Get vertices on face
 static unsigned int face_vertices[4][3] = {{1, 2, 3}, {0, 2, 3}, {0, 1, 3}, {0, 1, 2}};
-const unsigned int v0 = face_vertices[facet][0];
-const unsigned int v1 = face_vertices[facet][1];
-const unsigned int v2 = face_vertices[facet][2];
+const unsigned int v0 = face_vertices[facet%(restriction)s][0];
+const unsigned int v1 = face_vertices[facet%(restriction)s][1];
+const unsigned int v2 = face_vertices[facet%(restriction)s][2];
 
 // Compute scale factor (area of face scaled by area of reference triangle)
 const double a0 = (x%(restriction)s[v0][1]*x%(restriction)s[v1][2]
@@ -709,3 +709,11 @@ tabulate_tensor_quadrature(A, w, c0, c1, facet0, facet1);"""
 jacobian = {1: jacobian_1D, 2: jacobian_2D, 3: jacobian_3D}
 map_onto_physical = {1: map_onto_physical_1D, 2: map_onto_physical_2D, 3: map_onto_physical_3D}
 facet_determinant = {1: facet_determinant_1D, 2: facet_determinant_2D, 3: facet_determinant_3D}
+
+fiat_coordinate_map = {"interval": map_coordinates_FIAT_interval,
+                       "triangle": map_coordinates_FIAT_triangle,
+                       "tetrahedron": map_coordinates_FIAT_tetrahedron}
+transform_snippet = {"interval": transform_interval_snippet,
+                       "triangle": transform_triangle_snippet,
+                       "tetrahedron": transform_tetrahedron_snippet}
+

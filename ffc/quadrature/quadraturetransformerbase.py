@@ -667,15 +667,15 @@ class QuadratureTransformerBase(Transformer):
         format_float_decl   = self.format["float declaration"]
         format_F            = self.format["function value"]
         format_float        = self.format["floating point"]
-        format_add_equal    = self.format["add equal"]
+        format_iadd         = self.format["iadd"]
         format_nzc          = self.format["nonzero columns"](0).split("0")[0]
-        format_r            = self.format["free secondary indices"][0]
+        format_r            = self.format["free indices"][0]
         format_mult         = self.format["multiply"]
         format_scale_factor = self.format["scale factor"]
         format_add          = self.format["add"]
         format_tensor       = self.format["element tensor quad"]
-        format_array_access = self.format["array access"]
-        format_Gip          = self.format["geometry tensor"] + self.format["integration points"]
+        format_component    = self.format["component"]
+        format_Gip          = self.format["geometry constant"] + self.format["integration points"]
 
         # Initialise return values.
         code = []
@@ -745,7 +745,7 @@ class QuadratureTransformerBase(Transformer):
                 # Get number of operations to compute entry and add to function operations count.
                 f_ops = self._count_operations(function) + 1
                 func_ops += f_ops
-                entry = format_add_equal(name, function)
+                entry = format_iadd(name, function)
                 function_expr[number] = entry
 
                 # Extract non-zero column number if needed.
@@ -769,7 +769,7 @@ class QuadratureTransformerBase(Transformer):
         ACCESS = GEO
         weight = self.format["weight"](self.points)
         if self.points > 1:
-            weight += self.format["array access"](self.format["integration points"])
+            weight += self.format["component"]("", self.format["integration points"])
             ACCESS = IP
         weight = self._create_symbol(weight, ACCESS)[()]
 
@@ -863,7 +863,7 @@ class QuadratureTransformerBase(Transformer):
             except:
                 pass
 
-            entry_code = format_add_equal( format_tensor + format_array_access(entry), value)
+            entry_code = format_iadd( format_component(format_tensor, entry), value)
 
             if loop not in loops:
                 loops[loop] = [entry_ops, [entry_ops_comment, entry_code]]
@@ -995,7 +995,7 @@ class QuadratureTransformerBase(Transformer):
         # since we will either loop the entire space dimension or the non-zeros.
         if self.points == 1:
             format_ip = "0"
-        basis_access = self.format["matrix access"](format_ip, loop_index)
+        basis_access = self.format["component"]("", [format_ip, loop_index])
 
         # Offset element space dimension in case of negative restriction,
         # need to use the complete element for offset in case of mixed element.
@@ -1030,8 +1030,7 @@ class QuadratureTransformerBase(Transformer):
         if non_zeros and basis_map == "0":
             basis_map = str(non_zeros[1][0])
         elif non_zeros:
-            basis_map = self.format["nonzero columns"](non_zeros[0]) +\
-                        self.format["array access"](basis_map)
+            basis_map = self.format["component"](self.format["nonzero columns"](non_zeros[0]), basis_map)
         if offset:
             basis_map = self.format["grouping"](self.format["add"]([basis_map, offset]))
 
@@ -1056,7 +1055,7 @@ class QuadratureTransformerBase(Transformer):
 
         # Pick first free index of secondary type
         # (could use primary indices, but it's better to avoid confusion).
-        loop_index = self.format["free secondary indices"][0]
+        loop_index = self.format["free indices"][0]
 
         # Create basis access, we never need to map the entry in the basis
         # table since we will either loop the entire space dimension or the
@@ -1117,8 +1116,7 @@ class QuadratureTransformerBase(Transformer):
         if non_zeros and coefficient_access == "0":
             coefficient_access = str(non_zeros[1][0])
         elif non_zeros and not quad_element:
-            coefficient_access = self.format["nonzero columns"](non_zeros[0]) +\
-                                 self.format["array access"](coefficient_access)
+            coefficient_access = self.format["component"](self.format["nonzero columns"](non_zeros[0]), coefficient_access)
         if offset:
             coefficient_access = self.format["add"]([coefficient_access, offset])
 
