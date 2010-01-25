@@ -105,8 +105,6 @@ def _compute_dofmap_ir(ufl_element, element_id, element_map):
     num_dofs_per_entity = _num_dofs_per_entity(element)
     facet_dofs = _tabulate_facet_dofs(element, cell)
 
-    print num_dofs_per_entity
-
     # Store id
     ir = {"id": element_id}
 
@@ -181,9 +179,9 @@ def _compute_form_ir(form, form_data, form_id, element_map):
     ir["num_interior_facet_integrals"] = form_data.num_interior_facet_domains
     ir["create_finite_element"] = [element_map[e] for e in form_data.elements]
     ir["create_dof_map"] = [element_map[e] for e in form_data.elements]
-    ir["create_cell_integral"] = range(form_data.num_cell_domains)
-    ir["create_exterior_facet_integral"] = range(form_data.num_exterior_facet_domains)
-    ir["create_interior_facet_integral"] = range(form_data.num_interior_facet_domains)
+    ir["create_cell_integral"] = _create_foo_integral("cell", form_data)
+    ir["create_exterior_facet_integral"] = _create_foo_integral("exterior_facet", form_data)
+    ir["create_interior_facet_integral"] = _create_foo_integral("interior_facet", form_data)
 
     return ir
 
@@ -335,6 +333,11 @@ def _interpolate_vertex_values(element, cell):
 def _create_sub_foo(ufl_element, element_map):
     "Compute intermediate representation of create_sub_element/dofmap."
     return [element_map[e] for e in ufl_element.sub_elements()]
+
+def _create_foo_integral(domain_type, form_data):
+    "Compute intermediate representation of create_foo_integral."
+    return [domain_id for (_domain_type, domain_id, integrals, metadata) in
+           form_data.integral_data if _domain_type == domain_type]
 
 #--- Utility functions ---
 

@@ -57,8 +57,6 @@ def analyze_forms(forms, object_names, options):
     # Build element map
     element_map = _build_element_map(unique_elements)
 
-    print element_map
-
     end()
 
     return form_and_data, unique_elements, element_map
