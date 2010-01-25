@@ -162,7 +162,7 @@ def main(args):
 
     # Generate and validate code
     generate_code()
-    validate_code()
+    #validate_code()
 
     # Build and validate programs
     build_programs()
