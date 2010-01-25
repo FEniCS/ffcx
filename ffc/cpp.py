@@ -73,8 +73,7 @@ format.update({"add":           lambda v: " + ".join(v),
 format.update({"element tensor":  lambda i: "A[%d]" % i,
                "geometry tensor":
                                   lambda j, a: "G%d_%s" % (j, "_".join(["%d" % i for i in a])),
-               "coefficient":     lambda j, k: "w[%d][%d]" % (j, k),
-               "scale factor":    "det",
+               "coefficient":     lambda j, k: format["component"]("w", [j, k]),
                "transform":       lambda t, j, k, r: _transform(t, j, k, r)})
 
 # Geometry related variable names
@@ -97,6 +96,8 @@ format.update({# Loop indices
                "x coordinate": "x",
                "y coordinate": "y",
                "z coordinate": "z",
+               "scale factor": "det",
+               "normal component": lambda r, j: "n%s%s" % (choose_map[r], j),
                # Random variable names
                "local dof": "dof",
                "basisvalues": "basisvalues",

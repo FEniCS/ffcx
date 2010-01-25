@@ -375,26 +375,3 @@ def _tabulate_psis(transformer, Indent, format):
                         # Remove from list of columns.
                         new_nzcs.remove(inv_name_map[n][1])
     return code
-
-def _remove_unused(lines, trans_set, format):
-    "Remove unused variables so that the compiler will not complain."
-
-    # Normally, the removal of unused variables should happen at the
-    # formatting stage, but since the code for the tabulate_tensor()
-    # function may grow to considerable size, we make an exception and
-    # remove unused variables here when we know the names of the used
-    # variables. No searching necessary and much, much, much faster.
-
-
-    # Generate auxiliary code line that uses all members of the set
-    # (to trick remove_unused).
-    line_set = format["iadd"]("A", format["mul"](trans_set))
-    lines += "\n" + line_set
-
-    # Remove unused Jacobi declarations.
-    code = remove_unused(lines)
-
-    # Delete auxiliary line.
-    code = code.replace("\n" + line_set, "")
-    return [code]
-

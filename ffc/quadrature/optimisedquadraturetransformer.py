@@ -28,6 +28,7 @@ from ffc.log import info
 from ffc.log import debug
 from ffc.log import ffc_assert
 from ffc.log import error
+from ffc.cpp import choose_map
 
 # Utility and optimisation functions for quadraturegenerator.
 from quadraturetransformerbase import QuadratureTransformerBase
@@ -252,7 +253,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
                         dxdX = create_symbol(format_transform("JINV", c, local_comp, self.restriction), GEO)
                         basis = create_product([dxdX, basis])
                     elif transformation == "contravariant piola":
-                        detJ = create_fraction(create_float(1), create_symbol(format_detJ(self.restriction), GEO))
+                        detJ = create_fraction(create_float(1), create_symbol(format_detJ(choose_map[self.restriction]), GEO))
                         dXdx = create_symbol(format_transform("J", c, local_comp, self.restriction), GEO)
                         basis = create_product([detJ, dXdx, basis])
                     else:
@@ -279,7 +280,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
 
         # Prefetch formats to speed up code generation.
         format_transform     = self.format["transform"]
-        format_detJ          = self.format["determinant"]
+        format_detJ          = self.format["det(J)"]
 
         code = []
 
@@ -313,7 +314,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
                         dxdX = create_symbol(format_transform("JINV", c, local_comp, self.restriction), GEO)
                         function_name = create_product([dxdX, function_name])
                     elif transformation == "contravariant piola":
-                        detJ = create_fraction(create_float(1), create_symbol(format_detJ(self.restriction), GEO))
+                        detJ = create_fraction(create_float(1), create_symbol(format_detJ(choose_map[self.restriction]), GEO))
                         dXdx = create_symbol(format_transform("J", c, local_comp, self.restriction), GEO)
                         function_name = create_product([detJ, dXdx, function_name])
                     else:

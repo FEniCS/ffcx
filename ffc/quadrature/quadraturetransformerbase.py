@@ -436,7 +436,7 @@ class QuadratureTransformerBase(Transformer):
             component += 1
 
         # Let child class create constant symbol
-        coefficient = self.format["coeff"] + self.format["matrix access"](o.count(), component)
+        coefficient = self.format["coefficient"](o.count(), component)
         return self._create_symbol(coefficient, CONST)
 
     def vector_constant(self, o, *operands):
@@ -457,7 +457,7 @@ class QuadratureTransformerBase(Transformer):
             component += o.shape()[0]
 
         # Let child class create constant symbol
-        coefficient = self.format["coeff"] + self.format["matrix access"](o.count(), component)
+        coefficient = self.format["coefficient"](o.count(), component)
         return self._create_symbol(coefficient, CONST)
 
     def tensor_constant(self, o, *operands):
@@ -479,7 +479,7 @@ class QuadratureTransformerBase(Transformer):
             component += product(o.shape())
 
         # Let child class create constant symbol
-        coefficient = self.format["coeff"] + self.format["matrix access"](o.count(), component)
+        coefficient = self.format["coefficient"](o.count(), component)
         return self._create_symbol(coefficient, CONST)
 
     # -------------------------------------------------------------------------
@@ -676,6 +676,7 @@ class QuadratureTransformerBase(Transformer):
         format_tensor       = self.format["element tensor quad"]
         format_component    = self.format["component"]
         format_Gip          = self.format["geometry constant"] + self.format["integration points"]
+        format_assign       = self.format["assign"]
 
         # Initialise return values.
         code = []
@@ -716,7 +717,7 @@ class QuadratureTransformerBase(Transformer):
         if self.function_count:
             code += ["", format_comment("Coefficient declarations")]
         for function_number in range(self.function_count):
-            code.append((format_float_decl + format_F + str(function_number), format_float(0)))
+            code.append(format_assign(format_float_decl + format_F + str(function_number), format_float(0)))
 
         # Create code for computing function values, sort after loop ranges first.
         functions = self.functions
@@ -1062,7 +1063,7 @@ class QuadratureTransformerBase(Transformer):
         # non-zeros.
         if self.points == 1:
             format_ip = "0"
-        basis_access = self.format["matrix access"](format_ip, loop_index)
+        basis_access = self.format["component"]("", [format_ip, loop_index])
 
         # Handle restriction through facet.
         facet = {"+": self.facet0, "-": self.facet1, None: self.facet0}[self.restriction]
@@ -1128,8 +1129,7 @@ class QuadratureTransformerBase(Transformer):
         except:
             pass
 
-        coefficient = self.format["coeff"] +\
-                      self.format["matrix access"](str(ufl_function.count()), coefficient_access)
+        coefficient = self.format["coefficient"](str(ufl_function.count()), coefficient_access)
         function_expr = self._create_symbol(coefficient, ACCESS)[()]
         if basis_name:
             function_expr = self._create_product([self._create_symbol(basis_name, ACCESS)[()], self._create_symbol(coefficient, ACCESS)[()]])
