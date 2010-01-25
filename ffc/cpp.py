@@ -7,7 +7,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian B. Oelgaard 2010
 # Modified by Marie E. Rognes 2010
-# Last changed: 2010-01-24
+# Last changed: 2010-01-25
 
 # Python modules.
 import re
@@ -84,6 +84,26 @@ format.update({"entity index": "c.entity_indices",
                "J":      lambda i, j: "J_%d%d" % (i, j),
                "inv(J)": lambda i, j: "K_%d%d" % (i, j),
                "det(J)": lambda r: "detJ_%s" % r})
+
+# Code snippets:
+from codesnippets import *
+format.update({"cell coordinates": cell_coordinates,
+               "jacobian": lambda n, r="": jacobian[n] % {"restriction": r},
+               "inverse jacobian": lambda n, r="": inverse_jacobian[n] % {"restriction": r},
+               "jacobian and inverse": lambda n, r="": format["jacobian"](n, r) + format["inverse jacobian"](n, r),
+               "facet determinant": lambda n, r="": facet_determinant[n] % {"restriction": r},
+               "fiat coordinate map": lambda n: fiat_coordinate_map[n],
+               #"map coordinates": lambda n, r="": map_coordinates[n] % {"restriction": r},
+               "scale factor snippet": scale_factor,
+               "map onto physical": map_onto_physical,
+               "combinations": combinations_snippet,
+               "transform snippet": transform_snippet,
+               "evaluate function": evaluate_f,
+               "ufc header": header_ufc,
+               "dolfin header": header_dolfin,
+               "footer": footer
+               })
+
 
 # TODO: Stuff from format_old used by KBO, should be moved around and possibly renamed.
 format.update({# Loop indices
@@ -248,7 +268,7 @@ def _generate_switch(variable, cases, default=None):
     # Create switch
     code = "switch (%s)\n{\n" % variable
     for i in range(len(cases)):
-        code += "case %d:\n%s\n  break;\n" % (i, indent(cases[i], 2))
+        code += "case %d: {\n%s\n  break;\n}\n" % (i, indent(cases[i], 2))
     code += "}\n"
 
     # Default value
@@ -390,7 +410,7 @@ def indent(block, num_spaces):
 
 
 # FIXME: Major cleanup needed, remove as much as possible
-from codesnippets import *
+#from codesnippets import *
 
 # FIXME: KBO: temporary hack to get dictionary working.
 from constants import FFC_OPTIONS
@@ -550,7 +570,7 @@ format_old = {
     "snippet map_onto_physical": lambda d : eval("map_onto_physical_%dD" % d),
     #           "snippet declare_representation": declare_representation,
     #           "snippet delete_representation": delete_representation,
-    "snippet calculate dof": calculate_dof,
+    #"snippet calculate dof": calculate_dof,
     "get cell vertices" : "const double * const * x = c.coordinates;",
     "generate normal": lambda d, i: _generate_normal(d, i),
     "generate body": lambda d: _generate_body(d),

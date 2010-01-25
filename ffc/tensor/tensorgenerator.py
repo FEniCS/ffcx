@@ -13,7 +13,6 @@ __license__  = "GNU GPL version 3 or any later version"
 # FFC modules
 from ffc.log import error
 from ffc.cpp import format, remove_unused, count_ops
-from ffc import codesnippets
 
 # FFC tensor representation modules
 from ffc.tensor.monomialtransformation import MonomialIndex
@@ -61,10 +60,9 @@ def _tabulate_tensor(ir, options):
         # Generate code for geometry tensors
         g_code = _generate_geometry_tensors(AK, j_set, g_set)
 
-        # Generate code for Jacobian
-        r = {"restriction": ""}
-        j_code  = codesnippets.jacobian[geometric_dimension] % r
-        j_code += "\n\n" + codesnippets.scale_factor
+        # Generate code for Jacobian and its inverse
+        j_code = format["jacobian and inverse"](geometric_dimension)
+        j_code += "\n\n" + format["scale factor snippet"]
 
     elif domain_type == "exterior_facet":
 
@@ -78,9 +76,8 @@ def _tabulate_tensor(ir, options):
         g_code = _generate_geometry_tensors(AK[0], j_set, g_set)
 
         # Generate code for Jacobian
-        r = {"restriction": ""}
-        j_code  = codesnippets.jacobian[geometric_dimension] % r
-        j_code += "\n\n" + codesnippets.facet_determinant[geometric_dimension] % r
+        j_code = format["jacobian and inverse"](geometric_dimension)
+        j_code += "\n\n" + format["facet determinant"](geometric_dimension)
 
     elif domain_type == "interior_facet":
 
@@ -95,9 +92,8 @@ def _tabulate_tensor(ir, options):
         g_code = _generate_geometry_tensors(AK[0][0], j_set, g_set)
 
         # Generate code for Jacobian
-        r = {"restriction": ""}
-        j_code  = codesnippets.jacobian[geometric_dimension] % r
-        j_code += "\n\n" + codesnippets.facet_determinant[geometric_dimension] % r
+        j_code = format["jacobian and inverse"](geometric_dimension)
+        j_code += "\n\n" + format["facet determinant"](geometric_dimension)
 
     else:
         error("Unhandled integral type: " + str(domain_type))

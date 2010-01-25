@@ -30,8 +30,6 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Last changed: 2010-01-13
 
-from ffc.codesnippets import jacobian, cell_coordinates, map_onto_physical
-from ffc.codesnippets import evaluate_f
 from ffc.cpp import format, remove_unused, IndentControl
 from ffc.utils import pick_first
 
@@ -49,6 +47,7 @@ multiply = format["multiply"]
 J = format["J"]
 Jinv = format["inv(J)"]
 detJ = format["det(J)"]("")
+map_onto_physical = format["map onto physical"]
 
 def evaluate_dof_and_dofs(ir):
     "Generate code for evaluate_dof and evaluate_dof."
@@ -87,7 +86,6 @@ def _required_declarations(ir):
     """Generate code for declaring required variables and geometry
     information.
     """
-
     code = []
 
     # Declare variable for storing the result and physical coordinates
@@ -97,28 +95,27 @@ def _required_declarations(ir):
     code.append(comment("Declare variable for physical coordinates"))
     code.append(declare("double", "y[%d]" % cell_dim))
 
-    # Add Jacobian and extra result variable if needed
+    # Check whether Jacobians are necessary.
     needs_inverse_jacobian = any(["contravariant piola" in m
                                   for m in ir["mappings"]])
     needs_jacobian = any(["covariant piola" in m for m in ir["mappings"]])
 
+    # Add cell coordinates only if sufficient
+    if not (needs_jacobian or needs_inverse_jacobian):
+        code.append(format["cell coordinates"])
+        return "\n".join(code)
+
+    # Otherwise declare intermediate result variable
+    code.append(declare("double", "result"))
+
+    # Add sufficient Jacobian information
     if needs_inverse_jacobian:
-        code.append(jacobian[cell_dim] % {"restriction": ""})
-        code.append(declare("double", "result"))
-        return "\n".join(code)
-
-    elif needs_jacobian:
-        code.append(jacobian[cell_dim] % {"restriction": ""})
-        code.append(declare("double", "result"))
-
-        # Remove inverse jacobian
-        jacobians = [J(i, j) for i in range(cell_dim) for j in range(cell_dim)]
-        used_set = set(jacobians + ["result", "vals", "y"])
-        return remove_unused("\n".join(code), used_set)
-
+        code.append(format["jacobian and inverse"](cell_dim))
     else:
-        code.append(cell_coordinates)
-        return "\n".join(code)
+        code.append(format["jacobian"](cell_dim))
+
+    return "\n".join(code)
+
 
 def _generate_body(i, dof, mapping, cell_dim, offset=0, result="result"):
     "Generate code for a single dof."
@@ -143,7 +140,7 @@ def _generate_body(i, dof, mapping, cell_dim, offset=0, result="result"):
         code.append(assign(component("y", j), y))
 
     # Evaluate function at physical point
-    code.append(evaluate_f)
+    code.append(format["evaluate function"])
 
     # Map function values to the reference element
     F = _change_variables(mapping, cell_dim, offset)
@@ -173,6 +170,7 @@ def _generate_multiple_points_body(i, dof, mapping,
     tokens = [dof[x] for x in points]
     len_tokens = pick_first([len(t) for t in tokens])
 
+
     # Declare points
     points = format["list"]([format["list"](x) for x in points])
     code += [declare("double", "X_%d[%d][%d]" % (i, n, cell_dim), points)]
@@ -187,6 +185,9 @@ def _generate_multiple_points_body(i, dof, mapping,
     weights = format["list"]([format["list"](w) for w in weights])
     code += [declare("double", "W_%d[%d][%d]" % (i, n, len_tokens), weights)]
 
+    # Declare copy variable:
+    code += [declare("double", "copy_%d[%d]" % (i, cell_dim))]
+
     # Add loop over points
     code += [comment("// Loop over points")]
     code += ["for(unsigned int j = 0; j < %d; j++) {\n" % n]
@@ -199,12 +200,12 @@ def _generate_multiple_points_body(i, dof, mapping,
 
     # Evaluate function at physical point
     code += [Indent.indent(comment("// Evaluate function at physical point"))]
-    code.append(Indent.indent(evaluate_f))
+    code.append(Indent.indent(format["evaluate function"]))
 
     # Map function values to the reference element
     code += [Indent.indent(comment("// Map function to reference element"))]
     F = _change_variables(mapping, cell_dim, offset)
-    code += [Indent.indent(assign(component("copy", k), F_k))
+    code += [Indent.indent(assign(component("copy_%d" % i, k), F_k))
              for (k, F_k) in enumerate(F)]
 
     # Add loop over directional components

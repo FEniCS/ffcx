@@ -22,7 +22,6 @@ from ffc.evaluatebasis import _evaluate_basis, _evaluate_basis_all
 from ffc.evaluatebasisderivatives import _evaluate_basis_derivatives, _evaluate_basis_derivatives_all
 from ffc.evaluatedof import evaluate_dof_and_dofs, affine_weights
 from ffc.interpolatevertexvalues import interpolate_vertex_values
-from ffc.codesnippets import jacobian, cell_coordinates
 
 # FFC specialized code generation modules
 from ffc import quadrature
@@ -302,7 +301,7 @@ def _tabulate_coordinates(ir):
     coefficients = affine_weights(cell_dim)
 
     # Start with code for coordinates for vertices of cell
-    code = [cell_coordinates]
+    code = [format["cell coordinates"]]
 
     # Generate code for each point and each component
     for (i, coordinate) in enumerate(ir):
