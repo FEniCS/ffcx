@@ -85,12 +85,12 @@ format.update({"entity index": "c.entity_indices",
                "inv(J)": lambda i, j: "K_%d%d" % (i, j),
                "det(J)": lambda r="": "detJ%s" % r})
 
-# Code snippets:
+# Code snippets
 from codesnippets import *
 format.update({"cell coordinates": cell_coordinates,
                "jacobian": lambda n, r="": jacobian[n] % {"restriction": r},
                "inverse jacobian": lambda n, r="": inverse_jacobian[n] % {"restriction": r},
-               "jacobian and inverse": lambda n, r="": format["jacobian"](n, r) + format["inverse jacobian"](n, r),
+               "jacobian and inverse": lambda n, r="": format["jacobian"](n, r) + "\n" + format["inverse jacobian"](n, r),
                "facet determinant": lambda n, r="": facet_determinant[n] % {"restriction": r},
                "fiat coordinate map": lambda n: fiat_coordinate_map[n],
                #"map coordinates": lambda n, r="": map_coordinates[n] % {"restriction": r},
@@ -103,7 +103,6 @@ format.update({"cell coordinates": cell_coordinates,
                "dolfin header": header_dolfin,
                "footer": footer
                })
-
 
 # TODO: Stuff from format_old used by KBO, should be moved around and possibly renamed.
 format.update({# Loop indices
@@ -725,8 +724,10 @@ def remove_unused(code, used_set=set()):
                 used_lines.remove(line)
         if not used_lines and not variable_name in used_set:
             debug("Removing unused variable: %s" % variable_name)
-            #lines[declaration_line] = "// " + lines[declaration_line]
-            lines[declaration_line] = None
+            print "Removing unused variable: %s" % variable_name
+            print lines[declaration_line]
+            lines[declaration_line] = "// " + lines[declaration_line]
+            #lines[declaration_line] = None
             removed_lines += [declaration_line]
 
     return "\n".join([line for line in lines if not line == None])
@@ -800,4 +801,3 @@ def _generate_normal(cell_dimension, integral_type, reference_normal=False):
         code += facet_normal % {"direction" : "", "restriction": choose_map["+"]}
         code += facet_normal % {"direction" : "!", "restriction": choose_map["-"]}
     return code
-

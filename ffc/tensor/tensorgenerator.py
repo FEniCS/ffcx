@@ -92,14 +92,29 @@ def _tabulate_tensor(ir, options):
         g_code = _generate_geometry_tensors(AK[0][0], j_set, g_set)
 
         # Generate code for Jacobian
-        j_code = format["jacobian and inverse"](geometric_dimension)
-        j_code += "\n\n" + format["facet determinant"](geometric_dimension)
+
+        print "Generating Jacobian code"
+
+        j_code  = format["jacobian and inverse"](geometric_dimension, "0")
+        j_code += format["jacobian and inverse"](geometric_dimension, "1")
+        j_code += "\n\n" + format["facet determinant"](geometric_dimension, "0")
+
+        print "-------------------------------"
+        print "Check"
+        print j_code
+        print "-------------------------------"
+        print j_set
 
     else:
         error("Unhandled integral type: " + str(domain_type))
 
     # Remove unused declarations from Jacobian code
     jacobi_code = remove_unused(j_code, j_set)
+
+    print "-------------------------------"
+    print "After removing"
+    print jacobi_code
+    print "-------------------------------"
 
     # FIXME: Missing stuff from old generate_jacobian
 
