@@ -14,12 +14,14 @@
 #include <ufc.h>
 
 typedef unsigned int uint;
+uint counter = 0;
 
 // Function for printing single value result
 template <class value_type>
 void print_value(std::string name, value_type value, int i=-1, int j=-1)
 {
   std::stringstream s;
+  s << counter++ << "_";
   s << name;
   if (i >= 0) s << "_" << i;
   if (j >= 0) s << "_" << j;
@@ -31,6 +33,7 @@ template <class value_type>
 void print_array(std::string name, unsigned int n, value_type* values, int i=-1, int j=-1)
 {
   std::stringstream s;
+  s << counter++ << "_";
   s << name;
   if (i >= 0) s << "_" << i;
   if (j >= 0) s << "_" << j;
