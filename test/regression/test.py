@@ -30,6 +30,7 @@ def generate_test_cases():
 
     # Copy demos files
     demo_files = [f for f in os.listdir("../../../demo/") if f.endswith(".ufl")]
+    demo_files.sort()
     for f in demo_files:
         shutil.copy("../../../demo/%s" % f, ".")
     info_green("Copied %d demo files" % len(demo_files))
@@ -49,6 +50,7 @@ def generate_code():
 
     # Get a list of all files
     form_files = [f for f in os.listdir(".") if f.endswith(".ufl")]
+    form_files.sort()
 
     # Iterate over all files
     for f in form_files:
@@ -71,6 +73,7 @@ def validate_code():
 
     # Get a list of all files
     header_files = [f for f in os.listdir(".") if f.endswith(".h")]
+    header_files.sort()
 
     # Iterate over all files
     for f in header_files:
@@ -101,6 +104,7 @@ def build_programs():
 
     # Get a list of all files
     header_files = [f for f in os.listdir(".") if f.endswith(".h")]
+    header_files.sort()
 
     # Iterate over all files
     for f in header_files:
