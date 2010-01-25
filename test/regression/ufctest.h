@@ -339,7 +339,11 @@ void test_dofmap(ufc::dof_map& dofmap, ufc::shape cell_shape)
   // tabulate_entity_dofs
   for (uint d = 0; d <= c.topological_dimension; d++)
   {
-    for (uint i = 0; i < dofmap.num_entity_dofs(d); i++)
+    uint num_entities[4][4] = {{0, 0, 0, 0}, // dummy entities in 0D
+                               {2, 1, 0, 0}, // interval
+                               {3, 3, 1, 0}, // triangle
+                               {4, 6, 4, 1}}; // tetrahedron
+    for (uint i = 0; i < num_entities[c.topological_dimension][d]; i++)
     {
       dofmap.tabulate_entity_dofs(dofs, d, i);
       print_array("tabulate_entity_dofs", dofmap.num_entity_dofs(d), dofs, d, i);

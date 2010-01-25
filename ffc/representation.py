@@ -105,6 +105,8 @@ def _compute_dofmap_ir(ufl_element, element_id, element_map):
     num_dofs_per_entity = _num_dofs_per_entity(element)
     facet_dofs = _tabulate_facet_dofs(element, cell)
 
+    print num_dofs_per_entity
+
     # Store id
     ir = {"id": element_id}
 
