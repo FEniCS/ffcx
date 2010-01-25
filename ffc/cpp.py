@@ -83,7 +83,7 @@ format.update({"entity index": "c.entity_indices",
                "cell":   lambda s: "ufc::%s" % s,
                "J":      lambda i, j: "J_%d%d" % (i, j),
                "inv(J)": lambda i, j: "K_%d%d" % (i, j),
-               "det(J)": lambda r: "detJ_%s" % r})
+               "det(J)": lambda r="": "detJ%s" % r})
 
 # Code snippets:
 from codesnippets import *

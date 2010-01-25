@@ -93,13 +93,13 @@ const double K%(restriction)s_00 =  1.0/J%(restriction)s_00;"""
 _inverse_jacobian_2D = """\
 
 // Compute determinant of Jacobian
-double detJ_%(restriction)s = J%(restriction)s_00*J%(restriction)s_11 - J%(restriction)s_01*J%(restriction)s_10;
+double detJ%(restriction)s = J%(restriction)s_00*J%(restriction)s_11 - J%(restriction)s_01*J%(restriction)s_10;
 
 // Compute inverse of Jacobian
-const double K%(restriction)s_00 =  J%(restriction)s_11 / detJ_%(restriction)s;
-const double K%(restriction)s_01 = -J%(restriction)s_01 / detJ_%(restriction)s;
-const double K%(restriction)s_10 = -J%(restriction)s_10 / detJ_%(restriction)s;
-const double K%(restriction)s_11 =  J%(restriction)s_00 / detJ_%(restriction)s;"""
+const double K%(restriction)s_00 =  J%(restriction)s_11 / detJ%(restriction)s;
+const double K%(restriction)s_01 = -J%(restriction)s_01 / detJ%(restriction)s;
+const double K%(restriction)s_10 = -J%(restriction)s_10 / detJ%(restriction)s;
+const double K%(restriction)s_11 =  J%(restriction)s_00 / detJ%(restriction)s;"""
 
 _inverse_jacobian_3D = """\
 
@@ -117,24 +117,24 @@ const double d21 = J%(restriction)s_02*J%(restriction)s_10 - J%(restriction)s_00
 const double d22 = J%(restriction)s_00*J%(restriction)s_11 - J%(restriction)s_01*J%(restriction)s_10;
 
 // Compute determinant of Jacobian
-double detJ_%(restriction)s = J%(restriction)s_00*d00 + J%(restriction)s_10*d10 + J%(restriction)s_20*d20;
+double detJ%(restriction)s = J%(restriction)s_00*d00 + J%(restriction)s_10*d10 + J%(restriction)s_20*d20;
 
 // Compute inverse of Jacobian
-const double K%(restriction)s_00 = d00 / detJ_%(restriction)s;
-const double K%(restriction)s_01 = d10 / detJ_%(restriction)s;
-const double K%(restriction)s_02 = d20 / detJ_%(restriction)s;
-const double K%(restriction)s_10 = d01 / detJ_%(restriction)s;
-const double K%(restriction)s_11 = d11 / detJ_%(restriction)s;
-const double K%(restriction)s_12 = d21 / detJ_%(restriction)s;
-const double K%(restriction)s_20 = d02 / detJ_%(restriction)s;
-const double K%(restriction)s_21 = d12 / detJ_%(restriction)s;
-const double K%(restriction)s_22 = d22 / detJ_%(restriction)s;"""
+const double K%(restriction)s_00 = d00 / detJ%(restriction)s;
+const double K%(restriction)s_01 = d10 / detJ%(restriction)s;
+const double K%(restriction)s_02 = d20 / detJ%(restriction)s;
+const double K%(restriction)s_10 = d01 / detJ%(restriction)s;
+const double K%(restriction)s_11 = d11 / detJ%(restriction)s;
+const double K%(restriction)s_12 = d21 / detJ%(restriction)s;
+const double K%(restriction)s_20 = d02 / detJ%(restriction)s;
+const double K%(restriction)s_21 = d12 / detJ%(restriction)s;
+const double K%(restriction)s_22 = d22 / detJ%(restriction)s;"""
 
 evaluate_f = "f.evaluate(vals, y, c);"
 
 scale_factor = """\
 // Set scale factor
-const double det = std::abs(detJ_);"""
+const double det = std::abs(detJ);"""
 
 _facet_determinant_1D = """\
 // Facet determinant 1D (vertex)
@@ -494,10 +494,10 @@ transform_snippet = {"interval": _transform_interval_snippet,
 # // Get coordinates and map to the UFC reference element
 # double x = (element_coordinates[0][1]*element_coordinates[2][0] -\\
 #             element_coordinates[0][0]*element_coordinates[2][1] +\\
-#             J_11*coordinates[0] - J_01*coordinates[1]) / detJ_;
+#             J_11*coordinates[0] - J_01*coordinates[1]) / detJ;
 # double y = (element_coordinates[1][1]*element_coordinates[0][0] -\\
 #             element_coordinates[1][0]*element_coordinates[0][1] -\\
-#             J_10*coordinates[0] + J_00*coordinates[1]) / detJ_;"""
+#             J_10*coordinates[0] + J_00*coordinates[1]) / detJ;"""
 
 # _map_coordinates_3D = _jacobian_3D + _inverse_jacobian_3D + """\
 
@@ -515,9 +515,9 @@ transform_snippet = {"interval": _transform_interval_snippet,
 #                 + d22*(element_coordinates[0][2] - element_coordinates[1][2] - element_coordinates[2][2]);
 
 # // Get coordinates and map to the UFC reference element
-# double x = (C0 + d00*coordinates[0] + d10*coordinates[1] + d20*coordinates[2]) / detJ_;
-# double y = (C1 + d01*coordinates[0] + d11*coordinates[1] + d21*coordinates[2]) / detJ_;
-# double z = (C2 + d02*coordinates[0] + d12*coordinates[1] + d22*coordinates[2]) / detJ_;"""
+# double x = (C0 + d00*coordinates[0] + d10*coordinates[1] + d20*coordinates[2]) / detJ;
+# double y = (C1 + d01*coordinates[0] + d11*coordinates[1] + d21*coordinates[2]) / detJ;
+# double z = (C2 + d02*coordinates[0] + d12*coordinates[1] + d22*coordinates[2]) / detJ;"""
 
 # map_coordinates = {"interval": _map_coordinates_1D,
 #                    "triangle": _map_coordinates_2D,
