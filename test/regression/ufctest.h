@@ -190,6 +190,8 @@ void test_finite_element(ufc::finite_element& element)
   double* values = new double[element.space_dimension()*value_size*derivative_size];
   double* vertex_values = new double[(c.topological_dimension + 1)*value_size];
   double* coordinates = new double[c.geometric_dimension];
+  for (uint i = 0; i < c.geometric_dimension; i++)
+    coordinates[i] = 0.1*static_cast<double>(i);
   test_function f(value_size);
 
   // signature
@@ -224,16 +226,22 @@ void test_finite_element(ufc::finite_element& element)
   {
     for (uint n = 0; n <= max_derivative; n++)
     {
+      uint num_derivatives = 1;
+      for (uint j = 0; j < n; j++)
+        num_derivatives *= c.geometric_dimension;
       element.evaluate_basis_derivatives(i, n, values, coordinates, c);
-      print_array("evaluate_basis_derivatives", value_size*derivative_size, values, i, n);
+      print_array("evaluate_basis_derivatives", value_size*num_derivatives, values, i, n);
     }
   }
 
   // evaluate_basis_derivatives_all
   for (uint n = 0; n <= max_derivative; n++)
   {
+    uint num_derivatives = 1;
+      for (uint j = 0; j < n; j++)
+        num_derivatives *= c.geometric_dimension;
     element.evaluate_basis_derivatives_all(n, values, coordinates, c);
-    print_array("evaluate_basis_derivatives_all", element.space_dimension()*value_size*derivative_size, values, n);
+    print_array("evaluate_basis_derivatives_all", element.space_dimension()*value_size*num_derivatives, values, n);
   }
 
   // evaluate_dof
@@ -459,11 +467,9 @@ void test_form(ufc::form& form)
   if (form.num_coefficients() > 0)
   {
     w = new double * [form.num_coefficients()];
-    std::cout << "n = " << form.num_coefficients() << std::endl;
     for (uint i = 0; i < form.num_coefficients(); i++)
     {
       ufc::finite_element* element = form.create_finite_element(form.rank() + i);
-      std::cout << "space_dimension = " << element->space_dimension() << std::endl;
       w[i] = new double[element->space_dimension()];
       for (uint j = 0; j < element->space_dimension(); j++)
         w[i][j] = 0.1*static_cast<double>(i*j);
