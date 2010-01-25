@@ -356,7 +356,7 @@ def _tabulate_entity_dofs(ir):
 
     return "\n".join(code)
 
-#--- Utility functioins ---
+#--- Utility functions ---
 
 def _create_foo(numbers, prefix, class_name):
     "Generate code for create_<foo>."

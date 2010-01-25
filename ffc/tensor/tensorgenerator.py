@@ -92,16 +92,15 @@ def _tabulate_tensor(ir, options):
         g_code = _generate_geometry_tensors(AK[0][0], j_set, g_set)
 
         # Generate code for Jacobian
-        j_code = format["jacobian and inverse"](geometric_dimension)
-        j_code += "\n\n" + format["facet determinant"](geometric_dimension)
+        j_code  = format["jacobian and inverse"](geometric_dimension, "0")
+        j_code += format["jacobian and inverse"](geometric_dimension, "1")
+        j_code += "\n\n" + format["facet determinant"](geometric_dimension, "0")
 
     else:
         error("Unhandled integral type: " + str(domain_type))
 
     # Remove unused declarations from Jacobian code
     jacobi_code = remove_unused(j_code, j_set)
-
-    # FIXME: Missing stuff from old generate_jacobian
 
     # Compute total number of operations
     j_ops, g_ops, t_ops = [count_ops(c) for c in (j_code, g_code, t_code)]
@@ -138,7 +137,7 @@ def _generate_tensor_contraction(terms, options, g_set):
     format_float    = format["float"]
     zero            = format_float(0)
 
-    # FIXME: This should be an option
+    # True if we should add to element tensor (not used)
     incremental = False
 
     # Get machine precision

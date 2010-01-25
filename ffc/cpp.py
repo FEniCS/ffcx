@@ -84,12 +84,12 @@ format.update({"entity index": "c.entity_indices",
                "inv(J)": lambda i, j: "K_%d%d" % (i, j),
                "det(J)": lambda r="": "detJ%s" % r})
 
-# Code snippets:
+# Code snippets
 from codesnippets import *
 format.update({"cell coordinates": cell_coordinates,
                "jacobian": lambda n, r="": jacobian[n] % {"restriction": r},
                "inverse jacobian": lambda n, r="": inverse_jacobian[n] % {"restriction": r},
-               "jacobian and inverse": lambda n, r="": format["jacobian"](n, r) + format["inverse jacobian"](n, r),
+               "jacobian and inverse": lambda n, r="": format["jacobian"](n, r) + "\n" + format["inverse jacobian"](n, r),
                "facet determinant": lambda n, r="": facet_determinant[n] % {"restriction": r},
                "fiat coordinate map": lambda n: fiat_coordinate_map[n],
                "generate normal": lambda d, i: _generate_normal(d, i),
@@ -725,8 +725,7 @@ def remove_unused(code, used_set=set()):
                 used_lines.remove(line)
         if not used_lines and not variable_name in used_set:
             debug("Removing unused variable: %s" % variable_name)
-            #lines[declaration_line] = "// " + lines[declaration_line]
-            lines[declaration_line] = None
+            lines[declaration_line] = "// " + lines[declaration_line]
             removed_lines += [declaration_line]
 
     return "\n".join([line for line in lines if not line == None])
@@ -796,4 +795,3 @@ def _generate_normal(geometric_dimension, domain_type, reference_normal=False):
     else:
         error("Unsupported domain_type: %s" % str(domain_type))
     return code
-
