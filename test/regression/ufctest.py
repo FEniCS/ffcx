@@ -15,12 +15,22 @@ int main()
 }
 """
 
-def form_test_code(prefix, num_forms):
-    "Return code for testing a set of forms."
-    tests = ["  %s_form_%d f%d; test_form(f%d);" % (prefix.lower(), i, i, i) for i in range(num_forms)]
-    return _test_code % (prefix, "\n".join(tests))
+def generate_test_code(header_file):
+    "Generate test code for given header file."
 
-def element_test_code(prefix, num_elements):
-    "Return code for testing a set of elements."
-    tests = ["%s_element_%d e%d; test_element(e%d);" % (prefix.lower(), i, i, i) for i in range(num_elements)]
-    return _test_code % (prefix, "\n".join(tests))
+    # Count the number of forms and elements
+    prefix = header_file.split(".h")[0]
+    generated_code = open(header_file).read()
+    num_forms = generated_code.count("class %s_form_" % prefix.lower())
+    num_elements = generated_code.count("class %s_finite_element_" % prefix.lower())
+
+    # Generate tests, either based on forms or elements
+    if num_forms > 0:
+        tests = ["  %s_form_%d f%d; test_form(f%d);" % (prefix.lower(), i, i, i) for i in range(num_forms)]
+    else:
+        tests = ["  %s_element_%d e%d; test_element(e%d);" % (prefix.lower(), i, i, i) for i in range(num_elements)]
+
+    # Write file
+    test_file = open(prefix + ".cpp", "w")
+    test_file.write(_test_code % (prefix, "\n".join(tests)))
+    test_file.close()

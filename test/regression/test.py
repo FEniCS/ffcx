@@ -6,7 +6,7 @@ __license__  = "GNU GPL version 3 or any later version"
 from ffc.log import begin, end, info, info_red, info_green, info_blue
 import os, sys, shutil, commands
 
-from ufctest import form_test_code, element_test_code
+from ufctest import generate_test_code
 
 # Parameters
 output_directory = "output"
@@ -106,14 +106,11 @@ def build_programs():
     for f in header_files:
 
         # Generate test code
-        prefix = f.split(".h")[0]
-        num_forms = open(f).read().count("class %s_form_" % prefix.lower())
-        test_file = open(prefix + ".cpp", "w")
-        test_file.write(form_test_code(prefix, num_forms))
-        test_file.close()
+        filename = generate_test_code(f)
 
         # Compile test code
-        command = "g++ `pkg-config --cflags ufc-1` -Wall -Werror -g -o %s %s.cpp" % (prefix, prefix)
+        prefix = f.split(".h")[0]
+        command = "g++ `pkg-config --cflags ufc-1` -Wall -Werror -g -o %s %s" % (prefix, f)
         ok = run_command(command)
 
         # Check status
