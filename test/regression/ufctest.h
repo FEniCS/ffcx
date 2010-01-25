@@ -455,14 +455,20 @@ void test_form(ufc::form& form)
   }
 
   // Prepare dummy coefficients
-  double** w = new double * [form.num_coefficients()];
-  for (uint i = form.rank(); i < form.rank() + form.num_coefficients(); i++)
+  double** w = 0;
+  if (form.num_coefficients() > 0)
   {
-    ufc::finite_element* element = form.create_finite_element(i);
-    w[i] = new double[element->space_dimension()];
-    for (uint j = 0; j < element->space_dimension(); j++)
-      w[i][j] = 0.1*static_cast<double>(i*j);
-    delete [] element;
+    w = new double * [form.num_coefficients()];
+    std::cout << "n = " << form.num_coefficients() << std::endl;
+    for (uint i = 0; i < form.num_coefficients(); i++)
+    {
+      ufc::finite_element* element = form.create_finite_element(form.rank() + i);
+      std::cout << "space_dimension = " << element->space_dimension() << std::endl;
+      w[i] = new double[element->space_dimension()];
+      for (uint j = 0; j < element->space_dimension(); j++)
+        w[i][j] = 0.1*static_cast<double>(i*j);
+      delete element;
+    }
   }
 
   // Get cell shape

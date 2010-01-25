@@ -113,7 +113,7 @@ def build_programs():
         test_file.close()
 
         # Compile test code
-        command = "g++ `pkg-config --cflags ufc-1` -Wall -Werror -o %s %s.cpp" % (prefix, prefix)
+        command = "g++ `pkg-config --cflags ufc-1` -Wall -Werror -g -o %s %s.cpp" % (prefix, prefix)
         ok = run_command(command)
 
         # Check status
