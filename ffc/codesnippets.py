@@ -17,7 +17,9 @@ __all__ = ["header_ufc", "header_dolfin", "footer",
            "evaluate_f",
            "facet_determinant", "map_onto_physical",
            "fiat_coordinate_map", "transform_snippet",
-           "scale_factor", "combinations_snippet"]
+           "scale_factor", "combinations_snippet",
+           "normal_direction",
+           "facet_normal"]
 
 header_ufc = """\
 // This code conforms with the UFC specification version %(ufc_version)s
@@ -138,12 +140,6 @@ _facet_determinant_1D = """\
 // Facet determinant 1D (vertex)
 const double det = 1.0;"""
 
-normal_direction_1D = ""
-
-facet_normal_1D = """\
-// Compute facet normals from the facet scale factor constants
-// FIXME: not implemented"""
-
 _facet_determinant_2D = """\
 // Get vertices on edge
 static unsigned int edge_vertices[3][2] = {{1, 2}, {0, 2}, {0, 1}};
@@ -154,14 +150,6 @@ const unsigned int v1 = edge_vertices[facet%(restriction)s][1];
 const double dx0 = x%(restriction)s[v1][0] - x%(restriction)s[v0][0];
 const double dx1 = x%(restriction)s[v1][1] - x%(restriction)s[v0][1];
 const double det = std::sqrt(dx0*dx0 + dx1*dx1);"""
-
-normal_direction_2D = """\
-const bool direction = dx1*(x%(restriction)s[%(facet)s][0] - x%(restriction)s[v0][0]) - dx0*(x%(restriction)s[%(facet)s][1] - x%(restriction)s[v0][1]) < 0;"""
-
-facet_normal_2D = """\
-// Compute facet normals from the facet scale factor constants
-const double n%(restriction)s0 = %(direction)sdirection ? dx1 / det : -dx1 / det;
-const double n%(restriction)s1 = %(direction)sdirection ? -dx0 / det : dx0 / det;"""
 
 _facet_determinant_3D = """\
 // Get vertices on face
@@ -194,10 +182,24 @@ const double a2 = (x%(restriction)s[v0][0]*x%(restriction)s[v1][1]
 
 const double det = std::sqrt(a0*a0 + a1*a1 + a2*a2);"""
 
-normal_direction_3D = """\
+_normal_direction_1D = ""
+
+_normal_direction_2D = """\
+const bool direction = dx1*(x%(restriction)s[%(facet)s][0] - x%(restriction)s[v0][0]) - dx0*(x%(restriction)s[%(facet)s][1] - x%(restriction)s[v0][1]) < 0;"""
+
+_normal_direction_3D = """\
 const bool direction = a0*(x%(restriction)s[%(facet)s][0] - x%(restriction)s[v0][0]) + a1*(x%(restriction)s[%(facet)s][1] - x%(restriction)s[v0][1])  + a2*(x%(restriction)s[%(facet)s][2] - x%(restriction)s[v0][2]) < 0;"""
 
-facet_normal_3D = """\
+_facet_normal_1D = """\
+// Compute facet normals from the facet scale factor constants
+// FIXME: not implemented"""
+
+_facet_normal_2D = """\
+// Compute facet normals from the facet scale factor constants
+const double n%(restriction)s0 = %(direction)sdirection ? dx1 / det : -dx1 / det;
+const double n%(restriction)s1 = %(direction)sdirection ? -dx0 / det : dx0 / det;"""
+
+_facet_normal_3D = """\
 // Compute facet normals from the facet scale factor constants
 const double n%(restriction)s0 = %(direction)sdirection ? a0 / det : -a0 / det;
 const double n%(restriction)s1 = %(direction)sdirection ? a1 / det : -a1 / det;
@@ -476,6 +478,14 @@ fiat_coordinate_map = {"interval": _map_coordinates_FIAT_interval,
 transform_snippet = {"interval": _transform_interval_snippet,
                      "triangle": _transform_triangle_snippet,
                      "tetrahedron": _transform_tetrahedron_snippet}
+
+normal_direction = {1: _normal_direction_1D,
+                    2: _normal_direction_2D,
+                    3: _normal_direction_3D}
+
+facet_normal = {1: _facet_normal_1D,
+                2: _facet_normal_2D,
+                3: _facet_normal_3D}
 
 
 # FIXME: Remove: These seem to be unused

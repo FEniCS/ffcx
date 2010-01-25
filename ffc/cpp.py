@@ -73,8 +73,7 @@ format.update({"add":           lambda v: " + ".join(v),
 format.update({"element tensor":  lambda i: "A[%d]" % i,
                "geometry tensor":
                                   lambda j, a: "G%d_%s" % (j, "_".join(["%d" % i for i in a])),
-               "coefficient":     lambda j, k: "w[%d][%d]" % (j, k),
-               "scale factor":    "det",
+               "coefficient":     lambda j, k: format["component"]("w", [j, k]),
                "transform":       lambda t, j, k, r: _transform(t, j, k, r)})
 
 # Geometry related variable names
@@ -93,6 +92,7 @@ format.update({"cell coordinates": cell_coordinates,
                "jacobian and inverse": lambda n, r="": format["jacobian"](n, r) + "\n" + format["inverse jacobian"](n, r),
                "facet determinant": lambda n, r="": facet_determinant[n] % {"restriction": r},
                "fiat coordinate map": lambda n: fiat_coordinate_map[n],
+               "generate normal": lambda d, i: _generate_normal(d, i),
                #"map coordinates": lambda n, r="": map_coordinates[n] % {"restriction": r},
                "scale factor snippet": scale_factor,
                "map onto physical": map_onto_physical,
@@ -116,6 +116,8 @@ format.update({# Loop indices
                "x coordinate": "x",
                "y coordinate": "y",
                "z coordinate": "z",
+               "scale factor": "det",
+               "normal component": lambda r, j: "n%s%s" % (choose_map[r], j),
                # Random variable names
                "local dof": "dof",
                "basisvalues": "basisvalues",
@@ -571,7 +573,6 @@ format_old = {
     #           "snippet delete_representation": delete_representation,
     #"snippet calculate dof": calculate_dof,
     "get cell vertices" : "const double * const * x = c.coordinates;",
-    "generate normal": lambda d, i: _generate_normal(d, i),
     "generate body": lambda d: _generate_body(d),
     # misc
     "comment": lambda v: "// %s" % v,
@@ -776,25 +777,21 @@ def _generate_jacobian(cell_dimension, integral_type):
 
     return code
 
-def _generate_normal(cell_dimension, integral_type, reference_normal=False):
+def _generate_normal(geometric_dimension, domain_type, reference_normal=False):
     "Generate code for computing normal"
 
-    # Choose space dimension
-    if cell_dimension == 1:
-        normal_direction = normal_direction_1D
-        facet_normal = facet_normal_1D
-    elif cell_dimension == 2:
-        normal_direction = normal_direction_2D
-        facet_normal = facet_normal_2D
-    else:
-        normal_direction = normal_direction_3D
-        facet_normal = facet_normal_3D
+    # Choose snippets
+    direction = normal_direction[geometric_dimension]
+    normal = facet_normal[geometric_dimension]
 
-    if integral_type == "exterior facet":
-        code = normal_direction % {"restriction": "", "facet" : "facet"}
-        code += facet_normal % {"direction" : "", "restriction": ""}
-    elif integral_type == "interior facet":
-        code = normal_direction % {"restriction": choose_map["+"], "facet": "facet0"}
-        code += facet_normal % {"direction" : "", "restriction": choose_map["+"]}
-        code += facet_normal % {"direction" : "!", "restriction": choose_map["-"]}
+    # Choose restrictions
+    if domain_type == "exterior_facet":
+        code = direction % {"restriction": "", "facet" : "facet"}
+        code += normal % {"direction" : "", "restriction": ""}
+    elif domain_type == "interior_facet":
+        code = direction % {"restriction": choose_map["+"], "facet": "facet0"}
+        code += normal % {"direction" : "", "restriction": choose_map["+"]}
+        code += normal % {"direction" : "!", "restriction": choose_map["-"]}
+    else:
+        error("Unsupported domain_type: %s" % str(domain_type))
     return code

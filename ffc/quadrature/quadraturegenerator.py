@@ -114,6 +114,7 @@ def _tabulate_tensor(ir, options):
         # FIXME: This will most likely have to change if we support e.g., 2D elements in 3D space.
         jacobi_code = format["jacobian and inverse"](geometric_dimension)
         jacobi_code += "\n\n" + format["facet determinant"](geometric_dimension)
+        jacobi_code += "\n\n" + format["generate normal"](geometric_dimension, domain_type)
 
     elif domain_type == "interior_facet":
         cases = [[None for j in range(num_facets)] for i in range(num_facets)]
@@ -142,6 +143,7 @@ def _tabulate_tensor(ir, options):
         jacobi_code += format["jacobian and inverse"](geometric_dimension, map1)
         jacobi_code += "\n\n"
         jacobi_code += format["facet determinant"](geometric_dimension, map0)
+        jacobi_code += "\n\n" + format["generate normal"](geometric_dimension, domain_type)
     else:
         error("Unhandled integral type: " + str(integral_type))
 
@@ -371,26 +373,3 @@ def _tabulate_psis(transformer, Indent, format):
                         # Remove from list of columns.
                         new_nzcs.remove(inv_name_map[n][1])
     return code
-
-def _remove_unused(lines, trans_set, format):
-    "Remove unused variables so that the compiler will not complain."
-
-    # Normally, the removal of unused variables should happen at the
-    # formatting stage, but since the code for the tabulate_tensor()
-    # function may grow to considerable size, we make an exception and
-    # remove unused variables here when we know the names of the used
-    # variables. No searching necessary and much, much, much faster.
-
-
-    # Generate auxiliary code line that uses all members of the set
-    # (to trick remove_unused).
-    line_set = format["iadd"]("A", format["mul"](trans_set))
-    lines += "\n" + line_set
-
-    # Remove unused Jacobi declarations.
-    code = remove_unused(lines)
-
-    # Delete auxiliary line.
-    code = code.replace("\n" + line_set, "")
-    return [code]
-
