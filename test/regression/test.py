@@ -3,9 +3,9 @@ __date__ = "2010-01-21"
 __copyright__ = "Copyright (C) 2010 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-from ffc.log import begin, end, info, info_red, info_green, info_blue
-import os, sys, shutil, commands
+import os, sys, shutil, commands, difflib
 
+from ffc.log import begin, end, info, info_red, info_green, info_blue
 from ufctest import generate_test_code
 
 # Parameters
@@ -22,6 +22,13 @@ def run_command(command):
         logfile = open("../error.log", "w")
     logfile.write(output + "\n")
     return False
+
+def log_error(message):
+    "Log error message."
+    global logfile
+    if logfile is None:
+        logfile = open("../error.log", "w")
+    logfile.write(message + "\n")
 
 def generate_test_cases():
     "Generate form files for all test cases."
@@ -94,6 +101,10 @@ def validate_code():
             info_green("%s OK" % f)
         else:
             info_red("%s differs" % f)
+            diff = "\n".join([line for line in difflib.unified_diff(reference_code.split("\n"), generated_code.split("\n"))])
+            s = "Code differs for %s, diff follows" % f
+            log_error(s + "\n" + len(s)*"-")
+            log_error(diff)
 
     end()
 
@@ -189,16 +200,16 @@ def main(args):
     os.chdir(output_directory)
 
     # Generate test cases
-    generate_test_cases()
+    #generate_test_cases()
 
     # Generate and validate code
     #generate_code()
-    #validate_code()
+    validate_code()
 
     # Build, run and validate programs
     #build_programs()
     #run_programs()
-    validate_programs()
+    #validate_programs()
 
     return 0
 
