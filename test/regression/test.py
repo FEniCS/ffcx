@@ -5,11 +5,26 @@ __license__  = "GNU GPL version 3 or any later version"
 
 import os, sys, shutil, commands, difflib
 
-from ffc.log import begin, end, info, info_red, info_green, info_blue
 from ufctest import generate_test_code
 
 # Parameters
 output_directory = "output"
+demo_directory = "../../../demo"
+
+# Change here to run old or new FFC
+run_old_ffc = False
+
+if run_old_ffc:
+    from ffc.common.log import begin, end, info, set_level, INFO
+    info_green = info
+    info_red = info
+    info_blue = info
+    set_level(INFO)
+    demo_directory = "../../../../ffc-0.7.1-reference/demo"
+else:
+    from ffc.log import begin, end, info, info_red, info_green, info_blue
+
+# Global log file
 logfile = None
 
 def run_command(command):
@@ -36,10 +51,10 @@ def generate_test_cases():
     begin("Generating test cases")
 
     # Copy demos files
-    demo_files = [f for f in os.listdir("../../../demo/") if f.endswith(".ufl")]
+    demo_files = [f for f in os.listdir(demo_directory) if f.endswith(".ufl")]
     demo_files.sort()
     for f in demo_files:
-        shutil.copy("../../../demo/%s" % f, ".")
+        shutil.copy("%s/%s" % (demo_directory, f), ".")
     info_green("Copied %d demo files" % len(demo_files))
 
     # Generate form files for forms
@@ -213,15 +228,15 @@ def main(args):
     # FIXME: Only run validate programs when code differs
 
     # Generate test cases
-    #generate_test_cases()
+    generate_test_cases()
 
     # Generate and validate code
-    #generate_code()
+    generate_code()
     #validate_code()
 
     # Build, run and validate programs
-    #build_programs()
-    #run_programs()
+    build_programs()
+    run_programs()
     validate_programs()
 
     return 0
