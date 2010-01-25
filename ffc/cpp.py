@@ -724,10 +724,7 @@ def remove_unused(code, used_set=set()):
                 used_lines.remove(line)
         if not used_lines and not variable_name in used_set:
             debug("Removing unused variable: %s" % variable_name)
-            print "Removing unused variable: %s" % variable_name
-            print lines[declaration_line]
             lines[declaration_line] = "// " + lines[declaration_line]
-            #lines[declaration_line] = None
             removed_lines += [declaration_line]
 
     return "\n".join([line for line in lines if not line == None])
