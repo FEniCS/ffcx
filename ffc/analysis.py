@@ -12,7 +12,7 @@ __date__ = "2007-02-05"
 __copyright__ = "Copyright (C) 2007-2010 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-23
+# Last changed: 2010-01-25
 
 # UFL modules
 from ufl.common import istr, tstr
@@ -24,6 +24,7 @@ from ufl.algorithms import extract_unique_elements
 
 # FFC modules
 from ffc.log import log, info, begin, end, warning, debug, error
+from ffc.utils import all_equal
 from ffc.quadratureelement import default_quadrature_degree
 from ffc.tensor import estimate_cost
 from ffc.utils import all_equal

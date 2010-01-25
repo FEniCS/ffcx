@@ -7,7 +7,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Martin Alnes, 2008
 # Modified by Kristian B. Oelgaard
-# Last changed: 2010-01-23
+# Last changed: 2010-01-25
 
 # UFL modules
 from ufl.classes import Form, Argument, Coefficient, ScalarValue, IntValue
@@ -28,10 +28,6 @@ def extract_monomial_form(integrals):
     """
 
     info("Extracting monomial form representation from UFL form")
-
-    # Purge list tensors from expression tree
-    #original_form = form
-    #form = purge_list_tensors(form)
 
     # Iterate over all integrals
     monomial_form = MonomialForm()
@@ -55,6 +51,9 @@ def extract_monomial_integrand(integrand):
         debug("Reusing monomial integrand from cache")
         return _cache[integrand]
 
+    # Purge list tensors
+    integrand = purge_list_tensors(integrand)
+
     # Apply monomial transformer
     monomial_integrand = apply_transformer(integrand, MonomialTransformer())
 
@@ -73,7 +72,8 @@ def estimate_cost(integral):
     # Extract monomial integrand
     try:
         monomial_integrand = extract_monomial_integrand(integral.integrand())
-    except:
+    except Exception, exception:
+        debug("Monomial extraction failed: " + str(exception))
         return -1
 
     # Compute cost
