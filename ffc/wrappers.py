@@ -3,7 +3,7 @@ __date__ = "2010-01-18"
 __copyright__ = "Copyright (C) 2010 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-18
+# Last changed: 2010-01-25
 
 # Python modules
 from itertools import chain
@@ -28,7 +28,7 @@ def generate_wrapper_code(analysis, prefix, options):
     begin("Compiler stage 4.1: Generating additional wrapper code")
 
     # Extract data from analysis
-    form_and_data, elements, element_map = analysis
+    form_and_data, _elements, element_map = analysis
 
     # Special case: single element
     #if len(generated_forms) == 1 and generated_forms[0][1].form is None:
@@ -48,6 +48,11 @@ def generate_wrapper_code(analysis, prefix, options):
                                        format["classname form"](prefix, i),
                                        [format["classname finite_element"](prefix, j) for j in element_numbers],
                                        [format["classname dof_map"](prefix, j) for j in element_numbers]))
+
+    # Extract elements for all test and trial spaces
+    elements = []
+    for (form, form_data) in form_and_data:
+        elements += form_data.elements[:form_data.rank]
 
     # Check if all elements are equal
     if all_equal(elements):
