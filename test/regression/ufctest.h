@@ -2,7 +2,7 @@
 // Licensed under the GNU GPL version 3 or any later version.
 //
 // First added:  2010-01-24
-// Last changed: 2010-01-24
+// Last changed: 2010-01-25
 //
 // Functions for calling generated UFC functions with "random" (but
 // fixed) data and print the output to screen. Useful for running
@@ -19,7 +19,8 @@ typedef unsigned int uint;
 template <class value_type>
 void print_value(std::string name, value_type value, int i=-1, int j=-1)
 {
-  std::stringstream s(name);
+  std::stringstream s;
+  s << name;
   if (i >= 0) s << "_" << i;
   if (j >= 0) s << "_" << j;
   std::cout << s.str() << ": " << value << std::endl;
@@ -29,7 +30,8 @@ void print_value(std::string name, value_type value, int i=-1, int j=-1)
 template <class value_type>
 void print_array(std::string name, unsigned int n, value_type* values, int i=-1, int j=-1)
 {
-  std::stringstream s(name);
+  std::stringstream s;
+  s << name;
   if (i >= 0) s << "_" << i;
   if (j >= 0) s << "_" << j;
   std::cout << s.str() << ":";
