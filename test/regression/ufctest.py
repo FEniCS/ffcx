@@ -28,7 +28,7 @@ def generate_test_code(header_file):
     if num_forms > 0:
         tests = ["  %s_form_%d f%d; test_form(f%d);" % (prefix.lower(), i, i, i) for i in range(num_forms)]
     else:
-        tests = ["  %s_element_%d e%d; test_element(e%d);" % (prefix.lower(), i, i, i) for i in range(num_elements)]
+        tests = ["  %s_finite_element_%d e%d; test_finite_element(e%d);" % (prefix.lower(), i, i, i) for i in range(num_elements)]
 
     # Write file
     test_file = open(prefix + ".cpp", "w")
