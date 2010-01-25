@@ -158,11 +158,11 @@ def main(args):
     os.chdir(output_directory)
 
     # Generate test cases
-    generate_test_cases()
+    #generate_test_cases()
 
     # Generate and validate code
-    generate_code()
-    validate_code()
+    #generate_code()
+    #validate_code()
 
     # Build and validate programs
     build_programs()

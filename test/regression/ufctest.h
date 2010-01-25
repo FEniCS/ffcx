@@ -339,7 +339,7 @@ void test_dofmap(ufc::dof_map& dofmap, ufc::shape cell_shape)
   // tabulate_entity_dofs
   for (uint d = 0; d <= c.topological_dimension; d++)
   {
-    for (uint i = 0; i < dofmap.num_entity_dofs(i); i++)
+    for (uint i = 0; i < dofmap.num_entity_dofs(d); i++)
     {
       dofmap.tabulate_entity_dofs(dofs, d, i);
       print_array("tabulate_entity_dofs", dofmap.num_entity_dofs(d), dofs, d, i);
