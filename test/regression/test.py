@@ -125,10 +125,10 @@ def build_programs():
 
     end()
 
-def validate_programs():
-    "Validate generated programs against references."
+def run_programs():
+    "Run generated programs."
 
-    begin("Validating generated programs")
+    begin("Running generated programs")
 
     # Get a list of all files
     test_programs = [f for f in os.listdir(".") if f.endswith(".bin")]
@@ -149,6 +149,37 @@ def validate_programs():
 
     end()
 
+def validate_programs():
+    "Validate generated programs against references."
+
+    begin("Validating generated programs")
+
+    # Get a list of all files
+    output_files = [f for f in os.listdir(".") if f.endswith(".out")]
+    output_files.sort()
+
+    # Iterate over all files
+    for f in output_files:
+
+        # Get generated output
+        generated_output = open(f).read()
+
+        # Get reference output
+        reference_file = "../references/%s" % f
+        if os.path.isfile(reference_file):
+            reference_output = open(reference_file).read()
+        else:
+            info_blue("Missing reference for %s" % f)
+            continue
+
+        # Compare with reference
+        if generated_output == reference_output:
+            info_green("%s OK" % f)
+        else:
+            info_red("%s differs" % f)
+
+    end()
+
 def main(args):
     "Run all regression tests."
 
@@ -161,11 +192,12 @@ def main(args):
     generate_test_cases()
 
     # Generate and validate code
-    generate_code()
+    #generate_code()
     #validate_code()
 
-    # Build and validate programs
-    build_programs()
+    # Build, run and validate programs
+    #build_programs()
+    #run_programs()
     validate_programs()
 
     return 0
