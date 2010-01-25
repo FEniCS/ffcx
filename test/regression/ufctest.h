@@ -177,7 +177,7 @@ void test_finite_element(ufc::finite_element& element)
   std::cout << "----------------------" << std::endl;
 
   // How many derivatives to test
-  uint max_derivative = 3;
+  uint max_derivative = 2;
 
   // Prepare arguments
   test_cell c(element.cell_shape());
@@ -339,7 +339,11 @@ void test_dofmap(ufc::dof_map& dofmap, ufc::shape cell_shape)
   // tabulate_entity_dofs
   for (uint d = 0; d <= c.topological_dimension; d++)
   {
-    for (uint i = 0; i < dofmap.num_entity_dofs(i); i++)
+    uint num_entities[4][4] = {{0, 0, 0, 0}, // dummy entities in 0D
+                               {2, 1, 0, 0}, // interval
+                               {3, 3, 1, 0}, // triangle
+                               {4, 6, 4, 1}}; // tetrahedron
+    for (uint i = 0; i < num_entities[c.topological_dimension][d]; i++)
     {
       dofmap.tabulate_entity_dofs(dofs, d, i);
       print_array("tabulate_entity_dofs", dofmap.num_entity_dofs(d), dofs, d, i);
@@ -381,6 +385,7 @@ void test_cell_integral(ufc::cell_integral& integral,
 
   // Prepare arguments
   test_cell c(cell_shape);
+  std::cout << "tensor_size = " << tensor_size << std::endl;
   double* A = new double[tensor_size];
 
   // Call tabulate_tensor
@@ -461,6 +466,8 @@ void test_form(ufc::form& form)
     macro_tensor_size *= 2*element->space_dimension();
     delete element;
   }
+
+  std::cout << "check tensor_size = " << tensor_size << std::endl;
 
   // Prepare dummy coefficients
   double** w = 0;

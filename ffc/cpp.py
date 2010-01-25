@@ -7,7 +7,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian B. Oelgaard 2010
 # Modified by Marie E. Rognes 2010
-# Last changed: 2010-01-24
+# Last changed: 2010-01-25
 
 # Python modules.
 import re
@@ -82,7 +82,27 @@ format.update({"entity index": "c.entity_indices",
                "cell":   lambda s: "ufc::%s" % s,
                "J":      lambda i, j: "J_%d%d" % (i, j),
                "inv(J)": lambda i, j: "K_%d%d" % (i, j),
-               "det(J)": lambda r: "detJ_%s" % r})
+               "det(J)": lambda r="": "detJ%s" % r})
+
+# Code snippets:
+from codesnippets import *
+format.update({"cell coordinates": cell_coordinates,
+               "jacobian": lambda n, r="": jacobian[n] % {"restriction": r},
+               "inverse jacobian": lambda n, r="": inverse_jacobian[n] % {"restriction": r},
+               "jacobian and inverse": lambda n, r="": format["jacobian"](n, r) + format["inverse jacobian"](n, r),
+               "facet determinant": lambda n, r="": facet_determinant[n] % {"restriction": r},
+               "fiat coordinate map": lambda n: fiat_coordinate_map[n],
+               "generate normal": lambda d, i: _generate_normal(d, i),
+               #"map coordinates": lambda n, r="": map_coordinates[n] % {"restriction": r},
+               "scale factor snippet": scale_factor,
+               "map onto physical": map_onto_physical,
+               "combinations": combinations_snippet,
+               "transform snippet": transform_snippet,
+               "evaluate function": evaluate_f,
+               "ufc header": header_ufc,
+               "dolfin header": header_dolfin,
+               "footer": footer
+               })
 
 # TODO: Stuff from format_old used by KBO, should be moved around and possibly renamed.
 format.update({# Loop indices
@@ -249,7 +269,7 @@ def _generate_switch(variable, cases, default=None):
     # Create switch
     code = "switch (%s)\n{\n" % variable
     for i in range(len(cases)):
-        code += "case %d:\n%s\n  break;\n" % (i, indent(cases[i], 2))
+        code += "case %d: {\n%s\n  break;\n}\n" % (i, indent(cases[i], 2))
     code += "}\n"
 
     # Default value
@@ -391,7 +411,7 @@ def indent(block, num_spaces):
 
 
 # FIXME: Major cleanup needed, remove as much as possible
-from codesnippets import *
+#from codesnippets import *
 
 # FIXME: KBO: temporary hack to get dictionary working.
 from constants import FFC_OPTIONS
@@ -551,9 +571,8 @@ format_old = {
     "snippet map_onto_physical": lambda d : eval("map_onto_physical_%dD" % d),
     #           "snippet declare_representation": declare_representation,
     #           "snippet delete_representation": delete_representation,
-    "snippet calculate dof": calculate_dof,
+    #"snippet calculate dof": calculate_dof,
     "get cell vertices" : "const double * const * x = c.coordinates;",
-    "generate normal": lambda d, i: _generate_normal(d, i),
     "generate body": lambda d: _generate_body(d),
     # misc
     "comment": lambda v: "// %s" % v,
@@ -759,26 +778,22 @@ def _generate_jacobian(cell_dimension, integral_type):
 
     return code
 
-def _generate_normal(cell_dimension, integral_type, reference_normal=False):
+def _generate_normal(geometric_dimension, domain_type, reference_normal=False):
     "Generate code for computing normal"
 
-    # Choose space dimension
-    if cell_dimension == 1:
-        normal_direction = normal_direction_1D
-        facet_normal = facet_normal_1D
-    elif cell_dimension == 2:
-        normal_direction = normal_direction_2D
-        facet_normal = facet_normal_2D
-    else:
-        normal_direction = normal_direction_3D
-        facet_normal = facet_normal_3D
+    # Choose snippets
+    direction = normal_direction[geometric_dimension]
+    normal = facet_normal[geometric_dimension]
 
-    if integral_type == "exterior facet":
-        code = normal_direction % {"restriction": "", "facet" : "facet"}
-        code += facet_normal % {"direction" : "", "restriction": ""}
-    elif integral_type == "interior facet":
-        code = normal_direction % {"restriction": choose_map["+"], "facet": "facet0"}
-        code += facet_normal % {"direction" : "", "restriction": choose_map["+"]}
-        code += facet_normal % {"direction" : "!", "restriction": choose_map["-"]}
+    # Choose restrictions
+    if domain_type == "exterior_facet":
+        code = direction % {"restriction": "", "facet" : "facet"}
+        code += normal % {"direction" : "", "restriction": ""}
+    elif domain_type == "interior_facet":
+        code = direction % {"restriction": choose_map["+"], "facet": "facet0"}
+        code += normal % {"direction" : "", "restriction": choose_map["+"]}
+        code += normal % {"direction" : "!", "restriction": choose_map["-"]}
+    else:
+        error("Unsupported domain_type: %s" % str(domain_type))
     return code
 

@@ -6,7 +6,7 @@ __date__ = "2007-04-04"
 __copyright__ = "Copyright (C) 2007-2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-21
+# Last changed: 2010-01-25
 
 # Python modules
 import math
@@ -24,7 +24,6 @@ from ffc.quadrature.symbolics import create_sum
 from ffc.quadrature.symbolics import create_product
 from ffc.quadrature.symbolics import create_fraction
 from ffc.quadrature.symbolics import CONST
-from ffc import codesnippets
 
 def _evaluate_basis_all(data_list):
     """Like evaluate_basis, but return the values of all basis functions (dofs)."""
@@ -119,10 +118,9 @@ def _evaluate_basis(data_list):
     ffc_assert(all(element_cell_domain == data["cell_domain"] for data in data_list),\
                "The element cell domain must be the same for all sub elements: " + repr(data_list))
 
-    # Create mapping from physical element to the FIAT reference element
-    # (from codesnippets.py).
+    # Create mapping from physical element to the FIAT reference element.
     # FIXME: KBO: Change this when supporting R^2 in R^3 elements.
-    code += [Indent.indent(codesnippets.fiat_coordinate_map[element_cell_domain])]
+    code += [Indent.indent(format["fiat coordinate map"](element_cell_domain))]
 
     # Get value shape and reset values. This should also work for TensorElement,
     # scalar are empty tuples, therefore (1,) in which case value_shape = 1.
@@ -541,7 +539,7 @@ def _compute_basisvalues(data, Indent, format):
             # result[1,:] = 0.5 * ( a - b + ( a + b + 2.0 ) * xsnew )
             # The initial value basisvalue 1 is always x
             code += [format_assign(format_component(format_basisvalue, 1), format_x)]
-        
+
             # Only active is embedded_degree > 1
             if embedded_degree > 1:
                 # FIAT_NEW.jacobi.eval_jacobi_batch(a,b,n,xs)
@@ -764,7 +762,7 @@ def _compute_basisvalues(data, Indent, format):
                 # Compute value
                 fac1 = create_fraction(float_2*symbol_p + float_1, symbol_p + float_1)
                 fac2 = create_fraction(symbol_p, symbol_p + float_1)
-                fac3 = create_product([fac1, f1, basis_idx1]) - create_product([fac2, f2, basis_idx2]) 
+                fac3 = create_product([fac1, f1, basis_idx1]) - create_product([fac2, f2, basis_idx2])
                 lines.append(format_assign(str(basis_idx0), fac3))
                 # Create loop (block of lines)
                 code += generate_loop(lines, loop_vars, Indent, format)
@@ -840,7 +838,7 @@ def _compute_basisvalues(data, Indent, format):
             lines.append(format_assign(str(basis_idx0), fac3))
             # Create loop (block of lines)
             code += generate_loop(lines, loop_vars, Indent, format)
-                
+
             # FIAT_NEW code
             # now handle r=1
             # for p in range(n):

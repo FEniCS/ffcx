@@ -30,6 +30,7 @@ def generate_test_cases():
 
     # Copy demos files
     demo_files = [f for f in os.listdir("../../../demo/") if f.endswith(".ufl")]
+    demo_files.sort()
     for f in demo_files:
         shutil.copy("../../../demo/%s" % f, ".")
     info_green("Copied %d demo files" % len(demo_files))
@@ -49,6 +50,7 @@ def generate_code():
 
     # Get a list of all files
     form_files = [f for f in os.listdir(".") if f.endswith(".ufl")]
+    form_files.sort()
 
     # Iterate over all files
     for f in form_files:
@@ -71,6 +73,7 @@ def validate_code():
 
     # Get a list of all files
     header_files = [f for f in os.listdir(".") if f.endswith(".h")]
+    header_files.sort()
 
     # Iterate over all files
     for f in header_files:
@@ -101,6 +104,7 @@ def build_programs():
 
     # Get a list of all files
     header_files = [f for f in os.listdir(".") if f.endswith(".h")]
+    header_files.sort()
 
     # Iterate over all files
     for f in header_files:
@@ -110,7 +114,7 @@ def build_programs():
 
         # Compile test code
         prefix = f.split(".h")[0]
-        command = "g++ `pkg-config --cflags ufc-1` -Wall -Werror -g -o %s %s.cpp" % (prefix, prefix)
+        command = "g++ `pkg-config --cflags ufc-1` -Wall -Werror -g -o %s.bin %s.cpp" % (prefix, prefix)
         ok = run_command(command)
 
         # Check status
@@ -126,7 +130,22 @@ def validate_programs():
 
     begin("Validating generated programs")
 
-    info("Not implemented")
+    # Get a list of all files
+    test_programs = [f for f in os.listdir(".") if f.endswith(".bin")]
+    test_programs.sort()
+
+    # Iterate over all files
+    for f in test_programs:
+
+        # Compile test code
+        prefix = f.split(".bin")[0]
+        ok = run_command("rm -f %s.out; ./%s.bin > %s.out" % (prefix, prefix, prefix))
+
+        # Check status
+        if ok:
+            info_green("%s OK" % f)
+        else:
+            info_red("%s failed" % f)
 
     end()
 

@@ -6,7 +6,7 @@ __copyright__ = "Copyright (C) 2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian B. Oelgaard, 2009
-# Last changed: 2010-01-21
+# Last changed: 2010-01-25
 
 # UFL modules
 from ufl.classes import Argument
@@ -127,7 +127,7 @@ class MonomialDeterminant:
     def __init__(self):
         "Create empty monomial determinant."
         self.power = 0
-        self.restriction = None
+        self.restriction = ""
 
     def __str__(self):
         "Return informal string representation (pretty-print)."
