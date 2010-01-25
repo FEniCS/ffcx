@@ -159,7 +159,7 @@ public:
     {
       values[i] = 1.0;
       for (uint j = 0; j < c.geometric_dimension; j++)
-        values[i] *= static_cast<double>(i)*coordinates[j];
+        values[i] *= static_cast<double>(i + 1)*coordinates[j];
     }
   }
 
@@ -472,7 +472,7 @@ void test_form(ufc::form& form)
       ufc::finite_element* element = form.create_finite_element(form.rank() + i);
       w[i] = new double[element->space_dimension()];
       for (uint j = 0; j < element->space_dimension(); j++)
-        w[i][j] = 0.1*static_cast<double>(i*j);
+        w[i][j] = 0.1*static_cast<double>((i + 1)*(j + 1));
       delete element;
     }
   }
