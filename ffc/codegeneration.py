@@ -11,7 +11,7 @@ __date__ = "2009-12-16"
 __copyright__ = "Copyright (C) 2009 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-24
+# Last changed: 2010-01-25
 
 # FFC modules
 from ffc.log import info, begin, end, debug_code
@@ -54,6 +54,10 @@ def generate_code(ir, prefix, options):
     # Generate code for forms
     info("Generating code for forms")
     code_forms = [_generate_form_code(ir, prefix, options) for ir in ir_forms]
+
+    # Reverse element and dofmap code so sub_foo classes are defined first
+    code_elements.reverse()
+    code_dofmaps.reverse()
 
     end()
 
