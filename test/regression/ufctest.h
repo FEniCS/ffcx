@@ -25,7 +25,7 @@ void print_value(std::string name, value_type value, int i=-1, int j=-1)
   s << name;
   if (i >= 0) s << "_" << i;
   if (j >= 0) s << "_" << j;
-  std::cout << s.str() << ": " << value << std::endl;
+  std::cout << s.str() << " = " << value << std::endl;
 }
 
 // Function for printing array value result
@@ -37,7 +37,7 @@ void print_array(std::string name, unsigned int n, value_type* values, int i=-1,
   s << name;
   if (i >= 0) s << "_" << i;
   if (j >= 0) s << "_" << j;
-  std::cout << s.str() << ":";
+  std::cout << s.str() << " =";
   for (uint i = 0; i < n; i++)
     std::cout << " " << values[i];
   std::cout << std::endl;
@@ -385,7 +385,6 @@ void test_cell_integral(ufc::cell_integral& integral,
 
   // Prepare arguments
   test_cell c(cell_shape);
-  std::cout << "tensor_size = " << tensor_size << std::endl;
   double* A = new double[tensor_size];
 
   // Call tabulate_tensor
@@ -466,8 +465,6 @@ void test_form(ufc::form& form)
     macro_tensor_size *= 2*element->space_dimension();
     delete element;
   }
-
-  std::cout << "check tensor_size = " << tensor_size << std::endl;
 
   // Prepare dummy coefficients
   double** w = 0;

@@ -1,101 +1,99 @@
 
 Testing form
 ------------
-check tensor_size = 1
-0_signature: Form([Integral(Coefficient(FiniteElement('Lagrange', Cell('tetrahedron', 1, Space(3)), 1), 0), Measure('cell', 2, None)), Integral(Coefficient(FiniteElement('Lagrange', Cell('tetrahedron', 1, Space(3)), 1), 0), Measure('exterior_facet', 5, None))])
-1_rank: Form([Integral(Coefficient(FiniteElement('Lagrange', Cell('tetrahedron', 1, Space(3)), 1), 0), Measure('cell', 2, None)), Integral(Coefficient(FiniteElement('Lagrange', Cell('tetrahedron', 1, Space(3)), 1), 0), Measure('exterior_facet', 5, None))])
-2_num_coefficients: 1
-3_num_cell_integrals: 3
-4_num_exterior_facet_integrals: 6
-5_num_interior_facet_integrals: 0
+0_signature = Form([Integral(Coefficient(FiniteElement('Lagrange', Cell('tetrahedron', 1, Space(3)), 1), 0), Measure('cell', 2, None)), Integral(Coefficient(FiniteElement('Lagrange', Cell('tetrahedron', 1, Space(3)), 1), 0), Measure('exterior_facet', 5, None))])
+1_rank = Form([Integral(Coefficient(FiniteElement('Lagrange', Cell('tetrahedron', 1, Space(3)), 1), 0), Measure('cell', 2, None)), Integral(Coefficient(FiniteElement('Lagrange', Cell('tetrahedron', 1, Space(3)), 1), 0), Measure('exterior_facet', 5, None))])
+2_num_coefficients = 1
+3_num_cell_integrals = 3
+4_num_exterior_facet_integrals = 6
+5_num_interior_facet_integrals = 0
 
 Testing finite_element
 ----------------------
-6_signature: FiniteElement('Lagrange', Cell('tetrahedron', 1, Space(3)), 1)
-7_cell_shape: 3
-8_space_dimension: 4
-9_value_rank: 0
-10_evaluate_basis:_0: -3.42205
-11_evaluate_basis:_1: 1.81908
-12_evaluate_basis:_2: -0.801482
-13_evaluate_basis:_3: 3.40445
-14_evaluate_basis_all: -3.42205 1.81908 -0.801482 3.40445
-15_evaluate_basis_derivatives_0_0: -3.42205
-16_evaluate_basis_derivatives_0_1: 0.799465 -2.14772 0.457532
-17_evaluate_basis_derivatives_0_2: 0 0 0 0 0 0 0 0 0
-18_evaluate_basis_derivatives_1_0: 1.81908
-19_evaluate_basis_derivatives_1_1: -0.799465 2.14772 -0.457532
-20_evaluate_basis_derivatives_1_2: 0 0 0 0 0 0 0 0 0
-21_evaluate_basis_derivatives_2_0: -0.801482
-22_evaluate_basis_derivatives_2_1: 0 0 0
-23_evaluate_basis_derivatives_2_2: 0 0 0 0 0 0 0 0 0
-24_evaluate_basis_derivatives_3_0: 3.40445
-25_evaluate_basis_derivatives_3_1: 0 0 0
-26_evaluate_basis_derivatives_3_2: 0 0 0 0 0 0 0 0 0
-27_evaluate_basis_derivatives_all_0: -3.42205 1.81908 -0.801482 3.40445
-28_evaluate_basis_derivatives_all_1: 0.799465 -2.14772 0.457532 -0.799465 2.14772 -0.457532 0 0 0 0 0 0
-29_evaluate_basis_derivatives_all_2: 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-30_evaluate_dof_0: 0.1377
-31_evaluate_dof_1: 0.353248
-32_evaluate_dof_2: 0.145236
-33_evaluate_dof_3: 0.044352
-34_evaluate_dofs: 0.1377 0.353248 0.145236 0.044352
-35_interpolate_vertex_values: 0.1377 0.353248 0.145236 0.044352
-36_num_sub_elements: 0
+6_signature = FiniteElement('Lagrange', Cell('tetrahedron', 1, Space(3)), 1)
+7_cell_shape = 3
+8_space_dimension = 4
+9_value_rank = 0
+10_evaluate_basis:_0 = -3.42205
+11_evaluate_basis:_1 = 1.81908
+12_evaluate_basis:_2 = -0.801482
+13_evaluate_basis:_3 = 3.40445
+14_evaluate_basis_all = -3.42205 1.81908 -0.801482 3.40445
+15_evaluate_basis_derivatives_0_0 = -3.42205
+16_evaluate_basis_derivatives_0_1 = 0.799465 -2.14772 0.457532
+17_evaluate_basis_derivatives_0_2 = 0 0 0 0 0 0 0 0 0
+18_evaluate_basis_derivatives_1_0 = 1.81908
+19_evaluate_basis_derivatives_1_1 = -0.799465 2.14772 -0.457532
+20_evaluate_basis_derivatives_1_2 = 0 0 0 0 0 0 0 0 0
+21_evaluate_basis_derivatives_2_0 = -0.801482
+22_evaluate_basis_derivatives_2_1 = 0 0 0
+23_evaluate_basis_derivatives_2_2 = 0 0 0 0 0 0 0 0 0
+24_evaluate_basis_derivatives_3_0 = 3.40445
+25_evaluate_basis_derivatives_3_1 = 0 0 0
+26_evaluate_basis_derivatives_3_2 = 0 0 0 0 0 0 0 0 0
+27_evaluate_basis_derivatives_all_0 = -3.42205 1.81908 -0.801482 3.40445
+28_evaluate_basis_derivatives_all_1 = 0.799465 -2.14772 0.457532 -0.799465 2.14772 -0.457532 0 0 0 0 0 0
+29_evaluate_basis_derivatives_all_2 = 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+30_evaluate_dof_0 = 0.1377
+31_evaluate_dof_1 = 0.353248
+32_evaluate_dof_2 = 0.145236
+33_evaluate_dof_3 = 0.044352
+34_evaluate_dofs = 0.1377 0.353248 0.145236 0.044352
+35_interpolate_vertex_values = 0.1377 0.353248 0.145236 0.044352
+36_num_sub_elements = 0
 
 Testing dof_map
 ---------------
-37_signature: FFC dofmap for FiniteElement('Lagrange', Cell('tetrahedron', 1, Space(3)), 1)
-38_needs_mesh_entities_0: 1
-39_needs_mesh_entities_1: 0
-40_needs_mesh_entities_2: 0
-41_needs_mesh_entities_3: 0
-42_init_mesh: 0
-43_init_cell: not used by FFC
-44_init_cell_finalize: not used by FFC
-45_global_dimension: 10001
-46_local_dimension: 4
-47_max_local_dimension: 4
-48_geometric_dimension: 3
-49_num_facet_dofs: 3
-50_num_entity_dofs_0: 1
-51_num_entity_dofs_1: 0
-52_num_entity_dofs_2: 0
-53_num_entity_dofs_3: 0
-54_tabulate_dofs: 0 0 0 0
-55_tabulate_dofs_0: 1 2 3
-56_tabulate_dofs_1: 0 2 3
-57_tabulate_dofs_2: 0 1 3
-58_tabulate_dofs_3: 0 1 2
-59_tabulate_entity_dofs_0_0: 0
-60_tabulate_entity_dofs_0_1: 1
-61_tabulate_entity_dofs_0_2: 2
-62_tabulate_entity_dofs_0_3: 3
-63_tabulate_entity_dofs_1_0:
-64_tabulate_entity_dofs_1_1:
-65_tabulate_entity_dofs_1_2:
-66_tabulate_entity_dofs_1_3:
-67_tabulate_entity_dofs_1_4:
-68_tabulate_entity_dofs_1_5:
-69_tabulate_entity_dofs_2_0:
-70_tabulate_entity_dofs_2_1:
-71_tabulate_entity_dofs_2_2:
-72_tabulate_entity_dofs_2_3:
-73_tabulate_entity_dofs_3_0:
-74_tabulate_coordinates_0: 0.9 0.34 0.45
-75_tabulate_coordinates_1: 0.56 0.76 0.83
-76_tabulate_coordinates_2: 0.98 0.78 0.19
-77_tabulate_coordinates_3: 0.12 0.56 0.66
-78_num_sub_dof_maps: 0
+37_signature = FFC dofmap for FiniteElement('Lagrange', Cell('tetrahedron', 1, Space(3)), 1)
+38_needs_mesh_entities_0 = 1
+39_needs_mesh_entities_1 = 0
+40_needs_mesh_entities_2 = 0
+41_needs_mesh_entities_3 = 0
+42_init_mesh = 0
+43_init_cell = not used by FFC
+44_init_cell_finalize = not used by FFC
+45_global_dimension = 10001
+46_local_dimension = 4
+47_max_local_dimension = 4
+48_geometric_dimension = 3
+49_num_facet_dofs = 3
+50_num_entity_dofs_0 = 1
+51_num_entity_dofs_1 = 0
+52_num_entity_dofs_2 = 0
+53_num_entity_dofs_3 = 0
+54_tabulate_dofs = 0 0 0 0
+55_tabulate_dofs_0 = 1 2 3
+56_tabulate_dofs_1 = 0 2 3
+57_tabulate_dofs_2 = 0 1 3
+58_tabulate_dofs_3 = 0 1 2
+59_tabulate_entity_dofs_0_0 = 0
+60_tabulate_entity_dofs_0_1 = 1
+61_tabulate_entity_dofs_0_2 = 2
+62_tabulate_entity_dofs_0_3 = 3
+63_tabulate_entity_dofs_1_0 =
+64_tabulate_entity_dofs_1_1 =
+65_tabulate_entity_dofs_1_2 =
+66_tabulate_entity_dofs_1_3 =
+67_tabulate_entity_dofs_1_4 =
+68_tabulate_entity_dofs_1_5 =
+69_tabulate_entity_dofs_2_0 =
+70_tabulate_entity_dofs_2_1 =
+71_tabulate_entity_dofs_2_2 =
+72_tabulate_entity_dofs_2_3 =
+73_tabulate_entity_dofs_3_0 =
+74_tabulate_coordinates_0 = 0.9 0.34 0.45
+75_tabulate_coordinates_1 = 0.56 0.76 0.83
+76_tabulate_coordinates_2 = 0.98 0.78 0.19
+77_tabulate_coordinates_3 = 0.12 0.56 0.66
+78_num_sub_dof_maps = 0
 
 Testing cell_integral
 ---------------------
-tensor_size = 1
-79_tabulate_tensor: 0.00684834
+79_tabulate_tensor = 0.00684834
 
 Testing exterior_facet_integral
 -------------------------------
-80_tabulate_tensor_0: 0.0576144
-81_tabulate_tensor_1: 0.0504713
-82_tabulate_tensor_2: 0.0282048
-83_tabulate_tensor_3: 0.0280529
+80_tabulate_tensor_0 = 0.0576144
+81_tabulate_tensor_1 = 0.0504713
+82_tabulate_tensor_2 = 0.0282048
+83_tabulate_tensor_3 = 0.0280529

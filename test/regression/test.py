@@ -103,7 +103,7 @@ def validate_code():
             info_red("%s differs" % f)
             diff = "\n".join([line for line in difflib.unified_diff(reference_code.split("\n"), generated_code.split("\n"))])
             s = "Code differs for %s, diff follows" % f
-            log_error(s + "\n" + len(s)*"-")
+            log_error("\n" + s + "\n" + len(s)*"-")
             log_error(diff)
 
     end()
@@ -188,6 +188,17 @@ def validate_programs():
             info_green("%s OK" % f)
         else:
             info_red("%s differs" % f)
+            old = [line.split(" = ") for line in reference_output.split("\n") if " = " in line]
+            new = dict([line.split(" = ") for line in generated_output.split("\n") if " = " in line])
+            s = "Output differs for %s, diff follows" % f
+            log_error("\n" + s + "\n" + len(s)*"-")
+            for (key, value) in old:
+                if not key in new:
+                    log_error("%s: missing value in generated code" % key)
+                elif new[key] != value:
+                    log_error("%s: values differ" % key)
+                    log_error("  old = " + value)
+                    log_error("  new = " + new[key])
 
     end()
 
@@ -199,17 +210,19 @@ def main(args):
         os.mkdir(output_directory)
     os.chdir(output_directory)
 
+    # FIXME: Only run validate programs when code differs
+
     # Generate test cases
     #generate_test_cases()
 
     # Generate and validate code
     #generate_code()
-    validate_code()
+    #validate_code()
 
     # Build, run and validate programs
     #build_programs()
     #run_programs()
-    #validate_programs()
+    validate_programs()
 
     return 0
 
