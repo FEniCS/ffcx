@@ -104,6 +104,7 @@ def get_format():
 # NOTE: We use commented print for debug, since debug will make the code run slower.
 def generate_aux_constants(constant_decl, name, var_type, print_ops=False):
     "A helper tool to generate code for constant declarations."
+    format_comment = format["comment"]
     code = []
     append = code.append
     ops = 0
@@ -120,11 +121,11 @@ def generate_aux_constants(constant_decl, name, var_type, print_ops=False):
             op = expr.ops()
             ops += op
             append(format_comment("Number of operations: %d" %op))
-            append((var_type + name + str(num), str(expr)))
+            append(var_type(name + str(num), str(expr)))
             append("")
         else:
             ops += expr.ops()
-            append((var_type + name + str(num), str(expr)))
+            append(var_type(name + str(num), str(expr)))
 
     return (ops, code)
 

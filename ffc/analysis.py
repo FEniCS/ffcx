@@ -26,6 +26,7 @@ from ufl.algorithms import extract_unique_elements
 from ffc.log import log, info, begin, end, warning, debug, error
 from ffc.quadratureelement import default_quadrature_degree
 from ffc.tensor import estimate_cost
+from ffc.utils import all_equal
 
 def analyze_forms(forms, object_names, options):
     """
@@ -128,7 +129,7 @@ def _extract_metadata(form_data, options):
     "Attach and group meta data for each subdomain integral collection."
 
     # Recognized metadata keys
-    metadata_keys = ("representation", "quadrature_degree")
+    metadata_keys = ("representation", "quadrature_degree", "quadrature_rule")
 
     # Iterate over integral collections
     for (domain_type, domain_id, integrals, metadata) in form_data.integral_data:
@@ -198,6 +199,8 @@ def _extract_metadata(form_data, options):
             # Update common metadata
             metadata["representation"] = r
             metadata["quadrature_degree"] = q
+            # Attach quadrature rule (default)
+            metadata["quadrature_rule"] = options["quadrature_rule"]
 
     return metadata
 

@@ -769,7 +769,7 @@ class QuadratureTransformerBase(Transformer):
         ACCESS = GEO
         weight = self.format["weight"](self.points)
         if self.points > 1:
-            weight += self.format["array access"](self.format["integration points"])
+            weight += self.format["component"]("", self.format["integration points"])
             ACCESS = IP
         weight = self._create_symbol(weight, ACCESS)[()]
 
@@ -1030,8 +1030,7 @@ class QuadratureTransformerBase(Transformer):
         if non_zeros and basis_map == "0":
             basis_map = str(non_zeros[1][0])
         elif non_zeros:
-            basis_map = self.format["nonzero columns"](non_zeros[0]) +\
-                        self.format["array access"](basis_map)
+            basis_map = self.format["component"](self.format["nonzero columns"](non_zeros[0]), basis_map)
         if offset:
             basis_map = self.format["grouping"](self.format["add"]([basis_map, offset]))
 
@@ -1117,8 +1116,7 @@ class QuadratureTransformerBase(Transformer):
         if non_zeros and coefficient_access == "0":
             coefficient_access = str(non_zeros[1][0])
         elif non_zeros and not quad_element:
-            coefficient_access = self.format["nonzero columns"](non_zeros[0]) +\
-                                 self.format["array access"](coefficient_access)
+            coefficient_access = self.format["component"](self.format["nonzero columns"](non_zeros[0]), coefficient_access)
         if offset:
             coefficient_access = self.format["add"]([coefficient_access, offset])
 
