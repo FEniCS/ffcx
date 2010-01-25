@@ -80,7 +80,6 @@ def _tabulate_tensor(ir, options):
         # Generate code for Jacobian
         r = {"restriction": ""}
         j_code  = codesnippets.jacobian[geometric_dimension] % r
-        print codesnippets.facet_determinant[geometric_dimension]
         j_code += "\n\n" + codesnippets.facet_determinant[geometric_dimension] % r
 
     elif domain_type == "interior_facet":

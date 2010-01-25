@@ -120,13 +120,14 @@ public:
     }
 
     // Generate some "random" coordinates
-    coordinates = new double * [4];
+    double** x = new double * [4];
     for (uint i = 0; i < 4; i++)
-    {
-      coordinates[i] = new double[3];
-      for (uint j = 0; j < 3; j++)
-        coordinates[i][j] = 0.1*static_cast<double>(i*j + offset);
-    }
+      x[i] = new double[3];
+    x[0][0] = 0.90; x[0][1] = 0.34; x[0][2] = 0.45;
+    x[1][0] = 0.56; x[1][1] = 0.76; x[1][2] = 0.83;
+    x[2][0] = 0.98; x[2][1] = 0.78; x[2][2] = 0.19;
+    x[3][0] = 0.12; x[3][1] = 0.56; x[3][2] = 0.66;
+    coordinates = x;
   }
 
   ~test_cell()
