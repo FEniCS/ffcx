@@ -46,15 +46,18 @@ def analyze_forms(forms, object_names, options):
 
     # Extract unique elements
     unique_elements = []
-    element_map = {}
     for (form, form_data) in form_and_data:
         for element in form_data.unique_sub_elements:
-            if not element in element_map:
-                element_map[element] = len(unique_elements)
+            if not element in unique_elements:
                 unique_elements.append(element)
 
     # Sort elements
     unique_elements = sort_elements(unique_elements)
+
+    # Build element map
+    element_map = _build_element_map(unique_elements)
+
+    print element_map
 
     end()
 
@@ -79,6 +82,13 @@ def analyze_elements(elements):
                 unique_elements.append(e)
     end()
     return form_and_data, unique_elements, element_map
+
+def _build_element_map(elements):
+    "Build map from elements to element numbers."
+    element_map = {}
+    for (i, element) in enumerate(elements):
+        element_map[element] = i
+    return element_map
 
 def _get_nested_elements(element):
     "Get unique nested elements (including self)."
