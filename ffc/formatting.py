@@ -14,7 +14,7 @@ __date__ = "2009-12-16"
 __copyright__ = "Copyright (C) 2009 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-18
+# Last changed: 2010-01-25
 
 # Python modules
 import os
@@ -28,9 +28,9 @@ from ufc_utils import interior_facet_integral_combined
 from ufc_utils import form_combined
 
 # FFC modules
-from ffc import codesnippets
 from ffc.log import info, error, begin, end
 from ffc.constants import FFC_VERSION, UFC_VERSION
+from ffc.cpp import format
 
 def format_code(code, wrapper_code, prefix, options):
     "Format given code in UFC format."
@@ -94,12 +94,12 @@ def _generate_header(prefix, options):
     "Generate code for header."
     args = {"ffc_version": FFC_VERSION, "ufc_version": UFC_VERSION, "prefix_upper": prefix.upper()}
     if options["format"] == "ufc":
-        return codesnippets.header_ufc % args
+        return format["ufc header"] % args
     elif options["format"] == "dolfin":
-        return codesnippets.header_dolfin % args
+        return format["dolfin header"] % args
     else:
         error("Unable to format code, unknown format \"%s\".", options["format"])
 
 def _generate_footer():
     "Generate code for footer."
-    return codesnippets.footer
+    return format["footer"]

@@ -5,7 +5,7 @@ __date__ = "2009-01-07"
 __copyright__ = "Copyright (C) 2009-2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-21
+# Last changed: 2010-01-25
 
 # Python modules.
 import numpy
@@ -19,8 +19,6 @@ from ffc.cpp import tabulate_matrix, tabulate_vector
 from ffc.cpp import IndentControl
 from ffc.cpp import format
 from ffc.cpp import remove_unused, choose_map
-
-from ffc import codesnippets
 
 # Utility and optimisation functions for quadraturegenerator.
 from quadraturegenerator_utils import generate_loop
@@ -92,9 +90,8 @@ def _tabulate_tensor(ir, options):
 
         # Get Jacobian snippet.
         # FIXME: This will most likely have to change if we support e.g., 2D elements in 3D space.
-        r = {"restriction": ""}
-        jacobi_code  = codesnippets.jacobian[geometric_dimension] % r
-        jacobi_code += "\n\n" + codesnippets.scale_factor
+        jacobi_code = format["jacobian and inverse"](geometric_dimension)
+        jacobi_code += "\n\n" + format["scale factor snippet"]
 
     elif domain_type == "exterior_facet":
         cases = [None for i in range(num_facets)]
@@ -115,9 +112,8 @@ def _tabulate_tensor(ir, options):
 
         # Get Jacobian snippet.
         # FIXME: This will most likely have to change if we support e.g., 2D elements in 3D space.
-        r = {"restriction": ""}
-        jacobi_code  = codesnippets.jacobian[geometric_dimension] % r
-        jacobi_code += "\n\n" + codesnippets.facet_determinant[geometric_dimension] % r
+        jacobi_code = format["jacobian and inverse"](geometric_dimension)
+        jacobi_code += "\n\n" + format["facet determinant"](geometric_dimension)
 
     elif domain_type == "interior_facet":
         cases = [[None for j in range(num_facets)] for i in range(num_facets)]
@@ -126,7 +122,7 @@ def _tabulate_tensor(ir, options):
                 # Update treansformer with facets and generate case code + set of used geometry terms.
                 transformer.update_facets(i, j)
                 c, mem_code, ops = _generate_element_tensor(integrals, transformer, Indent, format, interior=True)
-                case = [f_comment("Total number of operations to compute element tensor (from this point): %d" % ops)] 
+                case = [f_comment("Total number of operations to compute element tensor (from this point): %d" % ops)]
                 case += c
                 cases[i][j] = "\n".join(case)
 
@@ -139,13 +135,13 @@ def _tabulate_tensor(ir, options):
 
         # Get Jacobian snippet.
         # FIXME: This will most likely have to change if we support e.g., 2D elements in 3D space.
-        r0 = {"restriction": choose_map["+"]}
-        r1 = {"restriction": choose_map["-"]}
-        jacobi_code  = codesnippets.jacobian[geometric_dimension] % r0
+        map0 = choose_map["+"]
+        map1 = choose_map["-"]
+        jacobi_code  = format["jacobian and inverse"](geometric_dimension, map0)
         jacobi_code += "\n\n"
-        jacobi_code += codesnippets.jacobian[geometric_dimension] % r1
+        jacobi_code += format["jacobian and inverse"](geometric_dimension, map1)
         jacobi_code += "\n\n"
-        jacobi_code += codesnippets.facet_determinant[geometric_dimension] % r0
+        jacobi_code += format["facet determinant"](geometric_dimension, map0)
     else:
         error("Unhandled integral type: " + str(integral_type))
 

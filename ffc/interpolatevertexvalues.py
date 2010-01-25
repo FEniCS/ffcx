@@ -4,9 +4,8 @@ __author__ = "Marie E. Rognes (meg@simula.no)"
 __copyright__ = "Copyright (C) 2009"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-21
+# Last changed: 2010-01-25
 
-from ffc.codesnippets import jacobian
 from ffc.cpp import format, remove_unused
 
 # Extract code manipulation formats
@@ -28,7 +27,7 @@ def interpolate_vertex_values(ir):
     code = []
     dim = ir["cell_dim"]
     if ir["needs_jacobian"]:
-        code.append(jacobian[dim] % {"restriction": ""})
+        code.append(format["jacobian and inverse"](dim))
 
     # Compute total value dimension for (mixed) element
     total_dim = sum(data["value_dim"] for data in ir["element_data"])

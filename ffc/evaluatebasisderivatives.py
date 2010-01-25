@@ -7,7 +7,7 @@ __date__ = "2007-04-16"
 __copyright__ = "Copyright (C) 2007-2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-21
+# Last changed: 2010-01-25
 
 # Python modules
 import math
@@ -25,7 +25,6 @@ from ffc.quadrature.quadraturegenerator_utils import generate_loop
 # Temporary import
 #from cpp import format_old as format
 from ffc.cpp import format
-from ffc import codesnippets
 
 def _evaluate_basis_derivatives_all(data_list):
     """Like evaluate_basis, but return the values of all basis functions (dofs)."""
@@ -140,9 +139,8 @@ def _evaluate_basis_derivatives(data_list):
                "The element cell domain must be the same for all sub elements: " + repr(data_list))
 
     # Create mapping from physical element to the FIAT reference element
-    # (from codesnippets.py).
     # FIXME: KBO: Change this when supporting R^2 in R^3 elements.
-    code += [Indent.indent(codesnippets.fiat_coordinate_map[element_cell_domain])]
+    code += [Indent.indent(format["fiat coordinate map"](element_cell_domain))]
 
     # Get the topological dimension.
     # FIXME: If the elements are defined on the same cell domain they also have
@@ -198,8 +196,8 @@ def _compute_num_derivatives(topological_dimension, Indent, format):
 def _generate_combinations(topological_dimension, Indent, format):
     "Generate all possible combinations of derivatives of order 'n'"
 
-    # Use code from codesnippets.py
-    code = ["", Indent.indent(codesnippets.combinations_snippet\
+    # Use code from format
+    code = ["", Indent.indent(format["combinations"]\
             % {"combinations": format["derivative combinations"],\
                "topological_dimension-1": topological_dimension-1,\
                "num_derivatives" : format["num derivatives"],\
@@ -210,9 +208,9 @@ def _generate_transform(element_cell_domain, Indent, format):
     """Generate the transformation matrix, whic is used to transform derivatives from reference
     element back to the physical element."""
 
-    # Generate code to construct the inverse of the Jacobian, use code from codesnippets.py
+    # Generate code to construct the inverse of the Jacobian
     if (element_cell_domain in ["interval", "triangle", "tetrahedron"]):
-        code = ["", Indent.indent(codesnippets.transform_snippet[element_cell_domain]\
+        code = ["", Indent.indent(format["transform snippet"][element_cell_domain]\
         % {"transform": format["transform matrix"],\
            "num_derivatives" : format["num derivatives"],\
            "n": format["argument derivative order"],\
