@@ -339,9 +339,9 @@ void test_dofmap(ufc::dof_map& dofmap, ufc::shape cell_shape)
   // tabulate_entity_dofs
   for (uint d = 0; d <= c.topological_dimension; d++)
   {
-    uint num_entities[4][4] = {{0, 0, 0, 0}, // dummy entities in 0D
-                               {2, 1, 0, 0}, // interval
-                               {3, 3, 1, 0}, // triangle
+    uint num_entities[4][4] = {{0, 0, 0, 0},  // dummy entities in 0D
+                               {2, 1, 0, 0},  // interval
+                               {3, 3, 1, 0},  // triangle
                                {4, 6, 4, 1}}; // tetrahedron
     for (uint i = 0; i < num_entities[c.topological_dimension][d]; i++)
     {
@@ -528,7 +528,8 @@ void test_form(ufc::form& form)
   for (uint i = 0; i < form.num_cell_integrals(); i++)
   {
     ufc::cell_integral* integral = form.create_cell_integral(i);
-    test_cell_integral(*integral, cell_shape, tensor_size, w);
+    if (integral)
+      test_cell_integral(*integral, cell_shape, tensor_size, w);
     delete integral;
   }
 
@@ -536,7 +537,8 @@ void test_form(ufc::form& form)
   for (uint i = 0; i < form.num_exterior_facet_integrals(); i++)
   {
     ufc::exterior_facet_integral* integral = form.create_exterior_facet_integral(i);
-    test_exterior_facet_integral(*integral, cell_shape, tensor_size, w);
+    if (integral)
+      test_exterior_facet_integral(*integral, cell_shape, tensor_size, w);
     delete integral;
   }
 
@@ -544,7 +546,8 @@ void test_form(ufc::form& form)
   for (uint i = 0; i < form.num_interior_facet_integrals(); i++)
   {
     ufc::interior_facet_integral* integral = form.create_interior_facet_integral(i);
-    test_interior_facet_integral(*integral, cell_shape, macro_tensor_size, w);
+    if (integral)
+      test_interior_facet_integral(*integral, cell_shape, macro_tensor_size, w);
     delete integral;
   }
 
