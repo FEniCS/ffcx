@@ -55,10 +55,6 @@ def generate_code(ir, prefix, options):
     info("Generating code for forms")
     code_forms = [_generate_form_code(ir, prefix, options) for ir in ir_forms]
 
-    # Reverse element and dofmap code so sub_foo classes are defined first
-    code_elements.reverse()
-    code_dofmaps.reverse()
-
     end()
 
     return code_elements, code_dofmaps, code_integrals, code_forms

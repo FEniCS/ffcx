@@ -21,6 +21,7 @@ from ufl.algorithms import preprocess, FormData
 from ufl.algorithms import estimate_max_polynomial_degree
 from ufl.algorithms import estimate_total_polynomial_degree
 from ufl.algorithms import extract_unique_elements
+from ufl.algorithms import sort_elements
 
 # FFC modules
 from ffc.log import log, info, begin, end, warning, debug, error
@@ -51,7 +52,12 @@ def analyze_forms(forms, object_names, options):
             if not element in element_map:
                 element_map[element] = len(unique_elements)
                 unique_elements.append(element)
+
+    # Sort elements
+    unique_elements = sort_elements(unique_elements)
+
     end()
+
     return form_and_data, unique_elements, element_map
 
 def analyze_elements(elements):
