@@ -177,7 +177,7 @@ void test_finite_element(ufc::finite_element& element)
   std::cout << "----------------------" << std::endl;
 
   // How many derivatives to test
-  uint max_derivative = 3;
+  uint max_derivative = 2;
 
   // Prepare arguments
   test_cell c(element.cell_shape());
@@ -381,6 +381,7 @@ void test_cell_integral(ufc::cell_integral& integral,
 
   // Prepare arguments
   test_cell c(cell_shape);
+  std::cout << "tensor_size = " << tensor_size << std::endl;
   double* A = new double[tensor_size];
 
   // Call tabulate_tensor
@@ -461,6 +462,8 @@ void test_form(ufc::form& form)
     macro_tensor_size *= 2*element->space_dimension();
     delete element;
   }
+
+  std::cout << "check tensor_size = " << tensor_size << std::endl;
 
   // Prepare dummy coefficients
   double** w = 0;
