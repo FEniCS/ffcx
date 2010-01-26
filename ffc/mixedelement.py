@@ -68,8 +68,7 @@ class MixedElement:
 
         # Zeros for insertion into mixed table
         table_shape = (self.space_dimension(), self.num_components(), len(points))
-        zeros = numpy.zeros(table_shape)
-
+        
         # Iterate over elements and fill in non-zero values
         irange = (0, 0)
         crange = (0, 0)
@@ -88,7 +87,10 @@ class MixedElement:
 
                 # Insert zeros if necessary (should only happen first time)
                 if not dtuple in mixed_table:
-                    mixed_table[dtuple] = zeros
+                    # NOTE: It is super important to create a new numpy.zeros
+                    # instance to avoid manipulating a numpy reference in case
+                    # it is created outside the loop.
+                    mixed_table[dtuple] = numpy.zeros(table_shape)
 
                 # Insert non-zero values
                 if (crange[1] - crange[0]) > 1:
