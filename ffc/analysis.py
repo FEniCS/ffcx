@@ -27,8 +27,8 @@ from ufl.algorithms import sort_elements
 from ffc.log import log, info, begin, end, warning, debug, error, ffc_assert
 from ffc.utils import all_equal
 from ffc.quadratureelement import default_quadrature_degree
-from ffc.tensor import estimate_cost
 from ffc.utils import all_equal
+from ffc.tensor import estimate_cost
 
 def analyze_forms(forms, object_names, options):
     """

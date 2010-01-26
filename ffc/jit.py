@@ -9,7 +9,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Johan Hake, 2008-2009
 # Modified by Ilmar Wilbers, 2008
 # Modified by Kristian B. Oelgaard, 2009
-# Last changed: 2010-01-20
+# Last changed: 2010-01-25
 
 # Python modules
 import os
@@ -179,5 +179,5 @@ def check_options(form, options):
 
 def extract_element_and_dofmap(module):
     "Extract element and dofmap from module"
-    return (getattr(module, module.__name__ + "_0_finite_element_0")(),
-            getattr(module, module.__name__ + "_0_dof_map_0")())
+    return (getattr(module, module.__name__ + "_finite_element_0")(),
+            getattr(module, module.__name__ + "_dof_map_0")())

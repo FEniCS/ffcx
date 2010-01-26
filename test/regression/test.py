@@ -3,13 +3,28 @@ __date__ = "2010-01-21"
 __copyright__ = "Copyright (C) 2010 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-from ffc.log import begin, end, info, info_red, info_green, info_blue
-import os, sys, shutil, commands
+import os, sys, shutil, commands, difflib
 
 from ufctest import generate_test_code
 
 # Parameters
 output_directory = "output"
+demo_directory = "../../../demo"
+
+# Change here to run old or new FFC
+run_old_ffc = False
+
+if run_old_ffc:
+    from ffc.common.log import begin, end, info, set_level, INFO
+    info_green = info
+    info_red = info
+    info_blue = info
+    set_level(INFO)
+    demo_directory = "../../../../ffc-0.7.1-reference/demo"
+else:
+    from ffc.log import begin, end, info, info_red, info_green, info_blue
+
+# Global log file
 logfile = None
 
 def run_command(command):
@@ -23,16 +38,23 @@ def run_command(command):
     logfile.write(output + "\n")
     return False
 
+def log_error(message):
+    "Log error message."
+    global logfile
+    if logfile is None:
+        logfile = open("../error.log", "w")
+    logfile.write(message + "\n")
+
 def generate_test_cases():
     "Generate form files for all test cases."
 
     begin("Generating test cases")
 
     # Copy demos files
-    demo_files = [f for f in os.listdir("../../../demo/") if f.endswith(".ufl")]
+    demo_files = [f for f in os.listdir(demo_directory) if f.endswith(".ufl")]
     demo_files.sort()
     for f in demo_files:
-        shutil.copy("../../../demo/%s" % f, ".")
+        shutil.copy("%s/%s" % (demo_directory, f), ".")
     info_green("Copied %d demo files" % len(demo_files))
 
     # Generate form files for forms
@@ -94,6 +116,10 @@ def validate_code():
             info_green("%s OK" % f)
         else:
             info_red("%s differs" % f)
+            diff = "\n".join([line for line in difflib.unified_diff(reference_code.split("\n"), generated_code.split("\n"))])
+            s = "Code differs for %s, diff follows" % f
+            log_error("\n" + s + "\n" + len(s)*"-")
+            log_error(diff)
 
     end()
 
@@ -125,10 +151,10 @@ def build_programs():
 
     end()
 
-def validate_programs():
-    "Validate generated programs against references."
+def run_programs():
+    "Run generated programs."
 
-    begin("Validating generated programs")
+    begin("Running generated programs")
 
     # Get a list of all files
     test_programs = [f for f in os.listdir(".") if f.endswith(".bin")]
@@ -149,26 +175,79 @@ def validate_programs():
 
     end()
 
+def validate_programs():
+    "Validate generated programs against references."
+
+    begin("Validating generated programs")
+
+    # Get a list of all files
+    output_files = [f for f in os.listdir(".") if f.endswith(".out")]
+    output_files.sort()
+
+    # Iterate over all files
+    for f in output_files:
+
+        # Get generated output
+        generated_output = open(f).read()
+
+        # Get reference output
+        reference_file = "../references/%s" % f
+        if os.path.isfile(reference_file):
+            reference_output = open(reference_file).read()
+        else:
+            info_blue("Missing reference for %s" % f)
+            continue
+
+        # Compare with reference
+        if generated_output == reference_output:
+            info_green("%s OK" % f)
+        else:
+            info_red("%s differs" % f)
+            old = [line.split(" = ") for line in reference_output.split("\n") if " = " in line]
+            new = dict([line.split(" = ") for line in generated_output.split("\n") if " = " in line])
+            s = "Output differs for %s, diff follows" % f
+            log_error("\n" + s + "\n" + len(s)*"-")
+            for (key, value) in old:
+                if not key in new:
+                    log_error("%s: missing value in generated code" % key)
+                elif new[key] != value:
+                    log_error("%s: values differ" % key)
+                    log_error("  old = " + value)
+                    log_error("  new = " + new[key])
+
+    end()
+
 def main(args):
     "Run all regression tests."
 
     # Enter output directory
-    if not os.path.isdir(output_directory):
-        os.mkdir(output_directory)
+    if os.path.isdir(output_directory):
+        shutil.rmtree(output_directory)
+    os.mkdir(output_directory)
     os.chdir(output_directory)
+
+    # FIXME: Only run validate programs when code differs
 
     # Generate test cases
     generate_test_cases()
 
     # Generate and validate code
     generate_code()
-    validate_code()
+    #validate_code()
 
-    # Build and validate programs
+    # Build, run and validate programs
     build_programs()
+    run_programs()
     validate_programs()
 
-    return 0
+    # Print results
+    if logfile is None:
+        info_green("Regression tests OK")
+        return 0
+    else:
+        info_red("Regression tests failed")
+        info("Error messages stored in error.log")
+        return 1
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv[1:]))

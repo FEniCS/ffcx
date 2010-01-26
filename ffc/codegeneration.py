@@ -11,11 +11,11 @@ __date__ = "2009-12-16"
 __copyright__ = "Copyright (C) 2009 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-25
+# Last changed: 2010-01-26
 
 # FFC modules
 from ffc.log import info, begin, end, debug_code
-from ffc.cpp import format, indent
+from ffc.cpp import format, indent, set_float_formatting
 
 # FFC code generation modules
 from ffc.evaluatebasis import _evaluate_basis, _evaluate_basis_all
@@ -34,6 +34,9 @@ def generate_code(ir, prefix, options):
     "Generate code from intermediate representation."
 
     begin("Compiler stage 4: Generating code")
+
+    # Set floating point format
+    set_float_formatting(options)
 
     # Extract representations
     ir_elements, ir_dofmaps, ir_integrals, ir_forms = ir
@@ -215,8 +218,8 @@ def _init_mesh(ir):
     "Generate code for init_mesh. ir is a list of num dofs per entity."
     component = format["component"]
     entities = format["num entities"]
-    dimension = format["inner product"](ir, [component(entities, d-1)
-                                             for d in ir])
+    dimension = format["inner product"](ir, [component(entities, d)
+                                             for d in range(len(ir))])
     return "\n".join([format["assign"]("_global_dimension", dimension),
                       format["return"](format["bool"](False))])
 

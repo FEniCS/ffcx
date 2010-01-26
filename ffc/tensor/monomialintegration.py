@@ -11,7 +11,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Garth N. Wells 2006
 # Modified by Marie E. Rognes (meg@math.uio.no) 2008
 # Modified by Kristian B. Oelgaard, 2009
-# Last changed: 2010-01-21
+# Last changed: 2010-01-25
 
 # Python modules
 import numpy
@@ -25,7 +25,7 @@ from ufl.geometry import domain2facet
 from ffc.log import info, debug, error
 from ffc.fiatinterface import create_element, create_quadrature, map_facet_points
 
-# FFC tensor representation modules.
+# FFC tensor representation modules
 from multiindex import build_indices
 from monomialextraction import MonomialException
 from monomialtransformation import MonomialIndex

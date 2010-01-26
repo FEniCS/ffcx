@@ -62,32 +62,6 @@ def extract_monomial_integrand(integrand):
 
     return monomial_integrand
 
-def estimate_cost(integral):
-    """
-    Estimate cost of tensor representation for integrand. The cost is
-    computed as the sum of the number of coefficients and derivatives,
-    if the integrand can be represented as a monomial, and -1 if not.
-    """
-
-    # Extract monomial integrand
-    try:
-        monomial_integrand = extract_monomial_integrand(integral.integrand())
-    except Exception, exception:
-        debug("Monomial extraction failed: " + str(exception))
-        return -1
-
-    # Compute cost
-    cost = 0
-    for monomial in monomial_integrand.monomials:
-        monomial_cost = 0
-        for factor in monomial.factors:
-            if isinstance(factor.function, Coefficient):
-                monomial_cost += 1
-            monomial_cost += len(factor.derivatives)
-        cost = max(cost, monomial_cost)
-
-    return cost
-
 class MonomialException(Exception):
     "Exception raised when monomial extraction fails."
     def __init__(self, *args, **kwargs):
