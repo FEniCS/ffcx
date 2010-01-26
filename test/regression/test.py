@@ -240,7 +240,14 @@ def main(args):
     run_programs()
     validate_programs()
 
-    return 0
+    # Print results
+    if logfile is None:
+        info_green("Regression tests OK")
+        return 0
+    else:
+        info_red("Regression tests failed")
+        info("Error messages stored in error.log")
+        return 1
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv[1:]))
