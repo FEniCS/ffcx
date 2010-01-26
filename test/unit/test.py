@@ -301,5 +301,5 @@ class JITTests(unittest.TestCase):
 
 if __name__ == "__main__":
     #os.system("python testcreateelement.py")
-    #os.system("python test_symbolics.py")
+    os.system("python %s" % os.path.join("symbolics", "testsymbolics.py"))
     unittest.main()
