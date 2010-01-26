@@ -253,6 +253,11 @@ def _inner_product(v, w):
 def _transform(type, j, k, r):
     # FIXME: j, k might need to be swapped for J or JINV
     map_name = {"J": "J", "JINV": "K"}[type] + {None: "", "+": "0", "-": "1"}[r]
+    # FIXME: KBO: In the old format["transform"] we swapped j and k, in the old
+    # format["transform_ufl"] we didn't. format["transform_ufl"] was only used
+    # in the tensorgenerator so it might not be needed anymore?
+    if type == "J":
+        return (map_name + "_%d%d") % (k, j)
     return (map_name + "_%d%d") % (j, k)
 
 def _generate_switch(variable, cases, default=None):
