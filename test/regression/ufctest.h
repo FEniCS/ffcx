@@ -2,7 +2,7 @@
 // Licensed under the GNU GPL version 3 or any later version.
 //
 // First added:  2010-01-24
-// Last changed: 2010-01-25
+// Last changed: 2010-01-26
 //
 // Functions for calling generated UFC functions with "random" (but
 // fixed) data and print the output to screen. Useful for running
@@ -11,24 +11,47 @@
 #include <sstream>
 #include <string>
 #include <iostream>
+#include <iomanip>
+#include <cmath>
 #include <ufc.h>
 
 typedef unsigned int uint;
+
+// How many derivatives to test
+const uint max_derivative = 2;
+
+// Precision in output of floats
+const uint precision = 10;
+
+// Global counter for results
 uint counter = 0;
 
-// Function for printing single value result
+// Function for printing a single value
 template <class value_type>
-void print_value(std::string name, value_type value, int i=-1, int j=-1)
+void print_value(value_type value)
+{
+  std::cout.precision(precision);
+  if (std::abs(static_cast<double>(value)) < std::pow(0.1, precision))
+    std::cout << "0";
+  else
+    std::cout << value;
+}
+
+// Function for printing scalar result
+template <class value_type>
+void print_scalar(std::string name, value_type value, int i=-1, int j=-1)
 {
   std::stringstream s;
   s << counter++ << "_";
   s << name;
   if (i >= 0) s << "_" << i;
   if (j >= 0) s << "_" << j;
-  std::cout << s.str() << " = " << value << std::endl;
+  std::cout << s.str() << " = ";
+  print_value(value);
+  std::cout << std::endl;
 }
 
-// Function for printing array value result
+// Function for printing array result
 template <class value_type>
 void print_array(std::string name, unsigned int n, value_type* values, int i=-1, int j=-1)
 {
@@ -39,7 +62,10 @@ void print_array(std::string name, unsigned int n, value_type* values, int i=-1,
   if (j >= 0) s << "_" << j;
   std::cout << s.str() << " =";
   for (uint i = 0; i < n; i++)
-    std::cout << " " << values[i];
+  {
+    std::cout << " ";
+    print_value(values[i]);
+  }
   std::cout << std::endl;
 }
 
@@ -176,9 +202,6 @@ void test_finite_element(ufc::finite_element& element)
   std::cout << "Testing finite_element" << std::endl;
   std::cout << "----------------------" << std::endl;
 
-  // How many derivatives to test
-  uint max_derivative = 2;
-
   // Prepare arguments
   test_cell c(element.cell_shape());
   uint value_size = 1;
@@ -195,20 +218,20 @@ void test_finite_element(ufc::finite_element& element)
   test_function f(value_size);
 
   // signature
-  print_value("signature", element.signature());
+  //print_scalar("signature", element.signature());
 
   // cell_shape
-  print_value("cell_shape", element.cell_shape());
+  print_scalar("cell_shape", element.cell_shape());
 
   // space_dimension
-  print_value("space_dimension", element.space_dimension());
+  print_scalar("space_dimension", element.space_dimension());
 
   // value_rank
-  print_value("value_rank", element.value_rank());
+  print_scalar("value_rank", element.value_rank());
 
   // value_dimension
   for (uint i = 0; i < element.value_rank(); i++)
-    print_value("value_dimension", element.value_dimension(i), i);
+    print_scalar("value_dimension", element.value_dimension(i), i);
 
   // evaluate_basis
   for (uint i = 0; i < element.space_dimension(); i++)
@@ -246,7 +269,7 @@ void test_finite_element(ufc::finite_element& element)
 
   // evaluate_dof
   for (uint i = 0; i < element.space_dimension(); i++)
-    print_value("evaluate_dof", element.evaluate_dof(i, f, c), i);
+    print_scalar("evaluate_dof", element.evaluate_dof(i, f, c), i);
 
   // evaluate_dofs
   element.evaluate_dofs(values, f, c);
@@ -257,7 +280,7 @@ void test_finite_element(ufc::finite_element& element)
   print_array("interpolate_vertex_values", (c.topological_dimension + 1)*value_size, vertex_values);
 
   // num_sub_dof_elements
-  print_value("num_sub_elements", element.num_sub_elements());
+  print_scalar("num_sub_elements", element.num_sub_elements());
 
   // create_sub_element
   for (uint i = 0; i < element.num_sub_elements(); i++)
@@ -291,39 +314,39 @@ void test_dofmap(ufc::dof_map& dofmap, ufc::shape cell_shape)
     coordinates[i] = new double[c.geometric_dimension];
 
   // signature
-  print_value("signature", dofmap.signature());
+  //print_scalar("signature", dofmap.signature());
 
   // needs_mesh_entities
   for (uint d = 0; d <= c.topological_dimension; d++)
-    print_value("needs_mesh_entities", dofmap.needs_mesh_entities(d), d);
+    print_scalar("needs_mesh_entities", dofmap.needs_mesh_entities(d), d);
 
   // init_mesh
-  print_value("init_mesh", dofmap.init_mesh(m));
+  print_scalar("init_mesh", dofmap.init_mesh(m));
 
-  // init_cell not tested
-  print_value("init_cell", "not used by FFC");
+  // init_cell not tested (not used by FFC)
+  print_scalar("init_cell", 0);
 
-  // init_cell_finalize
-  print_value("init_cell_finalize", "not used by FFC");
+  // init_cell_finalize (not used by FFC)
+  print_scalar("init_cell_finalize", 0);
 
   // global_dimension
-  print_value("global_dimension", dofmap.global_dimension());
+  print_scalar("global_dimension", dofmap.global_dimension());
 
   // local_dimension
-  print_value("local_dimension", dofmap.local_dimension(c));
+  print_scalar("local_dimension", dofmap.local_dimension(c));
 
   // max_local_dimension
-  print_value("max_local_dimension", dofmap.max_local_dimension());
+  print_scalar("max_local_dimension", dofmap.max_local_dimension());
 
   // geometric_dimension
-  print_value("geometric_dimension", dofmap.geometric_dimension());
+  print_scalar("geometric_dimension", dofmap.geometric_dimension());
 
   // num_facet_dofs
-  print_value("num_facet_dofs", dofmap.num_facet_dofs());
+  print_scalar("num_facet_dofs", dofmap.num_facet_dofs());
 
   // num_entity_dofs
   for (uint d = 0; d <= c.topological_dimension; d++)
-    print_value("num_entity_dofs", dofmap.num_entity_dofs(d), d);
+    print_scalar("num_entity_dofs", dofmap.num_entity_dofs(d), d);
 
   // tabulate_dofs
   dofmap.tabulate_dofs(dofs, m, c);
@@ -356,7 +379,7 @@ void test_dofmap(ufc::dof_map& dofmap, ufc::shape cell_shape)
     print_array("tabulate_coordinates", c.geometric_dimension, coordinates[i], i);
 
   // num_sub_dof_maps
-  print_value("num_sub_dof_maps", dofmap.num_sub_dof_maps());
+  print_scalar("num_sub_dof_maps", dofmap.num_sub_dof_maps());
 
   // create_sub_dof_map
   for (uint i = 0; i < dofmap.num_sub_dof_maps(); i++)
@@ -488,22 +511,22 @@ void test_form(ufc::form& form)
   element = 0;
 
   // signature
-  print_value("signature", form.signature());
+  //print_scalar("signature", form.signature());
 
   // rank
-  print_value("rank", form.signature());
+  //print_scalar("rank", form.signature());
 
   // num_coefficients
-  print_value("num_coefficients", form.num_coefficients());
+  print_scalar("num_coefficients", form.num_coefficients());
 
   // num_cell_integrals
-  print_value("num_cell_integrals", form.num_cell_integrals());
+  print_scalar("num_cell_integrals", form.num_cell_integrals());
 
   // num_exterior_facet_integrals
-  print_value("num_exterior_facet_integrals", form.num_exterior_facet_integrals());
+  print_scalar("num_exterior_facet_integrals", form.num_exterior_facet_integrals());
 
   // num_interior_facet_integrals
-  print_value("num_interior_facet_integrals", form.num_interior_facet_integrals());
+  print_scalar("num_interior_facet_integrals", form.num_interior_facet_integrals());
 
   // create_finite_element
   for (uint i = 0; i < form.rank() + form.num_coefficients(); i++)
