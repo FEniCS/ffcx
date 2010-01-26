@@ -211,6 +211,7 @@ void test_finite_element(ufc::finite_element& element)
   for (uint i = 0; i < max_derivative; i++)
     derivative_size *= c.geometric_dimension;
   double* values = new double[element.space_dimension()*value_size*derivative_size];
+  double* dof_values = new double[element.space_dimension()];
   double* vertex_values = new double[(c.topological_dimension + 1)*value_size];
   double* coordinates = new double[c.geometric_dimension];
   for (uint i = 0; i < c.geometric_dimension; i++)
@@ -268,11 +269,10 @@ void test_finite_element(ufc::finite_element& element)
   }
 
   // evaluate_dof
-  double* copies = new double[element.space_dimension()*value_size*derivative_size];
   for (uint i = 0; i < element.space_dimension(); i++)
   {
-    copies[i] = element.evaluate_dof(i, f, c);
-    print_scalar("evaluate_dof", copies[i], i);
+    dof_values[i] = element.evaluate_dof(i, f, c);
+    print_scalar("evaluate_dof", dof_values[i], i);
   }
 
   // evaluate_dofs
@@ -280,7 +280,7 @@ void test_finite_element(ufc::finite_element& element)
   print_array("evaluate_dofs", element.space_dimension(), values);
 
   // interpolate_vertex_values
-  element.interpolate_vertex_values(vertex_values, copies, c);
+  element.interpolate_vertex_values(vertex_values, dof_values, c);
   print_array("interpolate_vertex_values", (c.topological_dimension + 1)*value_size, vertex_values);
 
   // num_sub_dof_elements
@@ -296,6 +296,7 @@ void test_finite_element(ufc::finite_element& element)
 
   // Cleanup
   delete [] values;
+  delete [] dof_values;
   delete [] vertex_values;
   delete [] coordinates;
 }
