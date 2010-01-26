@@ -145,7 +145,7 @@ class FunctionValueTests(unittest.TestCase):
         points = [random_point(tetrahedron) for i in range(num_points)]
         self._check_function_values(points, element, reference)
 
-    def testBDM1(self):
+    def testBDM1_2D(self):
         "Test values of BDM1."
 
         element = create(FiniteElement("Brezzi-Douglas-Marini", "triangle", 1))
@@ -160,7 +160,7 @@ class FunctionValueTests(unittest.TestCase):
         self._check_function_values(points, element, reference)
 
 
-    def testRT1(self):
+    def testRT1_2D(self):
         "Test values of RT1."
 
         element = create(FiniteElement("Raviart-Thomas", "triangle", 1))
@@ -171,7 +171,7 @@ class FunctionValueTests(unittest.TestCase):
         points = [random_point(triangle) for i in range(num_points)]
         self._check_function_values(points, element, reference)
 
-    def testRT2(self):
+    def testRT2_2D(self):
         "Test values of RT2."
 
         element = create(FiniteElement("Raviart-Thomas", "triangle", 2))
@@ -198,6 +198,57 @@ class FunctionValueTests(unittest.TestCase):
         points = [random_point(triangle) for i in range(num_points)]
         self._check_function_values(points, element, reference)
 
+    def testNED1_2D(self):
+        "Test values of NED1."
+
+        element = create(FiniteElement("N1curl", "triangle", 1))
+        reference = [ lambda x: (-x[1], x[0]),
+                      lambda x: ( x[1], 1 - x[0]),
+                      lambda x: ( 1 - x[1], x[0]),
+                      ]
+
+        points = [random_point(triangle) for i in range(num_points)]
+        self._check_function_values(points, element, reference)
+
+    def testRT1_3D(self):
+        element = create(FiniteElement("RT", "tetrahedron", 1))
+        reference = [lambda x: (-x[0], -x[1], -x[2]),
+                     lambda x: (-1.0 + x[0], x[1], x[2]),
+                     lambda x: (-x[0], 1.0 - x[1], -x[2]),
+                     lambda x: ( x[0], x[1], -1.0 + x[2])
+                     ]
+        points = [random_point(tetrahedron) for i in range(num_points)]
+        self._check_function_values(points, element, reference)
+
+    def testBDM1_3D(self):
+        element = create(FiniteElement("BDM", "tetrahedron", 1))
+        reference = [ lambda x: (-3*x[0], x[1], x[2]),
+                      lambda x: (x[0], -3*x[1], x[2]),
+                      lambda x: (x[0], x[1], -3*x[2]),
+                      lambda x: (-3.0 + 3*x[0] + 4*x[1] + 4*x[2], -x[1], -x[2]),
+                      lambda x: (1.0 - x[0] - 4*x[1], 3*x[1], -x[2]),
+                      lambda x: (1.0 - x[0] - 4*x[2], -x[1], 3*x[2]),
+                      lambda x: (x[0], 3.0 - 4*x[0] - 3*x[1] - 4*x[2], x[2]),
+                      lambda x: (-3*x[0], -1.0 + 4*x[0] + x[1], x[2]),
+                      lambda x: (x[0], -1.0 + x[1] + 4*x[2], -3*x[2]),
+                      lambda x: (-x[0], -x[1], -3.0 + 4*x[0] + 4*x[1] + 3*x[2]),
+                      lambda x: (3*x[0], -x[1], 1.0 - 4*x[0] - x[2]),
+                      lambda x: (-x[0], 3*x[1], 1.0 - 4*x[1] - x[2])
+                      ]
+        points = [random_point(tetrahedron) for i in range(num_points)]
+        self._check_function_values(points, element, reference)
+
+    def testNED1_3D(self):
+        element = create(FiniteElement("N1curl", "tetrahedron", 1))
+        reference = [ lambda x: (0.0, -x[2], x[1]),
+                      lambda x: (-x[2], 0.0,  x[0]),
+                      lambda x: (-x[1],  x[0], 0.0),
+                      lambda x: ( x[2], x[2], 1.0 - x[0] - x[1]),
+                      lambda x: (x[1], 1.0 - x[0] - x[2], x[1]),
+                      lambda x: (1.0 - x[1] - x[2], x[0], x[0])
+                      ]
+        points = [random_point(tetrahedron) for i in range(num_points)]
+        self._check_function_values(points, element, reference)
 
 class JITTests(unittest.TestCase):
 
