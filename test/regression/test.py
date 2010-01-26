@@ -221,8 +221,9 @@ def main(args):
     "Run all regression tests."
 
     # Enter output directory
-    if not os.path.isdir(output_directory):
-        os.mkdir(output_directory)
+    if os.path.isdir(output_directory):
+        shutil.rmtree(output_directory)
+    os.mkdir(output_directory)
     os.chdir(output_directory)
 
     # FIXME: Only run validate programs when code differs
