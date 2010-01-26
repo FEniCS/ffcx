@@ -175,25 +175,26 @@ class FunctionValueTests(unittest.TestCase):
         "Test values of RT2."
 
         element = create(FiniteElement("Raviart-Thomas", "triangle", 2))
-        reference = [lambda x: (-2*x[0] + 4*x[0]**2, -x[1] + 4*x[0]*x[1]),
-                     lambda x: (-x[0] + 4*x[0]*x[1], -2*x[1] + 4*x[1]**2),
-                     lambda x: (2 - 6*x[0] - 3*x[1] + 4*x[0]*x[1] + 4*x[0]**2,
-                                -3*x[1] + 4*x[0]*x[1] + 4*x[1]**2),
-                     lambda x: (-1 + x[0] +3*x[1] -4*x[0]*x[1],
-                                2*x[1] -4*x[1]**2),
-                     lambda x: (3*x[0] -4*x[0]*x[1] - 4*x[0]**2,
-                                -2 + 3*x[0] +6*x[1] - 4*x[0]*x[1] -4*x[1]**2),
-                     lambda x: (-2*x[0] +4* x[0]**2,
-                                1 -3*x[0] -x[1] + 4*x[0]*x[1]),
-                     lambda x: (16/math.sqrt(2)*x[0] - 8/math.sqrt(2)*x[0]*x[1]
-                                - 16/math.sqrt(2)*x[0]**2,
-                                8/math.sqrt(2)*x[1] - 16/math.sqrt(2)*x[0]*x[1]
-                                - 8/math.sqrt(2)*x[1]**2),
-                     lambda x: (8/math.sqrt(2)*x[0] -16/math.sqrt(2)*x[0]*x[1]
-                                - 8/math.sqrt(2)*x[0]**2,
-                                16/math.sqrt(2)*x[1] - 8/math.sqrt(2)*x[0]*x[1]
-                                - 16/math.sqrt(2)*x[1]**2)
-                     ]
+
+        reference = [ lambda x: (-x[0] + 3*x[0]**2,
+                                 -x[1] + 3*x[0]*x[1]),
+                      lambda x: (-x[0] + 3*x[0]*x[1],
+                                 -x[1] + 3*x[1]**2),
+                      lambda x: ( 2 - 5*x[0] - 3*x[1] + 3*x[0]*x[1] + 3*x[0]**2,
+                                  -2*x[1] + 3*x[0]*x[1] + 3*x[1]**2),
+                      lambda x: (-1.0 + x[0] + 3*x[1] - 3*x[0]*x[1],
+                                 x[1] - 3*x[1]**2),
+                      lambda x: (2*x[0] - 3*x[0]*x[1] - 3*x[0]**2,
+                                 -2 + 3*x[0]+ 5*x[1] - 3*x[0]*x[1] - 3*x[1]**2),
+                      lambda x: (- x[0] + 3*x[0]**2,
+                                 + 1 - 3*x[0] - x[1] + 3*x[0]*x[1]),
+                      lambda x: (6*x[0] - 3*x[0]*x[1] - 6*x[0]**2,
+                                 3*x[1] - 6*x[0]*x[1] - 3*x[1]**2),
+                      lambda x: (3*x[0] - 6*x[0]*x[1] - 3*x[0]**2,
+                                 6*x[1]- 3*x[0]*x[1] - 6*x[1]**2),
+                      ]
+
+
         points = [random_point(triangle) for i in range(num_points)]
         self._check_function_values(points, element, reference)
 
@@ -249,5 +250,5 @@ class JITTests(unittest.TestCase):
 
 if __name__ == "__main__":
     #os.system("python testcreateelement.py")
-    os.system("python %s" % os.path.join("symbolics", "testsymbolics.py"))
+    #os.system("python test_symbolics.py")
     unittest.main()
