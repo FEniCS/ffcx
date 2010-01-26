@@ -6,7 +6,7 @@ __copyright__ = "Copyright (C) 2009-2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Anders Logg, 2009.
-# Last changed: 2010-01-23
+# Last changed: 2010-01-26
 
 # UFL modules
 from ufl.classes import Form, Integral, SpatialDerivative

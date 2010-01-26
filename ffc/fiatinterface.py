@@ -91,7 +91,8 @@ def map_facet_points(points, facet):
 
     # Special case, don't need to map coordinates on vertices
     dim = len(points[0]) + 1
-    if dim == 1: return [(0.0,), (1.0,)][facet]
+    if dim == 1:
+        return [(0.0,), (1.0,)][facet]
 
     # Vertex coordinates
     vertex_coordinates = \
@@ -108,7 +109,7 @@ def map_facet_points(points, facet):
     coordinates = [vertex_coordinates[dim][v] for v in facet_vertices[dim][facet]]
     new_points = []
     for point in points:
-        w = (1.0 - sum(point),) + point
+        w = (1.0 - sum(point),) + tuple(point)
         x = tuple(sum([w[i]*array(coordinates[i]) for i in range(len(w))]))
         new_points += [x]
 
