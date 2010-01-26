@@ -7,15 +7,16 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian B. Oelgaard 2010
 # Modified by Marie E. Rognes 2010
-# Last changed: 2010-01-25
+# Last changed: 2010-01-26
 
-# Python modules.
-import re
-import numpy
+# Python modules
+import re, numpy, platform
 
-# FFC modules.
+# FFC modules
 from ffc.log import debug
 from ffc.constants import FFC_OPTIONS
+
+# FIXME: AL: This files needs cleaning up!
 
 # Formatting rules
 # FIXME: KBO: format is a builtin_function, i.e., we should use a different name.
@@ -168,7 +169,6 @@ format.update({"classname finite_element": \
 
 # Misc
 format.update({"bool":    lambda v: {True: "true", False: "false"}[v],
-               # FIXME: KBO: Will float be equal to the old 'floating point'?
                "float":   lambda v: "%g" % v,
                "str":     lambda v: "%s" % str(v),
                "epsilon": FFC_OPTIONS["epsilon"]})
@@ -795,3 +795,36 @@ def _generate_normal(geometric_dimension, domain_type, reference_normal=False):
     else:
         error("Unsupported domain_type: %s" % str(domain_type))
     return code
+
+
+
+def set_float_formatting(options):
+    "Set floating point formatting based on options."
+    print options
+
+    # Get number of digits
+    precision = int(options["precision"])
+
+    # Options for float formatting
+    f1 = "%%.%dg" % precision
+    f2 = "%%.%de" % precision
+
+    # Regular float formatting
+    def floating_point_regular(v):
+        if abs(v) < 100.0:
+            return f1 % v
+        else:
+            return f2 % v
+
+    # Special float formatting on Windows (remove extra leading zero)
+    def floating_point_windows(v):
+        return floating_point(v).replace("e-0", "e-").replace("e+0", "e+")
+
+    # Set float formatting
+    if platform.system() == "Windows":
+        format["float"] = floating_point_windows
+    else:
+        format["float"] = floating_point_regular
+
+    # Set machine precision
+    format["epsilon"] = 10.0*eval("1e-%s" % precision)
