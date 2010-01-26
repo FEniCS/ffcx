@@ -800,7 +800,6 @@ def _generate_normal(geometric_dimension, domain_type, reference_normal=False):
 
 def set_float_formatting(options):
     "Set floating point formatting based on options."
-    print options
 
     # Get number of digits
     precision = int(options["precision"])
