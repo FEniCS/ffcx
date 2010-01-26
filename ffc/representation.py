@@ -84,7 +84,7 @@ def _compute_element_ir(ufl_element, element_id, element_map):
     ir["space_dimension"] = element.space_dimension()
     ir["value_rank"] = len(ufl_element.value_shape())
     ir["value_dimension"] = ufl_element.value_shape()
-    ir["evaluate_basis"] = _evaluate_basis(ufl_element, element)
+    ir["evaluate_basis"] = _verify_evaluate_basis(_evaluate_basis(ufl_element, element))
     ir["evaluate_dof"] = _evaluate_dof(element, cell)
     ir["interpolate_vertex_values"] = _interpolate_vertex_values(element, cell)
     ir["num_sub_elements"] = ufl_element.num_sub_elements()
@@ -217,6 +217,7 @@ def _evaluate_basis(ufl_element, fiat_element):
           "mapping" : mapping,
           "space_dimension" : fiat_element.space_dimension(),
           "topological_dimension" : ufl_element.cell().topological_dimension(),
+          "geometric_dimension" : ufl_element.cell().geometric_dimension(),
           "dmats" : fiat_element.get_nodal_basis().get_dmats()
           }
 
@@ -224,6 +225,25 @@ def _evaluate_basis(ufl_element, fiat_element):
       fiat_element.get_nodal_basis().get_expansion_set().get_num_members(data["embedded_degree"])
 
     return [data]
+
+def _verify_evaluate_basis(data_list):
+    "Some safety checks."
+    # FIXME: KBO: If UFL makes sure that the below is always true, we can delete this function.
+    # Get the element cell domain and check if it is the same for all elements.
+    element_cell_domain = data_list[0]["cell_domain"]
+    ffc_assert(all(element_cell_domain == data["cell_domain"] for data in data_list),\
+               "The element cell domain must be the same for all sub elements: " + repr(data_list))
+
+    # Get the element geometric dimension and check if it is the same for all elements.
+    geometric_dimension = data_list[0]["geometric_dimension"]
+    ffc_assert(all(geometric_dimension == data["geometric_dimension"] for data in data_list),\
+               "The geometric dimension must be the same for all sub elements: " + repr(data_list))
+
+    # Get the element topological dimension and check if it is the same for all elements.
+    topological_dimension = data_list[0]["topological_dimension"]
+    ffc_assert(all(topological_dimension == data["topological_dimension"] for data in data_list),\
+               "The topological dimension must be the same for all sub elements: " + repr(data_list))
+    return data_list
 
 def _value_dimension(element):
     "Compute value dimension of element."

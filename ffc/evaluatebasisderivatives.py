@@ -62,11 +62,7 @@ def _evaluate_basis_derivatives_all(data_list):
 
     # Compute number of derivatives
     # Get the topological dimension.
-    # FIXME: If the elements are defined on the same cell domain they also have
-    # the same topological dimension so there is no need to check this.
     topological_dimension = data_list[0]["topological_dimension"]
-    ffc_assert(all(topological_dimension == data["topological_dimension"] for data in data_list),\
-               "The topological dimension must be the same for all sub elements: " + repr(data_list))
     code += _compute_num_derivatives(topological_dimension, Indent, format)
 
     # Declare helper value to hold single dof values and reset
@@ -132,22 +128,16 @@ def _evaluate_basis_derivatives(data_list):
     code = []
     Indent = IndentControl()
 
-    # Get the element cell domain and check if it is the same for all elements.
+    # Get the element cell domain, geometric and topological dimension.
     element_cell_domain = data_list[0]["cell_domain"]
-    # FIXME: KBO: This should already be checked elsewhere.
-    ffc_assert(all(element_cell_domain == data["cell_domain"] for data in data_list),\
-               "The element cell domain must be the same for all sub elements: " + repr(data_list))
-
-    # Create mapping from physical element to the FIAT reference element
-    # FIXME: KBO: Change this when supporting R^2 in R^3 elements.
-    code += [Indent.indent(format["fiat coordinate map"](element_cell_domain))]
-
-    # Get the topological dimension.
-    # FIXME: If the elements are defined on the same cell domain they also have
-    # the same topological dimension so there is no need to check this.
+    geometric_dimension = data_list[0]["geometric_dimension"]
     topological_dimension = data_list[0]["topological_dimension"]
-    ffc_assert(all(topological_dimension == data["topological_dimension"] for data in data_list),\
-               "The topological dimension must be the same for all sub elements: " + repr(data_list))
+
+    # Get code snippets for Jacobian, Inverse of Jacobian and mapping of
+    # coordinates from physical element to the FIAT reference element.
+    # FIXME: KBO: Change this when supporting R^2 in R^3 elements.
+    code += [Indent.indent(format["jacobian and inverse"](geometric_dimension))]
+    code += ["", Indent.indent(format["fiat coordinate map"](element_cell_domain))]
 
     # Compute number of derivatives that has to be computed, and declare an array to hold
     # the values of the derivatives on the reference element
@@ -297,6 +287,7 @@ def _mixed_elements(data_list, Indent, format):
         # Increase indentation, indent code and decrease indentation.
         Indent.increase()
         if_code = remove_unused(Indent.indent("\n".join(element_code)))
+        # if_code = Indent.indent("\n".join(element_code))
         Indent.decrease()
 
         # Create if statement and add to code.

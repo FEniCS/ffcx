@@ -89,11 +89,11 @@ from codesnippets import *
 format.update({"cell coordinates": cell_coordinates,
                "jacobian": lambda n, r="": jacobian[n] % {"restriction": r},
                "inverse jacobian": lambda n, r="": inverse_jacobian[n] % {"restriction": r},
-               "jacobian and inverse": lambda n, r="": format["jacobian"](n, r) + "\n" + format["inverse jacobian"](n, r),
+               "jacobian and inverse": lambda n, r="": format["jacobian"](n, r) +\
+                                       "\n" + format["inverse jacobian"](n, r),
                "facet determinant": lambda n, r="": facet_determinant[n] % {"restriction": r},
                "fiat coordinate map": lambda n: fiat_coordinate_map[n],
                "generate normal": lambda d, i: _generate_normal(d, i),
-               #"map coordinates": lambda n, r="": map_coordinates[n] % {"restriction": r},
                "scale factor snippet": scale_factor,
                "map onto physical": map_onto_physical,
                "combinations": combinations_snippet,
@@ -113,9 +113,9 @@ format.update({# Loop indices
                "tmp value": lambda i: "tmp%d" % i,
                "tmp ref value": lambda i: "tmp_ref%d" % i,
                # Snippet variable names
-               "x coordinate": "x",
-               "y coordinate": "y",
-               "z coordinate": "z",
+               "x coordinate": "X",
+               "y coordinate": "Y",
+               "z coordinate": "Z",
                "scale factor": "det",
                "normal component": lambda r, j: "n%s%s" % (choose_map[r], j),
                # Random variable names
@@ -675,12 +675,11 @@ def remove_unused(code, used_set=set()):
 
     lines = code.split("\n")
     for (line_number, line) in enumerate(lines):
-
         # Split words
         words = [word for word in line.split(" ") if not word == ""]
-
         # Remember line where variable is declared
-        for type in [type for type in types if len(words) > len(type)]:
+        for type in [type for type in types if " ".join(type) in " ".join(words)]: # Fewer matches than line below.
+        # for type in [type for type in types if len(words) > len(type)]:
             variable_type = words[0:len(type)]
             variable_name = words[len(type)]
 
@@ -725,10 +724,10 @@ def remove_unused(code, used_set=set()):
                 used_lines.remove(line)
         if not used_lines and not variable_name in used_set:
             debug("Removing unused variable: %s" % variable_name)
-            lines[declaration_line] = "// " + lines[declaration_line]
+            lines[declaration_line] = None # KBO: Need to completely remove line for evaluate_basis* to work
+            # lines[declaration_line] = "// " + lines[declaration_line]
             removed_lines += [declaration_line]
-
-    return "\n".join([line for line in lines if not line == None])
+    return "\n".join([line for line in lines if not line is None])
 
 def count_ops(code):
     "Count the number of operations in code (multiply-add pairs)."

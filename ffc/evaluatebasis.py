@@ -6,7 +6,7 @@ __date__ = "2007-04-04"
 __copyright__ = "Copyright (C) 2007-2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-25
+# Last changed: 2010-01-26
 
 # Python modules
 import math
@@ -105,27 +105,24 @@ def _evaluate_basis(data_list):
     The function should work for all elements supported by FIAT, but it remains
     untested for tensor valued element."""
 
-    # FIXME: KBO: Can we remove this?
-#    set_format(format)
-
     # Init return code and indent object
     code = []
     Indent = IndentControl()
 
-    # Get the element cell domain and check if it is the same for all elements.
+    # Get the element cell domain and geometric dimension.
     element_cell_domain = data_list[0]["cell_domain"]
-    # FIXME: KBO: This should already be checked elsewhere.
-    ffc_assert(all(element_cell_domain == data["cell_domain"] for data in data_list),\
-               "The element cell domain must be the same for all sub elements: " + repr(data_list))
+    geometric_dimension = data_list[0]["geometric_dimension"]
 
-    # Create mapping from physical element to the FIAT reference element.
+    # Get code snippets for Jacobian, Inverse of Jacobian and mapping of
+    # coordinates from physical element to the FIAT reference element.
     # FIXME: KBO: Change this when supporting R^2 in R^3 elements.
-    code += [Indent.indent(format["fiat coordinate map"](element_cell_domain))]
+    code += [Indent.indent(format["jacobian and inverse"](geometric_dimension))]
+    code += ["", Indent.indent(format["fiat coordinate map"](element_cell_domain))]
 
     # Get value shape and reset values. This should also work for TensorElement,
     # scalar are empty tuples, therefore (1,) in which case value_shape = 1.
     value_shape = sum(sum(data["value_shape"] or (1,)) for data in data_list)
-    code += [Indent.indent(format["comment"]("Reset values"))]
+    code += ["", Indent.indent(format["comment"]("Reset values"))]
     if value_shape == 1:
         # Reset values as it is a pointer.
         code += [format["assign"](Indent.indent(format["pointer"] + format["argument values"]), format["floating point"](0.0))]
@@ -138,7 +135,7 @@ def _evaluate_basis(data_list):
         data = data_list[0]
 
         # Map degree of freedom to local degree.
-        code += [_map_dof(0, Indent, format)]
+        code += ["", _map_dof(0, Indent, format)]
 
         # Generate element code.
         code += _generate_element_code(data, 0, False, Indent, format)
@@ -149,12 +146,7 @@ def _evaluate_basis(data_list):
         code += _mixed_elements(data_list, Indent, format)
 
     # Remove unused variables (from transformations and mappings) in code.
-#    for c in code:
-#        print c
     code = remove_unused("\n".join(code))
-#    print "\nhere\n", code
-#    raise RuntimeError
-
     return code
 
 def _map_dof(sum_space_dim, Indent, format):
@@ -207,6 +199,7 @@ def _mixed_elements(data_list, Indent, format):
         # Increase indentation, indent code and decrease indentation.
         Indent.increase()
         if_code = remove_unused(Indent.indent("\n".join(element_code)))
+        # if_code = Indent.indent("\n".join(element_code))
         Indent.decrease()
 
         # Create if statement and add to code.
@@ -497,7 +490,7 @@ def _compute_basisvalues(data, Indent, format):
     float_0_25 = create_float(0.25)
 
     # Init return code.
-    code = []
+    code = [""]
 
     # Create zero array for basisvalues.
     # Get number of members of the expansion set.

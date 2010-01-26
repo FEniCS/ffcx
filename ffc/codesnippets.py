@@ -220,6 +220,9 @@ for (unsigned int j = 0; j < %d; j++)
     tmp += dofs_per_element[j];
 }"""
 
+# Used in evaluate_basis_derivatives. For second order derivatives in 2D it will
+# generate the combinations: [(0, 0), (0, 1), (1, 0), (1, 1)] (i.e., xx, xy, yx, yy)
+# which will also be the ordering of derivatives in the return value.
 combinations_snippet = """\
 // Declare pointer to two dimensional array that holds combinations of derivatives and initialise
 unsigned int **%(combinations)s = new unsigned int *[%(num_derivatives)s];
@@ -250,7 +253,7 @@ for (unsigned int row = 1; row < %(num_derivatives)s; row++)
 
 _transform_interval_snippet = """\
 // Compute inverse of Jacobian
-const double %(K)s[1][1] =  {{1.0 / J_00}};
+const double %(K)s[1][1] =  {{K_00}};
 
 // Declare transformation matrix
 // Declare pointer to two dimensional array and initialise
@@ -275,7 +278,9 @@ for (unsigned int row = 0; row < %(num_derivatives)s; row++)
 
 _transform_triangle_snippet = """\
 // Compute inverse of Jacobian
-const double %(K)s[2][2] =  {{J_11 / detJ, -J_01 / detJ}, {-J_10 / detJ, J_00 / detJ}};
+const double %(K)s[2][2] = \
+{{K_00, K_01},\
+ {K_10, K_11}};
 
 // Declare transformation matrix
 // Declare pointer to two dimensional array and initialise
@@ -300,10 +305,10 @@ for (unsigned int row = 0; row < %(num_derivatives)s; row++)
 
 _transform_tetrahedron_snippet = """\
 // Compute inverse of Jacobian
-const double %(K)s[3][3] =\
-{{d00 / detJ, d10 / detJ, d20 / detJ},\
- {d01 / detJ, d11 / detJ, d21 / detJ},\
- {d02 / detJ, d12 / detJ, d22 / detJ}};
+const double %(K)s[3][3] = \
+{{K_00, K_01, K_02},\
+ {K_10, K_11, K_12},\
+ {K_20, K_21, K_22}};
 
 // Declare transformation matrix
 // Declare pointer to two dimensional array and initialise
@@ -325,7 +330,6 @@ for (unsigned int row = 0; row < %(num_derivatives)s; row++)
       %(transform)s[row][col] *= %(K)s[%(combinations)s[col][k]][%(combinations)s[row][k]];
   }
 }"""
-
 
 # Codesnippets used in evaluate_dof
 _map_onto_physical_1D = """\
@@ -361,98 +365,29 @@ y[2] = w0*x[0][2] + w1*x[1][2] + w2*x[2][2] + w3*x[3][2];"""
 
 # Codesnippets used in evaluatebasis[|derivatives]
 _map_coordinates_FIAT_interval = """\
-// Extract vertex coordinates
-const double * const * element_coordinates = c.coordinates;
-
-// Compute Jacobian of affine map from reference cell
-const double J_00 = element_coordinates[1][0] - element_coordinates[0][0];
-
 // Get coordinates and map to the reference (FIAT) element
-double x = (2.0*coordinates[0] - element_coordinates[0][0] - element_coordinates[1][0]) / J_00;"""
+double X = (2.0*coordinates[0] - x[0][0] - x[1][0]) / J_00;"""
 
 _map_coordinates_FIAT_triangle = """\
-// Extract vertex coordinates
-const double * const * element_coordinates = c.coordinates;
-
-// Compute Jacobian of affine map from reference cell
-const double J_00 = element_coordinates[1][0] - element_coordinates[0][0];
-const double J_01 = element_coordinates[2][0] - element_coordinates[0][0];
-const double J_10 = element_coordinates[1][1] - element_coordinates[0][1];
-const double J_11 = element_coordinates[2][1] - element_coordinates[0][1];
-
-// Compute determinant of Jacobian
-const double detJ = J_00*J_11 - J_01*J_10;
-
-// Compute inverse of Jacobian
-const double Jinv_00 =  J_11 / detJ;
-const double Jinv_01 = -J_01 / detJ;
-const double Jinv_10 = -J_10 / detJ;
-const double Jinv_11 =  J_00 / detJ;
-
 // Compute constants
-const double C0 = element_coordinates[1][0] + element_coordinates[2][0];
-const double C1 = element_coordinates[1][1] + element_coordinates[2][1];
+const double C0 = x[1][0] + x[2][0];
+const double C1 = x[1][1] + x[2][1];
 
 // Get coordinates and map to the reference (FIAT) element
-double x = (J_01*C1 - J_11*C0 + 2.0*J_11*coordinates[0] - 2.0*J_01*coordinates[1]) / detJ;
-double y = (J_10*C0 - J_00*C1 - 2.0*J_10*coordinates[0] + 2.0*J_00*coordinates[1]) / detJ;"""
+double X = (J_01*(C1 - 2.0*coordinates[1]) + J_11*(2.0*coordinates[0] - C0)) / detJ;
+double Y = (J_00*(2.0*coordinates[1] - C1) + J_10*(C0 - 2.0*coordinates[0])) / detJ;"""
 
 _map_coordinates_FIAT_tetrahedron = """\
-// Extract vertex coordinates
-const double * const * element_coordinates = c.coordinates;
-
-// Compute Jacobian of affine map from reference cell
-const double J_00 = element_coordinates[1][0] - element_coordinates[0][0];
-const double J_01 = element_coordinates[2][0] - element_coordinates[0][0];
-const double J_02 = element_coordinates[3][0] - element_coordinates[0][0];
-const double J_10 = element_coordinates[1][1] - element_coordinates[0][1];
-const double J_11 = element_coordinates[2][1] - element_coordinates[0][1];
-const double J_12 = element_coordinates[3][1] - element_coordinates[0][1];
-const double J_20 = element_coordinates[1][2] - element_coordinates[0][2];
-const double J_21 = element_coordinates[2][2] - element_coordinates[0][2];
-const double J_22 = element_coordinates[3][2] - element_coordinates[0][2];
-
-// Compute sub determinants
-const double d00 = J_11*J_22 - J_12*J_21;
-const double d01 = J_12*J_20 - J_10*J_22;
-const double d02 = J_10*J_21 - J_11*J_20;
-const double d10 = J_02*J_21 - J_01*J_22;
-const double d11 = J_00*J_22 - J_02*J_20;
-const double d12 = J_01*J_20 - J_00*J_21;
-const double d20 = J_01*J_12 - J_02*J_11;
-const double d21 = J_02*J_10 - J_00*J_12;
-const double d22 = J_00*J_11 - J_01*J_10;
-
-// Compute determinant of Jacobian
-double detJ = J_00*d00 + J_10*d10 + J_20*d20;
-
-// Compute inverse of Jacobian
-const double Jinv_00 = d00 / detJ;
-const double Jinv_01 = d10 / detJ;
-const double Jinv_02 = d20 / detJ;
-const double Jinv_10 = d01 / detJ;
-const double Jinv_11 = d11 / detJ;
-const double Jinv_12 = d21 / detJ;
-const double Jinv_20 = d02 / detJ;
-const double Jinv_21 = d12 / detJ;
-const double Jinv_22 = d22 / detJ;
-
 // Compute constants
-const double C0 = element_coordinates[3][0] + element_coordinates[2][0] \\
-                + element_coordinates[1][0] - element_coordinates[0][0];
-const double C1 = element_coordinates[3][1] + element_coordinates[2][1] \\
-                + element_coordinates[1][1] - element_coordinates[0][1];
-const double C2 = element_coordinates[3][2] + element_coordinates[2][2] \\
-                + element_coordinates[1][2] - element_coordinates[0][2];
+const double C0 = x[3][0] + x[2][0] + x[1][0] - x[0][0];
+const double C1 = x[3][1] + x[2][1] + x[1][1] - x[0][1];
+const double C2 = x[3][2] + x[2][2] + x[1][2] - x[0][2];
 
 // Get coordinates and map to the reference (FIAT) element
-double x = coordinates[0];
-double y = coordinates[1];
-double z = coordinates[2];
-
-x = (2.0*d00*x + 2.0*d10*y + 2.0*d20*z - d00*C0 - d10*C1 - d20*C2) / detJ;
-y = (2.0*d01*x + 2.0*d11*y + 2.0*d21*z - d01*C0 - d11*C1 - d21*C2) / detJ;
-z = (2.0*d02*x + 2.0*d12*y + 2.0*d22*z - d02*C0 - d12*C1 - d22*C2) / detJ;"""
+double X = (d_00*(2.0*coordinates[0] - C0) + d_10*(2.0*coordinates[1] - C1) + d_20*(2.0*coordinates[2] - C2)) / detJ;
+double Y = (d_01*(2.0*coordinates[0] - C0) + d_11*(2.0*coordinates[1] - C1) + d_21*(2.0*coordinates[2] - C2)) / detJ;
+double Z = (d_02*(2.0*coordinates[0] - C0) + d_12*(2.0*coordinates[1] - C1) + d_22*(2.0*coordinates[2] - C2)) / detJ;
+"""
 
 
 # Mappings to code snippets used by format
