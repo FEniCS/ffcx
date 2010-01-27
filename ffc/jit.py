@@ -9,7 +9,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Johan Hake, 2008-2009
 # Modified by Ilmar Wilbers, 2008
 # Modified by Kristian B. Oelgaard, 2009
-# Last changed: 2010-01-25
+# Last changed: 2010-01-27
 
 # Python modules
 import os
@@ -68,7 +68,7 @@ def jit_form(form, options=None):
         form = as_form(form)
 
     # Check options
-    options = check_options(form, options)
+    options = _check_options(form, options)
 
     # Set log level
     set_level(options["log_level"])
@@ -147,9 +147,9 @@ def jit_element(element, options=None):
     # Compile form
     (compiled_form, module, form_data) = jit_form(form, options)
 
-    return extract_element_and_dofmap(module)
+    return _extract_element_and_dofmap(module, form_data)
 
-def check_options(form, options):
+def _check_options(form, options):
     "Check options and add any missing options"
 
     # Form can not be a list
@@ -177,7 +177,12 @@ def check_options(form, options):
 
     return options
 
-def extract_element_and_dofmap(module):
-    "Extract element and dofmap from module"
-    return (getattr(module, module.__name__ + "_finite_element_0")(),
-            getattr(module, module.__name__ + "_dof_map_0")())
+def _extract_element_and_dofmap(module, form_data):
+    """
+    Extract element and dofmap from module. Code will be generated for
+    all unique elements (including sub elements) and to get the top
+    level element we need to extract the last element.
+    """
+    i = len(form_data.unique_sub_elements) - 1
+    return (getattr(module, module.__name__ + ("_finite_element_%d" % i))(),
+            getattr(module, module.__name__ + ("_dof_map_%d" % i))())
