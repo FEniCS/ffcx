@@ -7,7 +7,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Peter Brune, 2009
 # Modified by Anders Logg, 2009
-# Last changed: 2010-01-21
+# Last changed: 2010-01-27
 
 # Python modules.
 from numpy import shape
@@ -339,7 +339,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
                     elif transformation == "contravariant piola":
                         self.trans_set.add(format_detJ(choose_map[self.restriction]))
                         detJ = format_inv(format_detJ(choose_map[self.restriction]))
-                        dXdx = format_transform("J", c, local_comp, self.restriction)
+                        dXdx = format_transform("J", local_comp, c, self.restriction)
                         self.trans_set.add(dXdx)
                         basis = format_mult([detJ, dXdx, basis])
                     else:
@@ -409,7 +409,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
                     elif transformation == "contravariant piola":
                         self.trans_set.add(format_detJ(choose_map[self.restriction]))
                         detJ = format_inv(format_detJ(choose_map[self.restriction]))
-                        dXdx = format_transform("J", c, local_comp, self.restriction)
+                        dXdx = format_transform("J", local_comp, c, self.restriction)
                         self.trans_set.add(dXdx)
                         function_name = format_mult([detJ, dXdx, function_name])
                     else:

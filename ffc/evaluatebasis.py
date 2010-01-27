@@ -6,7 +6,7 @@ __date__ = "2007-04-04"
 __copyright__ = "Copyright (C) 2007-2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-26
+# Last changed: 2010-01-27
 
 # Python modules
 import math
@@ -348,7 +348,7 @@ def _compute_values(data, sum_value_dim, vector, Indent, format):
         basis_col = [format_tmp(j) for j in range(topological_dimension)]
         for i in range(num_components):
             # Create Jacobian.
-            jacobian_row = [format["transform"]("J", j, i, None) for j in range(topological_dimension)]
+            jacobian_row = [format["transform"]("J", i, j, None) for j in range(topological_dimension)]
 
             # Create inner product and multiply by inverse of Jacobian.
             inner = [format_mult([jacobian_row[j], basis_col[j]]) for j in range(topological_dimension)]
@@ -367,10 +367,10 @@ def _compute_values(data, sum_value_dim, vector, Indent, format):
         basis_col = [format_tmp(j) for j in range(topological_dimension)]
         for i in range(num_components):
             # Create inverse of Jacobian.
-            inv_jacobian_row = [format["transform"]("JINV", j, i, None) for j in range(topological_dimension)]
+            inv_jacobian_column = [format["transform"]("JINV", j, i, None) for j in range(topological_dimension)]
 
             # Create inner product of basis values and inverse of Jacobian.
-            inner = [format_mult([inv_jacobian_row[j], basis_col[j]]) for j in range(topological_dimension)]
+            inner = [format_mult([inv_jacobian_column[j], basis_col[j]]) for j in range(topological_dimension)]
             value = format_group(format_add(inner))
             name = format_component(format_values, i + sum_value_dim)
             code += [format_assign(name, value)]

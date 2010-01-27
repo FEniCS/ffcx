@@ -6,7 +6,7 @@ __copyright__ = "Copyright (C) 2009-2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Anders Logg, 2009
-# Last changed: 2010-01-21
+# Last changed: 2010-01-27
 
 # Python modules.
 from numpy import shape
@@ -254,7 +254,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
                         basis = create_product([dxdX, basis])
                     elif transformation == "contravariant piola":
                         detJ = create_fraction(create_float(1), create_symbol(format_detJ(choose_map[self.restriction]), GEO))
-                        dXdx = create_symbol(format_transform("J", c, local_comp, self.restriction), GEO)
+                        dXdx = create_symbol(format_transform("J", local_comp, c, self.restriction), GEO)
                         basis = create_product([detJ, dXdx, basis])
                     else:
                         error("Transformation is not supported: " + repr(transformation))
@@ -315,7 +315,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
                         function_name = create_product([dxdX, function_name])
                     elif transformation == "contravariant piola":
                         detJ = create_fraction(create_float(1), create_symbol(format_detJ(choose_map[self.restriction]), GEO))
-                        dXdx = create_symbol(format_transform("J", c, local_comp, self.restriction), GEO)
+                        dXdx = create_symbol(format_transform("J", local_comp, c, self.restriction), GEO)
                         function_name = create_product([detJ, dXdx, function_name])
                     else:
                         error("Transformation is not supported: ", repr(transformation))

@@ -7,7 +7,7 @@ __date__ = "2007-04-16"
 __copyright__ = "Copyright (C) 2007-2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-25
+# Last changed: 2010-01-27
 
 # Python modules
 import math
@@ -516,7 +516,7 @@ def _compute_reference_derivatives(data, Indent, format):
         basis_col = [format_tmp(j) for j in range(topological_dimension)]
         for i in range(num_components):
             # Create Jacobian.
-            jacobian_row = [format["transform"]("J", j, i, None) for j in range(topological_dimension)]
+            jacobian_row = [format["transform"]("J", i, j, None) for j in range(topological_dimension)]
 
             # Create inner product and multiply by inverse of Jacobian.
             inner = [format["multiply"]([jacobian_row[j], basis_col[j]]) for j in range(topological_dimension)]
@@ -535,10 +535,10 @@ def _compute_reference_derivatives(data, Indent, format):
         basis_col = [format_tmp(j) for j in range(topological_dimension)]
         for i in range(num_components):
             # Create inverse of Jacobian.
-            inv_jacobian_row = [format["transform"]("JINV", j, i, None) for j in range(topological_dimension)]
+            inv_jacobian_column = [format["transform"]("JINV", j, i, None) for j in range(topological_dimension)]
 
             # Create inner product of basis values and inverse of Jacobian.
-            inner = [format["multiply"]([inv_jacobian_row[j], basis_col[j]]) for j in range(topological_dimension)]
+            inner = [format["multiply"]([inv_jacobian_column[j], basis_col[j]]) for j in range(topological_dimension)]
             value = format["grouping"](format["add"](inner))
             name = format_component(format["reference derivatives"], i)
             code += [format_assign(name, value)]
