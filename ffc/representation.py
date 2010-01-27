@@ -28,7 +28,7 @@ from itertools import chain
 import ufl
 
 # FFC modules
-from ffc.utils import compute_permutations
+from ffc.utils import compute_permutations, product
 from ffc.log import info, error, begin, end, debug_ir, ffc_assert, warning
 from ffc.fiatinterface import create_element, entities_per_dim, reference_cell
 from ffc.mixedelement import MixedElement
@@ -245,17 +245,14 @@ def _verify_evaluate_basis(data_list):
                "The topological dimension must be the same for all sub elements: " + repr(data_list))
     return data_list
 
-def _value_dimension(element):
-    "Compute value dimension of element."
-
-    # FIXME: Arbitrary tensor elements?
-    # FIXME: Move to FiniteElement/MixedElement
-
+# FIXME: Move to FiniteElement/MixedElement
+def _value_size(element):
+    "Compute value size of element."
     shape = element.value_shape()
     if shape == ():
         return 1
     else:
-        return shape[0]
+        return product(shape)
 
 def _evaluate_dof(element, cell):
     "Compute intermediate representation of evaluate_dof."
@@ -265,10 +262,10 @@ def _evaluate_dof(element, cell):
     offset = 0
     for e in all_elements(element):
         offsets += [offset]*e.space_dimension()
-        offset += _value_dimension(e)
+        offset += _value_size(e) # AL: change here, is that correct?
 
     return {"mappings": element.mapping(),
-            "value_dim": _value_dimension(element),
+            "value_size": _value_size(element),
             "cell_dimension": cell.geometric_dimension(),
             "dofs": [L.pt_dict for L in element.dual_basis()],
             "offsets": offsets}
@@ -343,7 +340,7 @@ def _interpolate_vertex_values(element, cell):
 
     # Compute data for each constituent element
     extract = lambda values: values[values.keys()[0]].transpose()
-    ir["element_data"] = [{"value_dim": _value_dimension(e),
+    ir["element_data"] = [{"value_size": _value_size(e),
                            "basis_values": extract(e.tabulate(0, vertices)),
                            "mapping": e.mapping()[0],
                            "space_dim": e.space_dimension()}
