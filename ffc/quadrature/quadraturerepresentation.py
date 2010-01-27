@@ -6,7 +6,7 @@ __copyright__ = "Copyright (C) 2009-2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Anders Logg, 2009.
-# Last changed: 2010-01-26
+# Last changed: 2010-01-28
 
 # UFL modules
 from ufl.classes import Form, Integral, SpatialDerivative
@@ -15,7 +15,8 @@ from ufl.algorithms import extract_unique_elements, extract_type, extract_elemen
 
 # FFC modules
 from ffc.log import ffc_assert, error
-from ffc.fiatinterface import create_element, create_quadrature, map_facet_points
+from ffc.fiatinterface import create_element, create_quadrature
+from ffc.fiatinterface import map_facet_points, scale_weights
 
 def compute_integral_ir(domain_type, domain_id, integrals, metadata, form_data, form_id):
     "Compute intermediate represention of integral."
@@ -27,7 +28,7 @@ def compute_integral_ir(domain_type, domain_id, integrals, metadata, form_data, 
           "form_id":              form_id,
           "geometric_dimension":  form_data.geometric_dimension,
           "num_facets":           form_data.num_facets}
-    
+
     sorted_integrals = _sort_integrals(integrals, metadata, form_data)
     integrals_dict, psi_tables, quad_weights = _tabulate_basis(sorted_integrals, domain_type, form_data.num_facets)
 
@@ -75,6 +76,7 @@ def _tabulate_basis(sorted_integrals, domain_type, num_facets):
             (points, weights) = create_quadrature(cell_domain, num_points_per_axis)
         elif domain_type == "exterior_facet" or domain_type == "interior_facet":
             (points, weights) = create_quadrature(facet_domain, num_points_per_axis)
+            weights = scale_weights(weights)
         else:
             error("Unknown integral type: " + str(domain_type))
 

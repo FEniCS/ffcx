@@ -23,7 +23,8 @@ from ufl.geometry import domain2facet
 
 # FFC modules
 from ffc.log import info, debug, error
-from ffc.fiatinterface import create_element, create_quadrature, map_facet_points
+from ffc.fiatinterface import create_element, create_quadrature
+from ffc.fiatinterface import map_facet_points, scale_weights
 
 # FFC tensor representation modules
 from multiindex import build_indices
@@ -78,11 +79,8 @@ def _init_quadrature(arguments, domain_type, quadrature_degree):
         # Get points and weights
         (points, weights) = create_quadrature(facet_shape, num_points)
 
-        # Scale weights so sum is 1 (note, different than for cell tensors)
-        if cell_shape == "triangle":
-            weights *= 2.0
-        elif cell_shape == "tetrahedron":
-            weights *= 6.0
+        # Scale facet weights
+        weights = scale_weights(weights)
 
     return (points, weights)
 
