@@ -35,7 +35,7 @@ Testing finite_element
 28_evaluate_dof_1 = 0.353248
 29_evaluate_dof_2 = 0.145236
 30_evaluate_dof_3 = 0.044352
-31_evaluate_dofs = 0 0 0 0
+31_evaluate_dofs = 0.1377 0.353248 0.145236 0.044352
 32_interpolate_vertex_values = 0.1377 0.353248 0.145236 0.044352
 33_num_sub_elements = 0
 

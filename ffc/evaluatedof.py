@@ -91,7 +91,7 @@ def _required_declarations(ir):
     # Declare variable for storing the result and physical coordinates
     cell_dim = ir["cell_dimension"]
     code.append(comment("Declare variables for result of evaluation"))
-    code.append(declare("double", "vals[%d]" % ir["value_dim"]))
+    code.append(declare("double", "vals[%d]" % ir["value_size"]))
     code.append(comment("Declare variable for physical coordinates"))
     code.append(declare("double", "y[%d]" % cell_dim))
 

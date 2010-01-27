@@ -4,7 +4,7 @@ __author__ = "Marie E. Rognes (meg@simula.no)"
 __copyright__ = "Copyright (C) 2009"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-25
+# Last changed: 2010-01-27
 
 from ffc.cpp import format, remove_unused
 
@@ -30,7 +30,7 @@ def interpolate_vertex_values(ir):
         code.append(format["jacobian and inverse"](dim))
 
     # Compute total value dimension for (mixed) element
-    total_dim = sum(data["value_dim"] for data in ir["element_data"])
+    total_dim = sum(data["value_size"] for data in ir["element_data"])
 
     # Generate code for each element
     value_offset = 0
@@ -43,7 +43,7 @@ def interpolate_vertex_values(ir):
                                                        space_offset))
 
         # Update offsets for value- and space dimension
-        value_offset += data["value_dim"]
+        value_offset += data["value_size"]
         space_offset += data["space_dim"]
 
     # Remove unused variables. (Not tracking set of used variables in
@@ -53,12 +53,12 @@ def interpolate_vertex_values(ir):
     return clean_code
 
 
-def _interpolate_vertex_values_element(data, dim, total_value_dim,
+def _interpolate_vertex_values_element(data, dim, total_value_size,
                                        value_offset=0, space_offset=0):
 
     # Extract vertex values for all basis functions
     vertex_values = data["basis_values"]
-    value_dim = data["value_dim"]
+    value_size = data["value_size"]
     space_dim = data["space_dim"]
     mapping = data["mapping"]
 
@@ -68,12 +68,12 @@ def _interpolate_vertex_values_element(data, dim, total_value_dim,
 
     # Create code for each value dimension:
     code = []
-    for k in range(value_dim):
+    for k in range(value_size):
 
         # Create code for each vertex x_j
         for (j, values_at_vertex) in enumerate(vertex_values):
 
-            if value_dim == 1: values_at_vertex = [values_at_vertex]
+            if value_size == 1: values_at_vertex = [values_at_vertex]
 
             # Map basis functions using appropriate mapping
             components = change_of_variables(values_at_vertex, k)
@@ -85,7 +85,7 @@ def _interpolate_vertex_values_element(data, dim, total_value_dim,
             value = inner(dof_values, components)
 
             # Assign value to correct vertex
-            index = j*total_value_dim + (k + value_offset)
+            index = j*total_value_size + (k + value_offset)
             code.append(assign(component("vertex_values", index), value))
 
     return "\n".join(code)
