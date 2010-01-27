@@ -2,7 +2,7 @@
 // Licensed under the GNU GPL version 3 or any later version.
 //
 // First added:  2010-01-24
-// Last changed: 2010-01-26
+// Last changed: 2010-01-27
 //
 // Functions for calling generated UFC functions with "random" (but
 // fixed) data and print the output to screen. Useful for running
@@ -211,8 +211,20 @@ void test_finite_element(ufc::finite_element& element)
   for (uint i = 0; i < max_derivative; i++)
     derivative_size *= c.geometric_dimension;
   double* values = new double[element.space_dimension()*value_size*derivative_size];
+  for (uint i = 0; i < element.space_dimension()*value_size*derivative_size; i++)
+    {
+      values[i] = 0.0;
+    }
   double* dof_values = new double[element.space_dimension()];
+  for (uint i = 0; i < element.space_dimension(); i++)
+    {
+      dof_values[i] = 0.0;
+    }
   double* vertex_values = new double[(c.topological_dimension + 1)*value_size];
+  for (uint i = 0; i < (c.topological_dimension + 1)*value_size; i++)
+    {
+      vertex_values[i] = 0.0;
+    }
   double* coordinates = new double[c.geometric_dimension];
   for (uint i = 0; i < c.geometric_dimension; i++)
     coordinates[i] = 0.1*static_cast<double>(i);
@@ -313,6 +325,9 @@ void test_dofmap(ufc::dof_map& dofmap, ufc::shape cell_shape)
   test_cell c(cell_shape);
   uint n = dofmap.max_local_dimension();
   uint* dofs = new uint[n];
+  for (uint i = 0; i < n; i++)
+    dofs[i] = 0;
+
   uint num_facets = c.topological_dimension + 1;
   double** coordinates = new double * [n];
   for (uint i = 0; i < n; i++)
@@ -414,6 +429,9 @@ void test_cell_integral(ufc::cell_integral& integral,
   // Prepare arguments
   test_cell c(cell_shape);
   double* A = new double[tensor_size];
+  for(int i = 0; i < tensor_size; i++) {
+    A[i] = 0.0;
+  }
 
   // Call tabulate_tensor
   integral.tabulate_tensor(A, w, c);
@@ -441,6 +459,10 @@ void test_exterior_facet_integral(ufc::exterior_facet_integral& integral,
   // Call tabulate_tensor for each facet
   for (uint facet = 0; facet < num_facets; facet++)
   {
+    for(uint i = 0; i < tensor_size; i++) {
+      A[i] = 0.0;
+    }
+
     integral.tabulate_tensor(A, w, c, facet);
     print_array("tabulate_tensor", tensor_size, A, facet);
   }
@@ -470,6 +492,10 @@ void test_interior_facet_integral(ufc::interior_facet_integral& integral,
   {
     for (uint facet1 = 0; facet1 < num_facets; facet1++)
     {
+      for(uint i = 0; i < macro_tensor_size; i++) {
+        A[i] = 0.0;
+      }
+
       integral.tabulate_tensor(A, w, c0, c1, facet0, facet1);
       print_array("tabulate_tensor", macro_tensor_size, A, facet0, facet1);
     }
