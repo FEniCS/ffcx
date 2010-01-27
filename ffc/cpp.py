@@ -169,7 +169,7 @@ format.update({"classname finite_element": \
 
 # Misc
 format.update({"bool":    lambda v: {True: "true", False: "false"}[v],
-               "float":   lambda v: "%g" % v,
+               "float":   lambda v: "%f" % v,
                "str":     lambda v: "%s" % str(v),
                "epsilon": FFC_OPTIONS["epsilon"]})
 
@@ -803,7 +803,7 @@ def set_float_formatting(options):
     precision = int(options["precision"])
 
     # Options for float formatting
-    f1 = "%%.%dg" % precision
+    f1 = "%%.%df" % precision
     f2 = "%%.%de" % precision
 
     # Regular float formatting
