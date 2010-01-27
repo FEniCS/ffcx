@@ -130,7 +130,7 @@ def build_programs():
     header_files = [f for f in os.listdir(".") if f.endswith(".h")]
     header_files.sort()
 
-    begin("Building test programs (% header files found)" % len(header_files))
+    begin("Building test programs (%d header files found)" % len(header_files))
 
     # Iterate over all files
     for f in header_files:
