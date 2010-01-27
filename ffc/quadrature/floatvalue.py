@@ -30,7 +30,8 @@ def set_format(_format):
     global EPS
     EPS = format["epsilon"]
 
-format_float = format["floating point"]
+#format_float = format["floating point"]
+format_float = format["float"]
 EPS = format["epsilon"]
 
 class FloatValue(Expr):
