@@ -11,7 +11,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Garth N. Wells 2006
 # Modified by Marie E. Rognes (meg@math.uio.no) 2008
 # Modified by Kristian B. Oelgaard, 2009
-# Last changed: 2010-01-25
+# Last changed: 2010-01-27
 
 # Python modules
 import numpy
@@ -74,7 +74,15 @@ def _init_quadrature(arguments, domain_type, quadrature_degree):
     if domain_type == Measure.CELL:
         (points, weights) = create_quadrature(cell_shape, num_points)
     else:
+
+        # Get points and weights
         (points, weights) = create_quadrature(facet_shape, num_points)
+
+        # Scale weights so sum is 1 (note, different than for cell tensors)
+        if cell_shape == "triangle":
+            weights *= 2.0
+        elif cell_shape == "tetrahedron":
+            weights *= 6.0
 
     return (points, weights)
 

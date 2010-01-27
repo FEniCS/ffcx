@@ -429,9 +429,8 @@ void test_cell_integral(ufc::cell_integral& integral,
   // Prepare arguments
   test_cell c(cell_shape);
   double* A = new double[tensor_size];
-  for(int i = 0; i < tensor_size; i++) {
+  for(int i = 0; i < tensor_size; i++)
     A[i] = 0.0;
-  }
 
   // Call tabulate_tensor
   integral.tabulate_tensor(A, w, c);
@@ -459,9 +458,8 @@ void test_exterior_facet_integral(ufc::exterior_facet_integral& integral,
   // Call tabulate_tensor for each facet
   for (uint facet = 0; facet < num_facets; facet++)
   {
-    for(uint i = 0; i < tensor_size; i++) {
+    for(uint i = 0; i < tensor_size; i++)
       A[i] = 0.0;
-    }
 
     integral.tabulate_tensor(A, w, c, facet);
     print_array("tabulate_tensor", tensor_size, A, facet);
@@ -492,9 +490,8 @@ void test_interior_facet_integral(ufc::interior_facet_integral& integral,
   {
     for (uint facet1 = 0; facet1 < num_facets; facet1++)
     {
-      for(uint i = 0; i < macro_tensor_size; i++) {
+      for(uint i = 0; i < macro_tensor_size; i++)
         A[i] = 0.0;
-      }
 
       integral.tabulate_tensor(A, w, c0, c1, facet0, facet1);
       print_array("tabulate_tensor", macro_tensor_size, A, facet0, facet1);
