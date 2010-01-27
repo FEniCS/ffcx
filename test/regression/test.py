@@ -68,11 +68,11 @@ def generate_test_cases():
 def generate_code():
     "Generate code for all test cases."
 
-    begin("Generating code")
-
     # Get a list of all files
     form_files = [f for f in os.listdir(".") if f.endswith(".ufl")]
     form_files.sort()
+
+    begin("Generating code (%d form files found)" % len(form_files))
 
     # Iterate over all files
     for f in form_files:
@@ -91,11 +91,11 @@ def generate_code():
 def validate_code():
     "Validate generated code against references."
 
-    begin("Validating generated code")
-
     # Get a list of all files
     header_files = [f for f in os.listdir(".") if f.endswith(".h")]
     header_files.sort()
+
+    begin("Validating generated code (%d header files found)" % len(header_files))
 
     # Iterate over all files
     for f in header_files:
@@ -126,11 +126,11 @@ def validate_code():
 def build_programs():
     "Build test programs for all test cases."
 
-    begin("Building test programs")
-
     # Get a list of all files
     header_files = [f for f in os.listdir(".") if f.endswith(".h")]
     header_files.sort()
+
+    begin("Building test programs (% header files found)" % len(header_files))
 
     # Iterate over all files
     for f in header_files:
@@ -154,11 +154,11 @@ def build_programs():
 def run_programs():
     "Run generated programs."
 
-    begin("Running generated programs")
-
     # Get a list of all files
     test_programs = [f for f in os.listdir(".") if f.endswith(".bin")]
     test_programs.sort()
+
+    begin("Running generated programs (%d programs found)" % len(test_programs))
 
     # Iterate over all files
     for f in test_programs:
@@ -178,11 +178,11 @@ def run_programs():
 def validate_programs():
     "Validate generated programs against references."
 
-    begin("Validating generated programs")
-
     # Get a list of all files
     output_files = [f for f in os.listdir(".") if f.endswith(".out")]
     output_files.sort()
+
+    begin("Validating generated programs (%d programs found)" % len(output_files))
 
     # Iterate over all files
     for f in output_files:
