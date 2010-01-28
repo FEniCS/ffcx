@@ -259,8 +259,6 @@ def _transform(type, j, k, r):
 def _generate_switch(variable, cases, default=None, numbers=None):
     "Generate switch statement from given variable and cases"
 
-    print numbers
-
     # Special case: no cases and no default
     if len(cases) == 0 and default is None:
         return format["do nothing"]
