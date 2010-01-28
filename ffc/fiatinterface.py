@@ -5,7 +5,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Garth N. Wells, 2009.
 # Modified by Marie Rognes, 2009-2010.
-# Last changed: 2010-01-27
+# Last changed: 2010-01-28
 
 # Python modules
 from numpy import array
@@ -114,7 +114,3 @@ def map_facet_points(points, facet):
         new_points += [x]
 
     return new_points
-
-def scale_weights(weights):
-    "Scale weights so sum of weights is 1."
-    return weights / sum(weights)

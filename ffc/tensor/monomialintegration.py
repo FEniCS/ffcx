@@ -11,7 +11,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Garth N. Wells 2006
 # Modified by Marie E. Rognes (meg@math.uio.no) 2008
 # Modified by Kristian B. Oelgaard, 2009
-# Last changed: 2010-01-27
+# Last changed: 2010-01-28
 
 # Python modules
 import numpy
@@ -24,7 +24,7 @@ from ufl.geometry import domain2facet
 # FFC modules
 from ffc.log import info, debug, error
 from ffc.fiatinterface import create_element, create_quadrature
-from ffc.fiatinterface import map_facet_points, scale_weights
+from ffc.fiatinterface import map_facet_points
 
 # FFC tensor representation modules
 from multiindex import build_indices
@@ -75,12 +75,7 @@ def _init_quadrature(arguments, domain_type, quadrature_degree):
     if domain_type == Measure.CELL:
         (points, weights) = create_quadrature(cell_shape, num_points)
     else:
-
-        # Get points and weights
         (points, weights) = create_quadrature(facet_shape, num_points)
-
-        # Scale facet weights
-        weights = scale_weights(weights)
 
     return (points, weights)
 

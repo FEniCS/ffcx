@@ -16,7 +16,7 @@ from ufl.algorithms import extract_unique_elements, extract_type, extract_elemen
 # FFC modules
 from ffc.log import ffc_assert, error
 from ffc.fiatinterface import create_element, create_quadrature
-from ffc.fiatinterface import map_facet_points, scale_weights
+from ffc.fiatinterface import map_facet_points
 
 def compute_integral_ir(domain_type, domain_id, integrals, metadata, form_data, form_id):
     "Compute intermediate represention of integral."
@@ -76,7 +76,6 @@ def _tabulate_basis(sorted_integrals, domain_type, num_facets):
             (points, weights) = create_quadrature(cell_domain, num_points_per_axis)
         elif domain_type == "exterior_facet" or domain_type == "interior_facet":
             (points, weights) = create_quadrature(facet_domain, num_points_per_axis)
-            weights = scale_weights(weights)
         else:
             error("Unknown integral type: " + str(domain_type))
 
