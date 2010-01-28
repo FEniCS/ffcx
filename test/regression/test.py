@@ -12,7 +12,7 @@ output_directory = "output"
 demo_directory = "../../../demo"
 
 # Change here to run old or new FFC
-run_old_ffc = True
+run_old_ffc = False
 
 if run_old_ffc:
     from ffc.common.log import begin, end, info, set_level, INFO
@@ -221,26 +221,27 @@ def main(args):
     "Run all regression tests."
 
     # Enter output directory
-    if os.path.isdir(output_directory):
-        shutil.rmtree(output_directory)
-    os.mkdir(output_directory)
+    #if os.path.isdir(output_directory):
+    #    shutil.rmtree(output_directory)
+    #os.mkdir(output_directory)
     os.chdir(output_directory)
 
     # FIXME: Only run validate programs when code differs
 
     # Generate test cases
-    generate_test_cases()
+    #generate_test_cases()
 
     # Generate and validate code
-    generate_code()
+    #generate_code()
     #validate_code()
 
     # Hack for old bug in value_dimension for tensor elements
-    print run_command("cp ../tmp/TensorWeightedPoisson.h .")
+    if run_old_ffc:
+        print run_command("cp ../tmp/TensorWeightedPoisson.h .")
 
     # Build, run and validate programs
-    build_programs()
-    run_programs()
+    #build_programs()
+    #run_programs()
     validate_programs()
 
     # Print results

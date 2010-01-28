@@ -376,7 +376,7 @@ void test_dofmap(ufc::dof_map& dofmap, ufc::shape cell_shape)
   for (uint facet = 0; facet < num_facets; facet++)
   {
     dofmap.tabulate_facet_dofs(dofs, facet);
-    print_array("tabulate_dofs", dofmap.num_facet_dofs(), dofs, facet);
+    print_array("tabulate_facet_dofs", dofmap.num_facet_dofs(), dofs, facet);
   }
 
   // tabulate_entity_dofs
