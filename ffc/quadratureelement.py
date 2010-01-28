@@ -4,13 +4,13 @@ __copyright__ = "Copyright (C) 2007-2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Garth N. Wells 2006-2009
-# Last changed: 2010-01-21
+# Last changed: 2010-01-28
 
 # Python modules.
 import numpy
 
 # FIAT modules.
-from FIAT.shapes import num_entities
+#from FIAT.shapes import num_entities
 
 # UFL modules.
 from ufl.classes import Cell

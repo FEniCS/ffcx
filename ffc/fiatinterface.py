@@ -12,7 +12,7 @@ from numpy import array
 
 # UFL and FIAT modules
 import ufl
-import FIAT_NEW as FIAT
+import FIAT
 
 # FFC modules
 from ffc.log import debug, error
