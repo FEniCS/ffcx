@@ -11,7 +11,6 @@ from ffc.cpp import format, remove_unused
 # Extract code manipulation formats
 inner = format["inner product"]
 component = format["component"]
-precision = format["float"]
 assign = format["assign"]
 multiply = format["multiply"]
 

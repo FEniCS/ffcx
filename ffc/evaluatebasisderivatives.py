@@ -70,7 +70,8 @@ def _evaluate_basis_derivatives_all(data_list):
     if (value_shape == 1):
         num_vals = format["num derivatives"]
     else:
-        num_vals = format["multiply"]([format["floating point"](value_shape), format["num derivatives"]])
+        # FIXME: KBO: Should the str(int()) be in format?
+        num_vals = format["multiply"]([str(int(value_shape)), format["num derivatives"]])
     code += [format_assign(Indent.indent(format["float declaration"] + format["pointer"] + "dof_values"),\
               format["component"](format["new"] + format["float declaration"], num_vals))]
     loop_vars = [(format_r, 0, num_vals)]
@@ -399,7 +400,8 @@ def _compute_component(shape_dmats, index, component, indices, Indent, format):
     elif component == 1:
         access = format["add"]([format["num derivatives"], index])
     else:
-        mul = format["multiply"]([format["floating point"](component), format["num derivatives"]])
+        # FIXME: KBO: Should the str(int()) be in format?
+        mul = format["multiply"]([str(int(component)), format["num derivatives"]])
         access = format["add"]([mul, index])
 
     name = format["component"](format["reference derivatives"], access)
@@ -467,7 +469,8 @@ def _compute_reference_derivatives(data, Indent, format):
     if (num_components == 1):
         num_vals = format["num derivatives"]
     else:
-        num_vals = format["multiply"]([format["floating point"](num_components), format["num derivatives"]])
+        # FIXME: KBO: Should the str(int()) be in format?
+        num_vals = format["multiply"]([str(int(num_components)), format["num derivatives"]])
     code += [format_assign(Indent.indent(format_float + format["pointer"] + format["reference derivatives"]),\
               format["component"](format["new"] + format_float, num_vals))]
     # Reset values of reference derivatives.

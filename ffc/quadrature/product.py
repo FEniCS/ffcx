@@ -25,7 +25,6 @@ def set_format(_format):
     format = _format
     global EPS
     EPS = format["epsilon"]
-EPS = format["epsilon"]
 
 #class Product(object):
 class Product(Expr):
@@ -117,7 +116,7 @@ class Product(Expr):
                 self.val = float_val
                 self.vrs = [create_float(float_val)]
             # If 1.0 is the only value left, add it.
-            elif abs(float_val - 1.0) < EPS and not self.vrs:
+            elif abs(float_val - 1.0) < format["epsilon"] and not self.vrs:
                 self.val = 1.0
                 self.vrs = [create_float(1)]
 
