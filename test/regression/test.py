@@ -12,7 +12,7 @@ output_directory = "output"
 demo_directory = "../../../demo"
 
 # Change here to run old or new FFC
-run_old_ffc = True
+run_old_ffc = False
 
 if run_old_ffc:
     from ffc.common.log import begin, end, info, set_level, INFO
@@ -21,6 +21,8 @@ if run_old_ffc:
     info_blue = info
     set_level(INFO)
     demo_directory = "../../../../ffc-0.7.1-reference/demo"
+    #demo_directory = "/home/meg/local/src/fenics/ffc-0.7.1-reference/demo"
+
 else:
     from ffc.log import begin, end, info, info_red, info_green, info_blue
 
@@ -58,10 +60,13 @@ def generate_test_cases():
     info_green("Copied %d demo files" % len(demo_files))
 
     # Generate form files for forms
-    info("Not implemented")
+    info("Generating form files for extra demo forms: Not implemented")
 
     # Generate form files for elements
-    info("Not implemented")
+    from library import elements
+    info("Generating form files for extra elements (%d elements)" % len(elements))
+    for (i, element) in enumerate(elements):
+        open("X_Element%d.ufl" % i, "w").write("element = %s" % element)
 
     end()
 
