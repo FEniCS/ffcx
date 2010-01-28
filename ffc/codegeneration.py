@@ -11,7 +11,7 @@ __date__ = "2009-12-16"
 __copyright__ = "Copyright (C) 2009 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-27
+# Last changed: 2010-01-28
 
 # FFC modules
 from ffc.log import info, begin, end, debug_code
@@ -367,7 +367,7 @@ def _create_foo(numbers, prefix, class_name):
     class_names = ["%s_%s_%d" % (prefix.lower(), class_name, i) for i in numbers]
     cases = [format["return"]("new " + name + "()") for name in class_names]
     default = format["return"](0)
-    return format["switch"]("i", cases + [default], default)
+    return format["switch"]("i", cases, default=default, numbers=numbers)
 
 def _create_foo_integral(ir, integral_type, prefix):
     "Generate code for create_<foo>_integral."

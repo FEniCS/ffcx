@@ -7,7 +7,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian B. Oelgaard 2010
 # Modified by Marie E. Rognes 2010
-# Last changed: 2010-01-27
+# Last changed: 2010-01-28
 
 # Python modules
 import re, numpy, platform
@@ -29,7 +29,7 @@ format.update({"return":      lambda v: "return %s;" % str(v),
                "block begin": "{",
                "block end":   "}",
                "list":        lambda v: format["block"](format["separator"].join([str(l) for l in v])),
-               "switch":      lambda v, cases, default=None: _generate_switch(v, cases, default),
+               "switch":      lambda v, cases, default=None, numbers=None: _generate_switch(v, cases, default, numbers),
                "exception":   lambda v: "throw std::runtime_error(\"%s\");" % v,
                "comment":     lambda v: "// %s" % v,
                "if":          lambda c, v: "if (%s)\n{\n%s\n}\n" % (c, v),
@@ -254,21 +254,29 @@ def _transform(type, j, k, r):
     map_name = {"J": "J", "JINV": "K"}[type] + {None: "", "+": "0", "-": "1"}[r]
     return (map_name + "_%d%d") % (j, k)
 
-def _generate_switch(variable, cases, default=None):
+# FIXME: Input to _generate_switch should be a list of tuples (i, case)
+
+def _generate_switch(variable, cases, default=None, numbers=None):
     "Generate switch statement from given variable and cases"
 
-    # Special case: no cases:
-    if len(cases) == 0:
+    # Special case: no cases and no default
+    if len(cases) == 0 and default is None:
         return format["do nothing"]
+    elif len(cases) == 0:
+        return default
 
-    # Special case: one case
-    if len(cases) == 1:
+    # Special case: one case and no default
+    if len(cases) == 1 and default is None:
         return cases[0]
+
+    # Create numbers for switch
+    if numbers is None:
+        numbers = range(len(cases))
 
     # Create switch
     code = "switch (%s)\n{\n" % variable
-    for i in range(len(cases)):
-        code += "case %d:\n  {\n  %s\n    break;\n  }\n" % (i, indent(cases[i], 2))
+    for (i, case) in enumerate(cases):
+        code += "case %d:\n  {\n  %s\n    break;\n  }\n" % (numbers[i], indent(case, 2))
     code += "}\n"
 
     # Default value
