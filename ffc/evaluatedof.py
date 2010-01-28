@@ -212,7 +212,8 @@ def _generate_multiple_points_body(i, dof, mapping,
     code += [Indent.indent(comment("// Loop over directions"))]
     code += [Indent.indent("for(unsigned int k = 0; k < %d; k++) {" % len_tokens)]
     Indent.increase()
-    value = multiply([component("copy", component("D_%d" % i, ("j", "k"))),
+    value = multiply([component("copy_%d" % i,
+                                component("D_%d" % i, ("j", "k"))),
                       component("W_%d" %i, ("j", "k"))])
 
     # Add value from this point to total result
