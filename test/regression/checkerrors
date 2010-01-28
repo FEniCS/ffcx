@@ -2,6 +2,6 @@
 #
 # Temporary script for checking remaining errors for FFC 0.9.0
 
-cat error.log | grep differ | grep ':' | grep -v num_entity_dofs | grep -v evaluate_basis_all | grep -v interpolate_vertex_values | grep -v evaluate_dofs | cut -d'_' -f2- | sort | less
+cat error.log | grep differ | grep ':' | grep -v num_entity_dofs | grep -v evaluate_basis_all | grep -v interpolate_vertex_values | cut -d'_' -f2- | sort | less
 
-cat error.log | grep differ | grep ':' | grep -v num_entity_dofs | grep -v evaluate_basis_all | grep -v interpolate_vertex_values | grep -v evaluate_dofs | cut -d'_' -f2- | sort | wc
+cat error.log | grep differ | grep ':' | grep -v num_entity_dofs | grep -v evaluate_basis_all | grep -v interpolate_vertex_values | cut -d'_' -f2- | sort | wc

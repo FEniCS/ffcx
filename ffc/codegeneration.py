@@ -11,7 +11,7 @@ __date__ = "2009-12-16"
 __copyright__ = "Copyright (C) 2009 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-27
+# Last changed: 2010-01-28
 
 # FFC modules
 from ffc.log import info, begin, end, debug_code
@@ -94,7 +94,7 @@ def _generate_element_code(ir, prefix, options):
     code["evaluate_dofs"] = evaluate_dofs_code
     code["interpolate_vertex_values"] = interpolate_vertex_values(ir["interpolate_vertex_values"])
     code["num_sub_elements"] = ret(ir["num_sub_elements"])
-    code["create_sub_element"] = _create_foo(ir["create_sub_element"], prefix, "finite_element")
+    code["create_sub_element"] = _create_foo(prefix, "finite_element", ir["create_sub_element"])
 
     # Postprocess code
     _postprocess_code(code, options)
@@ -137,7 +137,7 @@ def _generate_dofmap_code(ir, prefix, options):
     code["tabulate_entity_dofs"] = _tabulate_entity_dofs(ir["tabulate_entity_dofs"])
     code["tabulate_coordinates"] = _tabulate_coordinates(ir["tabulate_coordinates"])
     code["num_sub_dof_maps"] = ret(ir["num_sub_dof_maps"])
-    code["create_sub_dof_map"] = _create_foo(ir["create_sub_dof_map"], prefix, "dof_map")
+    code["create_sub_dof_map"] = _create_foo(prefix, "dof_map", ir["create_sub_dof_map"])
 
     # Postprocess code
     _postprocess_code(code, options)
@@ -185,8 +185,8 @@ def _generate_form_code(ir, prefix, options):
     code["num_cell_integrals"] = ret(ir["num_cell_integrals"])
     code["num_exterior_facet_integrals"] = ret(ir["num_exterior_facet_integrals"])
     code["num_interior_facet_integrals"] = ret(ir["num_interior_facet_integrals"])
-    code["create_finite_element"] = _create_foo(ir["create_finite_element"], prefix, "finite_element")
-    code["create_dof_map"] = _create_foo(ir["create_dof_map"], prefix, "dof_map")
+    code["create_finite_element"] = _create_foo(prefix, "finite_element", ir["create_finite_element"])
+    code["create_dof_map"] = _create_foo(prefix, "dof_map", ir["create_dof_map"])
     code["create_cell_integral"] = _create_foo_integral(ir, "cell", prefix)
     code["create_exterior_facet_integral"] = _create_foo_integral(ir, "exterior_facet", prefix)
     code["create_interior_facet_integral"] = _create_foo_integral(ir, "interior_facet", prefix)
@@ -362,18 +362,18 @@ def _tabulate_entity_dofs(ir):
 
 #--- Utility functions ---
 
-def _create_foo(numbers, prefix, class_name):
+def _create_foo(prefix, class_name, postfix, numbers=None):
     "Generate code for create_<foo>."
-    class_names = ["%s_%s_%d" % (prefix.lower(), class_name, i) for i in numbers]
+    class_names = ["%s_%s_%d" % (prefix.lower(), class_name, i) for i in postfix]
     cases = [format["return"]("new " + name + "()") for name in class_names]
     default = format["return"](0)
-    return format["switch"]("i", cases + [default], default)
+    return format["switch"]("i", cases, default=default, numbers=numbers)
 
 def _create_foo_integral(ir, integral_type, prefix):
     "Generate code for create_<foo>_integral."
     class_name = integral_type + "_integral_" + str(ir["id"])
-    numbers = ir["create_" + integral_type + "_integral"]
-    return _create_foo(numbers, prefix, class_name)
+    postfix = ir["create_" + integral_type + "_integral"]
+    return _create_foo(prefix, class_name, postfix, numbers=postfix)
 
 def _postprocess_code(code, options):
     "Postprocess generated code."

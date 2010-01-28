@@ -35,7 +35,7 @@ Testing finite_element
 28_evaluate_dof_1 = 0.353248
 29_evaluate_dof_2 = 0.145236
 30_evaluate_dof_3 = 0.044352
-31_evaluate_dofs = 0 0 0 0
+31_evaluate_dofs = 0.1377 0.353248 0.145236 0.044352
 32_interpolate_vertex_values = 0.1377 0.353248 0.145236 0.044352
 33_num_sub_elements = 0
 
@@ -58,10 +58,10 @@ Testing dof_map
 48_num_entity_dofs_2 = 0
 49_num_entity_dofs_3 = 0
 50_tabulate_dofs = 0 0 0 0
-51_tabulate_dofs_0 = 1 2 3
-52_tabulate_dofs_1 = 0 2 3
-53_tabulate_dofs_2 = 0 1 3
-54_tabulate_dofs_3 = 0 1 2
+51_tabulate_facet_dofs_0 = 1 2 3
+52_tabulate_facet_dofs_1 = 0 2 3
+53_tabulate_facet_dofs_2 = 0 1 3
+54_tabulate_facet_dofs_3 = 0 1 2
 55_tabulate_entity_dofs_0_0 =
 56_tabulate_entity_dofs_0_1 =
 57_tabulate_entity_dofs_0_2 =

@@ -2,7 +2,7 @@
 // Licensed under the GNU GPL version 3 or any later version.
 //
 // First added:  2010-01-24
-// Last changed: 2010-01-27
+// Last changed: 2010-01-28
 //
 // Functions for calling generated UFC functions with "random" (but
 // fixed) data and print the output to screen. Useful for running
@@ -212,19 +212,19 @@ void test_finite_element(ufc::finite_element& element)
     derivative_size *= c.geometric_dimension;
   double* values = new double[element.space_dimension()*value_size*derivative_size];
   for (uint i = 0; i < element.space_dimension()*value_size*derivative_size; i++)
-    {
-      values[i] = 0.0;
-    }
+  {
+    values[i] = 0.0;
+  }
   double* dof_values = new double[element.space_dimension()];
   for (uint i = 0; i < element.space_dimension(); i++)
-    {
-      dof_values[i] = 0.0;
-    }
+  {
+    dof_values[i] = 0.0;
+  }
   double* vertex_values = new double[(c.topological_dimension + 1)*value_size];
   for (uint i = 0; i < (c.topological_dimension + 1)*value_size; i++)
-    {
-      vertex_values[i] = 0.0;
-    }
+  {
+    vertex_values[i] = 0.0;
+  }
   double* coordinates = new double[c.geometric_dimension];
   for (uint i = 0; i < c.geometric_dimension; i++)
     coordinates[i] = 0.1*static_cast<double>(i);
@@ -376,7 +376,7 @@ void test_dofmap(ufc::dof_map& dofmap, ufc::shape cell_shape)
   for (uint facet = 0; facet < num_facets; facet++)
   {
     dofmap.tabulate_facet_dofs(dofs, facet);
-    print_array("tabulate_dofs", dofmap.num_facet_dofs(), dofs, facet);
+    print_array("tabulate_facet_dofs", dofmap.num_facet_dofs(), dofs, facet);
   }
 
   // tabulate_entity_dofs
