@@ -174,11 +174,12 @@ def _compute_num_derivatives(topological_dimension, Indent, format):
     "Computes the number of derivatives of order 'n' as: element.cell_shape()^n."
 
     code = [format["comment"]("Compute number of derivatives.")]
-    code += [format["declaration"](Indent.indent(format["uint declaration"]), format["num derivatives"],\
-              format["floating point"](1))]
+    # FIXME: KBO: Should the str(int()) be in format?
+    code.append(format["declaration"](format["uint declaration"], format["num derivatives"], str(int(1))))
 
     loop_vars = [(format["free indices"][0], 0, format["argument derivative order"])]
-    lines = [format["imul"](format["num derivatives"], format["floating point"](topological_dimension))]
+    # FIXME: KBO: Should the str(int()) be in format?
+    lines = [format["imul"](format["num derivatives"], str(int(topological_dimension)))]
 
     code += generate_loop(lines, loop_vars, Indent, format)
 
@@ -225,7 +226,8 @@ def _reset_values(data_list, Indent, format):
     if value_shape == 1:
         num_vals = format["num derivatives"]
     else:
-        num_vals = format["multiply"]([format["floating point"](value_shape), format["num derivatives"]])
+        # FIXME: KBO: Should the str(int()) be in format?
+        num_vals = format["multiply"]([str(int(value_shape)), format["num derivatives"]])
     name = format["component"](format["argument values"], format["free indices"][0])
     loop_vars = [(format["free indices"][0], 0, num_vals)]
     lines = [format_assign(name, format["floating point"](0))]
@@ -355,7 +357,7 @@ def _update_dmats(shape_dmats, indices, Indent, format):
     code += generate_loop(lines, loop_vars, Indent, format)
     return code
 
-def _compute_dmats(num_dmats, shape_dmats, available_indices, Indent, format):
+def _compute_dmats(num_dmats, shape_dmats, available_indices, deriv_index, Indent, format):
 
     s, t, u = available_indices
 
@@ -369,8 +371,9 @@ def _compute_dmats(num_dmats, shape_dmats, available_indices, Indent, format):
 
     lines += ["", format["comment"]("Update dmats using an inner product.")]
     # Create dmats matrix by multiplication
+    comb = format["component"](format["derivative combinations"], [deriv_index, s])
     for i in range(num_dmats):
-        lines += _dmats_product(shape_dmats, s, i, [t, u], Indent, format)
+        lines += _dmats_product(shape_dmats, comb, i, [t, u], Indent, format)
 
     code += generate_loop(lines, loop_vars, Indent, format)
 
@@ -386,7 +389,6 @@ def _dmats_product(shape_dmats, index, i, indices, Indent, format):
     value = format["multiply"]([format["component"](format["dmats"](i), [t, tu]), dmats_old])
     name = Indent.indent(format["iadd"](dmats, value))
     lines = generate_loop([name], [(tu, 0, shape_dmats[0])], Indent, format)
-
     code = [format["if"](index + format["is equal"] + str(i),\
             "\n".join(generate_loop(lines, loop_vars, Indent, format)))]
 
@@ -496,7 +498,7 @@ def _compute_reference_derivatives(data, Indent, format):
     code += [Indent.indent(format_comment("Loop possible derivatives."))]
     loop_vars = [(format_r, 0, format["num derivatives"])]
     # Compute dmats as a recursive matrix product
-    lines = _compute_dmats(len(data["dmats"]), shape_dmats, [format_s, format_t, format_u], Indent, format)
+    lines = _compute_dmats(len(data["dmats"]), shape_dmats, [format_s, format_t, format_u], format_r, Indent, format)
     # Compute derivatives for all components
     for i in range(num_components):
         lines += _compute_component(shape_dmats, format_r, i, [format_s, format_t], Indent, format)
