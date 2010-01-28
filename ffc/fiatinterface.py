@@ -5,7 +5,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Garth N. Wells, 2009.
 # Modified by Marie Rognes, 2009-2010.
-# Last changed: 2010-01-28
+# Last changed: 2010-01-29
 
 # Python modules
 from numpy import array
@@ -30,6 +30,14 @@ domain2dim = {"vertex": 0,
 
 # Mapping from dimension to number of mesh sub-entities:
 entities_per_dim = {1: [2, 1], 2: [3, 3, 1], 3: [4, 6, 4, 1]}
+
+def _indices(element, domain):
+    dim = domain.topological_dimension()
+    entities = element.entity_dofs()[dim]
+    indices = []
+    for (entity, index) in entities.iteritems():
+        indices += index
+    return indices
 
 def reference_cell(dim):
     if isinstance(dim, int):
