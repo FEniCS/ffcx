@@ -17,6 +17,7 @@ import FIAT_NEW as FIAT
 # FFC modules
 from ffc.log import debug, error
 from ffc.quadratureelement import QuadratureElement as FFCQuadratureElement
+from ffc.restrictedelement import RestrictedElement as FFCRestrictedElement
 
 # Cache for computed elements
 _cache = {}
@@ -49,6 +50,11 @@ def create_element(ufl_element):
     # Create element
     if isinstance(ufl_element, ufl.MixedElement):
         element = FFCMixedElement(ufl_element)
+    elif isinstance(ufl_element, ufl.ElementRestriction):
+        print "Creating RestrictedElement"
+        print "  input:   ", ufl_element
+        print "  element: ", ufl_element.element()
+        element = FFCRestrictedElement(create_element(ufl_element.element()))
     else:
         element = create_fiat_element(ufl_element)
 

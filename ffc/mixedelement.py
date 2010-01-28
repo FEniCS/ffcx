@@ -6,7 +6,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Marie E. Rognes (meg@simula.no) 2007--2010
 # Modified by Kristian B. Oelgaard 2009
 
-# Last changed: 2010-01-21
+# Last changed: 2010-01-28
 
 # Python modules
 import numpy
@@ -19,9 +19,7 @@ from log import error
 from fiatinterface import create_fiat_element
 
 class MixedElement:
-    """
-    Create a FFC mixed element from a UFL mixed element.
-    """
+    "Create a FFC mixed element from a UFL mixed element."
 
     def __init__(self, ufl_element):
         self._elements = _extract_elements(ufl_element)
@@ -68,7 +66,7 @@ class MixedElement:
 
         # Zeros for insertion into mixed table
         table_shape = (self.space_dimension(), self.num_components(), len(points))
-        
+
         # Iterate over elements and fill in non-zero values
         irange = (0, 0)
         crange = (0, 0)

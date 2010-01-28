@@ -12,7 +12,7 @@ output_directory = "output"
 demo_directory = "../../../demo"
 
 # Change here to run old or new FFC
-run_old_ffc = True
+run_old_ffc = False
 
 if run_old_ffc:
     from ffc.common.log import begin, end, info, set_level, INFO

@@ -12,7 +12,7 @@ __date__ = "2007-02-05"
 __copyright__ = "Copyright (C) 2007-2010 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-25
+# Last changed: 2010-01-28
 
 # UFL modules
 from ufl.common import istr, tstr
