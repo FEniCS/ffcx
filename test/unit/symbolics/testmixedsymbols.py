@@ -5,7 +5,7 @@ __date__ = "2010-01-06"
 __copyright__ = "Copyright (C) 2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-06
+# Last changed: 2010-01-28
 
 # Pyhton modules
 import unittest
@@ -13,11 +13,19 @@ import time
 
 # FFC modules
 from ffc.quadrature.symbolics import *
-from ffc.cpp import format
+from ffc.cpp import format, set_float_formatting
+from ffc.constants import FFC_OPTIONS
+set_float_formatting(FFC_OPTIONS)
 
 class TestMixedSymbols(unittest.TestCase):
 
     def testMixedSymbols(self):
+
+        f_0 = format["float"](0)
+        f_2 = format["float"](2)
+        f_3 = format["float"](3)
+        f_4 = format["float"](4)
+        f_6 = format["float"](6)
 
         f0 = FloatValue(-2.0)
         f1 = FloatValue(3.0)
@@ -104,18 +112,18 @@ class TestMixedSymbols(unittest.TestCase):
         self.assertEqual(mpf3.ops(), 5)
 
         self.assertEqual(str(mpp0), 'x*x*y')
-        self.assertEqual(str(mpp1), '3*x*x*y*y')
-        self.assertEqual(str(mpp2), '0')
-        self.assertEqual(str(mpp3), '9*x*x*x*y*y*y')
+        self.assertEqual(str(mpp1), '%s*x*x*y*y' % f_3)
+        self.assertEqual(str(mpp2), '%s' % f_0)
+        self.assertEqual(str(mpp3), '%s*x*x*x*y*y*y' % format["float"](9))
         self.assertEqual(str(mps0), 'x*(x + y)')
         self.assertEqual(str(mps1), '(x + x)*(x + y)')
 #        self.assertEqual(str(mps2), '(x-2)*(x + x-2)')
-        self.assertEqual(str(mps2), '(x + x-2)*(x-2)')
+        self.assertEqual(str(mps2), '(x + x-%s)*(x-%s)' % (f_2, f_2))
         self.assertEqual(str(mps3), '(x + x)*(x + x)*(x + y)')
         self.assertEqual(str(mpf0), 'x*x/y')
-        self.assertEqual(str(mpf1), 'x/3*x/y')
-        self.assertEqual(str(mpf2), '-2/y*x/3')
-        self.assertEqual(str(mpf3), 'x/3*x/y*x/y')
+        self.assertEqual(str(mpf1), 'x/%s*x/y' % f_3)
+        self.assertEqual(str(mpf2), '-%s/y*x/%s' % (f_2, f_3))
+        self.assertEqual(str(mpf3), 'x/%s*x/y*x/y' % f_3)
 
 
         # Mixed sums
@@ -155,7 +163,7 @@ class TestMixedSymbols(unittest.TestCase):
         self.assertAlmostEqual(eval(str(msp1)), eval(str(p1))+eval(str(p0)))
         self.assertAlmostEqual(eval(str(msp2)), eval(str(p2))+eval(str(p3)))
         self.assertAlmostEqual(eval(str(msp3)), eval(str(p1))+eval(str(msp1)))
-        self.assertEqual(str(msp4), '0')
+        self.assertEqual(str(msp4), '%s' % f_0)
 
         self.assertAlmostEqual(eval(str(mss0)), eval(str(S0))+eval(str(s0)))
         self.assertAlmostEqual(eval(str(mss1)), eval(str(S1))+eval(str(S0)))
@@ -183,17 +191,17 @@ class TestMixedSymbols(unittest.TestCase):
         self.assertEqual(msf3.ops(), 5)
 
         self.assertEqual(str(msp0), '(x + x*y)')
-        self.assertEqual(str(msp1), '(3*x*y + x*y)')
-        self.assertEqual(str(msp2), '-6*x*y*z')
-        self.assertEqual(str(msp3), '(3*x*y + 3*x*y + x*y)')
+        self.assertEqual(str(msp1), '(%s*x*y + x*y)' % f_3)
+        self.assertEqual(str(msp2), '-%s*x*y*z' % f_6)
+        self.assertEqual(str(msp3), '(%s*x*y + %s*x*y + x*y)' % (f_3, f_3))
         self.assertEqual(str(mss0), '(x + x + y)')
         self.assertEqual(str(mss1), '(x + x + x + y)')
-        self.assertEqual(str(mss2), '(x + x + x-4)')
+        self.assertEqual(str(mss2), '(x + x + x-%s)' % f_4)
         self.assertEqual(str(mss3), '(x + x + (x + x)*(x + y))')
         self.assertEqual(str(msf0), '(x + x/y)')
-        self.assertEqual(str(msf1), '(x/3 + x/y)')
-        self.assertEqual(str(msf2), '(x/3-2/y)')
-        self.assertEqual(str(msf3), '(x/3 + x/y + x/y)')
+        self.assertEqual(str(msf1), '(x/%s + x/y)' % f_3)
+        self.assertEqual(str(msf2), '(x/%s-%s/y)' % (f_3, f_2))
+        self.assertEqual(str(msf3), '(x/%s + x/y + x/y)' % f_3)
 
 
         # Mixed fractions
@@ -257,27 +265,24 @@ class TestMixedSymbols(unittest.TestCase):
         self.assertEqual(mff3.ops(), 5)
 
         self.assertEqual(str(mfp0), 'x*y/x')
-        self.assertEqual(str(mfp1), '3*x*y/(x*y)')
-        self.assertEqual(str(mfp2), '0')
-        self.assertEqual(str(mfp3), '3*x*y/(3*x*y/(x*y))')
+        self.assertEqual(str(mfp1), '%s*x*y/(x*y)' % f_3)
+        self.assertEqual(str(mfp2), '%s' % f_0)
+        self.assertEqual(str(mfp3), '%s*x*y/(%s*x*y/(x*y))' % (f_3, f_3))
         self.assertEqual(str(mfs0), '(x + y)/x')
         self.assertEqual(str(mfs1), '(x + x)/(x + y)')
-        self.assertEqual(str(mfs2), '(x-2)/(x + x-2)')
+        self.assertEqual(str(mfs2), '(x-%s)/(x + x-%s)' % (f_2, f_2))
         self.assertEqual(str(mfs3), '(x + x)/((x + x)/(x + y))')
         self.assertEqual(str(mff0), '(x/y)/x')
-        self.assertEqual(str(mff1), '(x/y)/(x/3)')
-        self.assertEqual(str(mff2), '(x/3)/(-2/y)')
-        self.assertEqual(str(mff3), '(x/y)/((x/y)/(x/3))')
+        self.assertEqual(str(mff1), '(x/y)/(x/%s)' % f_3)
+        self.assertEqual(str(mff2), '(x/%s)/(-%s/y)' % (f_3, f_2))
+        self.assertEqual(str(mff3), '(x/y)/((x/y)/(x/%s))' % f_3)
 
         # Use p1 as a base expression for Symbol
         s3 = Symbol(get_format()["cos"](p1), CONST, p1, 1)
-        self.assertEqual(str(s3), 'std::cos(3*x*y)')
+        self.assertEqual(str(s3), 'std::cos(%s*x*y)' % f_3)
         self.assertEqual(s3.ops(), 3)
 
 if __name__ == "__main__":
-
-    if format == None:
-        set_format(format)
 
     # Run all returned tests
     runner = unittest.TextTestRunner()

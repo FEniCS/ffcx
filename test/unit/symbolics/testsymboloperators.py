@@ -5,7 +5,7 @@ __date__ = "2010-01-06"
 __copyright__ = "Copyright (C) 2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-07
+# Last changed: 2010-01-28
 
 # Pyhton modules
 import unittest
@@ -15,7 +15,9 @@ import time
 from ffc.quadrature.reduce_operations import operation_count, expand_operations, reduce_operations
 from ffc.quadrature.symbolics import *
 from ffc.quadrature.sumobj import _group_fractions
-from ffc.cpp import format
+from ffc.cpp import format, set_float_formatting
+from ffc.constants import FFC_OPTIONS
+set_float_formatting(FFC_OPTIONS)
 from ffc.log import error, push_level, pop_level, CRITICAL
 
 class TestSymbolOperators(unittest.TestCase):
@@ -23,6 +25,11 @@ class TestSymbolOperators(unittest.TestCase):
     def testSymbolOperators(self):
         "Test binary operators"
 
+        f_0 = format["float"](0)
+        f_1 = format["float"](1)
+        f_2 = format["float"](2)
+        f_3 = format["float"](3)
+        f_0_5 = format["float"](0.5)
         f0 = FloatValue(0.0)
         f2 = FloatValue(2.0)
         fm1 = FloatValue(-1.0)
@@ -48,37 +55,37 @@ class TestSymbolOperators(unittest.TestCase):
         F5 = Fraction(fm3, y)
 
         # Test Symbol '+'
-        self.assertEqual(str(x + f2), '(2 + x)')
-        self.assertEqual(str(x + x), '2*x')
+        self.assertEqual(str(x + f2), '(%s + x)' % f_2)
+        self.assertEqual(str(x + x), '%s*x' % f_2)
         self.assertEqual(str(x + y), '(x + y)')
-        self.assertEqual(str(x + p0), '3*x')
+        self.assertEqual(str(x + p0), '%s*x' % f_3)
         self.assertEqual(str(x + p1), '(x + x*y)')
         self.assertEqual(str(x + S0), '(x + x + y)')
-        self.assertEqual(str(x + F0), '(x + 2/y)')
+        self.assertEqual(str(x + F0), '(x + %s/y)' % f_2)
 
         # Test Symbol '-'
-        self.assertEqual(str(x - f2), '(x-2)')
-        self.assertEqual(str(x - x), '0')
+        self.assertEqual(str(x - f2), '(x-%s)' % f_2)
+        self.assertEqual(str(x - x), '%s' % f_0)
         self.assertEqual(str(x - y), '(x - y)')
         self.assertEqual(str(x - p0), ' - x')
         self.assertEqual(str(x - p1), '(x - x*y)')
         self.assertEqual(str(x - S0), '(x - (x + y))')
-        self.assertEqual(str(x - F5), '(x - -3/y)')
+        self.assertEqual(str(x - F5), '(x - -%s/y)' % f_3)
 
         # Test Symbol '*', only need to test float, symbol and product. Sum and
         # fraction are handled by 'other'
-        self.assertEqual(str(x*f2), '2*x')
+        self.assertEqual(str(x*f2), '%s*x' % f_2)
         self.assertEqual(str(x*y), 'x*y')
         self.assertEqual(str(x*p1), 'x*x*y')
 
         # Test Symbol '/'
-        self.assertEqual(str(x/f2), '0.5*x')
-        self.assertEqual(str(x/x), '1')
+        self.assertEqual(str(x/f2), '%s*x' % f_0_5)
+        self.assertEqual(str(x/x), '%s' % f_1)
         self.assertEqual(str(x/y), 'x/y')
         self.assertEqual(str(x/S0), 'x/(x + y)')
-        self.assertEqual(str(x/p0), '0.5')
-        self.assertEqual(str(y/p1), '1/x')
-        self.assertEqual(str(z/p0), '0.5*z/x')
+        self.assertEqual(str(x/p0), '%s' % f_0_5)
+        self.assertEqual(str(y/p1), '%s/x' % f_1)
+        self.assertEqual(str(z/p0), '%s*z/x' % f_0_5)
         self.assertEqual(str(z/p1), 'z/(x*y)')
         # Silence output
         push_level(CRITICAL)
@@ -87,9 +94,6 @@ class TestSymbolOperators(unittest.TestCase):
         pop_level()
 
 if __name__ == "__main__":
-
-    if format == None:
-        set_format(format)
 
     # Run all returned tests
     runner = unittest.TextTestRunner()

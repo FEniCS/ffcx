@@ -6,13 +6,12 @@ __date__ = "2009-07-11"
 __copyright__ = "Copyright (C) 2009-2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-07
+# Last changed: 2010-01-28
 
 import unittest
 
 # FFC modules
 from ffc.quadrature.symbolics import *
-from ffc.cpp import format
 
 # Import tests
 from testfloat import TestFloat
@@ -92,9 +91,6 @@ def suite():
     return suite
 
 if __name__ == "__main__":
-
-    if format == None:
-        set_format(format)
 
     # Run all returned tests
     runner = unittest.TextTestRunner()
