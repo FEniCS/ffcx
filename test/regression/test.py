@@ -233,7 +233,7 @@ def main(args):
 
     # Generate and validate code
     generate_code()
-    validate_code()
+    #validate_code()
 
     # Hack for old bug in value_dimension for tensor elements
     if run_old_ffc:
