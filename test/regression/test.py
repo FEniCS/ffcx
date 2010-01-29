@@ -217,9 +217,8 @@ def validate_programs():
             continue
 
         # Compare with reference
-        if generated_output == reference_output:
-            info_green("%s OK" % f)
-        else:
+        ok = True
+        if not generated_output == reference_output:
             info_red("%s differs" % f)
             old = [line.split(" = ") for line in reference_output.split("\n") if " = " in line]
             new = dict([line.split(" = ") for line in generated_output.split("\n") if " = " in line])
@@ -234,11 +233,17 @@ def validate_programs():
                 if skip:
                     continue
                 if not key in new:
+                    ok = False
                     log_error("%s: missing value in generated code" % key)
                 elif new[key] != value:
+                    ok = False
                     log_error("%s: values differ" % key)
                     log_error("  old = " + value)
                     log_error("  new = " + new[key])
+
+        # Check status
+        if ok:
+            info_green("%s OK" % f)
 
     end()
 
