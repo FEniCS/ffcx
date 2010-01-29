@@ -78,6 +78,12 @@ def analyze_elements(elements):
             if not e in element_map:
                 element_map[e] = len(unique_elements)
                 unique_elements.append(e)
+    # Sort elements
+    unique_elements = sort_elements(unique_elements)
+
+    # Build element map
+    element_map = _build_element_map(unique_elements)
+
     end()
     return form_and_data, unique_elements, element_map
 
