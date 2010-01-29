@@ -247,8 +247,10 @@ def _tabulate_coefficients(data, Indent, format):
     # Get the element family.
     family = data["family"]
 
+    # FIXME: KBO: At some point we should handle the coefficients based on value_shape
+    # but I want to make sure that the shape of the coefficients is as I expect.
     # Scalar elements.
-    if family in ("Lagrange", "Discontinuous Lagrange", "P0"):
+    if family in ("Lagrange", "Discontinuous Lagrange", "P0", "Crouzeix-Raviart"):
         coefficients = [coefficients]
     # Vector valued basis element [Raviart-Thomas, Brezzi-Douglas-Marini (BDM)].
     elif family in ("Brezzi-Douglas-Marini", "Raviart-Thomas", "Nedelec 1st kind H(curl)"):
