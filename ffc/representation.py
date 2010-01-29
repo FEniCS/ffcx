@@ -241,7 +241,6 @@ def _verify_evaluate_basis(data_list):
         if data is not_implemented:
             return "Function not supported/implemented for QuadratureElement."
 
-
     # FIXME: KBO: If UFL makes sure that the below is always true, we can delete this function.
     # Get the element cell domain and check if it is the same for all elements.
     element_cell_domain = data_list[0]["cell_domain"]

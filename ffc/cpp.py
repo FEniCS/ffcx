@@ -7,7 +7,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian B. Oelgaard 2010
 # Modified by Marie E. Rognes 2010
-# Last changed: 2010-01-29
+# Last changed: 2010-01-30
 
 # Python modules
 import re, numpy, platform
@@ -31,6 +31,7 @@ format.update({"return":      lambda v: "return %s;" % str(v),
                "list":        lambda v: format["block"](format["separator"].join([str(l) for l in v])),
                "switch":      lambda v, cases, default=None, numbers=None: _generate_switch(v, cases, default, numbers),
                "exception":   lambda v: "throw std::runtime_error(\"%s\");" % v,
+               "warning":     lambda v: 'std::cerr << "*** FFC warning: " << "%s" << std::endl;' % v,
                "comment":     lambda v: "// %s" % v,
                "if":          lambda c, v: "if (%s)\n{\n%s\n}\n" % (c, v),
                "loop":        lambda i, j, k: "for (unsigned int %s = %s; %s < %s; %s++)"% (i, j, i, k, i),

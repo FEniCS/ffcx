@@ -5,7 +5,7 @@ __copyright__ = "Copyright (C) 2009"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian B. Oelgaard 2010
-# Last changed: 2010-01-29
+# Last changed: 2010-01-30
 
 from ffc.cpp import format, remove_unused
 
@@ -25,7 +25,7 @@ def interpolate_vertex_values(ir):
 
     # Handle unsupported elements.
     if isinstance(ir, str):
-        return format["exception"]("interpolate_vertex_values: %s" % ir)
+        return format["warning"]("interpolate_vertex_values: %s" % ir)
 
     # Add code for Jacobian if necessary
     code = []

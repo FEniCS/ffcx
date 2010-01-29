@@ -7,7 +7,7 @@ __date__ = "2007-04-16"
 __copyright__ = "Copyright (C) 2007-2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-29
+# Last changed: 2010-01-30
 
 # Python modules
 import math
@@ -30,11 +30,10 @@ def _evaluate_basis_derivatives_all(data_list):
     """Like evaluate_basis, but return the values of all basis functions (dofs)."""
 
     if isinstance(data_list, str):
-        return format["exception"]("evaluate_basis_derivatives_all: %s" % data_list)
+        return format["warning"]("evaluate_basis_derivatives_all: %s" % data_list)
 
     format_r, format_s = format["free indices"][:2]
     format_assign = format["assign"]
-
 
     # Initialise objects
     Indent = IndentControl()
@@ -127,7 +126,7 @@ def _evaluate_basis_derivatives(data_list):
     Nedelec (broken?)"""
 
     if isinstance(data_list, str):
-        return format["exception"]("evaluate_basis_derivatives: %s" % data_list)
+        return format["warning"]("evaluate_basis_derivatives: %s" % data_list)
 
     # Init return code and indent object
     code = []

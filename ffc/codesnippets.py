@@ -8,7 +8,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Kristian B. Oelgaard 2010
 # Modified by Marie Rognes 2007 -- 2010
 # Modified by Peter Brune 2009
-# Last changed: 2010-01-25
+# Last changed: 2010-01-30
 
 # Code snippets
 
@@ -30,6 +30,7 @@ header_ufc = """\
 
 #include <cmath>
 #include <stdexcept>
+#include <iostream>
 #include <ufc.h>"""
 
 header_dolfin = """\
