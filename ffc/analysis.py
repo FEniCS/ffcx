@@ -129,12 +129,12 @@ def _adjust_elements(form_data):
         error("Missing cell definition in form.")
 
     # Extract common degree
-    common_degree = max([element.degree() for element in form_data.elements])
+    common_degree = max([element.degree() for element in form_data.unique_sub_elements])
     if common_degree is None:
         common_degree = default_quadrature_degree
 
     # Set cell and degree if missing
-    for element in form_data.elements:
+    for element in form_data.unique_sub_elements:
 
         # Check if cell and degree need to be adjusted
         cell = element.cell()
@@ -177,7 +177,7 @@ def _extract_metadata(form_data, options):
 
             # Automatic selection of representation
             if r == "auto":
-                r = _auto_select_representation(integral)
+                r = _auto_select_representation(integral, form_data.unique_sub_elements)
                 info("representation:    auto --> %s" % r)
                 integral_metadata["representation"] = r
             else:
@@ -185,7 +185,7 @@ def _extract_metadata(form_data, options):
 
             # Automatic selection of quadrature degree
             if q == "auto":
-                q = _auto_select_quadrature_degree(integral, r, form_data.elements)
+                q = _auto_select_quadrature_degree(integral, r, form_data.unique_sub_elements)
                 info("quadrature_degree: auto --> %d" % q)
                 integral_metadata["quadrature_degree"] = q
             else:
@@ -225,7 +225,7 @@ def _extract_metadata(form_data, options):
 
     return metadata
 
-def _auto_select_representation(integral):
+def _auto_select_representation(integral, elements):
     """
     Automatically select a suitable representation for integral.
     Note that the selection is made for each integral, not for
@@ -233,6 +233,10 @@ def _auto_select_representation(integral):
     into the same integral (if their measures are equal) will
     necessarily get the same representation.
     """
+
+    # Use quadrature representation if we have a quadrature element
+    if len([e for e in elements if e.family() == "Quadrature"]):
+        return "quadrature"
 
     # Estimate cost of tensor representation
     tensor_cost = estimate_cost(integral)
