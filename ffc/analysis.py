@@ -191,7 +191,7 @@ def _extract_metadata(form_data, options):
             else:
                 info("quadrature_degree: %d" % q)
 
-                info("")
+            info("")
 
             # Append to list of metadata
             integral_metadatas.append(integral_metadata)
@@ -255,10 +255,15 @@ def _auto_select_quadrature_degree(integral, representation, elements):
     if representation == "quadrature":
         quadrature_degrees = [e.degree() for e in elements if e.family() == "Quadrature"]
         if quadrature_degrees:
+            debug("Found quadrature element(s) with the following degree(s): " + str(quadrature_degrees))
             ffc_assert(min(quadrature_degrees) == max(quadrature_degrees), \
                        "All QuadratureElements in an integrand must have the same degree: %s" \
                        % str(quadrature_degrees))
+            debug("Selecting quadrature degree based on quadrature element: " + str(quadrature_degrees[0]))
             return quadrature_degrees[0]
 
     # Otherwise estimate total degree of integrand
-    return estimate_total_polynomial_degree(integral, default_quadrature_degree)
+    q = estimate_total_polynomial_degree(integral, default_quadrature_degree)
+    debug("Selecting quadrature degree based on total polynomial degree of integrand: " + str(q))
+
+    return q
