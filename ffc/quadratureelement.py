@@ -13,14 +13,7 @@ import numpy
 from FIAT.functional import PointEvaluation
 
 # FFC modules.
-from log import error
-#from finiteelement import ufl_domain2fiat_domain
-#from dofrepresentation import DofRepresentation
-#from ffcquadraturerules import make_quadrature
-#from finiteelement import FiniteElement
-#from finiteelement import AFFINE
-#from finiteelement import CONTRAVARIANT_PIOLA
-#from finiteelement import COVARIANT_PIOLA
+from log import error, info_red
 
 # Default quadrature element degree
 default_quadrature_degree = 1
@@ -62,7 +55,7 @@ class QuadratureElement:
 
         # Save the geometric dimension.
         # FIXME: KBO: Do we need to change this in order to integrate on facets?
-        self.geometric_dimension = ufl_element.cell().geometric_dimension
+        self._geometric_dimension = ufl_element.cell().geometric_dimension()
 
     def space_dimension(self):
         "The element space dimension is simply the number of quadrature points"
@@ -101,8 +94,8 @@ class QuadratureElement:
         # RuntimeError again.
         if order:
             # error("Derivatives are not defined on a QuadratureElement")
-            print "\n*** WARNING: Derivatives are not defined on a QuadratureElement,"
-            print   "             returning values of basisfunction.\n"
+            info_red("\n*** WARNING: Derivatives are not defined on a QuadratureElement,")
+            info_red("             returning values of basisfunction.\n")
 
         # Check that incoming points are equal to the quadrature points.
         if len(points) != len(self._points) or abs(numpy.array(points) - self._points).max() > 1e-12:
@@ -110,11 +103,10 @@ class QuadratureElement:
             print "\nquad points:\n", self._points
             error("Points must be equal to coordinates of quadrature points")
 
-#        # Return the identity matrix of size __num_quad_points in a
-#        # suitable format for monomialintegration.
-#        values = numpy.identity(self._num_quad_points, float)
-#        table = [{(0,)*self.cell().topological_dimension(): values}]
-#        return table
+        # Return the identity matrix of size len(self._points) in a
+        # suitable format for tensor and quadrature representations.
+        values = numpy.eye(len(self._points))
+        return {(0,)*self._geometric_dimension: values}
 
 def _create_entity_dofs(cell, num_dofs):
     "This function is ripped from FIAT/discontinuous_lagrange.py"
