@@ -18,9 +18,16 @@ from ffc.constants import FFC_OPTIONS
 
 # FIXME: AL: This files needs cleaning up!
 
+# FIXME: AL: In places where we have non-implemented functions
+# FIXME: print a warning message instead of throwing an exception
+# FIXME: we should throw an exception and instead have a command-line
+# FIXME: option for converting exceptions to warnings that can be
+# FIXME: used from the regression test script.
+
 # Formatting rules
 # FIXME: KBO: format is a builtin_function, i.e., we should use a different name.
 format = {}
+
 
 # Program flow
 format.update({"return":      lambda v: "return %s;" % str(v),
