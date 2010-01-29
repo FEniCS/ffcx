@@ -7,6 +7,8 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Last changed: 2010-01-21
 
+# FIXME: KBO: Rename module to quadratureutils.py
+
 # Python modules.
 from numpy import transpose
 from numpy import sqrt
@@ -18,6 +20,7 @@ from ffc.log import debug
 from ffc.log import error
 from ffc.log import ffc_assert
 
+# FIXME: KBO: Move to cpp.py (format)
 def generate_loop(lines, loop_vars, Indent, format):
     "This function generates a loop over a vector or matrix."
 
@@ -61,6 +64,7 @@ def generate_loop(lines, loop_vars, Indent, format):
 
     return code
 
+# FIXME: KBO: Move to cpp.py (format)
 def generate_psi_name(counter, facet, component, derivatives):
     """Generate a name for the psi table of the form:
     FE#_f#_C#_D###, where '#' will be an integer value.

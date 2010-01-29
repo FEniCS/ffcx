@@ -31,8 +31,8 @@ def set_format(_format):
     EPS = format["epsilon"]
 
 #format_float = format["floating point"]
-format_float = format["float"]
-EPS = format["epsilon"]
+#format_float = format["float"]
+#EPS = format["epsilon"]
 
 class FloatValue(Expr):
     def __init__(self, value):
@@ -47,6 +47,7 @@ class FloatValue(Expr):
         self._prec = 0
 
         # Handle 0.0, 1.0 and -1.0 values explicitly.
+        EPS = format["epsilon"]
         if abs(value) <  EPS:
             self.val = 0.0
         elif abs(value - 1.0) <  EPS:
@@ -57,7 +58,7 @@ class FloatValue(Expr):
         # Compute the representation now, such that we can use it directly
         # in the __eq__ and __ne__ methods (improves performance a bit, but
         # only when objects are cached).
-        self._repr = "FloatValue(%s)" % format_float(self.val)
+        self._repr = "FloatValue(%s)" % format["float"](self.val)
 
         # Use repr as hash value
         self._hash = hash(self._repr)
@@ -65,7 +66,7 @@ class FloatValue(Expr):
     # Print function.
     def __str__(self):
         "Simple string representation which will appear in the generated code."
-        return format_float(self.val)
+        return format["float"](self.val)
 
     # Binary operators.
     def __add__(self, other):

@@ -26,8 +26,6 @@ def set_format(_format):
     global EPS
     EPS = format["epsilon"]
 
-EPS = format["epsilon"]
-
 class Sum(Expr):
     __slots__ = ("vrs", "_expanded", "_reduced")
     def __init__(self, variables):
@@ -48,6 +46,8 @@ class Sum(Expr):
         self._expanded = False
         self._reduced = False
 
+        # Get epsilon
+        EPS = format["epsilon"]
         # Process variables if we have any.
         if variables:
             # Loop variables and remove nested Sums and collect all floats in

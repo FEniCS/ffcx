@@ -5,7 +5,7 @@ __date__ = "2010-01-06"
 __copyright__ = "Copyright (C) 2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-06
+# Last changed: 2010-01-28
 
 # Pyhton modules
 import unittest
@@ -14,7 +14,9 @@ import time
 # FFC modules
 from ffc.quadrature.reduce_operations import operation_count, expand_operations, reduce_operations
 from ffc.quadrature.symbolics import *
-from ffc.cpp import format
+from ffc.cpp import format, set_float_formatting
+from ffc.constants import FFC_OPTIONS
+set_float_formatting(FFC_OPTIONS)
 
 class TestPoisson(unittest.TestCase):
 
@@ -99,9 +101,6 @@ class TestPoisson(unittest.TestCase):
         self.assertEqual(expr_red.ops(), 23)
 
 if __name__ == "__main__":
-
-    if format == None:
-        set_format(format)
 
     # Run all returned tests
     runner = unittest.TextTestRunner()

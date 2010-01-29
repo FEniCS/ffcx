@@ -5,7 +5,7 @@ __date__ = "2010-01-06"
 __copyright__ = "Copyright (C) 2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-07
+# Last changed: 2010-01-28
 
 # Pyhton modules
 import unittest
@@ -13,7 +13,9 @@ import time
 
 # FFC modules
 from ffc.quadrature.symbolics import *
-from ffc.cpp import format
+from ffc.cpp import format, set_float_formatting
+from ffc.constants import FFC_OPTIONS
+set_float_formatting(FFC_OPTIONS)
 from ffc.log import push_level, pop_level, CRITICAL
 
 class TestFraction(unittest.TestCase):
@@ -50,15 +52,16 @@ class TestFraction(unittest.TestCase):
         self.assertRaises(Exception, Fraction, s0, f2)
         pop_level()
 
-        self.assertEqual(repr(F0), "Fraction(FloatValue(-1.5), FloatValue(1))")
+        self.assertEqual(repr(F0), "Fraction(FloatValue(%s), FloatValue(%s))"\
+                                    % (format["float"](-1.5), format["float"](1)))
         self.assertEqual(repr(F2), "Fraction(Symbol('x', BASIS), Symbol('y', GEO))")
 
-        self.assertEqual(str(F0), "-1.5")
-        self.assertEqual(str(F1), "0")
+        self.assertEqual(str(F0), "%s" % format["float"](-1.5))
+        self.assertEqual(str(F1), "%s" % format["float"](0))
         self.assertEqual(str(F2), "x/y")
-        self.assertEqual(str(F3), "x/3")
-        self.assertEqual(str(F4), "-2/y")
-        self.assertEqual(str(F5), "0")
+        self.assertEqual(str(F3), "x/%s" % format["float"](3))
+        self.assertEqual(str(F4), "-%s/y" % format["float"](2))
+        self.assertEqual(str(F5), "%s" % format["float"](0))
 
         self.assertEqual(F2 == F2, True)
         self.assertEqual(F2 == F3, False)
@@ -82,8 +85,6 @@ class TestFraction(unittest.TestCase):
         self.assertEqual(F6 in d, True)
 
 if __name__ == "__main__":
-
-#    set_format(format)
 
     # Run all returned tests
     runner = unittest.TextTestRunner()

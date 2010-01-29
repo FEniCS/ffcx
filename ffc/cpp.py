@@ -169,9 +169,10 @@ format.update({"classname finite_element": \
 
 # Misc
 format.update({"bool":    lambda v: {True: "true", False: "false"}[v],
-               "float":   lambda v: "%f" % v,
+#               "float":   lambda v: "%f" % v,
                "str":     lambda v: "%s" % str(v),
-               "epsilon": FFC_OPTIONS["epsilon"]})
+#               "epsilon": FFC_OPTIONS["epsilon"]
+})
 
 def _declaration(type, name, value=None):
     if value is None:
@@ -612,30 +613,30 @@ format_old = {
         lambda prefix, i, label: "%s_%d_exterior_facet_integral_%s" % (prefix.lower(), i, label)}
 
 # Set number of digits for floating point and machine precision
-precision = int(options["precision"])
-f1 = "%%.%dg" % precision
-f2 = "%%.%de" % precision
+#precision = int(options["precision"])
+#f1 = "%%.%dg" % precision
+#f2 = "%%.%de" % precision
 
-def floating_point(v):
-    "Format floating point number."
-    if abs(v) < 100.0:
-        return f1 % v
-    else:
-        return f2 % v
+#def floating_point(v):
+#    "Format floating point number."
+#    if abs(v) < 100.0:
+#        return f1 % v
+#    else:
+#        return f2 % v
 
-def floating_point_windows(v):
-    "Format floating point number for Windows (remove extra leading zero in exponents)."
-    return floating_point(v).replace("e-0", "e-").replace("e+0", "e+")
+#def floating_point_windows(v):
+#    "Format floating point number for Windows (remove extra leading zero in exponents)."
+#    return floating_point(v).replace("e-0", "e-").replace("e+0", "e+")
 
-if platform.system() == "Windows":
-    format["floating point"] = floating_point_windows
-    format_old["floating point"] = floating_point_windows
-else:
-    format_old["floating point"] = floating_point
-    format["floating point"] = floating_point
+#if platform.system() == "Windows":
+#    format["floating point"] = floating_point_windows
+#    format_old["floating point"] = floating_point_windows
+#else:
+#    format_old["floating point"] = floating_point
+#    format["floating point"] = floating_point
 
-format_old["epsilon"] = 10.0*eval("1e-%s" % precision)
-format["epsilon"] = 10.0*eval("1e-%s" % precision)
+#format_old["epsilon"] = 10.0*eval("1e-%s" % precision)
+#format["epsilon"] = 10.0*eval("1e-%s" % precision)
 
 def _generate_body(declarations):
     "Generate function body from list of declarations or statements."
@@ -830,6 +831,9 @@ def set_float_formatting(options):
         format["float"] = floating_point_windows
     else:
         format["float"] = floating_point_regular
+
+    # FIXME: KBO: Remove once we agree on the format of 'f1'
+    format["floating point"] = format["float"]
 
     # Set machine precision
     format["epsilon"] = 10.0*eval("1e-%s" % precision)
