@@ -29,6 +29,7 @@ from ffc.log import ffc_assert
 from ffc.log import error
 from ffc.log import info
 from ffc.fiatinterface import create_element
+from ffc.mixedelement import MixedElement
 
 # FFC tensor modules.
 from ffc.tensor.multiindex import MultiIndex as FFCMultiIndex
@@ -1106,8 +1107,14 @@ class QuadratureTransformerBase(Transformer):
         if quad_element:
             quad_offset = 0
             if component:
-                for i in range(component):
-                    quad_offset += ffc_element.sub_element(i).space_dimension()
+                # FIXME: Should we add a member function elements() to FiniteElement?
+                if isinstance(ffc_element, MixedElement):
+                    for i in range(component):
+                        quad_offset += ffc_element.elements()[i].space_dimension()
+                elif component != 1:
+                    error("Can't handle components different from 1 if we don't have a MixedElement.")
+                else:
+                    quad_offset += ffc_element.space_dimension()
             if quad_offset:
                 coefficient_access = self.format["add"]([format_ip, str(quad_offset)])
             else:
