@@ -14,6 +14,7 @@ demo_directory = "../../../demo"
 # Change here to run old or new FFC
 run_old_ffc = False
 
+# FIXME: Only used while testing
 if run_old_ffc:
     from ffc.common.log import begin, end, info, set_level, INFO
     info_green = info
@@ -25,6 +26,12 @@ if run_old_ffc:
 
 else:
     from ffc.log import begin, end, info, info_red, info_green, info_blue
+
+# FIXME: Only used while testing
+# Skip functions that were not implemented before
+skip_functions = ["evaluate_basis_all",
+                  "evaluate_basis_derivatives_all",
+                  "num_entity_dofs"]
 
 # Global log file
 logfile = None
@@ -46,6 +53,12 @@ def log_error(message):
     if logfile is None:
         logfile = open("../error.log", "w")
     logfile.write(message + "\n")
+
+def clean_output():
+    "Clean out old output directory"
+    if os.path.isdir(output_directory):
+        shutil.rmtree(output_directory)
+    os.mkdir(output_directory)
 
 def generate_test_cases():
     "Generate form files for all test cases."
@@ -213,6 +226,13 @@ def validate_programs():
             s = "Output differs for %s, diff follows" % f
             log_error("\n" + s + "\n" + len(s)*"-")
             for (key, value) in old:
+                skip = False
+                for s in skip_functions:
+                    if s in key:
+                        skip = True
+                        continue
+                if skip:
+                    continue
                 if not key in new:
                     log_error("%s: missing value in generated code" % key)
                 elif new[key] != value:
@@ -225,20 +245,20 @@ def validate_programs():
 def main(args):
     "Run all regression tests."
 
+    # Clean out old output directory
+    clean_output()
+
     # Enter output directory
-    if os.path.isdir(output_directory):
-        shutil.rmtree(output_directory)
-    os.mkdir(output_directory)
     os.chdir(output_directory)
 
-    # FIXME: Only run validate programs when code differs
+    # FIXME: Add option -fast
 
     # Generate test cases
     generate_test_cases()
 
     # Generate and validate code
     generate_code()
-    #validate_code()
+    ##validate_code()
 
     # Hack for old bug in value_dimension for tensor elements
     if run_old_ffc:
