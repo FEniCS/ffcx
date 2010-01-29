@@ -7,17 +7,21 @@
 #
 # Compile this form with FFC: ffc ElementRestriction.ufl
 
-# This element will have 3 DOFs living on the interior
-CG = FiniteElement("Lagrange", triangle, 4)
+# Restricted element
+CG_R = FiniteElement("Lagrange", triangle, 4)["facet"]
+u_r  = TrialFunction(CG_R)
+v_r  = TestFunction(CG_R)
+a    = avg(v_r)*avg(u_r)*dS + v_r*u_r*ds
 
-# One can use either the strings "facet" or "interval", or the built-ins
-# 'facet' or 'interval' to restrict the element to only contain the facet dofs
-# elem_r will thus only have 12 DOFs
-elem_r = CG["facet"]
+#CG = FiniteElement("Lagrange", triangle, 4)
+#CG_R = CG["facet"]
+#u_r  = TrialFunction(CG_R)
+#v_r  = TestFunction(CG_R)
+#a = v_r*u_r*dS + v_r*u_r*ds
 
-# A mixed element where only the second element is restricted
-elem_m = CG + elem_r
-
-# Restricting a mixed element implies restriction of all sub-elements
-element = elem_m[interval]
+# Mixed element
+#ME = CG + CG_R
+#u, u_r  = TrialFunctions(ME)
+#v, v_r  = TestFunctions(ME)
+#a = v*u*dx + v_r*u_r*dS + v_r*u_r*ds
 
