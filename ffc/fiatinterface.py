@@ -74,9 +74,12 @@ def create_element(ufl_element):
 def create_fiat_element(ufl_element):
     "Create FIAT element corresponding to given finite element."
 
-    # Check if finite element family is supported by FIAT
     family = ufl_element.family()
-    if not family in FIAT.element_classes:
+    # Handle QuadrtureElement
+    if family == "Quadrature":
+        return FFCQuadratureElement(ufl_element)
+    # Check if finite element family is supported by FIAT
+    elif not family in FIAT.element_classes:
         error("Sorry, finite element of type \"%s\" are not supported by FIAT.", family)
 
     # Create FIAT finite element

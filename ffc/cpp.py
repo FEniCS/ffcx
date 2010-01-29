@@ -7,7 +7,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian B. Oelgaard 2010
 # Modified by Marie E. Rognes 2010
-# Last changed: 2010-01-28
+# Last changed: 2010-01-29
 
 # Python modules
 import re, numpy, platform

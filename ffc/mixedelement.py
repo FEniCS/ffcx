@@ -4,9 +4,9 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Garth N. Wells 2006-2009
 # Modified by Marie E. Rognes (meg@simula.no) 2007--2010
-# Modified by Kristian B. Oelgaard 2009
+# Modified by Kristian B. Oelgaard 2010
 
-# Last changed: 2010-01-28
+# Last changed: 2010-01-29
 
 # Python modules
 import numpy

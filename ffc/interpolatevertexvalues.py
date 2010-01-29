@@ -4,7 +4,8 @@ __author__ = "Marie E. Rognes (meg@simula.no)"
 __copyright__ = "Copyright (C) 2009"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-27
+# Modified by Kristian B. Oelgaard 2010
+# Last changed: 2010-01-29
 
 from ffc.cpp import format, remove_unused
 
@@ -21,6 +22,10 @@ invdetJ = "1.0/%s" % format["det(J)"]("")
 
 def interpolate_vertex_values(ir):
     "Generate code for interpolate_vertex_values."
+
+    # Handle unsupported elements.
+    if isinstance(ir, str):
+        return format["exception"]("interpolate_vertex_values: %s" % ir)
 
     # Add code for Jacobian if necessary
     code = []

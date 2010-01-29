@@ -19,7 +19,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Marie E. Rognes 2010
 # Modified by Kristian B. Oelgaard 2010
-# Last changed: 2010-01-21
+# Last changed: 2010-01-29
 
 # Python modules
 from itertools import chain
@@ -32,6 +32,7 @@ from ffc.utils import compute_permutations, product
 from ffc.log import info, error, begin, end, debug_ir, ffc_assert, warning
 from ffc.fiatinterface import create_element, entities_per_dim, reference_cell
 from ffc.mixedelement import MixedElement
+from ffc.quadratureelement import QuadratureElement
 
 # FFC specialized representation modules
 from ffc import quadrature
@@ -198,6 +199,11 @@ def _evaluate_basis(ufl_element, fiat_element):
             data += _evaluate_basis(element, create_element(element))
         return data
 
+    # Handle QuadratureElement, not supported because the basis is only defined
+    # at the dof coordinates where the value is 1, so not very interesting.
+    if ufl_element.family() == "Quadrature":
+        return [not_implemented]
+
     # TODO: KBO: Remove if never triggered.
     ffc_assert(fiat_element.get_nodal_basis().get_embedded_degree() == \
                ufl_element.degree(),\
@@ -228,6 +234,14 @@ def _evaluate_basis(ufl_element, fiat_element):
 
 def _verify_evaluate_basis(data_list):
     "Some safety checks."
+
+    # If we have a QuadratureElement, or if there is one present in the MixedElement
+    # we cannot create evaluate_basis
+    for data in data_list:
+        if data is not_implemented:
+            return "Function not supported/implemented for QuadratureElement."
+
+
     # FIXME: KBO: If UFL makes sure that the below is always true, we can delete this function.
     # Get the element cell domain and check if it is the same for all elements.
     element_cell_domain = data_list[0]["cell_domain"]
@@ -263,7 +277,6 @@ def _evaluate_dof(element, cell):
     for e in all_elements(element):
         offsets += [offset]*e.space_dimension()
         offset += _value_size(e) # AL: change here, is that correct?
-
     return {"mappings": element.mapping(),
             "value_size": _value_size(element),
             "cell_dimension": cell.geometric_dimension(),
@@ -327,6 +340,11 @@ def _tabulate_facet_dofs(element, cell):
 def _interpolate_vertex_values(element, cell):
     "Compute intermediate representation of interpolate_vertex_values."
 
+    # Check for QuadratureElement
+    for e in all_elements(element):
+        if isinstance(e, QuadratureElement):
+            return "Function is not supported/implemented for QuadratureElement."
+
     ir = {}
     ir["cell_dim"] = cell.geometric_dimension()
 
@@ -358,6 +376,8 @@ def _create_foo_integral(domain_type, form_data):
 
 #--- Utility functions ---
 
+# FIXME: KBO: This could go somewhere else, like in UFL?
+# Also look at function naming, use single '_' for utility functions.
 def all_elements(element):
     try:
         return element.elements()

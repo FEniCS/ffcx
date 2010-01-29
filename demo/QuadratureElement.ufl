@@ -21,5 +21,5 @@ sig0 = Coefficient(sig)
 f    = Coefficient(element)
 
 a = v.dx(i)*C*u.dx(i)*dx + v.dx(i)*2*u0*u*u0.dx(i)*dx
-L = v*f*dx - inner(grad(v), sig0)*dx
+L = v*f*dx - inner(grad(v), sig0)*dx(0, metadata={"ffc_quadrature_degree":3})
 

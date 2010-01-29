@@ -4,17 +4,13 @@ __copyright__ = "Copyright (C) 2007-2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Garth N. Wells 2006-2009
-# Last changed: 2010-01-28
+# Last changed: 2010-01-29
 
 # Python modules.
 import numpy
 
 # FIAT modules.
-#from FIAT.shapes import num_entities
-
-# UFL modules.
-from ufl.classes import Cell
-from ufl.classes import Measure
+from FIAT.functional import PointEvaluation
 
 # FFC modules.
 from log import error
@@ -32,16 +28,8 @@ default_quadrature_degree = 1
 class QuadratureElement:
     """Write description of QuadratureElement"""
 
-    def __init__(self, ufl_element, domain=None):
+    def __init__(self, ufl_element):
         "Create QuadratureElement"
-
-        # Handle restrictions
-        if domain and isinstance(domain, Cell):
-            error("Restriction of QuadratureElement to Cell is not supported because all dofs are internal to the element.")
-        elif domain and isinstance(domain, Measure):
-            error("Restriction of QuadratureElement to Measure has not been implemented yet.")
-
-        FiniteElement.__init__(self, ufl_element, domain)
 
         # Compute number of points per axis from the degree of the element
         degree = ufl_element.degree()
@@ -49,49 +37,52 @@ class QuadratureElement:
             degree = default_quadrature_degree
         self._num_axis_points = (degree + 2) / 2
 
-        # Set rank (is rank = 0 for this element?)
-        self._rank = 0
-
         # Set element degree to constant
         # FIXME: Is this necessary? At this point we should already have computed
         # the total degree of the form.
-        self._degree = 0
-
-        # FIXME: Do we really need to do this here? We just use the number of
-        # FIXME: points while the actual points are computed in quadraturerepresentation.py
+#        self._degree = 0
 
         # Create quadrature (only interested in points)
         # TODO: KBO: What should we do about quadrature functions that live on ds, dS?
-        points, weights = make_quadrature(self.cell().domain(), self._num_axis_points)
+        # Get cell and facet domains.
+        cell_domain = ufl_element.cell().domain()
+        facet_domain = ufl_element.cell().facet_domain()
+        points, weights = create_quadrature(cell_domain, self._num_axis_points)
 
-        # Save number of quadrature points
-        self._num_quad_points = len(points)
+        # Save the quadrature points
+        self._points = points
 
-        # Create entity IDs, ripped from FIAT/DiscontinuousLagrange.py
-        # Used by formdata.py to create the DofMap
-        entity_ids = {}
-        for d in range( self.cell().topological_dimension() ):
-            entity_ids[d] = {}
-            for e in range(num_entities[ufl_domain2fiat_domain[self.cell().domain()]][d]):
-                entity_ids[d][e] = []
-        entity_ids[ self.cell().topological_dimension() ] = {}
-        entity_ids[ self.cell().topological_dimension() ][ 0 ] = range( self._num_quad_points )
-        self._entity_dofs = [entity_ids]
+        # Create entity dofs.
+        ufc_cell = reference_cell(ufl_element.cell().domain())
+        self._entity_dofs = _create_entity_dofs(ufc_cell, len(points))
 
-        # FIXME: We could change calls to element.dual_basis().pts to
-        # element.dof_coordinates() which would only support a limited number of
-        # elements.
-        # Initialise a dummy dual_basis.
-        # Used in dofmap.py", line 158, in __compute_dof_coordinates
-        self._dual_basis = [DofRepresentation("Quadrature", [pt]) for pt in points]
+        # The dual is a simply the PointEvaluation at the quadrature points
+        # FIXME: KBO: Check if this gives expected results for code like evaluate_dof.
+        self._dual = [PointEvaluation(ufc_cell, tuple(point)) for point in points]
 
-    def num_axis_points(self):
-        "Return the number of quadrature points per axis as specified by user"
-        return self._num_axis_points
+        # Save the geometric dimension.
+        # FIXME: KBO: Do we need to change this in order to integrate on facets?
+        self.geometric_dimension = ufl_element.cell().geometric_dimension
 
     def space_dimension(self):
-        "Return the total number of quadrature points"
-        return self._num_quad_points
+        "The element space dimension is simply the number of quadrature points"
+        return len(self._points)
+
+    def value_shape(self):
+        "The QuadratureElement is scalar valued"
+        return ()
+
+    def entity_dofs(self):
+        "Entity dofs are like that of DG, all internal to the cell"
+        return self._entity_dofs
+
+    def mapping(self):
+        "The mapping is not really affine, but it is easier to handle the code generation this way."
+        return ["affine"]*self.space_dimension()
+
+    def dual_basis(self):
+        "Return list of PointEvaluations"
+        return self._dual
 
     def tabulate(self, order, points):
         """Return the identity matrix of size (num_quad_points, num_quad_points),
@@ -109,21 +100,33 @@ class QuadratureElement:
         # This issue should be fixed in UFL and then we can switch on the
         # RuntimeError again.
         if order:
-#            error("Derivatives are not defined on a QuadratureElement")
+            # error("Derivatives are not defined on a QuadratureElement")
             print "\n*** WARNING: Derivatives are not defined on a QuadratureElement,"
             print   "             returning values of basisfunction.\n"
 
-        # Check that incoming points are as many as the quadrature points
-        if not len(points) == self._num_quad_points:
+        # Check that incoming points are equal to the quadrature points.
+        if len(points) != len(self._points) or abs(numpy.array(points) - self._points).max() > 1e-12:
+            print "\npoints:\n", numpy.array(points)
+            print "\nquad points:\n", self._points
             error("Points must be equal to coordinates of quadrature points")
 
-        # Return the identity matrix of size __num_quad_points in a
-        # suitable format for monomialintegration.
-        values = numpy.identity(self._num_quad_points, float)
-        table = [{(0,)*self.cell().topological_dimension(): values}]
-        return table
+#        # Return the identity matrix of size __num_quad_points in a
+#        # suitable format for monomialintegration.
+#        values = numpy.identity(self._num_quad_points, float)
+#        table = [{(0,)*self.cell().topological_dimension(): values}]
+#        return table
 
-    def value_rank(self):
-        "Return the rank of the value space"
-        return self._rank
+def _create_entity_dofs(cell, num_dofs):
+    "This function is ripped from FIAT/discontinuous_lagrange.py"
+    entity_dofs = {}
+    top = cell.get_topology()
+    for dim in sorted( top ):
+        entity_dofs[dim] = {}
+        for entity in sorted( top[dim] ):
+            entity_dofs[dim][entity]=[]
+    entity_dofs[dim][0] = range(num_dofs)
+    return entity_dofs
+
+# FFC modules to avoid circular import
+from ffc.fiatinterface import create_quadrature, reference_cell
 

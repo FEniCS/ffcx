@@ -6,7 +6,7 @@ __date__ = "2007-04-04"
 __copyright__ = "Copyright (C) 2007-2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-27
+# Last changed: 2010-01-29
 
 # Python modules
 import math
@@ -27,6 +27,9 @@ from ffc.quadrature.symbolics import CONST
 
 def _evaluate_basis_all(data_list):
     """Like evaluate_basis, but return the values of all basis functions (dofs)."""
+
+    if isinstance(data_list, str):
+        return format["exception"]("evaluate_basis_all: %s" % data_list)
 
     format_r, format_s  =  format["free indices"][:2]
     format_assign       = format["assign"]
@@ -104,6 +107,9 @@ def _evaluate_basis(data_list):
 
     The function should work for all elements supported by FIAT, but it remains
     untested for tensor valued element."""
+
+    if isinstance(data_list, str):
+        return format["exception"]("evaluate_basis: %s" % data_list)
 
     # Init return code and indent object
     code = []
