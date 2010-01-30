@@ -250,20 +250,18 @@ def _tabulate_coefficients(data, Indent, format):
     # Get coefficients from basis functions, computed by FIAT at compile time.
     coefficients = data["coeffs"]
 
-    # Get the element family.
-    family = data["family"]
-
     # FIXME: KBO: At some point we should handle the coefficients based on value_shape
     # but I want to make sure that the shape of the coefficients is as I expect.
     # Scalar elements.
-    if family in ("Lagrange", "Discontinuous Lagrange", "P0", "Crouzeix-Raviart"):
+    rank = len(data["value_shape"])
+    if rank == 0:
         coefficients = [coefficients]
     # Vector valued basis element [Raviart-Thomas, Brezzi-Douglas-Marini (BDM)].
-    elif family in ("Brezzi-Douglas-Marini", "Raviart-Thomas", "Nedelec 1st kind H(curl)"):
+    elif rank == 1:
         coefficients = numpy.transpose(coefficients, [1,0,2])
     # Tensor and other elements.
     else:
-        error("This finite element family is currently not supported: %s" % family)
+        error("Rank %d elements are currently not supported" % rank)
 
     # Init return code.
     code = []
@@ -316,7 +314,7 @@ def _compute_values(data, sum_value_dim, vector, Indent, format):
     elif len(shape) == 1:
         num_components = shape[0]
     else:
-        error("Tensor valued elements are not supported yet: %s" % data["family"])
+        error("Tensor valued elements are not supported yet: %d " % shape)
 
     lines = []
     if (vector or num_components != 1):

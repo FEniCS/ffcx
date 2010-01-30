@@ -21,7 +21,7 @@ class RestrictedElement:
         return self._element.value_shape()
 
     def degree(self):
-        return self._base_element.degree()
+        return self._element.degree()
 
     def entity_dofs(self):
         return self._entity_dofs
@@ -43,11 +43,11 @@ class RestrictedElement:
 
     # Used in evaluate_basis:
     def get_coeffs(self):
-        coefficients = self._base_element.get_coeffs()
+        coefficients = self._element.get_coeffs()
         return numpy.array([coefficients[i] for i in self._indices])
 
     def dmats(self):
-        dmats = self._base_element.dmats()
+        dmats = self._element.dmats()
         new = []
         for d in dmats:
             new += [[[d[i][j] for j in self._indices]

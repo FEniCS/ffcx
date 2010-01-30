@@ -85,7 +85,7 @@ def _compute_element_ir(ufl_element, element_id, element_map):
     ir["space_dimension"] = element.space_dimension()
     ir["value_rank"] = len(ufl_element.value_shape())
     ir["value_dimension"] = ufl_element.value_shape()
-    ir["evaluate_basis"] = _verify_evaluate_basis(_evaluate_basis(ufl_element, element))
+    ir["evaluate_basis"] = _verify_evaluate_basis(_evaluate_basis(element, cell))
     ir["evaluate_dof"] = _evaluate_dof(element, cell)
     ir["interpolate_vertex_values"] = _interpolate_vertex_values(element, cell)
     ir["num_sub_elements"] = ufl_element.num_sub_elements()
@@ -188,47 +188,36 @@ def _compute_form_ir(form, form_data, form_id, element_map):
 
 #--- Computation of intermediate representation for non-trivial functions ---
 
-def _evaluate_basis(ufl_element, fiat_element):
+def _evaluate_basis(element, cell):
     "Compute intermediate representation for evaluate_basis."
 
-    # Handle MixedElements recursively.
-    # TODO: KBO: Is this OK if done consistently in FFC (for TensorElements)?
-    if isinstance(ufl_element, ufl.MixedElement):
-        data = []
-        for element in ufl_element.sub_elements():
-            data += _evaluate_basis(element, create_element(element))
-        return data
+    # Create data for each sub-element of a mixed element
+    if isinstance(element, MixedElement):
+        return [_evaluate_basis(e, cell)[0] for e in element.elements()]
 
     # Handle QuadratureElement, not supported because the basis is only defined
     # at the dof coordinates where the value is 1, so not very interesting.
-    if ufl_element.family() == "Quadrature":
+    if isinstance(element, QuadratureElement):
         return [not_implemented]
-
-    # TODO: KBO: Remove if never triggered.
-    ffc_assert(fiat_element.get_nodal_basis().get_embedded_degree() == \
-               ufl_element.degree(),\
-               "Degrees do not match: %s, %s" % (repr(fiat_element), repr(ufl_element)))
 
     # Get mapping for element, must be the same for all DOFs for evaluate_basis
     # to work in its current implementation
-    mapping = fiat_element.mapping()[0]
-    ffc_assert(all(mapping == m for m in fiat_element.mapping()),\
-               "Mapping is not the same for all dofs of this element: %s" % str(fiat_element))
+    mapping = element.mapping()[0]
+    ffc_assert(all(mapping == m for m in element.mapping()),\
+               "Mapping is not the same for all dofs of this element: %s" % str(element))
     data = {
-          "value_shape" : fiat_element.value_shape(),
-          "embedded_degree" : ufl_element.degree(),
-          "cell_domain" : ufl_element.cell().domain(),
-          "coeffs" : fiat_element.get_coeffs(),
-          "family" : ufl_element.family(),
+          "value_shape" : element.value_shape(),
+          "embedded_degree" : element.degree(),
+          "cell_domain" : cell.domain(),
+          "coeffs" : element.get_coeffs(),
           "mapping" : mapping,
-          "space_dimension" : fiat_element.space_dimension(),
-          "topological_dimension" : ufl_element.cell().topological_dimension(),
-          "geometric_dimension" : ufl_element.cell().geometric_dimension(),
-          "dmats" : fiat_element.get_nodal_basis().get_dmats()
+          "space_dimension" : element.space_dimension(),
+          "topological_dimension" : cell.topological_dimension(),
+          "geometric_dimension" : cell.geometric_dimension(),
+          "dmats" : element.dmats()
           }
 
-    data["num_expansion_members"] = \
-      fiat_element.get_nodal_basis().get_expansion_set().get_num_members(data["embedded_degree"])
+    data["num_expansion_members"] = element.get_num_members(data["embedded_degree"])
 
     return [data]
 
