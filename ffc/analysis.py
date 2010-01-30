@@ -105,11 +105,15 @@ def _analyze_form(form, object_names, options):
     "Analyze form, returning preprocessed form and form data."
 
     # Get name before pre-processing.
-    name = object_names[id(form)]
+    if id(form) in object_names:
+        name = object_names[id(form)]
+    else:
+        name = "a"
 
     # Preprocess form
     if not form.is_preprocessed():
         form = preprocess(form)
+
     # Compute form data
     form_data = FormData(form, name, object_names=object_names)
     info(str(form_data))
