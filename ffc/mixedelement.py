@@ -6,25 +6,20 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Marie E. Rognes (meg@simula.no) 2007--2010
 # Modified by Kristian B. Oelgaard 2010
 
-# Last changed: 2010-01-29
+# Last changed: 2010-01-30
 
 # Python modules
 import numpy
 
-# UFL modules
-from ufl import MixedElement as UFLMixedElement
-
 # FFC modules
-from log import error
-from fiatinterface import create_fiat_element
+from ffc.log import error
 
 class MixedElement:
-    "Create a FFC mixed element from a UFL mixed element."
+    "Create a FFC mixed element from a list of FFC/FIAT elements."
 
-    def __init__(self, ufl_element):
-        self._elements = _extract_elements(ufl_element)
+    def __init__(self, elements):
+        self._elements = elements
         self._entity_dofs = _combine_entity_dofs(self._elements)
-        self._value_shape = ufl_element.value_shape()
 
     def elements(self):
         return self._elements
@@ -33,7 +28,9 @@ class MixedElement:
         return sum(e.space_dimension() for e in self._elements)
 
     def value_shape(self):
-        return self._value_shape
+        # FIXME: value_shape for tensor elements in mixed elements not
+        # well-defined
+        return (sum(sum(e.value_shape()) or 1 for e in self._elements),)
 
     def entity_dofs(self):
         return self._entity_dofs
@@ -129,18 +126,6 @@ def _combine_entity_dofs(elements):
         # Adjust offset
         offset += e.space_dimension()
     return entity_dofs
-
-def _extract_elements(ufl_element):
-    "Recursively extract un-nested list of (component) elements."
-
-    elements = []
-    if isinstance(ufl_element, UFLMixedElement):
-        for sub_element in ufl_element.sub_elements():
-            elements += _extract_elements(sub_element)
-        return elements
-
-    elements += [create_fiat_element(ufl_element)]
-    return elements
 
 def _num_components(element):
     "Compute number of components for element."
