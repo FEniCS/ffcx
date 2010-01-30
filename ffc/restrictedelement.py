@@ -47,15 +47,16 @@ class RestrictedElement:
         return numpy.array([coefficients[i] for i in self._indices])
 
     def dmats(self):
-        dmats = self._element.dmats()
-        new = []
-        for d in dmats:
-            new += [[[d[i][j] for j in self._indices]
-                     for i in self._indices]]
-        return new
+        return self._element.dmats()
+#        dmats = self._element.dmats()
+#        new = []
+#        for d in dmats:
+#            new += [[[d[i][j] for j in self._indices]
+#                     for i in self._indices]]
+#        return new
 
     def get_num_members(self, arg):
-        return self.space_dimension()
+        return self._element.get_num_members(arg)
 
 def _extract_entity_dofs(element, indices):
     # FIXME: Readability counts
