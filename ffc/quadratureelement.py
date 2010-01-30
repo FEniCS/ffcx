@@ -4,7 +4,7 @@ __copyright__ = "Copyright (C) 2007-2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Garth N. Wells 2006-2009
-# Last changed: 2010-01-29
+# Last changed: 2010-01-30
 
 # Python modules.
 import numpy
@@ -121,4 +121,3 @@ def _create_entity_dofs(cell, num_dofs):
 
 # FFC modules to avoid circular import
 from ffc.fiatinterface import create_quadrature, reference_cell
-

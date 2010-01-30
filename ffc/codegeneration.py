@@ -11,11 +11,12 @@ __date__ = "2009-12-16"
 __copyright__ = "Copyright (C) 2009 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-28
+# Last changed: 2010-01-30
 
 # FFC modules
 from ffc.log import info, begin, end, debug_code
-from ffc.cpp import format, indent, set_float_formatting
+from ffc.cpp import format, indent
+from ffc.cpp import set_float_formatting, set_exception_handling
 
 # FFC code generation modules
 from ffc.evaluatebasis import _evaluate_basis, _evaluate_basis_all
@@ -35,8 +36,12 @@ def generate_code(ir, prefix, options):
 
     begin("Compiler stage 4: Generating code")
 
-    # Set floating point format
-    set_float_formatting(options)
+    # FIXME: Document option -fconvert_exceptions_to_warnings
+    # FIXME: Remove option epsilon and just rely on precision?
+
+    # Set code generation options
+    set_float_formatting(int(options["precision"]))
+    set_exception_handling(options["convert_exceptions_to_warnings"])
 
     # Extract representations
     ir_elements, ir_dofmaps, ir_integrals, ir_forms = ir

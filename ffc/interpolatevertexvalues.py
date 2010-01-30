@@ -25,7 +25,7 @@ def interpolate_vertex_values(ir):
 
     # Handle unsupported elements.
     if isinstance(ir, str):
-        return format["warning"]("interpolate_vertex_values: %s" % ir)
+        return format["exception"]("interpolate_vertex_values: %s" % ir)
 
     # Add code for Jacobian if necessary
     code = []

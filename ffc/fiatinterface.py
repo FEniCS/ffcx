@@ -28,6 +28,8 @@ _cache = {}
 # instead? The same goes for similar dictionaries in UFL (geometry.py). After
 # all both FFC and UFL complies with UFC or not?
 # Mapping from domain to dimension
+# FIXME: AL: They should be in UFL (and probably are there already). They
+# FIXME: can't be in UFC since UFL cannot depend on UFC.
 domain2dim = {"vertex": 0,
               "interval": 1,
               "triangle": 2,
@@ -49,16 +51,18 @@ def create_element(ufl_element):
         debug("Reusing element from cache")
         return _cache[ufl_element]
 
-    # Initialize element based on type
+    # Create regular FIAT finite element
     if isinstance(ufl_element, ufl.FiniteElement):
-        element = create_fiat_element(ufl_element)
+        element = _create_fiat_element(ufl_element)
 
+    # Create mixed element (implemented by FFC)
     elif isinstance(ufl_element, ufl.MixedElement):
         elements = _extract_elements(ufl_element)
         element = MixedElement(elements)
 
+    # Create restricted element(implemented by FFC)
     elif isinstance(ufl_element, ufl.ElementRestriction):
-        element = create_restricted_element(ufl_element)
+        element = _create_restricted_element(ufl_element)
 
     else:
         error("Cannot handle this element type: %s" % str(ufl_element))
@@ -68,13 +72,16 @@ def create_element(ufl_element):
 
     return element
 
-def create_fiat_element(ufl_element):
+def _create_fiat_element(ufl_element):
     "Create FIAT element corresponding to given finite element."
 
     family = ufl_element.family()
-    # Handle QuadrtureElement
+
+    # FIXME: AL: Should this really be here?
+    # Handle QuadratureElement
     if family == "Quadrature":
         return FFCQuadratureElement(ufl_element)
+
     # Check if finite element family is supported by FIAT
     elif not family in FIAT.element_classes:
         error("Sorry, finite element of type \"%s\" are not supported by FIAT.", family)
@@ -129,8 +136,6 @@ def map_facet_points(points, facet):
 
     return new_points
 
-
-# -- Extract elements from UFL mixed element
 def _extract_elements(ufl_element, domain=None):
     "Recursively extract un-nested list of (component) elements."
 
@@ -146,9 +151,7 @@ def _extract_elements(ufl_element, domain=None):
     elements += [create_element(ufl_element)]
     return elements
 
-
-# -- Restricted element initializer functions
-def create_restricted_element(ufl_element):
+def _create_restricted_element(ufl_element):
     "Create an FFC representation for an UFL ElementRestriction."
 
     if not isinstance(ufl_element, ufl.ElementRestriction):
@@ -159,7 +162,7 @@ def create_restricted_element(ufl_element):
 
     # If simple element -> create RestrictedElement from fiat_element
     if isinstance(base_element, ufl.FiniteElement):
-        element = create_fiat_element(base_element)
+        element = _create_fiat_element(base_element)
         return RestrictedElement(element, _indices(element, domain))
 
     # If restricted mixed element -> convert to mixed restricted element
@@ -180,4 +183,3 @@ def _indices(element, domain):
         for (entity, index) in entities.iteritems():
             indices += index
     return indices
-

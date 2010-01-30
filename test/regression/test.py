@@ -96,7 +96,7 @@ def generate_code():
     for f in form_files:
 
         # Generate code
-        ok = run_command("ffc -d %s" % f)
+        ok = run_command("ffc -d -fconvert_exceptions_to_warnings %s" % f)
 
         # Check status
         if ok:

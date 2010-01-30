@@ -811,13 +811,8 @@ def _generate_normal(geometric_dimension, domain_type, reference_normal=False):
         error("Unsupported domain_type: %s" % str(domain_type))
     return code
 
-
-
-def set_float_formatting(options):
-    "Set floating point formatting based on options."
-
-    # Get number of digits
-    precision = int(options["precision"])
+def set_float_formatting(precision):
+    "Set floating point formatting based on precision."
 
     # Options for float formatting
     f1 = "%%.%df" % precision
@@ -845,3 +840,8 @@ def set_float_formatting(options):
 
     # Set machine precision
     format["epsilon"] = 10.0*eval("1e-%s" % precision)
+
+def set_exception_handling(convert_exceptions_to_warnings):
+    "Set handling of exceptions."
+    if convert_exceptions_to_warnings:
+        format["exception"] = format["warning"]
