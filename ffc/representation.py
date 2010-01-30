@@ -206,18 +206,10 @@ def _evaluate_basis(element, cell):
     ffc_assert(all(mapping == m for m in element.mapping()),\
                "Mapping is not the same for all dofs of this element: %s" % str(element))
     data = {
-<<<<<<< TREE
-          "value_shape" : ufl_element.value_shape(),
-          "embedded_degree" : ufl_element.degree(),
-          "cell_domain" : ufl_element.cell().domain(),
-          "coeffs" : fiat_element.get_coeffs(),
-          "family" : ufl_element.family(),
-=======
           "value_shape" : element.value_shape(),
           "embedded_degree" : element.degree(),
           "cell_domain" : cell.domain(),
           "coeffs" : element.get_coeffs(),
->>>>>>> MERGE-SOURCE
           "mapping" : mapping,
           "space_dimension" : element.space_dimension(),
           "topological_dimension" : cell.topological_dimension(),
