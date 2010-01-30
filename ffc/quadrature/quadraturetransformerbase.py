@@ -1,11 +1,11 @@
 "QuadratureTransformerBase, a common class for quadrature transformers to translate UFL expressions."
 
-__author__ = "Kristian B. Oelgaard (k.b.oelgaard@tudelft.nl)"
+__author__ = "Kristian B. Oelgaard (k.b.oelgaard@gmail.com)"
 __date__ = "2009-10-13"
-__copyright__ = "Copyright (C) 2009 Kristian B. Oelgaard"
+__copyright__ = "Copyright (C) 2009-2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2009-12-09
+# Last changed: 2010-01-21
 
 # Python modules.
 from itertools import izip
@@ -28,7 +28,8 @@ from ufl.algorithms.printing import tree_format
 from ffc.log import ffc_assert
 from ffc.log import error
 from ffc.log import info
-from ffc.createelement import create_element
+from ffc.fiatinterface import create_element
+from ffc.mixedelement import MixedElement
 
 # FFC tensor modules.
 from ffc.tensor.multiindex import MultiIndex as FFCMultiIndex
@@ -44,14 +45,18 @@ class QuadratureTransformerBase(Transformer):
 #class QuadratureTransformerBase(ReuseTransformer):
     "Transform UFL representation to quadrature code."
 
-    def __init__(self, form_representation, domain_type, optimise_options, format):
+    def __init__(self, ir, optimise_options, format):
 
         Transformer.__init__(self)
+
+        # Get weights and psi tables
+        quadrature_weights = ir["quadrature_weights"]
+        psi_tables = ir["psi_tables"]
 
         # Save format, optimise_options, weights and fiat_elements_map.
         self.format = format
         self.optimise_options = optimise_options
-        self.quadrature_weights = form_representation.quadrature_weights[domain_type]
+        self.quadrature_weights = quadrature_weights
 
         # Create containers and variables.
         self.used_psi_tables = set()
@@ -75,9 +80,8 @@ class QuadratureTransformerBase(Transformer):
         self._components = Stack()
         self.trans_set = set()
         self.element_map, self.name_map, self.unique_tables =\
-              create_psi_tables(form_representation.psi_tables[domain_type],\
+              create_psi_tables(psi_tables,\
                                        self.format["epsilon"], self.optimise_options)
-
         # Cache.
         self.argument_cache = {}
         self.function_cache = {}
@@ -96,8 +100,8 @@ class QuadratureTransformerBase(Transformer):
     def update_points(self, points):
         self.points = points
         # Reset functions everytime we move to a new quadrature loop
-        # But not the functions count.
         self.functions = {}
+        self.function_count = 0
 
         # Reset cache
         self.argument_cache = {}
@@ -433,7 +437,7 @@ class QuadratureTransformerBase(Transformer):
             component += 1
 
         # Let child class create constant symbol
-        coefficient = self.format["coeff"] + self.format["matrix access"](o.count(), component)
+        coefficient = self.format["coefficient"](o.count(), component)
         return self._create_symbol(coefficient, CONST)
 
     def vector_constant(self, o, *operands):
@@ -454,7 +458,7 @@ class QuadratureTransformerBase(Transformer):
             component += o.shape()[0]
 
         # Let child class create constant symbol
-        coefficient = self.format["coeff"] + self.format["matrix access"](o.count(), component)
+        coefficient = self.format["coefficient"](o.count(), component)
         return self._create_symbol(coefficient, CONST)
 
     def tensor_constant(self, o, *operands):
@@ -476,7 +480,7 @@ class QuadratureTransformerBase(Transformer):
             component += product(o.shape())
 
         # Let child class create constant symbol
-        coefficient = self.format["coeff"] + self.format["matrix access"](o.count(), component)
+        coefficient = self.format["coefficient"](o.count(), component)
         return self._create_symbol(coefficient, CONST)
 
     # -------------------------------------------------------------------------
@@ -664,15 +668,16 @@ class QuadratureTransformerBase(Transformer):
         format_float_decl   = self.format["float declaration"]
         format_F            = self.format["function value"]
         format_float        = self.format["floating point"]
-        format_add_equal    = self.format["add equal"]
+        format_iadd         = self.format["iadd"]
         format_nzc          = self.format["nonzero columns"](0).split("0")[0]
-        format_r            = self.format["free secondary indices"][0]
+        format_r            = self.format["free indices"][0]
         format_mult         = self.format["multiply"]
         format_scale_factor = self.format["scale factor"]
         format_add          = self.format["add"]
         format_tensor       = self.format["element tensor quad"]
-        format_array_access = self.format["array access"]
-        format_Gip          = self.format["geometry tensor"] + self.format["integration points"]
+        format_component    = self.format["component"]
+        format_Gip          = self.format["geometry constant"] + self.format["integration points"]
+        format_assign       = self.format["assign"]
 
         # Initialise return values.
         code = []
@@ -713,7 +718,7 @@ class QuadratureTransformerBase(Transformer):
         if self.function_count:
             code += ["", format_comment("Coefficient declarations")]
         for function_number in range(self.function_count):
-            code.append((format_float_decl + format_F + str(function_number), format_float(0)))
+            code.append(format_assign(format_float_decl + format_F + str(function_number), format_float(0)))
 
         # Create code for computing function values, sort after loop ranges first.
         functions = self.functions
@@ -742,7 +747,7 @@ class QuadratureTransformerBase(Transformer):
                 # Get number of operations to compute entry and add to function operations count.
                 f_ops = self._count_operations(function) + 1
                 func_ops += f_ops
-                entry = format_add_equal(name, function)
+                entry = format_iadd(name, function)
                 function_expr[number] = entry
 
                 # Extract non-zero column number if needed.
@@ -766,7 +771,7 @@ class QuadratureTransformerBase(Transformer):
         ACCESS = GEO
         weight = self.format["weight"](self.points)
         if self.points > 1:
-            weight += self.format["array access"](self.format["integration points"])
+            weight += self.format["component"]("", self.format["integration points"])
             ACCESS = IP
         weight = self._create_symbol(weight, ACCESS)[()]
 
@@ -860,7 +865,7 @@ class QuadratureTransformerBase(Transformer):
             except:
                 pass
 
-            entry_code = format_add_equal( format_tensor + format_array_access(entry), value)
+            entry_code = format_iadd( format_component(format_tensor, entry), value)
 
             if loop not in loops:
                 loops[loop] = [entry_ops, [entry_ops_comment, entry_code]]
@@ -921,6 +926,14 @@ class QuadratureTransformerBase(Transformer):
         ffc_assert(not (derivatives and quad_element), \
                    "Derivatives of Quadrature elements are not supported: " + repr(ufl_function))
 
+        # Create FFC element.
+        ffc_element = create_element(ufl_function.element())
+
+        # Get relevant sub element and mapping.
+        sub_element = create_element(ufl_function.element().extract_component(tuple(component))[1])
+        # Assuming that mappings for all basisfunctions are equal (they should be).
+        transformation = sub_element.mapping()[0]
+
         # Handle tensor elements.
         if len(local_comp) > 1:
             local_comp = local_elem._sub_element_mapping[local_comp]
@@ -929,7 +942,8 @@ class QuadratureTransformerBase(Transformer):
         else:
             local_comp = 0
 
-        # Map component
+        # Map component using UFL map
+        # NOTE: We rely implicitly on a similar ordering of sub elements of mixed elements in UFL and FFC.
         if len(component) > 1:
             component = ufl_function.element()._sub_element_mapping[tuple(component)]
         elif component:
@@ -939,10 +953,6 @@ class QuadratureTransformerBase(Transformer):
         local_offset = 0
         if component:
             local_offset = component - local_comp
-
-        # Create FFC element and get transformation.
-        ffc_element = create_element(ufl_function.element())
-        transformation = ffc_element.component_element(component)[0].mapping()
 
         # Set geo_dim.
         # TODO: All terms REALLY have to be defined on cell with the same
@@ -987,7 +997,7 @@ class QuadratureTransformerBase(Transformer):
         # since we will either loop the entire space dimension or the non-zeros.
         if self.points == 1:
             format_ip = "0"
-        basis_access = self.format["matrix access"](format_ip, loop_index)
+        basis_access = self.format["component"]("", [format_ip, loop_index])
 
         # Offset element space dimension in case of negative restriction,
         # need to use the complete element for offset in case of mixed element.
@@ -1022,8 +1032,7 @@ class QuadratureTransformerBase(Transformer):
         if non_zeros and basis_map == "0":
             basis_map = str(non_zeros[1][0])
         elif non_zeros:
-            basis_map = self.format["nonzero columns"](non_zeros[0]) +\
-                        self.format["array access"](basis_map)
+            basis_map = self.format["component"](self.format["nonzero columns"](non_zeros[0]), basis_map)
         if offset:
             basis_map = self.format["grouping"](self.format["add"]([basis_map, offset]))
 
@@ -1048,14 +1057,14 @@ class QuadratureTransformerBase(Transformer):
 
         # Pick first free index of secondary type
         # (could use primary indices, but it's better to avoid confusion).
-        loop_index = self.format["free secondary indices"][0]
+        loop_index = self.format["free indices"][0]
 
         # Create basis access, we never need to map the entry in the basis
         # table since we will either loop the entire space dimension or the
         # non-zeros.
         if self.points == 1:
             format_ip = "0"
-        basis_access = self.format["matrix access"](format_ip, loop_index)
+        basis_access = self.format["component"]("", [format_ip, loop_index])
 
         # Handle restriction through facet.
         facet = {"+": self.facet0, "-": self.facet1, None: self.facet0}[self.restriction]
@@ -1098,8 +1107,14 @@ class QuadratureTransformerBase(Transformer):
         if quad_element:
             quad_offset = 0
             if component:
-                for i in range(component):
-                    quad_offset += ffc_element.sub_element(i).space_dimension()
+                # FIXME: Should we add a member function elements() to FiniteElement?
+                if isinstance(ffc_element, MixedElement):
+                    for i in range(component):
+                        quad_offset += ffc_element.elements()[i].space_dimension()
+                elif component != 1:
+                    error("Can't handle components different from 1 if we don't have a MixedElement.")
+                else:
+                    quad_offset += ffc_element.space_dimension()
             if quad_offset:
                 coefficient_access = self.format["add"]([format_ip, str(quad_offset)])
             else:
@@ -1109,8 +1124,7 @@ class QuadratureTransformerBase(Transformer):
         if non_zeros and coefficient_access == "0":
             coefficient_access = str(non_zeros[1][0])
         elif non_zeros and not quad_element:
-            coefficient_access = self.format["nonzero columns"](non_zeros[0]) +\
-                                 self.format["array access"](coefficient_access)
+            coefficient_access = self.format["component"](self.format["nonzero columns"](non_zeros[0]), coefficient_access)
         if offset:
             coefficient_access = self.format["add"]([coefficient_access, offset])
 
@@ -1122,8 +1136,7 @@ class QuadratureTransformerBase(Transformer):
         except:
             pass
 
-        coefficient = self.format["coeff"] +\
-                      self.format["matrix access"](str(ufl_function.count()), coefficient_access)
+        coefficient = self.format["coefficient"](str(ufl_function.count()), coefficient_access)
         function_expr = self._create_symbol(coefficient, ACCESS)[()]
         if basis_name:
             function_expr = self._create_product([self._create_symbol(basis_name, ACCESS)[()], self._create_symbol(coefficient, ACCESS)[()]])

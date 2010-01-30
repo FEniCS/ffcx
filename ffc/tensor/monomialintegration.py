@@ -1,4 +1,4 @@
-"This module implements efficient integration of monomial forms"
+"This module implements efficient integration of monomial forms."
 
 __author__ = "Anders Logg (logg@simula.no)"
 __date__ = "2004-11-03"
@@ -11,39 +11,37 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Garth N. Wells 2006
 # Modified by Marie E. Rognes (meg@math.uio.no) 2008
 # Modified by Kristian B. Oelgaard, 2009
-# Last changed: 2009-12-09
+# Last changed: 2010-01-28
 
-# Python modules.
+# Python modules
 import numpy
 import time
 
-# UFL modules.
+# UFL modules
 from ufl.classes import Measure
+from ufl.geometry import domain2facet
 
-# FIAT modules.
-from FIAT.transformedspace import *
-from FIAT.shapes import *
+# FFC modules
+from ffc.log import info, debug, error
+from ffc.fiatinterface import create_element, create_quadrature
+from ffc.fiatinterface import map_facet_points
 
-# FFC modules.
-from ffc.log import debug
-from ffc.log import error
-from ffc.ffcquadraturerules import make_quadrature
-from ffc.referencecell import map_to_facet
-from ffc.quadratureelement import QuadratureElement
-
-# FFC tensor representation modules.
+# FFC tensor representation modules
 from multiindex import build_indices
 from monomialextraction import MonomialException
 from monomialtransformation import MonomialIndex
 
-def integrate(monomial, domain_type, facet0, facet1, quadrature_order):
+def integrate(monomial, domain_type, facet0, facet1, quadrature_degree):
     """Compute the reference tensor for a given monomial term of a
     multilinear form"""
 
+    info("Precomputing integrals on reference element")
+
+    # Start timing
     tic = time.time()
 
     # Initialize quadrature points and weights
-    (points, weights) = _init_quadrature(monomial.arguments, domain_type, quadrature_order)
+    (points, weights) = _init_quadrature(monomial.arguments, domain_type, quadrature_degree)
 
     # Initialize quadrature table for basis functions
     table = _init_table(monomial.arguments, domain_type, points, facet0, facet1)
@@ -62,39 +60,22 @@ def integrate(monomial, domain_type, facet0, facet1, quadrature_order):
 
     return A0
 
-def _init_quadrature(arguments, domain_type, quadrature_order):
+def _init_quadrature(arguments, domain_type, quadrature_degree):
     "Initialize quadrature for given monomial."
 
     # Get shapes (check first factor, should be the same for all)
-    element = arguments[0].element
-    cell_shape = element.cell().domain()
-    facet_shape = element.cell().facet_domain()
-
-    # FIXME: KBO: Old, remove this?
-    # Compute number of points to match the degree
-    #quadrature_order = _compute_degree(arguments)
+    ufl_element = arguments[0].element
+    cell_shape = ufl_element.cell().domain()
+    facet_shape = domain2facet[cell_shape]
 
     # Use the quadrature order given by metadata to compute the number of points
-    # TODO: KBO: This might be suboptimal, since each monomial in the tensor
-    # representation might have different order.
-    num_points = (quadrature_order + 2) / 2
-
-    debug("Quadrature order is %d, using %d quadrature point(s) in each dimension." % (quadrature_order, num_points))
-
-    # FIXME: KBO: This should be handled in compiler.py when computing the
-    # quadrature order, so we can remove this.
-    # Check if any basis functions are defined on a quadrature element
-    #for v in arguments:
-    #    if isinstance(v.element, QuadratureElement):
-    #        num_points = v.element.num_axis_points()
-    #        debug("Found quadrature element, adjusting number of points to %d.", num_points)
-    #        break
+    num_points = (quadrature_degree + 2) / 2
 
     # Create quadrature rule and get points and weights
     if domain_type == Measure.CELL:
-        (points, weights) = make_quadrature(cell_shape, num_points)
+        (points, weights) = create_quadrature(cell_shape, num_points)
     else:
-        (points, weights) = make_quadrature(facet_shape, num_points)
+        (points, weights) = create_quadrature(facet_shape, num_points)
 
     return (points, weights)
 
@@ -105,25 +86,27 @@ def _init_table(arguments, domain_type, points, facet0, facet1):
     # Compute maximum number of derivatives for each element
     num_derivatives = {}
     for v in arguments:
-        element = v.element
+        ufl_element = v.element
         order = len(v.derivatives)
-        if element in num_derivatives:
-            num_derivatives[element] = max(order, num_derivatives[element])
+        if ufl_element in num_derivatives:
+            num_derivatives[ufl_element] = max(order, num_derivatives[ufl_element])
         else:
-            num_derivatives[element] = order
+            num_derivatives[ufl_element] = order
 
     # Call FIAT to tabulate the basis functions for each element
     table = {}
-    for element in num_derivatives:
-        order = num_derivatives[element]
-        # Tabulate for different integral types
+    for (ufl_element, order) in num_derivatives.items():
+        fiat_element = create_element(ufl_element)
         if domain_type == Measure.CELL:
-            table[(element, None)] = element.tabulate(order, points)
+            table[(ufl_element, None)] = fiat_element.tabulate(order, points)
         elif domain_type == Measure.EXTERIOR_FACET:
-            table[(element, None)] = element.tabulate(order, map_to_facet(element.cell().domain(), points, facet0))
+            x = map_facet_points(points, facet0)
+            table[(ufl_element, None)] = fiat_element.tabulate(order, x)
         elif domain_type == Measure.INTERIOR_FACET:
-            table[(element, "+")] = element.tabulate(order, map_to_facet(element.cell().domain(), points, facet0))
-            table[(element, "-")] = element.tabulate(order, map_to_facet(element.cell().domain(), points, facet1))
+            x0 = map_facet_points(points, facet0)
+            x1 = map_facet_points(points, facet1)
+            table[(ufl_element, "+")] = fiat_element.tabulate(order, x0)
+            table[(ufl_element, "-")] = fiat_element.tabulate(order, x1)
 
     return table
 
@@ -146,7 +129,8 @@ def _compute_psi(v, table, num_points, domain_type):
     # later when we sum over these dimensions.
 
     # Get cell dimension
-    cell_dimension = v.element.cell().topological_dimension()
+    ufl_element = v.element
+    cell_dimension = ufl_element.cell().geometric_dimension()
 
     # Get indices and shapes for components
     if len(v.components) ==  0:
@@ -161,7 +145,6 @@ def _compute_psi(v, table, num_points, domain_type):
     # Get indices and shapes for derivatives
     dindex = [d for d in v.derivatives]
     dshape = [len(d.index_range) for d in v.derivatives]
-    dorder = len(dindex)
 
     # Get indices and shapes for basis functions
     vindex = [v.index]
@@ -183,9 +166,9 @@ def _compute_psi(v, table, num_points, domain_type):
                 # Translate derivative multiindex to lookup tuple
                 dtuple = _multiindex_to_tuple(dlist, cell_dimension)
                 # Get values from table
-                Psi[component][tuple(dlist)] = etable[cindex[0].index_range[component]][dorder][dtuple]
+                Psi[component][tuple(dlist)] = etable[dtuple][:, cindex[0].index_range[component], :]
     else:
-        etable = table[(v.element, v.restriction)][dorder]
+        etable = table[(v.element, v.restriction)]
         for dlist in dlists:
             # Translate derivative multiindex to lookup tuple
             dtuple = _multiindex_to_tuple(dlist, cell_dimension)
@@ -222,6 +205,7 @@ def _compute_product(psis, weights):
     # Initialize zero reference tensor (will be rearranged later)
     (shape, indices) = _compute_shape(psis)
     A0 = numpy.zeros(shape, dtype= numpy.float)
+
     # Initialize list of internal multiindices
     bshape = _compute_internal_shape(psis)
     bindices = build_indices([range(b) for b in bshape]) or [[]]
@@ -230,6 +214,7 @@ def _compute_product(psis, weights):
     num_points = len(weights)
     for q in range(num_points):
         for b in bindices:
+
             # Compute outer products of subtables for current (q, b)
             B = weights[q]
             for (Psi, index, bpart) in psis:
@@ -245,11 +230,13 @@ def _compute_product(psis, weights):
     return A0
 
 def _compute_rearrangement(indices):
-    """Compute rearrangement tuple for given list of Indices, so that
-    the tuple reorders the given list of Indices with fixed, primary,
-    secondary and internal Indices in rising order."""
+    """
+    Compute rearrangement tuple for given list of Indices, so that the
+    tuple reorders the given list of Indices with fixed, primary,
+    secondary and internal Indices in rising order.
+    """
     fixed     = _find_indices(indices, MonomialIndex.FIXED)
-    internal = _find_indices(indices, MonomialIndex.INTERNAL)
+    internal  = _find_indices(indices, MonomialIndex.INTERNAL)
     primary   = _find_indices(indices, MonomialIndex.PRIMARY)
     secondary = _find_indices(indices, MonomialIndex.SECONDARY)
     assert len(fixed + internal + primary + secondary) == len(indices)
@@ -266,9 +253,11 @@ def _compute_shape(psis):
     return (shape, indices)
 
 def _compute_internal_shape(psis):
-    """Compute shape for internal indices from given list of tables.
-    Also compute a list of  mappings from each table to the internal
-    dimensions associated with that table."""
+    """
+    Compute shape for internal indices from given list of tables.
+    Also compute a list of mappings from each table to the internal
+    dimensions associated with that table.
+    """
     # First find the number of different internal indices (check maximum)
     bs = [b for (Psi, index, bpart) in psis for b in bpart]
     if len(bs) == 0: return []
@@ -290,11 +279,13 @@ def _find_indices(indices, index_type):
     return [pos[i] for i in numpy.argsort(val)]
 
 def _multiindex_to_tuple(dindex, cell_dimension):
-    """Compute lookup tuple from given derivative
-    multiindex. Necessary since the table we get from FIAT is a
-    dictionary with the tuples as keys. A derivative tuple specifies
-    the number of derivatives in each space dimension, rather than
-    listing the space dimensions for the derivatives."""
+    """
+    Compute lookup tuple from given derivative multiindex. Necessary
+    since the table we get from FIAT is a dictionary with the tuples
+    as keys. A derivative tuple specifies the number of derivatives in
+    each space dimension, rather than listing the space dimensions for
+    the derivatives.
+    """
     dtuple = [0 for i in range(cell_dimension)]
     for d in dindex:
         dtuple[d] += 1

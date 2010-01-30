@@ -5,18 +5,20 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Marie E. Rognes (meg@math.uio.no) 2007
 # Modified by Kristian B. Oelgaard, 2009
-# Last changed: 2009-12-09
+# Last changed: 2009-12-21
 
 # FFC modules.
 from ffc.log import debug
 
 # FFC tensor representation modules.
 from monomialtransformation import MonomialIndex
-from multiindex import create_multi_index
+from multiindex import create_multiindex
 
 class GeometryTensor:
-    """This class represents the geometry tensor for a monomial term
-    of a multilinear form."""
+    """
+    This class represents the geometry tensor for a monomial term of a
+    multilinear form.
+    """
 
     def __init__(self, monomial):
         "Create geometry tensor for given monomial."
@@ -26,9 +28,13 @@ class GeometryTensor:
         self.coefficients = monomial.coefficients
         self.transforms = monomial.transforms
 
-        # Create secondary and auxiliary multi indices
-        self.secondary_multi_index = create_multi_index(monomial, MonomialIndex.SECONDARY)
-        self.external_multi_index  = create_multi_index(monomial, MonomialIndex.EXTERNAL)
+        # Extract indices
+        secondary_indices = monomial.extract_unique_indices(MonomialIndex.SECONDARY)
+        external_indices  = monomial.extract_unique_indices(MonomialIndex.EXTERNAL)
+
+        # Create multiindices
+        self.secondary_multi_index = create_multiindex(secondary_indices)
+        self.external_multi_index  = create_multiindex(external_indices)
 
         debug("Secondary multi index: " + str(self.secondary_multi_index))
         debug("External multi index:  " + str(self.external_multi_index))

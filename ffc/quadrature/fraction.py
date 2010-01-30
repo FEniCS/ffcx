@@ -1,14 +1,15 @@
 "This file implements a class to represent a fraction."
 
-__author__ = "Kristian B. Oelgaard (k.b.oelgaard@tudelft.nl)"
+__author__ = "Kristian B. Oelgaard (k.b.oelgaard@gmail.com)"
 __date__ = "2009-07-12"
-__copyright__ = "Copyright (C) 2009 Kristian B. Oelgaard"
+__copyright__ = "Copyright (C) 2009-2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2009-12-09
+# Last changed: 2010-01-21
 
 # FFC modules.
 from ffc.log import error
+from ffc.cpp import format
 
 # FFC quadrature modules.
 from symbolics import create_float
@@ -22,8 +23,6 @@ from expr import Expr
 def set_format(_format):
     global format
     format = _format
-    global EPS
-    EPS = format["epsilon"]
 
 class Fraction(Expr):
     __slots__ = ("num", "denom", "_expanded", "_reduced")
@@ -96,7 +95,8 @@ class Fraction(Expr):
         # NOTE: This will be removed by the optimisations later before writing any code.
         if self.denom._prec in (2, 4) or self.denom.val < 0.0: # prod or frac
             denom = format["grouping"](denom)
-        return num + format["division"] + denom
+#        return num + format["division"] + denom
+        return format["div"](num, denom)
 
     # Binary operators.
     def __add__(self, other):

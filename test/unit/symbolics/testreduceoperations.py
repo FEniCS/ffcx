@@ -5,7 +5,7 @@ __date__ = "2010-01-06"
 __copyright__ = "Copyright (C) 2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-06
+# Last changed: 2010-01-28
 
 # Pyhton modules
 import unittest
@@ -13,14 +13,16 @@ import time
 
 # FFC modules
 from ffc.quadrature.symbolics import *
-from ffc.ufcformat import Format
+from ffc.cpp import format, set_float_formatting
 from ffc.constants import FFC_OPTIONS
+set_float_formatting(FFC_OPTIONS)
 
 class TestReduceOperations(unittest.TestCase):
 
     def testReduceOperations(self):
 
-#        print "\nTesting ReduceOperations"
+        f_1 = format["float"](1)
+        f_2 = format["float"](2)
 
         # Aux. variables
         f2 = FloatValue(2)
@@ -122,8 +124,8 @@ class TestReduceOperations(unittest.TestCase):
         self.assertEqual(Fr0, F0)
         self.assertEqual(Fr1, f0_5)
         self.assertEqual(Fr2, Fraction(f2, y))
-        self.assertEqual(str(Fr3), "x*(1 + x/y)")
-        self.assertEqual(str(Fr4), "x*(2 + y)/a")
+        self.assertEqual(str(Fr3), "x*(%s + x/y)" % f_1)
+        self.assertEqual(str(Fr4), "x*(%s + y)/a" % f_2)
 
         # Test sum
         # TODO: Here we might have to add additional tests
@@ -301,30 +303,30 @@ class TestReduceOperations(unittest.TestCase):
 #        print "Sr23: '%s'" %Sr23
 
         self.assertEqual(Sr0, S0)
-        self.assertEqual(str(Sr1), "x*(2 + y)")
+        self.assertEqual(str(Sr1), "x*(%s + y)" % f_2)
         # TODO: Should this be (x + x*y)?
-        self.assertEqual(str(Sr2), "x*(1 + y)")
+        self.assertEqual(str(Sr2), "x*(%s + y)" % f_1)
 #        self.assertEqual(str(Sr2), "(x + x*y)")
-        self.assertEqual(str(Sr3), "2*(x + y)")
-        self.assertEqual(str(Sr4), "x*y*(2 + z)")
-        self.assertEqual(str(Sr5), "x*(1 + x*(1 + x))")
+        self.assertEqual(str(Sr3), "%s*(x + y)" % f_2)
+        self.assertEqual(str(Sr4), "x*y*(%s + z)" % f_2)
+        self.assertEqual(str(Sr5), "x*(%s + x*(%s + x))" % (f_1, f_1))
         self.assertEqual(str(Sr6), "x*x*(a + c + x*(b + d))")
-        self.assertEqual(str(Sr7), "(x*(2 + x + y) + z*(2 + y))")
+        self.assertEqual(str(Sr7), "(x*(%s + x + y) + z*(%s + y))" % (f_2, f_2))
         self.assertEqual(str(Sr8), "(x*x*x*(y + z) + y*(a + b))")
-        self.assertEqual(str(Sr9), "(x*x*(2 + x*(y + z)) + y*(a + b + c))")
-        self.assertEqual(str(Sr10), "x*x*y*(2 + z)")
-        self.assertEqual(str(Sr11), "x*x*y*y*(2 + z)")
-        self.assertEqual(str(Sr12), "(x*x*y*y*(2 + z) + z*(a + b + c))")
-        self.assertEqual(str(Sr13), "(1/x + 1/y)")
-        self.assertEqual(str(Sr14), "(-1/x-1/y)")
-        self.assertEqual(str(Sr15), "4/x")
-        self.assertEqual(str(Sr16), "(0.5 + 2*x)/(y*z)")
-        self.assertEqual(str(Sr17), "x*y*(2/a + z/b)")
-        self.assertEqual(str(Sr18), "(2 + x*(z + 3*y))/a")
-        self.assertEqual(str(Sr19), "x*(z + (2 + y)/a)")
+        self.assertEqual(str(Sr9), "(x*x*(%s + x*(y + z)) + y*(a + b + c))" % f_2)
+        self.assertEqual(str(Sr10), "x*x*y*(%s + z)" % f_2)
+        self.assertEqual(str(Sr11), "x*x*y*y*(%s + z)" % f_2)
+        self.assertEqual(str(Sr12), "(x*x*y*y*(%s + z) + z*(a + b + c))" % f_2)
+        self.assertEqual(str(Sr13), "(%s/x + %s/y)" % (f_1, f_1))
+        self.assertEqual(str(Sr14), "(-%s/x-%s/y)" % (f_1, f_1))
+        self.assertEqual(str(Sr15), "%s/x" % format["float"](4))
+        self.assertEqual(str(Sr16), "(%s + %s*x)/(y*z)" % (format["float"](0.5), f_2))
+        self.assertEqual(str(Sr17), "x*y*(%s/a + z/b)" % f_2)
+        self.assertEqual(str(Sr18), "(%s + x*(z + %s*y))/a" % (f_2, format["float"](3)))
+        self.assertEqual(str(Sr19), "x*(z + (%s + y)/a)" % f_2)
         self.assertEqual(str(Sr20), "a*c*d*(x + y)/(b*z)")
-        self.assertEqual(str(Sr21), "(x*(a + b + c + y + z) + y*(2 + a + b) + z*(2 + a + b))")
-        self.assertEqual(str(Sr22), "0")
+        self.assertEqual(str(Sr21), "(x*(a + b + c + y + z) + y*(%s + a + b) + z*(%s + a + b))" % (f_2, f_2))
+        self.assertEqual(str(Sr22), "%s" % format["float"](0))
         self.assertEqual(str(Sr23), "(x*y*z + z*z*z*(y*y*y*(x + z) + z*z))")
 
         self.assertEqual(S0.ops(), 1)
@@ -375,9 +377,6 @@ class TestReduceOperations(unittest.TestCase):
         self.assertEqual(Sr23.ops(), 12)
 
 if __name__ == "__main__":
-
-    if format == None:
-        set_format(Format(FFC_OPTIONS).format)
 
     # Run all returned tests
     runner = unittest.TextTestRunner()

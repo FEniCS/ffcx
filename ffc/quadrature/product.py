@@ -1,14 +1,15 @@
 "This file implements a class to represent a product."
 
-__author__ = "Kristian B. Oelgaard (k.b.oelgaard@tudelft.nl)"
+__author__ = "Kristian B. Oelgaard (k.b.oelgaard@gmail.com)"
 __date__ = "2009-07-12"
-__copyright__ = "Copyright (C) 2009 Kristian B. Oelgaard"
+__copyright__ = "Copyright (C) 2009-2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2009-12-09
+# Last changed: 2010-01-21
 
 # FFC modules.
 from ffc.log import error
+from ffc.cpp import format
 
 # FFC quadrature modules.
 from symbolics import create_float
@@ -115,7 +116,7 @@ class Product(Expr):
                 self.val = float_val
                 self.vrs = [create_float(float_val)]
             # If 1.0 is the only value left, add it.
-            elif abs(float_val - 1.0) < EPS and not self.vrs:
+            elif abs(float_val - 1.0) < format["epsilon"] and not self.vrs:
                 self.val = 1.0
                 self.vrs = [create_float(1)]
 
@@ -148,8 +149,8 @@ class Product(Expr):
         # If we have more than one variable and the first float is -1 exlude the 1.
         if len(self.vrs) > 1 and self.vrs[0]._prec == 0 and self.vrs[0].val == -1.0:
             # Join string representation of members by multiplication
-            return   format["subtract"](["", format["multiply"]([str(v) for v in self.vrs[1:]])])
-        return format["multiply"]([str(v) for v in self.vrs])
+            return   format["sub"](["", format["mul"]([str(v) for v in self.vrs[1:]])])
+        return format["mul"]([str(v) for v in self.vrs])
 
     # Binary operators.
     def __add__(self, other):

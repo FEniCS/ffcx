@@ -9,23 +9,19 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Johan Hake, 2008-2009
 # Modified by Ilmar Wilbers, 2008
 # Modified by Kristian B. Oelgaard, 2009
-# Last changed: 2009-12-15
+# Last changed: 2010-01-27
 
-# Python modules.
+# Python modules
 import os
 import instant
 import ufc_utils
 
-# UFL modules.
-from ufl.classes import Form
-from ufl.classes import FiniteElementBase
-from ufl.classes import TestFunction
+# UFL modules
+from ufl.classes import Form, FiniteElementBase, TestFunction
 from ufl.objects import dx
-from ufl.algorithms import as_form
-from ufl.algorithms import preprocess
-from ufl.algorithms import FormData
+from ufl.algorithms import as_form, preprocess, FormData
 
-# FFC modules.
+# FFC modules
 from log import log
 from log import info
 from log import warning
@@ -35,7 +31,6 @@ from log import set_level
 from log import set_prefix
 from log import INFO
 from constants import FFC_OPTIONS
-from finiteelement import FiniteElement
 from mixedelement import MixedElement
 from compiler import compile_form
 from jitobject import JITObject
@@ -73,7 +68,7 @@ def jit_form(form, options=None):
         form = as_form(form)
 
     # Check options
-    options = check_options(form, options)
+    options = _check_options(form, options)
 
     # Set log level
     set_level(options["log_level"])
@@ -94,10 +89,10 @@ def jit_form(form, options=None):
 
         # Get form data from in-memory cache or create it
         if form in _form_data_cache:
-            form_data = _form_data_cache[id(form)]
+            form_data = _form_data_cache[form]
         else:
             form_data = FormData(preprocessed_form)
-            _form_data_cache[id(form)] = form_data
+            _form_data_cache[form] = form_data
         return (compiled_form, module, form_data)
 
     # Write a message
@@ -109,7 +104,9 @@ def jit_form(form, options=None):
 
     # Generate code
     signature = jit_object.signature()
-    preprocessed_form, form_data = compile_form(preprocessed_form, {}, signature, options)[0]
+    analysis = compile_form(preprocessed_form, prefix=signature, options=options)
+    # FIXME: Make this more sane, less cryptic
+    form_data = analysis[0][0][1]
 
     # Create python extension module using Instant (through UFC)
     debug("Creating Python extension (compiling and linking), this may take some time...")
@@ -130,7 +127,7 @@ def jit_form(form, options=None):
     compiled_form = getattr(module, module.__name__ + "_form_0")()
 
     # Store form data in cache
-    _form_data_cache[id(form)] = form_data
+    _form_data_cache[form] = form_data
 
     return compiled_form, module, form_data
 
@@ -150,9 +147,9 @@ def jit_element(element, options=None):
     # Compile form
     (compiled_form, module, form_data) = jit_form(form, options)
 
-    return extract_element_and_dofmap(module)
+    return _extract_element_and_dofmap(module, form_data)
 
-def check_options(form, options):
+def _check_options(form, options):
     "Check options and add any missing options"
 
     # Form can not be a list
@@ -180,7 +177,12 @@ def check_options(form, options):
 
     return options
 
-def extract_element_and_dofmap(module):
-    "Extract element and dofmap from module"
-    return (getattr(module, module.__name__ + "_0_finite_element_0")(),
-            getattr(module, module.__name__ + "_0_dof_map_0")())
+def _extract_element_and_dofmap(module, form_data):
+    """
+    Extract element and dofmap from module. Code will be generated for
+    all unique elements (including sub elements) and to get the top
+    level element we need to extract the last element.
+    """
+    i = len(form_data.unique_sub_elements) - 1
+    return (getattr(module, module.__name__ + ("_finite_element_%d" % i))(),
+            getattr(module, module.__name__ + ("_dof_map_%d" % i))())

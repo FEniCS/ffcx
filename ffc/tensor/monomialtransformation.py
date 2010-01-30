@@ -6,7 +6,8 @@ __copyright__ = "Copyright (C) 2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian B. Oelgaard, 2009
-# Last changed: 2009-12-09
+# Modified by Marie E. Rognes, 2010
+# Last changed: 2010-01-26
 
 # UFL modules
 from ufl.classes import Argument
@@ -14,55 +15,49 @@ from ufl.classes import Coefficient
 from ufl.classes import FixedIndex
 
 # FFC modules
-from ffc.log import ffc_assert
-from ffc.log import error
+from ffc.log import info, error, ffc_assert
 from ffc.utils import pick_first
-from ffc.createelement import create_element
-from ffc.finiteelement import AFFINE
-from ffc.finiteelement import CONTRAVARIANT_PIOLA
-from ffc.finiteelement import COVARIANT_PIOLA
+from ffc.fiatinterface import create_element
 
 # FFC tensor representation modules
-from monomialextraction import MonomialForm
-from monomialextraction import MonomialException
+from ffc.tensor.monomialextraction import MonomialForm
+from ffc.tensor.monomialextraction import MonomialException
 
-# Index counters
-_current_secondary_index = 0
-_current_internal_index = 0
-_current_external_index = 0
+def transform_monomial_form(monomial_form):
+    "Transform monomial form to reference element."
 
-def next_secondary_index():
-    global _current_secondary_index
-    _current_secondary_index += 1
-    return _current_secondary_index - 1
+    info("Transforming monomial form to reference element")
 
-def next_internal_index():
-    global _current_internal_index
-    _current_internal_index += 1
-    return _current_internal_index - 1
+    # Check that we get a monomial form
+    ffc_assert(isinstance(monomial_form, MonomialForm),
+               "Expecting a MonomialForm.")
 
-def next_external_index():
-    global _current_external_index
-    _current_external_index += 1
-    return _current_external_index - 1
+    # Note that we check if each monomial has been transformed before
+    # and if so we leave it untouched. This is to prevent repeated
+    # transformation (which fails) which may sometimes happen as a
+    # result of extracted integrands being cached by the monomial
+    # extraction.
 
-def reset_indices():
-    global _current_secondary_index
-    global _current_internal_index
-    global _current_external_index
-    _current_secondary_index = 0
-    _current_internal_index = 0
-    _current_external_index = 0
+    # Transform each integral
+    for (integrand, measure) in monomial_form:
+        for (i, monomial) in enumerate(integrand.monomials):
+            if not isinstance(monomial, TransformedMonomial):
+                integrand.monomials[i] = TransformedMonomial(monomial)
 
 class MonomialIndex:
+    """
+    This class represents a monomial index. Each index has a type,
+    a range and a unique id. Valid index types are listed below.
+    """
 
-    FIXED      = "fixed"      # Integer index
-    PRIMARY    = "primary"    # Argument basis function index
-    SECONDARY  = "secondary"  # Index appearing both inside and outside integral
-    INTERNAL   = "internal"   # Index appearing only inside integral
-    EXTERNAL   = "external"   # Index appearing only outside integral
+    FIXED     = "fixed"      # Integer index
+    PRIMARY   = "primary"    # Argument basis function index
+    SECONDARY = "secondary"  # Index appearing both inside and outside integral
+    INTERNAL  = "internal"   # Index appearing only inside integral
+    EXTERNAL  = "external"   # Index appearing only outside integral
 
     def __init__(self, index=None, index_type=None, index_range=None, index_id=None):
+        "Create index with given type, range and id."
         if isinstance(index, MonomialIndex):
             self.index_type = index.index_type
             self.index_range = [i for i in index.index_range]
@@ -73,6 +68,7 @@ class MonomialIndex:
             self.index_id = index_id
 
     def __lt__(self, other):
+        "Comparison operator."
         return self.index_id < other.index_id
 
     def __call__(self, primary=None, secondary=None, internal=None, external=None):
@@ -110,6 +106,7 @@ class MonomialIndex:
         return self + (-offset)
 
     def __str__(self):
+        "Return informal string representation (pretty-print)."
         if self.index_type == MonomialIndex.FIXED:
             return str(self.index_range[0])
         elif self.index_type == MonomialIndex.PRIMARY:
@@ -124,14 +121,17 @@ class MonomialIndex:
             return "?"
 
 class MonomialDeterminant:
+    "This class representes a determinant factor in a monomial."
 
     # FIXME: Handle restrictions for determinants
 
     def __init__(self):
+        "Create empty monomial determinant."
         self.power = 0
-        self.restriction = None
+        self.restriction = ""
 
     def __str__(self):
+        "Return informal string representation (pretty-print)."
         if self.power == 0:
             return "|det F'|"
         elif self.power == 1:
@@ -140,20 +140,25 @@ class MonomialDeterminant:
             return "|det F'| (det F')^%s" % str(self.power)
 
 class MonomialCoefficient:
+    "This class represents a coefficient in a monomial."
 
     def __init__(self, index, number):
+        "Create monomial coefficient for given index and number."
         self.index = index
         self.number = number
 
     def __str__(self):
+        "Return informal string representation (pretty-print)."
         return "c_" + str(self.index)
 
 class MonomialTransform:
+    "This class represents a transform (mapping derivative) in a form."
 
     J = "J"
     JINV = "JINV"
 
     def __init__(self, index0, index1, transform_type, restriction, offset):
+        "Create monomial transform."
 
         # Set data
         self.index0 = index0
@@ -172,6 +177,7 @@ class MonomialTransform:
             self.index1 = index1 - offset
 
     def __str__(self):
+        "Return informal string representation (pretty-print)."
         if self.restriction is None:
             r = ""
         else:
@@ -182,8 +188,13 @@ class MonomialTransform:
             return "dX_%s/dx_%s%s" % (str(self.index0), str(self.index1), r)
 
 class MonomialArgument:
+    """
+    This class represents a monomial argument, that is, a derivative of
+    a scalar component of a basis function on the reference element.
+    """
 
     def __init__(self, element, index, components, derivatives, restriction):
+        "Create monomial argument."
         self.element = element
         self.index = index
         self.components = components
@@ -191,6 +202,7 @@ class MonomialArgument:
         self.restriction = restriction
 
     def __str__(self):
+        "Return informal string representation (pretty-print)."
         if len(self.components) == 0:
             c = ""
         else:
@@ -209,8 +221,13 @@ class MonomialArgument:
         return d0 + v + r + c + d1
 
 class TransformedMonomial:
+    """
+    This class represents a monomial form after transformation to the
+    reference element.
+    """
 
     def __init__(self, monomial):
+        "Create transformed monomial from given monomial."
 
         # Reset monomial data
         self.float_value = monomial.float_value
@@ -220,7 +237,7 @@ class TransformedMonomial:
         self.arguments = []
 
         # Reset index counters
-        reset_indices()
+        _reset_indices()
 
         # Initialize index map
         index_map = {}
@@ -228,12 +245,22 @@ class TransformedMonomial:
         # Iterate over factors
         for f in monomial.factors:
 
-            # Extract element and dimensions
-            element = create_element(f.element())
-            vdim = element.value_dimension(0) # FIXME: rank dependent (meg)
-            sdim = element.space_dimension()
-            gdim = element.cell().geometric_dimension()
-            cdim = element.num_sub_elements()
+            # FIXME: Can't handle tensor-valued elements: vdim = shape[0]
+
+            # Create FIAT element
+            ufl_element = f.element()
+            fiat_element = create_element(f.element())
+
+            # Get number of components
+            shape = ufl_element.value_shape()
+            if len(shape) == 0:
+                vdim = 1
+            else:
+                vdim = shape[0]
+
+            # Extract dimensions
+            sdim = fiat_element.space_dimension()
+            gdim = ufl_element.cell().geometric_dimension()
 
             # Extract basis function index and coefficients
             if isinstance(f.function, Argument):
@@ -254,17 +281,28 @@ class TransformedMonomial:
             # Handle non-affine mappings (Piola)
             if len(components) > 0:
 
-                # Get sub element, offset and mapping
+                # We can only handle rank 1 elements for now
                 component = components[0]
-                if len(component.index_range) > 1:
-                    same = element.component_element(component.index_range[0])[0].mapping()
-                    if not all([element.component_element(c)[0].mapping() is same for c in component.index_range]):
-                        raise MonomialException, "Unable to handle different mappings for index range."
-                (sub_element, offset) = element.component_element(component.index_range[0])
-                mapping = sub_element.mapping()
+
+                # Get mapping (all need to be equal)
+                mappings = []
+                for i in component.index_range:
+                    (offset, ufl_sub_element) = ufl_element.extract_component(i)
+                    fiat_sub_element = create_element(ufl_sub_element)
+                    mappings.append(fiat_sub_element.mapping())
+                mapping = pick_first(pick_first(mappings))
+
+                # Get component index and sub element
+                (component_index, sub_element) = ufl_element.extract_component(component.index_range[0])
+
+                # Get offset
+                if len(component_index) == 0:
+                    offset = 0
+                else:
+                    offset = component.index_range[0] - component_index[0]
 
                 # Add transforms where appropriate
-                if mapping == CONTRAVARIANT_PIOLA:
+                if mapping == "contravariant piola":
                     # phi(x) = (det J)^{-1} J Phi(X)
                     index0 = component
                     index1 = MonomialIndex(index_range=range(gdim)) + offset
@@ -272,7 +310,7 @@ class TransformedMonomial:
                     self.transforms.append(transform)
                     self.determinant.power -= 1
                     components[0] = index1
-                elif mapping == COVARIANT_PIOLA:
+                elif mapping == "covariant piola":
                     # phi(x) = J^{-T} Phi(X)
                     index0 = MonomialIndex(index_range=range(gdim)) + offset
                     index1 = component
@@ -301,12 +339,12 @@ class TransformedMonomial:
             restriction = f.restriction
 
             # Create basis function
-            v = MonomialArgument(element, vindex, components, derivatives, restriction)
+            v = MonomialArgument(ufl_element, vindex, components, derivatives, restriction)
             self.arguments.append(v)
 
         # Figure out secondary and auxiliary indices
-        internal_indices = self.extract_internal_indices(None)
-        external_indices = self.extract_external_indices(None)
+        internal_indices = self._extract_internal_indices(None)
+        external_indices = self._extract_external_indices(None)
         for i in internal_indices + external_indices:
 
             # Skip already visited indices
@@ -319,17 +357,26 @@ class TransformedMonomial:
 
             if num_internal == 1 and num_external == 1:
                 i.index_type = MonomialIndex.SECONDARY
-                i.index_id   = next_secondary_index()
+                i.index_id   = _next_secondary_index()
             elif num_internal == 2 and num_external == 0:
                 i.index_type = MonomialIndex.INTERNAL
-                i.index_id   = next_internal_index()
+                i.index_id   = _next_internal_index()
             elif num_internal == 0 and num_external == 2:
                 i.index_type = MonomialIndex.EXTERNAL
-                i.index_id   = next_external_index()
+                i.index_id   = _next_external_index()
             else:
                 error("Summation index does not appear exactly twice: " + str(i))
 
+    def extract_unique_indices(self, index_type=None):
+        "Return all unique indices for monomial w.r.t. type and id (not range)."
+        indices = []
+        for index in self._extract_indices(index_type):
+            if not index in indices:
+                indices.append(index)
+        return indices
+
     def _extract_components(self, f, index_map, vdim):
+        "Return list of components."
         components = []
         for c in f.components:
             if c in index_map:
@@ -344,35 +391,27 @@ class TransformedMonomial:
             components.append(index)
         return components
 
-
-    def extract_internal_indices(self, index_type=None):
+    def _extract_internal_indices(self, index_type=None):
         "Return list of indices appearing inside integral."
         indices = []
         for v in self.arguments:
             indices += [v.index] + v.components + v.derivatives
         return [i for i in indices if i.index_type == index_type]
 
-    def extract_external_indices(self, index_type=None):
+    def _extract_external_indices(self, index_type=None):
         "Return list of indices appearing outside integral."
         indices = [c.index for c in self.coefficients] + \
                   [t.index0 for t in self.transforms]  + \
                   [t.index1 for t in self.transforms]
         return [i for i in indices if i.index_type == index_type]
 
-    def extract_indices(self, index_type=None):
+    def _extract_indices(self, index_type=None):
         "Return all indices for monomial."
-        return self.extract_internal_indices(index_type) + \
-               self.extract_external_indices(index_type)
-
-    def extract_unique_indices(self, index_type=None):
-        "Return all unique indices for monomial w.r.t. type and id (not range)."
-        indices = []
-        for index in self.extract_indices(index_type):
-            if not index in indices:
-                indices.append(index)
-        return indices
+        return self._extract_internal_indices(index_type) + \
+               self._extract_external_indices(index_type)
 
     def __str__(self):
+        "Return informal string representation (pretty-print)."
         factors = []
         if not self.float_value == 1.0:
             factors.append(self.float_value)
@@ -381,13 +420,34 @@ class TransformedMonomial:
         factors += self.transforms
         return " * ".join([str(f) for f in factors]) + " | " + " * ".join([str(v) for v in self.arguments])
 
-def transform_monomial_form(monomial_form):
-    "Transform monomial form to reference element."
+# Index counters
+_current_secondary_index = 0
+_current_internal_index = 0
+_current_external_index = 0
 
-    # Check that we get a Form
-    ffc_assert(isinstance(monomial_form, MonomialForm), "Expecting a MonomialForm.")
+def _next_secondary_index():
+    "Return next available secondary index."
+    global _current_secondary_index
+    _current_secondary_index += 1
+    return _current_secondary_index - 1
 
-    # Transform each monomial
-    for (integrand, measure) in monomial_form:
-        for (i, monomial) in enumerate(integrand.monomials):
-            integrand.monomials[i] = TransformedMonomial(monomial)
+def _next_internal_index():
+    "Return next available internal index."
+    global _current_internal_index
+    _current_internal_index += 1
+    return _current_internal_index - 1
+
+def _next_external_index():
+    "Return next available external index."
+    global _current_external_index
+    _current_external_index += 1
+    return _current_external_index - 1
+
+def _reset_indices():
+    "Reset all index counters."
+    global _current_secondary_index
+    global _current_internal_index
+    global _current_external_index
+    _current_secondary_index = 0
+    _current_internal_index = 0
+    _current_external_index = 0

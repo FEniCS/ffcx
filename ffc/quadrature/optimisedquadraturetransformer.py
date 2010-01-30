@@ -1,12 +1,12 @@
 "QuadratureTransformer (optimised) for quadrature code generation to translate UFL expressions."
 
-__author__ = "Kristian B. Oelgaard (k.b.oelgaard@tudelft.nl)"
+__author__ = "Kristian B. Oelgaard (k.b.oelgaard@gmail.com)"
 __date__ = "2009-03-18"
-__copyright__ = "Copyright (C) 2009 Kristian B. Oelgaard"
+__copyright__ = "Copyright (C) 2009-2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Anders Logg, 2009
-# Last changed: 2009-12-09
+# Last changed: 2010-01-27
 
 # Python modules.
 from numpy import shape
@@ -28,9 +28,7 @@ from ffc.log import info
 from ffc.log import debug
 from ffc.log import ffc_assert
 from ffc.log import error
-from ffc.finiteelement import AFFINE
-from ffc.finiteelement import CONTRAVARIANT_PIOLA
-from ffc.finiteelement import COVARIANT_PIOLA
+from ffc.cpp import choose_map
 
 # Utility and optimisation functions for quadraturegenerator.
 from quadraturetransformerbase import QuadratureTransformerBase
@@ -38,7 +36,7 @@ from quadraturegenerator_utils import generate_psi_name
 from quadraturegenerator_utils import create_permutations
 
 # Symbolics functions
-from symbolics import set_format
+#from symbolics import set_format
 from symbolics import create_float
 from symbolics import create_symbol
 from symbolics import create_product
@@ -53,11 +51,11 @@ from symbolics import optimise_code
 class QuadratureTransformerOpt(QuadratureTransformerBase):
     "Transform UFL representation to quadrature code."
 
-    def __init__(self, form_representation, domain_type, optimise_options, format):
+    def __init__(self, ir, optimise_options, format):
 
         # Initialise base class.
-        QuadratureTransformerBase.__init__(self, form_representation, domain_type, optimise_options, format)
-        set_format(format)
+        QuadratureTransformerBase.__init__(self, ir, optimise_options, format)
+#        set_format(format)
 
     # -------------------------------------------------------------------------
     # Start handling UFL classes.
@@ -218,12 +216,12 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
 
         # Prefetch formats to speed up code generation.
         format_transform     = self.format["transform"]
-        format_detJ          = self.format["determinant"]
+        format_detJ          = self.format["det(J)"]
 
         code = {}
 
         # Affince mapping
-        if transformation == AFFINE:
+        if transformation == "affine":
             # Loop derivatives and get multi indices.
             for multi in multiindices:
                 deriv = [multi.count(i) for i in range(self.geo_dim)]
@@ -251,12 +249,12 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
                     mapping, basis = self._create_mapping_basis(c + local_offset, deriv, ufl_argument, ffc_element)
 
                     # Multiply basis by appropriate transform.
-                    if transformation == COVARIANT_PIOLA:
+                    if transformation == "covariant piola":
                         dxdX = create_symbol(format_transform("JINV", c, local_comp, self.restriction), GEO)
                         basis = create_product([dxdX, basis])
-                    elif transformation == CONTRAVARIANT_PIOLA:
-                        detJ = create_fraction(create_float(1), create_symbol(format_detJ(self.restriction), GEO))
-                        dXdx = create_symbol(format_transform("J", c, local_comp, self.restriction), GEO)
+                    elif transformation == "contravariant piola":
+                        detJ = create_fraction(create_float(1), create_symbol(format_detJ(choose_map[self.restriction]), GEO))
+                        dXdx = create_symbol(format_transform("J", local_comp, c, self.restriction), GEO)
                         basis = create_product([detJ, dXdx, basis])
                     else:
                         error("Transformation is not supported: " + repr(transformation))
@@ -282,12 +280,12 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
 
         # Prefetch formats to speed up code generation.
         format_transform     = self.format["transform"]
-        format_detJ          = self.format["determinant"]
+        format_detJ          = self.format["det(J)"]
 
         code = []
 
         # Handle affine mappings.
-        if transformation == AFFINE:
+        if transformation == "affine":
             # Loop derivatives and get multi indices.
             for multi in multiindices:
                 deriv = [multi.count(i) for i in range(self.geo_dim)]
@@ -312,12 +310,12 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
                     function_name = self._create_function_name(c + local_offset, deriv, quad_element, ufl_function, ffc_element)
 
                     # Multiply basis by appropriate transform.
-                    if transformation == COVARIANT_PIOLA:
+                    if transformation == "covariant piola":
                         dxdX = create_symbol(format_transform("JINV", c, local_comp, self.restriction), GEO)
                         function_name = create_product([dxdX, function_name])
-                    elif transformation == CONTRAVARIANT_PIOLA:
-                        detJ = create_fraction(create_float(1), create_symbol(format_detJ(self.restriction), GEO))
-                        dXdx = create_symbol(format_transform("J", c, local_comp, self.restriction), GEO)
+                    elif transformation == "contravariant piola":
+                        detJ = create_fraction(create_float(1), create_symbol(format_detJ(choose_map[self.restriction]), GEO))
+                        dXdx = create_symbol(format_transform("J", local_comp, c, self.restriction), GEO)
                         function_name = create_product([detJ, dXdx, function_name])
                     else:
                         error("Transformation is not supported: ", repr(transformation))

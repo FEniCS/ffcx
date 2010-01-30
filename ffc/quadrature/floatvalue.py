@@ -1,18 +1,19 @@
 "This file implements a class to represent a float."
 
-__author__ = "Kristian B. Oelgaard (k.b.oelgaard@tudelft.nl)"
+__author__ = "Kristian B. Oelgaard (k.b.oelgaard@gmail.com)"
 __date__ = "2009-07-12"
-__copyright__ = "Copyright (C) 2009 Kristian B. Oelgaard"
+__copyright__ = "Copyright (C) 2009-2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2009-12-09
+# Last changed: 2010-01-21
 
 # FFC modules.
 from ffc.log import error
+from ffc.cpp import format
 
 # FFC quadrature modules.
 from symbolics import CONST
-from symbolics import format
+#from symbolics import format
 from symbolics import create_float
 from symbolics import create_product
 from symbolics import create_sum
@@ -29,6 +30,10 @@ def set_format(_format):
     global EPS
     EPS = format["epsilon"]
 
+#format_float = format["floating point"]
+#format_float = format["float"]
+#EPS = format["epsilon"]
+
 class FloatValue(Expr):
     def __init__(self, value):
         """Initialise a FloatValue object, it derives from Expr and contains
@@ -42,6 +47,7 @@ class FloatValue(Expr):
         self._prec = 0
 
         # Handle 0.0, 1.0 and -1.0 values explicitly.
+        EPS = format["epsilon"]
         if abs(value) <  EPS:
             self.val = 0.0
         elif abs(value - 1.0) <  EPS:
@@ -52,7 +58,7 @@ class FloatValue(Expr):
         # Compute the representation now, such that we can use it directly
         # in the __eq__ and __ne__ methods (improves performance a bit, but
         # only when objects are cached).
-        self._repr = "FloatValue(%s)" % format_float(self.val)
+        self._repr = "FloatValue(%s)" % format["float"](self.val)
 
         # Use repr as hash value
         self._hash = hash(self._repr)
@@ -60,7 +66,7 @@ class FloatValue(Expr):
     # Print function.
     def __str__(self):
         "Simple string representation which will appear in the generated code."
-        return format_float(self.val)
+        return format["float"](self.val)
 
     # Binary operators.
     def __add__(self, other):

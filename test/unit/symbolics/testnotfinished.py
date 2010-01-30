@@ -5,7 +5,7 @@ __date__ = "2010-01-06"
 __copyright__ = "Copyright (C) 2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-06
+# Last changed: 2010-01-28
 
 # Pyhton modules
 import unittest
@@ -14,13 +14,19 @@ import time
 # FFC modules
 from ffc.quadrature.symbolics import *
 from ffc.quadrature.sumobj import _group_fractions
-from ffc.ufcformat import Format
+from ffc.cpp import format, set_float_formatting
 from ffc.constants import FFC_OPTIONS
+set_float_formatting(FFC_OPTIONS)
 
 class TestNotFinished(unittest.TestCase):
 
     def testNotFinished(self):
         "Stuff that would be nice to implement."
+
+        f_1 = format["float"](1)
+        f_2 = format["float"](2)
+        f_4 = format["float"](4)
+        f_8 = format["float"](8)
 
         f0 = FloatValue(4)
         f1 = FloatValue(2)
@@ -52,17 +58,17 @@ class TestNotFinished(unittest.TestCase):
         e4 = Sum([Fraction(f1*s0, a*b*c), Fraction(s0, a*b)]).expand().reduce_ops()
 
         # Tests that pass the current implementation
-        self.assertEqual(str(e0), '4/(2*x + 8*y)')
+        self.assertEqual(str(e0), '%s/(%s*x + %s*y)' % (f_4, f_2, f_8))
         self.assertEqual(str(e1), 'x/(x + x*y)')
-        self.assertEqual(str(e2), '(1 + y)/(x + x*y)')
-        self.assertEqual(str(e3), '8/x')
-        self.assertEqual(str(e4), 'x*(1/(a*b) + 2/(a*b*c))')
+        self.assertEqual(str(e2), '(%s + y)/(x + x*y)' % f_1)
+        self.assertEqual(str(e3), '%s/x' % f_8)
+        self.assertEqual(str(e4), 'x*(%s/(a*b) + %s/(a*b*c))' % (f_1, f_2))
 
         # Tests that should pass in future implementations (change NotEqual to Equal)
-        self.assertNotEqual(str(e0), '2/(x + 4*y)')
-        self.assertNotEqual(str(e1), '1/(1 + y)')
-        self.assertNotEqual(str(e2), '1/x')
-        self.assertNotEqual(str(e4), 'x*(2/c + 1)/(a*b)')
+        self.assertNotEqual(str(e0), '%s/(x + %s*y)' % (f_2, f_4))
+        self.assertNotEqual(str(e1), '%s/(%s + y)' % (f_1, f_1))
+        self.assertNotEqual(str(e2), '%s/x' % f_1)
+        self.assertNotEqual(str(e4), 'x*(%s/c + %s)/(a*b)' % (f_2, f_1))
 
         # TODO: Would it be a good idea to reduce expressions wrt. var_type
         # without first expanding?
@@ -75,9 +81,6 @@ class TestNotFinished(unittest.TestCase):
         self.assertNotEqual( Ex0[0][1], Er0[1].expand() )
 
 if __name__ == "__main__":
-
-    if format == None:
-        set_format(Format(FFC_OPTIONS).format)
 
     # Run all returned tests
     runner = unittest.TextTestRunner()

@@ -5,7 +5,7 @@ __date__ = "2010-01-06"
 __copyright__ = "Copyright (C) 2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-07
+# Last changed: 2010-01-28
 
 # Pyhton modules
 import unittest
@@ -13,8 +13,9 @@ import time
 
 # FFC modules
 from ffc.quadrature.symbolics import *
-from ffc.ufcformat import Format
+from ffc.cpp import format, set_float_formatting
 from ffc.constants import FFC_OPTIONS
+set_float_formatting(FFC_OPTIONS)
 
 class TestFloat(unittest.TestCase):
 
@@ -32,10 +33,10 @@ class TestFloat(unittest.TestCase):
     #        print "f2: '%s'" %f2
     #        print "f3: '%s'" %f3
 
-            self.assertEqual(repr(f0), "FloatValue(1.5)")
-            self.assertEqual(repr(f1), "FloatValue(-5)")
-            self.assertEqual(repr(f2), "FloatValue(0)")
-            self.assertEqual(repr(f3), "FloatValue(-1e-11)")
+            self.assertEqual(repr(f0), "FloatValue(%s)" % format["float"](1.5))
+            self.assertEqual(repr(f1), "FloatValue(%s)" % format["float"](-5))
+            self.assertEqual(repr(f2), "FloatValue(%s)" % format["float"](0))
+            self.assertEqual(repr(f3), "FloatValue(%s)" % format["float"](-1e-11))
 
             self.assertEqual(f2.val == 0, True)
             self.assertEqual(f3.val == 0, False)
@@ -61,9 +62,6 @@ class TestFloat(unittest.TestCase):
             self.assertEqual(f1 in d, False)
 
 if __name__ == "__main__":
-
-    if format == None:
-        set_format(Format(FFC_OPTIONS).format)
 
     # Run all returned tests
     runner = unittest.TextTestRunner()

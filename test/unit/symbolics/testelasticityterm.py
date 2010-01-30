@@ -5,7 +5,7 @@ __date__ = "2010-01-06"
 __copyright__ = "Copyright (C) 2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-06
+# Last changed: 2010-01-28
 
 # Pyhton modules
 import unittest
@@ -13,8 +13,9 @@ import time
 
 # FFC modules
 from ffc.quadrature.symbolics import *
-from ffc.ufcformat import Format
+from ffc.cpp import format, set_float_formatting
 from ffc.constants import FFC_OPTIONS
+set_float_formatting(FFC_OPTIONS)
 
 class TestElasticityTerm(unittest.TestCase):
 
@@ -66,9 +67,6 @@ class TestElasticityTerm(unittest.TestCase):
         self.assertAlmostEqual(eval(str(expr)), eval(str(opt_code)))
 
 if __name__ == "__main__":
-
-    if format == None:
-        set_format(Format(FFC_OPTIONS).format)
 
     # Run all returned tests
     runner = unittest.TextTestRunner()

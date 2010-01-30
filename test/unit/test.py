@@ -5,6 +5,7 @@ __date__ = "2007-02-06 -- 2009-02-24"
 __copyright__ = "Copyright (C) 2007-2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
+# Modified by Marie E. Rognes <meg@simula.no> 2010
 import unittest
 import sys
 import numpy
@@ -15,7 +16,7 @@ from time import time
 sys.path.append(os.path.join(os.pardir, os.pardir))
 
 from ufl import *
-from ffc.finiteelement import FiniteElement as FFCElement
+from ffc.fiatinterface import create_element as create
 from ffc import jit
 
 interval = [(0,), (1,)]
@@ -32,128 +33,122 @@ class SpaceDimensionTests(unittest.TestCase):
     def testContinuousLagrange(self):
         "Test space dimensions of continuous Lagrange elements."
 
-        P1 = FFCElement(FiniteElement("Lagrange", "triangle", 1))
+        P1 = create(FiniteElement("Lagrange", "triangle", 1))
         self.assertEqual(P1.space_dimension(), 3)
 
-        P2 = FFCElement(FiniteElement("Lagrange", "triangle", 2))
+        P2 = create(FiniteElement("Lagrange", "triangle", 2))
         self.assertEqual(P2.space_dimension(), 6)
 
-        P3 = FFCElement(FiniteElement("Lagrange", "triangle", 3))
+        P3 = create(FiniteElement("Lagrange", "triangle", 3))
         self.assertEqual(P3.space_dimension(), 10)
 
     def testDiscontinuousLagrange(self):
         "Test space dimensions of discontinuous Lagrange elements."
 
-        P0 = FFCElement(FiniteElement("Discontinuous Lagrange", "triangle", 0))
+        P0 = create(FiniteElement("DG", "triangle", 0))
         self.assertEqual(P0.space_dimension(), 1)
 
-        P1 = FFCElement(FiniteElement("Discontinuous Lagrange", "triangle", 1))
+        P1 = create(FiniteElement("DG", "triangle", 1))
         self.assertEqual(P1.space_dimension(), 3)
 
-        P2 = FFCElement(FiniteElement("Discontinuous Lagrange", "triangle", 2))
+        P2 = create(FiniteElement("DG", "triangle", 2))
         self.assertEqual(P2.space_dimension(), 6)
 
-        P3 = FFCElement(FiniteElement("Discontinuous Lagrange", "triangle", 3))
+        P3 = create(FiniteElement("DG", "triangle", 3))
         self.assertEqual(P3.space_dimension(), 10)
 
 class FunctionValueTests(unittest.TestCase):
+    """
+    These tests examine tabulate gives the correct answers for a the
+    supported (non-mixed) elements of polynomial degree less than or
+    equal to 3
+    """
+
+    # FIXME: Add tests for NED and BDM/RT in 3D.
+
+    def _check_function_values(self, points, element, reference):
+        for x in points:
+            table = element.tabulate(0, (x,))
+            basis = table[table.keys()[0]]
+            for i in range(len(basis)):
+                if element.value_shape() == ():
+                    self.assertAlmostEqual(basis[i], reference[i](x))
+                else:
+                    for k in range(element.value_shape()[0]):
+                        self.assertAlmostEqual(basis[i][k][0],
+                                               reference[i](x)[k])
 
     def testContinuousLagrange1D(self):
         "Test values of continuous Lagrange functions in 1D."
 
-        element = FFCElement(FiniteElement("Lagrange", "interval", 1))
-        basis = element.basis()
-
+        element = create(FiniteElement("Lagrange", "interval", 1))
         reference = [lambda x: 1 - x[0],
                      lambda x: x[0]]
 
-        for i in range(len(basis)):
-            for j in range(num_points):
-                x = random_point(interval)
-                self.assertAlmostEqual(basis[i](x), reference[i](x))
+        points = [random_point(interval) for i in range(num_points)]
+        self._check_function_values(points, element, reference)
 
     def testContinuousLagrange2D(self):
         "Test values of continuous Lagrange functions in 2D."
 
-        element = FFCElement(FiniteElement("Lagrange", "triangle", 1))
-        basis = element.basis()
-
+        element = create(FiniteElement("Lagrange", "triangle", 1))
         reference = [lambda x: 1 - x[0] - x[1],
                      lambda x: x[0],
                      lambda x: x[1]]
 
-        for i in range(len(basis)):
-            for j in range(num_points):
-                x = random_point(triangle)
-                self.assertAlmostEqual(basis[i](x), reference[i](x))
+        points = [random_point(triangle) for i in range(num_points)]
+        self._check_function_values(points, element, reference)
 
     def testContinuousLagrange3D(self):
         "Test values of continuous Lagrange functions in 3D."
 
-        element = FFCElement(FiniteElement("Lagrange", "tetrahedron", 1))
-        basis = element.basis()
-
+        element = create(FiniteElement("Lagrange", "tetrahedron", 1))
         reference = [lambda x: 1 - x[0] - x[1] - x[2],
                      lambda x: x[0],
                      lambda x: x[1],
                      lambda x: x[2]]
 
-        for i in range(len(basis)):
-            for j in range(num_points):
-                x = random_point(tetrahedron)
-                self.assertAlmostEqual(basis[i](x), reference[i](x))
+        points = [random_point(tetrahedron) for i in range(num_points)]
+        self._check_function_values(points, element, reference)
 
     def testDiscontinuousLagrange1D(self):
         "Test values of discontinuous Lagrange functions in 1D."
 
-        element = FFCElement(FiniteElement("Discontinuous Lagrange", "interval", 1))
-        basis = element.basis()
-
+        element = create(FiniteElement("DG", "interval", 1))
         reference = [lambda x: 1 - x[0],
                      lambda x: x[0]]
 
-        for i in range(len(basis)):
-            for j in range(num_points):
-                x = random_point(interval)
-                self.assertAlmostEqual(basis[i](x), reference[i](x))
+        points = [random_point(interval) for i in range(num_points)]
+        self._check_function_values(points, element, reference)
+
 
     def testDiscontinuousLagrange2D(self):
         "Test values of discontinuous Lagrange functions in 2D."
 
-        element = FFCElement(FiniteElement("Discontinuous Lagrange", "triangle", 1))
-        basis = element.basis()
-
+        element = create(FiniteElement("DG", "triangle", 1))
         reference = [lambda x: 1 - x[0] - x[1],
                      lambda x: x[0],
                      lambda x: x[1]]
 
-        for i in range(len(basis)):
-            for j in range(num_points):
-                x = random_point(triangle)
-                self.assertAlmostEqual(basis[i](x), reference[i](x))
+        points = [random_point(triangle) for i in range(num_points)]
+        self._check_function_values(points, element, reference)
 
     def testDiscontinuousLagrange3D(self):
         "Test values of discontinuous Lagrange functions in 3D."
 
-        element = FFCElement(FiniteElement("Discontinuous Lagrange", "tetrahedron", 1))
-        basis = element.basis()
-
+        element = create(FiniteElement("DG", "tetrahedron", 1))
         reference = [lambda x: 1 - x[0] - x[1] - x[2],
                      lambda x: x[0],
                      lambda x: x[1],
                      lambda x: x[2]]
 
-        for i in range(len(basis)):
-            for j in range(num_points):
-                x = random_point(tetrahedron)
-                self.assertAlmostEqual(basis[i](x), reference[i](x))
+        points = [random_point(tetrahedron) for i in range(num_points)]
+        self._check_function_values(points, element, reference)
 
-    def testBDM1(self):
+    def testBDM1_2D(self):
         "Test values of BDM1."
 
-        element = FFCElement(FiniteElement("Brezzi-Douglas-Marini", "triangle", 1))
-        basis = element.basis()
-
+        element = create(FiniteElement("Brezzi-Douglas-Marini", "triangle", 1))
         reference = [lambda x: (2*x[0], -x[1]),
                      lambda x: (-x[0], 2*x[1]),
                      lambda x: (2 - 2*x[0] - 3*x[1], x[1]),
@@ -161,59 +156,99 @@ class FunctionValueTests(unittest.TestCase):
                      lambda x: (-x[0], -2 + 3*x[0] + 2*x[1]),
                      lambda x: (2*x[0], 1 - 3*x[0] - x[1])]
 
-        for i in range(len(basis)):
-            for j in range(num_points):
-                x = random_point(triangle)
-                self.assertAlmostEqual(basis[i](x)[0], reference[i](x)[0])
-                self.assertAlmostEqual(basis[i](x)[1], reference[i](x)[1])
+        points = [random_point(triangle) for i in range(num_points)]
+        self._check_function_values(points, element, reference)
 
-    def testRT1(self):
+
+    def testRT1_2D(self):
         "Test values of RT1."
 
-        element = FFCElement(FiniteElement("Raviart-Thomas", "triangle", 1))
-        basis = element.basis()
-
+        element = create(FiniteElement("Raviart-Thomas", "triangle", 1))
         reference = [lambda x: (x[0], x[1]),
                      lambda x: (1 - x[0], -x[1]),
                      lambda x: (x[0], x[1] - 1)]
 
-        for i in range(len(basis)):
-            for j in range(num_points):
-                x = random_point(triangle)
-                self.assertAlmostEqual(basis[i](x)[0], reference[i](x)[0])
-                self.assertAlmostEqual(basis[i](x)[1], reference[i](x)[1])
+        points = [random_point(triangle) for i in range(num_points)]
+        self._check_function_values(points, element, reference)
 
-    def testRT2(self):
+    def testRT2_2D(self):
         "Test values of RT2."
 
-        element = FFCElement(FiniteElement("Raviart-Thomas", "triangle", 2))
-        basis = element.basis()
+        element = create(FiniteElement("Raviart-Thomas", "triangle", 2))
 
-        reference = [lambda x: (-2*x[0] + 4*x[0]**2, -x[1] + 4*x[0]*x[1]),
-                     lambda x: (-x[0] + 4*x[0]*x[1], -2*x[1] + 4*x[1]**2),
-                     lambda x: (2 - 6*x[0] - 3*x[1] + 4*x[0]*x[1] + 4*x[0]**2,
-                                -3*x[1] + 4*x[0]*x[1] + 4*x[1]**2),
-                     lambda x: (-1 + x[0] +3*x[1] -4*x[0]*x[1],
-                                2*x[1] -4*x[1]**2),
-                     lambda x: (3*x[0] -4*x[0]*x[1] - 4*x[0]**2,
-                                -2 + 3*x[0] +6*x[1] - 4*x[0]*x[1] -4*x[1]**2),
-                     lambda x: (-2*x[0] +4* x[0]**2,
-                                1 -3*x[0] -x[1] + 4*x[0]*x[1]),
-                     lambda x: (16/math.sqrt(2)*x[0] - 8/math.sqrt(2)*x[0]*x[1]
-                                - 16/math.sqrt(2)*x[0]**2,
-                                8/math.sqrt(2)*x[1] - 16/math.sqrt(2)*x[0]*x[1]
-                                - 8/math.sqrt(2)*x[1]**2),
-                     lambda x: (8/math.sqrt(2)*x[0] -16/math.sqrt(2)*x[0]*x[1]
-                                - 8/math.sqrt(2)*x[0]**2,
-                                16/math.sqrt(2)*x[1] - 8/math.sqrt(2)*x[0]*x[1]
-                                - 16/math.sqrt(2)*x[1]**2)
+        reference = [ lambda x: (-x[0] + 3*x[0]**2,
+                                 -x[1] + 3*x[0]*x[1]),
+                      lambda x: (-x[0] + 3*x[0]*x[1],
+                                 -x[1] + 3*x[1]**2),
+                      lambda x: ( 2 - 5*x[0] - 3*x[1] + 3*x[0]*x[1] + 3*x[0]**2,
+                                  -2*x[1] + 3*x[0]*x[1] + 3*x[1]**2),
+                      lambda x: (-1.0 + x[0] + 3*x[1] - 3*x[0]*x[1],
+                                 x[1] - 3*x[1]**2),
+                      lambda x: (2*x[0] - 3*x[0]*x[1] - 3*x[0]**2,
+                                 -2 + 3*x[0]+ 5*x[1] - 3*x[0]*x[1] - 3*x[1]**2),
+                      lambda x: (- x[0] + 3*x[0]**2,
+                                 + 1 - 3*x[0] - x[1] + 3*x[0]*x[1]),
+                      lambda x: (6*x[0] - 3*x[0]*x[1] - 6*x[0]**2,
+                                 3*x[1] - 6*x[0]*x[1] - 3*x[1]**2),
+                      lambda x: (3*x[0] - 6*x[0]*x[1] - 3*x[0]**2,
+                                 6*x[1]- 3*x[0]*x[1] - 6*x[1]**2),
+                      ]
+
+
+        points = [random_point(triangle) for i in range(num_points)]
+        self._check_function_values(points, element, reference)
+
+    def testNED1_2D(self):
+        "Test values of NED1."
+
+        element = create(FiniteElement("N1curl", "triangle", 1))
+        reference = [ lambda x: (-x[1], x[0]),
+                      lambda x: ( x[1], 1 - x[0]),
+                      lambda x: ( 1 - x[1], x[0]),
+                      ]
+
+        points = [random_point(triangle) for i in range(num_points)]
+        self._check_function_values(points, element, reference)
+
+    def testRT1_3D(self):
+        element = create(FiniteElement("RT", "tetrahedron", 1))
+        reference = [lambda x: (-x[0], -x[1], -x[2]),
+                     lambda x: (-1.0 + x[0], x[1], x[2]),
+                     lambda x: (-x[0], 1.0 - x[1], -x[2]),
+                     lambda x: ( x[0], x[1], -1.0 + x[2])
                      ]
+        points = [random_point(tetrahedron) for i in range(num_points)]
+        self._check_function_values(points, element, reference)
 
-        for i in range(len(basis)):
-            for j in range(num_points):
-                x = random_point(triangle)
-                self.assertAlmostEqual(basis[i](x)[0], reference[i](x)[0])
-                self.assertAlmostEqual(basis[i](x)[1], reference[i](x)[1])
+    def testBDM1_3D(self):
+        element = create(FiniteElement("BDM", "tetrahedron", 1))
+        reference = [ lambda x: (-3*x[0], x[1], x[2]),
+                      lambda x: (x[0], -3*x[1], x[2]),
+                      lambda x: (x[0], x[1], -3*x[2]),
+                      lambda x: (-3.0 + 3*x[0] + 4*x[1] + 4*x[2], -x[1], -x[2]),
+                      lambda x: (1.0 - x[0] - 4*x[1], 3*x[1], -x[2]),
+                      lambda x: (1.0 - x[0] - 4*x[2], -x[1], 3*x[2]),
+                      lambda x: (x[0], 3.0 - 4*x[0] - 3*x[1] - 4*x[2], x[2]),
+                      lambda x: (-3*x[0], -1.0 + 4*x[0] + x[1], x[2]),
+                      lambda x: (x[0], -1.0 + x[1] + 4*x[2], -3*x[2]),
+                      lambda x: (-x[0], -x[1], -3.0 + 4*x[0] + 4*x[1] + 3*x[2]),
+                      lambda x: (3*x[0], -x[1], 1.0 - 4*x[0] - x[2]),
+                      lambda x: (-x[0], 3*x[1], 1.0 - 4*x[1] - x[2])
+                      ]
+        points = [random_point(tetrahedron) for i in range(num_points)]
+        self._check_function_values(points, element, reference)
+
+    def testNED1_3D(self):
+        element = create(FiniteElement("N1curl", "tetrahedron", 1))
+        reference = [ lambda x: (0.0, -x[2], x[1]),
+                      lambda x: (-x[2], 0.0,  x[0]),
+                      lambda x: (-x[1],  x[0], 0.0),
+                      lambda x: ( x[2], x[2], 1.0 - x[0] - x[1]),
+                      lambda x: (x[1], 1.0 - x[0] - x[2], x[1]),
+                      lambda x: (1.0 - x[1] - x[2], x[0], x[0])
+                      ]
+        points = [random_point(tetrahedron) for i in range(num_points)]
+        self._check_function_values(points, element, reference)
 
 class JITTests(unittest.TestCase):
 
@@ -221,7 +256,8 @@ class JITTests(unittest.TestCase):
         "Test that JIT compiler is fast enough."
 
         # FIXME: Use local cache: cache_dir argument to instant.build_module
-        options = {"log_level": INFO + 5}
+        #options = {"log_level": INFO + 5}
+        options = {"log_level": 5}
 
         # Define two forms with the same signatures
         element = FiniteElement("Lagrange", "triangle", 1)
@@ -264,6 +300,6 @@ class JITTests(unittest.TestCase):
         self.assertTrue(dt1 < 10*dt1_good)
 
 if __name__ == "__main__":
-    os.system("python testcreateelement.py")
+    #os.system("python testcreateelement.py")
     os.system("python %s" % os.path.join("symbolics", "testsymbolics.py"))
     unittest.main()

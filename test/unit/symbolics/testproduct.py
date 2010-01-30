@@ -5,7 +5,7 @@ __date__ = "2010-01-06"
 __copyright__ = "Copyright (C) 2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-07
+# Last changed: 2010-01-28
 
 # Pyhton modules
 import unittest
@@ -13,14 +13,17 @@ import time
 
 # FFC modules
 from ffc.quadrature.symbolics import *
-from ffc.ufcformat import Format
+from ffc.cpp import format, set_float_formatting
 from ffc.constants import FFC_OPTIONS
+set_float_formatting(FFC_OPTIONS)
 
 class TestProduct(unittest.TestCase):
 
     def testProduct(self):
         "Test simple product instance."
 
+        f_0 = format["float"](0)
+        f_1 = format["float"](1)
         f0 = FloatValue(-2.0)
         f1 = FloatValue(3.0)
         f2 = FloatValue(0)
@@ -65,26 +68,27 @@ class TestProduct(unittest.TestCase):
 #        print "\np13: %s * %s = '%s'" % (f6, f5, p13)
 #        print "\np14: %s * %s = '%s'" % (f1, f2, p14)
 
-        self.assertEqual(repr(p0), "Product([FloatValue(0)])")
+        self.assertEqual(repr(p0), "Product([FloatValue(%s)])" % f_0)
         self.assertEqual(repr(p1), "Product([Symbol('x', BASIS)])")
-        self.assertEqual(repr(p3), "Product([FloatValue(3), Symbol('x', BASIS), Symbol('y', GEO)])")
-        self.assertEqual(repr(p6), "Product([FloatValue(-1), Symbol('x', BASIS), Symbol('y', GEO)])")
+        self.assertEqual(repr(p3), "Product([FloatValue(%s), Symbol('x', BASIS), Symbol('y', GEO)])"\
+                                    % format["float"](3))
+        self.assertEqual(repr(p6), "Product([FloatValue(-%s), Symbol('x', BASIS), Symbol('y', GEO)])" % f_1)
         self.assertEqual(repr(p7), "Product([Symbol('x', BASIS), Symbol('y', GEO)])")
         self.assertEqual(repr(p8), "Product([Symbol('x', BASIS), Symbol('z', GEO)])")
         self.assertEqual(str(p2), 'x*y')
-        self.assertEqual(str(p4), '0')
-        self.assertEqual(str(p5), '-6*x*y*z')
+        self.assertEqual(str(p4), '%s' % f_0)
+        self.assertEqual(str(p5), '-%s*x*y*z' % format["float"](6))
         self.assertEqual(str(p6), ' - x*y')
         self.assertEqual(str(p7), 'x*y')
         self.assertEqual(str(p8), 'x*z')
         self.assertEqual(str(p9), 'x*y')
         self.assertEqual(p0.val, 0)
-        self.assertEqual(str(p10), '0')
-        self.assertEqual(str(p11), '1')
-        self.assertEqual(str(p12), '-1')
-        self.assertEqual(str(p13), '-1')
-        self.assertEqual(repr(p14), "Product([FloatValue(0)])")
-        self.assertEqual(repr(p14.expand()), "FloatValue(0)")
+        self.assertEqual(str(p10), '%s' % f_0)
+        self.assertEqual(str(p11), '%s' % f_1)
+        self.assertEqual(str(p12), '-%s' % f_1)
+        self.assertEqual(str(p13), '-%s' % f_1)
+        self.assertEqual(repr(p14), "Product([FloatValue(%s)])" % f_0)
+        self.assertEqual(repr(p14.expand()), "FloatValue(%s)" % f_0)
 
         self.assertEqual(p1 == p1, True)
         self.assertEqual(p1 == p7, False)
@@ -118,9 +122,6 @@ class TestProduct(unittest.TestCase):
         self.assertEqual(p2 in d, False)
 
 if __name__ == "__main__":
-
-    if format == None:
-        set_format(Format(FFC_OPTIONS).format)
 
     # Run all returned tests
     runner = unittest.TextTestRunner()

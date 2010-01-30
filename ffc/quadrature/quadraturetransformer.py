@@ -1,13 +1,13 @@
 "QuadratureTransformer for quadrature code generation to translate UFL expressions."
 
-__author__ = "Kristian B. Oelgaard (k.b.oelgaard@tudelft.nl)"
+__author__ = "Kristian B. Oelgaard (k.b.oelgaard@gmail.com)"
 __date__ = "2009-02-09"
-__copyright__ = "Copyright (C) 2009 Kristian B. Oelgaard"
+__copyright__ = "Copyright (C) 2009-2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Peter Brune, 2009
 # Modified by Anders Logg, 2009
-# Last changed: 2009-12-09
+# Last changed: 2010-01-27
 
 # Python modules.
 from numpy import shape
@@ -29,9 +29,7 @@ from ffc.log import info
 from ffc.log import debug
 from ffc.log import error
 from ffc.log import ffc_assert
-from ffc.finiteelement import AFFINE
-from ffc.finiteelement import CONTRAVARIANT_PIOLA
-from ffc.finiteelement import COVARIANT_PIOLA
+from ffc.cpp import choose_map
 
 # Utility and optimisation functions for quadraturegenerator.
 from quadraturetransformerbase import QuadratureTransformerBase
@@ -42,9 +40,10 @@ from reduce_operations import operation_count
 class QuadratureTransformer(QuadratureTransformerBase):
     "Transform UFL representation to quadrature code."
 
-    def __init__(self, form_representation, domain_type, optimise_options, format):
+    def __init__(self, ir, optimise_options, format):
 
-        QuadratureTransformerBase.__init__(self, form_representation, domain_type, optimise_options, format)
+        # Initialise base class.
+        QuadratureTransformerBase.__init__(self, ir, optimise_options, format)
 
     # -------------------------------------------------------------------------
     # Start handling UFL classes.
@@ -195,7 +194,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
         #print("\n\nVisiting Division: " + repr(o) + "with operands: " + "\n".join(map(repr,operands)))
 
         # Prefetch formats to speed up code generation.
-        format_div      = self.format["division"]
+        format_div      = self.format["div"]
         format_grouping = self.format["grouping"]
 
         ffc_assert(len(operands) == 2, \
@@ -222,7 +221,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
                 code[key] = val
             # Create fraction and add to code
             else:
-                code[key] = val + format_div + format_grouping(denominator)
+                code[key] = format_div(val, format_grouping(denominator))
 
         return code
 
@@ -293,12 +292,12 @@ class QuadratureTransformer(QuadratureTransformerBase):
         format_add           = self.format["add"]
         format_mult          = self.format["multiply"]
         format_transform     = self.format["transform"]
-        format_detJ          = self.format["determinant"]
+        format_detJ          = self.format["det(J)"]
         format_inv           = self.format["inverse"]
 
         code = {}
         # Handle affine mappings.
-        if transformation == AFFINE:
+        if transformation == "affine":
             # Loop derivatives and get multi indices.
             for multi in multiindices:
                 deriv = [multi.count(i) for i in range(self.geo_dim)]
@@ -333,14 +332,14 @@ class QuadratureTransformer(QuadratureTransformerBase):
                         continue
 
                     # Multiply basis by appropriate transform.
-                    if transformation == COVARIANT_PIOLA:
+                    if transformation == "covariant piola":
                         dxdX = format_transform("JINV", c, local_comp, self.restriction)
                         self.trans_set.add(dxdX)
                         basis = format_mult([dxdX, basis])
-                    elif transformation == CONTRAVARIANT_PIOLA:
-                        self.trans_set.add(format_detJ(self.restriction))
-                        detJ = format_inv(format_detJ(self.restriction))
-                        dXdx = format_transform("J", c, local_comp, self.restriction)
+                    elif transformation == "contravariant piola":
+                        self.trans_set.add(format_detJ(choose_map[self.restriction]))
+                        detJ = format_inv(format_detJ(choose_map[self.restriction]))
+                        dXdx = format_transform("J", local_comp, c, self.restriction)
                         self.trans_set.add(dXdx)
                         basis = format_mult([detJ, dXdx, basis])
                     else:
@@ -371,12 +370,12 @@ class QuadratureTransformer(QuadratureTransformerBase):
         # Prefetch formats to speed up code generation.
         format_mult          = self.format["multiply"]
         format_transform     = self.format["transform"]
-        format_detJ          = self.format["determinant"]
+        format_detJ          = self.format["det(J)"]
         format_inv           = self.format["inverse"]
 
         code = []
         # Handle affine mappings.
-        if transformation == AFFINE:
+        if transformation == "affine":
             # Loop derivatives and get multi indices.
             for multi in multiindices:
                 deriv = [multi.count(i) for i in range(self.geo_dim)]
@@ -403,14 +402,14 @@ class QuadratureTransformer(QuadratureTransformerBase):
                         continue
 
                     # Multiply basis by appropriate transform.
-                    if transformation == COVARIANT_PIOLA:
+                    if transformation == "covariant piola":
                         dxdX = format_transform("JINV", c, local_comp, self.restriction)
                         self.trans_set.add(dxdX)
                         function_name = format_mult([dxdX, function_name])
-                    elif transformation == CONTRAVARIANT_PIOLA:
-                        self.trans_set.add(format_detJ(self.restriction))
-                        detJ = format_inv(format_detJ(self.restriction))
-                        dXdx = format_transform("J", c, local_comp, self.restriction)
+                    elif transformation == "contravariant piola":
+                        self.trans_set.add(format_detJ(choose_map[self.restriction]))
+                        detJ = format_inv(format_detJ(choose_map[self.restriction]))
+                        dXdx = format_transform("J", local_comp, c, self.restriction)
                         self.trans_set.add(dXdx)
                         function_name = format_mult([detJ, dXdx, function_name])
                     else:

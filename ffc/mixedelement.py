@@ -1,206 +1,140 @@
-_author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2005-09-16"
-__copyright__ = "Copyright (C) 2005-2007 Anders Logg"
+__author__ = "Anders Logg (logg@simula.no) and friends"
+__copyright__ = "Copyright (C) 2005-2010 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Garth N. Wells 2006-2009
-# Modified by Marie E. Rognes (meg@math.uio.no) 2007
-# Modified by Kristian B. Oelgaard 2009
-# Last changed: 2009-12-11
+# Modified by Marie E. Rognes (meg@simula.no) 2007--2010
+# Modified by Kristian B. Oelgaard 2010
 
-# Python modules.
+# Last changed: 2010-01-30
+
+# Python modules
 import numpy
 
-# UFL modules.
-from ufl.classes import FiniteElementBase
+# FFC modules
+from ffc.log import error
 
-# FFC modules.
-from log import error
-from dofrepresentation import DofRepresentation
+class MixedElement:
+    "Create a FFC mixed element from a list of FFC/FIAT elements."
 
-class MixedElement(FiniteElementBase):
-    """A MixedElement represents a finite element defined as a tensor
-    product of finite elements. It is represented as a list of finite
-    elements (mixed or simple) and may thus be recursively defined in
-    terms of other mixed elements."""
-
-    # TODO: KBO: change the argument list to get the ufl_element, modify
-    # create_element accordingly
-    def __init__(self, elements, ufl_str, value_shape, domain=None):
-        "Create MixedElement from a list of elements."
-
-        # Initialise base class
-        degree = max(e.degree() for e in elements)
-        FiniteElementBase.__init__(self, "Mixed", elements[0].cell(),
-                                   degree, value_shape)
-        # Save UFL string representation
-        self._repr = ufl_str
-
-        # Make sure we get a list of elements
-        if not isinstance(elements, list):
-            error(elements, "Mixed finite element must be created from a list of at least two elements.")
-
-        # Save list of elements
+    def __init__(self, elements):
         self._elements = elements
+        self._entity_dofs = _combine_entity_dofs(self._elements)
 
-        # Save domain, no need to do any checks, that should be handled by the subelements
-        self._domain = domain
-
-        # FIXME: This is just a temporary hack to 'support' tensor elements
-        self._rank = 1
-
-    def __add__(self, other):
-        "Create mixed element"
-        return MixedElement([self, other])
-
-    def basis(self):
-        "Return basis of finite element space"
-        error("Basis cannot be accessed explicitly for a mixed element.")
-
-    def component_element(self, component):
-        "Return sub element and offset for given component."
-        offset = 0
-        for element in self.extract_elements():
-            next_offset = offset + element.value_dimension(0)
-            if next_offset > component:
-                return (element, offset)
-            offset = next_offset
-        error("Unable to extract sub element for component %s of %s." % (str(component), str(self)))
-
-    def dual_basis(self):
-        """Return the representation of the dofs. We unnest the
-        possibly nested dof types as for entity_dofs and shift the
-        components according to the position of the basic elements."""
-
-        # Calculate the shifts in components caused by the positioning
-        # of the elements:
-        dims = [element.value_dimension(0) for element in self._elements]
-        shifts = [sum(dims[:i]) for i in range(len(dims))]
-        n = sum(dims)
-
-        # Shift the components for the separate dofs
-        dofs = []
-        for e in range(len(self._elements)):
-            element = self._elements[e]
-            shift = shifts[e]
-            for d in element.dual_basis():
-                dof = DofRepresentation(d)
-                dof.shift_directions(n, shift)
-                dofs += [dof]
-        return dofs
-
-    def entity_dofs(self):
-        """Return the mapping from entities to dofs. Note that we
-        unnest the possibly recursively nested entity_dofs here to
-        generate just a list of entity dofs for basic elements."""
-        return [entity_dofs for element in self._elements for entity_dofs in element.entity_dofs()]
-
-    def extract_elements(self):
-        "Extract list of all recursively nested elements."
-        return _extract_elements(self)
-
-    def num_sub_elements(self):
-        "Return the number of sub elements"
-        return len(self._elements)
+    def elements(self):
+        return self._elements
 
     def space_dimension(self):
-        "Return the dimension of the finite element function space"
-        return sum([element.space_dimension() for element in self._elements])
+        return sum(e.space_dimension() for e in self._elements)
 
-    def sub_element(self, i):
-        "Return sub element i"
-        return self._elements[i]
+    def value_shape(self):
+        # FIXME: value_shape for tensor elements in mixed elements not
+        # well-defined
+        return (sum(sum(e.value_shape()) or 1 for e in self._elements),)
+
+    def entity_dofs(self):
+        return self._entity_dofs
+
+    def mapping(self):
+        return [m for e in self._elements for m in e.mapping()]
+
+    def dual_basis(self):
+        return [L for e in self._elements for L in e.dual_basis()]
+
+    def num_components(self):
+        return sum(_num_components(e) for e in self._elements)
 
     def tabulate(self, order, points):
-        """Tabulate values on mixed element by appropriately reordering
-        the tabulated values for the sub elements."""
+        """
+        Tabulate values on mixed element by appropriately reordering
+        the tabulated values for the nested elements.
+
+        The table of values is organized as follows:
+
+          D^a v_i[j](x_k) = table[a][i][j][k]
+
+        where a is a multi-index (tuple) representing the derivative.
+        For example, a = (1, 1) represents d/dx d/dy.
+        """
 
         # Special case: only one element
         if len(self._elements) == 1:
             return elements[0].tabulate(order, points)
 
-        # Iterate over sub elements and build mixed table from element tables
-        mixed_table = []
-        offset = 0
-        for i in range(len(self._elements)):
-            # Get current element and table
-            element = self._elements[i]
+        # Zeros for insertion into mixed table
+        table_shape = (self.space_dimension(), self.num_components(), len(points))
+
+        # Iterate over elements and fill in non-zero values
+        irange = (0, 0)
+        crange = (0, 0)
+        mixed_table = {}
+        for element in self._elements:
+
+            # Tabulate element
             table = element.tabulate(order, points)
-            # Iterate over the components corresponding to the current element
-            if element.value_rank() == 0:
-                component_table = _compute_component_table(table, offset, self.space_dimension())
-                mixed_table.append(component_table)
-            else:
-                for i in range(element.value_dimension(0)):
-                    component_table = _compute_component_table(table[i], offset, self.space_dimension())
-                    mixed_table.append(component_table)
-            # Add to offset, the number of the first basis function for the current element
-            offset += element.space_dimension()
+
+            # Compute range for insertion into mixed table
+            irange = (irange[1], irange[1] + element.space_dimension())
+            crange = (crange[1], crange[1] + _num_components(element))
+
+            # Insert table into mixed table
+            for dtuple in table.keys():
+
+                # Insert zeros if necessary (should only happen first time)
+                if not dtuple in mixed_table:
+                    # NOTE: It is super important to create a new numpy.zeros
+                    # instance to avoid manipulating a numpy reference in case
+                    # it is created outside the loop.
+                    mixed_table[dtuple] = numpy.zeros(table_shape)
+
+                # Insert non-zero values
+                if (crange[1] - crange[0]) > 1:
+                    mixed_table[dtuple][irange[0]:irange[1], crange[0]:crange[1]] = table[dtuple]
+                else:
+                    mixed_table[dtuple][irange[0]:irange[1], crange[0]] = table[dtuple]
 
         return mixed_table
 
-    def value_dimension(self, i):
-        "Return the dimension of the value space for axis i"
-        return sum([element.value_dimension(i) for element in self._elements])
+#--- Utility functions ---
 
-    def value_rank(self):
-        "Return the rank of the value space"
-        return 1
+def _combine_entity_dofs(elements):
+    """
+    Combine the entity_dofs from a list of elements into a combined
+    entity_dof containing the information for all the elements.
+    """
 
-def _compute_component_table(table, offset, space_dimension):
+    # Initialize entity_dofs dictionary
+    entity_dofs = dict((key, {}) for key in elements[0].entity_dofs())
+    for dim in elements[0].entity_dofs():
+        for entity in elements[0].entity_dofs()[dim]:
+            entity_dofs[dim][entity] = []
 
-    "Compute subtable for given component"
-    component_table = []
-    # Iterate over derivative orders
-    for dorder in range(len(table)):
-        component_table.append({})
-        # Iterate over derivative tuples
-        derivative_dictionary = {}
-        for dtuple in table[dorder]:
-            element_subtable = table[dorder][dtuple]
-            num_points = numpy.shape(element_subtable)[1]
-            mixed_subtable = numpy.zeros((space_dimension, num_points), dtype = numpy.float)
-            # Iterate over element basis functions and fill in non-zero values
-            for i in range(len(element_subtable)):
-                mixed_subtable[offset + i] = element_subtable[i]
-            # Add to dictionary
-            component_table[dorder][dtuple] = mixed_subtable
-    return component_table
+    offset = 0
 
-def _compute_mixed_entity_dofs(elements):
-    "Compute mixed entity dofs as a list of entity dof mappings"
-    mixed_entity_dofs = []
-    for element in elements:
-        if isinstance(element.entity_dofs(), list):
-            mixed_entity_dofs += element.entity_dofs()
-        else:
-            mixed_entity_dofs += [element.entity_dofs()]
-    return mixed_entity_dofs
+    # Insert dofs from each element into the mixed entity_dof.
+    for e in elements:
+        dofs = e.entity_dofs()
+        for dim in dofs:
+            for entity in dofs[dim]:
 
-def _extract_elements(element):
-    """This function extracts the basis elements recursively from vector elements and mixed elements.
-    Example, the following mixed element:
+                # Must take offset into account
+                shifted_dofs = [v + offset for v in dofs[dim][entity]]
 
-    element1 = FiniteElement("Lagrange", "triangle", 1)
-    element2 = VectorElement("Lagrange", "triangle", 2)
+                # Insert dofs from this element into the entity_dofs
+                entity_dofs[dim][entity] += shifted_dofs
 
-    element  = element2 + element1, has the structure:
-    mixed-element[mixed-element[Lagrange order 2, Lagrange order 2], Lagrange order 1]
+        # Adjust offset
+        offset += e.space_dimension()
+    return entity_dofs
 
-    This function returns the list of basis elements:
-    elements = [Lagrange order 2, Lagrange order 2, Lagrange order 1]"""
-
-    elements = []
-
-    # Import here to avoid cyclic dependency
-    from finiteelement import FiniteElement
-
-    # If the element is not mixed (a basis element, add to list)
-    if isinstance(element, FiniteElement):
-        elements += [element]
-    # Else call this function again for each subelement
+def _num_components(element):
+    "Compute number of components for element."
+    num_components = 0
+    value_shape = element.value_shape()
+    if len(value_shape) == 0:
+        num_components += 1
+    elif len(value_shape) == 1:
+        num_components += value_shape[0]
     else:
-        for i in range(element.num_sub_elements()):
-            elements += _extract_elements(element.sub_element(i))
-
-    return elements
+        error("Cannot handle tensor-valued elements.")
+    return num_components

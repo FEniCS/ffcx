@@ -1,14 +1,15 @@
 "This file implements a class to represent a sum."
 
-__author__ = "Kristian B. Oelgaard (k.b.oelgaard@tudelft.nl)"
+__author__ = "Kristian B. Oelgaard (k.b.oelgaard@gmail.com)"
 __date__ = "2009-07-12"
-__copyright__ = "Copyright (C) 2009 Kristian B. Oelgaard"
+__copyright__ = "Copyright (C) 2009-2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2009-12-09
+# Last changed: 2010-01-21
 
 # FFC modules.
 from ffc.log import error
+from ffc.cpp import format
 
 # FFC quadrature modules.
 from symbolics import create_float
@@ -45,6 +46,8 @@ class Sum(Expr):
         self._expanded = False
         self._reduced = False
 
+        # Get epsilon
+        EPS = format["epsilon"]
         # Process variables if we have any.
         if variables:
             # Loop variables and remove nested Sums and collect all floats in
@@ -104,7 +107,7 @@ class Sum(Expr):
         "Simple string representation which will appear in the generated code."
         # First add all the positive variables using plus, then add all
         # negative variables.
-        s = format["add"]([str(v) for v in self.vrs if not v.val < 0]) + \
+        s = format["add"]([str(v) for v in self.vrs if not v.val < 0]) +\
             "".join([str(v) for v in self.vrs if v.val < 0])
         # Group only if we have more that one variable.
         if len(self.vrs) > 1:
