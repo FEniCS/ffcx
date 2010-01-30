@@ -8,7 +8,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 from log import INFO
 
-FFC_VERSION = "0.7.1"
+FFC_VERSION = "0.9.0-beta"
 
 FFC_OPTIONS = {"format":                         "ufc",  # code generation format
                "representation":                 "auto", # form representation / code generation strategy
