@@ -215,7 +215,7 @@ def _evaluate_basis(ufl_element, fiat_element):
     ffc_assert(all(mapping == m for m in fiat_element.mapping()),\
                "Mapping is not the same for all dofs of this element: %s" % str(fiat_element))
     data = {
-          "value_shape" : fiat_element.value_shape(),
+          "value_shape" : ufl_element.value_shape(),
           "embedded_degree" : ufl_element.degree(),
           "cell_domain" : ufl_element.cell().domain(),
           "coeffs" : fiat_element.get_coeffs(),

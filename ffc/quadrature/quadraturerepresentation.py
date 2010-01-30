@@ -36,6 +36,8 @@ def compute_integral_ir(domain_type, domain_id, integrals, metadata, form_data, 
     ir["psi_tables"]          = psi_tables
     ir["integrals"]           = integrals_dict
 
+    #print "FD: ", form_data
+
     return ir
 
 def _tabulate_basis(sorted_integrals, domain_type, num_facets):

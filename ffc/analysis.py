@@ -104,12 +104,14 @@ def _get_nested_elements(element):
 def _analyze_form(form, object_names, options):
     "Analyze form, returning preprocessed form and form data."
 
+    # Get name before pre-processing.
+    name = object_names[id(form)]
+
     # Preprocess form
     if not form.is_preprocessed():
         form = preprocess(form)
-
     # Compute form data
-    form_data = FormData(form, object_names=object_names)
+    form_data = FormData(form, name, object_names=object_names)
     info(str(form_data))
 
     # Adjust cell and degree for elements when unspecified
