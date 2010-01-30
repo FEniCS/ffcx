@@ -24,6 +24,9 @@ from ffc.restrictedelement import RestrictedElement
 # Cache for computed elements
 _cache = {}
 
+# FIXME: KBO: Should stuff like, domain2dim and entities_per_dim be in UFC
+# instead? The same goes for similar dictionaries in UFL (geometry.py). After
+# all both FFC and UFL complies with UFC or not?
 # Mapping from domain to dimension
 domain2dim = {"vertex": 0,
               "interval": 1,
