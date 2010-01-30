@@ -100,8 +100,8 @@ class QuadratureTransformerBase(Transformer):
     def update_points(self, points):
         self.points = points
         # Reset functions everytime we move to a new quadrature loop
-        # But not the functions count.
         self.functions = {}
+        self.function_count = 0
 
         # Reset cache
         self.argument_cache = {}

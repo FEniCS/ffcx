@@ -32,11 +32,18 @@ def compute_integral_ir(domain_type, domain_id, integrals, metadata, form_data, 
     sorted_integrals = _sort_integrals(integrals, metadata, form_data)
     integrals_dict, psi_tables, quad_weights = _tabulate_basis(sorted_integrals, domain_type, form_data.num_facets)
 
+    # Add tables for weights and basis values and dictionary of integrals.
     ir["quadrature_weights"]  = quad_weights
     ir["psi_tables"]          = psi_tables
     ir["integrals"]           = integrals_dict
 
-    #print "FD: ", form_data
+    # Create dimensions of primary indices, needed to reset the argument 'A'
+    # given to tabulate_tensor() by the assembler.
+    prim_idims = []
+    for argument in form_data.arguments:
+        element = create_element(argument.element())
+        prim_idims.append(element.space_dimension())
+    ir["prim_idims"] = prim_idims
 
     return ir
 

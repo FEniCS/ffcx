@@ -43,9 +43,16 @@ def generate_integral_code(ir, prefix, options):
 def _tabulate_tensor(ir, options):
     "Generate code for a single integral (tabulate_tensor())."
 
-    f_comment =       format["comment"]
-    f_G       =       format["geometry constant"]
-    f_const_double =  format["const float declaration"]
+    f_comment       = format["comment"]
+    f_G             = format["geometry constant"]
+    f_const_double  = format["const float declaration"]
+    f_switch        = format["switch"]
+    f_switch        = format["switch"]
+    f_float         = format["float"]
+    f_assign        = format["assign"]
+    f_component     = format["component"]
+    f_A             = format["element tensor quad"]
+    f_r             = format["free indices"][0]
 
     # FIXME: KBO: Handle this in a better way, make -O option take an argument?
     if options["optimize"]:
@@ -65,12 +72,12 @@ def _tabulate_tensor(ir, options):
                             "ignore zero tables": False}
 
     # Common data and objects.
-    domain_type = ir["domain_type"]
+    domain_type         = ir["domain_type"]
     geometric_dimension = ir["geometric_dimension"]
-    num_facets = ir["num_facets"]
+    num_facets          = ir["num_facets"]
+    integrals           = ir["integrals"]
+    prim_idims          = ir["prim_idims"]
     Indent = IndentControl()
-    integrals = ir["integrals"]
-    switch = format["switch"]
 
     # Create transformer.
     if optimise_options["simplify expressions"]:
@@ -108,7 +115,7 @@ def _tabulate_tensor(ir, options):
 
         # Generate tensor code for all cases using a switch.
         # FIXME: KBO: move 'facet' to format
-        tensor_code = switch("facet", cases)
+        tensor_code = f_switch("facet", cases)
 
         # Get Jacobian snippet.
         # FIXME: This will most likely have to change if we support e.g., 2D elements in 3D space.
@@ -117,6 +124,9 @@ def _tabulate_tensor(ir, options):
         jacobi_code += "\n\n" + format["generate normal"](geometric_dimension, domain_type)
 
     elif domain_type == "interior_facet":
+        # Modify the dimensions of the primary indices because we have a macro element
+        prim_idims = [d*2 for d in prim_idims]
+
         cases = [[None for j in range(num_facets)] for i in range(num_facets)]
         for i in range(num_facets):
             for j in range(num_facets):
@@ -132,7 +142,7 @@ def _tabulate_tensor(ir, options):
 
         # Generate tensor code for all cases using a switch.
         # FIXME: KBO: move 'facet0' and 'facet1' to format
-        tensor_code = switch("facet0", [switch("facet1", cases[i]) for i in range(len(cases))])
+        tensor_code = f_switch("facet0", [f_switch("facet1", cases[i]) for i in range(len(cases))])
 
         # Get Jacobian snippet.
         # FIXME: This will most likely have to change if we support e.g., 2D elements in 3D space.
@@ -152,6 +162,15 @@ def _tabulate_tensor(ir, options):
     common = [remove_unused(jacobi_code, transformer.trans_set)]
     common += _tabulate_weights(transformer, Indent, format)
     common += _tabulate_psis(transformer, Indent, format)
+
+    # Reset the element tensor (array 'A' given as argument to tabulate_tensor() by assembler)
+    # Handle functionals.
+    value = f_float(0)
+    if prim_idims == []:
+        common += [f_assign(f_component(f_A, "0"), f_float(0))]
+    else:
+        dim = reduce(lambda v,u: v*u, prim_idims)
+        common += generate_loop([f_assign(f_component(f_A, f_r), f_float(0))], [(f_r, 0, dim)], Indent, format)
 
     # Create the constant geometry declarations (only generated if simplify expressions are enabled).
     geo_ops, geo_code = generate_aux_constants(transformer.geo_consts, f_G, f_const_double)
