@@ -5,7 +5,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Garth N. Wells, 2009.
 # Modified by Marie Rognes, 2009-2010.
-# Last changed: 2010-01-29
+# Last changed: 2010-01-30
 
 # Python modules
 from numpy import array
@@ -17,7 +17,9 @@ import FIAT
 # FFC modules
 from ffc.log import debug, error
 from ffc.quadratureelement import QuadratureElement as FFCQuadratureElement
-from ffc.restrictedelement import RestrictedElement as FFCRestrictedElement
+
+from ffc.mixedelement import MixedElement
+from ffc.restrictedelement import RestrictedElement
 
 # Cache for computed elements
 _cache = {}
@@ -30,14 +32,6 @@ domain2dim = {"vertex": 0,
 
 # Mapping from dimension to number of mesh sub-entities:
 entities_per_dim = {1: [2, 1], 2: [3, 3, 1], 3: [4, 6, 4, 1]}
-
-def _indices(element, domain):
-    dim = domain.topological_dimension()
-    entities = element.entity_dofs()[dim]
-    indices = []
-    for (entity, index) in entities.iteritems():
-        indices += index
-    return indices
 
 def reference_cell(dim):
     if isinstance(dim, int):
@@ -52,19 +46,19 @@ def create_element(ufl_element):
         debug("Reusing element from cache")
         return _cache[ufl_element]
 
-    # FIXME: hack to avoid circular importing
-    from mixedelement import MixedElement as FFCMixedElement
-
-    # Create element
-    if isinstance(ufl_element, ufl.MixedElement):
-        element = FFCMixedElement(ufl_element)
-    elif isinstance(ufl_element, ufl.ElementRestriction):
-        print "Creating RestrictedElement"
-        print "  input:   ", ufl_element
-        print "  element: ", ufl_element.element()
-        element = FFCRestrictedElement(create_element(ufl_element.element()))
-    else:
+    # Initialize element based on type
+    if isinstance(ufl_element, ufl.FiniteElement):
         element = create_fiat_element(ufl_element)
+
+    elif isinstance(ufl_element, ufl.MixedElement):
+        elements = _extract_elements(ufl_element)
+        element = MixedElement(elements)
+
+    elif isinstance(ufl_element, ufl.ElementRestriction):
+        element = create_restricted_element(ufl_element)
+
+    else:
+        error("Cannot handle this element type: %s" % str(ufl_element))
 
     # Store in cache
     _cache[ufl_element] = element
@@ -131,3 +125,56 @@ def map_facet_points(points, facet):
         new_points += [x]
 
     return new_points
+
+
+# -- Extract elements from UFL mixed element
+def _extract_elements(ufl_element, domain=None):
+    "Recursively extract un-nested list of (component) elements."
+
+    elements = []
+    if isinstance(ufl_element, ufl.MixedElement):
+        for sub_element in ufl_element.sub_elements():
+            elements += _extract_elements(sub_element, domain)
+        return elements
+
+    if domain:
+        ufl_element = ufl.ElementRestriction(ufl_element, domain)
+
+    elements += [create_element(ufl_element)]
+    return elements
+
+
+# -- Restricted element initializer functions
+def create_restricted_element(ufl_element):
+    "Create an FFC representation for an UFL ElementRestriction."
+
+    if not isinstance(ufl_element, ufl.ElementRestriction):
+        error("create_restricted_element expects an ufl.ElementRestriction")
+
+    base_element = ufl_element.element()
+    domain = ufl_element.domain()
+
+    # If simple element -> create RestrictedElement from fiat_element
+    if isinstance(base_element, ufl.FiniteElement):
+        element = create_fiat_element(base_element)
+        return RestrictedElement(element, _indices(element, domain))
+
+    # If restricted mixed element -> convert to mixed restricted element
+    if isinstance(base_element, ufl.MixedElement):
+        elements = _extract_elements(base_element, domain)
+        return MixedElement(elements)
+
+    error("Cannot create restricted element from %s" % str(ufl_element))
+
+def _indices(element, domain):
+    "Extract basis functions indices that correspond to domain."
+
+    dim = domain.topological_dimension()
+    entity_dofs = element.entity_dofs()
+    indices = []
+    for dim in range(domain.topological_dimension() + 1):
+        entities = entity_dofs[dim]
+        for (entity, index) in entities.iteritems():
+            indices += index
+    return indices
+
