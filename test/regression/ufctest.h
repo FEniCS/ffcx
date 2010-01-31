@@ -2,7 +2,7 @@
 // Licensed under the GNU GPL version 3 or any later version.
 //
 // First added:  2010-01-24
-// Last changed: 2010-01-28
+// Last changed: 2010-02-01
 //
 // Functions for calling generated UFC functions with "random" (but
 // fixed) data and print the output to screen. Useful for running
@@ -22,6 +22,7 @@ const uint max_derivative = 2;
 
 // Precision in output of floats
 const uint precision = 10;
+const double epsilon = 1e-10;
 
 // Global counter for results
 uint counter = 0;
@@ -31,7 +32,7 @@ template <class value_type>
 void print_value(value_type value)
 {
   std::cout.precision(precision);
-  if (std::abs(static_cast<double>(value)) < std::pow(0.1, precision))
+  if (std::abs(static_cast<double>(value)) < epsilon)
     std::cout << "0";
   else
     std::cout << value;
