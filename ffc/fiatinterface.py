@@ -98,6 +98,11 @@ def create_quadrature(shape, num_points):
     Generate quadrature rule (points, weights) for given shape with
     num_points points in each direction.
     """
+
+    # FIXME: KBO: Can this be handled more elegantly?
+    if isinstance(shape, int) and shape == 0 or domain2dim[shape] == 0:
+        return ([()], array([1.0,]))
+
     quad_rule = FIAT.make_quadrature(reference_cell(shape), num_points)
     return quad_rule.get_points(), quad_rule.get_weights()
 
@@ -113,7 +118,7 @@ def map_facet_points(points, facet):
     # Special case, don't need to map coordinates on vertices
     dim = len(points[0]) + 1
     if dim == 1:
-        return [(0.0,), (1.0,)][facet]
+        return [[(0.0,), (1.0,)][facet]]
 
     # Vertex coordinates
     vertex_coordinates = \
