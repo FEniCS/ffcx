@@ -12,7 +12,7 @@ __date__ = "2007-02-05"
 __copyright__ = "Copyright (C) 2007-2010 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-29
+# Last changed: 2010-01-31
 
 # UFL modules
 from ufl.common import istr, tstr
@@ -129,18 +129,24 @@ def _analyze_form(form, object_names, options):
 def _adjust_elements(form_data):
     "Adjust cell and degree for elements when unspecified."
 
+    # Note the importance of consider form_data.sub_elements here
+    # instead of form_data.unique_sub_elements. This is because
+    # elements considered equal (same output from __repr__) will not
+    # be repeated in unique_sub_elements but all elements need to be
+    # adjusted.
+
     # Extract common cell
     common_cell = form_data.cell
     if common_cell.domain() is None:
         error("Missing cell definition in form.")
 
     # Extract common degree
-    common_degree = max([element.degree() for element in form_data.unique_sub_elements])
+    common_degree = max([element.degree() for element in form_data.sub_elements])
     if common_degree is None:
         common_degree = default_quadrature_degree
 
     # Set cell and degree if missing
-    for element in form_data.unique_sub_elements:
+    for element in form_data.sub_elements:
 
         # Check if cell and degree need to be adjusted
         cell = element.cell()

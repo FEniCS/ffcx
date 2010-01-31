@@ -11,7 +11,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Garth N. Wells 2006
 # Modified by Marie E. Rognes (meg@math.uio.no) 2008
 # Modified by Kristian B. Oelgaard, 2009
-# Last changed: 2010-01-28
+# Last changed: 2010-01-31
 
 # Python modules
 import numpy
