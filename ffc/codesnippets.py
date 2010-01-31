@@ -88,7 +88,11 @@ const double J%(restriction)s_22 = x%(restriction)s[3][2] - x%(restriction)s[0][
 # Jacobian is already initialized
 _inverse_jacobian_1D = """\
 
-const double K%(restriction)s_00 =  1.0/J%(restriction)s_00;"""
+// Compute determinant of Jacobian
+const double detJ%(restriction)s =  J%(restriction)s_00;
+
+// Compute inverse of Jacobian
+const double K%(restriction)s_00 =  1.0 / detJ%(restriction)s;"""
 
 _inverse_jacobian_2D = """\
 
