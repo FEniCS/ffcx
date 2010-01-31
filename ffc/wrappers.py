@@ -36,9 +36,10 @@ def generate_wrapper_code(analysis, prefix, options):
 
     # Special case: single element
     if len(form_and_data) == 0:
+        element_number = len(elements) - 1
         element_name = UFCElementName("0",
-                                      [format["classname finite_element"](prefix, 0)],
-                                      [format["classname dof_map"](prefix, 0)])
+                                      [format["classname finite_element"](prefix, element_number)],
+                                      [format["classname dof_map"](prefix, element_number)])
         return generate_dolfin_code(prefix, "", element_name, None, False) + "\n\n"
 
     # Generate name data for each form
