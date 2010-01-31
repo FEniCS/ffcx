@@ -5,7 +5,7 @@ __date__ = "2010-01-06"
 __copyright__ = "Copyright (C) 2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-28
+# Last changed: 2010-01-31
 
 # Pyhton modules
 import unittest
@@ -66,4 +66,3 @@ if __name__ == "__main__":
     # Run all returned tests
     runner = unittest.TextTestRunner()
     runner.run(TestFloat('testFloat'))
-
