@@ -179,7 +179,7 @@ def _extract_metadata(form_data, options):
 
             # Check metadata
             r = integral_metadata["representation"]
-            q = integral_metadata["quadrature_degree"]
+            q = int(integral_metadata["quadrature_degree"])
             if not r in ("quadrature", "tensor", "auto"):
                 info("Valid choices are 'tensor', 'quadrature' or 'auto'.")
                 error("Illegal choice of representation for integral: " + str(r))
