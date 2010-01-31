@@ -6,7 +6,7 @@ __copyright__ = "Copyright (C) 2009-2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Anders Logg, 2009.
-# Last changed: 2010-01-28
+# Last changed: 2010-01-31
 
 # UFL modules
 from ufl.classes import Form, Integral, SpatialDerivative
@@ -161,13 +161,13 @@ def _sort_integrals(integrals, metadata, form_data):
     # subdomain and representation.
     for integral in integrals:
         # Get default degree and rule.
-        degree = int(metadata["quadrature_degree"])
+        degree = metadata["quadrature_degree"]
         rule  = metadata["quadrature_rule"]
         integral_metadata = integral.measure().metadata()
         # Override if specified in integral metadata
         if not integral_metadata is None:
             if "quadrature_degree" in integral_metadata:
-                degree = int(integral_metadata["quadrature_degree"])
+                degree = integral_metadata["quadrature_degree"]
             if "quadrature_rule" in integral_metadata:
                 rule = integral_metadata["quadrature_rule"]
 

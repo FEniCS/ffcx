@@ -179,13 +179,15 @@ def _extract_metadata(form_data, options):
 
             # Check metadata
             r = integral_metadata["representation"]
-            q = int(integral_metadata["quadrature_degree"])
+            q = integral_metadata["quadrature_degree"]
             if not r in ("quadrature", "tensor", "auto"):
                 info("Valid choices are 'tensor', 'quadrature' or 'auto'.")
                 error("Illegal choice of representation for integral: " + str(r))
-            if not ((isinstance(q, int) and q >= 0) or q == "auto"):
-                info("Valid choices are nonnegative integers or 'auto'.")
-                error("Illegal quadrature degree for integral: " + str(q))
+            if not q == "auto":
+                q = int(q)
+                if not q >= 0:
+                    info("Valid choices are nonnegative integers or 'auto'.")
+                    error("Illegal quadrature degree for integral: " + str(q))
 
             # Automatic selection of representation
             if r == "auto":
@@ -199,9 +201,9 @@ def _extract_metadata(form_data, options):
             if q == "auto":
                 q = _auto_select_quadrature_degree(integral, r, form_data.unique_sub_elements)
                 info("quadrature_degree: auto --> %d" % q)
-                integral_metadata["quadrature_degree"] = q
             else:
                 info("quadrature_degree: %d" % q)
+            integral_metadata["quadrature_degree"] = q
 
             info("")
 
@@ -232,6 +234,7 @@ def _extract_metadata(form_data, options):
             # Update common metadata
             metadata["representation"] = r
             metadata["quadrature_degree"] = q
+
             # Attach quadrature rule (default)
             metadata["quadrature_rule"] = options["quadrature_rule"]
 
