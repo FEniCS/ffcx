@@ -25,7 +25,7 @@ def generate_wrapper_code(analysis, prefix, options):
 
     # Try importing DOLFIN wrapper utils
     try:
-        from dolfin_utils.wrappers import generate_dolfin_code, UFCFormNames
+        from dolfin_utils.wrappers import generate_dolfin_code, UFCFormNames, UFCElementName
     except:
         error("Unable to generate DOLFIN wrappers, missing module dolfin_utils.wrappers.")
 
@@ -36,11 +36,10 @@ def generate_wrapper_code(analysis, prefix, options):
 
     # Special case: single element
     if len(form_and_data) == 0:
-        element_number = len(elements) - 1
-        form_names = [UFCFormNames("0", [], None,
-                                   [format["classname finite_element"](prefix, element_number)],
-                                   [format["classname dof_map"](prefix, element_number)])]
-        return generate_dolfin_code(prefix, "", form_names, (0, 0), False) + "\n\n"
+        element_name = UFCElementName("0",
+                                      [format["classname finite_element"](prefix, 0)],
+                                      [format["classname dof_map"](prefix, 0)])
+        return generate_dolfin_code(prefix, "", element_name, None, False) + "\n\n"
 
     # Generate name data for each form
     form_names = []
