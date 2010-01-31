@@ -161,13 +161,13 @@ def _sort_integrals(integrals, metadata, form_data):
     # subdomain and representation.
     for integral in integrals:
         # Get default degree and rule.
-        degree = metadata["quadrature_degree"]
+        degree = int(metadata["quadrature_degree"])
         rule  = metadata["quadrature_rule"]
         integral_metadata = integral.measure().metadata()
         # Override if specified in integral metadata
         if not integral_metadata is None:
             if "quadrature_degree" in integral_metadata:
-                degree = integral_metadata["quadrature_degree"]
+                degree = int(integral_metadata["quadrature_degree"])
             if "quadrature_rule" in integral_metadata:
                 rule = integral_metadata["quadrature_rule"]
 
