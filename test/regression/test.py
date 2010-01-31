@@ -81,7 +81,7 @@ def generate_test_cases():
     info("Generating form files for extra demo forms: Not implemented")
 
     # Generate form files for elements
-    from library import elements
+    from elements import elements
     info("Generating form files for extra elements (%d elements)" % len(elements))
     for (i, element) in enumerate(elements):
         open("X_Element%d.ufl" % i, "w").write("element = %s" % element)
