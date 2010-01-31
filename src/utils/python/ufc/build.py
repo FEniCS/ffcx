@@ -14,9 +14,9 @@ from distutils import sysconfig
 
 def build_ufc_module(h_files, source_directory="", system_headers=None, **kwargs):
     """Build a python extension module from ufc compliant source code.
-    
+
     The compiled module will be imported and returned by the function.
-    
+
     @param h_files:
        The name(s) of the header files that should be compiled and included in
        the python extension module.
@@ -24,7 +24,7 @@ def build_ufc_module(h_files, source_directory="", system_headers=None, **kwargs
        The directory where the source files reside.
     @param system_headers:
        Extra headers that will be #included in the generated wrapper file.
-    
+
     Any additional keyword arguments are passed on to instant.build_module.
     """
 
@@ -38,17 +38,17 @@ def build_ufc_module(h_files, source_directory="", system_headers=None, **kwargs
     for f in h_files2:
         if not os.path.isfile(f):
             raise IOError, "The file '%s' does not exist." % f
-    
+
     # Check system_headers argument
     system_headers = system_headers or []
     assert isinstance(system_headers, list), "Provide a 'list' as 'system_headers'"
     assert all(isinstance(header, str) for header in system_headers), "Elements of 'system_headers' must be 'str'."
-    
+
     system_headers.append("boost/shared_ptr.hpp")
-    
+
     # Get the swig interface file declarations
     declarations = extract_declarations(h_files2)
-    
+
     # Check system requirements
     (cpp_path, swig_path) = configure_instant()
 
@@ -68,15 +68,15 @@ def configure_instant():
     # Get include directory for ufc.h (might be better way to do this?)
     (path, dummy, dummy, dummy) = instant.header_and_libs_from_pkgconfig("ufc-1")
     if len(path) == 0: path = [(os.sep).join(sysconfig.get_python_inc().split(os.sep)[:-2]) + os.sep + "include"]
-    
+
     # Register the paths
     cpp_path, swig_path = [path[0]], [path[0]]
-    
+
     # Check for swig installation
     result, output = instant.get_status_output("swig -version")
     if result == 1:
         raise OSError, "Could not find swig installation. Please install swig version 1.3.35 or higher.\n"
-    
+
     # Check swig version for shared_ptr
     if not instant.check_swig_version("1.3.35"):
         raise OSError, "Your current swig version is %s, it needs to be 1.3.35 or higher.\n" % instant.get_swig_version()
@@ -87,17 +87,17 @@ def configure_instant():
         import ufc
     except:
         raise OSError, "Please install the python extenstion module of UFC on your system.\n"
-    
-    # Check that the form compiler will use the same swig version 
+
+    # Check that the form compiler will use the same swig version
     # that UFC was compiled with
     if not instant.check_swig_version(ufc.__swigversion__, same=True):
         raise OSError, """The python extension module of UFC was not compiled with the present version of swig.
 Install swig version %s or recompiled UFC with present swig
 """ % ufc.__swigversion__
-    
+
     # Set a default swig command and boost include directory
     boost_include_dir = []
-    
+
     # Check for boost installation
     # Set a default directory for the boost installation
     if sys.platform == "darwin":
@@ -105,7 +105,7 @@ Install swig version %s or recompiled UFC with present swig
         default = os.path.join(os.path.sep, "sw")
     else:
         default = os.path.join(os.path.sep, "usr")
-        
+
     # If BOOST_DIR is not set use default directory
     boost_dir = os.getenv("BOOST_DIR", default)
     boost_is_found = False
@@ -114,7 +114,7 @@ Install swig version %s or recompiled UFC with present swig
             boost_include_dir = [os.path.join(boost_dir, inc_dir)]
             boost_is_found = True
             break
-    
+
     if not boost_is_found:
         raise OSError, """The Boost library was not found.
 If Boost is installed in a nonstandard location,
@@ -123,7 +123,7 @@ set the environment variable BOOST_DIR.
 
     # Add the boost_include_dir
     cpp_path += boost_include_dir
-    
+
     return cpp_path, swig_path
 
 def extract_declarations(h_files):
@@ -153,12 +153,12 @@ This is fixed in swig version 1.3.37
     for h_file in h_files:
         # Read the code
         code = open(h_file).read()
-        
+
         # Extract the class names
         derived_classes   = re.findall(r"class[ ]+([\w]+)[ ]*: public", code)
         ufc_classes       = re.findall(r"public[ ]+(ufc::[\w]+).*", code)
         ufc_proxy_classes = [s.replace("ufc::", "") for s in ufc_classes]
-        
+
         shared_ptr_format = "SWIG_SHARED_PTR_DERIVED(%(der_class)s,%(ufc_class)s,%(der_class)s)"
         declarations += "\n"
         declarations += "\n".join(\
@@ -168,4 +168,3 @@ This is fixed in swig version 1.3.37
 
         declarations += "\n"
     return declarations
-

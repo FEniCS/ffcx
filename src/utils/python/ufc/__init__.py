@@ -44,3 +44,25 @@ from dof_map import *
 from integrals import *
 from form import *
 from build import build_ufc_module
+
+templates = {"function_header":                        function_header,
+             "function_implementation":                function_implementation,
+             "function_combined":                      function_combined,
+             "finite_element_header":                  finite_element_header,
+             "finite_element_implementation":          finite_element_implementation,
+             "finite_element_combined":                finite_element_combined,
+             "dof_map_header":                         dof_map_header,
+             "dof_map_implementation":                 dof_map_implementation,
+             "dof_map_combined":                       dof_map_combined,
+             "cell_integral_header":                   cell_integral_header,
+             "cell_integral_implementation":           cell_integral_implementation,
+             "cell_integral_combined":                 cell_integral_combined,
+             "exterior_facet_integral_header":         exterior_facet_integral_header,
+             "exterior_facet_integral_implementation": exterior_facet_integral_implementation,
+             "exterior_facet_integral_combined":       exterior_facet_integral_combined,
+             "interior_facet_integral_header":         interior_facet_integral_header,
+             "interior_facet_integral_implementation": interior_facet_integral_implementation,
+             "interior_facet_integral_combined":       interior_facet_integral_combined,
+             "form_header":                            form_header,
+             "form_implementation":                    form_implementation,
+             "form_combined":                          form_combined}
