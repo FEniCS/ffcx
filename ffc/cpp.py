@@ -7,7 +7,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian B. Oelgaard 2010
 # Modified by Marie E. Rognes 2010
-# Last changed: 2010-01-30
+# Last changed: 2010-01-31
 
 # Python modules
 import re, numpy, platform
@@ -108,10 +108,10 @@ format.update({"cell coordinates": cell_coordinates,
                "combinations": combinations_snippet,
                "transform snippet": transform_snippet,
                "evaluate function": evaluate_f,
-               "ufc header": header_ufc,
-               "dolfin header": header_dolfin,
-               "footer": footer
-               })
+               "ufc comment": comment_ufc,
+               "dolfin comment": comment_dolfin,
+               "header": header,
+               "footer": footer})
 
 # TODO: Stuff from format_old used by KBO, should be moved around and possibly renamed.
 format.update({# Loop indices
