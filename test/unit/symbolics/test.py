@@ -47,10 +47,10 @@ class TestSingle(unittest.TestCase):
         f12 = FloatValue(12)
         p0 = Product([f12, f0])
 
-        print repr(p0)
-        print p0.val
-        print repr(p0.expand())
-        print p0.expand().val
+#        print repr(p0)
+#        print p0.val
+#        print repr(p0.expand())
+#        print p0.expand().val
 
 def suite():
 

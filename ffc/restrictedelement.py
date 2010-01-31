@@ -68,7 +68,7 @@ def _extract_entity_dofs(element, indices):
             dofs[dim][entity] = []
             for index in all_dofs:
                 if index in indices:
-                    print "index = ", index
+                    # print "index = ", index
                     i = indices.index(index)
                     dofs[dim][entity] += [i]
     return dofs
