@@ -300,6 +300,4 @@ class JITTests(unittest.TestCase):
         self.assertTrue(dt1 < 10*dt1_good)
 
 if __name__ == "__main__":
-    #os.system("python testcreateelement.py")
-    os.system("python %s" % os.path.join("symbolics", "testsymbolics.py"))
     unittest.main()
