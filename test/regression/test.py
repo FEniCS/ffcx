@@ -3,6 +3,11 @@ __date__ = "2010-01-21"
 __copyright__ = "Copyright (C) 2010 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
+# FIXME: Need to add many more test cases. Quite a few DOLFIN
+# FIXME: forms failed after the FFC tests passed. Also need to
+# FIXME: to check with different compiler optioins, representation
+# FIXME: and DOLFIN wrappers.
+
 import os, sys, shutil, commands, difflib
 
 from ufctest import generate_test_code
