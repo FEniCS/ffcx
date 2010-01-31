@@ -44,7 +44,8 @@ def format_code(code, wrapper_code, prefix, options):
     code_c += _generate_comment(options) + "\n"
 
     # Generate code for header
-    code_h += format["header"] % {"prefix_upper": prefix.upper()} + "\n"
+    code_h += format["header_h"] % {"prefix_upper": prefix.upper()} + "\n"
+    code_c += format["header_c"] % {"prefix": prefix}
 
     # Generate code for elements
     if code_elements:

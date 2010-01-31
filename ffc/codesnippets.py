@@ -12,7 +12,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Code snippets
 
-__all__ = ["comment_ufc", "comment_dolfin", "header", "footer",
+__all__ = ["comment_ufc", "comment_dolfin", "header_h", "header_c", "footer",
            "cell_coordinates", "jacobian", "inverse_jacobian",
            "evaluate_f",
            "facet_determinant", "map_onto_physical",
@@ -34,7 +34,7 @@ comment_dolfin = """\
 // contains DOLFIN-specific wrappers that depend on DOLFIN.
 """
 
-header = """\
+header_h = """\
 #ifndef __%(prefix_upper)s_H
 #define __%(prefix_upper)s_H
 
@@ -42,6 +42,10 @@ header = """\
 #include <stdexcept>
 #include <fstream>
 #include <ufc.h>
+"""
+
+header_c = """\
+#include "%(prefix)s.h"
 """
 
 footer = """\

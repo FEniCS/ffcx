@@ -110,7 +110,8 @@ format.update({"cell coordinates": cell_coordinates,
                "evaluate function": evaluate_f,
                "ufc comment": comment_ufc,
                "dolfin comment": comment_dolfin,
-               "header": header,
+               "header_h": header_h,
+               "header_c": header_c,
                "footer": footer})
 
 # TODO: Stuff from format_old used by KBO, should be moved around and possibly renamed.
