@@ -16,7 +16,7 @@ from ffc.quadrature.reduce_operations import operation_count, expand_operations,
 from ffc.quadrature.symbolics import *
 from ffc.cpp import format, set_float_formatting
 from ffc.constants import FFC_OPTIONS
-set_float_formatting(FFC_OPTIONS)
+set_float_formatting(FFC_OPTIONS['precision'])
 class TestElasticity2D(unittest.TestCase):
 
     def testElasticity2D(self):

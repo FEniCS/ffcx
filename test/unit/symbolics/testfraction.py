@@ -15,7 +15,7 @@ import time
 from ffc.quadrature.symbolics import *
 from ffc.cpp import format, set_float_formatting
 from ffc.constants import FFC_OPTIONS
-set_float_formatting(FFC_OPTIONS)
+set_float_formatting(FFC_OPTIONS['precision'])
 from ffc.log import push_level, pop_level, CRITICAL
 
 class TestFraction(unittest.TestCase):

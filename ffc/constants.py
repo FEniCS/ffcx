@@ -4,7 +4,7 @@ __copyright__ = "Copyright (C) 2005-2010 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian B. Oelgaard, 2009
-# Last changed: 2010-01-30
+# Last changed: 2010-01-31
 
 from log import INFO
 
@@ -14,7 +14,7 @@ FFC_OPTIONS = {"format":                         "ufc",  # code generation forma
                "representation":                 "auto", # form representation / code generation strategy
                "quadrature_rule":                "auto", # quadrature rule used for integration of element tensors
                "quadrature_degree":              "auto", # quadrature degree used for computing integrals
-               "precision":                      "15",   # precision used when writing numbers
+               "precision":                      15,     # precision used when writing numbers
                "split":                          False,  # split generated code into .h and .cpp file
                "form_postfix":                   True,   # postfix form name with "Function", "LinearForm" or BilinearForm
                "cache_dir":                      None,   # cache dir used by Instant

@@ -16,7 +16,7 @@ from ffc.quadrature.symbolics import *
 from ffc.quadrature.sumobj import _group_fractions
 from ffc.cpp import format, set_float_formatting
 from ffc.constants import FFC_OPTIONS
-set_float_formatting(FFC_OPTIONS)
+set_float_formatting(FFC_OPTIONS['precision'])
 
 class TestNotFinished(unittest.TestCase):
 
