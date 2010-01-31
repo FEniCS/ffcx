@@ -11,7 +11,7 @@ __date__ = "2009-12-16"
 __copyright__ = "Copyright (C) 2009 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-30
+# Last changed: 2010-01-31
 
 # FFC modules
 from ffc.log import info, begin, end, debug_code
@@ -312,12 +312,10 @@ def _tabulate_coordinates(ir):
     for (i, coordinate) in enumerate(ir):
 
         w = coefficients(coordinate)
-        weights = [precision(w[k]) for k in range(cell_dim + 1)]
-
         for j in range(cell_dim):
             # Compute physical coordinate
             coords = [component("x", (k, j)) for k in range(cell_dim + 1)]
-            value = inner_product(weights, coords)
+            value = inner_product(w, coords)
 
             # Assign coordinate
             code.append(assign(component("coordinates", (i, j)), value))

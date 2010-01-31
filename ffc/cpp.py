@@ -211,6 +211,8 @@ def _multiply(factors):
         if isinstance(f, (int, float)):
             if abs(f) < format["epsilon"]:
                 return cpp_str(0)
+            if abs(f - 1.0) < format["epsilon"]:
+                continue
 
         # Convert to string
         f = cpp_str(f)
@@ -218,10 +220,6 @@ def _multiply(factors):
         # Return zero if any factor is zero
         if f == "0":
             return cpp_str(0)
-
-        # Ignore 1 factors
-        if f == "1" or f == "1.0":
-            continue
 
         # If sum-like, parentheseze factor
         if "+" in f or "-" in f:
