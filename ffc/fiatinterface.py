@@ -5,7 +5,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Garth N. Wells, 2009.
 # Modified by Marie Rognes, 2009-2010.
-# Last changed: 2010-01-30
+# Last changed: 2010-01-31
 
 # Python modules
 from numpy import array
@@ -40,9 +40,9 @@ entities_per_dim = {1: [2, 1], 2: [3, 3, 1], 3: [4, 6, 4, 1]}
 
 def reference_cell(dim):
     if isinstance(dim, int):
-        return FIAT.reference_element.ufc_simplex(dim)
+        return FIAT.ufc_simplex(dim)
     else:
-        return FIAT.reference_element.ufc_simplex(domain2dim[dim])
+        return FIAT.ufc_simplex(domain2dim[dim])
 
 def create_element(ufl_element):
 
