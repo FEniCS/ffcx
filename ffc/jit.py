@@ -159,11 +159,6 @@ def _check_parameters(form, parameters):
     else:
         parameters = parameters.copy()
 
-    # Check for invalid parameters
-    for key in parameters:
-        if not key in FFC_PARAMETERS_JIT:
-            warning('Unknown option "%s" for JIT compiler, ignoring.' % key)
-
     # Add defaults for missing parameters
     for key in FFC_PARAMETERS_JIT:
         if not key in parameters:
