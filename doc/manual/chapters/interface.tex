@@ -997,6 +997,9 @@ This factory function constructs a \texttt{cell\_integral} object for
 cell domain \texttt{i}. The caller is responsible for deleting the
 returned object.
 
+If the integral evaluates to zero, this function may return a null
+pointer.
+
 \subsection{The function \texttt{create\_exterior\_facet\_integral}}
 
 \begin{code}
@@ -1008,6 +1011,9 @@ This factory function constructs an \texttt{exterior\_facet\_integral}
 object for exterior facet domain \texttt{i}. The caller is responsible
 for deleting the returned object.
 
+If the integral evaluates to zero, this function may return a null
+pointer.
+
 \subsection{The function \texttt{create\_interior\_facet\_integral}}
 
 \begin{code}
@@ -1018,3 +1024,6 @@ create_interior_facet_integral(unsigned int i) const = 0;
 This factory function constructs an \texttt{interior\_facet\_integral}
 object for interior facet domain \texttt{i}. The caller is responsible
 for deleting the returned object.
+
+If the integral evaluates to zero, this function may return a null
+pointer.
