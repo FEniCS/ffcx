@@ -423,6 +423,7 @@ def _compute_reference_derivatives(data, Indent, format):
     f_tmp        = format["tmp ref value"]
     f_dmats      = format["dmats"]
     f_assign     = format["assign"]
+    f_iadd       = format["iadd"]
 
     f_r, f_s, f_t, f_u = format["free indices"]
 
@@ -487,7 +488,7 @@ def _compute_reference_derivatives(data, Indent, format):
         dmats = format["component"](format["dmats"](""), [f_s, f_t])
         basis = format["component"](format["basisvalues"], f_t)
         value = format["multiply"]([coeffs, dmats, basis])
-        lines_c.append(f_assign(name, value))
+        lines_c.append(f_iadd(name, value))
     lines += generate_loop(lines_c, loop_vars_c, Indent, format)
 
     # Apply transformation if applicable.

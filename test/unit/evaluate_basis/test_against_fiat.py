@@ -21,27 +21,27 @@ from ffc.log import push_level, pop_level, CRITICAL, INFO
 # TODO: RT degree 0 gives error from FIAT, but is allowed by UFL
 # TODO: Nedelec degree 0 gives error from FIAT, but is allowed by UFL
 single_elements = [
-#                    {"family": "Lagrange",\
-#                      "shapes": ["interval", "triangle", "tetrahedron"],\
-#                      "degrees": [1, 2, 3, 4]},\
-#                    {"family": "Discontinuous Lagrange",\
-#                      "shapes": ["interval", "triangle", "tetrahedron"],\
-#                      "degrees": [0, 1, 2, 3, 4]},\
+                    {"family": "Lagrange",\
+                      "shapes": ["interval", "triangle", "tetrahedron"],\
+                      "degrees": [1, 2, 3, 4]},\
+                    {"family": "Discontinuous Lagrange",\
+                      "shapes": ["interval", "triangle", "tetrahedron"],\
+                      "degrees": [0, 1, 2, 3, 4]},\
                     {"family": "Crouzeix-Raviart",\
                       "shapes": ["triangle", "tetrahedron"],\
                       "degrees": [1]},\
                     {"family": "Raviart-Thomas",\
                       "shapes": ["triangle", "tetrahedron"],\
                       "degrees": [1, 2, 3]},\
-#                    {"family": "Brezzi-Douglas-Marini",\
-#                      "shapes": ["triangle", "tetrahedron"],\
-#                      "degrees": [1, 2, 3]},\
-#                    {"family": "Brezzi-Douglas-Fortin-Marini",\
-#                      "shapes": ["triangle", "tetrahedron"],\
-#                      "degrees": [1, 2, 3]},\
-#                    {"family": "Nedelec 1st kind H(curl)",\
-#                      "shapes": ["triangle", "tetrahedron"],\
-#                      "degrees": [1, 2, 3]}
+                    {"family": "Brezzi-Douglas-Marini",\
+                      "shapes": ["triangle", "tetrahedron"],\
+                      "degrees": [1, 2, 3]},\
+                    {"family": "Brezzi-Douglas-Fortin-Marini",\
+                      "shapes": ["triangle", "tetrahedron"],\
+                      "degrees": [1, 2, 3]},\
+                    {"family": "Nedelec 1st kind H(curl)",\
+                      "shapes": ["triangle", "tetrahedron"],\
+                      "degrees": [1, 2, 3]}
 ]
 
 # Create some mixed elements
