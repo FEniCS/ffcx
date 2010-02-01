@@ -6,7 +6,7 @@ __date__ = "2009-07-11"
 __copyright__ = "Copyright (C) 2009-2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-28
+# Last changed: 2010-02-01
 
 import unittest
 

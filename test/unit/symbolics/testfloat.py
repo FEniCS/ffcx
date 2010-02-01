@@ -14,8 +14,8 @@ import time
 # FFC modules
 from ffc.quadrature.symbolics import *
 from ffc.cpp import format, set_float_formatting
-from ffc import default_parameters
-set_float_formatting(default_parameters()['precision'])
+from ffc.parameters import FFC_PARAMETERS
+set_float_formatting(FFC_PARAMETERS["precision"])
 
 class TestFloat(unittest.TestCase):
 

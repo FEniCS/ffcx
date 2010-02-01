@@ -5,7 +5,7 @@ __date__ = "2010-01-06"
 __copyright__ = "Copyright (C) 2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-28
+# Last changed: 2010-02-01
 
 # Pyhton modules
 import unittest
@@ -15,8 +15,8 @@ import time
 from ffc.quadrature.symbolics import *
 from ffc.quadrature.sumobj import _group_fractions
 from ffc.cpp import format, set_float_formatting
-from ffc import default_parameters
-set_float_formatting(default_parameters()['precision'])
+from ffc.parameters import FFC_PARAMETERS
+set_float_formatting(FFC_PARAMETERS['precision'])
 
 class TestNotFinished(unittest.TestCase):
 
