@@ -99,13 +99,6 @@ def jit_form(form, parameters=None):
             _form_data_cache[form] = form_data
         return (compiled_form, module, form_data)
 
-    # Write a message
-    if parameters["representation"] == "auto":
-        representation = ""
-    else:
-        representation = " (%s representation)" % parameters["representation"]
-    log(INFO + 5, "Calling FFC just-in-time (JIT) compiler%s, this may take some time." % representation)
-
     # Generate code
     signature = jit_object.signature()
     analysis = compile_form(preprocessed_form, prefix=signature, parameters=parameters)
