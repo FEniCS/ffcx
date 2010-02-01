@@ -5,7 +5,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Garth N. Wells, 2009.
 # Modified by Marie Rognes, 2009-2010.
-# Last changed: 2010-01-31
+# Last changed: 2010-02-01
 
 # Python modules
 from numpy import array
@@ -168,7 +168,7 @@ def _create_restricted_element(ufl_element):
     # If simple element -> create RestrictedElement from fiat_element
     if isinstance(base_element, ufl.FiniteElement):
         element = _create_fiat_element(base_element)
-        return RestrictedElement(element, _indices(element, domain))
+        return RestrictedElement(element, _indices(element, domain), domain)
 
     # If restricted mixed element -> convert to mixed restricted element
     if isinstance(base_element, ufl.MixedElement):
@@ -180,11 +180,26 @@ def _create_restricted_element(ufl_element):
 def _indices(element, domain):
     "Extract basis functions indices that correspond to domain."
 
-    dim = domain.topological_dimension()
-    entity_dofs = element.entity_dofs()
-    indices = []
-    for dim in range(domain.topological_dimension() + 1):
-        entities = entity_dofs[dim]
-        for (entity, index) in entities.iteritems():
-            indices += index
-    return indices
+    if isinstance(domain, ufl.Cell):
+        dim = domain.topological_dimension()
+        entity_dofs = element.entity_dofs()
+        indices = []
+        # FIXME: KBO: This will only make it possible to restrict up to a given
+        # topological dimension. What if one wants to restrict to the dofs on
+        # the interior of a cell?
+        for dim in range(domain.topological_dimension() + 1):
+            entities = entity_dofs[dim]
+            for (entity, index) in entities.iteritems():
+                indices += index
+        return indices
+    # Just extract all indices to make handling in RestrictedElement uniform.
+    elif isinstance(domain, ufl.Measure):
+        indices = []
+        entity_dofs = element.entity_dofs()
+        for dim, entities in entity_dofs.items():
+            for entity, index in entities.items():
+                indices += index
+        return indices
+    else:
+        error("Restriction to domain: %s, is not supported." % repr(domain))
+
