@@ -272,9 +272,9 @@ def main(debug_level):
                 num_tests += verify_element(ufl_element)
 
     # Evaluate basis for mixed elements
-#    info("\nComputing evaluate_basis for mixed elements")
-#    for ufl_element in mixed_elements:
-#        num_tests += verify_element(ufl_element)
+    info("\nComputing evaluate_basis for mixed elements")
+    for ufl_element in mixed_elements:
+        num_tests += verify_element(ufl_element)
 
     # print results
     error = print_results(num_tests, ffc_fail, gcc_fail, run_fail, dif_cri, dif_acc, correct)
