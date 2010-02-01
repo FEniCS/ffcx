@@ -17,7 +17,7 @@ from ffc.cpp import format, remove_unused, count_ops
 # FFC tensor representation modules
 from ffc.tensor.monomialtransformation import MonomialIndex
 
-def generate_integral_code(ir, prefix, options):
+def generate_integral_code(ir, prefix, parameters):
     "Generate code for integral from intermediate representation."
 
     # Prefetch formatting to speedup code generation
@@ -30,11 +30,11 @@ def generate_integral_code(ir, prefix, options):
     code["members"] = ""
     code["constructor"] = do_nothing
     code["destructor"] = do_nothing
-    code["tabulate_tensor"] = _tabulate_tensor(ir, options)
+    code["tabulate_tensor"] = _tabulate_tensor(ir, parameters)
 
     return code
 
-def _tabulate_tensor(ir, options):
+def _tabulate_tensor(ir, parameters):
     "Generate code for tabulate_tensor."
 
     # Prefetch formats to speed up code generation
@@ -55,7 +55,7 @@ def _tabulate_tensor(ir, options):
     if domain_type == "cell":
 
         # Generate code for one single tensor contraction
-        t_code = _generate_tensor_contraction(AK, options, g_set)
+        t_code = _generate_tensor_contraction(AK, parameters, g_set)
 
         # Generate code for geometry tensors
         g_code = _generate_geometry_tensors(AK, j_set, g_set)
@@ -69,7 +69,7 @@ def _tabulate_tensor(ir, options):
         # Generate code for num_facets tensor contractions
         cases = [None for i in range(num_facets)]
         for i in range(num_facets):
-            cases[i] = _generate_tensor_contraction(AK[i], options, g_set)
+            cases[i] = _generate_tensor_contraction(AK[i], parameters, g_set)
         t_code = switch("facet", cases)
 
         # Generate code for geometry tensors
@@ -85,7 +85,7 @@ def _tabulate_tensor(ir, options):
         cases = [[None for j in range(num_facets)] for i in range(num_facets)]
         for i in range(num_facets):
             for j in range(num_facets):
-                cases[i][j] = _generate_tensor_contraction(AK[i][j], options, g_set)
+                cases[i][j] = _generate_tensor_contraction(AK[i][j], parameters, g_set)
         t_code = switch("facet0", [switch("facet1", cases[i]) for i in range(len(cases))])
 
         # Generate code for geometry tensors
@@ -123,7 +123,7 @@ def _tabulate_tensor(ir, options):
 
     return "\n".join(lines)
 
-def _generate_tensor_contraction(terms, options, g_set):
+def _generate_tensor_contraction(terms, parameters, g_set):
     "Generate code for computation of tensor contraction."
 
     # Prefetch formats to speed up code generation
@@ -141,7 +141,7 @@ def _generate_tensor_contraction(terms, options, g_set):
     incremental = False
 
     # Get machine precision
-    epsilon = options["epsilon"]
+    epsilon = parameters["epsilon"]
 
     # Get list of primary indices (should be the same so pick first)
     A0, GK = terms[0]

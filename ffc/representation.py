@@ -40,7 +40,7 @@ from ffc import tensor
 
 not_implemented = None
 
-def compute_ir(analysis, options):
+def compute_ir(analysis, parameters):
     "Compute intermediate representation."
 
     begin("Compiler stage 2: Computing intermediate representation")

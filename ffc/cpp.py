@@ -7,14 +7,13 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian B. Oelgaard 2010
 # Modified by Marie E. Rognes 2010
-# Last changed: 2010-01-31
+# Last changed: 2010-02-01
 
 # Python modules
 import re, numpy, platform
 
 # FFC modules
 from ffc.log import debug
-from ffc.constants import FFC_OPTIONS
 
 # FIXME: AL: This files needs cleaning up!
 
@@ -429,15 +428,15 @@ def indent(block, num_spaces):
 #from codesnippets import *
 
 # FIXME: KBO: temporary hack to get dictionary working.
-from constants import FFC_OPTIONS
+from parameters import FFC_PARAMETERS
 import platform
-options=FFC_OPTIONS.copy()
+parameters=FFC_PARAMETERS.copy()
 
 # Old dictionary, move the stuff we need to the new dictionary above
 choose_map = {None: "", "+": "0", "-": 1}
-transform_options = {"JINV": lambda m, j, k: "Jinv%s_%d%d" % (m, j, k),
+transform_parameters = {"JINV": lambda m, j, k: "Jinv%s_%d%d" % (m, j, k),
                      "J": lambda m, j, k: "J%s_%d%d" % (m, k, j)}
-format_old = {
+sformat_old = {
     # Operators
     #
 #    "multiply": lambda v: _multiply(v),
@@ -450,7 +449,7 @@ format_old = {
     "add": lambda v: " + ".join(v),
     "subtract": lambda v: " - ".join(v),
     "division": "/",
-    "power": lambda base, exp: power_options[exp >= 0](self.format["multiply"]([str(base)]*abs(exp))),
+    "power": lambda base, exp: power_parameters[exp >= 0](self.format["multiply"]([str(base)]*abs(exp))),
     "std power": lambda base, exp: "std::pow(%s, %s)" % (base, exp),
     "exp": lambda v: "std::exp(%s)" % v,
     "ln": lambda v: "std::log(%s)" % v,
@@ -542,8 +541,8 @@ format_old = {
 #    "coeff": "w",
 #    "modified coefficient declaration": lambda i, j, k, l: "const double c%d_%d_%d_%d" % (i, j, k, l),
 #    "modified coefficient access": lambda i, j, k, l: "c%d_%d_%d_%d" % (i, j, k, l),
-#    "transform": lambda type, j, k, r: "%s" % (transform_options[type](choose_map[r], j, k)),
-#    "transform_ufl": lambda type, j, k, r: "%s" % (transform_options_ufl[type](choose_map[r], j, k)),
+#    "transform": lambda type, j, k, r: "%s" % (transform_parameters[type](choose_map[r], j, k)),
+#    "transform_ufl": lambda type, j, k, r: "%s" % (transform_parameters_ufl[type](choose_map[r], j, k)),
 #    "reference tensor" : lambda j, i, a: None,
 #    "geometry tensor": "G",
 #    "sign tensor": lambda type, i, k: "S%s%s_%d" % (type, i, k),
@@ -620,7 +619,7 @@ format_old = {
         lambda prefix, i, label: "%s_%d_exterior_facet_integral_%s" % (prefix.lower(), i, label)}
 
 # Set number of digits for floating point and machine precision
-#precision = int(options["precision"])
+#precision = int(parameters["precision"])
 #f1 = "%%.%dg" % precision
 #f2 = "%%.%de" % precision
 
@@ -674,7 +673,7 @@ special_characters = ["+", "-", "*", "/", "=", ".", " ", ";", "(", ")", "\\", "{
 def remove_unused(code, used_set=set()):
     """
     Remove unused variables from a given C++ code. This is useful when
-    generating code that will be compiled with gcc and options -Wall
+    generating code that will be compiled with gcc and parameters -Wall
     -Werror, in which case gcc returns an error when seeing a variable
     declaration for a variable that is never used.
 

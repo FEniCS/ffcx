@@ -17,11 +17,11 @@ from ffc.cpp import format
 # FIXME: the complexity in the dolfin_utils module and also clean
 # FIXME: up and simplify that module
 
-def generate_wrapper_code(analysis, prefix, options):
+def generate_wrapper_code(analysis, prefix, parameters):
     "Generate code for additional wrappers."
 
     # Skip if wrappers not requested
-    if not options["format"] == "dolfin": return None
+    if not parameters["format"] == "dolfin": return None
 
     # Try importing DOLFIN wrapper utils
     try:

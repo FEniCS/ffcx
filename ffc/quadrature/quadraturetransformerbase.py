@@ -45,7 +45,7 @@ class QuadratureTransformerBase(Transformer):
 #class QuadratureTransformerBase(ReuseTransformer):
     "Transform UFL representation to quadrature code."
 
-    def __init__(self, ir, optimise_options, format):
+    def __init__(self, ir, optimise_parameters, format):
 
         Transformer.__init__(self)
 
@@ -53,9 +53,9 @@ class QuadratureTransformerBase(Transformer):
         quadrature_weights = ir["quadrature_weights"]
         psi_tables = ir["psi_tables"]
 
-        # Save format, optimise_options, weights and fiat_elements_map.
+        # Save format, optimise_parameters, weights and fiat_elements_map.
         self.format = format
-        self.optimise_options = optimise_options
+        self.optimise_parameters = optimise_parameters
         self.quadrature_weights = quadrature_weights
 
         # Create containers and variables.
@@ -81,7 +81,7 @@ class QuadratureTransformerBase(Transformer):
         self.trans_set = set()
         self.element_map, self.name_map, self.unique_tables =\
               create_psi_tables(psi_tables,\
-                                       self.format["epsilon"], self.optimise_options)
+                                       self.format["epsilon"], self.optimise_parameters)
         # Cache.
         self.argument_cache = {}
         self.function_cache = {}
@@ -316,7 +316,7 @@ class QuadratureTransformerBase(Transformer):
         # Check if basis is already in cache
         basis = self.argument_cache.get((o, components, derivatives, self.restriction), None)
         # FIXME: Why does using a code dict from cache make the expression manipulations blow (MemoryError) up later?
-        if basis is not None and not self.optimise_options["simplify expressions"]:
+        if basis is not None and not self.optimise_parameters["simplify expressions"]:
 #        if basis is not None:
             return basis
 
@@ -403,7 +403,7 @@ class QuadratureTransformerBase(Transformer):
         # Check if function is already in cache
         function_code = self.function_cache.get((o, components, derivatives, self.restriction), None)
         # FIXME: Why does using a code dict from cache make the expression manipulations blow (MemoryError) up later?
-        if function_code is not None and not self.optimise_options["simplify expressions"]:
+        if function_code is not None and not self.optimise_parameters["simplify expressions"]:
 #        if function_code is not None:
             return function_code
 
@@ -816,7 +816,7 @@ class QuadratureTransformerBase(Transformer):
 
                 index_j, entry, range_j, space_dim_j = key
                 loop = ((indices[index_j], 0, range_j),)
-                if range_j == 1 and self.optimise_options["ignore ones"]:
+                if range_j == 1 and self.optimise_parameters["ignore ones"]:
                     loop = ()
                 # Multiply number of operations to compute entries by range of loop.
                 entry_ops *= range_j
@@ -839,9 +839,9 @@ class QuadratureTransformerBase(Transformer):
                 index_k, entry_k, range_k, space_dim_k = key1
 
                 loop = []
-                if not (range_j == 1 and self.optimise_options["ignore ones"]):
+                if not (range_j == 1 and self.optimise_parameters["ignore ones"]):
                     loop.append((indices[index_j], 0, range_j))
-                if not (range_k == 1 and self.optimise_options["ignore ones"]):
+                if not (range_k == 1 and self.optimise_parameters["ignore ones"]):
                     loop.append((indices[index_k], 0, range_k))
 
                 entry = format_add([format_mult([entry_j, str(space_dim_k)]), entry_k])
@@ -1015,11 +1015,11 @@ class QuadratureTransformerBase(Transformer):
 
         basis = ""
         # Ignore zeros if applicable
-        if zeros and (self.optimise_options["ignore zero tables"] or self.optimise_options["remove zero terms"]):
+        if zeros and (self.optimise_parameters["ignore zero tables"] or self.optimise_parameters["remove zero terms"]):
             basis = self._format_scalar_value(None)[()]
         # If the loop index range is one we can look up the first component
         # in the psi array. If we only have ones we don't need the basis.
-        elif self.optimise_options["ignore ones"] and loop_index_range == 1 and ones:
+        elif self.optimise_parameters["ignore ones"] and loop_index_range == 1 and ones:
             loop_index = "0"
             basis = self._format_scalar_value(1.0)[()]
         else:
@@ -1080,7 +1080,7 @@ class QuadratureTransformerBase(Transformer):
         basis_name, non_zeros, zeros, ones = self.name_map[basis_name]
 
         # If all basis are zero we just return None.
-        if zeros and self.optimise_options["ignore zero tables"]:
+        if zeros and self.optimise_parameters["ignore zero tables"]:
             return self._format_scalar_value(None)[()]
 
         # Get the index range of the loop index.
@@ -1091,7 +1091,7 @@ class QuadratureTransformerBase(Transformer):
 
         # If the loop index range is one we can look up the first component
         # in the coefficient array. If we only have ones we don't need the basis.
-        if self.optimise_options["ignore ones"] and loop_index_range == 1 and ones:
+        if self.optimise_parameters["ignore ones"] and loop_index_range == 1 and ones:
             coefficient_access = "0"
             basis_name = ""
         elif not quad_element:

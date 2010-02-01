@@ -27,7 +27,7 @@ from quadraturetransformer import QuadratureTransformer
 from optimisedquadraturetransformer import QuadratureTransformerOpt
 from symbolics import generate_aux_constants
 
-def generate_integral_code(ir, prefix, options):
+def generate_integral_code(ir, prefix, parameters):
     "Generate code for integral from intermediate representation."
 
     # Generate code
@@ -36,11 +36,11 @@ def generate_integral_code(ir, prefix, options):
     code["members"] = ""
     code["constructor"] = format["do nothing"]
     code["destructor"] = format["do nothing"]
-    code["tabulate_tensor"] = _tabulate_tensor(ir, options)
+    code["tabulate_tensor"] = _tabulate_tensor(ir, parameters)
 
     return code
 
-def _tabulate_tensor(ir, options):
+def _tabulate_tensor(ir, parameters):
     "Generate code for a single integral (tabulate_tensor())."
 
     f_comment       = format["comment"]
@@ -55,17 +55,17 @@ def _tabulate_tensor(ir, options):
     f_r             = format["free indices"][0]
 
     # FIXME: KBO: Handle this in a better way, make -O option take an argument?
-    if options["optimize"]:
-        # These options results in fast code, but compiles slower and there
+    if parameters["optimize"]:
+        # These parameters results in fast code, but compiles slower and there
         # might still be bugs.
-        optimise_options = {"non zero columns": True,
+        optimise_parameters = {"non zero columns": True,
                             "ignore ones": True,
                             "remove zero terms": True,
                             "simplify expressions": True,
                             "ignore zero tables": True}
     else:
-        # These options should be safe and fast, but result in slow code.
-        optimise_options = {"non zero columns": False,
+        # These parameters should be safe and fast, but result in slow code.
+        optimise_parameters = {"non zero columns": False,
                             "ignore ones": False,
                             "remove zero terms": False,
                             "simplify expressions": False,
@@ -80,10 +80,10 @@ def _tabulate_tensor(ir, options):
     Indent = IndentControl()
 
     # Create transformer.
-    if optimise_options["simplify expressions"]:
-        transformer = QuadratureTransformerOpt(ir, optimise_options, format)
+    if optimise_parameters["simplify expressions"]:
+        transformer = QuadratureTransformerOpt(ir, optimise_parameters, format)
     else:
-        transformer = QuadratureTransformer(ir, optimise_options, format)
+        transformer = QuadratureTransformer(ir, optimise_parameters, format)
 
     operations = []
     if domain_type == "cell":
@@ -179,7 +179,7 @@ def _tabulate_tensor(ir, options):
 
     # Add comments.
     common += ["", f_comment("Compute element tensor using UFL quadrature representation")]
-    common += [f_comment("Optimisations: %s" % ", ".join([str(i) for i in optimise_options.items()]))]
+    common += [f_comment("Optimisations: %s" % ", ".join([str(i) for i in optimise_parameters.items()]))]
 
     # Print info on operation count
     message = {"cell": "Number of operations to compute tensor: %d",
@@ -275,7 +275,7 @@ def _tabulate_weights(transformer, Indent, format):
             value = tabulate_vector(weights, format)
         code += [f_assign(Indent.indent(name), value)]
 
-        # Tabulate the quadrature points (uncomment for different options).
+        # Tabulate the quadrature points (uncomment for different parameters).
         # 1) Tabulate the points as: p0, p1, p2, with p0 = (x0, y0, z0) etc.
         # Use f_float to format the value (enable variable precision).
         formatted_points = [f_group(f_sep.join([f_float(val)\
@@ -340,7 +340,7 @@ def _tabulate_psis(transformer, Indent, format):
     tables = transformer.unique_tables
 
     # Get list of non zero columns, if we ignore ones ignore columns with one component.
-    if transformer.optimise_options["ignore ones"]:
+    if transformer.optimise_parameters["ignore ones"]:
         nzcs = [val[1] for key, val in inv_name_map.items()\
                                         if val[1] and len(val[1][1]) > 1]
     else:
@@ -377,7 +377,7 @@ def _tabulate_psis(transformer, Indent, format):
             code += [f_assign(Indent.indent(decl_name), Indent.indent(value)), ""]
 
         # Tabulate non-zero indices.
-        if transformer.optimise_options["non zero columns"]:
+        if transformer.optimise_parameters["non zero columns"]:
             if name in name_map:
                 for n in name_map[name]:
                     if inv_name_map[n][1] and inv_name_map[n][1] in new_nzcs:

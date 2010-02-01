@@ -30,7 +30,7 @@ from ffc.quadratureelement import default_quadrature_degree
 from ffc.utils import all_equal
 from ffc.tensor import estimate_cost
 
-def analyze_forms(forms, object_names, options):
+def analyze_forms(forms, object_names, parameters):
     """
     Analyze form(s), returning
 
@@ -42,7 +42,7 @@ def analyze_forms(forms, object_names, options):
     begin("Compiler stage 1: Analyzing form(s)")
 
     # Analyze forms
-    form_and_data = [_analyze_form(form, object_names, options) for form in forms]
+    form_and_data = [_analyze_form(form, object_names, parameters) for form in forms]
 
     # Extract unique elements
     unique_elements = []
@@ -101,7 +101,7 @@ def _get_nested_elements(element):
         nested_elements += _get_nested_elements(e)
     return set(nested_elements)
 
-def _analyze_form(form, object_names, options):
+def _analyze_form(form, object_names, parameters):
     "Analyze form, returning preprocessed form and form data."
 
     # Get name before pre-processing.
@@ -122,7 +122,7 @@ def _analyze_form(form, object_names, options):
     _adjust_elements(form_data)
 
     # Extract integral metadata
-    _extract_metadata(form_data, options)
+    _extract_metadata(form_data, parameters)
 
     return form, form_data
 
@@ -158,7 +158,7 @@ def _adjust_elements(form_data):
             info("Adjusting element cell from %s to %s." % (istr(cell), str(common_cell)))
             element.set_cell(common_cell)
 
-def _extract_metadata(form_data, options):
+def _extract_metadata(form_data, parameters):
     "Attach and group meta data for each subdomain integral collection."
 
     # Recognized metadata keys
@@ -175,7 +175,7 @@ def _extract_metadata(form_data, options):
             integral_metadata = integral.measure().metadata() or {}
             for key in metadata_keys:
                 if not key in integral_metadata:
-                    integral_metadata[key] = options[key]
+                    integral_metadata[key] = parameters[key]
 
             # Check metadata
             r = integral_metadata["representation"]
@@ -236,7 +236,7 @@ def _extract_metadata(form_data, options):
             metadata["quadrature_degree"] = q
 
             # Attach quadrature rule (default)
-            metadata["quadrature_rule"] = options["quadrature_rule"]
+            metadata["quadrature_rule"] = parameters["quadrature_rule"]
 
     return metadata
 

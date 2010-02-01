@@ -40,10 +40,10 @@ from reduce_operations import operation_count
 class QuadratureTransformer(QuadratureTransformerBase):
     "Transform UFL representation to quadrature code."
 
-    def __init__(self, ir, optimise_options, format):
+    def __init__(self, ir, optimise_parameters, format):
 
         # Initialise base class.
-        QuadratureTransformerBase.__init__(self, ir, optimise_options, format)
+        QuadratureTransformerBase.__init__(self, ir, optimise_parameters, format)
 
     # -------------------------------------------------------------------------
     # Start handling UFL classes.

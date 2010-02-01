@@ -51,10 +51,10 @@ from symbolics import optimise_code
 class QuadratureTransformerOpt(QuadratureTransformerBase):
     "Transform UFL representation to quadrature code."
 
-    def __init__(self, ir, optimise_options, format):
+    def __init__(self, ir, optimise_parameters, format):
 
         # Initialise base class.
-        QuadratureTransformerBase.__init__(self, ir, optimise_options, format)
+        QuadratureTransformerBase.__init__(self, ir, optimise_parameters, format)
 #        set_format(format)
 
     # -------------------------------------------------------------------------

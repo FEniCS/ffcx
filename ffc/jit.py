@@ -9,7 +9,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Johan Hake, 2008-2009
 # Modified by Ilmar Wilbers, 2008
 # Modified by Kristian B. Oelgaard, 2009
-# Last changed: 2010-01-27
+# Last changed: 2010-02-01
 
 # Python modules
 import os
@@ -30,14 +30,14 @@ from log import error
 from log import set_level
 from log import set_prefix
 from log import INFO
-from constants import FFC_OPTIONS
+from parameters import default_parameters
 from mixedelement import MixedElement
 from compiler import compile_form
 from jitobject import JITObject
 
 # Special Options for JIT-compilation
-FFC_OPTIONS_JIT = FFC_OPTIONS.copy()
-FFC_OPTIONS_JIT["no-evaluate_basis_derivatives"] = True
+FFC_PARAMETERS_JIT = default_parameters()
+FFC_PARAMETERS_JIT["no-evaluate_basis_derivatives"] = True
 
 # Set debug level for Instant
 instant.set_logging_level("warning")
@@ -45,43 +45,43 @@ instant.set_logging_level("warning")
 # Form data cache
 _form_data_cache = {}
 
-def jit(object, options=None):
+def jit(object, parameters=None):
     """Just-in-time compile the given form or element
 
     Parameters:
 
       object  : The object to be compiled
-      options : An option dictionary
+      parameters : An option dictionary
     """
 
     # Check if we get an element or a form
     if isinstance(object, FiniteElementBase):
-        return jit_element(object, options)
+        return jit_element(object, parameters)
     else:
-        return jit_form(object, options)
+        return jit_form(object, parameters)
 
-def jit_form(form, options=None):
+def jit_form(form, parameters=None):
     "Just-in-time compile the given form"
 
     # Check that we get a Form
     if not isinstance(form, Form):
         form = as_form(form)
 
-    # Check options
-    options = _check_options(form, options)
+    # Check parameters
+    parameters = _check_parameters(form, parameters)
 
     # Set log level
-    set_level(options["log_level"])
-    set_prefix(options["log_prefix"])
+    set_level(parameters["log_level"])
+    set_prefix(parameters["log_prefix"])
 
     # Preprocess form
     preprocessed_form = preprocess(form)
 
     # Wrap input
-    jit_object = JITObject(form, preprocessed_form, options)
+    jit_object = JITObject(form, preprocessed_form, parameters)
 
     # Check cache
-    module = instant.import_module(jit_object, cache_dir=options["cache_dir"])
+    module = instant.import_module(jit_object, cache_dir=parameters["cache_dir"])
     if module:
 
         # Get compiled form from Instant cache
@@ -96,15 +96,15 @@ def jit_form(form, options=None):
         return (compiled_form, module, form_data)
 
     # Write a message
-    if options["representation"] == "auto":
+    if parameters["representation"] == "auto":
         representation = ""
     else:
-        representation = " (%s representation)" % options["representation"]
+        representation = " (%s representation)" % parameters["representation"]
     log(INFO + 5, "Calling FFC just-in-time (JIT) compiler%s, this may take some time." % representation)
 
     # Generate code
     signature = jit_object.signature()
-    analysis = compile_form(preprocessed_form, prefix=signature, options=options)
+    analysis = compile_form(preprocessed_form, prefix=signature, parameters=parameters)
     # FIXME: Make this more sane, less cryptic
     form_data = analysis[0][0][1]
 
@@ -114,13 +114,13 @@ def jit_form(form, options=None):
         signature + ".h",
         source_directory = os.curdir,
         signature = signature,
-        sources = [signature + ".cpp"] if options["split"] else [],
-        cppargs  = ["-O2"] if options["cpp optimize"] else ["-O0"] ,
-        cache_dir = options["cache_dir"])
+        sources = [signature + ".cpp"] if parameters["split"] else [],
+        cppargs  = ["-O2"] if parameters["cpp optimize"] else ["-O0"] ,
+        cache_dir = parameters["cache_dir"])
 
     # Remove code
     os.unlink(signature + ".h")
-    if options["split"] :
+    if parameters["split"] :
         os.unlink(signature + ".cpp")
 
     # Extract compiled form
@@ -131,7 +131,7 @@ def jit_form(form, options=None):
 
     return compiled_form, module, form_data
 
-def jit_element(element, options=None):
+def jit_element(element, parameters=None):
     "Just-in-time compile the given element"
 
     # Check that we get an element
@@ -145,37 +145,37 @@ def jit_element(element, options=None):
     form = v*dx
 
     # Compile form
-    (compiled_form, module, form_data) = jit_form(form, options)
+    (compiled_form, module, form_data) = jit_form(form, parameters)
 
     return _extract_element_and_dofmap(module, form_data)
 
-def _check_options(form, options):
-    "Check options and add any missing options"
+def _check_parameters(form, parameters):
+    "Check parameters and add any missing parameters"
 
     # Form can not be a list
     if isinstance(form, list):
         error("JIT compiler requires a single form (not a list of forms).")
 
-    # Copy options
-    if options is None:
-        options = {}
+    # Copy parameters
+    if parameters is None:
+        parameters = {}
     else:
-        options = options.copy()
+        parameters = parameters.copy()
 
-    # Check for invalid options
-    for key in options:
-        if not key in FFC_OPTIONS_JIT:
+    # Check for invalid parameters
+    for key in parameters:
+        if not key in FFC_PARAMETERS_JIT:
             warning('Unknown option "%s" for JIT compiler, ignoring.' % key)
 
-    # Add defaults for missing options
-    for key in FFC_OPTIONS_JIT:
-        if not key in options:
-            options[key] = FFC_OPTIONS_JIT[key]
+    # Add defaults for missing parameters
+    for key in FFC_PARAMETERS_JIT:
+        if not key in parameters:
+            parameters[key] = FFC_PARAMETERS_JIT[key]
 
     # Don't postfix form names
-    options["form_postfix"] = False
+    parameters["form_postfix"] = False
 
-    return options
+    return parameters
 
 def _extract_element_and_dofmap(module, form_data):
     """

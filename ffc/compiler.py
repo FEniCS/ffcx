@@ -106,7 +106,7 @@ from time import time
 
 # FFC modules
 from ffc.log import info, info_green, warning
-from ffc.constants import FFC_OPTIONS
+from ffc.parameters import default_parameters
 
 # FFC modules
 from ffc.analysis import analyze_forms, analyze_elements
@@ -116,7 +116,7 @@ from ffc.codegeneration import generate_code
 from ffc.formatting import format_code
 from ffc.wrappers import generate_wrapper_code
 
-def compile_form(forms, object_names={}, prefix="Form", options=FFC_OPTIONS.copy()):
+def compile_form(forms, object_names={}, prefix="Form", parameters=default_parameters()):
     """This function generates UFC code for a given UFL form or list
     of UFL forms."""
 
@@ -127,43 +127,43 @@ def compile_form(forms, object_names={}, prefix="Form", options=FFC_OPTIONS.copy
 
     # Check input arguments
     forms = _check_forms(forms)
-    options = _check_options(options)
+    parameters = _check_parameters(parameters)
     if not forms: return
 
     # Stage 1: analysis
     cpu_time = time()
-    analysis = analyze_forms(forms, object_names, options)
+    analysis = analyze_forms(forms, object_names, parameters)
     _print_timing(1, time() - cpu_time)
 
     # Stage 2: intermediate representation
     cpu_time = time()
-    ir = compute_ir(analysis, options)
+    ir = compute_ir(analysis, parameters)
     _print_timing(2, time() - cpu_time)
 
     # Stage 3: optimization
     cpu_time = time()
-    oir = optimize_ir(ir, options)
+    oir = optimize_ir(ir, parameters)
     _print_timing(3, time() - cpu_time)
 
     # Stage 4: code generation
     cpu_time = time()
-    code = generate_code(oir, prefix, options)
+    code = generate_code(oir, prefix, parameters)
     _print_timing(4, time() - cpu_time)
 
     # Stage 4.1: generate wrappers
     cpu_time = time()
-    wrapper_code = generate_wrapper_code(analysis, prefix, options)
+    wrapper_code = generate_wrapper_code(analysis, prefix, parameters)
     _print_timing(4.1, time() - cpu_time)
 
     # Stage 5: format code
     cpu_time = time()
-    format_code(code, wrapper_code, prefix, options)
+    format_code(code, wrapper_code, prefix, parameters)
     _print_timing(5, time() - cpu_time)
 
     info_green("FFC finished in %g seconds.", time() - cpu_time_0)
     return analysis
 
-def compile_element(elements, object_names={}, prefix="Element", options=FFC_OPTIONS.copy()):
+def compile_element(elements, object_names={}, prefix="Element", parameters=default_parameters()):
     """This function generates UFC code for a given UFL element or
     list of UFL elements."""
 
@@ -174,7 +174,7 @@ def compile_element(elements, object_names={}, prefix="Element", options=FFC_OPT
 
     # Check input arguments
     elements = _check_elements(elements)
-    options = _check_options(options)
+    parameters = _check_parameters(parameters)
     if not elements: return
 
     # Stage 1: analysis
@@ -184,27 +184,27 @@ def compile_element(elements, object_names={}, prefix="Element", options=FFC_OPT
 
     # Stage 2: intermediate representation
     cpu_time = time()
-    ir = compute_ir(analysis, options)
+    ir = compute_ir(analysis, parameters)
     _print_timing(2, time() - cpu_time)
 
     # Stage 3: optimization
     cpu_time = time()
-    oir = optimize_ir(ir, options)
+    oir = optimize_ir(ir, parameters)
     _print_timing(3, time() - cpu_time)
 
     # Stage 4: code generation
     cpu_time = time()
-    code = generate_code(oir, prefix, options)
+    code = generate_code(oir, prefix, parameters)
     _print_timing(4, time() - cpu_time)
 
     # Stage 4.1: generate wrappers
     cpu_time = time()
-    wrapper_code = generate_wrapper_code(analysis, prefix, options)
+    wrapper_code = generate_wrapper_code(analysis, prefix, parameters)
     _print_timing(4.1, time() - cpu_time)
 
     # Stage 5: format code
     cpu_time = time()
-    format_code(code, wrapper_code, prefix, options)
+    format_code(code, wrapper_code, prefix, parameters)
     _print_timing(5, time() - cpu_time)
 
     info_green("FFC finished in %g seconds.", time() - cpu_time_0)
@@ -221,13 +221,13 @@ def _check_elements(elements):
         elements = (elements,)
     return elements
 
-def _check_options(options):
-    "Initial check of options."
-    if "blas" in options:
+def _check_parameters(parameters):
+    "Initial check of parameters."
+    if "blas" in parameters:
         warning("BLAS mode unavailable (will return in a future version).")
-    if "quadrature_points" in options:
+    if "quadrature_points" in parameters:
         warning("Option 'quadrature_points' has been replaced by 'quadrature_degree'.")
-    return options
+    return parameters
 
 def _print_timing(stage, timing):
     "Print timing results."

@@ -90,7 +90,7 @@ def generate_psi_name(counter, facet, component, derivatives):
 
     return name
 
-def create_psi_tables(tables, format_epsilon, options):
+def create_psi_tables(tables, format_epsilon, parameters):
     "Create names and maps for tables and non-zero entries if appropriate."
 
     debug("\nQG-utils, psi_tables:\n" + str(tables))
@@ -101,7 +101,7 @@ def create_psi_tables(tables, format_epsilon, options):
 
     # Reduce tables such that we only have those tables left with unique values
     # Create a name map for those tables that are redundant.
-    name_map, unique_tables = unique_psi_tables(flat_tables, format_epsilon, options)
+    name_map, unique_tables = unique_psi_tables(flat_tables, format_epsilon, parameters)
 
     debug("\nQG-utils, psi_tables, unique_tables:\n" + str(unique_tables))
     debug("\nQG-utils, psi_tables, name_map:\n" + str(name_map))
@@ -182,10 +182,10 @@ def flatten_psi_tables(tables):
 
     return (element_map, flat_tables)
 
-def unique_psi_tables(tables, format_epsilon, options):
+def unique_psi_tables(tables, format_epsilon, parameters):
     """Returns a name map and a dictionary of unique tables. The function checks
     if values in the tables are equal, if this is the case it creates a name
-    mapping. It also create additional information (depending on which options
+    mapping. It also create additional information (depending on which parameters
     are set) such as if the table contains all ones, or only zeros, and a list
     on non-zero columns.
     unique_tables - {name:values,}.
@@ -216,7 +216,7 @@ def unique_psi_tables(tables, format_epsilon, options):
     # counter for non-zero column arrays.
     i = 0
     non_zero_columns = {}
-    if options["non zero columns"]:
+    if parameters["non zero columns"]:
         for name in sorted(tables.keys()):
             # Get values.
             vals = tables[name]

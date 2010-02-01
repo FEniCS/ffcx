@@ -31,7 +31,7 @@ from ffc import tensor
 # FIXME: Temporary
 not_implemented = "// Not implemented, please fix me!"
 
-def generate_code(ir, prefix, options):
+def generate_code(ir, prefix, parameters):
     "Generate code from intermediate representation."
 
     begin("Compiler stage 4: Generating code")
@@ -39,34 +39,34 @@ def generate_code(ir, prefix, options):
     # FIXME: Document option -fconvert_exceptions_to_warnings
     # FIXME: Remove option epsilon and just rely on precision?
 
-    # Set code generation options
-    set_float_formatting(int(options["precision"]))
-    set_exception_handling(options["convert_exceptions_to_warnings"])
+    # Set code generation parameters
+    set_float_formatting(int(parameters["precision"]))
+    set_exception_handling(parameters["convert_exceptions_to_warnings"])
 
     # Extract representations
     ir_elements, ir_dofmaps, ir_integrals, ir_forms = ir
 
     # Generate code for elements
     info("Generating code for %d elements" % len(ir_elements))
-    code_elements = [_generate_element_code(ir, prefix, options) for ir in ir_elements]
+    code_elements = [_generate_element_code(ir, prefix, parameters) for ir in ir_elements]
 
     # Generate code for dofmaps
     info("Generating code for %d dofmaps" % len(ir_dofmaps))
-    code_dofmaps = [_generate_dofmap_code(ir, prefix, options) for ir in ir_dofmaps]
+    code_dofmaps = [_generate_dofmap_code(ir, prefix, parameters) for ir in ir_dofmaps]
 
     # Generate code for integrals
     info("Generating code for integrals")
-    code_integrals = [_generate_integral_code(ir, prefix, options) for ir in ir_integrals]
+    code_integrals = [_generate_integral_code(ir, prefix, parameters) for ir in ir_integrals]
 
     # Generate code for forms
     info("Generating code for forms")
-    code_forms = [_generate_form_code(ir, prefix, options) for ir in ir_forms]
+    code_forms = [_generate_form_code(ir, prefix, parameters) for ir in ir_forms]
 
     end()
 
     return code_elements, code_dofmaps, code_integrals, code_forms
 
-def _generate_element_code(ir, prefix, options):
+def _generate_element_code(ir, prefix, parameters):
     "Generate code for finite element from intermediate representation."
 
     # Skip code generation if ir is None
@@ -102,11 +102,11 @@ def _generate_element_code(ir, prefix, options):
     code["create_sub_element"] = _create_foo(prefix, "finite_element", ir["create_sub_element"])
 
     # Postprocess code
-    _postprocess_code(code, options)
+    _postprocess_code(code, parameters)
 
     return code
 
-def _generate_dofmap_code(ir, prefix, options):
+def _generate_dofmap_code(ir, prefix, parameters):
     "Generate code for dofmap from intermediate representation."
 
     # Skip code generation if ir is None
@@ -145,20 +145,20 @@ def _generate_dofmap_code(ir, prefix, options):
     code["create_sub_dof_map"] = _create_foo(prefix, "dof_map", ir["create_sub_dof_map"])
 
     # Postprocess code
-    _postprocess_code(code, options)
+    _postprocess_code(code, parameters)
 
     return code
 
-def _generate_integral_code(ir, prefix, options):
+def _generate_integral_code(ir, prefix, parameters):
     "Generate code for integrals from intermediate representation."
 
     # Skip code generation if ir is None
     if ir is None: return None
 
     if ir["representation"] == "tensor":
-        code = tensor.generate_integral_code(ir, prefix, options)
+        code = tensor.generate_integral_code(ir, prefix, parameters)
     elif ir["representation"] == "quadrature":
-        code = quadrature.generate_integral_code(ir, prefix, options)
+        code = quadrature.generate_integral_code(ir, prefix, parameters)
     else:
         error("Unknown representation: %s" % ir["representation"])
 
@@ -167,7 +167,7 @@ def _generate_integral_code(ir, prefix, options):
 
     return code
 
-def _generate_form_code(ir, prefix, options):
+def _generate_form_code(ir, prefix, parameters):
     "Generate code for form from intermediate representation."
 
     # Skip code generation if ir is None
@@ -197,7 +197,7 @@ def _generate_form_code(ir, prefix, options):
     code["create_interior_facet_integral"] = _create_foo_integral(ir, "interior_facet", prefix)
 
     # Postprocess code
-    _postprocess_code(code, options)
+    _postprocess_code(code, parameters)
     #debug_code(code, "form")
 
     return code
@@ -378,10 +378,10 @@ def _create_foo_integral(ir, integral_type, prefix):
     postfix = ir["create_" + integral_type + "_integral"]
     return _create_foo(prefix, class_name, postfix, numbers=postfix)
 
-def _postprocess_code(code, options):
+def _postprocess_code(code, parameters):
     "Postprocess generated code."
     _indent_code(code)
-    _remove_code(code, options)
+    _remove_code(code, parameters)
 
 def _indent_code(code):
     "Indent code that should be indented."
@@ -389,10 +389,10 @@ def _indent_code(code):
         if not key in ("classname", "members"):
             code[key] = indent(code[key], 4)
 
-def _remove_code(code, options):
+def _remove_code(code, parameters):
     "Remove code that should not be generated."
     for key in code:
         flag = "no-" + key
-        if flag in options and options[flag]:
+        if flag in parameters and parameters[flag]:
             msg = "// Function %s not generated (compiled with -f%s)" % (key, flag)
             code[key] = format["exception"](msg)

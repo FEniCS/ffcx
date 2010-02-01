@@ -13,7 +13,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Ola Skavhaug, 2006.
 # Modified by Dag Lindbo, 2008.
 # Modified by Kristian B. Oelgaard 2009.
-# Last changed: 2010-01-25
+# Last changed: 2010-02-01
 
 # Python modules.
 import sys
@@ -31,7 +31,7 @@ from ffc.log import info
 from ffc.log import set_level
 from ffc.log import DEBUG
 from ffc.log import ERROR
-from ffc.constants import FFC_OPTIONS
+from ffc.parameters import default_parameters
 from ffc.constants import FFC_VERSION
 from ffc.compiler import compile_form, compile_element
 
@@ -63,9 +63,9 @@ def main(argv):
     # PYHTONPATH
     sys.path.append(getcwd())
 
-    # Get options and set log level (such that info_usage() will work)
-    options = FFC_OPTIONS.copy()
-    set_level(options["log_level"])
+    # Get parameters and set log level (such that info_usage() will work)
+    parameters = default_parameters()
+    set_level(parameters["log_level"])
 
     # Get command-line arguments
     try:
@@ -93,35 +93,35 @@ def main(argv):
         error("Missing file.")
         return 1
 
-    # Parse command-line options
+    # Parse command-line parameters
     for opt, arg in opts:
         if opt in ("-d", "--debug"):
-             options["log_level"] = DEBUG
+             parameters["log_level"] = DEBUG
         elif opt in ("-s", "--silent"):
-            options["log_level"] = ERROR
+            parameters["log_level"] = ERROR
         elif opt in ("-l", "--language"):
-            options["format"] = arg
+            parameters["format"] = arg
         elif opt in ("-r", "--representation"):
-            options["representation"] = arg
+            parameters["representation"] = arg
         elif opt in ("-q", "--quadrature-rule"):
-            options["quadrature_rule"] = arg
+            parameters["quadrature_rule"] = arg
         elif opt == "-f":
             if len(arg.split("=")) == 2:
                 (key, value) = arg.split("=")
-                options[key] = value
+                parameters[key] = value
             elif len(arg.split("==")) == 1:
                 key = arg.split("=")[0]
-                options[arg] = True
+                parameters[arg] = True
             else:
                 info_usage()
                 return 1
         elif opt in ("-O", "--optimize"):
-            options["optimize"] = True
+            parameters["optimize"] = True
         elif opt in ("-o", "--output-directory"):
-            options["output_dir"] = arg
+            parameters["output_dir"] = arg
 
     # Set log_level again in case -d or -s was used on the command line
-    set_level(options["log_level"])
+    set_level(parameters["log_level"])
 
     # Print a nice message
     info_version()
@@ -144,17 +144,17 @@ def main(argv):
             return 1
 
         # Catch exceptions only when not in debug mode
-        if options["log_level"] <= DEBUG:
+        if parameters["log_level"] <= DEBUG:
             if len(ufd.forms) > 0:
-                compile_form(ufd.forms, ufd.object_names, prefix, options)
+                compile_form(ufd.forms, ufd.object_names, prefix, parameters)
             else:
-                compile_element(ufd.elements, ufd.object_names, prefix, options)
+                compile_element(ufd.elements, ufd.object_names, prefix, parameters)
         else:
             try:
                 if len(ufd.forms) > 0:
-                    compile_form(ufd.forms, ufd.object_names, prefix, options)
+                    compile_form(ufd.forms, ufd.object_names, prefix, parameters)
                 else:
-                    compile_element(ufd.elements, ufd.object_names, prefix, options)
+                    compile_element(ufd.elements, ufd.object_names, prefix, parameters)
             except Exception, exception:
                 info("")
                 error(str(exception))
