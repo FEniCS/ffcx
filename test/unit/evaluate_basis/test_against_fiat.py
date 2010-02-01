@@ -9,7 +9,7 @@ from cppcode import evaluate_basis_code_fiat
 from ufl import FiniteElement, MixedElement
 from ffc.fiatinterface import create_element, reference_cell
 from ffc.mixedelement import MixedElement as FFCMixedElement
-from ffc.log import info
+from ffc.log import info, error
 import numpy
 import sys, os, commands, numpy, shutil
 from test_common import xcomb, compile_element, print_results, compile_gcc_code,\
@@ -159,6 +159,7 @@ def get_fiat_values(ufl_element):
     element, points, geo_dim, ref_coords, deriv_order = get_data(ufl_element)
     values = element.tabulate(deriv_order, points)
     return_values = {}
+    value_shape = element.value_shape()
 
     # Rearrange values to match what we get from evaluate_basis*()
     for n in range(deriv_order + 1):
@@ -175,19 +176,18 @@ def get_fiat_values(ufl_element):
             if n != 0:
                 p += element.space_dimension()
             row = [[] for i in range(element.space_dimension())]
-            for deriv in combinations:
-                deriv_vals = values[deriv]
-                shape = numpy.shape(deriv_vals)
-                if len(shape) == 2:
-                    for i in range(shape[0]):
+            for i in range(element.space_dimension()):
+                if value_shape == ():
+                    for deriv in combinations:
+                        deriv_vals = values[deriv]
                         row[i].append(deriv_vals[i][p])
-                elif len(shape) == 3:
-#                    deriv_vals = numpy.transpose(deriv_vals, (1,0,2))
-                    for c in range(shape[1]):
-                        for i in range(shape[0]):
+                elif len(value_shape) == 1:
+                    for c in range(element.value_shape()[0]):
+                        for deriv in combinations:
+                            deriv_vals = values[deriv]
                             row[i].append(deriv_vals[i][c][p])
                 else:
-                    print deriv_vals
+                    print values
                     error("Did not expect tensor elements")
             new_row = []
             for r in row:
