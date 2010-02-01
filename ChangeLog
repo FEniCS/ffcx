@@ -1,3 +1,6 @@
+1.4 [2010-02-01]
+ - Changed behavior of create_foo_integral (returning 0 when integral is 0)
+ - Bug fixes in installation
 1.2 [2009-09-23]
  - Add new function ufc::dof_map::max_local_dimension()
  - Change ufc::dof_map::local_dimension() to ufc::dof_map::local_dimension(const ufc::cell c)

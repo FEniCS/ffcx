@@ -1,4 +1,4 @@
-// This is utility code for UFC (Unified Form-assembly Code) v. 1.2.
+// This is utility code for UFC (Unified Form-assembly Code) v. 1.4.
 // This code is released into the public domain.
 //
 // The FEniCS Project (http://www.fenics.org/) 2006-2009.
