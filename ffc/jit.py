@@ -80,8 +80,12 @@ def jit_form(form, parameters=None):
     # Wrap input
     jit_object = JITObject(form, preprocessed_form, parameters)
 
+    # Get cache dir
+    cache_dir = parameters["cache_dir"]
+    if cache_dir == "": cache_dir = None
+
     # Check cache
-    module = instant.import_module(jit_object, cache_dir=parameters["cache_dir"])
+    module = instant.import_module(jit_object, cache_dir=cache_dir)
     if module:
 
         # Get compiled form from Instant cache
@@ -116,7 +120,7 @@ def jit_form(form, parameters=None):
         signature = signature,
         sources = [signature + ".cpp"] if parameters["split"] else [],
         cppargs  = ["-O2"] if parameters["cpp_optimize"] else ["-O0"] ,
-        cache_dir = parameters["cache_dir"])
+        cache_dir = cache_dir)
 
     # Remove code
     os.unlink(signature + ".h")
