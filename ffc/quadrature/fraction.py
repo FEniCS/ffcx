@@ -5,7 +5,7 @@ __date__ = "2009-07-12"
 __copyright__ = "Copyright (C) 2009-2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-21
+# Last changed: 2010-02-01
 
 # FFC modules.
 from ffc.log import error
@@ -241,9 +241,14 @@ class Fraction(Expr):
         self = found*remain."""
 
         # Reduce the numerator by the var type.
-        # Handle case where numerator is a sum.
         if self.num._prec == 3:
-            num_found, num_remain = self.num.reduce_vartype(var_type)[0]
+            foo = self.num.reduce_vartype(var_type)
+            if len(foo) == 1:
+                num_found, num_remain = self.num.reduce_vartype(var_type)[0]
+            else:
+                # meg: I have only a marginal idea of what I'm doing here!
+                return create_sum([create_fraction(create_product([num_found, num_remain]), self.denom)
+                                   for (num_found, num_remain) in foo]).expand().reduce_vartype(var_type)
         else:
             num_found, num_remain = self.num.reduce_vartype(var_type)
 
@@ -259,7 +264,7 @@ class Fraction(Expr):
             denom_found, denom_remain = self.denom.reduce_vartype(var_type)
 
         # If we have a Sum in the denominator, all terms must be reduced by
-        # the same terms to make sense.
+        # the same terms to make sense
         else:
             remain = []
             for m in self.denom.vrs:
@@ -294,6 +299,7 @@ class Fraction(Expr):
         # TODO: Add more checks to avoid expansion.
         found = None
         # There is always a remainder.
+
         remain = create_fraction(num_remain, denom_remain).expand()
 
         if num_found:
@@ -306,6 +312,7 @@ class Fraction(Expr):
                 found = create_fraction(create_float(1), denom_found)
             else:
                 found = ()
+
         return (found, remain)
 
 # FFC quadrature modules.
