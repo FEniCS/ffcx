@@ -1,7 +1,7 @@
-1.4 [2010-02-01]
+1.4.0 [2010-02-01]
  - Changed behavior of create_foo_integral (returning 0 when integral is 0)
  - Bug fixes in installation
-1.2 [2009-09-23]
+1.2.0 [2009-09-23]
  - Add new function ufc::dof_map::max_local_dimension()
  - Change ufc::dof_map::local_dimension() to ufc::dof_map::local_dimension(const ufc::cell c)
 1.1.2 [2009-04-07]
@@ -13,12 +13,12 @@
  - The swig generated extension module is named ufc.py and expose all ufc base classes to python
  - Added a swig generated extention module to ufc. UFC now depends on swig
  - Changed name of the python utility module from "ufc" to "ufc_utils"
-1.1 [2008-02-18]
+1.1.0 [2008-02-18]
  - Add new function ufc::finite_element::evaluate_dofs
  - Add new function ufc::finite_element::evaluate_basis_all
  - Add new function ufc::finite_element::evaluate_basis_derivatives_all
  - Add new function ufc::dof_map::geometric_dimension
  - Add new function ufc::dof_map::num_entity_dofs
  - Add new function ufc::dof_map::tabulate_entity_dofs
-1.0 [2007-06-17]
+1.0.0 [2007-06-17]
  - Release of UFC 1.0
