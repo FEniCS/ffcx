@@ -15,8 +15,8 @@ import time
 from ffc.quadrature.reduce_operations import operation_count, expand_operations, reduce_operations
 from ffc.quadrature.symbolics import *
 from ffc.cpp import format, set_float_formatting
-from ffc.constants import FFC_OPTIONS
-set_float_formatting(FFC_OPTIONS['precision'])
+from ffc import default_parameters
+set_float_formatting(default_parameters()['precision'])
 
 class TestPoisson(unittest.TestCase):
 

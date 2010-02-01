@@ -5,7 +5,7 @@ __date__ = "2010-01-06"
 __copyright__ = "Copyright (C) 2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-31
+# Last changed: 2010-02-01
 
 # Pyhton modules
 import unittest
@@ -14,8 +14,8 @@ import time
 # FFC modules
 from ffc.quadrature.symbolics import *
 from ffc.cpp import format, set_float_formatting
-from ffc.constants import FFC_OPTIONS
-set_float_formatting(FFC_OPTIONS["precision"])
+from ffc import default_parameters
+set_float_formatting(default_parameters()['precision'])
 
 class TestFloat(unittest.TestCase):
 
