@@ -3,40 +3,20 @@ __date__ = "2010-01-21"
 __copyright__ = "Copyright (C) 2010 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
+# Last changed: 2010-02-02
+
 # FIXME: Need to add many more test cases. Quite a few DOLFIN
 # FIXME: forms failed after the FFC tests passed. Also need to
-# FIXME: to check with different compiler optioins, representation
+# FIXME: to check with different compiler options, representation
 # FIXME: and DOLFIN wrappers.
 
 import os, sys, shutil, commands, difflib
-
+from ffc.log import begin, end, info, info_red, info_green, info_blue
 from ufctest import generate_test_code
 
 # Parameters
 output_directory = "output"
 demo_directory = "../../../demo"
-
-# Change here to run old or new FFC
-run_old_ffc = False
-
-# FIXME: Only used while testing
-if run_old_ffc:
-    from ffc.common.log import begin, end, info, set_level, INFO
-    info_green = info
-    info_red = info
-    info_blue = info
-    set_level(INFO)
-    demo_directory = "../../../../ffc-0.7.1-reference/demo"
-    #demo_directory = "/home/meg/local/src/fenics/ffc-0.7.1-reference/demo"
-
-else:
-    from ffc.log import begin, end, info, info_red, info_green, info_blue
-
-# FIXME: Only used while testing
-# Skip functions that were not implemented before
-skip_functions = ["evaluate_basis_all",
-                  "evaluate_basis_derivatives_all",
-                  "num_entity_dofs"]
 
 # Global log file
 logfile = None
@@ -101,7 +81,7 @@ def generate_code():
     for f in form_files:
 
         # Generate code
-        ok = run_command("ffc -d -fconvert_exceptions_to_warnings %s" % f)
+        ok = run_command("ffc -d -f precision=8 -fconvert_exceptions_to_warnings %s" % f)
 
         # Check status
         if ok:
@@ -228,13 +208,6 @@ def validate_programs():
             new = dict([line.split(" = ") for line in generated_output.split("\n") if " = " in line])
             header = "Output differs for %s, diff follows" % f
             for (key, value) in old:
-                skip = False
-                for s in skip_functions:
-                    if s in key:
-                        skip = True
-                        continue
-                if skip:
-                    continue
                 if not key in new:
                     if ok: log_error("\n" + header + "\n" + len(header)*"-")
                     log_error("%s: missing value in generated code" % key)
@@ -270,11 +243,7 @@ def main(args):
 
     # Generate and validate code
     generate_code()
-    ##validate_code()
-
-    # Hack for old bug in value_dimension for tensor elements
-    if run_old_ffc:
-        print run_command("cp ../tmp/*.h .")
+    validate_code()
 
     # Build, run and validate programs
     build_programs()
