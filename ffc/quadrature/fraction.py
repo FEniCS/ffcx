@@ -241,16 +241,26 @@ class Fraction(Expr):
         self = found*remain."""
 
         # Reduce the numerator by the var type.
+#        print "self.num._prec: ", self.num._prec
+#        print "self.num: ", self.num
         if self.num._prec == 3:
             foo = self.num.reduce_vartype(var_type)
             if len(foo) == 1:
-                num_found, num_remain = self.num.reduce_vartype(var_type)[0]
+                num_found, num_remain = foo[0]
+#                num_found, num_remain = self.num.reduce_vartype(var_type)[0]
             else:
                 # meg: I have only a marginal idea of what I'm doing here!
+#                print "here: "
                 return create_sum([create_fraction(create_product([num_found, num_remain]), self.denom)
                                    for (num_found, num_remain) in foo]).expand().reduce_vartype(var_type)
         else:
-            num_found, num_remain = self.num.reduce_vartype(var_type)
+#            num_found, num_remain = self.num.reduce_vartype(var_type)
+            foo = self.num.reduce_vartype(var_type)
+            if len(foo) != 1:
+                raise RuntimeError("This case is not handled")
+            num_found, num_remain = foo[0]
+#            print "num found: ", num_found
+#            print "num rem: ", num_remain
 
 #        # TODO: Remove this test later, expansion should have taken care of
 #        # no denominator.
@@ -260,15 +270,25 @@ class Fraction(Expr):
         # If the denominator is not a Sum things are straightforward.
         denom_found = None
         denom_remain = None
+#        print "self.denom: ", self.denom
+#        print "self.denom._prec: ", self.denom._prec
         if self.denom._prec != 3: # sum
-            denom_found, denom_remain = self.denom.reduce_vartype(var_type)
+#            denom_found, denom_remain = self.denom.reduce_vartype(var_type)
+            foo = self.denom.reduce_vartype(var_type)
+            if len(foo) != 1:
+                raise RuntimeError("This case is not handled")
+            denom_found, denom_remain = foo[0]
 
         # If we have a Sum in the denominator, all terms must be reduced by
         # the same terms to make sense
         else:
             remain = []
             for m in self.denom.vrs:
-                d_found, d_remain = m.reduce_vartype(var_type)
+#                d_found, d_remain = m.reduce_vartype(var_type)
+                foo = m.reduce_vartype(var_type)
+                if len(foo) != 1:
+                    raise RuntimeError("This case is not handled")
+                d_found, d_remain = foo[0]
                 # If we've found a denom, but the new found is different from
                 # the one already found, terminate loop since it wouldn't make
                 # sense to reduce the fraction.
@@ -282,10 +302,10 @@ class Fraction(Expr):
                     if self.denom.t <= var_type:
                         if not num_found:
                             num_found = create_float(1)
-                        return (create_fraction(num_found, self.denom), num_remain)
+                        return [(create_fraction(num_found, self.denom), num_remain)]
                     else:
                         # The remainder is always a fraction
-                        return (num_found, create_fraction(num_remain, self.denom))
+                        return [(num_found, create_fraction(num_remain, self.denom))]
 
                 # Update denom found and add remainder.
                 denom_found = d_found
@@ -293,14 +313,15 @@ class Fraction(Expr):
 
             # There is always a non-const remainder if denominator was a sum.
             denom_remain = create_sum(remain)
-
+#        print "den f: ", denom_found
+#        print "den r: ", denom_remain
         # If we have found a common denominator, but no found numerator,
         # create a constant.
         # TODO: Add more checks to avoid expansion.
         found = None
         # There is always a remainder.
-
         remain = create_fraction(num_remain, denom_remain).expand()
+#        print "remain: ", remain
 
         if num_found:
             if denom_found:
@@ -312,8 +333,9 @@ class Fraction(Expr):
                 found = create_fraction(create_float(1), denom_found)
             else:
                 found = ()
-
-        return (found, remain)
+#        print "found: ", found
+#        print len((found, remain))
+        return [(found, remain)]
 
 # FFC quadrature modules.
 from floatvalue import FloatValue

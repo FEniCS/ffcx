@@ -159,6 +159,8 @@ def optimise_code(expr, ip_consts, geo_consts, trans_set):
 #        debug("ip_epxr\n" + str(ip_expr))
 #        print "\nbasis\n" + str(basis)
 #        print "ip_epxr\n" + repr(ip_expr)
+#        print "ip_epxr\n" + str(ip_expr)
+#        print "ip_epxr\n" + repr(ip_expr.expand())
 
         # If we have no basis (like functionals) create a const.
         if not basis:
@@ -197,6 +199,7 @@ def optimise_code(expr, ip_consts, geo_consts, trans_set):
         if not isinstance(ip_expressions, list):
             ip_expressions = [ip_expressions]
 
+        # Debug code to check that reduction didn't screw up anything
 #        vals = []
 #        for ip in ip_expressions:
 #            ip_dec, geo = ip

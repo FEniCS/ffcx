@@ -490,13 +490,24 @@ class Sum(Expr):
         part contains the leftover after division by 'found' such that:
         self = Sum([f*r for f,r in self.reduce_vartype(Type)])."""
         found = {}
+#        print "\nself: ", self
         # Loop members and reduce them by vartype.
         for v in self.vrs:
-            f, r = v.reduce_vartype(var_type)
-            if f in found:
-                found[f].append(r)
-            else:
-                found[f] = [r]
+#            print "v: ", v
+#            print "red: ", v.reduce_vartype(var_type)
+#            red = v.reduce_vartype(var_type)
+#            f, r = v.reduce_vartype(var_type)
+#            print "len red: ", len(red)
+#            print "red: ", red
+#            if len(red) == 2:
+#                f, r = red
+#            else:
+#                raise RuntimeError
+            for f, r in v.reduce_vartype(var_type):
+                if f in found:
+                    found[f].append(r)
+                else:
+                    found[f] = [r]
 
         # Create the return value.
         returns = []

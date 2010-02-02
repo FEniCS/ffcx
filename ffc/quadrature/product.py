@@ -383,7 +383,7 @@ class Product(Expr):
             found = found.pop()
         # We did not find any variables.
         else:
-            return ((), self)
+            return [((), self)]
 
         # Create appropriate object for remains.
         if len(remains) > 1:
@@ -392,10 +392,10 @@ class Product(Expr):
             remains = remains.pop()
         # We don't have anything left.
         else:
-            return (self, create_float(1))
+            return [(self, create_float(1))]
 
         # Return whatever we found.
-        return (found, remains)
+        return [(found, remains)]
 
 # FFC quadrature modules.
 from floatvalue import FloatValue

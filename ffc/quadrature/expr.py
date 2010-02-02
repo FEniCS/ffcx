@@ -111,6 +111,6 @@ class Expr(object):
         self = found*remain.
         Works for FloatValue and Symbol."""
         if self.t == var_type:
-            return (self, create_float(1))
-        return ((), self)
+            return [(self, create_float(1))]
+        return [((), self)]
 

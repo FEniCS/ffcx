@@ -76,9 +76,9 @@ class TestNotFinished(unittest.TestCase):
                              Product([Symbol('B0', BASIS), Symbol('B1', BASIS)]) ]) ])
         Er0 = E0.reduce_vartype(BASIS)
         Ex0 = E0.expand().reduce_vartype(BASIS)
+#        print "%s, red(BASIS): ('%s', '%s')" %(E0, Er0[0][0], Er0[0][1])
 #        print "%s, red(BASIS): ('%s', '%s')" %(E0, Ex0[0][0], Ex0[0][1])
-#        print "%s, red(BASIS): ('%s', '%s')" %(E0, Er0[0], Er0[1])
-        self.assertNotEqual( Ex0[0][1], Er0[1].expand() )
+        self.assertNotEqual( Ex0[0][1], Er0[0][1].expand() )
 
 if __name__ == "__main__":
 
