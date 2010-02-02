@@ -28,7 +28,7 @@ License:
 Dependencies:
 -------------
 
-  1. Python, version 2.5
+  1. Python, version 2.6
 
   2. The latest version of FIAT, UFC and UFL
 
@@ -36,10 +36,3 @@ Dependencies:
      FEniCS web page: http://www.fenics.org/.
 
   3. The Python NumPy module
-
-  4. FErari version, version 0.1.0 (optional)
-
-     This is only required to compile with optimization (flag -O).
-
-Anders Logg
-logg@simula.no
