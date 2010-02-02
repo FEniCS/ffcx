@@ -62,9 +62,9 @@ def generate_test_cases():
 
     # Generate form files for elements
     from elements import elements
-    #info("Generating form files for extra elements (%d elements)" % len(elements))
-    #for (i, element) in enumerate(elements):
-    #    open("X_Element%d.ufl" % i, "w").write("element = %s" % element)
+    info("Generating form files for extra elements (%d elements)" % len(elements))
+    for (i, element) in enumerate(elements):
+        open("X_Element%d.ufl" % i, "w").write("element = %s" % element)
 
     end()
 

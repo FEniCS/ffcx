@@ -12,24 +12,24 @@ Testing finite_element
 5_space_dimension = 4
 6_value_rank = 0
 7_evaluate_basis:_0 = 0.6815527
-8_evaluate_basis:_1 = -1.6395717
-9_evaluate_basis:_2 = 0.081163289
-10_evaluate_basis:_3 = 1.8768557
-11_evaluate_basis_all = 0.6815527 -1.6395717 0.081163289 1.8768557
+8_evaluate_basis:_1 = -1.639572
+9_evaluate_basis:_2 = 0.08116329
+10_evaluate_basis:_3 = 1.876856
+11_evaluate_basis_all = 0.6815527 -1.639572 0.08116329 1.876856
 12_evaluate_basis_derivatives_0_0 = 0.6815527
-13_evaluate_basis_derivatives_0_1 = 0.79946461 -2.1477246 0.45753227
+13_evaluate_basis_derivatives_0_1 = 0.7994646 -2.147725 0.4575323
 14_evaluate_basis_derivatives_0_2 = 0 0 0 0 0 0 0 0 0
-15_evaluate_basis_derivatives_1_0 = -1.6395717
-16_evaluate_basis_derivatives_1_1 = 0.91019715 1.1316622 2.1951814
+15_evaluate_basis_derivatives_1_0 = -1.639572
+16_evaluate_basis_derivatives_1_1 = 0.9101971 1.131662 2.195181
 17_evaluate_basis_derivatives_1_2 = 0 0 0 0 0 0 0 0 0
-18_evaluate_basis_derivatives_2_0 = 0.081163289
-19_evaluate_basis_derivatives_2_1 = -0.027987338 1.3689462 -1.5380871
+18_evaluate_basis_derivatives_2_0 = 0.08116329
+19_evaluate_basis_derivatives_2_1 = -0.02798734 1.368946 -1.538087
 20_evaluate_basis_derivatives_2_2 = 0 0 0 0 0 0 0 0 0
-21_evaluate_basis_derivatives_3_0 = 1.8768557
-22_evaluate_basis_derivatives_3_1 = -1.6816744 -0.35288392 -1.1146264
+21_evaluate_basis_derivatives_3_0 = 1.876856
+22_evaluate_basis_derivatives_3_1 = -1.681674 -0.3528839 -1.114626
 23_evaluate_basis_derivatives_3_2 = 0 0 0 0 0 0 0 0 0
-24_evaluate_basis_derivatives_all_0 = 0.6815527 -1.6395717 0.081163289 1.8768557
-25_evaluate_basis_derivatives_all_1 = 0.79946461 -2.1477246 0.45753227 0.91019715 1.1316622 2.1951814 -0.027987338 1.3689462 -1.5380871 -1.6816744 -0.35288392 -1.1146264
+24_evaluate_basis_derivatives_all_0 = 0.6815527 -1.639572 0.08116329 1.876856
+25_evaluate_basis_derivatives_all_1 = 0.7994646 -2.147725 0.4575323 0.9101971 1.131662 2.195181 -0.02798734 1.368946 -1.538087 -1.681674 -0.3528839 -1.114626
 26_evaluate_basis_derivatives_all_2 = 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
 27_evaluate_dof_0 = 0.1377
 28_evaluate_dof_1 = 0.353248
@@ -85,4 +85,4 @@ Testing dof_map
 
 Testing cell_integral
 ---------------------
-75_tabulate_tensor = 0.013645588
+75_tabulate_tensor = 0.01364559
