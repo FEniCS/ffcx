@@ -23,6 +23,7 @@ from ufl.common import Stack
 from ufl.algorithms import propagate_restrictions
 from ufl.algorithms.transformations import Transformer
 from ufl.algorithms.printing import tree_format
+from ufl.algorithms import strip_variables
 
 # FFC modules.
 from ffc.log import ffc_assert
@@ -682,6 +683,9 @@ class QuadratureTransformerBase(Transformer):
         # Initialise return values.
         code = []
         num_ops = 0
+
+        # Strip variables
+        integrand = strip_variables(integrand)
 
         # Only propagate restrictions if we have an interior integral.
         if interior:
