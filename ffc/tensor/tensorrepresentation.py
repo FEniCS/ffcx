@@ -14,15 +14,13 @@ __copyright__ = "Copyright (C) 2007-2010 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian B. Oelgaard, 2010.
-# Last changed: 2010-01-25
+# Last changed: 2010-02-02
 
 # UFL modules
-from ufl.classes import Form
-from ufl.classes import Measure
-from ufl.classes import Integral
+from ufl.classes import Form, Measure, Integral
 
 # FFC modules
-from ffc.log import info
+from ffc.log import info, error
 
 # FFC tensor representation modules
 from ffc.tensor.monomialextraction import extract_monomial_form
