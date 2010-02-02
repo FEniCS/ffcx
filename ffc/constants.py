@@ -4,7 +4,7 @@ __copyright__ = "Copyright (C) 2005-2010 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian B. Oelgaard, 2009
-# Last changed: 2010-02-01
+# Last changed: 2010-02-02
 
-FFC_VERSION = "0.9.0-beta"
-UFC_VERSION = "1.2"
+FFC_VERSION = "0.9.0"
+UFC_VERSION = "1.4"
