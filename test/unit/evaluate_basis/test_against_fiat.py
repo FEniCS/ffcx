@@ -36,9 +36,10 @@ single_elements = [
                     {"family": "Brezzi-Douglas-Marini",\
                       "shapes": ["triangle", "tetrahedron"],\
                       "degrees": [1, 2, 3]},\
-                    {"family": "Brezzi-Douglas-Fortin-Marini",\
-                      "shapes": ["triangle", "tetrahedron"],\
-                      "degrees": [1, 2, 3]},\
+# Not supported in new FIAT
+#                    {"family": "Brezzi-Douglas-Fortin-Marini",\
+#                      "shapes": ["triangle", "tetrahedron"],\
+#                      "degrees": [1, 2, 3]},\
                     {"family": "Nedelec 1st kind H(curl)",\
                       "shapes": ["triangle", "tetrahedron"],\
                       "degrees": [1, 2, 3]}
@@ -226,8 +227,8 @@ def get_ffc_values(ufl_element):
         ffc_values[n] = values
     return ffc_values
 
-def verify_element(ufl_element):
-    info("\nVerifying element: " + str(ufl_element))
+def verify_element(num_elements, i, ufl_element):
+    info("\nVerifying element %d of %d: %s" % (i, num_elements, str(ufl_element)))
     error = compile_element(ufl_element, ffc_fail, log_file)
     if error:
         return 1
@@ -262,21 +263,21 @@ def main(debug_level):
         os.mkdir("tmp")
     os.chdir("tmp")
 
-    # Evaluate basis for single elements
-    num_tests = 0
-    msg = "Computing evaluate_basis for single elements"
-    info("\n" + msg + "\n" + len(msg)*"-")
+    # Create list of all elements that has to be tested.
+    elements = []
     for element in single_elements:
         for shape in element["shapes"]:
             for degree in element["degrees"]:
-                ufl_element = FiniteElement(element["family"], shape, degree)
-                num_tests += verify_element(ufl_element)
+                elements.append(FiniteElement(element["family"], shape, degree))
+    # Add the mixed elements
+    elements += mixed_elements
+    num_elements = len(elements)
 
-    # Evaluate basis for mixed elements
-    msg = "Computing evaluate_basis for mixed elements"
-    info("\n" + msg + "\n" + len(msg)*"-")
-    for ufl_element in mixed_elements:
-        num_tests += verify_element(ufl_element)
+    # Test all elements.
+    num_tests = 0
+    info("\nVerifying evaluate_basis and evaluate_basis_derivatives for elements.")
+    for i, ufl_element in enumerate(elements):
+        num_tests += verify_element(num_elements, i + 1, ufl_element)
 
     # print results
     error = print_results(num_tests, ffc_fail, gcc_fail, run_fail, dif_cri, dif_acc, correct)

@@ -10,7 +10,7 @@ import commands
 import numpy
 import os
 
-tol = 1e-14
+tol = 1e-8
 crit_tol = 1e-8
 
 def xcomb(items, n):

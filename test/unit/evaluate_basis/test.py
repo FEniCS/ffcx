@@ -17,7 +17,6 @@ class EvaluateBasisTests(unittest.TestCase):
         "Test evaluate basis agains FIAT.FiniteElement.tabulate()."
 
         error = fiat_main(INFO)
-        #error = fiat_main(CRITICAL)
         self.assertEqual(error, 0, "Errors while testing evaluate_basis against FIAT, see fiat_errors.log for details")
 
 if __name__ == "__main__":
