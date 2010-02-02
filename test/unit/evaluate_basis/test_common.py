@@ -142,9 +142,9 @@ def verify_values(ufl_element, ref_values, ffc_values, dif_cri, dif_acc, correct
     for deriv_order in range(num_tests):
         s = ""
         if deriv_order == 0:
-            s = "  evaluate_basis()"
+            s = "  evaluate_basis"
         else:
-            s = "  evaluate_basis_derivatives(), order = %d" % deriv_order
+            s = "  evaluate_basis_derivatives, order = %d" % deriv_order
         e = abs(ffc_values[deriv_order] - ref_values[deriv_order])
         error = e.max()
         if error > tol:
