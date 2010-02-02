@@ -236,8 +236,6 @@ def main(args):
     # Enter output directory
     os.chdir(output_directory)
 
-    # FIXME: Add option -fast
-
     # Generate test cases
     generate_test_cases()
 
@@ -246,9 +244,12 @@ def main(args):
     validate_code()
 
     # Build, run and validate programs
-    build_programs()
-    run_programs()
-    validate_programs()
+    if "--fast" in args or "-f" in args:
+        info("Skipping program validation")
+    else:
+        build_programs()
+        run_programs()
+        validate_programs()
 
     # Print results
     if logfile is None:
