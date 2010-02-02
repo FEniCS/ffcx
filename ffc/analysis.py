@@ -48,9 +48,6 @@ def analyze_forms(forms, object_names, parameters):
     # Extract unique elements
     unique_elements = []
     for (form, form_data) in form_and_data:
-        form = strip_variables(form)
-        print "Strip"
-        print form
         for element in form_data.unique_sub_elements:
             if not element in unique_elements:
                 unique_elements.append(element)
