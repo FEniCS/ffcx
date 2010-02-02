@@ -22,6 +22,7 @@ from ufl.algorithms import estimate_max_polynomial_degree
 from ufl.algorithms import estimate_total_polynomial_degree
 from ufl.algorithms import extract_unique_elements
 from ufl.algorithms import sort_elements
+from ufl.algorithms import strip_variables
 
 # FFC modules
 from ffc.log import log, info, begin, end, warning, debug, error, ffc_assert
@@ -47,6 +48,9 @@ def analyze_forms(forms, object_names, parameters):
     # Extract unique elements
     unique_elements = []
     for (form, form_data) in form_and_data:
+        form = strip_variables(form)
+        print "Strip"
+        print form
         for element in form_data.unique_sub_elements:
             if not element in unique_elements:
                 unique_elements.append(element)
@@ -103,6 +107,9 @@ def _get_nested_elements(element):
 
 def _analyze_form(form, object_names, parameters):
     "Analyze form, returning preprocessed form and form data."
+
+    # Strip variables
+    form = strip_variables(form)
 
     # Get name before pre-processing.
     if id(form) in object_names:
