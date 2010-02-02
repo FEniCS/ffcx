@@ -9,7 +9,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Johan Hake, 2008-2009
 # Modified by Ilmar Wilbers, 2008
 # Modified by Kristian B. Oelgaard, 2009
-# Last changed: 2010-02-01
+# Last changed: 2010-02-02
 
 # Python modules
 import os
@@ -60,7 +60,7 @@ def jit(object, parameters=None):
     else:
         return jit_form(object, parameters)
 
-def jit_form(form, parameters=None):
+def jit_form(form, parameters=None, use_form_data_cache=True):
     "Just-in-time compile the given form"
 
     # Check that we get a Form
@@ -92,7 +92,7 @@ def jit_form(form, parameters=None):
         compiled_form = getattr(module, module.__name__ + "_form_0")()
 
         # Get form data from in-memory cache or create it
-        if id(form) in _form_data_cache:
+        if id(form) in _form_data_cache and use_form_data_cache:
             form_data = _form_data_cache[id(form)]
         else:
             form_data = FormData(preprocessed_form)
@@ -127,12 +127,21 @@ def jit_form(form, parameters=None):
     compiled_form = getattr(module, module.__name__ + "_form_0")()
 
     # Store form data in cache
-    _form_data_cache[id(form)] = form_data
+    if use_form_data_cache:
+        _form_data_cache[id(form)] = form_data
 
     return compiled_form, module, form_data
 
 def jit_element(element, parameters=None):
     "Just-in-time compile the given element"
+
+    # FIXME: We need a new solution for this. The creation
+    # FIXME: of a dummy form leads to problems, in particular
+    # FIXME: we must make sure not to use the form_data cache
+    # FIXME: since it may lead to reuse of the dummy form
+    # FIXME: in a later proper form and then the arguments (v)
+    # FIXME: is a pure UFL basis function (without a DOLFIN
+    # FIXME: FunctionSpace)
 
     # Check that we get an element
     if not isinstance(element, FiniteElementBase):
@@ -145,7 +154,7 @@ def jit_element(element, parameters=None):
     form = v*dx
 
     # Compile form
-    (compiled_form, module, form_data) = jit_form(form, parameters)
+    (compiled_form, module, form_data) = jit_form(form, parameters, use_form_data_cache=False)
 
     return _extract_element_and_dofmap(module, form_data)
 
