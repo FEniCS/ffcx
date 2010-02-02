@@ -275,7 +275,8 @@ def main(debug_level):
 
     # Test all elements.
     num_tests = 0
-    info("\nVerifying evaluate_basis and evaluate_basis_derivatives for elements.")
+    msg = "Verifying evaluate_basis and evaluate_basis_derivatives for elements"
+    info("\n" + msg + "\n" + len(msg)*"-")
     for i, ufl_element in enumerate(elements):
         num_tests += verify_element(num_elements, i + 1, ufl_element)
 
