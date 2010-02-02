@@ -21,9 +21,9 @@ if platform.system() == "Windows" or "bdist_wininst" in sys.argv:
     scripts.extend(batch_files)
 
 setup(name = "FFC",
-      version = "0.7.1",
+      version = "0.9.0",
       description = "The FEniCS Form Compiler",
-      author = "Anders Logg and Kristian Oelgaard et al.",
+      author = "Anders Logg, Kristian Oelgaard, Marie Rognes et al.",
       author_email = "ffc@lists.launchpad.net",
       url = "http://www.fenics.org/ffc/",
       packages = ["ffc", "ffc.quadrature", "ffc.tensor"],
