@@ -257,7 +257,8 @@ class JITTests(unittest.TestCase):
 
         # FIXME: Use local cache: cache_dir argument to instant.build_module
         #options = {"log_level": INFO + 5}
-        options = {"log_level": 5}
+        #options = {"log_level": 5}
+        options = {"log_level": WARNING}
 
         # Define two forms with the same signatures
         element = FiniteElement("Lagrange", "triangle", 1)

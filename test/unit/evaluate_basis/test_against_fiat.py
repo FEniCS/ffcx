@@ -3,7 +3,7 @@ __date__ = "2010-01-29"
 __copyright__ = "Copyright (C) 2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-02-01
+# Last changed: 2010-02-02
 
 from cppcode import evaluate_basis_code_fiat
 from ufl import FiniteElement, MixedElement
@@ -290,4 +290,3 @@ def main(debug_level):
 if __name__ == "__main__":
     # sys.exit(main(sys.argv[1:]))
     sys.exit(main(INFO))
-

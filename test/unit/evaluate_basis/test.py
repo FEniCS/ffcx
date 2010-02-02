@@ -9,14 +9,15 @@ __license__  = "GNU GPL version 3 or any later version"
 
 import unittest
 from test_against_fiat import main as fiat_main
-from ffc.log import CRITICAL
+from ffc.log import CRITICAL, INFO
 
 class EvaluateBasisTests(unittest.TestCase):
 
     def testAgainsFiat(self):
         "Test evaluate basis agains FIAT.FiniteElement.tabulate()."
 
-        error = fiat_main(CRITICAL)
+        error = fiat_main(INFO)
+        #error = fiat_main(CRITICAL)
         self.assertEqual(error, 0, "Errors while testing evaluate_basis against FIAT, see fiat_errors.log for details")
 
 if __name__ == "__main__":
