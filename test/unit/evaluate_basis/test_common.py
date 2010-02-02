@@ -3,9 +3,9 @@ __date__ = "2010-01-29"
 __copyright__ = "Copyright (C) 2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-02-01
+# Last changed: 2010-02-02
 
-from ffc.log import info, info_red, info_blue, info_green
+from ffc.log import info, info_red, info_blue, info_green, debug
 import commands
 import numpy
 import os
@@ -145,23 +145,22 @@ def verify_values(ufl_element, ref_values, ffc_values, dif_cri, dif_acc, correct
             s = "  evaluate_basis()"
         else:
             s = "  evaluate_basis_derivatives(), order = %d" % deriv_order
-        info(s)
         e = abs(ffc_values[deriv_order] - ref_values[deriv_order])
         error = e.max()
         if error > tol:
             if error >  crit_tol:
-                m = "  error: %s (crit_tol: %s)" % (str(error), str(crit_tol))
+                m = "%s failed: error = %s (crit_tol: %s)" % (s, str(error), str(crit_tol))
                 info_red(m)
                 dif_cri.append(str(ufl_element))
                 s = s + "\n" + m
             else:
-                m = "  error: %s (tol: %s)" % (str(error), str(tol))
+                m = "%s ok: error = %s (tol: %s)" % (s, str(error), str(tol))
                 info_blue(m)
                 dif_acc.append(str(ufl_element))
                 s = s + "\n" + m
             errors.append(s)
         else:
-            info_green("  OK")
+            info_green("%s OK" % s)
             correct.append(str(ufl_element))
     # Log errors if any
     if len(errors) > 1:

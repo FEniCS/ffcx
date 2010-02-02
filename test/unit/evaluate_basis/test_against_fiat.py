@@ -9,7 +9,7 @@ from cppcode import evaluate_basis_code_fiat
 from ufl import FiniteElement, MixedElement
 from ffc.fiatinterface import create_element, reference_cell
 from ffc.mixedelement import MixedElement as FFCMixedElement
-from ffc.log import info, error
+from ffc.log import info, error, debug
 import numpy
 import sys, os, commands, numpy, shutil
 from test_common import xcomb, compile_element, print_results, compile_gcc_code,\
@@ -243,7 +243,7 @@ def verify_element(ufl_element):
     ffc_values = get_ffc_values(ufl_element)
     if ffc_values is None:
         return 1
-    info("  time to compute FFC values: %f" % (time.time() - t))
+    debug("  time to compute FFC values: %f" % (time.time() - t))
 
     # Compare values and return number of tests.
     return verify_values(ufl_element, fiat_values, ffc_values, dif_cri, dif_acc, correct, log_file)
@@ -264,7 +264,8 @@ def main(debug_level):
 
     # Evaluate basis for single elements
     num_tests = 0
-    info("\nComputing evaluate_basis for single elements")
+    msg = "Computing evaluate_basis for single elements"
+    info("\n" + msg + "\n" + len(msg)*"-")
     for element in single_elements:
         for shape in element["shapes"]:
             for degree in element["degrees"]:
@@ -272,7 +273,8 @@ def main(debug_level):
                 num_tests += verify_element(ufl_element)
 
     # Evaluate basis for mixed elements
-    info("\nComputing evaluate_basis for mixed elements")
+    msg = "Computing evaluate_basis for mixed elements"
+    info("\n" + msg + "\n" + len(msg)*"-")
     for ufl_element in mixed_elements:
         num_tests += verify_element(ufl_element)
 
