@@ -52,7 +52,7 @@ def compute_integral_ir(domain_type, domain_id, integrals, metadata, form_data, 
     # Compute representation of cell tensor
     num_facets = form_data.num_facets
     quadrature_degree = metadata["quadrature_degree"]
-    if domain_type == "cell":
+    if domain_type == "cell" or domain_type == "surface":
 
         # Compute sum of tensor representations
         ir["AK"] = _compute_terms(monomial_form, None, None, domain_type, quadrature_degree)

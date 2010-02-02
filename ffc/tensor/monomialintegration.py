@@ -11,7 +11,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Garth N. Wells 2006
 # Modified by Marie E. Rognes (meg@math.uio.no) 2008
 # Modified by Kristian B. Oelgaard, 2009
-# Last changed: 2010-01-31
+# Last changed: 2010-02-02
 
 # Python modules
 import numpy
@@ -72,7 +72,7 @@ def _init_quadrature(arguments, domain_type, quadrature_degree):
     num_points = (quadrature_degree + 2) / 2
 
     # Create quadrature rule and get points and weights
-    if domain_type == Measure.CELL:
+    if domain_type in (Measure.CELL, Measure.SURFACE):
         (points, weights) = create_quadrature(cell_shape, num_points)
     else:
         (points, weights) = create_quadrature(facet_shape, num_points)
@@ -97,7 +97,7 @@ def _init_table(arguments, domain_type, points, facet0, facet1):
     table = {}
     for (ufl_element, order) in num_derivatives.items():
         fiat_element = create_element(ufl_element)
-        if domain_type == Measure.CELL:
+        if domain_type in (Measure.CELL, Measure.SURFACE):
             table[(ufl_element, None)] = fiat_element.tabulate(order, points)
         elif domain_type == Measure.EXTERIOR_FACET:
             x = map_facet_points(points, facet0)
