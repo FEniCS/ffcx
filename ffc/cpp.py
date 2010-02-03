@@ -324,47 +324,56 @@ def _tabulate_tensor(vals):
     else:
         error("Not an N-dimensional array:\n%s" % tensor)
 
-# Functions
-def inner_product(a, b, format):
-    """Generate code for inner product of a and b, where a is a list
-    of floating point numbers and b is a list of symbols."""
+def _generate_jacobian(cell_dimension, integral_type):
+    "Generate code for computing jacobian"
 
-    # Check input
-    if not len(a) == len(b):
-        error("Dimensions don't match for inner product.")
+    # Choose space dimension
+    if cell_dimension == 1:
+        jacobian = jacobian_1D
+        facet_determinant = facet_determinant_1D
+    elif cell_dimension == 2:
+        jacobian = jacobian_2D
+        facet_determinant = facet_determinant_2D
+    else:
+        jacobian = jacobian_3D
+        facet_determinant = facet_determinant_3D
 
-    # Prefetch formats to speed up code generation
-    format_add            = format["addition"]
-    format_subtract       = format["subtract"]
-    format_multiply       = format["multiply"]
-    format_floating_point = format["floating point"]
-    format_epsilon        = format["epsilon"]
+    # Check if we need to compute more than one Jacobian
+    if integral_type == "cell":
+        code  = jacobian % {"restriction":  ""}
+        code += "\n\n"
+        code += scale_factor
+    elif integral_type == "exterior facet":
+        code  = jacobian % {"restriction":  ""}
+        code += "\n\n"
+        code += facet_determinant % {"restriction": "", "facet" : "facet"}
+    elif integral_type == "interior facet":
+        code  = jacobian % {"restriction": choose_map["+"]}
+        code += "\n\n"
+        code += jacobian % {"restriction": choose_map["-"]}
+        code += "\n\n"
+        code += facet_determinant % {"restriction": choose_map["+"], "facet": "facet0"}
 
-    # Add all entries
-    value = None
-    for i in range(len(a)):
+    return code
 
-        # Skip terms where a is almost zero
-        if abs(a[i]) <= format_epsilon:
-            continue
+def _generate_normal(geometric_dimension, domain_type, reference_normal=False):
+    "Generate code for computing normal"
 
-        # Fancy handling of +, -, +1, -1
-        if value:
-            if abs(a[i] - 1.0) < format_epsilon:
-                value = format_add([value, b[i]])
-            elif abs(a[i] + 1.0) < format_epsilon:
-                value = format_subtract([value, b[i]])
-            elif a[i] > 0.0:
-                value = format_add([value, format_multiply([format_floating_point(a[i]), b[i]])])
-            else:
-                value = format_subtract([value, format_multiply([format_floating_point(-a[i]), b[i]])])
-        else:
-            if abs(a[i] - 1.0) < format_epsilon or abs(a[i] + 1.0) < format_epsilon:
-                value = b[i]
-            else:
-                value = format_multiply([format_floating_point(a[i]), b[i]])
+    # Choose snippets
+    direction = normal_direction[geometric_dimension]
+    normal = facet_normal[geometric_dimension]
 
-    return value or format_floating_point(0.0)
+    # Choose restrictions
+    if domain_type == "exterior_facet":
+        code = direction % {"restriction": "", "facet" : "facet"}
+        code += normal % {"direction" : "", "restriction": ""}
+    elif domain_type == "interior_facet":
+        code = direction % {"restriction": choose_map["+"], "facet": "facet0"}
+        code += normal % {"direction" : "", "restriction": choose_map["+"]}
+        code += normal % {"direction" : "!", "restriction": choose_map["-"]}
+    else:
+        error("Unsupported domain_type: %s" % str(domain_type))
+    return code
 
 # ---- Indentation control ----
 class IndentControl:
@@ -387,20 +396,52 @@ class IndentControl:
         "Indent string input string by size"
         return indent(a, self.size)
 
+# Functions.
 def indent(block, num_spaces):
     "Indent each row of the given string block with n spaces."
     indentation = " " * num_spaces
     return indentation + ("\n" + indentation).join(block.split("\n"))
 
+def count_ops(code):
+    "Count the number of operations in code (multiply-add pairs)."
+    num_add = code.count("+") + code.count("-")
+    num_multiply = code.count("*") + code.count("/")
+    return (num_add + num_multiply) / 2
 
-# FIXME: KBO: temporary hack to get dictionary working.
-#from parameters import FFC_PARAMETERS
-#import platform
-#parameters=FFC_PARAMETERS.copy()
+def set_float_formatting(precision):
+    "Set floating point formatting based on precision."
 
-## Old dictionary, move the stuff we need to the new dictionary above
-#transform_parameters = {"JINV": lambda m, j, k: "Jinv%s_%d%d" % (m, j, k),
-#                     "J": lambda m, j, k: "J%s_%d%d" % (m, k, j)}
+    # Options for float formatting
+    f1 = "%%.%df" % precision
+    f2 = "%%.%de" % precision
+
+    # Regular float formatting
+    def floating_point_regular(v):
+        if abs(v) < 100.0:
+            return f1 % v
+        else:
+            return f2 % v
+
+    # Special float formatting on Windows (remove extra leading zero)
+    def floating_point_windows(v):
+        return floating_point(v).replace("e-0", "e-").replace("e+0", "e+")
+
+    # Set float formatting
+    if platform.system() == "Windows":
+        format["float"] = floating_point_windows
+    else:
+        format["float"] = floating_point_regular
+
+    # FIXME: KBO: Remove once we agree on the format of 'f1'
+    format["floating point"] = format["float"]
+
+    # Set machine precision
+    format["epsilon"] = 10.0*eval("1e-%s" % precision)
+
+def set_exception_handling(convert_exceptions_to_warnings):
+    "Set handling of exceptions."
+    if convert_exceptions_to_warnings:
+        format["exception"] = format["warning"]
 
 # Declarations to examine
 types = [["double"],
@@ -488,12 +529,6 @@ def remove_unused(code, used_set=set()):
             removed_lines += [declaration_line]
     return "\n".join([line for line in lines if not line is None])
 
-def count_ops(code):
-    "Count the number of operations in code (multiply-add pairs)."
-    num_add = code.count("+") + code.count("-")
-    num_multiply = code.count("*") + code.count("/")
-    return (num_add + num_multiply) / 2
-
 def _variable_in_line(variable_name, line):
     "Check if variable name is used in line"
     if not variable_name in line:
@@ -503,88 +538,3 @@ def _variable_in_line(variable_name, line):
     delimiter = "[" + ",".join(["\\" + c for c in special_characters]) + "]"
     return not re.search(delimiter + variable_name + delimiter, line) == None
 
-def _generate_jacobian(cell_dimension, integral_type):
-    "Generate code for computing jacobian"
-
-    # Choose space dimension
-    if cell_dimension == 1:
-        jacobian = jacobian_1D
-        facet_determinant = facet_determinant_1D
-    elif cell_dimension == 2:
-        jacobian = jacobian_2D
-        facet_determinant = facet_determinant_2D
-    else:
-        jacobian = jacobian_3D
-        facet_determinant = facet_determinant_3D
-
-    # Check if we need to compute more than one Jacobian
-    if integral_type == "cell":
-        code  = jacobian % {"restriction":  ""}
-        code += "\n\n"
-        code += scale_factor
-    elif integral_type == "exterior facet":
-        code  = jacobian % {"restriction":  ""}
-        code += "\n\n"
-        code += facet_determinant % {"restriction": "", "facet" : "facet"}
-    elif integral_type == "interior facet":
-        code  = jacobian % {"restriction": choose_map["+"]}
-        code += "\n\n"
-        code += jacobian % {"restriction": choose_map["-"]}
-        code += "\n\n"
-        code += facet_determinant % {"restriction": choose_map["+"], "facet": "facet0"}
-
-    return code
-
-def _generate_normal(geometric_dimension, domain_type, reference_normal=False):
-    "Generate code for computing normal"
-
-    # Choose snippets
-    direction = normal_direction[geometric_dimension]
-    normal = facet_normal[geometric_dimension]
-
-    # Choose restrictions
-    if domain_type == "exterior_facet":
-        code = direction % {"restriction": "", "facet" : "facet"}
-        code += normal % {"direction" : "", "restriction": ""}
-    elif domain_type == "interior_facet":
-        code = direction % {"restriction": choose_map["+"], "facet": "facet0"}
-        code += normal % {"direction" : "", "restriction": choose_map["+"]}
-        code += normal % {"direction" : "!", "restriction": choose_map["-"]}
-    else:
-        error("Unsupported domain_type: %s" % str(domain_type))
-    return code
-
-def set_float_formatting(precision):
-    "Set floating point formatting based on precision."
-
-    # Options for float formatting
-    f1 = "%%.%df" % precision
-    f2 = "%%.%de" % precision
-
-    # Regular float formatting
-    def floating_point_regular(v):
-        if abs(v) < 100.0:
-            return f1 % v
-        else:
-            return f2 % v
-
-    # Special float formatting on Windows (remove extra leading zero)
-    def floating_point_windows(v):
-        return floating_point(v).replace("e-0", "e-").replace("e+0", "e+")
-
-    # Set float formatting
-    if platform.system() == "Windows":
-        format["float"] = floating_point_windows
-    else:
-        format["float"] = floating_point_regular
-
-    # FIXME: KBO: Remove once we agree on the format of 'f1'
-    format["floating point"] = format["float"]
-
-    # Set machine precision
-    format["epsilon"] = 10.0*eval("1e-%s" % precision)
-
-def set_exception_handling(convert_exceptions_to_warnings):
-    "Set handling of exceptions."
-    if convert_exceptions_to_warnings:
-        format["exception"] = format["warning"]

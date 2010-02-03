@@ -16,7 +16,6 @@ import numpy
 from ffc.log import error, debug_code, ffc_assert
 from ffc.cpp import remove_unused, format
 from ffc.cpp import IndentControl
-from ffc.cpp import inner_product
 from ffc.quadrature.quadraturegenerator_utils import generate_loop
 from ffc.quadrature.symbolics import create_float
 from ffc.quadrature.symbolics import create_symbol
