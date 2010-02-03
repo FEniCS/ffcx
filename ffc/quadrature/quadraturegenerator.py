@@ -15,7 +15,7 @@ from ufl.algorithms.printing import tree_format
 
 ## FFC modules.
 from ffc.log import info, debug, ffc_assert
-from ffc.cpp import tabulate_matrix, tabulate_vector
+from ffc.cpp import tabulate_matrix
 from ffc.cpp import IndentControl
 from ffc.cpp import format
 from ffc.cpp import remove_unused, choose_map
@@ -256,6 +256,7 @@ def _tabulate_weights(transformer, Indent, format):
     f_component =  format["component"]
     f_group    = format["grouping"]
     f_assign    = format["assign"]
+    f_tensor    = format["tensor"]
 
     code = ["", Indent.indent(format["comment"]("Array of quadrature weights"))]
 
@@ -272,7 +273,7 @@ def _tabulate_weights(transformer, Indent, format):
         value = f_float(weights[0])
         if len(weights) > 1:
             name += f_component("", str(num_points))
-            value = tabulate_vector(weights, format)
+            value = f_tensor(weights)
         code += [f_assign(Indent.indent(name), value)]
 
         # Tabulate the quadrature points (uncomment for different parameters).

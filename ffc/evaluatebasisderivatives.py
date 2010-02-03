@@ -18,7 +18,7 @@ from ffc.log import error, ffc_assert
 from ffc.evaluatebasis import _map_dof
 from ffc.evaluatebasis import _compute_basisvalues
 from ffc.evaluatebasis import _tabulate_coefficients
-from ffc.cpp import tabulate_matrix, IndentControl, remove_unused, tabulate_vector
+from ffc.cpp import tabulate_matrix, IndentControl, remove_unused
 from ffc.quadrature.quadraturegenerator_utils import generate_loop
 #from ffc.quadrature.symbolics import set_format
 

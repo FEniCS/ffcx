@@ -13,7 +13,7 @@ __license__  = "GNU GPL version 3 or any later version"
 import re, numpy, platform
 
 # FFC modules
-from ffc.log import debug
+from ffc.log import debug, error
 
 # FIXME: AL: This files needs cleaning up!
 
@@ -26,6 +26,7 @@ from ffc.log import debug
 # Formatting rules
 # FIXME: KBO: format is a builtin_function, i.e., we should use a different name.
 format = {}
+choose_map = {None: "", "+": "0", "-": 1}
 
 # Program flow
 format.update({"return":      lambda v: "return %s;" % str(v),
@@ -112,6 +113,10 @@ format.update({"cell coordinates": cell_coordinates,
                "header_c": header_c,
                "footer": footer})
 
+# UFC function arguments (names)
+
+# UFC formatting used in evaluate_basis and evaluate_basis_derivatives.
+
 # TODO: Stuff from format_old used by KBO, should be moved around and possibly renamed.
 format.update({# Loop indices
                "integration points": "ip",
@@ -156,6 +161,8 @@ format.update({# Loop indices
 #               "delete": "delete ",
                "delete pointer": lambda v, w: "delete [] %s%s;" % (v, w),
                "separator": ", ",
+               "list separator": ", ",
+               "tabulate tensor": lambda m: _tabulate_tensor(m),
                "block separator": ",\n",
                "new line": "\\\n"
 })
@@ -176,11 +183,10 @@ format.update({"classname finite_element": \
 
 # Misc
 format.update({"bool":    lambda v: {True: "true", False: "false"}[v],
-#               "float":   lambda v: "%f" % v,
-               "str":     lambda v: "%s" % str(v),
-#               "epsilon": FFC_OPTIONS["epsilon"]
-})
+               "str":     lambda v: "%s" % str(v)})
 
+
+# Helper functions for formatting.
 def _declaration(type, name, value=None):
     if value is None:
         return "%s %s;\n" % (type, name);
@@ -191,7 +197,6 @@ def _component(var, k):
         k = [k]
     return "%s" % var + "".join("[%s]" % str(i) for i in k)
 
-# Utility functions for arithmetic operations
 def _multiply(factors):
     """
     Generate string multiplying a list of numbers or strings.  If a
@@ -261,7 +266,6 @@ def _transform(type, j, k, r):
     return (map_name + "_%d%d") % (j, k)
 
 # FIXME: Input to _generate_switch should be a list of tuples (i, case)
-
 def _generate_switch(variable, cases, default=None, numbers=None):
     "Generate switch statement from given variable and cases"
 
@@ -291,6 +295,36 @@ def _generate_switch(variable, cases, default=None, numbers=None):
 
     return code
 
+def _tabulate_tensor(vals):
+    "Tabulate a multidimensional tensor. (Replace tabulate_matrix and tabulate_vector)."
+
+    # Prefetch formats to speed up code generation
+    f_block     = format["block"]
+    f_list_sep  = format["list separator"]
+    f_block_sep = format["block separator"]
+    # FIXME: KBO: Change this to "float" once issue in set_float_formatting is fixed.
+    f_float     = format["floating point"]
+    f_epsilon   = format["epsilon"]
+
+    # Create numpy array and get shape.
+    tensor = numpy.array(vals)
+    shape = numpy.shape(tensor)
+    if len(shape) == 1:
+        # Create zeros if value is smaller than tolerance.
+        values = []
+        for v in tensor:
+            if abs(v) < f_epsilon:
+                values.append(f_float(0.0))
+            else:
+                values.append(f_float(v))
+        # Format values.
+        return f_block(f_list_sep.join(values))
+    elif len(shape) > 1:
+        return f_block(f_block_sep.join([_tabulate_tensor(tensor[i]) for i in range(shape[0])]))
+    else:
+        error("Not an N-dimensional array:\n%s" % tensor)
+
+# Functions
 def inner_product(a, b, format):
     """Generate code for inner product of a and b, where a is a list
     of floating point numbers and b is a list of symbols."""
@@ -369,32 +403,6 @@ def tabulate_matrix(matrix, format):
 
     return value
 
-def tabulate_vector(vector, format):
-    "Function that tabulates the values of a vector, into a one dimensional array."
-
-    # Check input
-    if not len(numpy.shape(vector)) == 1:
-        error("This is not a vector.")
-
-    # Prefetch formats to speed up code generation
-    format_block          = format["block"]
-    format_separator      = format["separator"]
-    format_floating_point = format["floating point"]
-    format_epsilon        = format["epsilon"]
-
-    # Get size of matrix
-    num_cols = numpy.shape(vector)[0]
-
-    # Set vector entries equal to zero if their absolute values is smaller than format_epsilon
-    for i in range(num_cols):
-        if abs(vector[i]) < format_epsilon:
-            vector[i] = 0.0
-
-    value = format_block(format_separator.join([format_floating_point(val) for val in vector]))
-
-    return value
-
-
 # ---- Indentation control ----
 class IndentControl:
     "Class to control the indentation of code"
@@ -422,19 +430,14 @@ def indent(block, num_spaces):
     return indentation + ("\n" + indentation).join(block.split("\n"))
 
 
-
-# FIXME: Major cleanup needed, remove as much as possible
-#from codesnippets import *
-
 # FIXME: KBO: temporary hack to get dictionary working.
-from parameters import FFC_PARAMETERS
-import platform
-parameters=FFC_PARAMETERS.copy()
+#from parameters import FFC_PARAMETERS
+#import platform
+#parameters=FFC_PARAMETERS.copy()
 
-# Old dictionary, move the stuff we need to the new dictionary above
-choose_map = {None: "", "+": "0", "-": 1}
-transform_parameters = {"JINV": lambda m, j, k: "Jinv%s_%d%d" % (m, j, k),
-                     "J": lambda m, j, k: "J%s_%d%d" % (m, k, j)}
+## Old dictionary, move the stuff we need to the new dictionary above
+#transform_parameters = {"JINV": lambda m, j, k: "Jinv%s_%d%d" % (m, j, k),
+#                     "J": lambda m, j, k: "J%s_%d%d" % (m, k, j)}
 
 # Declarations to examine
 types = [["double"],
