@@ -366,43 +366,6 @@ def inner_product(a, b, format):
 
     return value or format_floating_point(0.0)
 
-
-def tabulate_matrix(matrix, format):
-    "Function that tabulates the values of a matrix, into a two dimensional array."
-
-    # Check input
-    if not len(numpy.shape(matrix)) == 2:
-        error("This is not a matrix.")
-
-    # Prefetch formats to speed up code generation
-    format_block          = format["block"]
-    format_separator      = format["separator"]
-    format_floating_point = format["floating point"]
-    format_epsilon        = format["epsilon"]
-
-    # Get size of matrix
-    num_rows = numpy.shape(matrix)[0]
-    num_cols = numpy.shape(matrix)[1]
-
-    # Set matrix entries equal to zero if their absolute values is smaller than format_epsilon
-    for i in range(num_rows):
-        for j in range(num_cols):
-            if abs(matrix[i][j]) < format_epsilon:
-                matrix[i][j] = 0.0
-
-    # Generate array of values
-    value = format["new line"] + format["block begin"]
-    rows = []
-
-    for i in range(num_rows):
-        rows += [format_block(format_separator.join([format_floating_point(matrix[i,j])\
-                 for j in range(num_cols)]))]
-
-    value += format["block separator"].join(rows)
-    value += format["block end"]
-
-    return value
-
 # ---- Indentation control ----
 class IndentControl:
     "Class to control the indentation of code"

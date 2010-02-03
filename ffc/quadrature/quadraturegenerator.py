@@ -15,7 +15,6 @@ from ufl.algorithms.printing import tree_format
 
 ## FFC modules.
 from ffc.log import info, debug, ffc_assert
-from ffc.cpp import tabulate_matrix
 from ffc.cpp import IndentControl
 from ffc.cpp import format
 from ffc.cpp import remove_unused, choose_map
@@ -165,6 +164,7 @@ def _tabulate_tensor(ir, parameters):
 
     # Reset the element tensor (array 'A' given as argument to tabulate_tensor() by assembler)
     # Handle functionals.
+    common += [f_comment("Reset values in the element tensor.")]
     value = f_float(0)
     if prim_idims == []:
         common += [f_assign(f_component(f_A, "0"), f_float(0))]
@@ -256,7 +256,7 @@ def _tabulate_weights(transformer, Indent, format):
     f_component =  format["component"]
     f_group    = format["grouping"]
     f_assign    = format["assign"]
-    f_tensor    = format["tensor"]
+    f_tensor    = format["tabulate tensor"]
 
     code = ["", Indent.indent(format["comment"]("Array of quadrature weights"))]
 
@@ -324,13 +324,15 @@ def _tabulate_psis(transformer, Indent, format):
 
     # Prefetch formats to speed up code generation.
     f_comment    = format["comment"]
-    f_block      = format["block"]
+#    f_block      = format["block"]
     f_table      = format["static const float declaration"]
     f_component  = format["component"]
     f_const_uint = format["static const uint declaration"]
     f_nzcolumns  = format["nonzero columns"]
-    f_sep        = format["separator"]
+    f_list        = format["list"]
     f_assign    = format["assign"]
+    f_tensor    = format["tabulate tensor"]
+    f_new_line    = format["new line"]
 
     # FIXME: Check if we can simplify the tabulation
 
@@ -374,8 +376,8 @@ def _tabulate_psis(transformer, Indent, format):
             decl_name = f_component(f_table + name, [ip, dofs])
 
             # Generate array of values.
-            value = tabulate_matrix(vals, format)
-            code += [f_assign(Indent.indent(decl_name), Indent.indent(value)), ""]
+            value = f_tensor(vals)
+            code += [f_assign(Indent.indent(decl_name), f_new_line + value), ""]
 
         # Tabulate non-zero indices.
         if transformer.optimise_parameters["non zero columns"]:
@@ -386,7 +388,7 @@ def _tabulate_psis(transformer, Indent, format):
                         if not i in transformer.used_nzcs:
                             continue
                         code += [Indent.indent(f_comment("Array of non-zero columns") )]
-                        value = f_block(f_sep.join(["%d" %c for c in list(cols)]))
+                        value = f_list(["%d" % c for c in list(cols)])
                         name_col = f_component(f_const_uint + f_nzcolumns(i), len(cols))
                         code += [f_assign(Indent.indent(name_col), value), ""]
 

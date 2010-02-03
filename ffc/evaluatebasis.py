@@ -16,7 +16,7 @@ import numpy
 from ffc.log import error, debug_code, ffc_assert
 from ffc.cpp import remove_unused, format
 from ffc.cpp import IndentControl
-from ffc.cpp import inner_product, tabulate_matrix
+from ffc.cpp import inner_product
 from ffc.quadrature.quadraturegenerator_utils import generate_loop
 from ffc.quadrature.symbolics import create_float
 from ffc.quadrature.symbolics import create_symbol
@@ -249,6 +249,7 @@ def _tabulate_coefficients(data, Indent, format):
     f_const_float        = format["const float declaration"]
     f_assign             = format["assign"]
     f_tensor             = format["tabulate tensor"]
+    f_new_line             = format["new line"]
 
     # Get coefficients from basis functions, computed by FIAT at compile time.
     coefficients = data["coeffs"]
@@ -278,10 +279,10 @@ def _tabulate_coefficients(data, Indent, format):
 
         # Declare varable name for coefficients.
         name = f_component(f_table_declaration + f_coefficients(i), [num_dofs, num_mem])
-        value = tabulate_matrix(coeffs, format)
+        value = f_tensor(coeffs)
 
         # Generate array of values.
-        code += [f_assign(Indent.indent(name), Indent.indent(value))] + [""]
+        code += [f_assign(Indent.indent(name), f_new_line + value)] + [""]
     return code
 
 def _compute_values(data, sum_value_dim, vector, Indent, format):

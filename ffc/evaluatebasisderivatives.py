@@ -18,7 +18,7 @@ from ffc.log import error, ffc_assert
 from ffc.evaluatebasis import _map_dof
 from ffc.evaluatebasis import _compute_basisvalues
 from ffc.evaluatebasis import _tabulate_coefficients
-from ffc.cpp import tabulate_matrix, IndentControl, remove_unused
+from ffc.cpp import IndentControl, remove_unused
 from ffc.quadrature.quadraturegenerator_utils import generate_loop
 #from ffc.quadrature.symbolics import set_format
 
@@ -315,6 +315,8 @@ def _tabulate_dmats(data, Indent, format):
     f_dmats          = format["dmats"]
     f_component  = format["component"]
     f_assign = format["assign"]
+    f_tensor = format["tabulate tensor"]
+    f_new_line = format["new line"]
 
     # Get derivative matrices (coefficients) of basis functions, computed by FIAT at compile time
     derivative_matrices = data["dmats"]
@@ -333,8 +335,8 @@ def _tabulate_dmats(data, Indent, format):
 
         # Declare varable name for coefficients
         name = f_component(f_table + f_dmats(i), [shape[0], shape[1]])
-        value = tabulate_matrix(matrix, format)
-        code += [f_assign(Indent.indent(name), Indent.indent(value)), ""]
+        value = f_tensor(matrix)
+        code += [f_assign(Indent.indent(name), f_new_line + value), ""]
 
     return code
 
@@ -417,13 +419,15 @@ def _compute_reference_derivatives(data, Indent, format):
     code = []
 
     # Prefetch formats to speed up code generation
-    f_comment    = format["comment"]
-    f_float      = format["float declaration"]
-    f_component  = format["component"]
-    f_tmp        = format["tmp ref value"]
-    f_dmats      = format["dmats"]
-    f_assign     = format["assign"]
-    f_iadd       = format["iadd"]
+    f_comment   = format["comment"]
+    f_float     = format["float declaration"]
+    f_component = format["component"]
+    f_tmp       = format["tmp ref value"]
+    f_dmats     = format["dmats"]
+    f_assign    = format["assign"]
+    f_iadd      = format["iadd"]
+    f_tensor    = format["tabulate tensor"]
+    f_new_line  = format["new line"]
 
     f_r, f_s, f_t, f_u = format["free indices"]
 
@@ -464,11 +468,11 @@ def _compute_reference_derivatives(data, Indent, format):
     code += [Indent.indent(f_comment("Declare derivative matrix (of polynomial basis)."))]
     matrix = numpy.eye(shape_dmats[0])
     name = f_component(f_float + f_dmats(""), [shape_dmats[0], shape_dmats[1]])
-    value = tabulate_matrix(matrix, format)
-    code += [f_assign(Indent.indent(name), Indent.indent(value)), ""]
+    value = f_tensor(matrix)
+    code += [f_assign(Indent.indent(name), f_new_line + value), ""]
     code += [Indent.indent(f_comment("Declare (auxiliary) derivative matrix (of polynomial basis)."))]
     name = f_component(f_float + format["dmats old"], [shape_dmats[0], shape_dmats[1]])
-    code += [f_assign(Indent.indent(name), Indent.indent(value)), ""]
+    code += [f_assign(Indent.indent(name), f_new_line + value), ""]
 
     # Loop all derivatives and compute value of the derivative as:
     # deriv_on_ref[r] = coeff[dof][s]*dmat[s][t]*basis[t]
