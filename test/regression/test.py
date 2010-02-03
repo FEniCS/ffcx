@@ -3,7 +3,7 @@ __date__ = "2010-01-21"
 __copyright__ = "Copyright (C) 2010 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-02-02
+# Last changed: 2010-02-03
 
 # FIXME: Need to add many more test cases. Quite a few DOLFIN
 # FIXME: forms failed after the FFC tests passed. Also need to
@@ -11,10 +11,12 @@ __license__  = "GNU GPL version 3 or any later version"
 # FIXME: and DOLFIN wrappers.
 
 import os, sys, shutil, commands, difflib
+from numpy import array, shape, abs, max
 from ffc.log import begin, end, info, info_red, info_green, info_blue
 from ufctest import generate_test_code
 
 # Parameters
+tolerance = 1e-9
 output_directory = "output"
 demo_directory = "../../../demo"
 
@@ -203,21 +205,40 @@ def validate_programs():
 
         # Compare with reference
         ok = True
-        if not generated_output == reference_output:
-            old = [line.split(" = ") for line in reference_output.split("\n") if " = " in line]
-            new = dict([line.split(" = ") for line in generated_output.split("\n") if " = " in line])
-            header = "Output differs for %s, diff follows" % f
-            for (key, value) in old:
-                if not key in new:
-                    if ok: log_error("\n" + header + "\n" + len(header)*"-")
-                    log_error("%s: missing value in generated code" % key)
-                    ok = False
-                elif new[key] != value:
-                    if ok: log_error("\n" + header + "\n" + len(header)*"-")
-                    log_error("%s: values differ" % key)
-                    log_error("  old = " + value)
-                    log_error("  new = " + new[key])
-                    ok = False
+        old = [line.split(" = ") for line in reference_output.split("\n") if " = " in line]
+        new = dict([line.split(" = ") for line in generated_output.split("\n") if " = " in line])
+        header = "Output differs for %s, diff follows" % f
+        for (key, value) in old:
+
+            # Check if value is present
+            if not key in new:
+                if ok: log_error("\n" + header + "\n" + len(header)*"-")
+                log_error("%s: missing value in generated code" % key)
+                ok = False
+                continue
+
+            # Extract float values
+            old_values = array([float(v) for v in value.split(" ")])
+            new_values = array([float(v) for v in new[key].split(" ")])
+
+            # Check that shape is correct
+            if not shape(old_values) == shape(new_values):
+                if ok: log_error("\n" + header + "\n" + len(header)*"-")
+                log_error("%s: shape mismatch" % key)
+                ok = False
+                continue
+
+            # Check that values match to within tolerance
+            diff = max(abs(old_values - new_values))
+            if diff > tolerance:
+                if ok: log_error("\n" + header + "\n" + len(header)*"-")
+                log_error("%s: values differ, error = %g (tolerance = %g)" % (key, diff, tolerance))
+                log_error("  old = " + " ".join("%.16g" % v for v in old_values))
+                log_error("  new = " + " ".join("%.16g" % v for v in new_values))
+
+        # Add debugging output to log file
+        debug = "\n".join([line for line in generated_output.split("\n") if "debug" in line])
+        if debug: log_error(debug)
 
         # Check status
         if ok:
