@@ -11,32 +11,32 @@ Testing finite_element
 4_cell_shape = 3
 5_space_dimension = 4
 6_value_rank = 0
-7_evaluate_basis:_0 = 0.68155
-8_evaluate_basis:_1 = -1.6396
-9_evaluate_basis:_2 = 0.081163
-10_evaluate_basis:_3 = 1.8769
-11_evaluate_basis_all = 0.68155 -1.6396 0.081163 1.8769
-12_evaluate_basis_derivatives_0_0 = 0.68155
-13_evaluate_basis_derivatives_0_1 = 0.79946 -2.1477 0.45753
+7_evaluate_basis:_0 = 0.6513806554502019
+8_evaluate_basis:_1 = -1.66431982431359
+9_evaluate_basis:_2 = 0.1133045703151803
+10_evaluate_basis:_3 = 1.899634563032329
+11_evaluate_basis_all = 0.6513806554502019 -1.66431982431359 0.1133045703151803 1.899634563032329
+12_evaluate_basis_derivatives_0_0 = 0.6513806554502019
+13_evaluate_basis_derivatives_0_1 = 0.8142104975345208 -2.123895150721983 0.4873385680991382
 14_evaluate_basis_derivatives_0_2 = 0 0 0 0 0 0 0 0 0
-15_evaluate_basis_derivatives_1_0 = -1.6396
-16_evaluate_basis_derivatives_1_1 = 0.9102 1.1317 2.1952
+15_evaluate_basis_derivatives_1_0 = -1.66431982431359
+16_evaluate_basis_derivatives_1_1 = 0.9133825771062168 1.14574168302468 2.19226305095986
 17_evaluate_basis_derivatives_1_2 = 0 0 0 0 0 0 0 0 0
-18_evaluate_basis_derivatives_2_0 = 0.081163
-19_evaluate_basis_derivatives_2_1 = -0.027987 1.3689 -1.5381
+18_evaluate_basis_derivatives_2_0 = 0.1133045703151803
+19_evaluate_basis_derivatives_2_1 = -0.04067792685383641 1.336577909793853 -1.551313937649451
 20_evaluate_basis_derivatives_2_2 = 0 0 0 0 0 0 0 0 0
-21_evaluate_basis_derivatives_3_0 = 1.8769
-22_evaluate_basis_derivatives_3_1 = -1.6817 -0.35288 -1.1146
+21_evaluate_basis_derivatives_3_0 = 1.899634563032329
+22_evaluate_basis_derivatives_3_1 = -1.686915119184908 -0.3584244998288183 -1.128287589984473
 23_evaluate_basis_derivatives_3_2 = 0 0 0 0 0 0 0 0 0
-24_evaluate_basis_derivatives_all_0 = 0.68155 -1.6396 0.081163 1.8769
-25_evaluate_basis_derivatives_all_1 = 0.79946 -2.1477 0.45753 0.9102 1.1317 2.1952 -0.027987 1.3689 -1.5381 -1.6817 -0.35288 -1.1146
+24_evaluate_basis_derivatives_all_0 = 0.6513806554502019 -1.66431982431359 0.1133045703151803 1.899634563032329
+25_evaluate_basis_derivatives_all_1 = 0.8142104975345208 -2.123895150721983 0.4873385680991382 0.9133825771062168 1.14574168302468 2.19226305095986 -0.04067792685383641 1.336577909793853 -1.551313937649451 -1.686915119184908 -0.3584244998288183 -1.128287589984473
 26_evaluate_basis_derivatives_all_2 = 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-27_evaluate_dof_0 = 0.1377
-28_evaluate_dof_1 = 0.35325
-29_evaluate_dof_2 = 0.14524
-30_evaluate_dof_3 = 0.044352
-31_evaluate_dofs = 0.1377 0.35325 0.14524 0.044352
-32_interpolate_vertex_values = 0.1377 0.35325 0.14524 0.044352
+27_evaluate_dof_0 = 0.140720811
+28_evaluate_dof_1 = 0.358429071
+29_evaluate_dof_2 = 0.147608811
+30_evaluate_dof_3 = 0.04602500100000001
+31_evaluate_dofs = 0.140720811 0.358429071 0.147608811 0.04602500100000001
+32_interpolate_vertex_values = 0.140720811 0.358429071 0.147608811 0.04602500100000001
 33_num_sub_elements = 0
 
 Testing dof_map
@@ -77,19 +77,19 @@ Testing dof_map
 67_tabulate_entity_dofs_2_2 =
 68_tabulate_entity_dofs_2_3 =
 69_tabulate_entity_dofs_3_0 =
-70_tabulate_coordinates_0 = 0.9 0.34 0.45
-71_tabulate_coordinates_1 = 0.56 0.76 0.83
-72_tabulate_coordinates_2 = 0.98 0.78 0.19
-73_tabulate_coordinates_3 = 0.12 0.56 0.66
+70_tabulate_coordinates_0 = 0.903 0.341 0.457
+71_tabulate_coordinates_1 = 0.5610000000000001 0.767 0.833
+72_tabulate_coordinates_2 = 0.987 0.783 0.191
+73_tabulate_coordinates_3 = 0.123 0.5610000000000001 0.667
 74_num_sub_dof_maps = 0
 
 Testing cell_integral
 ---------------------
-75_tabulate_tensor = 0.0068483
+75_tabulate_tensor = 0.006903825552306
 
 Testing exterior_facet_integral
 -------------------------------
-76_tabulate_tensor_0 = 0.057614
-77_tabulate_tensor_1 = 0.057682
-78_tabulate_tensor_2 = 0.039487
-79_tabulate_tensor_3 = 0.033664
+76_tabulate_tensor_0 = 0.0578157034656348
+77_tabulate_tensor_1 = 0.05825405301080629
+78_tabulate_tensor_2 = 0.03959102291945829
+79_tabulate_tensor_3 = 0.03414692020900983

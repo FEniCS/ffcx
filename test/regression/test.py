@@ -56,15 +56,8 @@ def generate_test_cases():
     demo_files = [f for f in os.listdir(demo_directory) if f.endswith(".ufl")]
     demo_files.sort()
     for f in demo_files:
-
-        # FIXME: Special debugging
-        if not f == "ElementRestriction.ufl":
-            continue
-
         shutil.copy("%s/%s" % (demo_directory, f), ".")
     info_green("Copied %d demo files" % len(demo_files))
-
-    return
 
     # Generate form files for forms
     info("Generating form files for extra demo forms: Not implemented")

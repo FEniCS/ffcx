@@ -15,9 +15,6 @@
 #include <cmath>
 #include <ufc.h>
 
-// FIXME: Special debugging
-#include <stdio.h>
-
 typedef unsigned int uint;
 
 // How many derivatives to test
@@ -289,15 +286,6 @@ void test_finite_element(ufc::finite_element& element)
   {
     dof_values[i] = element.evaluate_dof(i, f, c);
     print_scalar("evaluate_dof", dof_values[i], i);
-
-    // FIXME: Special debugging
-    if (i == 3)
-    {
-      std::cout << "debug Special debugging" << std::endl;
-      printf("debug x1: (%.16g, %.16g)\n", c.coordinates[1][0], c.coordinates[1][1]);
-      printf("debug x2: (%.16g, %.16g)\n", c.coordinates[2][0], c.coordinates[2][1]);
-      printf("debug dof_values[3]: %.16g\n", dof_values[i]);
-    }
   }
 
   // evaluate_dofs
