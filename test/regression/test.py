@@ -16,7 +16,7 @@ from ffc.log import begin, end, info, info_red, info_green, info_blue
 from ufctest import generate_test_code
 
 # Parameters
-tolerance = 1e-10
+tolerance = 1e-9
 output_directory = "output"
 demo_directory = "../../../demo"
 
