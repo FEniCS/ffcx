@@ -241,8 +241,8 @@ def validate_programs():
             if not max(abs(old_values - new_values)) < tolerance:
                 if ok: log_error("\n" + header + "\n" + len(header)*"-")
                 log_error("%s: values differ to within tolerance (%g)" % (key, tolerance))
-                log_error("  old = %.16g" + str(old_values))
-                log_error("  new = %.16g" + str(new_values))
+                log_error("  old = " + " ".join("%.16g" % v for v in old_values))
+                log_error("  new = " + " ".join("%.16g" % v for v in new_values))
 
         # Add debugging output to log file
         debug = "\n".join([line for line in generated_output.split("\n") if "debug" in line])

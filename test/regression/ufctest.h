@@ -24,8 +24,8 @@ typedef unsigned int uint;
 const uint max_derivative = 2;
 
 // Precision in output of floats
-const uint precision = 1e-10;
-const double epsilon = 1e-10;
+const uint precision = 16;
+const double epsilon = 1e-16;
 
 // Global counter for results
 uint counter = 0;
