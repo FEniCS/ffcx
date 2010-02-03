@@ -684,14 +684,10 @@ class QuadratureTransformerBase(Transformer):
         code = []
         num_ops = 0
 
-        # Strip variables
-        integrand = strip_variables(integrand)
-
         # Only propagate restrictions if we have an interior integral.
         if interior:
             integrand = propagate_restrictions(integrand)
-
-        #print "Integrand:\n", str(tree_format(integrand))
+#        print "Integrand:\n", str(tree_format(integrand))
 
         # Profiling
 #        name = "test.prof"
