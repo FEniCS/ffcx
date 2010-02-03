@@ -228,8 +228,6 @@ def validate_programs():
                 ok = False
                 continue
 
-            print max(abs(old_values - new_values))
-
             # Check that values match to within tolerance
             diff = max(abs(old_values - new_values))
             if diff > tolerance:
