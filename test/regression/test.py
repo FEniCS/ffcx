@@ -3,7 +3,7 @@ __date__ = "2010-01-21"
 __copyright__ = "Copyright (C) 2010 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-02-02
+# Last changed: 2010-02-03
 
 # FIXME: Need to add many more test cases. Quite a few DOLFIN
 # FIXME: forms failed after the FFC tests passed. Also need to
@@ -54,8 +54,15 @@ def generate_test_cases():
     demo_files = [f for f in os.listdir(demo_directory) if f.endswith(".ufl")]
     demo_files.sort()
     for f in demo_files:
+
+        # FIXME: Special debugging
+        if not f == "ElementRestriction.ufl":
+            continue
+
         shutil.copy("%s/%s" % (demo_directory, f), ".")
     info_green("Copied %d demo files" % len(demo_files))
+
+    return
 
     # Generate form files for forms
     info("Generating form files for extra demo forms: Not implemented")
@@ -218,6 +225,10 @@ def validate_programs():
                     log_error("  old = " + value)
                     log_error("  new = " + new[key])
                     ok = False
+
+        # Add debugging output to log file
+        debug = "\n".join([line for line in generated_output.split("\n") if "debug" in line])
+        if debug: log_error(debug)
 
         # Check status
         if ok:
