@@ -11,32 +11,32 @@ Testing finite_element
 4_cell_shape = 3
 5_space_dimension = 4
 6_value_rank = 0
-7_evaluate_basis:_0 = 0.681553
-8_evaluate_basis:_1 = -1.63957
-9_evaluate_basis:_2 = 0.0811633
-10_evaluate_basis:_3 = 1.87686
-11_evaluate_basis_all = 0.681553 -1.63957 0.0811633 1.87686
-12_evaluate_basis_derivatives_0_0 = 0.681553
-13_evaluate_basis_derivatives_0_1 = 0.799465 -2.14772 0.457532
+7_evaluate_basis:_0 = 0.68155
+8_evaluate_basis:_1 = -1.6396
+9_evaluate_basis:_2 = 0.081163
+10_evaluate_basis:_3 = 1.8769
+11_evaluate_basis_all = 0.68155 -1.6396 0.081163 1.8769
+12_evaluate_basis_derivatives_0_0 = 0.68155
+13_evaluate_basis_derivatives_0_1 = 0.79946 -2.1477 0.45753
 14_evaluate_basis_derivatives_0_2 = 0 0 0 0 0 0 0 0 0
-15_evaluate_basis_derivatives_1_0 = -1.63957
-16_evaluate_basis_derivatives_1_1 = 0.910197 1.13166 2.19518
+15_evaluate_basis_derivatives_1_0 = -1.6396
+16_evaluate_basis_derivatives_1_1 = 0.9102 1.1317 2.1952
 17_evaluate_basis_derivatives_1_2 = 0 0 0 0 0 0 0 0 0
-18_evaluate_basis_derivatives_2_0 = 0.0811633
-19_evaluate_basis_derivatives_2_1 = -0.0279873 1.36895 -1.53809
+18_evaluate_basis_derivatives_2_0 = 0.081163
+19_evaluate_basis_derivatives_2_1 = -0.027987 1.3689 -1.5381
 20_evaluate_basis_derivatives_2_2 = 0 0 0 0 0 0 0 0 0
-21_evaluate_basis_derivatives_3_0 = 1.87686
-22_evaluate_basis_derivatives_3_1 = -1.68167 -0.352884 -1.11463
+21_evaluate_basis_derivatives_3_0 = 1.8769
+22_evaluate_basis_derivatives_3_1 = -1.6817 -0.35288 -1.1146
 23_evaluate_basis_derivatives_3_2 = 0 0 0 0 0 0 0 0 0
-24_evaluate_basis_derivatives_all_0 = 0.681553 -1.63957 0.0811633 1.87686
-25_evaluate_basis_derivatives_all_1 = 0.799465 -2.14772 0.457532 0.910197 1.13166 2.19518 -0.0279873 1.36895 -1.53809 -1.68167 -0.352884 -1.11463
+24_evaluate_basis_derivatives_all_0 = 0.68155 -1.6396 0.081163 1.8769
+25_evaluate_basis_derivatives_all_1 = 0.79946 -2.1477 0.45753 0.9102 1.1317 2.1952 -0.027987 1.3689 -1.5381 -1.6817 -0.35288 -1.1146
 26_evaluate_basis_derivatives_all_2 = 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
 27_evaluate_dof_0 = 0.1377
-28_evaluate_dof_1 = 0.353248
-29_evaluate_dof_2 = 0.145236
+28_evaluate_dof_1 = 0.35325
+29_evaluate_dof_2 = 0.14524
 30_evaluate_dof_3 = 0.044352
-31_evaluate_dofs = 0.1377 0.353248 0.145236 0.044352
-32_interpolate_vertex_values = 0.1377 0.353248 0.145236 0.044352
+31_evaluate_dofs = 0.1377 0.35325 0.14524 0.044352
+32_interpolate_vertex_values = 0.1377 0.35325 0.14524 0.044352
 33_num_sub_elements = 0
 
 Testing dof_map
@@ -85,11 +85,11 @@ Testing dof_map
 
 Testing cell_integral
 ---------------------
-75_tabulate_tensor = 0.00684833
+75_tabulate_tensor = 0.0068483
 
 Testing exterior_facet_integral
 -------------------------------
-76_tabulate_tensor_0 = 0.0576145
-77_tabulate_tensor_1 = 0.0576815
-78_tabulate_tensor_2 = 0.0394868
-79_tabulate_tensor_3 = 0.0336635
+76_tabulate_tensor_0 = 0.057614
+77_tabulate_tensor_1 = 0.057682
+78_tabulate_tensor_2 = 0.039487
+79_tabulate_tensor_3 = 0.033664

@@ -2,7 +2,7 @@
 // Licensed under the GNU GPL version 3 or any later version.
 //
 // First added:  2010-01-24
-// Last changed: 2010-02-02
+// Last changed: 2010-02-03
 //
 // Functions for calling generated UFC functions with "random" (but
 // fixed) data and print the output to screen. Useful for running
@@ -21,8 +21,8 @@ typedef unsigned int uint;
 const uint max_derivative = 2;
 
 // Precision in output of floats
-const uint precision = 6;
-const double epsilon = 1e-6;
+const uint precision = 5;
+const double epsilon = 1e-10;
 
 // Global counter for results
 uint counter = 0;
