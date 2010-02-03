@@ -12,7 +12,9 @@ import sys
 pwd = os.path.dirname(os.path.abspath(__file__))
 
 # Tests to run
-tests = ["unit", "regression"]
+#tests = ["unit", "regression"]
+# FIXME: Temporary debugging
+tests = ["regression"]
 
 failed = []
 
