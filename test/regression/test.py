@@ -231,9 +231,10 @@ def validate_programs():
             print max(abs(old_values - new_values))
 
             # Check that values match to within tolerance
-            if not max(abs(old_values - new_values)) < tolerance:
+            diff = max(abs(old_values - new_values))
+            if diff > tolerance:
                 if ok: log_error("\n" + header + "\n" + len(header)*"-")
-                log_error("%s: values differ to within tolerance (%g)" % (key, tolerance))
+                log_error("%s: values differ, error = %g (tolerance = %g)" % (key, diff, tolerance))
                 log_error("  old = " + " ".join("%.16g" % v for v in old_values))
                 log_error("  new = " + " ".join("%.16g" % v for v in new_values))
 
