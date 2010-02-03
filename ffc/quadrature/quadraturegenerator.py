@@ -15,12 +15,9 @@ from ufl.algorithms.printing import tree_format
 
 ## FFC modules.
 from ffc.log import info, debug, ffc_assert
-from ffc.cpp import IndentControl
-from ffc.cpp import format
-from ffc.cpp import remove_unused, choose_map
+from ffc.cpp import IndentControl, format, remove_unused, choose_map
 
 # Utility and optimisation functions for quadraturegenerator.
-from quadraturegenerator_utils import generate_loop
 from quadraturetransformer import QuadratureTransformer
 
 from optimisedquadraturetransformer import QuadratureTransformerOpt
@@ -52,6 +49,7 @@ def _tabulate_tensor(ir, parameters):
     f_component     = format["component"]
     f_A             = format["element tensor quad"]
     f_r             = format["free indices"][0]
+    f_loop          = format["generate loop"]
 
     # FIXME: KBO: Handle this in a better way, make -O option take an argument?
     if parameters["optimize"]:
@@ -170,7 +168,7 @@ def _tabulate_tensor(ir, parameters):
         common += [f_assign(f_component(f_A, "0"), f_float(0))]
     else:
         dim = reduce(lambda v,u: v*u, prim_idims)
-        common += generate_loop([f_assign(f_component(f_A, f_r), f_float(0))], [(f_r, 0, dim)], Indent, format)
+        common += f_loop([f_assign(f_component(f_A, f_r), f_float(0))], [(f_r, 0, dim)])
 
     # Create the constant geometry declarations (only generated if simplify expressions are enabled).
     geo_ops, geo_code = generate_aux_constants(transformer.geo_consts, f_G, f_const_double)
@@ -193,8 +191,9 @@ def _generate_element_tensor(integrals, transformer, Indent, format, interior=Fa
     "Construct quadrature code for element tensors."
 
     # Prefetch formats to speed up code generation.
-    f_comment      = format["comment"]
-    f_ip           = format["integration points"]
+    f_comment = format["comment"]
+    f_ip      = format["integration points"]
+    f_loop    = format["generate loop"]
 
     # Initialise return values.
     element_code     = []
@@ -234,7 +233,7 @@ def _generate_element_tensor(integrals, transformer, Indent, format, interior=Fa
         # Loop code over all IPs.
         if integral_code:
             if points > 1:
-                ip_code += generate_loop(integral_code, [(f_ip, 0, points)], Indent, format)
+                ip_code += f_loop(integral_code, [(f_ip, 0, points)])
             else:
                 ip_code.append(f_comment("Only 1 integration point, omitting IP loop."))
                 ip_code += integral_code

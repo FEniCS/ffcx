@@ -24,29 +24,16 @@ from ufl.classes import Coefficient
 from ufl.algorithms.printing import tree_format
 
 # FFC modules.
-from ffc.log import info
-from ffc.log import debug
-from ffc.log import ffc_assert
-from ffc.log import error
+from ffc.log import info, debug, error, ffc_assert
 from ffc.cpp import choose_map
-
-# Utility and optimisation functions for quadraturegenerator.
-from quadraturetransformerbase import QuadratureTransformerBase
-from quadraturegenerator_utils import generate_psi_name
-from quadraturegenerator_utils import create_permutations
+from ffc.quadrature.quadraturetransformerbase import QuadratureTransformerBase
+from ffc.quadrature.quadratureutils import create_permutations
 
 # Symbolics functions
 #from symbolics import set_format
-from symbolics import create_float
-from symbolics import create_symbol
-from symbolics import create_product
-from symbolics import create_sum
-from symbolics import create_fraction
-from symbolics import BASIS
-from symbolics import IP
-from symbolics import GEO
-from symbolics import CONST
-from symbolics import optimise_code
+from ffc.quadrature.symbolics import create_float, create_symbol, create_product,\
+                                     create_sum, create_fraction, BASIS, IP, GEO,\
+                                     CONST, optimise_code
 
 class QuadratureTransformerOpt(QuadratureTransformerBase):
     "Transform UFL representation to quadrature code."

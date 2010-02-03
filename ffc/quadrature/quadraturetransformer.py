@@ -25,16 +25,12 @@ from ufl.classes import Coefficient
 from ufl.algorithms.printing import tree_format
 
 # FFC modules.
-from ffc.log import info
-from ffc.log import debug
-from ffc.log import error
-from ffc.log import ffc_assert
+from ffc.log import info, debug, error, ffc_assert
 from ffc.cpp import choose_map
 
 # Utility and optimisation functions for quadraturegenerator.
 from quadraturetransformerbase import QuadratureTransformerBase
-from quadraturegenerator_utils import generate_psi_name
-from quadraturegenerator_utils import create_permutations
+from quadratureutils import create_permutations
 from reduce_operations import operation_count
 
 class QuadratureTransformer(QuadratureTransformerBase):

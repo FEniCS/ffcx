@@ -7,7 +7,7 @@ __date__ = "2007-04-16"
 __copyright__ = "Copyright (C) 2007-2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-30
+# Last changed: 2010-02-03
 
 # Python modules
 import math
@@ -18,13 +18,7 @@ from ffc.log import error, ffc_assert
 from ffc.evaluatebasis import _map_dof
 from ffc.evaluatebasis import _compute_basisvalues
 from ffc.evaluatebasis import _tabulate_coefficients
-from ffc.cpp import IndentControl, remove_unused
-from ffc.quadrature.quadraturegenerator_utils import generate_loop
-#from ffc.quadrature.symbolics import set_format
-
-# Temporary import
-#from cpp import format_old as format
-from ffc.cpp import format
+from ffc.cpp import IndentControl, remove_unused, format
 
 def _evaluate_basis_derivatives_all(data_list):
     """Like evaluate_basis, but return the values of all basis functions (dofs)."""
@@ -32,8 +26,9 @@ def _evaluate_basis_derivatives_all(data_list):
     if isinstance(data_list, str):
         return format["exception"]("evaluate_basis_derivatives_all: %s" % data_list)
 
-    f_r, f_s = format["free indices"][:2]
-    f_assign = format["assign"]
+    f_r, f_s  = format["free indices"][:2]
+    f_assign  = format["assign"]
+    f_loop    = format["generate loop"]
 
     # Initialise objects
     Indent = IndentControl()
@@ -78,7 +73,7 @@ def _evaluate_basis_derivatives_all(data_list):
               format["component"](format["new"] + format["float declaration"], num_vals))]
     loop_vars = [(f_r, 0, num_vals)]
     line = [f_assign(format["component"]("dof_values", f_r), format["floating point"](0.0))]
-    code += generate_loop(line, loop_vars, Indent, format)
+    code += f_loop(line, loop_vars)
 
     # Create loop over dofs that calls evaluate_basis_derivatives for a single dof and
     # inserts the values into the global array.
@@ -94,8 +89,8 @@ def _evaluate_basis_derivatives_all(data_list):
     name = format["component"](format["argument values"], index)
     value = format["component"]("dof_values", f_s)
     lines_s = [f_assign(name, value)]
-    lines_r += generate_loop(lines_s, loop_vars_s, Indent, format)
-    code += generate_loop(lines_r, loop_vars_r, Indent, format)
+    lines_r += f_loop(lines_s, loop_vars_s)
+    code += f_loop(lines_r, loop_vars_r)
 
     code += ["", format["comment"]("Delete pointer.")]
     code += [Indent.indent(format["delete pointer"]("dof_values", ""))]
@@ -184,7 +179,7 @@ def _compute_num_derivatives(topological_dimension, Indent, format):
     # FIXME: KBO: Should the str(int()) be in format?
     lines = [format["imul"](format["num derivatives"], str(int(topological_dimension)))]
 
-    code += generate_loop(lines, loop_vars, Indent, format)
+    code += format["generate loop"](lines, loop_vars)
 
     return code
 
@@ -234,7 +229,7 @@ def _reset_values(data_list, Indent, format):
     name = format["component"](format["argument values"], format["free indices"][0])
     loop_vars = [(format["free indices"][0], 0, num_vals)]
     lines = [f_assign(name, format["floating point"](0))]
-    code += generate_loop(lines, loop_vars, Indent, format)
+    code += format["generate loop"](lines, loop_vars)
 
     return code + [""]
 
@@ -349,7 +344,7 @@ def _reset_dmats(shape_dmats, indices, Indent, format):
     lines = [f_assign(dmats_old, format["floating point"](0.0))]
     lines += [format["if"](indices[0] + format["is equal"] + indices[1],\
               format["assign"](Indent.indent(dmats_old), format["floating point"](1.0)))]
-    code += generate_loop(lines, loop_vars, Indent, format)
+    code += format["generate loop"](lines, loop_vars)
     return code
 
 def _update_dmats(shape_dmats, indices, Indent, format):
@@ -359,7 +354,7 @@ def _update_dmats(shape_dmats, indices, Indent, format):
     dmats_old = format["component"](format["dmats old"], [indices[0], indices[1]])
     loop_vars = [(indices[0], 0, shape_dmats[0]), (indices[1], 0, shape_dmats[1])]
     lines = [f_assign(dmats_old, dmats), f_assign(dmats, format["floating point"](0.0))]
-    code += generate_loop(lines, loop_vars, Indent, format)
+    code += format["generate loop"](lines, loop_vars)
     return code
 
 def _compute_dmats(num_dmats, shape_dmats, available_indices, deriv_index, Indent, format):
@@ -380,11 +375,12 @@ def _compute_dmats(num_dmats, shape_dmats, available_indices, deriv_index, Inden
     for i in range(num_dmats):
         lines += _dmats_product(shape_dmats, comb, i, [t, u], Indent, format)
 
-    code += generate_loop(lines, loop_vars, Indent, format)
+    code += format["generate loop"](lines, loop_vars)
 
     return code
 
 def _dmats_product(shape_dmats, index, i, indices, Indent, format):
+    f_loop = format["generate loop"]
 
     t, u = indices
     tu = t + u
@@ -393,9 +389,9 @@ def _dmats_product(shape_dmats, index, i, indices, Indent, format):
     dmats_old = format["component"](format["dmats old"], [tu, u])
     value = format["multiply"]([format["component"](format["dmats"](i), [t, tu]), dmats_old])
     name = Indent.indent(format["iadd"](dmats, value))
-    lines = generate_loop([name], [(tu, 0, shape_dmats[0])], Indent, format)
+    lines = f_loop([name], [(tu, 0, shape_dmats[0])])
     code = [format["if"](index + format["is equal"] + str(i),\
-            "\n".join(generate_loop(lines, loop_vars, Indent, format)))]
+            "\n".join(f_loop(lines, loop_vars)))]
 
     return code
 
@@ -428,6 +424,7 @@ def _compute_reference_derivatives(data, Indent, format):
     f_iadd      = format["iadd"]
     f_tensor    = format["tabulate tensor"]
     f_new_line  = format["new line"]
+    f_loop    = format["generate loop"]
 
     f_r, f_s, f_t, f_u = format["free indices"]
 
@@ -459,7 +456,7 @@ def _compute_reference_derivatives(data, Indent, format):
     # Reset values of reference derivatives.
     name = format["component"](format["reference derivatives"], f_r)
     lines = [f_assign(name, format["floating point"](0))]
-    code += generate_loop(lines, [(f_r, 0, num_vals)], Indent, format)
+    code += f_loop(lines, [(f_r, 0, num_vals)])
 
     code += [""]
 
@@ -493,7 +490,7 @@ def _compute_reference_derivatives(data, Indent, format):
         basis = format["component"](format["basisvalues"], f_t)
         value = format["multiply"]([coeffs, dmats, basis])
         lines_c.append(f_iadd(name, value))
-    lines += generate_loop(lines_c, loop_vars_c, Indent, format)
+    lines += f_loop(lines_c, loop_vars_c)
 
     # Apply transformation if applicable.
     mapping = data["mapping"]
@@ -541,7 +538,7 @@ def _compute_reference_derivatives(data, Indent, format):
         error("Unknown mapping: %s" % mapping)
 
     # Generate loop over number of derivatives.
-    code += generate_loop(lines, loop_vars, Indent, format)
+    code += f_loop(lines, loop_vars)
 
     return code + [""]
 
@@ -633,7 +630,7 @@ def _delete_pointers(data, Indent, format):
     loop_vars = [(f_r, 0, format["num derivatives"])]
     lines =  [format["delete pointer"](format["derivative combinations"], format["component"]("", f_r))]
     lines += [format["delete pointer"](format["transform matrix"], format["component"]("", f_r))]
-    code += generate_loop(lines, loop_vars, Indent, format)
+    code += format["generate loop"](lines, loop_vars)
 
     code += [Indent.indent(format["delete pointer"](format["derivative combinations"], ""))]
     code += [Indent.indent(format["delete pointer"](format["transform matrix"], ""))]

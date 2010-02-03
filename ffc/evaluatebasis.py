@@ -16,13 +16,8 @@ import numpy
 from ffc.log import error, debug_code, ffc_assert
 from ffc.cpp import remove_unused, format
 from ffc.cpp import IndentControl
-from ffc.quadrature.quadraturegenerator_utils import generate_loop
-from ffc.quadrature.symbolics import create_float
-from ffc.quadrature.symbolics import create_symbol
-from ffc.quadrature.symbolics import create_sum
-from ffc.quadrature.symbolics import create_product
-from ffc.quadrature.symbolics import create_fraction
-from ffc.quadrature.symbolics import CONST
+from ffc.quadrature.symbolics import create_float, create_float, create_symbol,\
+                                     create_product, create_sum, create_fraction, CONST
 
 def _evaluate_basis_all(data_list):
     """Like evaluate_basis, but return the values of all basis functions (dofs)."""
@@ -31,8 +26,9 @@ def _evaluate_basis_all(data_list):
         return format["exception"]("evaluate_basis_all: %s" % data_list)
 
     f_r, f_s  = format["free indices"][:2]
-    f_assign       = format["assign"]
-    f_tensor       = format["tabulate tensor"]
+    f_assign  = format["assign"]
+    f_tensor  = format["tabulate tensor"]
+    f_loop    = format["generate loop"]
 
     # Initialise objects
     Indent = IndentControl()
@@ -90,9 +86,9 @@ def _evaluate_basis_all(data_list):
         name = format["component"](format["argument values"], index)
         value = format["component"]("dof_values", f_s)
         lines_s = [f_assign(name, value)]
-        lines_r += generate_loop(lines_s, loop_vars_s, Indent, format)
+        lines_r += f_loop(lines_s, loop_vars_s)
 
-    code += generate_loop(lines_r, loop_vars_r, Indent, format)
+    code += f_loop(lines_r, loop_vars_r)
 
     # Generate bode (no need to remove unused)
     return "\n".join(code)
@@ -304,6 +300,7 @@ def _compute_values(data, sum_value_dim, vector, Indent, format):
     f_group            = format["grouping"]
     f_tmp              = format["tmp ref value"]
     f_assign           = format["assign"]
+    f_loop    = format["generate loop"]
 
     # Init return code.
     code = []
@@ -339,7 +336,7 @@ def _compute_values(data, sum_value_dim, vector, Indent, format):
     # Get number of members of the expansion set.
     num_mem = data["num_expansion_members"]
     loop_vars = [(f_r, 0, num_mem)]
-    code += generate_loop(lines, loop_vars, Indent, format)
+    code += f_loop(lines, loop_vars)
 
     # Apply transformation if applicable.
     mapping = data["mapping"]
@@ -467,6 +464,7 @@ def _compute_basisvalues(data, Indent, format):
     f_float        = format["floating point"]
     f_uint         = format["uint declaration"]
     f_tensor      = format["tabulate tensor"]
+    f_loop    = format["generate loop"]
 #    f_free_indices = format["free indices"]
 #    f_r            = f_free_indices[0]
 #    f_s            = f_free_indices[1]
@@ -591,7 +589,7 @@ def _compute_basisvalues(data, Indent, format):
                 # Compute value
                 lines.append(f_assign(str(basis_k), create_product([f2, symbol_x*basis_km1]) - f3*basis_km2))
                 # Create loop (block of lines)
-                code += generate_loop(lines, loop_vars, Indent, format)
+                code += f_loop(lines, loop_vars)
 
         # Scale values
         # FIAT_NEW.expansions.LineExpansionSet
@@ -607,7 +605,7 @@ def _compute_basisvalues(data, Indent, format):
         fac1 = create_symbol( f_sqrt(str(symbol_p + float_0_5)), CONST )
         lines += [format["imul"](str(basis_k), str(fac1))]
         # Create loop (block of lines)
-        code += generate_loop(lines, loop_vars, Indent, format)
+        code += f_loop(lines, loop_vars)
     # 2D
     elif (element_cell_domain == "triangle"):
         # FIAT_NEW.expansions.TriangleExpansionSet
@@ -661,7 +659,7 @@ def _compute_basisvalues(data, Indent, format):
                 fac1 = create_product([create_fraction(symbol_p, float_1 + symbol_p), f3, basis_idx2])
                 lines.append(f_assign(str(basis_idx0), fac0 - fac1))
                 # Create loop (block of lines)
-                code += generate_loop(lines, loop_vars, Indent, format)
+                code += f_loop(lines, loop_vars)
 
             # FIAT_NEW code (loop 2 in FIAT)
             # for p in range(n):
@@ -677,7 +675,7 @@ def _compute_basisvalues(data, Indent, format):
             fac1 = create_product([float_0_5, float_1 + float_2*symbol_p + fac0, basis_idx1])
             lines.append(f_assign(str(basis_idx0), fac1.expand().reduce_ops()))
             # Create loop (block of lines)
-            code += generate_loop(lines, loop_vars, Indent, format)
+            code += f_loop(lines, loop_vars)
 
             # Only active is embedded_degree > 1
             if embedded_degree > 1:
@@ -705,7 +703,7 @@ def _compute_basisvalues(data, Indent, format):
                 fac1 = cn * basis_idx2
                 lines.append(f_assign(str(basis_idx0), fac0 - fac1))
                 # Create loop (block of lines)
-                code += generate_loop(lines, loop_vars, Indent, format)
+                code += f_loop(lines, loop_vars)
 
             # FIAT_NEW code (loop 4 in FIAT)
             # for p in range(n+1):
@@ -721,7 +719,7 @@ def _compute_basisvalues(data, Indent, format):
             fac2 = create_symbol( f_sqrt(str(fac0)), CONST )
             lines += [format["imul"](str(basis_idx0), fac2)]
             # Create loop (block of lines)
-            code += generate_loop(lines, loop_vars, Indent, format)
+            code += f_loop(lines, loop_vars)
 
     # 3D
     elif (element_cell_domain == "tetrahedron"):
@@ -781,7 +779,7 @@ def _compute_basisvalues(data, Indent, format):
                 fac3 = create_product([fac1, f1, basis_idx1]) - create_product([fac2, f2, basis_idx2])
                 lines.append(f_assign(str(basis_idx0), fac3))
                 # Create loop (block of lines)
-                code += generate_loop(lines, loop_vars, Indent, format)
+                code += f_loop(lines, loop_vars)
 
             # FIAT_NEW code (loop 2 in FIAT)
             # q = 1
@@ -799,7 +797,7 @@ def _compute_basisvalues(data, Indent, format):
             fac3 = create_product([basis_idx1, fac2 + fac1])
             lines.append(f_assign(str(basis_idx0), fac3))
             # Create loop (block of lines)
-            code += generate_loop(lines, loop_vars, Indent, format)
+            code += f_loop(lines, loop_vars)
 
             # Only active is embedded_degree > 1
             if embedded_degree > 1:
@@ -827,7 +825,7 @@ def _compute_basisvalues(data, Indent, format):
                 fac1 = create_product([an*f3 + bn*f4, basis_idx1]) - cn*f5*basis_idx2
                 lines.append(f_assign(str(basis_idx0), fac1))
                 # Create loop (block of lines)
-                code += generate_loop(lines, loop_vars, Indent, format)
+                code += f_loop(lines, loop_vars)
 
             # FIAT_NEW code (loop 4 in FIAT)
             # now handle r=1
@@ -846,7 +844,7 @@ def _compute_basisvalues(data, Indent, format):
             fac2 = create_product([basis_idx1, float_1 + symbol_p + symbol_q + fac1])
             lines.append(f_assign(str(basis_idx0), fac2))
             # Create loop (block of lines)
-            code += generate_loop(lines, loop_vars, Indent, format)
+            code += f_loop(lines, loop_vars)
 
             # Only active is embedded_degree > 1
             if embedded_degree > 1:
@@ -876,7 +874,7 @@ def _compute_basisvalues(data, Indent, format):
                 fac1 = create_product([an*symbol_z + bn, basis_idx1]) - cn*basis_idx2
                 lines.append(f_assign(str(basis_idx0), fac1))
                 # Create loop (block of lines)
-                code += generate_loop(lines, loop_vars, Indent, format)
+                code += f_loop(lines, loop_vars)
 
             # FIAT_NEW code (loop 6 in FIAT)
             # for p in range(n+1):
@@ -896,7 +894,7 @@ def _compute_basisvalues(data, Indent, format):
             fac2 = create_symbol( f_sqrt(str(fac0)), CONST )
             lines += [format["imul"](str(basis_idx0), fac2)]
             # Create loop (block of lines)
-            code += generate_loop(lines, loop_vars, Indent, format)
+            code += f_loop(lines, loop_vars)
     else:
         error("Cannot compute basis values for shape: %d" % elemet_cell_domain)
 

@@ -5,92 +5,16 @@ __date__ = "2007-03-16"
 __copyright__ = "Copyright (C) 2007-2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-21
-
-# FIXME: KBO: Rename module to quadratureutils.py
+# Last changed: 2010-02-03
 
 # Python modules.
-from numpy import transpose
-from numpy import sqrt
-from numpy import shape
-from numpy import array
+from numpy import transpose, sqrt, shape, array
 
 # FFC modules.
-from ffc.log import debug
-from ffc.log import error
-from ffc.log import ffc_assert
+from ffc.log import debug, error, ffc_assert
+from ffc.cpp import format
 
-# FIXME: KBO: Move to cpp.py (format)
-def generate_loop(lines, loop_vars, Indent, format):
-    "This function generates a loop over a vector or matrix."
-
-    # Prefetch formats to speed up code generation.
-    format_loop     = format["loop"]
-    format_begin    = format["block begin"]
-    format_end      = format["block end"]
-    format_comment  = format["comment"]
-
-    if not loop_vars:
-        return lines
-    code = []
-    for ls in loop_vars:
-        # Get index and lower and upper bounds.
-        index, lower, upper = ls
-
-        # Loop index.
-        code.append( Indent.indent(format_loop(index, lower, upper)) )
-        code.append( Indent.indent(format_begin) )
-
-        # Increase indentation.
-        Indent.increase()
-
-        # If this is the last loop, write values.
-        if index == loop_vars[-1][0]:
-            for l in lines:
-                if (isinstance(l,tuple) or isinstance(l,list)) and len(l) == 2:
-                    code.append((Indent.indent(l[0]), l[1]))
-                elif isinstance(l,str):
-                    code.append(Indent.indent(l))
-                else:
-                    print "line: ", l
-                    error("Line must be a string or a list or tuple of length 2.")
-
-    # Decrease indentation and write end blocks.
-    vrs = [lv[0] for lv in loop_vars]
-    vrs.reverse()
-    for lv in vrs:
-        Indent.decrease()
-        code.append( Indent.indent(format_end + format_comment("end loop over '%s'" %lv) ) )
-
-    return code
-
-# FIXME: KBO: Move to cpp.py (format)
-def generate_psi_name(counter, facet, component, derivatives):
-    """Generate a name for the psi table of the form:
-    FE#_f#_C#_D###, where '#' will be an integer value.
-
-    FE  - is a simple counter to distinguish the various bases, it will be
-          assigned in an arbitrary fashion.
-
-    f   - denotes facets if applicable, range(element.num_facets()).
-
-    C   - is the component number if any (this does not yet take into account
-          tensor valued functions)
-
-    D   - is the number of derivatives in each spatial direction if any. If the
-          element is defined in 3D, then D012 means d^3(*)/dydz^2."""
-
-    name = "FE%d" % counter
-    if not facet is None:
-        name += "_f%d" % facet
-    if component != () and component != []:
-        name += "_C%d" % component
-    if any(derivatives):
-        name += "_D" + "".join([str(d) for d in derivatives])
-
-    return name
-
-def create_psi_tables(tables, format_epsilon, parameters):
+def create_psi_tables(tables, parameters):
     "Create names and maps for tables and non-zero entries if appropriate."
 
     debug("\nQG-utils, psi_tables:\n" + str(tables))
@@ -101,7 +25,7 @@ def create_psi_tables(tables, format_epsilon, parameters):
 
     # Reduce tables such that we only have those tables left with unique values
     # Create a name map for those tables that are redundant.
-    name_map, unique_tables = unique_psi_tables(flat_tables, format_epsilon, parameters)
+    name_map, unique_tables = unique_psi_tables(flat_tables, parameters)
 
     debug("\nQG-utils, psi_tables, unique_tables:\n" + str(unique_tables))
     debug("\nQG-utils, psi_tables, name_map:\n" + str(name_map))
@@ -114,6 +38,8 @@ def flatten_psi_tables(tables):
     element number. returns:
     name_map    - {num_quad_points:{ufl_element:element_number,},}.
     flat_tables - {unique_table_name:values (ip,basis),}."""
+
+    generate_psi_name = format["psi name"]
 
     # Initialise return values and element counter.
     flat_tables = {}
@@ -182,7 +108,7 @@ def flatten_psi_tables(tables):
 
     return (element_map, flat_tables)
 
-def unique_psi_tables(tables, format_epsilon, parameters):
+def unique_psi_tables(tables, parameters):
     """Returns a name map and a dictionary of unique tables. The function checks
     if values in the tables are equal, if this is the case it creates a name
     mapping. It also create additional information (depending on which parameters
@@ -191,15 +117,17 @@ def unique_psi_tables(tables, format_epsilon, parameters):
     unique_tables - {name:values,}.
     name_map      - {original_name:[new_name, non-zero-columns (list), is zero (bool), is ones (bool)],}."""
 
+    format_epsilon = format["epsilon"]
+
     # Get unique tables (from old table utility).
-    name_map, inverse_name_map = unique_tables(tables, format_epsilon)
+    name_map, inverse_name_map = unique_tables(tables)
 
     debug("\ntables: " + str(tables))
     debug("\nname_map: " + str(name_map))
     debug("\ninv_name_map: " + str(inverse_name_map))
 
     # Get names of tables with all ones (from old table utility).
-    names_ones = get_ones(tables, format_epsilon)
+    names_ones = get_ones(tables)
 
     # Set values to zero if they are lower than threshold.
     for name in tables:
@@ -262,7 +190,7 @@ def unique_psi_tables(tables, format_epsilon, parameters):
                         i += 1
 
     # Check if we have some zeros in the tables.
-    names_zeros = contains_zeros(tables, format_epsilon)
+    names_zeros = contains_zeros(tables)
 
     # Add non-zero column, zero and ones info to inverse_name_map
     # (so we only need to pass around one name_map to code generating functions).
@@ -286,7 +214,7 @@ def unique_psi_tables(tables, format_epsilon, parameters):
         # FE1 = {-1,1,0}, nzc1 = [0,1]  -> FE0 = {-1,1}, nzc0 = [0,2], nzc1 = [0,1].
 
         # Call old utility function again.
-        nm, inv_nm = unique_tables(tables, format_epsilon)
+        nm, inv_nm = unique_tables(tables)
 
         # Update name maps.
         for name in inverse_name_map:
@@ -304,7 +232,7 @@ def unique_psi_tables(tables, format_epsilon, parameters):
                     name_map[name].append(m)
 
         # Get new names of tables with all ones (for vector constants).
-        names = get_ones(tables, format_epsilon)
+        names = get_ones(tables)
 
         # Because these tables now contain ones as a consequence of compression
         # we still need to consider the non-zero columns when looking up values
@@ -324,7 +252,7 @@ def unique_psi_tables(tables, format_epsilon, parameters):
 
     return (inverse_name_map, tables)
 
-def unique_tables(tables, format_epsilon):
+def unique_tables(tables):
     """Removes tables with redundant values and returns a name_map and a
     inverse_name_map. E.g.,
 
@@ -333,6 +261,8 @@ def unique_tables(tables, format_epsilon):
     tables = {a:[0,1,2], b:[0,2,3]}
     name_map = {a:[c,d]}
     inverse_name_map = {a:a, b:b, c:a, d:a}."""
+
+    format_epsilon = format["epsilon"]
 
     name_map = {}
     inverse_name_map = {}
@@ -354,8 +284,15 @@ def unique_tables(tables, format_epsilon):
 
             # Check if dimensions match.
             if shape(val0) == shape(val1):
+#                if (val0 - val1).max() < format_epsilon\
+#                   and not  sqrt(((val0 - val1)*(val0 - val1)).sum()) < format_epsilon:
+#                    print "\nv0: ", val0
+#                    print "\nv1: ", val1
+#                    print "v0 - v1: ", abs(val0 - val1)
+#                    raise RuntimeError
                 # Check if values are the same.
-                if sqrt(((val0 - val1)*(val0 - val1)).sum()) < format_epsilon:
+#                if sqrt(((val0 - val1)*(val0 - val1)).sum()) < format_epsilon:
+                if abs(val0 - val1).max() < format_epsilon:
                     mapped.append(name1)
                     del tables[name1]
                     if name0 in name_map:
@@ -372,8 +309,9 @@ def unique_tables(tables, format_epsilon):
 
     return (name_map, inverse_name_map)
 
-def get_ones(tables, format_epsilon):
+def get_ones(tables):
     "Return names of tables for which all values are 1.0."
+    format_epsilon = format["epsilon"]
     names = []
     for name in tables:
         vals = tables[name]
@@ -386,9 +324,10 @@ def get_ones(tables, format_epsilon):
             names.append(name)
     return names
 
-def contains_zeros(tables, format_epsilon):
+def contains_zeros(tables):
     "Checks if any tables contains only zeros."
 
+    format_epsilon = format["epsilon"]
     names = []
     for name in tables:
         vals = tables[name]

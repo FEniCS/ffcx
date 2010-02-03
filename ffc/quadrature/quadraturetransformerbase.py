@@ -36,9 +36,7 @@ from ffc.mixedelement import MixedElement
 from ffc.tensor.multiindex import MultiIndex as FFCMultiIndex
 
 # Utility and optimisation functions for quadraturegenerator.
-from quadraturegenerator_utils import create_psi_tables
-from quadraturegenerator_utils import generate_loop
-from quadraturegenerator_utils import generate_psi_name
+from quadratureutils import create_psi_tables
 from symbolics import generate_aux_constants
 from symbolics import BASIS, IP, GEO, CONST
 
@@ -81,8 +79,8 @@ class QuadratureTransformerBase(Transformer):
         self._components = Stack()
         self.trans_set = set()
         self.element_map, self.name_map, self.unique_tables =\
-              create_psi_tables(psi_tables,\
-                                       self.format["epsilon"], self.optimise_parameters)
+              create_psi_tables(psi_tables, self.optimise_parameters)
+
         # Cache.
         self.argument_cache = {}
         self.function_cache = {}
@@ -679,6 +677,7 @@ class QuadratureTransformerBase(Transformer):
         format_component    = self.format["component"]
         format_Gip          = self.format["geometry constant"] + self.format["integration points"]
         format_assign       = self.format["assign"]
+        f_loop              = self.format["generate loop"]
 
         # Initialise return values.
         code = []
@@ -765,7 +764,7 @@ class QuadratureTransformerBase(Transformer):
             lines = []
             for number in function_numbers:
                 lines.append(function_expr[number])
-            code += func_ops_comment + generate_loop(lines, [(format_r, 0, loop_range)], Indent, self.format)
+            code += func_ops_comment + f_loop(lines, [(format_r, 0, loop_range)])
 
         # Create weight.
         ACCESS = GEO
@@ -888,7 +887,7 @@ class QuadratureTransformerBase(Transformer):
             # Add number of operations for current loop to total count.
             num_ops += ops
             code += ["", format_comment("Number of operations for primary indices: %d" % ops)]
-            code += generate_loop(lines, loop, Indent, self.format)
+            code += f_loop(lines, loop)
 
         info("             done, time = %f" % (time.time() - t))
 
@@ -974,6 +973,7 @@ class QuadratureTransformerBase(Transformer):
 
         # Get string for integration points.
         format_ip = self.format["integration points"]
+        generate_psi_name = self.format["psi name"]
 
         # Only support test and trial functions.
         # TODO: Verify that test and trial functions will ALWAYS be rearranged to 0 and 1.
@@ -1054,6 +1054,7 @@ class QuadratureTransformerBase(Transformer):
 
         # Get string for integration points.
         format_ip = self.format["integration points"]
+        generate_psi_name = self.format["psi name"]
 
         # Pick first free index of secondary type
         # (could use primary indices, but it's better to avoid confusion).

@@ -12,7 +12,7 @@ import unittest
 import time
 
 # FFC modules
-from ffc.quadrature.reduce_operations import operation_count, expand_operations, reduce_operations
+from ffc.quadrature.reduce_operations import expand_operations, reduce_operations
 from ffc.quadrature.symbolics import *
 from ffc.quadrature.sumobj import _group_fractions
 from ffc.cpp import format, set_float_formatting

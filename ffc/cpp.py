@@ -16,13 +16,6 @@ import re, numpy, platform
 from ffc.log import debug, error
 
 # FIXME: AL: This files needs cleaning up!
-
-# FIXME: AL: In places where we have non-implemented functions
-# FIXME: print a warning message instead of throwing an exception
-# FIXME: we should throw an exception and instead have a command-line
-# FIXME: option for converting exceptions to warnings that can be
-# FIXME: used from the regression test script.
-
 # Formatting rules
 # FIXME: KBO: format is a builtin_function, i.e., we should use a different name.
 format = {}
@@ -158,11 +151,12 @@ format.update({# Loop indices
                # Misc
                "pointer": "*",
                "new": "new ",
-#               "delete": "delete ",
                "delete pointer": lambda v, w: "delete [] %s%s;" % (v, w),
                "separator": ", ",
                "list separator": ", ",
+               "psi name": lambda c, f, co, d: _generate_psi_name(c,f,co,d),
                "tabulate tensor": lambda m: _tabulate_tensor(m),
+               "generate loop": lambda v, w: _generate_loop(v, w),
                "block separator": ",\n",
                "new line": "\\\n"
 })
@@ -323,6 +317,76 @@ def _tabulate_tensor(vals):
         return f_block(f_block_sep.join([_tabulate_tensor(tensor[i]) for i in range(shape[0])]))
     else:
         error("Not an N-dimensional array:\n%s" % tensor)
+
+def _generate_loop(lines, loop_vars):
+    "This function generates a loop over a vector or matrix."
+
+    # Prefetch formats to speed up code generation.
+    format_loop     = format["loop"]
+    format_begin    = format["block begin"]
+    format_end      = format["block end"]
+    format_comment  = format["comment"]
+
+    Indent = IndentControl()
+
+    if not loop_vars:
+        return lines
+    code = []
+    for ls in loop_vars:
+        # Get index and lower and upper bounds.
+        index, lower, upper = ls
+
+        # Loop index.
+        code.append( Indent.indent(format_loop(index, lower, upper)) )
+        code.append( Indent.indent(format_begin) )
+
+        # Increase indentation.
+        Indent.increase()
+
+        # If this is the last loop, write values.
+        if index == loop_vars[-1][0]:
+            for l in lines:
+                if (isinstance(l,tuple) or isinstance(l,list)) and len(l) == 2:
+                    code.append((Indent.indent(l[0]), l[1]))
+                elif isinstance(l,str):
+                    code.append(Indent.indent(l))
+                else:
+                    print "line: ", l
+                    error("Line must be a string or a list or tuple of length 2.")
+
+    # Decrease indentation and write end blocks.
+    vrs = [lv[0] for lv in loop_vars]
+    vrs.reverse()
+    for lv in vrs:
+        Indent.decrease()
+        code.append( Indent.indent(format_end + format_comment("end loop over '%s'" %lv) ) )
+
+    return code
+
+def _generate_psi_name(counter, facet, component, derivatives):
+    """Generate a name for the psi table of the form:
+    FE#_f#_C#_D###, where '#' will be an integer value.
+
+    FE  - is a simple counter to distinguish the various bases, it will be
+          assigned in an arbitrary fashion.
+
+    f   - denotes facets if applicable, range(element.num_facets()).
+
+    C   - is the component number if any (this does not yet take into account
+          tensor valued functions)
+
+    D   - is the number of derivatives in each spatial direction if any. If the
+          element is defined in 3D, then D012 means d^3(*)/dydz^2."""
+
+    name = "FE%d" % counter
+    if not facet is None:
+        name += "_f%d" % facet
+    if component != () and component != []:
+        name += "_C%d" % component
+    if any(derivatives):
+        name += "_D" + "".join([str(d) for d in derivatives])
+
+    return name
 
 def _generate_jacobian(cell_dimension, integral_type):
     "Generate code for computing jacobian"
