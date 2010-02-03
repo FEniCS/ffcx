@@ -24,7 +24,7 @@ typedef unsigned int uint;
 const uint max_derivative = 2;
 
 // Precision in output of floats
-const uint precision = 5;
+const uint precision = 1e-10;
 const double epsilon = 1e-10;
 
 // Global counter for results
@@ -293,10 +293,10 @@ void test_finite_element(ufc::finite_element& element)
     // FIXME: Special debugging
     if (i == 3)
     {
-      std::cout << "debug: Special debugging" << std::endl;
-      printf("debug: x1 = (%.16g, %.16g)\n", c.coordinates[1][0], c.coordinates[1][1]);
-      printf("debug: x2 = (%.16g, %.16g)\n", c.coordinates[2][0], c.coordinates[2][1]);
-      printf("debug: dof_values[3] = %.16g\n", dof_values[i]);
+      std::cout << "debug Special debugging" << std::endl;
+      printf("debug x1: (%.16g, %.16g)\n", c.coordinates[1][0], c.coordinates[1][1]);
+      printf("debug x2: (%.16g, %.16g)\n", c.coordinates[2][0], c.coordinates[2][1]);
+      printf("debug dof_values[3]: %.16g\n", dof_values[i]);
     }
   }
 
