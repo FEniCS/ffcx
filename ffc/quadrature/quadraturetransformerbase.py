@@ -664,7 +664,7 @@ class QuadratureTransformerBase(Transformer):
 
         # Prefetch formats to speed up code generation.
         format_comment      = self.format["comment"]
-        format_float_decl   = self.format["float declaration"]
+        format_double       = self.format["float declaration"]
         format_F            = self.format["function value"]
         format_float        = self.format["floating point"]
         format_iadd         = self.format["iadd"]
@@ -673,10 +673,10 @@ class QuadratureTransformerBase(Transformer):
         format_mult         = self.format["multiply"]
         format_scale_factor = self.format["scale factor"]
         format_add          = self.format["add"]
-        format_tensor       = self.format["element tensor quad"]
+        format_tensor       = self.format["element tensor"]
         format_component    = self.format["component"]
         format_Gip          = self.format["geometry constant"] + self.format["integration points"]
-        format_assign       = self.format["assign"]
+        format_decl         = self.format["declaration"]
         f_loop              = self.format["generate loop"]
 
         # Initialise return values.
@@ -717,7 +717,7 @@ class QuadratureTransformerBase(Transformer):
         if self.function_count:
             code += ["", format_comment("Coefficient declarations")]
         for function_number in range(self.function_count):
-            code.append(format_assign(format_float_decl + format_F + str(function_number), format_float(0)))
+            code.append(format_decl(format_double, format_F + str(function_number), format_float(0)))
 
         # Create code for computing function values, sort after loop ranges first.
         functions = self.functions
@@ -864,7 +864,7 @@ class QuadratureTransformerBase(Transformer):
             except:
                 pass
 
-            entry_code = format_iadd( format_component(format_tensor, entry), value)
+            entry_code = format_iadd(format_tensor(entry), value)
 
             if loop not in loops:
                 loops[loop] = [entry_ops, [entry_ops_comment, entry_code]]

@@ -92,8 +92,10 @@ def _required_declarations(ir):
     cell_dim = ir["cell_dimension"]
     code.append(comment("Declare variables for result of evaluation"))
     code.append(declare("double", "vals[%d]" % ir["value_size"]))
+    code.append("")
     code.append(comment("Declare variable for physical coordinates"))
     code.append(declare("double", "y[%d]" % cell_dim))
+    code.append("")
 
     # Check whether Jacobians are necessary.
     needs_inverse_jacobian = any(["contravariant piola" in m

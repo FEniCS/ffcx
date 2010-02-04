@@ -7,7 +7,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian B. Oelgaard 2010
 # Modified by Marie E. Rognes 2010
-# Last changed: 2010-02-03
+# Last changed: 2010-02-04
 
 # Python modules
 import re, numpy, platform
@@ -42,13 +42,13 @@ format.update({
 # Declarations
 format.update({
     "declaration":                    lambda t, n, v=None: _declaration(t, n, v),
-    "float declaration":              "double ",
-    "uint declaration":               "unsigned int ",
-    "static const uint declaration":  "static const unsigned int ",
-    "static const float declaration": "static const double ",
+    "float declaration":              "double",
+    "uint declaration":               "unsigned int",
+    "static const uint declaration":  "static const unsigned int",
+    "static const float declaration": "static const double",
     "const float declaration":        lambda v, w: "const double %s = %s;" % (v, w),
     "const uint declaration":         lambda v, w: "const unsigned int %s = %s;" % (v, w),
-    "dynamic array":                  lambda t, n, s: "%s*%s = new %s[%s];" % (t, n, t, s),
+    "dynamic array":                  lambda t, n, s: "%s *%s = new %s[%s];" % (t, n, t, s),
     "delete dynamic array":           lambda n, s=None: _delete_array(n, s)
 })
 
@@ -99,9 +99,8 @@ format.update({
 
 # UFC function arguments (names)
 format.update({
-    "element tensor":  lambda i: "A[%d]" % i,
+    "element tensor":  lambda i: "A[%s]" % i,
     "coefficient":     lambda j, k: format["component"]("w", [j, k]),
-    "element tensor quad": "A",
     "argument basis num": "i",
     "argument derivative order": "n",
     "argument values": "values",
@@ -128,6 +127,9 @@ format.update({
     "dof map if":               lambda i,j: "%d <= %s && %s <= %d"\
                                 % (i, format["argument basis num"], format["argument basis num"], j),
     "dereference pointer":      lambda n: "*%s" % n,
+    "reference variable":       lambda n: "&%s" % n,
+    "call basis":               lambda i, s: "evaluate_basis(%s, %s, coordinates, c);" % (i, s),
+    "call basis_derivatives":   lambda i, s: "evaluate_basis_derivatives(%s, n, %s, coordinates, c);" % (i, s),
 
     # quadrature code generators
     "integration points": "ip",
@@ -139,7 +141,8 @@ format.update({
     "weight":             lambda i: "W%d" % (i),
     "psi name":           lambda c, f, co, d: _generate_psi_name(c,f,co,d),
     # both
-    "free indices":       ["r","s","t","u"]
+    "free indices":       ["r","s","t","u"],
+    "matrix index":       lambda i, j, range_j: _matrix_index(i, str(j), str(range_j))
 })
 
 # Misc
@@ -198,8 +201,8 @@ format.update({
 # Helper functions for formatting.
 def _declaration(type, name, value=None):
     if value is None:
-        return "%s %s;\n" % (type, name);
-    return "%s %s = %s;\n" % (type, name, str(value));
+        return "%s %s;" % (type, name);
+    return "%s %s = %s;" % (type, name, str(value));
 
 def _component(var, k):
     if not isinstance(k, (list, tuple)):
@@ -378,6 +381,17 @@ def _generate_loop(lines, loop_vars):
         code.append(indent(f_end + f_comment("end loop over '%s'" % index), _indent))
 
     return code
+
+def _matrix_index(i, j, range_j):
+    "Map the indices in a matrix to an index in an array i.e., m[i][j] -> a[i*range(j)+j]"
+    if i == 0:
+        access = j
+    elif i == 1:
+        access = format["add"]([range_j, j])
+    else:
+        irj = format["mul"]([format["str"](i), range_j])
+        access = format["add"]([irj, j])
+    return access
 
 def _generate_psi_name(counter, facet, component, derivatives):
     """Generate a name for the psi table of the form:

@@ -47,9 +47,10 @@ def _tabulate_tensor(ir, parameters):
     f_float         = format["float"]
     f_assign        = format["assign"]
     f_component     = format["component"]
-    f_A             = format["element tensor quad"]
+    f_A             = format["element tensor"]
     f_r             = format["free indices"][0]
     f_loop          = format["generate loop"]
+    f_int           = format["int"]
 
     # FIXME: KBO: Handle this in a better way, make -O option take an argument?
     if parameters["optimize"]:
@@ -165,10 +166,10 @@ def _tabulate_tensor(ir, parameters):
     common += [f_comment("Reset values in the element tensor.")]
     value = f_float(0)
     if prim_idims == []:
-        common += [f_assign(f_component(f_A, "0"), f_float(0))]
+        common += [f_assign(f_A(f_int(0)), f_float(0))]
     else:
         dim = reduce(lambda v,u: v*u, prim_idims)
-        common += f_loop([f_assign(f_component(f_A, f_r), f_float(0))], [(f_r, 0, dim)])
+        common += f_loop([f_assign(f_A(f_r), f_float(0))], [(f_r, 0, dim)])
 
     # Create the constant geometry declarations (only generated if simplify expressions are enabled).
     geo_ops, geo_code = generate_aux_constants(transformer.geo_consts, f_G, f_const_double)
@@ -253,7 +254,7 @@ def _tabulate_weights(transformer, Indent, format):
     f_weight   = format["weight"]
     f_component =  format["component"]
     f_group    = format["grouping"]
-    f_assign    = format["assign"]
+    f_decl    = format["declaration"]
     f_tensor    = format["tabulate tensor"]
 
     code = ["", Indent.indent(format["comment"]("Array of quadrature weights"))]
@@ -267,12 +268,12 @@ def _tabulate_weights(transformer, Indent, format):
         ffc_assert(weights.any(), "No weights.")
 
         # Create name and value for weight.
-        name = f_table + f_weight(num_points)
+        name = f_weight(num_points)
         value = f_float(weights[0])
         if len(weights) > 1:
             name += f_component("", str(num_points))
             value = f_tensor(weights)
-        code += [f_assign(Indent.indent(name), value)]
+        code += [f_decl(f_table, name, value)]
 
         # Tabulate the quadrature points (uncomment for different parameters).
         # 1) Tabulate the points as: p0, p1, p2, with p0 = (x0, y0, z0) etc.
@@ -328,7 +329,7 @@ def _tabulate_psis(transformer, Indent, format):
     f_const_uint = format["static const uint declaration"]
     f_nzcolumns  = format["nonzero columns"]
     f_list        = format["list"]
-    f_assign    = format["assign"]
+    f_decl    = format["declaration"]
     f_tensor    = format["tabulate tensor"]
     f_new_line    = format["new line"]
 
@@ -371,11 +372,11 @@ def _tabulate_psis(transformer, Indent, format):
         if not vals is None:
             # Add declaration to name.
             ip, dofs = numpy.shape(vals)
-            decl_name = f_component(f_table + name, [ip, dofs])
+            decl_name = f_component(name, [ip, dofs])
 
             # Generate array of values.
             value = f_tensor(vals)
-            code += [f_assign(Indent.indent(decl_name), f_new_line + value), ""]
+            code += [f_decl(f_table, decl_name, f_new_line + value), ""]
 
         # Tabulate non-zero indices.
         if transformer.optimise_parameters["non zero columns"]:
@@ -388,7 +389,7 @@ def _tabulate_psis(transformer, Indent, format):
                         code += [Indent.indent(f_comment("Array of non-zero columns") )]
                         value = f_list(["%d" % c for c in list(cols)])
                         name_col = f_component(f_const_uint + f_nzcolumns(i), len(cols))
-                        code += [f_assign(Indent.indent(name_col), value), ""]
+                        code += [f_decl(f_const_uint, name_col, value), ""]
 
                         # Remove from list of columns.
                         new_nzcs.remove(inv_name_map[n][1])
