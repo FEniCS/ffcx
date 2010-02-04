@@ -26,9 +26,12 @@ def _evaluate_basis_derivatives_all(data_list):
     if isinstance(data_list, str):
         return format["exception"]("evaluate_basis_derivatives_all: %s" % data_list)
 
-    f_r, f_s  = format["free indices"][:2]
-    f_assign  = format["assign"]
-    f_loop    = format["generate loop"]
+    f_r, f_s    = format["free indices"][:2]
+    f_assign    = format["assign"]
+    f_loop      = format["generate loop"]
+    f_array     = format["dynamic array"]
+    f_dof_vals  = format["dof values"]
+    f_comment   = format["comment"]
 
     # Initialise objects
     Indent = IndentControl()
@@ -53,7 +56,7 @@ def _evaluate_basis_derivatives_all(data_list):
 
     # Special case where space dimension is one (constant elements)
     if space_dimension == 1:
-        code += [format["comment"]("Element is constant, calling evaluate_basis_derivatives.")]
+        code += [f_comment("Element is constant, calling evaluate_basis_derivatives.")]
         code += ["evaluate_basis_derivatives(0, n, %s, coordinates, c);" % format["argument values"]]
         return "\n".join(code)
 
@@ -63,21 +66,21 @@ def _evaluate_basis_derivatives_all(data_list):
     code += _compute_num_derivatives(topological_dimension, Indent, format)
 
     # Declare helper value to hold single dof values and reset
-    code += ["", format["comment"]("Helper variable to hold values of a single dof.")]
+    code += ["", f_comment("Helper variable to hold values of a single dof.")]
     if (value_shape == 1):
         num_vals = format["num derivatives"]
     else:
         # FIXME: KBO: Should the str(int()) be in format?
         num_vals = format["multiply"]([str(int(value_shape)), format["num derivatives"]])
-    code += [f_assign(Indent.indent(format["float declaration"] + format["pointer"] + "dof_values"),\
-              format["component"](format["new"] + format["float declaration"], num_vals))]
+
+    code += [format["dynamic array"](format["float declaration"], f_dof_vals, num_vals)]
     loop_vars = [(f_r, 0, num_vals)]
-    line = [f_assign(format["component"]("dof_values", f_r), format["floating point"](0.0))]
+    line = [f_assign(format["component"](f_dof_vals, f_r), format["floating point"](0.0))]
     code += f_loop(line, loop_vars)
 
     # Create loop over dofs that calls evaluate_basis_derivatives for a single dof and
     # inserts the values into the global array.
-    code += ["", format["comment"]("Loop dofs and call evaluate_basis_derivatives.")]
+    code += ["", f_comment("Loop dofs and call evaluate_basis_derivatives.")]
     lines_r = []
     loop_vars_r = [(f_r, 0, space_dimension)]
 
@@ -92,8 +95,8 @@ def _evaluate_basis_derivatives_all(data_list):
     lines_r += f_loop(lines_s, loop_vars_s)
     code += f_loop(lines_r, loop_vars_r)
 
-    code += ["", format["comment"]("Delete pointer.")]
-    code += [Indent.indent(format["delete pointer"]("dof_values", ""))]
+    code += ["", f_comment("Delete pointer.")]
+    code += [format["delete dynamic array"](format["dof values"])]
 
     # Generate bode (no need to remove unused)
     return "\n".join(code)
@@ -359,17 +362,18 @@ def _update_dmats(shape_dmats, indices, Indent, format):
 
 def _compute_dmats(num_dmats, shape_dmats, available_indices, deriv_index, Indent, format):
 
+    f_comment = format["comment"]
     s, t, u = available_indices
 
     # Reset dmats_old
     code = _reset_dmats(shape_dmats, [t, u], Indent, format)
-    code += ["", format["comment"]("Looping derivative order to generate dmats.")]
+    code += ["", f_comment("Looping derivative order to generate dmats.")]
 
     # Set dmats matrix equal to dmats_old
     lines = _update_dmats(shape_dmats, [t, u], Indent, format)
     loop_vars = [(s, 0, format["argument derivative order"])]
 
-    lines += ["", format["comment"]("Update dmats using an inner product.")]
+    lines += ["", f_comment("Update dmats using an inner product.")]
     # Create dmats matrix by multiplication
     comb = format["component"](format["derivative combinations"], [deriv_index, s])
     for i in range(num_dmats):
@@ -451,8 +455,7 @@ def _compute_reference_derivatives(data, Indent, format):
     else:
         # FIXME: KBO: Should the str(int()) be in format?
         num_vals = format["multiply"]([str(int(num_components)), format["num derivatives"]])
-    code += [f_assign(Indent.indent(f_float + format["pointer"] + format["reference derivatives"]),\
-              format["component"](format["new"] + f_float, num_vals))]
+    code += [format["dynamic array"](f_float, format["reference derivatives"], num_vals)]
     # Reset values of reference derivatives.
     name = format["component"](format["reference derivatives"], f_r)
     lines = [f_assign(name, format["floating point"](0))]
@@ -497,7 +500,7 @@ def _compute_reference_derivatives(data, Indent, format):
     if mapping == "affine":
         pass
     elif mapping == "contravariant piola":
-        lines += ["", Indent.indent(format["comment"]\
+        lines += ["", Indent.indent(f_comment\
                 ("Using contravariant Piola transform to map values back to the physical element"))]
         # Get temporary values before mapping.
         lines += [format["const float declaration"](Indent.indent(f_tmp(i)),\
@@ -517,7 +520,7 @@ def _compute_reference_derivatives(data, Indent, format):
             name = f_component(format["reference derivatives"], _matrix_index(i, f_r, format["num derivatives"]))
             lines += [f_assign(name, value)]
     elif mapping == "covariant piola":
-        lines += ["", Indent.indent(format["comment"]\
+        lines += ["", Indent.indent(f_comment\
                 ("Using covariant Piola transform to map values back to the physical element"))]
         # Get temporary values before mapping.
         lines += [format["const float declaration"](Indent.indent(f_tmp(i)),\
@@ -620,20 +623,15 @@ def _transform_derivatives(data, sum_value_dim, Indent, format):
 def _delete_pointers(data, Indent, format):
     "Delete the pointers to arrays."
 
+    f_del_array = format["delete dynamic array"]
     code = []
-    f_r = format["free indices"][0]
 
-    code += ["", Indent.indent(format["comment"]("Delete pointer to array of derivatives on FIAT element"))]
-    code += [Indent.indent(format["delete pointer"](format["reference derivatives"], "")), ""]
+    code += ["", format["comment"]("Delete pointer to array of derivatives on FIAT element")]
+    code += [f_del_array(format["reference derivatives"]), ""]
 
-    code += [Indent.indent(format["comment"]("Delete pointer to array of combinations of derivatives and transform"))]
-    loop_vars = [(f_r, 0, format["num derivatives"])]
-    lines =  [format["delete pointer"](format["derivative combinations"], format["component"]("", f_r))]
-    lines += [format["delete pointer"](format["transform matrix"], format["component"]("", f_r))]
-    code += format["generate loop"](lines, loop_vars)
-
-    code += [Indent.indent(format["delete pointer"](format["derivative combinations"], ""))]
-    code += [Indent.indent(format["delete pointer"](format["transform matrix"], ""))]
+    code += [format["comment"]("Delete pointer to array of combinations of derivatives and transform")]
+    code += [f_del_array(format["derivative combinations"], format["num derivatives"])]
+    code += [f_del_array(format["transform matrix"], format["num derivatives"])]
 
     return code
 

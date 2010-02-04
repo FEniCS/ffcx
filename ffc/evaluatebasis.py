@@ -127,7 +127,8 @@ def _evaluate_basis(data_list):
     code += ["", Indent.indent(format["comment"]("Reset values"))]
     if value_shape == 1:
         # Reset values as it is a pointer.
-        code += [format["assign"](Indent.indent(format["pointer"] + format["argument values"]), format["floating point"](0.0))]
+        code += [format["assign"](format["dereference pointer"](format["argument values"]),\
+                                  format["floating point"](0.0))]
     else:
         # Reset all values.
         code += [format["assign"](Indent.indent(format["component"](format["argument values"], i)),\
@@ -293,7 +294,7 @@ def _compute_values(data, sum_value_dim, vector, Indent, format):
     f_basisvalues      = format["basisvalues"]
     f_r                = format["free indices"][0]
     f_dof              = format["local dof"]
-    f_pointer          = format["pointer"]
+    f_deref_pointer    = format["dereference pointer"]
     f_det              = format["det(J)"]
     f_inv              = format["inverse"]
     f_mult             = format["multiply"]
@@ -328,7 +329,7 @@ def _compute_values(data, sum_value_dim, vector, Indent, format):
             lines += [format["iadd"](name, value)]
     else:
         # Generate name and value to create matrix vector multiply
-        name = f_pointer + f_values
+        name = f_deref_pointer(f_values)
         value = f_multiply([f_component(f_coefficients(0), [f_dof, f_r]),\
                 f_component(f_basisvalues, f_r)])
         lines = [format["iadd"](name, value)]

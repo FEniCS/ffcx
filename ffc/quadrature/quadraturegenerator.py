@@ -249,8 +249,7 @@ def _tabulate_weights(transformer, Indent, format):
     # Prefetch formats to speed up code generation.
     f_float    = format["floating point"]
     f_table    = format["static const float declaration"]
-    f_block    = format["block"]
-    f_sep      = format["separator"]
+    f_sep      = format["list separator"]
     f_weight   = format["weight"]
     f_component =  format["component"]
     f_group    = format["grouping"]

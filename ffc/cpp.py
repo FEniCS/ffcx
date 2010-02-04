@@ -15,170 +15,185 @@ import re, numpy, platform
 # FFC modules
 from ffc.log import debug, error
 
-# FIXME: AL: This files needs cleaning up!
 # Formatting rules
 # FIXME: KBO: format is a builtin_function, i.e., we should use a different name.
 format = {}
-choose_map = {None: "", "+": "0", "-": 1}
+choose_map = {None: "", "+": "0", "-": "1"}
 
 # Program flow
-format.update({"return":      lambda v: "return %s;" % str(v),
-               "grouping":    lambda v: "(%s)" % v,
-               "block":       lambda v: "{%s}" % v,
-               "block begin": "{",
-               "block end":   "}",
-               "list":        lambda v: format["block"](format["separator"].join([str(l) for l in v])),
-               "switch":      lambda v, cases, default=None, numbers=None: _generate_switch(v, cases, default, numbers),
-               "exception":   lambda v: "throw std::runtime_error(\"%s\");" % v,
-               "warning":     lambda v: 'std::cerr << "*** FFC warning: " << "%s" << std::endl;' % v,
-               "comment":     lambda v: "// %s" % v,
-               "if":          lambda c, v: "if (%s)\n{\n%s\n}\n" % (c, v),
-               "loop":        lambda i, j, k: "for (unsigned int %s = %s; %s < %s; %s++)"% (i, j, i, k, i),
-               "is equal": " == ",
-               "do nothing":  "// Do nothing"})
+format.update({
+    "return":         lambda v: "return %s;" % str(v),
+    "grouping":       lambda v: "(%s)" % v,
+    "block":          lambda v: "{%s}" % v,
+    "block begin":    "{",
+    "block end":      "}",
+    "list":           lambda v: format["block"](format["list separator"].join([str(l) for l in v])),
+    "switch":         lambda v, cases, default=None, numbers=None: _generate_switch(v, cases, default, numbers),
+    "exception":      lambda v: "throw std::runtime_error(\"%s\");" % v,
+    "warning":        lambda v: 'std::cerr << "*** FFC warning: " << "%s" << std::endl;' % v,
+    "comment":        lambda v: "// %s" % v,
+    "if":             lambda c, v: "if (%s)\n{\n%s\n}\n" % (c, v),
+    "loop":           lambda i, j, k: "for (unsigned int %s = %s; %s < %s; %s++)"% (i, j, i, k, i),
+    "generate loop":  lambda v, w: _generate_loop(v, w),
+    "is equal":       " == ",
+    "do nothing":     "// Do nothing"
+})
 
 # Declarations
-format.update({"declaration": lambda t, n, v=None: _declaration(t, n, v),
-               "float declaration": "double ",
-               "uint declaration": "unsigned int ",
-               "static const uint declaration": "static const unsigned int ",
-               "static const float declaration": "static const double ",
-               "const float declaration":
-                   lambda v, w: "const double %s = %s;" % (v, w),
-               "const uint declaration":
-                   lambda v, w: "const unsigned int %s = %s;" % (v, w)})
+format.update({
+    "declaration":                    lambda t, n, v=None: _declaration(t, n, v),
+    "float declaration":              "double ",
+    "uint declaration":               "unsigned int ",
+    "static const uint declaration":  "static const unsigned int ",
+    "static const float declaration": "static const double ",
+    "const float declaration":        lambda v, w: "const double %s = %s;" % (v, w),
+    "const uint declaration":         lambda v, w: "const unsigned int %s = %s;" % (v, w),
+    "dynamic array":                  lambda t, n, s: "%s*%s = new %s[%s];" % (t, n, t, s),
+    "delete dynamic array":           lambda n, s=None: _delete_array(n, s)
+})
 
 # Mathematical operators
-format.update({"add":           lambda v: " + ".join(v),
-               "iadd":          lambda v, w: "%s += %s;" % (str(v), str(w)),
-               "sub":           lambda v: " - ".join(v),
-               "mul":           lambda v: "*".join(v),
-               "imul":          lambda v, w: "%s *= %s;" % (str(v), str(w)),
-               "div":           lambda v, w: "%s/%s" % (str(v), str(w)),
-               "inverse":       lambda v: "(1.0/%s)" % v,
-               "std power":     lambda base, exp: "std::pow(%s, %s)" % (base, exp),
-               "exp":           lambda v: "std::exp(%s)" % str(v),
-               "ln":            lambda v: "std::log(%s)" % str(v),
-               "cos":           lambda v: "std::cos(%s)" % str(v),
-               "sin":           lambda v: "std::sin(%s)" % str(v),
-               "absolute value":lambda v: "std::abs(%s)" % str(v),
-               "sqrt":          lambda v: "std::sqrt(%s)" % str(v),
-               "addition":      lambda v: _add(v),
-               "multiply":      lambda v: _multiply(v),
-               "power":         lambda base, exp: _power(base, exp),
-               "inner product": lambda v, w: _inner_product(v, w),
-               "assign":        lambda v, w: "%s = %s;" % (v, str(w)),
-               "component":     lambda v, k: _component(v, k)})
+format.update({
+    "add":            lambda v: " + ".join(v),
+    "iadd":           lambda v, w: "%s += %s;" % (str(v), str(w)),
+    "sub":            lambda v: " - ".join(v),
+    "mul":            lambda v: "*".join(v),
+    "imul":           lambda v, w: "%s *= %s;" % (str(v), str(w)),
+    "div":            lambda v, w: "%s/%s" % (str(v), str(w)),
+    "inverse":        lambda v: "(1.0/%s)" % v,
+    "std power":      lambda base, exp: "std::pow(%s, %s)" % (base, exp),
+    "exp":            lambda v: "std::exp(%s)" % str(v),
+    "ln":             lambda v: "std::log(%s)" % str(v),
+    "cos":            lambda v: "std::cos(%s)" % str(v),
+    "sin":            lambda v: "std::sin(%s)" % str(v),
+    "absolute value": lambda v: "std::abs(%s)" % str(v),
+    "sqrt":           lambda v: "std::sqrt(%s)" % str(v),
+    "addition":       lambda v: _add(v),
+    "multiply":       lambda v: _multiply(v),
+    "power":          lambda base, exp: _power(base, exp),
+    "inner product":  lambda v, w: _inner_product(v, w),
+    "assign":         lambda v, w: "%s = %s;" % (v, str(w)),
+    "component":      lambda v, k: _component(v, k)
+})
 
 # Formatting used in tabulate_tensor
-format.update({"element tensor":  lambda i: "A[%d]" % i,
-               "geometry tensor":
-                                  lambda j, a: "G%d_%s" % (j, "_".join(["%d" % i for i in a])),
-               "coefficient":     lambda j, k: format["component"]("w", [j, k]),
-               "transform":       lambda t, j, k, r: _transform(t, j, k, r)})
+format.update({
+    "geometry tensor": lambda j, a: "G%d_%s" % (j, "_".join(["%d" % i for i in a]))
+})
 
-# Geometry related variable names
-format.update({"entity index": "c.entity_indices",
-               "num entities": "m.num_entities",
-               "cell":   lambda s: "ufc::%s" % s,
-               "J":      lambda i, j: "J_%d%d" % (i, j),
-               "inv(J)": lambda i, j: "K_%d%d" % (i, j),
-               "det(J)": lambda r="": "detJ%s" % r})
+# Geometry related variable names (from code snippets).
+format.update({
+    "entity index":     "c.entity_indices",
+    "num entities":     "m.num_entities",
+    "cell":             lambda s: "ufc::%s" % s,
+    "J":                lambda i, j: "J_%d%d" % (i, j),
+    "inv(J)":           lambda i, j: "K_%d%d" % (i, j),
+    "det(J)":           lambda r="": "detJ%s" % r,
+    "scale factor":     "det",
+    "transform":        lambda t, j, k, r: _transform(t, j, k, r),
+    "normal component": lambda r, j: "n%s%s" % (choose_map[r], j),
+    "x coordinate":     "X",
+    "y coordinate":     "Y",
+    "z coordinate":     "Z"
+})
+
+# UFC function arguments (names)
+format.update({
+    "element tensor":  lambda i: "A[%d]" % i,
+    "coefficient":     lambda j, k: format["component"]("w", [j, k]),
+    "element tensor quad": "A",
+    "argument basis num": "i",
+    "argument derivative order": "n",
+    "argument values": "values",
+    "argument coordinates": "coordinates"
+})
+
+# Formatting used in evaluate_basis, evaluate_basis_derivatives and quadrature
+# code generators.
+format.update({
+    # evaluate_basis and evaluate_basis_derivatives
+    "tmp value":                lambda i: "tmp%d" % i,
+    "tmp ref value":            lambda i: "tmp_ref%d" % i,
+    "local dof":                "dof",
+    "basisvalues":              "basisvalues",
+    "coefficients":             lambda i: "coefficients%d" %(i),
+    "num derivatives":          "num_derivatives",
+    "derivative combinations":  "combinations",
+    "transform matrix":         "transform",
+    "transform Jinv":           "Jinv",
+    "dmats":                    lambda i: "dmats%s" %(i),
+    "dmats old":                "dmats_old",
+    "reference derivatives":    "derivatives",
+    "dof values":               "dof_values",
+    "dof map if":               lambda i,j: "%d <= %s && %s <= %d"\
+                                % (i, format["argument basis num"], format["argument basis num"], j),
+    "dereference pointer":      lambda n: "*%s" % n,
+
+    # quadrature code generators
+    "integration points": "ip",
+    "first free index":   "j",
+    "second free index":  "k",
+    "geometry constant":  "G",
+    "function value":     "F",
+    "nonzero columns":    lambda i: "nzc%d" % i,
+    "weight":             lambda i: "W%d" % (i),
+    "psi name":           lambda c, f, co, d: _generate_psi_name(c,f,co,d),
+    # both
+    "free indices":       ["r","s","t","u"]
+})
+
+# Misc
+format.update({
+    "bool":             lambda v: {True: "true", False: "false"}[v],
+    "str":              lambda v: "%s" % v,
+    "int":              lambda v: "%d" % v,
+    "list separator":   ", ",
+    "block separator":  ",\n",
+    "new line":         "\\\n",
+    "tabulate tensor":  lambda m: _tabulate_tensor(m),
+})
 
 # Code snippets
 from codesnippets import *
-format.update({"cell coordinates": cell_coordinates,
-               "jacobian": lambda n, r="": jacobian[n] % {"restriction": r},
-               "inverse jacobian": lambda n, r="": inverse_jacobian[n] % {"restriction": r},
-               "jacobian and inverse": lambda n, r="": format["jacobian"](n, r) +\
-                                       "\n" + format["inverse jacobian"](n, r),
-               "facet determinant": lambda n, r="": facet_determinant[n] % {"restriction": r},
-               "fiat coordinate map": lambda n: fiat_coordinate_map[n],
-               "generate normal": lambda d, i: _generate_normal(d, i),
-               "scale factor snippet": scale_factor,
-               "map onto physical": map_onto_physical,
-               "combinations": combinations_snippet,
-               "transform snippet": transform_snippet,
-               "evaluate function": evaluate_f,
-               "ufc comment": comment_ufc,
-               "dolfin comment": comment_dolfin,
-               "header_h": header_h,
-               "header_c": header_c,
-               "footer": footer})
-
-# UFC function arguments (names)
-
-# UFC formatting used in evaluate_basis and evaluate_basis_derivatives.
-
-# TODO: Stuff from format_old used by KBO, should be moved around and possibly renamed.
-format.update({# Loop indices
-               "integration points": "ip",
-               "free indices":  ["r","s","t","u"],
-               "first free index": "j",
-               "second free index": "k",
-               "tmp value": lambda i: "tmp%d" % i,
-               "tmp ref value": lambda i: "tmp_ref%d" % i,
-               # Snippet variable names
-               "x coordinate": "X",
-               "y coordinate": "Y",
-               "z coordinate": "Z",
-               "scale factor": "det",
-               "normal component": lambda r, j: "n%s%s" % (choose_map[r], j),
-               # Random variable names
-               "local dof": "dof",
-               "basisvalues": "basisvalues",
-               "geometry constant": "G",
-               "coefficients": lambda i: "coefficients%d" %(i),
-               "num derivatives": "num_derivatives",
-               "derivative combinations": "combinations",
-               "transform matrix": "transform",
-               "transform Jinv": "Jinv",
-               "dmats":   lambda i: "dmats%s" %(i),
-               "dmats old": "dmats_old",
-               "reference derivatives": "derivatives",
-               "function value": "F",
-               "nonzero columns": lambda i: "nzc%d" % i,
-               "element tensor quad": "A",
-               "weight": lambda i: "W%d" % (i),
-               # UFC argument names
-               "argument values": "values",
-               "argument coordinates": "coordinates",
-               "argument basis num": "i",
-               "argument derivative order": "n",
-               # Convenience formats
-               "dof map if": lambda i,j: "%d <= %s && %s <= %d" %(i,\
-                 format["argument basis num"], format["argument basis num"], j),
-               # Misc
-               "pointer": "*",
-               "new": "new ",
-               "delete pointer": lambda v, w: "delete [] %s%s;" % (v, w),
-               "separator": ", ",
-               "list separator": ", ",
-               "psi name": lambda c, f, co, d: _generate_psi_name(c,f,co,d),
-               "tabulate tensor": lambda m: _tabulate_tensor(m),
-               "generate loop": lambda v, w: _generate_loop(v, w),
-               "block separator": ",\n",
-               "new line": "\\\n"
+format.update({
+    "cell coordinates":     cell_coordinates,
+    "jacobian":             lambda n, r="": jacobian[n] % {"restriction": r},
+    "inverse jacobian":     lambda n, r="": inverse_jacobian[n] % {"restriction": r},
+    "jacobian and inverse": lambda n, r="": format["jacobian"](n, r) +\
+                            "\n" + format["inverse jacobian"](n, r),
+    "facet determinant":    lambda n, r="": facet_determinant[n] % {"restriction": r},
+    "fiat coordinate map":  lambda n: fiat_coordinate_map[n],
+    "generate normal":      lambda d, i: _generate_normal(d, i),
+    "scale factor snippet": scale_factor,
+    "map onto physical":    map_onto_physical,
+    "combinations":         combinations_snippet,
+    "transform snippet":    transform_snippet,
+    "evaluate function":    evaluate_f,
+    "ufc comment":          comment_ufc,
+    "dolfin comment":       comment_dolfin,
+    "header_h":             header_h,
+    "header_c":             header_c,
+    "footer":               footer
 })
 
 # Class names
-format.update({"classname finite_element": \
-                   lambda prefix, i: "%s_finite_element_%d" % (prefix.lower(), i),
-               "classname dof_map": \
-                   lambda prefix, i: "%s_dof_map_%d" % (prefix.lower(), i),
-               "classname cell_integral": \
-                   lambda prefix, form_id, sub_domain: "%s_cell_integral_%d_%d" % (prefix.lower(), form_id, sub_domain),
-               "classname exterior_facet_integral": \
-                   lambda prefix, form_id, sub_domain: "%s_exterior_facet_integral_%d_%d" % (prefix.lower(), form_id, sub_domain),
-               "classname interior_facet_integral": \
-                   lambda prefix, form_id, sub_domain: "%s_interior_facet_integral_%d_%d" % (prefix.lower(), form_id, sub_domain),
-               "classname form": \
-                   lambda prefix, i: "%s_form_%d" % (prefix.lower(), i)})
+format.update({
+    "classname finite_element": lambda prefix, i:\
+               "%s_finite_element_%d" % (prefix.lower(), i),
 
-# Misc
-format.update({"bool":    lambda v: {True: "true", False: "false"}[v],
-               "str":     lambda v: "%s" % str(v)})
+    "classname dof_map":  lambda prefix, i: "%s_dof_map_%d" % (prefix.lower(), i),
 
+    "classname cell_integral":  lambda prefix, form_id, sub_domain:\
+               "%s_cell_integral_%d_%d" % (prefix.lower(), form_id, sub_domain),
+
+    "classname exterior_facet_integral":  lambda prefix, form_id, sub_domain:\
+              "%s_exterior_facet_integral_%d_%d" % (prefix.lower(), form_id, sub_domain),
+
+    "classname interior_facet_integral":  lambda prefix, form_id, sub_domain:\
+              "%s_interior_facet_integral_%d_%d" % (prefix.lower(), form_id, sub_domain),
+
+    "classname form": lambda prefix, i: "%s_form_%d" % (prefix.lower(), i)
+})
 
 # Helper functions for formatting.
 def _declaration(type, name, value=None):
@@ -190,6 +205,14 @@ def _component(var, k):
     if not isinstance(k, (list, tuple)):
         k = [k]
     return "%s" % var + "".join("[%s]" % str(i) for i in k)
+
+def _delete_array(name, size=None):
+    if size is None:
+        return "delete [] %s;" % name
+    f_r = format["free indices"][0]
+    code = _generate_loop(["delete [] %s;" % format["component"](name, f_r)], [(f_r, 0, size)])
+    code.append("delete [] %s;" % name)
+    return "\n".join(code)
 
 def _multiply(factors):
     """
@@ -256,7 +279,7 @@ def _inner_product(v, w):
                           for i in range(len(v))])
 
 def _transform(type, j, k, r):
-    map_name = {"J": "J", "JINV": "K"}[type] + {None: "", "+": "0", "-": "1"}[r]
+    map_name = {"J": "J", "JINV": "K"}[type] + choose_map[r]
     return (map_name + "_%d%d") % (j, k)
 
 # FIXME: Input to _generate_switch should be a list of tuples (i, case)
@@ -322,44 +345,37 @@ def _generate_loop(lines, loop_vars):
     "This function generates a loop over a vector or matrix."
 
     # Prefetch formats to speed up code generation.
-    format_loop     = format["loop"]
-    format_begin    = format["block begin"]
-    format_end      = format["block end"]
-    format_comment  = format["comment"]
-
-    Indent = IndentControl()
+    f_loop     = format["loop"]
+    f_begin    = format["block begin"]
+    f_end      = format["block end"]
+    f_comment  = format["comment"]
 
     if not loop_vars:
         return lines
+
     code = []
+    _indent = 0
     for ls in loop_vars:
         # Get index and lower and upper bounds.
         index, lower, upper = ls
-
         # Loop index.
-        code.append( Indent.indent(format_loop(index, lower, upper)) )
-        code.append( Indent.indent(format_begin) )
+        code.append(indent(f_loop(index, lower, upper), _indent))
+        code.append(indent(f_begin, _indent))
 
         # Increase indentation.
-        Indent.increase()
+        _indent += 2
 
         # If this is the last loop, write values.
         if index == loop_vars[-1][0]:
             for l in lines:
-                if (isinstance(l,tuple) or isinstance(l,list)) and len(l) == 2:
-                    code.append((Indent.indent(l[0]), l[1]))
-                elif isinstance(l,str):
-                    code.append(Indent.indent(l))
-                else:
-                    print "line: ", l
-                    error("Line must be a string or a list or tuple of length 2.")
+                code.append(indent(l, _indent))
 
     # Decrease indentation and write end blocks.
-    vrs = [lv[0] for lv in loop_vars]
-    vrs.reverse()
-    for lv in vrs:
-        Indent.decrease()
-        code.append( Indent.indent(format_end + format_comment("end loop over '%s'" %lv) ) )
+    indices = [var[0] for var in loop_vars]
+    indices.reverse()
+    for index in indices:
+        _indent -= 2
+        code.append(indent(f_end + f_comment("end loop over '%s'" % index), _indent))
 
     return code
 
