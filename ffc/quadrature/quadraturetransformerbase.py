@@ -13,24 +13,17 @@ import time
 from numpy import shape
 
 # UFL Classes.
-from ufl.classes import MultiIndex
-from ufl.classes import FixedIndex
-from ufl.classes import Index
-from ufl.common import StackDict
-from ufl.common import Stack
+from ufl.classes import MultiIndex, FixedIndex, Index
+from ufl.common import StackDict, Stack
 
 # UFL Algorithms.
-from ufl.algorithms import propagate_restrictions
-from ufl.algorithms.transformations import Transformer
-from ufl.algorithms.printing import tree_format
-from ufl.algorithms import strip_variables
+from ufl.algorithms import propagate_restrictions, Transformer, tree_format, strip_variables
 
 # FFC modules.
-from ffc.log import ffc_assert
-from ffc.log import error
-from ffc.log import info
+from ffc.log import ffc_assert, error, info
 from ffc.fiatinterface import create_element
 from ffc.mixedelement import MixedElement
+from ffc.cpp import format
 
 # FFC tensor modules.
 from ffc.tensor.multiindex import MultiIndex as FFCMultiIndex
