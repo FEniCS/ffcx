@@ -15,7 +15,7 @@ from ufl.algorithms.printing import tree_format
 
 ## FFC modules.
 from ffc.log import info, debug, ffc_assert
-from ffc.cpp import IndentControl, format, remove_unused, choose_map
+from ffc.cpp import format, remove_unused
 
 # Utility and optimisation functions for quadraturegenerator.
 from quadraturetransformer import QuadratureTransformer
@@ -43,14 +43,13 @@ def _tabulate_tensor(ir, parameters):
     f_G             = format["geometry constant"]
     f_const_double  = format["const float declaration"]
     f_switch        = format["switch"]
-    f_switch        = format["switch"]
     f_float         = format["float"]
     f_assign        = format["assign"]
-    f_component     = format["component"]
     f_A             = format["element tensor"]
     f_r             = format["free indices"][0]
     f_loop          = format["generate loop"]
     f_int           = format["int"]
+    f_facet         = format["facet"]
 
     # FIXME: KBO: Handle this in a better way, make -O option take an argument?
     if parameters["optimize"]:
@@ -69,13 +68,12 @@ def _tabulate_tensor(ir, parameters):
                             "simplify expressions": False,
                             "ignore zero tables": False}
 
-    # Common data and objects.
+    # Common data.
     domain_type         = ir["domain_type"]
     geometric_dimension = ir["geometric_dimension"]
     num_facets          = ir["num_facets"]
     integrals           = ir["integrals"]
     prim_idims          = ir["prim_idims"]
-    Indent = IndentControl()
 
     # Create transformer.
     if optimise_parameters["simplify expressions"]:
@@ -87,7 +85,7 @@ def _tabulate_tensor(ir, parameters):
     if domain_type == "cell":
         # Update treansformer with facets and generate code + set of used geometry terms.
         transformer.update_facets(None, None)
-        tensor_code, mem_code, num_ops = _generate_element_tensor(integrals, transformer, Indent, format)
+        tensor_code, mem_code, num_ops = _generate_element_tensor(integrals, transformer)
         tensor_code = "\n".join(tensor_code)
 
         # Set operations equal to num_ops (for printing info on operations).
@@ -103,7 +101,7 @@ def _tabulate_tensor(ir, parameters):
         for i in range(num_facets):
             # Update treansformer with facets and generate case code + set of used geometry terms.
             transformer.update_facets(i, None)
-            c, mem_code, ops = _generate_element_tensor(integrals, transformer, Indent, format)
+            c, mem_code, ops = _generate_element_tensor(integrals, transformer)
             case = [f_comment("Total number of operations to compute element tensor (from this point): %d" % ops)]
             case += c
             cases[i] = "\n".join(case)
@@ -112,8 +110,7 @@ def _tabulate_tensor(ir, parameters):
             operations.append((i, ops))
 
         # Generate tensor code for all cases using a switch.
-        # FIXME: KBO: move 'facet' to format
-        tensor_code = f_switch("facet", cases)
+        tensor_code = f_switch(f_facet(None), cases)
 
         # Get Jacobian snippet.
         # FIXME: This will most likely have to change if we support e.g., 2D elements in 3D space.
@@ -130,7 +127,7 @@ def _tabulate_tensor(ir, parameters):
             for j in range(num_facets):
                 # Update treansformer with facets and generate case code + set of used geometry terms.
                 transformer.update_facets(i, j)
-                c, mem_code, ops = _generate_element_tensor(integrals, transformer, Indent, format, interior=True)
+                c, mem_code, ops = _generate_element_tensor(integrals, transformer, interior=True)
                 case = [f_comment("Total number of operations to compute element tensor (from this point): %d" % ops)]
                 case += c
                 cases[i][j] = "\n".join(case)
@@ -139,18 +136,15 @@ def _tabulate_tensor(ir, parameters):
                 operations.append((i, j, ops))
 
         # Generate tensor code for all cases using a switch.
-        # FIXME: KBO: move 'facet0' and 'facet1' to format
-        tensor_code = f_switch("facet0", [f_switch("facet1", cases[i]) for i in range(len(cases))])
+        tensor_code = f_switch(f_facet("+"), [f_switch(f_facet("-"), cases[i]) for i in range(len(cases))])
 
         # Get Jacobian snippet.
         # FIXME: This will most likely have to change if we support e.g., 2D elements in 3D space.
-        map0 = choose_map["+"]
-        map1 = choose_map["-"]
-        jacobi_code  = format["jacobian and inverse"](geometric_dimension, map0)
+        jacobi_code  = format["jacobian and inverse"](geometric_dimension, "+")
         jacobi_code += "\n\n"
-        jacobi_code += format["jacobian and inverse"](geometric_dimension, map1)
+        jacobi_code += format["jacobian and inverse"](geometric_dimension, "-")
         jacobi_code += "\n\n"
-        jacobi_code += format["facet determinant"](geometric_dimension, map0)
+        jacobi_code += format["facet determinant"](geometric_dimension, "+")
         jacobi_code += "\n\n" + format["generate normal"](geometric_dimension, domain_type)
     else:
         error("Unhandled integral type: " + str(integral_type))
@@ -158,8 +152,8 @@ def _tabulate_tensor(ir, parameters):
     # After we have generated the element code for all facets we can remove
     # the unused transformations and tabulate the used psi tables and weights.
     common = [remove_unused(jacobi_code, transformer.trans_set)]
-    common += _tabulate_weights(transformer, Indent, format)
-    common += _tabulate_psis(transformer, Indent, format)
+    common += _tabulate_weights(transformer)
+    common += _tabulate_psis(transformer)
 
     # Reset the element tensor (array 'A' given as argument to tabulate_tensor() by assembler)
     # Handle functionals.
@@ -180,15 +174,15 @@ def _tabulate_tensor(ir, parameters):
     common += ["", f_comment("Compute element tensor using UFL quadrature representation")]
     common += [f_comment("Optimisations: %s" % ", ".join([str(i) for i in optimise_parameters.items()]))]
 
-    # Print info on operation count
-    message = {"cell": "Number of operations to compute tensor: %d",
+    # Print info on operation count.
+    message = {"cell":           "Number of operations to compute tensor: %d",
                "exterior_facet": "Number of operations to compute tensor for facet %d: %d",
                "interior_facet": "Number of operations to compute tensor for facets (%d, %d): %d"}
     for ops in operations:
         info(message[domain_type] % ops)
     return "\n".join(common) + "\n" + tensor_code
 
-def _generate_element_tensor(integrals, transformer, Indent, format, interior=False):
+def _generate_element_tensor(integrals, transformer, interior=False):
     "Construct quadrature code for element tensors."
 
     # Prefetch formats to speed up code generation.
@@ -214,14 +208,13 @@ def _generate_element_tensor(integrals, transformer, Indent, format, interior=Fa
         debug("integral: " + str(integral))
         debug("\nIntegral tree_format: " + str(tree_format(integral)))
 
-        ip_code = ["", Indent.indent(f_comment\
-            ("Loop quadrature points for integral"))]
+        ip_code = ["", f_comment("Loop quadrature points for integral.")]
 
         # Update transformer to the current number of quadrature points.
         transformer.update_points(points)
 
-        # Generate code and get number of operations
-        integral_code, num_ops = transformer.generate_code(integral.integrand(), Indent, interior)
+        # Generate code and get number of operations.
+        integral_code, num_ops = transformer.generate_code(integral.integrand(), interior)
 
         # Get number of operations to compute entries for all terms when
         # looping over all IPs and update tensor count.
@@ -244,20 +237,20 @@ def _generate_element_tensor(integrals, transformer, Indent, format, interior=Fa
 
     return (element_code, members_code, tensor_ops_count)
 
-def _tabulate_weights(transformer, Indent, format):
+def _tabulate_weights(transformer):
     "Generate table of quadrature weights."
 
     # Prefetch formats to speed up code generation.
-    f_float    = format["floating point"]
-    f_table    = format["static const float declaration"]
-    f_sep      = format["list separator"]
-    f_weight   = format["weight"]
-    f_component =  format["component"]
-    f_group    = format["grouping"]
-    f_decl    = format["declaration"]
+    f_float     = format["floating point"]
+    f_table     = format["static const float declaration"]
+    f_sep       = format["list separator"]
+    f_weight    = format["weight"]
+    f_component = format["component"]
+    f_group     = format["grouping"]
+    f_decl      = format["declaration"]
     f_tensor    = format["tabulate tensor"]
 
-    code = ["", Indent.indent(format["comment"]("Array of quadrature weights"))]
+    code = ["", format["comment"]("Array of quadrature weights.")]
 
     # Loop tables of weights and create code.
     for num_points in transformer.used_weights:
@@ -284,14 +277,14 @@ def _tabulate_weights(transformer, Indent, format):
         # Create comment.
         comment = "Quadrature points on the UFC reference element: " \
                   + f_sep.join(formatted_points)
-        code += [Indent.indent(format["comment"](comment))]
+        code += [format["comment"](comment)]
 
         # 2) Tabulate the coordinates of the points p0, p1, p2 etc.
         #    X: x0, x1, x2
         #    Y: y0, y1, y2
         #    Z: z0, z1, z2
 #            comment = "Quadrature coordinates on the UFC reference element: "
-#            code += [Indent.indent(format["comment"](comment))]
+#            code += [format["comment"](comment)]
 
 #            # All points have the same number of coordinates.
 #            num_coord = len(points[0])
@@ -299,7 +292,7 @@ def _tabulate_weights(transformer, Indent, format):
 #            # All points have x-coordinates.
 #            xs = [f_float(p[0]) for p in points]
 #            comment = "X: " + f_sep.join(xs)
-#            code += [Indent.indent(format["comment"](comment))]
+#            code += [format["comment"](comment)]
 
 #            ys = []
 #            zs = []
@@ -307,41 +300,39 @@ def _tabulate_weights(transformer, Indent, format):
 #            if num_coord >= 2:
 #                ys = [f_float(p[1]) for p in points]
 #                comment = "Y: " + f_sep.join(ys)
-#                code += [Indent.indent(format["comment"](comment))]
+#                code += [format["comment"](comment)]
 #            # Only tabulate z-coordinate if we have 3 coordinates.
 #            if num_coord == 3:
 #                zs = [f_float(p[2]) for p in points]
 #                comment = "Z: " + f_sep.join(zs)
-#                code += [Indent.indent(format["comment"](comment))]
+#                code += [format["comment"](comment)]
 
         code += [""]
 
     return code
 
-def _tabulate_psis(transformer, Indent, format):
+def _tabulate_psis(transformer):
     "Tabulate values of basis functions and their derivatives at quadrature points."
 
     # Prefetch formats to speed up code generation.
-    f_comment    = format["comment"]
-#    f_block      = format["block"]
-    f_table      = format["static const float declaration"]
-    f_component  = format["component"]
-    f_const_uint = format["static const uint declaration"]
-    f_nzcolumns  = format["nonzero columns"]
+    f_comment     = format["comment"]
+    f_table       = format["static const float declaration"]
+    f_component   = format["component"]
+    f_const_uint  = format["static const uint declaration"]
+    f_nzcolumns   = format["nonzero columns"]
     f_list        = format["list"]
-    f_decl    = format["declaration"]
-    f_tensor    = format["tabulate tensor"]
+    f_decl        = format["declaration"]
+    f_tensor      = format["tabulate tensor"]
     f_new_line    = format["new line"]
 
     # FIXME: Check if we can simplify the tabulation
-
     code = []
-    code += [Indent.indent(f_comment("Value of basis functions at quadrature points.") )]
+    code += [f_comment("Value of basis functions at quadrature points.")]
 
     inv_name_map = transformer.name_map
     tables = transformer.unique_tables
 
-    # Get list of non zero columns, if we ignore ones ignore columns with one component.
+    # Get list of non zero columns, if we ignore ones, ignore columns with one component.
     if transformer.optimise_parameters["ignore ones"]:
         nzcs = [val[1] for key, val in inv_name_map.items()\
                                         if val[1] and len(val[1][1]) > 1]
@@ -386,9 +377,9 @@ def _tabulate_psis(transformer, Indent, format):
                         i, cols = inv_name_map[n][1]
                         if not i in transformer.used_nzcs:
                             continue
-                        code += [Indent.indent(f_comment("Array of non-zero columns") )]
+                        code += [f_comment("Array of non-zero columns")]
                         value = f_list(["%d" % c for c in list(cols)])
-                        name_col = f_component(f_const_uint + f_nzcolumns(i), len(cols))
+                        name_col = f_component(f_nzcolumns(i), len(cols))
                         code += [f_decl(f_const_uint, name_col, value), ""]
 
                         # Remove from list of columns.

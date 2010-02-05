@@ -99,12 +99,13 @@ format.update({
 
 # UFC function arguments (names)
 format.update({
-    "element tensor":  lambda i: "A[%s]" % i,
-    "coefficient":     lambda j, k: format["component"]("w", [j, k]),
-    "argument basis num": "i",
-    "argument derivative order": "n",
-    "argument values": "values",
-    "argument coordinates": "coordinates"
+    "element tensor":             lambda i: "A[%s]" % i,
+    "coefficient":                lambda j, k: format["component"]("w", [j, k]),
+    "argument basis num":         "i",
+    "argument derivative order":  "n",
+    "argument values":            "values",
+    "argument coordinates":       "coordinates",
+    "facet":                      lambda r: "facet%s" % choose_map[r]
 })
 
 # Formatting used in evaluate_basis, evaluate_basis_derivatives and quadrature
@@ -162,9 +163,9 @@ format.update({
     "cell coordinates":     cell_coordinates,
     "jacobian":             lambda n, r="": jacobian[n] % {"restriction": r},
     "inverse jacobian":     lambda n, r="": inverse_jacobian[n] % {"restriction": r},
-    "jacobian and inverse": lambda n, r="": format["jacobian"](n, r) +\
-                            "\n" + format["inverse jacobian"](n, r),
-    "facet determinant":    lambda n, r="": facet_determinant[n] % {"restriction": r},
+    "jacobian and inverse": lambda n, r=None: format["jacobian"](n, choose_map[r]) +\
+                            "\n" + format["inverse jacobian"](n, choose_map[r]),
+    "facet determinant":    lambda n, r=None: facet_determinant[n] % {"restriction": choose_map[r]},
     "fiat coordinate map":  lambda n: fiat_coordinate_map[n],
     "generate normal":      lambda d, i: _generate_normal(d, i),
     "scale factor snippet": scale_factor,

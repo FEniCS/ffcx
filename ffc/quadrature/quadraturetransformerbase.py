@@ -659,7 +659,7 @@ class QuadratureTransformerBase(Transformer):
     # -------------------------------------------------------------------------
     # Generate code from from integrand
     # -------------------------------------------------------------------------
-    def generate_code(self, integrand, Indent, interior):
+    def generate_code(self, integrand, interior):
         "Generate code from integrand."
 
         # Prefetch formats to speed up code generation.

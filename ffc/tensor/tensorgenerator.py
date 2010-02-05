@@ -92,9 +92,9 @@ def _tabulate_tensor(ir, parameters):
         g_code = _generate_geometry_tensors(AK[0][0], j_set, g_set)
 
         # Generate code for Jacobian
-        j_code  = format["jacobian and inverse"](geometric_dimension, "0")
-        j_code += format["jacobian and inverse"](geometric_dimension, "1")
-        j_code += "\n\n" + format["facet determinant"](geometric_dimension, "0")
+        j_code  = format["jacobian and inverse"](geometric_dimension, "+")
+        j_code += format["jacobian and inverse"](geometric_dimension, "-")
+        j_code += "\n\n" + format["facet determinant"](geometric_dimension, "+")
 
     else:
         error("Unhandled integral type: " + str(domain_type))
