@@ -9,7 +9,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Johan Hake, 2008-2009
 # Modified by Ilmar Wilbers, 2008
 # Modified by Kristian B. Oelgaard, 2009
-# Last changed: 2010-02-02
+# Last changed: 2010-02-07
 
 # Python modules
 import os
@@ -62,6 +62,9 @@ def jit(object, parameters=None):
 
 def jit_form(form, parameters=None, use_form_data_cache=True):
     "Just-in-time compile the given form"
+
+    # FIXME: Don't use form data cache, seems to create a memory leak
+    use_form_data_cache = False
 
     # Check that we get a Form
     if not isinstance(form, Form):
