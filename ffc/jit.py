@@ -50,8 +50,8 @@ def jit(object, parameters=None):
 
     Parameters:
 
-      object  : The object to be compiled
-      parameters : An option dictionary
+      object     : The object to be compiled
+      parameters : A set of parameters
     """
 
     # Check if we get an element or a form
