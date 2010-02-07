@@ -58,7 +58,7 @@ def jit(object, parameters=None):
         return jit_form(object, parameters)
 
 def jit_form(form, parameters=None):
-    "Just-in-time compile the given form"
+    "Just-in-time compile the given form."
 
     # Check that we get a Form
     if not isinstance(form, Form):
@@ -72,20 +72,17 @@ def jit_form(form, parameters=None):
     set_prefix(parameters["log_prefix"])
 
     # Preprocess form
-    preprocessed_form = preprocess(form)
+    if form.form_data() is None:
+        preprocessed_form = preprocess(form)
 
     # Wrap input
     jit_object = JITObject(form, preprocessed_form, parameters)
 
-    # Get cache dir
+    # Use Instant cache if possible
     cache_dir = parameters["cache_dir"]
     if cache_dir == "": cache_dir = None
-
-    # Check cache
     module = instant.import_module(jit_object, cache_dir=cache_dir)
     if module:
-
-        # Get compiled form from Instant cache
         compiled_form = getattr(module, module.__name__ + "_form_0")()
         return (compiled_form, module, preprocessed_form.form_data())
 
@@ -93,10 +90,9 @@ def jit_form(form, parameters=None):
     log(INFO + 5, "Calling FFC just-in-time (JIT) compiler, this may take some time.")
 
     # Generate code
-    signature = jit_object.signature()
-    compile_form(preprocessed_form, prefix=signature, parameters=parameters)
+    compile_form(preprocessed_form, prefix=jit_object.signature(), parameters=parameters)
 
-    # Create python extension module using Instant (through UFC)
+    # Build module using Instant (through UFC)
     debug("Creating Python extension (compiling and linking), this may take some time...")
     module = ufc_utils.build_ufc_module(
         signature + ".h",
