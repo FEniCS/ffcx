@@ -94,12 +94,17 @@ def jit_form(form, parameters=None, use_form_data_cache=True):
         # Get compiled form from Instant cache
         compiled_form = getattr(module, module.__name__ + "_form_0")()
 
+        # FIXME: Clean up logic around caching
         # Get form data from in-memory cache or create it
-        if id(form) in _form_data_cache and use_form_data_cache:
-            form_data = _form_data_cache[id(form)]
+        if use_form_data_cache:
+            if id(form) in _form_data_cache:
+                form_data = _form_data_cache[id(form)]
+            else:
+                form_data = FormData(preprocessed_form)
+                _form_data_cache[id(form)] = form_data
         else:
             form_data = FormData(preprocessed_form)
-            _form_data_cache[id(form)] = form_data
+
         return (compiled_form, module, form_data)
 
     # Write a message
