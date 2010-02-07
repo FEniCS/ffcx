@@ -94,18 +94,20 @@ def jit_form(form, parameters=None):
 
     # Build module using Instant (through UFC)
     debug("Creating Python extension (compiling and linking), this may take some time...")
+    hfile = jit_object.signature() + ".h"
+    cppfile = jit_object.signature() + ".cpp"
     module = ufc_utils.build_ufc_module(
-        signature + ".h",
+        hfile,
         source_directory = os.curdir,
-        signature = signature,
-        sources = [signature + ".cpp"] if parameters["split"] else [],
+        signature = jit_object.signature(),
+        sources = [cppfile] if parameters["split"] else [],
         cppargs  = ["-O2"] if parameters["cpp_optimize"] else ["-O0"] ,
         cache_dir = cache_dir)
 
     # Remove code
-    os.unlink(signature + ".h")
+    os.unlink(hfile)
     if parameters["split"] :
-        os.unlink(signature + ".cpp")
+        os.unlink(cppfile)
 
     # Extract compiled form
     compiled_form = getattr(module, module.__name__ + "_form_0")()
