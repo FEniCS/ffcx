@@ -5,10 +5,10 @@ __date__ = "2007-03-16"
 __copyright__ = "Copyright (C) 2007-2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-02-03
+# Last changed: 2010-02-05
 
 # Python modules.
-from numpy import transpose, sqrt, shape, array
+import numpy
 
 # FFC modules.
 from ffc.log import debug, error, ffc_assert
@@ -49,60 +49,43 @@ def flatten_psi_tables(tables):
     for point in sorted(tables.keys()):
         elem_dict = tables[point]
         element_map[point] = {}
-        debug("\nQG-utils, flatten_tables, points:\n" + str(point))
-        debug("\nQG-utils, flatten_tables, elem_dict:\n" + str(elem_dict))
         # Loop all elements and get all their tables.
         for elem in sorted(elem_dict.keys(), lambda x, y: cmp(str(x), str(y))):
             facet_tables = elem_dict[elem]
-            debug("\nQG-utils, flatten_tables, elem:\n" + str(elem))
-            debug("\nQG-utils, flatten_tables, facet_tables:\n" + str(facet_tables))
             element_map[point][elem] = counter
             for facet in sorted(facet_tables.keys()):
                 elem_table = facet_tables[facet]
                 # If the element value rank != 0, we must loop the components.
                 # before the derivatives (that's the way the values are tabulated).
                 if len(elem.value_shape()) != 0:
-#                    for num_comp, comp_table in enumerate(elem_table):
-#                        for derivs in sorted(comp_table.keys()):
                     for derivs in sorted(elem_table.keys()):
                         comp_table = elem_table[derivs]
-#                        print "\nkey: ", derivs
-#                        print "comp: ", comp_table
-#                        print "shape: ", shape(comp_table)
-                        transposed_table = transpose(comp_table, (1,0,2))
-#                        print "shape: ", shape(transposed_table)
+                        transposed_table = numpy.transpose(comp_table, (1,0,2))
                         for num_comp, psi_table in enumerate(transposed_table):
-#                            psi_table = num_deriv[derivs]
-                            debug("\nQG-utils, flatten_tables, derivs:\n" + str(derivs))
-                            debug("\nQG-utils, flatten_tables, psi_table:\n" + str(psi_table))
                             # Verify shape of basis (can be omitted for speed
                             # if needed I think).
-                            ffc_assert(len(shape(psi_table)) == 2 and shape(psi_table)[1] == point, \
+                            ffc_assert(len(numpy.shape(psi_table)) == 2 and numpy.shape(psi_table)[1] == point, \
                                         "Something is wrong with this table: " + str(psi_table))
                             # Generate the table name.
                             name = generate_psi_name(counter, facet, num_comp, derivs)
-                            debug("Table name: " + name)
                             ffc_assert(name not in flat_tables, \
                                         "Table name is not unique, something is wrong: " + name + str(flat_tables))
                             # Take transpose such that we get (ip_number, basis_number)
                             # instead of (basis_number, ip_number).
-                            flat_tables[name] = transpose(psi_table)
+                            flat_tables[name] = numpy.transpose(psi_table)
                 # If we don't have any components.
                 else:
                     for derivs in sorted(elem_table.keys()):
                         psi_table = elem_table[derivs]
-                        debug("\nQG-utils, flatten_tables, derivs:\n" + str(derivs))
-                        debug("\nQG-utils, flatten_tables, psi_table:\n" + str(psi_table))
                         # Verify shape of basis (can be omitted for speed
                         # if needed I think).
-                        ffc_assert(len(shape(psi_table)) == 2 and shape(psi_table)[1] == point, \
+                        ffc_assert(len(numpy.shape(psi_table)) == 2 and numpy.shape(psi_table)[1] == point, \
                                     "Something is wrong with this table: " + str(psi_table))
                         # Generate the table name.
                         name = generate_psi_name(counter, facet, (), derivs)
-                        debug("Table name: " + name)
                         ffc_assert(name not in flat_tables, \
                                     "Table name is not unique, something is wrong: " + name + str(flat_tables))
-                        flat_tables[name] = transpose(psi_table)
+                        flat_tables[name] = numpy.transpose(psi_table)
             # Increase unique element counter.
             counter += 1
 
@@ -117,8 +100,6 @@ def unique_psi_tables(tables, parameters):
     unique_tables - {name:values,}.
     name_map      - {original_name:[new_name, non-zero-columns (list), is zero (bool), is ones (bool)],}."""
 
-    format_epsilon = format["epsilon"]
-
     # Get unique tables (from old table utility).
     name_map, inverse_name_map = unique_tables(tables)
 
@@ -126,15 +107,13 @@ def unique_psi_tables(tables, parameters):
     debug("\nname_map: " + str(name_map))
     debug("\ninv_name_map: " + str(inverse_name_map))
 
-    # Get names of tables with all ones (from old table utility).
-    names_ones = get_ones(tables)
-
     # Set values to zero if they are lower than threshold.
+    format_epsilon = format["epsilon"]
     for name in tables:
         # Get values.
         vals = tables[name]
-        for r in range(shape(vals)[0]):
-            for c in range(shape(vals)[1]):
+        for r in range(numpy.shape(vals)[0]):
+            for c in range(numpy.shape(vals)[1]):
                 if abs(vals[r][c]) < format_epsilon:
                     vals[r][c] = 0
         tables[name] = vals
@@ -154,11 +133,11 @@ def unique_psi_tables(tables, parameters):
 
             # If all columns in the first row are non zero, there's no point
             # in continuing.
-            if len(non_zeros) == shape(vals)[1]:
+            if len(non_zeros) == numpy.shape(vals)[1]:
                 continue
 
             # If we only have one row (IP) we just need the nonzero columns.
-            if shape(vals)[0] == 1:
+            if numpy.shape(vals)[0] == 1:
                 if list(non_zeros):
                     non_zeros.sort()
                     non_zero_columns[name] = (i, non_zeros)
@@ -169,18 +148,18 @@ def unique_psi_tables(tables, parameters):
 
             # Check if the remaining rows are nonzero in the same positions, else expand.
             else:
-                for j in range(shape(vals)[0] - 1):
+                for j in range(1, numpy.shape(vals)[0]):
                     # All rows must have the same non-zero columns
                     # for the optimization to work (at this stage).
-                    new_non_zeros = list(vals[j+1].nonzero()[0])
+                    new_non_zeros = list(vals[j].nonzero()[0])
                     if non_zeros != new_non_zeros:
                         non_zeros = non_zeros + [c for c in new_non_zeros if not c in non_zeros]
                         # If this results in all columns being non-zero, continue.
-                        if len(non_zeros) == shape(vals)[1]:
+                        if len(non_zeros) == numpy.shape(vals)[1]:
                             continue
 
                 # Only add nonzeros if it results in a reduction of columns.
-                if len(non_zeros) != shape(vals)[1]:
+                if len(non_zeros) != numpy.shape(vals)[1]:
                     if list(non_zeros):
                         non_zeros.sort()
                         non_zero_columns[name] = (i, non_zeros)
@@ -191,6 +170,9 @@ def unique_psi_tables(tables, parameters):
 
     # Check if we have some zeros in the tables.
     names_zeros = contains_zeros(tables)
+
+    # Get names of tables with all ones.
+    names_ones = get_ones(tables)
 
     # Add non-zero column, zero and ones info to inverse_name_map
     # (so we only need to pass around one name_map to code generating functions).
@@ -274,24 +256,17 @@ def unique_tables(tables):
         name0 = names[i]
         if name0 in mapped:
             continue
-        val0 = array(tables[name0])
+        val0 = numpy.array(tables[name0])
 
         for j in range(i+1, len(names)):
             name1 = names[j]
             if name1 in mapped:
                 continue
-            val1 = array(tables[name1])
+            val1 = numpy.array(tables[name1])
 
             # Check if dimensions match.
-            if shape(val0) == shape(val1):
-#                if (val0 - val1).max() < format_epsilon\
-#                   and not  sqrt(((val0 - val1)*(val0 - val1)).sum()) < format_epsilon:
-#                    print "\nv0: ", val0
-#                    print "\nv1: ", val1
-#                    print "v0 - v1: ", abs(val0 - val1)
-#                    raise RuntimeError
+            if numpy.shape(val0) == numpy.shape(val1):
                 # Check if values are the same.
-#                if sqrt(((val0 - val1)*(val0 - val1)).sum()) < format_epsilon:
                 if abs(val0 - val1).max() < format_epsilon:
                     mapped.append(name1)
                     del tables[name1]
@@ -311,38 +286,21 @@ def unique_tables(tables):
 
 def get_ones(tables):
     "Return names of tables for which all values are 1.0."
-    format_epsilon = format["epsilon"]
+    f_epsilon = format["epsilon"]
     names = []
     for name in tables:
         vals = tables[name]
-        one = True
-        for r in range(shape(vals)[0]):
-            for c in range(shape(vals)[1]):
-                if abs(vals[r][c] - 1.0) > format_epsilon:
-                    one = False
-        if one:
+        if abs(vals - numpy.ones(numpy.shape(vals))).max() < f_epsilon:
             names.append(name)
     return names
 
 def contains_zeros(tables):
     "Checks if any tables contains only zeros."
-
-    format_epsilon = format["epsilon"]
+    f_epsilon = format["epsilon"]
     names = []
     for name in tables:
         vals = tables[name]
-        zero = True
-        for r in range(shape(vals)[0]):
-            # Loop as long as we have zeros.
-            if not zero:
-                break
-            for c in range(shape(vals)[1]):
-                # If just one value is different from zero, break loops.
-                if abs(vals[r][c]) > format_epsilon:
-                    # If we find a non-zero value break loop.
-                    zero = False
-                    break
-        if zero:
+        if abs(vals).max() < f_epsilon:
             names.append(name)
     return names
 

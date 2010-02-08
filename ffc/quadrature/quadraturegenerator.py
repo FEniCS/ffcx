@@ -77,9 +77,9 @@ def _tabulate_tensor(ir, parameters):
 
     # Create transformer.
     if optimise_parameters["simplify expressions"]:
-        transformer = QuadratureTransformerOpt(ir, optimise_parameters, format)
+        transformer = QuadratureTransformerOpt(ir, optimise_parameters)
     else:
-        transformer = QuadratureTransformer(ir, optimise_parameters, format)
+        transformer = QuadratureTransformer(ir, optimise_parameters)
 
     operations = []
     if domain_type == "cell":

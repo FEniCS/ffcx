@@ -26,7 +26,7 @@ from ufl.algorithms.printing import tree_format
 
 # FFC modules.
 from ffc.log import info, debug, error, ffc_assert
-from ffc.cpp import choose_map
+from ffc.cpp import choose_map, format
 
 # Utility and optimisation functions for quadraturegenerator.
 from quadraturetransformerbase import QuadratureTransformerBase
@@ -36,10 +36,10 @@ from reduce_operations import operation_count
 class QuadratureTransformer(QuadratureTransformerBase):
     "Transform UFL representation to quadrature code."
 
-    def __init__(self, ir, optimise_parameters, format):
+    def __init__(self, ir, optimise_parameters):
 
         # Initialise base class.
-        QuadratureTransformerBase.__init__(self, ir, optimise_parameters, format)
+        QuadratureTransformerBase.__init__(self, ir, optimise_parameters)
 
     # -------------------------------------------------------------------------
     # Start handling UFL classes.
@@ -51,10 +51,10 @@ class QuadratureTransformer(QuadratureTransformerBase):
         #print("Visiting Sum: " + "\noperands: \n" + "\n".join(map(repr, operands)))
 
         # Prefetch formats to speed up code generation.
-        format_group  = self.format["grouping"]
-        format_add    = self.format["add"]
-        format_mult   = self.format["multiply"]
-        format_float  = self.format["floating point"]
+        format_group  = format["grouping"]
+        format_add    = format["add"]
+        format_mult   = format["multiply"]
+        format_float  = format["floating point"]
         code = {}
 
         # Loop operands that has to be summed and sort according to map (j,k).
@@ -112,7 +112,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
         #print("Visiting Product with operands: \n" + "\n".join(map(repr,operands)))
 
         # Prefetch formats to speed up code generation.
-        format_mult = self.format["multiply"]
+        format_mult = format["multiply"]
         permute = []
         not_permute = []
 
@@ -190,8 +190,8 @@ class QuadratureTransformer(QuadratureTransformerBase):
         #print("\n\nVisiting Division: " + repr(o) + "with operands: " + "\n".join(map(repr,operands)))
 
         # Prefetch formats to speed up code generation.
-        format_div      = self.format["div"]
-        format_grouping = self.format["grouping"]
+        format_div      = format["div"]
+        format_grouping = format["grouping"]
 
         ffc_assert(len(operands) == 2, \
                    "Expected exactly two operands (numerator and denominator): " + repr(operands))
@@ -238,12 +238,12 @@ class QuadratureTransformer(QuadratureTransformerBase):
 
         # Handle different exponents
         if isinstance(expo, IntValue):
-            return {(): self.format["power"](val, expo.value())}
+            return {(): format["power"](val, expo.value())}
         elif isinstance(expo, FloatValue):
-            return {(): self.format["std power"](val, self.format["floating point"](expo.value()))}
+            return {(): format["std power"](val, format["floating point"](expo.value()))}
         elif isinstance(expo, Coefficient):
             exp = self.visit(expo)
-            return {(): self.format["std power"](val, exp[()])}
+            return {(): format["std power"](val, exp[()])}
         else:
             error("power does not support this exponent: " + repr(expo))
 
@@ -251,7 +251,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
         #print("\n\nVisiting Abs: " + repr(o) + "with operands: " + "\n".join(map(repr,operands)))
 
         # Prefetch formats to speed up code generation.
-        format_abs = self.format["absolute value"]
+        format_abs = format["absolute value"]
 
         # TODO: Are these safety checks needed? Need to check for None?
         ffc_assert(len(operands) == 1 and () in operands[0] and len(operands[0]) == 1, \
@@ -274,7 +274,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
         ffc_assert(len(components) == 1, "FacetNormal expects 1 component index: " + repr(components))
 
         # We get one component.
-        normal_component = self.format["normal component"](self.restriction, components[0])
+        normal_component = format["normal component"](self.restriction, components[0])
         self.trans_set.add(normal_component)
 
         return {():normal_component}
@@ -284,12 +284,12 @@ class QuadratureTransformer(QuadratureTransformerBase):
         "Create code for basis functions, and update relevant tables of used basis."
 
         # Prefetch formats to speed up code generation.
-        format_group         = self.format["grouping"]
-        format_add           = self.format["add"]
-        format_mult          = self.format["multiply"]
-        format_transform     = self.format["transform"]
-        format_detJ          = self.format["det(J)"]
-        format_inv           = self.format["inverse"]
+        format_group         = format["grouping"]
+        format_add           = format["add"]
+        format_mult          = format["multiply"]
+        format_transform     = format["transform"]
+        format_detJ          = format["det(J)"]
+        format_inv           = format["inverse"]
 
         code = {}
         # Handle affine mappings.
@@ -364,10 +364,10 @@ class QuadratureTransformer(QuadratureTransformerBase):
         "Create code for basis functions, and update relevant tables of used basis."
 
         # Prefetch formats to speed up code generation.
-        format_mult          = self.format["multiply"]
-        format_transform     = self.format["transform"]
-        format_detJ          = self.format["det(J)"]
-        format_inv           = self.format["inverse"]
+        format_mult          = format["multiply"]
+        format_transform     = format["transform"]
+        format_detJ          = format["det(J)"]
+        format_inv           = format["inverse"]
 
         code = []
         # Handle affine mappings.
@@ -417,7 +417,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
         if not code:
             return None
         elif len(code) > 1:
-            code = self.format["grouping"](self.format["add"](code))
+            code = format["grouping"](format["add"](code))
         else:
             code = code[0]
 
@@ -428,8 +428,8 @@ class QuadratureTransformer(QuadratureTransformerBase):
     # -------------------------------------------------------------------------
     def __apply_transform(self, function, derivatives, multi):
         "Apply transformation (from derivatives) to basis or function."
-        format_mult          = self.format["multiply"]
-        format_transform     = self.format["transform"]
+        format_mult          = format["multiply"]
+        format_transform     = format["transform"]
 
         # Add transformation if needed.
         transforms = []
@@ -445,7 +445,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
         else:
             prods = transforms
 
-        return self.format["multiply"](prods)
+        return format["multiply"](prods)
 
     # -------------------------------------------------------------------------
     # Helper functions for transformation of UFL objects in base class
@@ -454,14 +454,14 @@ class QuadratureTransformer(QuadratureTransformerBase):
         return {():symbol}
 
     def _create_product(self, symbols):
-        return self.format["multiply"](symbols)
+        return format["multiply"](symbols)
 
     def _format_scalar_value(self, value):
         #print("format_scalar_value: %d" % value)
         if value is None:
             return {():None}
         # TODO: Handle value < 0 better such that we don't have + -2 in the code.
-        return {():self.format["floating point"](value)}
+        return {():format["floating point"](value)}
 
     def _math_function(self, operands, format_function):
         # TODO: Are these safety checks needed?
@@ -477,10 +477,10 @@ class QuadratureTransformer(QuadratureTransformerBase):
     # Helper functions for code_generation()
     # -------------------------------------------------------------------------
     def _count_operations(self, expression):
-        return operation_count(expression, self.format)
+        return operation_count(expression, format)
 
     def _create_entry_value(self, val, weight, scale_factor):
-        format_mult = self.format["multiply"]
+        format_mult = format["multiply"]
         zero = False
 
         # Multiply value by weight and determinant

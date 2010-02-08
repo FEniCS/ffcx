@@ -25,7 +25,7 @@ from ufl.algorithms.printing import tree_format
 
 # FFC modules.
 from ffc.log import info, debug, error, ffc_assert
-from ffc.cpp import choose_map
+from ffc.cpp import choose_map, format
 from ffc.quadrature.quadraturetransformerbase import QuadratureTransformerBase
 from ffc.quadrature.quadratureutils import create_permutations
 
@@ -38,10 +38,10 @@ from ffc.quadrature.symbolics import create_float, create_symbol, create_product
 class QuadratureTransformerOpt(QuadratureTransformerBase):
     "Transform UFL representation to quadrature code."
 
-    def __init__(self, ir, optimise_parameters, format):
+    def __init__(self, ir, optimise_parameters):
 
         # Initialise base class.
-        QuadratureTransformerBase.__init__(self, ir, optimise_parameters, format)
+        QuadratureTransformerBase.__init__(self, ir, optimise_parameters)
 #        set_format(format)
 
     # -------------------------------------------------------------------------
@@ -153,14 +153,14 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         if isinstance(expo, IntValue):
             return {(): create_product([val]*expo.value())}
         elif isinstance(expo, FloatValue):
-            exp = self.format["floating point"](expo.value())
-            sym = create_symbol(self.format["std power"](str(val), exp), val.t)
+            exp = format["floating point"](expo.value())
+            sym = create_symbol(format["std power"](str(val), exp), val.t)
             sym.base_expr = val
             sym.base_op = 1 # Add one operation for the pow() function.
             return {(): sym}
         elif isinstance(expo, Coefficient):
             exp = self.visit(expo)
-            sym = create_symbol(self.format["std power"](str(val), exp[()]), val.t)
+            sym = create_symbol(format["std power"](str(val), exp[()]), val.t)
             sym.base_expr = val
             sym.base_op = 1 # Add one operation for the pow() function.
             return {(): sym}
@@ -176,7 +176,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
 
         # Take absolute value of operand.
         val = operands[0][()]
-        new_val = create_symbol(self.format["absolute value"](str(val)), val.t)
+        new_val = create_symbol(format["absolute value"](str(val)), val.t)
         new_val.base_expr = val
         new_val.base_op = 1 # Add one operation for taking the absolute value.
         return {():new_val}
@@ -194,7 +194,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         ffc_assert(not operands, "Didn't expect any operands for FacetNormal: " + repr(operands))
         ffc_assert(len(components) == 1, "FacetNormal expects 1 component index: " + repr(components))
 
-        normal_component = self.format["normal component"](self.restriction, components[0])
+        normal_component = format["normal component"](self.restriction, components[0])
         return {(): create_symbol(normal_component, GEO)}
 
     def create_argument(self, ufl_argument, derivatives, component, local_comp,
@@ -202,8 +202,8 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         "Create code for basis functions, and update relevant tables of used basis."
 
         # Prefetch formats to speed up code generation.
-        format_transform     = self.format["transform"]
-        format_detJ          = self.format["det(J)"]
+        format_transform     = format["transform"]
+        format_detJ          = format["det(J)"]
 
         code = {}
 
@@ -266,8 +266,8 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         "Create code for basis functions, and update relevant tables of used basis."
 
         # Prefetch formats to speed up code generation.
-        format_transform     = self.format["transform"]
-        format_detJ          = self.format["det(J)"]
+        format_transform     = format["transform"]
+        format_detJ          = format["det(J)"]
 
         code = []
 
@@ -323,7 +323,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
     # -------------------------------------------------------------------------
     def __apply_transform(self, function, derivatives, multi):
         "Apply transformation (from derivatives) to basis or function."
-        format_transform     = self.format["transform"]
+        format_transform     = format["transform"]
 
         # Add transformation if needed.
         transforms = []
