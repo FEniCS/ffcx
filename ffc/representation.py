@@ -46,7 +46,7 @@ def compute_ir(analysis, parameters):
     begin("Compiler stage 2: Computing intermediate representation")
 
     # Extract data from analysis
-    form_and_data, elements, element_map = analysis
+    forms, elements, element_map = analysis
 
     # Compute representation of elements
     info("Computing representation of %d elements" % len(elements))
@@ -58,12 +58,12 @@ def compute_ir(analysis, parameters):
 
     # Compute and flatten representation of integrals
     info("Computing representation of integrals")
-    irs = [_compute_integral_ir(f, d, i) for (i, (f, d)) in enumerate(form_and_data)]
+    irs = [_compute_integral_ir(f, i) for (i, f) in enumerate(forms)]
     ir_integrals = [ir for ir in chain(*irs) if not ir is None]
 
     # Compute representation of forms
     info("Computing representation of forms")
-    ir_forms = [_compute_form_ir(f, d, i, element_map) for (i, (f, d)) in enumerate(form_and_data)]
+    ir_forms = [_compute_form_ir(f, i, element_map) for (i, f) in enumerate(forms)]
 
     end()
 
@@ -132,13 +132,13 @@ def _compute_dofmap_ir(ufl_element, element_id, element_map):
 
     return ir
 
-def _compute_integral_ir(form, form_data, form_id):
+def _compute_integral_ir(form, form_id):
     "Compute intermediate represention of form integrals."
 
     irs = []
 
     # Iterate over integrals
-    for (domain_type, domain_id, integrals, metadata) in form_data.integral_data:
+    for (domain_type, domain_id, integrals, metadata) in form.form_data().integral_data:
 
         # Select representation
         if metadata["representation"] == "quadrature":
@@ -153,7 +153,7 @@ def _compute_integral_ir(form, form_data, form_id):
                                    domain_id,
                                    integrals,
                                    metadata,
-                                   form_data,
+                                   form.form_data(),
                                    form_id)
 
         # Append representation
@@ -161,8 +161,11 @@ def _compute_integral_ir(form, form_data, form_id):
 
     return irs
 
-def _compute_form_ir(form, form_data, form_id, element_map):
+def _compute_form_ir(form, form_id, element_map):
     "Compute intermediate representation of form."
+
+    # Extract form data
+    form_data = form.form_data()
 
     # Store id
     ir = {"id": form_id}

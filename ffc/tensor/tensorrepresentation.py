@@ -14,7 +14,7 @@ __copyright__ = "Copyright (C) 2007-2010 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian B. Oelgaard, 2010.
-# Last changed: 2010-02-02
+# Last changed: 2010-02-08
 
 # UFL modules
 from ufl.classes import Form, Measure, Integral
@@ -47,7 +47,8 @@ def compute_integral_ir(domain_type, domain_id, integrals, metadata, form_data, 
           "domain_id": domain_id,
           "form_id": form_id,
           "geometric_dimension": form_data.geometric_dimension,
-          "num_facets": form_data.num_facets}
+          "num_facets": form_data.num_facets,
+          "rank": form_data.rank}
 
     # Compute representation of cell tensor
     num_facets = form_data.num_facets

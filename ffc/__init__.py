@@ -16,7 +16,7 @@ The interface consists of the following functions:
 from ffc.compiler import compile_form, compile_element
 
 # Import JIT compiler
-from ffc.jit import jit
+from ffc.jitcompiler import jit
 
 # Import default parameters
 from parameters import default_parameters

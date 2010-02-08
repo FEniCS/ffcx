@@ -5,7 +5,7 @@ __date__ = "2009-01-07"
 __copyright__ = "Copyright (C) 2009-2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-25
+# Last changed: 2010-02-08
 
 # Python modules.
 import numpy

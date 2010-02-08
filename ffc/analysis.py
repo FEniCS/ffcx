@@ -12,12 +12,12 @@ __date__ = "2007-02-05"
 __copyright__ = "Copyright (C) 2007-2010 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-31
+# Last changed: 2010-02-07
 
 # UFL modules
 from ufl.common import istr, tstr
 from ufl.finiteelement import MixedElement
-from ufl.algorithms import preprocess, FormData
+from ufl.algorithms import preprocess
 from ufl.algorithms import estimate_max_polynomial_degree
 from ufl.algorithms import estimate_total_polynomial_degree
 from ufl.algorithms import extract_unique_elements
@@ -34,7 +34,7 @@ def analyze_forms(forms, object_names, parameters):
     """
     Analyze form(s), returning
 
-       form_and_data   - a tuple of pairs (forms, form_data)
+       forms           - a tuple of preprocessed forms
        unique_elements - a tuple of unique elements across all forms
        element_map     - a map from elements to unique element numbers
     """
@@ -42,12 +42,12 @@ def analyze_forms(forms, object_names, parameters):
     begin("Compiler stage 1: Analyzing form(s)")
 
     # Analyze forms
-    form_and_data = [_analyze_form(form, object_names, parameters) for form in forms]
+    forms = tuple(_analyze_form(form, object_names, parameters) for form in forms)
 
     # Extract unique elements
     unique_elements = []
-    for (form, form_data) in form_and_data:
-        for element in form_data.unique_sub_elements:
+    for form in forms:
+        for element in form.form_data().unique_sub_elements:
             if not element in unique_elements:
                 unique_elements.append(element)
 
@@ -59,14 +59,11 @@ def analyze_forms(forms, object_names, parameters):
 
     end()
 
-    return form_and_data, unique_elements, element_map
+    return forms, unique_elements, element_map
 
 def analyze_elements(elements):
 
     begin("Compiler stage 1: Analyzing form(s)")
-
-    # Empty form and data
-    form_and_data = []
 
     # Extract unique elements
     unique_elements = []
@@ -85,7 +82,8 @@ def analyze_elements(elements):
     element_map = _build_element_map(unique_elements)
 
     end()
-    return form_and_data, unique_elements, element_map
+
+    return (), unique_elements, element_map
 
 def _build_element_map(elements):
     "Build map from elements to element numbers."
@@ -102,29 +100,20 @@ def _get_nested_elements(element):
     return set(nested_elements)
 
 def _analyze_form(form, object_names, parameters):
-    "Analyze form, returning preprocessed form and form data."
+    "Analyze form, returning preprocessed form."
 
-    # Get name before pre-processing.
-    if id(form) in object_names:
-        name = object_names[id(form)]
-    else:
-        name = "a"
-
-    # Preprocess form
-    if not form.is_preprocessed():
+    # Preprocess form if necessary
+    if form.form_data() is None:
         form = preprocess(form)
-
-    # Compute form data
-    form_data = FormData(form, name, object_names=object_names)
-    info(str(form_data))
+    info(str(form.form_data()))
 
     # Adjust cell and degree for elements when unspecified
-    _adjust_elements(form_data)
+    _adjust_elements(form.form_data())
 
     # Extract integral metadata
-    _extract_metadata(form_data, parameters)
+    _extract_metadata(form.form_data(), parameters)
 
-    return form, form_data
+    return form
 
 def _adjust_elements(form_data):
     "Adjust cell and degree for elements when unspecified."

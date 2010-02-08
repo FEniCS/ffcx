@@ -11,7 +11,7 @@ __date__ = "2009-12-16"
 __copyright__ = "Copyright (C) 2009 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-31
+# Last changed: 2010-02-08
 
 # FFC modules
 from ffc.log import info, begin, end, debug_code
@@ -155,12 +155,16 @@ def _generate_integral_code(ir, prefix, parameters):
     # Skip code generation if ir is None
     if ir is None: return None
 
-    if ir["representation"] == "tensor":
-        code = tensor.generate_integral_code(ir, prefix, parameters)
-    elif ir["representation"] == "quadrature":
-        code = quadrature.generate_integral_code(ir, prefix, parameters)
+    # Select representation
+    if ir["representation"] == "quadrature":
+        r = quadrature
+    elif ir["representation"] == "tensor":
+        r = tensor
     else:
         error("Unknown representation: %s" % ir["representation"])
+
+    # Generate code
+    code = r.generate_integral_code(ir, prefix, parameters)
 
     # Indent code (unused variables should already be removed)
     _indent_code(code)

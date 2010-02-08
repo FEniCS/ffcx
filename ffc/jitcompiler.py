@@ -9,7 +9,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Johan Hake, 2008-2009
 # Modified by Ilmar Wilbers, 2008
 # Modified by Kristian B. Oelgaard, 2009
-# Last changed: 2010-02-02
+# Last changed: 2010-02-08
 
 # Python modules
 import os
@@ -42,16 +42,13 @@ FFC_PARAMETERS_JIT["no-evaluate_basis_derivatives"] = True
 # Set debug level for Instant
 instant.set_logging_level("warning")
 
-# Form data cache
-_form_data_cache = {}
-
 def jit(object, parameters=None):
     """Just-in-time compile the given form or element
 
     Parameters:
 
-      object  : The object to be compiled
-      parameters : An option dictionary
+      object     : The object to be compiled
+      parameters : A set of parameters
     """
 
     # Check if we get an element or a form
@@ -60,8 +57,8 @@ def jit(object, parameters=None):
     else:
         return jit_form(object, parameters)
 
-def jit_form(form, parameters=None, use_form_data_cache=True):
-    "Just-in-time compile the given form"
+def jit_form(form, parameters=None):
+    "Just-in-time compile the given form."
 
     # Check that we get a Form
     if not isinstance(form, Form):
@@ -75,73 +72,54 @@ def jit_form(form, parameters=None, use_form_data_cache=True):
     set_prefix(parameters["log_prefix"])
 
     # Preprocess form
-    preprocessed_form = preprocess(form)
+    if form.form_data() is None:
+        preprocessed_form = preprocess(form)
+    else:
+        preprocessed_form = form
 
     # Wrap input
     jit_object = JITObject(form, preprocessed_form, parameters)
 
-    # Get cache dir
+    # Use Instant cache if possible
     cache_dir = parameters["cache_dir"]
     if cache_dir == "": cache_dir = None
-
-    # Check cache
     module = instant.import_module(jit_object, cache_dir=cache_dir)
     if module:
-
-        # Get compiled form from Instant cache
         compiled_form = getattr(module, module.__name__ + "_form_0")()
-
-        # Get form data from in-memory cache or create it
-        if id(form) in _form_data_cache and use_form_data_cache:
-            form_data = _form_data_cache[id(form)]
-        else:
-            form_data = FormData(preprocessed_form)
-            _form_data_cache[id(form)] = form_data
-        return (compiled_form, module, form_data)
+        return (compiled_form, module, preprocessed_form.form_data())
 
     # Write a message
     log(INFO + 5, "Calling FFC just-in-time (JIT) compiler, this may take some time.")
 
     # Generate code
-    signature = jit_object.signature()
-    analysis = compile_form(preprocessed_form, prefix=signature, parameters=parameters)
-    # FIXME: Make this more sane, less cryptic
-    form_data = analysis[0][0][1]
+    compile_form(preprocessed_form, prefix=jit_object.signature(), parameters=parameters)
 
-    # Create python extension module using Instant (through UFC)
+    # Build module using Instant (through UFC)
     debug("Creating Python extension (compiling and linking), this may take some time...")
+    hfile = jit_object.signature() + ".h"
+    cppfile = jit_object.signature() + ".cpp"
     module = ufc_utils.build_ufc_module(
-        signature + ".h",
+        hfile,
         source_directory = os.curdir,
-        signature = signature,
-        sources = [signature + ".cpp"] if parameters["split"] else [],
+        signature = jit_object.signature(),
+        sources = [cppfile] if parameters["split"] else [],
         cppargs  = ["-O2"] if parameters["cpp_optimize"] else ["-O0"] ,
         cache_dir = cache_dir)
 
     # Remove code
-    os.unlink(signature + ".h")
+    os.unlink(hfile)
     if parameters["split"] :
-        os.unlink(signature + ".cpp")
+        os.unlink(cppfile)
 
     # Extract compiled form
     compiled_form = getattr(module, module.__name__ + "_form_0")()
 
-    # Store form data in cache
-    if use_form_data_cache:
-        _form_data_cache[id(form)] = form_data
-
-    return compiled_form, module, form_data
+    return compiled_form, module, preprocessed_form.form_data()
 
 def jit_element(element, parameters=None):
     "Just-in-time compile the given element"
 
-    # FIXME: We need a new solution for this. The creation
-    # FIXME: of a dummy form leads to problems, in particular
-    # FIXME: we must make sure not to use the form_data cache
-    # FIXME: since it may lead to reuse of the dummy form
-    # FIXME: in a later proper form and then the arguments (v)
-    # FIXME: is a pure UFL basis function (without a DOLFIN
-    # FIXME: FunctionSpace)
+    # FIXME: We need a new solution for this.
 
     # Check that we get an element
     if not isinstance(element, FiniteElementBase):
@@ -154,7 +132,7 @@ def jit_element(element, parameters=None):
     form = v*dx
 
     # Compile form
-    (compiled_form, module, form_data) = jit_form(form, parameters, use_form_data_cache=False)
+    (compiled_form, module, form_data) = jit_form(form, parameters)
 
     return _extract_element_and_dofmap(module, form_data)
 
