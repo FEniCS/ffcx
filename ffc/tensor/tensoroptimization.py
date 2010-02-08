@@ -32,7 +32,7 @@ def optimize_integral_ir(ir):
         # Compute optimized abstract code
         if ir["rank"] == 2:
             abstract_code = binary.optimize(A0.A0)
-        elif rank == 1:
+        elif ir["rank"] == 1:
             abstract_code = binary.optimize_action(A0.A0)
         else:
             warning("Tensor optimization only available for rank 1 and 2 tensors, skipping optimizations")
