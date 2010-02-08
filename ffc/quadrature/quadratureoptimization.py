@@ -10,6 +10,6 @@ def optimize_integral_ir(ir):
     "Compute optimized intermediate representation of integral."
 
     # FIXME: Kristian, please update this comment
-    info("Quadrature code already optimized (?), skipping optimization")
+    info("Optimisation of quadrature code takes place at the code generation stage, skipping optimization")
 
     return ir
