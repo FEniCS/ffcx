@@ -9,7 +9,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Johan Hake, 2008-2009
 # Modified by Ilmar Wilbers, 2008
 # Modified by Kristian B. Oelgaard, 2009
-# Last changed: 2010-02-07
+# Last changed: 2010-02-08
 
 # Python modules
 import os
@@ -74,6 +74,8 @@ def jit_form(form, parameters=None):
     # Preprocess form
     if form.form_data() is None:
         preprocessed_form = preprocess(form)
+    else:
+        preprocessed_form = form
 
     # Wrap input
     jit_object = JITObject(form, preprocessed_form, parameters)
