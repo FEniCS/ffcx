@@ -5,7 +5,7 @@ __date__ = "2009-10-13"
 __copyright__ = "Copyright (C) 2009-2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-21
+# Last changed: 2010-02-08
 
 # Python modules.
 from itertools import izip
@@ -655,20 +655,20 @@ class QuadratureTransformerBase(Transformer):
         "Generate code from integrand."
 
         # Prefetch formats to speed up code generation.
-        format_comment      = format["comment"]
-        format_double       = format["float declaration"]
-        format_F            = format["function value"]
-        format_float        = format["floating point"]
-        format_iadd         = format["iadd"]
-        format_nzc          = format["nonzero columns"](0).split("0")[0]
-        format_r            = format["free indices"][0]
-        format_mult         = format["multiply"]
-        format_scale_factor = format["scale factor"]
-        format_add          = format["add"]
-        format_tensor       = format["element tensor"]
-        format_component    = format["component"]
-        format_Gip          = format["geometry constant"] + format["integration points"]
-        format_decl         = format["declaration"]
+        f_comment      = format["comment"]
+        f_double       = format["float declaration"]
+        f_F            = format["function value"]
+        f_float        = format["floating point"]
+        f_iadd         = format["iadd"]
+        f_nzc          = format["nonzero columns"](0).split("0")[0]
+        f_r            = format["free indices"][0]
+        f_mult         = format["multiply"]
+        f_scale_factor = format["scale factor"]
+        f_add          = format["add"]
+        f_tensor       = format["element tensor"]
+        f_component    = format["component"]
+        f_Gip          = format["geometry constant"] + format["integration points"]
+        f_decl         = format["declaration"]
         f_loop              = format["generate loop"]
 
         # Initialise return values.
@@ -707,9 +707,9 @@ class QuadratureTransformerBase(Transformer):
         # Create the function declarations, we know that the code generator numbers
         # functions from 0 to n.
         if self.function_count:
-            code += ["", format_comment("Coefficient declarations")]
+            code += ["", f_comment("Coefficient declarations")]
         for function_number in range(self.function_count):
-            code.append(format_decl(format_double, format_F + str(function_number), format_float(0)))
+            code.append(f_decl(f_double, f_F + str(function_number), f_float(0)))
 
         # Create code for computing function values, sort after loop ranges first.
         functions = self.functions
@@ -729,7 +729,7 @@ class QuadratureTransformerBase(Transformer):
             for function in list_of_functions:
                 # Get name and number.
                 name = str(functions[function][0])
-                number = int(name.strip(format_F))
+                number = int(name.strip(f_F))
 
                 # TODO: This check can be removed for speed later.
                 ffc_assert(number not in function_numbers, "This is definitely not supposed to happen!")
@@ -738,17 +738,17 @@ class QuadratureTransformerBase(Transformer):
                 # Get number of operations to compute entry and add to function operations count.
                 f_ops = self._count_operations(function) + 1
                 func_ops += f_ops
-                entry = format_iadd(name, function)
+                entry = f_iadd(name, function)
                 function_expr[number] = entry
 
                 # Extract non-zero column number if needed.
-                if format_nzc in entry:
-                    self.used_nzcs.add(int(entry.split(format_nzc)[1].split("[")[0]))
+                if f_nzc in entry:
+                    self.used_nzcs.add(int(entry.split(f_nzc)[1].split("[")[0]))
 
             # Multiply number of operations by the range of the loop index and add
             # number of operations to compute function values to total count.
             func_ops *= loop_range
-            func_ops_comment = ["", format_comment("Total number of operations to compute function values = %d" % func_ops)]
+            func_ops_comment = ["", f_comment("Total number of operations to compute function values = %d" % func_ops)]
             num_ops += func_ops
 
             # Sort the functions according to name and create loop to compute the function values.
@@ -756,7 +756,7 @@ class QuadratureTransformerBase(Transformer):
             lines = []
             for number in function_numbers:
                 lines.append(function_expr[number])
-            code += func_ops_comment + f_loop(lines, [(format_r, 0, loop_range)])
+            code += func_ops_comment + f_loop(lines, [(f_r, 0, loop_range)])
 
         # Create weight.
         ACCESS = GEO
@@ -775,21 +775,21 @@ class QuadratureTransformerBase(Transformer):
                 continue
 
             # Create value, zero is True if value is zero
-            value, zero = self._create_entry_value(val, weight, format_scale_factor)
+            value, zero = self._create_entry_value(val, weight, f_scale_factor)
 
             if zero:
                 continue
 
             # Add points and scale factor to used weights and transformations
             self.used_weights.add(self.points)
-            self.trans_set.add(format_scale_factor)
+            self.trans_set.add(f_scale_factor)
 
             # Compute number of operations to compute entry
             # (add 1 because of += in assignment).
             entry_ops = self._count_operations(value) + 1
 
             # Create comment for number of operations
-            entry_ops_comment = format_comment("Number of operations to compute entry: %d" % entry_ops)
+            entry_ops_comment = f_comment("Number of operations to compute entry: %d" % entry_ops)
 
             # Create appropriate entries.
             # FIXME: We only support rank 0, 1 and 2.
@@ -813,8 +813,8 @@ class QuadratureTransformerBase(Transformer):
                 entry_ops *= range_j
 
                 # Extract non-zero column number if needed.
-                if format_nzc in entry:
-                    self.used_nzcs.add(int(entry.split(format_nzc)[1].split("[")[0]))
+                if f_nzc in entry:
+                    self.used_nzcs.add(int(entry.split(f_nzc)[1].split("[")[0]))
 
             elif len(key) == 2:
                 # Extract test and trial loops in correct order and check if for is legal.
@@ -835,17 +835,17 @@ class QuadratureTransformerBase(Transformer):
                 if not (range_k == 1 and self.optimise_parameters["ignore ones"]):
                     loop.append((indices[index_k], 0, range_k))
 
-                entry = format_add([format_mult([entry_j, str(space_dim_k)]), entry_k])
+                entry = f_add([f_mult([entry_j, str(space_dim_k)]), entry_k])
                 loop = tuple(loop)
 
                 # Multiply number of operations to compute entries by range of loops.
                 entry_ops *= range_j*range_k
 
                 # Extract non-zero column number if needed.
-                if format_nzc in entry_j:
-                    self.used_nzcs.add(int(entry_j.split(format_nzc)[1].split("[")[0]))
-                if format_nzc in entry_k:
-                    self.used_nzcs.add(int(entry_k.split(format_nzc)[1].split("[")[0]))
+                if f_nzc in entry_j:
+                    self.used_nzcs.add(int(entry_j.split(f_nzc)[1].split("[")[0]))
+                if f_nzc in entry_k:
+                    self.used_nzcs.add(int(entry_k.split(f_nzc)[1].split("[")[0]))
             else:
                 error("Only rank 0, 1 and 2 tensors are currently supported: " + repr(key))
 
@@ -856,7 +856,7 @@ class QuadratureTransformerBase(Transformer):
             except:
                 pass
 
-            entry_code = format_iadd(format_tensor(entry), value)
+            entry_code = f_iadd(f_tensor(entry), value)
 
             if loop not in loops:
                 loops[loop] = [entry_ops, [entry_ops_comment, entry_code]]
@@ -865,11 +865,11 @@ class QuadratureTransformerBase(Transformer):
                 loops[loop][1] += [entry_ops_comment, entry_code]
 
         # Generate code for ip constant declarations.
-        ip_const_ops, ip_const_code = generate_aux_constants(self.ip_consts, format_Gip,\
+        ip_const_ops, ip_const_code = generate_aux_constants(self.ip_consts, f_Gip,\
                                         format["const float declaration"], True)
         num_ops += ip_const_ops
         if ip_const_code:
-            code += ["", format_comment("Number of operations to compute ip constants: %d" %ip_const_ops)]
+            code += ["", f_comment("Number of operations to compute ip constants: %d" %ip_const_ops)]
             code += ip_const_code
 
         # Write all the loops of basis functions.
@@ -878,7 +878,7 @@ class QuadratureTransformerBase(Transformer):
 
             # Add number of operations for current loop to total count.
             num_ops += ops
-            code += ["", format_comment("Number of operations for primary indices: %d" % ops)]
+            code += ["", f_comment("Number of operations for primary indices: %d" % ops)]
             code += f_loop(lines, loop)
 
         info("             done, time = %f" % (time.time() - t))
@@ -964,7 +964,7 @@ class QuadratureTransformerBase(Transformer):
         "Create basis name and mapping from given basis_info."
 
         # Get string for integration points.
-        format_ip = format["integration points"]
+        f_ip = format["integration points"]
         generate_psi_name = format["psi name"]
 
         # Only support test and trial functions.
@@ -988,8 +988,8 @@ class QuadratureTransformerBase(Transformer):
         # Create basis access, we never need to map the entry in the basis table
         # since we will either loop the entire space dimension or the non-zeros.
         if self.points == 1:
-            format_ip = "0"
-        basis_access = format["component"]("", [format_ip, loop_index])
+            f_ip = "0"
+        basis_access = format["component"]("", [f_ip, loop_index])
 
         # Offset element space dimension in case of negative restriction,
         # need to use the complete element for offset in case of mixed element.
@@ -1045,7 +1045,7 @@ class QuadratureTransformerBase(Transformer):
     def _create_function_name(self, component, deriv, quad_element, ufl_function, ffc_element):
 
         # Get string for integration points.
-        format_ip = format["integration points"]
+        f_ip = format["integration points"]
         generate_psi_name = format["psi name"]
 
         # Pick first free index of secondary type
@@ -1056,8 +1056,8 @@ class QuadratureTransformerBase(Transformer):
         # table since we will either loop the entire space dimension or the
         # non-zeros.
         if self.points == 1:
-            format_ip = "0"
-        basis_access = format["component"]("", [format_ip, loop_index])
+            f_ip = "0"
+        basis_access = format["component"]("", [f_ip, loop_index])
 
         # Handle restriction through facet.
         facet = {"+": self.facet0, "-": self.facet1, None: self.facet0}[self.restriction]
@@ -1109,9 +1109,9 @@ class QuadratureTransformerBase(Transformer):
                 else:
                     quad_offset += ffc_element.space_dimension()
             if quad_offset:
-                coefficient_access = format["add"]([format_ip, str(quad_offset)])
+                coefficient_access = format["add"]([f_ip, str(quad_offset)])
             else:
-                coefficient_access = format_ip
+                coefficient_access = f_ip
 
         # If we have non zero column mapping but only one value just pick it.
         if non_zeros and coefficient_access == "0":

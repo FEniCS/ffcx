@@ -6,7 +6,7 @@ __copyright__ = "Copyright (C) 2009-2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Anders Logg, 2009
-# Last changed: 2010-01-27
+# Last changed: 2010-02-08
 
 # Python modules.
 from numpy import shape
@@ -202,8 +202,8 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         "Create code for basis functions, and update relevant tables of used basis."
 
         # Prefetch formats to speed up code generation.
-        format_transform     = format["transform"]
-        format_detJ          = format["det(J)"]
+        f_transform     = format["transform"]
+        f_detJ          = format["det(J)"]
 
         code = {}
 
@@ -237,11 +237,11 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
 
                     # Multiply basis by appropriate transform.
                     if transformation == "covariant piola":
-                        dxdX = create_symbol(format_transform("JINV", c, local_comp, self.restriction), GEO)
+                        dxdX = create_symbol(f_transform("JINV", c, local_comp, self.restriction), GEO)
                         basis = create_product([dxdX, basis])
                     elif transformation == "contravariant piola":
-                        detJ = create_fraction(create_float(1), create_symbol(format_detJ(choose_map[self.restriction]), GEO))
-                        dXdx = create_symbol(format_transform("J", local_comp, c, self.restriction), GEO)
+                        detJ = create_fraction(create_float(1), create_symbol(f_detJ(choose_map[self.restriction]), GEO))
+                        dXdx = create_symbol(f_transform("J", local_comp, c, self.restriction), GEO)
                         basis = create_product([detJ, dXdx, basis])
                     else:
                         error("Transformation is not supported: " + repr(transformation))
@@ -266,8 +266,8 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         "Create code for basis functions, and update relevant tables of used basis."
 
         # Prefetch formats to speed up code generation.
-        format_transform     = format["transform"]
-        format_detJ          = format["det(J)"]
+        f_transform     = format["transform"]
+        f_detJ          = format["det(J)"]
 
         code = []
 
@@ -298,11 +298,11 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
 
                     # Multiply basis by appropriate transform.
                     if transformation == "covariant piola":
-                        dxdX = create_symbol(format_transform("JINV", c, local_comp, self.restriction), GEO)
+                        dxdX = create_symbol(f_transform("JINV", c, local_comp, self.restriction), GEO)
                         function_name = create_product([dxdX, function_name])
                     elif transformation == "contravariant piola":
-                        detJ = create_fraction(create_float(1), create_symbol(format_detJ(choose_map[self.restriction]), GEO))
-                        dXdx = create_symbol(format_transform("J", local_comp, c, self.restriction), GEO)
+                        detJ = create_fraction(create_float(1), create_symbol(f_detJ(choose_map[self.restriction]), GEO))
+                        dXdx = create_symbol(f_transform("J", local_comp, c, self.restriction), GEO)
                         function_name = create_product([detJ, dXdx, function_name])
                     else:
                         error("Transformation is not supported: ", repr(transformation))
@@ -323,13 +323,13 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
     # -------------------------------------------------------------------------
     def __apply_transform(self, function, derivatives, multi):
         "Apply transformation (from derivatives) to basis or function."
-        format_transform     = format["transform"]
+        f_transform     = format["transform"]
 
         # Add transformation if needed.
         transforms = []
         for i, direction in enumerate(derivatives):
             ref = multi[i]
-            t = format_transform("JINV", ref, direction, self.restriction)
+            t = f_transform("JINV", ref, direction, self.restriction)
             transforms.append(create_symbol(t, GEO))
         transforms.append(function)
         return create_product(transforms)

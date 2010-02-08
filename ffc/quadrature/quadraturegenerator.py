@@ -249,8 +249,9 @@ def _tabulate_weights(transformer):
     f_group     = format["grouping"]
     f_decl      = format["declaration"]
     f_tensor    = format["tabulate tensor"]
+    f_comment   = format["comment"]
 
-    code = ["", format["comment"]("Array of quadrature weights.")]
+    code = ["", f_comment("Array of quadrature weights.")]
 
     # Loop tables of weights and create code.
     for num_points in transformer.used_weights:
@@ -277,7 +278,7 @@ def _tabulate_weights(transformer):
         # Create comment.
         comment = "Quadrature points on the UFC reference element: " \
                   + f_sep.join(formatted_points)
-        code += [format["comment"](comment)]
+        code += [f_comment(comment)]
 
         # 2) Tabulate the coordinates of the points p0, p1, p2 etc.
         #    X: x0, x1, x2
@@ -324,6 +325,7 @@ def _tabulate_psis(transformer):
     f_decl        = format["declaration"]
     f_tensor      = format["tabulate tensor"]
     f_new_line    = format["new line"]
+    f_int         = format["int"]
 
     # FIXME: Check if we can simplify the tabulation
     code = []
@@ -378,7 +380,7 @@ def _tabulate_psis(transformer):
                         if not i in transformer.used_nzcs:
                             continue
                         code += [f_comment("Array of non-zero columns")]
-                        value = f_list(["%d" % c for c in list(cols)])
+                        value = f_list([f_int(c) for c in list(cols)])
                         name_col = f_component(f_nzcolumns(i), len(cols))
                         code += [f_decl(f_const_uint, name_col, value), ""]
 
