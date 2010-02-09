@@ -505,7 +505,7 @@ def _compute_reference_derivatives(data):
             # Create inner product and multiply by inverse of Jacobian.
             inner = [f_mul([jacobian_row[j], basis_col[j]]) for j in range(topological_dimension)]
             sum_ = f_group(f_add(inner))
-            value = f_mul([f_inv(f_detJ("")), sum_])
+            value = f_mul([f_inv(f_detJ(None)), sum_])
             name = f_component(f_derivatives, f_matrix_index(i, f_r, f_num_derivs))
             lines += [f_assign(name, value)]
     elif mapping == "covariant piola":

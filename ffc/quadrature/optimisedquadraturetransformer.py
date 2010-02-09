@@ -25,7 +25,7 @@ from ufl.algorithms.printing import tree_format
 
 # FFC modules.
 from ffc.log import info, debug, error, ffc_assert
-from ffc.cpp import choose_map, format
+from ffc.cpp import format
 from ffc.quadrature.quadraturetransformerbase import QuadratureTransformerBase
 from ffc.quadrature.quadratureutils import create_permutations
 
@@ -240,7 +240,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
                         dxdX = create_symbol(f_transform("JINV", c, local_comp, self.restriction), GEO)
                         basis = create_product([dxdX, basis])
                     elif transformation == "contravariant piola":
-                        detJ = create_fraction(create_float(1), create_symbol(f_detJ(choose_map[self.restriction]), GEO))
+                        detJ = create_fraction(create_float(1), create_symbol(f_detJ(self.restriction), GEO))
                         dXdx = create_symbol(f_transform("J", local_comp, c, self.restriction), GEO)
                         basis = create_product([detJ, dXdx, basis])
                     else:
@@ -301,7 +301,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
                         dxdX = create_symbol(f_transform("JINV", c, local_comp, self.restriction), GEO)
                         function_name = create_product([dxdX, function_name])
                     elif transformation == "contravariant piola":
-                        detJ = create_fraction(create_float(1), create_symbol(f_detJ(choose_map[self.restriction]), GEO))
+                        detJ = create_fraction(create_float(1), create_symbol(f_detJ(self.restriction), GEO))
                         dXdx = create_symbol(f_transform("J", local_comp, c, self.restriction), GEO)
                         function_name = create_product([detJ, dXdx, function_name])
                     else:

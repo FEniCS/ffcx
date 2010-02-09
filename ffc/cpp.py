@@ -43,6 +43,7 @@ format.update({
 format.update({
     "declaration":                    lambda t, n, v=None: _declaration(t, n, v),
     "float declaration":              "double",
+    "int declaration":                "int",
     "uint declaration":               "unsigned int",
     "static const uint declaration":  "static const unsigned int",
     "static const float declaration": "static const double",
@@ -89,7 +90,7 @@ format.update({
     "cell":             lambda s: "ufc::%s" % s,
     "J":                lambda i, j: "J_%d%d" % (i, j),
     "inv(J)":           lambda i, j: "K_%d%d" % (i, j),
-    "det(J)":           lambda r="": "detJ%s" % r,
+    "det(J)":           lambda r=None: "detJ%s" % choose_map[r],
     "scale factor":     "det",
     "transform":        lambda t, j, k, r: _transform(t, j, k, r),
     "normal component": lambda r, j: "n%s%s" % (choose_map[r], j),
@@ -113,8 +114,23 @@ format.update({
     "argument entity":            "i",
     "member global dimension":    "_global_dimension",
     "argument dofs":              "dofs",
+    "argument dof num":           "i",
+    "argument dof values":        "dof_values",
+    "argument vertex values":     "vertex_values",
     "argument sub":               "i" # sub domain, sub element
 })
+
+# Formatting used in evaluatedof.
+format.update({
+    "dof vals":                 "vals",
+    "dof result":               "result",
+    "dof X":                    lambda i: "X_%d" % i,
+    "dof D":                    lambda i: "D_%d" % i,
+    "dof W":                    lambda i: "W_%d" % i,
+    "dof copy":                 lambda i: "copy_%d" % i,
+    "dof physical coordinates": "y"
+})
+
 
 # Formatting used in evaluate_basis, evaluate_basis_derivatives and quadrature
 # code generators.
@@ -477,27 +493,6 @@ def _generate_normal(geometric_dimension, domain_type, reference_normal=False):
     else:
         error("Unsupported domain_type: %s" % str(domain_type))
     return code
-
-# ---- Indentation control ----
-class IndentControl:
-    "Class to control the indentation of code"
-
-    def __init__(self):
-        "Constructor"
-        self.size = 0
-        self.increment = 2
-
-    def increase(self):
-        "Increase indentation by increment"
-        self.size += self.increment
-
-    def decrease(self):
-        "Decrease indentation by increment"
-        self.size -= self.increment
-
-    def indent(self, a):
-        "Indent string input string by size"
-        return indent(a, self.size)
 
 # Functions.
 def indent(block, num_spaces):

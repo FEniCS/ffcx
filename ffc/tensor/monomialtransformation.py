@@ -128,7 +128,7 @@ class MonomialDeterminant:
     def __init__(self):
         "Create empty monomial determinant."
         self.power = 0
-        self.restriction = ""
+        self.restriction = None
 
     def __str__(self):
         "Return informal string representation (pretty-print)."

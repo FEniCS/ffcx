@@ -287,7 +287,7 @@ def _compute_values(data, sum_value_dim, vector):
     f_r             = format["free indices"][0]
     f_dof           = format["local dof"]
     f_deref_pointer = format["dereference pointer"]
-    f_det           = format["det(J)"]
+    f_detJ          = format["det(J)"]
     f_inv           = format["inverse"]
     f_mul           = format["mul"]
     f_iadd          = format["iadd"]
@@ -350,7 +350,7 @@ def _compute_values(data, sum_value_dim, vector):
 
             # Create inner product and multiply by inverse of Jacobian.
             inner = f_group(f_inner(jacobian_row, basis_col))
-            value = f_mul([f_inv(f_det("")), inner])
+            value = f_mul([f_inv(f_detJ(None)), inner])
             name = f_component(f_values, i + sum_value_dim)
             code += [f_assign(name, value)]
     elif mapping == "covariant piola":

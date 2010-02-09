@@ -26,7 +26,7 @@ from ufl.algorithms.printing import tree_format
 
 # FFC modules.
 from ffc.log import info, debug, error, ffc_assert
-from ffc.cpp import choose_map, format
+from ffc.cpp import format
 
 # Utility and optimisation functions for quadraturegenerator.
 from quadraturetransformerbase import QuadratureTransformerBase
@@ -333,8 +333,8 @@ class QuadratureTransformer(QuadratureTransformerBase):
                         self.trans_set.add(dxdX)
                         basis = f_mult([dxdX, basis])
                     elif transformation == "contravariant piola":
-                        self.trans_set.add(f_detJ(choose_map[self.restriction]))
-                        detJ = f_inv(f_detJ(choose_map[self.restriction]))
+                        self.trans_set.add(f_detJ(self.restriction))
+                        detJ = f_inv(f_detJ(self.restriction))
                         dXdx = f_transform("J", local_comp, c, self.restriction)
                         self.trans_set.add(dXdx)
                         basis = f_mult([detJ, dXdx, basis])
@@ -403,8 +403,8 @@ class QuadratureTransformer(QuadratureTransformerBase):
                         self.trans_set.add(dxdX)
                         function_name = f_mult([dxdX, function_name])
                     elif transformation == "contravariant piola":
-                        self.trans_set.add(f_detJ(choose_map[self.restriction]))
-                        detJ = f_inv(f_detJ(choose_map[self.restriction]))
+                        self.trans_set.add(f_detJ(self.restriction))
+                        detJ = f_inv(f_detJ(self.restriction))
                         dXdx = f_transform("J", local_comp, c, self.restriction)
                         self.trans_set.add(dXdx)
                         function_name = f_mult([detJ, dXdx, function_name])
