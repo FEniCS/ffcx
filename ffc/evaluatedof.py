@@ -214,7 +214,7 @@ def _generate_multiple_points_body(i, dof, mapping,
 
     # Evaluate function at physical point
     lines_r.append(comment("Evaluate function at physical point."))
-    code.append(format["evaluate function"])
+    lines_r.append(format["evaluate function"])
 
     # Map function values to the reference element
     lines_r.append(comment("Map function to reference element."))
