@@ -138,7 +138,7 @@ class TestElasticity2D(unittest.TestCase):
 #        print "Elasticity2D: time, expand():     ", time.time() - start
 
 #        start = time.time()
-        elasticity_exp = expand_operations(elasticity, get_format())
+        elasticity_exp = expand_operations(elasticity, format)
 #        print "Elasticity2D: time, old expand(): ", time.time() - start
 
 #        start = time.time()
@@ -146,11 +146,11 @@ class TestElasticity2D(unittest.TestCase):
 #        print "Elasticity2D: time, reduce_ops(): ", time.time() - start
 
 #        start = time.time()
-        elasticity_red = reduce_operations(elasticity, get_format())
+        elasticity_red = reduce_operations(elasticity, format)
 #        print "Elasticity2D: time, old reduce(): ", time.time() - start
 
-        elasticity_exp_ops = operation_count(elasticity_exp, get_format())
-        elasticity_red_ops = operation_count(elasticity_red, get_format())
+        elasticity_exp_ops = operation_count(elasticity_exp, format)
+        elasticity_red_ops = operation_count(elasticity_red, format)
 #        print "expr.ops():                ", expr.ops()
 #        print "Elasticity2D old exp: ops: ", elasticity_exp_ops
 #        print "expr_exp.ops():            ", expr_exp.ops()

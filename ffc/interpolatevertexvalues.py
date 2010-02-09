@@ -5,20 +5,23 @@ __copyright__ = "Copyright (C) 2009"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian B. Oelgaard 2010
-# Last changed: 2010-01-30
+# Last changed: 2010-02-09
 
 from ffc.cpp import format, remove_unused
 
 # Extract code manipulation formats
-inner = format["inner product"]
+inner =     format["inner product"]
 component = format["component"]
-assign = format["assign"]
-multiply = format["multiply"]
+assign =    format["assign"]
+multiply =  format["multiply"]
 
 # Extract formats for the Jacobians
-J = format["J"]
-Jinv = format["inv(J)"]
-invdetJ = "1.0/%s" % format["det(J)"]("")
+J =       format["J"]
+Jinv =    format["inv(J)"]
+invdetJ = format["inverse"](format["det(J)"](None))
+
+f_dof_values =    format["argument dof values"]
+f_vertex_values = format["argument vertex values"]
 
 def interpolate_vertex_values(ir):
     "Generate code for interpolate_vertex_values."
@@ -83,14 +86,14 @@ def _interpolate_vertex_values_element(data, dim, total_value_size,
             components = change_of_variables(values_at_vertex, k)
 
             # Contract coefficients and basis functions
-            dof_values = [component("dof_values", i + space_offset)
+            dof_values = [component(f_dof_values, i + space_offset)
                           for i in range(space_dim)]
 
             value = inner(dof_values, components)
 
             # Assign value to correct vertex
             index = j*total_value_size + (k + value_offset)
-            code.append(assign(component("vertex_values", index), value))
+            code.append(assign(component(f_vertex_values, index), value))
 
     return "\n".join(code)
 

@@ -5,7 +5,7 @@ __date__ = "2009-07-12"
 __copyright__ = "Copyright (C) 2009-2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-21
+# Last changed: 2010-02-09
 
 # FFC modules.
 from ffc.log import error
@@ -17,14 +17,6 @@ from symbolics import create_product
 from symbolics import create_sum
 from symbolics import create_fraction
 from expr import Expr
-
-# TODO: This function is needed to avoid passing around the 'format', but could
-# it be done differently?
-def set_format(_format):
-    global format
-    format = _format
-    global EPS
-    EPS = format["epsilon"]
 
 class Sum(Expr):
     __slots__ = ("vrs", "_expanded", "_reduced")

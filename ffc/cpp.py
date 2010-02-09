@@ -7,7 +7,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian B. Oelgaard 2010
 # Modified by Marie E. Rognes 2010
-# Last changed: 2010-02-03
+# Last changed: 2010-02-04
 
 # Python modules
 import re, numpy, platform
@@ -42,14 +42,16 @@ format.update({
 # Declarations
 format.update({
     "declaration":                    lambda t, n, v=None: _declaration(t, n, v),
-    "float declaration":              "double ",
-    "uint declaration":               "unsigned int ",
-    "static const uint declaration":  "static const unsigned int ",
-    "static const float declaration": "static const double ",
+    "float declaration":              "double",
+    "int declaration":                "int",
+    "uint declaration":               "unsigned int",
+    "static const uint declaration":  "static const unsigned int",
+    "static const float declaration": "static const double",
     "const float declaration":        lambda v, w: "const double %s = %s;" % (v, w),
     "const uint declaration":         lambda v, w: "const unsigned int %s = %s;" % (v, w),
-    "dynamic array":                  lambda t, n, s: "%s*%s = new %s[%s];" % (t, n, t, s),
-    "delete dynamic array":           lambda n, s=None: _delete_array(n, s)
+    "dynamic array":                  lambda t, n, s: "%s *%s = new %s[%s];" % (t, n, t, s),
+    "delete dynamic array":           lambda n, s=None: _delete_array(n, s),
+    "create foo":                     lambda v: "new %s" % v
 })
 
 # Mathematical operators
@@ -88,25 +90,47 @@ format.update({
     "cell":             lambda s: "ufc::%s" % s,
     "J":                lambda i, j: "J_%d%d" % (i, j),
     "inv(J)":           lambda i, j: "K_%d%d" % (i, j),
-    "det(J)":           lambda r="": "detJ%s" % r,
+    "det(J)":           lambda r=None: "detJ%s" % choose_map[r],
     "scale factor":     "det",
     "transform":        lambda t, j, k, r: _transform(t, j, k, r),
     "normal component": lambda r, j: "n%s%s" % (choose_map[r], j),
     "x coordinate":     "X",
     "y coordinate":     "Y",
-    "z coordinate":     "Z"
+    "z coordinate":     "Z",
+    "coordinates":      "x"
 })
 
-# UFC function arguments (names)
+# UFC function arguments and class members (names)
 format.update({
-    "element tensor":  lambda i: "A[%d]" % i,
-    "coefficient":     lambda j, k: format["component"]("w", [j, k]),
-    "element tensor quad": "A",
-    "argument basis num": "i",
-    "argument derivative order": "n",
-    "argument values": "values",
-    "argument coordinates": "coordinates"
+    "element tensor":             lambda i: "A[%s]" % i,
+    "coefficient":                lambda j, k: format["component"]("w", [j, k]),
+    "argument basis num":         "i",
+    "argument derivative order":  "n",
+    "argument values":            "values",
+    "argument coordinates":       "coordinates",
+    "facet":                      lambda r: "facet%s" % choose_map[r],
+    "argument axis":              "i",
+    "argument dimension":         "d",
+    "argument entity":            "i",
+    "member global dimension":    "_global_dimension",
+    "argument dofs":              "dofs",
+    "argument dof num":           "i",
+    "argument dof values":        "dof_values",
+    "argument vertex values":     "vertex_values",
+    "argument sub":               "i" # sub domain, sub element
 })
+
+# Formatting used in evaluatedof.
+format.update({
+    "dof vals":                 "vals",
+    "dof result":               "result",
+    "dof X":                    lambda i: "X_%d" % i,
+    "dof D":                    lambda i: "D_%d" % i,
+    "dof W":                    lambda i: "W_%d" % i,
+    "dof copy":                 lambda i: "copy_%d" % i,
+    "dof physical coordinates": "y"
+})
+
 
 # Formatting used in evaluate_basis, evaluate_basis_derivatives and quadrature
 # code generators.
@@ -128,6 +152,9 @@ format.update({
     "dof map if":               lambda i,j: "%d <= %s && %s <= %d"\
                                 % (i, format["argument basis num"], format["argument basis num"], j),
     "dereference pointer":      lambda n: "*%s" % n,
+    "reference variable":       lambda n: "&%s" % n,
+    "call basis":               lambda i, s: "evaluate_basis(%s, %s, coordinates, c);" % (i, s),
+    "call basis_derivatives":   lambda i, s: "evaluate_basis_derivatives(%s, n, %s, coordinates, c);" % (i, s),
 
     # quadrature code generators
     "integration points": "ip",
@@ -139,7 +166,8 @@ format.update({
     "weight":             lambda i: "W%d" % (i),
     "psi name":           lambda c, f, co, d: _generate_psi_name(c,f,co,d),
     # both
-    "free indices":       ["r","s","t","u"]
+    "free indices":       ["r","s","t","u"],
+    "matrix index":       lambda i, j, range_j: _matrix_index(i, str(j), str(range_j))
 })
 
 # Misc
@@ -159,9 +187,9 @@ format.update({
     "cell coordinates":     cell_coordinates,
     "jacobian":             lambda n, r="": jacobian[n] % {"restriction": r},
     "inverse jacobian":     lambda n, r="": inverse_jacobian[n] % {"restriction": r},
-    "jacobian and inverse": lambda n, r="": format["jacobian"](n, r) +\
-                            "\n" + format["inverse jacobian"](n, r),
-    "facet determinant":    lambda n, r="": facet_determinant[n] % {"restriction": r},
+    "jacobian and inverse": lambda n, r=None: format["jacobian"](n, choose_map[r]) +\
+                            "\n" + format["inverse jacobian"](n, choose_map[r]),
+    "facet determinant":    lambda n, r=None: facet_determinant[n] % {"restriction": choose_map[r]},
     "fiat coordinate map":  lambda n: fiat_coordinate_map[n],
     "generate normal":      lambda d, i: _generate_normal(d, i),
     "scale factor snippet": scale_factor,
@@ -198,8 +226,8 @@ format.update({
 # Helper functions for formatting.
 def _declaration(type, name, value=None):
     if value is None:
-        return "%s %s;\n" % (type, name);
-    return "%s %s = %s;\n" % (type, name, str(value));
+        return "%s %s;" % (type, name);
+    return "%s %s = %s;" % (type, name, str(value));
 
 def _component(var, k):
     if not isinstance(k, (list, tuple)):
@@ -379,6 +407,17 @@ def _generate_loop(lines, loop_vars):
 
     return code
 
+def _matrix_index(i, j, range_j):
+    "Map the indices in a matrix to an index in an array i.e., m[i][j] -> a[i*range(j)+j]"
+    if i == 0:
+        access = j
+    elif i == 1:
+        access = format["add"]([range_j, j])
+    else:
+        irj = format["mul"]([format["str"](i), range_j])
+        access = format["add"]([irj, j])
+    return access
+
 def _generate_psi_name(counter, facet, component, derivatives):
     """Generate a name for the psi table of the form:
     FE#_f#_C#_D###, where '#' will be an integer value.
@@ -454,27 +493,6 @@ def _generate_normal(geometric_dimension, domain_type, reference_normal=False):
     else:
         error("Unsupported domain_type: %s" % str(domain_type))
     return code
-
-# ---- Indentation control ----
-class IndentControl:
-    "Class to control the indentation of code"
-
-    def __init__(self):
-        "Constructor"
-        self.size = 0
-        self.increment = 2
-
-    def increase(self):
-        "Increase indentation by increment"
-        self.size += self.increment
-
-    def decrease(self):
-        "Decrease indentation by increment"
-        self.size -= self.increment
-
-    def indent(self, a):
-        "Indent string input string by size"
-        return indent(a, self.size)
 
 # Functions.
 def indent(block, num_spaces):

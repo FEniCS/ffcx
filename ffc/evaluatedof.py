@@ -28,25 +28,42 @@ __author__ = "Marie E. Rognes (meg@simula.no)"
 __copyright__ = "Copyright (C) 2009"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-13
+# Modified by Kristian B. Oelgaard 2010
+# Last changed: 2010-02-09
 
-from ffc.cpp import format, remove_unused, IndentControl
+from ffc.cpp import format, remove_unused
 from ffc.utils import pick_first
 
 __all__ = ["evaluate_dof_and_dofs", "affine_weights"]
 
 # Prefetch formats:
-comment = format["comment"]
-declare = format["declaration"]
-assign = format["assign"]
+comment =   format["comment"]
+declare =   format["declaration"]
+assign =    format["assign"]
 component = format["component"]
-iadd = format["iadd"]
-inner = format["inner product"]
-add = format["addition"]
-multiply = format["multiply"]
-J = format["J"]
-Jinv = format["inv(J)"]
-detJ = format["det(J)"]("")
+iadd =      format["iadd"]
+inner =     format["inner product"]
+add =       format["addition"]
+multiply =  format["multiply"]
+J =         format["J"]
+Jinv =      format["inv(J)"]
+detJ =      format["det(J)"](None)
+ret =       format["return"]
+f_i =       format["argument dof num"]
+f_values =  format["argument values"]
+f_double =  format["float declaration"]
+f_vals =    format["dof vals"]
+f_result =  format["dof result"]
+f_y =       format["dof physical coordinates"]
+f_x =       format["coordinates"]
+f_int =     format["int declaration"]
+f_X =       format["dof X"]
+f_D =       format["dof D"]
+f_W =       format["dof W"]
+f_copy =    format["dof copy"]
+f_r, f_s =  format["free indices"][:2]
+f_loop =    format["generate loop"]
+
 map_onto_physical = format["map onto physical"]
 
 def evaluate_dof_and_dofs(ir):
@@ -56,11 +73,11 @@ def evaluate_dof_and_dofs(ir):
     (reqs, cases) = _generate_common_code(ir)
 
     # Combine each case with returns for evaluate_dof and switch
-    dof_cases = ["%s\n%s" % (c, format["return"](r)) for (c, r) in cases]
-    dof_code = reqs + format["switch"]("i", dof_cases, format["return"]("0.0"))
+    dof_cases = ["%s\n%s" % (c, ret(r)) for (c, r) in cases]
+    dof_code = reqs + format["switch"](f_i, dof_cases, ret(format["float"](0.0)))
 
     # Combine each case with assignments for evaluate_dofs
-    dofs_cases = "\n".join("%s\n%s" % (c, format["assign"]("values[%d]" % i, r))
+    dofs_cases = "\n".join("%s\n%s" % (c, format["assign"](component(f_values, i), r))
                            for (i, (c, r)) in enumerate(cases))
     dofs_code = reqs + dofs_cases
 
@@ -73,7 +90,7 @@ def _generate_common_code(ir):
 
     # Extract variables
     mappings = ir["mappings"]
-    offsets = ir["offsets"]
+    offsets  = ir["offsets"]
     cell_dim = ir["cell_dimension"]
 
     # Generate bodies for each degree of freedom
@@ -90,10 +107,11 @@ def _required_declarations(ir):
 
     # Declare variable for storing the result and physical coordinates
     cell_dim = ir["cell_dimension"]
-    code.append(comment("Declare variables for result of evaluation"))
-    code.append(declare("double", "vals[%d]" % ir["value_size"]))
-    code.append(comment("Declare variable for physical coordinates"))
-    code.append(declare("double", "y[%d]" % cell_dim))
+    code.append(comment("Declare variables for result of evaluation."))
+    code.append(declare(f_double, component(f_vals, ir["value_size"])))
+    code.append("")
+    code.append(comment("Declare variable for physical coordinates."))
+    code.append(declare(f_double, component(f_y, cell_dim)))
 
     # Check whether Jacobians are necessary.
     needs_inverse_jacobian = any(["contravariant piola" in m
@@ -106,7 +124,7 @@ def _required_declarations(ir):
         return "\n".join(code)
 
     # Otherwise declare intermediate result variable
-    code.append(declare("double", "result"))
+    code.append(declare(f_double, f_result))
 
     # Add sufficient Jacobian information
     if needs_inverse_jacobian:
@@ -117,7 +135,7 @@ def _required_declarations(ir):
     return "\n".join(code)
 
 
-def _generate_body(i, dof, mapping, cell_dim, offset=0, result="result"):
+def _generate_body(i, dof, mapping, cell_dim, offset=0, result=f_result):
     "Generate code for a single dof."
 
     points = dof.keys()
@@ -136,8 +154,8 @@ def _generate_body(i, dof, mapping, cell_dim, offset=0, result="result"):
     # Map point onto physical element: y = F_K(x)
     code = []
     for j in range(cell_dim):
-        y = inner(w, [component("x", (k, j)) for k in range(cell_dim + 1)])
-        code.append(assign(component("y", j), y))
+        y = inner(w, [component(f_x, (k, j)) for k in range(cell_dim + 1)])
+        code.append(assign(component(f_y, j), y))
 
     # Evaluate function at physical point
     code.append(format["evaluate function"])
@@ -158,11 +176,11 @@ def _generate_body(i, dof, mapping, cell_dim, offset=0, result="result"):
 
 
 def _generate_multiple_points_body(i, dof, mapping,
-                                   cell_dim, offset=0, result="result"):
+                                   cell_dim, offset=0, result=f_result):
 
     "Generate c++ for-loop for multiple points (integral bodies)"
 
-    code = [assign("result", 0.0)]
+    code = [assign(f_result, 0.0)]
     points = dof.keys()
     n = len(points)
 
@@ -173,55 +191,53 @@ def _generate_multiple_points_body(i, dof, mapping,
 
     # Declare points
     points = format["list"]([format["list"](x) for x in points])
-    code += [declare("double", "X_%d[%d][%d]" % (i, n, cell_dim), points)]
+    code += [declare(f_double, component(f_X(i), [n, cell_dim]), points)]
 
     # Declare components
     components = [[c[0] for (w, c) in token] for token in tokens]
     components = format["list"]([format["list"](c) for c in components])
-    code += [declare("int", "D_%d[%d][%d]" % (i, n, len_tokens), components)]
+    code += [declare(f_int, component(f_D(i), [n, len_tokens]), components)]
 
     # Declare weights
     weights = [[w for (w, c) in token] for token in tokens]
     weights = format["list"]([format["list"](w) for w in weights])
-    code += [declare("double", "W_%d[%d][%d]" % (i, n, len_tokens), weights)]
+    code += [declare(f_double, component(f_W(i), [n, len_tokens]), weights)]
 
     # Declare copy variable:
-    code += [declare("double", "copy_%d[%d]" % (i, cell_dim))]
+    code += [declare(f_double, component(f_copy(i), cell_dim))]
 
     # Add loop over points
-    code += [comment("// Loop over points")]
-    code += ["for(unsigned int j = 0; j < %d; j++) {\n" % n]
-
-    Indent = IndentControl()
-    Indent.increase()
+    code += [comment("Loop over points.")]
 
     # Map the points from the reference onto the physical element
-    code += [Indent.indent(map_onto_physical[cell_dim] % {"i": i, "j": "j"})]
+    lines_r = [map_onto_physical[cell_dim] % {"i": i, "j": f_r}]
 
     # Evaluate function at physical point
-    code += [Indent.indent(comment("// Evaluate function at physical point"))]
-    code.append(Indent.indent(format["evaluate function"]))
+    lines_r.append(comment("Evaluate function at physical point."))
+    lines_r.append(format["evaluate function"])
 
     # Map function values to the reference element
-    code += [Indent.indent(comment("// Map function to reference element"))]
+    lines_r.append(comment("Map function to reference element."))
     F = _change_variables(mapping, cell_dim, offset)
-    code += [Indent.indent(assign(component("copy_%d" % i, k), F_k))
+    lines_r += [assign(component(f_copy(i), k), F_k)
              for (k, F_k) in enumerate(F)]
 
     # Add loop over directional components
-    code += [Indent.indent(comment("// Loop over directions"))]
-    code += [Indent.indent("for(unsigned int k = 0; k < %d; k++) {" % len_tokens)]
-    Indent.increase()
-    value = multiply([component("copy_%d" % i,
-                                component("D_%d" % i, ("j", "k"))),
-                      component("W_%d" %i, ("j", "k"))])
-
+    lines_r.append(comment("Loop over directions."))
+    value = multiply([component(f_copy(i),
+                                component(f_D(i), (f_r, f_s))),
+                      component(f_W(i), (f_r, f_s))])
     # Add value from this point to total result
-    code += [Indent.indent(iadd("result", value))]
-    code += [Indent.indent("}")]
-    Indent.decrease()
+    lines_s = [iadd(f_result, value)]
 
-    code += [Indent.indent("}")]
+    # Generate loop over s and add to r.
+    loop_vars_s = [(f_s, 0, len_tokens)]
+    lines_r += f_loop(lines_s, loop_vars_s)
+
+    # Generate loop over r and add to code.
+    loop_vars_r = [(f_r, 0, n)]
+    code += f_loop(lines_r, loop_vars_r)
+
     code = "\n".join(code)
     return code
 
@@ -262,7 +278,7 @@ def _change_variables(mapping, dim, offset):
     # interpolate_vertex_values. Could this be abstracted out?
 
     if mapping == "affine":
-        return [component("vals", offset)]
+        return [component(f_vals, offset)]
 
     elif mapping == "contravariant piola":
         # Map each component from physical to reference using inverse
@@ -270,7 +286,7 @@ def _change_variables(mapping, dim, offset):
         values = []
         for i in range(dim):
             inv_jacobian_row = [Jinv(i, j) for j in range(dim)]
-            components = [component("vals", j + offset) for j in range(dim)]
+            components = [component(f_vals, j + offset) for j in range(dim)]
             values += [multiply([detJ, inner(inv_jacobian_row, components)])]
         return values
 
@@ -280,7 +296,7 @@ def _change_variables(mapping, dim, offset):
         values = []
         for i in range(dim):
             jacobian_column = [J(j, i) for j in range(dim)]
-            components = [component("vals", j + offset) for j in range(dim)]
+            components = [component(f_vals, j + offset) for j in range(dim)]
             values += [inner(jacobian_column, components)]
         return values
     else:

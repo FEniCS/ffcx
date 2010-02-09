@@ -6,7 +6,7 @@ __copyright__ = "Copyright (C) 2009-2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Anders Logg, 2009
-# Last changed: 2010-01-27
+# Last changed: 2010-02-08
 
 # Python modules.
 from numpy import shape
@@ -25,7 +25,7 @@ from ufl.algorithms.printing import tree_format
 
 # FFC modules.
 from ffc.log import info, debug, error, ffc_assert
-from ffc.cpp import choose_map
+from ffc.cpp import format
 from ffc.quadrature.quadraturetransformerbase import QuadratureTransformerBase
 from ffc.quadrature.quadratureutils import create_permutations
 
@@ -38,10 +38,10 @@ from ffc.quadrature.symbolics import create_float, create_symbol, create_product
 class QuadratureTransformerOpt(QuadratureTransformerBase):
     "Transform UFL representation to quadrature code."
 
-    def __init__(self, ir, optimise_parameters, format):
+    def __init__(self, ir, optimise_parameters):
 
         # Initialise base class.
-        QuadratureTransformerBase.__init__(self, ir, optimise_parameters, format)
+        QuadratureTransformerBase.__init__(self, ir, optimise_parameters)
 #        set_format(format)
 
     # -------------------------------------------------------------------------
@@ -153,14 +153,14 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         if isinstance(expo, IntValue):
             return {(): create_product([val]*expo.value())}
         elif isinstance(expo, FloatValue):
-            exp = self.format["floating point"](expo.value())
-            sym = create_symbol(self.format["std power"](str(val), exp), val.t)
+            exp = format["floating point"](expo.value())
+            sym = create_symbol(format["std power"](str(val), exp), val.t)
             sym.base_expr = val
             sym.base_op = 1 # Add one operation for the pow() function.
             return {(): sym}
         elif isinstance(expo, Coefficient):
             exp = self.visit(expo)
-            sym = create_symbol(self.format["std power"](str(val), exp[()]), val.t)
+            sym = create_symbol(format["std power"](str(val), exp[()]), val.t)
             sym.base_expr = val
             sym.base_op = 1 # Add one operation for the pow() function.
             return {(): sym}
@@ -176,7 +176,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
 
         # Take absolute value of operand.
         val = operands[0][()]
-        new_val = create_symbol(self.format["absolute value"](str(val)), val.t)
+        new_val = create_symbol(format["absolute value"](str(val)), val.t)
         new_val.base_expr = val
         new_val.base_op = 1 # Add one operation for taking the absolute value.
         return {():new_val}
@@ -194,7 +194,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         ffc_assert(not operands, "Didn't expect any operands for FacetNormal: " + repr(operands))
         ffc_assert(len(components) == 1, "FacetNormal expects 1 component index: " + repr(components))
 
-        normal_component = self.format["normal component"](self.restriction, components[0])
+        normal_component = format["normal component"](self.restriction, components[0])
         return {(): create_symbol(normal_component, GEO)}
 
     def create_argument(self, ufl_argument, derivatives, component, local_comp,
@@ -202,8 +202,8 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         "Create code for basis functions, and update relevant tables of used basis."
 
         # Prefetch formats to speed up code generation.
-        format_transform     = self.format["transform"]
-        format_detJ          = self.format["det(J)"]
+        f_transform     = format["transform"]
+        f_detJ          = format["det(J)"]
 
         code = {}
 
@@ -237,11 +237,11 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
 
                     # Multiply basis by appropriate transform.
                     if transformation == "covariant piola":
-                        dxdX = create_symbol(format_transform("JINV", c, local_comp, self.restriction), GEO)
+                        dxdX = create_symbol(f_transform("JINV", c, local_comp, self.restriction), GEO)
                         basis = create_product([dxdX, basis])
                     elif transformation == "contravariant piola":
-                        detJ = create_fraction(create_float(1), create_symbol(format_detJ(choose_map[self.restriction]), GEO))
-                        dXdx = create_symbol(format_transform("J", local_comp, c, self.restriction), GEO)
+                        detJ = create_fraction(create_float(1), create_symbol(f_detJ(self.restriction), GEO))
+                        dXdx = create_symbol(f_transform("J", local_comp, c, self.restriction), GEO)
                         basis = create_product([detJ, dXdx, basis])
                     else:
                         error("Transformation is not supported: " + repr(transformation))
@@ -266,8 +266,8 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         "Create code for basis functions, and update relevant tables of used basis."
 
         # Prefetch formats to speed up code generation.
-        format_transform     = self.format["transform"]
-        format_detJ          = self.format["det(J)"]
+        f_transform     = format["transform"]
+        f_detJ          = format["det(J)"]
 
         code = []
 
@@ -298,11 +298,11 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
 
                     # Multiply basis by appropriate transform.
                     if transformation == "covariant piola":
-                        dxdX = create_symbol(format_transform("JINV", c, local_comp, self.restriction), GEO)
+                        dxdX = create_symbol(f_transform("JINV", c, local_comp, self.restriction), GEO)
                         function_name = create_product([dxdX, function_name])
                     elif transformation == "contravariant piola":
-                        detJ = create_fraction(create_float(1), create_symbol(format_detJ(choose_map[self.restriction]), GEO))
-                        dXdx = create_symbol(format_transform("J", local_comp, c, self.restriction), GEO)
+                        detJ = create_fraction(create_float(1), create_symbol(f_detJ(self.restriction), GEO))
+                        dXdx = create_symbol(f_transform("J", local_comp, c, self.restriction), GEO)
                         function_name = create_product([detJ, dXdx, function_name])
                     else:
                         error("Transformation is not supported: ", repr(transformation))
@@ -323,13 +323,13 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
     # -------------------------------------------------------------------------
     def __apply_transform(self, function, derivatives, multi):
         "Apply transformation (from derivatives) to basis or function."
-        format_transform     = self.format["transform"]
+        f_transform     = format["transform"]
 
         # Add transformation if needed.
         transforms = []
         for i, direction in enumerate(derivatives):
             ref = multi[i]
-            t = format_transform("JINV", ref, direction, self.restriction)
+            t = f_transform("JINV", ref, direction, self.restriction)
             transforms.append(create_symbol(t, GEO))
         transforms.append(function)
         return create_product(transforms)

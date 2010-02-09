@@ -5,10 +5,10 @@ __date__ = "2004-11-03"
 __copyright__ = "Copyright (C) 2004-2010 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Modified by Kristian B. Oelgaard, 2009
+# Modified by Kristian B. Oelgaard, 2009-2010
 # Modified by Marie Rognes (meg@math.uio.no), 2007
 # Modified by Garth N. Wells, 2009
-# Last changed: 2010-01-25
+# Last changed: 2010-02-09
 
 # FFC modules
 from ffc.log import error
@@ -70,7 +70,7 @@ def _tabulate_tensor(ir, parameters):
         cases = [None for i in range(num_facets)]
         for i in range(num_facets):
             cases[i] = _generate_tensor_contraction(AK[i], parameters, g_set)
-        t_code = switch("facet", cases)
+        t_code = switch(format["facet"](None), cases)
 
         # Generate code for geometry tensors
         g_code = _generate_geometry_tensors(AK[0], j_set, g_set)
@@ -86,15 +86,15 @@ def _tabulate_tensor(ir, parameters):
         for i in range(num_facets):
             for j in range(num_facets):
                 cases[i][j] = _generate_tensor_contraction(AK[i][j], parameters, g_set)
-        t_code = switch("facet0", [switch("facet1", cases[i]) for i in range(len(cases))])
+        t_code = switch(format["facet"]("+"), [switch(format["facet"]("-"), cases[i]) for i in range(len(cases))])
 
         # Generate code for geometry tensors
         g_code = _generate_geometry_tensors(AK[0][0], j_set, g_set)
 
         # Generate code for Jacobian
-        j_code  = format["jacobian and inverse"](geometric_dimension, "0")
-        j_code += format["jacobian and inverse"](geometric_dimension, "1")
-        j_code += "\n\n" + format["facet determinant"](geometric_dimension, "0")
+        j_code  = format["jacobian and inverse"](geometric_dimension, "+")
+        j_code += format["jacobian and inverse"](geometric_dimension, "-")
+        j_code += "\n\n" + format["facet determinant"](geometric_dimension, "+")
 
     else:
         error("Unhandled integral type: " + str(domain_type))
