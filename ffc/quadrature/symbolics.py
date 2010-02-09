@@ -5,7 +5,7 @@ __date__ = "2009-07-12"
 __copyright__ = "Copyright (C) 2009-2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-21
+# Last changed: 2010-02-09
 
 # FFC modules
 from ffc.log import debug, error
@@ -20,7 +20,6 @@ IP  = 1
 GEO = 2
 CONST = 3
 type_to_string = {BASIS:"BASIS", IP:"IP",GEO:"GEO", CONST:"CONST"}
-#format = None
 
 # Functions and dictionaries for cache implementation.
 # Increases speed and should also reduce memory consumption.
@@ -85,21 +84,6 @@ def create_fraction(num, denom):
     fraction = Fraction(num, denom)
     _fraction_cache[key] = fraction
     return fraction
-
-# Function to set global format to avoid passing around the dictionary 'format'.
-#def set_format(_format):
-#    global format
-#    format = _format
-#    set_format_float(format)
-#    set_format_sym(format)
-#    set_format_prod(format)
-#    set_format_sum(format)
-#    set_format_frac(format)
-#    global format_comment
-#    format_comment = format["comment"]
-
-def get_format():
-    return format
 
 # NOTE: We use commented print for debug, since debug will make the code run slower.
 def generate_aux_constants(constant_decl, name, var_type, print_ops=False):
@@ -306,13 +290,8 @@ def optimise_code(expr, ip_consts, geo_consts, trans_set):
     error("Values disappeared.")
 
 from floatvalue import FloatValue
-from floatvalue import set_format as set_format_float
 from symbol     import Symbol
-from symbol     import set_format as set_format_sym
 from product    import Product
-from product    import set_format as set_format_prod
 from sumobj     import Sum
-from sumobj     import set_format as set_format_sum
 from fraction   import Fraction
-from fraction   import set_format as set_format_frac
 

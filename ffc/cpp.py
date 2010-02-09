@@ -49,7 +49,8 @@ format.update({
     "const float declaration":        lambda v, w: "const double %s = %s;" % (v, w),
     "const uint declaration":         lambda v, w: "const unsigned int %s = %s;" % (v, w),
     "dynamic array":                  lambda t, n, s: "%s *%s = new %s[%s];" % (t, n, t, s),
-    "delete dynamic array":           lambda n, s=None: _delete_array(n, s)
+    "delete dynamic array":           lambda n, s=None: _delete_array(n, s),
+    "create foo":                     lambda v: "new %s" % v
 })
 
 # Mathematical operators
@@ -94,10 +95,11 @@ format.update({
     "normal component": lambda r, j: "n%s%s" % (choose_map[r], j),
     "x coordinate":     "X",
     "y coordinate":     "Y",
-    "z coordinate":     "Z"
+    "z coordinate":     "Z",
+    "coordinates":      "x"
 })
 
-# UFC function arguments (names)
+# UFC function arguments and class members (names)
 format.update({
     "element tensor":             lambda i: "A[%s]" % i,
     "coefficient":                lambda j, k: format["component"]("w", [j, k]),
@@ -105,7 +107,13 @@ format.update({
     "argument derivative order":  "n",
     "argument values":            "values",
     "argument coordinates":       "coordinates",
-    "facet":                      lambda r: "facet%s" % choose_map[r]
+    "facet":                      lambda r: "facet%s" % choose_map[r],
+    "argument axis":              "i",
+    "argument dimension":         "d",
+    "argument entity":            "i",
+    "member global dimension":    "_global_dimension",
+    "argument dofs":              "dofs",
+    "argument sub":               "i" # sub domain, sub element
 })
 
 # Formatting used in evaluate_basis, evaluate_basis_derivatives and quadrature

@@ -278,7 +278,7 @@ class TestMixedSymbols(unittest.TestCase):
         self.assertEqual(str(mff3), '(x/y)/((x/y)/(x/%s))' % f_3)
 
         # Use p1 as a base expression for Symbol
-        s3 = Symbol(get_format()["cos"](p1), CONST, p1, 1)
+        s3 = Symbol(format["cos"](p1), CONST, p1, 1)
         self.assertEqual(str(s3), 'std::cos(%s*x*y)' % f_3)
         self.assertEqual(s3.ops(), 3)
 

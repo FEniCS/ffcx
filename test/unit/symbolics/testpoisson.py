@@ -64,7 +64,7 @@ class TestPoisson(unittest.TestCase):
 #        print "Poisson: time, expand():     ", time.time() - start
 
 #        start = time.time()
-        poisson_exp = expand_operations(poisson, get_format())
+        poisson_exp = expand_operations(poisson, format)
 #        print "Poisson: time, old expand(): ", time.time() - start
 
 #        start = time.time()
@@ -72,11 +72,11 @@ class TestPoisson(unittest.TestCase):
 #        print "Poisson: time, reduce_ops(): ", time.time() - start
 
 #        start = time.time()
-        poisson_red = reduce_operations(poisson, get_format())
+        poisson_red = reduce_operations(poisson, format)
 #        print "Poisson: time, old reduce(): ", time.time() - start
 
-        poisson_exp_ops = operation_count(poisson_exp, get_format())
-        poisson_red_ops = operation_count(poisson_red, get_format())
+        poisson_exp_ops = operation_count(poisson_exp, format)
+        poisson_red_ops = operation_count(poisson_red, format)
 #        print "expr.ops():           ", expr.ops()
 #        print "Poisson old exp: ops: ", poisson_exp_ops
 #        print "expr_exp.ops():       ", expr_exp.ops()
