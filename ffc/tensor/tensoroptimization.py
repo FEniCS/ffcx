@@ -14,6 +14,9 @@ def optimize_integral_ir(ir):
     representation directly, rather than working on a copy.
     """
 
+    info("Optimization using FErari in progress, skipping")
+    return ir
+
     from ferari import binary
 
     # Try importing FErari
@@ -38,6 +41,7 @@ def optimize_integral_ir(ir):
             warning("Tensor optimization only available for rank 1 and 2 tensors, skipping optimizations")
             return ir
 
+        print "Abstract code"
         print abstract_code
 
     return ir

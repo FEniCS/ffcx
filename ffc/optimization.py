@@ -11,7 +11,7 @@ __date__ = "2009-12-22"
 __copyright__ = "Copyright (C) 2009 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-02-08
+# Last changed: 2010-02-09
 
 # FFC modules
 from ffc.log import info, begin, end
@@ -28,6 +28,7 @@ def optimize_ir(ir, parameters):
     # Check if optimization is requested
     if not parameters["optimize"]:
         info("Skipping optimizations, add -O to optimize")
+        end()
         return ir
 
     # Extract representations
@@ -35,6 +36,8 @@ def optimize_ir(ir, parameters):
 
     # Iterate over integrals
     oir_integrals = [_optimize_integral_ir(ir) for ir in ir_integrals]
+
+    end()
 
     return ir_elements, ir_dofmaps, oir_integrals, ir_forms
 
