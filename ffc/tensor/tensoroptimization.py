@@ -13,9 +13,6 @@ def optimize_integral_ir(ir):
     Note that this function modifies the given intermediate
     representation directly, rather than working on a copy.
     """
-
-    from ferari import binary
-
     # Try importing FErari
     try:
         from ferari import binary
