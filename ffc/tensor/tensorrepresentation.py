@@ -14,7 +14,7 @@ __copyright__ = "Copyright (C) 2007-2010 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian B. Oelgaard, 2010.
-# Last changed: 2010-02-08
+# Last changed: 2010-02-10
 
 # UFL modules
 from ufl.classes import Form, Measure, Integral
@@ -101,6 +101,6 @@ def _compute_terms(monomial_form, facet0, facet1, domain_type, quadrature_degree
             GK = GeometryTensor(monomial)
 
             # Append term
-            terms.append((A0, GK))
+            terms.append((A0, GK, None))
 
     return terms

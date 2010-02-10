@@ -20,20 +20,19 @@ def optimize_integral_ir(ir):
         warning("Unable to find FErari, skipping tensor optimizations")
         return ir
 
-    warning("Calling FErari to perform optimizations, currently broken")
-
     # Iterate over tensors
-    for (A0, GK) in ir["AK"]:
+    for (i, (A0, GK, optimized_contraction)) in enumerate(ir["AK"]):
 
-        # Compute optimized abstract code
+        # Compute optimized tensor contraction
         if ir["rank"] == 2:
-            abstract_code = binary.optimize(A0.A0)
+            optimized_contraction = binary.optimize(A0.A0)
         elif ir["rank"] == 1:
-            abstract_code = binary.optimize_action(A0.A0)
+            optimized_contraction = binary.optimize_action(A0.A0)
         else:
             warning("Tensor optimization only available for rank 1 and 2 tensors, skipping optimizations")
             return ir
 
-        print abstract_code
+        # Store result for later use in code generation
+        ir["AK"][i] = (A0, GK, optimized_contraction)
 
     return ir

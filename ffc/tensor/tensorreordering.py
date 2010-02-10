@@ -5,7 +5,7 @@ __date__ = "2006-12-01"
 __copyright__ = "Copyright (C) 2006-2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-14
+# Last changed: 2010-02-10
 
 # Python modules
 import numpy
@@ -40,7 +40,7 @@ def reorder_entries(terms):
         tensor = numpy.zeros(dims, dtype=numpy.float)
 
         # Insert reduced reference tensor into reference tensor
-        (A0, GK) = term
+        (A0, GK, optimized_contraction) = term
         tensor[position] = A0.A0
         A0.A0 = tensor
 
@@ -57,7 +57,7 @@ def __compute_restrictions(term):
     and derivatives, the size remains the same."""
 
     # Get dimensions for primary and secondary indices
-    A0, GK = term
+    A0, GK, optimized_contraction = term
     idims = A0.primary_multi_index.dims
     adims = A0.secondary_multi_index.dims
 
