@@ -3,8 +3,12 @@ __date__ = "2010-02-08"
 __copyright__ = "Copyright (C) 2010 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
+# Python modules
+from numpy import shape
+
 # FFC modules
-from ffc.log import warning
+from ffc.log import warning, info
+from ffc.utils import product
 
 def optimize_integral_ir(ir):
     """
@@ -22,6 +26,10 @@ def optimize_integral_ir(ir):
 
     # Iterate over tensors
     for (i, (A0, GK, optimized_contraction)) in enumerate(ir["AK"]):
+
+        # Write a message
+        info("Calling FErari to optimize tensor of size %s (%d entries)",
+             " x ".join(str(d) for d in shape(A0.A0)), product(shape(A0.A0)))
 
         # Compute optimized tensor contraction
         if ir["rank"] == 2:
