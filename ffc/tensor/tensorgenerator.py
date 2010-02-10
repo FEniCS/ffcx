@@ -216,7 +216,7 @@ def _generate_tensor_contraction_optimized(terms, parameters, g_set):
 
     # Handle naming of entries depending on the number of terms
     if len(terms) == 1:
-        element_tensor = lambda i, j: format["element_tensor"](i)
+        element_tensor = lambda i, j: format["element tensor"](i)
     else:
         element_tensor = lambda i, j: format["element tensor term"](i, j)
 
