@@ -3,7 +3,7 @@ __date__ = "2010-01-18"
 __copyright__ = "Copyright (C) 2010 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-31
+# Last changed: 2010-02-10
 
 # Python modules
 from itertools import chain
@@ -32,10 +32,10 @@ def generate_wrapper_code(analysis, prefix, parameters):
     begin("Compiler stage 4.1: Generating additional wrapper code")
 
     # Extract data from analysis
-    form_and_data, elements, element_map = analysis
+    forms, elements, element_map = analysis
 
     # Special case: single element
-    if len(form_and_data) == 0:
+    if len(forms) == 0:
         element_number = len(elements) - 1
         element_name = UFCElementName("0",
                                       [format["classname finite_element"](prefix, element_number)],
@@ -44,18 +44,18 @@ def generate_wrapper_code(analysis, prefix, parameters):
 
     # Generate name data for each form
     form_names = []
-    for (i, (form, form_data)) in enumerate(form_and_data):
-        element_numbers = [element_map[e] for e in form_data.elements]
+    for (i, form) in enumerate(forms):
+        element_numbers = [element_map[e] for e in form.form_data().elements]
         form_names.append(UFCFormNames("%d" % i,
-                                       form_data.coefficient_names,
+                                       form.form_data().coefficient_names,
                                        format["classname form"](prefix, i),
                                        [format["classname finite_element"](prefix, j) for j in element_numbers],
                                        [format["classname dof_map"](prefix, j) for j in element_numbers]))
 
     # Extract elements for all test and trial spaces
     elements = []
-    for (form, form_data) in form_and_data:
-        elements += form_data.elements[:form_data.rank]
+    for form in forms:
+        elements += form.form_data().elements[:form.form_data().rank]
 
     # Check if all elements are equal
     if all_equal(elements):
@@ -64,7 +64,7 @@ def generate_wrapper_code(analysis, prefix, parameters):
         common_space = None
 
     # Special hack to handle functionals
-    if max([form_data.rank for (form, form_data) in form_and_data]) == 0:
+    if max([form.form_data().rank for form in forms]) == 0:
         common_space = None
 
     # Generate code
