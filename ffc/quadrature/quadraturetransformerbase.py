@@ -98,29 +98,29 @@ class QuadratureTransformerBase(Transformer):
         self.argument_cache = {}
         self.function_cache = {}
 
-    def reset(self):
-        # Reset containers.
-        self.used_psi_tables = set()
-        self.psi_tables_map = {}
-        self.used_weights = set()
-        self.used_nzcs = set()
-        self.geo_consts = {}
-        self.ip_consts = {}
-        self.trans_set = set()
-        self.functions = {}
-        self.function_count = 0
-        self.geo_dim = 0
-        self.points = 0
-        self.facet0 = None
-        self.facet1 = None
-        ffc_assert(not self._components, "This list is supposed to be empty: " + repr(self._components))
-        # It should be zero but clear just to be sure.
-        self._components = Stack()
-        self._index2value = StackDict()
+#    def reset(self):
+#        # Reset containers.
+#        self.used_psi_tables = set()
+#        self.psi_tables_map = {}
+#        self.used_weights = set()
+#        self.used_nzcs = set()
+#        self.geo_consts = {}
+#        self.ip_consts = {}
+#        self.trans_set = set()
+#        self.functions = {}
+#        self.function_count = 0
+#        self.geo_dim = 0
+#        self.points = 0
+#        self.facet0 = None
+#        self.facet1 = None
+#        ffc_assert(not self._components, "This list is supposed to be empty: " + repr(self._components))
+#        # It should be zero but clear just to be sure.
+#        self._components = Stack()
+#        self._index2value = StackDict()
 
-        # Reset cache
-        self.argument_cache = {}
-        self.function_cache = {}
+#        # Reset cache
+#        self.argument_cache = {}
+#        self.function_cache = {}
 
     def disp(self):
         print "\n\n **** Displaying QuadratureTransformer ****"
@@ -669,7 +669,7 @@ class QuadratureTransformerBase(Transformer):
         f_component    = format["component"]
         f_Gip          = format["geometry constant"] + format["integration points"]
         f_decl         = format["declaration"]
-        f_loop              = format["generate loop"]
+        f_loop         = format["generate loop"]
 
         # Initialise return values.
         code = []
