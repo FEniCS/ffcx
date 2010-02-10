@@ -19,7 +19,6 @@ from ffc.cpp import format, remove_unused
 
 # Utility and optimisation functions for quadraturegenerator.
 from quadraturetransformer import QuadratureTransformer
-
 from optimisedquadraturetransformer import QuadratureTransformerOpt
 from symbolics import generate_aux_constants
 

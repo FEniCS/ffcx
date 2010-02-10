@@ -9,7 +9,6 @@ from ffc.log import info
 def optimize_integral_ir(ir):
     "Compute optimized intermediate representation of integral."
 
-    # FIXME: Kristian, please update this comment
     info("Optimisation of quadrature code takes place at the code generation stage, skipping optimization")
 
     return ir

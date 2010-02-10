@@ -104,7 +104,7 @@ def _analyze_form(form, object_names, parameters):
 
     # Preprocess form if necessary
     if form.form_data() is None:
-        form = preprocess(form)
+        form = preprocess(form, object_names)
     info(str(form.form_data()))
 
     # Adjust cell and degree for elements when unspecified

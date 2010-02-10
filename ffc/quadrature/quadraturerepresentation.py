@@ -11,14 +11,15 @@ __license__  = "GNU GPL version 3 or any later version"
 # UFL modules
 from ufl.classes import Form, Integral, SpatialDerivative
 from ufl.algorithms import extract_unique_elements, extract_type, extract_elements
-#from ufl.algorithms import , extract_unique_elements, extract_type
 
 # FFC modules
 from ffc.log import ffc_assert, error
 from ffc.fiatinterface import create_element, create_quadrature
 from ffc.fiatinterface import map_facet_points
+from ffc.quadrature.quadraturetransformer import QuadratureTransformer
+from ffc.quadrature.optimisedquadraturetransformer import QuadratureTransformerOpt
 
-def compute_integral_ir(domain_type, domain_id, integrals, metadata, form_data, form_id):
+def compute_integral_ir(domain_type, domain_id, integrals, metadata, form_data, form_id, parameters):
     "Compute intermediate represention of integral."
 
     # Initialise representation
@@ -44,6 +45,8 @@ def compute_integral_ir(domain_type, domain_id, integrals, metadata, form_data, 
         element = create_element(argument.element())
         prim_idims.append(element.space_dimension())
     ir["prim_idims"] = prim_idims
+
+
 
     return ir
 

@@ -58,7 +58,7 @@ def compute_ir(analysis, parameters):
 
     # Compute and flatten representation of integrals
     info("Computing representation of integrals")
-    irs = [_compute_integral_ir(f, i) for (i, f) in enumerate(forms)]
+    irs = [_compute_integral_ir(f, i, parameters) for (i, f) in enumerate(forms)]
     ir_integrals = [ir for ir in chain(*irs) if not ir is None]
 
     # Compute representation of forms
@@ -132,7 +132,7 @@ def _compute_dofmap_ir(ufl_element, element_id, element_map):
 
     return ir
 
-def _compute_integral_ir(form, form_id):
+def _compute_integral_ir(form, form_id, parameters):
     "Compute intermediate represention of form integrals."
 
     irs = []
@@ -154,7 +154,8 @@ def _compute_integral_ir(form, form_id):
                                    integrals,
                                    metadata,
                                    form.form_data(),
-                                   form_id)
+                                   form_id,
+                                   parameters)
 
         # Append representation
         irs.append(ir)
