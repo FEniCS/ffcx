@@ -17,7 +17,6 @@ def optimize_integral_ir(ir):
     try:
         from ferari import binary
     except:
-        print "tjoho"
         warning("Unable to find FErari, skipping tensor optimizations")
         return ir
 
