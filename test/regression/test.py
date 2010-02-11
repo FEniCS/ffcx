@@ -82,10 +82,6 @@ def generate_code():
     # Iterate over all files
     for f in form_files:
 
-        if f in ["ElementRestriction.ufl"]:
-            print "skipping " + f
-            continue
-
         # Generate code
         ok = run_command("ffc -d -f precision=8 -fconvert_exceptions_to_warnings %s" % f)
 
