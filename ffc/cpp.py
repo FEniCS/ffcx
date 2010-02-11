@@ -7,7 +7,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian B. Oelgaard 2010
 # Modified by Marie E. Rognes 2010
-# Last changed: 2010-02-10
+# Last changed: 2010-02-12
 
 # Python modules
 import re, numpy, platform
@@ -305,7 +305,7 @@ def _inner_product(v, w):
     assert(len(v) == len(w)), "Sizes differ in inner-product!"
 
     # Special case, zero terms
-    if len(v) == 0: return ""
+    if len(v) == 0: return format["float"](0)
 
     # Straightforward handling when we only have strings
     if isinstance(v[0], str):

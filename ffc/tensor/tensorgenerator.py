@@ -8,7 +8,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Kristian B. Oelgaard, 2009-2010
 # Modified by Marie Rognes (meg@math.uio.no), 2007
 # Modified by Garth N. Wells, 2009
-# Last changed: 2010-02-10
+# Last changed: 2010-02-12
 
 # FFC modules
 from ffc.log import error
@@ -51,7 +51,7 @@ def _tabulate_tensor(ir, parameters):
     geometric_dimension = ir["geometric_dimension"]
     num_facets = ir["num_facets"]
 
-    # Check integral typpe and generate code
+    # Check integral type and generate code
     if domain_type == "cell":
 
         # Generate code for one single tensor contraction
@@ -210,9 +210,10 @@ def _generate_tensor_contraction_optimized(terms, parameters, g_set):
     """
 
     # Prefetch formats to speed up code generation
-    assign          = format["assign"]
-    geometry_tensor = format["geometry tensor"]
-    inner_product   = format["inner product"]
+    assign            = format["assign"]
+    geometry_tensor   = format["geometry tensor"]
+    inner_product     = format["inner product"]
+    float_declaration = format["float declaration"]
 
     # Handle naming of entries depending on the number of terms
     if len(terms) == 1:
@@ -227,6 +228,11 @@ def _generate_tensor_contraction_optimized(terms, parameters, g_set):
         # Check that an optimized contraction has been computed
         if optimized_contraction is None:
             error("Missing optimized tensor contraction.")
+
+        # Declare array if necessary
+        if len(terms) > 1:
+            num_entries = len(optimized_contraction)
+            lines.append("%s %s;" % (float_declaration, element_tensor(num_entries, j)))
 
         # Iterate over entries in element tensor
         for (lhs, rhs) in optimized_contraction:

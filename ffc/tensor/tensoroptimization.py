@@ -7,8 +7,15 @@ __license__  = "GNU GPL version 3 or any later version"
 from numpy import shape
 
 # FFC modules
-from ffc.log import warning, info
+from ffc.log import warning, info, error
 from ffc.utils import product
+
+# Try importing FErari
+try:
+    import ferari
+    from ferari import binary
+except:
+    ferari = None
 
 def optimize_integral_ir(ir):
     """
@@ -17,30 +24,57 @@ def optimize_integral_ir(ir):
     Note that this function modifies the given intermediate
     representation directly, rather than working on a copy.
     """
-    # Try importing FErari
-    try:
-        from ferari import binary
-    except:
-        warning("Unable to find FErari, skipping tensor optimizations")
+
+    # Skip optimization if FErari is not installed
+    if ferari is None:
+        warning("FErari not installed, skipping tensor optimizations")
         return ir
 
-    # Iterate over tensors
-    for (i, (A0, GK, optimized_contraction)) in enumerate(ir["AK"]):
+    # Extract data from intermediate representation
+    AK = ir["AK"]
+    domain_type = ir["domain_type"]
+    num_facets = ir["num_facets"]
+    rank = ir["rank"]
 
-        # Write a message
-        info("Calling FErari to optimize tensor of size %s (%d entries)",
-             " x ".join(str(d) for d in shape(A0.A0)), product(shape(A0.A0)))
+    # Optimize cell integrals
+    if domain_type == "cell":
+        for (k, (A0, GK, dummy)) in enumerate(AK):
+            ir["AK"][k] = (A0, GK, _optimize_tensor_contraction(A0.A0, rank))
 
-        # Compute optimized tensor contraction
-        if ir["rank"] == 2:
-            optimized_contraction = binary.optimize(A0.A0)
-        elif ir["rank"] == 1:
-            optimized_contraction = binary.optimize_action(A0.A0)
-        else:
-            warning("Tensor optimization only available for rank 1 and 2 tensors, skipping optimizations")
-            return ir
+    # Optimize exterior facet integrals
+    elif domain_type == "exterior_facet":
+        for i in range(num_facets):
+            for (k, (A0, GK, dummy)) in enumerate(AK[i]):
+                ir["AK"][i][k] = (A0, GK, _optimize_tensor_contraction(A0.A0, rank))
 
-        # Store result for later use in code generation
-        ir["AK"][i] = (A0, GK, optimized_contraction)
+    # Optimize interior facet integrals
+    elif domain_type == "interior_facet":
+        for i in range(num_facets):
+            for j in range(num_facets):
+                for (k, (A0, GK, dummy)) in enumerate(AK[i][j]):
+                    ir["AK"][i][j][k] = (A0, GK, _optimize_tensor_contraction(A0.A0, rank))
+
+    # Unhandled integral type
+    else:
+        error("Unhandled integral type: " + str(domain_type))
 
     return ir
+
+def _optimize_tensor_contraction(A0, rank):
+    "Compute optimized tensor contraction for given reference tensor."
+
+    # Select FErari optimization algorithm
+    if rank == 2:
+        optimize = binary.optimize
+    elif rank == 1:
+        optimize = binary.optimize_action
+    else:
+        warning("Tensor optimization only available for rank 1 and 2 tensors, skipping optimizations")
+        return None
+
+    # Write a message
+    info("Calling FErari to optimize tensor of size %s (%d entries)",
+         " x ".join(str(d) for d in shape(A0)), product(shape(A0)))#
+
+    # Compute optimized tensor contraction
+    return optimize(A0)
