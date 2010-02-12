@@ -14,7 +14,7 @@ __date__ = "2009-12-16"
 __copyright__ = "Copyright (C) 2009 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-01-31
+# Last changed: 2010-02-12
 
 # Python modules
 import os
@@ -23,7 +23,7 @@ import os
 from ufc_utils import templates
 
 # FFC modules
-from ffc.log import info, error, begin, end
+from ffc.log import info, error, begin, end, dstr
 from ffc.constants import FFC_VERSION, UFC_VERSION
 from ffc.cpp import format
 
@@ -120,10 +120,21 @@ def _write_file(output, prefix, postfix, parameters):
 
 def _generate_comment(parameters):
     "Generate code for comment on top of file."
+
+    # Generate top level comment
     args = {"ffc_version": FFC_VERSION, "ufc_version": UFC_VERSION}
     if parameters["format"] == "ufc":
-        return format["ufc comment"] % args
+        comment = format["ufc comment"] % args
     elif parameters["format"] == "dolfin":
-        return format["dolfin comment"] % args
+        comment = format["dolfin comment"] % args
     else:
         error("Unable to format code, unknown format \"%s\".", parameters["format"])
+
+    # Add parameter information
+    comment += format["comment"]("") + "\n"
+    comment += format["comment"]("This code was generated with the following parameters:") + "\n"
+    comment += format["comment"]("")
+    comment += "\n".join([""] + [format["comment"]("  " + l) for l in dstr(parameters).split("\n")][:-1])
+    comment += "\n"
+
+    return comment
