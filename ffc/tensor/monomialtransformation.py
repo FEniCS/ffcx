@@ -7,7 +7,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian B. Oelgaard, 2009
 # Modified by Marie E. Rognes, 2010
-# Last changed: 2010-01-26
+# Last changed: 2010-02-12
 
 # UFL modules
 from ufl.classes import Argument
@@ -289,8 +289,8 @@ class TransformedMonomial:
                 for i in component.index_range:
                     (offset, ufl_sub_element) = ufl_element.extract_component(i)
                     fiat_sub_element = create_element(ufl_sub_element)
-                    mappings.append(fiat_sub_element.mapping())
-                mapping = pick_first(pick_first(mappings))
+                    mappings.extend(fiat_sub_element.mapping())
+                mapping = pick_first(mappings)
 
                 # Get component index and sub element
                 (component_index, sub_element) = ufl_element.extract_component(component.index_range[0])
