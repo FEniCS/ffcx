@@ -12,7 +12,7 @@ __date__ = "2007-02-05"
 __copyright__ = "Copyright (C) 2007-2010 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-02-07
+# Last changed: 2010-02-14
 
 # UFL modules
 from ufl.common import istr, tstr
@@ -30,7 +30,7 @@ from ffc.quadratureelement import default_quadrature_degree
 from ffc.utils import all_equal
 from ffc.tensor import estimate_cost
 
-def analyze_forms(forms, object_names, parameters):
+def analyze_forms(forms, object_names, parameters, common_cell=None):
     """
     Analyze form(s), returning
 
@@ -42,7 +42,7 @@ def analyze_forms(forms, object_names, parameters):
     begin("Compiler stage 1: Analyzing form(s)")
 
     # Analyze forms
-    forms = tuple(_analyze_form(form, object_names, parameters) for form in forms)
+    forms = tuple(_analyze_form(form, object_names, parameters, common_cell) for form in forms)
 
     # Extract unique elements
     unique_elements = []
@@ -99,12 +99,12 @@ def _get_nested_elements(element):
         nested_elements += _get_nested_elements(e)
     return set(nested_elements)
 
-def _analyze_form(form, object_names, parameters):
+def _analyze_form(form, object_names, parameters, common_cell=None):
     "Analyze form, returning preprocessed form."
 
     # Preprocess form if necessary
     if form.form_data() is None:
-        form = preprocess(form, object_names)
+        form = preprocess(form, object_names, common_cell)
     info(str(form.form_data()))
 
     # Adjust cell and degree for elements when unspecified
