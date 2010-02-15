@@ -1,4 +1,4 @@
-0.9.1
+0.9.1 [2010-02-15]
  - Add back support for FErari optimizations
  - Bug fixes in JIT compiler
 0.9.0 [2010-02-02]
