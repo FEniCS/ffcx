@@ -16,7 +16,8 @@ __license__  = "GNU GPL version 3 or any later version"
 # FFC modules
 from ffc.log import info, begin, end, debug_code
 from ffc.cpp import format, indent
-from ffc.cpp import set_float_formatting, set_exception_handling
+from ffc.cpp import set_exception_handling
+#from ffc.cpp import set_float_formatting, set_exception_handling
 
 # FFC code generation modules
 from ffc.evaluatebasis import _evaluate_basis, _evaluate_basis_all
@@ -40,7 +41,7 @@ def generate_code(ir, prefix, parameters):
     # FIXME: Remove option epsilon and just rely on precision?
 
     # Set code generation parameters
-    set_float_formatting(int(parameters["precision"]))
+#    set_float_formatting(int(parameters["precision"]))
     set_exception_handling(parameters["convert_exceptions_to_warnings"])
 
     # Extract representations

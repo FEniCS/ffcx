@@ -33,6 +33,7 @@ from ffc.log import info, error, begin, end, debug_ir, ffc_assert, warning
 from ffc.fiatinterface import create_element, entities_per_dim, reference_cell
 from ffc.mixedelement import MixedElement
 from ffc.quadratureelement import QuadratureElement
+from ffc.cpp import set_float_formatting
 
 # FFC specialized representation modules
 from ffc import quadrature
@@ -44,6 +45,9 @@ def compute_ir(analysis, parameters):
     "Compute intermediate representation."
 
     begin("Compiler stage 2: Computing intermediate representation")
+
+    # Set code generation parameters
+    set_float_formatting(int(parameters["precision"]))
 
     # Extract data from analysis
     forms, elements, element_map = analysis

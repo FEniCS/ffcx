@@ -32,8 +32,7 @@ from ffc.quadrature.quadratureutils import create_permutations
 # Symbolics functions
 #from symbolics import set_format
 from ffc.quadrature.symbolics import create_float, create_symbol, create_product,\
-                                     create_sum, create_fraction, BASIS, IP, GEO,\
-                                     CONST, optimise_code
+                                     create_sum, create_fraction, BASIS, IP, GEO, CONST
 
 class QuadratureTransformerOpt(QuadratureTransformerBase):
     "Transform UFL representation to quadrature code."
@@ -369,23 +368,38 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
     def _count_operations(self, expression):
         return expression.ops()
 
-    def _create_entry_value(self, val, weight, scale_factor):
-        zero = False
+    def _create_entry_data(self, val):
+#        zero = False
         # Multiply value by weight and determinant
+        ACCESS = GEO
+        weight = format["weight"](self.points)
+        if self.points > 1:
+            weight += format["component"]("", format["integration points"])
+            ACCESS = IP
+        weight = self._create_symbol(weight, ACCESS)[()]
+        f_scale_factor = format["scale factor"]
 
-        # Multiply value by weight and determinant
-        value = create_product([val, weight, create_symbol(scale_factor, GEO)])
-        value = optimise_code(value, self.ip_consts, self.geo_consts, self.trans_set)
+        # Create value.
+        value = create_product([val, weight, create_symbol(f_scale_factor, GEO)])
+
+        # Update sets of used variables (if they will not be used because of
+        # optimisations later, they will be reset).
+        trans_set = set([f_scale_factor])
+        trans_set.update(map(lambda x: str(x), value.get_unique_vars(GEO)))
+        used_points = set([self.points])
+        ops = self._count_operations(value)
+        used_psi_tables = set([self.psi_tables_map[b] for b in value.get_unique_vars(BASIS)])
+
+        return [value, ops, trans_set, used_points, used_psi_tables]
+
+#        value = optimise_code(value, self.ip_consts, self.geo_consts, self.trans_set)
 
         # Check if value is zero
-        if not value.val:
-            zero = True
-        # Update the set of used psi tables through the name map if the value is not zero.
-        else:
-            self.used_psi_tables.update([self.psi_tables_map[b] for b in value.get_unique_vars(BASIS)])
+#        if not value.val:
+#            zero = True
+#        # Update the set of used psi tables through the name map if the value is not zero.
+#        else:
+#            self.used_psi_tables.update([self.psi_tables_map[b] for b in value.get_unique_vars(BASIS)])
 
-        return value, zero
+#        return value
 
-    def _update_used_psi_tables(self):
-        # Nothing to be done for optimised transformer (handled in _create_entry_value)
-        pass

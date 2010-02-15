@@ -479,16 +479,21 @@ class QuadratureTransformer(QuadratureTransformerBase):
     def _count_operations(self, expression):
         return operation_count(expression, format)
 
-    def _create_entry_value(self, val, weight, scale_factor):
-        f_mult = format["multiply"]
-        zero = False
-
+    def _create_entry_data(self, val):
         # Multiply value by weight and determinant
-        value = f_mult([val, weight, scale_factor])
+        # Create weight and scale factor.
+        weight = format["weight"](self.points)
+        if self.points > 1:
+            weight += format["component"]("", format["integration points"])
+        f_scale_factor = format["scale factor"]
 
-        return value, zero
+        # Update sets of used variables.
+        trans_set = set([f_scale_factor])
+        trans_set.update(self.trans_set)
+        used_points = set([self.points])
+        value = format["mul"]([val, weight, f_scale_factor])
+        ops = self._count_operations(value)
+        used_psi_tables = set([v for k, v in self.psi_tables_map.items()])
 
-    def _update_used_psi_tables(self):
-        # Just update with all names that are in the name map (added when constructing the basis map)
-        self.used_psi_tables.update([v for k, v in self.psi_tables_map.items()])
+        return [value, ops, trans_set, used_points, used_psi_tables]
 

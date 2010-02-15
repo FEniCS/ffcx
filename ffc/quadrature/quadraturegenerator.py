@@ -5,7 +5,7 @@ __date__ = "2009-01-07"
 __copyright__ = "Copyright (C) 2009-2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-02-08
+# Last changed: 2010-02-11
 
 # Python modules.
 import numpy
@@ -18,8 +18,6 @@ from ffc.log import info, debug, ffc_assert
 from ffc.cpp import format, remove_unused
 
 # Utility and optimisation functions for quadraturegenerator.
-from quadraturetransformer import QuadratureTransformer
-from optimisedquadraturetransformer import QuadratureTransformerOpt
 from symbolics import generate_aux_constants
 
 def generate_integral_code(ir, prefix, parameters):
@@ -50,41 +48,26 @@ def _tabulate_tensor(ir, parameters):
     f_int           = format["int"]
     f_facet         = format["facet"]
 
-    # FIXME: KBO: Handle this in a better way, make -O option take an argument?
-    if parameters["optimize"]:
-        # These parameters results in fast code, but compiles slower and there
-        # might still be bugs.
-        optimise_parameters = {"non zero columns": True,
-                            "ignore ones": True,
-                            "remove zero terms": True,
-                            "simplify expressions": True,
-                            "ignore zero tables": True}
-    else:
-        # These parameters should be safe and fast, but result in slow code.
-        optimise_parameters = {"non zero columns": False,
-                            "ignore ones": False,
-                            "remove zero terms": False,
-                            "simplify expressions": False,
-                            "ignore zero tables": False}
-
-    # Common data.
+    # Get data.
+    optimise_parameters = ir["optimise_parameters"]
     domain_type         = ir["domain_type"]
     geometric_dimension = ir["geometric_dimension"]
     num_facets          = ir["num_facets"]
-    integrals           = ir["integrals"]
     prim_idims          = ir["prim_idims"]
+    integrals           = ir["trans_integrals"]
+    geo_consts          = ir["geo_consts"]
 
-    # Create transformer.
-    if optimise_parameters["simplify expressions"]:
-        transformer = QuadratureTransformerOpt(ir, optimise_parameters)
-    else:
-        transformer = QuadratureTransformer(ir, optimise_parameters)
+    # Create sets of used variables.
+    used_weights    = set()
+    used_psi_tables = set()
+    used_nzcs       = set()
+    trans_set       = set()
+    sets = [used_weights, used_psi_tables, used_nzcs, trans_set]
 
     operations = []
     if domain_type == "cell":
         # Update treansformer with facets and generate code + set of used geometry terms.
-        transformer.update_facets(None, None)
-        tensor_code, mem_code, num_ops = _generate_element_tensor(integrals, transformer)
+        tensor_code, mem_code, num_ops = _generate_element_tensor(integrals, sets, optimise_parameters)
         tensor_code = "\n".join(tensor_code)
 
         # Set operations equal to num_ops (for printing info on operations).
@@ -99,8 +82,7 @@ def _tabulate_tensor(ir, parameters):
         cases = [None for i in range(num_facets)]
         for i in range(num_facets):
             # Update treansformer with facets and generate case code + set of used geometry terms.
-            transformer.update_facets(i, None)
-            c, mem_code, ops = _generate_element_tensor(integrals, transformer)
+            c, mem_code, ops = _generate_element_tensor(integrals[i], sets, optimise_parameters)
             case = [f_comment("Total number of operations to compute element tensor (from this point): %d" % ops)]
             case += c
             cases[i] = "\n".join(case)
@@ -125,8 +107,7 @@ def _tabulate_tensor(ir, parameters):
         for i in range(num_facets):
             for j in range(num_facets):
                 # Update treansformer with facets and generate case code + set of used geometry terms.
-                transformer.update_facets(i, j)
-                c, mem_code, ops = _generate_element_tensor(integrals, transformer, interior=True)
+                c, mem_code, ops = _generate_element_tensor(integrals[i][j], sets, optimise_parameters)
                 case = [f_comment("Total number of operations to compute element tensor (from this point): %d" % ops)]
                 case += c
                 cases[i][j] = "\n".join(case)
@@ -150,9 +131,12 @@ def _tabulate_tensor(ir, parameters):
 
     # After we have generated the element code for all facets we can remove
     # the unused transformations and tabulate the used psi tables and weights.
-    common = [remove_unused(jacobi_code, transformer.trans_set)]
-    common += _tabulate_weights(transformer)
-    common += _tabulate_psis(transformer)
+    common = [remove_unused(jacobi_code, trans_set)]
+    quadrature_weights = ir["quadrature_weights"]
+    common += _tabulate_weights([quadrature_weights[p] for p in used_weights])
+    name_map = ir["name_map"]
+    tables = ir["unique_tables"]
+    common += _tabulate_psis(tables, used_psi_tables, name_map, used_nzcs, optimise_parameters)
 
     # Reset the element tensor (array 'A' given as argument to tabulate_tensor() by assembler)
     # Handle functionals.
@@ -165,7 +149,7 @@ def _tabulate_tensor(ir, parameters):
         common += f_loop([f_assign(f_A(f_r), f_float(0))], [(f_r, 0, dim)])
 
     # Create the constant geometry declarations (only generated if simplify expressions are enabled).
-    geo_ops, geo_code = generate_aux_constants(transformer.geo_consts, f_G, f_const_double)
+    geo_ops, geo_code = generate_aux_constants(geo_consts, f_G, f_const_double)
     if geo_code:
         common += geo_code
 
@@ -174,69 +158,250 @@ def _tabulate_tensor(ir, parameters):
     common += [f_comment("Optimisations: %s" % ", ".join([str(i) for i in optimise_parameters.items()]))]
 
     # Print info on operation count.
-    message = {"cell":           "Number of operations to compute tensor: %d",
-               "exterior_facet": "Number of operations to compute tensor for facet %d: %d",
-               "interior_facet": "Number of operations to compute tensor for facets (%d, %d): %d"}
+    message = {"cell":           "Cell, number of operations to compute tensor: %d",
+               "exterior_facet": "Exterior facet %d, number of operations to compute tensor: %d",
+               "interior_facet": "Interior facets (%d, %d), number of operations to compute tensor: %d"}
     for ops in operations:
         info(message[domain_type] % ops)
     return "\n".join(common) + "\n" + tensor_code
 
-def _generate_element_tensor(integrals, transformer, interior=False):
+def _generate_element_tensor(integrals, sets, optimise_parameters):
     "Construct quadrature code for element tensors."
 
     # Prefetch formats to speed up code generation.
     f_comment = format["comment"]
     f_ip      = format["integration points"]
+    f_Gip     = format["geometry constant"] + format["integration points"]
     f_loop    = format["generate loop"]
 
     # Initialise return values.
     element_code     = []
     tensor_ops_count = 0
+
     # TODO: KBO: The members_code was used when I generated the load_table.h
     # file which could load tables of basisfunction. This feature has not
     # been reimplemented. However, with the new design where we only
     # tabulate unique tables (and only non-zero entries) it doesn't seem to
     # be necessary. Should it be deleted?
     members_code = ""
-
     # We receive a dictionary {num_points: form,}.
     # Loop points and forms.
-    for points, integral in integrals.items():
+    for points, terms, functions, ip_consts in integrals:
 
-        debug("Looping points: " + str(points))
-        debug("integral: " + str(integral))
-        debug("\nIntegral tree_format: " + str(tree_format(integral)))
+        element_code += ["", f_comment("Loop quadrature points for integral.")]
 
-        ip_code = ["", f_comment("Loop quadrature points for integral.")]
+        ip_code = []
+        num_ops = 0
+        # Generate code to compute function values.
+        if functions:
+            func_code, ops = _generate_functions(functions, sets)
+            ip_code += func_code
+            num_ops += ops
 
-        # Update transformer to the current number of quadrature points.
-        transformer.update_points(points)
+        # Generate code for ip constant declarations.
+        ip_const_ops, ip_const_code = generate_aux_constants(ip_consts, f_Gip,\
+                                        format["const float declaration"], True)
+        num_ops += ip_const_ops
+        if ip_const_code:
+            ip_code += ["", f_comment("Number of operations to compute ip constants: %d" %ip_const_ops)]
+            ip_code += ip_const_code
 
-        # Generate code and get number of operations.
-        integral_code, num_ops = transformer.generate_code(integral.integrand(), interior)
+        # Generate code to evaluate the element tensor.
+        integral_code, ops = _generate_integral_code(points, terms, sets, optimise_parameters)
+        num_ops += ops
+        tensor_ops_count += num_ops*points
+        ip_code += integral_code
 
-        # Get number of operations to compute entries for all terms when
-        # looping over all IPs and update tensor count.
-        num_operations = num_ops*points
-        tensor_ops_count += num_operations
-
-        ip_code.append(f_comment\
-            ("Number of operations to compute element tensor for following IP loop = %d" %(num_operations)) )
+        element_code.append(f_comment\
+            ("Number of operations to compute element tensor for following IP loop = %d" %(num_ops*points)) )
 
         # Loop code over all IPs.
-        if integral_code:
-            if points > 1:
-                ip_code += f_loop(integral_code, [(f_ip, 0, points)])
-            else:
-                ip_code.append(f_comment("Only 1 integration point, omitting IP loop."))
-                ip_code += integral_code
-
-        # Add integration points code to element code.
-        element_code += ip_code
+        if points > 1:
+            element_code += f_loop(ip_code, [(f_ip, 0, points)])
+        else:
+            element_code.append(f_comment("Only 1 integration point, omitting IP loop."))
+            element_code += ip_code
 
     return (element_code, members_code, tensor_ops_count)
 
-def _tabulate_weights(transformer):
+def _generate_functions(functions, sets):
+    "Generate declarations for functions and code to compute values."
+
+    f_comment      = format["comment"]
+    f_double       = format["float declaration"]
+    f_F            = format["function value"]
+    f_float        = format["floating point"]
+    f_decl         = format["declaration"]
+    f_r            = format["free indices"][0]
+    f_iadd         = format["iadd"]
+#    f_nzc          = format["nonzero columns"](0).split("0")[0]
+    f_loop         = format["generate loop"]
+
+    # Create the function declarations.
+    code = ["", f_comment("Coefficient declarations.")]
+    code += [f_decl(f_double, f_F(n), f_float(0)) for n in range(len(functions))]
+
+    # Get sets.
+    used_psi_tables = sets[1]
+    used_nzcs = sets[2]
+
+    # Sort functions after loop ranges.
+    function_list = {}
+    for key, val in functions.items():
+        if val[1] in function_list:
+            function_list[val[1]].append(key)
+        else:
+            function_list[val[1]] = [key]
+
+    total_ops = 0
+    # Loop ranges and get list of functions.
+    for loop_range, list_of_functions in function_list.items():
+        function_expr = {}
+        function_numbers = []
+        # Loop functions.
+        func_ops = 0
+        for function in list_of_functions:
+            # Get name and number.
+            number, range_i, ops, psi_name, u_nzcs = functions[function]
+
+            # Add name to used psi names and non zeros name to used_nzcs.
+            used_psi_tables.add(psi_name)
+            used_nzcs.update(u_nzcs)
+
+            # TODO: This check can be removed for speed later.
+            ffc_assert(number not in function_expr, "This is definitely not supposed to happen!")
+
+            # Convert function (that might be a symbol) to a simple string and save.
+            function = str(function)
+            function_expr[number] = function
+
+            # Get number of operations to compute entry and add to function operations count.
+            func_ops += (ops + 1)*range_i
+
+        # Add function operations to total count
+        total_ops += func_ops
+        code += ["", f_comment("Total number of operations to compute function values = %d" % func_ops)]
+
+        # Sort the functions according to name and create loop to compute the function values.
+        lines = [f_iadd(f_F(n), function_expr[n]) for n in sorted(function_expr.keys())]
+        code += f_loop(lines, [(f_r, 0, loop_range)])
+
+    return code, total_ops
+
+def _generate_integral_code(points, terms, sets, optimise_parameters):
+    "Generate code to evaluate the element tensor."
+
+    # Prefetch formats to speed up code generation.
+    f_comment       = format["comment"]
+    f_mul           = format["mul"]
+    f_scale_factor  = format["scale factor"]
+    f_iadd          = format["iadd"]
+    f_add           = format["add"]
+    f_A             = format["element tensor"]
+    f_loop          = format["generate loop"]
+
+    # Initialise return values.
+    code = []
+    num_ops = 0
+    loops = {}
+
+    # Extract sets.
+    used_weights, used_psi_tables, used_nzcs, trans_set = sets
+
+
+    # TODO: Verify that test and trial functions will ALWAYS be rearranged to 0 and 1.
+    indices = {-2: format["first free index"], -1: format["second free index"],
+                0: format["first free index"],  1: format["second free index"]}
+
+    # Loop terms and create code.
+    for key, data in terms.items():
+        val, ops, t_set, u_weights, u_psi_tables, u_nzcs = data
+
+        # If we have a value, then we also need to update the sets of used variables.
+        trans_set.update(t_set)
+        used_weights.update(u_weights)
+        used_psi_tables.update(u_psi_tables)
+        used_nzcs.update(u_nzcs)
+
+        # Compute number of operations to compute entry
+        # (add 1 because of += in assignment).
+        entry_ops = ops + 1
+
+        # Create comment for number of operations
+        entry_ops_comment = f_comment("Number of operations to compute entry: %d" % entry_ops)
+
+        # Create appropriate entries.
+        # FIXME: We only support rank 0, 1 and 2.
+        entry = ""
+        loop = ()
+        if len(key) == 0:
+            entry = "0"
+        elif len(key) == 1:
+            key = key[0]
+            # Checking if the basis was a test function.
+            # TODO: Make sure test function indices are always rearranged to 0.
+            ffc_assert(key[0] == -2 or key[0] == 0, \
+                        "Linear forms must be defined using test functions only: " + repr(key))
+            index_j, entry, range_j, space_dim_j = key
+            loop = ((indices[index_j], 0, range_j),)
+            if range_j == 1 and optimise_parameters["ignore ones"]:
+                loop = ()
+            # Multiply number of operations to compute entries by range of loop.
+            entry_ops *= range_j
+
+        elif len(key) == 2:
+            # Extract test and trial loops in correct order and check if for is legal.
+            key0, key1 = (0, 0)
+            for k in key:
+                ffc_assert(k[0] in indices, \
+                            "Bilinear forms must be defined using test and trial functions (index -2, -1, 0, 1): " + repr(k))
+                if k[0] == -2 or k[0] == 0:
+                    key0 = k
+                else:
+                    key1 = k
+            index_j, entry_j, range_j, space_dim_j = key0
+            index_k, entry_k, range_k, space_dim_k = key1
+
+            loop = []
+            if not (range_j == 1 and self.optimise_parameters["ignore ones"]):
+                loop.append((indices[index_j], 0, range_j))
+            if not (range_k == 1 and self.optimise_parameters["ignore ones"]):
+                loop.append((indices[index_k], 0, range_k))
+            entry = f_add([f_mul([entry_j, str(space_dim_k)]), entry_k])
+            loop = tuple(loop)
+
+            # Multiply number of operations to compute entries by range of loops.
+            entry_ops *= range_j*range_k
+        else:
+            error("Only rank 0, 1 and 2 tensors are currently supported: " + repr(key))
+
+        # Generate the code line for the entry.
+        # Try to evaluate entry ("3*6 + 2" --> "20").
+        try:
+            entry = str(eval(entry))
+        except:
+            pass
+
+        entry_code = f_iadd(f_A(entry), val)
+
+        if loop not in loops:
+            loops[loop] = [entry_ops, [entry_ops_comment, entry_code]]
+        else:
+            loops[loop][0] += entry_ops
+            loops[loop][1] += [entry_ops_comment, entry_code]
+
+    # Write all the loops of basis functions.
+    for loop, ops_lines in loops.items():
+        ops, lines = ops_lines
+
+        # Add number of operations for current loop to total count.
+        num_ops += ops
+        code += ["", f_comment("Number of operations for primary indices: %d" % ops)]
+        code += f_loop(lines, loop)
+
+    return code, num_ops
+
+def _tabulate_weights(quadrature_weights):
     "Generate table of quadrature weights."
 
     # Prefetch formats to speed up code generation.
@@ -249,22 +414,22 @@ def _tabulate_weights(transformer):
     f_decl      = format["declaration"]
     f_tensor    = format["tabulate tensor"]
     f_comment   = format["comment"]
+    f_int       = format["int"]
 
     code = ["", f_comment("Array of quadrature weights.")]
 
     # Loop tables of weights and create code.
-    for num_points in transformer.used_weights:
-        weights, points = transformer.quadrature_weights[num_points]
-
+    for weights, points in quadrature_weights:
         # FIXME: For now, raise error if we don't have weights.
         # We might want to change this later.
         ffc_assert(weights.any(), "No weights.")
 
         # Create name and value for weight.
+        num_points = len(points)
         name = f_weight(num_points)
         value = f_float(weights[0])
         if len(weights) > 1:
-            name += f_component("", str(num_points))
+            name += f_component("", f_int(num_points))
             value = f_tensor(weights)
         code += [f_decl(f_table, name, value)]
 
@@ -311,7 +476,7 @@ def _tabulate_weights(transformer):
 
     return code
 
-def _tabulate_psis(transformer):
+def _tabulate_psis(tables, used_psi_tables, inv_name_map, used_nzcs, optimise_parameters):
     "Tabulate values of basis functions and their derivatives at quadrature points."
 
     # Prefetch formats to speed up code generation.
@@ -330,11 +495,8 @@ def _tabulate_psis(transformer):
     code = []
     code += [f_comment("Value of basis functions at quadrature points.")]
 
-    inv_name_map = transformer.name_map
-    tables = transformer.unique_tables
-
     # Get list of non zero columns, if we ignore ones, ignore columns with one component.
-    if transformer.optimise_parameters["ignore ones"]:
+    if optimise_parameters["ignore ones"]:
         nzcs = [val[1] for key, val in inv_name_map.items()\
                                         if val[1] and len(val[1][1]) > 1]
     else:
@@ -358,7 +520,7 @@ def _tabulate_psis(transformer):
                 name_map[inv_name_map[name][0]] = [name]
 
     # Loop items in table and tabulate.
-    for name in sorted(list(transformer.used_psi_tables)):
+    for name in sorted(list(used_psi_tables)):
         # Only proceed if values are still used (if they're not remapped).
         vals = tables[name]
         if not vals is None:
@@ -371,12 +533,12 @@ def _tabulate_psis(transformer):
             code += [f_decl(f_table, decl_name, f_new_line + value), ""]
 
         # Tabulate non-zero indices.
-        if transformer.optimise_parameters["non zero columns"]:
+        if optimise_parameters["non zero columns"]:
             if name in name_map:
                 for n in name_map[name]:
                     if inv_name_map[n][1] and inv_name_map[n][1] in new_nzcs:
                         i, cols = inv_name_map[n][1]
-                        if not i in transformer.used_nzcs:
+                        if not i in used_nzcs:
                             continue
                         code += [f_comment("Array of non-zero columns")]
                         value = f_list([f_int(c) for c in list(cols)])
@@ -386,3 +548,5 @@ def _tabulate_psis(transformer):
                         # Remove from list of columns.
                         new_nzcs.remove(inv_name_map[n][1])
     return code
+
+

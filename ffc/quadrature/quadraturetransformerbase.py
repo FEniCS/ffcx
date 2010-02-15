@@ -37,17 +37,12 @@ class QuadratureTransformerBase(Transformer):
 #class QuadratureTransformerBase(ReuseTransformer):
     "Transform UFL representation to quadrature code."
 
-    def __init__(self, ir, optimise_parameters):
+    def __init__(self, psi_tables, optimise_parameters):
 
         Transformer.__init__(self)
 
-        # Get weights and psi tables
-        quadrature_weights = ir["quadrature_weights"]
-        psi_tables = ir["psi_tables"]
-
         # Save optimise_parameters, weights and fiat_elements_map.
         self.optimise_parameters = optimise_parameters
-        self.quadrature_weights = quadrature_weights
 
         # Create containers and variables.
         self.used_psi_tables = set()
@@ -69,7 +64,6 @@ class QuadratureTransformerBase(Transformer):
         self._derivatives = []
         self._index2value = StackDict()
         self._components = Stack()
-        self.trans_set = set()
         self.element_map, self.name_map, self.unique_tables =\
               create_psi_tables(psi_tables, self.optimise_parameters)
 
@@ -80,13 +74,13 @@ class QuadratureTransformerBase(Transformer):
     def update_facets(self, facet0, facet1):
         self.facet0 = facet0
         self.facet1 = facet1
-        # Reset functions and count everytime we generate a new case of facets.
-        self.functions = {}
-        self.function_count = 0
+#        # Reset functions and count everytime we generate a new case of facets.
+#        self.functions = {}
+#        self.function_count = 0
 
-        # Reset cache
-        self.argument_cache = {}
-        self.function_cache = {}
+#        # Reset cache
+#        self.argument_cache = {}
+#        self.function_cache = {}
 
     def update_points(self, points):
         self.points = points
@@ -97,30 +91,6 @@ class QuadratureTransformerBase(Transformer):
         # Reset cache
         self.argument_cache = {}
         self.function_cache = {}
-
-#    def reset(self):
-#        # Reset containers.
-#        self.used_psi_tables = set()
-#        self.psi_tables_map = {}
-#        self.used_weights = set()
-#        self.used_nzcs = set()
-#        self.geo_consts = {}
-#        self.ip_consts = {}
-#        self.trans_set = set()
-#        self.functions = {}
-#        self.function_count = 0
-#        self.geo_dim = 0
-#        self.points = 0
-#        self.facet0 = None
-#        self.facet1 = None
-#        ffc_assert(not self._components, "This list is supposed to be empty: " + repr(self._components))
-#        # It should be zero but clear just to be sure.
-#        self._components = Stack()
-#        self._index2value = StackDict()
-
-#        # Reset cache
-#        self.argument_cache = {}
-#        self.function_cache = {}
 
     def disp(self):
         print "\n\n **** Displaying QuadratureTransformer ****"
@@ -649,247 +619,28 @@ class QuadratureTransformerBase(Transformer):
         return self.visit(o.expression())
 
     # -------------------------------------------------------------------------
-    # Generate code from from integrand
+    # Generate terms for representation.
     # -------------------------------------------------------------------------
-    def generate_code(self, integrand, interior):
-        "Generate code from integrand."
+    def generate_terms(self, integrand):
+        "Generate terms for code generation."
+        # Get terms.
+        terms = self.visit(integrand)
 
-        # Prefetch formats to speed up code generation.
-        f_comment      = format["comment"]
-        f_double       = format["float declaration"]
-        f_F            = format["function value"]
-        f_float        = format["floating point"]
-        f_iadd         = format["iadd"]
-        f_nzc          = format["nonzero columns"](0).split("0")[0]
-        f_r            = format["free indices"][0]
-        f_mult         = format["multiply"]
-        f_scale_factor = format["scale factor"]
-        f_add          = format["add"]
-        f_tensor       = format["element tensor"]
-        f_component    = format["component"]
-        f_Gip          = format["geometry constant"] + format["integration points"]
-        f_decl         = format["declaration"]
-        f_loop         = format["generate loop"]
+        f_nzc = format["nonzero columns"](0).split("0")[0]
 
-        # Initialise return values.
-        code = []
-        num_ops = 0
-
-        # Only propagate restrictions if we have an interior integral.
-        if interior:
-            integrand = propagate_restrictions(integrand)
-#        print "Integrand:\n", str(tree_format(integrand))
-
-        # Profiling
-#        name = "test.prof"
-#        prof = hotshot.Profile(name)
-#        prof.runcall(self.visit, integrand)
-#        prof.close()
-#        stats = hotshot.stats.load(name)
-##        stats.strip_dirs()
-#        stats.sort_stats("time").print_stats(50)
-#        raise RuntimeError
-
-        # Generate loop code by transforming integrand.
-        info("Transforming UFL integrand...")
-        t = time.time()
-        loop_code = self.visit(integrand)
-        info("done, time = %f" % (time.time() - t))
-
-        # Generate code.
-        info("Generate code...")
-        t = time.time()
-
-        # TODO: Verify that test and trial functions will ALWAYS be rearranged to 0 and 1.
-        indices = {-2: format["first free index"], -1: format["second free index"],
-                    0: format["first free index"],  1: format["second free index"]}
-
-        # Create the function declarations, we know that the code generator numbers
-        # functions from 0 to n.
-        if self.function_count:
-            code += ["", f_comment("Coefficient declarations")]
-        for function_number in range(self.function_count):
-            code.append(f_decl(f_double, f_F + str(function_number), f_float(0)))
-
-        # Create code for computing function values, sort after loop ranges first.
-        functions = self.functions
-        function_list = {}
-        for key, val in functions.items():
-            if val[1] in function_list:
-                function_list[val[1]].append(key)
-            else:
-                function_list[val[1]] = [key]
-
-        # Loop ranges and get list of functions.
-        for loop_range, list_of_functions in function_list.items():
-            function_expr = {}
-            function_numbers = []
-            func_ops = 0
-            # Loop functions.
-            for function in list_of_functions:
-                # Get name and number.
-                name = str(functions[function][0])
-                number = int(name.strip(f_F))
-
-                # TODO: This check can be removed for speed later.
-                ffc_assert(number not in function_numbers, "This is definitely not supposed to happen!")
-
-                function_numbers.append(number)
-                # Get number of operations to compute entry and add to function operations count.
-                f_ops = self._count_operations(function) + 1
-                func_ops += f_ops
-                entry = f_iadd(name, function)
-                function_expr[number] = entry
-
-                # Extract non-zero column number if needed.
-                if f_nzc in entry:
-                    self.used_nzcs.add(int(entry.split(f_nzc)[1].split("[")[0]))
-
-            # Multiply number of operations by the range of the loop index and add
-            # number of operations to compute function values to total count.
-            func_ops *= loop_range
-            func_ops_comment = ["", f_comment("Total number of operations to compute function values = %d" % func_ops)]
-            num_ops += func_ops
-
-            # Sort the functions according to name and create loop to compute the function values.
-            function_numbers.sort()
-            lines = []
-            for number in function_numbers:
-                lines.append(function_expr[number])
-            code += func_ops_comment + f_loop(lines, [(f_r, 0, loop_range)])
-
-        # Create weight.
-        ACCESS = GEO
-        weight = format["weight"](self.points)
-        if self.points > 1:
-            weight += format["component"]("", format["integration points"])
-            ACCESS = IP
-        weight = self._create_symbol(weight, ACCESS)[()]
-
-        # Generate entries, multiply by weights and sort after primary loops.
-        loops = {}
-        for key, val in loop_code.items():
-
+        # Loop code and add weight and scale factor.
+        new_terms = {}
+        for key, val in terms.items():
             # If value was zero continue.
             if val is None:
                 continue
 
-            # Create value, zero is True if value is zero
-            value, zero = self._create_entry_value(val, weight, f_scale_factor)
-
-            if zero:
-                continue
-
-            # Add points and scale factor to used weights and transformations
-            self.used_weights.add(self.points)
-            self.trans_set.add(f_scale_factor)
-
-            # Compute number of operations to compute entry
-            # (add 1 because of += in assignment).
-            entry_ops = self._count_operations(value) + 1
-
-            # Create comment for number of operations
-            entry_ops_comment = f_comment("Number of operations to compute entry: %d" % entry_ops)
-
-            # Create appropriate entries.
-            # FIXME: We only support rank 0, 1 and 2.
-            entry = ""
-            loop = ()
-            if len(key) == 0:
-                entry = "0"
-
-            elif len(key) == 1:
-                key = key[0]
-                # Checking if the basis was a test function.
-                # TODO: Make sure test function indices are always rearranged to 0.
-                ffc_assert(key[0] == -2 or key[0] == 0, \
-                           "Linear forms must be defined using test functions only: " + repr(key))
-
-                index_j, entry, range_j, space_dim_j = key
-                loop = ((indices[index_j], 0, range_j),)
-                if range_j == 1 and self.optimise_parameters["ignore ones"]:
-                    loop = ()
-                # Multiply number of operations to compute entries by range of loop.
-                entry_ops *= range_j
-
-                # Extract non-zero column number if needed.
-                if f_nzc in entry:
-                    self.used_nzcs.add(int(entry.split(f_nzc)[1].split("[")[0]))
-
-            elif len(key) == 2:
-                # Extract test and trial loops in correct order and check if for is legal.
-                key0, key1 = (0, 0)
-                for k in key:
-                    ffc_assert(k[0] in indices, \
-                               "Bilinear forms must be defined using test and trial functions (index -2, -1, 0, 1): " + repr(k))
-                    if k[0] == -2 or k[0] == 0:
-                        key0 = k
-                    else:
-                        key1 = k
-                index_j, entry_j, range_j, space_dim_j = key0
-                index_k, entry_k, range_k, space_dim_k = key1
-
-                loop = []
-                if not (range_j == 1 and self.optimise_parameters["ignore ones"]):
-                    loop.append((indices[index_j], 0, range_j))
-                if not (range_k == 1 and self.optimise_parameters["ignore ones"]):
-                    loop.append((indices[index_k], 0, range_k))
-
-                entry = f_add([f_mult([entry_j, str(space_dim_k)]), entry_k])
-                loop = tuple(loop)
-
-                # Multiply number of operations to compute entries by range of loops.
-                entry_ops *= range_j*range_k
-
-                # Extract non-zero column number if needed.
-                if f_nzc in entry_j:
-                    self.used_nzcs.add(int(entry_j.split(f_nzc)[1].split("[")[0]))
-                if f_nzc in entry_k:
-                    self.used_nzcs.add(int(entry_k.split(f_nzc)[1].split("[")[0]))
-            else:
-                error("Only rank 0, 1 and 2 tensors are currently supported: " + repr(key))
-
-            # Generate the code line for the entry.
-            # Try to evaluate entry ("3*6 + 2" --> "20").
-            try:
-                entry = str(eval(entry))
-            except:
-                pass
-
-            entry_code = f_iadd(f_tensor(entry), value)
-
-            if loop not in loops:
-                loops[loop] = [entry_ops, [entry_ops_comment, entry_code]]
-            else:
-                loops[loop][0] += entry_ops
-                loops[loop][1] += [entry_ops_comment, entry_code]
-
-        # Generate code for ip constant declarations.
-        ip_const_ops, ip_const_code = generate_aux_constants(self.ip_consts, f_Gip,\
-                                        format["const float declaration"], True)
-        num_ops += ip_const_ops
-        if ip_const_code:
-            code += ["", f_comment("Number of operations to compute ip constants: %d" %ip_const_ops)]
-            code += ip_const_code
-
-        # Write all the loops of basis functions.
-        for loop, ops_lines in loops.items():
-            ops, lines = ops_lines
-
-            # Add number of operations for current loop to total count.
-            num_ops += ops
-            code += ["", f_comment("Number of operations for primary indices: %d" % ops)]
-            code += f_loop(lines, loop)
-
-        info("             done, time = %f" % (time.time() - t))
-
-        # Reset ip constant declarations
-        self.ip_consts = {}
-
-        # Update used psi tables
-        self._update_used_psi_tables()
-
-        return code, num_ops
+            # Create data and insert.
+            data = self._create_entry_data(val)
+            used_nzcs = set([int(k[1].split(f_nzc)[1].split("[")[0]) for k in key if f_nzc in k[1]])
+            data.append(used_nzcs)
+            new_terms[key] = data
+        return new_terms
 
     # -------------------------------------------------------------------------
     # Helper functions for transformation of UFL objects in base class
@@ -1069,21 +820,22 @@ class QuadratureTransformerBase(Transformer):
         offset = {"+": "", "-": str(ffc_element.space_dimension()), None: ""}[self.restriction]
 
         # Create basis name and map to correct basis and get info.
-        basis_name = generate_psi_name(element_counter, facet, component, deriv)
-        basis_name, non_zeros, zeros, ones = self.name_map[basis_name]
+        psi_name = generate_psi_name(element_counter, facet, component, deriv)
+        psi_name, non_zeros, zeros, ones = self.name_map[psi_name]
 
         # If all basis are zero we just return None.
         if zeros and self.optimise_parameters["ignore zero tables"]:
             return self._format_scalar_value(None)[()]
 
         # Get the index range of the loop index.
-        loop_index_range = shape(self.unique_tables[basis_name])[1]
+        loop_index_range = shape(self.unique_tables[psi_name])[1]
 
         # Set default coefficient access.
         coefficient_access = loop_index
 
         # If the loop index range is one we can look up the first component
         # in the coefficient array. If we only have ones we don't need the basis.
+        basis_name = psi_name
         if self.optimise_parameters["ignore ones"] and loop_index_range == 1 and ones:
             coefficient_access = "0"
             basis_name = ""
@@ -1092,7 +844,7 @@ class QuadratureTransformerBase(Transformer):
             # TODO: We should first add this table if the function is used later
             # in the expressions. If some term is multiplied by zero and it falls
             # away there is no need to compute the function value
-            self.used_psi_tables.add(basis_name)
+            self.used_psi_tables.add(psi_name)
             basis_name += basis_access
 
         # If we have a quadrature element we can use the ip number to look
@@ -1114,9 +866,11 @@ class QuadratureTransformerBase(Transformer):
                 coefficient_access = f_ip
 
         # If we have non zero column mapping but only one value just pick it.
+        used_nzcs = set()
         if non_zeros and coefficient_access == "0":
             coefficient_access = str(non_zeros[1][0])
         elif non_zeros and not quad_element:
+            used_nzcs.add(non_zeros[0])
             coefficient_access = format["component"](format["nonzero columns"](non_zeros[0]), coefficient_access)
         if offset:
             coefficient_access = format["add"]([coefficient_access, offset])
@@ -1140,13 +894,16 @@ class QuadratureTransformerBase(Transformer):
         else:
             # Check if the expression to compute the function value is already in
             # the dictionary of used function. If not, generate a new name and add.
-            function_name = self._create_symbol(format["function value"] + str(self.function_count), ACCESS)[()]
+            function_name = self._create_symbol(format["function value"](self.function_count), ACCESS)[()]
             if not function_expr in self.functions:
-                self.functions[function_expr] = (function_name, loop_index_range)
+                function_name = self._create_symbol(format["function value"](self.function_count), ACCESS)[()]
+                self.functions[function_expr] =\
+                    (self.function_count, loop_index_range, self._count_operations(function_expr), psi_name, used_nzcs)
                 # Increase count.
                 self.function_count += 1
             else:
-                function_name, index_r = self.functions[function_expr]
+                function_count, index_r, ops, psi_name, used_nzcs = self.functions[function_expr]
+                function_name = self._create_symbol(format["function value"](function_count), ACCESS)[()]
                 # Check just to make sure.
                 ffc_assert(index_r == loop_index_range, "Index ranges does not match." + repr(index_r) + repr(loop_index_range))
         return function_name
@@ -1157,9 +914,5 @@ class QuadratureTransformerBase(Transformer):
     def _count_operations(self, expression):
         error("This function should be implemented by the child class.")
 
-    def _create_entry_value(self, val, weight, scale_factor):
+    def _create_entry_data(self, val):
         error("This function should be implemented by the child class.")
-
-    def _update_used_psi_tables(self):
-        error("This function should be implemented by the child class.")
-

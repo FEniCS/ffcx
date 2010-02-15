@@ -161,7 +161,7 @@ format.update({
     "first free index":   "j",
     "second free index":  "k",
     "geometry constant":  "G",
-    "function value":     "F",
+    "function value":     lambda i: "F%d" % i,
     "nonzero columns":    lambda i: "nzc%d" % i,
     "weight":             lambda i: "W%d" % (i),
     "psi name":           lambda c, f, co, d: _generate_psi_name(c,f,co,d),

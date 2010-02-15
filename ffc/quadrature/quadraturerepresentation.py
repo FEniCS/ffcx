@@ -6,11 +6,11 @@ __copyright__ = "Copyright (C) 2009-2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Anders Logg, 2009.
-# Last changed: 2010-01-31
+# Last changed: 2010-02-15
 
 # UFL modules
 from ufl.classes import Form, Integral, SpatialDerivative
-from ufl.algorithms import extract_unique_elements, extract_type, extract_elements
+from ufl.algorithms import extract_unique_elements, extract_type, extract_elements, propagate_restrictions
 
 # FFC modules
 from ffc.log import ffc_assert, error
@@ -23,20 +23,18 @@ def compute_integral_ir(domain_type, domain_id, integrals, metadata, form_data, 
     "Compute intermediate represention of integral."
 
     # Initialise representation
+    num_facets = form_data.num_facets
     ir = {"representation":       "quadrature",
           "domain_type":          domain_type,
           "domain_id":            domain_id,
           "form_id":              form_id,
           "geometric_dimension":  form_data.geometric_dimension,
-          "num_facets":           form_data.num_facets}
+          "num_facets":           num_facets,
+          "geo_consts":           {}}
 
+    # Sort integrals and tabulate basis.
     sorted_integrals = _sort_integrals(integrals, metadata, form_data)
     integrals_dict, psi_tables, quad_weights = _tabulate_basis(sorted_integrals, domain_type, form_data.num_facets)
-
-    # Add tables for weights and basis values and dictionary of integrals.
-    ir["quadrature_weights"]  = quad_weights
-    ir["psi_tables"]          = psi_tables
-    ir["integrals"]           = integrals_dict
 
     # Create dimensions of primary indices, needed to reset the argument 'A'
     # given to tabulate_tensor() by the assembler.
@@ -46,7 +44,60 @@ def compute_integral_ir(domain_type, domain_id, integrals, metadata, form_data, 
         prim_idims.append(element.space_dimension())
     ir["prim_idims"] = prim_idims
 
+    # Create optimise parameters.
+    # FIXME: Find a way to avoid the redundant options here and in the generator.
+    if parameters["optimize"]:
+        # These parameters results in fast code, but compiles slower and there
+        # might still be bugs.
+        optimise_parameters = {"non zero columns": True,
+                            "ignore ones": True,
+                            "remove zero terms": True,
+                            "simplify expressions": True,
+                            "ignore zero tables": True}
+    else:
+        # These parameters should be safe and fast, but result in slow code.
+        optimise_parameters = {"non zero columns": False,
+                            "ignore ones": False,
+                            "remove zero terms": False,
+                            "simplify expressions": False,
+                            "ignore zero tables": False}
 
+    # Save the optisation parameters.
+    ir ["optimise_parameters"] = optimise_parameters
+
+    # Create transformer.
+    if optimise_parameters["simplify expressions"]:
+        transformer = QuadratureTransformerOpt(psi_tables, optimise_parameters)
+    else:
+        transformer = QuadratureTransformer(psi_tables, optimise_parameters)
+
+    # Add tables for weights, name_map and basis values.
+    ir["quadrature_weights"]  = quad_weights
+    ir["name_map"] = transformer.name_map
+    ir["unique_tables"] = transformer.unique_tables
+
+    # Transform integrals.
+    if domain_type == "cell":
+        # Compute transformed integrals.
+        transformer.update_facets(None, None)
+        ir["trans_integrals"] = _transform_integrals(transformer, integrals_dict, domain_type)
+    elif domain_type == "exterior_facet":
+        # Compute transformed integrals.
+        terms = [None for i in range(num_facets)]
+        for i in range(num_facets):
+            transformer.update_facets(i, None)
+            terms[i] = _transform_integrals(transformer, integrals_dict, domain_type)
+        ir["trans_integrals"] = terms
+    elif domain_type == "interior_facet":
+        # Compute transformed integrals.
+        terms = [[None for j in range(num_facets)] for i in range(num_facets)]
+        for i in range(num_facets):
+            for j in range(num_facets):
+                transformer.update_facets(i, j)
+                terms[i][j] = _transform_integrals(transformer, integrals_dict, domain_type)
+        ir["trans_integrals"] = terms
+    else:
+        error("Unhandled domain type: " + str(domain_type))
 
     return ir
 
@@ -191,3 +242,16 @@ def _sort_integrals(integrals, metadata, form_data):
         sorted_integrals[key] = val.integrals()[0]
 
     return sorted_integrals
+
+def _transform_integrals(transformer, integrals, domain_type):
+    "Transform integrals from UFL expression to quadrature representation."
+    transformed_integrals = []
+    for point, integral in integrals.items():
+        transformer.update_points(point)
+        integrand = integral.integrand()
+        if domain_type == "interior_integral":
+            integrand = propagate_restrictions(integrand)
+        terms = transformer.generate_terms(integrand)
+        transformed_integrals.append((point, terms, transformer.functions, {}))
+    return transformed_integrals
+
