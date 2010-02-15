@@ -12,7 +12,7 @@ __date__ = "2007-02-05"
 __copyright__ = "Copyright (C) 2007-2010 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-02-14
+# Last changed: 2010-02-15
 
 # UFL modules
 from ufl.common import istr, tstr
@@ -105,6 +105,7 @@ def _analyze_form(form, object_names, parameters, common_cell=None):
     # Preprocess form if necessary
     if form.form_data() is None:
         form = preprocess(form, object_names, common_cell)
+    info("")
     info(str(form.form_data()))
 
     # Adjust cell and degree for elements when unspecified
@@ -193,8 +194,6 @@ def _extract_metadata(form_data, parameters):
             else:
                 info("quadrature_degree: %d" % q)
             integral_metadata["quadrature_degree"] = q
-
-            info("")
 
             # Append to list of metadata
             integral_metadatas.append(integral_metadata)
