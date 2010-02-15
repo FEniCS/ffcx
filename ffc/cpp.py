@@ -7,7 +7,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian B. Oelgaard 2010
 # Modified by Marie E. Rognes 2010
-# Last changed: 2010-02-04
+# Last changed: 2010-02-12
 
 # Python modules
 import re, numpy, platform
@@ -59,6 +59,7 @@ format.update({
     "add":            lambda v: " + ".join(v),
     "iadd":           lambda v, w: "%s += %s;" % (str(v), str(w)),
     "sub":            lambda v: " - ".join(v),
+    "neg":            lambda v: "-%s" % v,
     "mul":            lambda v: "*".join(v),
     "imul":           lambda v, w: "%s *= %s;" % (str(v), str(w)),
     "div":            lambda v, w: "%s/%s" % (str(v), str(w)),
@@ -103,6 +104,7 @@ format.update({
 # UFC function arguments and class members (names)
 format.update({
     "element tensor":             lambda i: "A[%s]" % i,
+    "element tensor term":        lambda i, j: "A%d[%s]" % (j, i),
     "coefficient":                lambda j, k: format["component"]("w", [j, k]),
     "argument basis num":         "i",
     "argument derivative order":  "n",
@@ -300,11 +302,44 @@ def _inner_product(v, w):
     "Generate string for v[0]*w[0] + ... + v[n]*w[n]."
 
     # Check that v and w have same length
-    assert(len(v) == len(w)), \
-                  "Sizes differ (%d, %d) in inner-product!" % (len(v), len(w))
+    assert(len(v) == len(w)), "Sizes differ in inner-product!"
 
-    return format["addition"]([format["multiply"]([v[i], w[i]])
-                          for i in range(len(v))])
+    # Special case, zero terms
+    if len(v) == 0: return format["float"](0)
+
+    # Straightforward handling when we only have strings
+    if isinstance(v[0], str):
+        return _add([_multiply([v[i], w[i]]) for i in range(len(v))])
+
+    # Fancy handling of negative numbers etc
+    result = None
+    eps = format["epsilon"]
+    add = format["add"]
+    sub = format["sub"]
+    neg = format["neg"]
+    mul = format["mul"]
+    fl  = format["float"]
+    for (c, x) in zip(v, w):
+        if result:
+            if abs(c - 1.0) < eps:
+                result = add([result, x])
+            elif abs(c + 1.0) < eps:
+                result = sub([result, x])
+            elif c > eps:
+                result = add([result, mul([fl(c), x])])
+            elif c < -eps:
+                result = sub([result, mul([fl(-c), x])])
+        else:
+            if abs(c - 1.0) < eps:
+                result = x
+            elif abs(c + 1.0) < eps:
+                result = neg(x)
+            elif c > eps:
+                result = mul([fl(c), x])
+            elif c < -eps:
+                result = neg(mul([fl(-c), x]))
+
+    return result
 
 def _transform(type, j, k, r):
     map_name = {"J": "J", "JINV": "K"}[type] + choose_map[r]
@@ -502,7 +537,7 @@ def indent(block, num_spaces):
 
 def count_ops(code):
     "Count the number of operations in code (multiply-add pairs)."
-    num_add = code.count("+") + code.count("-")
+    num_add = code.count(" + ") + code.count(" - ")
     num_multiply = code.count("*") + code.count("/")
     return (num_add + num_multiply) / 2
 
@@ -635,4 +670,3 @@ def _variable_in_line(variable_name, line):
         line = line.replace(character, "\\" + character)
     delimiter = "[" + ",".join(["\\" + c for c in special_characters]) + "]"
     return not re.search(delimiter + variable_name + delimiter, line) == None
-

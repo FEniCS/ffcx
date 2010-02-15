@@ -3,7 +3,7 @@ __date__ = "2010-01-21"
 __copyright__ = "Copyright (C) 2010 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-02-03
+# Last changed: 2010-02-12
 
 # FIXME: Need to add many more test cases. Quite a few DOLFIN
 # FIXME: forms failed after the FFC tests passed. Also need to

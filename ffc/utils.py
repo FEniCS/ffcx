@@ -4,7 +4,7 @@ __copyright__ = "Copyright (C) 2005-2010 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian B. Oelgaard, 2009
-# Last changed: 2010-01-18
+# Last changed: 2010-02-12
 
 # Python modules.
 import operator
@@ -24,7 +24,7 @@ def all_equal(sequence):
 def pick_first(sequence):
     "Check that all values are equal and return the value."
     if not all_equal(sequence):
-        error("Values differ: " + str(values))
+        error("Values differ: " + str(sequence))
     return sequence[0]
 
 def listcopy(sequence):

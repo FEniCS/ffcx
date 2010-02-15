@@ -11,12 +11,13 @@ __copyright__ = "Copyright (C) 2009 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian B. Oelgaard, 2009
-# Last changed: 2010-01-21
+# Last changed: 2010-02-12
 
 # UFL modules
 from ufl.log import Logger
 from ufl.log import log_functions
 from ufl.log import INFO, DEBUG, ERROR, CRITICAL
+from ufl.common import dstr, tstr
 
 # Create FFC logger
 ffc_logger = Logger("FFC")

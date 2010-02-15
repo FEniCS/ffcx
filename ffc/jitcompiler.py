@@ -9,7 +9,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Johan Hake, 2008-2009
 # Modified by Ilmar Wilbers, 2008
 # Modified by Kristian B. Oelgaard, 2009
-# Last changed: 2010-02-08
+# Last changed: 2010-02-14
 
 # Python modules
 import os
@@ -42,7 +42,7 @@ FFC_PARAMETERS_JIT["no-evaluate_basis_derivatives"] = True
 # Set debug level for Instant
 instant.set_logging_level("warning")
 
-def jit(object, parameters=None):
+def jit(object, parameters=None, common_cell=None):
     """Just-in-time compile the given form or element
 
     Parameters:
@@ -55,9 +55,9 @@ def jit(object, parameters=None):
     if isinstance(object, FiniteElementBase):
         return jit_element(object, parameters)
     else:
-        return jit_form(object, parameters)
+        return jit_form(object, parameters, common_cell)
 
-def jit_form(form, parameters=None):
+def jit_form(form, parameters=None, common_cell=None):
     "Just-in-time compile the given form."
 
     # Check that we get a Form
@@ -73,7 +73,7 @@ def jit_form(form, parameters=None):
 
     # Preprocess form
     if form.form_data() is None:
-        preprocessed_form = preprocess(form)
+        preprocessed_form = preprocess(form, common_cell=common_cell)
     else:
         preprocessed_form = form
 
