@@ -897,15 +897,16 @@ class QuadratureTransformerBase(Transformer):
             function_name = self._create_symbol(format["function value"](self.function_count), ACCESS)[()]
             if not function_expr in self.functions:
                 function_name = self._create_symbol(format["function value"](self.function_count), ACCESS)[()]
-                self.functions[function_expr] =\
-                    (self.function_count, loop_index_range, self._count_operations(function_expr), psi_name, used_nzcs)
+                data = (self.function_count, loop_index_range, self._count_operations(function_expr),\
+                        psi_name, used_nzcs, ufl_function.element())
+                self.functions[function_expr] = data
                 # Increase count.
                 self.function_count += 1
             else:
-                function_count, index_r, ops, psi_name, used_nzcs = self.functions[function_expr]
-                function_name = self._create_symbol(format["function value"](function_count), ACCESS)[()]
+                data = self.functions[function_expr]
+                function_name = self._create_symbol(format["function value"](data[0]), ACCESS)[()]
                 # Check just to make sure.
-                ffc_assert(index_r == loop_index_range, "Index ranges does not match." + repr(index_r) + repr(loop_index_range))
+                ffc_assert(data[1] == loop_index_range, "Index ranges does not match." + repr(data[1]) + repr(loop_index_range))
         return function_name
 
     # -------------------------------------------------------------------------

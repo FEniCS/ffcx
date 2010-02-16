@@ -262,7 +262,7 @@ def _generate_functions(functions, sets):
         func_ops = 0
         for function in list_of_functions:
             # Get name and number.
-            number, range_i, ops, psi_name, u_nzcs = functions[function]
+            number, range_i, ops, psi_name, u_nzcs, ufl_element = functions[function]
 
             # Add name to used psi names and non zeros name to used_nzcs.
             used_psi_tables.add(psi_name)
