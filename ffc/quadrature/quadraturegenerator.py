@@ -315,6 +315,8 @@ def _generate_integral_code(points, terms, sets, optimise_parameters):
 
     # Loop terms and create code.
     for key, data in terms.items():
+
+        # Get data.
         val, ops, t_set, u_weights, u_psi_tables, u_nzcs = data
 
         # If we have a value, then we also need to update the sets of used variables.

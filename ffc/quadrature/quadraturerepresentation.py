@@ -97,7 +97,7 @@ def compute_integral_ir(domain_type, domain_id, integrals, metadata, form_data, 
         terms = [[None for j in range(num_facets)] for i in range(num_facets)]
         for i in range(num_facets):
             for j in range(num_facets):
-                info("Transforming exterior facet integral (%d, %d)" % (i, j))
+                info("Transforming interior facet integral (%d, %d)" % (i, j))
                 transformer.update_facets(i, j)
                 terms[i][j] = _transform_integrals(transformer, integrals_dict, domain_type)
         ir["trans_integrals"] = terms
@@ -254,7 +254,7 @@ def _transform_integrals(transformer, integrals, domain_type):
     for point, integral in integrals.items():
         transformer.update_points(point)
         integrand = integral.integrand()
-        if domain_type == "interior_integral":
+        if domain_type == "interior_facet":
             integrand = propagate_restrictions(integrand)
         terms = transformer.generate_terms(integrand)
         transformed_integrals.append((point, terms, transformer.functions, {}))
