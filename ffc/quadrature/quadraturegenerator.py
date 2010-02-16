@@ -363,9 +363,9 @@ def _generate_integral_code(points, terms, sets, optimise_parameters):
             index_k, entry_k, range_k, space_dim_k = key1
 
             loop = []
-            if not (range_j == 1 and self.optimise_parameters["ignore ones"]):
+            if not (range_j == 1 and optimise_parameters["ignore ones"]):
                 loop.append((indices[index_j], 0, range_j))
-            if not (range_k == 1 and self.optimise_parameters["ignore ones"]):
+            if not (range_k == 1 and optimise_parameters["ignore ones"]):
                 loop.append((indices[index_k], 0, range_k))
             entry = f_add([f_mul([entry_j, str(space_dim_k)]), entry_k])
             loop = tuple(loop)
