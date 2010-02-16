@@ -163,7 +163,7 @@ def _create_restricted_element(ufl_element):
         error("create_restricted_element expects an ufl.ElementRestriction")
 
     base_element = ufl_element.element()
-    domain = ufl_element.domain()
+    domain = ufl_element.domain_restriction()
 
     # If simple element -> create RestrictedElement from fiat_element
     if isinstance(base_element, ufl.FiniteElement):
