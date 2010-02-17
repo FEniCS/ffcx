@@ -16,7 +16,8 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # UFL modules
 from ufl.common import istr, tstr
-from ufl.finiteelement import MixedElement
+from ufl.integral import Measure
+from ufl.algorithms import preprocess
 from ufl.algorithms import preprocess
 from ufl.algorithms import estimate_max_polynomial_degree
 from ufl.algorithms import estimate_total_polynomial_degree
@@ -239,6 +240,11 @@ def _auto_select_representation(integral, elements):
 
     # Use quadrature representation if we have a quadrature element
     if len([e for e in elements if e.family() == "Quadrature"]):
+        return "quadrature"
+
+    # Use quadrature representation if any elements are restricted to
+    # UFL.Measure. This is used when integrals are computed over discontinuities.
+    if len([e for e in elements if isinstance(e.domain_restriction(), Measure)]):
         return "quadrature"
 
     # Estimate cost of tensor representation
