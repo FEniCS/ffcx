@@ -7,7 +7,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian B. Oelgaard, 2009
 # Modified by Marie E. Rognes, 2010
-# Last changed: 2010-02-12
+# Last changed: 2010-02-17
 
 # UFL modules
 from ufl.classes import Argument
@@ -16,7 +16,7 @@ from ufl.classes import FixedIndex
 
 # FFC modules
 from ffc.log import info, error, ffc_assert
-from ffc.utils import pick_first
+from ffc.utils import all_equal
 from ffc.fiatinterface import create_element
 
 # FFC tensor representation modules
@@ -290,7 +290,9 @@ class TransformedMonomial:
                     (offset, ufl_sub_element) = ufl_element.extract_component(i)
                     fiat_sub_element = create_element(ufl_sub_element)
                     mappings.extend(fiat_sub_element.mapping())
-                mapping = pick_first(mappings)
+                if not all_equal(mappings):
+                    raise MonomialException, ("Mappings differ: " + str(mappings))
+                mapping = mappings[0]
 
                 # Get component index and sub element
                 (component_index, sub_element) = ufl_element.extract_component(component.index_range[0])
