@@ -8,7 +8,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Kristian B. Oelgaard, 2009-2010
 # Modified by Marie Rognes (meg@math.uio.no), 2007
 # Modified by Garth N. Wells, 2009
-# Last changed: 2010-02-12
+# Last changed: 2010-02-17
 
 # FFC modules
 from ffc.log import error
@@ -100,7 +100,7 @@ def _tabulate_tensor(ir, parameters):
         error("Unhandled integral type: " + str(domain_type))
 
     # Remove unused declarations from Jacobian code
-    jacobi_code = remove_unused(j_code, j_set)
+    j_code = remove_unused(j_code, j_set)
 
     # Compute total number of operations
     j_ops, g_ops, t_ops = [count_ops(c) for c in (j_code, g_code, t_code)]
@@ -113,7 +113,7 @@ def _tabulate_tensor(ir, parameters):
     lines.append(comment("Number of operations (multiply-add pairs) for tensor contraction: %d" % t_ops))
     lines.append(comment("Total number of operations (multiply-add pairs):                  %d" % total_ops))
     lines.append("")
-    lines.append(jacobi_code)
+    lines.append(j_code)
     lines.append("")
     lines.append(comment("Compute geometry tensor"))
     lines.append(g_code)
@@ -319,7 +319,7 @@ def _generate_geometry_tensors(terms, j_set, g_set):
 
             # Multiply with determinant factor
             det = GK.determinant
-            value = _multiply_value_by_det(value, GK.determinant, len(values) > 1)
+            value = _multiply_value_by_det(value, GK.determinant, len(values) > 1, j_set)
 
             # Add code
             lines.append(format_declaration(name, value))
@@ -355,10 +355,12 @@ def _generate_entry(GK, a, i, j_set):
 
     return entry
 
-def _multiply_value_by_det(value, det, is_sum):
+def _multiply_value_by_det(value, det, is_sum, j_set):
     "Generate code for multiplication of value by determinant."
     if not det.power == 0:
-        d = [format["power"](format["det(J)"](det.restriction), det.power)]
+        J = format["det(J)"](det.restriction)
+        d = [format["power"](J, det.power)]
+        j_set.add(J)
     else:
         d = []
     if value == "1.0":
