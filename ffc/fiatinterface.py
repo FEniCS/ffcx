@@ -150,6 +150,12 @@ def _extract_elements(ufl_element, domain=None):
             elements += _extract_elements(sub_element, domain)
         return elements
 
+    # Handle restricted elements since they might be mixed elements too.
+    if isinstance(ufl_element, ufl.ElementRestriction):
+        base_element = ufl_element.element()
+        restriction = ufl_element.domain_restriction()
+        return _extract_elements(base_element, restriction)
+
     if domain:
         ufl_element = ufl.ElementRestriction(ufl_element, domain)
 
