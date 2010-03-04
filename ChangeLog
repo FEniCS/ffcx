@@ -1,3 +1,4 @@
+ - Added support for UFL.SpatialCoordinate.
 0.9.2 [2010-02-17]
  - Bug fix in removal of unused variables in Piola-mapped terms for tensor representation
 0.9.1 [2010-02-15]
