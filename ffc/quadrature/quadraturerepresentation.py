@@ -104,6 +104,8 @@ def compute_integral_ir(domain_type, domain_id, integrals, metadata, form_data, 
     else:
         error("Unhandled domain type: " + str(domain_type))
 
+    ir["using coordinates"] = transformer.using_coordinates
+
     return ir
 
 def _tabulate_basis(sorted_integrals, domain_type, num_facets):

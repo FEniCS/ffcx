@@ -59,6 +59,7 @@ class QuadratureTransformerBase(Transformer):
         self.facet0 = None
         self.facet1 = None
         self.restriction = None
+        self.using_coordinates = False
 
         # Stacks.
         self._derivatives = []
@@ -204,10 +205,6 @@ class QuadratureTransformerBase(Transformer):
     def geometric_quantity(self, o):
         print "\n\nVisiting GeometricQuantity:", repr(o)
         error("This type of GeometricQuantity is not supported (yet).")
-
-    def spatial_coordinate(self, o):
-        print "\n\nVisiting SpatialCoordinate:", repr(o)
-        error("SpatialCoordinate is not supported (yet).")
 
     def lifting_result(self, o):
         print "\n\nVisiting LiftingResult:", repr(o)
@@ -443,6 +440,25 @@ class QuadratureTransformerBase(Transformer):
         # Let child class create constant symbol
         coefficient = format["coefficient"](o.count(), component)
         return self._create_symbol(coefficient, CONST)
+
+    # -------------------------------------------------------------------------
+    # SpatialCoordinate (geometry.py).
+    # -------------------------------------------------------------------------
+    def spatial_coordinate(self, o, *operands):
+        #print "\n\nVisiting SpatialCoordinate:", repr(o)
+        #print "\n\nVisiting SpatialCoordinate:", repr(operands)
+
+        # Get the component.
+        components = self.component()
+
+        # Safety checks.
+        ffc_assert(not operands, "Didn't expect any operands for FacetNormal: " + repr(operands))
+        ffc_assert(len(components) == 1, " expects 1 component index: " + repr(components))
+
+        # Generate the appropriate coordinate.
+        coordinate = format["ip coordinates"](self.points, components[0])
+        self.using_coordinates = True
+        return self._create_symbol(coordinate, IP)
 
     # -------------------------------------------------------------------------
     # Indexed (indexed.py).

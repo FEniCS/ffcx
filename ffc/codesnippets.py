@@ -19,7 +19,7 @@ __all__ = ["comment_ufc", "comment_dolfin", "header_h", "header_c", "footer",
            "fiat_coordinate_map", "transform_snippet",
            "scale_factor", "combinations_snippet",
            "normal_direction",
-           "facet_normal"]
+           "facet_normal", "ip_coordinates"]
 
 comment_ufc = """\
 // This code conforms with the UFC specification version %(ufc_version)s
@@ -368,6 +368,26 @@ y[0] = w0*x[0][0] + w1*x[1][0] + w2*x[2][0] + w3*x[3][0];
 y[1] = w0*x[0][1] + w1*x[1][1] + w2*x[2][1] + w3*x[3][1];
 y[2] = w0*x[0][2] + w1*x[1][2] + w2*x[2][2] + w3*x[3][2];"""
 
+_ip_coordinates_1D = """\
+X%(num_ip)d[0] = %(name)s[%(ip)s][0]*x%(restriction)s[0][0] + \
+%(name)s[%(ip)s][1]*x%(restriction)s[1][0];"""
+
+_ip_coordinates_2D = """\
+X%(num_ip)d[0] = %(name)s[%(ip)s][0]*x%(restriction)s[0][0] + \
+%(name)s[%(ip)s][1]*x%(restriction)s[1][0] + %(name)s[%(ip)s][2]*x%(restriction)s[2][0];
+X%(num_ip)d[1] = %(name)s[%(ip)s][0]*x%(restriction)s[0][1] + \
+%(name)s[%(ip)s][1]*x%(restriction)s[1][1] + %(name)s[%(ip)s][2]*x%(restriction)s[2][1];"""
+
+_ip_coordinates_3D = """\
+X%(num_ip)d[0] = %(name)s[%(ip)s][0]*x%(restriction)s[0][0] + \
+%(name)s[%(ip)s][1]*x%(restriction)s[1][0] + %(name)s[%(ip)s][2]*x%(restriction)s[2][0] + \
+%(name)s[%(ip)s][3]*x%(restriction)s[3][0];
+X%(num_ip)d[1] = %(name)s[%(ip)s][0]*x%(restriction)s[0][1] + \
+%(name)s[%(ip)s][1]*x%(restriction)s[1][1] + %(name)s[%(ip)s][2]*x%(restriction)s[2][1] + \
+%(name)s[%(ip)s][3]*x%(restriction)s[3][1];
+X%(num_ip)d[2] = %(name)s[%(ip)s][0]*x%(restriction)s[0][2] + \
+%(name)s[%(ip)s][1]*x%(restriction)s[1][2] + %(name)s[%(ip)s][2]*x%(restriction)s[2][2] + \
+%(name)s[%(ip)s][3]*x%(restriction)s[3][2];"""
 
 # Codesnippets used in evaluatebasis[|derivatives]
 _map_coordinates_FIAT_interval = """\
@@ -427,4 +447,8 @@ normal_direction = {1: _normal_direction_1D,
 facet_normal = {1: _facet_normal_1D,
                 2: _facet_normal_2D,
                 3: _facet_normal_3D}
+
+ip_coordinates = {1: _ip_coordinates_1D,
+                  2: _ip_coordinates_2D,
+                  3: _ip_coordinates_3D}
 

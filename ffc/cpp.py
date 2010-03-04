@@ -98,6 +98,8 @@ format.update({
     "x coordinate":     "X",
     "y coordinate":     "Y",
     "z coordinate":     "Z",
+    "ip coordinates":   lambda i, j: "X%d[%d]" % (i, j),
+    "affine map table": lambda i, j: "FEA%d_f%d" % (i, j),
     "coordinates":      "x"
 })
 
@@ -194,6 +196,8 @@ format.update({
     "facet determinant":    lambda n, r=None: facet_determinant[n] % {"restriction": choose_map[r]},
     "fiat coordinate map":  lambda n: fiat_coordinate_map[n],
     "generate normal":      lambda d, i: _generate_normal(d, i),
+    "generate ip coordinates":  lambda g, num_ip, name, ip, r=None: ip_coordinates[g] % \
+                                {"restriction": choose_map[r], "ip": ip, "name": name, "num_ip": num_ip},
     "scale factor snippet": scale_factor,
     "map onto physical":    map_onto_physical,
     "combinations":         combinations_snippet,
