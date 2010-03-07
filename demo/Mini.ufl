@@ -10,7 +10,7 @@
 
 
 P1 = VectorElement("Lagrange", triangle, 1)
-B = VectorElement("Bubble", triangle, None)
+B = VectorElement("Bubble", triangle, 3)
 V = ElementUnion(P1, B)
 
 Q = FiniteElement("DG", triangle, 0)
@@ -19,7 +19,4 @@ Mini =  V + Q
 (v, q) = TestFunctions(Mini)
 (u, p) = TrialFunctions(Mini)
 
-f = Coefficient(P1)
-
 a = (inner(grad(v), grad(u)) - div(v)*p + q*div(u))*dx
-L = inner(v, f)*dx

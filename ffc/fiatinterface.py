@@ -61,6 +61,11 @@ def create_element(ufl_element):
         elements = _extract_elements(ufl_element)
         element = MixedElement(elements)
 
+    # Create element union (implemented by FFC)
+    elif isinstance(ufl_element, ufl.ElementUnion):
+        elements = _extract_elements(ufl_element)
+        element = ElementUnion(elements)
+
     # Create restricted element(implemented by FFC)
     elif isinstance(ufl_element, ufl.ElementRestriction):
         element = _create_restricted_element(ufl_element)
@@ -156,6 +161,11 @@ def _extract_elements(ufl_element, domain=None):
     if isinstance(ufl_element, ufl.MixedElement):
         for sub_element in ufl_element.sub_elements():
             elements += _extract_elements(sub_element, domain)
+        return elements
+
+    if isinstance(ufl_element, ufl.ElementUnion):
+        for e in ufl_element._elements:
+            elements += _extract_elements(e)
         return elements
 
     # Handle restricted elements since they might be mixed elements too.

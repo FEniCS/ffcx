@@ -32,6 +32,7 @@ from ffc.utils import compute_permutations, product
 from ffc.log import info, error, begin, end, debug_ir, ffc_assert, warning
 from ffc.fiatinterface import create_element, entities_per_dim, reference_cell
 from ffc.mixedelement import MixedElement
+from ffc.elementunion import ElementUnion
 from ffc.quadratureelement import QuadratureElement
 from ffc.cpp import set_float_formatting
 
@@ -199,8 +200,9 @@ def _compute_form_ir(form, form_id, element_map):
 def _evaluate_basis(element, cell):
     "Compute intermediate representation for evaluate_basis."
 
-    # Create data for each sub-element of a mixed element
-    if isinstance(element, MixedElement):
+    # Create data for each sub-element of a mixed element or
+    # ElementUnion
+    if isinstance(element, (MixedElement, ElementUnion)):
         return [_evaluate_basis(e, cell)[0] for e in element.elements()]
 
     # Handle QuadratureElement, not supported because the basis is only defined
