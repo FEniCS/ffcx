@@ -266,20 +266,34 @@ def _value_size(element):
     else:
         return product(shape)
 
+def _generate_offsets(element, offset=0):
+
+    "Generate offsets: i.e value offset for each basis function."
+
+    offsets = []
+
+    if isinstance(element, MixedElement):
+        for e in element.elements():
+            offsets += _generate_offsets(e, offset)
+            offset += _value_size(e)
+
+    elif isinstance(element, ElementUnion):
+        for e in element.elements():
+            offsets += _generate_offsets(e, offset)
+
+    else:
+        offsets = [offset]*element.space_dimension()
+
+    return offsets
+
 def _evaluate_dof(element, cell):
     "Compute intermediate representation of evaluate_dof."
 
-    # Generate offsets: i.e value offset for each basis function
-    offsets = []
-    offset = 0
-    for e in all_elements(element):
-        offsets += [offset]*e.space_dimension()
-        offset += _value_size(e) # AL: change here, is that correct?
     return {"mappings": element.mapping(),
             "value_size": _value_size(element),
             "cell_dimension": cell.geometric_dimension(),
             "dofs": [L.pt_dict for L in element.dual_basis()],
-            "offsets": offsets}
+            "offsets": _generate_offsets(element)}
 
 def _tabulate_coordinates(element):
     "Compute intermediate representation of tabulate_coordinates."
@@ -377,10 +391,11 @@ def _create_foo_integral(domain_type, form_data):
 # FIXME: KBO: This could go somewhere else, like in UFL?
 # Also look at function naming, use single '_' for utility functions.
 def all_elements(element):
-    try:
+
+    if isinstance(element, MixedElement):
         return element.elements()
-    except:
-        return [element]
+
+    return [element]
 
 def _num_dofs_per_entity(element):
     """
