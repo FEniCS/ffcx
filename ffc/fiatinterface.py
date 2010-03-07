@@ -5,7 +5,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Garth N. Wells, 2009.
 # Modified by Marie Rognes, 2009-2010.
-# Last changed: 2010-02-01
+# Last changed: 2010-03-07
 
 # Python modules
 from numpy import array
@@ -20,6 +20,7 @@ from ffc.quadratureelement import QuadratureElement as FFCQuadratureElement
 
 from ffc.mixedelement import MixedElement
 from ffc.restrictedelement import RestrictedElement
+from ffc.elementunion import ElementUnion
 
 # Cache for computed elements
 _cache = {}
@@ -82,13 +83,20 @@ def _create_fiat_element(ufl_element):
     if family == "Quadrature":
         return FFCQuadratureElement(ufl_element)
 
+    cell = reference_cell(ufl_element.cell().domain())
+
+    # Handle Bubble element as ElementRestriction of P_{dim+1}
+    if family == "Bubble":
+        dim = ufl_element.cell().geometric_dimension()
+        V = FIAT.element_classes["Lagrange"](cell, dim + 1)
+        return RestrictedElement(V, [V.space_dimension() - 1], None)
+
     # Check if finite element family is supported by FIAT
-    elif not family in FIAT.element_classes:
+    if not family in FIAT.element_classes:
         error("Sorry, finite element of type \"%s\" are not supported by FIAT.", family)
 
     # Create FIAT finite element
     ElementClass = FIAT.element_classes[family]
-    cell = reference_cell(ufl_element.cell().domain())
     element = ElementClass(cell, ufl_element.degree())
 
     return element
