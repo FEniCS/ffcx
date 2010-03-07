@@ -1,0 +1,25 @@
+# Copyright (C) 2010 Marie E. Rognes
+# Licensed under the GNU GPL version 3 or any later version
+#
+# Illustration of ElementUnion: The bilinear form a(v, u) for the
+# Stokes equations using a mixed formulation involving the Mini
+# element. The velocity element is composed of a P1 element augmented
+# by the cubic bubble function.
+
+# Compile this form with FFC: ffc Mini.ufl
+
+
+P1 = VectorElement("Lagrange", triangle, 1)
+B = VectorElement("Bubble", triangle, None)
+V = ElementUnion(P1, B)
+
+Q = FiniteElement("DG", triangle, 0)
+Mini =  V + Q
+
+(v, q) = TestFunctions(Mini)
+(u, p) = TrialFunctions(Mini)
+
+f = Coefficient(P1)
+
+a = (inner(grad(v), grad(u)) - div(v)*p + q*div(u))*dx
+L = inner(v, f)*dx
