@@ -1,3 +1,5 @@
+ - Added support for ElementUnion (i.e. span of combinations of elements)
+ - Added support for Bubble elements
  - Added support for UFL.SpatialCoordinate.
 0.9.2 [2010-02-17]
  - Bug fix in removal of unused variables in Piola-mapped terms for tensor representation
