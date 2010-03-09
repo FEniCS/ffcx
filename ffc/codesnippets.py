@@ -448,7 +448,7 @@ facet_normal = {1: _facet_normal_1D,
                 2: _facet_normal_2D,
                 3: _facet_normal_3D}
 
-ip_coordinates = {1: _ip_coordinates_1D,
-                  2: _ip_coordinates_2D,
-                  3: _ip_coordinates_3D}
+ip_coordinates = {1: (3, _ip_coordinates_1D),
+                  2: (10, _ip_coordinates_2D),
+                  3: (21, _ip_coordinates_3D)}
 

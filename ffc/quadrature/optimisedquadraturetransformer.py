@@ -37,10 +37,10 @@ from ffc.quadrature.symbolics import create_float, create_symbol, create_product
 class QuadratureTransformerOpt(QuadratureTransformerBase):
     "Transform UFL representation to quadrature code."
 
-    def __init__(self, ir, optimise_parameters):
+    def __init__(self, *args):
 
         # Initialise base class.
-        QuadratureTransformerBase.__init__(self, ir, optimise_parameters)
+        QuadratureTransformerBase.__init__(self, *args)
 #        set_format(format)
 
     # -------------------------------------------------------------------------
@@ -391,15 +391,4 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         used_psi_tables = set([self.psi_tables_map[b] for b in value.get_unique_vars(BASIS)])
 
         return [value, ops, trans_set, used_points, used_psi_tables]
-
-#        value = optimise_code(value, self.ip_consts, self.geo_consts, self.trans_set)
-
-        # Check if value is zero
-#        if not value.val:
-#            zero = True
-#        # Update the set of used psi tables through the name map if the value is not zero.
-#        else:
-#            self.used_psi_tables.update([self.psi_tables_map[b] for b in value.get_unique_vars(BASIS)])
-
-#        return value
 

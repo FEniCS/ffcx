@@ -16,7 +16,6 @@ from ufl.algorithms.printing import tree_format
 ## FFC modules.
 from ffc.log import info, debug, ffc_assert
 from ffc.cpp import format, remove_unused
-from ffc.fiatinterface import map_facet_points
 
 # Utility and optimisation functions for quadraturegenerator.
 from symbolics import generate_aux_constants
@@ -57,7 +56,6 @@ def _tabulate_tensor(ir, parameters):
     prim_idims  = ir["prim_idims"]
     integrals   = ir["trans_integrals"]
     geo_consts  = ir["geo_consts"]
-    use_coords  = ir["using coordinates"]
 
     # Create sets of used variables.
     used_weights    = set()
@@ -73,17 +71,17 @@ def _tabulate_tensor(ir, parameters):
     if domain_type == "cell":
         # Update treansformer with facets and generate code + set of used geometry terms.
         tensor_code, mem_code, num_ops = _generate_element_tensor(integrals, sets, \
-                                         opt_par, use_coords, geo_dim, domain_type, 0)
+                                         opt_par)
         tensor_code = "\n".join(tensor_code)
 
         # Set operations equal to num_ops (for printing info on operations).
         operations.append(num_ops)
 
-        # Generate tables for affine map of coordinates.
-        if use_coords:
-            a_tables, used_tables = _generate_affine_maps(quadrature_weights, None)
-            affine_tables.update(a_tables)
-            used_psi_tables.update(used_tables)
+#        # Generate tables for affine map of coordinates.
+#        if use_coords:
+#            a_tables, used_tables = _generate_affine_maps(quadrature_weights, None)
+#            affine_tables.update(a_tables)
+#            used_psi_tables.update(used_tables)
 
         # Get Jacobian snippet.
         # FIXME: This will most likely have to change if we support e.g., 2D elements in 3D space.
@@ -94,7 +92,7 @@ def _tabulate_tensor(ir, parameters):
         cases = [None for i in range(num_facets)]
         for i in range(num_facets):
             # Update treansformer with facets and generate case code + set of used geometry terms.
-            c, mem_code, ops = _generate_element_tensor(integrals[i], sets, opt_par, use_coords, geo_dim, domain_type, i)
+            c, mem_code, ops = _generate_element_tensor(integrals[i], sets, opt_par)
             case = [f_comment("Total number of operations to compute element tensor (from this point): %d" % ops)]
             case += c
             cases[i] = "\n".join(case)
@@ -102,11 +100,11 @@ def _tabulate_tensor(ir, parameters):
             # Save number of operations (for printing info on operations).
             operations.append((i, ops))
 
-            # Generate tables for affine map of coordinates.
-            if use_coords:
-                a_tables, used_tables = _generate_affine_maps(quadrature_weights, i)
-                affine_tables.update(a_tables)
-                used_psi_tables.update(used_tables)
+#            # Generate tables for affine map of coordinates.
+#            if use_coords:
+#                a_tables, used_tables = _generate_affine_maps(quadrature_weights, i)
+#                affine_tables.update(a_tables)
+#                used_psi_tables.update(used_tables)
 
         # Generate tensor code for all cases using a switch.
         tensor_code = f_switch(f_facet(None), cases)
@@ -126,7 +124,7 @@ def _tabulate_tensor(ir, parameters):
             for j in range(num_facets):
                 # Update treansformer with facets and generate case code + set of used geometry terms.
                 c, mem_code, ops = _generate_element_tensor(integrals[i][j], sets, \
-                                                            opt_par, use_coords, geo_dim, domain_type, i)
+                                                            opt_par)
                 case = [f_comment("Total number of operations to compute element tensor (from this point): %d" % ops)]
                 case += c
                 cases[i][j] = "\n".join(case)
@@ -134,11 +132,11 @@ def _tabulate_tensor(ir, parameters):
                 # Save number of operations (for printing info on operations).
                 operations.append((i, j, ops))
 
-            # Generate tables for affine map of coordinates.
-            if use_coords:
-                a_tables, used_tables = _generate_affine_maps(quadrature_weights, i)
-                affine_tables.update(a_tables)
-                used_psi_tables.update(used_tables)
+#            # Generate tables for affine map of coordinates.
+#            if use_coords:
+#                a_tables, used_tables = _generate_affine_maps(quadrature_weights, i)
+#                affine_tables.update(a_tables)
+#                used_psi_tables.update(used_tables)
 
         # Generate tensor code for all cases using a switch.
         tensor_code = f_switch(f_facet("+"), [f_switch(f_facet("-"), cases[i]) for i in range(len(cases))])
@@ -190,7 +188,7 @@ def _tabulate_tensor(ir, parameters):
         info(message[domain_type] % ops)
     return "\n".join(common) + "\n" + tensor_code
 
-def _generate_element_tensor(integrals, sets, optimise_parameters, use_coords, geo_dim, domain_type, facet):
+def _generate_element_tensor(integrals, sets, optimise_parameters):
     "Construct quadrature code for element tensors."
 
     # Prefetch formats to speed up code generation.
@@ -202,7 +200,6 @@ def _generate_element_tensor(integrals, sets, optimise_parameters, use_coords, g
     f_double  = format["float declaration"]
     f_decl    = format["declaration"]
     f_X       = format["ip coordinates"]
-    f_FEA     = format["affine map table"]
 
 
     # Initialise return values.
@@ -217,7 +214,7 @@ def _generate_element_tensor(integrals, sets, optimise_parameters, use_coords, g
     members_code = ""
     # We receive a dictionary {num_points: form,}.
     # Loop points and forms.
-    for points, terms, functions, ip_consts in integrals:
+    for points, terms, functions, ip_consts, coordinate in integrals:
 
         element_code += ["", f_comment("Loop quadrature points for integral.")]
 
@@ -225,18 +222,16 @@ def _generate_element_tensor(integrals, sets, optimise_parameters, use_coords, g
         num_ops = 0
 
         # Generate code to compute coordinates if used.
-        if use_coords:
+        if coordinate:
+            name, geo_dim, ip, r = coordinate
             element_code += ["", f_comment("Declare array to hold physical coordinate of quadrature point.")]
             element_code += [f_decl(f_double, f_X(points, geo_dim))]
-
-            ip_code += ["", f_comment("Compute physical coordinate of quadrature point.")]
-            ip = 1
-            r = None
-            if points > 1:
-                ip = f_ip
-            if domain_type == "interior_facet":
-                r = "+"
-            ip_code += [f_coords(geo_dim, points, f_FEA(points, facet), ip, r)]
+            ops, coord_code = f_coords(geo_dim, points, name, ip, r)
+            ip_code += ["", f_comment("Compute physical coordinate of quadrature point, operations: %d." % ops)]
+            ip_code += [coord_code]
+            num_ops += ops
+            # Update used psi tables.
+            sets[1].add(name)
 
         # Generate code to compute function values.
         if functions:
@@ -596,30 +591,4 @@ def _tabulate_psis(tables, used_psi_tables, inv_name_map, used_nzcs, optimise_pa
                         # Remove from list of columns.
                         new_nzcs.remove(inv_name_map[n][1])
     return code
-
-def _generate_affine_maps(weights, facet):
-    "Generate psi tables for affine maps."
-
-    # TODO: KBO: Perhaps it is better to create a fiat element and tabulate
-    # the values at the integration points?
-    f_FEA = format["affine map table"]
-    used_weights = set()
-    tables = {}
-
-    affine_map = {1: lambda x: [1.0 - x[0],               x[0]],
-                  2: lambda x: [1.0 - x[0] - x[1],        x[0], x[1]],
-                  3: lambda x: [1.0 - x[0] - x[1] - x[2], x[0], x[1], x[2]]}
-
-    for num_ip, (w, points) in weights.items():
-        vals = []
-        if not facet is None:
-            points = map_facet_points(points, facet)
-            name = f_FEA(num_ip, facet)
-        else:
-            name = f_FEA(num_ip, 0)
-        for p in points:
-            vals.append(affine_map[len(p)](p))
-        used_weights.add(name)
-        tables[name] = numpy.array(vals)
-    return tables, used_weights
 

@@ -34,7 +34,7 @@ def optimize_integral_ir(ir):
     return ir
 
 def _optimise_integral(integral, geo_consts):
-    for points, terms, functions, ip_consts in integral:
+    for points, terms, functions, ip_consts, coordinate in integral:
         new_terms = {}
         for key, data in terms.iteritems():
             val, ops, t_set, u_weights, u_psi_tables, u_nzcs = data

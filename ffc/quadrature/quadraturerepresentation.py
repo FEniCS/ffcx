@@ -69,9 +69,11 @@ def compute_integral_ir(domain_type, domain_id, integrals, metadata, form_data, 
 
     # Create transformer.
     if optimise_parameters["simplify expressions"]:
-        transformer = QuadratureTransformerOpt(psi_tables, optimise_parameters)
+        transformer = QuadratureTransformerOpt(psi_tables, quad_weights, \
+            form_data.geometric_dimension, optimise_parameters)
     else:
-        transformer = QuadratureTransformer(psi_tables, optimise_parameters)
+        transformer = QuadratureTransformer(psi_tables, quad_weights,\
+            form_data.geometric_dimension, optimise_parameters)
 
     # Add tables for weights, name_map and basis values.
     ir["quadrature_weights"]  = quad_weights
@@ -103,8 +105,6 @@ def compute_integral_ir(domain_type, domain_id, integrals, metadata, form_data, 
         ir["trans_integrals"] = terms
     else:
         error("Unhandled domain type: " + str(domain_type))
-
-    ir["using coordinates"] = transformer.using_coordinates
 
     return ir
 
@@ -259,6 +259,7 @@ def _transform_integrals(transformer, integrals, domain_type):
         if domain_type == "interior_facet":
             integrand = propagate_restrictions(integrand)
         terms = transformer.generate_terms(integrand)
-        transformed_integrals.append((point, terms, transformer.functions, {}))
+        transformed_integrals.append((point, terms, transformer.functions, \
+                                      {}, transformer.coordinate))
     return transformed_integrals
 

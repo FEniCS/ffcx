@@ -10,7 +10,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Python modules.
 from itertools import izip
 import time
-from numpy import shape
+from numpy import shape, array
 
 # UFL Classes.
 from ufl.classes import MultiIndex, FixedIndex, Index
@@ -21,7 +21,7 @@ from ufl.algorithms import propagate_restrictions, Transformer, tree_format, str
 
 # FFC modules.
 from ffc.log import ffc_assert, error, info
-from ffc.fiatinterface import create_element
+from ffc.fiatinterface import create_element, map_facet_points
 from ffc.mixedelement import MixedElement
 from ffc.cpp import format
 
@@ -37,7 +37,7 @@ class QuadratureTransformerBase(Transformer):
 #class QuadratureTransformerBase(ReuseTransformer):
     "Transform UFL representation to quadrature code."
 
-    def __init__(self, psi_tables, optimise_parameters):
+    def __init__(self, psi_tables, quad_weights, geo_dim, optimise_parameters):
 
         Transformer.__init__(self)
 
@@ -48,18 +48,18 @@ class QuadratureTransformerBase(Transformer):
         self.used_psi_tables = set()
         self.psi_tables_map = {}
         self.used_weights = set()
+        self.quad_weights = quad_weights
         self.used_nzcs = set()
-        self.geo_consts = {}
         self.ip_consts = {}
         self.trans_set = set()
         self.functions = {}
         self.function_count = 0
-        self.geo_dim = 0
+        self.geo_dim = geo_dim
         self.points = 0
         self.facet0 = None
         self.facet1 = None
         self.restriction = None
-        self.using_coordinates = False
+        self.coordinate = None
 
         # Stacks.
         self._derivatives = []
@@ -75,6 +75,7 @@ class QuadratureTransformerBase(Transformer):
     def update_facets(self, facet0, facet1):
         self.facet0 = facet0
         self.facet1 = facet1
+        self.coordinate = None
 #        # Reset functions and count everytime we generate a new case of facets.
 #        self.functions = {}
 #        self.function_count = 0
@@ -85,6 +86,7 @@ class QuadratureTransformerBase(Transformer):
 
     def update_points(self, points):
         self.points = points
+        self.coordinate = None
         # Reset functions everytime we move to a new quadrature loop
         self.functions = {}
         self.function_count = 0
@@ -101,7 +103,6 @@ class QuadratureTransformerBase(Transformer):
         print "\nQuadratureTransformer, used_psi_tables:\n", self.used_psi_tables
         print "\nQuadratureTransformer, psi_tables_map:\n", self.psi_tables_map
         print "\nQuadratureTransformer, used_weights:\n", self.used_weights
-        print "\nQuadratureTransformer, geo_consts:\n", self.geo_consts
 
     def component(self):
         "Return current component tuple."
@@ -455,9 +456,10 @@ class QuadratureTransformerBase(Transformer):
         ffc_assert(not operands, "Didn't expect any operands for FacetNormal: " + repr(operands))
         ffc_assert(len(components) == 1, " expects 1 component index: " + repr(components))
 
-        # Generate the appropriate coordinate.
+        # Generate the appropriate coordinate and update tables.
         coordinate = format["ip coordinates"](self.points, components[0])
-        self.using_coordinates = True
+        self._generate_affine_map()
+
         return self._create_symbol(coordinate, IP)
 
     # -------------------------------------------------------------------------
@@ -712,18 +714,8 @@ class QuadratureTransformerBase(Transformer):
         if component:
             local_offset = component - local_comp
 
-        # Set geo_dim.
-        # TODO: All terms REALLY have to be defined on cell with the same
-        # geometrical dimension so only do this once and exclude the check?
-        geo_dim = ufl_function.element().cell().geometric_dimension()
-        if self.geo_dim:
-            ffc_assert(geo_dim == self.geo_dim, \
-                       "All terms must be defined on cells with the same geometrical dimension.")
-        else:
-            self.geo_dim = geo_dim
-
         # Generate FFC multi index for derivatives.
-        multiindices = FFCMultiIndex([range(geo_dim)]*len(derivatives)).indices
+        multiindices = FFCMultiIndex([range(self.geo_dim)]*len(derivatives)).indices
 
         return (component, local_comp, local_offset, ffc_element, quad_element, transformation, multiindices)
 
@@ -924,6 +916,41 @@ class QuadratureTransformerBase(Transformer):
                 # Check just to make sure.
                 ffc_assert(data[1] == loop_index_range, "Index ranges does not match." + repr(data[1]) + repr(loop_index_range))
         return function_name
+
+    def _generate_affine_map(self):
+        """Generate psi table for affine map, used by spatial coordinate to map
+        integration point to physical element."""
+
+        # TODO: KBO: Perhaps it is better to create a fiat element and tabulate
+        # the values at the integration points?
+        f_FEA = format["affine map table"]
+        f_ip  = format["integration points"]
+
+        affine_map = {1: lambda x: [1.0 - x[0],               x[0]],
+                      2: lambda x: [1.0 - x[0] - x[1],        x[0], x[1]],
+                      3: lambda x: [1.0 - x[0] - x[1] - x[2], x[0], x[1], x[2]]}
+
+        num_ip = self.points
+        w, points = self.quad_weights[num_ip]
+        if not self.facet0 is None:
+            points = map_facet_points(points, self.facet0)
+            name = f_FEA(num_ip, self.facet0)
+        else:
+            name = f_FEA(num_ip, 0)
+
+        if name not in self.unique_tables:
+            vals = []
+            for p in points:
+                vals.append(affine_map[len(p)](p))
+            self.unique_tables[name] = array(vals)
+        if self.coordinate is None:
+            ip = 1
+            r = None
+            if num_ip > 1:
+                ip = f_ip
+            if self.facet1 is not None:
+                r = "+"
+            self.coordinate = [name, self.geo_dim, ip, r]
 
     # -------------------------------------------------------------------------
     # Helper functions for code_generation()
