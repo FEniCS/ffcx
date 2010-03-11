@@ -50,45 +50,54 @@ OPTIONS
               one of 'tensor' (default) or 'quadrature' (experimental).
 
        -f option
-              Specify  code generation options. The list of options available
-              depends on the specified language (format). Current options
-              include -fprecision=n, -fquadrature_points=n,
-              -fsplit, -fblas and -fno-foo, described in detail
-              below.
+              Specify code generation options. The list of options available
+              depends on the specified  language  (format). Current  options  
+              include  -fblas, -fno-foo, -fprecision=n,
+              -fprecompute_basis_const, -fprecompute_ip_const,
+              -fquadrature_degree=n and, -fsplit, described in detail below.
+
+       -f blas
+              Generate code that uses BLAS to compute tensor products.
+              This option is currently ignored, but can be  used to reduce the
+              code size when the BLAS option is (re-)implemented in future
+              versions.
+
+       -f no-foo
+              Don't  generate code for UFC function with name 'foo'. Typical
+              options include -fno-evaluate_basis and
+              -fno-evaluate_basis_derivatives to reduce the size of the
+              generated code when these functions are not needed.
 
        -f precision=n
               Set the number of significant digits to n in the generated code.
               The default value of n is 15.
 
-       -f quadrature_order=n
-              Will generate a quadrature rule accurate up to order n regardless
-              of the polynomial order of the form. This option is only valid
-              for UFL forms and the specified order will apply to ALL terms of
-              the given form for which no order has been specified through
-              metadata! As default FFC will determine the order automatically
-              from the form.
+       -f precompute_basis_const
+              Additional optimisation option for quadrature representation.
+              This option is ignored if optimisation is  not used 
+              (see  -O  option),  and it also implies the precompute_ip_const
+              option. This option will generate code that precompute terms
+              which are constant in the loops involving basis indices. This can
+              result in  a  reduction  of  the operation count and thereby
+              improve the runtime efficiency of the generated code. However,
+              the improvements depends on the GCC compiler options as well as
+              the characteristics of the variational form.
 
-       -f quadrature_points=n
-              Will generate n quadrature points in each spatial direction
-              regardless of the polynomial order of the form. This option is
-              only valid for the standard FFC forms i.e., *.form files, not
-              UFL forms. The specified number of points will apply to ALL terms
-              of the given form! As default FFC will determine the number of
-              quadrature points needed for exact representation of the form.
+       -f precompute_ip_const
+              Like the precompute_basis_const option with the only difference
+              that code will be generated to compute terms which are constant
+              in the loops involving the integration points only.
+
+       -f quadrature_degree=n
+              Will  generate  a  quadrature  rule accurate up to degree n
+              regardless of the polynomial degree of the form. This option is
+              only valid for UFL forms and the specified degree will apply to
+              ALL terms of the  given  form for  which no degree has been
+              specified through metadata! As default FFC will determine the
+              degree automatically from the form.
 
        -f split
               Generate separate files for declarations and the implementation.
-
-       -f blas
-              Generate  code that uses BLAS to compute tensor products.  This
-              option is currently ignored, but can be used to reduce the code
-              size when the BLAS option is (re-)implemented in future versions.
-
-       -f no-foo
-              Don't generate code for UFC function with name 'foo'. Typical
-              options   include   -fno-evaluate_basis   and  -fno-evaluate_ba-
-              sis_derivatives to reduce the size  of  the generated code when
-              these functions are not needed.
 
        -O, --optimize
               Generate optimized code with a lower operation  count compared to
