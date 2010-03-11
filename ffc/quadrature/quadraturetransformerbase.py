@@ -5,7 +5,7 @@ __date__ = "2009-10-13"
 __copyright__ = "Copyright (C) 2009-2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-02-08
+# Last changed: 2010-03-11
 
 # Python modules.
 from itertools import izip
@@ -275,7 +275,7 @@ class QuadratureTransformerBase(Transformer):
         # Check if basis is already in cache
         basis = self.argument_cache.get((o, components, derivatives, self.restriction), None)
         # FIXME: Why does using a code dict from cache make the expression manipulations blow (MemoryError) up later?
-        if basis is not None and not self.optimise_parameters["simplify expressions"]:
+        if basis is not None and not self.optimise_parameters["optimisation"]:
 #        if basis is not None:
             return basis
 
@@ -362,7 +362,7 @@ class QuadratureTransformerBase(Transformer):
         # Check if function is already in cache
         function_code = self.function_cache.get((o, components, derivatives, self.restriction), None)
         # FIXME: Why does using a code dict from cache make the expression manipulations blow (MemoryError) up later?
-        if function_code is not None and not self.optimise_parameters["simplify expressions"]:
+        if function_code is not None and not self.optimise_parameters["optimisation"]:
 #        if function_code is not None:
             return function_code
 
@@ -646,19 +646,81 @@ class QuadratureTransformerBase(Transformer):
 
         f_nzc = format["nonzero columns"](0).split("0")[0]
 
-        # Loop code and add weight and scale factor.
+        # Loop code and add weight and scale factor to value and sort after
+        # loop ranges.
         new_terms = {}
         for key, val in terms.items():
             # If value was zero continue.
             if val is None:
                 continue
-
-            # Create data and insert.
-            data = self._create_entry_data(val)
+            # Create data.
+            value, ops, sets = self._create_entry_data(val)
+            # Extract nzc columns if any and add to sets.
             used_nzcs = set([int(k[1].split(f_nzc)[1].split("[")[0]) for k in key if f_nzc in k[1]])
-            data.append(used_nzcs)
-            new_terms[key] = data
+            sets.append(used_nzcs)
+
+            # Create loop information and entry from key info and insert into dict.
+            loop, entry = self._create_loop_entry(key)
+            if not loop in new_terms:
+                sets.append({})
+                new_terms[loop] = [sets, [(entry, value, ops)]]
+            else:
+                for i, s in enumerate(sets):
+                    new_terms[loop][0][i].update(s)
+                new_terms[loop][1].append((entry, value, ops))
         return new_terms
+
+    def _create_loop_entry(self, key):
+
+        # TODO: Verify that test and trial functions will ALWAYS be rearranged to 0 and 1.
+        indices = {-2: format["first free index"], -1: format["second free index"],
+                    0: format["first free index"],  1: format["second free index"]}
+
+        # Create appropriate entries.
+        # FIXME: We only support rank 0, 1 and 2.
+        entry = ""
+        loop = ()
+        if len(key) == 0:
+            entry = "0"
+        elif len(key) == 1:
+            key = key[0]
+            # Checking if the basis was a test function.
+            # TODO: Make sure test function indices are always rearranged to 0.
+            ffc_assert(key[0] == -2 or key[0] == 0, \
+                        "Linear forms must be defined using test functions only: " + repr(key))
+            index_j, entry, range_j, space_dim_j = key
+            loop = ((indices[index_j], 0, range_j),)
+            if range_j == 1 and self.optimise_parameters["ignore ones"]:
+                loop = ()
+        elif len(key) == 2:
+            # Extract test and trial loops in correct order and check if for is legal.
+            key0, key1 = (0, 0)
+            for k in key:
+                ffc_assert(k[0] in indices, \
+                "Bilinear forms must be defined using test and trial functions (index -2, -1, 0, 1): " + repr(k))
+                if k[0] == -2 or k[0] == 0:
+                    key0 = k
+                else:
+                    key1 = k
+            index_j, entry_j, range_j, space_dim_j = key0
+            index_k, entry_k, range_k, space_dim_k = key1
+
+            loop = []
+            if not (range_j == 1 and self.optimise_parameters["ignore ones"]):
+                loop.append((indices[index_j], 0, range_j))
+            if not (range_k == 1 and self.optimise_parameters["ignore ones"]):
+                loop.append((indices[index_k], 0, range_k))
+            entry = format["add"]([format["mul"]([entry_j, str(space_dim_k)]), entry_k])
+            loop = tuple(loop)
+        else:
+            error("Only rank 0, 1 and 2 tensors are currently supported: " + repr(key))
+        # Generate the code line for the entry.
+        # Try to evaluate entry ("3*6 + 2" --> "20").
+        try:
+            entry = str(eval(entry))
+        except:
+            pass
+        return loop, entry
 
     # -------------------------------------------------------------------------
     # Helper functions for transformation of UFL objects in base class

@@ -5,7 +5,7 @@ __date__ = "2010-01-06"
 __copyright__ = "Copyright (C) 2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-02-01
+# Last changed: 2010-03-11
 
 # Pyhton modules
 import unittest
@@ -278,7 +278,7 @@ class TestMixedSymbols(unittest.TestCase):
         self.assertEqual(str(mff3), '(x/y)/((x/y)/(x/%s))' % f_3)
 
         # Use p1 as a base expression for Symbol
-        s3 = Symbol(format["cos"](p1), CONST, p1, 1)
+        s3 = Symbol(format["cos"], CONST, p1, 1)
         self.assertEqual(str(s3), 'std::cos(%s*x*y)' % f_3)
         self.assertEqual(s3.ops(), 3)
 

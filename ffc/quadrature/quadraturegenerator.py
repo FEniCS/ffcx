@@ -5,7 +5,7 @@ __date__ = "2009-01-07"
 __copyright__ = "Copyright (C) 2009-2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-02-11
+# Last changed: 2010-03-11
 
 # Python modules.
 import numpy
@@ -38,7 +38,7 @@ def _tabulate_tensor(ir, parameters):
 
     f_comment       = format["comment"]
     f_G             = format["geometry constant"]
-    f_const_double  = format["const float declaration"]
+    f_const_double  = format["assign"]
     f_switch        = format["switch"]
     f_float         = format["float"]
     f_assign        = format["assign"]
@@ -75,13 +75,7 @@ def _tabulate_tensor(ir, parameters):
         tensor_code = "\n".join(tensor_code)
 
         # Set operations equal to num_ops (for printing info on operations).
-        operations.append(num_ops)
-
-#        # Generate tables for affine map of coordinates.
-#        if use_coords:
-#            a_tables, used_tables = _generate_affine_maps(quadrature_weights, None)
-#            affine_tables.update(a_tables)
-#            used_psi_tables.update(used_tables)
+        operations.append([num_ops])
 
         # Get Jacobian snippet.
         # FIXME: This will most likely have to change if we support e.g., 2D elements in 3D space.
@@ -98,13 +92,7 @@ def _tabulate_tensor(ir, parameters):
             cases[i] = "\n".join(case)
 
             # Save number of operations (for printing info on operations).
-            operations.append((i, ops))
-
-#            # Generate tables for affine map of coordinates.
-#            if use_coords:
-#                a_tables, used_tables = _generate_affine_maps(quadrature_weights, i)
-#                affine_tables.update(a_tables)
-#                used_psi_tables.update(used_tables)
+            operations.append([i, ops])
 
         # Generate tensor code for all cases using a switch.
         tensor_code = f_switch(f_facet(None), cases)
@@ -130,13 +118,7 @@ def _tabulate_tensor(ir, parameters):
                 cases[i][j] = "\n".join(case)
 
                 # Save number of operations (for printing info on operations).
-                operations.append((i, j, ops))
-
-#            # Generate tables for affine map of coordinates.
-#            if use_coords:
-#                a_tables, used_tables = _generate_affine_maps(quadrature_weights, i)
-#                affine_tables.update(a_tables)
-#                used_psi_tables.update(used_tables)
+                operations.append([i, j, ops])
 
         # Generate tensor code for all cases using a switch.
         tensor_code = f_switch(f_facet("+"), [f_switch(f_facet("-"), cases[i]) for i in range(len(cases))])
@@ -174,6 +156,8 @@ def _tabulate_tensor(ir, parameters):
     # Create the constant geometry declarations (only generated if simplify expressions are enabled).
     geo_ops, geo_code = generate_aux_constants(geo_consts, f_G, f_const_double)
     if geo_code:
+        common += [f_comment("Number of operations to compute geometry constants: %d." % geo_ops)]
+        common += [format["declaration"](format["float declaration"], f_G(len(geo_consts)))]
         common += geo_code
 
     # Add comments.
@@ -185,7 +169,9 @@ def _tabulate_tensor(ir, parameters):
                "exterior_facet": "Exterior facet %d, number of operations to compute tensor: %d",
                "interior_facet": "Interior facets (%d, %d), number of operations to compute tensor: %d"}
     for ops in operations:
-        info(message[domain_type] % ops)
+        # Add geo ops count to integral ops count for writing info.
+        ops[-1] += geo_ops
+        info(message[domain_type] % tuple(ops))
     return "\n".join(common) + "\n" + tensor_code
 
 def _generate_element_tensor(integrals, sets, optimise_parameters):
@@ -194,7 +180,7 @@ def _generate_element_tensor(integrals, sets, optimise_parameters):
     # Prefetch formats to speed up code generation.
     f_comment = format["comment"]
     f_ip      = format["integration points"]
-    f_Gip     = format["geometry constant"] + format["integration points"]
+    f_I       = format["ip constant"]
     f_loop    = format["generate loop"]
     f_coords  = format["generate ip coordinates"]
     f_double  = format["float declaration"]
@@ -240,11 +226,14 @@ def _generate_element_tensor(integrals, sets, optimise_parameters):
             num_ops += ops
 
         # Generate code for ip constant declarations.
-        ip_const_ops, ip_const_code = generate_aux_constants(ip_consts, f_Gip,\
-                                        format["const float declaration"], True)
+#        ip_const_ops, ip_const_code = generate_aux_constants(ip_consts, f_I,\
+#                                        format["const float declaration"], True)
+        ip_const_ops, ip_const_code = generate_aux_constants(ip_consts, f_I,\
+                                        format["assign"], True)
         num_ops += ip_const_ops
         if ip_const_code:
             ip_code += ["", f_comment("Number of operations to compute ip constants: %d" %ip_const_ops)]
+            ip_code += [format["declaration"](format["float declaration"], f_I(len(ip_consts)))]
             ip_code += ip_const_code
 
         # Generate code to evaluate the element tensor.
@@ -275,7 +264,6 @@ def _generate_functions(functions, sets):
     f_decl         = format["declaration"]
     f_r            = format["free indices"][0]
     f_iadd         = format["iadd"]
-#    f_nzc          = format["nonzero columns"](0).split("0")[0]
     f_loop         = format["generate loop"]
 
     # Create the function declarations.
@@ -340,6 +328,7 @@ def _generate_integral_code(points, terms, sets, optimise_parameters):
     f_add           = format["add"]
     f_A             = format["element tensor"]
     f_loop          = format["generate loop"]
+    f_B             = format["basis constant"]
 
     # Initialise return values.
     code = []
@@ -349,16 +338,11 @@ def _generate_integral_code(points, terms, sets, optimise_parameters):
     # Extract sets.
     used_weights, used_psi_tables, used_nzcs, trans_set = sets
 
-
-    # TODO: Verify that test and trial functions will ALWAYS be rearranged to 0 and 1.
-    indices = {-2: format["first free index"], -1: format["second free index"],
-                0: format["first free index"],  1: format["second free index"]}
-
     # Loop terms and create code.
-    for key, data in terms.items():
+    for loop, (data, entry_vals) in terms.items():
 
         # Get data.
-        val, ops, t_set, u_weights, u_psi_tables, u_nzcs = data
+        t_set, u_weights, u_psi_tables, u_nzcs, basis_consts = data
 
         # If we have a value, then we also need to update the sets of used variables.
         trans_set.update(t_set)
@@ -366,80 +350,35 @@ def _generate_integral_code(points, terms, sets, optimise_parameters):
         used_psi_tables.update(u_psi_tables)
         used_nzcs.update(u_nzcs)
 
-        # Compute number of operations to compute entry
-        # (add 1 because of += in assignment).
-        entry_ops = ops + 1
+        # Generate code for basis constant declarations.
+#        basis_const_ops, basis_const_code = generate_aux_constants(basis_consts, f_B,\
+#                                        format["const float declaration"], True)
+        basis_const_ops, basis_const_code = generate_aux_constants(basis_consts, f_B,\
+                                        format["assign"], True)
+        decl_code = []
+        if basis_consts:
+            decl_code = [format["declaration"](format["float declaration"], f_B(len(basis_consts)))]
+        loops[loop] = [basis_const_ops, decl_code + basis_const_code]
 
-        # Create comment for number of operations
-        entry_ops_comment = f_comment("Number of operations to compute entry: %d" % entry_ops)
+        for entry, value, ops in entry_vals:
+            # Compute number of operations to compute entry
+            # (add 1 because of += in assignment).
+            entry_ops = ops + 1
 
-        # Create appropriate entries.
-        # FIXME: We only support rank 0, 1 and 2.
-        entry = ""
-        loop = ()
-        if len(key) == 0:
-            entry = "0"
-        elif len(key) == 1:
-            key = key[0]
-            # Checking if the basis was a test function.
-            # TODO: Make sure test function indices are always rearranged to 0.
-            ffc_assert(key[0] == -2 or key[0] == 0, \
-                        "Linear forms must be defined using test functions only: " + repr(key))
-            index_j, entry, range_j, space_dim_j = key
-            loop = ((indices[index_j], 0, range_j),)
-            if range_j == 1 and optimise_parameters["ignore ones"]:
-                loop = ()
-            # Multiply number of operations to compute entries by range of loop.
-            entry_ops *= range_j
+            # Create comment for number of operations
+            entry_ops_comment = f_comment("Number of operations to compute entry: %d" % entry_ops)
 
-        elif len(key) == 2:
-            # Extract test and trial loops in correct order and check if for is legal.
-            key0, key1 = (0, 0)
-            for k in key:
-                ffc_assert(k[0] in indices, \
-                            "Bilinear forms must be defined using test and trial functions (index -2, -1, 0, 1): " + repr(k))
-                if k[0] == -2 or k[0] == 0:
-                    key0 = k
-                else:
-                    key1 = k
-            index_j, entry_j, range_j, space_dim_j = key0
-            index_k, entry_k, range_k, space_dim_k = key1
-
-            loop = []
-            if not (range_j == 1 and optimise_parameters["ignore ones"]):
-                loop.append((indices[index_j], 0, range_j))
-            if not (range_k == 1 and optimise_parameters["ignore ones"]):
-                loop.append((indices[index_k], 0, range_k))
-            entry = f_add([f_mul([entry_j, str(space_dim_k)]), entry_k])
-            loop = tuple(loop)
-
-            # Multiply number of operations to compute entries by range of loops.
-            entry_ops *= range_j*range_k
-        else:
-            error("Only rank 0, 1 and 2 tensors are currently supported: " + repr(key))
-
-        # Generate the code line for the entry.
-        # Try to evaluate entry ("3*6 + 2" --> "20").
-        try:
-            entry = str(eval(entry))
-        except:
-            pass
-
-        entry_code = f_iadd(f_A(entry), val)
-
-        if loop not in loops:
-            loops[loop] = [entry_ops, [entry_ops_comment, entry_code]]
-        else:
+            entry_code = f_iadd(f_A(entry), value)
             loops[loop][0] += entry_ops
             loops[loop][1] += [entry_ops_comment, entry_code]
 
     # Write all the loops of basis functions.
     for loop, ops_lines in loops.items():
         ops, lines = ops_lines
-
+        prim_ops = reduce(lambda i, j: i*j, [ops] + [l[2] for l in loop])
         # Add number of operations for current loop to total count.
-        num_ops += ops
-        code += ["", f_comment("Number of operations for primary indices: %d" % ops)]
+        num_ops += prim_ops
+        code += ["", f_comment("Number of operations for primary indices: %d" % prim_ops)]
         code += f_loop(lines, loop)
 
     return code, num_ops

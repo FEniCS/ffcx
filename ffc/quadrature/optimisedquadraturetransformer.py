@@ -6,7 +6,7 @@ __copyright__ = "Copyright (C) 2009-2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Anders Logg, 2009
-# Last changed: 2010-02-08
+# Last changed: 2010-03-11
 
 # Python modules.
 from numpy import shape
@@ -153,15 +153,19 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
             return {(): create_product([val]*expo.value())}
         elif isinstance(expo, FloatValue):
             exp = format["floating point"](expo.value())
-            sym = create_symbol(format["std power"](str(val), exp), val.t)
-            sym.base_expr = val
-            sym.base_op = 1 # Add one operation for the pow() function.
+#            sym = create_symbol(format["std power"](str(val), exp), val.t)
+#            sym.base_expr = val
+#            sym.base_op = 1 # Add one operation for the pow() function.
+            sym = create_symbol(format["std power"], val.t, val, 1)
+            sym.exp = exp
             return {(): sym}
         elif isinstance(expo, Coefficient):
             exp = self.visit(expo)
-            sym = create_symbol(format["std power"](str(val), exp[()]), val.t)
-            sym.base_expr = val
-            sym.base_op = 1 # Add one operation for the pow() function.
+#            sym = create_symbol(format["std power"](str(val), exp[()]), val.t)
+#            sym.base_expr = val
+#            sym.base_op = 1 # Add one operation for the pow() function.
+            sym = create_symbol(format["std power"], val.t, val, 1)
+            sym.exp = exp[()]
             return {(): sym}
         else:
             error("power does not support this exponent: " + repr(expo))
@@ -175,9 +179,10 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
 
         # Take absolute value of operand.
         val = operands[0][()]
-        new_val = create_symbol(format["absolute value"](str(val)), val.t)
-        new_val.base_expr = val
-        new_val.base_op = 1 # Add one operation for taking the absolute value.
+#        new_val = create_symbol(format["absolute value"](str(val)), val.t)
+#        new_val.base_expr = val
+#        new_val.base_op = 1 # Add one operation for taking the absolute value.
+        new_val = create_symbol(format["absolute value"], val.t, val, 1)
         return {():new_val}
 
     # -------------------------------------------------------------------------
@@ -356,9 +361,10 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         # Use format function on value of operand.
         operand = operands[0]
         for key, val in operand.items():
-            new_val = create_symbol(format_function(str(val)), val.t)
-            new_val.base_expr = val
-            new_val.base_op = 1 # Add one operation for the math function.
+#            new_val = create_symbol(format_function(str(val)), val.t)
+#            new_val.base_expr = val
+#            new_val.base_op = 1 # Add one operation for the math function.
+            new_val = create_symbol(format_function, val.t, val, 1)
             operand[key] = new_val
         return operand
 
@@ -390,5 +396,5 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         ops = self._count_operations(value)
         used_psi_tables = set([self.psi_tables_map[b] for b in value.get_unique_vars(BASIS)])
 
-        return [value, ops, trans_set, used_points, used_psi_tables]
+        return (value, ops, [trans_set, used_points, used_psi_tables])
 

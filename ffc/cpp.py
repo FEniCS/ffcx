@@ -7,7 +7,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian B. Oelgaard 2010
 # Modified by Marie E. Rognes 2010
-# Last changed: 2010-02-12
+# Last changed: 2010-03-11
 
 # Python modules
 import re, numpy, platform
@@ -164,7 +164,12 @@ format.update({
     "integration points": "ip",
     "first free index":   "j",
     "second free index":  "k",
-    "geometry constant":  "G",
+    "geometry constant":  lambda i: "G[%d]" % i,
+    "ip constant":        lambda i: "I[%d]" % i,
+    "basis constant":     lambda i: "B[%d]" % i,
+#    "geometry constant":  lambda i: "G%d" % i,
+#    "ip constant":        lambda i: "I%d" % i,
+#    "basis constant":     lambda i: "B%d" % i,
     "function value":     lambda i: "F%d" % i,
     "nonzero columns":    lambda i: "nzc%d" % i,
     "weight":             lambda i: "W%d" % (i),

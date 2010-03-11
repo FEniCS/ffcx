@@ -5,7 +5,7 @@ __date__ = "2010-01-06"
 __copyright__ = "Copyright (C) 2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-02-01
+# Last changed: 2010-03-11
 
 # Pyhton modules
 import unittest
@@ -63,7 +63,7 @@ class TestElasticityTerm(unittest.TestCase):
         opt_code = optimise_code(expr, ip_consts, geo_consts, trans_set)
 #        print "ElasticityTerm, optimise_code(): ", time.time() - start
 
-        G0 = eval(str(geo_consts.items()[0][0]))
+        G = [eval(str(geo_consts.items()[0][0]))]
         self.assertAlmostEqual(eval(str(expr)), eval(str(opt_code)))
 
 if __name__ == "__main__":

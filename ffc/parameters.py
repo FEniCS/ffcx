@@ -5,7 +5,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 from log import INFO
 
-# Last changed: 2010-02-01
+# Last changed: 2010-03-11
 
 FFC_PARAMETERS = {
   "format":                         "ufc",  # code generation format
@@ -29,8 +29,7 @@ FFC_PARAMETERS = {
   "output_dir":                     ".",    # output directory for generated
                                             # code
   "cpp_optimize":                   False,  # optimization for the JIT compiler
-  "optimize":                       False,  # optimise the quadrature code
-                                            # generation
+  "optimize":                       False,  # optimise the code generation
   "log_level":                      INFO,   # log level, displaying only
                                             # messages with level >= log_level
   "log_prefix":                     ""      # log prefix

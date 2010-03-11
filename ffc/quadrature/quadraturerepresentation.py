@@ -6,7 +6,7 @@ __copyright__ = "Copyright (C) 2009-2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Anders Logg, 2009.
-# Last changed: 2010-02-15
+# Last changed: 2010-03-11
 
 # UFL modules
 from ufl.classes import Form, Integral, SpatialDerivative
@@ -47,28 +47,33 @@ def compute_integral_ir(domain_type, domain_id, integrals, metadata, form_data, 
     ir["prim_idims"] = prim_idims
 
     # Create optimise parameters.
-    # FIXME: Find a way to avoid the redundant options here and in the generator.
+    optimise_parameters = {"non zero columns":    False,
+                           "ignore ones":         False,
+                           "remove zero terms":   False,
+                           "optimisation":        False,
+                           "ignore zero tables":  False}
     if parameters["optimize"]:
-        # These parameters results in fast code, but compiles slower and there
-        # might still be bugs.
-        optimise_parameters = {"non zero columns": True,
-                            "ignore ones": True,
-                            "remove zero terms": True,
-                            "simplify expressions": True,
-                            "ignore zero tables": True}
-    else:
-        # These parameters should be safe and fast, but result in slow code.
-        optimise_parameters = {"non zero columns": False,
-                            "ignore ones": False,
-                            "remove zero terms": False,
-                            "simplify expressions": False,
-                            "ignore zero tables": False}
+        optimise_parameters["ignore ones"]        = True
+        optimise_parameters["remove zero terms"]  = True
+        optimise_parameters["ignore zero tables"] = True
+
+        if "simplify_expressions" in parameters:
+            optimise_parameters["non zero columns"] = True
+            optimise_parameters["optimisation"]     = "simplify_expressions"
+        elif "precompute_ip_const" in parameters:
+            optimise_parameters["optimisation"] = "precompute_ip_const"
+        elif "precompute_basis_const" in parameters:
+            optimise_parameters["optimisation"] = "precompute_basis_const"
+        else:
+            # Use simplify_expressions as default for now.
+            optimise_parameters["non zero columns"] = True
+            optimise_parameters["optimisation"]     = "simplify_expressions"
 
     # Save the optisation parameters.
-    ir ["optimise_parameters"] = optimise_parameters
+    ir["optimise_parameters"] = optimise_parameters
 
     # Create transformer.
-    if optimise_parameters["simplify expressions"]:
+    if optimise_parameters["optimisation"]:
         transformer = QuadratureTransformerOpt(psi_tables, quad_weights, \
             form_data.geometric_dimension, optimise_parameters)
     else:

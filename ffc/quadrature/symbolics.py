@@ -5,7 +5,7 @@ __date__ = "2009-07-12"
 __copyright__ = "Copyright (C) 2009-2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-02-09
+# Last changed: 2010-03-11
 
 # FFC modules
 from ffc.log import debug, error
@@ -105,11 +105,11 @@ def generate_aux_constants(constant_decl, name, var_type, print_ops=False):
             op = expr.ops()
             ops += op
             append(format_comment("Number of operations: %d" %op))
-            append(var_type(name + str(num), str(expr)))
+            append(var_type(name(num), str(expr)))
             append("")
         else:
             ops += expr.ops()
-            append(var_type(name + str(num), str(expr)))
+            append(var_type(name(num), str(expr)))
 
     return (ops, code)
 
@@ -121,7 +121,8 @@ def optimise_code(expr, ip_consts, geo_consts, trans_set):
     declarations and update the trans_set (used transformations)."""
 
     format_G  = format["geometry constant"]
-    format_ip = format["integration points"]
+#    format_ip = format["integration points"]
+    format_I  = format["ip constant"]
     trans_set_update = trans_set.update
 
     # Return constant symbol if value is zero.
@@ -245,7 +246,7 @@ def optimise_code(expr, ip_consts, geo_consts, trans_set):
                     geo_consts[geo] = len(geo_consts)
 
                 # Substitute geometry expression.
-                geo = create_symbol(format_G + str(geo_consts[geo]), GEO)
+                geo = create_symbol(format_G(geo_consts[geo]), GEO)
 
             # If we did not have any ip_declarations use geo, else create a
             # product and append to the list of ip_values.
@@ -273,7 +274,7 @@ def optimise_code(expr, ip_consts, geo_consts, trans_set):
 
             # Substitute ip expression.
 #            ip_expr = create_symbol(format_G + format_ip + str(ip_consts[ip_expr]), IP)
-            ip_expr = create_symbol(format_G + format_ip + str(ip_consts[ip_expr]), IP)
+            ip_expr = create_symbol(format_I(ip_consts[ip_expr]), IP)
 
         # Multiply by basis and append to basis vals.
 #        prod = create_product([basis, ip_expr])

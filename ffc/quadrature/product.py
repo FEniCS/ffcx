@@ -5,7 +5,7 @@ __date__ = "2009-07-12"
 __copyright__ = "Copyright (C) 2009-2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-02-09
+# Last changed: 2010-03-11
 
 # FFC modules.
 from ffc.log import error
@@ -71,6 +71,7 @@ class Product(Expr):
                         self.vrs.append(var._expanded)
                     # If expanded product is still a product, add the variables.
                     elif var._expanded and var._expanded._prec == 2:
+#                        self.vrs.append(var)
                         # Add copies of the variables of other product (collect floats).
                         if var._expanded.vrs[0]._prec == 0:
                             float_val *= var._expanded.vrs[0].val
