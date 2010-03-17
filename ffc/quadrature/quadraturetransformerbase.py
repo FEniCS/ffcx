@@ -541,6 +541,22 @@ class QuadratureTransformerBase(Transformer):
         #print("\n\nVisiting Sin: " + repr(o) + "with operands: " + "\n".join(map(repr,operands)))
         return self._math_function(operands, format["sin"])
 
+    def tan(self, o, *operands):
+        #print("\n\nVisiting Tan: " + repr(o) + "with operands: " + "\n".join(map(repr,operands)))
+        return self._math_function(operands, format["tan"])
+
+    def acos(self, o, *operands):
+        #print("\n\nVisiting Acos: " + repr(o) + "with operands: " + "\n".join(map(repr,operands)))
+        return self._math_function(operands, format["acos"])
+
+    def asin(self, o, *operands):
+        #print("\n\nVisiting Asin: " + repr(o) + "with operands: " + "\n".join(map(repr,operands)))
+        return self._math_function(operands, format["asin"])
+
+    def atan(self, o, *operands):
+        #print("\n\nVisiting Atan: " + repr(o) + "with operands: " + "\n".join(map(repr,operands)))
+        return self._math_function(operands, format["atan"])
+
     # -------------------------------------------------------------------------
     # PositiveRestricted and NegativeRestricted (restriction.py).
     # -------------------------------------------------------------------------
