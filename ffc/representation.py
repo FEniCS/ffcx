@@ -32,7 +32,7 @@ from ffc.utils import compute_permutations, product
 from ffc.log import info, error, begin, end, debug_ir, ffc_assert, warning
 from ffc.fiatinterface import create_element, entities_per_dim, reference_cell
 from ffc.mixedelement import MixedElement
-from ffc.elementunion import ElementUnion
+from ffc.enrichedelement import EnrichedElement
 from ffc.quadratureelement import QuadratureElement
 from ffc.cpp import set_float_formatting
 
@@ -201,8 +201,8 @@ def _evaluate_basis(element, cell):
     "Compute intermediate representation for evaluate_basis."
 
     # Create data for each sub-element of a mixed element or
-    # ElementUnion
-    if isinstance(element, (MixedElement, ElementUnion)):
+    # enriched element
+    if isinstance(element, (MixedElement, EnrichedElement)):
         return [_evaluate_basis(e, cell)[0] for e in element.elements()]
 
     # Handle QuadratureElement, not supported because the basis is only defined
@@ -277,7 +277,7 @@ def _generate_offsets(element, offset=0):
             offsets += _generate_offsets(e, offset)
             offset += _value_size(e)
 
-    elif isinstance(element, ElementUnion):
+    elif isinstance(element, EnrichedElement):
         for e in element.elements():
             offsets += _generate_offsets(e, offset)
 

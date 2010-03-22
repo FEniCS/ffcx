@@ -5,7 +5,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Garth N. Wells, 2009.
 # Modified by Marie Rognes, 2009-2010.
-# Last changed: 2010-03-07
+# Last changed: 2010-03-22
 
 # Python modules
 from numpy import array
@@ -20,7 +20,7 @@ from ffc.quadratureelement import QuadratureElement as FFCQuadratureElement
 
 from ffc.mixedelement import MixedElement
 from ffc.restrictedelement import RestrictedElement
-from ffc.elementunion import ElementUnion
+from ffc.enrichedelement import EnrichedElement
 
 # Cache for computed elements
 _cache = {}
@@ -62,9 +62,9 @@ def create_element(ufl_element):
         element = MixedElement(elements)
 
     # Create element union (implemented by FFC)
-    elif isinstance(ufl_element, ufl.ElementUnion):
+    elif isinstance(ufl_element, ufl.EnrichedElement):
         elements = [create_element(e) for e in ufl_element._elements]
-        element = ElementUnion(elements)
+        element = EnrichedElement(elements)
 
     # Create restricted element(implemented by FFC)
     elif isinstance(ufl_element, ufl.ElementRestriction):

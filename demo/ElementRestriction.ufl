@@ -22,7 +22,7 @@ a    = avg(v_r)*avg(u_r)*dS + v_r*u_r*ds
 # Mixed element
 #CG = FiniteElement("Lagrange", triangle, 4)
 #CG_R = CG["facet"]
-#ME = CG + CG_R
+#ME = CG * CG_R
 #u, u_r  = TrialFunctions(ME)
 #v, v_r  = TestFunctions(ME)
 #a = v*u*dx + v_r('+')*u_r('+')*dS + v_r('+')*u_r('+')*dS + v_r*u_r*ds

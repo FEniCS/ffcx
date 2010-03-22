@@ -35,4 +35,4 @@ GRAD = FiniteElement("Lagrange", shape, order)
 CURL = FiniteElement("N1curl", shape, order)
 VectorLagrange = VectorElement("Lagrange", shape, order+1)
 
-[a, L] = HodgeLaplaceGradCurl(GRAD + CURL, VectorLagrange)
+[a, L] = HodgeLaplaceGradCurl(GRAD * CURL, VectorLagrange)

@@ -8,7 +8,7 @@
 
 vector = VectorElement("Lagrange", "triangle", 1)
 scalar = FiniteElement("Lagrange", "triangle", 1)
-system = vector + scalar
+system = vector * scalar
 
 (v, q) = TestFunctions(system)
 (u, p) = TrialFunctions(system)

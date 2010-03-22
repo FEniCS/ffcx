@@ -1,3 +1,4 @@
+ - Rename ElementUnion -> EnrichedElement
  - Add support for tan() and inverse trigonometric functions
  - Added support for ElementUnion (i.e. span of combinations of elements)
  - Added support for Bubble elements
