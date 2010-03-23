@@ -11,7 +11,7 @@ __date__ = "2009-12-16"
 __copyright__ = "Copyright (C) 2009 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-02-09
+# Last changed: 2010-03-23
 
 # FFC modules
 from ffc.log import info, begin, end, debug_code
@@ -264,10 +264,10 @@ def _tabulate_dofs(ir):
     entity_index =        format["entity index"]
     num_entities_format = format["num entities"]
     unsigned_int =        format["uint declaration"]
-    dofs =                format["argument dofs"]
+    dofs_variable =       format["argument dofs"]
 
     # Extract representation
-    (num_dofs_per_element, num_entities, need_offset) = ir
+    (dofs_per_element, num_dofs_per_element, num_entities, need_offset) = ir
 
     # Declare offset if needed
     code = []
@@ -278,25 +278,27 @@ def _tabulate_dofs(ir):
 
     # Generate code for each element
     i = 0
-    for num_dofs in num_dofs_per_element:
+    for (no, num_dofs) in enumerate(dofs_per_element):
 
         # Generate code for each degree of freedom for each dimension
         for (dim, num) in enumerate(num_dofs):
 
             # Ignore if no dofs for this dimension
-            if num == 0: continue
+            if not num[0]: continue
 
-            for k in range(num_entities[dim]):
-                v = multiply([num, component(entity_index, (dim, k))])
-                for j in range(num):
+            for (k, dofs) in enumerate(num):
+                v = multiply([len(num[k]), component(entity_index, (dim, k))])
+                for (j, dof) in enumerate(dofs):
                     value = add([offset_name, v, j])
-                    code.append(assign(component(dofs, i), value))
-                    i += 1
+                    code.append(assign(component(dofs_variable, dof+i), value))
 
             # Update offset corresponding to mesh entity:
             if need_offset:
-                addition = multiply([num, component(num_entities_format, dim)])
+                addition = multiply([len(num[0]),
+                                     component(num_entities_format, dim)])
                 code.append(iadd("offset", addition))
+
+        i += num_dofs_per_element[no]
 
     return "\n".join(code)
 

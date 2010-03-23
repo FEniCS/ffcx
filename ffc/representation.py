@@ -311,12 +311,20 @@ def _tabulate_dofs(element, cell):
     elements = all_elements(element)
     num_dofs_per_element = [_num_dofs_per_entity(e) for e in elements]
 
+    # Extract local dof numbers per entity for each element
+    all_entity_dofs = [e.entity_dofs() for e in elements]
+    dofs_per_element = [[[list(dofs[dim][entity])
+                          for entity in sorted(dofs[dim].keys())]
+                         for dim in sorted(dofs.keys())]
+                        for dofs in all_entity_dofs]
+
     # Check whether we need offset
     multiple_entities =  any([sum(n > 0 for n in num_dofs) - 1
                               for num_dofs in num_dofs_per_element])
     need_offset = len(elements) > 1 or multiple_entities
 
-    return (num_dofs_per_element, num_entities, need_offset)
+    num_dofs_per_element = [e.space_dimension() for e in elements]
+    return (dofs_per_element, num_dofs_per_element, num_entities, need_offset)
 
 
 def _tabulate_facet_dofs(element, cell):
