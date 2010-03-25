@@ -468,10 +468,11 @@ class QuadratureTransformer(QuadratureTransformerBase):
         ffc_assert(len(operands) == 1 and () in operands[0] and len(operands[0]) == 1, \
                    "MathFunctions expect one operand of function type: " + repr(operands))
         # Use format function on value of operand.
+        new_operand = {}
         operand = operands[0]
         for key, val in operand.items():
-            operand[key] = format_function(val)
-        return operand
+            new_operand[key] = format_function(val)
+        return new_operand
 
     # -------------------------------------------------------------------------
     # Helper functions for code_generation()
