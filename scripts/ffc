@@ -13,7 +13,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Ola Skavhaug, 2006.
 # Modified by Dag Lindbo, 2008.
 # Modified by Kristian B. Oelgaard 2009.
-# Last changed: 2010-02-01
+# Last changed: 2010-03-25
 
 # Python modules.
 import sys
@@ -148,13 +148,13 @@ def main(argv):
             if len(ufd.forms) > 0:
                 compile_form(ufd.forms, ufd.object_names, prefix, parameters)
             else:
-                compile_element(ufd.elements, ufd.object_names, prefix, parameters)
+                compile_element(ufd.elements, prefix, parameters)
         else:
             try:
                 if len(ufd.forms) > 0:
                     compile_form(ufd.forms, ufd.object_names, prefix, parameters)
                 else:
-                    compile_element(ufd.elements, ufd.object_names, prefix, parameters)
+                    compile_element(ufd.elements, prefix, parameters)
             except Exception, exception:
                 info("")
                 error(str(exception))
