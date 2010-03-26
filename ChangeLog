@@ -1,3 +1,4 @@
+ - Make functions introduced in UFC 1.1 mandatory (now pure virtual)
 1.4.0 [2010-02-01]
  - Changed behavior of create_foo_integral (returning 0 when integral is 0)
  - Bug fixes in installation
