@@ -11,7 +11,7 @@ __date__ = "2009-12-16"
 __copyright__ = "Copyright (C) 2009 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-03-23
+# Last changed: 2010-04-05
 
 # FFC modules
 from ffc.log import info, begin, end, debug_code
@@ -233,11 +233,18 @@ def _needs_mesh_entities(ir):
     return format["switch"](dimension, [ret(boolean(c)) for c in ir], ret(boolean(False)))
 
 def _init_mesh(ir):
-    "Generate code for init_mesh. ir is a list of num dofs per entity."
+    """Generate code for init_mesh. ir[0] is a list of num dofs per
+    entity."""
+
+    num_dofs = ir[0]
     component = format["component"]
     entities =  format["num entities"]
-    dimension = format["inner product"](ir, [component(entities, d)
-                                             for d in range(len(ir))])
+    dimension = format["inner product"](num_dofs, [component(entities, d)
+                                                   for d in range(len(num_dofs))])
+    # Handle global "elements" if any
+    if ir[1]:
+        dimension = format["add"]([dimension, format["int"](ir[1])])
+
     return "\n".join([format["assign"](format["member global dimension"], dimension),
                       format["return"](format["bool"](False))])
 
@@ -266,8 +273,11 @@ def _tabulate_dofs(ir):
     unsigned_int =        format["uint declaration"]
     dofs_variable =       format["argument dofs"]
 
+    if ir is None:
+        return assign(component(dofs_variable, 0), 0)
+
     # Extract representation
-    (dofs_per_element, num_dofs_per_element, num_entities, need_offset) = ir
+    (dofs_per_element, num_dofs_per_element, num_entities, need_offset, fakes) = ir
 
     # Declare offset if needed
     code = []
@@ -279,6 +289,13 @@ def _tabulate_dofs(ir):
     # Generate code for each element
     i = 0
     for (no, num_dofs) in enumerate(dofs_per_element):
+
+        # Handle fakes (Space of reals)
+        if fakes[no] and num_dofs_per_element[no] == 1:
+            code.append(assign(component(dofs_variable, i), offset_name))
+            code.append(iadd(offset_name, 1))
+            i += 1
+            continue
 
         # Generate code for each degree of freedom for each dimension
         for (dim, num) in enumerate(num_dofs):

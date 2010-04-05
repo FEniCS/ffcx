@@ -32,7 +32,7 @@ from ffc.utils import compute_permutations, product
 from ffc.log import info, error, begin, end, debug_ir, ffc_assert, warning
 from ffc.fiatinterface import create_element, entities_per_dim, reference_cell
 from ffc.mixedelement import MixedElement
-from ffc.enrichedelement import EnrichedElement
+from ffc.enrichedelement import EnrichedElement, SpaceOfReals
 from ffc.quadratureelement import QuadratureElement
 from ffc.cpp import set_float_formatting
 
@@ -117,7 +117,7 @@ def _compute_dofmap_ir(ufl_element, element_id, element_map):
     # Compute data for each function
     ir["signature"] = "FFC dofmap for " + repr(ufl_element)
     ir["needs_mesh_entities"] = [d > 0 for d in num_dofs_per_entity]
-    ir["init_mesh"] = num_dofs_per_entity
+    ir["init_mesh"] = _init_mesh(element)
     ir["init_cell"] = None
     ir["init_cell_finalize"] = None
     ir["global_dimension"] = None
@@ -136,6 +136,24 @@ def _compute_dofmap_ir(ufl_element, element_id, element_map):
     #debug_ir(ir, "dofmap")
 
     return ir
+
+def _init_mesh(element):
+
+    if not isinstance(element, MixedElement):
+        return (_num_dofs_per_entity(element), 0)
+
+    elements = []
+    reals = []
+    num_reals = 0
+    for (i, e) in enumerate(element.elements()):
+        if not isinstance(e, SpaceOfReals):
+            elements += [e]
+        else:
+            num_reals += 1
+    element = MixedElement(elements)
+    return (_num_dofs_per_entity(element), num_reals)
+
+    # return _num_dofs_per_entity(element)
 
 def _compute_integral_ir(form, form_id, parameters):
     "Compute intermediate represention of form integrals."
@@ -304,6 +322,9 @@ def _tabulate_coordinates(element):
 def _tabulate_dofs(element, cell):
     "Compute intermediate representation of tabulate_dofs."
 
+    if isinstance(element, SpaceOfReals):
+        return None
+
     # Extract number of enties for each dimension for this cell
     num_entities = entities_per_dim[cell.geometric_dimension()]
 
@@ -324,7 +345,11 @@ def _tabulate_dofs(element, cell):
     need_offset = len(elements) > 1 or multiple_entities
 
     num_dofs_per_element = [e.space_dimension() for e in elements]
-    return (dofs_per_element, num_dofs_per_element, num_entities, need_offset)
+
+    # Handle global "elements"
+    fakes = [isinstance(e, SpaceOfReals) for e in elements]
+
+    return (dofs_per_element, num_dofs_per_element, num_entities, need_offset, fakes)
 
 
 def _tabulate_facet_dofs(element, cell):

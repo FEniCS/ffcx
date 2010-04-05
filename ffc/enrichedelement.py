@@ -54,3 +54,40 @@ class EnrichedElement:
                 table[dtuple][irange[0]:irange[1]][:] = etable[dtuple]
 
         return table
+
+
+class SpaceOfReals:
+
+    def __init__(self, element):
+        self._element = element
+        self._entity_dofs = element.entity_dofs()
+
+    def space_dimension(self):
+        return 1
+
+    def value_shape(self):
+        return ()
+
+    def degree(self):
+        return 0
+
+    def entity_dofs(self):
+        return self._entity_dofs
+
+    def mapping(self):
+        return ["affine"]
+
+    def dual_basis(self):
+        return self._element.dual_basis()
+
+    def tabulate(self, order, points):
+        return self._element.tabulate(order, points)
+
+    def get_coeffs(self):
+        return self._element.get_coeffs()
+
+    def dmats(self):
+        return self._element.dmats()
+
+    def get_num_members(self, arg):
+        return self._element.get_num_members(arg)

@@ -5,7 +5,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Garth N. Wells, 2009.
 # Modified by Marie Rognes, 2009-2010.
-# Last changed: 2010-03-22
+# Last changed: 2010-04-05
 
 # Python modules
 from numpy import array
@@ -20,7 +20,7 @@ from ffc.quadratureelement import QuadratureElement as FFCQuadratureElement
 
 from ffc.mixedelement import MixedElement
 from ffc.restrictedelement import RestrictedElement
-from ffc.enrichedelement import EnrichedElement
+from ffc.enrichedelement import EnrichedElement, SpaceOfReals
 
 # Cache for computed elements
 _cache = {}
@@ -82,6 +82,11 @@ def _create_fiat_element(ufl_element):
     "Create FIAT element corresponding to given finite element."
 
     family = ufl_element.family()
+
+    # Handle the space of the constant
+    if family == "Real":
+        constant = _create_fiat_element(ufl.FiniteElement("DG", ufl_element.cell(), 0))
+        return SpaceOfReals(constant)
 
     # FIXME: AL: Should this really be here?
     # Handle QuadratureElement
