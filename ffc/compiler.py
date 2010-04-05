@@ -162,14 +162,7 @@ def compile_form(forms, object_names={}, prefix="Form", parameters=default_param
 
     info_green("FFC finished in %g seconds.", time() - cpu_time_0)
 
-    # Return either a single form or a tuple of preprocessed forms
-    forms = analysis[0]
-    if len(forms) == 1:
-        return forms[0]
-    else:
-        return tuple(forms)
-
-def compile_element(elements, object_names={}, prefix="Element", parameters=default_parameters()):
+def compile_element(elements, prefix="Element", parameters=default_parameters()):
     """This function generates UFC code for a given UFL element or
     list of UFL elements."""
 

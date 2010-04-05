@@ -1,3 +1,5 @@
+ - Remove return of form in compile_form
+ - Remove object_names argument to compile_element
  - Rename ElementUnion -> EnrichedElement
  - Add support for tan() and inverse trigonometric functions
  - Added support for ElementUnion (i.e. span of combinations of elements)
