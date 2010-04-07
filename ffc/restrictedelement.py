@@ -2,14 +2,19 @@ __author__ = "Anders Logg (logg@simula.no) and friends"
 __copyright__ = "Copyright (C) 2010 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-02-01
+# Modified by Marie Rognes, 2010.
+# Last changed: 2010-04-07
 
+from ffc.log import error
 import numpy
 
 class RestrictedElement:
     "Create a restriction of a given FIAT element."
 
     def __init__(self, element, indices, domain):
+        if len(indices) == 0:
+            error("No point in creating empty RestrictedElement.")
+
         self._element = element
         self._indices = indices
         self._entity_dofs = _extract_entity_dofs(element, indices)
@@ -49,12 +54,6 @@ class RestrictedElement:
 
     def dmats(self):
         return self._element.dmats()
-#        dmats = self._element.dmats()
-#        new = []
-#        for d in dmats:
-#            new += [[[d[i][j] for j in self._indices]
-#                     for i in self._indices]]
-#        return new
 
     def get_num_members(self, arg):
         return self._element.get_num_members(arg)

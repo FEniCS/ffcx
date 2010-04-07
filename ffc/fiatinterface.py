@@ -5,7 +5,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Garth N. Wells, 2009.
 # Modified by Marie Rognes, 2009-2010.
-# Last changed: 2010-04-05
+# Last changed: 2010-04-07
 
 # Python modules
 from numpy import array
@@ -22,22 +22,16 @@ from ffc.mixedelement import MixedElement
 from ffc.restrictedelement import RestrictedElement
 from ffc.enrichedelement import EnrichedElement, SpaceOfReals
 
+# Dictionary mapping from domain (cell) to dimension
+from ufl.geometry import domain2dim
+
+# Mapping from dimension to number of mesh sub-entities. (In principle,
+# ufl.geometry.domain2num_facets contains the same information, but
+# with string keys.)
+entities_per_dim = {1: [2, 1], 2: [3, 3, 1], 3: [4, 6, 4, 1]}
+
 # Cache for computed elements
 _cache = {}
-
-# FIXME: KBO: Should stuff like, domain2dim and entities_per_dim be in UFC
-# instead? The same goes for similar dictionaries in UFL (geometry.py). After
-# all both FFC and UFL complies with UFC or not?
-# Mapping from domain to dimension
-# FIXME: AL: They should be in UFL (and probably are there already). They
-# FIXME: can't be in UFC since UFL cannot depend on UFC.
-domain2dim = {"vertex": 0,
-              "interval": 1,
-              "triangle": 2,
-              "tetrahedron": 3}
-
-# Mapping from dimension to number of mesh sub-entities:
-entities_per_dim = {1: [2, 1], 2: [3, 3, 1], 3: [4, 6, 4, 1]}
 
 def reference_cell(dim):
     if isinstance(dim, int):
@@ -95,11 +89,11 @@ def _create_fiat_element(ufl_element):
 
     cell = reference_cell(ufl_element.cell().domain())
 
-    # Handle Bubble element as ElementRestriction of P_{dim+1}
+    # Handle Bubble element as ElementRestriction of P_{k} to interior
     if family == "Bubble":
+        V = FIAT.element_classes["Lagrange"](cell, ufl_element.degree())
         dim = ufl_element.cell().geometric_dimension()
-        V = FIAT.element_classes["Lagrange"](cell, dim + 1)
-        return RestrictedElement(V, [V.space_dimension() - 1], None)
+        return RestrictedElement(V, _indices(V, "interior", dim), None)
 
     # Check if finite element family is supported by FIAT
     if not family in FIAT.element_classes:
@@ -201,22 +195,32 @@ def _create_restricted_element(ufl_element):
 
     error("Cannot create restricted element from %s" % str(ufl_element))
 
-def _indices(element, domain):
+def _indices(element, domain, dim=0):
     "Extract basis functions indices that correspond to domain."
 
+    # FIXME: The domain argument in FFC/UFL needs to be re-thought and
+    # cleaned-up.
+
+    # If domain is "interior", pick basis functions associated with
+    # cell.
+    if domain == "interior" and dim:
+        return element.entity_dofs()[dim][0]
+
+    # If domain is a ufl.Cell, pick basis functions associated with
+    # the topological degree of the domain and of all lower
+    # dimensions.
     if isinstance(domain, ufl.Cell):
         dim = domain.topological_dimension()
         entity_dofs = element.entity_dofs()
         indices = []
-        # FIXME: KBO: This will only make it possible to restrict up to a given
-        # topological dimension. What if one wants to restrict to the dofs on
-        # the interior of a cell?
         for dim in range(domain.topological_dimension() + 1):
             entities = entity_dofs[dim]
             for (entity, index) in entities.iteritems():
                 indices += index
         return indices
-    # Just extract all indices to make handling in RestrictedElement uniform.
+
+    # Just extract all indices to make handling in RestrictedElement
+    # uniform.
     elif isinstance(domain, ufl.Measure):
         indices = []
         entity_dofs = element.entity_dofs()
@@ -224,6 +228,7 @@ def _indices(element, domain):
             for entity, index in entities.items():
                 indices += index
         return indices
+
     else:
         error("Restriction to domain: %s, is not supported." % repr(domain))
 
