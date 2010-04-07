@@ -37,10 +37,11 @@ class EnrichedElement:
 
     def tabulate(self, order, points):
 
-        table_shape = (self.space_dimension(), _num_components(self), len(points))
+        num_components = _num_components(self)
+        table_shape = (self.space_dimension(), num_components, len(points))
+
         table = {}
         irange = (0, 0)
-
         for element in self._elements:
 
             etable = element.tabulate(order, points)
@@ -48,8 +49,12 @@ class EnrichedElement:
 
             # Insert element table into table
             for dtuple in etable.keys():
+
                 if not dtuple in table:
-                    table[dtuple] = numpy.zeros(table_shape)
+                    if num_components == 1:
+                        table[dtuple] = numpy.zeros((self.space_dimension(), len(points)))
+                    else:
+                        table[dtuple] = numpy.zeros(table_shape)
 
                 table[dtuple][irange[0]:irange[1]][:] = etable[dtuple]
 
