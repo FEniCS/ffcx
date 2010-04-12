@@ -6,7 +6,7 @@ __date__ = "2007-04-04"
 __copyright__ = "Copyright (C) 2007-2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-02-04
+# Last changed: 2010-04-12
 
 # Python modules
 import math
@@ -18,11 +18,11 @@ from ffc.cpp import remove_unused, indent, format
 from ffc.quadrature.symbolics import create_float, create_float, create_symbol,\
                                      create_product, create_sum, create_fraction, CONST
 
-def _evaluate_basis_all(data_list):
+def _evaluate_basis_all(data):
     """Like evaluate_basis, but return the values of all basis functions (dofs)."""
 
-    if isinstance(data_list, str):
-        return format["exception"]("evaluate_basis_all: %s" % data_list)
+    if isinstance(data, str):
+        return format["exception"]("evaluate_basis_all: %s" % data)
 
     # Prefetch formats.
     f_assign    = format["assign"]
@@ -54,8 +54,8 @@ def _evaluate_basis_all(data_list):
     # all the code
 
     # Get total value shape and space dimension for entire element (possibly mixed).
-    value_shape = sum(sum(data["value_shape"] or (1,)) for data in data_list)
-    space_dimension = sum(data["space_dimension"] for data in data_list)
+    value_size = data["value_size"]
+    space_dimension = data["space_dimension"]
 
     # Special case where space dimension is one (constant elements).
     if space_dimension == 1:
@@ -65,10 +65,10 @@ def _evaluate_basis_all(data_list):
 
     # Declare helper value to hold single dof values.
     code += [f_comment("Helper variable to hold values of a single dof.")]
-    if value_shape == 1:
+    if value_size == 1:
         code += [f_decl(f_double, f_dof_vals, f_float(0.0))]
     else:
-        code += [f_decl(f_double, f_component(f_dof_vals, value_shape), f_tensor([0.0]*value_shape))]
+        code += [f_decl(f_double, f_component(f_dof_vals, value_size), f_tensor([0.0]*value_size))]
 
     # Create loop over dofs that calls evaluate_basis for a single dof and
     # inserts the values into the global array.
@@ -76,17 +76,17 @@ def _evaluate_basis_all(data_list):
     lines_r = []
     loop_vars_r = [(f_r, 0, space_dimension)]
 
-    if value_shape == 1:
+    if value_size == 1:
         lines_r += [f_basis(f_r, f_ref_var(f_dof_vals))]
     else:
         lines_r += [f_basis(f_r, f_dof_vals)]
 
-    if value_shape ==  1:
+    if value_size ==  1:
         lines_r += [f_assign(f_component(f_values, f_r), f_dof_vals)]
     else:
-        index = format["matrix index"](f_r, f_s, value_shape)
+        index = format["matrix index"](f_r, f_s, value_size)
         lines_s = [f_assign(f_component(f_values, index), f_component(f_dof_vals, f_s))]
-        lines_r += f_loop(lines_s, [(f_s, 0, value_shape)])
+        lines_r += f_loop(lines_s, [(f_s, 0, value_size)])
 
     code += f_loop(lines_r, loop_vars_r)
 
@@ -95,7 +95,7 @@ def _evaluate_basis_all(data_list):
 
 
 # From FIAT_NEW.polynomial_set.tabulate()
-def _evaluate_basis(data_list):
+def _evaluate_basis(data):
     """Generate run time code to evaluate an element basisfunction at an
     arbitrary point. The value(s) of the basisfunction is/are
     computed as in FIAT as the dot product of the coefficients (computed at compile time)
@@ -105,8 +105,8 @@ def _evaluate_basis(data_list):
     The function should work for all elements supported by FIAT, but it remains
     untested for tensor valued elements."""
 
-    if isinstance(data_list, str):
-        return format["exception"]("evaluate_basis: %s" % data_list)
+    if isinstance(data, str):
+        return format["exception"]("evaluate_basis: %s" % data)
 
     # Prefetch formats.
     f_assign    = format["assign"]
@@ -119,8 +119,8 @@ def _evaluate_basis(data_list):
     code = []
 
     # Get the element cell domain and geometric dimension.
-    element_cell_domain = data_list[0]["cell_domain"]
-    geometric_dimension = data_list[0]["geometric_dimension"]
+    element_cell_domain = data["cell_domain"]
+    geometric_dimension = data["geometric_dimension"]
 
     # Get code snippets for Jacobian, Inverse of Jacobian and mapping of
     # coordinates from physical element to the FIAT reference element.
@@ -130,108 +130,116 @@ def _evaluate_basis(data_list):
 
     # Get value shape and reset values. This should also work for TensorElement,
     # scalar are empty tuples, therefore (1,) in which case value_shape = 1.
-    value_shape = sum(sum(data["value_shape"] or (1,)) for data in data_list)
+    value_size = data["value_size"]
     code += ["", f_comment("Reset values.")]
-    if value_shape == 1:
+    if value_size == 1:
         # Reset values as a pointer.
         code += [f_assign(format["dereference pointer"](f_values), f_float(0.0))]
     else:
         # Reset all values.
-        code += [f_assign(f_component(f_values, i), f_float(0.0)) for i in range(value_shape)]
+        code += [f_assign(f_component(f_values, i), f_float(0.0)) for i in range(value_size)]
 
-    if len(data_list) == 1:
-        data = data_list[0]
+    # Create code for all basis values (dofs).
+    dof_cases = []
+    for dof in data["dof_data"]:
+        dof_cases.append(_generate_dof_code(data, dof))
+    code += [format["switch"](format["argument basis num"], dof_cases)]
 
-        # Map degree of freedom to local degree.
-        code += ["", _map_dof(0)]
+#    if len(data_list) == 1:
+#        data = data_list[0]
 
-        # Generate element code.
-        code += _generate_element_code(data, 0, False)
+#        # Map degree of freedom to local degree.
+#        code += ["", _map_dof(0)]
 
-    # If the element is of type MixedElement (including Vector- and TensorElement).
-    else:
-        # Generate element code, for all sub-elements.
-        code += _mixed_elements(data_list)
+#        # Generate element code.
+#        code += _generate_element_code(data, 0, False)
+
+#    # If the element is of type MixedElement (including Vector- and TensorElement).
+#    else:
+#        # Generate element code, for all sub-elements.
+#        code += _mixed_elements(data_list)
 
     # Remove unused variables (from transformations and mappings) in code.
     code = remove_unused("\n".join(code))
+#    code = "\n".join(code)
     return code
 
-def _map_dof(sum_space_dim):
-    """This function creates code to map a basis function to a local basis function.
-    Example, the following mixed element:
+#def _map_dof(sum_space_dim):
+#    """This function creates code to map a basis function to a local basis function.
+#    Example, the following mixed element:
 
-    element = VectorElement("Lagrange", "triangle", 2)
+#    element = VectorElement("Lagrange", "triangle", 2)
 
-    has the element list, elements = [Lagrange order 2, Lagrange order 2] and 12 dofs (6 each).
-    The evaluation of basis function 8 is then mapped to 2 (8-6) for local element no. 2."""
+#    has the element list, elements = [Lagrange order 2, Lagrange order 2] and 12 dofs (6 each).
+#    The evaluation of basis function 8 is then mapped to 2 (8-6) for local element no. 2."""
 
-    # In case of only one element or the first element in a series then we don't subtract anything.
-    if sum_space_dim == 0:
-        code = [format["comment"]("Map degree of freedom to element degree of freedom")]
-        code += [format["const uint declaration"](format["local dof"], format["argument basis num"])]
-    else:
-        code = [format["comment"]("Map degree of freedom to element degree of freedom")]
-        code += [format["const uint declaration"](format["local dof"],\
-                format["sub"]([format["argument basis num"], "%d" % sum_space_dim]))]
+#    # In case of only one element or the first element in a series then we don't subtract anything.
+#    if sum_space_dim == 0:
+#        code = [format["comment"]("Map degree of freedom to element degree of freedom")]
+#        code += [format["const uint declaration"](format["local dof"], format["argument basis num"])]
+#    else:
+#        code = [format["comment"]("Map degree of freedom to element degree of freedom")]
+#        code += [format["const uint declaration"](format["local dof"],\
+#                format["sub"]([format["argument basis num"], "%d" % sum_space_dim]))]
 
-    return "\n".join(code)
+#    return "\n".join(code)
 
-def _mixed_elements(data_list):
-    "Generate code for each sub-element in the event of mixed elements"
+#def _mixed_elements(data_list):
+#    "Generate code for each sub-element in the event of mixed elements"
 
-    # Prefetch formats to speed up code generation.
-    f_dof_map_if = format["dof map if"]
-    f_if         = format["if"]
+#    # Prefetch formats to speed up code generation.
+#    f_dof_map_if = format["dof map if"]
+#    f_if         = format["if"]
 
-    sum_value_dim = 0
-    sum_space_dim = 0
+#    sum_value_dim = 0
+#    sum_space_dim = 0
 
-    # Initialise return code.
-    code = []
+#    # Initialise return code.
+#    code = []
 
-    # Loop list of data and generate code for each element.
-    for data in data_list:
+#    # Loop list of data and generate code for each element.
+#    for data in data_list:
 
-        # Get value and space dimension (should be tensor ready).
-        value_dim = sum(data["value_shape"] or (1,))
-        space_dim = data["space_dimension"]
+#        # Get value and space dimension (should be tensor ready).
+#        value_dim = sum(data["value_shape"] or (1,))
+#        space_dim = data["space_dimension"]
 
-        # Generate map from global to local dof.
-        element_code = [_map_dof(sum_space_dim)]
+#        # Generate map from global to local dof.
+#        element_code = [_map_dof(sum_space_dim)]
 
-        # Generate code for basis element.
-        element_code += _generate_element_code(data, sum_value_dim, True)
+#        # Generate code for basis element.
+#        element_code += _generate_element_code(data, sum_value_dim, True)
 
-        # Remove unused code for each sub element and indent code.
-        if_code = indent(remove_unused("\n".join(element_code)), 2)
+#        # Remove unused code for each sub element and indent code.
+#        if_code = indent(remove_unused("\n".join(element_code)), 2)
 
-        # Create if statement and add to code.
-        code += [f_if(f_dof_map_if(sum_space_dim, sum_space_dim + space_dim - 1), if_code)]
+#        # Create if statement and add to code.
+#        code += [f_if(f_dof_map_if(sum_space_dim, sum_space_dim + space_dim - 1), if_code)]
 
-        # Increase sum of value dimension, and space dimension.
-        sum_value_dim += value_dim
-        sum_space_dim += space_dim
+#        # Increase sum of value dimension, and space dimension.
+#        sum_value_dim += value_dim
+#        sum_space_dim += space_dim
 
-    return code
+#    return code
 
-def _generate_element_code(data, sum_value_dim, vector):
+#def _generate_element_code(data, dof_data):
+def _generate_dof_code(data, dof_data):
     """Generate code for a single basis element as the dot product of
     coefficients and basisvalues. Then apply transformation if applicable."""
 
     # Generate basisvalues.
-    code = _compute_basisvalues(data)
+    code = _compute_basisvalues(data, dof_data)
 
     # Tabulate coefficients.
-    code += _tabulate_coefficients(data)
+    code += _tabulate_coefficients(dof_data)
 
     # Compute the value of the basisfunction as the dot product of the coefficients
     # and basisvalues and apply transformation.
-    code += _compute_values(data, sum_value_dim, vector)
+    code += _compute_values(data, dof_data)
 
-    return code
+    return remove_unused("\n".join(code))
 
-def _tabulate_coefficients(data):
+def _tabulate_coefficients(dof_data):
     """This function tabulates the element coefficients that are generated by FIAT at
     compile time."""
 
@@ -245,35 +253,36 @@ def _tabulate_coefficients(data):
     f_new_line      = format["new line"]
 
     # Get coefficients from basis functions, computed by FIAT at compile time.
-    coefficients = data["coeffs"]
+    coefficients = dof_data["coeffs"]
 
-    # Use rank to handle coefficients.
-    rank = len(data["value_shape"])
-    if rank == 0:
-        coefficients = [coefficients]
-    # Vector valued basis element [Raviart-Thomas, Brezzi-Douglas-Marini (BDM)].
-    elif rank == 1:
-        coefficients = numpy.transpose(coefficients, [1,0,2])
-    # Tensor and other elements.
-    else:
-        error("Rank %d elements are currently not supported" % rank)
+#    # Use rank to handle coefficients.
+#    rank = len(data["value_shape"])
+#    if rank == 0:
+#        coefficients = [coefficients]
+#    # Vector valued basis element [Raviart-Thomas, Brezzi-Douglas-Marini (BDM)].
+#    elif rank == 1:
+#        coefficients = numpy.transpose(coefficients, [1,0,2])
+#    # Tensor and other elements.
+#    else:
+#        error("Rank %d elements are currently not supported" % rank)
 
     # Initialise return code.
     code = [f_comment("Table(s) of coefficients.")]
 
+    # Get number of members of the expansion set.
+    num_mem = dof_data["num_expansion_members"]
+
     # Generate tables for each component.
     for i, coeffs in enumerate(coefficients):
-        # Get number of dofs and number of members of the expansion set.
-        num_dofs, num_mem = numpy.shape(coeffs)
 
         # Varable name for coefficients.
-        name = f_component(f_coefficients(i), [num_dofs, num_mem])
+        name = f_component(f_coefficients(i), num_mem)
 
         # Generate array of values.
         code += [f_decl(f_table, name, f_new_line + f_tensor(coeffs))] + [""]
     return code
 
-def _compute_values(data, sum_value_dim, vector):
+def _compute_values(data, dof_data):
     """This function computes the value of the basisfunction as the dot product
     of the coefficients and basisvalues."""
 
@@ -285,7 +294,7 @@ def _compute_values(data, sum_value_dim, vector):
     f_coefficients  = format["coefficients"]
     f_basisvalues   = format["basisvalues"]
     f_r             = format["free indices"][0]
-    f_dof           = format["local dof"]
+#    f_dof           = format["local dof"]
     f_deref_pointer = format["dereference pointer"]
     f_detJ          = format["det(J)"]
     f_inv           = format["inverse"]
@@ -302,44 +311,48 @@ def _compute_values(data, sum_value_dim, vector):
     # Initialise return code.
     code = [f_comment("Compute value(s).")]
 
-    # Get number of components, change for tensor valued elements.
-    shape = data["value_shape"]
-    if shape == ():
-        num_components = 1
-    elif len(shape) == 1:
-        num_components = shape[0]
-    else:
-        error("Tensor valued elements are not supported yet: %d " % shape)
+    # Get dof data.
+    num_components = dof_data["num_components"]
+    offset = dof_data["offset"]
+
+#    # Get number of components, change for tensor valued elements.
+#    shape = data["value_shape"]
+#    if shape == ():
+#        num_components = 1
+#    elif len(shape) == 1:
+#        num_components = shape[0]
+#    else:
+#        error("Tensor valued elements are not supported yet: %d " % shape)
 
     lines = []
-    if (vector or num_components != 1):
+    if data["value_size"] != 1:
         # Loop number of components.
         for i in range(num_components):
             # Generate name and value to create matrix vector multiply.
-            name = f_component(f_values, i + sum_value_dim)
-            value = f_mul([f_component(f_coefficients(i), [f_dof, f_r]),\
+            name = f_component(f_values, i + offset)
+            value = f_mul([f_component(f_coefficients(i), f_r),\
                     f_component(f_basisvalues, f_r)])
             lines += [f_iadd(name, value)]
     else:
         # Generate name and value to create matrix vector multiply.
         name = f_deref_pointer(f_values)
-        value = f_mul([f_component(f_coefficients(0), [f_dof, f_r]),\
+        value = f_mul([f_component(f_coefficients(0), f_r),\
                 f_component(f_basisvalues, f_r)])
         lines = [f_iadd(name, value)]
 
     # Get number of members of the expansion set.
-    num_mem = data["num_expansion_members"]
+    num_mem = dof_data["num_expansion_members"]
     loop_vars = [(f_r, 0, num_mem)]
     code += f_loop(lines, loop_vars)
 
     # Apply transformation if applicable.
-    mapping = data["mapping"]
+    mapping = dof_data["mapping"]
     if mapping == "affine":
         pass
     elif mapping == "contravariant piola":
         code += ["", f_comment("Using contravariant Piola transform to map values back to the physical element.")]
         # Get temporary values before mapping.
-        code += [f_const_float(f_tmp_ref(i), f_component(f_values, i + sum_value_dim))\
+        code += [f_const_float(f_tmp_ref(i), f_component(f_values, i + offset))\
                   for i in range(num_components)]
         # Create names for inner product.
         topological_dimension = data["topological_dimension"]
@@ -351,12 +364,12 @@ def _compute_values(data, sum_value_dim, vector):
             # Create inner product and multiply by inverse of Jacobian.
             inner = f_group(f_inner(jacobian_row, basis_col))
             value = f_mul([f_inv(f_detJ(None)), inner])
-            name = f_component(f_values, i + sum_value_dim)
+            name = f_component(f_values, i + offset)
             code += [f_assign(name, value)]
     elif mapping == "covariant piola":
         code += ["", f_comment("Using covariant Piola transform to map values back to the physical element.")]
         # Get temporary values before mapping.
-        code += [f_const_float(f_tmp_ref(i), f_component(f_values, i + sum_value_dim))\
+        code += [f_const_float(f_tmp_ref(i), f_component(f_values, i + offset))\
                   for i in range(num_components)]
         # Create names for inner product.
         topological_dimension = data["topological_dimension"]
@@ -367,7 +380,7 @@ def _compute_values(data, sum_value_dim, vector):
 
             # Create inner product of basis values and inverse of Jacobian.
             value = f_group(f_inner(inv_jacobian_column, basis_col))
-            name = f_component(f_values, i + sum_value_dim)
+            name = f_component(f_values, i + offset)
             code += [f_assign(name, value)]
     else:
         error("Unknown mapping: %s" % mapping)
@@ -434,7 +447,7 @@ def _jrc(a, b, n):
     cn        = create_fraction(cn_num, cn_denom)
     return (an, bn, cn)
 
-def _compute_basisvalues(data):
+def _compute_basisvalues(data, dof_data):
     """From FIAT_NEW.expansions."""
 
     # Prefetch formats to speed up code generation.
@@ -469,7 +482,7 @@ def _compute_basisvalues(data):
     an, bn, cn          = [create_symbol(f_tmp(i), CONST) for i in range(5,8)]
 
     # Get embedded degree.
-    embedded_degree = data["embedded_degree"]
+    embedded_degree = dof_data["embedded_degree"]
 
     # Create helper symbols.
     symbol_p    = create_symbol(f_r, CONST)
@@ -501,7 +514,7 @@ def _compute_basisvalues(data):
 
     # Create zero array for basisvalues.
     # Get number of members of the expansion set.
-    num_mem = data["num_expansion_members"]
+    num_mem = dof_data["num_expansion_members"]
     code += [f_comment("Array of basisvalues.")]
     code += [f_decl(f_double, f_component(f_basisvalue, num_mem), f_tensor([0.0]*num_mem))]
 

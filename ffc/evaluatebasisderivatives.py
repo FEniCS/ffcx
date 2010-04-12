@@ -7,7 +7,7 @@ __date__ = "2007-04-16"
 __copyright__ = "Copyright (C) 2007-2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-02-08
+# Last changed: 2010-04-12
 
 # Python modules
 import math
@@ -15,14 +15,14 @@ import numpy
 
 # FFC modules
 from ffc.log import error, ffc_assert
-from ffc.evaluatebasis import _map_dof, _compute_basisvalues, _tabulate_coefficients
+from ffc.evaluatebasis import _compute_basisvalues, _tabulate_coefficients
 from ffc.cpp import remove_unused, indent, format
 
-def _evaluate_basis_derivatives_all(data_list):
+def _evaluate_basis_derivatives_all(data):
     """Like evaluate_basis, but return the values of all basis functions (dofs)."""
 
-    if isinstance(data_list, str):
-        return format["exception"]("evaluate_basis_derivatives_all: %s" % data_list)
+    if isinstance(data, str):
+        return format["exception"]("evaluate_basis_derivatives_all: %s" % data)
 
     # Prefetch formats.
     f_r, f_s      = format["free indices"][:2]
@@ -59,8 +59,8 @@ def _evaluate_basis_derivatives_all(data_list):
     # easily generate all the code.
 
     # Get total value shape and space dimension for entire element (possibly mixed).
-    value_shape = sum(sum(data["value_shape"] or (1,)) for data in data_list)
-    space_dimension = sum(data["space_dimension"] for data in data_list)
+    value_size = data["value_size"]
+    space_dimension = data["space_dimension"]
 
     # Special case where space dimension is one (constant elements).
     if space_dimension == 1:
@@ -69,16 +69,14 @@ def _evaluate_basis_derivatives_all(data_list):
         return "\n".join(code)
 
     # Compute number of derivatives.
-    # Get the topological dimension.
-    topological_dimension = data_list[0]["topological_dimension"]
-    code += _compute_num_derivatives(topological_dimension)
+    code += _compute_num_derivatives(data["topological_dimension"])
 
     # Declare helper value to hold single dof values and reset.
     code += ["", f_comment("Helper variable to hold values of a single dof.")]
-    if (value_shape == 1):
+    if (value_size == 1):
         num_vals = f_num_derivs
     else:
-        num_vals = f_mul([f_int(value_shape), f_num_derivs])
+        num_vals = f_mul([f_int(value_size), f_num_derivs])
     code += [f_array(f_double, f_dof_vals, num_vals)]
     line  = [f_assign(f_component(f_dof_vals, f_r), f_float(0.0))]
     code += f_loop(line, [(f_r, 0, num_vals)])
@@ -102,23 +100,23 @@ def _evaluate_basis_derivatives_all(data_list):
     # Generate bode (no need to remove unused).
     return "\n".join(code)
 
-def _evaluate_basis_derivatives(data_list):
+def _evaluate_basis_derivatives(data):
     """Evaluate the derivatives of an element basisfunction at a point. The values are
     computed as in FIAT as the matrix product of the coefficients (computed at compile time),
     basisvalues which are dependent on the coordinate and thus have to be computed at
     run time and combinations (depending on the order of derivative) of dmats
     tables which hold the derivatives of the expansion coefficients."""
 
-    if isinstance(data_list, str):
-        return format["exception"]("evaluate_basis_derivatives: %s" % data_list)
+    if isinstance(data, str):
+        return format["exception"]("evaluate_basis_derivatives: %s" % data)
 
     # Initialise return code.
     code = []
 
     # Get the element cell domain, geometric and topological dimension.
-    element_cell_domain = data_list[0]["cell_domain"]
-    geometric_dimension = data_list[0]["geometric_dimension"]
-    topological_dimension = data_list[0]["topological_dimension"]
+    element_cell_domain = data["cell_domain"]
+    geometric_dimension = data["geometric_dimension"]
+    topological_dimension = data["topological_dimension"]
 
     # Get code snippets for Jacobian, Inverse of Jacobian and mapping of
     # coordinates from physical element to the FIAT reference element.
@@ -138,21 +136,15 @@ def _evaluate_basis_derivatives(data_list):
     code += _generate_transform(element_cell_domain)
 
     # Reset all values.
-    code += _reset_values(data_list)
+    code += _reset_values(data)
 
-    if len(data_list) == 1:
-        data = data_list[0]
-
-        # Map degree of freedom to local degree.
-        code += [_map_dof(0)]
-
-        # Generate element code.
-        code += _generate_element_code(data, 0)
-
-    # If the element is of type MixedElement (including Vector- and TensorElement).
-    else:
-        code += _mixed_elements(data_list)
+    # Create code for all basis values (dofs).
+    dof_cases = []
+    for dof in data["dof_data"]:
+        dof_cases.append(_generate_dof_code(data, dof))
+    code += [format["switch"](format["argument basis num"], dof_cases)]
     code = remove_unused("\n".join(code))
+#    code = "\n".join(code)
     return code
 
 def _compute_num_derivatives(topological_dimension):
@@ -198,7 +190,7 @@ def _generate_transform(element_cell_domain):
 
     return code
 
-def _reset_values(data_list):
+def _reset_values(data):
     "Reset all components of the 'values' array as it is a pointer to an array."
 
     # Prefetch formats.
@@ -209,13 +201,13 @@ def _reset_values(data_list):
 
     # Get value shape and reset values. This should also work for TensorElement,
     # scalar are empty tuples, therefore (1,) in which case value_shape = 1.
-    value_shape = sum(sum(data["value_shape"] or (1,)) for data in data_list)
+    value_size = data["value_size"]
 
     # Only multiply by value shape if different from 1.
-    if value_shape == 1:
+    if value_size == 1:
         num_vals = format["num derivatives"]
     else:
-        num_vals = format["mul"]([format["int"](value_shape), format["num derivatives"]])
+        num_vals = format["mul"]([format["int"](value_size), format["num derivatives"]])
     name = format["component"](format["argument values"], f_r)
     loop_vars = [(f_r, 0, num_vals)]
     lines = [f_assign(name, format["floating point"](0))]
@@ -223,71 +215,74 @@ def _reset_values(data_list):
 
     return code + [""]
 
-def _generate_element_code(data, sum_value_dim):
-    "Generate code for each basis element."
+def _generate_dof_code(data, dof_data):
+    "Generate code for a basis."
 
     code = []
 
     # Compute basisvalues, from evaluatebasis.py.
-    code += _compute_basisvalues(data)
+    code += _compute_basisvalues(data, dof_data)
 
     # Tabulate coefficients.
-    code += _tabulate_coefficients(data)
+    code += _tabulate_coefficients(dof_data)
 
     # Tabulate coefficients for derivatives.
-    code += _tabulate_dmats(data)
+    code += _tabulate_dmats(dof_data)
 
     # Compute the derivatives of the basisfunctions on the reference (FIAT) element,
     # as the dot product of the new coefficients and basisvalues.
-    code += _compute_reference_derivatives(data)
+    code += _compute_reference_derivatives(data, dof_data)
 
     # Transform derivatives to physical element by multiplication with the transformation matrix.
-    code += _transform_derivatives(data, sum_value_dim)
+    code += _transform_derivatives(data, dof_data)
 
     # Delete pointers.
-    code += _delete_pointers(data)
+    code += _delete_pointers()
+
+    code = remove_unused("\n".join(code))
+#    code = "\n".join(code)
 
     return code
 
-def _mixed_elements(data_list):
-    "Generate code for each sub-element in the event of vector valued elements or mixed elements."
+#def _mixed_elements(data_list):
+#    "Generate code for each sub-element in the event of vector valued elements or mixed elements."
 
-    # Prefetch formats to speed up code generation.
-    f_dof_map_if = format["dof map if"]
-    f_if         = format["if"]
+#    # Prefetch formats to speed up code generation.
+#    f_dof_map_if = format["dof map if"]
+#    f_if         = format["if"]
 
-    sum_value_dim = 0
-    sum_space_dim = 0
+#    sum_value_dim = 0
+#    sum_space_dim = 0
 
-    # Init return code.
-    code = []
+#    # Init return code.
+#    code = []
 
-    # Generate code for each element.
-    for data in data_list:
+#    # Generate code for each element.
+#    for data in data_list:
 
-        # Get value and space dimension (should be tensor ready).
-        value_dim = sum(data["value_shape"] or (1,))
-        space_dim = data["space_dimension"]
+#        # Get value and space dimension (should be tensor ready).
+#        value_dim = sum(data["value_shape"] or (1,))
+#        space_dim = data["space_dimension"]
 
-        # Generate map from global to local dof.
-        element_code = [_map_dof(sum_space_dim)]
+#        # Generate map from global to local dof.
+#        element_code = [_map_dof(sum_space_dim)]
 
-        # Generate code for basis element.
-        element_code += _generate_element_code(data, sum_value_dim)
+#        # Generate code for basis element.
+#        element_code += _generate_element_code(data, sum_value_dim)
 
-        # Remove unused code for each sub element and indent code.
-        if_code = indent(remove_unused("\n".join(element_code)), 2)
+#        # Remove unused code for each sub element and indent code.
+#        if_code = indent(remove_unused("\n".join(element_code)), 2)
 
-        # Create if statement and add to code.
-        code += [f_if(f_dof_map_if(sum_space_dim, sum_space_dim + space_dim -1), if_code)]
+#        # Create if statement and add to code.
+#        code += [f_if(f_dof_map_if(sum_space_dim, sum_space_dim + space_dim -1), if_code)]
 
-        # Increase sum of value dimension, and space dimension.
-        sum_value_dim += value_dim
-        sum_space_dim += space_dim
+#        # Increase sum of value dimension, and space dimension.
+#        sum_value_dim += value_dim
+#        sum_space_dim += space_dim
 
-    return code
+#    return code
 
-def _tabulate_dmats(data):
+def _tabulate_dmats(dof_data):
     "Tabulate the derivatives of the polynomial base"
 
     code = []
@@ -301,7 +296,7 @@ def _tabulate_dmats(data):
     f_new_line  = format["new line"]
 
     # Get derivative matrices (coefficients) of basis functions, computed by FIAT at compile time.
-    derivative_matrices = data["dmats"]
+    derivative_matrices = dof_data["dmats"]
 
     code += [format["comment"]("Tables of derivatives of the polynomial base (transpose).")]
 
@@ -313,7 +308,7 @@ def _tabulate_dmats(data):
 
         # Get shape and check dimension (This is probably not needed).
         shape = numpy.shape(matrix)
-        ffc_assert(shape[0] == shape[1] == data["num_expansion_members"], "Something is wrong with the shape of dmats.")
+        ffc_assert(shape[0] == shape[1] == dof_data["num_expansion_members"], "Something is wrong with the shape of dmats.")
 
         # Declare varable name for coefficients.
         name = f_component(f_dmats(i), [shape[0], shape[1]])
@@ -391,7 +386,7 @@ def _dmats_product(shape_dmats, index, i, indices):
 
     return code
 
-def _compute_reference_derivatives(data):
+def _compute_reference_derivatives(data, dof_data):
     """Compute derivatives on the reference element by recursively multiply coefficients with
     the relevant derivatives of the polynomial base until the requested order of derivatives
     has been reached. After this take the dot product with the basisvalues."""
@@ -403,7 +398,7 @@ def _compute_reference_derivatives(data):
     f_int           = format["int"]
     f_matrix_index  = format["matrix index"]
     f_coefficients  = format["coefficients"]
-    f_dof           = format["local dof"]
+#    f_dof           = format["local dof"]
     f_basisvalues   = format["basisvalues"]
     f_const_double  = format["const float declaration"]
     f_group         = format["grouping"]
@@ -428,20 +423,14 @@ def _compute_reference_derivatives(data):
 
     f_r, f_s, f_t, f_u = format["free indices"]
 
-    # Get number of components, change for tensor valued elements.
-    shape = data["value_shape"]
-    if shape == ():
-        num_components = 1
-    elif len(shape) == 1:
-        num_components = shape[0]
-    else:
-        error("Tensor valued elements are not supported yet: %s" % data["family"])
+    # Get number of components.
+    num_components = dof_data["num_components"]
 
     # Get shape of derivative matrix (they should all have the same shape) and
     # verify that it is a square matrix.
-    shape_dmats = numpy.shape(data["dmats"][0])
+    shape_dmats = numpy.shape(dof_data["dmats"][0])
     ffc_assert(shape_dmats[0] == shape_dmats[1],\
-               "Something is wrong with the dmats:\n%s" % str(data["dmats"]))
+               "Something is wrong with the dmats:\n%s" % str(dof_data["dmats"]))
 
     code = [f_comment("Compute reference derivatives.")]
 
@@ -471,13 +460,13 @@ def _compute_reference_derivatives(data):
     code += [f_decl(f_double, name, f_new_line + value), ""]
 
     # Compute dmats as a recursive matrix product
-    lines = _compute_dmats(len(data["dmats"]), shape_dmats, [f_s, f_t, f_u], f_r)
+    lines = _compute_dmats(len(dof_data["dmats"]), shape_dmats, [f_s, f_t, f_u], f_r)
 
     # Compute derivatives for all components
     lines_c = []
     for i in range(num_components):
         name = f_component(f_derivatives, f_matrix_index(i, f_r, f_num_derivs))
-        coeffs = f_component(f_coefficients(i), [f_dof, f_s])
+        coeffs = f_component(f_coefficients(i), f_s)
         dmats = f_component(f_dmats(""), [f_s, f_t])
         basis = f_component(f_basisvalues, f_t)
         lines_c.append(f_iadd(name, f_mul([coeffs, dmats, basis])))
@@ -485,7 +474,7 @@ def _compute_reference_derivatives(data):
     lines += f_loop(lines_c, loop_vars_c)
 
     # Apply transformation if applicable.
-    mapping = data["mapping"]
+    mapping = dof_data["mapping"]
     if mapping == "affine":
         pass
     elif mapping == "contravariant piola":
@@ -538,7 +527,7 @@ def _compute_reference_derivatives(data):
 
     return code + [""]
 
-def _transform_derivatives(data, sum_value_dim):
+def _transform_derivatives(data, dof_data):
     """Transform derivatives back to the physical element by applying the
     transformation matrix."""
 
@@ -554,20 +543,15 @@ def _transform_derivatives(data, sum_value_dim):
     f_r, f_s      = format["free indices"][:2]
     f_index       = format["matrix index"]
 
-    # Get number of components, change for tensor valued elements.
-    shape = data["value_shape"]
-    if shape == ():
-        num_components = 1
-    elif len(shape) == 1:
-        num_components = shape[0]
-    else:
-        error("Tensor valued elements are not supported yet: %s" % data["family"])
+    # Get number of components and offset.
+    num_components = dof_data["num_components"]
+    offset = dof_data["offset"]
 
     code = [format["comment"]("Transform derivatives back to physical element")]
 
     lines = []
     for i in range(num_components):
-        access_name = f_index(sum_value_dim + i, f_r, f_num_derivs)
+        access_name = f_index(offset + i, f_r, f_num_derivs)
         name = f_component(f_values, access_name)
         access_val = f_index(i, f_s, f_num_derivs)
         value = f_mul([f_component(f_transform, [f_r, f_s]), f_component(f_derivatives, access_val)])
@@ -577,7 +561,7 @@ def _transform_derivatives(data, sum_value_dim):
     code += f_loop(lines, loop_vars)
     return code
 
-def _delete_pointers(data):
+def _delete_pointers():
     "Delete the pointers to arrays."
 
     f_del_array = format["delete dynamic array"]

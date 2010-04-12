@@ -3,7 +3,7 @@ __date__ = "2010-01-29"
 __copyright__ = "Copyright (C) 2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-02-02
+# Last changed: 2010-04-12
 
 from cppcode import evaluate_basis_code_fiat
 from ufl import FiniteElement, MixedElement
@@ -36,13 +36,13 @@ single_elements = [
                     {"family": "Brezzi-Douglas-Marini",\
                       "shapes": ["triangle", "tetrahedron"],\
                       "degrees": [1, 2, 3]},\
+                    {"family": "Nedelec 1st kind H(curl)",\
+                      "shapes": ["triangle", "tetrahedron"],\
+                      "degrees": [1, 2, 3]}
 # Not supported in new FIAT
 #                    {"family": "Brezzi-Douglas-Fortin-Marini",\
 #                      "shapes": ["triangle", "tetrahedron"],\
 #                      "degrees": [1, 2, 3]},\
-                    {"family": "Nedelec 1st kind H(curl)",\
-                      "shapes": ["triangle", "tetrahedron"],\
-                      "degrees": [1, 2, 3]}
 ]
 
 # Create some mixed elements

@@ -19,7 +19,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Marie E. Rognes 2010
 # Modified by Kristian B. Oelgaard 2010
-# Last changed: 2010-01-29
+# Last changed: 2010-04-12
 
 # Python modules
 from itertools import chain
@@ -90,7 +90,7 @@ def _compute_element_ir(ufl_element, element_id, element_map):
     ir["space_dimension"] = element.space_dimension()
     ir["value_rank"] = len(ufl_element.value_shape())
     ir["value_dimension"] = ufl_element.value_shape()
-    ir["evaluate_basis"] = _verify_evaluate_basis(_evaluate_basis(element, cell))
+    ir["evaluate_basis"] = _evaluate_basis(element, cell)
     ir["evaluate_dof"] = _evaluate_dof(element, cell)
     ir["interpolate_vertex_values"] = _interpolate_vertex_values(element, cell)
     ir["num_sub_elements"] = ufl_element.num_sub_elements()
@@ -215,66 +215,6 @@ def _compute_form_ir(form, form_id, element_map):
 
 #--- Computation of intermediate representation for non-trivial functions ---
 
-def _evaluate_basis(element, cell):
-    "Compute intermediate representation for evaluate_basis."
-
-    # Create data for each sub-element of a mixed element or
-    # enriched element
-    if isinstance(element, (MixedElement, EnrichedElement)):
-        return [_evaluate_basis(e, cell)[0] for e in element.elements()]
-
-    # Handle QuadratureElement, not supported because the basis is only defined
-    # at the dof coordinates where the value is 1, so not very interesting.
-    if isinstance(element, QuadratureElement):
-        return [not_implemented]
-
-    # Get mapping for element, must be the same for all DOFs for evaluate_basis
-    # to work in its current implementation
-    mapping = element.mapping()[0]
-    ffc_assert(all(mapping == m for m in element.mapping()),\
-               "Mapping is not the same for all dofs of this element: %s" % str(element))
-    data = {
-          "value_shape" : element.value_shape(),
-          "embedded_degree" : element.degree(),
-          "cell_domain" : cell.domain(),
-          "coeffs" : element.get_coeffs(),
-          "mapping" : mapping,
-          "space_dimension" : element.space_dimension(),
-          "topological_dimension" : cell.topological_dimension(),
-          "geometric_dimension" : cell.geometric_dimension(),
-          "dmats" : element.dmats()
-          }
-
-    data["num_expansion_members"] = element.get_num_members(data["embedded_degree"])
-
-    return [data]
-
-def _verify_evaluate_basis(data_list):
-    "Some safety checks."
-
-    # If we have a QuadratureElement, or if there is one present in the MixedElement
-    # we cannot create evaluate_basis
-    for data in data_list:
-        if data is not_implemented:
-            return "Function not supported/implemented for QuadratureElement."
-
-    # FIXME: KBO: If UFL makes sure that the below is always true, we can delete this function.
-    # Get the element cell domain and check if it is the same for all elements.
-    element_cell_domain = data_list[0]["cell_domain"]
-    ffc_assert(all(element_cell_domain == data["cell_domain"] for data in data_list),\
-               "The element cell domain must be the same for all sub elements: " + repr(data_list))
-
-    # Get the element geometric dimension and check if it is the same for all elements.
-    geometric_dimension = data_list[0]["geometric_dimension"]
-    ffc_assert(all(geometric_dimension == data["geometric_dimension"] for data in data_list),\
-               "The geometric dimension must be the same for all sub elements: " + repr(data_list))
-
-    # Get the element topological dimension and check if it is the same for all elements.
-    topological_dimension = data_list[0]["topological_dimension"]
-    ffc_assert(all(topological_dimension == data["topological_dimension"] for data in data_list),\
-               "The topological dimension must be the same for all sub elements: " + repr(data_list))
-    return data_list
-
 # FIXME: Move to FiniteElement/MixedElement
 def _value_size(element):
     "Compute value size of element."
@@ -282,6 +222,7 @@ def _value_size(element):
     if shape == ():
         return 1
     else:
+        # FIXME: KBO: Is this correct? Shouldn't it be sum() instead?
         return product(shape)
 
 def _generate_offsets(element, offset=0):
@@ -312,6 +253,83 @@ def _evaluate_dof(element, cell):
             "cell_dimension": cell.geometric_dimension(),
             "dofs": [L.pt_dict for L in element.dual_basis()],
             "offsets": _generate_offsets(element)}
+
+def _extract_elements(element):
+
+    new_elements = []
+    if isinstance(element, (MixedElement, EnrichedElement)):
+        for e in element.elements():
+            new_elements += _extract_elements(e)
+    else:
+        new_elements.append(element)
+    return new_elements
+
+def _num_components(element):
+    """Compute the number of components of element, like _value_size, but
+    does not support tensor elements."""
+    shape = element.value_shape()
+    if shape == ():
+        return 1
+    elif len(shape) == 1:
+        return shape[0]
+    else:
+        error("Tensor valued elements are not supported yet: %d " % shape)
+
+def _evaluate_basis(element, cell):
+    "Compute intermediate representation for evaluate_basis."
+
+    # Handle Mixed and EnrichedElements by extracting 'sub' elements.
+    elements = _extract_elements(element)
+    offsets = _generate_offsets(element)
+    mappings = element.mapping()
+
+    # Handle QuadratureElement, not supported because the basis is only defined
+    # at the dof coordinates where the value is 1, so not very interesting.
+    for e in elements:
+        if isinstance(e, QuadratureElement):
+            return "Function not supported/implemented for QuadratureElement."
+
+    # Initialise data with 'global' values.
+    data = {
+          "value_size" : sum(element.value_shape() or (1,)),
+          "cell_domain" : cell.domain(),
+          "topological_dimension" : cell.topological_dimension(),
+          "geometric_dimension" : cell.geometric_dimension(),
+          "space_dimension" : element.space_dimension()
+          }
+    # Loop element and space dimensions to generate dof data.
+    dof = 0
+    dof_data = []
+    for e in elements:
+        for i in range(e.space_dimension()):
+            num_components = _num_components(e)
+            coefficients = []
+            coeffs = e.get_coeffs()
+
+            # Handle coefficients for vector valued basis elements
+            # [Raviart-Thomas, Brezzi-Douglas-Marini (BDM)].
+            if num_components > 1:
+                for c in range(num_components):
+                    coefficients.append(coeffs[i][c])
+            else:
+                coefficients.append(coeffs[i])
+
+            dof_data.append(
+              {
+              "embedded_degree" : e.degree(),
+              "coeffs" : coefficients,
+              "num_components" : num_components,
+              "dmats" : e.dmats(),
+              "mapping" : mappings[dof],
+              "offset" : offsets[dof],
+              "num_expansion_members": e.get_num_members(e.degree())
+              })
+
+            dof += 1
+
+    data["dof_data"] = dof_data
+
+    return data
 
 def _tabulate_coordinates(element):
     "Compute intermediate representation of tabulate_coordinates."
