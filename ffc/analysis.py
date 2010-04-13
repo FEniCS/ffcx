@@ -12,12 +12,12 @@ __date__ = "2007-02-05"
 __copyright__ = "Copyright (C) 2007-2010 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-02-15
+# Last changed: 2010-04-13
 
 # UFL modules
 from ufl.common import istr, tstr
 from ufl.integral import Measure
-from ufl.algorithms import preprocess
+from ufl.finiteelement import MixedElement, EnrichedElement
 from ufl.algorithms import preprocess
 from ufl.algorithms import estimate_max_polynomial_degree
 from ufl.algorithms import estimate_total_polynomial_degree
@@ -229,6 +229,17 @@ def _extract_metadata(form_data, parameters):
 
     return metadata
 
+def _get_sub_elements(element):
+    "Get sub elements."
+    sub_elements = [element]
+    if isinstance(element, MixedElement):
+        for e in element.sub_elements():
+            sub_elements += _get_sub_elements(e)
+    elif isinstance(element, EnrichedElement):
+        for e in element._elements:
+            sub_elements += _get_sub_elements(e)
+    return sub_elements
+
 def _auto_select_representation(integral, elements):
     """
     Automatically select a suitable representation for integral.
@@ -238,13 +249,18 @@ def _auto_select_representation(integral, elements):
     necessarily get the same representation.
     """
 
+    # Get ALL sub elements, needed to check for restrictions of EnrichedElements.
+    sub_elements = []
+    for e in elements:
+        sub_elements += _get_sub_elements(e)
+
     # Use quadrature representation if we have a quadrature element
-    if len([e for e in elements if e.family() == "Quadrature"]):
+    if len([e for e in sub_elements if e.family() == "Quadrature"]):
         return "quadrature"
 
     # Use quadrature representation if any elements are restricted to
     # UFL.Measure. This is used when integrals are computed over discontinuities.
-    if len([e for e in elements if isinstance(e.domain_restriction(), Measure)]):
+    if len([e for e in sub_elements if isinstance(e.domain_restriction(), Measure)]):
         return "quadrature"
 
     # Estimate cost of tensor representation
