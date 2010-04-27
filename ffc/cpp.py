@@ -417,7 +417,7 @@ def _tabulate_tensor(vals):
     else:
         error("Not an N-dimensional array:\n%s" % tensor)
 
-def _generate_loop(lines, loop_vars):
+def _generate_loop(lines, loop_vars, _indent=0):
     "This function generates a loop over a vector or matrix."
 
     # Prefetch formats to speed up code generation.
@@ -430,7 +430,6 @@ def _generate_loop(lines, loop_vars):
         return lines
 
     code = []
-    _indent = 0
     for ls in loop_vars:
         # Get index and lower and upper bounds.
         index, lower, upper = ls
