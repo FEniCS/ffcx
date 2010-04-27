@@ -34,7 +34,7 @@ format.update({
     "comment":        lambda v: "// %s" % v,
     "if":             lambda c, v: "if (%s)\n{\n%s\n}\n" % (c, v),
     "loop":           lambda i, j, k: "for (unsigned int %s = %s; %s < %s; %s++)"% (i, j, i, k, i),
-    "generate loop":  lambda v, w: _generate_loop(v, w),
+    "generate loop":  lambda v, w, _indent=0: _generate_loop(v, w, _indent),
     "is equal":       " == ",
     "do nothing":     "// Do nothing"
 })
@@ -253,7 +253,7 @@ def _delete_array(name, size=None):
     if size is None:
         return "delete [] %s;" % name
     f_r = format["free indices"][0]
-    code = _generate_loop(["delete [] %s;" % format["component"](name, f_r)], [(f_r, 0, size)])
+    code = format["generate loop"](["delete [] %s;" % format["component"](name, f_r)], [(f_r, 0, size)])
     code.append("delete [] %s;" % name)
     return "\n".join(code)
 
@@ -417,7 +417,7 @@ def _tabulate_tensor(vals):
     else:
         error("Not an N-dimensional array:\n%s" % tensor)
 
-def _generate_loop(lines, loop_vars, _indent=0):
+def _generate_loop(lines, loop_vars, _indent):
     "This function generates a loop over a vector or matrix."
 
     # Prefetch formats to speed up code generation.
