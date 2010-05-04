@@ -5,7 +5,7 @@ __date__ = "2009-07-12"
 __copyright__ = "Copyright (C) 2009-2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-03-11
+# Last changed: 2010-05-04
 
 # FFC modules
 from ffc.log import debug, error
@@ -125,12 +125,13 @@ def optimise_code(expr, ip_consts, geo_consts, trans_set):
     format_I  = format["ip constant"]
     trans_set_update = trans_set.update
 
-    # Return constant symbol if value is zero.
-    if expr.val == 0.0:
+    # Return constant symbol if expanded value is zero.
+    exp_expr = expr.expand()
+    if exp_expr.val == 0.0:
         return create_float(0)
 
     # Reduce expression with respect to basis function variable.
-    basis_expressions = expr.expand().reduce_vartype(BASIS)
+    basis_expressions = exp_expr.reduce_vartype(BASIS)
 
     # If we had a product instance we'll get a tuple back so embed in list.
     if not isinstance(basis_expressions, list):
