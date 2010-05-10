@@ -140,6 +140,8 @@ def _compute_dofmap_ir(ufl_element, element_id, element_map):
 def _init_mesh(element):
 
     if not isinstance(element, MixedElement):
+        if isinstance(element, SpaceOfReals):
+            return ([], 1)
         return (_num_dofs_per_entity(element), 0)
 
     elements = []
