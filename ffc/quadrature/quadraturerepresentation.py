@@ -6,7 +6,7 @@ __copyright__ = "Copyright (C) 2009-2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Anders Logg, 2009.
-# Last changed: 2010-03-11
+# Last changed: 2010-05-04
 
 # UFL modules
 from ufl.classes import Form, Integral, SpatialDerivative
@@ -110,6 +110,9 @@ def compute_integral_ir(domain_type, domain_id, integrals, metadata, form_data, 
         ir["trans_integrals"] = terms
     else:
         error("Unhandled domain type: " + str(domain_type))
+
+    # Save tables map, to extract table names for optimisation option -O.
+    ir["psi_tables_map"] = transformer.psi_tables_map
 
     return ir
 

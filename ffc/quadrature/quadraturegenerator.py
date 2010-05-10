@@ -5,7 +5,7 @@ __date__ = "2009-01-07"
 __copyright__ = "Copyright (C) 2009-2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-03-11
+# Last changed: 2010-05-04
 
 # Python modules.
 import numpy
@@ -340,6 +340,11 @@ def _generate_integral_code(points, terms, sets, optimise_parameters):
 
     # Loop terms and create code.
     for loop, (data, entry_vals) in terms.items():
+
+        # If we don't have any entry values, there's no need to generate the
+        # loop.
+        if not entry_vals:
+            continue
 
         # Get data.
         t_set, u_weights, u_psi_tables, u_nzcs, basis_consts = data

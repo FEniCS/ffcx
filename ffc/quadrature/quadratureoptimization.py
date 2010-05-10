@@ -3,7 +3,7 @@ __date__ = "2010-02-08"
 __copyright__ = "Copyright (C) 2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-03-11
+# Last changed: 2010-05-04
 
 # FFC modules
 from ffc.log import info
@@ -16,23 +16,24 @@ def optimize_integral_ir(ir):
 
     parameters = ir["optimise_parameters"]
     if parameters["optimisation"]:
-        integrals  = ir["trans_integrals"]
-        domain_type =ir["domain_type"]
-        num_facets = ir["num_facets"]
-        geo_consts = ir["geo_consts"]
+        integrals  =  ir["trans_integrals"]
+        domain_type = ir["domain_type"]
+        num_facets =  ir["num_facets"]
+        geo_consts =  ir["geo_consts"]
+        psi_tables_map =  ir["psi_tables_map"]
         if domain_type == "cell":
             info("Optimising expressions for cell integral")
             if parameters["optimisation"] in ("precompute_ip_const", "precompute_basis_const"):
                 _precompute_expressions(integrals, geo_consts, parameters["optimisation"])
             else:
-                _simplify_expression(integrals, geo_consts)
+                _simplify_expression(integrals, geo_consts, psi_tables_map)
         elif domain_type == "exterior_facet":
             for i in range(num_facets):
                 info("Optimising expressions for facet integral %d" % i)
                 if parameters["optimisation"] in ("precompute_ip_const", "precompute_basis_const"):
                     _precompute_expressions(integrals[i], geo_consts, parameters["optimisation"])
                 else:
-                    _simplify_expression(integrals[i], geo_consts)
+                    _simplify_expression(integrals[i], geo_consts, psi_tables_map)
         elif domain_type == "interior_facet":
             for i in range(num_facets):
                 for j in range(num_facets):
@@ -40,22 +41,26 @@ def optimize_integral_ir(ir):
                     if parameters["optimisation"] in ("precompute_ip_const", "precompute_basis_const"):
                         _precompute_expressions(integrals[i][j], geo_consts,parameters["optimisation"])
                     else:
-                        _simplify_expression(integrals[i][j], geo_consts)
+                        _simplify_expression(integrals[i][j], geo_consts, psi_tables_map)
         else:
             error("Unhandled domain type: " + str(domain_type))
 
     return ir
 
-def _simplify_expression(integral, geo_consts):
+def _simplify_expression(integral, geo_consts, psi_tables_map):
     for points, terms, functions, ip_consts, coordinate in integral:
         for loop, (data, entry_vals) in terms.iteritems():
             t_set, u_weights, u_psi_tables, u_nzcs, basis_consts = data
             new_entry_vals = []
+            psi_tables = set()
             for entry, val, ops in entry_vals:
                 value = optimise_code(val, ip_consts, geo_consts, t_set)
                 # Check if value is zero
                 if value.val:
                     new_entry_vals.append((entry, value, value.ops()))
+                    psi_tables.update(set([psi_tables_map[b] for b in value.get_unique_vars(BASIS)]))
+
+            terms[loop][0][2] = psi_tables
             terms[loop][1] = new_entry_vals
 
 def _precompute_expressions(integral, geo_consts, optimisation):
