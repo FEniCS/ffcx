@@ -282,13 +282,19 @@ def main(args):
     # Generate test cases
     generate_test_cases(bench)
 
-    # Generate and validate code
+    # Generate code
     generate_code()
-    validate_code()
+
+    # Validate code
+    if not bench:
+        validate_code()
 
     # Build, run and validate programs
     if "--fast" in args or "-f" in args:
         info("Skipping program validation")
+    elif bench:
+        build_programs(bench)
+        run_programs()
     else:
         build_programs(bench)
         run_programs()

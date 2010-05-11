@@ -1,0 +1,11 @@
+# Copyright (C) 2004-2010 Anders Logg (logg@simula.no).
+# Licensed under the GNU GPL version 3 or any later version.
+#
+# The bilinear form a(v, u) for Poisson's equation.
+
+element = FiniteElement("Lagrange", triangle, 1)
+
+v = TestFunction(element)
+u = TrialFunction(element)
+
+a = inner(grad(v), grad(u))*dx
