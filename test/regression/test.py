@@ -1,9 +1,20 @@
+"""This script compiles and verifies the output for all form files
+found in the 'demo' directory. The verification is performed in two
+steps. First, the generated code is compared with stored references.
+Then, the output from all functions in the generated code is compared
+with stored reference values.
+
+This script can also be used for benchmarking tabulate_tensor for all
+form files found in the 'bench' directory. To run benchmarks, use the
+option -b.
+"""
+
 __author__ = "Anders Logg, Kristian B. Oelgaard and Marie E. Rognes"
 __date__ = "2010-01-21"
 __copyright__ = "Copyright (C) 2010 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-02-12
+# Last changed: 2010-05-11
 
 # FIXME: Need to add many more test cases. Quite a few DOLFIN
 # FIXME: forms failed after the FFC tests passed. Also need to
@@ -19,6 +30,7 @@ from ufctest import generate_test_code
 tolerance = 1e-9
 output_directory = "output"
 demo_directory = "../../../demo"
+bench_directory = "../../../bench"
 
 # Global log file
 logfile = None
@@ -47,26 +59,31 @@ def clean_output():
         shutil.rmtree(output_directory)
     os.mkdir(output_directory)
 
-def generate_test_cases():
+def generate_test_cases(bench):
     "Generate form files for all test cases."
 
     begin("Generating test cases")
 
-    # Copy demos files
-    demo_files = [f for f in os.listdir(demo_directory) if f.endswith(".ufl")]
-    demo_files.sort()
-    for f in demo_files:
-        shutil.copy("%s/%s" % (demo_directory, f), ".")
-    info_green("Copied %d demo files" % len(demo_files))
+    # Copy form files
+    if bench:
+        form_directory = bench_directory
+    else:
+        form_directory = demo_directory
+    form_files = [f for f in os.listdir(form_directory) if f.endswith(".ufl")]
+    form_files.sort()
+    for f in form_files:
+        shutil.copy("%s/%s" % (form_directory, f), ".")
+    info_green("Found %d form files" % len(form_files))
 
     # Generate form files for forms
-    info("Generating form files for extra demo forms: Not implemented")
+    info("Generating form files for extra forms: Not implemented")
 
     # Generate form files for elements
-    from elements import elements
-    info("Generating form files for extra elements (%d elements)" % len(elements))
-    for (i, element) in enumerate(elements):
-        open("X_Element%d.ufl" % i, "w").write("element = %s" % element)
+    if not bench:
+        from elements import elements
+        info("Generating form files for extra elements (%d elements)" % len(elements))
+        for (i, element) in enumerate(elements):
+            open("X_Element%d.ufl" % i, "w").write("element = %s" % element)
 
     end()
 
@@ -128,7 +145,7 @@ def validate_code():
 
     end()
 
-def build_programs():
+def build_programs(bench):
     "Build test programs for all test cases."
 
     # Get a list of all files
@@ -136,12 +153,14 @@ def build_programs():
     header_files.sort()
 
     begin("Building test programs (%d header files found)" % len(header_files))
+    if bench > 0:
+        info("Benchmarking activated")
 
     # Iterate over all files
     for f in header_files:
 
         # Generate test code
-        filename = generate_test_code(f)
+        filename = generate_test_code(f, bench)
 
         # Compile test code
         prefix = f.split(".h")[0]
@@ -257,8 +276,11 @@ def main(args):
     # Enter output directory
     os.chdir(output_directory)
 
+    # Check if we should run benchmarks
+    bench = "--bench" in args or "-b" in args
+
     # Generate test cases
-    generate_test_cases()
+    generate_test_cases(bench)
 
     # Generate and validate code
     generate_code()
@@ -268,7 +290,7 @@ def main(args):
     if "--fast" in args or "-f" in args:
         info("Skipping program validation")
     else:
-        build_programs()
+        build_programs(bench)
         run_programs()
         validate_programs()
 

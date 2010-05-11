@@ -2,7 +2,7 @@
 // Licensed under the GNU GPL version 3 or any later version.
 //
 // First added:  2010-01-24
-// Last changed: 2010-02-03
+// Last changed: 2010-05-11
 //
 // Functions for calling generated UFC functions with "random" (but
 // fixed) data and print the output to screen. Useful for running
@@ -13,6 +13,7 @@
 #include <iostream>
 #include <iomanip>
 #include <cmath>
+#include <ctime>
 #include <ufc.h>
 
 typedef unsigned int uint;
@@ -24,8 +25,19 @@ const uint max_derivative = 2;
 const uint precision = 16;
 const double epsilon = 1e-16;
 
+// Parameters for adaptive timing
+const uint initial_num_reps = 10;
+const double minimum_timing = 1.0;
+
 // Global counter for results
 uint counter = 0;
+
+// Function for timing
+double time()
+{
+  clock_t __toc_time = std::clock();
+  return ((double) (__toc_time)) / CLOCKS_PER_SEC;
+}
 
 // Function for printing a single value
 template <class value_type>
@@ -420,8 +432,9 @@ void test_dofmap(ufc::dof_map& dofmap, ufc::shape cell_shape)
 // Function for testing ufc::cell_integral objects
 void test_cell_integral(ufc::cell_integral& integral,
                         ufc::shape cell_shape,
-                        int tensor_size,
-                        double** w)
+                        uint tensor_size,
+                        double** w,
+                        bool bench)
 {
   std::cout << std::endl;
   std::cout << "Testing cell_integral" << std::endl;
@@ -430,12 +443,31 @@ void test_cell_integral(ufc::cell_integral& integral,
   // Prepare arguments
   test_cell c(cell_shape);
   double* A = new double[tensor_size];
-  for(int i = 0; i < tensor_size; i++)
+  for(uint i = 0; i < tensor_size; i++)
     A[i] = 0.0;
 
   // Call tabulate_tensor
   integral.tabulate_tensor(A, w, c);
   print_array("tabulate_tensor", tensor_size, A);
+
+  // Benchmark tabulate tensor
+  if (bench)
+  {
+    for (uint num_reps = initial_num_reps;; num_reps *= 2)
+    {
+      double t0 = time();
+      for (uint i = 0; i < num_reps; i++)
+        integral.tabulate_tensor(A, w, c);
+      double dt = time() - t0;
+      if (dt > minimum_timing)
+      {
+        dt /= static_cast<double>(num_reps);
+        std::cout << "timing required " << num_reps << " iterations" << std::endl;
+        std::cout << "bench cell_integral::tabulate_tensor: " << dt << std::endl;
+        break;
+      }
+    }
+  }
 
   // Cleanup
   delete [] A;
@@ -445,7 +477,8 @@ void test_cell_integral(ufc::cell_integral& integral,
 void test_exterior_facet_integral(ufc::exterior_facet_integral& integral,
                                   ufc::shape cell_shape,
                                   uint tensor_size,
-                                  double** w)
+                                  double** w,
+                                  bool bench)
 {
   std::cout << std::endl;
   std::cout << "Testing exterior_facet_integral" << std::endl;
@@ -466,6 +499,26 @@ void test_exterior_facet_integral(ufc::exterior_facet_integral& integral,
     print_array("tabulate_tensor", tensor_size, A, facet);
   }
 
+  // Benchmark tabulate tensor
+  if (bench)
+  {
+    for (uint num_reps = initial_num_reps;; num_reps *= 2)
+    {
+      double t0 = time();
+      for (uint i = 0; i < num_reps; i++)
+        integral.tabulate_tensor(A, w, c, 0);
+      double dt = time() - t0;
+      if (dt > minimum_timing)
+      {
+        dt /= static_cast<double>(num_reps);
+        std::cout << "timing required " << num_reps << " iterations" << std::endl;
+        std::cout << "bench exterior_facet_integral::tabulate_tensor: " << dt << std::endl;
+        break;
+      }
+    }
+
+  }
+
   // Cleanup
   delete [] A;
 }
@@ -474,7 +527,8 @@ void test_exterior_facet_integral(ufc::exterior_facet_integral& integral,
 void test_interior_facet_integral(ufc::interior_facet_integral& integral,
                                   ufc::shape cell_shape,
                                   uint macro_tensor_size,
-                                  double** w)
+                                  double** w,
+                                  bool bench)
 {
   std::cout << std::endl;
   std::cout << "Testing interior_facet_integral" << std::endl;
@@ -498,10 +552,32 @@ void test_interior_facet_integral(ufc::interior_facet_integral& integral,
       print_array("tabulate_tensor", macro_tensor_size, A, facet0, facet1);
     }
   }
+
+  // Benchmark tabulate tensor
+  if (bench)
+  {
+    for (uint num_reps = initial_num_reps;; num_reps *= 2)
+    {
+      double t0 = time();
+      for (uint i = 0; i < num_reps; i++)
+        integral.tabulate_tensor(A, w, c0, c1, 0, 0);
+      double dt = time() - t0;
+      if (dt > minimum_timing)
+      {
+        dt /= static_cast<double>(num_reps);
+        std::cout << "timing required " << num_reps << " iterations" << std::endl;
+        std::cout << "bench interior_facet_integral::tabulate_tensor: " << dt << std::endl;
+        break;
+      }
+    }
+  }
+
+  // Cleanup
+  delete [] A;
 }
 
 // Function for testing ufc::form objects
-void test_form(ufc::form& form)
+void test_form(ufc::form& form, bool bench)
 {
   std::cout << std::endl;
   std::cout << "Testing form" << std::endl;
@@ -578,7 +654,7 @@ void test_form(ufc::form& form)
   {
     ufc::cell_integral* integral = form.create_cell_integral(i);
     if (integral)
-      test_cell_integral(*integral, cell_shape, tensor_size, w);
+      test_cell_integral(*integral, cell_shape, tensor_size, w, bench);
     delete integral;
   }
 
@@ -587,7 +663,7 @@ void test_form(ufc::form& form)
   {
     ufc::exterior_facet_integral* integral = form.create_exterior_facet_integral(i);
     if (integral)
-      test_exterior_facet_integral(*integral, cell_shape, tensor_size, w);
+      test_exterior_facet_integral(*integral, cell_shape, tensor_size, w, bench);
     delete integral;
   }
 
@@ -596,7 +672,7 @@ void test_form(ufc::form& form)
   {
     ufc::interior_facet_integral* integral = form.create_interior_facet_integral(i);
     if (integral)
-      test_interior_facet_integral(*integral, cell_shape, macro_tensor_size, w);
+      test_interior_facet_integral(*integral, cell_shape, macro_tensor_size, w, bench);
     delete integral;
   }
 

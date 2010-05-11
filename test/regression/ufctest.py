@@ -3,6 +3,8 @@ __date__ = "2010-01-24"
 __copyright__ = "Copyright (C) 2010 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
+# Last changed: 2010-05-11
+
 _test_code = """\
 #include "../ufctest.h"
 #include "%s.h"
@@ -15,7 +17,7 @@ int main()
 }
 """
 
-def generate_test_code(header_file):
+def generate_test_code(header_file, bench):
     "Generate test code for given header file."
 
     # Count the number of forms and elements
@@ -26,7 +28,7 @@ def generate_test_code(header_file):
 
     # Generate tests, either based on forms or elements
     if num_forms > 0:
-        tests = ["  %s_form_%d f%d; test_form(f%d);" % (prefix.lower(), i, i, i) for i in range(num_forms)]
+        tests = ["  %s_form_%d f%d; test_form(f%d, %d);" % (prefix.lower(), i, i, i, bench) for i in range(num_forms)]
     else:
         tests = ["  %s_finite_element_%d e%d; test_finite_element(e%d);" % (prefix.lower(), i, i, i) for i in range(num_elements)]
 
