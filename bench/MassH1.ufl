@@ -1,4 +1,4 @@
-# Copyright (C) 2004-2010 Anders Logg (logg@simula.no).
+# Copyright (C) 2010 Anders Logg (logg@simula.no).
 # Licensed under the GNU GPL version 3 or any later version.
 
 element = FiniteElement("Lagrange", triangle, 1)
@@ -6,4 +6,4 @@ element = FiniteElement("Lagrange", triangle, 1)
 v = TestFunction(element)
 u = TrialFunction(element)
 
-a = inner(grad(v), grad(u))*dx
+a = v*u*dx
