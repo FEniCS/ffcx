@@ -1,0 +1,12 @@
+# Copyright (C) 2010 Anders Logg (logg@simula.no).
+# Licensed under the GNU GPL version 3 or any later version.
+
+element = VectorElement("Lagrange", triangle, 1)
+
+v  = TestFunction(element)
+u  = TrialFunction(element)
+w  = Coefficient(element)
+c1 = Coefficient(element)
+c2 = Coefficient(element)
+
+a = inner(c1, c2)*inner(grad(w)*v, grad(w)*u)*dx

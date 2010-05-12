@@ -1,0 +1,9 @@
+# Copyright (C) 2010 Anders Logg (logg@simula.no).
+# Licensed under the GNU GPL version 3 or any later version.
+
+element = FiniteElement("BDM", triangle, 2)
+
+v = TestFunction(element)
+u = TrialFunction(element)
+
+a = inner(v, u)*dx

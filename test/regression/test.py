@@ -14,7 +14,7 @@ __date__ = "2010-01-21"
 __copyright__ = "Copyright (C) 2010 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-05-11
+# Last changed: 2010-05-12
 
 # FIXME: Need to add many more test cases. Quite a few DOLFIN
 # FIXME: forms failed after the FFC tests passed. Also need to
@@ -87,7 +87,7 @@ def generate_test_cases(bench):
 
     end()
 
-def generate_code():
+def generate_code(args):
     "Generate code for all test cases."
 
     # Get a list of all files
@@ -100,7 +100,7 @@ def generate_code():
     for f in form_files:
 
         # Generate code
-        ok = run_command("ffc -d -f precision=8 -fconvert_exceptions_to_warnings %s" % f)
+        ok = run_command("ffc %s -d -f precision=8 -fconvert_exceptions_to_warnings %s" % (" ".join(args), f))
 
         # Check status
         if ok:
@@ -276,21 +276,23 @@ def main(args):
     # Enter output directory
     os.chdir(output_directory)
 
-    # Check if we should run benchmarks
-    bench = "--bench" in args or "-b" in args
+    # Check command-line arguments
+    bench = "--bench" in args
+    fast = "--fast" in args
+    args = [arg for arg in args if not arg in ("--bench", "--fast")]
 
     # Generate test cases
     generate_test_cases(bench)
 
     # Generate code
-    generate_code()
+    generate_code(args)
 
     # Validate code
     if not bench:
         validate_code()
 
     # Build, run and validate programs
-    if "--fast" in args or "-f" in args:
+    if fast:
         info("Skipping program validation")
     elif bench:
         build_programs(bench)
