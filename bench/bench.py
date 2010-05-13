@@ -8,25 +8,30 @@ __copyright__ = "Copyright (C) 2010 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
 import os, glob
+from pylab import *
 from utils import print_table
 
 # Test options
 test_options = ["-r tensor", "-r tensor -O", "-r quadrature", "-r quadrature -O"]
 
 # Get list of test cases
-test_cases = [f.split(".")[0] for f in glob.glob("*.ufl")]
+test_cases = sorted([f.split(".")[0] for f in glob.glob("*.ufl")])
 
 # Sort test cases by prefix and polynomial degree (demonstrating some Python skill here...)
 forms = list(set([f.split("_")[0] for f in test_cases]))
-degrees = [(f, sorted([int(g.split("_")[1]) for g in test_cases if "%s_" % f in g])) for f in forms]
+degrees = dict([(f, sorted([int(g.split("_")[1]) for g in test_cases if "%s_" % f in g])) for f in forms])
 
 # Iterate over options
 os.chdir("../test/regression")
 results = {}
+table = {}
 for (j, test_option) in enumerate(test_options):
 
     # Run benchmark
-    os.system("python test.py --bench %s" % test_option)
+    print "\nUsing options %s\n" % test_option
+    #os.system("python test.py --bench %s" % test_option)
+
+    print test_cases
 
     # Collect results
     for (i, test_case) in enumerate(test_cases):
@@ -35,7 +40,27 @@ for (j, test_option) in enumerate(test_options):
         if not len(lines) == 1:
             raise RuntimeError, "Unable to extract benchmark data for test case %s" % test_case
         timing = float(lines[0].split(":")[-1])
-        results[(i, j)] = (test_case, test_option, timing)
+        table[(i, j)] = (test_case, test_option, timing)
+        results[(test_case, test_option)] = timing
 
 # Print results
-print_table(results, "FFC bench")
+print_table(table, "FFC bench")
+
+# Plot results
+fixme = 0.0
+bullets = ["x-", "o-", "*-", "s-"]
+for (i, form) in enumerate(forms):
+    figure(i)
+    for (j, test_option) in enumerate(test_options):
+        q = degrees[form]
+        t = [results[("%s_%d" % (form, p), test_option)] + fixme*p for p in q]
+        fixme += 0.1
+        plot(q, t, bullets[j])
+        hold(True)
+    legend(test_options, loc="upper left")
+    grid(True)
+    title(form)
+    xlabel('degree')
+    ylabel('CPU time')
+
+show()
