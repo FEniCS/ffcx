@@ -28,7 +28,7 @@ for (i, form) in enumerate(forms):
     figure(i)
     for (j, test_option) in enumerate(test_options):
         q, t = results[form][test_option]
-        plot(q, t, bullets[j])
+        semilogy(q, t, bullets[j])
         hold(True)
     legend(test_options, loc="upper left")
     grid(True)

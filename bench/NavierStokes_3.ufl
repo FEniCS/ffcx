@@ -1,0 +1,12 @@
+# Copyright (C) 2010 Anders Logg (logg@simula.no).
+# Licensed under the GNU GPL version 3 or any later version.
+
+scalar = FiniteElement("Lagrange", triangle, 3)
+vector = VectorElement("Lagrange", triangle, 3)
+
+v = TestFunction(vector)
+u = TrialFunction(vector)
+w = Coefficient(vector)
+rho = Coefficient(scalar)
+
+a = rho*inner(v, grad(w)*u)*dx
