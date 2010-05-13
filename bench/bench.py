@@ -29,9 +29,7 @@ for (j, test_option) in enumerate(test_options):
 
     # Run benchmark
     print "\nUsing options %s\n" % test_option
-    #os.system("python test.py --bench %s" % test_option)
-
-    print test_cases
+    os.system("python test.py --bench %s" % test_option)
 
     # Collect results
     for (i, test_case) in enumerate(test_cases):
@@ -47,14 +45,12 @@ for (j, test_option) in enumerate(test_options):
 print_table(table, "FFC bench")
 
 # Plot results
-fixme = 0.0
 bullets = ["x-", "o-", "*-", "s-"]
 for (i, form) in enumerate(forms):
     figure(i)
     for (j, test_option) in enumerate(test_options):
         q = degrees[form]
-        t = [results[("%s_%d" % (form, p), test_option)] + fixme*p for p in q]
-        fixme += 0.1
+        t = [results[("%s_%d" % (form, p), test_option)] for p in q]
         plot(q, t, bullets[j])
         hold(True)
     legend(test_options, loc="upper left")
