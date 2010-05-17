@@ -1,0 +1,10 @@
+# Copyright (C) 2010 Anders Logg (logg@simula.no).
+# Licensed under the GNU GPL version 3 or any later version.
+
+element = FiniteElement("Lagrange", tetrahedron, 5)
+
+v = TestFunction(element)
+u = TrialFunction(element)
+c = Coefficient(element)
+
+a = c*inner(grad(v), grad(u))*dx
