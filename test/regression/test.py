@@ -153,8 +153,14 @@ def build_programs(bench):
     header_files.sort()
 
     begin("Building test programs (%d header files found)" % len(header_files))
+
+    # Set compiler options
     if bench > 0:
         info("Benchmarking activated")
+        compiler_options = "`pkg-config --cflags ufc-1` -Wall -Werror -O2"
+    else:
+        compiler_options = "`pkg-config --cflags ufc-1` -Wall -Werror -g"
+    info("Compiler options: %s" % compiler_options)
 
     # Iterate over all files
     for f in header_files:
@@ -164,7 +170,7 @@ def build_programs(bench):
 
         # Compile test code
         prefix = f.split(".h")[0]
-        command = "g++ `pkg-config --cflags ufc-1` -Wall -Werror -g -o %s.bin %s.cpp" % (prefix, prefix)
+        command = "g++ %s -o %s.bin %s.cpp" % (compiler_options, prefix, prefix)
         ok = run_command(command)
 
         # Check status
