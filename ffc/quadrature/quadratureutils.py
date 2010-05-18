@@ -5,7 +5,7 @@ __date__ = "2007-03-16"
 __copyright__ = "Copyright (C) 2007-2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-02-05
+# Last changed: 2010-05-18
 
 # Python modules.
 import numpy
@@ -123,7 +123,7 @@ def unique_psi_tables(tables, parameters):
     # counter for non-zero column arrays.
     i = 0
     non_zero_columns = {}
-    if parameters["non zero columns"]:
+    if parameters["eliminate zeros"]:
         for name in sorted(tables.keys()):
             # Get values.
             vals = tables[name]

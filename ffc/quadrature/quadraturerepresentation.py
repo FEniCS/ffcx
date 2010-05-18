@@ -6,7 +6,7 @@ __copyright__ = "Copyright (C) 2009-2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Anders Logg, 2009.
-# Last changed: 2010-05-04
+# Last changed: 2010-05-18
 
 # UFL modules
 from ufl.classes import Form, Integral, SpatialDerivative
@@ -47,27 +47,37 @@ def compute_integral_ir(domain_type, domain_id, integrals, metadata, form_data, 
     ir["prim_idims"] = prim_idims
 
     # Create optimise parameters.
-    optimise_parameters = {"non zero columns":    False,
+    optimise_parameters = {"eliminate zeros":     False,
                            "ignore ones":         False,
                            "remove zero terms":   False,
                            "optimisation":        False,
                            "ignore zero tables":  False}
+
     if parameters["optimize"]:
         optimise_parameters["ignore ones"]        = True
         optimise_parameters["remove zero terms"]  = True
         optimise_parameters["ignore zero tables"] = True
 
+        # Do not include this in below if/else clause since we want to be
+        # able to switch on this optimisation in addition to the other
+        # optimisations.
+        if "eliminate_zeros" in parameters:
+            optimise_parameters["eliminate zeros"] = True
+
         if "simplify_expressions" in parameters:
-            optimise_parameters["non zero columns"] = True
-            optimise_parameters["optimisation"]     = "simplify_expressions"
+            optimise_parameters["optimisation"] = "simplify_expressions"
         elif "precompute_ip_const" in parameters:
             optimise_parameters["optimisation"] = "precompute_ip_const"
         elif "precompute_basis_const" in parameters:
             optimise_parameters["optimisation"] = "precompute_basis_const"
+        # The current default optimisation (for -O) is equal to
+        # '-feliminate_zeros -fsimplify_expressions'.
         else:
-            # Use simplify_expressions as default for now.
-            optimise_parameters["non zero columns"] = True
-            optimise_parameters["optimisation"]     = "simplify_expressions"
+            # If '-O -feliminate_zeros' was given on the command line, do not
+            # simplify expressions
+            if not "eliminate_zeros" in parameters:
+                optimise_parameters["eliminate zeros"] = True
+                optimise_parameters["optimisation"]    = "simplify_expressions"
 
     # Save the optisation parameters.
     ir["optimise_parameters"] = optimise_parameters

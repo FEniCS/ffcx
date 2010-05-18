@@ -5,7 +5,7 @@ __date__ = "2009-01-07"
 __copyright__ = "Copyright (C) 2009-2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-05-04
+# Last changed: 2010-05-18
 
 # Python modules.
 import numpy
@@ -162,7 +162,8 @@ def _tabulate_tensor(ir, parameters):
 
     # Add comments.
     common += ["", f_comment("Compute element tensor using UFL quadrature representation")]
-    common += [f_comment("Optimisations: %s" % ", ".join([str(i) for i in opt_par.items()]))]
+    common += [f_comment("Optimisations: %s" % ", ".join([str((k, opt_par[k]))\
+                for k in sorted(opt_par.keys())]))]
 
     # Print info on operation count.
     message = {"cell":           "Cell, number of operations to compute tensor: %d",
@@ -520,7 +521,7 @@ def _tabulate_psis(tables, used_psi_tables, inv_name_map, used_nzcs, optimise_pa
             code += [f_decl(f_table, decl_name, f_new_line + value), ""]
 
         # Tabulate non-zero indices.
-        if optimise_parameters["non zero columns"]:
+        if optimise_parameters["eliminate zeros"]:
             if name in name_map:
                 for n in name_map[name]:
                     if inv_name_map[n][1] and inv_name_map[n][1] in new_nzcs:
