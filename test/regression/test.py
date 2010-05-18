@@ -157,7 +157,9 @@ def build_programs(bench):
     # Set compiler options
     if bench > 0:
         info("Benchmarking activated")
-        compiler_options = "`pkg-config --cflags ufc-1` -Wall -Werror -O2"
+        # Takes too long to build with -O2
+        #compiler_options = "`pkg-config --cflags ufc-1` -Wall -Werror -O2"
+        compiler_options = "`pkg-config --cflags ufc-1` -Wall -Werror"
     else:
         compiler_options = "`pkg-config --cflags ufc-1` -Wall -Werror -g"
     info("Compiler options: %s" % compiler_options)
