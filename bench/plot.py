@@ -9,7 +9,11 @@ from pylab import *
 
 # Read logfile
 results = {}
-for line in open("bench.log", "r").read().split("\n"):
+try:
+    output = open("bench.log").read()
+except:
+    output = open("results/bench.log").read()
+for line in output.split("\n"):
     if not "," in line: continue
     test_case, test_option, timing = [w.strip() for w in line.split(",")]
     form, degree = test_case.split("_")
