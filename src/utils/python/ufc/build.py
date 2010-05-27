@@ -1,5 +1,5 @@
 __author__ = "Johan Hake (hake@simula.no)"
-__date__ = "2009-03-06 -- 2009-06-22"
+__date__ = "2009-03-06 -- 2010-05-27"
 __copyright__ = "Copyright (C) 2009 Johan Hake"
 __license__  = "GNU LGPL Version 2.1"
 
@@ -160,11 +160,22 @@ This is fixed in swig version 1.3.37
         ufc_proxy_classes = [s.replace("ufc::", "") for s in ufc_classes]
 
         shared_ptr_format = "SWIG_SHARED_PTR_DERIVED(%(der_class)s,%(ufc_class)s,%(der_class)s)"
+        new_share_ptr_format = "%%shared_ptr(%s)"
+        
+        # Write shared_ptr code for swig 2.0.0 or higher
+        declarations += "\n"
+        declarations += "#if SWIG_VERSION >= 0x020000\n"
+        declarations += "\n".join(new_share_ptr_format%c for c in derived_classes)
+        
+        declarations += "\n"
+        declarations += "#else\n"
         declarations += "\n"
         declarations += "\n".join(\
             shared_ptr_format % { "ufc_proxy_class": c[0], "ufc_class": c[1], "der_class": c[2] }\
             for c in zip(ufc_proxy_classes, ufc_classes, derived_classes)\
             )
-
+        declarations += "\n"
+        declarations += "\n"
+        declarations += "#endif\n"
         declarations += "\n"
     return declarations
