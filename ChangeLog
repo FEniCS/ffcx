@@ -1,3 +1,4 @@
+ - Add support for facet normal in 1D.
  - Expose -feliminate_zeros for quadrature optimisations to give user more control
  - Remove return of form in compile_form
  - Remove object_names argument to compile_element

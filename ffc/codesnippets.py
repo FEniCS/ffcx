@@ -188,7 +188,8 @@ const double a2 = (x%(restriction)s[v0][0]*x%(restriction)s[v1][1]
 
 const double det = std::sqrt(a0*a0 + a1*a1 + a2*a2);"""
 
-_normal_direction_1D = ""
+_normal_direction_1D = """\
+const bool direction = facet%(restriction)s == 0 ? x%(restriction)s[0][0] > x%(restriction)s[1][0] : x%(restriction)s[1][0] > x%(restriction)s[0][0];"""
 
 _normal_direction_2D = """\
 const bool direction = dx1*(x%(restriction)s[%(facet)s][0] - x%(restriction)s[v0][0]) - dx0*(x%(restriction)s[%(facet)s][1] - x%(restriction)s[v0][1]) < 0;"""
@@ -196,9 +197,9 @@ const bool direction = dx1*(x%(restriction)s[%(facet)s][0] - x%(restriction)s[v0
 _normal_direction_3D = """\
 const bool direction = a0*(x%(restriction)s[%(facet)s][0] - x%(restriction)s[v0][0]) + a1*(x%(restriction)s[%(facet)s][1] - x%(restriction)s[v0][1])  + a2*(x%(restriction)s[%(facet)s][2] - x%(restriction)s[v0][2]) < 0;"""
 
-_facet_normal_1D = """\
-// Compute facet normals from the facet scale factor constants
-// FIXME: not implemented"""
+_facet_normal_1D = """
+// Facet normals are 1.0 or -1.0:   (-1.0) <-- X------X --> (1.0)
+const double n%(restriction)s = %(direction)sdirection ? 1.0 : -1.0;"""
 
 _facet_normal_2D = """\
 // Compute facet normals from the facet scale factor constants
