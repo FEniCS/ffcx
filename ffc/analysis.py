@@ -12,7 +12,7 @@ __date__ = "2007-02-05"
 __copyright__ = "Copyright (C) 2007-2010 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-04-13
+# Last changed: 2010-06-04
 
 # UFL modules
 from ufl.common import istr, tstr
@@ -23,6 +23,7 @@ from ufl.algorithms import estimate_max_polynomial_degree
 from ufl.algorithms import estimate_total_polynomial_degree
 from ufl.algorithms import extract_unique_elements
 from ufl.algorithms import sort_elements
+from ufl.algorithms import compute_form_with_arity
 
 # FFC modules
 from ffc.log import log, info, begin, end, warning, debug, error, ffc_assert
@@ -109,6 +110,9 @@ def _analyze_form(form, object_names, parameters, common_cell=None):
     info("")
     info(str(form.form_data()))
 
+    # Check that all terms in form have same arity
+    _check_arity(form)
+
     # Adjust cell and degree for elements when unspecified
     _adjust_elements(form.form_data())
 
@@ -116,6 +120,15 @@ def _analyze_form(form, object_names, parameters, common_cell=None):
     _extract_metadata(form.form_data(), parameters)
 
     return form
+
+def _check_arity(form):
+    "Check that all terms in form have same arity."
+
+    rank = form.form_data().rank
+    terms_of_arity_rank = compute_form_with_arity(form, rank)
+
+    ffc_assert(terms_of_arity_rank == form,
+               "All terms in form must have same rank.")
 
 def _adjust_elements(form_data):
     "Adjust cell and degree for elements when unspecified."
