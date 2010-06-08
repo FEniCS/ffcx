@@ -33,6 +33,7 @@ from ffc.log import info, error, begin, end, debug_ir, ffc_assert, warning
 from ffc.fiatinterface import create_element, entities_per_dim, reference_cell
 from ffc.mixedelement import MixedElement
 from ffc.enrichedelement import EnrichedElement, SpaceOfReals
+from ffc.restrictedelement import RestrictedElement
 from ffc.quadratureelement import QuadratureElement
 from ffc.cpp import set_float_formatting
 
@@ -142,6 +143,9 @@ def _init_mesh(element):
     if not isinstance(element, MixedElement):
         if isinstance(element, SpaceOfReals):
             return ([], 1)
+        elif isinstance(element, RestrictedElement) and\
+             isinstance(element.domain(), ufl.Measure):
+            return ([], 0)
         return (_num_dofs_per_entity(element), 0)
 
     elements = []
