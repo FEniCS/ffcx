@@ -244,6 +244,10 @@ def _init_mesh(ir):
     # Handle global "elements" if any
     if ir[1]:
         dimension = format["add"]([dimension, format["int"](ir[1])])
+        try:
+            dimension = format["int"](eval(dimension))
+        except:
+            pass
 
     return "\n".join([format["assign"](format["member global dimension"], dimension),
                       format["return"](format["bool"](False))])
