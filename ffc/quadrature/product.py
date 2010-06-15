@@ -65,7 +65,7 @@ class Product(Expr):
 #                    continue
                     # If expanded product is a float, just add it.
                     if var._expanded and var._expanded._prec == 0:
-                        float_val *= var._expanded.vrs[0].val
+                        float_val *= var._expanded.val
                     # If expanded product is symbol, this product is still expanded and add symbol.
                     elif var._expanded and var._expanded._prec == 1:
                         self.vrs.append(var._expanded)

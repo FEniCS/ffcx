@@ -50,6 +50,9 @@ class TestProduct(unittest.TestCase):
         p12 = Product([f6, f5])
         p13 = Product([f6, f5]).expand()
         p14 = Product([f1, f2])
+        p_tmp = Product([f1])
+        p_tmp.expand()
+        p15 = Product([p_tmp, s0])
 
 #        print "\nTesting Products"
 #        print "\np0: [] '%s'" % (p0)
