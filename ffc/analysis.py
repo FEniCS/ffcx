@@ -14,7 +14,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Marie E. Rognes, 2010
 
-# Last changed: 2010-06-14
+# Last changed: 2010-06-16
 
 # UFL modules
 from ufl.common import istr, tstr
@@ -112,9 +112,10 @@ def _analyze_form(form, object_names, parameters, common_cell=None):
     info("")
     info(str(form.form_data()))
 
+    # FIXME:
     # Check that all terms in form have same arity
-    ffc_assert(len(compute_form_arities(form)) == 1,
-               "All terms in form must have same rank.")
+    #ffc_assert(len(compute_form_arities(form)) == 1,
+    #           "All terms in form must have same rank.")
 
     # Adjust cell and degree for elements when unspecified
     _adjust_elements(form.form_data())
