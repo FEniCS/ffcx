@@ -61,7 +61,7 @@ def create_element(ufl_element):
         element = EnrichedElement(elements)
 
     # Create restricted element(implemented by FFC)
-    elif isinstance(ufl_element, ufl.ElementRestriction):
+    elif isinstance(ufl_element, ufl.RestrictedElement):
         element = _create_restricted_element(ufl_element)
 
     else:
@@ -89,7 +89,7 @@ def _create_fiat_element(ufl_element):
 
     cell = reference_cell(ufl_element.cell().domain())
 
-    # Handle Bubble element as ElementRestriction of P_{k} to interior
+    # Handle Bubble element as RestrictedElement of P_{k} to interior
     if family == "Bubble":
         V = FIAT.element_classes["Lagrange"](cell, ufl_element.degree())
         dim = ufl_element.cell().geometric_dimension()
@@ -163,22 +163,22 @@ def _extract_elements(ufl_element, domain=None):
         return elements
 
     # Handle restricted elements since they might be mixed elements too.
-    if isinstance(ufl_element, ufl.ElementRestriction):
+    if isinstance(ufl_element, ufl.RestrictedElement):
         base_element = ufl_element.element()
         restriction = ufl_element.domain_restriction()
         return _extract_elements(base_element, restriction)
 
     if domain:
-        ufl_element = ufl.ElementRestriction(ufl_element, domain)
+        ufl_element = ufl.RestrictedElement(ufl_element, domain)
 
     elements += [create_element(ufl_element)]
     return elements
 
 def _create_restricted_element(ufl_element):
-    "Create an FFC representation for an UFL ElementRestriction."
+    "Create an FFC representation for an UFL RestrictedElement."
 
-    if not isinstance(ufl_element, ufl.ElementRestriction):
-        error("create_restricted_element expects an ufl.ElementRestriction")
+    if not isinstance(ufl_element, ufl.RestrictedElement):
+        error("create_restricted_element expects an ufl.RestrictedElement")
 
     base_element = ufl_element.element()
     domain = ufl_element.domain_restriction()
