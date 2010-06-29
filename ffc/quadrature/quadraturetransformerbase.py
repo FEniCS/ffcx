@@ -659,7 +659,6 @@ class QuadratureTransformerBase(Transformer):
         "Generate terms for code generation."
         # Get terms.
         terms = self.visit(integrand)
-
         f_nzc = format["nonzero columns"](0).split("0")[0]
 
         # Loop code and add weight and scale factor to value and sort after

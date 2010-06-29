@@ -65,6 +65,21 @@ class TestSymbol(unittest.TestCase):
         self.assertEqual(s5 in l, True)
         self.assertEqual(s5 in d, True)
 
+        # Use s0 as a base expression for Symbol
+        s6 = Symbol(format["cos"], CONST, s0, 1)
+        self.assertEqual(str(s6), 'std::cos(x)')
+        self.assertEqual(s6.ops(), 1)
+
+        # Test cache with exponents
+        s7 = create_symbol(format["std power"], CONST, s0, 1, 2.3)
+        self.assertEqual(str(s7), 'std::pow(x, 2.3)')
+        self.assertEqual(s7.ops(), 1)
+
+        s8 = create_symbol(format["std power"], CONST, s0, 1, 2.3)
+        s9 = create_symbol(format["std power"], CONST, s0, 1, 2.5)
+        self.assertEqual(repr(s7) == repr(s8), True)
+        self.assertEqual(repr(s7) != repr(s9), True)
+
 if __name__ == "__main__":
 
     # Run all returned tests
