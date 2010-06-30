@@ -19,6 +19,7 @@ from ufl.classes import FixedIndex
 from ufl.classes import IntValue
 from ufl.classes import FloatValue
 from ufl.classes import Coefficient
+from ufl.expr import Operator
 
 # UFL Algorithms.
 from ufl.algorithms.printing import tree_format
@@ -159,7 +160,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
             sym = create_symbol(format["std power"], val.t, val, 1, exp)
 #            sym.exp = exp
             return {(): sym}
-        elif isinstance(expo, Coefficient):
+        elif isinstance(expo, (Coefficient, Operator)):
             exp = self.visit(expo)
 #            sym = create_symbol(format["std power"](str(val), exp[()]), val.t)
 #            sym.base_expr = val
@@ -378,7 +379,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
 #            new_val = create_symbol(format_function(str(val)), val.t)
 #            new_val.base_expr = val
 #            new_val.base_op = 1 # Add one operation for the math function.
-            new_val = create_symbol(format_function, val.t, val, 1, val.exp)
+            new_val = create_symbol(format_function, val.t, val, 1)
             operand[key] = new_val
         return operand
 

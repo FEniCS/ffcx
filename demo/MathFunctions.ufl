@@ -1,0 +1,28 @@
+# Copyright (C) 2010 Kristian B. Oelgaard (k.b.oelgaard@gmail.com)
+# Licensed under the GNU GPL version 3 or any later version
+#
+# Test all algebra operators on Coefficients.
+#
+# Compile this form with FFC: ffc MathFunctions.ufl
+
+element = FiniteElement("Lagrange", triangle, 1)
+
+c0 = Coefficient(element)
+c1 = Coefficient(element)
+
+s0 = c0 - c1
+p0 = c0*c1
+f0 = c0/c1
+
+integrand = sqrt(c0) + sqrt(s0) + sqrt(p0) + sqrt(f0)\
+          + exp(c0) + exp(s0) + exp(p0) + exp(f0)\
+          + ln(c0) + ln(s0) + ln(p0) + ln(f0)\
+          + cos(c0) + cos(s0) + cos(p0) + cos(f0)\
+          + sin(c0) + sin(s0) + sin(p0) + sin(f0)\
+          + tan(c0) + tan(s0) + tan(p0) + tan(f0)\
+          + acos(c0) + acos(s0) + acos(p0) + acos(f0)\
+          + asin(c0) + asin(s0) + asin(p0) + asin(f0)\
+          + atan(c0) + atan(s0) + atan(p0) + atan(f0)
+
+a = integrand*dx
+

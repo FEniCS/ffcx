@@ -20,6 +20,7 @@ from ufl.classes import FixedIndex
 from ufl.classes import IntValue
 from ufl.classes import FloatValue
 from ufl.classes import Coefficient
+from ufl.expr import Operator
 
 # UFL Algorithms.
 from ufl.algorithms.printing import tree_format
@@ -241,7 +242,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
             return {(): format["power"](val, expo.value())}
         elif isinstance(expo, FloatValue):
             return {(): format["std power"](val, format["floating point"](expo.value()))}
-        elif isinstance(expo, Coefficient):
+        elif isinstance(expo, (Coefficient, Operator)):
             exp = self.visit(expo)
             return {(): format["std power"](val, exp[()])}
         else:
