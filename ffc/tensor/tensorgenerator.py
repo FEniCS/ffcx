@@ -8,7 +8,8 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Kristian B. Oelgaard, 2009-2010
 # Modified by Marie Rognes (meg@math.uio.no), 2007
 # Modified by Garth N. Wells, 2009
-# Last changed: 2010-02-17
+# Modified by Mehdi Nikbakht, 2010
+# Last changed: 2010-06-15
 
 # FFC modules
 from ffc.log import error
@@ -29,6 +30,8 @@ def generate_integral_code(ir, prefix, parameters):
     code["classname"] = classname(prefix, ir["form_id"], ir["domain_id"])
     code["members"] = ""
     code["constructor"] = do_nothing
+    code["constructor_arguments"] = ""
+    code["initializer_list"] = ""     
     code["destructor"] = do_nothing
     code["tabulate_tensor"] = _tabulate_tensor(ir, parameters)
 

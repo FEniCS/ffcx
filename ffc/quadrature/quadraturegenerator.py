@@ -5,7 +5,8 @@ __date__ = "2009-01-07"
 __copyright__ = "Copyright (C) 2009-2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-05-18
+# Modified by Mehdi Nikbakht, 2010
+# Last changed: 2010-06-15
 
 # Python modules.
 import numpy
@@ -28,6 +29,8 @@ def generate_integral_code(ir, prefix, parameters):
     code["classname"] = format["classname " + ir["domain_type"] + "_integral"](prefix, ir["form_id"], ir["domain_id"])
     code["members"] = ""
     code["constructor"] = format["do nothing"]
+    code["constructor_arguments"] = ""
+    code["initializer_list"] = ""    
     code["destructor"] = format["do nothing"]
     code["tabulate_tensor"] = _tabulate_tensor(ir, parameters)
 

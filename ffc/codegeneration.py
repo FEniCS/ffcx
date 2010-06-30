@@ -11,7 +11,8 @@ __date__ = "2009-12-16"
 __copyright__ = "Copyright (C) 2009 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-04-05
+# Modified by Mehdi Nikbakht, 2010
+# Last changed: 2010-06-15
 
 # FFC modules
 from ffc.log import info, begin, end, debug_code
@@ -86,6 +87,8 @@ def _generate_element_code(ir, prefix, parameters):
     code["classname"] = classname(prefix, ir["id"])
     code["members"] = ""
     code["constructor"] = do_nothing
+    code["constructor_arguments"] = ""
+    code["initializer_list"] = ""     
     code["destructor"] = do_nothing
     code["signature"] = ret('"%s"' % ir["signature"])
     code["cell_shape"] = ret(format["cell"](ir["cell_shape"]))
@@ -128,6 +131,8 @@ def _generate_dofmap_code(ir, prefix, parameters):
     code["classname"] = classname(prefix, ir["id"])
     code["members"] = "\nprivate:\n\n  " + declare("unsigned int", "_global_dimension")
     code["constructor"] = assign("_global_dimension", f_int(0))
+    code["constructor_arguments"] = ""
+    code["initializer_list"] = ""     
     code["destructor"] = do_nothing
     code["signature"] = ret('"%s"' % ir["signature"])
     code["needs_mesh_entities"] = _needs_mesh_entities(ir["needs_mesh_entities"])
@@ -190,6 +195,8 @@ def _generate_form_code(ir, prefix, parameters):
     code["classname"] = classname(prefix, ir["id"])
     code["members"] = ""
     code["constructor"] = do_nothing
+    code["constructor_arguments"] = ""
+    code["initializer_list"] = "" 
     code["destructor"] = do_nothing
     code["signature"] = ret('"%s"' % ir["signature"])
     code["rank"] = ret(ir["rank"])
@@ -433,7 +440,7 @@ def _postprocess_code(code, parameters):
 def _indent_code(code):
     "Indent code that should be indented."
     for key in code:
-        if not key in ("classname", "members"):
+        if not key in ("classname", "members", "constructor_arguments", "initializer_list"):
             code[key] = indent(code[key], 4)
 
 def _remove_code(code, parameters):
