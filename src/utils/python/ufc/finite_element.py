@@ -11,7 +11,7 @@ class %(classname)s: public ufc::finite_element
 public:
 
   /// Constructor
-  %(classname)s() : ufc::finite_element()
+  %(classname)s(%(constructor_arguments)s) : ufc::finite_element()%(initializer_list)s
   {
 %(constructor)s
   }
@@ -135,7 +135,7 @@ class %(classname)s: public ufc::finite_element
 public:
 
   /// Constructor
-  %(classname)s();
+  %(classname)s(%(constructor_arguments)s);
 
   /// Destructor
   virtual ~%(classname)s();
@@ -206,7 +206,7 @@ public:
 finite_element_implementation= """\
 
 /// Constructor
-%(classname)s::%(classname)s() : ufc::finite_element()
+%(classname)s::%(classname)s(%(constructor_arguments)s) : ufc::finite_element()%(initializer_list)s
 {
 %(constructor)s
 }

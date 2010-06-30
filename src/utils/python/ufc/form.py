@@ -24,7 +24,7 @@ class %(classname)s: public ufc::form
 public:
 
   /// Constructor
-  %(classname)s() : ufc::form()
+  %(classname)s(%(constructor_arguments)s) : ufc::form()%(initializer_list)s
   {
 %(constructor)s
   }
@@ -123,9 +123,9 @@ form_header = """\
 class %(classname)s: public ufc::form
 {%(members)s
 public:
-
+  
   /// Constructor
-  %(classname)s();
+  %(classname)s(%(constructor_arguments)s);
 
   /// Destructor
   virtual ~%(classname)s();
@@ -168,7 +168,7 @@ public:
 
 form_implementation = """\
 /// Constructor
-%(classname)s::%(classname)s() : ufc::form()
+%(classname)s::%(classname)s(%(constructor_arguments)s) : ufc::form()%(initializer_list)s
 {
 %(constructor)s
 }

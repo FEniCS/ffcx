@@ -11,8 +11,8 @@ class %(classname)s: public ufc::dof_map
 {%(members)s
 public:
 
-  /// Constructor
-  %(classname)s() : ufc::dof_map()
+   /// Constructor
+  %(classname)s(%(constructor_arguments)s) : ufc::dof_map()%(initializer_list)s
   {
 %(constructor)s
   }
@@ -143,8 +143,8 @@ class %(classname)s: public ufc::dof_map
 public:
 
   /// Constructor
-  %(classname)s();
-
+  %(classname)s(%(constructor_arguments)s);
+  
   /// Destructor
   virtual ~%(classname)s();
 
@@ -210,7 +210,7 @@ public:
 
 dof_map_implementation = """\
 /// Constructor
-%(classname)s::%(classname)s() : ufc::dof_map()
+%(classname)s::%(classname)s(%(constructor_arguments)s) : ufc::dof_map()%(initializer_list)s
 {
 %(constructor)s
 }

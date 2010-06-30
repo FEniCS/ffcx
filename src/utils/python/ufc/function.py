@@ -11,7 +11,7 @@ class %(classname)s: public ufc::function
 public:
 
   /// Constructor
-  %(classname)s() : ufc::function()
+  %(classname)s::%(classname)s(%(constructor_arguments)s) : ufc::function()%(initializer_list)s
   {
 %(constructor)s
   }
@@ -41,7 +41,7 @@ class %(classname)s: public ufc::function
 public:
 
   /// Constructor
-  %(classname)s();
+  %(classname)s(%(constructor_arguments)s);
 
   /// Destructor
   virtual ~%(classname)s();
@@ -56,7 +56,7 @@ public:
 
 function_implementation = """\
 /// Constructor
-%(classname)s::%(classname)s() : ufc::function()
+%(classname)s::%(classname)s(%(constructor_arguments)s) : ufc::function()%(initializer_list)s
 {
 %(constructor)s
 }
