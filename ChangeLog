@@ -1,4 +1,6 @@
+1.4.1 [2010-07-01]
  - Make functions introduced in UFC 1.1 mandatory (now pure virtual)
+ - Update templates to allow constructor arguments in form classes
 1.4.0 [2010-02-01]
  - Changed behavior of create_foo_integral (returning 0 when integral is 0)
  - Bug fixes in installation
