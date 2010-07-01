@@ -30,7 +30,7 @@ def generate_integral_code(ir, prefix, parameters):
     code["members"] = ""
     code["constructor"] = format["do nothing"]
     code["constructor_arguments"] = ""
-    code["initializer_list"] = ""    
+    code["initializer_list"] = ""
     code["destructor"] = format["do nothing"]
     code["tabulate_tensor"] = _tabulate_tensor(ir, parameters)
 

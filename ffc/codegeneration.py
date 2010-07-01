@@ -88,7 +88,7 @@ def _generate_element_code(ir, prefix, parameters):
     code["members"] = ""
     code["constructor"] = do_nothing
     code["constructor_arguments"] = ""
-    code["initializer_list"] = ""     
+    code["initializer_list"] = ""
     code["destructor"] = do_nothing
     code["signature"] = ret('"%s"' % ir["signature"])
     code["cell_shape"] = ret(format["cell"](ir["cell_shape"]))
@@ -132,7 +132,7 @@ def _generate_dofmap_code(ir, prefix, parameters):
     code["members"] = "\nprivate:\n\n  " + declare("unsigned int", "_global_dimension")
     code["constructor"] = assign("_global_dimension", f_int(0))
     code["constructor_arguments"] = ""
-    code["initializer_list"] = ""     
+    code["initializer_list"] = ""
     code["destructor"] = do_nothing
     code["signature"] = ret('"%s"' % ir["signature"])
     code["needs_mesh_entities"] = _needs_mesh_entities(ir["needs_mesh_entities"])
@@ -196,7 +196,7 @@ def _generate_form_code(ir, prefix, parameters):
     code["members"] = ""
     code["constructor"] = do_nothing
     code["constructor_arguments"] = ""
-    code["initializer_list"] = "" 
+    code["initializer_list"] = ""
     code["destructor"] = do_nothing
     code["signature"] = ret('"%s"' % ir["signature"])
     code["rank"] = ret(ir["rank"])
