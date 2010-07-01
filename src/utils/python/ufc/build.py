@@ -161,12 +161,12 @@ This is fixed in swig version 1.3.37
 
         shared_ptr_format = "SWIG_SHARED_PTR_DERIVED(%(der_class)s,%(ufc_class)s,%(der_class)s)"
         new_share_ptr_format = "%%shared_ptr(%s)"
-        
+
         # Write shared_ptr code for swig 2.0.0 or higher
         declarations += "\n"
         declarations += "#if SWIG_VERSION >= 0x020000\n"
         declarations += "\n".join(new_share_ptr_format%c for c in derived_classes)
-        
+
         declarations += "\n"
         declarations += "#else\n"
         declarations += "\n"

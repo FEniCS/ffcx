@@ -17,7 +17,7 @@ public:
   {
 %(constructor)s
   }
-  
+
   /// Destructor
   virtual ~%(classname)s()
   {
@@ -46,7 +46,7 @@ public:
 
   /// Constructor
   %(classname)s(%(constructor_arguments)s);
-  
+
   /// Destructor
   virtual ~%(classname)s();
 
@@ -88,13 +88,13 @@ exterior_facet_integral_combined = """\
 class %(classname)s: public ufc::exterior_facet_integral
 {%(members)s
 public:
-  
+
   /// Constructor
   %(classname)s(%(constructor_arguments)s) : ufc::exterior_facet_integral()%(initializer_list)s
   {
 %(constructor)s
   }
-  
+
   /// Destructor
   virtual ~%(classname)s()
   {
@@ -168,7 +168,7 @@ interior_facet_integral_combined = """\
 class %(classname)s: public ufc::interior_facet_integral
 {%(members)s
 public:
-  
+
   /// Constructor
   %(classname)s(%(constructor_arguments)s) : ufc::interior_facet_integral()%(initializer_list)s
   {

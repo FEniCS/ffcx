@@ -11,7 +11,7 @@ class %(classname)s: public ufc::dof_map
 {%(members)s
 public:
 
-   /// Constructor
+  /// Constructor
   %(classname)s(%(constructor_arguments)s) : ufc::dof_map()%(initializer_list)s
   {
 %(constructor)s
@@ -144,7 +144,7 @@ public:
 
   /// Constructor
   %(classname)s(%(constructor_arguments)s);
-  
+
   /// Destructor
   virtual ~%(classname)s();
 

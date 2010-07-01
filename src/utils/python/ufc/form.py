@@ -123,7 +123,7 @@ form_header = """\
 class %(classname)s: public ufc::form
 {%(members)s
 public:
-  
+
   /// Constructor
   %(classname)s(%(constructor_arguments)s);
 
