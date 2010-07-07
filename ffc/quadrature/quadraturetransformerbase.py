@@ -250,10 +250,14 @@ class QuadratureTransformerBase(Transformer):
         error("This object should be implemented by the child class.")
 
     # -------------------------------------------------------------------------
-    # FacetNormal (geometry.py).
+    # FacetNormal, CellVolume (geometry.py).
     # -------------------------------------------------------------------------
     def facet_normal(self, o,  *operands):
         print "\n\nVisiting FacetNormal: ", repr(o)
+        error("This object should be implemented by the child class.")
+
+    def cell_volume(self, o,  *operands):
+        print "\n\nVisiting CellVolume: ", repr(o)
         error("This object should be implemented by the child class.")
 
     # -------------------------------------------------------------------------

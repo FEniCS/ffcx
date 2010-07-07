@@ -262,7 +262,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
         return {():f_abs(operands[0][()])}
 
     # -------------------------------------------------------------------------
-    # FacetNormal (geometry.py).
+    # FacetNormal, CellVolume (geometry.py).
     # -------------------------------------------------------------------------
     def facet_normal(self, o,  *operands):
         #print("Visiting FacetNormal:")
@@ -290,6 +290,18 @@ class QuadratureTransformer(QuadratureTransformerBase):
             self.trans_set.add(normal_component)
 
         return {():normal_component}
+
+    def cell_volume(self, o,  *operands):
+        # Safety check.
+        ffc_assert(not operands, "Didn't expect any operands for CellVolume: " + repr(operands))
+
+        # FIXME: KBO: This has to change for higher order elements
+        detJ = format["det(J)"](self.restriction)
+        volume = format["absolute value"](detJ)
+        self.trans_set.add(detJ)
+
+        return {():volume}
+
 
     def create_argument(self, ufl_argument, derivatives, component, local_comp,
                   local_offset, ffc_element, transformation, multiindices):
