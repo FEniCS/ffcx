@@ -296,14 +296,20 @@ class QuadratureTransformer(QuadratureTransformerBase):
         ffc_assert(not operands, "Didn't expect any operands for CellVolume: " + repr(operands))
 
         # FIXME: KBO: This has to change for higher order elements
-#        detJ = format["det(J)"](self.restriction)
-#        volume = format["absolute value"](detJ)
-#        self.trans_set.add(detJ)
-
         volume = format["cell volume"](self.restriction)
         self.trans_set.add(volume)
 
         return {():volume}
+
+    def circumradius(self, o,  *operands):
+        # Safety check.
+        ffc_assert(not operands, "Didn't expect any operands for Circumradius: " + repr(operands))
+
+        # FIXME: KBO: This has to change for higher order elements
+        circumradius = format["circumradius"](self.restriction)
+        self.trans_set.add(circumradius)
+
+        return {():circumradius}
 
 
     def create_argument(self, ufl_argument, derivatives, component, local_comp,

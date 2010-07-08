@@ -19,7 +19,7 @@ __all__ = ["comment_ufc", "comment_dolfin", "header_h", "header_c", "footer",
            "fiat_coordinate_map", "transform_snippet",
            "scale_factor", "combinations_snippet",
            "normal_direction",
-           "facet_normal", "ip_coordinates", "cell_volume"]
+           "facet_normal", "ip_coordinates", "cell_volume", "circumradius"]
 
 comment_ufc = """\
 // This code conforms with the UFC specification version %(ufc_version)s
@@ -223,6 +223,34 @@ const double volume%(restriction)s = std::abs(detJ%(restriction)s)/2.0;"""
 _cell_volume_3D = """\
 // Cell Volume.
 const double volume%(restriction)s = std::abs(detJ%(restriction)s)/6.0;"""
+
+_circumradius_1D = """\
+// Compute circumradius, in 1D it is equal to the cell volume.
+const double circumradius%(restriction)s = std::abs(detJ%(restriction)s);"""
+
+_circumradius_2D = """\
+// Compute circumradius, assuming triangle is embedded in 2D.
+const double v1v2%(restriction)s  = std::sqrt( (x%(restriction)s[2][0] - x%(restriction)s[1][0])*(x%(restriction)s[2][0] - x%(restriction)s[1][0]) + (x%(restriction)s[2][1] - x%(restriction)s[1][1])*(x%(restriction)s[2][1] - x%(restriction)s[1][1]) );
+const double v0v2%(restriction)s  = std::sqrt( J%(restriction)s_11*J%(restriction)s_11 + J%(restriction)s_01*J%(restriction)s_01 );
+const double v0v1%(restriction)s  = std::sqrt( J%(restriction)s_00*J%(restriction)s_00 + J%(restriction)s_10*J%(restriction)s_10 );
+
+const double circumradius%(restriction)s = 0.25*(v1v2%(restriction)s*v0v2%(restriction)s*v0v1%(restriction)s)/(volume%(restriction)s);"""
+
+_circumradius_3D = """\
+// Compute circumradius.
+const double v1v2%(restriction)s  = std::sqrt( (x%(restriction)s[2][0] - x%(restriction)s[1][0])*(x%(restriction)s[2][0] - x%(restriction)s[1][0]) + (x%(restriction)s[2][1] - x%(restriction)s[1][1])*(x%(restriction)s[2][1] - x%(restriction)s[1][1]) + (x%(restriction)s[2][2] - x%(restriction)s[1][2])*(x%(restriction)s[2][2] - x%(restriction)s[1][2]) );
+const double v0v2%(restriction)s  = std::sqrt(J%(restriction)s_01*J%(restriction)s_01 + J%(restriction)s_11*J%(restriction)s_11 + J%(restriction)s_21*J%(restriction)s_21);
+const double v0v1%(restriction)s  = std::sqrt(J%(restriction)s_00*J%(restriction)s_00 + J%(restriction)s_10*J%(restriction)s_10 + J%(restriction)s_20*J%(restriction)s_20);
+const double v0v3%(restriction)s  = std::sqrt(J%(restriction)s_02*J%(restriction)s_02 + J%(restriction)s_12*J%(restriction)s_12 + J%(restriction)s_22*J%(restriction)s_22);
+const double v1v3%(restriction)s  = std::sqrt( (x%(restriction)s[3][0] - x%(restriction)s[1][0])*(x%(restriction)s[3][0] - x%(restriction)s[1][0]) + (x%(restriction)s[3][1] - x%(restriction)s[1][1])*(x%(restriction)s[3][1] - x%(restriction)s[1][1]) + (x%(restriction)s[3][2] - x%(restriction)s[1][2])*(x%(restriction)s[3][2] - x%(restriction)s[1][2]) );
+const double v2v3%(restriction)s  = std::sqrt( (x%(restriction)s[3][0] - x%(restriction)s[2][0])*(x%(restriction)s[3][0] - x%(restriction)s[2][0]) + (x%(restriction)s[3][1] - x%(restriction)s[2][1])*(x%(restriction)s[3][1] - x%(restriction)s[2][1]) + (x%(restriction)s[3][2] - x%(restriction)s[2][2])*(x%(restriction)s[3][2] - x%(restriction)s[2][2]) );
+const  double la%(restriction)s   = v1v2%(restriction)s*v0v3%(restriction)s;
+const  double lb%(restriction)s   = v0v2%(restriction)s*v1v3%(restriction)s;
+const  double lc%(restriction)s   = v0v1%(restriction)s*v2v3%(restriction)s;
+const  double s%(restriction)s    = 0.5*(la%(restriction)s+lb%(restriction)s+lc%(restriction)s);
+const  double area%(restriction)s = std::sqrt(s%(restriction)s*(s%(restriction)s-la%(restriction)s)*(s%(restriction)s-lb%(restriction)s)*(s%(restriction)s-lc%(restriction)s));
+
+const double circumradius%(restriction)s = area%(restriction)s / ( 6.0*volume%(restriction)s );"""
 
 evaluate_basis_dof_map = """\
 unsigned int element = 0;
@@ -468,4 +496,8 @@ ip_coordinates = {1: (3, _ip_coordinates_1D),
 cell_volume = {1: _cell_volume_1D,
                2: _cell_volume_2D,
                3: _cell_volume_3D}
+
+circumradius = {1: _circumradius_1D,
+                2: _circumradius_2D,
+                3: _circumradius_3D}
 

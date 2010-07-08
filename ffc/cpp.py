@@ -97,6 +97,7 @@ format.update({
     "inv(J)":           lambda i, j: "K_%d%d" % (i, j),
     "det(J)":           lambda r=None: "detJ%s" % choose_map[r],
     "cell volume":      lambda r=None: "volume%s" % choose_map[r],
+    "circumradius":     lambda r=None: "circumradius%s" % choose_map[r],
     "scale factor":     "det",
     "transform":        lambda t, j, k, r: _transform(t, j, k, r),
     "normal component": lambda r, j: "n%s%s" % (choose_map[r], j),
@@ -207,6 +208,7 @@ format.update({
     "fiat coordinate map":  lambda n: fiat_coordinate_map[n],
     "generate normal":      lambda d, i: _generate_normal(d, i),
     "generate cell volume": lambda d, i: _generate_cell_volume(d, i),
+    "generate circumradius": lambda d, i: _generate_circumradius(d, i),
     "generate ip coordinates":  lambda g, num_ip, name, ip, r=None: (ip_coordinates[g][0], ip_coordinates[g][1] % \
                                 {"restriction": choose_map[r], "ip": ip, "name": name, "num_ip": num_ip}),
     "scale factor snippet": scale_factor,
@@ -559,6 +561,22 @@ def _generate_cell_volume(geometric_dimension, domain_type):
         error("Unsupported domain_type: %s" % str(domain_type))
     return code
 
+def _generate_circumradius(geometric_dimension, domain_type):
+    "Generate code for computing a cell's circumradius."
+
+    # Choose snippets
+    radius = circumradius[geometric_dimension]
+
+    # Choose restrictions
+    if domain_type in ("cell", "exterior_facet"):
+        code = radius % {"restriction": ""}
+    elif domain_type == "interior_facet":
+        code = radius % {"restriction": choose_map["+"]}
+        code += radius % {"restriction": choose_map["-"]}
+    else:
+        error("Unsupported domain_type: %s" % str(domain_type))
+    return code
+
 # Functions.
 def indent(block, num_spaces):
     "Indent each row of the given string block with n spaces."
@@ -638,6 +656,10 @@ def remove_unused(code, used_set=set()):
 
     lines = code.split("\n")
     for (line_number, line) in enumerate(lines):
+        # Exclude commented lines.
+        if line[:2] == "//" or line[:3] == "///":
+            continue
+
         # Split words
         words = [word for word in line.split(" ") if not word == ""]
         # Remember line where variable is declared

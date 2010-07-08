@@ -1,3 +1,4 @@
+ - Added support for new geometric quantity Circumradius in UFL.
  - Added support for new geometric quantity CellVolume in UFL.
 0.9.3 [2010-07-01]
  - Make global_dimension for Real return an int instead of double, bug # 592088

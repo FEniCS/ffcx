@@ -230,6 +230,16 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
 
         return {():create_symbol(volume, GEO)}
 
+    def circumradius(self, o,  *operands):
+        # Safety check.
+        ffc_assert(not operands, "Didn't expect any operands for Circumradius: " + repr(operands))
+
+        # FIXME: KBO: This has to change for higher order elements
+        circumradius = format["circumradius"](self.restriction)
+        self.trans_set.add(circumradius)
+
+        return {():create_symbol(circumradius, GEO)}
+
     def create_argument(self, ufl_argument, derivatives, component, local_comp,
                   local_offset, ffc_element, transformation, multiindices):
         "Create code for basis functions, and update relevant tables of used basis."
