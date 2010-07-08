@@ -221,9 +221,12 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         ffc_assert(not operands, "Didn't expect any operands for FacetNormal: " + repr(operands))
 
         # FIXME: KBO: This has to change for higher order elements
-        detJ = format["det(J)"](self.restriction)
-        volume = format["absolute value"](detJ)
-        self.trans_set.add(detJ)
+#        detJ = format["det(J)"](self.restriction)
+#        volume = format["absolute value"](detJ)
+#        self.trans_set.add(detJ)
+
+        volume = format["cell volume"]
+        self.trans_set.add(volume)
 
         return {():create_symbol(volume, GEO)}
 

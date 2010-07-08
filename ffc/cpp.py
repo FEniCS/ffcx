@@ -96,6 +96,7 @@ format.update({
     "J":                lambda i, j: "J_%d%d" % (i, j),
     "inv(J)":           lambda i, j: "K_%d%d" % (i, j),
     "det(J)":           lambda r=None: "detJ%s" % choose_map[r],
+    "cell volume":      "volume",
     "scale factor":     "det",
     "transform":        lambda t, j, k, r: _transform(t, j, k, r),
     "normal component": lambda r, j: "n%s%s" % (choose_map[r], j),

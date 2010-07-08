@@ -296,9 +296,12 @@ class QuadratureTransformer(QuadratureTransformerBase):
         ffc_assert(not operands, "Didn't expect any operands for CellVolume: " + repr(operands))
 
         # FIXME: KBO: This has to change for higher order elements
-        detJ = format["det(J)"](self.restriction)
-        volume = format["absolute value"](detJ)
-        self.trans_set.add(detJ)
+#        detJ = format["det(J)"](self.restriction)
+#        volume = format["absolute value"](detJ)
+#        self.trans_set.add(detJ)
+
+        volume = format["cell volume"]
+        self.trans_set.add(volume)
 
         return {():volume}
 
