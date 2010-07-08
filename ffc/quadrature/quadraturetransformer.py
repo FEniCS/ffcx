@@ -300,7 +300,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
 #        volume = format["absolute value"](detJ)
 #        self.trans_set.add(detJ)
 
-        volume = format["cell volume"]
+        volume = format["cell volume"](self.restriction)
         self.trans_set.add(volume)
 
         return {():volume}

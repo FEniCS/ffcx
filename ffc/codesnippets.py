@@ -95,7 +95,7 @@ _inverse_jacobian_1D = """\
 // Compute determinant of Jacobian
 const double detJ%(restriction)s =  J%(restriction)s_00;
 
-const double volume = std::abs(detJ%(restriction)s);
+const double volume%(restriction)s = std::abs(detJ%(restriction)s);
 
 // Compute inverse of Jacobian
 const double K%(restriction)s_00 =  1.0 / detJ%(restriction)s;"""
@@ -105,7 +105,7 @@ _inverse_jacobian_2D = """\
 // Compute determinant of Jacobian
 double detJ%(restriction)s = J%(restriction)s_00*J%(restriction)s_11 - J%(restriction)s_01*J%(restriction)s_10;
 
-const double volume = std::abs(detJ%(restriction)s)/2.0;
+const double volume%(restriction)s = std::abs(detJ%(restriction)s)/2.0;
 
 // Compute inverse of Jacobian
 const double K%(restriction)s_00 =  J%(restriction)s_11 / detJ%(restriction)s;
@@ -129,7 +129,7 @@ const double d%(restriction)s_22 = J%(restriction)s_00*J%(restriction)s_11 - J%(
 // Compute determinant of Jacobian
 double detJ%(restriction)s = J%(restriction)s_00*d%(restriction)s_00 + J%(restriction)s_10*d%(restriction)s_10 + J%(restriction)s_20*d%(restriction)s_20;
 
-const double volume = std::abs(detJ%(restriction)s)/6.0;
+const double volume%(restriction)s = std::abs(detJ%(restriction)s)/6.0;
 
 // Compute inverse of Jacobian
 const double K%(restriction)s_00 = d%(restriction)s_00 / detJ%(restriction)s;
