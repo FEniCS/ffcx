@@ -84,6 +84,7 @@ def _tabulate_tensor(ir, parameters):
         # FIXME: This will most likely have to change if we support e.g., 2D elements in 3D space.
         jacobi_code = format["jacobian and inverse"](geo_dim)
         jacobi_code += "\n\n" + format["scale factor snippet"]
+        jacobi_code += "\n\n" + format["generate cell volume"](geo_dim, domain_type)
 
     elif domain_type == "exterior_facet":
         cases = [None for i in range(num_facets)]
@@ -105,6 +106,7 @@ def _tabulate_tensor(ir, parameters):
         jacobi_code = format["jacobian and inverse"](geo_dim)
         jacobi_code += "\n\n" + format["facet determinant"](geo_dim)
         jacobi_code += "\n\n" + format["generate normal"](geo_dim, domain_type)
+        jacobi_code += "\n\n" + format["generate cell volume"](geo_dim, domain_type)
 
     elif domain_type == "interior_facet":
         # Modify the dimensions of the primary indices because we have a macro element
@@ -134,6 +136,7 @@ def _tabulate_tensor(ir, parameters):
         jacobi_code += "\n\n"
         jacobi_code += format["facet determinant"](geo_dim, "+")
         jacobi_code += "\n\n" + format["generate normal"](geo_dim, domain_type)
+        jacobi_code += "\n\n" + format["generate cell volume"](geo_dim, domain_type)
     else:
         error("Unhandled integral type: " + str(integral_type))
 

@@ -206,6 +206,7 @@ format.update({
     "facet determinant":    lambda n, r=None: facet_determinant[n] % {"restriction": choose_map[r]},
     "fiat coordinate map":  lambda n: fiat_coordinate_map[n],
     "generate normal":      lambda d, i: _generate_normal(d, i),
+    "generate cell volume": lambda d, i: _generate_cell_volume(d, i),
     "generate ip coordinates":  lambda g, num_ip, name, ip, r=None: (ip_coordinates[g][0], ip_coordinates[g][1] % \
                                 {"restriction": choose_map[r], "ip": ip, "name": name, "num_ip": num_ip}),
     "scale factor snippet": scale_factor,
@@ -538,6 +539,22 @@ def _generate_normal(geometric_dimension, domain_type, reference_normal=False):
         code = direction % {"restriction": choose_map["+"], "facet": "facet0"}
         code += normal % {"direction" : "", "restriction": choose_map["+"]}
         code += normal % {"direction" : "!", "restriction": choose_map["-"]}
+    else:
+        error("Unsupported domain_type: %s" % str(domain_type))
+    return code
+
+def _generate_cell_volume(geometric_dimension, domain_type):
+    "Generate code for computing cell volume."
+
+    # Choose snippets
+    volume = cell_volume[geometric_dimension]
+
+    # Choose restrictions
+    if domain_type in ("cell", "exterior_facet"):
+        code = volume % {"restriction": ""}
+    elif domain_type == "interior_facet":
+        code = volume % {"restriction": choose_map["+"]}
+        code += volume % {"restriction": choose_map["-"]}
     else:
         error("Unsupported domain_type: %s" % str(domain_type))
     return code

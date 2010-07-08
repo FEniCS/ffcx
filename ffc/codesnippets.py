@@ -19,7 +19,7 @@ __all__ = ["comment_ufc", "comment_dolfin", "header_h", "header_c", "footer",
            "fiat_coordinate_map", "transform_snippet",
            "scale_factor", "combinations_snippet",
            "normal_direction",
-           "facet_normal", "ip_coordinates"]
+           "facet_normal", "ip_coordinates", "cell_volume"]
 
 comment_ufc = """\
 // This code conforms with the UFC specification version %(ufc_version)s
@@ -95,8 +95,6 @@ _inverse_jacobian_1D = """\
 // Compute determinant of Jacobian
 const double detJ%(restriction)s =  J%(restriction)s_00;
 
-const double volume%(restriction)s = std::abs(detJ%(restriction)s);
-
 // Compute inverse of Jacobian
 const double K%(restriction)s_00 =  1.0 / detJ%(restriction)s;"""
 
@@ -104,8 +102,6 @@ _inverse_jacobian_2D = """\
 
 // Compute determinant of Jacobian
 double detJ%(restriction)s = J%(restriction)s_00*J%(restriction)s_11 - J%(restriction)s_01*J%(restriction)s_10;
-
-const double volume%(restriction)s = std::abs(detJ%(restriction)s)/2.0;
 
 // Compute inverse of Jacobian
 const double K%(restriction)s_00 =  J%(restriction)s_11 / detJ%(restriction)s;
@@ -128,8 +124,6 @@ const double d%(restriction)s_22 = J%(restriction)s_00*J%(restriction)s_11 - J%(
 
 // Compute determinant of Jacobian
 double detJ%(restriction)s = J%(restriction)s_00*d%(restriction)s_00 + J%(restriction)s_10*d%(restriction)s_10 + J%(restriction)s_20*d%(restriction)s_20;
-
-const double volume%(restriction)s = std::abs(detJ%(restriction)s)/6.0;
 
 // Compute inverse of Jacobian
 const double K%(restriction)s_00 = d%(restriction)s_00 / detJ%(restriction)s;
@@ -217,6 +211,18 @@ _facet_normal_3D = """\
 const double n%(restriction)s0 = %(direction)sdirection ? a0 / det : -a0 / det;
 const double n%(restriction)s1 = %(direction)sdirection ? a1 / det : -a1 / det;
 const double n%(restriction)s2 = %(direction)sdirection ? a2 / det : -a2 / det;"""
+
+_cell_volume_1D = """\
+// Cell Volume.
+const double volume%(restriction)s = std::abs(detJ%(restriction)s);"""
+
+_cell_volume_2D = """\
+// Cell Volume.
+const double volume%(restriction)s = std::abs(detJ%(restriction)s)/2.0;"""
+
+_cell_volume_3D = """\
+// Cell Volume.
+const double volume%(restriction)s = std::abs(detJ%(restriction)s)/6.0;"""
 
 evaluate_basis_dof_map = """\
 unsigned int element = 0;
@@ -458,4 +464,8 @@ facet_normal = {1: _facet_normal_1D,
 ip_coordinates = {1: (3, _ip_coordinates_1D),
                   2: (10, _ip_coordinates_2D),
                   3: (21, _ip_coordinates_3D)}
+
+cell_volume = {1: _cell_volume_1D,
+               2: _cell_volume_2D,
+               3: _cell_volume_3D}
 
