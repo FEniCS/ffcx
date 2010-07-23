@@ -36,6 +36,11 @@ format.update({
     "loop":           lambda i, j, k: "for (unsigned int %s = %s; %s < %s; %s++)"% (i, j, i, k, i),
     "generate loop":  lambda v, w, _indent=0: _generate_loop(v, w, _indent),
     "is equal":       " == ",
+    "not equal":      " == ",
+    "less than":      " < ",
+    "greater than":   " > ",
+    "less equal":     " <= ",
+    "greater equal":  " >= ",
     "do nothing":     "// Do nothing"
 })
 
@@ -173,6 +178,8 @@ format.update({
     "geometry constant":  lambda i: "G[%d]" % i,
     "ip constant":        lambda i: "I[%d]" % i,
     "basis constant":     lambda i: "B[%d]" % i,
+    "conditional":        lambda i: "C[%d]" % i,
+    "evaluate conditional":lambda i,j,k: "(%s) ? %s : %s" % (i,j,k),
 #    "geometry constant":  lambda i: "G%d" % i,
 #    "ip constant":        lambda i: "I%d" % i,
 #    "basis constant":     lambda i: "B%d" % i,

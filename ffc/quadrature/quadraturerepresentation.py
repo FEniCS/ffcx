@@ -278,6 +278,6 @@ def _transform_integrals(transformer, integrals, domain_type):
             integrand = propagate_restrictions(integrand)
         terms = transformer.generate_terms(integrand)
         transformed_integrals.append((point, terms, transformer.functions, \
-                                      {}, transformer.coordinate))
+                                      {}, transformer.coordinate, transformer.conditionals))
     return transformed_integrals
 

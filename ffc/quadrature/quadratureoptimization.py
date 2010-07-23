@@ -48,7 +48,7 @@ def optimize_integral_ir(ir):
     return ir
 
 def _simplify_expression(integral, geo_consts, psi_tables_map):
-    for points, terms, functions, ip_consts, coordinate in integral:
+    for points, terms, functions, ip_consts, coordinate, conditionals in integral:
         for loop, (data, entry_vals) in terms.iteritems():
             t_set, u_weights, u_psi_tables, u_nzcs, basis_consts = data
             new_entry_vals = []
@@ -64,7 +64,7 @@ def _simplify_expression(integral, geo_consts, psi_tables_map):
             terms[loop][1] = new_entry_vals
 
 def _precompute_expressions(integral, geo_consts, optimisation):
-    for points, terms, functions, ip_consts, coordinate in integral:
+    for points, terms, functions, ip_consts, coordinate, conditionals in integral:
         for loop, (data, entry_vals) in terms.iteritems():
             t_set, u_weights, u_psi_tables, u_nzcs, basis_consts = data
             new_entry_vals = []

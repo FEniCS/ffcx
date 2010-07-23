@@ -194,6 +194,7 @@ def _generate_element_tensor(integrals, sets, optimise_parameters):
     f_double  = format["float declaration"]
     f_decl    = format["declaration"]
     f_X       = format["ip coordinates"]
+    f_C       = format["conditional"]
 
 
     # Initialise return values.
@@ -208,7 +209,7 @@ def _generate_element_tensor(integrals, sets, optimise_parameters):
     members_code = ""
     # We receive a dictionary {num_points: form,}.
     # Loop points and forms.
-    for points, terms, functions, ip_consts, coordinate in integrals:
+    for points, terms, functions, ip_consts, coordinate, conditionals in integrals:
 
         element_code += ["", f_comment("Loop quadrature points for integral.")]
 
@@ -232,6 +233,17 @@ def _generate_element_tensor(integrals, sets, optimise_parameters):
             func_code, ops = _generate_functions(functions, sets)
             ip_code += func_code
             num_ops += ops
+
+        # Generate code to compute conditionals (might depend on coordinates
+        # and function values so put here).
+        # TODO: Some conditionals might only depend on geometry so they
+        # should be moved outside if possible.
+        if conditionals:
+            ip_code += [f_decl(f_double, f_C(len(conditionals)))]
+            for c, (t, ops, name) in conditionals.items():
+                ip_code += [f_comment("Compute conditional, operations: %d." % ops)]
+                ip_code += [format["assign"](name, c)]
+                num_ops += ops
 
         # Generate code for ip constant declarations.
 #        ip_const_ops, ip_const_code = generate_aux_constants(ip_consts, f_I,\

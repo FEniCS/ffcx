@@ -60,6 +60,7 @@ class QuadratureTransformerBase(Transformer):
         self.facet1 = None
         self.restriction = None
         self.coordinate = None
+        self.conditionals = {}
 
         # Stacks.
         self._derivatives = []
@@ -76,6 +77,7 @@ class QuadratureTransformerBase(Transformer):
         self.facet0 = facet0
         self.facet1 = facet1
         self.coordinate = None
+        self.conditionals = {}
 #        # Reset functions and count everytime we generate a new case of facets.
 #        self.functions = {}
 #        self.function_count = 0
@@ -88,6 +90,7 @@ class QuadratureTransformerBase(Transformer):
         self.points = points
         self.coordinate = None
         # Reset functions everytime we move to a new quadrature loop
+        self.conditionals = {}
         self.functions = {}
         self.function_count = 0
 
@@ -183,13 +186,13 @@ class QuadratureTransformerBase(Transformer):
     # condition.py, constantvalue.py, function.py, geometry.py, lifting.py,
     # mathfunctions.py, restriction.py
     # -------------------------------------------------------------------------
-    def condition(self, o):
-        print "\n\nVisiting Condition:", repr(o)
-        error("Condition is not supported (yet).")
+#    def condition(self, o):
+#        print "\n\nVisiting Condition:", repr(o)
+#        error("Condition is not supported (yet).")
 
-    def conditional(self, o):
-        print "\n\nVisiting Condition:", repr(o)
-        error("Conditional is not supported (yet).")
+#    def conditional(self, o):
+#        print "\n\nVisiting Condition:", repr(o)
+#        error("Conditional is not supported (yet).")
 
     def constant_value(self, o):
         print "\n\nVisiting ConstantValue:", repr(o)

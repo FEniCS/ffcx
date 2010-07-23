@@ -187,6 +187,59 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         return {():new_val}
 
     # -------------------------------------------------------------------------
+    # Condition, Conditional (conditional.py).
+    # -------------------------------------------------------------------------
+    def condition(self, o, *operands):
+
+        # Get LHS and RHS expressions and do safety checks.
+        # Might be a bit too strict?
+        lhs, rhs = operands
+        ffc_assert(len(lhs) == 1 and lhs.keys()[0] == (),\
+            "LHS of Condtion should only be one function: " + repr(lhs))
+        ffc_assert(len(rhs) == 1 and rhs.keys()[0] == (),\
+            "RHS of Condtion should only be one function: " + repr(rhs))
+
+        # Map names from UFL to cpp.py.
+        name_map = {"==":"is equal", "!=":"not equal",\
+                    "<":"less than", ">":"greater than",\
+                    "<=":"less equal", ">=":"greater equal"}
+
+        # Get the minimum type
+        t = min(lhs[()].t, rhs[()].t)
+        sym = create_symbol("", t, cond=(lhs[()], format[name_map[o._name]], rhs[()]))
+        return {(): sym}
+
+    def conditional(self, o, *operands):
+
+        # Get condition and return values; and do safety check.
+        cond, true, false = operands
+        ffc_assert(len(cond) == 1 and cond.keys()[0] == (),\
+            "Condtion should only be one function: " + repr(cond))
+        ffc_assert(len(true) == 1 and true.keys()[0] == (),\
+            "True value of Condtional should only be one function: " + repr(true))
+        ffc_assert(len(false) == 1 and false.keys()[0] == (),\
+            "False value of Condtional should only be one function: " + repr(false))
+
+        # Get values and test for None
+        t_val = true[()]
+        f_val = false[()]
+
+        # Get the minimum type and number of operations.
+        t = min([cond[()].t, t_val.t, f_val.t])
+        ops = sum([cond[()].ops(), t_val.ops(), f_val.ops()])
+
+        # Create expression for conditional
+        # TODO: Handle this differently to expose the variables which are used
+        # to create the expressions.
+        expr = create_symbol(format["evaluate conditional"](cond[()], t_val, f_val), t)
+        name = create_symbol(format["conditional"](len(self.conditionals)), t)
+        if not expr in self.conditionals:
+            self.conditionals[expr] = (t, ops, name)
+        else:
+            name = self.conditionals[expr][2]
+        return {():name}
+
+    # -------------------------------------------------------------------------
     # FacetNormal, CellVolume (geometry.py).
     # -------------------------------------------------------------------------
     def facet_normal(self, o,  *operands):

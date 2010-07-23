@@ -33,6 +33,7 @@ from ffc.cpp import format
 from quadraturetransformerbase import QuadratureTransformerBase
 from quadratureutils import create_permutations
 from reduce_operations import operation_count
+from symbolics import IP
 
 class QuadratureTransformer(QuadratureTransformerBase):
     "Transform UFL representation to quadrature code."
@@ -260,6 +261,54 @@ class QuadratureTransformer(QuadratureTransformerBase):
 
         # Take absolute value of operand.
         return {():f_abs(operands[0][()])}
+
+    # -------------------------------------------------------------------------
+    # Condition, Conditional (conditional.py).
+    # -------------------------------------------------------------------------
+    def condition(self, o, *operands):
+
+        # Get LHS and RHS expressions and do safety checks.
+        # Might be a bit too strict?
+        lhs, rhs = operands
+        ffc_assert(len(lhs) == 1 and lhs.keys()[0] == (),\
+            "LHS of Condtion should only be one function: " + repr(lhs))
+        ffc_assert(len(rhs) == 1 and rhs.keys()[0] == (),\
+            "RHS of Condtion should only be one function: " + repr(rhs))
+
+        # Map names from UFL to cpp.py.
+        name_map = {"==":"is equal", "!=":"not equal",\
+                    "<":"less than", ">":"greater than",\
+                    "<=":"less equal", ">=":"greater equal"}
+
+        return {(): lhs[()] + format[name_map[o._name]] + rhs[()]}
+
+    def conditional(self, o, *operands):
+
+        # Get condition and return values; and do safety check.
+        cond, true, false = operands
+        ffc_assert(len(cond) == 1 and cond.keys()[0] == (),\
+            "Condtion should only be one function: " + repr(cond))
+        ffc_assert(len(true) == 1 and true.keys()[0] == (),\
+            "True value of Condtional should only be one function: " + repr(true))
+        ffc_assert(len(false) == 1 and false.keys()[0] == (),\
+            "False value of Condtional should only be one function: " + repr(false))
+
+        # Get values and test for None
+        t_val = true[()]
+        f_val = false[()]
+        if t_val is None:
+            t_val = format["float"](0.0)
+        if f_val is None:
+            f_val = format["float"](0.0)
+
+        # Create expression for conditional
+        expr = format["evaluate conditional"](cond[()], t_val, f_val)
+        name = format["conditional"](len(self.conditionals))
+        if not expr in self.conditionals:
+            self.conditionals[expr] = (IP, operation_count(expr, format), name)
+        else:
+            name = self.conditionals[expr][2]
+        return {():name}
 
     # -------------------------------------------------------------------------
     # FacetNormal, CellVolume (geometry.py).

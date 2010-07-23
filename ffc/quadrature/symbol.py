@@ -19,8 +19,8 @@ from symbolics import create_fraction
 from expr import Expr
 
 class Symbol(Expr):
-    __slots__ = ("v", "base_expr", "base_op", "exp")
-    def __init__(self, variable, symbol_type, base_expr=None, base_op=0):
+    __slots__ = ("v", "base_expr", "base_op", "exp", "cond")
+    def __init__(self, variable, symbol_type, base_expr=None, base_op=0, cond=()):
         """Initialise a Symbols object, it derives from Expr and contains
         the additional variables:
 
@@ -44,6 +44,7 @@ class Symbol(Expr):
         self.base_expr = base_expr
         self.base_op = base_op
         self.exp = None
+        self.cond = cond
 
         # If type of the base_expr is lower than the given symbol_type change type.
         # TODO: Should we raise an error here? Or simply require that one
@@ -56,6 +57,8 @@ class Symbol(Expr):
         # only when objects are cached).
         if self.base_expr:
             self._repr = "Symbol('%s', %s, %s, %d)" % (self.v, type_to_string[self.t], self.base_expr._repr, self.base_op)
+        elif self.cond:
+            self._repr = "Symbol('%s', %s, %s, %d, %s)" % (self.v, type_to_string[self.t], self.base_expr, self.base_op, self.cond)
         else:
             self._repr = "Symbol('%s', %s)" % (self.v, type_to_string[self.t])
 
@@ -66,7 +69,10 @@ class Symbol(Expr):
     def __str__(self):
         "Simple string representation which will appear in the generated code."
         if self.base_expr is None:
-            return self.v
+            if self.cond == ():
+                return self.v
+            else:
+                return "".join([str(c) for c in self.cond])
         elif self.exp is None:
             return self.v(str(self.base_expr))
         return self.v(str(self.base_expr), self.exp)
@@ -205,6 +211,8 @@ class Symbol(Expr):
         # for the base (sin(2*x + 1)) --> 2 + 1.
         if self.base_expr:
             return self.base_op + self.base_expr.ops()
+        elif self.cond:
+            return self.base_op + self.cond[0].ops() + self.cond[2].ops() + 1
         return self.base_op
 
 from floatvalue import FloatValue

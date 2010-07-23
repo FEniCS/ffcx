@@ -1,3 +1,4 @@
+ - Added support for Conditional and added demo/Conditional.ufl.
  - Added support for new geometric quantity Circumradius in UFL.
  - Added support for new geometric quantity CellVolume in UFL.
 0.9.3 [2010-07-01]
