@@ -232,11 +232,13 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         # TODO: Handle this differently to expose the variables which are used
         # to create the expressions.
         expr = create_symbol(format["evaluate conditional"](cond[()], t_val, f_val), t)
-        name = create_symbol(format["conditional"](len(self.conditionals)), t)
+        num = len(self.conditionals)
+        name = create_symbol(format["conditional"](num), t)
         if not expr in self.conditionals:
-            self.conditionals[expr] = (t, ops, name)
+            self.conditionals[expr] = (t, ops, num)
         else:
-            name = self.conditionals[expr][2]
+            num = self.conditionals[expr][2]
+            name = create_symbol(format["conditional"](num), t)
         return {():name}
 
     # -------------------------------------------------------------------------

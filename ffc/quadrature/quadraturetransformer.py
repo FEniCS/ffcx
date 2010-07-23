@@ -303,11 +303,13 @@ class QuadratureTransformer(QuadratureTransformerBase):
 
         # Create expression for conditional
         expr = format["evaluate conditional"](cond[()], t_val, f_val)
-        name = format["conditional"](len(self.conditionals))
+        num = len(self.conditionals)
+        name = format["conditional"](num)
         if not expr in self.conditionals:
-            self.conditionals[expr] = (IP, operation_count(expr, format), name)
+            self.conditionals[expr] = (IP, operation_count(expr, format), num)
         else:
-            name = self.conditionals[expr][2]
+            num = self.conditionals[expr][2]
+            name = format["conditional"](num)
         return {():name}
 
     # -------------------------------------------------------------------------

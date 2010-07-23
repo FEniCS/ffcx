@@ -240,9 +240,13 @@ def _generate_element_tensor(integrals, sets, optimise_parameters):
         # should be moved outside if possible.
         if conditionals:
             ip_code += [f_decl(f_double, f_C(len(conditionals)))]
-            for c, (t, ops, name) in conditionals.items():
+            # Sort conditionals (need to in case of nested conditionals).
+            reversed_conds = dict([(n, (o, e)) for e, (t, o, n) in conditionals.items()])
+            for num in range(len(conditionals)):
+                name = format["conditional"](num)
+                ops, expr = reversed_conds[num]
                 ip_code += [f_comment("Compute conditional, operations: %d." % ops)]
-                ip_code += [format["assign"](name, c)]
+                ip_code += [format["assign"](name, expr)]
                 num_ops += ops
 
         # Generate code for ip constant declarations.
