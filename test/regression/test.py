@@ -100,7 +100,7 @@ def generate_code(args):
     for f in form_files:
 
         # Generate code
-        ok = run_command("ffc %s -d -f precision=8 -fconvert_exceptions_to_warnings %s" % (" ".join(args), f))
+        ok = run_command("ffc %s -v -f precision=8 -fconvert_exceptions_to_warnings %s" % (" ".join(args), f))
 
         # Check status
         if ok:
