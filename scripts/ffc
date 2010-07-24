@@ -12,8 +12,8 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Johan Jansson, 2005.
 # Modified by Ola Skavhaug, 2006.
 # Modified by Dag Lindbo, 2008.
-# Modified by Kristian B. Oelgaard 2009.
-# Last changed: 2010-03-25
+# Modified by Kristian B. Oelgaard 2010.
+# Last changed: 2010-07-24
 
 # Python modules.
 import sys
@@ -70,8 +70,8 @@ def main(argv):
     # Get command-line arguments
     try:
         opts, args = getopt.getopt(argv, \
-        "hvdsl:r:f:Oo:q:", \
-        ["help", "version", "debug", "silent", "language=", "representation=",
+        "hVvsl:r:f:Oo:q:", \
+        ["help", "version", "verbose", "silent", "language=", "representation=",
          "optimize", "output-directory=", "quadrature-rule="])
     except getopt.GetoptError:
         info_usage()
@@ -84,7 +84,7 @@ def main(argv):
         return 0
 
     # Check for --version
-    if ("-v", "") in opts or ("--version", "") in opts:
+    if ("-V", "") in opts or ("--version", "") in opts:
         info_version()
         return 0
 
@@ -95,7 +95,7 @@ def main(argv):
 
     # Parse command-line parameters
     for opt, arg in opts:
-        if opt in ("-d", "--debug"):
+        if opt in ("-v", "--verbose"):
              parameters["log_level"] = DEBUG
         elif opt in ("-s", "--silent"):
             parameters["log_level"] = ERROR
@@ -158,7 +158,7 @@ def main(argv):
             except Exception, exception:
                 info("")
                 error(str(exception))
-                error("To get more information about this error, rerun FFC with --debug.")
+                error("To get more information about this error, rerun FFC with --verbose.")
                 return 1
 
     return 0
