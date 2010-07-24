@@ -280,7 +280,15 @@ class QuadratureTransformer(QuadratureTransformerBase):
                     "<":"less than", ">":"greater than",\
                     "<=":"less equal", ">=":"greater equal"}
 
-        return {(): lhs[()] + format[name_map[o._name]] + rhs[()]}
+        # Get values and test for None
+        l_val = lhs[()]
+        r_val = rhs[()]
+        if l_val is None:
+            l_val = format["float"](0.0)
+        if r_val is None:
+            r_val = format["float"](0.0)
+
+        return {(): l_val + format[name_map[o._name]] + r_val}
 
     def conditional(self, o, *operands):
 
