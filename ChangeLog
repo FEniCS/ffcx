@@ -1,10 +1,11 @@
+ - Added memory cache in jit(), for preprocessed forms
  - Added support for Conditional and added demo/Conditional.ufl.
  - Added support for new geometric quantity Circumradius in UFL.
  - Added support for new geometric quantity CellVolume in UFL.
 0.9.3 [2010-07-01]
  - Make global_dimension for Real return an int instead of double, bug # 592088
  - Add support for facet normal in 1D.
- - Expose -feliminate_zeros for quadrature optimisations to give user more 
+ - Expose -feliminate_zeros for quadrature optimisations to give user more
    control
  - Remove return of form in compile_form
  - Remove object_names argument to compile_element
@@ -14,7 +15,7 @@
  - Added support for Bubble elements
  - Added support for UFL.SpatialCoordinate.
 0.9.2 [2010-02-17]
- - Bug fix in removal of unused variables in Piola-mapped terms for tensor 
+ - Bug fix in removal of unused variables in Piola-mapped terms for tensor
    representation
 0.9.1 [2010-02-15]
  - Add back support for FErari optimizations

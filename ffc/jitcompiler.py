@@ -12,7 +12,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Last changed: 2010-02-14
 
 # Python modules
-import os
+import os, sys
 import instant
 import ufc_utils
 
@@ -42,6 +42,12 @@ FFC_PARAMETERS_JIT["no-evaluate_basis_derivatives"] = True
 # Set debug level for Instant
 instant.set_logging_level("warning")
 
+# Memory cache for preprocessed forms
+_memory_cache = {}
+
+# Counter to prevent memory leak
+_memory_check = 1
+
 def jit(object, parameters=None, common_cell=None):
     """Just-in-time compile the given form or element
 
@@ -59,6 +65,7 @@ def jit(object, parameters=None, common_cell=None):
 
 def jit_form(form, parameters=None, common_cell=None):
     "Just-in-time compile the given form."
+    global _memory_check
 
     # Check that we get a Form
     if not isinstance(form, Form):
@@ -72,10 +79,28 @@ def jit_form(form, parameters=None, common_cell=None):
     set_prefix(parameters["log_prefix"])
 
     # Preprocess form
-    if form.form_data() is None:
-        preprocessed_form = preprocess(form, common_cell=common_cell)
-    else:
+    
+    # First check if form is preprocessed
+    if form.form_data() is not None:
         preprocessed_form = form
+
+    # Second check memory cache
+    elif _memory_cache.has_key(id(form)):
+        preprocessed_form = _memory_cache[id(form)]
+
+    # Else preprocess form and store in memory cache
+    else:
+        preprocessed_form = preprocess(form, common_cell=common_cell)
+        _memory_cache[id(form)] = preprocessed_form
+
+        # For each 10th time the refcount of the cached form are checked
+        # and superflous forms are poped
+        if (_memory_check % 10) == 0:
+            for key, cached_form in _memory_cache.items():
+                if sys.getrefcount(cached_form) < 6:
+                    _memory_cache.pop(key)
+        else:
+            _memory_check += 1
 
     # Wrap input
     jit_object = JITObject(form, preprocessed_form, parameters)
