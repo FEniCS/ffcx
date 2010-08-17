@@ -85,13 +85,15 @@ def jit_form(form, parameters=None, common_cell=None):
         preprocessed_form = form
 
     # Second check memory cache
-    elif _memory_cache.has_key(id(form)):
-        preprocessed_form = _memory_cache[id(form)]
+    # Check both for memory id and repr. The last because some algorithm
+    # might have changed the form, while keeping its id.
+    elif _memory_cache.has_key((id(form), repr(form))):
+        preprocessed_form = _memory_cache[(id(form), repr(form))]
 
     # Else preprocess form and store in memory cache
     else:
         preprocessed_form = preprocess(form, common_cell=common_cell)
-        _memory_cache[id(form)] = preprocessed_form
+        _memory_cache[(id(form), repr(form))] = preprocessed_form
 
         # For each 10th time the refcount of the cached form are checked
         # and superflous forms are poped
