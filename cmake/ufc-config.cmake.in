@@ -1,0 +1,17 @@
+# - UFC
+# CMake configuration for UFC (http:://www.fenics.org/ufc)
+#
+# This file has been automatically generated.
+
+# FIXME: Check that naming conforms to CMake standards
+# FIXME: Do we want to add Python info?
+
+# Package found
+set(UFC_FOUND TRUE)
+
+# Include directories
+set(UFC_INCLUDE_DIRS "@CMAKE_INSTALL_PREFIX@/@UFC_INCLUDE_DIR@")
+
+# Version
+set(UFC_VERSION "@UFC_VERSION@")
+

@@ -16,12 +16,15 @@ if(COMMAND cmake_policy)
   cmake_policy(SET CMP0003 NEW)
 endif()
 
+# Set location of our FindFoo.cmake modules
+set(UFC_CMAKE_DIR "${UFC_SOURCE_DIR}/cmake" CACHE INTERNAL "")
+
 #------------------------------------------------------------------------------
 # Set UFC version number
 
 set(UFC_VERSION_MAJOR "0")
-set(UFC_VERSION_MINOR "9")
-set(UFC_VERSION_MICRO "8")
+set(UFC_VERSION_MINOR "4")
+set(UFC_VERSION_MICRO "1")
 set(UFC_VERSION "${UFC_VERSION_MAJOR}.${UFC_VERSION_MINOR}.${UFC_VERSION_MICRO}")
 #add_definitions(-DPACKAGE_VERSION="${UFC_VERSION}")
 
@@ -122,6 +125,10 @@ install(DIRECTORY
 #------------------------------------------------------------------------------
 # Generate ufc-config.cmake file
 
-# FIXME:
+configure_file(${UFC_CMAKE_DIR}/ufc-config.cmake.in ufc-config.cmake @ONLY)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ufc-config.cmake
+  DESTINATION ${CMAKE_INSTALL_PREFIX}/share/ufc/cmake
+  COMPONENT Development
+  )
 
 #------------------------------------------------------------------------------
