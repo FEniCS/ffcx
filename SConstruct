@@ -36,7 +36,7 @@ options = [
     PathVariable("prefix", "Installation prefix", default_prefix, PathVariable.PathAccept),
     PathVariable("includeDir", "ufc.h installation directory",
                join("$prefix","include"), PathVariable.PathAccept),
-    PathVariable("pythonModuleDir", "Python module installation directory", 
+    PathVariable("pythonModuleDir", "Python module installation directory",
                default_python_dir, PathVariable.PathAccept),
     BoolVariable("enablePyUFC", "Compile and install the python extension module", "Yes"),
     PathVariable("pythonExtDir", "Python extension module installation directory",
@@ -81,7 +81,7 @@ if not env.GetOption("clean"):
     # Notify the user about that options from scons/options.cache are being used:
     if isfile(cache_file) and getsize(cache_file):
         print "Using options from options.cache"
-    
+
     # Append end_message if old ufc module excists
     if old_ufc_modules:
         end_message +=  """
@@ -89,7 +89,7 @@ if not env.GetOption("clean"):
 *** Warning: Old ufc module
 
 %s
-  
+
 still excists in installation path.
 Try remove these files with:
 
@@ -120,7 +120,7 @@ if env.subst("$prefix").rstrip("/") in ("/usr", "/usr/local") and \
        "dist-packages" in sysconfig.get_python_lib():
     for tgt_dir in ["pythonModuleDir", "pythonExtDir"]:
         env[tgt_dir] = env[tgt_dir].replace("site-packages", "dist-packages")
-               
+
 # Now generate the help text
 env.Help(opts.GenerateHelpText(env))
 
@@ -129,7 +129,7 @@ ufc_basename = join("src", "ufc", "ufc")
 env.Install(env["pkgConfDir"],File(pkg_config_file))
 env.Install(env["includeDir"],File(ufc_basename+".h"))
 env.Install(join(env["pythonModuleDir"],"ufc_utils"),
-            [File(f) for f in glob.glob(join("src","utils","python","ufc","*.py") )])
+            [File(f) for f in glob.glob(join("src","utils","python","ufc_utils","*.py") )])
 
 targets = [env["pkgConfDir"],env["pythonModuleDir"],env["includeDir"]]
 
@@ -141,7 +141,7 @@ if env["enablePyUFC"]:
         ufc_wrap, ufc_py = swig_env.CXXFile(target=ufc_basename,
                                             source=[ufc_basename+".i"])
         ufc_so = swig_env.SharedLibrary(target=ufc_basename, source=ufc_wrap)[0]
-        
+
         # A SCons bug workaround. Fixed in newer SCons versions
         ufc_py = File(join(dirname(ufc_basename),basename(str(ufc_py))))
 
