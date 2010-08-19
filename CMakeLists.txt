@@ -28,9 +28,6 @@ set(UFC_VERSION_MICRO "1")
 set(UFC_VERSION "${UFC_VERSION_MAJOR}.${UFC_VERSION_MINOR}.${UFC_VERSION_MICRO}")
 #add_definitions(-DPACKAGE_VERSION="${UFC_VERSION}")
 
-# Compiler flags
-# FIXME: Default to optimisation?
-
 #------------------------------------------------------------------------------
 # Options
 
@@ -44,7 +41,10 @@ find_package(PythonLibs QUIET)
 find_package(SWIG QUIET)
 include(UseSWIG)
 
-# FIXME: Look for Boost (shared_ptr support)
+# Look for Boost (shared_ptr support for Python wrappers)
+set(Boost_ADDITIONAL_VERSIONS 1.43 1.43.0)
+set(BOOST_ROOT $ENV{BOOST_DIR})
+find_package(Boost 1.36 QUIET)
 
 #------------------------------------------------------------------------------
 # Get installation path for Python modules
@@ -70,7 +70,7 @@ set(UFC_INCLUDE_DIR "include")
 set(UFC_PKGCONFIG_DIR "lib/pkgconfig")
 set(UFC_SHARE_DIR "share")
 set(UFC_MAN_DIR "share/man")
-#set(UFC_CMAKE_CONFIG_DIR "share/ufc")
+set(UFC_CMAKE_CONFIG_DIR "share/ufc")
 
 #------------------------------------------------------------------------------
 # Install ufc.h
@@ -81,22 +81,42 @@ install(FILES ${UFC_H} DESTINATION ${UFC_INCLUDE_DIR} COMPONENT Development)
 #------------------------------------------------------------------------------
 # Build SWIG extension and install
 
-if (UFC_ENABLE_PYTHON AND SWIG_FOUND)
+if (UFC_ENABLE_PYTHON AND SWIG_FOUND AND Boost_FOUND)
 
+  # Default to release build (can be overridden by user)
+  if (NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE "Release" CACHE STRING
+      "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel." FORCE)
+  endif()
+
+  # Make build directory for SWIG-generated C++ file
+  FILE(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/src/ufc")
+
+  # Include directories
+  include_directories(${Boost_INCLUDE_DIRS} ${PYTHON_INCLUDE_DIRS})
+
+  # Set module name
   set(SWIG_MODULE_NAME ufc)
+
+  # SWIG flags
   set(CMAKE_SWIG_FLAGS -module ${SWIG_MODULE_NAME})
-  set(CMAKE_SWIG_OUTDIR ${CMAKE_CURRENT_BINARY_DIR})
+
+  # SWIG output directory
+  #set(CMAKE_SWIG_OUTDIR ${CMAKE_CURRENT_BINARY_DIR})
+
+  # SWIG sources
   set(SWIG_SOURCES src/ufc/ufc.i)
+
   set_source_files_properties(${SWIG_SOURCES} PROPERTIES CPLUSPLUS ON)
 
   swig_add_module(${SWIG_MODULE_NAME} python ${SWIG_SOURCES})
-  include_directories(${PYTHON_INCLUDE_DIRS})
 
   # Is this required?
   swig_link_libraries(ufc ${PYTHON_LIBRARIES})
 
-
   get_target_property(SWIG_MODULE_LOCATION ${SWIG_MODULE_ufc_REAL_NAME} LOCATION)
+
+  message("SWIG_MODULE_LOCATION ${SWIG_MODULE_LOCATION}")
 
   # Install the swig file
   install(FILES src/ufc/ufc.i
@@ -106,7 +126,7 @@ if (UFC_ENABLE_PYTHON AND SWIG_FOUND)
 
   # Install _ufc.so and ufc.py
   install(FILES ${SWIG_MODULE_LOCATION} ${CMAKE_CURRENT_BINARY_DIR}/ufc.py
-    DESTINATION ${UFC_INSTALL_PYTHON_MODULE_DIR}
+    DESTINATION ${UFC_INSTALL_PYTHON_MODULE_DIR}/ufc
     COMPONENT Development
     )
 
@@ -127,7 +147,7 @@ install(DIRECTORY
 
 configure_file(${UFC_CMAKE_DIR}/ufc-config.cmake.in ufc-config.cmake @ONLY)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ufc-config.cmake
-  DESTINATION ${CMAKE_INSTALL_PREFIX}/share/ufc/cmake
+  DESTINATION ${CMAKE_INSTALL_PREFIX}/${UFC_CMAKE_CONFIG_DIR}
   COMPONENT Development
   )
 
