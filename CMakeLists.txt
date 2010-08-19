@@ -125,7 +125,9 @@ if (UFC_ENABLE_PYTHON AND SWIG_FOUND AND Boost_FOUND)
     )
 
   # Install _ufc.so and ufc.py
-  install(FILES ${SWIG_MODULE_LOCATION} ${CMAKE_CURRENT_BINARY_DIR}/ufc.py
+  install(FILES 
+    ${SWIG_MODULE_LOCATION} ${CMAKE_CURRENT_BINARY_DIR}/ufc.py 
+    src/ufc/__init__.py
     DESTINATION ${UFC_INSTALL_PYTHON_MODULE_DIR}/ufc
     COMPONENT Development
     )
