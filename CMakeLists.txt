@@ -25,8 +25,7 @@ set(UFC_CMAKE_DIR "${UFC_SOURCE_DIR}/cmake" CACHE INTERNAL "")
 set(UFC_VERSION_MAJOR "0")
 set(UFC_VERSION_MINOR "4")
 set(UFC_VERSION_MICRO "1")
-set(UFC_VERSION "${UFC_VERSION_MAJOR}.${UFC_VERSION_MINOR}.${UFC_VERSION_MICRO}")
-#add_definitions(-DPACKAGE_VERSION="${UFC_VERSION}")
+set(UFC_VERSION_STRING "${UFC_VERSION_MAJOR}.${UFC_VERSION_MINOR}.${UFC_VERSION_MICRO}")
 
 #------------------------------------------------------------------------------
 # Options
@@ -125,9 +124,9 @@ if (UFC_ENABLE_PYTHON AND SWIG_FOUND AND Boost_FOUND)
     )
 
   # Install _ufc.so and ufc.py
-  install(FILES 
-    ${SWIG_MODULE_LOCATION} ${CMAKE_CURRENT_BINARY_DIR}/ufc.py 
-    src/ufc/__init__.py
+  install(FILES
+    ${SWIG_MODULE_LOCATION}
+    ${CMAKE_CURRENT_BINARY_DIR}/ufc.py src/ufc/__init__.py
     DESTINATION ${UFC_INSTALL_PYTHON_MODULE_DIR}/ufc
     COMPONENT Development
     )
