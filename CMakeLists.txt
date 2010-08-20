@@ -92,7 +92,7 @@ if (UFC_ENABLE_PYTHON AND SWIG_FOUND AND Boost_FOUND)
   FILE(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/src/ufc")
 
   # Include directories
-  include_directories(${Boost_INCLUDE_DIRS} ${PYTHON_INCLUDE_DIRS})
+  include_directories(${UFC_SOURCE_DIR}/src/ufc ${Boost_INCLUDE_DIRS} ${PYTHON_INCLUDE_DIRS})
 
   # Set module name
   set(SWIG_MODULE_NAME ufc)
