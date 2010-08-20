@@ -22,7 +22,7 @@ set(UFC_CMAKE_DIR "${UFC_SOURCE_DIR}/cmake" CACHE INTERNAL "")
 #------------------------------------------------------------------------------
 # Set UFC version number
 
-set(UFC_VERSION_MAJOR "0")
+set(UFC_VERSION_MAJOR "1")
 set(UFC_VERSION_MINOR "4")
 set(UFC_VERSION_MICRO "1")
 set(UFC_VERSION_STRING "${UFC_VERSION_MAJOR}.${UFC_VERSION_MINOR}.${UFC_VERSION_MICRO}")
@@ -153,3 +153,13 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ufc-config.cmake
   )
 
 #------------------------------------------------------------------------------
+# Generate pkg-config config file (ufc-1.pc)
+
+configure_file(${UFC_CMAKE_DIR}/ufc-1.pc.in ufc-1.pc @ONLY)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ufc-1.pc
+  DESTINATION ${CMAKE_INSTALL_PREFIX}/${UFC_PKGCONFIG_DIR}
+  COMPONENT Development
+  )
+
+#------------------------------------------------------------------------------
+
