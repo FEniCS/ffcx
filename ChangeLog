@@ -1,3 +1,4 @@
+ - Move to CMake build system
 1.4.1 [2010-07-01]
  - Make functions introduced in UFC 1.1 mandatory (now pure virtual)
  - Update templates to allow constructor arguments in form classes
