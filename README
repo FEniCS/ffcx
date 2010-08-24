@@ -32,10 +32,11 @@ in this source tree.
 -------------------------------------------------------------------------------
 2. Installation
 
-To install UFC, simply run
+To install UFC, run
 
-    scons
-    sudo scons install
+    cmake .
+    make
+    make install
 
 This installs the header file ufc.h and a small set of Python utilities
 (templates) for generating UFC code. Files will be installed under the default
@@ -43,7 +44,8 @@ prefix.
 
 The installation prefix may be optionally specified, for example
 
-    scons install prefix=~/local
+    cmake -D -DCMAKE_INSTALL_PREFIX=~/local .
+    make install
 
 Alternatively, just copy the single header file src/ufc/ufc.h
 into a suitable include directory.
@@ -51,25 +53,29 @@ into a suitable include directory.
 If you do not want to build and install the python extenstion module of UFC,
 needed by, e.g., PyDOLFIN, you can write
 
-    scons enablePyUFC=No
-    sudo scons install
+    cmake -D -DCMAKE_INSTALL_PREFIX=~/local -D UFC_ENABLE_PYTHON:BOOL=OFF .
+    make
+    make install
 
-Help with available options and default arguments can be viewed by
+For more options, it is convenient to use a CMake GUI. To use a GUI (if
+installed) for an out-of-source build, simply type
 
-    scons -h
+    mkdir build
+    cd build
+    cmake-gui ../
+    make
+    make install
 
 -------------------------------------------------------------------------------
 3. License
 
-The header file ufc.h and UFC Python utils are released into
-the public domain.
+The header file ufc.h and UFC Python utils are released into the public domain.
 
 -------------------------------------------------------------------------------
 4. Feedback
 
 Feedback, comments and suggestions should be sent to
 
-    ufc-dev@fenics.org
+    fenics-ufc@lists.launchpad.net
 
 -------------------------------------------------------------------------------
-Oslo, July 2010

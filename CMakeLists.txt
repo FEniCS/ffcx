@@ -100,9 +100,6 @@ if (UFC_ENABLE_PYTHON AND SWIG_FOUND AND Boost_FOUND)
   # SWIG flags
   set(CMAKE_SWIG_FLAGS -module ${SWIG_MODULE_NAME})
 
-  # SWIG output directory
-  #set(CMAKE_SWIG_OUTDIR ${CMAKE_CURRENT_BINARY_DIR})
-
   # SWIG sources
   set(SWIG_SOURCES src/ufc/ufc.i)
 
