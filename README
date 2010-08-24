@@ -33,6 +33,6 @@ Dependencies:
   2. The latest version of FIAT, UFC and UFL
 
      You need to have FIAT, UFC and UFL installed. They are available from the
-     FEniCS web page: http://www.fenics.org/.
+     web page: https://launchpad.net/fenics-project/.
 
   3. The Python NumPy module
