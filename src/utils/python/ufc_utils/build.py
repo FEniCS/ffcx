@@ -101,7 +101,7 @@ Install swig version %s or recompiled UFC with present swig
     # Check for boost installation
     # Set a default directory for the boost installation
     if sys.platform == "darwin":
-        # use fink as default
+        # Use MacPorts as default
         default = os.path.join(os.path.sep, "opt", "local")
     else:
         default = os.path.join(os.path.sep, "usr")
