@@ -14,7 +14,7 @@ if(COMMAND cmake_policy)
 endif()
 
 # Set verbose output while testing CMake
-set(CMAKE_VERBOSE_MAKEFILE 1)
+#set(CMAKE_VERBOSE_MAKEFILE 1)
 
 # Set location of our FindFoo.cmake modules
 set(UFC_CMAKE_DIR "${UFC_SOURCE_DIR}/cmake" CACHE INTERNAL "")
