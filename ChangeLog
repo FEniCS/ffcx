@@ -1,3 +1,4 @@
+0.9.4
  - Added memory cache in jit(), for preprocessed forms
  - Added support for Conditional and added demo/Conditional.ufl.
  - Added support for new geometric quantity Circumradius in UFL.
