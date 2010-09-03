@@ -50,12 +50,14 @@ class TestReduceVarType(unittest.TestCase):
         S2 = Sum([B0, B1])
         S3 = Sum([B0, p0])
         S4 = Sum([f5, p0])
+        S5 = Sum([I0, G0])
 
         F0 = Fraction(B0,I5).expand()
         F1 = Fraction(p1,I5).expand()
         F2 = Fraction(G3,S2).expand()
         F3 = Fraction(G3,S3).expand()
         F4 = Fraction(I1, Sum([I1, I0]))
+        F5 = Fraction(S5, I1)
 
         r0 = B0.reduce_vartype(BASIS)
         r1 = B0.reduce_vartype(CONST)
@@ -77,28 +79,29 @@ class TestReduceVarType(unittest.TestCase):
         rf3 = F2.reduce_vartype(BASIS)
         rf4 = F3.reduce_vartype(BASIS)
         rf5 = F4.reduce_vartype(IP)
-
+        rf6 = F5.reduce_vartype(IP)
 #        print
-#        print "%s, red(BASIS): ('%s', '%s')" %(B0, r0[0], r0[1])
-#        print "%s, red(CONST): ('%s', '%s')" %(B0, r1[0], r1[1])
+#        print "%s, red(BASIS): ('%s', '%s')" %(B0, r0[0][0], r0[0][1])
+#        print "%s, red(CONST): ('%s', '%s')" %(B0, r1[0][0], r1[0][1])
 
-#        print "\n%s, red(BASIS): ('%s', '%s')" %(p0, rp0[0], rp0[1])
-#        print "%s, red(IP):    ('%s', '%s')" %(p0, rp1[0], rp1[1])
-#        print "%s, red(BASIS): ('%s', '%s')" %(p1, rp2[0], rp2[1])
-#        print "%s, red(CONST): ('%s', '%s')" %(p1, rp3[0], rp3[1])
+#        print "\n%s, red(BASIS): ('%s', '%s')" %(p0, rp0[0][0], rp0[0][1])
+#        print "%s, red(IP):    ('%s', '%s')" %(p0, rp1[0][0], rp1[0][1])
+#        print "%s, red(BASIS): ('%s', '%s')" %(p1, rp2[0][0], rp2[0][1])
+#        print "%s, red(CONST): ('%s', '%s')" %(p1, rp3[0][0], rp3[0][1])
 
-#        print "\n%s, red(BASIS): ('%s', '%s')" %(S0, rs0[0], rs0[1])
-#        print "%s, red(IP):    ('%s', '%s')" %(S0, rs1[0], rs1[1])
-#        print "%s, red(BASIS): '%s', '%s'" %(S1, rs2[0], rs2[1])
-#        print "%s, red(BASIS): '%s', '%s'" %(S4, rs3[0], rs3[1])
-#        print "%s, red(BASIS): '%s'" %(S4, rs4[0])
+#        print "\n%s, red(BASIS): ('%s', '%s')" %(S0, rs0[0][0], rs0[0][1])
+#        print "%s, red(IP):    ('%s', '%s')" %(S0, rs1[0][0], rs1[0][1])
+#        print "%s, red(BASIS): '%s', '%s'" %(S1, rs2[0][0], rs2[0][1])
+#        print "%s, red(BASIS): '%s', '%s'" %(S4, rs3[0][0], rs3[0][1])
+#        print "%s, red(BASIS): '%s'" %(S4, rs4[0][0])
 
-#        print "\nrf0: %s, red(BASIS): ('%s', '%s')" %(F0, rf0[0], rf0[1])
-#        print "rf1: %s, red(BASIS): ('%s', '%s')" %(F1, rf1[0], rf1[1])
-#        print "rf2: %s, red(IP): ('%s', '%s')" %(F0, rf2[0], rf2[1])
-#        print "rf3: %s, red(BASIS): ('%s', '%s')" %(F2, rf3[0], rf3[1])
-#        print "rf4: %s, red(BASIS): ('%s', '%s')" %(F3, rf4[0], rf4[1])
-#        print "rf5: %s, red(IP): ('%s', '%s')" %(F4, rf5[0], rf5[1])
+#        print "\nrf0: %s, red(BASIS): ('%s', '%s')" %(F0, rf0[0][0], rf0[0][1])
+#        print "rf1: %s, red(BASIS): ('%s', '%s')" %(F1, rf1[0][0], rf1[0][1])
+#        print "rf2: %s, red(IP): ('%s', '%s')" %(F0, rf2[0][0], rf2[0][1])
+#        print "rf3: %s, red(BASIS): ('%s', '%s')" %(F2, rf3[0][0], rf3[0][1])
+#        print "rf4: %s, red(BASIS): ('%s', '%s')" %(F3, rf4[0][0], rf4[0][1])
+#        print "rf5: %s, red(IP): ('%s', '%s')" %(F4, rf5[0][0], rf5[0][1])
+#        print "rf6: %s, red(IP): ('%s', '%s') + ('%s', '%s')" %(F5, rf6[0][0], rf6[0][1], rf6[1][0], rf6[1][1])
 
         self.assertEqual([(B0, f1)], r0)
         self.assertEqual([((), B0)], r1)
@@ -130,6 +133,10 @@ class TestReduceVarType(unittest.TestCase):
         self.assertEqual( [( Fraction(f1, B0), Fraction( G3, Sum([I5, f1])))], rf4)
         self.assertEqual(F4, rf5[0][0])
         self.assertEqual(FloatValue(1), rf5[0][1])
+        self.assertEqual(Fraction(I0,I1), rf6[0][0])
+        self.assertEqual(f1, rf6[0][1])
+        self.assertEqual(Fraction(f1,I1), rf6[1][0])
+        self.assertEqual(G0, rf6[1][1])
 
 if __name__ == "__main__":
 
