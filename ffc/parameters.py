@@ -29,7 +29,7 @@ FFC_PARAMETERS = {
   "output_dir":                     ".",     # output directory for generated
                                              # code
   "cpp_optimize":                   False,   # optimization for the JIT compiler
-  "cpp_optimize_flags":             "-O3",   # optimization flags for the JIT compiler
+  "cpp_optimize_flags":             "-O2",   # optimization flags for the JIT compiler
   "optimize":                       False,   # optimise the code generation
   "log_level":                      INFO,    # log level, displaying only
                                              # messages with level >= log_level
