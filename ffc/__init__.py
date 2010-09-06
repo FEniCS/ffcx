@@ -20,3 +20,6 @@ from ffc.jitcompiler import jit
 
 # Import default parameters
 from parameters import default_parameters
+
+# Import useful extra functionality
+from extras import *

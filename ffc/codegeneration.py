@@ -12,7 +12,7 @@ __copyright__ = "Copyright (C) 2009 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Mehdi Nikbakht, 2010
-# Last changed: 2010-06-15
+# Last changed: 2010-09-04
 
 # FFC modules
 from ffc.log import info, begin, end, debug_code

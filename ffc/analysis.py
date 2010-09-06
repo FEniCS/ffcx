@@ -14,7 +14,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Marie E. Rognes, 2010
 
-# Last changed: 2010-06-21
+# Last changed: 2010-09-04
 
 # UFL modules
 from ufl.common import istr, tstr

@@ -1,3 +1,4 @@
+ - Add utility function compute_tensor_representation
 0.9.4
  - Added memory cache in jit(), for preprocessed forms
  - Added support for Conditional and added demo/Conditional.ufl.
