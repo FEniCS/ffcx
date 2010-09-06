@@ -245,16 +245,19 @@ class Fraction(Expr):
             else:
                 # meg: I have only a marginal idea of what I'm doing here!
 #                print "here: "
-                return create_sum([create_fraction(create_product([num_found, num_remain]), self.denom)
-                                   for (num_found, num_remain) in foo]).expand().reduce_vartype(var_type)
+                new_sum = []
+                for num_found, num_remain in foo:
+                    if num_found == ():
+                        new_sum.append(create_fraction(num_remain, self.denom))
+                    else:
+                        new_sum.append(create_fraction(create_product([num_found, num_remain]), self.denom))
+                return create_sum(new_sum).expand().reduce_vartype(var_type)
         else:
 #            num_found, num_remain = self.num.reduce_vartype(var_type)
             foo = self.num.reduce_vartype(var_type)
             if len(foo) != 1:
                 raise RuntimeError("This case is not handled")
             num_found, num_remain = foo[0]
-#            print "num found: ", num_found
-#            print "num rem: ", num_remain
 
 #        # TODO: Remove this test later, expansion should have taken care of
 #        # no denominator.
@@ -315,7 +318,7 @@ class Fraction(Expr):
         found = None
         # There is always a remainder.
         remain = create_fraction(num_remain, denom_remain).expand()
-#        print "remain: ", remain
+#        print "remain: ", repr(remain)
 
         if num_found:
             if denom_found:

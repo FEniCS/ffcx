@@ -186,7 +186,7 @@ class Symbol(Expr):
             return create_fraction(num, denom[0])
         # If we don't have any donominator left, return the numerator.
         # x / 2.0 -> 0.5*x.
-        return num
+        return num.expand()
 
     # Public functions.
     def get_unique_vars(self, var_type):

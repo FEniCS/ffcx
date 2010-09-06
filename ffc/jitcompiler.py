@@ -79,7 +79,7 @@ def jit_form(form, parameters=None, common_cell=None):
     set_prefix(parameters["log_prefix"])
 
     # Preprocess form
-    
+
     # First check if form is preprocessed
     if form.form_data() is not None:
         preprocessed_form = form
@@ -130,7 +130,7 @@ def jit_form(form, parameters=None, common_cell=None):
         source_directory = os.curdir,
         signature = jit_object.signature(),
         sources = [cppfile] if parameters["split"] else [],
-        cppargs  = ["-O2"] if parameters["cpp_optimize"] else ["-O0"] ,
+        cppargs = parameters["cpp_optimize_flags"].split() if parameters["cpp_optimize"] else ["-O0"],
         cache_dir = cache_dir)
 
     # Remove code
