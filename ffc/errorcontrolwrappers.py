@@ -9,17 +9,16 @@ class %(class_name)s: public dolfin::ErrorControl
  public:
 
   %(class_name)s(dolfin::Form& a, dolfin::Form& L, dolfin::Form& M)
-
     {
 
-      // Initialize dual forms with function spaces from a
+      // Create dual forms with function spaces from a
       _a_star = new %(a_star)s(a.function_space(1), a.function_space(0));
       _L_star = new %(L_star)s(a.function_space(1));
 
-      // Make extrapolation space
+      // Create extrapolation space
       _E = new %(E_space)s(mesh);
 
-      // Initialize residual functional (for use with error estimate)
+      // Create residual functional (for use with error estimate)
       _residual = new %(residual)s(mesh);
 
     };
