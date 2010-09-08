@@ -100,6 +100,22 @@ def generate_error_control_forms(forms):
 
     return (forms, names)
 
+def write_code(prefix, code):
+
+    # Append code to above file (must fix #endif)
+    file = open(prefix + ".h", "r")
+    lines = file.readlines()
+    lines = lines[:-3]
+    file.close()
+
+    file = open(prefix + ".h", "w")
+    file.write("".join(lines))
+    file.write(code)
+    file.write("}\n#endif\n");
+
+    file.close()
+
+
 def compile_with_error_control(forms, object_names, prefix, parameters):
 
     info("Generating additionals")
@@ -129,10 +145,7 @@ def compile_with_error_control(forms, object_names, prefix, parameters):
     print code
     print "-"*80
 
-    # Append code to above file (must fix #endif)
-    file = open(prefix + ".h", "a")
-    file.write(code)
-    file.close()
+    write_code(prefix, code)
 
     return 0
 
