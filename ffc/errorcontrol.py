@@ -9,6 +9,7 @@ from ufl import adjoint, FiniteElement, MixedElement, Coefficient, action, repla
 
 from ffc.log import info, error
 from ffc.compiler import compile_form
+from ffc.errorcontrolwrappers import generate_error_control_wrapper
 
 
 def increase_order(element):
@@ -98,10 +99,6 @@ def generate_error_control_forms(forms):
 
     return (forms, names)
 
-def generate_error_control_wrapper():
-
-    return "foo;"
-
 def compile_with_error_control(forms, object_names, prefix, parameters):
 
     info("Generating additionals")
@@ -118,13 +115,17 @@ def compile_with_error_control(forms, object_names, prefix, parameters):
     for k in names:
         all_names[k] = names[k]
 
-    prefix += "ErrorControl"
-
     # Compile all forms
     compile_form(foos + tuple(forms), all_names, prefix, parameters)
 
     # Generate error_control DOLFIN wrapper
-    code = generate_error_control_wrapper()
+    code = generate_error_control_wrapper(prefix)
+
+    print "-"*80
+    print "- Wrapper code - "
+    print "-"*80
+    print code
+    print "-"*80
 
     # Append code to above file (must fix #endif)
     file = open(prefix + ".h", "a")
