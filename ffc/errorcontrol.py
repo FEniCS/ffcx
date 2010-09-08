@@ -2,10 +2,14 @@ __author__ = "Marie E. Rognes (meg@simula.no)"
 __copyright__ = "Copyright (C) 2010 " + __author__
 __license__  = "GNU LGPL version 3 or any later version"
 
-# Last changed: 2010-09-07
+# Last changed: 2010-09-08
 
-from ufl.algorithms.analysis import extract_elements, extract_unique_elements
-from ufl import adjoint, FiniteElement, MixedElement, Coefficient, action
+from ufl.algorithms.analysis import extract_elements, extract_unique_elements, extract_arguments
+from ufl import adjoint, FiniteElement, MixedElement, Coefficient, action, replace
+
+from ffc.log import info, error
+from ffc.compiler import compile_form
+
 
 def increase_order(element):
     "Return element of same family, but a polynomial degree higher."
@@ -43,7 +47,8 @@ def create_dual_forms(a, L, M):
 
     # Fudged linear case for now
     a_star = adjoint(a)
-    L_star = M
+    (u, v) = extract_arguments(a)
+    L_star = replace(M, {u:v})
 
     return (a_star, L_star)
 
@@ -57,7 +62,7 @@ def create_extrapolation_space(L):
     # Increase order and return
     return increase_order(V)
 
-def generate_error_control_stuff(forms):
+def generate_error_control_forms(forms):
 
     # Check input
     _check_input(forms)
@@ -65,18 +70,66 @@ def generate_error_control_stuff(forms):
     # Extract forms
     (a, L, M) = _extract_forms(forms)
 
-    # Create residual form (Probably need to name the coefficient
-    # here, in order to be able to find it again.)
-    residual = L - action(a)
-
-    # Create forms for dual problem
+    # Create bilinear and linear forms for dual problem
     (a_star, L_star) = create_dual_forms(a, L, M)
 
-    # Generate higher order element for extrapolation
+    # Define discrete solution as coefficient on trial element (NB!)
+    u_h = Coefficient(extract_elements(a)[1])
+
+    # Create finite element for extrapolation
     E = create_extrapolation_space(L)
 
-    # Collect forms and elements to be compiled
-    forms = (residual, a_star, L_star)
-    elements = (E, )
+    # Create coefficient for extrapolated dual
+    Ez_h = Coefficient(E)
 
-    return (forms, elements)
+    # Create residual funcational
+    residual = action(L - action(a, u_h), Ez_h)
+
+    # Collect forms and elements to be compiled
+    forms = (a_star, L_star, residual)
+
+    # Add names to object names
+    names = {}
+    names[id(a_star)] = "a_star"
+    names[id(L_star)] = "L_star"
+    names[id(residual)] = "residual"
+    names[id(Ez_h)] = "Ez_h"
+    names[id(u_h)] = "u_h"
+
+    return (forms, names)
+
+def generate_error_control_wrapper():
+
+    return "foo;"
+
+def compile_with_error_control(forms, object_names, prefix, parameters):
+
+    info("Generating additionals")
+    (foos, names) = generate_error_control_forms(forms)
+
+    # Check whether we use same names...
+    if bool(set(names.values()) & set(object_names.values())):
+        error("Same name used ... this can cause trouble")
+
+    # Note: Not quite sure what to use this for yet.
+    all_names = {}
+    for k in object_names:
+        all_names[k] = object_names[k]
+    for k in names:
+        all_names[k] = names[k]
+
+    prefix += "ErrorControl"
+
+    # Compile all forms
+    compile_form(foos + tuple(forms), all_names, prefix, parameters)
+
+    # Generate error_control DOLFIN wrapper
+    code = generate_error_control_wrapper()
+
+    # Append code to above file (must fix #endif)
+    file = open(prefix + ".h", "a")
+    file.write(code)
+    file.close()
+
+    return 0
+

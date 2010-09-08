@@ -13,7 +13,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Ola Skavhaug, 2006.
 # Modified by Dag Lindbo, 2008.
 # Modified by Kristian B. Oelgaard 2010.
-# Last changed: 2010-09-07
+# Last changed: 2010-09-08
 
 # Python modules.
 import sys
@@ -34,7 +34,7 @@ from ffc.log import ERROR
 from ffc.parameters import default_parameters
 from ffc.constants import FFC_VERSION
 from ffc.compiler import compile_form, compile_element
-from ffc.errorcontrol import generate_error_control_stuff
+from ffc.errorcontrol import compile_with_error_control
 
 def error(msg):
     "Print error message (cannot use log system at top level)."
@@ -149,7 +149,10 @@ def main(argv):
             error("Expecting a UFL form file (.ufl).")
             return 1
 
-        print "ufd.object_names = ", ufd.object_names
+        # Do additional stuff if in error-control mode
+        if with_error_control:
+            return compile_with_error_control(ufd.forms, ufd.object_names,
+                                              prefix, parameters)
 
         # Catch exceptions only when not in debug mode
         if parameters["log_level"] <= DEBUG:
@@ -169,11 +172,6 @@ def main(argv):
                 error("To get more information about this error, rerun FFC with --verbose.")
                 return 1
 
-        # Do additional stuff if in error-control mode
-        if with_error_control:
-            (forms, elements) = generate_error_control_stuff(ufd.forms)
-            compile_form(forms, {}, prefix+"ErrorControlForms", parameters)
-            compile_element(elements, prefix+"ErrorControlSpaces", parameters)
 
     return 0
 
