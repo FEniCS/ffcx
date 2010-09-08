@@ -5,7 +5,8 @@ __license__  = "GNU LGPL version 3 or any later version"
 # Last changed: 2010-09-08
 
 from ufl.algorithms.analysis import extract_elements, extract_unique_elements, extract_arguments
-from ufl import adjoint, FiniteElement, MixedElement, Coefficient, action, replace
+from ufl import FiniteElement, MixedElement, Coefficient
+from ufl import adjoint, action, replace
 
 from ffc.log import info, error
 from ffc.compiler import compile_form
@@ -110,13 +111,14 @@ def compile_with_error_control(forms, object_names, prefix, parameters):
 
     # Note: Not quite sure what to use this for yet.
     all_names = {}
-    for k in object_names:
-        all_names[k] = object_names[k]
     for k in names:
         all_names[k] = names[k]
+    for k in object_names:
+        all_names[k] = object_names[k]
 
     # Compile all forms
-    compile_form(foos + tuple(forms), all_names, prefix, parameters)
+    all_forms = foos + tuple(forms)
+    compile_form(all_forms, all_names, prefix, parameters)
 
     # Generate error_control DOLFIN wrapper
     code = generate_error_control_wrapper(prefix)
