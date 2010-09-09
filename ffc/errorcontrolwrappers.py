@@ -31,7 +31,13 @@ base = """
    {
      // delete stuff;
    }
+
   };
+
+  typedef %(a)s BilinearForm;
+  typedef %(L)s LinearForm;
+  typedef %(M)s GoalFunctional;
+
 """
 
 def generate_error_control_wrapper(prefix):
@@ -41,5 +47,9 @@ def generate_error_control_wrapper(prefix):
                    "a_star": "Form_%d" % (N),
                    "L_star": "Form_%d" % (N+1),
                    "E_space": "CoefficientSpace_%s" % "Ez_h",
-                   "residual": "Form_%d" % (N+2)}
+                   "residual": "Form_%d" % (N+2),
+                   "a": "Form_%d" %(N + 3),
+                   "L": "Form_%d" %(N + 4),
+                   "M": "Form_%d" %(N + 5)}
+
     return code
