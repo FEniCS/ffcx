@@ -17,6 +17,9 @@ base = """
      _a_star = new %(a_star)s(a.function_space(1), a.function_space(0));
      _L_star = new %(L_star)s(a.function_space(1));
 
+     const dolfin::FunctionSpace& V(*a.function_space(0));
+     const dolfin::Mesh& mesh(V.mesh());
+
      // Create extrapolation space
      _E = new %(E_space)s(mesh);
 
