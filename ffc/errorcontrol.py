@@ -2,16 +2,44 @@ __author__ = "Marie E. Rognes (meg@simula.no)"
 __copyright__ = "Copyright (C) 2010 " + __author__
 __license__  = "GNU LGPL version 3 or any later version"
 
-# Last changed: 2010-09-08
+# Last changed: 2010-09-09
 
 from ufl.algorithms.analysis import extract_elements, extract_unique_elements, extract_arguments
-from ufl import FiniteElement, MixedElement, Coefficient
-from ufl import adjoint, action, replace
+from ufl import FiniteElement, MixedElement, Coefficient, TrialFunction, TestFunction
+from ufl import adjoint, action, replace, inner, dx
 
 from ffc.log import info, error
 from ffc.compiler import compile_form
 from ffc.errorcontrolwrappers import generate_error_control_wrapper
 
+
+def change_regularity(element, family):
+    """
+    For a given function space, return the corresponding space with
+    the finite elements specified by 'family'. Possible families
+    are the families supported by the form compiler
+    """
+
+    # MR: This belongs in UFL
+    n = element.num_sub_elements()
+    if n > 0:
+        subs = element.sub_elements()
+        return MixedElement([change_regularity(subs[i], family)
+                             for i in range(n)])
+    shape = element.value_shape()
+    if not shape:
+        return FiniteElement(family, element.cell(), element.degree())
+
+    return MixedElement([FiniteElement(family, element.cell(), element.degree())
+                               for i in range(shape[0])])
+
+def tear(element):
+    """
+    For a given element space, return the corresponding discontinuous
+    space
+    """
+    W = change_regularity(element, "DG")
+    return W
 
 def increase_order(element):
     "Return element of same family, but a polynomial degree higher."
@@ -64,6 +92,44 @@ def create_extrapolation_space(L):
     # Increase order and return
     return increase_order(V)
 
+def create_cell_residual_forms(a, L):
+
+    elements = extract_elements(a)
+
+    # Define discrete solution as coefficient on trial element (NB!)
+    u_h = Coefficient(elements[1])
+
+    # Define residual as linear form
+    r = L - action(a, u_h)
+
+    # Establish space for bubble
+    cell = elements[0].cell()
+    CGd = FiniteElement("CG", cell, cell.geometric_dimension()+1)
+
+    # Define bubble
+    b_T = Coefficient(CGd)
+
+    # Tear trialspace
+    DG = tear(elements[1])
+    u = TrialFunction(DG)
+    v = TestFunction(DG)
+
+    v_T = b_T*v
+    a = inner(v_T, b_T)*dx
+    L = replace(r, {extract_arguments(r)[0]: v_T})
+
+    return (a, L)
+
+def create_facet_residual_forms(a, L):
+
+    a_r_dT = None
+    L_r_dT = None
+    return (a_r_dT, L_r_dT)
+
+def create_error_indicator_form():
+
+    return None
+
 def generate_error_control_forms(forms):
 
     # Check input
@@ -86,6 +152,15 @@ def generate_error_control_forms(forms):
 
     # Create residual funcational
     residual = action(L - action(a, u_h), Ez_h)
+
+    # Create bilinear and linear forms for cell residual
+    (a_r_T, L_r_T) = create_cell_residual_forms(a, L)
+
+    # Create bilinear and linear forms for facet residual
+    (a_r_dT, L_r_dT) = create_facet_residual_forms(a, L)
+
+    # Create linear form for error indicators
+    eta_T = create_error_indicator_form()
 
     # Collect forms and elements to be compiled
     forms = (a_star, L_star, residual)
