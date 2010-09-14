@@ -2,7 +2,7 @@ __author__ = "Marie E. Rognes (meg@simula.no)"
 __copyright__ = "Copyright (C) 2010 " + __author__
 __license__  = "GNU LGPL version 3 or any later version"
 
-# Last changed: 2010-09-09
+# Last changed: 2010-09-10
 
 from ufl.algorithms.analysis import extract_elements, extract_unique_elements, extract_arguments
 from ufl import FiniteElement, MixedElement, Coefficient, TrialFunction, TestFunction
@@ -109,13 +109,13 @@ def create_cell_residual_forms(a, L):
     # Define bubble
     b_T = Coefficient(CGd)
 
-    # Tear trialspace
+    # Tear trial space
     DG = tear(elements[1])
-    u = TrialFunction(DG)
+    R_T = TrialFunction(DG)
     v = TestFunction(DG)
 
     v_T = b_T*v
-    a = inner(v_T, b_T)*dx
+    a = inner(v_T, R_T)*dx
     L = replace(r, {extract_arguments(r)[0]: v_T})
 
     return (a, L)
@@ -156,6 +156,9 @@ def generate_error_control_forms(forms):
     # Create bilinear and linear forms for cell residual
     (a_r_T, L_r_T) = create_cell_residual_forms(a, L)
 
+    print "a_R_T = ", a_r_T
+    print "L_R_T = ", L_r_T
+
     # Create bilinear and linear forms for facet residual
     (a_r_dT, L_r_dT) = create_facet_residual_forms(a, L)
 
@@ -163,7 +166,7 @@ def generate_error_control_forms(forms):
     eta_T = create_error_indicator_form()
 
     # Collect forms and elements to be compiled
-    forms = (a_star, L_star, residual)
+    forms = (a_star, L_star, residual, a_r_T, L_r_T)
 
     # Add names to object names
     names = {}
@@ -172,6 +175,8 @@ def generate_error_control_forms(forms):
     names[id(residual)] = "residual"
     names[id(Ez_h)] = "Ez_h"
     names[id(u_h)] = "u_h"
+    names[id(a_r_T)] = "a_R_T"
+    names[id(L_r_T)] = "L_R_T"
 
     return (forms, names)
 
