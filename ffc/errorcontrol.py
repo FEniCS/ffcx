@@ -2,11 +2,11 @@ __author__ = "Marie E. Rognes (meg@simula.no)"
 __copyright__ = "Copyright (C) 2010 " + __author__
 __license__  = "GNU LGPL version 3 or any later version"
 
-# Last changed: 2010-09-10
+# Last changed: 2010-09-14
 
 from ufl.algorithms.analysis import extract_elements, extract_unique_elements, extract_arguments
 from ufl import FiniteElement, MixedElement, Coefficient, TrialFunction, TestFunction
-from ufl import adjoint, action, replace, inner, dx
+from ufl import adjoint, action, replace, inner, dx, ds, dS, avg
 
 from ffc.log import info, error
 from ffc.compiler import compile_form
@@ -126,9 +126,33 @@ def create_facet_residual_forms(a, L):
     L_r_dT = None
     return (a_r_dT, L_r_dT)
 
-def create_error_indicator_form():
+def create_error_indicator_form(a, L, z):
 
-    return None
+    elements = extract_elements(a)
+
+    # R_T should live in a's trial space
+    R_T = Coefficient(elements[1])
+
+    # So should kind of R_dT
+    R_dT = Coefficient(elements[1])
+
+    # Interpolated dual extrapolation should live in dual trial space
+    # aka primal test space
+    z_h = Coefficient(elements[0])
+
+    # Use test function on DG to localize
+    DG = FiniteElement("DG", elements[1].cell(), 0)
+    v = TestFunction(DG)
+
+    # Define indicator form
+    eta_T = v*inner(R_T, z - z_h)*dx \
+            + avg(v)*(inner(R_dT('+'), (z - z_h)('+'))
+                      + inner(R_dT('-'), (z - z_h)('-')))*dS \
+            + v*inner(R_dT, z - z_h)*ds
+
+    names = {"eta_T": eta_T, "R_T": R_T, "R_dT": R_dT, "z_h": z_h}
+
+    return (eta_T, names)
 
 def generate_error_control_forms(forms):
 
@@ -160,13 +184,13 @@ def generate_error_control_forms(forms):
     print "L_R_T = ", L_r_T
 
     # Create bilinear and linear forms for facet residual
-    (a_r_dT, L_r_dT) = create_facet_residual_forms(a, L)
+    # (a_r_dT, L_r_dT) = create_facet_residual_forms(a, L)
 
     # Create linear form for error indicators
-    eta_T = create_error_indicator_form()
+    (eta_T, eta_T_names) = create_error_indicator_form(a, L, Ez_h)
 
     # Collect forms and elements to be compiled
-    forms = (a_star, L_star, residual, a_r_T, L_r_T)
+    forms = (a_star, L_star, residual, a_r_T, L_r_T, eta_T)
 
     # Add names to object names
     names = {}
@@ -177,6 +201,9 @@ def generate_error_control_forms(forms):
     names[id(u_h)] = "u_h"
     names[id(a_r_T)] = "a_R_T"
     names[id(L_r_T)] = "L_R_T"
+
+    for (name, form) in eta_T_names.iteritems():
+        names[id(form)] = name
 
     return (forms, names)
 
