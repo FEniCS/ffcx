@@ -34,9 +34,9 @@ base = """
      %(attach_residual)s
 
      // Create bilinear and linear form for computing cell residual R_T
-     //_DG = new %(DG_space)s(mesh);
-     //_a_R_T = new %(a_R_T)s(*_DG, *_DG);
-     //_L_R_T = new %(L_R_T)s(*_DG);
+     _DG = new %(DG_space)s(mesh);
+     _a_R_T = new %(a_R_T)s(*_DG, *_DG);
+     _L_R_T = new %(L_R_T)s(*_DG);
 
    }
 
