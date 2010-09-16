@@ -209,7 +209,32 @@ def generate_error_control_forms(forms):
 
     return (forms, names)
 
-def write_code(prefix, code):
+def hack(lines, prefix):
+
+    code = "".join(lines)
+
+    (before, after) = code.split("class Form_8:")
+
+    print "after = ", after
+
+    after = after.replace(" public dolfin::Form",
+                          "class Form_8: public dolfin::GoalFunctional")
+    after = after.replace("dolfin::Form", "dolfin::GoalFunctional")
+
+    updating = """
+    virtual void update_ec(const dolfin::Form& a, const dolfin::Form& L)
+    {
+      // Update self
+      ec.reset(new %s::ErrorControl(a, L, *this));
+    }
+    };
+    """ % prefix
+
+    after = after.replace("};", updating)
+
+    return (before, after)
+
+def write_code(prefix, ec_code, typedefs):
 
     # Append code to above file (must fix #endif)
     file = open(prefix + ".h", "r")
@@ -218,10 +243,13 @@ def write_code(prefix, code):
     file.close()
 
     file = open(prefix + ".h", "w")
-    file.write("".join(lines))
-    file.write(code)
+    # meg: Not proud moment. No need for yelling.
+    (before, after) = hack(lines, prefix)
+    file.write(before)
+    file.write(ec_code)
+    file.write(after)
+    file.write(typedefs)
     file.write("}\n#endif\n");
-
     file.close()
 
 
@@ -246,15 +274,15 @@ def compile_with_error_control(forms, object_names, prefix, parameters):
     compile_form(all_forms, all_names, prefix, parameters)
 
     # Generate error_control DOLFIN wrapper
-    code = generate_error_control_wrapper(prefix)
+    (ec_code, typedefs) = generate_error_control_wrapper(prefix)
 
     print "-"*80
     print "- Wrapper code - "
     print "-"*80
-    print code
+    print ec_code
     print "-"*80
 
-    write_code(prefix, code)
+    write_code(prefix, ec_code, typedefs)
 
     return 0
 
