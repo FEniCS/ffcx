@@ -38,6 +38,17 @@ base = """
      _a_R_T = new %(a_R_T)s(*_DG_k, *_DG_k);
      _L_R_T = new %(L_R_T)s(*_DG_k);
 
+     // Initialize bubble function
+     _B = new %(Bubble_space)s(mesh);
+     _b_T = new dolfin::Function(*_B);
+     _b_T->vector() = 1.0;
+
+     // Attach bubble function to _a_R_T and _L_R_T
+     _a_R_T->set_coefficient("b_T", *_b_T);
+     _L_R_T->set_coefficient("b_T", *_b_T);
+
+     %(attach_L_R_T)s
+
      // Create error indicator form
      _DG_0 = new %(DG0_space)s(mesh);
      _eta_T = new %(eta_T)s(*_DG_0);
@@ -78,8 +89,11 @@ def generate_error_control_wrapper(prefix):
     N = 0 # Assuming that forms are generated in order
     d = 6 # Number of forms from the error control
 
-    residual_snippet = generate_attach_snippet("_residual", "a") + "\n" + \
+    residual_snippet = generate_attach_snippet("_residual", "a") + "\n\t" + \
                        generate_attach_snippet("_residual", "L")
+
+    L_R_T_snippet = generate_attach_snippet("_L_R_T", "a") + "\n\t" + \
+                    generate_attach_snippet("_L_R_T", "L")
 
     code = base % {"class_name": "ErrorControl",
                    "a_star": "Form_%d" % (N),
@@ -90,12 +104,15 @@ def generate_error_control_wrapper(prefix):
                    "a_R_T": "Form_%d" % (N+3),
                    "L_R_T": "Form_%d" % (N+4),
                    "DG0_space": "Form_%d::TestSpace" % (N+5),
+                   "Bubble_space": "Form_%d::CoefficientSpace_%s" % (N+3, "b_T"),
                    "eta_T": "Form_%d" % (N+5),
                    "a": "Form_%d" %(N + d),
                    "L": "Form_%d" %(N + d+1),
                    "M": "Form_%d" %(N + d+2),
                    "attach_a_star": generate_attach_snippet("_a_star", "a"),
                    "attach_L_star": generate_attach_snippet("_L_star", "M"),
-                   "attach_residual": residual_snippet}
+                   "attach_residual": residual_snippet,
+                   "attach_L_R_T": L_R_T_snippet,
+                   }
 
     return code

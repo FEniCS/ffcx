@@ -2,7 +2,7 @@ __author__ = "Marie E. Rognes (meg@simula.no)"
 __copyright__ = "Copyright (C) 2010 " + __author__
 __license__  = "GNU LGPL version 3 or any later version"
 
-# Last changed: 2010-09-14
+# Last changed: 2010-09-16
 
 from ufl.algorithms.analysis import extract_elements, extract_unique_elements, extract_arguments
 from ufl import FiniteElement, MixedElement, Coefficient, TrialFunction, TestFunction
@@ -92,33 +92,34 @@ def create_extrapolation_space(L):
     # Increase order and return
     return increase_order(V)
 
-def create_cell_residual_forms(a, L):
+def create_cell_residual_forms(a, L, u_h):
 
     elements = extract_elements(a)
-
-    # Define discrete solution as coefficient on trial element (NB!)
-    u_h = Coefficient(elements[1])
 
     # Define residual as linear form
     r = L - action(a, u_h)
 
     # Establish space for bubble
     cell = elements[0].cell()
-    CGd = FiniteElement("CG", cell, cell.geometric_dimension()+1)
+    Bubble = FiniteElement("B", cell, cell.geometric_dimension()+1)
 
     # Define bubble
-    b_T = Coefficient(CGd)
+    b_T = Coefficient(Bubble)
 
     # Tear trial space
     DG = tear(elements[1])
     R_T = TrialFunction(DG)
     v = TestFunction(DG)
 
+    # Define forms
     v_T = b_T*v
-    a = inner(v_T, R_T)*dx
-    L = replace(r, {extract_arguments(r)[0]: v_T})
+    a_R_T = inner(v_T, R_T)*dx
+    L_R_T = replace(r, {extract_arguments(r)[0]: v_T})
 
-    return (a, L)
+    forms = (a_R_T, L_R_T)
+    names = {"b_T": b_T}
+    return (forms, names)
+
 
 def create_facet_residual_forms(a, L):
 
@@ -178,10 +179,8 @@ def generate_error_control_forms(forms):
     residual = action(L - action(a, u_h), Ez_h)
 
     # Create bilinear and linear forms for cell residual
-    (a_r_T, L_r_T) = create_cell_residual_forms(a, L)
-
-    print "a_R_T = ", a_r_T
-    print "L_R_T = ", L_r_T
+    (forms, R_T_names) = create_cell_residual_forms(a, L, u_h)
+    (a_r_T, L_r_T) = forms
 
     # Create bilinear and linear forms for facet residual
     # (a_r_dT, L_r_dT) = create_facet_residual_forms(a, L)
@@ -203,6 +202,9 @@ def generate_error_control_forms(forms):
     names[id(L_r_T)] = "L_R_T"
 
     for (name, form) in eta_T_names.iteritems():
+        names[id(form)] = name
+
+    for (name, form) in R_T_names.iteritems():
         names[id(form)] = name
 
     return (forms, names)
