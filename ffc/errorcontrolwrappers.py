@@ -16,8 +16,8 @@ base = """
      std::string name;
 
      // Create dual forms with function spaces from a
-     _a_star = new %(a_star)s(a.function_space(1), a.function_space(0));
-     _L_star = new %(L_star)s(a.function_space(1));
+     _a_star.reset(new %(a_star)s(a.function_space(1), a.function_space(0)));
+     _L_star.reset(new %(L_star)s(a.function_space(1)));
 
      %(attach_a_star)s
      %(attach_L_star)s
@@ -26,21 +26,21 @@ base = """
      const dolfin::Mesh& mesh(V.mesh());
 
      // Create extrapolation space
-     _E = new %(E_space)s(mesh);
+     _E.reset(new %(E_space)s(mesh));
 
      // Create residual functional (for use with error estimate)
-     _residual = new %(residual)s(mesh);
+     _residual.reset(new %(residual)s(mesh));
 
      %(attach_residual)s
 
      // Create bilinear and linear form for computing cell residual R_T
-     _DG_k = new %(DGk_space)s(mesh);
-     _a_R_T = new %(a_R_T)s(*_DG_k, *_DG_k);
-     _L_R_T = new %(L_R_T)s(*_DG_k);
+     _DG_k.reset(new %(DGk_space)s(mesh));
+     _a_R_T.reset(new %(a_R_T)s(*_DG_k, *_DG_k));
+     _L_R_T.reset(new %(L_R_T)s(*_DG_k));
 
      // Initialize bubble function
-     _B = new %(Bubble_space)s(mesh);
-     _b_T = new dolfin::Function(*_B);
+     _B.reset(new %(Bubble_space)s(mesh));
+     _b_T.reset(new dolfin::Function(*_B));
      _b_T->vector() = 1.0;
 
      // Attach bubble function to _a_R_T and _L_R_T
@@ -50,14 +50,14 @@ base = """
      %(attach_L_R_T)s
 
      // Create error indicator form
-     _DG_0 = new %(DG0_space)s(mesh);
-     _eta_T = new %(eta_T)s(*_DG_0);
+     _DG_0.reset(new %(DG0_space)s(mesh));
+     _eta_T.reset(new %(eta_T)s(*_DG_0));
 
    }
 
   ~%(class_name)s()
    {
-     // delete stuff;
+     // Do nothing. Boost takes care of deletion
    }
 
   };
