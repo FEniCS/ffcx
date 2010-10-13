@@ -2,7 +2,7 @@ __author__ = "Marie E. Rognes (meg@simula.no)"
 __copyright__ = "Copyright (C) 2010 " + __author__
 __license__  = "GNU LGPL version 3 or any later version"
 
-# Last changed: 2010-09-16
+# Last changed: 2010-10-13
 
 from ufl.algorithms.analysis import extract_elements, extract_unique_elements, extract_arguments
 from ufl import FiniteElement, MixedElement, Coefficient, TrialFunction, TestFunction
@@ -121,11 +121,33 @@ def create_cell_residual_forms(a, L, u_h):
     return (forms, names)
 
 
-def create_facet_residual_forms(a, L):
+def create_facet_residual_forms(a, L, u):
 
-    a_r_dT = None
-    L_r_dT = None
-    return (a_r_dT, L_r_dT)
+    # Define weak residual (linear form)
+    r = L - action(a, u)
+
+    # Pick trial space of a as space of residual representation,
+    elements = extract_elements(a)
+    DG = tear(elements[1])
+
+    # Establish cone function(s)
+    cell = elements[0].cell()
+    C = FiniteElement("DG", cell, cell.geometric_dimension())
+    b_e = Coefficient(C)
+
+    R_T = Coefficient(DG)
+    R_e = TrialFunction(DG)
+    v = TestFunction(DG)
+    v_e = b_e*v
+
+    a_R_dT = (inner(v_e('+'), R_e('+')) + inner(v_e('-'), R_e('-')))*dS \
+             + inner(v_e, R_e)*ds
+    L_R_dT = replace(r, {extract_arguments(r)[0]: v_e}) - inner(v_e, R_T)*dx
+
+    forms = (a_R_dT, L_R_dT)
+    names = {"b_e": b_e, "R_T": R_T}
+
+    return (forms, names)
 
 def create_error_indicator_form(a, L, z):
 
@@ -180,16 +202,16 @@ def generate_error_control_forms(forms):
 
     # Create bilinear and linear forms for cell residual
     (forms, R_T_names) = create_cell_residual_forms(a, L, u_h)
-    (a_r_T, L_r_T) = forms
+    (a_R_T, L_R_T) = forms
 
     # Create bilinear and linear forms for facet residual
-    # (a_r_dT, L_r_dT) = create_facet_residual_forms(a, L)
+    ((a_R_dT, L_R_dT), R_dT_names) = create_facet_residual_forms(a, L, u_h)
 
     # Create linear form for error indicators
     (eta_T, eta_T_names) = create_error_indicator_form(a, L, Ez_h)
 
     # Collect forms and elements to be compiled
-    forms = (a_star, L_star, residual, a_r_T, L_r_T, eta_T)
+    forms = (a_star, L_star, residual, a_R_T, L_R_T, a_R_dT, L_R_dT, eta_T)
 
     # Add names to object names
     names = {}
@@ -198,13 +220,18 @@ def generate_error_control_forms(forms):
     names[id(residual)] = "residual"
     names[id(Ez_h)] = "Ez_h"
     names[id(u_h)] = "u_h"
-    names[id(a_r_T)] = "a_R_T"
-    names[id(L_r_T)] = "L_R_T"
+    names[id(a_R_T)] = "a_R_T"
+    names[id(L_R_T)] = "L_R_T"
+    names[id(a_R_dT)] = "a_R_dT"
+    names[id(L_R_dT)] = "L_R_dT"
 
     for (name, form) in eta_T_names.iteritems():
         names[id(form)] = name
 
     for (name, form) in R_T_names.iteritems():
+        names[id(form)] = name
+
+    for (name, form) in R_dT_names.iteritems():
         names[id(form)] = name
 
     return (forms, names)
@@ -213,12 +240,14 @@ def hack(lines, prefix):
 
     code = "".join(lines)
 
-    (before, after) = code.split("class Form_8:")
+    n = 10
+
+    (before, after) = code.split("class Form_%d:" % n)
 
     print "after = ", after
 
     after = after.replace(" public dolfin::Form",
-                          "class Form_8: public dolfin::GoalFunctional")
+                          "class Form_%d: public dolfin::GoalFunctional" % n)
     after = after.replace("dolfin::Form", "dolfin::GoalFunctional")
 
     updating = """
