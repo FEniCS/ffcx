@@ -14,7 +14,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Marie E. Rognes, 2010
 
-# Last changed: 2010-09-04
+# Last changed: 2010-10-25
 
 # UFL modules
 from ufl.common import istr, tstr
@@ -105,6 +105,10 @@ def _get_nested_elements(element):
 
 def _analyze_form(form, object_names, parameters, common_cell=None):
     "Analyze form, returning preprocessed form."
+
+    # Check that form is not empty
+    ffc_assert(len(form.integrals()),
+               "Form (%s) seems to be zero: cannot compile it." % str(form))
 
     # Preprocess form if necessary
     if form.form_data() is None:
