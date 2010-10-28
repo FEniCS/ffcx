@@ -44,7 +44,7 @@ prefix.
 
 The installation prefix may be optionally specified, for example
 
-    cmake -D -DCMAKE_INSTALL_PREFIX=~/local .
+    cmake -DCMAKE_INSTALL_PREFIX=~/local .
     make install
 
 Alternatively, just copy the single header file src/ufc/ufc.h
@@ -53,7 +53,7 @@ into a suitable include directory.
 If you do not want to build and install the python extenstion module of UFC,
 needed by, e.g., PyDOLFIN, you can write
 
-    cmake -D -DCMAKE_INSTALL_PREFIX=~/local -D UFC_ENABLE_PYTHON:BOOL=OFF .
+    cmake -DCMAKE_INSTALL_PREFIX=~/local -D UFC_ENABLE_PYTHON:BOOL=OFF .
     make
     make install
 
