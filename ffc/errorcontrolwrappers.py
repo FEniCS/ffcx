@@ -47,8 +47,8 @@ error_control_base = """
      _b_T->vector() = 1.0;
 
      // Attach bubble function to _a_R_T and _L_R_T
-     _a_R_T->set_coefficient("b_T", *_b_T);
-     _L_R_T->set_coefficient("b_T", *_b_T);
+     _a_R_T->set_coefficient(0, *_b_T);
+     _L_R_T->set_coefficient(%(L_R_T_b_T)d, *_b_T);
 
      %(attach_L_R_T)s
 
@@ -142,6 +142,8 @@ def generate_wrapper_maps(ec_forms, forms):
     eta_h = preprocess(eta_h)
     num_Ez_h = eta_h.form_data().num_coefficients - 1
     print num_Ez_h
+    L_R_T = preprocess(L_R_T)
+    num_b_T_in_L_R_T = eta_h.form_data().num_coefficients - 1
 
     maps = {"class_name": "ErrorControl",
             "a_star": "Form_%d" % 0,
@@ -160,6 +162,7 @@ def generate_wrapper_maps(ec_forms, forms):
             "a": "Form_%d" % d,
             "L": "Form_%d" % (d+1),
             "M": "Form_%d" % (d+2),
+            "L_R_T_b_T": num_b_T_in_L_R_T,
             "attach_a_star": generate_attach_snippet("_a_star", "a"),
             "attach_L_star": generate_attach_snippet("_L_star", "M"),
             "attach_residual": residual_snippet,
