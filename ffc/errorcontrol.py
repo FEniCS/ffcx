@@ -2,10 +2,10 @@ __author__ = "Marie E. Rognes (meg@simula.no)"
 __copyright__ = "Copyright (C) 2010 " + __author__
 __license__  = "GNU LGPL version 3 or any later version"
 
-# Last changed: 2010-11-02
+# Last changed: 2010-11-03
 
 from ufl import Coefficient
-
+from ufl.algorithms import preprocess
 from ffc.log import info, error
 from ffc.compiler import compile_form
 from ffc.formmanipulations import *
@@ -29,6 +29,8 @@ def generate_error_control(forms, object_names):
 
     _check_input(forms, object_names)
 
+    ec_names = {}
+
     # Extract unknown (or None if not defined)
     unknown = object_names.get("unknown", None)
 
@@ -43,6 +45,7 @@ def generate_error_control(forms, object_names):
     # on trial element
     if unknown is None:
         unknown = Coefficient(V)
+        ec_names[id(unknown)] = "the_discrete_solution"
 
     # Create coefficient for extrapolated dual
     Ez_h = Coefficient(E)
@@ -59,14 +62,32 @@ def generate_error_control(forms, object_names):
     # Generate error estimate (residual) (# FIXME: Add option here)
     eta_h = action(weak_residual, Ez_h)
 
-    # Generate error indicators (# FIXME: Add option here)
-    eta_T = generate_error_indicator(weak_residual, E)
+    print "eta_h = ", eta_h
 
-    return (a_star, L_star, a_R_T, L_R_T, a_R_dT, L_R_dT, eta_h, eta_T)
+    a = preprocess(eta_h)
+    print "form_data = ", a.form_data()
+
+    # Generate error indicators (# FIXME: Add option here)
+    eta_T = generate_error_indicator(weak_residual, E, Q=None, Eh=None)
+
+    ec_forms = (a_star, L_star, a_R_T, L_R_T, a_R_dT, L_R_dT, eta_h, eta_T)
+
+    return (ec_forms, ec_names)
 
 def compile_with_error_control(forms, object_names, prefix, parameters):
 
-    ec_forms = generate_error_control(forms, object_names)
+    ec_forms, ec_names = generate_error_control(forms, object_names)
+
+    # Add object names generated for error control
+    assert not (set(object_names.values()) & set(ec_names.values())), \
+           "Same names used in code generation for error control. Trouble!"
+
+    for (name, value) in ec_names.iteritems():
+        object_names[name] = value
+
+    print "\n\nObject names:"
+    for (name, value) in object_names.iteritems():
+        print (name, value)
 
     # Compile all forms
     all_forms = ec_forms + tuple(forms)

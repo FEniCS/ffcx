@@ -122,7 +122,7 @@ def generate_wrapper_maps(ec_forms, forms):
     or
 
     Form_8 : F
-    Form_10: M
+    Form_9 : M
 
     Ez_h will be the last coefficient defined in Form_6
 
@@ -131,6 +131,7 @@ def generate_wrapper_maps(ec_forms, forms):
 
     assert (d == 8), "Hm."
     (a_star, L_star, a_R_T, L_R_T, a_R_dT, L_R_dT, eta_h, eta_T) = ec_forms
+    #(a_star, L_star, a_R_T, L_R_T) = ec_forms
 
     residual_snippet = generate_attach_snippet("_residual", "a") + "\n\t" + \
                        generate_attach_snippet("_residual", "L")
@@ -140,25 +141,26 @@ def generate_wrapper_maps(ec_forms, forms):
                      generate_attach_snippet("_L_R_dT", "L")
 
     eta_h = preprocess(eta_h)
+    print "eta_h = ", eta_h
+
     num_Ez_h = eta_h.form_data().num_coefficients - 1
-    print num_Ez_h
     L_R_T = preprocess(L_R_T)
-    num_b_T_in_L_R_T = eta_h.form_data().num_coefficients - 1
+    num_b_T_in_L_R_T = L_R_T.form_data().num_coefficients - 1
 
     maps = {"class_name": "ErrorControl",
             "a_star": "Form_%d" % 0,
             "L_star": "Form_%d" % 1,
-            "E_space": "Form_%d_FunctionSpace_%s" % (6, num_Ez_h),
-            "residual": "Form_%d" % 6,
             "DGk_space": "Form_%d::TestSpace" % 3,
             "a_R_T": "Form_%d" % 2,
-            "L_R_T": "Form_%d" % 3,
             "Bubble_space": "Form_%d_FunctionSpace_%d" % (2, 2),
-            "Cone_space": "Form_%d_FunctionSpace_%d" % (4, 2),
+            "L_R_T": "Form_%d" % 3,
             "a_R_dT": "Form_%d" % 4,
+            "Cone_space": "Form_%d_FunctionSpace_%d" % (4, 2),
             "L_R_dT": "Form_%d" % 5,
-            "DG0_space": "Form_%d::TestSpace" % 7,
+            "residual": "Form_%d" % 6,
+            "E_space": "Form_%d_FunctionSpace_%s" % (6, num_Ez_h),
             "eta_T": "Form_%d" % 7,
+            "DG0_space": "Form_%d::TestSpace" % 7,
             "a": "Form_%d" % d,
             "L": "Form_%d" % (d+1),
             "M": "Form_%d" % (d+2),
