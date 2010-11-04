@@ -3,75 +3,72 @@ __copyright__ = "Copyright (C) 2010 " + __author__
 __license__  = "GNU LGPL version 3 or any later version"
 
 error_control_base = """
-  class %(class_name)s: public dolfin::ErrorControl
-  {
+class %(class_name)s: public dolfin::ErrorControl
+{
 
-   public:
+ public:
 
-   %(class_name)s(const dolfin::Form& a, const dolfin::Form& L,
-                  dolfin::GoalFunctional& M)
-      : dolfin::%(class_name)s(a, L, M)
+ %(class_name)s(const dolfin::Form& a, const dolfin::Form& L,
+                dolfin::GoalFunctional& M)
+               : dolfin::%(class_name)s(a, L, M)
+ {
 
-   {
+    std::string name;
 
-     std::string name;
+    // Create dual forms with function spaces from a
+    _a_star.reset(new %(a_star)s(a.function_space(1), a.function_space(0)));
+    _L_star.reset(new %(L_star)s(a.function_space(1)));
 
-     // Create dual forms with function spaces from a
-     _a_star.reset(new %(a_star)s(a.function_space(1), a.function_space(0)));
-     _L_star.reset(new %(L_star)s(a.function_space(1)));
+    %(attach_a_star)s
+    %(attach_L_star)s
 
-     %(attach_a_star)s
-     %(attach_L_star)s
+    const dolfin::FunctionSpace& V(*a.function_space(0));
+    const dolfin::Mesh& mesh(V.mesh());
 
-     const dolfin::FunctionSpace& V(*a.function_space(0));
-     const dolfin::Mesh& mesh(V.mesh());
+    // Create extrapolation space
+    _E.reset(new %(E_space)s(mesh));
 
-     // Create extrapolation space
-     _E.reset(new %(E_space)s(mesh));
+    // Create residual functional (for use with error estimate)
+    _residual.reset(new %(residual)s(mesh));
 
-     // Create residual functional (for use with error estimate)
-     _residual.reset(new %(residual)s(mesh));
+    %(attach_residual)s
 
-     %(attach_residual)s
+    // Create bilinear and linear form for computing cell residual R_T
+    _DG_k.reset(new %(DGk_space)s(mesh));
+    _a_R_T.reset(new %(a_R_T)s(*_DG_k, *_DG_k));
+    _L_R_T.reset(new %(L_R_T)s(*_DG_k));
 
-     // Create bilinear and linear form for computing cell residual R_T
-     _DG_k.reset(new %(DGk_space)s(mesh));
-     _a_R_T.reset(new %(a_R_T)s(*_DG_k, *_DG_k));
-     _L_R_T.reset(new %(L_R_T)s(*_DG_k));
+    // Initialize bubble function
+    _B.reset(new %(Bubble_space)s(mesh));
+    _b_T.reset(new dolfin::Function(*_B));
+    _b_T->vector() = 1.0;
 
-     // Initialize bubble function
-     _B.reset(new %(Bubble_space)s(mesh));
-     _b_T.reset(new dolfin::Function(*_B));
-     _b_T->vector() = 1.0;
+    // Attach bubble function to _a_R_T and _L_R_T
+    _a_R_T->set_coefficient("__cell_bubble", *_b_T);
+    _L_R_T->set_coefficient("__cell_bubble", *_b_T);
 
-     // Attach bubble function to _a_R_T and _L_R_T
-     _a_R_T->set_coefficient("__cell_bubble", *_b_T);
-     _L_R_T->set_coefficient("__cell_bubble", *_b_T);
+    %(attach_L_R_T)s
 
-     %(attach_L_R_T)s
+    // Create bilinear and linear form for computing facet residual R_dT
+    _a_R_dT.reset(new %(a_R_dT)s(*_DG_k, *_DG_k));
+    _L_R_dT.reset(new %(L_R_dT)s(*_DG_k));
 
-     // Create bilinear and linear form for computing facet residual R_dT
-     _a_R_dT.reset(new %(a_R_dT)s(*_DG_k, *_DG_k));
-     _L_R_dT.reset(new %(L_R_dT)s(*_DG_k));
+    %(attach_L_R_dT)s
 
-     %(attach_L_R_dT)s
+    // Initialize cone space
+    _C.reset(new %(Cone_space)s(mesh));
 
-     // Initialize cone space
-     _C.reset(new %(Cone_space)s(mesh));
+    // Create error indicator form
+    _DG_0.reset(new %(DG0_space)s(mesh));
+    _eta_T.reset(new %(eta_T)s(*_DG_0));
 
-     // Create error indicator form
-     _DG_0.reset(new %(DG0_space)s(mesh));
-     _eta_T.reset(new %(eta_T)s(*_DG_0));
-
-   }
+  }
 
   ~%(class_name)s()
-   {
-     // Do nothing. Boost takes care of deletion
-   }
-
-  };
-
+  {
+    // Do nothing. Boost takes care of deletion
+  }
+};
 """
 
 typedefs = """
@@ -93,10 +90,18 @@ def generate_attach_snippet(to, from_form):
       if (name == "__discrete_primal_solution")
         continue;
 
+      try {
+        const uint coefficient_number = %(to)s->coefficient_number(name);
+      } catch (...) {
+        std::cout << "Attaching coefficient named: " << name << " to %(to)s";
+        std::cout << " failed! But this might be expected." << std::endl;
+        continue;
+      }
+
       std::cout << "Attaching coefficient named: " << name;
       std::cout << " to %(to)s" << std::endl;
-
       %(to)s->set_coefficient(name, %(from_form)s.coefficient(i));
+
     }""" % {"to": to, "from_form": from_form}
 
     return snippet
