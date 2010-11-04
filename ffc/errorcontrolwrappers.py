@@ -2,8 +2,6 @@ __author__ = "Marie E. Rognes (meg@simula.no)"
 __copyright__ = "Copyright (C) 2010 " + __author__
 __license__  = "GNU LGPL version 3 or any later version"
 
-from ufl.algorithms import preprocess
-
 error_control_base = """
   class %(class_name)s: public dolfin::ErrorControl
   {
@@ -47,8 +45,8 @@ error_control_base = """
      _b_T->vector() = 1.0;
 
      // Attach bubble function to _a_R_T and _L_R_T
-     _a_R_T->set_coefficient(0, *_b_T);
-     _L_R_T->set_coefficient(%(L_R_T_b_T)d, *_b_T);
+     _a_R_T->set_coefficient("__cell_bubble", *_b_T);
+     _L_R_T->set_coefficient("__cell_bubble", *_b_T);
 
      %(attach_L_R_T)s
 
@@ -89,7 +87,12 @@ def generate_attach_snippet(to, from_form):
     snippet = """// Attach coefficients in %(to)s
     for (dolfin::uint i = 0; i < %(from_form)s.num_coefficients(); i++)
     {
+
       name = %(from_form)s.coefficient_name(i);
+      // Don't attach discrete primal solution here (not computed.)
+      if (name == "__discrete_primal_solution")
+        continue;
+
       std::cout << "Attaching coefficient named: " << name;
       std::cout << " to %(to)s" << std::endl;
 
@@ -128,10 +131,8 @@ def generate_wrapper_maps(ec_forms, forms):
 
     """
     d = len(ec_forms) # Number of forms from the error control
-
     assert (d == 8), "Hm."
     (a_star, L_star, a_R_T, L_R_T, a_R_dT, L_R_dT, eta_h, eta_T) = ec_forms
-    #(a_star, L_star, a_R_T, L_R_T) = ec_forms
 
     residual_snippet = generate_attach_snippet("_residual", "a") + "\n\t" + \
                        generate_attach_snippet("_residual", "L")
@@ -140,31 +141,23 @@ def generate_wrapper_maps(ec_forms, forms):
     L_R_dT_snippet = generate_attach_snippet("_L_R_dT", "a") + "\n\t" + \
                      generate_attach_snippet("_L_R_dT", "L")
 
-    eta_h = preprocess(eta_h)
-    print "eta_h = ", eta_h
-
-    num_Ez_h = eta_h.form_data().num_coefficients - 1
-    L_R_T = preprocess(L_R_T)
-    num_b_T_in_L_R_T = L_R_T.form_data().num_coefficients - 1
-
     maps = {"class_name": "ErrorControl",
             "a_star": "Form_%d" % 0,
             "L_star": "Form_%d" % 1,
             "DGk_space": "Form_%d::TestSpace" % 3,
             "a_R_T": "Form_%d" % 2,
-            "Bubble_space": "Form_%d_FunctionSpace_%d" % (2, 2),
             "L_R_T": "Form_%d" % 3,
+            "Bubble_space": "CoefficientSpace_%s" % "__cell_bubble",
             "a_R_dT": "Form_%d" % 4,
-            "Cone_space": "Form_%d_FunctionSpace_%d" % (4, 2),
             "L_R_dT": "Form_%d" % 5,
+            "Cone_space": "CoefficientSpace_%s" % "__cell_cone",
             "residual": "Form_%d" % 6,
-            "E_space": "Form_%d_FunctionSpace_%s" % (6, num_Ez_h),
+            "E_space": "CoefficientSpace_%s" % "__improved_dual",
             "eta_T": "Form_%d" % 7,
             "DG0_space": "Form_%d::TestSpace" % 7,
             "a": "Form_%d" % d,
             "L": "Form_%d" % (d+1),
             "M": "Form_%d" % (d+2),
-            "L_R_T_b_T": num_b_T_in_L_R_T,
             "attach_a_star": generate_attach_snippet("_a_star", "a"),
             "attach_L_star": generate_attach_snippet("_L_star", "M"),
             "attach_residual": residual_snippet,
