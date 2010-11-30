@@ -2,7 +2,7 @@ __author__ = "Marie E. Rognes (meg@simula.no)"
 __copyright__ = "Copyright (C) 2010 " + __author__
 __license__  = "GNU LGPL version 3 or any later version"
 
-# Last changed: 2010-11-04
+# Last changed: 2010-11-30
 
 from ufl import Coefficient
 from ufl.algorithms import preprocess
@@ -50,15 +50,18 @@ def _check_input(forms, object_names):
 
     return (a, L, M), unknown, False
 
-def generate_error_control(forms, object_names):
+def generate_error_control(forms, object_names, module=None):
 
     info("Generating additionals")
+
+    if module is None:
+        module = __import__("ufl")
 
     # Check input and extract appropriate forms
     forms, unknown, nonlinear = _check_input(forms, object_names)
 
     # Generate dual forms
-    a_star, L_star = generate_dual_forms(forms, unknown)
+    a_star, L_star = generate_dual_forms(forms, unknown, module)
 
     # Extract trial element as second argument of bilinear form
     V = unknown.element()

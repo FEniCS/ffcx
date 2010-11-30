@@ -2,10 +2,11 @@ __author__ = "Marie E. Rognes (meg@simula.no)"
 __copyright__ = "Copyright (C) 2010 " + __author__
 __license__  = "GNU LGPL version 3 or any later version"
 
-# Last changed: 2010-11-04
+# Last changed: 2010-11-30
 
+import ufl
 from ufl import FiniteElement, MixedElement, Coefficient, TrialFunction, TestFunction
-from ufl import adjoint, action, replace, inner, dx, ds, dS, avg, derivative
+from ufl import adjoint, action, replace, inner, dx, ds, dS, avg
 from ufl.algorithms.analysis import extract_elements, extract_unique_elements, extract_arguments
 
 def change_regularity(element, family):
@@ -28,12 +29,9 @@ def change_regularity(element, family):
     return MixedElement([FiniteElement(family, element.cell(), element.degree())
                                for i in range(shape[0])])
 
-def tear(element):
-    """
-    For a given element space, return the corresponding discontinuous
-    space
-    """
-    W = change_regularity(element, "DG")
+def tear(V):
+    "For a given space, return the corresponding discontinuous space."
+    W = change_regularity(V, "DG")
     return W
 
 def increase_order(element):
@@ -50,15 +48,14 @@ def increase_order(element):
 
     return FiniteElement(element.family(), element.cell(), element.degree()+1)
 
-def generate_dual_forms(forms, unknown):
+def generate_dual_forms(forms, unknown, module):
     """
     Input:
     """
-
     (bilinear, linear, functional) = forms
 
     a_star = adjoint(bilinear)
-    L_star = derivative(functional, unknown)
+    L_star = module.derivative(functional, unknown)
 
     return (a_star, L_star)
 
