@@ -2,11 +2,10 @@ __author__ = "Marie E. Rognes (meg@simula.no)"
 __copyright__ = "Copyright (C) 2010 " + __author__
 __license__  = "GNU LGPL version 3 or any later version"
 
-# Last changed: 2010-11-30
+# Last changed: 2010-12-01
 
-import ufl
 from ufl import FiniteElement, MixedElement, Coefficient, TrialFunction, TestFunction
-from ufl import adjoint, action, replace, inner, dx, ds, dS, avg
+from ufl import adjoint, action, replace, inner, dx, ds, dS, avg, derivative
 from ufl.algorithms.analysis import extract_elements, extract_unique_elements, extract_arguments
 
 def change_regularity(element, family):
