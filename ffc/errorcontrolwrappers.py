@@ -9,7 +9,7 @@ class %(class_name)s: public dolfin::ErrorControl
  public:
 
  %(class_name)s(const dolfin::Form& a, const dolfin::Form& L,
-                dolfin::GoalFunctional& M)
+                const dolfin::Form& M)
                : dolfin::%(class_name)s(a, L, M)
  {
 
