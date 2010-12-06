@@ -2,7 +2,7 @@ __author__ = "Marie E. Rognes (meg@simula.no)"
 __copyright__ = "Copyright (C) 2010 " + __author__
 __license__  = "GNU LGPL version 3 or any later version"
 
-# Last changed: 2010-12-01
+# Last changed: 2010-12-06
 
 from ufl import FiniteElement, MixedElement, Coefficient, TrialFunction, TestFunction
 from ufl import adjoint, action, replace, inner, dx, ds, dS, avg, derivative
@@ -66,66 +66,40 @@ def generate_weak_residual(forms, u_h=None):
 
     return - forms
 
-def generate_cell_residual(r, V_h=None):
+def generate_cell_residual(r, V_h, b_T, module):
+
+    # Define trial and test functions
+    R_T = module.TrialFunction(V_h)
+    v = module.TestFunction(V_h)
 
     # Extract test argument from r for temporary use
     v_h = extract_arguments(r)[0]
-
-    # Establish space for bubble
-    cell = v_h.cell()
-    Bubble = FiniteElement("B", cell, cell.geometric_dimension()+1)
-
-    # Define bubble
-    b_T = Coefficient(Bubble)
-
-    # Use test space if no space is given for residual representation
-    if V_h is None:
-        V_h = tear(v_h.element())
-
-    # Tear trial space
-    R_T = TrialFunction(V_h)
-    v = TestFunction(V_h)
 
     # Define forms
     v_T = b_T*v
     a_R_T = inner(v_T, R_T)*dx
     L_R_T = replace(r, {v_h: v_T})
 
-    return (a_R_T, L_R_T, b_T)
+    return (a_R_T, L_R_T)
 
 
-def generate_facet_residual(r, V_h=None):
+def generate_facet_residual(r, V_h, b_e, R_T, module):
 
-    # Use test space if no space is given for residual representation
     v_h = extract_arguments(r)[0]
-    if V_h is None:
-        V_h = tear(v_h.element())
-
-    # Define coefficient for cell residual
-    R_T = Coefficient(V_h)
-
-    # Establish cone function(s)
-    cell = V_h.cell()
-    C = FiniteElement("DG", cell, cell.geometric_dimension())
-    b_e = Coefficient(C)
 
     # Define variational problem
-    R_e = TrialFunction(V_h)
-    v = TestFunction(V_h)
+    R_e = module.TrialFunction(V_h)
+    v = module.TestFunction(V_h)
+
+    # Define variational form
     v_e = b_e*v
     a_R_dT = (inner(v_e('+'), R_e('+')) + inner(v_e('-'), R_e('-')))*dS \
              + inner(v_e, R_e)*ds
     L_R_dT = replace(r, {v_h: v_e}) - inner(v_e, R_T)*dx
 
-    return (a_R_dT, L_R_dT, R_T, b_e)
+    return (a_R_dT, L_R_dT)
 
-def generate_error_indicator(r, R_T, R_dT, z, z_h):
-
-    cell = z.element().cell()
-
-    # Use test function on DG to localize
-    DG = FiniteElement("DG", cell, 0)
-    v = TestFunction(DG)
+def generate_error_indicator(r, R_T, R_dT, z, z_h, v):
 
     # Define indicator form
     eta_T = v*inner(R_T, z - z_h)*dx \

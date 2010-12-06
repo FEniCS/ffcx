@@ -2,7 +2,7 @@ __author__ = "Marie E. Rognes (meg@simula.no)"
 __copyright__ = "Copyright (C) 2010 " + __author__
 __license__  = "GNU LGPL version 3 or any later version"
 
-# Last changed: 2010-12-02
+# Last changed: 2010-12-06
 
 from ufl import Coefficient
 from ufl.algorithms import preprocess
@@ -88,15 +88,26 @@ def generate_error_control(forms, object_names, module=None):
     # Define approximation space for cell and facet residuals
     V_h = tear(V)
 
-    # Create cell residual forms
-    a_R_T, L_R_T, b_T = generate_cell_residual(weak_residual, V_h=V_h)
+    # Define bubble
+    B = FiniteElement("B", V.cell(), V.cell().geometric_dimension()+1)
+    b_T = Coefficient(B)
     ec_names[id(b_T)] = "__cell_bubble"
 
-    # Create facet residual forms
-    a_R_dT, L_R_dT, R_T, b_e = generate_facet_residual(weak_residual, V_h=V_h)
+    # Create cell residual forms
+    a_R_T, L_R_T = generate_cell_residual(weak_residual, V_h, b_T, module)
+
+    # Define coefficient for cell residual
+    R_T = Coefficient(V_h)
     ec_names[id(R_T)] = "__cell_residual"
+
+    # Establish cone function(s)
+    C = FiniteElement("DG", V.cell(), V.cell().geometric_dimension())
+    b_e = Coefficient(C)
     ec_names[id(b_e)] = "__cell_cone"
 
+    # Create facet residual forms
+    a_R_dT, L_R_dT = generate_facet_residual(weak_residual, V_h, b_e, R_T,
+                                             module)
     # Define
     R_dT = Coefficient(V_h)
     z_h = Coefficient(extract_arguments(a_star)[1].element())
@@ -104,7 +115,8 @@ def generate_error_control(forms, object_names, module=None):
     ec_names[id(z_h)] = "__discrete_dual_solution"
 
     # Generate error indicators (# FIXME: Add option here)
-    eta_T = generate_error_indicator(weak_residual, R_T, R_dT, Ez_h, z_h)
+    v = TestFunction(FiniteElement("DG", V.cell(), 0))
+    eta_T = generate_error_indicator(weak_residual, R_T, R_dT, Ez_h, z_h, v)
 
     ec_forms = (a_star, L_star, a_R_T, L_R_T, a_R_dT, L_R_dT, eta_h, eta_T)
 
