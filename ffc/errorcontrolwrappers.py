@@ -2,9 +2,10 @@ __author__ = "Marie E. Rognes (meg@simula.no)"
 __copyright__ = "Copyright (C) 2010 " + __author__
 __license__  = "GNU LGPL version 3 or any later version"
 
-# Last changed: 2010-12-02
+# Last changed: 2010-12-06
 
-__all__ = ["generate_ec_generator_code", "generate_ec_typedefs"]
+__all__ = ["generate_ec_generator_code", "generate_ec_typedefs",
+           "write_code"]
 
 ec_typedefs = """
 typedef %(a)s BilinearForm;
@@ -88,8 +89,8 @@ update_ec_base = """
 
     // Create bilinear and linear form for computing cell residual R_T
     V_R_T.reset(new %(V_R_T)s(mesh));
-    a_R_T.reset(new %(a_R_T)s(*V_R_T, *V_R_T));
-    L_R_T.reset(new %(L_R_T)s(*V_R_T));
+    a_R_T.reset(new %(a_R_T)s(V_R_T, V_R_T));
+    L_R_T.reset(new %(L_R_T)s(V_R_T));
 
     // Initialize bubble and attach to a_R_T and L_R_T
     V_b_T.reset(new %(V_b_T)s(mesh));
