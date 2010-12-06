@@ -52,7 +52,8 @@ namespace ufc
     /// Constructor
     cell(): cell_shape(interval),
             topological_dimension(0), geometric_dimension(0),
-            entity_indices(0), coordinates(0) {}
+            entity_indices(0), coordinates(0), index(0), local_facet(-1),
+            mesh_identifier(-1) {}
 
     /// Destructor
     virtual ~cell() {}
@@ -71,6 +72,15 @@ namespace ufc
 
     /// Array of coordinates for the vertices of the cell
     double** coordinates;
+
+    /// Cell index (shortcut for entity_indices[topological_dimension][0])
+    unsigned int index;
+
+    /// Local facet index
+    int local_facet;
+
+    /// Unique mesh indentifier
+    int mesh_identifier;
 
   };
 
