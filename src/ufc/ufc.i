@@ -13,8 +13,11 @@
 //#define SWIG_SHARED_PTR_SUBNAMESPACE tr1
 %include <boost_shared_ptr.i>
 
+%include "ufc.h"
+
 #if SWIG_VERSION >= 0x020000
 
+%shared_ptr(ufc::cell)
 %shared_ptr(ufc::form)
 %shared_ptr(ufc::finite_element)
 %shared_ptr(ufc::dof_map)
@@ -24,6 +27,7 @@
 
 #else
 
+SWIG_SHARED_PTR(cell,ufc::cell)
 SWIG_SHARED_PTR(form,ufc::form)
 SWIG_SHARED_PTR(finite_element,ufc::finite_element)
 SWIG_SHARED_PTR(dof_map,ufc::dof_map)
