@@ -1,7 +1,7 @@
 // This is UFC (Unified Form-assembly Code) v. 1.4.
 // This code is released into the public domain.
 //
-// The FEniCS Project (http://www.fenics.org/) 2006-2010.
+// The FEniCS Project (http://www.fenicsproject.org/) 2006-2010.
 
 #ifndef __UFC_H
 #define __UFC_H
@@ -73,13 +73,13 @@ namespace ufc
     /// Array of coordinates for the vertices of the cell
     double** coordinates;
 
-    /// Cell index (shortcut for entity_indices[topological_dimension][0])
+    /// Cell index (short-cut for entity_indices[topological_dimension][0])
     unsigned int index;
 
     /// Local facet index
     int local_facet;
 
-    /// Unique mesh indentifier
+    /// Unique mesh identifier
     int mesh_identifier;
 
   };
