@@ -18,9 +18,9 @@ from ffc import *
 #element = FiniteElement("BDM", tetrahedron, 2)
 
 #element = FiniteElement("RT", triangle, 2)
-#element = FiniteElement("BDM", tetrahedron, 2)
+element = FiniteElement("RT", tetrahedron, 2)
 
-element = FiniteElement("Nedelec 1st kind H(curl)", triangle, 3)
-element = FiniteElement("Nedelec 1st kind H(curl)", tetrahedron, 3)
+#element = FiniteElement("Nedelec 1st kind H(curl)", triangle, 3)
+#element = FiniteElement("Nedelec 1st kind H(curl)", tetrahedron, 3)
 
 plot(element)

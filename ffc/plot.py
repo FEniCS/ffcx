@@ -78,7 +78,7 @@ def render(models, is3d=True):
     # Set light
     light = soya.Light(scene)
     if is3d:
-        light.set_xyz(1.0, 5.0, 1.0)
+        light.set_xyz(1.0, 5.0, 5.0)
     else:
         light.set_xyz(0.0, 0.0, 1.0)
     light.cast_shadow = 1
@@ -327,8 +327,7 @@ def create_dof_models(element):
     # Dofs that should be flipped if point in the "wrong" direction
     directional = {"PointScaledNormalEval": True,
                    "PointEdgeTangent":      False,
-                   "PointFaceTangent":      False,
-                   "ComponentPointEval":    False}
+                   "PointFaceTangent":      False}
 
     # Create FIAT element and get dofs
     fiat_element = create_element(element)
@@ -366,7 +365,7 @@ def create_dof_models(element):
             # Generate model
             models.append(DirectionalEvaluation(x, n, directional[dof_type]))
 
-        elif dof_type in ("FrobeniusIntegralMoment", "IntegralMoment"):
+        elif dof_type in ("FrobeniusIntegralMoment", "IntegralMoment", "ComponentPointEval"):
 
             warning("Not plotting interior moment for now.")
 
