@@ -21,6 +21,13 @@ try:
 except:
     _soya_imported = False
 
+# Colors for elements
+element_colors = {"Lagrange":                 (0.00, 1.00, 0.00),
+                  "Crouzeix-Raviart":         (1.00, 0.25, 0.25),
+                  "Brezzi-Douglas-Marini":    (1.00, 1.00, 0.00),
+                  "Raviart-Thomas":           (0.90, 0.60, 0.00),
+                  "Nedelec 1st kind H(curl)": (0.90, 0.30, 0.00)}
+
 def plot(element):
     "Plot finite element."
 
@@ -70,7 +77,10 @@ def render(models, is3d=True):
 
     # Set light
     light = soya.Light(scene)
-    light.set_xyz(2.0, 5.0, -1.0)
+    if is3d:
+        light.set_xyz(1.0, 5.0, 1.0)
+    else:
+        light.set_xyz(0.0, 0.0, 1.0)
     light.cast_shadow = 1
     light.shadow_color = (0.0, 0.0, 0.0, 0.5)
 
@@ -172,8 +182,8 @@ def Arrow(scene, x, n, l=0.3):
     x1 = x + l*n
     x2 = x1 - R2*n
     l0 = Cylinder(scene, x0, x1, r)
-    l1 = Cylinder(scene, x1 - 0.5*r*n, x1 - 0.5*r*n - R2*n + R1*t0, r)
-    l2 = Cylinder(scene, x1 - 0.5*r*n, x1 - 0.5*r*n - R2*n - R1*t0, r)
+    l1 = Cylinder(scene, x1 - 0.5*r*n, x1 - 0.5*r*n - R2*n + R1*t1, r)
+    l2 = Cylinder(scene, x1 - 0.5*r*n, x1 - 0.5*r*n - R2*n - R1*t1, r)
 
     # Extract model
     return scene.to_model()
@@ -294,12 +304,20 @@ def DirectionalEvaluation(x, n, flip):
 def create_cell_model(element):
     "Create Soya3D model for cell."
 
+    # Get color
+    family = element.family()
+    if not family in element_colors:
+        warning("Don't know a good color for elements of type '%s', using default color." % family)
+        family = "Lagrange"
+    color = element_colors[family]
+    color = (color[0], color[1], color[2], 0.7)
+
     # Create model based on domain type
     domain = element.cell().domain()
     if domain == "triangle":
-        return UnitTriangle(), False
+        return UnitTriangle(color), False
     elif domain == "tetrahedron":
-        return UnitTetrahedron(), True
+        return UnitTetrahedron(color), True
 
     error("Unable to plot element, unhandled cell type: %s" % str(domain))
 
@@ -307,9 +325,10 @@ def create_dof_models(element):
     "Create Soya3D models for dofs."
 
     # Dofs that should be flipped if point in the "wrong" direction
-    flip = {"PointScaledNormalEval": True,
-            "PointEdgeTangent":      False,
-            "PointFaceTangent":      False}
+    directional = {"PointScaledNormalEval": True,
+                   "PointEdgeTangent":      False,
+                   "PointFaceTangent":      False,
+                   "ComponentPointEval":    False}
 
     # Create FIAT element and get dofs
     fiat_element = create_element(element)
@@ -335,7 +354,7 @@ def create_dof_models(element):
             # Generate model
             models.append(PointEvaluation(x))
 
-        elif dof_type in ("PointScaledNormalEval", "PointEdgeTangent", "PointFaceTangent"):
+        elif dof_type in directional:
 
             # Normal evaluation, get point and normal
             points = L.keys()
@@ -345,7 +364,7 @@ def create_dof_models(element):
             n = [xx[0] for xx in L[x]]
 
             # Generate model
-            models.append(DirectionalEvaluation(x, n, flip[dof_type]))
+            models.append(DirectionalEvaluation(x, n, directional[dof_type]))
 
         elif dof_type in ("FrobeniusIntegralMoment", "IntegralMoment"):
 

@@ -12,12 +12,15 @@ from ffc import *
 #element = FiniteElement("CG", tetrahedron, 5)
 
 #element = FiniteElement("CR", triangle, 1)
-element = FiniteElement("CR", tetrahedron, 1)
+#element = FiniteElement("CR", tetrahedron, 1)
 
 #element = FiniteElement("BDM", triangle, 2)
 #element = FiniteElement("BDM", tetrahedron, 2)
 
-#element = FiniteElement("Nedelec 1st kind H(curl)", triangle, 3)
-#element = FiniteElement("Nedelec 1st kind H(curl)", tetrahedron, 3)
+#element = FiniteElement("RT", triangle, 2)
+#element = FiniteElement("BDM", tetrahedron, 2)
+
+element = FiniteElement("Nedelec 1st kind H(curl)", triangle, 3)
+element = FiniteElement("Nedelec 1st kind H(curl)", tetrahedron, 3)
 
 plot(element)
