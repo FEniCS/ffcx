@@ -102,9 +102,13 @@ def tangents(n):
 def Cylinder(scene, p0, p1, r, color=(0.0, 0.0, 0.0, 1.0)):
     "Return model for cylinder from p0 to p1 with radius r."
 
-    # Convert to NumPy arrays
-    p0 = array((p0.x, p0.y, p0.z))
-    p1 = array((p1.x, p1.y, p1.z))
+    # Convert to NumPy array
+    if isinstance(p0, soya.Vertex):
+        p0 = array((p0.x, p0.y, p0.z))
+        p1 = array((p1.x, p1.y, p1.z))
+    else:
+        p0 = array(p0)
+        p1 = array(p1)
 
     # Get tangent vectors for plane
     n = p0 - p1
@@ -138,6 +142,19 @@ def Cylinder(scene, p0, p1, r, color=(0.0, 0.0, 0.0, 1.0)):
     model = scene.to_model()
 
     return model
+
+def Arrow(scene, x, n, l=0.3):
+    "Return model for arrow from x in direction n."
+
+    # Convert to Numpy arrays
+    x = array(x)
+    n = array(n)
+
+    # Create cylinders
+    l1 = Cylinder(scene, x, x + l*n, 0.04*l)
+
+    # Extract model
+    return scene.to_model()
 
 def UnitTetrahedron(color=(0.0, 1.0, 0.0, 0.5)):
     "Return model for unit tetrahedron."
@@ -198,6 +215,28 @@ def UnitTriangle(color=(0.0, 1.0, 0.0, 0.5)):
 
     return model
 
+def NormalEvaluation(x, n):
+    "Return model for normal evaluation at given point in given direction."
+
+    # Create separate scene (since we will extract a model, not render)
+    scene = soya.World()
+
+    # Normalize
+    n = array(n)
+    n = 0.75 * n / norm(n)
+
+    # Flip normal if necessary
+    if not pointing_outwards(x, n):
+        n = -n
+
+    # Create arrow
+    arrow = Arrow(scene, x, n)
+
+    # Extract model
+    model = scene.to_model()
+
+    return model
+
 def PointEvaluation(x):
     "Return model for point evaluation at given point."
 
@@ -249,13 +288,42 @@ def create_dof_models(element):
         dof_type = dof.get_type_tag()
 
         # Create model based on dof type
+        L = dof.get_point_dict()
         if dof_type == "PointEval":
-            points = dof.get_point_dict().keys()
+
+            # Point evaluation, just get point
+            points = L.keys()
             if not len(points) == 1:
                 error("Strange dof, single point expected for point evaluation.")
             x = points[0]
+
+            # Generate model
             models.append(PointEvaluation(x))
+
+        elif dof_type == "PointScaledNormalEval":
+
+            # Normal evaluation, get point and normal
+            points = L.keys()
+            if not len(points) == 1:
+                error("Strange dof, single point expected for point evaluation.")
+            x = points[0]
+            n = [xx[0] for xx in L[x]]
+
+            # Generate model
+            models.append(NormalEvaluation(x, n))
+
+        elif dof_type == "FrobeniusIntegralMoment":
+
+            warning("Not plotting interior moment for now.")
+
         else:
             error("Unable to plot dof, unhandled dof type: %s" % str(dof_type))
 
     return models
+
+def pointing_outwards(x, n):
+    "Check if n is pointing inwards, used for flipping dofs."
+    eps = 1e-10
+    x = array(x) + 0.1*array(n)
+    return x[0] < -eps or x[1] < -eps or x[2] < -eps or x[2] > 1.0 - x[0] - x[1] + eps
+

@@ -8,5 +8,8 @@ __license__  = "GNU GPL version 3 or any later version"
 from ufl import *
 from ffc import *
 
-P5 = FiniteElement("CG", tetrahedron, 5)
-plot(P5)
+#P5 = FiniteElement("CG", tetrahedron, 5)
+#plot(P5)
+
+element = FiniteElement("BDM", tetrahedron, 2)
+plot(element)
