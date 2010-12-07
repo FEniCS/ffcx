@@ -353,6 +353,18 @@ def create_dof_models(element):
             # Generate model
             models.append(PointEvaluation(x))
 
+        elif dof_type == "PointNormalDeriv":
+
+            # Evaluation of derivatives at point
+            print L
+            points = L.keys()
+            if not len(points) == 1:
+                error("Strange dof, single point expected for point evaluation.")
+            x = points[0]
+
+            # Generate model
+            models.append(PointEvaluation(x))
+
         elif dof_type in directional:
 
             # Normal evaluation, get point and normal

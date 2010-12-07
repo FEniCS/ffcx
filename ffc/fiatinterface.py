@@ -5,7 +5,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Garth N. Wells, 2009.
 # Modified by Marie Rognes, 2009-2010.
-# Last changed: 2010-04-07
+# Last changed: 2010-12-07
 
 # Python modules
 from numpy import array
@@ -101,7 +101,11 @@ def _create_fiat_element(ufl_element):
 
     # Create FIAT finite element
     ElementClass = FIAT.element_classes[family]
-    element = ElementClass(cell, ufl_element.degree())
+    degree = ufl_element.degree()
+    if degree is None:
+        element = ElementClass(cell)
+    else:
+        element = ElementClass(cell, degree)
 
     return element
 
