@@ -30,15 +30,15 @@ def plot(element):
         return
 
     # Create cell model
-    cell = create_cell_model(element)
+    cell, is3d = create_cell_model(element)
 
     # Create dof models
     dofs = create_dof_models(element)
 
     # Render plot window
-    render([cell] + dofs)
+    render([cell] + dofs, is3d)
 
-def render(models):
+def render(models, is3d=True):
     "Render given list of models."
 
     # Note that we view from the positive z-axis, and not from the
@@ -55,9 +55,14 @@ def render(models):
     scene.atmosphere.bg_color = (1.0, 1.0, 1.0, 1.0)
 
     # Define rotation around y-axis
-    class RotatingBody(soya.Body):
-        def advance_time(self, proportion):
-            self.rotate_y(2.0 * proportion)
+    if is3d:
+        class RotatingBody(soya.Body):
+            def advance_time(self, proportion):
+                self.rotate_y(2.0 * proportion)
+    else:
+        class RotatingBody(soya.Body):
+            def advance_time(self, proportion):
+                self.rotate_z(2.0 * proportion)
 
     # Add all models
     for model in models:
@@ -71,11 +76,15 @@ def render(models):
 
     # Set camera
     camera = soya.Camera(scene)
-    camera.set_xyz(0.0, 10, 50.0)
     camera.ortho = 0
-    camera.fov = 1.8
+    camera.set_xyz(0.0, 10, 50.0)
     p = camera.position()
-    p.set_xyz(0.0, 0.4, 0.0)
+    if is3d:
+        camera.fov = 1.8
+        p.set_xyz(0.0, 0.4, 0.0)
+    else:
+        camera.fov = 2.5
+        p.set_xyz(0.0, 0.0, 0.0)
     camera.look_at(p)
     soya.set_root_widget(camera)
 
@@ -228,31 +237,11 @@ def UnitTriangle(color=(0.0, 1.0, 0.0, 0.5)):
 
     return model
 
-def DirectionalEvaluation(x, n, flip):
-    "Return model for directional evaluation at given point in given direction."
-
-    # Create separate scene (since we will extract a model, not render)
-    scene = soya.World()
-
-    # Normalize
-    n = array(n)
-    n = 0.75 * n / norm(n)
-
-    # Flip normal if necessary
-    if flip and not pointing_outwards(x, n):
-        info("Flipping direction of arrow so it points outward.")
-        n = -n
-
-    # Create arrow
-    arrow = Arrow(scene, x, n)
-
-    # Extract model
-    model = scene.to_model()
-
-    return model
-
 def PointEvaluation(x):
     "Return model for point evaluation at given point."
+
+    # Make sure point is 3D
+    x = to3d(x)
 
     # Create separate scene (since we will extract a model, not render)
     scene = soya.World()
@@ -275,15 +264,42 @@ def PointEvaluation(x):
 
     return model
 
+def DirectionalEvaluation(x, n, flip):
+    "Return model for directional evaluation at given point in given direction."
+
+    # Make sure points are 3D
+    x = to3d(x)
+    n = to3d(n)
+
+    # Create separate scene (since we will extract a model, not render)
+    scene = soya.World()
+
+    # Normalize
+    n = array(n)
+    n = 0.75 * n / norm(n)
+
+    # Flip normal if necessary
+    if flip and not pointing_outwards(x, n):
+        info("Flipping direction of arrow so it points outward.")
+        n = -n
+
+    # Create arrow
+    arrow = Arrow(scene, x, n)
+
+    # Extract model
+    model = scene.to_model()
+
+    return model
+
 def create_cell_model(element):
     "Create Soya3D model for cell."
 
     # Create model based on domain type
     domain = element.cell().domain()
     if domain == "triangle":
-        return UnitTriangle()
+        return UnitTriangle(), False
     elif domain == "tetrahedron":
-        return UnitTetrahedron()
+        return UnitTetrahedron(), True
 
     error("Unable to plot element, unhandled cell type: %s" % str(domain))
 
@@ -345,3 +361,9 @@ def pointing_outwards(x, n):
     eps = 1e-10
     x = array(x) + 0.1*array(n)
     return x[0] < -eps or x[1] < -eps or x[2] < -eps or x[2] > 1.0 - x[0] - x[1] + eps
+
+def to3d(x):
+    "Make sure point is 3D."
+    if len(x) == 2:
+        x = (x[0], x[1], 0.0)
+    return x
