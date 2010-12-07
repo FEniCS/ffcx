@@ -150,8 +150,21 @@ def Arrow(scene, x, n, l=0.3):
     x = array(x)
     n = array(n)
 
+    # Get tangents
+    t0, t1 = tangents(n)
+
+    # Dimensions for arrow
+    r = 0.04*l
+    R1 = 0.1*l
+    R2 = 0.2*l
+
     # Create cylinders
-    l1 = Cylinder(scene, x, x + l*n, 0.04*l)
+    x0 = x
+    x1 = x + l*n
+    x2 = x1 - R2*n
+    l0 = Cylinder(scene, x0, x1, r)
+    l1 = Cylinder(scene, x1 - 0.5*r*n, x1 - 0.5*r*n - R2*n + R1*t0, r)
+    l2 = Cylinder(scene, x1 - 0.5*r*n, x1 - 0.5*r*n - R2*n - R1*t0, r)
 
     # Extract model
     return scene.to_model()
