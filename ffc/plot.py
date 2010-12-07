@@ -11,7 +11,7 @@ from numpy import dot, cross, array, sin, cos, pi
 from numpy.linalg import norm
 
 from ffc.fiatinterface import create_element
-from ffc.log import warning, error
+from ffc.log import warning, error, info
 
 # Import Soya3D
 try:
@@ -228,8 +228,8 @@ def UnitTriangle(color=(0.0, 1.0, 0.0, 0.5)):
 
     return model
 
-def NormalEvaluation(x, n):
-    "Return model for normal evaluation at given point in given direction."
+def DirectionalEvaluation(x, n, flip):
+    "Return model for directional evaluation at given point in given direction."
 
     # Create separate scene (since we will extract a model, not render)
     scene = soya.World()
@@ -239,7 +239,8 @@ def NormalEvaluation(x, n):
     n = 0.75 * n / norm(n)
 
     # Flip normal if necessary
-    if not pointing_outwards(x, n):
+    if flip and not pointing_outwards(x, n):
+        info("Flipping direction of arrow so it points outward.")
         n = -n
 
     # Create arrow
@@ -289,6 +290,11 @@ def create_cell_model(element):
 def create_dof_models(element):
     "Create Soya3D models for dofs."
 
+    # Dofs that should be flipped if point in the "wrong" direction
+    flip = {"PointScaledNormalEval": True,
+            "PointEdgeTangent":      False,
+            "PointFaceTangent":      False}
+
     # Create FIAT element and get dofs
     fiat_element = create_element(element)
     dofs = fiat_element.dual_basis()
@@ -313,7 +319,7 @@ def create_dof_models(element):
             # Generate model
             models.append(PointEvaluation(x))
 
-        elif dof_type == "PointScaledNormalEval":
+        elif dof_type in ("PointScaledNormalEval", "PointEdgeTangent", "PointFaceTangent"):
 
             # Normal evaluation, get point and normal
             points = L.keys()
@@ -323,9 +329,9 @@ def create_dof_models(element):
             n = [xx[0] for xx in L[x]]
 
             # Generate model
-            models.append(NormalEvaluation(x, n))
+            models.append(DirectionalEvaluation(x, n, flip[dof_type]))
 
-        elif dof_type == "FrobeniusIntegralMoment":
+        elif dof_type in ("FrobeniusIntegralMoment", "IntegralMoment"):
 
             warning("Not plotting interior moment for now.")
 
@@ -339,4 +345,3 @@ def pointing_outwards(x, n):
     eps = 1e-10
     x = array(x) + 0.1*array(n)
     return x[0] < -eps or x[1] < -eps or x[2] < -eps or x[2] > 1.0 - x[0] - x[1] + eps
-
