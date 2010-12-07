@@ -21,5 +21,8 @@ from ffc.jitcompiler import jit
 # Import default parameters
 from parameters import default_parameters
 
+# Import plotting
+from plot import *
+
 # Import useful extra functionality
 from extras import *
