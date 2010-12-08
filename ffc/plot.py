@@ -244,12 +244,12 @@ def UnitTetrahedron(color=(0.0, 1.0, 0.0, 0.5)):
     v3 = soya.Vertex(scene, 0.0, 0.0, 1.0, diffuse=color)
 
     # Create edges
-    e0 = Cylinder(scene, v0, v1, 0.005)
-    e1 = Cylinder(scene, v0, v2, 0.005)
-    e2 = Cylinder(scene, v0, v3, 0.005)
-    e3 = Cylinder(scene, v1, v2, 0.005)
-    e4 = Cylinder(scene, v1, v3, 0.005)
-    e5 = Cylinder(scene, v2, v3, 0.005)
+    e0 = Cylinder(scene, v0, v1, 0.007)
+    e1 = Cylinder(scene, v0, v2, 0.007)
+    e2 = Cylinder(scene, v0, v3, 0.007)
+    e3 = Cylinder(scene, v1, v2, 0.007)
+    e4 = Cylinder(scene, v1, v3, 0.007)
+    e5 = Cylinder(scene, v2, v3, 0.007)
 
     # Create faces
     f0 = soya.Face(scene, (v1, v2, v3))
@@ -282,9 +282,9 @@ def UnitTriangle(color=(0.0, 1.0, 0.0, 0.5)):
     v2 = soya.Vertex(scene, 0.0, 1.0, 0.0, diffuse=color)
 
     # Create edges
-    e0 = Cylinder(scene, v0, v1, 0.005)
-    e1 = Cylinder(scene, v0, v2, 0.005)
-    e2 = Cylinder(scene, v1, v2, 0.005)
+    e0 = Cylinder(scene, v0, v1, 0.007)
+    e1 = Cylinder(scene, v0, v2, 0.007)
+    e2 = Cylinder(scene, v1, v2, 0.007)
 
     # Create face
     f = soya.Face(scene, (v0, v1, v2))
