@@ -11,6 +11,7 @@ __all__ = ["plot"]
 
 from numpy import dot, cross, array, sin, cos, pi, sqrt
 from numpy.linalg import norm
+import sys
 
 from ffc.fiatinterface import create_element
 from ffc.log import warning, error, info
@@ -20,6 +21,7 @@ try:
     import soya
     from soya.sphere import Sphere
     from soya.label3d import Label3D
+    from soya.sdlconst import QUIT
     _soya_imported = True
 except:
     _soya_imported = False
@@ -134,8 +136,17 @@ def render(element, models, num_moments, is3d, rotate):
     camera.look_at(p)
     soya.set_root_widget(camera)
 
+    # Handle exit
+    class Idler(soya.Idler):
+        def end_round(self):
+            for event in self.events:
+                if event[0] == QUIT:
+                    print "Closing plot, bye bye"
+                    sys.exit(0)
+
     # Main loop
-    soya.MainLoop(scene).main_loop()
+    idler = Idler(scene)
+    idler.idle()
 
 def tangents(n):
     "Return normalized tangent vectors for plane defined by given vector."

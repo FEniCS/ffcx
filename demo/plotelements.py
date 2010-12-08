@@ -15,7 +15,7 @@ from ffc import *
 #element = FiniteElement("Arnold-Winther", triangle)
 
 #element = FiniteElement("Brezzi-Douglas-Marini", triangle, 3)
-element = FiniteElement("Brezzi-Douglas-Marini", tetrahedron, 3)
+#element = FiniteElement("Brezzi-Douglas-Marini", tetrahedron, 3)
 
 #element = FiniteElement("Crouzeix-Raviart", triangle, 1)
 #element = FiniteElement("Crouzeix-Raviart", tetrahedron, 1)
@@ -26,7 +26,7 @@ element = FiniteElement("Brezzi-Douglas-Marini", tetrahedron, 3)
 #element = FiniteElement("Hermite", triangle)
 #element = FiniteElement("Hermite", tetrahedron)
 
-#element = FiniteElement("Lagrange", triangle, 3)
+element = FiniteElement("Lagrange", triangle, 3)
 #element = FiniteElement("Lagrange", tetrahedron, 3)
 
 #element = FiniteElement("Mardal-Tai-Winther", triangle)
