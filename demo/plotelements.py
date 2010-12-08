@@ -35,7 +35,7 @@ element = FiniteElement("Brezzi-Douglas-Marini", tetrahedron, 3)
 #element = FiniteElement("Nedelec 1st kind H(curl)", tetrahedron, 3)
 
 #element = FiniteElement("Nedelec 2nd kind H(curl)", triangle, 3)
-#element = FiniteElement("Nedelec 2nd kind H(curl)", tetrahedron, 3)
+#element = FiniteElement("Nedelec 2nd kind H(curl)", tetrahedron, 1)
 
 #element = FiniteElement("Raviart-Thomas", triangle, 3)
 #element = FiniteElement("Raviart-Thomas", tetrahedron, 3)
