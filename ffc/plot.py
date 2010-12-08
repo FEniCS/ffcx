@@ -403,13 +403,15 @@ def create_dof_models(element):
                    "Hermite": hermite_dofs,
                    "Morley":  morley_dofs}
 
+    unsupported = {}
+
     # Check if element is supported
     family = element.family()
     if not family in unsupported:
 
         # Create FIAT element and get dofs
         fiat_element = create_element(element)
-        dofs = [(dof.get_type_tag(), dof.get_point_dic()) for dof in fiat_element.dual_basis()]
+        dofs = [(dof.get_type_tag(), dof.get_point_dict()) for dof in fiat_element.dual_basis()]
 
     else:
 
@@ -492,8 +494,20 @@ def to3d(x):
 
 def argyris_dofs(element):
     "Special fix for Hermite elements until Rob fixes in FIAT."
+
     if not element.degree() == 5:
         error("Unable to plot element, only know how to plot quintic Argyris elements.")
+
+    dofs_2d = [("PointEval",  {(0.0, 0.0): [ (1.0, ()) ]}),
+               ("PointEval",  {(1.0, 0.0): [ (1.0, ()) ]}),
+               ("PointEval",  {(0.0, 1.0): [ (1.0, ()) ]}),
+               ("PointDeriv", {(0.0, 0.0): [ (1.0, ()) ]}), # hack, same dof twice
+               ("PointDeriv", {(0.0, 0.0): [ (1.0, ()) ]}), # hack, same dof twice
+               ("PointDeriv", {(1.0, 0.0): [ (1.0, ()) ]}), # hack, same dof twice
+               ("PointDeriv", {(1.0, 0.0): [ (1.0, ()) ]}), # hack, same dof twice
+               ("PointDeriv", {(0.0, 1.0): [ (1.0, ()) ]}), # hack, same dof twice
+               ("PointDeriv", {(0.0, 1.0): [ (1.0, ()) ]}), # hack, same dof twice
+               ("PointEval",  {(1.0/3, 1.0/3): [ (1.0, ()) ]})]
 
 def hermite_dofs(element):
     "Special fix for Hermite elements until Rob fixes in FIAT."
