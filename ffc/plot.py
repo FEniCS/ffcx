@@ -417,7 +417,7 @@ def DirectionalDerivative(x, n):
 
     return model
 
-def IntegralMoment(element):
+def IntegralMoment(element, num_moments):
     "Return model for integral moment for given element."
 
     info("Plotting dof: integral moment")
@@ -430,18 +430,25 @@ def IntegralMoment(element):
         a = 1.0 / (3 + sqrt(3)) # so was this
         x = (a, a, a)
 
+    # Fancy scaling of radius and color
+    r = 1.0 / (num_moments + 5)
+    if num_moments % 2 == 0:
+        c = 1.0
+    else:
+        c = 0.0
+
     # Create separate scene (since we will extract a model, not render)
     scene = soya.World()
 
     # Define material (color) for the sphere
     material = soya.Material()
-    material.diffuse = (1.0, 1.0, 1.0, 0.3)
+    material.diffuse = (c, c, c, 0.7)
 
     # Create sphere
     sphere = Sphere(scene, material=material)
 
     # Scale and moveand move to coordinate
-    sphere.scale(0.15, 0.15, 0.15)
+    sphere.scale(r, r, r)
     p = sphere.position()
     p.set_xyz(x[0], x[1], x[2])
     sphere.move(p)
@@ -565,7 +572,7 @@ def create_dof_models(element):
         elif dof_type in ("FrobeniusIntegralMoment", "IntegralMoment", "ComponentPointEval"):
 
             # Generate model
-            models.append(IntegralMoment(element))
+            models.append(IntegralMoment(element, num_moments))
 
             # Count the number of integral moments
             num_moments += 1
