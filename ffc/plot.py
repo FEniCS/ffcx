@@ -122,8 +122,8 @@ def render(element, models, num_moments, is3d, rotate):
             p.set_xyz(0.0, 0.4, 0.0)
         else:
             camera.set_xyz(-20, 10, 50.0)
-            camera.fov = 1.5
-            p.set_xyz(0.3, 0.48, 0.5)
+            camera.fov = 1.6
+            p.set_xyz(0.3, 0.42, 0.5)
     else:
         if rotate:
             camera.set_xyz(0, 10, 50.0)
@@ -131,8 +131,8 @@ def render(element, models, num_moments, is3d, rotate):
             p.set_xyz(0.0, 0.0, 0.0)
         else:
             camera.set_xyz(0, 10, 50.0)
-            camera.fov = 1.6
-            p.set_xyz(0.5, 0.45, 0.0)
+            camera.fov = 1.7
+            p.set_xyz(0.5, 0.4, 0.0)
     camera.look_at(p)
     soya.set_root_widget(camera)
 
@@ -266,23 +266,11 @@ def Arrow(scene, x, n, center=False):
 
     # Center arrow
     if center:
-        x -= 0.5*l*n
+        x -= 0.5*L*n
 
     # Create cylinder and cone
     cylinder = Cylinder(scene, x, x + L*n, r)
     cone = Cone(scene, x + L*n, x + (L + l)*n, R)
-
-    # Create cylinders
-    #x0 = x
-    #x1 = x + l*n
-    #x2 = x1 - R2*n
-    #if center:
-    #    x0 -= 0.5*l*n
-    #    x1 -= 0.5*l*n
-    #    x2 -= 0.5*l*n
-    #
-   # l1 = Cylinder(scene, x1 - 0.5*r*n, x1 - 0.5*r*n - R2*n + R1*t1, r)
-   # l2 = Cylinder(scene, x1 - 0.5*r*n, x1 - 0.5*r*n - R2*n - R1*t1, r)
 
     # Extract model
     return scene.to_model()
