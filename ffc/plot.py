@@ -7,7 +7,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 __all__ = ["plot"]
 
-from numpy import dot, cross, array, sin, cos, pi
+from numpy import dot, cross, array, sin, cos, pi, sqrt
 from numpy.linalg import norm
 
 from ffc.fiatinterface import create_element
@@ -17,6 +17,7 @@ from ffc.log import warning, error, info
 try:
     import soya
     from soya.sphere import Sphere
+    from soya.label3d import Label3D
     _soya_imported = True
 except:
     _soya_imported = False
@@ -45,12 +46,12 @@ def plot(element):
     cell, is3d = create_cell_model(element)
 
     # Create dof models
-    dofs = create_dof_models(element)
+    dofs, num_moments = create_dof_models(element)
 
     # Render plot window
-    render([cell] + dofs, is3d)
+    render(element, [cell] + dofs, num_moments, is3d)
 
-def render(models, is3d=True):
+def render(element, models, num_moments, is3d=True):
     "Render given list of models."
 
     # Note that we view from the positive z-axis, and not from the
@@ -59,12 +60,21 @@ def render(models, is3d=True):
     # the default camera settings in Soya.
 
     # Initialize Soya
-    soya.init("FFC plot", sound=1)
+    if element.degree() is not None:
+        title = "%s degree %d on a %s" % (element.family(), element.degree(), element.cell().domain())
+    else:
+        title = "%s degree on a %s" % (element.family(), element.cell().domain())
+    soya.init(title)
 
     # Create scene
     scene = soya.World()
     scene.atmosphere = soya.Atmosphere()
     scene.atmosphere.bg_color = (1.0, 1.0, 1.0, 1.0)
+
+    # Not used, need to manually handle rotation
+    #label = Label3D(scene, text=str(num_moments), size=0.005)
+    #label.set_xyz(1.0, 1.0, 1.0)
+    #label.set_color((0.0, 0.0, 0.0, 1.0))
 
     # Define rotation around y-axis
     if is3d:
@@ -406,6 +416,40 @@ def DirectionalDerivative(x, n):
 
     return model
 
+def IntegralMoment(element):
+    "Return model for integral moment for given element."
+
+    info("Plotting dof: integral moment")
+
+    # Set position
+    if element.cell().domain() == "triangle":
+        a = 1.0 / (2 + sqrt(2)) # this was a fun exercise
+        x = (a, a, 0.0)
+    else:
+        a = 1.0 / (3 + sqrt(3)) # so was this
+        x = (a, a, a)
+
+    # Create separate scene (since we will extract a model, not render)
+    scene = soya.World()
+
+    # Define material (color) for the sphere
+    material = soya.Material()
+    material.diffuse = (1.0, 1.0, 1.0, 0.3)
+
+    # Create sphere
+    sphere = Sphere(scene, material=material)
+
+    # Scale and moveand move to coordinate
+    sphere.scale(0.15, 0.15, 0.15)
+    p = sphere.position()
+    p.set_xyz(x[0], x[1], x[2])
+    sphere.move(p)
+
+    # Extract model
+    model = scene.to_model()
+
+    return model
+
 def create_cell_model(element):
     "Create Soya3D model for cell."
 
@@ -455,6 +499,7 @@ def create_dof_models(element):
 
     # Iterate over dofs and add models
     models = []
+    num_moments = 0
     for (dof_type, L) in dofs:
 
         # Check type of dof
@@ -518,12 +563,16 @@ def create_dof_models(element):
 
         elif dof_type in ("FrobeniusIntegralMoment", "IntegralMoment", "ComponentPointEval"):
 
-            warning("Not plotting interior moment for now.")
+            # Generate model
+            models.append(IntegralMoment(element))
+
+            # Count the number of integral moments
+            num_moments += 1
 
         else:
             error("Unable to plot dof, unhandled dof type: %s" % str(dof_type))
 
-    return models
+    return models, num_moments
 
 def pointing_outwards(x, n):
     "Check if n is pointing inwards, used for flipping dofs."
