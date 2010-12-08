@@ -22,11 +22,12 @@ except:
     _soya_imported = False
 
 # Colors for elements
-element_colors = {"Lagrange":                 (0.00, 1.00, 0.00),
+element_colors = {"Brezzi-Douglas-Marini":    (1.00, 1.00, 0.00),
                   "Crouzeix-Raviart":         (1.00, 0.25, 0.25),
-                  "Brezzi-Douglas-Marini":    (1.00, 1.00, 0.00),
-                  "Raviart-Thomas":           (0.90, 0.60, 0.00),
-                  "Nedelec 1st kind H(curl)": (0.90, 0.30, 0.00)}
+                  "Lagrange":                 (0.00, 1.00, 0.00),
+                  "Morley":                   (0.50, 0.50, 0.50),
+                  "Nedelec 1st kind H(curl)": (0.90, 0.30, 0.00),
+                  "Raviart-Thomas":           (0.90, 0.60, 0.00)}
 
 def plot(element):
     "Plot finite element."
@@ -274,7 +275,7 @@ def PointEvaluation(x):
 
     return model
 
-def DirectionalEvaluation(x, n, flip):
+def DirectionalEvaluation(x, n, flip=False):
     "Return model for directional evaluation at given point in given direction."
 
     # Make sure points are 3D
@@ -295,6 +296,28 @@ def DirectionalEvaluation(x, n, flip):
 
     # Create arrow
     arrow = Arrow(scene, x, n)
+
+    # Extract model
+    model = scene.to_model()
+
+    return model
+
+def DirectionalDerivative(x, n):
+    "Return model for directional derivative at given point in given direction."
+
+    # Make sure points are 3D
+    x = to3d(x)
+    n = to3d(n)
+
+    # Create separate scene (since we will extract a model, not render)
+    scene = soya.World()
+
+    # Normalize
+    n = array(n)
+    n = 0.75 * n / norm(n)
+
+    # Create line
+    line = Cylinder(scene, x - 0.07*n, x + 0.07*n, 0.005)
 
     # Extract model
     model = scene.to_model()
@@ -335,7 +358,7 @@ def create_dof_models(element):
 
     # Iterate over dofs and add models
     models = []
-    for dof in dofs:
+    for (i, dof) in enumerate(dofs):
 
         # Get type of dof
         dof_type = dof.get_type_tag()
@@ -355,15 +378,23 @@ def create_dof_models(element):
 
         elif dof_type == "PointNormalDeriv":
 
-            # Evaluation of derivatives at point
+            # FIXME: Special fix for Morley elements until Rob fixes in FIAT
+            if element.family() == "Morley":
+                L = morley_fix(L, i)
+
             print L
+
+            # Evaluation of derivatives at point
             points = L.keys()
             if not len(points) == 1:
                 error("Strange dof, single point expected for point evaluation.")
             x = points[0]
+            n = [xx[0] for xx in L[x]]
+
+            print x, n
 
             # Generate model
-            models.append(PointEvaluation(x))
+            models.append(DirectionalDerivative(x, n))
 
         elif dof_type in directional:
 
@@ -397,3 +428,12 @@ def to3d(x):
     if len(x) == 2:
         x = (x[0], x[1], 0.0)
     return x
+
+def morley_fix(L, i):
+    "Special fix for Morley elements until Rob fixes in FIAT."
+    if not len(L) == 0:
+        warning("Looks like Rob has fixed the Morley elements in FIAT so this fix is no longer required...")
+        return L
+    return { 3: {(0.5, 0.0): [( 0.0, (0,)), (-1.0,  (1,))]},
+             4: {(0.5, 0.5): [( 1.0, (0,)), ( 1.0,  (1,))]},
+             5: {(0.0, 0.5): [(-1.0, (0,)), ( 0.0,  (1,))]} }[i]

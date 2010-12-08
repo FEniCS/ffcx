@@ -12,7 +12,7 @@ from ffc import *
 # "Quintic Argyris"
 
 #element = FiniteElement("BDM", triangle, 2)
-element = FiniteElement("BDM", tetrahedron, 3)
+#element = FiniteElement("BDM", tetrahedron, 3)
 
 # "Discontinuous Lagrange"
 # "Cubic Hermite"
@@ -20,7 +20,7 @@ element = FiniteElement("BDM", tetrahedron, 3)
 #element = FiniteElement("Lagrange", triangle, 5)
 #element = FiniteElement("Lagrange", tetrahedron, 5)
 
-#element = FiniteElement("Morley", triangle, None)
+element = FiniteElement("Morley", triangle, None)
 
 #element = FiniteElement("Nedelec 1st kind H(curl)", triangle, 3)
 #element = FiniteElement("Nedelec 1st kind H(curl)", tetrahedron, 3)
