@@ -5,6 +5,8 @@ __date__ = "2010-12-07"
 __copyright__ = "Copyright (C) 2010 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
+# Last changed: 2010-12-08
+
 __all__ = ["plot"]
 
 from numpy import dot, cross, array, sin, cos, pi, sqrt
