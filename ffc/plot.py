@@ -65,9 +65,9 @@ def render(element, models, num_moments, is3d, rotate):
 
     # Initialize Soya
     if element.degree() is not None:
-        title = "%s degree %d on a %s" % (element.family(), element.degree(), element.cell().domain())
+        title = "%s of degree %d on a %s" % (element.family(), element.degree(), element.cell().domain())
     else:
-        title = "%s degree on a %s" % (element.family(), element.cell().domain())
+        title = "%s on a %s" % (element.family(), element.cell().domain())
     soya.init(title)
 
     # Create scene
