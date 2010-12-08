@@ -209,6 +209,45 @@ def Cylinder(scene, p0, p1, r, color=(0.0, 0.0, 0.0, 1.0)):
 
     return model
 
+def Cone(scene, p0, p1, r, color=(0.0, 0.0, 0.0, 1.0)):
+    "Return model for cone from p0 to p1 with radius r."
+
+    # Convert to NumPy array
+    if isinstance(p0, soya.Vertex):
+        p0 = array((p0.x, p0.y, p0.z))
+        p1 = array((p1.x, p1.y, p1.z))
+    else:
+        p0 = array(p0)
+        p1 = array(p1)
+
+    # Get tangent vectors for plane
+    n = p0 - p1
+    n = n / norm(n)
+    t0, t1 = tangents(n)
+
+    # Traverse the circles
+    num_steps = 10
+    dtheta = 2.0*pi / float(num_steps)
+    v2 = soya.Vertex(scene, p1[0], p1[1], p1[2], diffuse=color)
+    for i in range(num_steps):
+
+        # Compute coordinates for bottom of face
+        dx0 = cos(i*dtheta)*t0 + sin(i*dtheta)*t1
+        dx1 = cos((i + 1)*dtheta)*t0 + sin((i + 1)*dtheta)*t1
+        x0 = p0 + r*dx0
+        x1 = p0 + r*dx1
+
+        # Create face
+        v0 = soya.Vertex(scene, x0[0], x0[1], x0[2], diffuse=color)
+        v1 = soya.Vertex(scene, x1[0], x1[1], x1[2], diffuse=color)
+        f  = soya.Face(scene, (v0, v1, v2))
+        f.double_sided = 1
+
+    # Extract model
+    model = scene.to_model()
+
+    return model
+
 def Arrow(scene, x, n, center=False):
     "Return model for arrow from x in direction n."
 
@@ -220,22 +259,30 @@ def Arrow(scene, x, n, center=False):
     t0, t1 = tangents(n)
 
     # Dimensions for arrow
-    l = 0.3
-    r = 0.04*l
-    R1 = 0.1*l
-    R2 = 0.2*l
+    L = 0.3
+    l = 0.35*L
+    r = 0.04*L
+    R = 0.125*L
+
+    # Center arrow
+    if center:
+        x -= 0.5*l*n
+
+    # Create cylinder and cone
+    cylinder = Cylinder(scene, x, x + L*n, r)
+    cone = Cone(scene, x + L*n, x + (L + l)*n, R)
 
     # Create cylinders
-    x0 = x
-    x1 = x + l*n
-    x2 = x1 - R2*n
-    if center:
-        x0 -= 0.5*l*n
-        x1 -= 0.5*l*n
-        x2 -= 0.5*l*n
-    l0 = Cylinder(scene, x0, x1, r)
-    l1 = Cylinder(scene, x1 - 0.5*r*n, x1 - 0.5*r*n - R2*n + R1*t1, r)
-    l2 = Cylinder(scene, x1 - 0.5*r*n, x1 - 0.5*r*n - R2*n - R1*t1, r)
+    #x0 = x
+    #x1 = x + l*n
+    #x2 = x1 - R2*n
+    #if center:
+    #    x0 -= 0.5*l*n
+    #    x1 -= 0.5*l*n
+    #    x2 -= 0.5*l*n
+    #
+   # l1 = Cylinder(scene, x1 - 0.5*r*n, x1 - 0.5*r*n - R2*n + R1*t1, r)
+   # l2 = Cylinder(scene, x1 - 0.5*r*n, x1 - 0.5*r*n - R2*n - R1*t1, r)
 
     # Extract model
     return scene.to_model()
