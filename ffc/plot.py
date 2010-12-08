@@ -166,7 +166,7 @@ def Cylinder(scene, p0, p1, r, color=(0.0, 0.0, 0.0, 1.0)):
 
     return model
 
-def Arrow(scene, x, n, l=0.3):
+def Arrow(scene, x, n, center=False):
     "Return model for arrow from x in direction n."
 
     # Convert to Numpy arrays
@@ -177,6 +177,7 @@ def Arrow(scene, x, n, l=0.3):
     t0, t1 = tangents(n)
 
     # Dimensions for arrow
+    l = 0.3
     r = 0.04*l
     R1 = 0.1*l
     R2 = 0.2*l
@@ -185,6 +186,10 @@ def Arrow(scene, x, n, l=0.3):
     x0 = x
     x1 = x + l*n
     x2 = x1 - R2*n
+    if center:
+        x0 -= 0.5*l*n
+        x1 -= 0.5*l*n
+        x2 -= 0.5*l*n
     l0 = Cylinder(scene, x0, x1, r)
     l1 = Cylinder(scene, x1 - 0.5*r*n, x1 - 0.5*r*n - R2*n + R1*t1, r)
     l2 = Cylinder(scene, x1 - 0.5*r*n, x1 - 0.5*r*n - R2*n - R1*t1, r)
@@ -347,7 +352,7 @@ def PointSecondDerivative(x):
 
     return model
 
-def DirectionalEvaluation(x, n, flip=False):
+def DirectionalEvaluation(x, n, flip=False, center=False):
     "Return model for directional evaluation at given point in given direction."
 
     info("Plotting dof: directional evaluation at x = %s in direction n = %s" % (str(x), str(n)))
@@ -369,7 +374,7 @@ def DirectionalEvaluation(x, n, flip=False):
         n = -n
 
     # Create arrow
-    arrow = Arrow(scene, x, n)
+    arrow = Arrow(scene, x, n, center)
 
     # Extract model
     model = scene.to_model()
@@ -423,10 +428,10 @@ def create_cell_model(element):
 def create_dof_models(element):
     "Create Soya3D models for dofs."
 
-    # Dofs that should be flipped if point in the "wrong" direction
-    directional = {"PointScaledNormalEval": True,
-                   "PointEdgeTangent":      False,
-                   "PointFaceTangent":      False}
+    # Flags for whether to flip and center arrows
+    directional = {"PointScaledNormalEval": (True,  False),
+                   "PointEdgeTangent":      (False, True),
+                   "PointFaceTangent":      (False, True)}
 
     # Elements not supported fully by FIAT
     unsupported = {"Argyris":            argyris_dofs,
@@ -436,7 +441,6 @@ def create_dof_models(element):
 
     # Check if element is supported
     family = element.family()
-    print family
     if not family in unsupported:
         # Create FIAT element and get dofs
         fiat_element = create_element(element)
@@ -507,7 +511,8 @@ def create_dof_models(element):
             n = [xx[0] for xx in L[x]]
 
             # Generate model
-            models.append(DirectionalEvaluation(x, n, directional[dof_type]))
+            flip, center = directional[dof_type]
+            models.append(DirectionalEvaluation(x, n, flip, center))
 
         elif dof_type in ("FrobeniusIntegralMoment", "IntegralMoment", "ComponentPointEval"):
 
