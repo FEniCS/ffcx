@@ -25,7 +25,7 @@ except:
 element_colors = {"Brezzi-Douglas-Marini":    (1.00, 1.00, 0.00),
                   "Crouzeix-Raviart":         (1.00, 0.25, 0.25),
                   "Lagrange":                 (0.00, 1.00, 0.00),
-                  "Morley":                   (0.50, 0.50, 0.50),
+                  "Morley":                   (0.40, 0.40, 0.40),
                   "Nedelec 1st kind H(curl)": (0.90, 0.30, 0.00),
                   "Raviart-Thomas":           (0.90, 0.60, 0.00)}
 
@@ -203,11 +203,11 @@ def UnitTetrahedron(color=(0.0, 1.0, 0.0, 0.5)):
 
     # Create edges
     e0 = Cylinder(scene, v0, v1, 0.005)
-    e0 = Cylinder(scene, v0, v2, 0.005)
-    e0 = Cylinder(scene, v0, v3, 0.005)
-    e0 = Cylinder(scene, v1, v2, 0.005)
-    e0 = Cylinder(scene, v1, v3, 0.005)
-    e0 = Cylinder(scene, v2, v3, 0.005)
+    e1 = Cylinder(scene, v0, v2, 0.005)
+    e2 = Cylinder(scene, v0, v3, 0.005)
+    e3 = Cylinder(scene, v1, v2, 0.005)
+    e4 = Cylinder(scene, v1, v3, 0.005)
+    e5 = Cylinder(scene, v2, v3, 0.005)
 
     # Create faces
     f0 = soya.Face(scene, (v1, v2, v3))
@@ -236,6 +236,11 @@ def UnitTriangle(color=(0.0, 1.0, 0.0, 0.5)):
     v0 = soya.Vertex(scene, 0.0, 0.0, 0.0, diffuse=color)
     v1 = soya.Vertex(scene, 1.0, 0.0, 0.0, diffuse=color)
     v2 = soya.Vertex(scene, 0.0, 1.0, 0.0, diffuse=color)
+
+    # Create edges
+    e0 = Cylinder(scene, v0, v1, 0.005)
+    e1 = Cylinder(scene, v0, v2, 0.005)
+    e2 = Cylinder(scene, v1, v2, 0.005)
 
     # Create face
     f = soya.Face(scene, (v0, v1, v2))
