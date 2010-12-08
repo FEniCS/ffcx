@@ -17,10 +17,13 @@ from ffc import *
 # "Discontinuous Lagrange"
 # "Cubic Hermite"
 
-#element = FiniteElement("Lagrange", triangle, 5)
+#element = FiniteElement("Hermite", triangle, None)
+element = FiniteElement("Hermite", tetrahedron, None)
+
+#element = FiniteElement("Lagrange", triangle, 2)
 #element = FiniteElement("Lagrange", tetrahedron, 5)
 
-element = FiniteElement("Morley", triangle, None)
+#element = FiniteElement("Morley", triangle, None)
 
 #element = FiniteElement("Nedelec 1st kind H(curl)", triangle, 3)
 #element = FiniteElement("Nedelec 1st kind H(curl)", tetrahedron, 3)
@@ -29,7 +32,6 @@ element = FiniteElement("Morley", triangle, None)
 #element = FiniteElement("CR", tetrahedron, 1)
 
 #element = FiniteElement("RT", triangle, 2)
-#element = FiniteElement("RT", tetrahedron, 2)
-
+#element = FiniteElement("RT", tetrahedron, 1)
 
 plot(element)

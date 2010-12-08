@@ -24,6 +24,7 @@ except:
 # Colors for elements
 element_colors = {"Brezzi-Douglas-Marini":    (1.00, 1.00, 0.00),
                   "Crouzeix-Raviart":         (1.00, 0.25, 0.25),
+                  "Hermite":                  (0.50, 1.00, 0.50),
                   "Lagrange":                 (0.00, 1.00, 0.00),
                   "Morley":                   (0.40, 0.40, 0.40),
                   "Nedelec 1st kind H(curl)": (0.90, 0.30, 0.00),
@@ -91,7 +92,7 @@ def render(models, is3d=True):
     camera.set_xyz(0.0, 10, 50.0)
     p = camera.position()
     if is3d:
-        camera.fov = 1.8
+        camera.fov = 1.9
         p.set_xyz(0.0, 0.4, 0.0)
     else:
         camera.fov = 2.5
@@ -192,6 +193,8 @@ def Arrow(scene, x, n, l=0.3):
 def UnitTetrahedron(color=(0.0, 1.0, 0.0, 0.5)):
     "Return model for unit tetrahedron."
 
+    info("Plotting unit tetrahedron")
+
     # Create separate scene (since we will extract a model, not render)
     scene = soya.World()
 
@@ -229,6 +232,8 @@ def UnitTetrahedron(color=(0.0, 1.0, 0.0, 0.5)):
 def UnitTriangle(color=(0.0, 1.0, 0.0, 0.5)):
     "Return model for unit tetrahedron."
 
+    info("Plotting unit triangle")
+
     # Create separate scene (since we will extract a model, not render)
     scene = soya.World()
 
@@ -256,6 +261,8 @@ def UnitTriangle(color=(0.0, 1.0, 0.0, 0.5)):
 def PointEvaluation(x):
     "Return model for point evaluation at given point."
 
+    info("Plotting dof: point evaluation at x = %s" % str(x))
+
     # Make sure point is 3D
     x = to3d(x)
 
@@ -280,8 +287,39 @@ def PointEvaluation(x):
 
     return model
 
+def PointDerivative(x):
+    "Return model for point evaluation at given point."
+
+    info("Plotting dof: point derivative at x = %s" % str(x))
+
+    # Make sure point is 3D
+    x = to3d(x)
+
+    # Create separate scene (since we will extract a model, not render)
+    scene = soya.World()
+
+    # Define material (color) for the sphere
+    material = soya.Material()
+    material.diffuse = (0.0, 0.0, 0.0, 0.2)
+
+    # Create sphere
+    sphere = Sphere(scene, material=material)
+
+    # Scale and moveand move to coordinate
+    sphere.scale(0.1, 0.1, 0.1)
+    p = sphere.position()
+    p.set_xyz(x[0], x[1], x[2])
+    sphere.move(p)
+
+    # Extract model
+    model = scene.to_model()
+
+    return model
+
 def DirectionalEvaluation(x, n, flip=False):
     "Return model for directional evaluation at given point in given direction."
+
+    info("Plotting dof: directional evaluation at x = %s in direction n = %s" % (str(x), str(n)))
 
     # Make sure points are 3D
     x = to3d(x)
@@ -309,6 +347,8 @@ def DirectionalEvaluation(x, n, flip=False):
 
 def DirectionalDerivative(x, n):
     "Return model for directional derivative at given point in given direction."
+
+    info("Plotting dof: directional derivative at x = %s in direction n = %s" % (str(x), str(n)))
 
     # Make sure points are 3D
     x = to3d(x)
@@ -370,12 +410,20 @@ def create_dof_models(element):
 
         # Create model based on dof type
         L = dof.get_point_dict()
+
+        # FIXME: Fixes for FIAT bugs
+        if element.family() == "Morley":
+            dof_type, L = morley_dof(i)
+        elif element.family() == "Hermite":
+            dof_type, L = hermite_dof(i, element.cell().domain())
+
+        # Check type of dof
         if dof_type == "PointEval":
 
             # Point evaluation, just get point
             points = L.keys()
             if not len(points) == 1:
-                error("Strange dof, single point expected for point evaluation.")
+                error("Strange dof, single point expected.")
             x = points[0]
 
             # Generate model
@@ -383,30 +431,33 @@ def create_dof_models(element):
 
         elif dof_type == "PointNormalDeriv":
 
-            # FIXME: Special fix for Morley elements until Rob fixes in FIAT
-            if element.family() == "Morley":
-                L = morley_fix(L, i)
+            # Evaluation of derivatives at point
+            points = L.keys()
+            if not len(points) == 1:
+                error("Strange dof, single point expected.")
+            x = points[0]
+            n = [xx[0] for xx in L[x]]
 
-            print L
+            # Generate model
+            models.append(DirectionalDerivative(x, n))
+
+        elif dof_type == "PointDeriv":
 
             # Evaluation of derivatives at point
             points = L.keys()
             if not len(points) == 1:
-                error("Strange dof, single point expected for point evaluation.")
+                error("Strange dof, single point expected.")
             x = points[0]
-            n = [xx[0] for xx in L[x]]
-
-            print x, n
 
             # Generate model
-            models.append(DirectionalDerivative(x, n))
+            models.append(PointDerivative(x))
 
         elif dof_type in directional:
 
             # Normal evaluation, get point and normal
             points = L.keys()
             if not len(points) == 1:
-                error("Strange dof, single point expected for point evaluation.")
+                error("Strange dof, single point expected.")
             x = points[0]
             n = [xx[0] for xx in L[x]]
 
@@ -434,11 +485,54 @@ def to3d(x):
         x = (x[0], x[1], 0.0)
     return x
 
-def morley_fix(L, i):
+def morley_dof(i):
     "Special fix for Morley elements until Rob fixes in FIAT."
-    if not len(L) == 0:
-        warning("Looks like Rob has fixed the Morley elements in FIAT so this fix is no longer required...")
-        return L
-    return { 3: {(0.5, 0.0): [( 0.0, (0,)), (-1.0,  (1,))]},
-             4: {(0.5, 0.5): [( 1.0, (0,)), ( 1.0,  (1,))]},
-             5: {(0.0, 0.5): [(-1.0, (0,)), ( 0.0,  (1,))]} }[i]
+    dofs = {0: ("PointEval",        {(0.0, 0.0): [ (1.0, ()) ]}),
+            1: ("PointEval",        {(1.0, 0.0): [ (1.0, ()) ]}),
+            2: ("PointEval",        {(0.0, 1.0): [ (1.0, ()) ]}),
+            3: ("PointNormalDeriv", {(0.5, 0.0): [ (0.0, (0,)), (-1.0,  (1,))]}),
+            4: ("PointNormalDeriv", {(0.5, 0.5): [ (1.0, (0,)), ( 1.0,  (1,))]}),
+            5: ("PointNormalDeriv", {(0.0, 0.5): [(-1.0, (0,)), ( 0.0,  (1,))]})}
+    return dofs[i]
+
+def hermite_dof(i, shape):
+    "Special fix for Hermite elements until Rob fixes in FIAT."
+
+    dofs_2d = {0: ("PointEval",  {(0.0, 0.0): [ (1.0, ()) ]}),
+               1: ("PointEval",  {(1.0, 0.0): [ (1.0, ()) ]}),
+               2: ("PointEval",  {(0.0, 1.0): [ (1.0, ()) ]}),
+               3: ("PointDeriv", {(0.0, 0.0): [ (1.0, ()) ]}), # hack, same dof twice
+               4: ("PointDeriv", {(0.0, 0.0): [ (1.0, ()) ]}), # hack, same dof twice
+               5: ("PointDeriv", {(1.0, 0.0): [ (1.0, ()) ]}), # hack, same dof twice
+               6: ("PointDeriv", {(1.0, 0.0): [ (1.0, ()) ]}), # hack, same dof twice
+               7: ("PointDeriv", {(0.0, 1.0): [ (1.0, ()) ]}), # hack, same dof twice
+               8: ("PointDeriv", {(0.0, 1.0): [ (1.0, ()) ]}), # hack, same dof twice
+               9: ("PointEval",  {(1.0/3, 1.0/3): [ (1.0, ()) ]})}
+
+    dofs_3d = {0: ("PointEval",  {(0.0, 0.0, 0.0): [ (1.0, ()) ]}),
+               1: ("PointEval",  {(1.0, 0.0, 0.0): [ (1.0, ()) ]}),
+               2: ("PointEval",  {(0.0, 1.0, 0.0): [ (1.0, ()) ]}),
+               3: ("PointEval",  {(0.0, 0.0, 1.0): [ (1.0, ()) ]}),
+               4: ("PointDeriv", {(0.0, 0.0, 0.0): [ (1.0, ()) ]}), # hack, same dof three times
+               5: ("PointDeriv", {(0.0, 0.0, 0.0): [ (1.0, ()) ]}), # hack, same dof three times
+               6: ("PointDeriv", {(0.0, 0.0, 0.0): [ (1.0, ()) ]}), # hack, same dof three times
+               7: ("PointDeriv", {(1.0, 0.0, 0.0): [ (1.0, ()) ]}), # hack, same dof three times
+               8: ("PointDeriv", {(1.0, 0.0, 0.0): [ (1.0, ()) ]}), # hack, same dof three times
+               9: ("PointDeriv", {(1.0, 0.0, 0.0): [ (1.0, ()) ]}), # hack, same dof three times
+              10: ("PointDeriv", {(0.0, 1.0, 0.0): [ (1.0, ()) ]}), # hack, same dof three times
+              11: ("PointDeriv", {(0.0, 1.0, 0.0): [ (1.0, ()) ]}), # hack, same dof three times
+              12: ("PointDeriv", {(0.0, 1.0, 0.0): [ (1.0, ()) ]}), # hack, same dof three times
+              13: ("PointDeriv", {(0.0, 0.0, 1.0): [ (1.0, ()) ]}), # hack, same dof three times
+              14: ("PointDeriv", {(0.0, 0.0, 1.0): [ (1.0, ()) ]}), # hack, same dof three times
+              15: ("PointDeriv", {(0.0, 0.0, 1.0): [ (1.0, ()) ]}), # hack, same dof three times
+              16: ("PointEval",  {(1.0/3, 1.0/3, 1.0/3): [ (1.0, ()) ]}),
+              17: ("PointEval",  {(0.0,   1.0/3, 1.0/3): [ (1.0, ()) ]}),
+              18: ("PointEval",  {(1.0/3, 0.0,   1.0/3): [ (1.0, ()) ]}),
+              19: ("PointEval",  {(1.0/3, 1.0/3, 0.0):   [ (1.0, ()) ]})}
+
+    if shape == "triangle":
+        return dofs_2d[i]
+    else:
+        return dofs_3d[i]
+
+    return {}
