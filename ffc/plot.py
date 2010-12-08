@@ -22,7 +22,8 @@ except:
     _soya_imported = False
 
 # Colors for elements
-element_colors = {"Brezzi-Douglas-Marini":    (1.00, 1.00, 0.00),
+element_colors = {"Argyris":                  (0.45, 0.70, 0.80),
+                  "Brezzi-Douglas-Marini":    (1.00, 1.00, 0.00),
                   "Crouzeix-Raviart":         (1.00, 0.25, 0.25),
                   "Hermite":                  (0.50, 1.00, 0.50),
                   "Lagrange":                 (0.00, 1.00, 0.00),
@@ -397,25 +398,29 @@ def create_dof_models(element):
                    "PointEdgeTangent":      False,
                    "PointFaceTangent":      False}
 
-    # Create FIAT element and get dofs
-    fiat_element = create_element(element)
-    dofs = fiat_element.dual_basis()
+    # Elements not supported fully by FIAT
+    unsupported = {"Argyris": argyris_dofs,
+                   "Hermite": hermite_dofs,
+                   "Morley":  morley_dofs}
+
+    # Check if element is supported
+    family = element.family()
+    if not family in unsupported:
+
+        # Create FIAT element and get dofs
+        fiat_element = create_element(element)
+        dofs = [(dof.get_type_tag(), dof.get_point_dic()) for dof in fiat_element.dual_basis()]
+
+    else:
+
+        # Bybass FIAT and set the dofs ourselves
+        dofs = unsupported[family](element)
 
     # Iterate over dofs and add models
     models = []
-    for (i, dof) in enumerate(dofs):
+    for (dof_type, L) in dofs:
 
-        # Get type of dof
-        dof_type = dof.get_type_tag()
-
-        # Create model based on dof type
-        L = dof.get_point_dict()
-
-        # FIXME: Fixes for FIAT bugs
-        if element.family() == "Morley":
-            dof_type, L = morley_dof(i)
-        elif element.family() == "Hermite":
-            dof_type, L = hermite_dof(i, element.cell().domain())
+        print dof_type, L
 
         # Check type of dof
         if dof_type == "PointEval":
@@ -485,54 +490,56 @@ def to3d(x):
         x = (x[0], x[1], 0.0)
     return x
 
-def morley_dof(i):
-    "Special fix for Morley elements until Rob fixes in FIAT."
-    dofs = {0: ("PointEval",        {(0.0, 0.0): [ (1.0, ()) ]}),
-            1: ("PointEval",        {(1.0, 0.0): [ (1.0, ()) ]}),
-            2: ("PointEval",        {(0.0, 1.0): [ (1.0, ()) ]}),
-            3: ("PointNormalDeriv", {(0.5, 0.0): [ (0.0, (0,)), (-1.0,  (1,))]}),
-            4: ("PointNormalDeriv", {(0.5, 0.5): [ (1.0, (0,)), ( 1.0,  (1,))]}),
-            5: ("PointNormalDeriv", {(0.0, 0.5): [(-1.0, (0,)), ( 0.0,  (1,))]})}
-    return dofs[i]
+def argyris_dofs(element):
+    "Special fix for Hermite elements until Rob fixes in FIAT."
+    if not element.degree() == 5:
+        error("Unable to plot element, only know how to plot quintic Argyris elements.")
 
-def hermite_dof(i, shape):
+def hermite_dofs(element):
     "Special fix for Hermite elements until Rob fixes in FIAT."
 
-    dofs_2d = {0: ("PointEval",  {(0.0, 0.0): [ (1.0, ()) ]}),
-               1: ("PointEval",  {(1.0, 0.0): [ (1.0, ()) ]}),
-               2: ("PointEval",  {(0.0, 1.0): [ (1.0, ()) ]}),
-               3: ("PointDeriv", {(0.0, 0.0): [ (1.0, ()) ]}), # hack, same dof twice
-               4: ("PointDeriv", {(0.0, 0.0): [ (1.0, ()) ]}), # hack, same dof twice
-               5: ("PointDeriv", {(1.0, 0.0): [ (1.0, ()) ]}), # hack, same dof twice
-               6: ("PointDeriv", {(1.0, 0.0): [ (1.0, ()) ]}), # hack, same dof twice
-               7: ("PointDeriv", {(0.0, 1.0): [ (1.0, ()) ]}), # hack, same dof twice
-               8: ("PointDeriv", {(0.0, 1.0): [ (1.0, ()) ]}), # hack, same dof twice
-               9: ("PointEval",  {(1.0/3, 1.0/3): [ (1.0, ()) ]})}
+    dofs_2d = [("PointEval",  {(0.0, 0.0): [ (1.0, ()) ]}),
+               ("PointEval",  {(1.0, 0.0): [ (1.0, ()) ]}),
+               ("PointEval",  {(0.0, 1.0): [ (1.0, ()) ]}),
+               ("PointDeriv", {(0.0, 0.0): [ (1.0, ()) ]}), # hack, same dof twice
+               ("PointDeriv", {(0.0, 0.0): [ (1.0, ()) ]}), # hack, same dof twice
+               ("PointDeriv", {(1.0, 0.0): [ (1.0, ()) ]}), # hack, same dof twice
+               ("PointDeriv", {(1.0, 0.0): [ (1.0, ()) ]}), # hack, same dof twice
+               ("PointDeriv", {(0.0, 1.0): [ (1.0, ()) ]}), # hack, same dof twice
+               ("PointDeriv", {(0.0, 1.0): [ (1.0, ()) ]}), # hack, same dof twice
+               ("PointEval",  {(1.0/3, 1.0/3): [ (1.0, ()) ]})]
 
-    dofs_3d = {0: ("PointEval",  {(0.0, 0.0, 0.0): [ (1.0, ()) ]}),
-               1: ("PointEval",  {(1.0, 0.0, 0.0): [ (1.0, ()) ]}),
-               2: ("PointEval",  {(0.0, 1.0, 0.0): [ (1.0, ()) ]}),
-               3: ("PointEval",  {(0.0, 0.0, 1.0): [ (1.0, ()) ]}),
-               4: ("PointDeriv", {(0.0, 0.0, 0.0): [ (1.0, ()) ]}), # hack, same dof three times
-               5: ("PointDeriv", {(0.0, 0.0, 0.0): [ (1.0, ()) ]}), # hack, same dof three times
-               6: ("PointDeriv", {(0.0, 0.0, 0.0): [ (1.0, ()) ]}), # hack, same dof three times
-               7: ("PointDeriv", {(1.0, 0.0, 0.0): [ (1.0, ()) ]}), # hack, same dof three times
-               8: ("PointDeriv", {(1.0, 0.0, 0.0): [ (1.0, ()) ]}), # hack, same dof three times
-               9: ("PointDeriv", {(1.0, 0.0, 0.0): [ (1.0, ()) ]}), # hack, same dof three times
-              10: ("PointDeriv", {(0.0, 1.0, 0.0): [ (1.0, ()) ]}), # hack, same dof three times
-              11: ("PointDeriv", {(0.0, 1.0, 0.0): [ (1.0, ()) ]}), # hack, same dof three times
-              12: ("PointDeriv", {(0.0, 1.0, 0.0): [ (1.0, ()) ]}), # hack, same dof three times
-              13: ("PointDeriv", {(0.0, 0.0, 1.0): [ (1.0, ()) ]}), # hack, same dof three times
-              14: ("PointDeriv", {(0.0, 0.0, 1.0): [ (1.0, ()) ]}), # hack, same dof three times
-              15: ("PointDeriv", {(0.0, 0.0, 1.0): [ (1.0, ()) ]}), # hack, same dof three times
-              16: ("PointEval",  {(1.0/3, 1.0/3, 1.0/3): [ (1.0, ()) ]}),
-              17: ("PointEval",  {(0.0,   1.0/3, 1.0/3): [ (1.0, ()) ]}),
-              18: ("PointEval",  {(1.0/3, 0.0,   1.0/3): [ (1.0, ()) ]}),
-              19: ("PointEval",  {(1.0/3, 1.0/3, 0.0):   [ (1.0, ()) ]})}
+    dofs_3d = [("PointEval",  {(0.0, 0.0, 0.0): [ (1.0, ()) ]}),
+               ("PointEval",  {(1.0, 0.0, 0.0): [ (1.0, ()) ]}),
+               ("PointEval",  {(0.0, 1.0, 0.0): [ (1.0, ()) ]}),
+               ("PointEval",  {(0.0, 0.0, 1.0): [ (1.0, ()) ]}),
+               ("PointDeriv", {(0.0, 0.0, 0.0): [ (1.0, ()) ]}), # hack, same dof three times
+               ("PointDeriv", {(0.0, 0.0, 0.0): [ (1.0, ()) ]}), # hack, same dof three times
+               ("PointDeriv", {(0.0, 0.0, 0.0): [ (1.0, ()) ]}), # hack, same dof three times
+               ("PointDeriv", {(1.0, 0.0, 0.0): [ (1.0, ()) ]}), # hack, same dof three times
+               ("PointDeriv", {(1.0, 0.0, 0.0): [ (1.0, ()) ]}), # hack, same dof three times
+               ("PointDeriv", {(1.0, 0.0, 0.0): [ (1.0, ()) ]}), # hack, same dof three times
+               ("PointDeriv", {(0.0, 1.0, 0.0): [ (1.0, ()) ]}), # hack, same dof three times
+               ("PointDeriv", {(0.0, 1.0, 0.0): [ (1.0, ()) ]}), # hack, same dof three times
+               ("PointDeriv", {(0.0, 1.0, 0.0): [ (1.0, ()) ]}), # hack, same dof three times
+               ("PointDeriv", {(0.0, 0.0, 1.0): [ (1.0, ()) ]}), # hack, same dof three times
+               ("PointDeriv", {(0.0, 0.0, 1.0): [ (1.0, ()) ]}), # hack, same dof three times
+               ("PointDeriv", {(0.0, 0.0, 1.0): [ (1.0, ()) ]}), # hack, same dof three times
+               ("PointEval",  {(1.0/3, 1.0/3, 1.0/3): [ (1.0, ()) ]}),
+               ("PointEval",  {(0.0,   1.0/3, 1.0/3): [ (1.0, ()) ]}),
+               ("PointEval",  {(1.0/3, 0.0,   1.0/3): [ (1.0, ()) ]}),
+               ("PointEval",  {(1.0/3, 1.0/3, 0.0):   [ (1.0, ()) ]})]
 
-    if shape == "triangle":
-        return dofs_2d[i]
+    if element.cell().domain() == "triangle":
+        return dofs_2d
     else:
-        return dofs_3d[i]
+        return dofs_3d
 
-    return {}
+def morley_dofs(element):
+    "Special fix for Morley elements until Rob fixes in FIAT."
+    return [("PointEval",        {(0.0, 0.0): [ (1.0, ()) ]}),
+            ("PointEval",        {(1.0, 0.0): [ (1.0, ()) ]}),
+            ("PointEval",        {(0.0, 1.0): [ (1.0, ()) ]}),
+            ("PointNormalDeriv", {(0.5, 0.0): [ (0.0, (0,)), (-1.0,  (1,))]}),
+            ("PointNormalDeriv", {(0.5, 0.5): [ (1.0, (0,)), ( 1.0,  (1,))]}),
+            ("PointNormalDeriv", {(0.0, 0.5): [(-1.0, (0,)), ( 0.0,  (1,))]})]
