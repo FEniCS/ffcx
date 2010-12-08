@@ -23,6 +23,7 @@ except:
 
 # Colors for elements
 element_colors = {"Argyris":                  (0.45, 0.70, 0.80),
+                  "Arnold-Winther":           (0.00, 0.00, 1.00),
                   "Brezzi-Douglas-Marini":    (1.00, 1.00, 0.00),
                   "Crouzeix-Raviart":         (1.00, 0.25, 0.25),
                   "Hermite":                  (0.50, 1.00, 0.50),
@@ -435,6 +436,7 @@ def create_dof_models(element):
 
     # Elements not supported fully by FIAT
     unsupported = {"Argyris":            argyris_dofs,
+                   "Arnold-Winther":     arnold_winther_dofs,
                    "Hermite":            hermite_dofs,
                    "Mardal-Tai-Winther": mardal_tai_winther_dofs,
                    "Morley":             morley_dofs}
@@ -535,6 +537,43 @@ def to3d(x):
         x = (x[0], x[1], 0.0)
     return x
 
+def arnold_winther_dofs(element):
+    "Special fix for Arnold-Winther elements until Rob fixes in FIAT."
+
+    if not element.cell().domain() == "triangle":
+        error("Unable to plot element, only know how to plot Mardal-Tai-Winther on triangles.")
+
+    return [("PointEval",        {(0.0, 0.0): [ (1.0, ()) ]}), # hack, same dof three times
+            ("PointEval",        {(0.0, 0.0): [ (1.0, ()) ]}), # hack, same dof three times
+            ("PointEval",        {(0.0, 0.0): [ (1.0, ()) ]}), # hack, same dof three times
+            ("PointEval",        {(1.0, 0.0): [ (1.0, ()) ]}), # hack, same dof three times
+            ("PointEval",        {(1.0, 0.0): [ (1.0, ()) ]}), # hack, same dof three times
+            ("PointEval",        {(1.0, 0.0): [ (1.0, ()) ]}), # hack, same dof three times
+            ("PointEval",        {(0.0, 1.0): [ (1.0, ()) ]}), # hack, same dof three times
+            ("PointEval",        {(0.0, 1.0): [ (1.0, ()) ]}), # hack, same dof three times
+            ("PointEval",        {(0.0, 1.0): [ (1.0, ()) ]}), # hack, same dof three times
+            ("PointScaledNormalEval", {(1.0/7, 0.0):     [  (0.0, (0,)), (-1.0, (1,))]}),
+            ("PointScaledNormalEval", {(2.0/7, 0.0):     [  (0.0, (0,)), (-1.0, (1,))]}),
+            ("PointScaledNormalEval", {(3.0/7, 0.0):     [  (0.0, (0,)), (-1.0, (1,))]}),
+            ("PointScaledNormalEval", {(4.0/7, 0.0):     [  (0.0, (0,)), (-1.0, (1,))]}),
+            ("PointScaledNormalEval", {(5.0/7, 0.0):     [  (0.0, (0,)), (-1.0, (1,))]}),
+            ("PointScaledNormalEval", {(6.0/7, 0.0):     [  (0.0, (0,)), (-1.0, (1,))]}),
+            ("PointScaledNormalEval", {(6.0/7, 1.0/7.0): [  (1.0, (0,)),  (1.0, (1,))]}),
+            ("PointScaledNormalEval", {(5.0/7, 2.0/7.0): [  (1.0, (0,)),  (1.0, (1,))]}),
+            ("PointScaledNormalEval", {(4.0/7, 3.0/7.0): [  (1.0, (0,)),  (1.0, (1,))]}),
+            ("PointScaledNormalEval", {(3.0/7, 4.0/7.0): [  (1.0, (0,)),  (1.0, (1,))]}),
+            ("PointScaledNormalEval", {(2.0/7, 5.0/7.0): [  (1.0, (0,)),  (1.0, (1,))]}),
+            ("PointScaledNormalEval", {(0.0,   1.0/7.0): [ (-1.0, (0,)),  (0.0, (1,))]}),
+            ("PointScaledNormalEval", {(0.0,   2.0/7.0): [ (-1.0, (0,)),  (0.0, (1,))]}),
+            ("PointScaledNormalEval", {(0.0,   3.0/7.0): [ (-1.0, (0,)),  (0.0, (1,))]}),
+            ("PointScaledNormalEval", {(0.0,   4.0/7.0): [ (-1.0, (0,)),  (0.0, (1,))]}),
+            ("PointScaledNormalEval", {(0.0,   5.0/7.0): [ (-1.0, (0,)),  (0.0, (1,))]}),
+            ("PointScaledNormalEval", {(0.0,   6.0/7.0): [ (-1.0, (0,)),  (0.0, (1,))]}),
+            ("PointScaledNormalEval", {(0.0,   6.0/7.0): [ (-1.0, (0,)),  (0.0, (1,))]}),
+            ("IntegralMoment", None),
+            ("IntegralMoment", None),
+            ("IntegralMoment", None)]
+
 def argyris_dofs(element):
     "Special fix for Hermite elements until Rob fixes in FIAT."
 
@@ -621,7 +660,6 @@ def mardal_tai_winther_dofs(element):
             ("PointEdgeTangent", {(0.5, 0.0): [ (-1.0, (0,)),  (0.0, (1,))]}),
             ("PointEdgeTangent", {(0.5, 0.5): [ (-1.0, (0,)),  (1.0, (1,))]}),
             ("PointEdgeTangent", {(0.0, 0.5): [  (0.0, (0,)), (-1.0, (1,))]})]
-
 
 def morley_dofs(element):
     "Special fix for Morley elements until Rob fixes in FIAT."

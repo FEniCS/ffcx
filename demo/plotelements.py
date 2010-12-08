@@ -8,10 +8,10 @@ __license__  = "GNU GPL version 3 or any later version"
 from ufl import *
 from ffc import *
 
-# "Argyris"
-# "Quintic Argyris"
 
 #element = FiniteElement("Argyris", triangle, 5)
+
+element = FiniteElement("Arnold-Winther", triangle)
 
 #element = FiniteElement("Brezzi-Douglas-Marini", triangle, 2)
 #element = FiniteElement("Brezzi-Douglas-Marini", tetrahedron, 3)
@@ -24,7 +24,7 @@ from ffc import *
 #element = FiniteElement("Lagrange", triangle, 2)
 #element = FiniteElement("Lagrange", tetrahedron, 5)
 
-element = FiniteElement("Mardal-Tai-Winther", triangle, None)
+#element = FiniteElement("Mardal-Tai-Winther", triangle, None)
 
 #element = FiniteElement("Morley", triangle, None)
 
