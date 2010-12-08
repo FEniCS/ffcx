@@ -35,6 +35,7 @@ element_colors = {"Argyris":                  (0.45, 0.70, 0.80),
                   "Mardal-Tai-Winther":       (1.00, 0.10, 0.90),
                   "Morley":                   (0.40, 0.40, 0.40),
                   "Nedelec 1st kind H(curl)": (0.90, 0.30, 0.00),
+                  "Nedelec 2nd kind H(curl)": (0.70, 0.20, 0.00),
                   "Raviart-Thomas":           (0.90, 0.60, 0.00)}
 
 def plot(element):
