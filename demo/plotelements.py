@@ -13,10 +13,11 @@ from ffc import *
 
 #element = FiniteElement("Arnold-Winther", triangle)
 
-#element = FiniteElement("Brezzi-Douglas-Marini", triangle, 2)
-element = FiniteElement("Brezzi-Douglas-Marini", tetrahedron, 2)
+#element = FiniteElement("Brezzi-Douglas-Marini", triangle, 3)
+#element = FiniteElement("Brezzi-Douglas-Marini", tetrahedron, 3)
 
-# "Discontinuous Lagrange"
+#element = FiniteElement("Discontinuous Lagrange", triangle, 3)
+element = FiniteElement("Discontinuous Lagrange", tetrahedron, 3)
 
 #element = FiniteElement("Hermite", triangle, None)
 #element = FiniteElement("Hermite", tetrahedron, None)
@@ -30,6 +31,9 @@ element = FiniteElement("Brezzi-Douglas-Marini", tetrahedron, 2)
 
 #element = FiniteElement("Nedelec 1st kind H(curl)", triangle, 3)
 #element = FiniteElement("Nedelec 1st kind H(curl)", tetrahedron, 3)
+
+#element = FiniteElement("Nedelec 2nd kind H(curl)", triangle, 1)
+#element = FiniteElement("Nedelec 2nd kind H(curl)", tetrahedron, 3)
 
 #element = FiniteElement("Crouzeix-Raviart", triangle, 1)
 #element = FiniteElement("Crouzeix-Raviart", tetrahedron, 1)
