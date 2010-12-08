@@ -38,7 +38,7 @@ element_colors = {"Argyris":                  (0.45, 0.70, 0.80),
                   "Nedelec 2nd kind H(curl)": (0.70, 0.20, 0.00),
                   "Raviart-Thomas":           (0.90, 0.60, 0.00)}
 
-def plot(element):
+def plot(element, rotate=True):
     "Plot finite element."
 
     # Check if Soya3D has been imported
@@ -53,9 +53,9 @@ def plot(element):
     dofs, num_moments = create_dof_models(element)
 
     # Render plot window
-    render(element, [cell] + dofs, num_moments, is3d)
+    render(element, [cell] + dofs, num_moments, is3d, rotate)
 
-def render(element, models, num_moments, is3d=True):
+def render(element, models, num_moments, is3d, rotate):
     "Render given list of models."
 
     # Note that we view from the positive z-axis, and not from the
@@ -80,7 +80,7 @@ def render(element, models, num_moments, is3d=True):
     #label.set_xyz(1.0, 1.0, 1.0)
     #label.set_color((0.0, 0.0, 0.0, 1.0))
 
-    # Define rotation around y-axis
+    # Define rotation
     if is3d:
         class RotatingBody(soya.Body):
             def advance_time(self, proportion):
@@ -90,9 +90,15 @@ def render(element, models, num_moments, is3d=True):
             def advance_time(self, proportion):
                 self.rotate_z(2.0 * proportion)
 
+    # Select type of display, rotating or not
+    if rotate:
+        Body = RotatingBody
+    else:
+        Body = soya.Body
+
     # Add all models
     for model in models:
-        rotating = RotatingBody(scene, model)
+        body = Body(scene, model)
 
     # Set light
     light = soya.Light(scene)
@@ -106,14 +112,25 @@ def render(element, models, num_moments, is3d=True):
     # Set camera
     camera = soya.Camera(scene)
     camera.ortho = 0
-    camera.set_xyz(0.0, 10, 50.0)
     p = camera.position()
     if is3d:
-        camera.fov = 2.1
-        p.set_xyz(0.0, 0.4, 0.0)
+        if rotate:
+            camera.set_xyz(-20, 10, 50.0)
+            camera.fov = 2.1
+            p.set_xyz(0.0, 0.4, 0.0)
+        else:
+            camera.set_xyz(-20, 10, 50.0)
+            camera.fov = 1.4
+            p.set_xyz(0.3, 0.4, 0.5)
     else:
-        camera.fov = 2.6
-        p.set_xyz(0.0, 0.0, 0.0)
+        if rotate:
+            camera.set_xyz(0, 10, 50.0)
+            camera.fov = 2.6
+            p.set_xyz(0.0, 0.0, 0.0)
+        else:
+            camera.set_xyz(0, 10, 50.0)
+            camera.fov = 1.6
+            p.set_xyz(0.5, 0.5, 0.0)
     camera.look_at(p)
     soya.set_root_widget(camera)
 
