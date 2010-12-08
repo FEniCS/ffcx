@@ -22,7 +22,7 @@ element = FiniteElement("Argyris", triangle, 5)
 #element = FiniteElement("Hermite", triangle, None)
 #element = FiniteElement("Hermite", tetrahedron, None)
 
-element = FiniteElement("Lagrange", triangle, 2)
+#element = FiniteElement("Lagrange", triangle, 2)
 #element = FiniteElement("Lagrange", tetrahedron, 5)
 
 #element = FiniteElement("Morley", triangle, None)

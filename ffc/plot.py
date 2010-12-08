@@ -93,10 +93,10 @@ def render(models, is3d=True):
     camera.set_xyz(0.0, 10, 50.0)
     p = camera.position()
     if is3d:
-        camera.fov = 1.9
+        camera.fov = 2.1
         p.set_xyz(0.0, 0.4, 0.0)
     else:
-        camera.fov = 2.5
+        camera.fov = 2.6
         p.set_xyz(0.0, 0.0, 0.0)
     camera.look_at(p)
     soya.set_root_widget(camera)
@@ -289,7 +289,7 @@ def PointEvaluation(x):
     return model
 
 def PointDerivative(x):
-    "Return model for point evaluation at given point."
+    "Return model for evaluation of derivatives at given point."
 
     info("Plotting dof: point derivative at x = %s" % str(x))
 
@@ -308,6 +308,35 @@ def PointDerivative(x):
 
     # Scale and moveand move to coordinate
     sphere.scale(0.1, 0.1, 0.1)
+    p = sphere.position()
+    p.set_xyz(x[0], x[1], x[2])
+    sphere.move(p)
+
+    # Extract model
+    model = scene.to_model()
+
+    return model
+
+def PointSecondDerivative(x):
+    "Return model for evaluation of second derivatives at given point."
+
+    info("Plotting dof: point derivative at x = %s" % str(x))
+
+    # Make sure point is 3D
+    x = to3d(x)
+
+    # Create separate scene (since we will extract a model, not render)
+    scene = soya.World()
+
+    # Define material (color) for the sphere
+    material = soya.Material()
+    material.diffuse = (0.0, 0.0, 0.0, 0.05)
+
+    # Create sphere
+    sphere = Sphere(scene, material=material)
+
+    # Scale and moveand move to coordinate
+    sphere.scale(0.15, 0.15, 0.15)
     p = sphere.position()
     p.set_xyz(x[0], x[1], x[2])
     sphere.move(p)
@@ -403,8 +432,6 @@ def create_dof_models(element):
                    "Hermite": hermite_dofs,
                    "Morley":  morley_dofs}
 
-    unsupported = {}
-
     # Check if element is supported
     family = element.family()
     if not family in unsupported:
@@ -421,8 +448,6 @@ def create_dof_models(element):
     # Iterate over dofs and add models
     models = []
     for (dof_type, L) in dofs:
-
-        print dof_type, L
 
         # Check type of dof
         if dof_type == "PointEval":
@@ -458,6 +483,17 @@ def create_dof_models(element):
 
             # Generate model
             models.append(PointDerivative(x))
+
+        elif dof_type == "PointSecondDeriv":
+
+            # Evaluation of derivatives at point
+            points = L.keys()
+            if not len(points) == 1:
+                error("Strange dof, single point expected.")
+            x = points[0]
+
+            # Generate model
+            models.append(PointSecondDerivative(x))
 
         elif dof_type in directional:
 
@@ -498,16 +534,30 @@ def argyris_dofs(element):
     if not element.degree() == 5:
         error("Unable to plot element, only know how to plot quintic Argyris elements.")
 
-    dofs_2d = [("PointEval",  {(0.0, 0.0): [ (1.0, ()) ]}),
-               ("PointEval",  {(1.0, 0.0): [ (1.0, ()) ]}),
-               ("PointEval",  {(0.0, 1.0): [ (1.0, ()) ]}),
-               ("PointDeriv", {(0.0, 0.0): [ (1.0, ()) ]}), # hack, same dof twice
-               ("PointDeriv", {(0.0, 0.0): [ (1.0, ()) ]}), # hack, same dof twice
-               ("PointDeriv", {(1.0, 0.0): [ (1.0, ()) ]}), # hack, same dof twice
-               ("PointDeriv", {(1.0, 0.0): [ (1.0, ()) ]}), # hack, same dof twice
-               ("PointDeriv", {(0.0, 1.0): [ (1.0, ()) ]}), # hack, same dof twice
-               ("PointDeriv", {(0.0, 1.0): [ (1.0, ()) ]}), # hack, same dof twice
-               ("PointEval",  {(1.0/3, 1.0/3): [ (1.0, ()) ]})]
+    if not element.cell().domain() == "triangle":
+        error("Unable to plot element, only know how to plot Argyris on triangles.")
+
+    return [("PointEval",        {(0.0, 0.0): [ (1.0, ()) ]}),
+            ("PointEval",        {(1.0, 0.0): [ (1.0, ()) ]}),
+            ("PointEval",        {(0.0, 1.0): [ (1.0, ()) ]}),
+            ("PointDeriv",       {(0.0, 0.0): [ (1.0, ()) ]}), # hack, same dof twice
+            ("PointDeriv",       {(0.0, 0.0): [ (1.0, ()) ]}), # hack, same dof twice
+            ("PointDeriv",       {(1.0, 0.0): [ (1.0, ()) ]}), # hack, same dof twice
+            ("PointDeriv",       {(1.0, 0.0): [ (1.0, ()) ]}), # hack, same dof twice
+            ("PointDeriv",       {(0.0, 1.0): [ (1.0, ()) ]}), # hack, same dof twice
+            ("PointDeriv",       {(0.0, 1.0): [ (1.0, ()) ]}), # hack, same dof twice
+            ("PointSecondDeriv", {(0.0, 0.0): [ (1.0, ()) ]}), # hack, same dof three times
+            ("PointSecondDeriv", {(0.0, 0.0): [ (1.0, ()) ]}), # hack, same dof three times
+            ("PointSecondDeriv", {(0.0, 0.0): [ (1.0, ()) ]}), # hack, same dof three times
+            ("PointSecondDeriv", {(1.0, 0.0): [ (1.0, ()) ]}), # hack, same dof three times
+            ("PointSecondDeriv", {(1.0, 0.0): [ (1.0, ()) ]}), # hack, same dof three times
+            ("PointSecondDeriv", {(1.0, 0.0): [ (1.0, ()) ]}), # hack, same dof three times
+            ("PointSecondDeriv", {(0.0, 1.0): [ (1.0, ()) ]}), # hack, same dof three times
+            ("PointSecondDeriv", {(0.0, 1.0): [ (1.0, ()) ]}), # hack, same dof three times
+            ("PointSecondDeriv", {(0.0, 1.0): [ (1.0, ()) ]}), # hack, same dof three times
+            ("PointNormalDeriv", {(0.5, 0.0): [ (0.0, (0,)), (-1.0,  (1,))]}),
+            ("PointNormalDeriv", {(0.5, 0.5): [ (1.0, (0,)), ( 1.0,  (1,))]}),
+            ("PointNormalDeriv", {(0.0, 0.5): [(-1.0, (0,)), ( 0.0,  (1,))]})]
 
 def hermite_dofs(element):
     "Special fix for Hermite elements until Rob fixes in FIAT."
