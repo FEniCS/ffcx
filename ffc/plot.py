@@ -266,7 +266,8 @@ def Arrow(scene, x, n, center=False):
 
     # Center arrow
     if center:
-        x -= 0.5*L*n
+        print "Centering!"
+        x -= 0.5*(L + l)*n
 
     # Create cylinder and cone
     cylinder = Cylinder(scene, x, x + L*n, r)
