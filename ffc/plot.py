@@ -27,6 +27,7 @@ element_colors = {"Argyris":                  (0.45, 0.70, 0.80),
                   "Crouzeix-Raviart":         (1.00, 0.25, 0.25),
                   "Hermite":                  (0.50, 1.00, 0.50),
                   "Lagrange":                 (0.00, 1.00, 0.00),
+                  "Mardal-Tai-Winther":       (1.00, 0.10, 0.90),
                   "Morley":                   (0.40, 0.40, 0.40),
                   "Nedelec 1st kind H(curl)": (0.90, 0.30, 0.00),
                   "Raviart-Thomas":           (0.90, 0.60, 0.00)}
@@ -428,14 +429,15 @@ def create_dof_models(element):
                    "PointFaceTangent":      False}
 
     # Elements not supported fully by FIAT
-    unsupported = {"Argyris": argyris_dofs,
-                   "Hermite": hermite_dofs,
-                   "Morley":  morley_dofs}
+    unsupported = {"Argyris":            argyris_dofs,
+                   "Hermite":            hermite_dofs,
+                   "Mardal-Tai-Winther": mardal_tai_winther_dofs,
+                   "Morley":             morley_dofs}
 
     # Check if element is supported
     family = element.family()
+    print family
     if not family in unsupported:
-
         # Create FIAT element and get dofs
         fiat_element = create_element(element)
         dofs = [(dof.get_type_tag(), dof.get_point_dict()) for dof in fiat_element.dual_basis()]
@@ -599,8 +601,29 @@ def hermite_dofs(element):
     else:
         return dofs_3d
 
+def mardal_tai_winther_dofs(element):
+    "Special fix for Mardal-Tai-Winther elements until Rob fixes in FIAT."
+
+    if not element.cell().domain() == "triangle":
+        error("Unable to plot element, only know how to plot Mardal-Tai-Winther on triangles.")
+
+    return [("PointScaledNormalEval", {(1.0/3, 0.0):     [  (0.0, (0,)), (-1.0, (1,))]}),
+            ("PointScaledNormalEval", {(2.0/3, 0.0):     [  (0.0, (0,)), (-1.0, (1,))]}),
+            ("PointScaledNormalEval", {(2.0/3, 1.0/3.0): [  (1.0, (0,)),  (1.0, (1,))]}),
+            ("PointScaledNormalEval", {(1.0/3, 2.0/3.0): [  (1.0, (0,)),  (1.0, (1,))]}),
+            ("PointScaledNormalEval", {(0.0,   1.0/3.0): [ (-1.0, (0,)),  (0.0, (1,))]}),
+            ("PointScaledNormalEval", {(0.0,   2.0/3.0): [ (-1.0, (0,)),  (0.0, (1,))]}),
+            ("PointEdgeTangent", {(0.5, 0.0): [ (-1.0, (0,)),  (0.0, (1,))]}),
+            ("PointEdgeTangent", {(0.5, 0.5): [ (-1.0, (0,)),  (1.0, (1,))]}),
+            ("PointEdgeTangent", {(0.0, 0.5): [  (0.0, (0,)), (-1.0, (1,))]})]
+
+
 def morley_dofs(element):
     "Special fix for Morley elements until Rob fixes in FIAT."
+
+    if not element.cell().domain() == "triangle":
+        error("Unable to plot element, only know how to plot Morley on triangles.")
+
     return [("PointEval",        {(0.0, 0.0): [ (1.0, ()) ]}),
             ("PointEval",        {(1.0, 0.0): [ (1.0, ()) ]}),
             ("PointEval",        {(0.0, 1.0): [ (1.0, ()) ]}),
