@@ -42,6 +42,6 @@ element = FiniteElement("Brezzi-Douglas-Marini", tetrahedron, 3)
 #element = FiniteElement("Raviart-Thomas", triangle, 3)
 #element = FiniteElement("Raviart-Thomas", tetrahedron, 3)
 
-#plot(element)
+plot(element)
 #plot(element, rotate=False)
-plot("notation")
+#plot("notation")

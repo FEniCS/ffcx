@@ -503,7 +503,7 @@ def IntegralMoment(domain, num_moments):
     info("Plotting dof: integral moment")
 
     # Set position
-    if domain:
+    if domain == "triangle":
         a = 1.0 / (2 + sqrt(2)) # this was a fun exercise
         x = (a, a, 0.0)
     else:
