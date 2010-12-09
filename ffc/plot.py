@@ -88,7 +88,10 @@ def render(models, title, num_moments, is3d, rotate):
     # Create scene
     scene = soya.World()
     scene.atmosphere = soya.Atmosphere()
-    scene.atmosphere.bg_color = (1.0, 1.0, 1.0, 1.0)
+    if title == "Notation":
+        scene.atmosphere.bg_color = (0.0, 1.0, 0.0, 1.0)
+    else:
+        scene.atmosphere.bg_color = (1.0, 1.0, 1.0, 1.0)
 
     # Not used, need to manually handle rotation
     #label = Label3D(scene, text=str(num_moments), size=0.005)
@@ -670,8 +673,8 @@ def create_notation_models():
 
     models = []
 
-    y = 1.34
-    dy = -0.35
+    y = 1.3
+    dy = -0.325
 
     # Create model for evaluation
     models.append(PointEvaluation([0, y]))
@@ -679,9 +682,13 @@ def create_notation_models():
 
     # Create model for derivative evaluation
     models.append(PointDerivative([0, y]))
+    models.append(PointDerivative([0, y]))
+    models.append(PointDerivative([0, y]))
     y += dy
 
     # Create model for second derivative evaluation
+    models.append(PointSecondDerivative([0, y]))
+    models.append(PointSecondDerivative([0, y]))
     models.append(PointSecondDerivative([0, y]))
     y += dy
 
@@ -694,9 +701,9 @@ def create_notation_models():
     y += dy
 
     # Create model for integral moments
+    models.append(IntegralMoment("tetrahedron", 0, [0, y]))
     models.append(IntegralMoment("tetrahedron", 1, [0, y]))
     models.append(IntegralMoment("tetrahedron", 2, [0, y]))
-    models.append(IntegralMoment("tetrahedron", 3, [0, y]))
 
     return models
 
