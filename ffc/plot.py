@@ -5,7 +5,7 @@ __date__ = "2010-12-07"
 __copyright__ = "Copyright (C) 2010 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-12-08
+# Last changed: 2010-12-09
 
 __all__ = ["plot"]
 
@@ -48,16 +48,33 @@ def plot(element, rotate=True):
         warning("Unable to plot element, Soya3D not available (install package python-soya).")
         return
 
-    # Create cell model
-    cell, is3d = create_cell_model(element)
+    # Special case: plot dof notation
+    if element == "notation":
 
-    # Create dof models
-    dofs, num_moments = create_dof_models(element)
+        # Create model for notation
+        notation = create_notation_models()
 
-    # Render plot window
-    render(element, [cell] + dofs, num_moments, is3d, rotate)
+        # Render plot window
+        render(notation, "Notation", 0, True, rotate)
 
-def render(element, models, num_moments, is3d, rotate):
+    else:
+
+        # Create cell model
+        cell, is3d = create_cell_model(element)
+
+        # Create dof models
+        dofs, num_moments = create_dof_models(element)
+
+        # Create title
+        if element.degree() is not None:
+            title = "%s of degree %d on a %s" % (element.family(), element.degree(), element.cell().domain())
+        else:
+            title = "%s on a %s" % (element.family(), element.cell().domain())
+
+        # Render plot window
+        render([cell] + dofs, title, num_moments, is3d, rotate)
+
+def render(models, title, num_moments, is3d, rotate):
     "Render given list of models."
 
     # Note that we view from the positive z-axis, and not from the
@@ -66,10 +83,6 @@ def render(element, models, num_moments, is3d, rotate):
     # the default camera settings in Soya.
 
     # Initialize Soya
-    if element.degree() is not None:
-        title = "%s of degree %d on a %s" % (element.family(), element.degree(), element.cell().domain())
-    else:
-        title = "%s on a %s" % (element.family(), element.cell().domain())
     soya.init(title)
 
     # Create scene
@@ -484,13 +497,13 @@ def DirectionalDerivative(x, n):
 
     return model
 
-def IntegralMoment(element, num_moments):
+def IntegralMoment(domain, num_moments):
     "Return model for integral moment for given element."
 
     info("Plotting dof: integral moment")
 
     # Set position
-    if element.cell().domain() == "triangle":
+    if domain:
         a = 1.0 / (2 + sqrt(2)) # this was a fun exercise
         x = (a, a, 0.0)
     else:
@@ -589,18 +602,6 @@ def create_dof_models(element):
             # Generate model
             models.append(PointEvaluation(x))
 
-        elif dof_type == "PointNormalDeriv":
-
-            # Evaluation of derivatives at point
-            points = L.keys()
-            if not len(points) == 1:
-                error("Strange dof, single point expected.")
-            x = points[0]
-            n = [xx[0] for xx in L[x]]
-
-            # Generate model
-            models.append(DirectionalDerivative(x, n))
-
         elif dof_type == "PointDeriv":
 
             # Evaluation of derivatives at point
@@ -636,10 +637,22 @@ def create_dof_models(element):
             flip, center = directional[dof_type]
             models.append(DirectionalEvaluation(x, n, flip, center))
 
+        elif dof_type == "PointNormalDeriv":
+
+            # Evaluation of derivatives at point
+            points = L.keys()
+            if not len(points) == 1:
+                error("Strange dof, single point expected.")
+            x = points[0]
+            n = [xx[0] for xx in L[x]]
+
+            # Generate model
+            models.append(DirectionalDerivative(x, n))
+
         elif dof_type in ("FrobeniusIntegralMoment", "IntegralMoment", "ComponentPointEval"):
 
             # Generate model
-            models.append(IntegralMoment(element, num_moments))
+            models.append(IntegralMoment(element.cell().domain(), num_moments))
 
             # Count the number of integral moments
             num_moments += 1
@@ -648,6 +661,33 @@ def create_dof_models(element):
             error("Unable to plot dof, unhandled dof type: %s" % str(dof_type))
 
     return models, num_moments
+
+def create_notation_models():
+    "Create Soya 3D models for notation."
+
+    models = []
+
+    # Create model for evaluation
+    models.append(PointEvaluation([0, 1]))
+
+    # Create model for derivative evaluation
+    models.append(PointDerivative([0, 0.7]))
+
+    # Create model for second derivative evaluation
+    models.append(PointSecondDerivative([0, 0.4]))
+
+    # Create model for directional evaluation
+    models.append(DirectionalEvaluation([0, 0.1], [1, 1], False, True))
+
+    # Create model for directional evaluation
+    models.append(DirectionalDerivative([0, -0.2], [1, 1]))
+
+    # Create model for integral moments
+    models.append(IntegralMoment("tetrahedron", 1))
+    models.append(IntegralMoment("tetrahedron", 2))
+    models.append(IntegralMoment("tetrahedron", 3))
+
+    return models
 
 def pointing_outwards(x, n):
     "Check if n is pointing inwards, used for flipping dofs."
