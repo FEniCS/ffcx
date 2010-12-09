@@ -497,18 +497,21 @@ def DirectionalDerivative(x, n):
 
     return model
 
-def IntegralMoment(domain, num_moments):
+def IntegralMoment(domain, num_moments, x=None):
     "Return model for integral moment for given element."
 
     info("Plotting dof: integral moment")
 
     # Set position
-    if domain == "triangle":
+    if x is None and domain == "triangle":
         a = 1.0 / (2 + sqrt(2)) # this was a fun exercise
         x = (a, a, 0.0)
-    else:
+    elif x is None:
         a = 1.0 / (3 + sqrt(3)) # so was this
         x = (a, a, a)
+
+    # Make sure point is 3D
+    x = to3d(x)
 
     # Fancy scaling of radius and color
     r = 1.0 / (num_moments + 5)
@@ -667,25 +670,33 @@ def create_notation_models():
 
     models = []
 
+    y = 1.34
+    dy = -0.35
+
     # Create model for evaluation
-    models.append(PointEvaluation([0, 1]))
+    models.append(PointEvaluation([0, y]))
+    y += dy
 
     # Create model for derivative evaluation
-    models.append(PointDerivative([0, 0.7]))
+    models.append(PointDerivative([0, y]))
+    y += dy
 
     # Create model for second derivative evaluation
-    models.append(PointSecondDerivative([0, 0.4]))
+    models.append(PointSecondDerivative([0, y]))
+    y += dy
 
     # Create model for directional evaluation
-    models.append(DirectionalEvaluation([0, 0.1], [1, 1], False, True))
+    models.append(DirectionalEvaluation([0, y], [1, 1], False, True))
+    y += dy
 
     # Create model for directional evaluation
-    models.append(DirectionalDerivative([0, -0.2], [1, 1]))
+    models.append(DirectionalDerivative([0, y], [1, 1]))
+    y += dy
 
     # Create model for integral moments
-    models.append(IntegralMoment("tetrahedron", 1))
-    models.append(IntegralMoment("tetrahedron", 2))
-    models.append(IntegralMoment("tetrahedron", 3))
+    models.append(IntegralMoment("tetrahedron", 1, [0, y]))
+    models.append(IntegralMoment("tetrahedron", 2, [0, y]))
+    models.append(IntegralMoment("tetrahedron", 3, [0, y]))
 
     return models
 
