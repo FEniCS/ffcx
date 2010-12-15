@@ -5,7 +5,7 @@ __date__ = "2010-12-07"
 __copyright__ = "Copyright (C) 2010 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-12-10
+# Last changed: 2010-12-15
 
 __all__ = ["plot"]
 
@@ -734,24 +734,18 @@ def arnold_winther_dofs(element):
             ("PointEval",        {(0.0, 1.0): [ (1.0, ()) ]}), # hack, same dof three times
             ("PointEval",        {(0.0, 1.0): [ (1.0, ()) ]}), # hack, same dof three times
             ("PointEval",        {(0.0, 1.0): [ (1.0, ()) ]}), # hack, same dof three times
-            ("PointScaledNormalEval", {(1.0/7, 0.0):     [  (0.0, (0,)), (-1.0, (1,))]}),
-            ("PointScaledNormalEval", {(2.0/7, 0.0):     [  (0.0, (0,)), (-1.0, (1,))]}),
-            ("PointScaledNormalEval", {(3.0/7, 0.0):     [  (0.0, (0,)), (-1.0, (1,))]}),
-            ("PointScaledNormalEval", {(4.0/7, 0.0):     [  (0.0, (0,)), (-1.0, (1,))]}),
-            ("PointScaledNormalEval", {(5.0/7, 0.0):     [  (0.0, (0,)), (-1.0, (1,))]}),
-            ("PointScaledNormalEval", {(6.0/7, 0.0):     [  (0.0, (0,)), (-1.0, (1,))]}),
-            ("PointScaledNormalEval", {(6.0/7, 1.0/7.0): [  (1.0, (0,)),  (1.0, (1,))]}),
-            ("PointScaledNormalEval", {(5.0/7, 2.0/7.0): [  (1.0, (0,)),  (1.0, (1,))]}),
-            ("PointScaledNormalEval", {(4.0/7, 3.0/7.0): [  (1.0, (0,)),  (1.0, (1,))]}),
-            ("PointScaledNormalEval", {(3.0/7, 4.0/7.0): [  (1.0, (0,)),  (1.0, (1,))]}),
-            ("PointScaledNormalEval", {(2.0/7, 5.0/7.0): [  (1.0, (0,)),  (1.0, (1,))]}),
-            ("PointScaledNormalEval", {(1.0/7, 6.0/7.0): [  (1.0, (0,)),  (1.0, (1,))]}),
-            ("PointScaledNormalEval", {(0.0,   1.0/7.0): [ (-1.0, (0,)),  (0.0, (1,))]}),
-            ("PointScaledNormalEval", {(0.0,   2.0/7.0): [ (-1.0, (0,)),  (0.0, (1,))]}),
-            ("PointScaledNormalEval", {(0.0,   3.0/7.0): [ (-1.0, (0,)),  (0.0, (1,))]}),
-            ("PointScaledNormalEval", {(0.0,   4.0/7.0): [ (-1.0, (0,)),  (0.0, (1,))]}),
-            ("PointScaledNormalEval", {(0.0,   5.0/7.0): [ (-1.0, (0,)),  (0.0, (1,))]}),
-            ("PointScaledNormalEval", {(0.0,   6.0/7.0): [ (-1.0, (0,)),  (0.0, (1,))]}),
+            ("PointScaledNormalEval", {(1.0/5, 0.0):     [  (0.0, (0,)), (-1.0, (1,))]}),
+            ("PointScaledNormalEval", {(2.0/5, 0.0):     [  (0.0, (0,)), (-1.0, (1,))]}),
+            ("PointScaledNormalEval", {(3.0/5, 0.0):     [  (0.0, (0,)), (-1.0, (1,))]}),
+            ("PointScaledNormalEval", {(4.0/5, 0.0):     [  (0.0, (0,)), (-1.0, (1,))]}),
+            ("PointScaledNormalEval", {(4.0/5, 1.0/5.0): [  (1.0, (0,)),  (1.0, (1,))]}),
+            ("PointScaledNormalEval", {(3.0/5, 2.0/5.0): [  (1.0, (0,)),  (1.0, (1,))]}),
+            ("PointScaledNormalEval", {(2.0/5, 3.0/5.0): [  (1.0, (0,)),  (1.0, (1,))]}),
+            ("PointScaledNormalEval", {(1.0/5, 4.0/5.0): [  (1.0, (0,)),  (1.0, (1,))]}),
+            ("PointScaledNormalEval", {(0.0,   1.0/5.0): [ (-1.0, (0,)),  (0.0, (1,))]}),
+            ("PointScaledNormalEval", {(0.0,   2.0/5.0): [ (-1.0, (0,)),  (0.0, (1,))]}),
+            ("PointScaledNormalEval", {(0.0,   3.0/5.0): [ (-1.0, (0,)),  (0.0, (1,))]}),
+            ("PointScaledNormalEval", {(0.0,   4.0/5.0): [ (-1.0, (0,)),  (0.0, (1,))]}),
             ("IntegralMoment", None),
             ("IntegralMoment", None),
             ("IntegralMoment", None)]
