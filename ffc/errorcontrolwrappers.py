@@ -2,7 +2,7 @@ __author__ = "Marie E. Rognes (meg@simula.no)"
 __copyright__ = "Copyright (C) 2010 " + __author__
 __license__  = "GNU LGPL version 3 or any later version"
 
-# Last changed: 2010-12-06
+# Last changed: 2011-01-03
 
 __all__ = ["generate_ec_generator_code", "generate_ec_typedefs",
            "write_code"]
@@ -126,13 +126,14 @@ update_ec_base = """
 
     // Update error control
     _ec.reset(new dolfin::ErrorControl(a_star, L_star, residual,
-                                       a_R_T, L_R_T, a_R_dT, L_R_dT, eta_T));
+                                       a_R_T, L_R_T, a_R_dT, L_R_dT, eta_T,
+                                       %(linear)s));
 
   }
 
 """
 
-def generate_wrapper_maps():
+def generate_wrapper_maps(linear):
 
     def attach(tos, froms):
         if isinstance(froms, tuple):
@@ -158,14 +159,15 @@ def generate_wrapper_maps():
             "attach_L_star":    attach("L_star", "(*this)"),
             "attach_residual":  attach(("residual",)*2, ("a", "L")),
             "attach_L_R_T":     attach(("L_R_T",)*2, ("a", "L")),
-            "attach_L_R_dT":    attach(("L_R_dT",)*2, ("a", "L"))
+            "attach_L_R_dT":    attach(("L_R_dT",)*2, ("a", "L")),
+            "linear":           "true" if linear else "false"
             }
 
     return maps
 
-def generate_ec_generator_code():
+def generate_ec_generator_code(linear):
 
-    maps = generate_wrapper_maps()
+    maps = generate_wrapper_maps(linear)
     code = update_ec_base % maps
     return code
 

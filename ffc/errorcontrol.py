@@ -2,7 +2,7 @@ __author__ = "Marie E. Rognes (meg@simula.no)"
 __copyright__ = "Copyright (C) 2010 " + __author__
 __license__  = "GNU LGPL version 3 or any later version"
 
-# Last changed: 2010-12-06
+# Last changed: 2011-01-03
 
 from ufl import Coefficient
 from ufl.algorithms import preprocess
@@ -120,12 +120,12 @@ def generate_error_control(forms, object_names, module=None):
 
     ec_forms = (a_star, L_star, a_R_T, L_R_T, a_R_dT, L_R_dT, eta_h, eta_T)
 
-    return (ec_forms, ec_names, forms)
+    return (ec_forms, ec_names, forms, not nonlinear)
 
 def compile_with_error_control(forms, object_names, prefix, parameters):
 
     # Generate additional forms (and names) for error control
-    ec_forms, ec_names, forms = generate_error_control(forms, object_names)
+    ec_forms, ec_names, forms, linear = generate_error_control(forms, object_names)
 
     # Check that there are no conflicts between user defined and
     # generated names
@@ -139,7 +139,7 @@ def compile_with_error_control(forms, object_names, prefix, parameters):
     compile_form(ec_forms + forms, object_names, prefix, parameters)
 
     # Generate additional DOLFIN wrapper for goal form
-    goal_code = generate_ec_generator_code()
+    goal_code = generate_ec_generator_code(linear)
 
     # Generate additional typedefs
     typedefs = generate_ec_typedefs(len(ec_forms))
