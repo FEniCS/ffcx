@@ -165,26 +165,11 @@ const unsigned int v1 = face_vertices[facet%(restriction)s][1];
 const unsigned int v2 = face_vertices[facet%(restriction)s][2];
 
 // Compute scale factor (area of face scaled by area of reference triangle)
-const double a0 = (x%(restriction)s[v0][1]*x%(restriction)s[v1][2]
-                 + x%(restriction)s[v0][2]*x%(restriction)s[v2][1]
-                 + x%(restriction)s[v1][1]*x%(restriction)s[v2][2])
-                - (x%(restriction)s[v2][1]*x%(restriction)s[v1][2]
-                 + x%(restriction)s[v2][2]*x%(restriction)s[v0][1]
-                 + x%(restriction)s[v1][1]*x%(restriction)s[v0][2]);
+const double a0 = (x%(restriction)s[v0][1]*x%(restriction)s[v1][2] + x%(restriction)s[v0][2]*x%(restriction)s[v2][1] + x%(restriction)s[v1][1]*x%(restriction)s[v2][2]) - (x%(restriction)s[v2][1]*x%(restriction)s[v1][2] + x%(restriction)s[v2][2]*x%(restriction)s[v0][1] + x%(restriction)s[v1][1]*x%(restriction)s[v0][2]);
 
-const double a1 = (x%(restriction)s[v0][2]*x%(restriction)s[v1][0]
-                 + x%(restriction)s[v0][0]*x%(restriction)s[v2][2]
-                 + x%(restriction)s[v1][2]*x%(restriction)s[v2][0])
-                - (x%(restriction)s[v2][2]*x%(restriction)s[v1][0]
-                 + x%(restriction)s[v2][0]*x%(restriction)s[v0][2]
-                + x%(restriction)s[v1][2]*x%(restriction)s[v0][0]);
+const double a1 = (x%(restriction)s[v0][2]*x%(restriction)s[v1][0] + x%(restriction)s[v0][0]*x%(restriction)s[v2][2] + x%(restriction)s[v1][2]*x%(restriction)s[v2][0]) - (x%(restriction)s[v2][2]*x%(restriction)s[v1][0] + x%(restriction)s[v2][0]*x%(restriction)s[v0][2] + x%(restriction)s[v1][2]*x%(restriction)s[v0][0]);
 
-const double a2 = (x%(restriction)s[v0][0]*x%(restriction)s[v1][1]
-                 + x%(restriction)s[v0][1]*x%(restriction)s[v2][0]
-                 + x%(restriction)s[v1][0]*x%(restriction)s[v2][1])
-                - (x%(restriction)s[v2][0]*x%(restriction)s[v1][1]
-                 + x%(restriction)s[v2][1]*x%(restriction)s[v0][0]
-                 + x%(restriction)s[v1][0]*x%(restriction)s[v0][1]);
+const double a2 = (x%(restriction)s[v0][0]*x%(restriction)s[v1][1] + x%(restriction)s[v0][1]*x%(restriction)s[v2][0] + x%(restriction)s[v1][0]*x%(restriction)s[v2][1]) - (x%(restriction)s[v2][0]*x%(restriction)s[v1][1] + x%(restriction)s[v2][1]*x%(restriction)s[v0][0] + x%(restriction)s[v1][0]*x%(restriction)s[v0][1]);
 
 const double det = std::sqrt(a0*a0 + a1*a1 + a2*a2);"""
 

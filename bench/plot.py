@@ -16,7 +16,11 @@ except:
 for line in output.split("\n"):
     if not "," in line: continue
     test_case, test_option, timing = [w.strip() for w in line.split(",")]
-    form, degree = test_case.split("_")
+    try:
+        form, degree = test_case.split("_")
+    except:
+        form, dim, degree = test_case.split("_")
+        form = form + "_" + dim
     if not form in results:
         results[form] = {}
     if not test_option in results[form]:
@@ -37,6 +41,7 @@ for (i, form) in enumerate(forms):
         q, t = results[form][test_option]
         semilogy(q, t, bullets[j])
         hold(True)
+    a = list(axis()); a[-1] = 50.0*a[-1]; axis(a);
     legend(test_options, loc="upper left")
     grid(True)
     xlabel('degree')
@@ -51,6 +56,7 @@ for (i, form) in enumerate(forms):
         t = [t0[k] / t[k] for k in range(len(t))]
         semilogy(q, t, bullets[j])
         hold(True)
+    a = list(axis()); a[-1] = 50.0*a[-1]; axis(a);
     legend(test_options, loc="upper left")
     grid(True)
     xlabel('degree')
