@@ -4,6 +4,8 @@ __license__  = "GNU LGPL version 3 or any later version"
 
 # Last changed: 2011-01-08
 
+# Note: This should be moved in with the other dolfin wrappers.
+
 __all__ = ["generate_ec_generator_code", "generate_ec_typedefs",
            "write_code"]
 
