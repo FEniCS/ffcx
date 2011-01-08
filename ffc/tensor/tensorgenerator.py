@@ -9,7 +9,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Marie Rognes (meg@math.uio.no), 2007
 # Modified by Garth N. Wells, 2009
 # Modified by Mehdi Nikbakht, 2010
-# Last changed: 2010-06-15
+# Last changed: 2011-01-08
 
 # FFC modules
 from ffc.log import error
@@ -297,6 +297,8 @@ def _generate_geometry_tensors(terms, j_set, g_set):
     # Iterate over all terms
     lines = []
     offset = 0
+    det_used = False
+
     for (i, term) in enumerate(terms):
 
         # Get secondary indices
@@ -329,9 +331,11 @@ def _generate_geometry_tensors(terms, j_set, g_set):
 
         # Add to offset
         offset += len(GKs)
+        det_used = True
 
     # Add scale factor
-    j_set.add(format_scale_factor)
+    if det_used:
+        j_set.add(format_scale_factor) # meg says: If all values vanish, det is not used.
 
     return "\n".join(lines)
 
