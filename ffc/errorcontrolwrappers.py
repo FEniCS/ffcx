@@ -2,7 +2,7 @@ __author__ = "Marie E. Rognes (meg@simula.no)"
 __copyright__ = "Copyright (C) 2010 " + __author__
 __license__  = "GNU LGPL version 3 or any later version"
 
-# Last changed: 2011-01-03
+# Last changed: 2011-01-08
 
 __all__ = ["generate_ec_generator_code", "generate_ec_typedefs",
            "write_code"]
@@ -24,7 +24,7 @@ attach_snippet_base = """
         continue;
 
       try {
-        const uint coefficient_number = %(to)s->coefficient_number(name);
+        coefficient_number = %(to)s->coefficient_number(name);
       } catch (...) {
         std::cout << "Attaching coefficient named: " << name << " to %(to)s";
         std::cout << " failed! But this might be expected." << std::endl;
@@ -72,6 +72,7 @@ update_ec_base = """
     L_star.reset(new %(L_star)s(V));
 
     // Attach coefficients from a to a_star and from M to L_star
+    uint coefficient_number = 0;
     %(attach_a_star)s
     %(attach_L_star)s
 
