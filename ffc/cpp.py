@@ -7,7 +7,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian B. Oelgaard 2010
 # Modified by Marie E. Rognes 2010
-# Last changed: 2010-03-11
+# Last changed: 2011-01-08
 
 # Python modules
 import re, numpy, platform
@@ -639,7 +639,9 @@ types = [["double"],
          ["const", "int"],
          ["unsigned", "int"],
          ["bool"],
-         ["const", "bool"]]
+         ["const", "bool"],
+         ["static", "unsigned", "int"],
+         ["const", "unsigned", "int"]]
 
 # Special characters and delimiters
 special_characters = ["+", "-", "*", "/", "=", ".", " ", ";", "(", ")", "\\", "{", "}", "[","]"]
@@ -669,6 +671,7 @@ def remove_unused(code, used_set=set()):
 
         # Split words
         words = [word for word in line.split(" ") if not word == ""]
+
         # Remember line where variable is declared
         for type in [type for type in types if " ".join(type) in " ".join(words)]: # Fewer matches than line below.
         # for type in [type for type in types if len(words) > len(type)]:
