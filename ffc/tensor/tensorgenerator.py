@@ -325,13 +325,13 @@ def _generate_geometry_tensors(terms, j_set, g_set):
             # Multiply with determinant factor
             det = GK.determinant
             value = _multiply_value_by_det(value, GK.determinant, len(values) > 1, j_set)
+            det_used = True
 
             # Add code
             lines.append(format_declaration(name, value))
 
         # Add to offset
         offset += len(GKs)
-        det_used = True
 
     # Add scale factor
     if det_used:
