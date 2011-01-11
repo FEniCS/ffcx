@@ -11,7 +11,7 @@ __date__ = "2009-12-22"
 __copyright__ = "Copyright (C) 2009 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-02-09
+# Last changed: 2011-01-11
 
 # FFC modules
 from ffc.log import info, begin, end
@@ -35,13 +35,13 @@ def optimize_ir(ir, parameters):
     ir_elements, ir_dofmaps, ir_integrals, ir_forms = ir
 
     # Iterate over integrals
-    oir_integrals = [_optimize_integral_ir(ir) for ir in ir_integrals]
+    oir_integrals = [_optimize_integral_ir(ir, parameters) for ir in ir_integrals]
 
     end()
 
     return ir_elements, ir_dofmaps, oir_integrals, ir_forms
 
-def _optimize_integral_ir(ir):
+def _optimize_integral_ir(ir, parameters):
     "Compute optimized intermediate represention of integral."
 
     # Select representation
@@ -53,6 +53,6 @@ def _optimize_integral_ir(ir):
         error("Unknown representation: %s" % ir["representation"])
 
     # Optimize representation
-    oir = r.optimize_integral_ir(ir)
+    oir = r.optimize_integral_ir(ir, parameters)
 
     return ir

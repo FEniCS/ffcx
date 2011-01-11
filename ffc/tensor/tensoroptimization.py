@@ -17,7 +17,7 @@ try:
 except:
     ferari = None
 
-def optimize_integral_ir(ir):
+def optimize_integral_ir(ir, parameters):
     """
     Compute optimized intermediate representation of integral.
 
@@ -28,6 +28,11 @@ def optimize_integral_ir(ir):
     # Skip optimization if FErari is not installed
     if ferari is None:
         warning("FErari not installed, skipping tensor optimizations")
+        return ir
+
+    # Skip optimization if requested
+    if "no_ferari" in parameters:
+        warning("Skipping FErari optimizations as requested.")
         return ir
 
     # Extract data from intermediate representation

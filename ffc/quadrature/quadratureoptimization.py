@@ -3,7 +3,7 @@ __date__ = "2010-02-08"
 __copyright__ = "Copyright (C) 2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-05-04
+# Last changed: 2011-01-11
 
 # FFC modules
 from ffc.log import info
@@ -11,8 +11,11 @@ from ffc.cpp import format
 from ffc.quadrature.symbolics import optimise_code, BASIS, IP, GEO, CONST
 from ffc.quadrature.symbolics import create_product, create_sum, create_symbol, create_fraction
 
-def optimize_integral_ir(ir):
+def optimize_integral_ir(ir, parameters):
     "Compute optimized intermediate representation of integral."
+
+    # FIXME: input argument "parameters" has been added to optimize_integral_ir
+    # FIXME: which shadows a local parameter
 
     parameters = ir["optimise_parameters"]
     if parameters["optimisation"]:
