@@ -2,7 +2,7 @@ __author__ = "Marie E. Rognes (meg@simula.no)"
 __copyright__ = "Copyright (C) 2010 " + __author__
 __license__  = "GNU LGPL version 3 or any later version"
 
-# Last changed: 2011-01-08
+# Last changed: 2011-01-11
 
 # Note: This should be moved in with the other dolfin wrappers.
 
@@ -74,7 +74,7 @@ update_ec_base = """
     L_star.reset(new %(L_star)s(V));
 
     // Attach coefficients from a to a_star and from M to L_star
-    uint coefficient_number = 0;
+    dolfin::uint coefficient_number = 0;
     %(attach_a_star)s
     %(attach_L_star)s
 
