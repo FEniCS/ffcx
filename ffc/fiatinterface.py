@@ -5,7 +5,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Garth N. Wells, 2009.
 # Modified by Marie Rognes, 2009-2010.
-# Last changed: 2010-12-08
+# Last changed: 2011-01-13
 
 # Python modules
 from numpy import array
@@ -76,6 +76,7 @@ def _create_fiat_element(ufl_element):
     "Create FIAT element corresponding to given finite element."
 
     family = ufl_element.family()
+    degree = ufl_element.degree()
 
     # Handle the space of the constant
     if family == "Real":
@@ -91,7 +92,7 @@ def _create_fiat_element(ufl_element):
 
     # Handle Bubble element as RestrictedElement of P_{k} to interior
     if family == "Bubble":
-        V = FIAT.supported_elements["Lagrange"](cell, ufl_element.degree())
+        V = FIAT.supported_elements["Lagrange"](cell, degree)
         dim = ufl_element.cell().geometric_dimension()
         return RestrictedElement(V, _indices(V, "interior", dim), None)
 
@@ -101,7 +102,6 @@ def _create_fiat_element(ufl_element):
 
     # Create FIAT finite element
     ElementClass = FIAT.supported_elements[family]
-    degree = ufl_element.degree()
     if degree is None:
         element = ElementClass(cell)
     else:

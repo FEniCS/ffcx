@@ -14,7 +14,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Marie E. Rognes, 2010
 
-# Last changed: 2010-10-25
+# Last changed: 2011-01-13
 
 # UFL modules
 from ufl.common import istr, tstr
@@ -146,6 +146,9 @@ def _adjust_elements(form_data):
     common_degree = max([element.degree() for element in form_data.sub_elements])
     if common_degree is None:
         common_degree = default_quadrature_degree
+
+    # Degree must be at least 1 (to work with Lagrange elements)
+    common_degree = max(1, common_degree)
 
     # Set cell and degree if missing
     for element in form_data.sub_elements:

@@ -1,3 +1,4 @@
+ - Set minimal degree to 1 in automatic degree selection for expressions
  - Add command-line option -f no_ferari
  - Add support for plotting of elements
  - Add utility function compute_tensor_representation
