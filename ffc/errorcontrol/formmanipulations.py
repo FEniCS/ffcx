@@ -2,50 +2,14 @@ __author__ = "Marie E. Rognes (meg@simula.no)"
 __copyright__ = "Copyright (C) 2010 " + __author__
 __license__  = "GNU LGPL version 3 or any later version"
 
-# Last changed: 2010-12-06
+# Last changed: 2011-01-17
 
-from ufl import FiniteElement, MixedElement, Coefficient, TrialFunction, TestFunction
 from ufl import adjoint, action, replace, inner, dx, ds, dS, avg, derivative
-from ufl.algorithms.analysis import extract_elements, extract_unique_elements, extract_arguments
+from ufl.algorithms.analysis import extract_arguments
 
-def change_regularity(element, family):
-    """
-    For a given function space, return the corresponding space with
-    the finite elements specified by 'family'. Possible families
-    are the families supported by the form compiler
-    """
-
-    # MR: This belongs in UFL
-    n = element.num_sub_elements()
-    if n > 0:
-        subs = element.sub_elements()
-        return MixedElement([change_regularity(subs[i], family)
-                             for i in range(n)])
-    shape = element.value_shape()
-    if not shape:
-        return FiniteElement(family, element.cell(), element.degree())
-
-    return MixedElement([FiniteElement(family, element.cell(), element.degree())
-                               for i in range(shape[0])])
-
-def tear(V):
-    "For a given space, return the corresponding discontinuous space."
-    W = change_regularity(V, "DG")
-    return W
-
-def increase_order(element):
-    "Return element of same family, but a polynomial degree higher."
-
-    # MR: This belongs in UFL.
-    n = element.num_sub_elements()
-    if n > 0:
-        subs = element.sub_elements()
-        return MixedElement([increase_order(subs[i]) for i in range(n)])
-
-    if element.family() == "Real":
-        return element
-
-    return FiniteElement(element.family(), element.cell(), element.degree()+1)
+__all__ = ["generate_dual_forms", "generate_weak_residual",
+           "generate_cell_residual", "generate_facet_residual",
+           "generate_error_indicator"]
 
 def generate_dual_forms(forms, unknown, module):
     """
