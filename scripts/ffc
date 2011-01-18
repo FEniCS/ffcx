@@ -13,7 +13,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Ola Skavhaug, 2006.
 # Modified by Dag Lindbo, 2008.
 # Modified by Kristian B. Oelgaard 2010.
-# Last changed: 2010-09-08
+# Last changed: 2011-01-18
 
 # Python modules.
 import sys
@@ -95,8 +95,6 @@ def main(argv):
         return 1
 
     # Parse command-line parameters
-    with_error_control = False
-
     for opt, arg in opts:
         if opt in ("-v", "--verbose"):
              parameters["log_level"] = DEBUG
@@ -123,8 +121,7 @@ def main(argv):
         elif opt in ("-o", "--output-directory"):
             parameters["output_dir"] = arg
         elif opt in ("-e", "--error-control"):
-            # Generate error control code:
-            with_error_control = True
+            parameters["error_control"] = True
 
     # Set log_level again in case -d or -s was used on the command line
     set_level(parameters["log_level"])
@@ -150,7 +147,7 @@ def main(argv):
             return 1
 
         # Do additional stuff if in error-control mode
-        if with_error_control:
+        if parameters["error_control"]:
             return compile_with_error_control(ufd.forms, ufd.object_names,
                                               prefix, parameters)
 

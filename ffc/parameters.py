@@ -5,7 +5,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 from log import INFO
 
-# Last changed: 2010-03-11
+# Last changed: 2011-01-18
 
 FFC_PARAMETERS = {
   "format":                         "ufc",   # code generation format
@@ -33,7 +33,8 @@ FFC_PARAMETERS = {
   "optimize":                       False,   # optimise the code generation
   "log_level":                      INFO,    # log level, displaying only
                                              # messages with level >= log_level
-  "log_prefix":                     ""       # log prefix
+  "log_prefix":                     "",      # log prefix
+  "error_control":                  False    # with error control
 }
 
 def default_parameters():
