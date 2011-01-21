@@ -5,7 +5,7 @@ __date__ = "2009-07-12"
 __copyright__ = "Copyright (C) 2009-2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-05-04
+# Last changed: 2011-01-21
 
 # FFC modules
 from ffc.log import debug, error
@@ -205,7 +205,7 @@ def optimise_code(expr, ip_consts, geo_consts, trans_set):
 
         ip_vals = []
         # Loop ip expressions.
-        for ip in ip_expressions:
+        for ip in sorted(ip_expressions):
             ip_dec, geo = ip
 #            debug("\nip_dec: " + str(ip_dec))
 #            debug("\ngeo: " + str(geo))
