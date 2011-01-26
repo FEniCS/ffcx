@@ -59,7 +59,7 @@ def _encapsulate(prefix, forms, elements, element_map, parameters):
 
     # Special case: single element
     if num_forms == 0:
-        capsules = encapsule_element(prefix, elements)
+        capsules = _encapsule_element(prefix, elements)
 
     # Special case: with error control
     elif (parameters["error_control"] and num_forms == 11):
