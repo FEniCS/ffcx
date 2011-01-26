@@ -2,7 +2,7 @@ __author__ = "Marie E. Rognes (meg@simula.no)"
 __copyright__ = "Copyright (C) 2010 " + __author__
 __license__  = "GNU LGPL version 3 or any later version"
 
-# Last changed: 2011-01-17
+# Last changed: 2011-01-24
 
 from ufl import Coefficient, action, FiniteElement, TestFunction, derivative
 from ufl.algorithms.analysis import extract_arguments
@@ -12,7 +12,6 @@ from ffc.log import info, error
 from ffc.compiler import compile_form
 
 from ffc.errorcontrol.formmanipulations import *
-from ffc.errorcontrol.errorcontrolwrappers import *
 
 __all__ = ["compile_form_with_error_control"]
 
@@ -143,14 +142,5 @@ def compile_with_error_control(forms, object_names, prefix, parameters):
 
     # Compile error control and input (pde + goal) forms as normal
     compile_form(ec_forms + forms, object_names, prefix, parameters)
-
-    # Generate additional DOLFIN wrapper for goal form
-    goal_code = generate_ec_generator_code(linear)
-
-    # Generate additional typedefs
-    typedefs = generate_ec_typedefs(len(ec_forms))
-
-    # Write code
-    write_code(prefix, "dolfin::GoalFunctional", goal_code, typedefs)
 
     return 0

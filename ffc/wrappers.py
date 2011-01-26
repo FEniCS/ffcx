@@ -3,7 +3,7 @@ __date__ = "2010-01-18"
 __copyright__ = "Copyright (C) 2010 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-02-10
+# Last changed: 2011-01-26
 
 # Python modules
 from itertools import chain
@@ -13,64 +13,96 @@ from ffc.log import begin, end, info, error
 from ffc.utils import all_equal
 from ffc.cpp import format
 
-# FIXME: This module needs some cleaning up. We should put all
-# FIXME: the complexity in the dolfin_utils module and also clean
-# FIXME: up and simplify that module
+__all__ = ["generate_wrapper_code"]
+
+# FIXME: More clean-ups needed here.
 
 def generate_wrapper_code(analysis, prefix, parameters):
     "Generate code for additional wrappers."
 
     # Skip if wrappers not requested
-    if not parameters["format"] == "dolfin": return None
+    if not parameters["format"] == "dolfin":
+        return None
 
-    # Try importing DOLFIN wrapper utils
+    # Check that we can import wrappers from dolfin
     try:
-        from dolfin_utils.wrappers import generate_dolfin_code, UFCFormNames, UFCElementName
+        import dolfin_utils.wrappers
     except:
-        error("Unable to generate DOLFIN wrappers, missing module dolfin_utils.wrappers.")
+        error("Unable to generate new DOLFIN wrappers, missing module dolfin_utils.wrappers.")
+
+    # Return dolfin wrapper
+    return _generate_dolfin_wrapper(analysis, prefix, parameters)
+
+def _generate_dolfin_wrapper(analysis, prefix, parameters):
 
     begin("Compiler stage 4.1: Generating additional wrapper code")
 
     # Extract data from analysis
     forms, elements, element_map = analysis
 
-    # Special case: single element
-    if len(forms) == 0:
-        element_number = len(elements) - 1
-        element_name = UFCElementName("0",
-                                      [format["classname finite_element"](prefix, element_number)],
-                                      [format["classname dof_map"](prefix, element_number)])
-        return generate_dolfin_code(prefix, "", element_name, None, False) + "\n\n"
-
-    # Generate name data for each form
-    form_names = []
-    for (i, form) in enumerate(forms):
-        element_numbers = [element_map[e] for e in form.form_data().elements]
-        form_names.append(UFCFormNames("%d" % i,
-                                       form.form_data().coefficient_names,
-                                       format["classname form"](prefix, i),
-                                       [format["classname finite_element"](prefix, j) for j in element_numbers],
-                                       [format["classname dof_map"](prefix, j) for j in element_numbers]))
-
-    # Extract elements for all test and trial spaces
-    elements = []
-    for form in forms:
-        elements += form.form_data().elements[:form.form_data().rank]
-
-    # Check if all elements are equal
-    if all_equal(elements):
-        common_space = (0, 0)
-    else:
-        common_space = None
-
-    # Special hack to handle functionals
-    if max([form.form_data().rank for form in forms]) == 0:
-        common_space = None
+    # Encapsulate data
+    (capsules, common_space) = _encapsulate(prefix, forms, elements,
+                                           element_map, parameters)
 
     # Generate code
     info("Generating wrapper code for DOLFIN")
-    code = generate_dolfin_code(prefix, "", form_names, common_space, False) + "\n\n"
-
+    from dolfin_utils.wrappers import generate_dolfin_code
+    code = generate_dolfin_code(prefix, "", capsules, common_space) + "\n\n"
     end()
 
     return code
+
+def _encapsulate(prefix, forms, elements, element_map, parameters):
+
+    num_forms = len(forms)
+    common_space = False
+
+    # Special case: single element
+    if num_forms == 0:
+        capsules = encapsule_element(prefix, elements)
+
+    # Special case: with error control
+    elif (parameters["error_control"] and num_forms == 11):
+        capsules = [_encapsule_form(prefix, form, i, element_map) for
+                    (i, form) in enumerate(forms[:num_forms-1])]
+        capsules += [_encapsule_form(prefix, forms[-1], num_forms-1,
+                                     element_map, "GoalFunctional")]
+
+    # Otherwise: generate standard capsules for each form
+    else:
+        capsules = [_encapsule_form(prefix, form, i, element_map) for
+                    (i, form) in enumerate(forms)]
+
+        # Check if all elements are equal
+        elements = []
+        for form in forms:
+            elements += form.form_data().elements[:form.form_data().rank]
+        common_space = all_equal(elements)
+
+    return (capsules, common_space)
+
+
+def _encapsule_form(prefix, form, i, element_map, superclassname=None):
+    element_numbers = [element_map[e] for e in form.form_data().elements]
+
+    if superclassname is None:
+        superclassname = "Form"
+
+    from dolfin_utils.wrappers import UFCFormNames
+    form_names = UFCFormNames("%d" % i,
+                              form.form_data().coefficient_names,
+                              format["classname form"](prefix, i),
+                              [format["classname finite_element"](prefix, j)
+                               for j in element_numbers],
+                              [format["classname dof_map"](prefix, j)
+                               for j in element_numbers],
+                              superclassname)
+    return form_names
+
+def _encapsule_element(prefix, elements):
+    element_number = len(elements) - 1
+    args = ("0",
+            [format["classname finite_element"](prefix, element_number)],
+            [format["classname dof_map"](prefix, element_number)])
+    from dolfin_utils.wrappers import UFCElementNames
+    return UFCElementNames(*args)
