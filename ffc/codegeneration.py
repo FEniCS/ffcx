@@ -12,7 +12,7 @@ __copyright__ = "Copyright (C) 2009 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Mehdi Nikbakht, 2010
-# Last changed: 2010-09-04
+# Last changed: 2011-01-27
 
 # FFC modules
 from ffc.log import info, begin, end, debug_code
@@ -75,9 +75,10 @@ def _generate_element_code(ir, prefix, parameters):
     if ir is None: return None
 
     # Prefetch formatting to speedup code generation
-    ret =         format["return"]
-    classname =   format["classname finite_element"]
-    do_nothing =  format["do nothing"]
+    ret        = format["return"]
+    classname  = format["classname finite_element"]
+    do_nothing = format["do nothing"]
+    create     = format["create foo"]
 
     # Codes generated together
     (evaluate_dof_code, evaluate_dofs_code) = evaluate_dof_and_dofs(ir["evaluate_dof"])
@@ -104,6 +105,7 @@ def _generate_element_code(ir, prefix, parameters):
     code["interpolate_vertex_values"] = interpolate_vertex_values(ir["interpolate_vertex_values"])
     code["num_sub_elements"] = ret(ir["num_sub_elements"])
     code["create_sub_element"] = _create_foo(prefix, "finite_element", ir["create_sub_element"])
+    code["create"] = ret(create(code["classname"]))
 
     # Postprocess code
     _postprocess_code(code, parameters)
@@ -117,14 +119,15 @@ def _generate_dofmap_code(ir, prefix, parameters):
     if ir is None: return None
 
     # Prefetch formatting to speedup code generation
-    ret =         format["return"]
-    classname =   format["classname dof_map"]
-    declare =     format["declaration"]
-    assign =      format["assign"]
-    do_nothing =  format["do nothing"]
-    switch =      format["switch"]
-    f_int =       format["int"]
-    f_d =         format["argument dimension"]
+    ret        = format["return"]
+    classname  = format["classname dof_map"]
+    declare    = format["declaration"]
+    assign     = format["assign"]
+    do_nothing = format["do nothing"]
+    switch     = format["switch"]
+    f_int      = format["int"]
+    f_d        = format["argument dimension"]
+    create     = format["create foo"]
 
     # Generate code
     code = {}
@@ -151,6 +154,7 @@ def _generate_dofmap_code(ir, prefix, parameters):
     code["tabulate_coordinates"] = _tabulate_coordinates(ir["tabulate_coordinates"])
     code["num_sub_dof_maps"] = ret(ir["num_sub_dof_maps"])
     code["create_sub_dof_map"] = _create_foo(prefix, "dof_map", ir["create_sub_dof_map"])
+    code["create"] = ret(create(code["classname"]))
 
     # Postprocess code
     _postprocess_code(code, parameters)
@@ -417,12 +421,12 @@ def _tabulate_entity_dofs(ir):
 
 def _create_foo(prefix, class_name, postfix, numbers=None):
     "Generate code for create_<foo>."
-    f_i =     format["argument sub"]
-    ret =     format["return"]
-    create =  format["create foo"]
+    f_i    = format["argument sub"]
+    ret    = format["return"]
+    create = format["create foo"]
 
     class_names = ["%s_%s_%d" % (prefix.lower(), class_name, i) for i in postfix]
-    cases = [ret(create(name + "()")) for name in class_names]
+    cases = [ret(create(name)) for name in class_names]
     default = ret(0)
     return format["switch"](f_i, cases, default=default, numbers=numbers)
 
