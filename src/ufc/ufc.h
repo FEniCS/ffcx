@@ -175,6 +175,13 @@ namespace ufc
     /// Create a new finite element for sub element i (for a mixed element)
     virtual finite_element* create_sub_element(unsigned int i) const = 0;
 
+#ifdef UFC_DEV
+    /// Create a new class instance
+    virtual finite_element* create() const
+    { return 0; } // Make pure virtual when moved into interface
+
+#endif
+
   };
 
   /// This class defines the interface for a local-to-global mapping of
@@ -246,6 +253,12 @@ namespace ufc
 
     /// Create a new dof_map for sub dof map i (for a mixed element)
     virtual dof_map* create_sub_dof_map(unsigned int i) const = 0;
+
+#ifdef UFC_DEV
+    /// Create a new class instance
+    virtual dof_map* create() const
+    { return 0; } // Make pure virtual when moved into interface
+#endif
 
   };
 
