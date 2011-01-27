@@ -45,6 +45,12 @@ from integrals import *
 from form import *
 from build import build_ufc_module
 
+# Check if we should import development/experimental version
+import os
+if "UFC_DEV" in os.environ:
+    from finite_element_1_6 import *
+    from dof_map_1_6 import *
+
 templates = {"function_header":                        function_header,
              "function_implementation":                function_implementation,
              "function_combined":                      function_combined,
