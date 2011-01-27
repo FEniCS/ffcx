@@ -7,7 +7,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian B. Oelgaard 2010
 # Modified by Marie E. Rognes 2010
-# Last changed: 2011-01-08
+# Last changed: 2011-01-28
 
 # Python modules
 import re, numpy, platform
@@ -56,7 +56,7 @@ format.update({
     "const uint declaration":         lambda v, w: "const unsigned int %s = %s;" % (v, w),
     "dynamic array":                  lambda t, n, s: "%s *%s = new %s[%s];" % (t, n, t, s),
     "delete dynamic array":           lambda n, s=None: _delete_array(n, s),
-    "create foo":                     lambda v: "new %s" % v
+    "create foo":                     lambda v: "new %s()" % v
 })
 
 # Mathematical operators
