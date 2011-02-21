@@ -151,7 +151,7 @@ public:
   /// Create a new finite element for argument function i
   virtual ufc::finite_element* create_finite_element(unsigned int i) const;
 
-  /// Create a new dof map for argument function i
+  /// Create a new dofmap for argument function i
   virtual ufc::dofmap* create_dofmap(unsigned int i) const;
 
   /// Create a new cell integral on sub domain i
@@ -221,7 +221,7 @@ ufc::finite_element* %(classname)s::create_finite_element(unsigned int i) const
 %(create_finite_element)s
 }
 
-/// Create a new dof map for argument function i
+/// Create a new dofmap for argument function i
 ufc::dofmap* %(classname)s::create_dofmap(unsigned int i) const
 {
 %(create_dofmap)s

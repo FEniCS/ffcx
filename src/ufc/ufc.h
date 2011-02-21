@@ -209,20 +209,20 @@ namespace ufc
     /// Destructor
     virtual ~dofmap() {}
 
-    /// Return a string identifying the dof map
+    /// Return a string identifying the dofmap
     virtual const char* signature() const = 0;
 
     /// Return true iff mesh entities of topological dimension d are needed
     virtual bool needs_mesh_entities(unsigned int d) const = 0;
 
-    /// Initialize dof map for mesh (return true iff init_cell() is needed)
+    /// Initialize dofmap for mesh (return true iff init_cell() is needed)
     virtual bool init_mesh(const mesh& mesh) = 0;
 
-    /// Initialize dof map for given cell
+    /// Initialize dofmap for given cell
     virtual void init_cell(const mesh& m,
                            const cell& c) = 0;
 
-    /// Finish initialization of dof map for cells
+    /// Finish initialization of dofmap for cells
     virtual void init_cell_finalize() = 0;
 
     // Return the topological dimension of the associated cell shape
@@ -263,10 +263,10 @@ namespace ufc
     virtual void tabulate_coordinates(double** coordinates,
                                       const cell& c) const = 0;
 
-    /// Return the number of sub dof maps (for a mixed element)
+    /// Return the number of sub dofmaps (for a mixed element)
     virtual unsigned int num_sub_dofmaps() const = 0;
 
-    /// Create a new dofmap for sub dof map i (for a mixed element)
+    /// Create a new dofmap for sub dofmap i (for a mixed element)
     virtual dofmap* create_sub_dofmap(unsigned int i) const = 0;
 
     /// Create a new class instance
@@ -414,7 +414,7 @@ namespace ufc
     /// Create a new finite element for argument function i
     virtual finite_element* create_finite_element(unsigned int i) const = 0;
 
-    /// Create a new dof map for argument function i
+    /// Create a new dofmap for argument function i
     virtual dofmap* create_dofmap(unsigned int i) const = 0;
 
     /// Create a new cell integral on sub domain i
