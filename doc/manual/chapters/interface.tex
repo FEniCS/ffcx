@@ -810,6 +810,27 @@ size of each each array \texttt{w[0]}, \texttt{w[1]} etc should be
 equal to the space dimension of the corresponding local finite element
 space.
 
+\subsection{The function \texttt{tabulate\_tensor} (quadrature version)}
+\index{\texttt{tabulate\_tensor} (quadrature version)}
+
+Introduced in version 2.0
+
+\begin{code}
+virtual void
+tabulate_tensor(double* A,
+                const double * const * w,
+                const cell& c,
+                unsigned int num_quadrature_points,
+                const double * const * quadrature_points,
+                const double* quadrature_weights) const = 0;
+\end{code}
+
+This function is identical to \texttt{tabulate\_tensor} described
+above but computes the integral over the cell using the given set of
+quadrature points and weights. Note that the quadrature points should
+be specified on the reference cell. By a careful choice of quadrature
+points, this function can be used to integrate over subsets of cells.
+
 \section{The class \texttt{ufc::exterior\_facet\_integral}}
 \index{\texttt{ufc::exterior\_facet\_integral}}
 
@@ -842,6 +863,27 @@ the facet is an edge of a triangle, the argument \texttt{facet} should
 be an integer between zero and two (0, 1, 2) and when the facet is a
 facet of a tetrahedron, the argument \texttt{facet} should be an
 integer between zero and three (0, 1, 2, 3).
+
+\subsection{The function \texttt{tabulate\_tensor} (quadrature version)}
+\index{\texttt{tabulate\_tensor} (quadrature version)}
+
+Introduced in version 2.0
+
+\begin{code}
+virtual void
+tabulate_tensor(double* A,
+                const double * const * w,
+                const cell& c,
+                unsigned int num_quadrature_points,
+                const double * const * quadrature_points,
+                const double* quadrature_weights) const = 0;
+\end{code}
+
+This function is identical to \texttt{tabulate\_tensor} described
+above but computes the integral over the cell using the given set of
+quadrature points and weights. Note that the quadrature points should
+be specified on the reference cell. By a careful choice of quadrature
+points, this function can be used to integrate over subsets of facets.
 
 \section{The class \texttt{ufc::interior\_facet\_integral}}
 \index{\texttt{ufc::interior\_facet\_integral}}
@@ -907,6 +949,27 @@ cells. Thus, when the facet is an edge of a triangle, each of these
 arguments may be an integer between zero and two (0, 1, 2) and when
 the facet is a face of a tetrahedron, each of these arguments may be
 an integer between zero and three (0, 1, 2, 3).
+
+\subsection{The function \texttt{tabulate\_tensor} (quadrature version)}
+\index{\texttt{tabulate\_tensor} (quadrature version)}
+
+Introduced in version 2.0
+
+\begin{code}
+virtual void
+tabulate_tensor(double* A,
+                const double * const * w,
+                const cell& c,
+                unsigned int num_quadrature_points,
+                const double * const * quadrature_points,
+                const double* quadrature_weights) const = 0;
+\end{code}
+
+This function is identical to \texttt{tabulate\_tensor} described
+above but computes the integral over the cell using the given set of
+quadrature points and weights. Note that the quadrature points should
+be specified on the reference cell. By a careful choice of quadrature
+points, this function can be used to integrate over subsets of facets.
 
 \section{The class \texttt{ufc::form}}
 \index{\texttt{ufc::form}}
