@@ -36,7 +36,7 @@ public:
   /// using the specified reference cell quadrature points/weights
   virtual void tabulate_tensor(double* A,
                                const double * const * w,
-                               const cell& c,
+                               const ufc::cell& c,
                                unsigned int num_quadrature_points,
                                const double * const * quadrature_points,
                                const double* quadrature_weights) const
@@ -71,7 +71,7 @@ public:
   /// using the specified reference cell quadrature points/weights
   virtual void tabulate_tensor(double* A,
                                const double * const * w,
-                               const cell& c,
+                               const ufc::cell& c,
                                unsigned int num_quadrature_points,
                                const double * const * quadrature_points,
                                const double* quadrature_weights) const;
@@ -104,7 +104,7 @@ void %(classname)s::tabulate_tensor(double* A,
 /// using the specified reference cell quadrature points/weights
 void tabulate_tensor(double* A,
                      const double * const * w,
-                     const cell& c,
+                     const ufc::cell& c,
                      unsigned int num_quadrature_points,
                      const double * const * quadrature_points,
                      const double* quadrature_weights) const
@@ -147,7 +147,7 @@ public:
   /// using the specified reference cell quadrature points/weights
   virtual void tabulate_tensor(double* A,
                                const double * const * w,
-                               const cell& c,
+                               const ufc::cell& c,
                                unsigned int num_quadrature_points,
                                const double * const * quadrature_points,
                                const double* quadrature_weights) const
@@ -183,7 +183,7 @@ public:
   /// using the specified reference cell quadrature points/weights
   virtual void tabulate_tensor(double* A,
                                const double * const * w,
-                               const cell& c,
+                               const ufc::cell& c,
                                unsigned int num_quadrature_points,
                                const double * const * quadrature_points,
                                const double* quadrature_weights) const;
@@ -217,7 +217,7 @@ void %(classname)s::tabulate_tensor(double* A,
 /// using the specified reference cell quadrature points/weights
 void tabulate_tensor(double* A,
                      const double * const * w,
-                     const cell& c,
+                     const ufc::cell& c,
                      unsigned int num_quadrature_points,
                      const double * const * quadrature_points,
                      const double* quadrature_weights) const
@@ -262,7 +262,7 @@ public:
   /// using the specified reference cell quadrature points/weights
   virtual void tabulate_tensor(double* A,
                                const double * const * w,
-                               const cell& c,
+                               const ufc::cell& c,
                                unsigned int num_quadrature_points,
                                const double * const * quadrature_points,
                                const double* quadrature_weights) const
@@ -300,7 +300,7 @@ public:
   /// using the specified reference cell quadrature points/weights
   virtual void tabulate_tensor(double* A,
                                const double * const * w,
-                               const cell& c,
+                               const ufc::cell& c,
                                unsigned int num_quadrature_points,
                                const double * const * quadrature_points,
                                const double* quadrature_weights) const;
@@ -336,7 +336,7 @@ void %(classname)s::tabulate_tensor(double* A,
 /// using the specified reference cell quadrature points/weights
 void tabulate_tensor(double* A,
                      const double * const * w,
-                     const cell& c,
+                     const ufc::cell& c,
                      unsigned int num_quadrature_points,
                      const double * const * quadrature_points,
                      const double* quadrature_weights) const
