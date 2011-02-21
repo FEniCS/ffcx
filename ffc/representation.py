@@ -87,6 +87,8 @@ def _compute_element_ir(ufl_element, element_id, element_map):
     # Compute data for each function
     ir["signature"] = repr(ufl_element)
     ir["cell_shape"] = cell.domain()
+    ir["topological_dimension"] = cell.topological_dimension()
+    ir["geometric_dimension"] = cell.geometric_dimension()
     ir["space_dimension"] = element.space_dimension()
     ir["value_rank"] = len(ufl_element.value_shape())
     ir["value_dimension"] = ufl_element.value_shape()
@@ -120,10 +122,11 @@ def _compute_dofmap_ir(ufl_element, element_id, element_map):
     ir["init_mesh"] = _init_mesh(element)
     ir["init_cell"] = None
     ir["init_cell_finalize"] = None
+    ir["topological_dimension"] = cell.topological_dimension()
+    ir["geometric_dimension"] = cell.geometric_dimension()
     ir["global_dimension"] = None
     ir["local_dimension"] = element.space_dimension()
     ir["max_local_dimension"] = element.space_dimension()
-    ir["geometric_dimension"] = cell.geometric_dimension()
     ir["num_facet_dofs"] = len(facet_dofs[0])
     ir["num_entity_dofs"] = num_dofs_per_entity
     ir["tabulate_dofs"] = _tabulate_dofs(element, cell)

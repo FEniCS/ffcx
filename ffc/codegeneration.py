@@ -93,6 +93,8 @@ def _generate_element_code(ir, prefix, parameters):
     code["destructor"] = do_nothing
     code["signature"] = ret('"%s"' % ir["signature"])
     code["cell_shape"] = ret(format["cell"](ir["cell_shape"]))
+    code["topological_dimension"] = ret(ir["topological_dimension"])
+    code["geometric_dimension"] = ret(ir["geometric_dimension"])
     code["space_dimension"] = ret(ir["space_dimension"])
     code["value_rank"] = ret(ir["value_rank"])
     code["value_dimension"] = _value_dimension(ir["value_dimension"])
@@ -142,10 +144,11 @@ def _generate_dofmap_code(ir, prefix, parameters):
     code["init_mesh"] = _init_mesh(ir["init_mesh"])
     code["init_cell"] = do_nothing
     code["init_cell_finalize"] = do_nothing
+    code["topological_dimension"] = ret(ir["topological_dimension"])
+    code["geometric_dimension"] = ret(ir["geometric_dimension"])
     code["global_dimension"] = ret("_global_dimension")
     code["local_dimension"] = ret(ir["local_dimension"])
     code["max_local_dimension"] = ret(ir["max_local_dimension"])
-    code["geometric_dimension"] = ret(ir["geometric_dimension"])
     code["num_facet_dofs"] = ret(ir["num_facet_dofs"])
     code["num_entity_dofs"] = switch(f_d, [ret(num) for num in ir["num_entity_dofs"]], ret(f_int(0)))
     code["tabulate_dofs"] = _tabulate_dofs(ir["tabulate_dofs"])
