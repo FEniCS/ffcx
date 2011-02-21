@@ -258,6 +258,26 @@ virtual shape cell_shape() const = 0;
 This function returns the shape of the cell the finite element is
 defined on.
 
+\subsection{The function \texttt{topological\_dimension}}
+Introduced in version 2.0.
+
+\begin{code}
+virtual unsigned int topological_dimension() const = 0;
+\end{code}
+
+This function returns the topological dimension of the cell the finite
+element is defined on.
+
+\subsection{The function \texttt{geometric\_dimension}}
+Introduced in version 2.0.
+
+\begin{code}
+virtual unsigned int geometric_dimension() const = 0;
+\end{code}
+
+This function returns the geometric dimension of the cell the finite
+element is defined on.
+
 \subsection{The function \texttt{space\_dimension}}
 
 \begin{code}
@@ -426,7 +446,7 @@ Introduced in version 1.1.
 \begin{code}
 virtual void evaluate_dofs(double* values,
                            const function& f,
-                           const cell& c) const;
+                           const cell& c) const = 0;
 \end{code}
 
 Vectorized version of \texttt{evaluate\_dof} for efficiency,
@@ -565,6 +585,26 @@ For \texttt{ufc::dof\_map} objects where \texttt{init\_mesh} returns
 true, this function must be called after \texttt{init\_cell} is called
 for each cell in the mesh to complete initialization of the dofmap.
 
+\subsection{The function \texttt{topological\_dimension}}
+Introduced in version 1.1.
+
+\begin{code}
+virtual unsigned int topological_dimension() const = 0;
+\end{code}
+
+This function returns the topological dimension of the associated cell
+shape.
+
+\subsection{The function \texttt{geometric\_dimension}}
+Introduced in version 2.0.
+
+\begin{code}
+virtual unsigned int geometric_dimension() const = 0;
+\end{code}
+
+This function returns the geometric dimension of the associated cell
+shape.
+
 \subsection{The function \texttt{global\_dimension}}
 
 \begin{code}
@@ -596,16 +636,6 @@ virtual unsigned int max_local_dimension() const = 0;
 This function returns the maximum dimension of the local finite element space
 on a single cell.
 
-\subsection{The function \texttt{geometric\_dimension}}
-Introduced in version 1.1.
-
-\begin{code}
-virtual unsigned int geometric_dimension() const;
-\end{code}
-
-This function returns the geometric dimension of the coordinates
-returned by \texttt{tabulate\_coordinates}.
-
 \subsection{The function \texttt{num\_facet\_dofs}}
 
 \begin{code}
@@ -623,7 +653,7 @@ boundary condition is applied to a single facet.
 Introduced in version 1.1.
 
 \begin{code}
-virtual unsigned int num_entity_dofs(unsigned int d) const;
+virtual unsigned int num_entity_dofs(unsigned int d) const = 0;
 \end{code}
 
 This function returns the number of dofs associated with a single
@@ -664,7 +694,7 @@ Introduced in version 1.1.
 \begin{code}
 virtual void tabulate_entity_dofs(unsigned int* dofs,
                                   unsigned int d,
-                                  unsigned int i) const;
+                                  unsigned int i) const = 0;
 \end{code}
 
 This function tabulates the local dof indices associated with a given local
