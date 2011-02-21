@@ -22,7 +22,8 @@ function with name equal to the function name.
 
 For more information about UFC and the FEniCS project, visit
 
-    http://www.fenics.org/ufc/
+    http://www.fenicsproject.org
+    https://launchpad.net/ufc
 
 """
 

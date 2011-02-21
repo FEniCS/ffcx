@@ -18,10 +18,10 @@ assembling finite element variational forms. The UFC interface
 consists of a single header file ufc.h that specifies a C++ interface
 that must be implemented by code that complies with the UFC
 specification. Examples of form compilers that support the UFC
-interface are FFC and SyFi. For more information, visit the UFC web
+interface are FFC and SyFi. For more information, visit the FEniCS web
 page at
 
-    http://www.fenics.org/ufc/
+    http://www.fenicsproject.org
 
 or refer to the UFC Specification and User Manual in
 
