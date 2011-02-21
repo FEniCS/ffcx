@@ -37,15 +37,15 @@ void assemble(..., ufc::form& form, ...)
     cell_integrals[i] = form.create_cell_integral(i);
 
   // Create dofmaps
-  ufc::dof_maps** dof_maps;
-  dof_maps = new ufc::dof_map*[form.rank() + form.num_coefficients()];
+  ufc::dofmaps** dofmaps;
+  dofmaps = new ufc::dofmap*[form.rank() + form.num_coefficients()];
   for (unsigned int i = 0; i < form.rank() + form.num_coefficients(); i++)
   {
-    dof_maps[i] = form.create_dof_map(i);
+    dofmaps[i] = form.create_dofmap(i);
 
     // Initialize dofmap
-    if (dof_maps[i]->init_mesh(mesh))
-    { 
+    if (dofmaps[i]->init_mesh(mesh))
+    {
       // Iterate over cells
       for (...)
       {
@@ -53,30 +53,30 @@ void assemble(..., ufc::form& form, ...)
         cell.entity_indices[...] = ...
         cell.coordinates[...] = ...
         ...
-       
+
         // Initialize dofmap for cell
-        dof_maps[i]->init_cell(mesh, cell);        
+        dofmaps[i]->init_cell(mesh, cell);
       }
 
-      dof_map.init_cell_finalize();
+      dofmap.init_cell_finalize();
     }
   }
 
   // Initialize array of values for the cell tensor
   unsigned int size = 1;
   for (unsigned int i = 0; i < form.rank(); i++)
-    size *= dof_maps[i]->max_local_dimension();
+    size *= dofmaps[i]->max_local_dimension();
   double* AK = new double[size];
 
   // Initialize array of local to global dofmaps
   unsigned int** dofs = new unsigned int*[form.rank()];
   for (unsigned int i = 0; i < form.rank(); i++)
-    dofs[i] = new unsigned int[dof_maps[i]->max_local_dimension()];
+    dofs[i] = new unsigned int[dofmaps[i]->max_local_dimension()];
 
   // Initialize array of coefficient values
   double** w = new double*[form.num_coefficients()];
   for (unsigned int i = 0; i < form.num_coefficients(); i++)
-    w[i] = new double[dof_maps[form.rank() + i]->max_local_dimension()];
+    w[i] = new double[dofmaps[form.rank() + i]->max_local_dimension()];
 
   // Iterate over cells
   for (...)
@@ -94,7 +94,7 @@ void assemble(..., ufc::form& form, ...)
 
     // Tabulate dofs for each dimension
     for (unsigned int i = 0; i < ufc.form.rank(); i++)
-      dof_maps[i]->tabulate_dofs(dofs[i], mesh, cell);
+      dofmaps[i]->tabulate_dofs(dofs[i], mesh, cell);
 
     // Tabulate cell tensor
     cell_integrals[sub_domain]->tabulate_tensor(AK, w, cell);

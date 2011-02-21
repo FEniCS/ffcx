@@ -709,7 +709,7 @@ with the function \texttt{dof\_map::geometric\_dimension()}.
 \subsection{The function \texttt{num\_sub\_dof\_maps}}
 
 \begin{code}
-virtual unsigned int num_sub_dof_maps() const = 0;
+virtual unsigned int num_sub_dofmaps() const = 0;
 \end{code}
 
 This function returns the number of sub-dofmaps for a nested (mixed)
@@ -721,7 +721,7 @@ elements (non-nested), this function should return one.
 \subsection{The function \texttt{create\_sub\_dof\_map}}
 
 \begin{code}
-virtual dof_map* create_sub_dof_map(unsigned int i) const = 0;
+virtual dofmap* create_sub_dofmap(unsigned int i) const = 0;
 \end{code}
 
 This factory function constructs a \texttt{ufc::dof\_map} object for
@@ -975,8 +975,8 @@ responsible for deleting the returned object.
 \subsection{The function \texttt{create\_dof\_map}}
 
 \begin{code}
-virtual dof_map*
-create_dof_map(unsigned int i) const = 0;
+virtual dofmap*
+create_dofmap(unsigned int i) const = 0;
 \end{code}
 
 This factory function constructs a \texttt{ufc::dof\_map} object for
