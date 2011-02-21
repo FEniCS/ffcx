@@ -509,6 +509,15 @@ integer between zero and the number of subelements
 (non-nested), this function creates a copy of the finite element
 itself. The caller is responsible for deleting the returned object.
 
+\subsection{The function \texttt{create}}
+
+\begin{code}
+virtual finite_element* create() const = 0;
+\end{code}
+
+This factory function creates a new instance of the generated
+\texttt{ufc::finite\_\-element} subclass.
+
 \section{The class \texttt{ufc::dof\_map}}
 \index{\texttt{ufc::dof\_map}}
 
@@ -760,6 +769,15 @@ between zero and the number of sub-dofmaps
 (\texttt{num\_sub\_dof\_maps}) minus one. If the dofmap is simple
 (non-nested), this function creates a copy of the dofmap itself. The
 caller is responsible for deleting the returned object.
+
+\subsection{The function \texttt{create}}
+
+\begin{code}
+virtual dofmap* create() const = 0;
+\end{code}
+
+This factory function creates a new instance of the generated
+\texttt{ufc::dofmap} subclass.
 
 \section{The integral classes}
 
