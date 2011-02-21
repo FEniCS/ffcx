@@ -271,13 +271,13 @@ void %(classname)s::init_cell_finalize()
 }
 
 /// Return the topological dimension of the associated cell shape
-unsigned int topological_dimension() const
+unsigned int %(classname)s::topological_dimension() const
 {
 %(topological_dimension)s
 }
 
 /// Return the geometric dimension of the associated cell shape
-unsigned int geometric_dimension() const
+unsigned int %(classname)s::geometric_dimension() const
 {
 %(geometric_dimension)s
 }
