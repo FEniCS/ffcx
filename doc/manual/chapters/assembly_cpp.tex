@@ -32,8 +32,8 @@ void assemble(..., ufc::form& form, ...)
 
   // Create cell integrals
   ufc::cell_integral** cell_integrals;
-  cell_integrals = new ufc::cell_integral*[form.num_cell_integrals()];
-  for (unsigned int i = 0; i < form.num_cell_integrals(); i++)
+  cell_integrals = new ufc::cell_integral*[form.num_cell_domains()];
+  for (unsigned int i = 0; i < form.num_cell_domains(); i++)
     cell_integrals[i] = form.create_cell_integral(i);
 
   // Create dofmaps

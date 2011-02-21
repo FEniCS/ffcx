@@ -928,33 +928,33 @@ Note that all integral terms of a form must have the same
 coefficients, even if not all coefficients are present in each term of
 the form.
 
-\subsection{The function \texttt{num\_cell\_integrals}}
+\subsection{The function \texttt{num\_cell\_domains}}
 
 \begin{code}
-virtual unsigned int num_cell_integrals() const = 0;
+virtual unsigned int num_cell_domains() const = 0;
 \end{code}
 
-This function returns the number of different cell integrals for the
+This function returns the number of different cell domains for the
 form. A form may have an arbitrary number of integrals over disjoint
 subdomains of the mesh.
 
-\subsection{The function \texttt{num\_exterior\_facet\_integrals}}
+\subsection{The function \texttt{num\_exterior\_facet\_domains}}
 
 \begin{code}
-virtual unsigned int num_exterior_facet_integrals() const = 0;
+virtual unsigned int num_exterior_facet_domains() const = 0;
 \end{code}
 
-This function returns the number of different exterior facet integrals
+This function returns the number of different exterior facet domains
 for the form. A form may have an arbitrary number of integrals over
 disjoint subdomains of the mesh boundary.
 
-\subsection{The function \texttt{num\_interior\_facet\_integrals}}
+\subsection{The function \texttt{num\_interior\_facet\_domains}}
 
 \begin{code}
-virtual unsigned int num_interior_facet_integrals() const = 0;
+virtual unsigned int num_interior_facet_domains() const = 0;
 \end{code}
 
-This function returns the number of different interior facet integrals
+This function returns the number of different interior facet domains
 for the form. A form may have an arbitrary number of integrals over
 disjoint subsets of the interior facets of the mesh.
 
