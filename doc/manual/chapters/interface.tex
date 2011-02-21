@@ -116,7 +116,7 @@ equal to the topological dimension of the mesh plus one.
 Thus, for a mesh of tetrahedral cells, \texttt{num\_entities[0]}
 should contain the number of vertices, \texttt{num\_entities[1]}
 should contain the number of edges (if they are needed, see
-\texttt{ufc::dof\_map::needs\_mesh\_entities} below),
+\texttt{ufc::dofmap::needs\_mesh\_entities} below),
 \texttt{num\_en\-tities[2]} should contain the number of faces, and
 \texttt{num\_entities[3]} should contain the number of volumes.  If
 \texttt{d} is the topological dimension of the mesh,
@@ -178,8 +178,8 @@ are implicitly defined by the cell type.
 
 Note that the entity indices are not always needed for all entities of
 the cell. Which entities are required is specified by the
-\texttt{ufc::dof\_map} class (see
-\texttt{ufc::dof\_map::needs\_mesh\_entities} below).
+\texttt{ufc::dofmap} class (see
+\texttt{ufc::dofmap::needs\_mesh\_entities} below).
 
 \subsection{The array \texttt{coordinates}}
 
@@ -325,7 +325,7 @@ virtual unsigned int space_dimension() const = 0;
 This function returns the dimension of the local finite element space
 ($|V_h^K|$), which is equal to the number of basis functions. This
 should also be equal to the value of \texttt{local\_dimension()} for
-the corresponding \texttt{ufc::dof\_map} (see below).
+the corresponding \texttt{ufc::dofmap} (see below).
 
 \subsection{The function \texttt{value\_rank}}
 
@@ -586,8 +586,8 @@ virtual finite_element* create() const = 0;
 This factory function creates a new instance of the generated
 \texttt{ufc::finite\_\-element} subclass.
 
-\section{The class \texttt{ufc::dof\_map}}
-\index{\texttt{ufc::dof\_map}}
+\section{The class \texttt{ufc::dofmap}}
+\index{\texttt{ufc::dofmap}}
 
 This class represents the local-to-global mapping of degrees of
 freedom (dofs), or rather one particular instance of such a mapping
@@ -605,7 +605,7 @@ virtual const char* signature() const = 0;
 
 This function returns a signature string that uniquely identifies the
 dofmap. This can be used to compare whether or not two given
-\texttt{ufc::dof\_map} objects are identical. (This may be used to
+\texttt{ufc::dofmap} objects are identical. (This may be used to
 optimize the assembly of forms by caching previously computed
 dofmaps.)
 
@@ -615,12 +615,12 @@ dofmaps.)
 virtual bool needs_mesh_entities(unsigned int d) const = 0;
 \end{code}
 
-This function returns true if the \texttt{ufc::dof\_map} requires mesh
+This function returns true if the \texttt{ufc::dofmap} requires mesh
 entities of topological dimension \texttt{d} to be available in
 \texttt{ufc::cell} arguments. Thus, if this function returns false for
 a given value of \texttt{d}, then the array
 \texttt{entity\_indices[d]} of the \texttt{ufc::cell} data structure
-will not be used during calls to \texttt{ufc::dof\_map} functions. In
+will not be used during calls to \texttt{ufc::dofmap} functions. In
 those cases, the array \texttt{entity\_indices[d]} may be set to zero.
 
 This may be used to check which entities must be generated to tabulate
@@ -648,7 +648,7 @@ virtual void init_cell(const mesh& m,
                        const cell& c) = 0;
 \end{code}
 
-For \texttt{ufc::dof\_map} objects where \texttt{init\_mesh} returns true,
+For \texttt{ufc::dofmap} objects where \texttt{init\_mesh} returns true,
 this function must be called for each cell in the mesh to initialize
 the dofmap.
 
@@ -658,7 +658,7 @@ the dofmap.
 virtual void init_cell_finalize() = 0;
 \end{code}
 
-For \texttt{ufc::dof\_map} objects where \texttt{init\_mesh} returns
+For \texttt{ufc::dofmap} objects where \texttt{init\_mesh} returns
 true, this function must be called after \texttt{init\_cell} is called
 for each cell in the mesh to complete initialization of the dofmap.
 
@@ -689,7 +689,7 @@ virtual unsigned int global_dimension() const = 0;
 \end{code}
 
 This function returns the dimension of the global finite element space
-on the mesh that the \texttt{ufc::dof\_map} has been initialized
+on the mesh that the \texttt{ufc::dofmap} has been initialized
 for. The result of calling this function before the initialization is
 complete is undefined.
 
@@ -811,9 +811,9 @@ The size of the output array \texttt{coordinates} should be equal to
 the value returned by \texttt{local\_dimension()} and the size of each
 subarray \texttt{coordi\-nates[0]}, \texttt{coordinates[1]} etc should
 be equal to the geometric dimension of the mesh, which can be obtained
-with the function \texttt{dof\_map::geometric\_\-dimension()}.
+with the function \texttt{dofmap::geometric\_\-dimension()}.
 
-\subsection{The function \texttt{num\_sub\_dof\_maps}}
+\subsection{The function \texttt{num\_sub\_dofmaps}}
 
 \begin{code}
 virtual unsigned int num_sub_dofmaps() const = 0;
@@ -825,16 +825,16 @@ documentation of the function
 \texttt{ufc::finite\_element::num\_sub\_elements}. For simple
 elements (non-nested), this function should return one.
 
-\subsection{The function \texttt{create\_sub\_dof\_map}}
+\subsection{The function \texttt{create\_sub\_dofmap}}
 
 \begin{code}
 virtual dofmap* create_sub_dofmap(unsigned int i) const = 0;
 \end{code}
 
-This factory function constructs a \texttt{ufc::dof\_map} object for
+This factory function constructs a \texttt{ufc::dofmap} object for
 subelement \texttt{i}. The argument \texttt{i} must be a number
 between zero and the number of sub-dofmaps
-(\texttt{num\_sub\_dof\_maps}) minus one. If the dofmap is simple
+(\texttt{num\_sub\_dofmaps}) minus one. If the dofmap is simple
 (non-nested), this function returns a zero pointer. The caller is
 responsible for deleting the returned object.
 
@@ -1153,14 +1153,14 @@ the finite element object for tensor axis $i$ if $i < r$, or the
 finite element for coefficient $i - r$ if $i \geq r$.  The caller is
 responsible for deleting the returned object.
 
-\subsection{The function \texttt{create\_dof\_map}}
+\subsection{The function \texttt{create\_dofmap}}
 
 \begin{code}
 virtual dofmap*
 create_dofmap(unsigned int i) const = 0;
 \end{code}
 
-This factory function constructs a \texttt{ufc::dof\_map} object for
+This factory function constructs a \texttt{ufc::dofmap} object for
 form argument \texttt{i}. A form with rank~$r$ and number of
 coefficients~$n$ has $r + n$ arguments, so this function returns the
 dofmap object for tensor axis $i$ if $i < r$, or the dofmap for
