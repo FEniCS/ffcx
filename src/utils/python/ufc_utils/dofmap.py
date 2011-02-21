@@ -54,6 +54,18 @@ public:
 %(init_cell_finalize)s
   }
 
+  /// Return the topological dimension of the associated cell shape
+  virtual unsigned int topological_dimension() const
+  {
+%(topological_dimension)s
+  }
+
+  /// Return the geometric dimension of the associated cell shape
+  virtual unsigned int geometric_dimension() const
+  {
+%(geometric_dimension)s
+  }
+
   /// Return the dimension of the global finite element function space
   virtual unsigned int global_dimension() const
   {
@@ -70,12 +82,6 @@ public:
   virtual unsigned int max_local_dimension() const
   {
 %(max_local_dimension)s
-  }
-
-  // Return the geometric dimension of the coordinates this dof map provides
-  virtual unsigned int geometric_dimension() const
-  {
-%(geometric_dimension)s
   }
 
   /// Return the number of dofs on each cell facet
@@ -170,6 +176,12 @@ public:
   /// Finish initialization of dof map for cells
   virtual void init_cell_finalize();
 
+  /// Return the topological dimension of the associated cell shape
+  virtual unsigned int topological_dimension() const;
+
+  /// Return the geometric dimension of the associated cell shape
+  virtual unsigned int geometric_dimension() const;
+
   /// Return the dimension of the global finite element function space
   virtual unsigned int global_dimension() const;
 
@@ -178,9 +190,6 @@ public:
 
   /// Return the maximum dimension of the local finite element function space
   virtual unsigned int max_local_dimension() const;
-
-  // Return the geometric dimension of the coordinates this dof map provides
-  virtual unsigned int geometric_dimension() const;
 
   /// Return the number of dofs on each cell facet
   virtual unsigned int num_facet_dofs() const;
@@ -261,6 +270,18 @@ void %(classname)s::init_cell_finalize()
 %(init_cell_finalize)s
 }
 
+/// Return the topological dimension of the associated cell shape
+unsigned int topological_dimension() const
+{
+%(topological_dimension)s
+}
+
+/// Return the geometric dimension of the associated cell shape
+unsigned int geometric_dimension() const
+{
+%(geometric_dimension)s
+}
+
 /// Return the dimension of the global finite element function space
 unsigned int %(classname)s::global_dimension() const
 {
@@ -277,12 +298,6 @@ unsigned int %(classname)s::local_dimension(const ufc::cell& c) const
 unsigned int %(classname)s::max_local_dimension() const
 {
 %(max_local_dimension)s
-}
-
-// Return the geometric dimension of the coordinates this dof map provides
-unsigned int %(classname)s::geometric_dimension() const
-{
-%(geometric_dimension)s
 }
 
 /// Return the number of dofs on each cell facet

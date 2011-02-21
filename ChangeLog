@@ -1,7 +1,9 @@
+ - Add finite_element::{topological,geometric}_dimension
+ - Add dofmap::topological_dimension
  - Rename num_foo_integrals --> num_foo_domains
  - Rename dof_map --> dofmap
  - Add finite_element::create
- - Add dof_map::create
+ - Add dofmap::create
 1.4.2 [2010-09-01]
  - Move to CMake build system
 1.4.1 [2010-07-01]

@@ -34,6 +34,18 @@ public:
 %(cell_shape)s
   }
 
+  /// Return the topological dimension of the cell shape
+  virtual unsigned int topological_dimension() const
+  {
+%(topological_dimension)s
+  }
+
+  /// Return the geometric dimension of the cell shape
+  virtual unsigned int geometric_dimension() const
+  {
+%(geometric_dimension)s
+  }
+
   /// Return the dimension of the finite element function space
   virtual unsigned int space_dimension() const
   {
@@ -152,6 +164,12 @@ public:
   /// Return the cell shape
   virtual ufc::shape cell_shape() const;
 
+  /// Return the topological dimension of the cell shape
+  virtual unsigned int topological_dimension() const;
+
+  /// Return the geometric dimension of the cell shape
+  virtual unsigned int geometric_dimension() const;
+
   /// Return the dimension of the finite element function space
   virtual unsigned int space_dimension() const;
 
@@ -236,6 +254,18 @@ const char* %(classname)s::signature() const
 ufc::shape %(classname)s::cell_shape() const
 {
 %(cell_shape)s
+}
+
+/// Return the topological dimension of the cell shape
+unsigned int topological_dimension() const
+{
+%(topological_dimension)s
+}
+
+/// Return the geometric dimension of the cell shape
+unsigned int geometric_dimension() const
+{
+%(geometric_dimension)s
 }
 
 /// Return the dimension of the finite element function space

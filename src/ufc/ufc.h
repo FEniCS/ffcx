@@ -121,6 +121,12 @@ namespace ufc
     /// Return the cell shape
     virtual shape cell_shape() const = 0;
 
+    // Return the topological dimension of the cell shape
+    virtual unsigned int topological_dimension() const = 0;
+
+    // Return the geometric dimension of the cell shape
+    virtual unsigned int geometric_dimension() const = 0;
+
     /// Return the dimension of the finite element function space
     virtual unsigned int space_dimension() const = 0;
 
@@ -209,6 +215,12 @@ namespace ufc
     /// Finish initialization of dof map for cells
     virtual void init_cell_finalize() = 0;
 
+    // Return the topological dimension of the associated cell shape
+    virtual unsigned int topological_dimension() const = 0;
+
+    // Return the geometric dimension of the associated cell shape
+    virtual unsigned int geometric_dimension() const = 0;
+
     /// Return the dimension of the global finite element function space
     virtual unsigned int global_dimension() const = 0;
 
@@ -217,9 +229,6 @@ namespace ufc
 
     /// Return the maximum dimension of the local finite element function space
     virtual unsigned int max_local_dimension() const = 0;
-
-    // Return the geometric dimension of the coordinates this dof map provides
-    virtual unsigned int geometric_dimension() const = 0;
 
     /// Return the number of dofs on each cell facet
     virtual unsigned int num_facet_dofs() const = 0;
