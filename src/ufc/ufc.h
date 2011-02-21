@@ -175,6 +175,16 @@ namespace ufc
                                            const double* dof_values,
                                            const cell& c) const = 0;
 
+    // Map coordinate xhat from reference cell to coordinate x in cell
+    virtual void map_from_reference_cell(double* x,
+                                         const double* xhat,
+                                         const cell& c) = 0;
+
+    // Map from coordinate x in cell to coordinate xhat in reference cell
+    virtual void map_to_reference_cell(double* xhat,
+                                       const double* x,
+                                       const cell& c) = 0;
+
     /// Return the number of sub elements (for a mixed element)
     virtual unsigned int num_sub_elements() const = 0;
 
