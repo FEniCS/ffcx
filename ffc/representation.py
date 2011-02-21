@@ -130,8 +130,8 @@ def _compute_dofmap_ir(ufl_element, element_id, element_map):
     ir["tabulate_facet_dofs"] = facet_dofs
     ir["tabulate_entity_dofs"] = (element.entity_dofs(), num_dofs_per_entity)
     ir["tabulate_coordinates"] = _tabulate_coordinates(element)
-    ir["num_sub_dof_maps"] = ufl_element.num_sub_elements()
-    ir["create_sub_dof_map"] = _create_sub_foo(ufl_element, element_map)
+    ir["num_sub_dofmaps"] = ufl_element.num_sub_elements()
+    ir["create_sub_dofmap"] = _create_sub_foo(ufl_element, element_map)
 
     #debug_ir(ir, "dofmap")
 
@@ -204,11 +204,11 @@ def _compute_form_ir(form, form_id, element_map):
     ir["signature"] = repr(form)
     ir["rank"] = form_data.rank
     ir["num_coefficients"] = form_data.num_coefficients
-    ir["num_cell_integrals"] = form_data.num_cell_domains
-    ir["num_exterior_facet_integrals"] = form_data.num_exterior_facet_domains
-    ir["num_interior_facet_integrals"] = form_data.num_interior_facet_domains
+    ir["num_cell_domains"] = form_data.num_cell_domains
+    ir["num_exterior_facet_domains"] = form_data.num_exterior_facet_domains
+    ir["num_interior_facet_domains"] = form_data.num_interior_facet_domains
     ir["create_finite_element"] = [element_map[e] for e in form_data.elements]
-    ir["create_dof_map"] = [element_map[e] for e in form_data.elements]
+    ir["create_dofmap"] = [element_map[e] for e in form_data.elements]
     ir["create_cell_integral"] = _create_foo_integral("cell", form_data)
     ir["create_exterior_facet_integral"] = _create_foo_integral("exterior_facet", form_data)
     ir["create_interior_facet_integral"] = _create_foo_integral("interior_facet", form_data)

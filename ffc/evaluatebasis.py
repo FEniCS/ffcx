@@ -6,7 +6,7 @@ __date__ = "2007-04-04"
 __copyright__ = "Copyright (C) 2007-2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-04-12
+# Last changed: 2011-02-21
 
 # Python modules
 import math
@@ -188,8 +188,8 @@ def _evaluate_basis(data):
 #    "Generate code for each sub-element in the event of mixed elements"
 
 #    # Prefetch formats to speed up code generation.
-#    f_dof_map_if = format["dof map if"]
-#    f_if         = format["if"]
+#    f_dofmap_if = format["dofmap if"]
+#    f_if        = format["if"]
 
 #    sum_value_dim = 0
 #    sum_space_dim = 0
@@ -214,7 +214,7 @@ def _evaluate_basis(data):
 #        if_code = indent(remove_unused("\n".join(element_code)), 2)
 
 #        # Create if statement and add to code.
-#        code += [f_if(f_dof_map_if(sum_space_dim, sum_space_dim + space_dim - 1), if_code)]
+#        code += [f_if(f_dofmap_if(sum_space_dim, sum_space_dim + space_dim - 1), if_code)]
 
 #        # Increase sum of value dimension, and space dimension.
 #        sum_value_dim += value_dim

@@ -9,7 +9,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Johan Hake, 2008-2009
 # Modified by Ilmar Wilbers, 2008
 # Modified by Kristian B. Oelgaard, 2009
-# Last changed: 2010-02-14
+# Last changed: 2011-02-21
 
 # Python modules
 import os, sys
@@ -194,4 +194,4 @@ def _extract_element_and_dofmap(module, form_data):
     """
     i = len(form_data.unique_sub_elements) - 1
     return (getattr(module, module.__name__ + ("_finite_element_%d" % i))(),
-            getattr(module, module.__name__ + ("_dof_map_%d" % i))())
+            getattr(module, module.__name__ + ("_dofmap_%d" % i))())

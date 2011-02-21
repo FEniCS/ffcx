@@ -8,7 +8,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Kristian B. Oelgaard 2010
 # Modified by Marie Rognes 2007 -- 2010
 # Modified by Peter Brune 2009
-# Last changed: 2010-02-03
+# Last changed: 2011-02-21
 
 # Code snippets
 
@@ -237,7 +237,7 @@ const  double area%(restriction)s = std::sqrt(s%(restriction)s*(s%(restriction)s
 
 const double circumradius%(restriction)s = area%(restriction)s / ( 6.0*volume%(restriction)s );"""
 
-evaluate_basis_dof_map = """\
+evaluate_basis_dofmap = """\
 unsigned int element = 0;
 unsigned int tmp = 0;
 for (unsigned int j = 0; j < %d; j++)

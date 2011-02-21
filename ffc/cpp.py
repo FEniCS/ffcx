@@ -7,7 +7,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Kristian B. Oelgaard 2010
 # Modified by Marie E. Rognes 2010
-# Last changed: 2011-01-28
+# Last changed: 2011-02-21
 
 # Python modules
 import re, numpy, platform
@@ -235,7 +235,7 @@ format.update({
     "classname finite_element": lambda prefix, i:\
                "%s_finite_element_%d" % (prefix.lower(), i),
 
-    "classname dof_map":  lambda prefix, i: "%s_dof_map_%d" % (prefix.lower(), i),
+    "classname dofmap":  lambda prefix, i: "%s_dofmap_%d" % (prefix.lower(), i),
 
     "classname cell_integral":  lambda prefix, form_id, sub_domain:\
                "%s_cell_integral_%d_%d" % (prefix.lower(), form_id, sub_domain),

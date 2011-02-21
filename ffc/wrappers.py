@@ -3,7 +3,7 @@ __date__ = "2010-01-18"
 __copyright__ = "Copyright (C) 2010 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2011-01-26
+# Last changed: 2011-02-21
 
 # Python modules
 from itertools import chain
@@ -94,7 +94,7 @@ def _encapsule_form(prefix, form, i, element_map, superclassname=None):
                               format["classname form"](prefix, i),
                               [format["classname finite_element"](prefix, j)
                                for j in element_numbers],
-                              [format["classname dof_map"](prefix, j)
+                              [format["classname dofmap"](prefix, j)
                                for j in element_numbers],
                               superclassname)
     return form_names
@@ -103,6 +103,6 @@ def _encapsule_element(prefix, elements):
     element_number = len(elements) - 1
     args = ("0",
             [format["classname finite_element"](prefix, element_number)],
-            [format["classname dof_map"](prefix, element_number)])
+            [format["classname dofmap"](prefix, element_number)])
     from dolfin_utils.wrappers import UFCElementNames
     return UFCElementNames(*args)

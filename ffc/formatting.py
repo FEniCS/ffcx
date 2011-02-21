@@ -14,7 +14,7 @@ __date__ = "2009-12-16"
 __copyright__ = "Copyright (C) 2009 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2010-09-04
+# Last changed: 2011-02-21
 
 # Python modules
 import os
@@ -56,8 +56,8 @@ def format_code(code, wrapper_code, prefix, parameters):
     # Generate code for dofmaps
     if code_dofmaps:
         for code_dofmap in code_dofmaps:
-            code_h += _format_h("dof_map", code_dofmap, parameters)
-            code_c += _format_c("dof_map", code_dofmap, parameters)
+            code_h += _format_h("dofmap", code_dofmap, parameters)
+            code_c += _format_c("dofmap", code_dofmap, parameters)
 
     # Generate code for integrals
     if code_integrals:

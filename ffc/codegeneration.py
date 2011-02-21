@@ -12,7 +12,7 @@ __copyright__ = "Copyright (C) 2009 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Mehdi Nikbakht, 2010
-# Last changed: 2011-01-27
+# Last changed: 2011-02-21
 
 # FFC modules
 from ffc.log import info, begin, end, debug_code
@@ -120,7 +120,7 @@ def _generate_dofmap_code(ir, prefix, parameters):
 
     # Prefetch formatting to speedup code generation
     ret        = format["return"]
-    classname  = format["classname dof_map"]
+    classname  = format["classname dofmap"]
     declare    = format["declaration"]
     assign     = format["assign"]
     do_nothing = format["do nothing"]
@@ -152,8 +152,8 @@ def _generate_dofmap_code(ir, prefix, parameters):
     code["tabulate_facet_dofs"] = _tabulate_facet_dofs(ir["tabulate_facet_dofs"])
     code["tabulate_entity_dofs"] = _tabulate_entity_dofs(ir["tabulate_entity_dofs"])
     code["tabulate_coordinates"] = _tabulate_coordinates(ir["tabulate_coordinates"])
-    code["num_sub_dof_maps"] = ret(ir["num_sub_dof_maps"])
-    code["create_sub_dof_map"] = _create_foo(prefix, "dof_map", ir["create_sub_dof_map"])
+    code["num_sub_dofmaps"] = ret(ir["num_sub_dofmaps"])
+    code["create_sub_dofmap"] = _create_foo(prefix, "dofmap", ir["create_sub_dofmap"])
     code["create"] = ret(create(code["classname"]))
 
     # Postprocess code
@@ -205,11 +205,11 @@ def _generate_form_code(ir, prefix, parameters):
     code["signature"] = ret('"%s"' % ir["signature"])
     code["rank"] = ret(ir["rank"])
     code["num_coefficients"] = ret(ir["num_coefficients"])
-    code["num_cell_integrals"] = ret(ir["num_cell_integrals"])
-    code["num_exterior_facet_integrals"] = ret(ir["num_exterior_facet_integrals"])
-    code["num_interior_facet_integrals"] = ret(ir["num_interior_facet_integrals"])
+    code["num_cell_domains"] = ret(ir["num_cell_domains"])
+    code["num_exterior_facet_domains"] = ret(ir["num_exterior_facet_domains"])
+    code["num_interior_facet_domains"] = ret(ir["num_interior_facet_domains"])
     code["create_finite_element"] = _create_foo(prefix, "finite_element", ir["create_finite_element"])
-    code["create_dof_map"] = _create_foo(prefix, "dof_map", ir["create_dof_map"])
+    code["create_dofmap"] = _create_foo(prefix, "dofmap", ir["create_dofmap"])
     code["create_cell_integral"] = _create_foo_integral(ir, "cell", prefix)
     code["create_exterior_facet_integral"] = _create_foo_integral(ir, "exterior_facet", prefix)
     code["create_interior_facet_integral"] = _create_foo_integral(ir, "interior_facet", prefix)
