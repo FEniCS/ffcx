@@ -53,22 +53,22 @@ public:
 %(num_coefficients)s
   }
 
-  /// Return the number of cell integrals
-  virtual unsigned int num_cell_integrals() const
+  /// Return the number of cell domains
+  virtual unsigned int num_cell_domains() const
   {
-%(num_cell_integrals)s
+%(num_cell_domains)s
   }
 
-  /// Return the number of exterior facet integrals
-  virtual unsigned int num_exterior_facet_integrals() const
+  /// Return the number of exterior facet domains
+  virtual unsigned int num_exterior_facet_domains() const
   {
-%(num_exterior_facet_integrals)s
+%(num_exterior_facet_domains)s
   }
 
-  /// Return the number of interior facet integrals
-  virtual unsigned int num_interior_facet_integrals() const
+  /// Return the number of interior facet domains
+  virtual unsigned int num_interior_facet_domains() const
   {
-%(num_interior_facet_integrals)s
+%(num_interior_facet_domains)s
   }
 
   /// Create a new finite element for argument function i
@@ -139,14 +139,14 @@ public:
   /// Return the number of coefficients (n)
   virtual unsigned int num_coefficients() const;
 
-  /// Return the number of cell integrals
-  virtual unsigned int num_cell_integrals() const;
+  /// Return the number of cell domains
+  virtual unsigned int num_cell_domains() const;
 
-  /// Return the number of exterior facet integrals
-  virtual unsigned int num_exterior_facet_integrals() const;
+  /// Return the number of exterior facet domains
+  virtual unsigned int num_exterior_facet_domains() const;
 
-  /// Return the number of interior facet integrals
-  virtual unsigned int num_interior_facet_integrals() const;
+  /// Return the number of interior facet domains
+  virtual unsigned int num_interior_facet_domains() const;
 
   /// Create a new finite element for argument function i
   virtual ufc::finite_element* create_finite_element(unsigned int i) const;
@@ -197,22 +197,22 @@ unsigned int %(classname)s::num_coefficients() const
 %(num_coefficients)s
 }
 
-/// Return the number of cell integrals
-unsigned int %(classname)s::num_cell_integrals() const
+/// Return the number of cell domains
+unsigned int %(classname)s::num_cell_domains() const
 {
-%(num_cell_integrals)s
+%(num_cell_domains)s
 }
 
-/// Return the number of exterior facet integrals
-unsigned int %(classname)s::num_exterior_facet_integrals() const
+/// Return the number of exterior facet domains
+unsigned int %(classname)s::num_exterior_facet_domains() const
 {
-%(num_exterior_facet_integrals)s
+%(num_exterior_facet_domains)s
 }
 
-/// Return the number of interior facet integrals
-unsigned int %(classname)s::num_interior_facet_integrals() const
+/// Return the number of interior facet domains
+unsigned int %(classname)s::num_interior_facet_domains() const
 {
-%(num_interior_facet_integrals)s
+%(num_interior_facet_domains)s
 }
 
 /// Create a new finite element for argument function i

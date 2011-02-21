@@ -45,18 +45,18 @@ namespace ufc
       }
 
       // construct all integral objects
-      cell_integrals.resize(form.num_cell_integrals());
-      for(unsigned i=0; i<form.num_cell_integrals(); i++)
+      cell_integrals.resize(form.num_cell_domains());
+      for(unsigned i=0; i<form.num_cell_domains(); i++)
       {
         cell_integrals[i] = form.create_cell_integral(i);
       }
-      exterior_facet_integrals.resize(form.num_exterior_facet_integrals());
-      for(unsigned i=0; i<form.num_exterior_facet_integrals(); i++)
+      exterior_facet_integrals.resize(form.num_exterior_facet_domains());
+      for(unsigned i=0; i<form.num_exterior_facet_domains(); i++)
       {
         exterior_facet_integrals[i] = form.create_exterior_facet_integral(i);
       }
-      interior_facet_integrals.resize(form.num_interior_facet_integrals());
-      for(unsigned i=0; i<form.num_interior_facet_integrals(); i++)
+      interior_facet_integrals.resize(form.num_interior_facet_domains());
+      for(unsigned i=0; i<form.num_interior_facet_domains(); i++)
       {
         interior_facet_integrals[i] = form.create_interior_facet_integral(i);
       }
@@ -106,13 +106,13 @@ namespace ufc
 
       delete [] dimensions;
 
-      for(unsigned i=0; i<form.num_cell_integrals(); i++)
+      for(unsigned i=0; i<form.num_cell_domains(); i++)
         delete cell_integrals[i];
 
-      for(unsigned i=0; i<form.num_exterior_facet_integrals(); i++)
+      for(unsigned i=0; i<form.num_exterior_facet_domains(); i++)
         delete exterior_facet_integrals[i];
 
-      for(unsigned i=0; i<form.num_interior_facet_integrals(); i++)
+      for(unsigned i=0; i<form.num_interior_facet_domains(); i++)
         delete interior_facet_integrals[i];
 
       for(unsigned i=0; i<num_coefficients; i++)

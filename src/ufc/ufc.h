@@ -356,14 +356,14 @@ namespace ufc
     /// Return the number of coefficients (n)
     virtual unsigned int num_coefficients() const = 0;
 
-    /// Return the number of cell integrals
-    virtual unsigned int num_cell_integrals() const = 0;
+    /// Return the number of cell domains
+    virtual unsigned int num_cell_domains() const = 0;
 
-    /// Return the number of exterior facet integrals
-    virtual unsigned int num_exterior_facet_integrals() const = 0;
+    /// Return the number of exterior facet domains
+    virtual unsigned int num_exterior_facet_domains() const = 0;
 
-    /// Return the number of interior facet integrals
-    virtual unsigned int num_interior_facet_integrals() const = 0;
+    /// Return the number of interior facet domains
+    virtual unsigned int num_interior_facet_domains() const = 0;
 
     /// Create a new finite element for argument function i
     virtual finite_element* create_finite_element(unsigned int i) const = 0;

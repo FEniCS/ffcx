@@ -17,7 +17,6 @@ using std::vector;
 #include "ufc_reference_cell.h"
 #include "ufc_benchmark.h"
 
-
 clock_t __tic_time;
 
 void tic()
@@ -31,7 +30,6 @@ double toc()
   double elapsed_time = ((double) (__toc_time - __tic_time)) / CLOCKS_PER_SEC;
   return elapsed_time;
 }
-
 
 // Adaptive timing: make sure we run for at least TMIN to get reliable results
 double time_tabulate_tensor(ufc::cell_integral& integral, double *A, const double * const * w, const ufc::cell & c)
@@ -54,7 +52,6 @@ double time_tabulate_tensor(ufc::cell_integral& integral, double *A, const doubl
   return 0.0;
 }
 
-
 // Adaptive timing: make sure we run for at least TMIN to get reliable results
 double time_tabulate_tensor(ufc::exterior_facet_integral& integral, double *A, const double * const * w, const ufc::cell & c, unsigned int facet)
 {
@@ -76,7 +73,6 @@ double time_tabulate_tensor(ufc::exterior_facet_integral& integral, double *A, c
   return 0.0;
 }
 
-
 // Benchmark all integrals of a form.
 vector< vector<double> > benchmark(const ufc::form & form, bool print_tensor)
 {
@@ -87,14 +83,14 @@ vector< vector<double> > benchmark(const ufc::form & form, bool print_tensor)
     ufc::reference_cell c(data.elements[0]->cell_shape());
 
     // data structures for times
-    vector<double> cell_times(form.num_cell_integrals());
-    vector<double> exterior_facet_times(form.num_exterior_facet_integrals());
-    vector<double> interior_facet_times(form.num_interior_facet_integrals());
+    vector<double> cell_times(form.num_cell_domains());
+    vector<double> exterior_facet_times(form.num_exterior_facet_domains());
+    vector<double> interior_facet_times(form.num_interior_facet_domains());
 
     // benchmark all cell integrals
-    for(unsigned i = 0; i < form.num_cell_integrals(); i++)
+    for(unsigned i = 0; i < form.num_cell_domains(); i++)
     {
-        cell_times[i] = time_tabulate_tensor(*data.cell_integrals[i], data.A, data.w, c);
+        cell_times[i] = time_tabulate_tensor(*data.cell_domains[i], data.A, data.w, c);
 
         if(print_tensor)
         {
@@ -105,10 +101,10 @@ vector< vector<double> > benchmark(const ufc::form & form, bool print_tensor)
     }
 
     // benchmark all exterior facet integrals
-    for(unsigned i = 0; i < form.num_exterior_facet_integrals(); i++)
+    for(unsigned i = 0; i < form.num_exterior_facet_domains(); i++)
     {
         unsigned int facet = 0; // TODO: would it be interesting to time all facets?
-        exterior_facet_times[i] = time_tabulate_tensor(*data.exterior_facet_integrals[i], data.A, data.w, c, facet);
+        exterior_facet_times[i] = time_tabulate_tensor(*data.exterior_facet_domains[i], data.A, data.w, c, facet);
 
         if(print_tensor)
         {
@@ -120,10 +116,10 @@ vector< vector<double> > benchmark(const ufc::form & form, bool print_tensor)
 
     // benchmark all interior facet integrals
     /* // TODO: If somebody needs this, please implement it! Need two cells, and larger A.
-    for(unsigned i = 0; i < form.num_interior_facet_integrals(); i++)
+    for(unsigned i = 0; i < form.num_interior_facet_domains(); i++)
     {
         unsigned int facet = 0; // TODO: would it be interesting to time all facets?
-        interior_facet_times[i] = time_tabulate_tensor(*data.interior_facet_integrals[i], data.A, data.w, c, facet);
+        interior_facet_times[i] = time_tabulate_tensor(*data.interior_facet_domains[i], data.A, data.w, c, facet);
 
         if(print_tensor)
         {
@@ -374,13 +370,3 @@ std::vector< std::vector<double> > tabulate_interior_facet_integral(const boost:
 
   return A;
 }
-
-
-
-
-
-
-
-
-
-

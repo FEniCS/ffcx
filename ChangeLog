@@ -1,3 +1,4 @@
+ - Rename num_foo_integrals --> num_foo_domains
  - Rename dof_map --> dofmap
  - Add finite_element::create
  - Add dof_map::create
