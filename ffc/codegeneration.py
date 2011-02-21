@@ -30,8 +30,9 @@ from ffc.interpolatevertexvalues import interpolate_vertex_values
 from ffc import quadrature
 from ffc import tensor
 
-# FIXME: Temporary
-not_implemented = "// Not implemented, please fix me!"
+# Errors issued for non-implemented functions
+map_from_reference_cell = "map_from_reference_cell not yet implemented (introduced in UFC 2.0)."
+map_to_reference_cell = "map_to_reference_cell not yet implemented (introduced in UFC 2.0)."
 
 def generate_code(ir, prefix, parameters):
     "Generate code from intermediate representation."
@@ -79,6 +80,7 @@ def _generate_element_code(ir, prefix, parameters):
     classname  = format["classname finite_element"]
     do_nothing = format["do nothing"]
     create     = format["create foo"]
+    exception  = format["exception"]
 
     # Codes generated together
     (evaluate_dof_code, evaluate_dofs_code) = evaluate_dof_and_dofs(ir["evaluate_dof"])
@@ -105,6 +107,8 @@ def _generate_element_code(ir, prefix, parameters):
     code["evaluate_dof"] = evaluate_dof_code
     code["evaluate_dofs"] = evaluate_dofs_code
     code["interpolate_vertex_values"] = interpolate_vertex_values(ir["interpolate_vertex_values"])
+    code["map_from_reference_cell"] = exception(map_from_reference_cell)
+    code["map_to_reference_cell"] = exception(map_to_reference_cell)
     code["num_sub_elements"] = ret(ir["num_sub_elements"])
     code["create_sub_element"] = _create_foo(prefix, "finite_element", ir["create_sub_element"])
     code["create"] = ret(create(code["classname"]))
