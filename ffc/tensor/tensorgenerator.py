@@ -9,7 +9,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Marie Rognes (meg@math.uio.no), 2007
 # Modified by Garth N. Wells, 2009
 # Modified by Mehdi Nikbakht, 2010
-# Last changed: 2011-01-08
+# Last changed: 2011-02-21
 
 # FFC modules
 from ffc.log import error
@@ -18,12 +18,17 @@ from ffc.cpp import format, remove_unused, count_ops
 # FFC tensor representation modules
 from ffc.tensor.monomialtransformation import MonomialIndex
 
+# Error issued for quadrature version of tabulate_tensor
+tabulate_tensor_quadrature_error = """\
+Quadrature version of tabulate_tensor not available when using the FFC tensor representation."""
+
 def generate_integral_code(ir, prefix, parameters):
     "Generate code for integral from intermediate representation."
 
     # Prefetch formatting to speedup code generation
     do_nothing = format["do nothing"]
     classname = format["classname " + ir["domain_type"] + "_integral"]
+    exception = format["exception"]
 
     # Generate code
     code = {}
@@ -34,6 +39,7 @@ def generate_integral_code(ir, prefix, parameters):
     code["initializer_list"] = ""
     code["destructor"] = do_nothing
     code["tabulate_tensor"] = _tabulate_tensor(ir, parameters)
+    code["tabulate_tensor_quadrature"] = exception(tabulate_tensor_quadrature_error)
 
     return code
 

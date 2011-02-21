@@ -6,7 +6,7 @@ __copyright__ = "Copyright (C) 2009-2010 Kristian B. Oelgaard"
 __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Mehdi Nikbakht, 2010
-# Last changed: 2010-06-15
+# Last changed: 2011-02-21
 
 # Python modules.
 import numpy
@@ -21,6 +21,10 @@ from ffc.cpp import format, remove_unused
 # Utility and optimisation functions for quadraturegenerator.
 from symbolics import generate_aux_constants
 
+# Error issued for quadrature version of tabulate_tensor
+tabulate_tensor_quadrature_error = """\
+Quadrature version of tabulate_tensor not yet implemented (introduced in UFC 2.0)."""
+
 def generate_integral_code(ir, prefix, parameters):
     "Generate code for integral from intermediate representation."
 
@@ -33,6 +37,7 @@ def generate_integral_code(ir, prefix, parameters):
     code["initializer_list"] = ""
     code["destructor"] = format["do nothing"]
     code["tabulate_tensor"] = _tabulate_tensor(ir, parameters)
+    code["tabulate_tensor_quadrature"] = format["exception"](tabulate_tensor_quadrature_error)
 
     return code
 
