@@ -145,7 +145,7 @@ public:
 
   /// Tabulate the tensor for the contribution from a local exterior facet
   /// using the specified reference cell quadrature points/weights
-  virtual void %(classname)s::tabulate_tensor(double* A,
+  virtual void tabulate_tensor(double* A,
                                const double * const * w,
                                const ufc::cell& c,
                                unsigned int num_quadrature_points,
