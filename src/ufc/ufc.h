@@ -175,15 +175,8 @@ namespace ufc
     /// Create a new finite element for sub element i (for a mixed element)
     virtual finite_element* create_sub_element(unsigned int i) const = 0;
 
-#ifdef UFC_DEV
-
     /// Create a new class instance
-    virtual finite_element* create() const
-    {
-      throw std::runtime_error("finite_element::create not implemented (introduced in UFC v1.6).");
-    }
-
-#endif
+    virtual finite_element* create() const = 0;
 
   };
 
@@ -257,15 +250,8 @@ namespace ufc
     /// Create a new dof_map for sub dof map i (for a mixed element)
     virtual dof_map* create_sub_dof_map(unsigned int i) const = 0;
 
-#ifdef UFC_DEV
-
     /// Create a new class instance
-    virtual dof_map* create() const
-    {
-      throw std::runtime_error("dof_map::create not implemented (introduced in UFC v1.6).");
-    }
-
-#endif
+    virtual dof_map* create() const = 0;
 
   };
 

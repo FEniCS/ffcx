@@ -1,7 +1,7 @@
-# Code generation format strings for UFC (Unified Form-assembly Code) v. 1.4.
+# Code generation format strings for UFC (Unified Form-assembly Code) v. 2.0.
 # This code is released into the public domain.
 #
-# The FEniCS Project (http://www.fenics.org/) 2006-2009.
+# The FEniCS Project (http://www.fenics.org/) 2006-2011.
 
 dof_map_combined = """\
 /// This class defines the interface for a local-to-global mapping of
@@ -131,6 +131,12 @@ public:
 %(create_sub_dof_map)s
   }
 
+  /// Create a new class instance
+  virtual ufc::dof_map* create() const
+  {
+%(create)s
+  }
+
 };
 """
 
@@ -204,6 +210,9 @@ public:
 
   /// Create a new dof_map for sub dof map i (for a mixed element)
   virtual ufc::dof_map* create_sub_dof_map(unsigned int i) const;
+
+  /// Create a new class instance
+  virtual ufc::dof_map* create() const;
 
 };
 """
@@ -329,4 +338,9 @@ ufc::dof_map* %(classname)s::create_sub_dof_map(unsigned int i) const
 %(create_sub_dof_map)s
 }
 
+/// Create a new class instance
+ufc::dof_map* %(classname)s::create() const
+{
+%(create)s
+}
 """
