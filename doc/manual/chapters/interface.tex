@@ -533,8 +533,12 @@ This factory function constructs a \texttt{ufc::finite\_element}
 object for subelement \texttt{i}. The argument \texttt{i} must be an
 integer between zero and the number of subelements
 (\texttt{num\_sub\_elements}) minus one. If the element is simple
-(non-nested), this function creates a copy of the finite element
-itself. The caller is responsible for deleting the returned object.
+(non-nested), this function returns a zero pointer. The caller is
+responsible for deleting the returned object.
+
+Note that in earlier versions of UFC, this function returned a copy of
+the element itself in the case of a simple element. To create a copy
+of the element, use the \emp{create} function instead.
 
 \subsection{The function \texttt{create}}
 
@@ -796,8 +800,12 @@ This factory function constructs a \texttt{ufc::dof\_map} object for
 subelement \texttt{i}. The argument \texttt{i} must be a number
 between zero and the number of sub-dofmaps
 (\texttt{num\_sub\_dof\_maps}) minus one. If the dofmap is simple
-(non-nested), this function creates a copy of the dofmap itself. The
-caller is responsible for deleting the returned object.
+(non-nested), this function returns a zero pointer. The caller is
+responsible for deleting the returned object.
+
+Note that in earlier versions of UFC, this function returned a copy of
+the dofmap itself in the case of a simple element. To create a copy
+of the element, use the \emp{create} function instead.
 
 \subsection{The function \texttt{create}}
 
