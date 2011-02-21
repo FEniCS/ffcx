@@ -469,6 +469,33 @@ the function is tensor-valued, the values are stored in the array
 \texttt{vertex\_values} row-major on the list of vertices followed by the
 row-major ordering of the tensor values as described above.
 
+\subsection{The function \texttt{map\_from\_reference\_cell}}
+
+Introduced in UFC 2.0.
+
+\begin{code}
+virtual void map_from_reference_cell(double* x,
+                                     const double* xhat,
+                                     const cell& c) = 0;
+\end{code}
+
+This function maps a given coordinate \texttt{xhat} on the reference
+cell to a coordinate \texttt{x} on a given \texttt{ufc::cell}.
+
+\subsection{The function \texttt{map\_to\_reference\_cell}}
+
+Introduced in UFC 2.0.
+
+\begin{code}
+virtual void map_to_reference_cell(double* xhat,
+                                   const double* x,
+                                   const cell& c) = 0;
+\end{code}
+
+This function maps a given coordinate \texttt{x} on a given
+\texttt{ufc::cell} to a coordinate \texttt{xhat} on the reference
+cell.
+
 \subsection{The function \texttt{num\_sub\_elements}}
 
 \begin{code}
@@ -510,6 +537,8 @@ integer between zero and the number of subelements
 itself. The caller is responsible for deleting the returned object.
 
 \subsection{The function \texttt{create}}
+
+Introduced in UFC 2.0.
 
 \begin{code}
 virtual finite_element* create() const = 0;
@@ -743,7 +772,7 @@ The size of the output array \texttt{coordinates} should be equal to
 the value returned by \texttt{local\_dimension()} and the size of each
 subarray \texttt{coordi\-nates[0]}, \texttt{coordinates[1]} etc should
 be equal to the geometric dimension of the mesh, which can be obtained
-with the function \texttt{dof\_map::geometric\_dimension()}.
+with the function \texttt{dof\_map::geometric\_\-dimension()}.
 
 \subsection{The function \texttt{num\_sub\_dof\_maps}}
 
@@ -771,6 +800,8 @@ between zero and the number of sub-dofmaps
 caller is responsible for deleting the returned object.
 
 \subsection{The function \texttt{create}}
+
+Introduced in UFC 2.0.
 
 \begin{code}
 virtual dofmap* create() const = 0;
