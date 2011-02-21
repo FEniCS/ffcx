@@ -2,9 +2,9 @@
 Testing form
 ------------
 0_num_coefficients = 1
-1_num_cell_integrals = 3
-2_num_exterior_facet_integrals = 6
-3_num_interior_facet_integrals = 0
+1_num_cell_domains = 3
+2_num_exterior_facet_domains = 6
+3_num_interior_facet_domains = 0
 
 Testing finite_element
 ----------------------
@@ -39,7 +39,7 @@ Testing finite_element
 32_interpolate_vertex_values = 0.140720811 0.358429071 0.147608811 0.04602500100000001
 33_num_sub_elements = 0
 
-Testing dof_map
+Testing dofmap
 ---------------
 34_needs_mesh_entities_0 = 1
 35_needs_mesh_entities_1 = 0
@@ -81,7 +81,7 @@ Testing dof_map
 71_tabulate_coordinates_1 = 0.5610000000000001 0.767 0.833
 72_tabulate_coordinates_2 = 0.987 0.783 0.191
 73_tabulate_coordinates_3 = 0.123 0.5610000000000001 0.667
-74_num_sub_dof_maps = 0
+74_num_sub_dofmaps = 0
 
 Testing cell_integral
 ---------------------

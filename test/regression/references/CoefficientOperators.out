@@ -2,9 +2,9 @@
 Testing form
 ------------
 0_num_coefficients = 2
-1_num_cell_integrals = 1
-2_num_exterior_facet_integrals = 0
-3_num_interior_facet_integrals = 0
+1_num_cell_domains = 1
+2_num_exterior_facet_domains = 0
+3_num_interior_facet_domains = 0
 
 Testing finite_element
 ----------------------
@@ -118,7 +118,7 @@ Testing finite_element
 102_interpolate_vertex_values = 0.3079230000000001 0.430287 0.772821
 103_num_sub_elements = 0
 
-Testing dof_map
+Testing dofmap
 ---------------
 104_needs_mesh_entities_0 = 1
 105_needs_mesh_entities_1 = 0
@@ -148,9 +148,9 @@ Testing dof_map
 129_tabulate_coordinates_0 = 0.903 0.341
 130_tabulate_coordinates_1 = 0.5610000000000001 0.767
 131_tabulate_coordinates_2 = 0.987 0.783
-132_num_sub_dof_maps = 0
+132_num_sub_dofmaps = 0
 
-Testing dof_map
+Testing dofmap
 ---------------
 133_needs_mesh_entities_0 = 1
 134_needs_mesh_entities_1 = 0
@@ -180,9 +180,9 @@ Testing dof_map
 158_tabulate_coordinates_0 = 0.903 0.341
 159_tabulate_coordinates_1 = 0.5610000000000001 0.767
 160_tabulate_coordinates_2 = 0.987 0.783
-161_num_sub_dof_maps = 0
+161_num_sub_dofmaps = 0
 
-Testing dof_map
+Testing dofmap
 ---------------
 162_needs_mesh_entities_0 = 1
 163_needs_mesh_entities_1 = 0
@@ -212,9 +212,9 @@ Testing dof_map
 187_tabulate_coordinates_0 = 0.903 0.341
 188_tabulate_coordinates_1 = 0.5610000000000001 0.767
 189_tabulate_coordinates_2 = 0.987 0.783
-190_num_sub_dof_maps = 0
+190_num_sub_dofmaps = 0
 
-Testing dof_map
+Testing dofmap
 ---------------
 191_needs_mesh_entities_0 = 1
 192_needs_mesh_entities_1 = 0
@@ -244,7 +244,7 @@ Testing dof_map
 216_tabulate_coordinates_0 = 0.903 0.341
 217_tabulate_coordinates_1 = 0.5610000000000001 0.767
 218_tabulate_coordinates_2 = 0.987 0.783
-219_num_sub_dof_maps = 0
+219_num_sub_dofmaps = 0
 
 Testing cell_integral
 ---------------------

@@ -327,10 +327,10 @@ void test_finite_element(ufc::finite_element& element)
 }
 
 // Function for testing ufc::element objects
-void test_dofmap(ufc::dof_map& dofmap, ufc::shape cell_shape)
+void test_dofmap(ufc::dofmap& dofmap, ufc::shape cell_shape)
 {
   std::cout << std::endl;
-  std::cout << "Testing dof_map" << std::endl;
+  std::cout << "Testing dofmap" << std::endl;
   std::cout << "---------------" << std::endl;
 
   // Prepare arguments
@@ -411,13 +411,13 @@ void test_dofmap(ufc::dof_map& dofmap, ufc::shape cell_shape)
   for (uint i = 0; i < dofmap.local_dimension(c); i++)
     print_array("tabulate_coordinates", c.geometric_dimension, coordinates[i], i);
 
-  // num_sub_dof_maps
-  print_scalar("num_sub_dof_maps", dofmap.num_sub_dof_maps());
+  // num_sub_dofmaps
+  print_scalar("num_sub_dofmaps", dofmap.num_sub_dofmaps());
 
-  // create_sub_dof_map
-  for (uint i = 0; i < dofmap.num_sub_dof_maps(); i++)
+  // create_sub_dofmap
+  for (uint i = 0; i < dofmap.num_sub_dofmaps(); i++)
   {
-    ufc::dof_map* sub_dofmap = dofmap.create_sub_dof_map(i);
+    ufc::dofmap* sub_dofmap = dofmap.create_sub_dofmap(i);
     test_dofmap(*sub_dofmap, cell_shape);
     delete sub_dofmap;
   }
@@ -624,14 +624,14 @@ void test_form(ufc::form& form, bool bench)
   // num_coefficients
   print_scalar("num_coefficients", form.num_coefficients());
 
-  // num_cell_integrals
-  print_scalar("num_cell_integrals", form.num_cell_integrals());
+  // num_cell_domains
+  print_scalar("num_cell_domains", form.num_cell_domains());
 
-  // num_exterior_facet_integrals
-  print_scalar("num_exterior_facet_integrals", form.num_exterior_facet_integrals());
+  // num_exterior_facet_domains
+  print_scalar("num_exterior_facet_domains", form.num_exterior_facet_domains());
 
-  // num_interior_facet_integrals
-  print_scalar("num_interior_facet_integrals", form.num_interior_facet_integrals());
+  // num_interior_facet_domains
+  print_scalar("num_interior_facet_domains", form.num_interior_facet_domains());
 
   // create_finite_element
   for (uint i = 0; i < form.rank() + form.num_coefficients(); i++)
@@ -641,16 +641,16 @@ void test_form(ufc::form& form, bool bench)
     delete element;
   }
 
-  // create_dof_map
+  // create_dofmap
   for (uint i = 0; i < form.rank() + form.num_coefficients(); i++)
   {
-    ufc::dof_map* dofmap = form.create_dof_map(i);
+    ufc::dofmap* dofmap = form.create_dofmap(i);
     test_dofmap(*dofmap, cell_shape);
     delete dofmap;
   }
 
   // create_cell_integral
-  for (uint i = 0; i < form.num_cell_integrals(); i++)
+  for (uint i = 0; i < form.num_cell_domains(); i++)
   {
     ufc::cell_integral* integral = form.create_cell_integral(i);
     if (integral)
@@ -659,7 +659,7 @@ void test_form(ufc::form& form, bool bench)
   }
 
   // create_exterior_facet_integral
-  for (uint i = 0; i < form.num_exterior_facet_integrals(); i++)
+  for (uint i = 0; i < form.num_exterior_facet_domains(); i++)
   {
     ufc::exterior_facet_integral* integral = form.create_exterior_facet_integral(i);
     if (integral)
@@ -668,7 +668,7 @@ void test_form(ufc::form& form, bool bench)
   }
 
   // create_interior_facet_integral
-  for (uint i = 0; i < form.num_interior_facet_integrals(); i++)
+  for (uint i = 0; i < form.num_interior_facet_domains(); i++)
   {
     ufc::interior_facet_integral* integral = form.create_interior_facet_integral(i);
     if (integral)
