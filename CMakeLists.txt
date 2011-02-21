@@ -102,16 +102,13 @@ if (UFC_ENABLE_PYTHON AND SWIG_FOUND AND Boost_FOUND)
 
   # SWIG sources
   set(SWIG_SOURCES src/ufc/ufc.i)
-
+  set(SWIG_MODULE_${SWIG_MODULE_NAME}_EXTRA_DEPS ${UFC_H})
   set_source_files_properties(${SWIG_SOURCES} PROPERTIES CPLUSPLUS ON)
-
   swig_add_module(${SWIG_MODULE_NAME} python ${SWIG_SOURCES})
 
   # Is this required?
   swig_link_libraries(ufc ${PYTHON_LIBRARIES})
-
   get_target_property(SWIG_MODULE_LOCATION ${SWIG_MODULE_ufc_REAL_NAME} LOCATION)
-
   message("SWIG_MODULE_LOCATION ${SWIG_MODULE_LOCATION}")
 
   # Install the swig file

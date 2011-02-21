@@ -1,5 +1,5 @@
  - Add quadrature version of tabulate_tensor
- - Add finite_element::map_{from,to}_reference_element
+ - Add finite_element::map_{from,to}_reference_cell
  - Add finite_element::{topological,geometric}_dimension
  - Add dofmap::topological_dimension
  - Rename num_foo_integrals --> num_foo_domains
