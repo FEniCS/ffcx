@@ -194,6 +194,44 @@ number of vertices of the cell. The length of the array
 \texttt{geometric\_dimension} and it should contain the $x$, $y$,
 \ldots coordinates of the first vertex etc.
 
+\subsection{The integer \texttt{index}}
+Introduced in UFC version 2.0.
+
+\begin{code}
+unsigned int index;
+\end{code}
+
+The integer \texttt{index} should contain the global index for the
+cell. This is a short-cut for
+\texttt{entity\_indices[topological\_dimension][0]}.
+
+\subsection{The integer \texttt{local\_facet}}
+Introduced in UFC version 2.0.
+
+\begin{code}
+int local_facet;
+\end{code}
+
+The integer \texttt{local\_facet} can be used during callbacks to the
+\texttt{evaluate} function of \texttt{ufc::function} to specify the
+local index of a facet (relative to the cell) on which the function is
+being evaluated. In all other cases, this variable should be set to
+\texttt{-1}.
+
+\subsection{The integer \texttt{mesh\_identifier}}
+Introduced in UFC version 2.0.
+
+\begin{code}
+int mesh_identifier;
+\end{code}
+
+The integer \texttt{mesh\_identifier} can be used during callbacks to
+the \texttt{evaluate} function of \texttt{ufc::function} to specify a
+global identifier for the mesh on which the function is being
+evaluated. This allows \texttt{ufc::function} subclasses to handle
+evaluation differently on different meshes. If not used, this variable
+should be set to \texttt{-1}.
+
 \section{The class \texttt{ufc::function}}
 \index{\texttt{ufc::function}}
 
@@ -259,7 +297,7 @@ This function returns the shape of the cell the finite element is
 defined on.
 
 \subsection{The function \texttt{topological\_dimension}}
-Introduced in version 2.0.
+Introduced in UFC version 2.0.
 
 \begin{code}
 virtual unsigned int topological_dimension() const = 0;
@@ -269,7 +307,7 @@ This function returns the topological dimension of the cell the finite
 element is defined on.
 
 \subsection{The function \texttt{geometric\_dimension}}
-Introduced in version 2.0.
+Introduced in UFC version 2.0.
 
 \begin{code}
 virtual unsigned int geometric_dimension() const = 0;
@@ -345,7 +383,7 @@ result is undefined.~\footnote{In particular, the basis functions
   is singular along that line.}
 
 \subsection{The function \texttt{evaluate\_basis\_all}}
-Introduced in version 1.1.
+Introduced in UFC version 1.1.
 
 \begin{code}
 virtual void evaluate_basis_all(double* values,
@@ -401,7 +439,7 @@ Note that just as for \texttt{evaluate\_basis}, the point defined by
 result is otherwise undefined.
 
 \subsection{The function \texttt{evaluate\_basis\_derivatives\_all}}
-Introduced in version 1.1.
+Introduced in UFC version 1.1.
 
 \begin{code}
 virtual void
@@ -441,7 +479,7 @@ of degrees of freedom include weighted integrals over facets or normal
 components on facets.
 
 \subsection{The function \texttt{evaluate\_dofs}}
-Introduced in version 1.1.
+Introduced in UFC version 1.1.
 
 \begin{code}
 virtual void evaluate_dofs(double* values,
@@ -470,8 +508,7 @@ the function is tensor-valued, the values are stored in the array
 row-major ordering of the tensor values as described above.
 
 \subsection{The function \texttt{map\_from\_reference\_cell}}
-
-Introduced in UFC 2.0.
+Introduced in UFC version 2.0.
 
 \begin{code}
 virtual void map_from_reference_cell(double* x,
@@ -483,8 +520,7 @@ This function maps a given coordinate \texttt{xhat} on the reference
 cell to a coordinate \texttt{x} on a given \texttt{ufc::cell}.
 
 \subsection{The function \texttt{map\_to\_reference\_cell}}
-
-Introduced in UFC 2.0.
+Introduced in UFC version 2.0.
 
 \begin{code}
 virtual void map_to_reference_cell(double* xhat,
@@ -538,11 +574,10 @@ responsible for deleting the returned object.
 
 Note that in earlier versions of UFC, this function returned a copy of
 the element itself in the case of a simple element. To create a copy
-of the element, use the \emp{create} function instead.
+of the element, use the \texttt{create} function instead.
 
 \subsection{The function \texttt{create}}
-
-Introduced in UFC 2.0.
+Introduced in UFC version 2.0.
 
 \begin{code}
 virtual finite_element* create() const = 0;
@@ -628,7 +663,7 @@ true, this function must be called after \texttt{init\_cell} is called
 for each cell in the mesh to complete initialization of the dofmap.
 
 \subsection{The function \texttt{topological\_dimension}}
-Introduced in version 1.1.
+Introduced in UFC version 1.1.
 
 \begin{code}
 virtual unsigned int topological_dimension() const = 0;
@@ -638,7 +673,7 @@ This function returns the topological dimension of the associated cell
 shape.
 
 \subsection{The function \texttt{geometric\_dimension}}
-Introduced in version 2.0.
+Introduced in UFC version 2.0.
 
 \begin{code}
 virtual unsigned int geometric_dimension() const = 0;
@@ -669,7 +704,7 @@ This function returns the dimension of the local finite element space
 on a given cell.
 
 \subsection{The function \texttt{max\_local\_dimension}}
-Introduced in version 1.2.
+Introduced in UFC version 1.2.
 
 \begin{code}
 virtual unsigned int max_local_dimension() const = 0;
@@ -692,7 +727,7 @@ This is also the number of dofs that should be set if a Dirichlet
 boundary condition is applied to a single facet.
 
 \subsection{The function \texttt{num\_entity\_dofs}}
-Introduced in version 1.1.
+Introduced in UFC version 1.1.
 
 \begin{code}
 virtual unsigned int num_entity_dofs(unsigned int d) const = 0;
@@ -731,7 +766,7 @@ incident with the facet. The size of the output array \texttt{dofs} should
 equal the value returned by \texttt{num\_facet\_dofs}.
 
 \subsection{The function \texttt{tabulate\_entity\_dofs}}
-Introduced in version 1.1.
+Introduced in UFC version 1.1.
 
 \begin{code}
 virtual void tabulate_entity_dofs(unsigned int* dofs,
@@ -805,11 +840,10 @@ responsible for deleting the returned object.
 
 Note that in earlier versions of UFC, this function returned a copy of
 the dofmap itself in the case of a simple element. To create a copy
-of the element, use the \emp{create} function instead.
+of the element, use the \texttt{create} function instead.
 
 \subsection{The function \texttt{create}}
-
-Introduced in UFC 2.0.
+Introduced in UFC version 2.0.
 
 \begin{code}
 virtual dofmap* create() const = 0;
@@ -869,8 +903,7 @@ space.
 
 \subsection{The function \texttt{tabulate\_tensor} (quadrature version)}
 \index{\texttt{tabulate\_tensor} (quadrature version)}
-
-Introduced in version 2.0
+Introduced in UFC version version 2.0
 
 \begin{code}
 virtual void
@@ -923,8 +956,7 @@ integer between zero and three (0, 1, 2, 3).
 
 \subsection{The function \texttt{tabulate\_tensor} (quadrature version)}
 \index{\texttt{tabulate\_tensor} (quadrature version)}
-
-Introduced in version 2.0
+Introduced in version version 2.0
 
 \begin{code}
 virtual void
@@ -1009,8 +1041,7 @@ an integer between zero and three (0, 1, 2, 3).
 
 \subsection{The function \texttt{tabulate\_tensor} (quadrature version)}
 \index{\texttt{tabulate\_tensor} (quadrature version)}
-
-Introduced in version 2.0
+Introduced in version version 2.0
 
 \begin{code}
 virtual void
