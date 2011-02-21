@@ -1,3 +1,4 @@
+ - Rename dof_map --> dofmap
  - Add finite_element::create
  - Add dof_map::create
 1.4.2 [2010-09-01]

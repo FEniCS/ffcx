@@ -183,15 +183,15 @@ namespace ufc
   /// This class defines the interface for a local-to-global mapping of
   /// degrees of freedom (dofs).
 
-  class dof_map
+  class dofmap
   {
   public:
 
     /// Constructor
-    dof_map() {}
+    dofmap() {}
 
     /// Destructor
-    virtual ~dof_map() {}
+    virtual ~dofmap() {}
 
     /// Return a string identifying the dof map
     virtual const char* signature() const = 0;
@@ -245,13 +245,13 @@ namespace ufc
                                       const cell& c) const = 0;
 
     /// Return the number of sub dof maps (for a mixed element)
-    virtual unsigned int num_sub_dof_maps() const = 0;
+    virtual unsigned int num_sub_dofmaps() const = 0;
 
-    /// Create a new dof_map for sub dof map i (for a mixed element)
-    virtual dof_map* create_sub_dof_map(unsigned int i) const = 0;
+    /// Create a new dofmap for sub dof map i (for a mixed element)
+    virtual dofmap* create_sub_dofmap(unsigned int i) const = 0;
 
     /// Create a new class instance
-    virtual dof_map* create() const = 0;
+    virtual dofmap* create() const = 0;
 
   };
 
@@ -369,7 +369,7 @@ namespace ufc
     virtual finite_element* create_finite_element(unsigned int i) const = 0;
 
     /// Create a new dof map for argument function i
-    virtual dof_map* create_dof_map(unsigned int i) const = 0;
+    virtual dofmap* create_dofmap(unsigned int i) const = 0;
 
     /// Create a new cell integral on sub domain i
     virtual cell_integral* create_cell_integral(unsigned int i) const = 0;

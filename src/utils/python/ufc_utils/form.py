@@ -77,10 +77,10 @@ public:
 %(create_finite_element)s
   }
 
-  /// Create a new dof map for argument function i
-  virtual ufc::dof_map* create_dof_map(unsigned int i) const
+  /// Create a new dofmap for argument function i
+  virtual ufc::dofmap* create_dofmap(unsigned int i) const
   {
-%(create_dof_map)s
+%(create_dofmap)s
   }
 
   /// Create a new cell integral on sub domain i
@@ -152,7 +152,7 @@ public:
   virtual ufc::finite_element* create_finite_element(unsigned int i) const;
 
   /// Create a new dof map for argument function i
-  virtual ufc::dof_map* create_dof_map(unsigned int i) const;
+  virtual ufc::dofmap* create_dofmap(unsigned int i) const;
 
   /// Create a new cell integral on sub domain i
   virtual ufc::cell_integral* create_cell_integral(unsigned int i) const;
@@ -222,9 +222,9 @@ ufc::finite_element* %(classname)s::create_finite_element(unsigned int i) const
 }
 
 /// Create a new dof map for argument function i
-ufc::dof_map* %(classname)s::create_dof_map(unsigned int i) const
+ufc::dofmap* %(classname)s::create_dofmap(unsigned int i) const
 {
-%(create_dof_map)s
+%(create_dofmap)s
 }
 
 /// Create a new cell integral on sub domain i

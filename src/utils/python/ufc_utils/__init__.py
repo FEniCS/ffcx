@@ -4,7 +4,7 @@ Three format strings are defined for each of the following UFC classes:
 
     function
     finite_element
-    dof_map
+    dofmap
     cell_integral
     exterior_facet_integral
     interior_facet_integral
@@ -40,16 +40,16 @@ UFC_VERSION = __version__
 
 from function import *
 from finite_element import *
-from dof_map import *
+from dofmap import *
 from integrals import *
 from form import *
 from build import build_ufc_module
 
 # Check if we should import development/experimental version
-import os
-if "UFC_DEV" in os.environ:
-    from finite_element_1_6 import *
-    from dof_map_1_6 import *
+#import os
+#if "UFC_DEV" in os.environ:
+#    from finite_element_1_6 import *
+#    from dofmap_1_6 import *
 
 templates = {"function_header":                        function_header,
              "function_implementation":                function_implementation,
@@ -57,9 +57,9 @@ templates = {"function_header":                        function_header,
              "finite_element_header":                  finite_element_header,
              "finite_element_implementation":          finite_element_implementation,
              "finite_element_combined":                finite_element_combined,
-             "dof_map_header":                         dof_map_header,
-             "dof_map_implementation":                 dof_map_implementation,
-             "dof_map_combined":                       dof_map_combined,
+             "dofmap_header":                          dofmap_header,
+             "dofmap_implementation":                  dofmap_implementation,
+             "dofmap_combined":                        dofmap_combined,
              "cell_integral_header":                   cell_integral_header,
              "cell_integral_implementation":           cell_integral_implementation,
              "cell_integral_combined":                 cell_integral_combined,

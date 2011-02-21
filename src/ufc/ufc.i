@@ -24,7 +24,7 @@
 
 %shared_ptr(ufc::form)
 %shared_ptr(ufc::finite_element)
-%shared_ptr(ufc::dof_map)
+%shared_ptr(ufc::dofmap)
 %shared_ptr(ufc::cell_integral)
 %shared_ptr(ufc::exterior_facet_integral)
 %shared_ptr(ufc::interior_facet_integral)
@@ -33,7 +33,7 @@
 
 SWIG_SHARED_PTR(form,ufc::form)
 SWIG_SHARED_PTR(finite_element,ufc::finite_element)
-SWIG_SHARED_PTR(dof_map,ufc::dof_map)
+SWIG_SHARED_PTR(dofmap,ufc::dofmap)
 SWIG_SHARED_PTR(cell_integral,ufc::cell_integral)
 SWIG_SHARED_PTR(exterior_facet_integral,ufc::exterior_facet_integral)
 SWIG_SHARED_PTR(interior_facet_integral,ufc::interior_facet_integral)

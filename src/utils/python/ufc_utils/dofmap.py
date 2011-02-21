@@ -3,16 +3,16 @@
 #
 # The FEniCS Project (http://www.fenics.org/) 2006-2011.
 
-dof_map_combined = """\
+dofmap_combined = """\
 /// This class defines the interface for a local-to-global mapping of
 /// degrees of freedom (dofs).
 
-class %(classname)s: public ufc::dof_map
+class %(classname)s: public ufc::dofmap
 {%(members)s
 public:
 
   /// Constructor
-  %(classname)s(%(constructor_arguments)s) : ufc::dof_map()%(initializer_list)s
+  %(classname)s(%(constructor_arguments)s) : ufc::dofmap()%(initializer_list)s
   {
 %(constructor)s
   }
@@ -120,19 +120,19 @@ public:
   }
 
   /// Return the number of sub dof maps (for a mixed element)
-  virtual unsigned int num_sub_dof_maps() const
+  virtual unsigned int num_sub_dofmaps() const
   {
-%(num_sub_dof_maps)s
+%(num_sub_dofmaps)s
   }
 
-  /// Create a new dof_map for sub dof map i (for a mixed element)
-  virtual ufc::dof_map* create_sub_dof_map(unsigned int i) const
+  /// Create a new dofmap for sub dof map i (for a mixed element)
+  virtual ufc::dofmap* create_sub_dofmap(unsigned int i) const
   {
-%(create_sub_dof_map)s
+%(create_sub_dofmap)s
   }
 
   /// Create a new class instance
-  virtual ufc::dof_map* create() const
+  virtual ufc::dofmap* create() const
   {
 %(create)s
   }
@@ -140,11 +140,11 @@ public:
 };
 """
 
-dof_map_header = """\
+dofmap_header = """\
 /// This class defines the interface for a local-to-global mapping of
 /// degrees of freedom (dofs).
 
-class %(classname)s: public ufc::dof_map
+class %(classname)s: public ufc::dofmap
 {%(members)s
 public:
 
@@ -206,20 +206,20 @@ public:
                                     const ufc::cell& c) const;
 
   /// Return the number of sub dof maps (for a mixed element)
-  virtual unsigned int num_sub_dof_maps() const;
+  virtual unsigned int num_sub_dofmaps() const;
 
-  /// Create a new dof_map for sub dof map i (for a mixed element)
-  virtual ufc::dof_map* create_sub_dof_map(unsigned int i) const;
+  /// Create a new dofmap for sub dof map i (for a mixed element)
+  virtual ufc::dofmap* create_sub_dofmap(unsigned int i) const;
 
   /// Create a new class instance
-  virtual ufc::dof_map* create() const;
+  virtual ufc::dofmap* create() const;
 
 };
 """
 
-dof_map_implementation = """\
+dofmap_implementation = """\
 /// Constructor
-%(classname)s::%(classname)s(%(constructor_arguments)s) : ufc::dof_map()%(initializer_list)s
+%(classname)s::%(classname)s(%(constructor_arguments)s) : ufc::dofmap()%(initializer_list)s
 {
 %(constructor)s
 }
@@ -327,19 +327,19 @@ void %(classname)s::tabulate_coordinates(double** coordinates,
 }
 
 /// Return the number of sub dof maps (for a mixed element)
-unsigned int %(classname)s::num_sub_dof_maps() const
+unsigned int %(classname)s::num_sub_dofmaps() const
 {
-%(num_sub_dof_maps)s
+%(num_sub_dofmaps)s
 }
 
-/// Create a new dof_map for sub dof map i (for a mixed element)
-ufc::dof_map* %(classname)s::create_sub_dof_map(unsigned int i) const
+/// Create a new dofmap for sub dof map i (for a mixed element)
+ufc::dofmap* %(classname)s::create_sub_dofmap(unsigned int i) const
 {
-%(create_sub_dof_map)s
+%(create_sub_dofmap)s
 }
 
 /// Create a new class instance
-ufc::dof_map* %(classname)s::create() const
+ufc::dofmap* %(classname)s::create() const
 {
 %(create)s
 }

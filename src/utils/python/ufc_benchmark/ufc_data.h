@@ -33,12 +33,12 @@ namespace ufc
 
       for(unsigned i=0; i<num_arguments; i++)
       {
-        dofmaps[i]    = form.create_dof_map(i);
+        dofmaps[i]    = form.create_dofmap(i);
         elements[i]   = form.create_finite_element(i);
         dimensions[i] = dofmaps[i]->max_local_dimension();
 
         if(dimensions[i] != elements[i]->space_dimension())
-          throw std::runtime_error("Mismatching dimensions between finite_elements and dof_maps!");
+          throw std::runtime_error("Mismatching dimensions between finite_elements and dofmaps!");
 
         if(elements[0]->cell_shape() != elements[i]->cell_shape())
           throw std::runtime_error("Mismatching cell shapes in elements!");
@@ -129,19 +129,19 @@ namespace ufc
 
     const ufc::form & form;
 
-    vector< ufc::dof_map * >        dofmaps;
+    vector< ufc::dofmap * > dofmaps;
     vector< ufc::finite_element * > elements;
 
-    vector< ufc::cell_integral *>             cell_integrals;
-    vector< ufc::exterior_facet_integral *>   exterior_facet_integrals;
-    vector< ufc::interior_facet_integral *>   interior_facet_integrals;
+    vector< ufc::cell_integral *> cell_integrals;
+    vector< ufc::exterior_facet_integral *> exterior_facet_integrals;
+    vector< ufc::interior_facet_integral *> interior_facet_integrals;
 
     unsigned rank;
     unsigned num_coefficients;
     unsigned num_arguments;
     unsigned A_size;
 
-    unsigned   *  dimensions;
+    unsigned * dimensions;
     double *  A;
     double *  macro_A;
     double ** w;
