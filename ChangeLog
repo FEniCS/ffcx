@@ -1,3 +1,4 @@
+0.9.9
  - Updates for UFC 2.0
  - Set minimal degree to 1 in automatic degree selection for expressions
  - Add command-line option -f no_ferari
