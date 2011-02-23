@@ -1,4 +1,5 @@
 0.9.9
+ - Add support for generating error control forms with option -e
  - Updates for UFC 2.0
  - Set minimal degree to 1 in automatic degree selection for expressions
  - Add command-line option -f no_ferari
