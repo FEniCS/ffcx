@@ -9,5 +9,5 @@ element = FiniteElement("Lagrange", tetrahedron, 3)
 
 v = TestFunction(element)
 u = TrialFunction(element)
-    
-a = v*u*dx
+
+a = u*v*dx

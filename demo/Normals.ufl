@@ -12,8 +12,8 @@ element = VectorElement("Lagrange", cell, 1)
 
 n = cell.n
 
-u = TestFunction(element)
 v = TrialFunction(element)
+u = TestFunction(element)
 
-a = dot(u, v)*ds
-L = dot(n, v)*ds
+a = dot(v, u)*ds
+L = dot(n, u)*ds

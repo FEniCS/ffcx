@@ -14,5 +14,5 @@ f = Coefficient(element)
 c = Constant(triangle)
 d = VectorConstant(triangle)
 
-a = c*inner(grad(v), grad(u))*dx
+a = c*inner(grad(u), grad(v))*dx
 L = inner(d, grad(v))*dx

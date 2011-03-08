@@ -1,14 +1,17 @@
-# Copyright (C) 2008 Anders Logg (logg@simula.no) and Kristian B. Oelgaard (k.b.oelgaard@tudelft.nl)
+# Copyright (C) 2008 Anders Logg (logg@simula.no) and Kristian
+# B. Oelgaard (k.b.oelgaard@tudelft.nl)
+#
 # Licensed under the GNU GPL version 3 or any later version
 #
-# This simple example illustrates how forms can be defined on different sub domains.
-# It is supported for all three integral types.
+# This simple example illustrates how forms can be defined on
+# different sub domains.  It is supported for all three integral
+# types.
 #
 # Compile this form with FFC: ffc SubDomains.ufl
 
 element = FiniteElement("CG", tetrahedron, 1)
 
-v = TestFunction(element)
 u = TrialFunction(element)
+v = TestFunction(element)
 
-a = v*u*dx(0) + 10.0*v*u*dx(1) + v*u*ds(0) + 2.0*v*u*ds(1) + v('+')*u('+')*dS(0) + 4.3*v('+')*u('+')*dS(1)
+a = u*v*dx(0) + 10.0*u*v*dx(1) + u*v*ds(0) + 2.0*u*v*ds(1) + u('+')*v('+')*dS(0) + 4.3*u('+')*v'+')*dS(1)
