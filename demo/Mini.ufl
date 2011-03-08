@@ -2,20 +2,18 @@
 # Licensed under the GNU GPL version 3 or any later version
 #
 # Illustration of vector sum of elements (EnrichedElement): The
-# bilinear form a(v, u) for the Stokes equations using a mixed
+# bilinear form a(u, v) for the Stokes equations using a mixed
 # formulation involving the Mini element. The velocity element is
 # composed of a P1 element augmented by the cubic bubble function.
 
 # Compile this form with FFC: ffc Mini.ufl
-
 
 P1 = VectorElement("Lagrange", triangle, 1)
 B = VectorElement("Bubble", triangle, 3)
 Q = FiniteElement("CG", triangle, 1)
 
 Mini =  (P1 + B)*Q
-
-(v, q) = TestFunctions(Mini)
 (u, p) = TrialFunctions(Mini)
+(v, q) = TestFunctions(Mini)
 
-a = (inner(grad(v), grad(u)) - div(v)*p + q*div(u))*dx
+a = (inner(grad(u), grad(v)) - div(v)*p + div(u)*q)*dx

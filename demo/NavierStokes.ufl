@@ -8,9 +8,9 @@
 
 element = VectorElement("Lagrange", tetrahedron, 1)
 
-v = TestFunction(element)
 u = TrialFunction(element)
+v = TestFunction(element)
 
 w = Coefficient(element)
 
-a = v[i]*w[j]*Dx(u[i], j)*dx
+a = w[j]*Dx(u[i], j)*v[i]*dx

@@ -2,9 +2,9 @@
 # Licensed under the GNU LGPL Version 2.1.
 #
 # First added:  2009-09-29
-# Last changed: 2009-10-16
+# Last changed: 2011-03-08
 #
-# The bilinear form a(v, u) and linear form L(v) for
+# The bilinear form a(u, v) and linear form L(v) for
 # a hyperelastic model. (Copied from dolfin/demo/pde/hyperelasticity/cpp)
 #
 # Compile this form with FFC: ffc HyperElasticity.ufl.

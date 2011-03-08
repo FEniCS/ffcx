@@ -3,9 +3,9 @@
 # Licensed under the GNU LGPL Version 2.1.
 #
 # First added:  2009-06-26
-# Last changed: 2009-09-14
+# Last changed: 2011-03-08
 #
-# The bilinear form a(v, u) and linear form L(v) for
+# The bilinear form a(u, v) and linear form L(v) for
 # Biharmonic equation in a discontinuous Galerkin (DG)
 # formulation.
 #
@@ -14,9 +14,9 @@
 # Elements
 element = FiniteElement("Lagrange", triangle, 2)
 
-# Test and trial functions
-v = TestFunction(element)
+# Trial and test functions
 u = TrialFunction(element)
+v = TestFunction(element)
 f = Coefficient(element)
 
 # Normal component, mesh size and right-hand side
@@ -27,10 +27,10 @@ h = Constant(triangle)
 alpha = Constant(triangle)
 
 # Bilinear form
-a = inner(div(grad(v)), div(grad(u)))*dx \
-  - inner(avg(div(grad(v))), jump(grad(u), n))*dS \
-  - inner(jump(grad(v), n), avg(div(grad(u))))*dS \
-  + alpha('+')/h('+')*inner(jump(grad(v),n), jump(grad(u),n))*dS
+a = inner(div(grad(u)), div(grad(v)))*dx \
+  - inner(jump(grad(u), n), avg(div(grad(v))))*dS \
+  - inner(avg(div(grad(u))), jump(grad(v), n))*dS \
+  + alpha('+')/h('+')*inner(jump(grad(u),n), jump(grad(v),n))*dS
 
 # Linear form
-L = v*f*dx
+L = f*v*dx

@@ -7,10 +7,10 @@
 
 element = FiniteElement("Lagrange", triangle, 1)
 
-v = TestFunction(element)
 u = TrialFunction(element)
+v = TestFunction(element)
 f = Coefficient(element)
 g = Coefficient(element)
 
-a = sqrt(1/abs(1/f))*sqrt(g)*inner(grad(v), grad(u))*dx + v*u*sqrt(f*g)*g*dx
+a = sqrt(1/abs(1/f))*sqrt(g)*inner(grad(u), grad(v))*dx + sqrt(f*g)*g*u*v*dx
 

@@ -1,9 +1,10 @@
-# Copyright (C) 2006-2007 Anders Logg (logg@simula.no) and Marie Rognes (meg@math.uio.no)"
-# Licensed under the GNU GPL version 3 or any later version
+# Copyright (C) 2006-2007 Anders Logg (logg@simula.no) and Marie
+# Rognes (meg@simula.no)"
 #
-# The bilinear form a(v, u) and linear form L(v) for
-# a mixed formulation of Poisson's equation with BDM
-# (Brezzi-Douglas-Marini) elements.
+# Licensed under the GNU LGPL version 3 or any later version
+#
+# The bilinear form a and linear form L for a mixed formulation of
+# Poisson's equation with BDM (Brezzi-Douglas-Marini) elements.
 
 # Compile this form with FFC: ffc MixedPoisson.ufl
 
@@ -14,10 +15,10 @@ DG  = FiniteElement("Discontinuous Lagrange", triangle, q - 1)
 
 mixed_element = BDM * DG
 
-(tau, w) = TestFunctions(mixed_element)
 (sigma, u) = TrialFunctions(mixed_element)
+(tau, w) = TestFunctions(mixed_element)
 
 f = Coefficient(DG)
 
-a = (inner(tau, sigma) - div(tau)*u + w*div(sigma))*dx
-L = w*f*dx
+a = (inner(sigma, tau) - div(tau)*u + div(sigma)*w)*dx
+L = f*w*dx

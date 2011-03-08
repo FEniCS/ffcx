@@ -2,7 +2,7 @@
 # Licensed under the GNU LGPL Version 2.1.
 #
 # First added:  2008-03-31
-# Last changed: 2008-03-31
+# Last changed: 2011-03-08
 #
 # The linearised bilinear form a(u,v) and linear form L(v) for
 # the nonlinear equation - div (1+u) grad u = f (non-linear Poisson)
@@ -13,12 +13,12 @@ element = FiniteElement("Lagrange", triangle, 2)
 QE      = FiniteElement("Quadrature", triangle, 3)
 sig     = VectorElement("Quadrature", triangle, 3)
 
-v    = TestFunction(element)
 u    = TrialFunction(element)
+v    = TestFunction(element)
 u0   = Coefficient(element)
 C    = Coefficient(QE)
 sig0 = Coefficient(sig)
 f    = Coefficient(element)
 
-a = v.dx(i)*C*u.dx(i)*dx + v.dx(i)*2*u0*u*u0.dx(i)*dx
-L = v*f*dx - inner(grad(v), sig0)*dx
+a = C*u.dx(i)*v.dx(i)*dx + 2*u0*u0.dx(i)*u*v.dx(i)*dx
+L = f*v*dx - inner(sig0, grad(v))*dx
