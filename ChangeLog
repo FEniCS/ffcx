@@ -1,3 +1,4 @@
+ - Add possibility to set swig binary and swig path
 0.9.9 [2011-02-23]
  - Add support for generating error control forms with option -e
  - Updates for UFC 2.0
