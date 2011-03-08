@@ -1,5 +1,5 @@
 __author__ = "Johan Hake (hake@simula.no)"
-__date__ = "2009-03-06 -- 2010-05-27"
+__date__ = "2009-03-06 -- 2011-03-05"
 __copyright__ = "Copyright (C) 2009 Johan Hake"
 __license__  = "GNU LGPL Version 2.1"
 
@@ -12,7 +12,8 @@ import os, sys, re
 
 from distutils import sysconfig
 
-def build_ufc_module(h_files, source_directory="", system_headers=None, **kwargs):
+def build_ufc_module(h_files, source_directory="", system_headers=None, \
+                     swig_binary="swig", swig_path="", **kwargs):
     """Build a python extension module from ufc compliant source code.
 
     The compiled module will be imported and returned by the function.
@@ -24,6 +25,10 @@ def build_ufc_module(h_files, source_directory="", system_headers=None, **kwargs
        The directory where the source files reside.
     @param system_headers:
        Extra headers that will be #included in the generated wrapper file.
+    @param swig_binary:
+       Name of the swig binary instant need to look for
+    @param swig_path:
+       Path to the swig binary
 
     Any additional keyword arguments are passed on to instant.build_module.
     """
@@ -32,7 +37,8 @@ def build_ufc_module(h_files, source_directory="", system_headers=None, **kwargs
     if isinstance(h_files, str):
         h_files = [h_files]
     assert isinstance(h_files, list) , "Provide a 'list' or a 'str' as 'h_files'."
-    assert all(isinstance(f, str) for f in h_files), "Elements of 'h_files' must be 'str'."
+    assert all(isinstance(f, str) for f in h_files), \
+           "Elements of 'h_files' must be 'str'."
 
     h_files2 = [os.path.join(source_directory, fn) for fn in h_files]
     for f in h_files2:
@@ -42,7 +48,8 @@ def build_ufc_module(h_files, source_directory="", system_headers=None, **kwargs
     # Check system_headers argument
     system_headers = system_headers or []
     assert isinstance(system_headers, list), "Provide a 'list' as 'system_headers'"
-    assert all(isinstance(header, str) for header in system_headers), "Elements of 'system_headers' must be 'str'."
+    assert all(isinstance(header, str) for header in system_headers), \
+           "Elements of 'system_headers' must be 'str'."
 
     system_headers.append("boost/shared_ptr.hpp")
 
@@ -50,7 +57,7 @@ def build_ufc_module(h_files, source_directory="", system_headers=None, **kwargs
     declarations = extract_declarations(h_files2)
 
     # Check system requirements
-    (cpp_path, swig_path) = configure_instant()
+    (cpp_path, swig_include_dirs) = configure_instant(swig_binary, swig_path)
 
     # Call instant and return module
     return instant.build_module(wrap_headers            = h_files,
@@ -59,27 +66,29 @@ def build_ufc_module(h_files, source_directory="", system_headers=None, **kwargs
                                 system_headers          = system_headers,
                                 include_dirs            = cpp_path,
                                 swigargs                = ['-c++', '-I.','-O'],
-                                swig_include_dirs       = swig_path,
+                                swig_include_dirs       = swig_include_dirs,
                                 **kwargs)
 
-def configure_instant():
+def configure_instant(swig_binary="swig", swig_path=""):
     "Check system requirements"
 
     # Get include directory for ufc.h (might be better way to do this?)
     (path, dummy, dummy, dummy) = instant.header_and_libs_from_pkgconfig("ufc-1")
-    if len(path) == 0: path = [(os.sep).join(sysconfig.get_python_inc().split(os.sep)[:-2]) + os.sep + "include"]
+    if len(path) == 0: path = [(os.sep).join(sysconfig.get_python_inc().\
+                                    split(os.sep)[:-2]) + os.sep + "include"]
 
     # Register the paths
-    cpp_path, swig_path = [path[0]], [path[0]]
+    cpp_path, swig_include_dirs = [path[0]], [path[0]]
 
     # Check for swig installation
-    result, output = instant.get_status_output("swig -version")
-    if result == 1:
-        raise OSError, "Could not find swig installation. Please install swig version 1.3.35 or higher.\n"
+    if not instant.check_and_set_swig_binary(swig_binary, swig_path):
+        raise OSError, "Could not find swig installation. Pass an existing "\
+              "swig binary or install SWIG version 1.3.35 or higher.\n"
 
     # Check swig version for shared_ptr
     if not instant.check_swig_version("1.3.35"):
-        raise OSError, "Your current swig version is %s, it needs to be 1.3.35 or higher.\n" % instant.get_swig_version()
+        raise OSError, "Your current swig version is %s, it needs to be "\
+              "1.3.35 or higher.\n" % instant.get_swig_version()
 
     # Check if UFC is importable and what version of swig was used to
     # create the UFC extension module
@@ -124,7 +133,7 @@ set the environment variable BOOST_DIR.
     # Add the boost_include_dir
     cpp_path += boost_include_dir
 
-    return cpp_path, swig_path
+    return cpp_path, swig_include_dirs
 
 def extract_declarations(h_files):
     "Extract information for shared_ptr"
