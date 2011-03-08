@@ -94,15 +94,14 @@ def jit_form(form, parameters=None, common_cell=None):
     else:
         preprocessed_form = preprocess(form, common_cell=common_cell)
         _memory_cache[(id(form), repr(form))] = preprocessed_form
-
+        
         # For each 10th time the refcount of the cached form are checked
         # and superflous forms are poped
         if (_memory_check % 10) == 0:
             for key, cached_form in _memory_cache.items():
                 if sys.getrefcount(cached_form) < 6:
                     _memory_cache.pop(key)
-        else:
-            _memory_check += 1
+        _memory_check += 1
 
     # Wrap input
     jit_object = JITObject(form, preprocessed_form, parameters)
@@ -127,10 +126,12 @@ def jit_form(form, parameters=None, common_cell=None):
     cppfile = jit_object.signature() + ".cpp"
     module = ufc_utils.build_ufc_module(
         hfile,
+        swig_binary=parameters["swig_binary"], swig_path=parameters["swig_path"], 
         source_directory = os.curdir,
         signature = jit_object.signature(),
         sources = [cppfile] if parameters["split"] else [],
-        cppargs = parameters["cpp_optimize_flags"].split() if parameters["cpp_optimize"] else ["-O0"],
+        cppargs = parameters["cpp_optimize_flags"].split() \
+                  if parameters["cpp_optimize"] else ["-O0"],
         cache_dir = cache_dir)
 
     # Remove code
@@ -160,6 +161,9 @@ def jit_element(element, parameters=None):
 
     # Compile form
     (compiled_form, module, form_data) = jit_form(form, parameters)
+
+    # Pop cache for element form. Otherwise it might interfere with DOLFIN forms
+    _memory_cache.pop((id(form), repr(form)))
 
     return _extract_element_and_dofmap(module, form_data)
 
