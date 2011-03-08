@@ -1,3 +1,4 @@
+ - Add missing const for map_{from,to}_reference_cell
 2.0.0 [2011-02-23]
  - Add quadrature version of tabulate_tensor
  - Add finite_element::map_{from,to}_reference_cell
