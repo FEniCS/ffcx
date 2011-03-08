@@ -1,4 +1,4 @@
-# Code generation format strings for UFC (Unified Form-assembly Code) v. 2.0.
+# Code generation format strings for UFC (Unified Form-assembly Code) v. 2.0.1.
 # This code is released into the public domain.
 #
 # The FEniCS Project (http://www.fenicsproject.org/) 2006-2011.
@@ -127,7 +127,7 @@ public:
   /// Map coordinate xhat from reference cell to coordinate x in cell
   virtual void map_from_reference_cell(double* x,
                                        const double* xhat,
-                                       const ufc::cell& c)
+                                       const ufc::cell& c) const
   {
 %(map_from_reference_cell)s
   }
@@ -135,7 +135,7 @@ public:
   /// Map from coordinate x in cell to coordinate xhat in reference cell
   virtual void map_to_reference_cell(double* xhat,
                                      const double* x,
-                                     const ufc::cell& c)
+                                     const ufc::cell& c) const
   {
 %(map_to_reference_cell)s
   }
@@ -237,12 +237,12 @@ public:
   /// Map coordinate xhat from reference cell to coordinate x in cell
   virtual void map_from_reference_cell(double* x,
                                        const double* xhat,
-                                       const ufc::cell& c);
+                                       const ufc::cell& c) const;
 
   /// Map from coordinate x in cell to coordinate xhat in reference cell
   virtual void map_to_reference_cell(double* xhat,
                                      const double* x,
-                                     const ufc::cell& c);
+                                     const ufc::cell& c) const;
 
   /// Return the number of sub elements (for a mixed element)
   virtual unsigned int num_sub_elements() const;
@@ -375,7 +375,7 @@ void %(classname)s::interpolate_vertex_values(double* vertex_values,
 /// Map coordinate xhat from reference cell to coordinate x in cell
 void %(classname)s::map_from_reference_cell(double* x,
                                             const double* xhat,
-                                            const ufc::cell& c)
+                                            const ufc::cell& c) const
 {
 %(map_from_reference_cell)s
 }
@@ -383,7 +383,7 @@ void %(classname)s::map_from_reference_cell(double* x,
 /// Map from coordinate x in cell to coordinate xhat in reference cell
 void %(classname)s::map_to_reference_cell(double* xhat,
                                           const double* x,
-                                          const ufc::cell& c)
+                                          const ufc::cell& c) const
 {
 %(map_to_reference_cell)s
 }

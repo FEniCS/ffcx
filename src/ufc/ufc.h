@@ -1,4 +1,4 @@
-// This is UFC (Unified Form-assembly Code) v. 2.0.
+// This is UFC (Unified Form-assembly Code) v. 2.0.1.
 // This code is released into the public domain.
 //
 // The FEniCS Project (http://www.fenicsproject.org/) 2006-2011.
@@ -8,7 +8,7 @@
 
 #define UFC_VERSION_MAJOR 2
 #define UFC_VERSION_MINOR 0
-#define UFC_VERSION_MAINTENANCE 0
+#define UFC_VERSION_MAINTENANCE 1
 
 #include <stdexcept>
 
@@ -121,10 +121,10 @@ namespace ufc
     /// Return the cell shape
     virtual shape cell_shape() const = 0;
 
-    // Return the topological dimension of the cell shape
+    /// Return the topological dimension of the cell shape
     virtual unsigned int topological_dimension() const = 0;
 
-    // Return the geometric dimension of the cell shape
+    /// Return the geometric dimension of the cell shape
     virtual unsigned int geometric_dimension() const = 0;
 
     /// Return the dimension of the finite element function space
@@ -175,15 +175,15 @@ namespace ufc
                                            const double* dof_values,
                                            const cell& c) const = 0;
 
-    // Map coordinate xhat from reference cell to coordinate x in cell
+    /// Map coordinate xhat from reference cell to coordinate x in cell
     virtual void map_from_reference_cell(double* x,
                                          const double* xhat,
-                                         const cell& c) = 0;
+                                         const cell& c) const = 0;
 
-    // Map from coordinate x in cell to coordinate xhat in reference cell
+    /// Map from coordinate x in cell to coordinate xhat in reference cell
     virtual void map_to_reference_cell(double* xhat,
                                        const double* x,
-                                       const cell& c) = 0;
+                                       const cell& c) const = 0;
 
     /// Return the number of sub elements (for a mixed element)
     virtual unsigned int num_sub_elements() const = 0;
@@ -225,10 +225,10 @@ namespace ufc
     /// Finish initialization of dofmap for cells
     virtual void init_cell_finalize() = 0;
 
-    // Return the topological dimension of the associated cell shape
+    /// Return the topological dimension of the associated cell shape
     virtual unsigned int topological_dimension() const = 0;
 
-    // Return the geometric dimension of the associated cell shape
+    /// Return the geometric dimension of the associated cell shape
     virtual unsigned int geometric_dimension() const = 0;
 
     /// Return the dimension of the global finite element function space
