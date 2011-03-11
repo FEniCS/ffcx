@@ -3,7 +3,7 @@ __date__ = "2008-09-04"
 __copyright__ = "Copyright (C) 2008 Anders Logg"
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2009-12-11
+# Last changed: 2011-03-11
 
 # Python modules.
 from hashlib import sha1
@@ -24,7 +24,7 @@ class JITObject:
     single instance of an application (at runtime). The signature is
     persistent and may be used for caching modules on disk."""
 
-    def __init__(self, form, preprocessed_form, parameters):
+    def __init__(self, form, preprocessed_form, parameters, common_cell):
         "Create JITObject for given form and parameters"
         assert(isinstance(form, ufl.Form))
 
@@ -32,6 +32,7 @@ class JITObject:
         self.form = form
         self.preprocessed_form = preprocessed_form
         self.parameters = parameters
+        self.common_cell = common_cell
         self._hash = None
         self._signature = None
 
@@ -60,11 +61,21 @@ class JITObject:
         # Compute form signature based on form stored in formdata
         form_signature = repr(self.preprocessed_form)
 
-        # Build signature including form, parameters, FFC version and SWIG version
+        # Compute other relevant signatures
         parameters_signature = _parameters_signature(self.parameters)
-        ffc_signature     = str(FFC_VERSION)
-        swig_signature    = str(get_swig_version())
-        signatures = [form_signature, parameters_signature, ffc_signature, swig_signature]
+        ffc_signature = str(FFC_VERSION)
+        swig_signature = str(get_swig_version())
+        cell_signature = str(self.common_cell)
+
+        # Uncomment for debugging
+        #print "form_signature       =", form_signature
+        #print "parameters_signature =", parameters_signature
+        #print "ffc_signature        =", ffc_signature
+        #print "swig_signature       =", swig_signature
+        #print "cell_signature       =", cell_signature
+
+        # Build common signature
+        signatures = [form_signature, parameters_signature, ffc_signature, swig_signature, cell_signature]
         string = ";".join(signatures)
         self._signature = "form_" + sha1(string).hexdigest()
 

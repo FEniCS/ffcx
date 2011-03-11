@@ -9,7 +9,7 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Johan Hake, 2008-2009
 # Modified by Ilmar Wilbers, 2008
 # Modified by Kristian B. Oelgaard, 2009
-# Last changed: 2011-02-21
+# Last changed: 2011-03-11
 
 # Python modules
 import os, sys
@@ -94,7 +94,7 @@ def jit_form(form, parameters=None, common_cell=None):
     else:
         preprocessed_form = preprocess(form, common_cell=common_cell)
         _memory_cache[(id(form), repr(form))] = preprocessed_form
-        
+
         # For each 10th time the refcount of the cached form are checked
         # and superflous forms are poped
         if (_memory_check % 10) == 0:
@@ -104,7 +104,7 @@ def jit_form(form, parameters=None, common_cell=None):
         _memory_check += 1
 
     # Wrap input
-    jit_object = JITObject(form, preprocessed_form, parameters)
+    jit_object = JITObject(form, preprocessed_form, parameters, common_cell)
 
     # Use Instant cache if possible
     cache_dir = parameters["cache_dir"]
@@ -126,7 +126,7 @@ def jit_form(form, parameters=None, common_cell=None):
     cppfile = jit_object.signature() + ".cpp"
     module = ufc_utils.build_ufc_module(
         hfile,
-        swig_binary=parameters["swig_binary"], swig_path=parameters["swig_path"], 
+        swig_binary=parameters["swig_binary"], swig_path=parameters["swig_path"],
         source_directory = os.curdir,
         signature = jit_object.signature(),
         sources = [cppfile] if parameters["split"] else [],
