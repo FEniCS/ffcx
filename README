@@ -44,7 +44,7 @@ prefix.
 
 The installation prefix may be optionally specified, for example
 
-    cmake -DCMAKE_INSTALL_PREFIX=~/local .
+    cmake -DCMAKE_INSTALL_PREFIX=$HOME/local .
     make install
 
 Alternatively, just copy the single header file src/ufc/ufc.h

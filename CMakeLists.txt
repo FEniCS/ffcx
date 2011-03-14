@@ -40,7 +40,7 @@ find_package(PythonInterp QUIET)
 find_package(PythonLibs QUIET)
 
 # This is to help pick up swig on Debian/Ubuntu. It can be removed when
-# Debian/Ubuntu change swig2.0 ->swig
+# Debian/Ubuntu change swig2.0 -> swig
 find_program(SWIG_EXECUTABLE swig2.0)
 
 # Find SWIG
