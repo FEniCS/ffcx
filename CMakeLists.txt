@@ -82,6 +82,11 @@ install(FILES ${UFC_H} DESTINATION ${UFC_INCLUDE_DIR} COMPONENT Development)
 
 if (UFC_ENABLE_PYTHON AND SWIG_FOUND AND Boost_FOUND)
 
+  # Check SWIG version
+  if (${SWIG_VERSION} LESS 2.0)
+      message(ERROR " UFC requires SWIG version 2.0 or greater. You have version ${SWIG_VERSION}. Set UFC_ENABLE_PYTHON to False or install correct SWIG version.")
+    endif()
+
   # Default to release build (can be overridden by user)
   if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release" CACHE STRING
