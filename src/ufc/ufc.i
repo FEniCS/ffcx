@@ -43,7 +43,7 @@ del UFC_VERSION, UFC_VERSION_MAJOR, UFC_VERSION_MINOR
 
 """Code for adding swig version to ufc extension module."""
 tmp = hex(ufc_swigversion())
-__swigversion__ = ".".join([tmp[-5],tmp[-3],tmp[-2:]])
+__swigversion__ = "%d.%d.%d"%(tuple(map(int, [tmp[-5], tmp[-3], tmp[-2:]])))
 
 del tmp, ufc_swigversion
 %}
