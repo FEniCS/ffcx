@@ -18,6 +18,7 @@ endif()
 
 # Set location of our FindFoo.cmake modules
 set(UFC_CMAKE_DIR "${UFC_SOURCE_DIR}/cmake" CACHE INTERNAL "")
+set(CMAKE_MODULE_PATH "${UFC_CMAKE_DIR}/modules")
 
 #------------------------------------------------------------------------------
 # Set UFC version number
