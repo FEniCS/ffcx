@@ -3,7 +3,7 @@ __date__ = "2010-01-18"
 __copyright__ = "Copyright (C) 2010 " + __author__
 __license__  = "GNU GPL version 3 or any later version"
 
-# Last changed: 2011-02-21
+# Last changed: 2011-03-22
 
 # Python modules
 from itertools import chain
@@ -47,7 +47,9 @@ def _generate_dolfin_wrapper(analysis, prefix, parameters):
     # Generate code
     info("Generating wrapper code for DOLFIN")
     from dolfin_utils.wrappers import generate_dolfin_code
-    code = generate_dolfin_code(prefix, "", capsules, common_space) + "\n\n"
+    code = generate_dolfin_code(prefix, "", capsules, common_space,
+                                error_control=parameters["error_control"])
+    code += "\n\n"
     end()
 
     return code
