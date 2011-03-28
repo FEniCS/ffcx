@@ -80,6 +80,11 @@ class TestNotFinished(unittest.TestCase):
 #        print "%s, red(BASIS): ('%s', '%s')" %(E0, Ex0[0][0], Ex0[0][1])
         self.assertNotEqual( Ex0[0][1], Er0[0][1].expand() )
 
+        # Both of these reductions should work at the same time
+        # 1) 2/(x/(a+b) + y/(a+b)) --> 2(a+b)/(x+y)
+        # 2) 2/(x + y/(a+b)) --> no reduction, or if divisions are more expensive
+        # 3) 2/(x + y/(a+b)) --> 2(a+b)/((a+b)x + y)
+
 if __name__ == "__main__":
 
     # Run all returned tests

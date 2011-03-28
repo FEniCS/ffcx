@@ -283,13 +283,15 @@ class Fraction(Expr):
             for m in self.denom.vrs:
 #                d_found, d_remain = m.reduce_vartype(var_type)
                 foo = m.reduce_vartype(var_type)
-                if len(foo) != 1:
-                    raise RuntimeError("This case is not handled")
                 d_found, d_remain = foo[0]
                 # If we've found a denom, but the new found is different from
                 # the one already found, terminate loop since it wouldn't make
                 # sense to reduce the fraction.
-                if denom_found != None and repr(d_found) != repr(denom_found):
+                # TODO: handle I0/((I0 + I1)/(G0 + G1) + (I1 + I2)/(G1 + G2))
+                # better than just skipping.
+#                if len(foo) != 1:
+#                    raise RuntimeError("This case is not handled")
+                if len(foo) != 1 or (denom_found is not None and repr(d_found) != repr(denom_found)):
                     # If the denominator of the entire sum has a type which is
                     # lower than or equal to the vartype that we are currently
                     # reducing for, we have to move it outside the expression

@@ -33,9 +33,12 @@ class TestReduceVarType(unittest.TestCase):
 
         I0 = Symbol("I0", IP)
         I1 = Symbol("I1", IP)
+        I2 = Symbol("I2", IP)
         I5 = Product([f5, I0])
 
         G0 = Symbol("G0", GEO)
+        G1 = Symbol("G1", GEO)
+        G2 = Symbol("G2", GEO)
         G3 = Product([f3, G0])
 
 
@@ -58,6 +61,11 @@ class TestReduceVarType(unittest.TestCase):
         F3 = Fraction(G3,S3).expand()
         F4 = Fraction(I1, Sum([I1, I0]))
         F5 = Fraction(S5, I1)
+        F6 = Fraction(I0,
+              Sum([
+                Fraction(Sum([I0,I1]), Sum([G0,G1])),
+                Fraction(Sum([I1,I2]), Sum([G1,G2])),
+              ]))
 
         r0 = B0.reduce_vartype(BASIS)
         r1 = B0.reduce_vartype(CONST)
@@ -80,6 +88,7 @@ class TestReduceVarType(unittest.TestCase):
         rf4 = F3.reduce_vartype(BASIS)
         rf5 = F4.reduce_vartype(IP)
         rf6 = F5.reduce_vartype(IP)
+        rf7 = F6.reduce_vartype(IP)
 #        print
 #        print "%s, red(BASIS): ('%s', '%s')" %(B0, r0[0][0], r0[0][1])
 #        print "%s, red(CONST): ('%s', '%s')" %(B0, r1[0][0], r1[0][1])
@@ -102,6 +111,7 @@ class TestReduceVarType(unittest.TestCase):
 #        print "rf4: %s, red(BASIS): ('%s', '%s')" %(F3, rf4[0][0], rf4[0][1])
 #        print "rf5: %s, red(IP): ('%s', '%s')" %(F4, rf5[0][0], rf5[0][1])
 #        print "rf6: %s, red(IP): ('%s', '%s') + ('%s', '%s')" %(F5, rf6[0][0], rf6[0][1], rf6[1][0], rf6[1][1])
+#        print "rf7: %s, red(IP): ('%s', '%s')" %(F6, rf7[0][0], rf7[0][1])
 
         self.assertEqual([(B0, f1)], r0)
         self.assertEqual([((), B0)], r1)
@@ -137,6 +147,8 @@ class TestReduceVarType(unittest.TestCase):
         self.assertEqual(f1, rf6[0][1])
         self.assertEqual(Fraction(f1,I1), rf6[1][0])
         self.assertEqual(G0, rf6[1][1])
+        self.assertEqual(F6, rf7[0][0])
+        self.assertEqual(f1, rf7[0][1])
 
 if __name__ == "__main__":
 

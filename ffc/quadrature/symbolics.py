@@ -120,6 +120,8 @@ def optimise_code(expr, ip_consts, geo_consts, trans_set):
     The function will update the dictionaries ip_const and geo_consts with new
     declarations and update the trans_set (used transformations)."""
 
+#    print "expr: ", repr(expr)
+
     format_G  = format["geometry constant"]
 #    format_ip = format["integration points"]
     format_I  = format["ip constant"]
@@ -185,7 +187,7 @@ def optimise_code(expr, ip_consts, geo_consts, trans_set):
         if not isinstance(ip_expressions, list):
             ip_expressions = [ip_expressions]
 
-        # Debug code to check that reduction didn't screw up anything
+#        # Debug code to check that reduction didn't screw up anything
 #        vals = []
 #        for ip in ip_expressions:
 #            ip_dec, geo = ip

@@ -59,7 +59,7 @@ class MixedElement:
 
         # Special case: only one element
         if len(self._elements) == 1:
-            return elements[0].tabulate(order, points)
+            return self._elements[0].tabulate(order, points)
 
         # Zeros for insertion into mixed table
         table_shape = (self.space_dimension(), self.num_components(), len(points))
