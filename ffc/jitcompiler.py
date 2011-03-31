@@ -9,7 +9,8 @@ __license__  = "GNU GPL version 3 or any later version"
 # Modified by Johan Hake, 2008-2009
 # Modified by Ilmar Wilbers, 2008
 # Modified by Kristian B. Oelgaard, 2009
-# Last changed: 2011-03-11
+# Modified by Joachim Haga, 2011.
+# Last changed: 2011-03-31
 
 # Python modules
 import os, sys
@@ -34,6 +35,7 @@ from parameters import default_parameters
 from mixedelement import MixedElement
 from compiler import compile_form
 from jitobject import JITObject
+import instant
 
 # Special Options for JIT-compilation
 FFC_PARAMETERS_JIT = default_parameters()
@@ -106,43 +108,51 @@ def jit_form(form, parameters=None, common_cell=None):
     # Wrap input
     jit_object = JITObject(form, preprocessed_form, parameters, common_cell)
 
-    # Use Instant cache if possible
-    cache_dir = parameters["cache_dir"]
-    if cache_dir == "": cache_dir = None
-    module = instant.import_module(jit_object, cache_dir=cache_dir)
-    if module:
+    try:
+        # Take lock to serialise code generation and compilation. The lock is taken
+        # early so that the Instant cache can be used by waiting processes.
+        lock = instant.locking.get_lock(instant.get_default_cache_dir(), 'ffc_'+jit_object.signature())
+
+        # Use Instant cache if possible
+        cache_dir = parameters["cache_dir"]
+        if cache_dir == "": cache_dir = None
+        module = instant.import_module(jit_object, cache_dir=cache_dir)
+        if module:
+            compiled_form = getattr(module, module.__name__ + "_form_0")()
+            return (compiled_form, module, preprocessed_form.form_data())
+
+        # Write a message
+        log(INFO + 5, "Calling FFC just-in-time (JIT) compiler, this may take some time.")
+
+        # Generate code
+        compile_form(preprocessed_form, prefix=jit_object.signature(), parameters=parameters)
+
+        # Build module using Instant (through UFC)
+        debug("Creating Python extension (compiling and linking), this may take some time...")
+        hfile = jit_object.signature() + ".h"
+        cppfile = jit_object.signature() + ".cpp"
+        module = ufc_utils.build_ufc_module(
+            hfile,
+            swig_binary=parameters["swig_binary"], swig_path=parameters["swig_path"],
+            source_directory = os.curdir,
+            signature = jit_object.signature(),
+            sources = [cppfile] if parameters["split"] else [],
+            cppargs = parameters["cpp_optimize_flags"].split() \
+                      if parameters["cpp_optimize"] else ["-O0"],
+            cache_dir = cache_dir)
+
+        # Remove code
+        os.unlink(hfile)
+        if parameters["split"] :
+            os.unlink(cppfile)
+
+        # Extract compiled form
         compiled_form = getattr(module, module.__name__ + "_form_0")()
-        return (compiled_form, module, preprocessed_form.form_data())
 
-    # Write a message
-    log(INFO + 5, "Calling FFC just-in-time (JIT) compiler, this may take some time.")
+        return compiled_form, module, preprocessed_form.form_data()
 
-    # Generate code
-    compile_form(preprocessed_form, prefix=jit_object.signature(), parameters=parameters)
-
-    # Build module using Instant (through UFC)
-    debug("Creating Python extension (compiling and linking), this may take some time...")
-    hfile = jit_object.signature() + ".h"
-    cppfile = jit_object.signature() + ".cpp"
-    module = ufc_utils.build_ufc_module(
-        hfile,
-        swig_binary=parameters["swig_binary"], swig_path=parameters["swig_path"],
-        source_directory = os.curdir,
-        signature = jit_object.signature(),
-        sources = [cppfile] if parameters["split"] else [],
-        cppargs = parameters["cpp_optimize_flags"].split() \
-                  if parameters["cpp_optimize"] else ["-O0"],
-        cache_dir = cache_dir)
-
-    # Remove code
-    os.unlink(hfile)
-    if parameters["split"] :
-        os.unlink(cppfile)
-
-    # Extract compiled form
-    compiled_form = getattr(module, module.__name__ + "_form_0")()
-
-    return compiled_form, module, preprocessed_form.form_data()
+    finally:
+        instant.locking.release_lock(lock)
 
 def jit_element(element, parameters=None):
     "Just-in-time compile the given element"
