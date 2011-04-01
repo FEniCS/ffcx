@@ -1,0 +1,19 @@
+# Copyright (C) 2011 Garth N. Wells (gnw20@cam.ac.uk)
+# Licensed under the GNU GPL version 3 or any later version
+#
+# This example demonstrates how to create vectors component-wise
+#
+# Compile this form with FFC: ffc Component.ufl
+
+element = VectorElement("Lagrange", tetrahedron, 1)
+
+v = TestFunction(element)
+f = Coefficient(element)
+
+# Create vector
+v0 = as_vector([v[0], v[1], 0.0])
+
+# Use created vector in linear form
+L = dot(f, v0)*dx
+
+
