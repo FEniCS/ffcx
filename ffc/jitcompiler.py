@@ -35,7 +35,6 @@ from parameters import default_parameters
 from mixedelement import MixedElement
 from compiler import compile_form
 from jitobject import JITObject
-import instant
 
 # Special Options for JIT-compilation
 FFC_PARAMETERS_JIT = default_parameters()
@@ -108,14 +107,20 @@ def jit_form(form, parameters=None, common_cell=None):
     # Wrap input
     jit_object = JITObject(form, preprocessed_form, parameters, common_cell)
 
+    # Use Instant cache if possible
+    cache_dir = parameters["cache_dir"]
+    if cache_dir == "": cache_dir = None
+    module = instant.import_module(jit_object, cache_dir=cache_dir)
+    if module:
+        compiled_form = getattr(module, module.__name__ + "_form_0")()
+        return (compiled_form, module, preprocessed_form.form_data())
+
     try:
-        # Take lock to serialise code generation and compilation. The lock is taken
-        # early so that the Instant cache can be used by waiting processes.
+        # Take lock to serialise code generation and compilation.
         lock = instant.locking.get_lock(instant.get_default_cache_dir(), 'ffc_'+jit_object.signature())
 
-        # Use Instant cache if possible
-        cache_dir = parameters["cache_dir"]
-        if cache_dir == "": cache_dir = None
+        # Retry Instant cache. The module may have been created while we waited
+        # for the lock, even if it didn't exist before.
         module = instant.import_module(jit_object, cache_dir=cache_dir)
         if module:
             compiled_form = getattr(module, module.__name__ + "_form_0")()
