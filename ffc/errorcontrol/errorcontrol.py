@@ -13,7 +13,7 @@ from ffc.compiler import compile_form
 
 from ffc.errorcontrol.formmanipulations import *
 
-__all__ = ["compile_form_with_error_control"]
+__all__ = ["compile_with_error_control"]
 
 def _check_input(forms, object_names):
     """
