@@ -9,6 +9,7 @@ import FIAT
 
 # FFC modules
 from ffc.log import debug, error
+from ffc.fiatinterface import reference_cell
 
 # Dictionary mapping from domain (cell) to dimension
 from ufl.geometry import domain2dim
