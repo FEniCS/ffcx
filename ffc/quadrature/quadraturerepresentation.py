@@ -14,10 +14,11 @@ from ufl.algorithms import extract_unique_elements, extract_type, extract_elemen
 
 # FFC modules
 from ffc.log import ffc_assert, info, error
-from ffc.fiatinterface import create_element, create_quadrature
+from ffc.fiatinterface import create_element
 from ffc.fiatinterface import map_facet_points
 from ffc.quadrature.quadraturetransformer import QuadratureTransformer
 from ffc.quadrature.optimisedquadraturetransformer import QuadratureTransformerOpt
+from ffc.quadrature_schemes import create_quadrature
 
 def compute_integral_ir(domain_type, domain_id, integrals, metadata, form_data, form_id, parameters):
     "Compute intermediate represention of integral."
