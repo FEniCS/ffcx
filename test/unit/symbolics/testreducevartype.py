@@ -150,6 +150,24 @@ class TestReduceVarType(unittest.TestCase):
         self.assertEqual(F6, rf7[0][0])
         self.assertEqual(f1, rf7[0][1])
 
+        expr = Sum([Symbol('W1', GEO), Fraction(Symbol('det', GEO), Sum([Symbol('F0', IP), Symbol('K_11', GEO)]))])
+        red = expr.expand().reduce_vartype(IP)
+        vals = []
+        for ip in red:
+            ip_dec, geo = ip
+            if ip_dec and geo:
+                vals.append(Product([ip_dec, geo]))
+            elif geo:
+                vals.append(geo)
+            elif ip_dec:
+                vals.append(ip_dec)
+        comb = Sum(vals).expand()
+        K_11 = 1.4
+        F0   = 1.5
+        W1   = 1.9
+        det  = 2.1
+        self.assertAlmostEqual(eval(str(expr)), eval(str(comb)))
+
 if __name__ == "__main__":
 
     # Run all returned tests

@@ -188,6 +188,10 @@ def optimise_code(expr, ip_consts, geo_consts, trans_set):
             ip_expressions = [ip_expressions]
 
 #        # Debug code to check that reduction didn't screw up anything
+#        for ip in ip_expressions:
+#            ip_dec, geo = ip
+#            print "geo: ", geo
+#            print "ip_dec: ", ip_dec
 #        vals = []
 #        for ip in ip_expressions:
 #            ip_dec, geo = ip
@@ -201,8 +205,13 @@ def optimise_code(expr, ip_consts, geo_consts, trans_set):
 #        if Sum(vals).expand() != ip_expr.expand():
 ##        if Sum([Product([ip, geo]) for ip, geo in ip_expressions]).expand() != ip_expr.expand():
 #            print "\nip_expr: ", repr(ip_expr)
+##            print "\nip_expr: ", str(ip_expr)
 ##            print "\nip_dec: ", repr(ip_dec)
 ##            print "\ngeo: ", repr(geo)
+#            for ip in ip_expressions:
+#                ip_dec, geo = ip
+#                print "geo: ", geo
+#                print "ip_dec: ", ip_dec
 #            error("Not equal")
 
         ip_vals = []
@@ -231,7 +240,7 @@ def optimise_code(expr, ip_consts, geo_consts, trans_set):
             # Append and continue if we did not have any geo values.
 #            if not geo:
             if not geo or geo.val == 0.0:
-                if ip_dec.val != 0.0:
+                if ip_dec and ip_dec.val != 0.0:
                     ip_vals.append(ip_dec)
                 continue
 

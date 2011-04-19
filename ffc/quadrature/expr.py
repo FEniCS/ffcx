@@ -50,6 +50,8 @@ class Expr(object):
 
     def __lt__(self, other):
         """<, compare precedence and _repr if two objects have the same precedence."""
+        if not isinstance(other, Expr):
+            return False
         if self._prec < other._prec:
             return True
         elif self._prec == other._prec:
@@ -58,6 +60,8 @@ class Expr(object):
 
     def __gt__(self, other):
         ">, opposite of __lt__."
+        if not isinstance(other, Expr):
+            return True
         if self._prec > other._prec:
             return True
         elif self._prec == other._prec:
