@@ -39,7 +39,7 @@ def create_quadrature(shape, degree):
     # FIXME: KBO: Can this be handled more elegantly?
     # Handle point case
     if isinstance(shape, int) and shape == 0 or domain2dim[shape] == 0:
-        return ([()], array([1.0,]))
+        return ([()], numpy.array([1.0,]))
 
     return _fiat_scheme(shape, degree)
 
@@ -191,4 +191,3 @@ def _tetrahedron_scheme(degree):
         w = w/6.0
     else:
         return _fiat_scheme("tetrahedron", degree)
-
