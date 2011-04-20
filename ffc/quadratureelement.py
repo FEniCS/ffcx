@@ -28,19 +28,19 @@ class QuadratureElement:
         degree = ufl_element.degree()
         if degree is None:
             degree = default_quadrature_degree
-        self._num_axis_points = (degree + 2) / 2
+        #self._num_axis_points = (degree + 2) / 2
 
         # Set element degree to constant
         # FIXME: Is this necessary? At this point we should already have computed
         # the total degree of the form.
-#        self._degree = 0
+        # self._degree = 0
 
         # Create quadrature (only interested in points)
         # TODO: KBO: What should we do about quadrature functions that live on ds, dS?
         # Get cell and facet domains.
         cell_domain = ufl_element.cell().domain()
         facet_domain = ufl_element.cell().facet_domain()
-        points, weights = create_quadrature(cell_domain, self._num_axis_points)
+        points, weights = create_quadrature(cell_domain, degree)
 
         # Save the quadrature points
         self._points = points
@@ -120,5 +120,5 @@ def _create_entity_dofs(cell, num_dofs):
     return entity_dofs
 
 # FFC modules to avoid circular import
-from ffc.fiatinterface import create_quadrature, reference_cell
+from ffc.fiatinterface import reference_cell
 from ffc.quadrature_schemes import create_quadrature

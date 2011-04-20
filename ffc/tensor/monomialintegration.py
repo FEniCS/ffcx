@@ -23,8 +23,9 @@ from ufl.geometry import domain2facet
 
 # FFC modules
 from ffc.log import info, debug, error
-from ffc.fiatinterface import create_element, create_quadrature
+from ffc.fiatinterface import create_element
 from ffc.fiatinterface import map_facet_points
+from ffc.quadrature_schemes import create_quadrature
 
 # FFC tensor representation modules
 from multiindex import build_indices
@@ -68,14 +69,11 @@ def _init_quadrature(arguments, domain_type, quadrature_degree):
     cell_shape = ufl_element.cell().domain()
     facet_shape = domain2facet[cell_shape]
 
-    # Use the quadrature order given by metadata to compute the number of points
-    num_points = (quadrature_degree + 2) / 2
-
     # Create quadrature rule and get points and weights
     if domain_type == Measure.CELL:
-        (points, weights) = create_quadrature(cell_shape, num_points)
+        (points, weights) = create_quadrature(cell_shape, quadrature_degree)
     else:
-        (points, weights) = create_quadrature(facet_shape, num_points)
+        (points, weights) = create_quadrature(facet_shape, quadrature_degree)
 
     return (points, weights)
 

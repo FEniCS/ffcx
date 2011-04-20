@@ -141,7 +141,7 @@ def _tabulate_basis(sorted_integrals, domain_type, num_facets):
         # Extract number of points and the rule.
         # TODO: The rule is currently unused because the fiatinterface does not
         # implement support for other rules than those defined in FIAT_NEW
-        num_points_per_axis, rule = pr
+        degree, rule = pr
 
         # Get all unique elements in integral.
         elements = extract_unique_elements(integral)
@@ -162,9 +162,9 @@ def _tabulate_basis(sorted_integrals, domain_type, num_facets):
         # Make quadrature rule and get points and weights.
         # FIXME: Make create_quadrature() take a rule argument.
         if domain_type == "cell":
-            (points, weights) = create_quadrature(cell_domain, num_points_per_axis)
+            (points, weights) = create_quadrature(cell_domain, degree)
         elif domain_type == "exterior_facet" or domain_type == "interior_facet":
-            (points, weights) = create_quadrature(facet_domain, num_points_per_axis)
+            (points, weights) = create_quadrature(facet_domain, degree)
         else:
             error("Unknown integral type: " + str(domain_type))
 
@@ -251,16 +251,12 @@ def _sort_integrals(integrals, metadata, form_data):
             if "quadrature_rule" in integral_metadata:
                 rule = integral_metadata["quadrature_rule"]
 
-        # FIXME: This could take place somewhere else?
-        # Compute the required number of points for each axis (exact integration).
-        num_points_per_axis = (degree + 1 + 1) / 2 # integer division gives 2m - 1 >= q.
-
-        # Create form and add to dictionary according to number of points and rule.
+        # Create form and add to dictionary according to degree and rule.
         form = Form([Integral(integral.integrand(), integral.measure().reconstruct(metadata={}))])
-        if not (num_points_per_axis, rule) in sorted_integrals:
-            sorted_integrals[(num_points_per_axis, rule)] = form
+        if not (degree, rule) in sorted_integrals:
+            sorted_integrals[(degree, rule)] = form
         else:
-            sorted_integrals[(num_points_per_axis, rule)] += form
+            sorted_integrals[(degree, rule)] += form
     # Extract integrals form forms.
     for key, val in sorted_integrals.items():
         if len(val.integrals()) != 1:
