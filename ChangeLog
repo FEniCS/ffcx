@@ -1,3 +1,7 @@
+ - Add some schemes for low-order simplices
+ - Request quadrature schemes by polynomial degree (not longer by number
+   of points in each direction)
+ - Get quadrature schemes via ffc.quadrature_schemes
  - Improved lock handling in JIT compiler
  - Include common_cell in form signature
  - Add possibility to set swig binary and swig path
