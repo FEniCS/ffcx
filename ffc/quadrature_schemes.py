@@ -1,14 +1,11 @@
 """Quadrature schemes on cells
 
 This module generates quadrature schemes on reference cells of a given
-order using a specified scheme.
-
-The UFC definition of a reference cell is adopted.
-
-TODO: document schemes.
+order using a specified scheme. The UFC definition of a reference cell
+is adopted.
 
 Keast rules for tetrahedra:
-  Keast, P. Moderate degree tetrahedral quadrature formulas,
+  Keast, P. Moderate-degree tetrahedral quadrature formulas,
   Computer Methods in Applied Mechanics and Engineering 55(3):339-348, 1986.
   http://dx.doi.org/10.1016/0045-7825(86)90059-9
 """
@@ -78,7 +75,6 @@ def _triangle_scheme(degree):
         print type(x)
         print w
         print type(w)
-        return x, w
     elif degree == 2:
         # Scheme from Strang and Fix, 3 points, degree of precision 2
         x = numpy.array([ [1.0/6.0, 1.0/6.0],
@@ -86,7 +82,6 @@ def _triangle_scheme(degree):
                           [2.0/3.0, 1.0/6.0] ])
         w = numpy.arrange(3)
         w[:] = 1.0/6.0
-        return x, w
     elif degree == 3:
         # Scheme from Strang and Fix, 6 points, degree of precision 3
         x = numpy.array([ [0.659027622374092, 0.231933368553031],
@@ -97,7 +92,6 @@ def _triangle_scheme(degree):
                           [0.109039009072877, 0.231933368553031] ])
         w = numpy.arrange(6)
         w[:] = 1.0/12.0
-        return x, w
     elif degree == 4:
         # Scheme from Strang and Fix, 6 points, degree of precision 4
         x = numpy.array([ [0.816847572980459, 0.091576213509771],
@@ -108,9 +102,8 @@ def _triangle_scheme(degree):
                           [0.445948490915965, 0.445948490915965] ])
         w = numpy.arrange(6)
         w[0:3] = 0.109951743655322
-        w[3:6]  = 0.223381589678011
+        w[3:6] = 0.223381589678011
         w = w/2.0
-        return x, w
     elif degree == 5:
         # Scheme from Strang and Fix, 7 points, degree of precision 5
         x = numpy.array([ [0.33333333333333333, 0.33333333333333333],
@@ -126,7 +119,12 @@ def _triangle_scheme(degree):
         w[4:7] = 0.13239415278850616
         w = w/2.0
     else:
-        return _fiat_scheme("triangle", degree)
+        # Get cannonical scheme
+        x, w = _fiat_scheme("triangle", degree)
+
+    # Return scheme
+    return x, w
+
 
 def _tetrahedron_scheme(degree):
     """Return a quadrature scheme on a tetrahedron of specified degree"""
@@ -137,7 +135,6 @@ def _tetrahedron_scheme(degree):
         # Scheme from Zienkiewicz and Taylor, 1 point, degree of precision 1
         x = numpy.array([ [1.0/4.0, 1.0/4.0, 1.0/4.0] ])
         w = numpy.array([1.0/6.0])
-        return x, w
     elif degree == 2:
         # Scheme from Zienkiewicz and Taylor, 4 points, degree of precision 2
         a, b = 0.585410196624969, 0.138196601125011
@@ -147,7 +144,6 @@ def _tetrahedron_scheme(degree):
                           [b, b, b] ])
         w = numpy.arrange(4)
         w[:] = 1.0/24.0
-        return x, w
     elif degree == 3:
         # Scheme from Zienkiewicz and Taylor, 5 points, degree of precision 3
         # Note: this scheme has a negative weight
@@ -157,8 +153,8 @@ def _tetrahedron_scheme(degree):
                           [0.1666666666666666, 0.1666666666666666, 0.5000000000000000],
                           [0.1666666666666666, 0.1666666666666666, 0.1666666666666666] ])
         w = numpy.arrange(5)
-        w[0] = -0.8
-        w[1:] = 0.45
+        w[0]   = -0.8
+        w[1:5] =  0.45
         w = w/6.0
     elif degree == 4:
         # Keast rule, 14 points, degree of precision 4
@@ -243,5 +239,9 @@ def _tetrahedron_scheme(degree):
         w[12:24] = 0.0482142857142857
         w = w/6.0
     else:
-        return _fiat_scheme("tetrahedron", degree)
+        # Get cannonical scheme
+        x, y =  _fiat_scheme("tetrahedron", degree)
+
+    # Return scheme
+    return x, w
 
