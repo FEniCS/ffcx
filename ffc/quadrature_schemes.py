@@ -66,21 +66,16 @@ def _fiat_scheme(shape, degree):
 def _triangle_scheme(degree):
     """Return a quadrature scheme on a triangle of specified order"""
 
-    if degree == 0 or order == 1:
+    if degree == 0 or degree == 1:
         # Scheme from Zienkiewicz and Taylor, 1 point, degree of precision 1
         x = numpy.array([ [1.0/3.0, 1.0/3.0] ])
         w = numpy.array([0.5])
-        print "Triangle scheme"
-        print x
-        print type(x)
-        print w
-        print type(w)
     elif degree == 2:
         # Scheme from Strang and Fix, 3 points, degree of precision 2
         x = numpy.array([ [1.0/6.0, 1.0/6.0],
                           [1.0/6.0, 2.0/3.0],
                           [2.0/3.0, 1.0/6.0] ])
-        w = numpy.arrange(3)
+        w = numpy.arange(3, dtype=numpy.float64)
         w[:] = 1.0/6.0
     elif degree == 3:
         # Scheme from Strang and Fix, 6 points, degree of precision 3
@@ -90,7 +85,7 @@ def _triangle_scheme(degree):
                           [0.231933368553031, 0.109039009072877],
                           [0.109039009072877, 0.659027622374092],
                           [0.109039009072877, 0.231933368553031] ])
-        w = numpy.arrange(6)
+        w = numpy.arange(6, dtype=numpy.float64)
         w[:] = 1.0/12.0
     elif degree == 4:
         # Scheme from Strang and Fix, 6 points, degree of precision 4
@@ -100,7 +95,7 @@ def _triangle_scheme(degree):
                           [0.108103018168070, 0.445948490915965],
                           [0.445948490915965, 0.108103018168070],
                           [0.445948490915965, 0.445948490915965] ])
-        w = numpy.arrange(6)
+        w = numpy.arange(6, dtype=numpy.float64)
         w[0:3] = 0.109951743655322
         w[3:6] = 0.223381589678011
         w = w/2.0
@@ -113,7 +108,7 @@ def _triangle_scheme(degree):
                           [0.05971587178976981, 0.47014206410511505],
                           [0.47014206410511505, 0.05971587178976981],
                           [0.47014206410511505, 0.47014206410511505] ])
-        w = numpy.arrange(7)
+        w = numpy.arange(7, dtype=numpy.float64)
         w[0]   = 0.22500000000000000
         w[1:4] = 0.12593918054482717
         w[4:7] = 0.13239415278850616
@@ -132,7 +127,7 @@ def _triangle_scheme(degree):
                           [0.310352451033785, 0.053145049844816],
                           [0.053145049844816, 0.636502499121399],
                           [0.053145049844816, 0.310352451033785] ])
-        w = numpy.arrange(12)
+        w = numpy.arange(12, dtype=numpy.float64)
         w[0:3]  = 0.050844906370207
         w[3:6]  = 0.116786275726379
         w[6:12] = 0.082851075618374
@@ -142,6 +137,11 @@ def _triangle_scheme(degree):
         x, w = _fiat_scheme("triangle", degree)
 
     # Return scheme
+    print "Points:"
+    print x
+    print "Weights:"
+    print w
+    print "------"
     return x, w
 
 
@@ -161,7 +161,7 @@ def _tetrahedron_scheme(degree):
                           [b, a, b],
                           [b, b, a],
                           [b, b, b] ])
-        w = numpy.arrange(4)
+        w = numpy.arange(4, dtype=numpy.float64)
         w[:] = 1.0/24.0
     elif degree == 3:
         # Scheme from Zienkiewicz and Taylor, 5 points, degree of precision 3
@@ -171,7 +171,7 @@ def _tetrahedron_scheme(degree):
                           [0.1666666666666666, 0.5000000000000000, 0.1666666666666666],
                           [0.1666666666666666, 0.1666666666666666, 0.5000000000000000],
                           [0.1666666666666666, 0.1666666666666666, 0.1666666666666666] ])
-        w = numpy.arrange(5)
+        w = numpy.arange(5, dtype=numpy.float64)
         w[0]   = -0.8
         w[1:5] =  0.45
         w = w/6.0
@@ -193,7 +193,7 @@ def _tetrahedron_scheme(degree):
                           [0.3143728734931922, 0.3143728734931922, 0.3143728734931922],
                           [0.3143728734931922, 0.3143728734931922, 0.0568813795204234],
                           [0.3143728734931922, 0.0568813795204234, 0.3143728734931922] ])
-        w = numpy.arrange(14)
+        w = numpy.arange(14, dtype=numpy.float64)
         w[0:6]   = 0.0190476190476190
         w[6:10]  = 0.0190476190476190
         w[10:14] = 0.1328387466855907
@@ -217,7 +217,7 @@ def _tetrahedron_scheme(degree):
                           [0.0665501535736643, 0.4334498464263357, 0.4334498464263357],
                           [0.4334498464263357, 0.0665501535736643, 0.4334498464263357],
                           [0.4334498464263357, 0.4334498464263357, 0.0665501535736643] ])
-        w = numpy.arrange(15)
+        w = numpy.arange(15, dtype=numpy.float64)
         w[0]    = 0.1817020685825351
         w[1:5]  = 0.0361607142857143
         w[5:9]  = 0.0698714945161738
@@ -251,7 +251,7 @@ def _tetrahedron_scheme(degree):
                           [0.0636610018750175, 0.6030056647916491, 0.2696723314583159],
                           [0.2696723314583159, 0.0636610018750175, 0.6030056647916491],
                           [0.6030056647916491, 0.2696723314583159, 0.0636610018750175] ])
-        w = numpy.arrange(24)
+        w = numpy.arange(24, dtype=numpy.float64)
         w[0:4]   = 0.0399227502581679
         w[4:8]   = 0.0100772110553207
         w[8:12]  = 0.0553571815436544
