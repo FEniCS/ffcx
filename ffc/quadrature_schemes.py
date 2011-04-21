@@ -35,7 +35,7 @@ def create_quadrature(shape, degree):
     """
 
     print "Shape", shape, type(shape)
-    print "Num points", degree
+    print "Degree", degree
 
     # FIXME: KBO: Can this be handled more elegantly?
     # Handle point case
@@ -44,7 +44,7 @@ def create_quadrature(shape, degree):
 
     return _fiat_scheme(shape, degree)
 
-    #if shape == "tetrehedron":
+    #if shape == "tetrahedron":
     #    return _tetrahedron_scheme(degree)
     #elif shape == "triangle":
     #    return _triangle_scheme(degree)
@@ -54,7 +54,7 @@ def create_quadrature(shape, degree):
 def _fiat_scheme(shape, degree):
     """Get quadrature scheme from FIAT interface"""
 
-    print "FIAT scheme", degree
+    print "Using FIAT scheme", degree
 
     # Number of points per axis for exact integration
     num_points_per_axis = (degree + 1 + 1) / 2
@@ -148,9 +148,9 @@ def _triangle_scheme(degree):
 def _tetrahedron_scheme(degree):
     """Return a quadrature scheme on a tetrahedron of specified degree"""
 
-    print "**** Tet scheme"
+    print "**** Tet scheme", degree
 
-    if degree == 0 or order == 1:
+    if degree == 0 or degree == 1:
         # Scheme from Zienkiewicz and Taylor, 1 point, degree of precision 1
         x = numpy.array([ [1.0/4.0, 1.0/4.0, 1.0/4.0] ])
         w = numpy.array([1.0/6.0])
@@ -259,7 +259,7 @@ def _tetrahedron_scheme(degree):
         w = w/6.0
     else:
         # Get cannonical scheme
-        x, y =  _fiat_scheme("tetrahedron", degree)
+        x, w =  _fiat_scheme("tetrahedron", degree)
 
     # Return scheme
     return x, w
