@@ -196,7 +196,7 @@ def _tetrahedron_scheme(degree):
                     [0.3143728734931922, 0.0568813795204234, 0.3143728734931922] ])
         w = arange(14, dtype=float64)
         w[0:6]   = 0.0190476190476190
-        w[6:10]  = 0.0190476190476190
+        w[6:10]  = 0.0885898247429807
         w[10:14] = 0.1328387466855907
         w = w/6.0
     elif degree == 5:
@@ -264,4 +264,3 @@ def _tetrahedron_scheme(degree):
 
     # Return scheme
     return x, w
-
