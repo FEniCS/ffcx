@@ -140,7 +140,7 @@ def _triangle_scheme(degree):
         w[6:12] = 0.082851075618374
         w = w/2.0
     else:
-        # Get cannonical scheme
+        # Get canonical scheme
         x, w = _fiat_scheme("triangle", degree)
 
     # Return scheme
@@ -227,7 +227,7 @@ def _tetrahedron_scheme(degree):
     elif degree == 6:
         # Keast rule, 24 points, degree of precision 6
         # Values taken from http://people.sc.fsu.edu/~jburkardt/datasets/quadrature_rules_tet/quadrature_rules_tet.html
-        # (KEAST6)
+        # (KEAST7)
         x = array([ [0.3561913862225449, 0.2146028712591517, 0.2146028712591517],
                     [0.2146028712591517, 0.2146028712591517, 0.2146028712591517],
                     [0.2146028712591517, 0.2146028712591517, 0.3561913862225449],
