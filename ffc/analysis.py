@@ -183,16 +183,20 @@ def _extract_metadata(form_data, parameters):
                     integral_metadata[key] = parameters[key]
 
             # Check metadata
-            r = integral_metadata["representation"]
-            q = integral_metadata["quadrature_degree"]
+            r  = integral_metadata["representation"]
+            qd = integral_metadata["quadrature_degree"]
+            qr = integral_metadata["quadrature_rule"]
             if not r in ("quadrature", "tensor", "auto"):
                 info("Valid choices are 'tensor', 'quadrature' or 'auto'.")
                 error("Illegal choice of representation for integral: " + str(r))
-            if not q == "auto":
-                q = int(q)
-                if not q >= 0:
+            if not qd  == "auto":
+                qd = int(qd)
+                if not qd >= 0:
                     info("Valid choices are nonnegative integers or 'auto'.")
-                    error("Illegal quadrature degree for integral: " + str(q))
+                    error("Illegal quadrature degree for integral: " + str(qd))
+            if not qr in ("default", "canonical", "auto"):
+                info("Valid choices are 'default', 'canonical' or 'auto'.")
+                error("Illegal choice of quadrature rule for integral: " + str(qr))
 
             # Automatic selection of representation
             if r == "auto":
@@ -203,12 +207,21 @@ def _extract_metadata(form_data, parameters):
                 info("representation:    %s" % r)
 
             # Automatic selection of quadrature degree
-            if q == "auto":
-                q = _auto_select_quadrature_degree(integral, r, form_data.unique_sub_elements)
-                info("quadrature_degree: auto --> %d" % q)
+            if qd == "auto":
+                qd = _auto_select_quadrature_degree(integral, r, form_data.unique_sub_elements)
+                info("quadrature_degree: auto --> %d" % qd)
+                integral_metadata["quadrature_degree"] = qd
             else:
-                info("quadrature_degree: %d" % q)
-            integral_metadata["quadrature_degree"] = q
+                info("quadrature_degree: %d" % qd)
+
+            # Automatic selection of quadrature rule
+            if qr == "auto":
+                # Just use default for now.
+                qr = "default"
+                info("quadrature_rule:   auto --> %s" % qr)
+                integral_metadata["quadrature_rule"] = qr
+            else:
+                info("quadrature_rule:   %s" % qr)
 
             # Append to list of metadata
             integral_metadatas.append(integral_metadata)
@@ -229,17 +242,23 @@ def _extract_metadata(form_data, parameters):
             # Check that quadrature degree is the same
             quadrature_degrees = [md["quadrature_degree"] for md in integral_metadatas]
             if not all_equal(quadrature_degrees):
-                q = max(quadrature_degrees)
-                info("Quadrature degree must be equal within each sub domain, using degree %d." % q)
+                qd = max(quadrature_degrees)
+                info("Quadrature degree must be equal within each sub domain, using degree %d." % qd)
             else:
-                q = quadrature_degrees[0]
+                qd = quadrature_degrees[0]
+
+            # Check that quadrature rule is the same
+            quadrature_rules = [md["quadrature_rule"] for md in integral_metadatas]
+            if not all_equal(quadrature_rules):
+                qr = "canonical"
+                info("Quadrature rule must be equal within each sub domain, using %s rule." % qr)
+            else:
+                qr = quadrature_rules[0]
 
             # Update common metadata
             metadata["representation"] = r
-            metadata["quadrature_degree"] = q
-
-            # Attach quadrature rule (default)
-            metadata["quadrature_rule"] = parameters["quadrature_rule"]
+            metadata["quadrature_degree"] = qd
+            metadata["quadrature_rule"] = qr
 
     return metadata
 
