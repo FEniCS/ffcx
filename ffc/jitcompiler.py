@@ -43,15 +43,6 @@ FFC_PARAMETERS_JIT["no-evaluate_basis_derivatives"] = True
 # Set debug level for Instant
 instant.set_logging_level("warning")
 
-# Note: caching prepocessed forms has been disabled,
-#       see https://bugs.launchpad.net/ffc/+bug/769811
-
-# Memory cache for preprocessed forms
-#_memory_cache = {}
-
-# Counter to prevent memory leak
-#_memory_check = 1
-
 def jit(object, parameters=None, common_cell=None):
     """Just-in-time compile the given form or element
 
@@ -69,7 +60,6 @@ def jit(object, parameters=None, common_cell=None):
 
 def jit_form(form, parameters=None, common_cell=None):
     "Just-in-time compile the given form."
-    global _memory_check
 
     # Check that we get a Form
     if not isinstance(form, Form):
@@ -84,33 +74,14 @@ def jit_form(form, parameters=None, common_cell=None):
 
     # Preprocess form
 
-    if form.form_data() is None:
-        preprocessed_form = preprocess(form, common_cell=common_cell)
-    else:
-        preprocessed_form = form
-
     # First check if form is preprocessed
-    #if form.form_data() is not None:
-    #    preprocessed_form = form
-    #
-    ## Second check memory cache
-    ## Check both for memory id and repr. The last because some algorithm
-    ## might have changed the form, while keeping its id.
-    #elif _memory_cache.has_key((id(form), repr(form))):
-    #    preprocessed_form = _memory_cache[(id(form), repr(form))]
-    #
-    ## Else preprocess form and store in memory cache
-    #else:
-    #    preprocessed_form = preprocess(form, common_cell=common_cell)
-    #    _memory_cache[(id(form), repr(form))] = preprocessed_form
-    #
-    #    # For each 10th time the refcount of the cached form are checked
-    #    # and superflous forms are poped
-    #    if (_memory_check % 10) == 0:
-    #        for key, cached_form in _memory_cache.items():
-    #            if sys.getrefcount(cached_form) < 6:
-    #                _memory_cache.pop(key)
-    #    _memory_check += 1
+    if form.form_data() is not None:
+        preprocessed_form = form.form_data()._form
+
+    # Else preprocess form and store in memory cache
+    else:
+        preprocessed_form = preprocess(form, common_cell=common_cell)
+        form._form_data = preprocessed_form.form_data()
 
     # Wrap input
     jit_object = JITObject(form, preprocessed_form, parameters, common_cell)
@@ -184,9 +155,6 @@ def jit_element(element, parameters=None):
 
     # Compile form
     (compiled_form, module, form_data) = jit_form(form, parameters)
-
-    # Pop cache for element form. Otherwise it might interfere with DOLFIN forms
-    #_memory_cache.pop((id(form), repr(form)))
 
     return _extract_element_and_dofmap(module, form_data)
 
