@@ -65,7 +65,7 @@ def analyze_forms(forms, object_names, parameters, common_cell=None):
 
     return forms, unique_elements, element_map
 
-def analyze_elements(elements):
+def analyze_elements(elements, parameters):
 
     begin("Compiler stage 1: Analyzing form(s)")
 
@@ -85,6 +85,13 @@ def analyze_elements(elements):
     # Build element map
     element_map = _build_element_map(unique_elements)
 
+    # Update scheme for QuadratureElements
+    scheme = parameters["quadrature_rule"]
+    if scheme == "auto":
+        scheme = "default"
+    for element in unique_elements:
+        if element.family() == "Quadrature":
+            element._scheme = scheme
     end()
 
     return (), unique_elements, element_map
@@ -171,6 +178,7 @@ def _extract_metadata(form_data, parameters):
     # Recognized metadata keys
     metadata_keys = ("representation", "quadrature_degree", "quadrature_rule")
 
+    quad_schemes = []
     # Iterate over integral collections
     for (domain_type, domain_id, integrals, metadata) in form_data.integral_data:
 
@@ -224,6 +232,7 @@ def _extract_metadata(form_data, parameters):
                 integral_metadata["quadrature_rule"] = qr
             else:
                 info("quadrature_rule:   %s" % qr)
+            quad_schemes.append(qr)
 
             # Append to list of metadata
             integral_metadatas.append(integral_metadata)
@@ -234,6 +243,7 @@ def _extract_metadata(form_data, parameters):
         else:
 
             # Check that representation is the same
+            # FIXME: Why must the representation within a sub domain be the same?
             representations = [md["representation"] for md in integral_metadatas]
             if not all_equal(representations):
                 r = "quadrature"
@@ -242,6 +252,7 @@ def _extract_metadata(form_data, parameters):
                 r = representations[0]
 
             # Check that quadrature degree is the same
+            # FIXME: Why must the degree within a sub domain be the same?
             quadrature_degrees = [md["quadrature_degree"] for md in integral_metadatas]
             if not all_equal(quadrature_degrees):
                 qd = max(quadrature_degrees)
@@ -250,6 +261,7 @@ def _extract_metadata(form_data, parameters):
                 qd = quadrature_degrees[0]
 
             # Check that quadrature rule is the same
+            # FIXME: Why must the rule within a sub domain be the same?
             quadrature_rules = [md["quadrature_rule"] for md in integral_metadatas]
             if not all_equal(quadrature_rules):
                 qr = "canonical"
@@ -261,6 +273,16 @@ def _extract_metadata(form_data, parameters):
             metadata["representation"] = r
             metadata["quadrature_degree"] = qd
             metadata["quadrature_rule"] = qr
+
+    # Update scheme for QuadratureElements
+    if not all_equal(quad_schemes):
+        scheme = "canonical"
+        info("Quadrature rule must be equal within each sub domain, using %s rule." % qr)
+    else:
+        scheme = quad_schemes[0]
+    for element in form_data.sub_elements:
+        if element.family() == "Quadrature":
+            element._scheme = scheme
 
     return metadata
 

@@ -178,7 +178,7 @@ def compile_element(elements, prefix="Element", parameters=default_parameters())
 
     # Stage 1: analysis
     cpu_time = time()
-    analysis = analyze_elements(elements)
+    analysis = analyze_elements(elements, parameters)
     _print_timing(1, time() - cpu_time)
 
     # Stage 2: intermediate representation

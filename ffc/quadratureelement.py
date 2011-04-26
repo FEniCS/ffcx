@@ -29,7 +29,10 @@ class QuadratureElement:
         degree = ufl_element.degree()
         if degree is None:
             degree = default_quadrature_degree
-        self._scheme = default_quadrature_scheme
+        scheme = ufl_element._scheme
+        if scheme is None:
+            scheme = default_quadrature_scheme
+        self._scheme = scheme
 
         # Create quadrature (only interested in points)
         # TODO: KBO: What should we do about quadrature functions that live on ds, dS?
