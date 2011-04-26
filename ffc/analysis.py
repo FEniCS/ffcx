@@ -14,13 +14,12 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Marie E. Rognes, 2010
 
-# Last changed: 2011-01-13
+# Last changed: 2011-04-26
 
 # UFL modules
 from ufl.common import istr, tstr
 from ufl.integral import Measure
 from ufl.finiteelement import MixedElement, EnrichedElement
-from ufl.algorithms import preprocess
 from ufl.algorithms import estimate_max_polynomial_degree
 from ufl.algorithms import estimate_total_polynomial_degree
 from ufl.algorithms import extract_unique_elements
@@ -38,7 +37,7 @@ def analyze_forms(forms, object_names, parameters, common_cell=None):
     """
     Analyze form(s), returning
 
-       forms           - a tuple of preprocessed forms
+       form_datas      - a tuple of form_data objects
        unique_elements - a tuple of unique elements across all forms
        element_map     - a map from elements to unique element numbers
     """
@@ -46,12 +45,12 @@ def analyze_forms(forms, object_names, parameters, common_cell=None):
     begin("Compiler stage 1: Analyzing form(s)")
 
     # Analyze forms
-    forms = tuple(_analyze_form(form, object_names, parameters, common_cell) for form in forms)
+    form_datas = tuple(_analyze_form(form, object_names, parameters, common_cell) for form in forms)
 
     # Extract unique elements
     unique_elements = []
-    for form in forms:
-        for element in form.form_data().unique_sub_elements:
+    for form_data in form_datas:
+        for element in form_data.unique_sub_elements:
             if not element in unique_elements:
                 unique_elements.append(element)
 
@@ -63,9 +62,9 @@ def analyze_forms(forms, object_names, parameters, common_cell=None):
 
     end()
 
-    return forms, unique_elements, element_map
+    return form_datas, unique_elements, element_map
 
-def analyze_elements(elements):
+def analyze_elements(elements, parameters):
 
     begin("Compiler stage 1: Analyzing form(s)")
 
@@ -85,6 +84,13 @@ def analyze_elements(elements):
     # Build element map
     element_map = _build_element_map(unique_elements)
 
+    # Update scheme for QuadratureElements
+    scheme = parameters["quadrature_rule"]
+    if scheme == "auto":
+        scheme = "default"
+    for element in unique_elements:
+        if element.family() == "Quadrature":
+            element._scheme = scheme
     end()
 
     return (), unique_elements, element_map
@@ -110,23 +116,26 @@ def _analyze_form(form, object_names, parameters, common_cell=None):
     ffc_assert(len(form.integrals()),
                "Form (%s) seems to be zero: cannot compile it." % str(form))
 
-    # Preprocess form if necessary
-    if form.form_data() is None:
-        form = preprocess(form, object_names, common_cell)
+    # Compute form metadata
+    form_data = form.compute_form_data(object_names, common_cell)
     info("")
-    info(str(form.form_data()))
+    info(str(form_data))
+
+    # Extract preprocessed form
+    preprocessed_form = form_data.preprocessed_form
 
     # Check that all terms in form have same arity
-    ffc_assert(len(compute_form_arities(form)) == 1,
+    ffc_assert(len(compute_form_arities(preprocessed_form)) == 1,
                "All terms in form must have same rank.")
 
     # Adjust cell and degree for elements when unspecified
-    _adjust_elements(form.form_data())
+    # FIXME: FiniteElementBase.set_foo() will not be supported from UFL 1.0.
+    _adjust_elements(form_data)
 
     # Extract integral metadata
-    _extract_metadata(form.form_data(), parameters)
+    _extract_metadata(form_data, parameters)
 
-    return form
+    return form_data
 
 def _adjust_elements(form_data):
     "Adjust cell and degree for elements when unspecified."
@@ -151,6 +160,7 @@ def _adjust_elements(form_data):
     common_degree = max(1, common_degree)
 
     # Set cell and degree if missing
+    # FIXME: FiniteElementBase.set_foo() will not be supported from UFL 1.0.
     for element in form_data.sub_elements:
 
         # Check if cell and degree need to be adjusted
@@ -169,6 +179,7 @@ def _extract_metadata(form_data, parameters):
     # Recognized metadata keys
     metadata_keys = ("representation", "quadrature_degree", "quadrature_rule")
 
+    quad_schemes = []
     # Iterate over integral collections
     for (domain_type, domain_id, integrals, metadata) in form_data.integral_data:
 
@@ -183,16 +194,20 @@ def _extract_metadata(form_data, parameters):
                     integral_metadata[key] = parameters[key]
 
             # Check metadata
-            r = integral_metadata["representation"]
-            q = integral_metadata["quadrature_degree"]
+            r  = integral_metadata["representation"]
+            qd = integral_metadata["quadrature_degree"]
+            qr = integral_metadata["quadrature_rule"]
             if not r in ("quadrature", "tensor", "auto"):
                 info("Valid choices are 'tensor', 'quadrature' or 'auto'.")
                 error("Illegal choice of representation for integral: " + str(r))
-            if not q == "auto":
-                q = int(q)
-                if not q >= 0:
+            if not qd  == "auto":
+                qd = int(qd)
+                if not qd >= 0:
                     info("Valid choices are nonnegative integers or 'auto'.")
-                    error("Illegal quadrature degree for integral: " + str(q))
+                    error("Illegal quadrature degree for integral: " + str(qd))
+            if not qr in ("default", "canonical", "auto"):
+                info("Valid choices are 'default', 'canonical' or 'auto'.")
+                error("Illegal choice of quadrature rule for integral: " + str(qr))
 
             # Automatic selection of representation
             if r == "auto":
@@ -203,12 +218,22 @@ def _extract_metadata(form_data, parameters):
                 info("representation:    %s" % r)
 
             # Automatic selection of quadrature degree
-            if q == "auto":
-                q = _auto_select_quadrature_degree(integral, r, form_data.unique_sub_elements)
-                info("quadrature_degree: auto --> %d" % q)
+            if qd == "auto":
+                qd = _auto_select_quadrature_degree(integral, r, form_data.unique_sub_elements)
+                info("quadrature_degree: auto --> %d" % qd)
+                integral_metadata["quadrature_degree"] = qd
             else:
-                info("quadrature_degree: %d" % q)
-            integral_metadata["quadrature_degree"] = q
+                info("quadrature_degree: %d" % qd)
+
+            # Automatic selection of quadrature rule
+            if qr == "auto":
+                # Just use default for now.
+                qr = "default"
+                info("quadrature_rule:   auto --> %s" % qr)
+                integral_metadata["quadrature_rule"] = qr
+            else:
+                info("quadrature_rule:   %s" % qr)
+            quad_schemes.append(qr)
 
             # Append to list of metadata
             integral_metadatas.append(integral_metadata)
@@ -219,6 +244,7 @@ def _extract_metadata(form_data, parameters):
         else:
 
             # Check that representation is the same
+            # FIXME: Why must the representation within a sub domain be the same?
             representations = [md["representation"] for md in integral_metadatas]
             if not all_equal(representations):
                 r = "quadrature"
@@ -227,19 +253,37 @@ def _extract_metadata(form_data, parameters):
                 r = representations[0]
 
             # Check that quadrature degree is the same
+            # FIXME: Why must the degree within a sub domain be the same?
             quadrature_degrees = [md["quadrature_degree"] for md in integral_metadatas]
             if not all_equal(quadrature_degrees):
-                q = max(quadrature_degrees)
-                info("Quadrature degree must be equal within each sub domain, using degree %d." % q)
+                qd = max(quadrature_degrees)
+                info("Quadrature degree must be equal within each sub domain, using degree %d." % qd)
             else:
-                q = quadrature_degrees[0]
+                qd = quadrature_degrees[0]
+
+            # Check that quadrature rule is the same
+            # FIXME: Why must the rule within a sub domain be the same?
+            quadrature_rules = [md["quadrature_rule"] for md in integral_metadatas]
+            if not all_equal(quadrature_rules):
+                qr = "canonical"
+                info("Quadrature rule must be equal within each sub domain, using %s rule." % qr)
+            else:
+                qr = quadrature_rules[0]
 
             # Update common metadata
             metadata["representation"] = r
-            metadata["quadrature_degree"] = q
+            metadata["quadrature_degree"] = qd
+            metadata["quadrature_rule"] = qr
 
-            # Attach quadrature rule (default)
-            metadata["quadrature_rule"] = parameters["quadrature_rule"]
+    # Update scheme for QuadratureElements
+    if not all_equal(quad_schemes):
+        scheme = "canonical"
+        info("Quadrature rule must be equal within each sub domain, using %s rule." % qr)
+    else:
+        scheme = quad_schemes[0]
+    for element in form_data.sub_elements:
+        if element.family() == "Quadrature":
+            element._scheme = scheme
 
     return metadata
 

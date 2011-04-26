@@ -262,6 +262,7 @@ def validate_programs():
                 log_error("%s: values differ, error = %g (tolerance = %g)" % (key, diff, tolerance))
                 log_error("  old = " + " ".join("%.16g" % v for v in old_values))
                 log_error("  new = " + " ".join("%.16g" % v for v in new_values))
+                ok = False
 
         # Add debugging output to log file
         debug = "\n".join([line for line in generated_output.split("\n") if "debug" in line])

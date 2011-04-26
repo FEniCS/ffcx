@@ -162,9 +162,9 @@ def _tabulate_basis(sorted_integrals, domain_type, num_facets):
         # Make quadrature rule and get points and weights.
         # FIXME: Make create_quadrature() take a rule argument.
         if domain_type == "cell":
-            (points, weights) = create_quadrature(cell_domain, degree)
+            (points, weights) = create_quadrature(cell_domain, degree, rule)
         elif domain_type == "exterior_facet" or domain_type == "interior_facet":
-            (points, weights) = create_quadrature(facet_domain, degree)
+            (points, weights) = create_quadrature(facet_domain, degree, rule)
         else:
             error("Unknown integral type: " + str(domain_type))
 
