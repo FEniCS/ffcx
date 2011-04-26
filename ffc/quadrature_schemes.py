@@ -120,7 +120,7 @@ def _triangle_scheme(degree):
         w[1:4] = 0.12593918054482717
         w[4:7] = 0.13239415278850616
         w = w/2.0
-    elif degree == 5:
+    elif degree == 6:
         # Scheme from Strang and Fix, 12 points, degree of precision 6
         x = array([ [0.873821971016996, 0.063089014491502],
                     [0.063089014491502, 0.873821971016996],
