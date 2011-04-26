@@ -121,6 +121,7 @@ def _analyze_form(form, object_names, parameters, common_cell=None):
                "All terms in form must have same rank.")
 
     # Adjust cell and degree for elements when unspecified
+    # FIXME: FiniteElementBase.set_foo() will not be supported from UFL 1.0.
     _adjust_elements(form.form_data())
 
     # Extract integral metadata
@@ -151,6 +152,7 @@ def _adjust_elements(form_data):
     common_degree = max(1, common_degree)
 
     # Set cell and degree if missing
+    # FIXME: FiniteElementBase.set_foo() will not be supported from UFL 1.0.
     for element in form_data.sub_elements:
 
         # Check if cell and degree need to be adjusted
