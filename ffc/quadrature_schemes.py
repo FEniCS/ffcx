@@ -57,7 +57,7 @@ def create_quadrature(shape, degree, scheme="default"):
     elif scheme == "canonical":
         return _fiat_scheme(shape, degree)
     else:
-        error("Unkown quadrature scheme.")
+        error("Unkown quadrature scheme: %s." % scheme)
 
 def _fiat_scheme(shape, degree):
     """Get quadrature scheme from FIAT interface"""

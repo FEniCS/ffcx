@@ -17,6 +17,7 @@ from log import error, info_red
 
 # Default quadrature element degree
 default_quadrature_degree = 1
+default_quadrature_scheme = "canonical"
 
 class QuadratureElement:
     """Write description of QuadratureElement"""
@@ -28,19 +29,14 @@ class QuadratureElement:
         degree = ufl_element.degree()
         if degree is None:
             degree = default_quadrature_degree
-        #self._num_axis_points = (degree + 2) / 2
-
-        # Set element degree to constant
-        # FIXME: Is this necessary? At this point we should already have computed
-        # the total degree of the form.
-        # self._degree = 0
+        self._scheme = default_quadrature_scheme
 
         # Create quadrature (only interested in points)
         # TODO: KBO: What should we do about quadrature functions that live on ds, dS?
         # Get cell and facet domains.
         cell_domain = ufl_element.cell().domain()
         facet_domain = ufl_element.cell().facet_domain()
-        points, weights = create_quadrature(cell_domain, degree)
+        points, weights = create_quadrature(cell_domain, degree, self._scheme)
 
         # Save the quadrature points
         self._points = points
