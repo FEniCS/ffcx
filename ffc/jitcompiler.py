@@ -96,7 +96,7 @@ def jit_form(form, parameters=None, common_cell=None):
         module = instant.import_module(jit_object, cache_dir=cache_dir)
         if module:
             compiled_form = getattr(module, module.__name__ + "_form_0")()
-            return (compiled_form, module, preprocessed_form.form_data())
+            return (compiled_form, module, form_data)
 
         # Write a message
         log(INFO + 5, "Calling FFC just-in-time (JIT) compiler, this may take some time.")
@@ -126,7 +126,7 @@ def jit_form(form, parameters=None, common_cell=None):
         # Extract compiled form
         compiled_form = getattr(module, module.__name__ + "_form_0")()
 
-        return compiled_form, module, preprocessed_form.form_data()
+        return compiled_form, module, form_data
 
     finally:
         instant.locking.release_lock(lock)
