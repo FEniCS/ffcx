@@ -29,17 +29,17 @@ class QuadratureElement:
         degree = ufl_element.degree()
         if degree is None:
             degree = default_quadrature_degree
-        scheme = ufl_element._scheme
+        scheme = ufl_element.quadrature_scheme()
         if scheme is None:
             scheme = default_quadrature_scheme
-        self._scheme = scheme
+        self._quad_scheme = scheme
 
         # Create quadrature (only interested in points)
         # TODO: KBO: What should we do about quadrature functions that live on ds, dS?
         # Get cell and facet domains.
         cell_domain = ufl_element.cell().domain()
         facet_domain = ufl_element.cell().facet_domain()
-        points, weights = create_quadrature(cell_domain, degree, self._scheme)
+        points, weights = create_quadrature(cell_domain, degree, self._quad_scheme)
 
         # Save the quadrature points
         self._points = points
