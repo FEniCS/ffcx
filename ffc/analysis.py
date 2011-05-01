@@ -90,7 +90,7 @@ def analyze_elements(elements, parameters):
         scheme = "default"
     for element in unique_elements:
         if element.family() == "Quadrature":
-            element._scheme = scheme
+            element._quad_scheme = scheme
     end()
 
     return (), unique_elements, element_map
@@ -283,7 +283,7 @@ def _extract_metadata(form_data, parameters):
         scheme = quad_schemes[0]
     for element in form_data.sub_elements:
         if element.family() == "Quadrature":
-            element._scheme = scheme
+            element._quad_scheme = scheme
 
     return metadata
 

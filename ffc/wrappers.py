@@ -37,12 +37,8 @@ def _generate_dolfin_wrapper(analysis, prefix, parameters):
 
     begin("Compiler stage 4.1: Generating additional wrapper code")
 
-    # Extract data from analysis
-    forms, elements, element_map = analysis
-
     # Encapsulate data
-    (capsules, common_space) = _encapsulate(prefix, forms, elements,
-                                           element_map, parameters)
+    (capsules, common_space) = _encapsulate(prefix, analysis, parameters)
 
     # Generate code
     info("Generating wrapper code for DOLFIN")
@@ -54,45 +50,48 @@ def _generate_dolfin_wrapper(analysis, prefix, parameters):
 
     return code
 
-def _encapsulate(prefix, forms, elements, element_map, parameters):
+def _encapsulate(prefix, analysis, parameters):
 
-    num_forms = len(forms)
+    # Extract data from analysis
+    form_datas, elements, element_map = analysis
+
+    num_form_datas = len(form_datas)
     common_space = False
 
     # Special case: single element
-    if num_forms == 0:
+    if num_form_datas == 0:
         capsules = _encapsule_element(prefix, elements)
 
     # Special case: with error control
-    elif (parameters["error_control"] and num_forms == 11):
-        capsules = [_encapsule_form(prefix, form, i, element_map) for
-                    (i, form) in enumerate(forms[:num_forms-1])]
-        capsules += [_encapsule_form(prefix, forms[-1], num_forms-1,
+    elif (parameters["error_control"] and num_form_datas == 11):
+        capsules = [_encapsule_form(prefix, form_data, i, element_map) for
+                    (i, form_data) in enumerate(form_datas[:num_form_datas-1])]
+        capsules += [_encapsule_form(prefix, form_datas[-1], num_form_datas-1,
                                      element_map, "GoalFunctional")]
 
     # Otherwise: generate standard capsules for each form
     else:
-        capsules = [_encapsule_form(prefix, form, i, element_map) for
-                    (i, form) in enumerate(forms)]
+        capsules = [_encapsule_form(prefix, form_data, i, element_map) for
+                    (i, form_data) in enumerate(form_datas)]
 
         # Check if all elements are equal
         elements = []
-        for form in forms:
-            elements += form.form_data().elements[:form.form_data().rank]
+        for form_data in form_datas:
+            elements += form_data.elements[:form_data.rank]
         common_space = all_equal(elements)
 
     return (capsules, common_space)
 
 
-def _encapsule_form(prefix, form, i, element_map, superclassname=None):
-    element_numbers = [element_map[e] for e in form.form_data().elements]
+def _encapsule_form(prefix, form_data, i, element_map, superclassname=None):
+    element_numbers = [element_map[e] for e in form_data.elements]
 
     if superclassname is None:
         superclassname = "Form"
 
     from dolfin_utils.wrappers import UFCFormNames
     form_names = UFCFormNames("%d" % i,
-                              form.form_data().coefficient_names,
+                              form_data.coefficient_names,
                               format["classname form"](prefix, i),
                               [format["classname finite_element"](prefix, j)
                                for j in element_numbers],
