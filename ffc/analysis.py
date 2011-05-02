@@ -14,7 +14,7 @@ __license__  = "GNU GPL version 3 or any later version"
 
 # Modified by Marie E. Rognes, 2010
 
-# Last changed: 2011-04-26
+# Last changed: 2011-05-02
 
 # UFL modules
 from ufl.common import istr, tstr
@@ -22,9 +22,12 @@ from ufl.integral import Measure
 from ufl.finiteelement import MixedElement, EnrichedElement
 from ufl.algorithms import estimate_max_polynomial_degree
 from ufl.algorithms import estimate_total_polynomial_degree
-from ufl.algorithms import extract_unique_elements
 from ufl.algorithms import sort_elements
 from ufl.algorithms import compute_form_arities
+
+# FIXME: Import error when trying to import extract_sub_elements
+# FIXME: from ufl.algorithmms.
+from ufl.algorithms.analysis import extract_elements, extract_sub_elements
 
 # FFC modules
 from ffc.log import log, info, begin, end, warning, debug, error, ffc_assert
@@ -116,8 +119,11 @@ def _analyze_form(form, object_names, parameters, common_cell=None):
     ffc_assert(len(form.integrals()),
                "Form (%s) seems to be zero: cannot compile it." % str(form))
 
+    # Extract element mapping for elements that should be replaced
+    element_mapping, common_cell = _extract_element_mapping(form, common_cell)
+
     # Compute form metadata
-    form_data = form.compute_form_data(object_names, common_cell)
+    form_data = form.compute_form_data(object_names, common_cell, element_mapping)
     info("")
     info(str(form_data))
 
@@ -132,10 +138,74 @@ def _analyze_form(form, object_names, parameters, common_cell=None):
     # FIXME: FiniteElementBase.set_foo() will not be supported from UFL 1.0.
     _adjust_elements(form_data)
 
+    # FIXME: Does this function also modify the form directly and should
+    # FIXME: should therefore be removed (like the UFL set_foo functions)
     # Extract integral metadata
     _extract_metadata(form_data, parameters)
 
     return form_data
+
+def _extract_element_mapping(form, common_cell):
+    """Extract mapping for elements that should be replaced. This is
+    used to automatically set elements in cases where the element is
+    not completely specified, which is typically the case for DOLFIN
+    Expressions."""
+
+    print "Extracting element mapping"
+
+    # Extract all elements
+    elements = extract_elements(form)
+    elements = extract_sub_elements(elements)
+
+    # Store cell
+    if common_cell is None:
+        cells = [e.cell() for e in elements]
+        cells = [c for c in cells if c.domain() is not None]
+        if len(cells) == 0:
+            error("Unable to extract common element; missing cell definition in form.")
+        common_cell = cells[0]
+
+    # FIXME: Check if these are needed
+    #    elif form._integrals:
+    #        # Special case to allow functionals only depending on geometric variables, with no elements
+    #        form_data.cell = form._integrals[0].integrand().cell()
+    #    else:
+    #        # Special case to allow integral of constants to pass through without crashing
+    #        form_data.cell = None
+    #        warning("Form is empty, no elements or integrals, cell is undefined.")
+
+    # Extract common degree
+    common_degree = max([e.degree() for e in elements])
+    if common_degree is None:
+        common_degree = default_quadrature_degree
+
+    # Degree must be at least 1 (to work with Lagrange elements)
+    common_degree = max(1, common_degree)
+
+    # Reconstruct elements
+    element_mapping = {}
+    for element in elements:
+
+        # Adjust element family (currently unchanged)
+        family = element.family()
+
+        # Adjust cell
+        cell = element.cell()
+        if cell.domain() is None:
+            info("Adjusting element cell from %s to %s." % (istr(cell), str(common_cell)))
+            cell = common_cell
+
+        # Adjust degree
+        degree = element.degree()
+        if degree is None:
+            info("Adjusting element degree from %s to %d" % (istr(degree), common_degree))
+            degree = common_degree
+
+        # Reconstruct element and set mapping
+        #new_element = element.reconstruct(family=family, cell=cell, degree=degree)
+        #element_mapping[element] = new_element
+
+    return element_mapping, common_cell
 
 def _adjust_elements(form_data):
     "Adjust cell and degree for elements when unspecified."
@@ -284,8 +354,6 @@ def _extract_metadata(form_data, parameters):
     for element in form_data.sub_elements:
         if element.family() == "Quadrature":
             element._quad_scheme = scheme
-
-    return metadata
 
 def _get_sub_elements(element):
     "Get sub elements."
