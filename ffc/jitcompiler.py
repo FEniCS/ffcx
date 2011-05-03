@@ -1,15 +1,29 @@
 """This module provides a just-in-time (JIT) form compiler.
 It uses Instant to wrap the generated code into a Python module."""
 
-__author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-07-20"
-__copyright__ = "Copyright (C) 2007-2009 Anders Logg"
-__license__  = "GNU GPL version 3 or any later version"
-
+# Copyright (C) 2007-2009 Anders Logg
+#
+# This file is part of FFC.
+#
+# FFC is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# FFC is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with FFC.  If not, see <http://www.gnu.org/licenses/>.
+#
 # Modified by Johan Hake, 2008-2009
 # Modified by Ilmar Wilbers, 2008
 # Modified by Kristian B. Oelgaard, 2009
 # Modified by Joachim Haga, 2011.
+#
+# First added:  2007-07-20
 # Last changed: 2011-04-26
 
 # Python modules

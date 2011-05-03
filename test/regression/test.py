@@ -9,11 +9,24 @@ form files found in the 'bench' directory. To run benchmarks, use the
 option -b.
 """
 
-__author__ = "Anders Logg, Kristian B. Oelgaard and Marie E. Rognes"
-__date__ = "2010-01-21"
-__copyright__ = "Copyright (C) 2010 " + __author__
-__license__  = "GNU GPL version 3 or any later version"
-
+# Copyright (C) 2010 Anders Logg, Kristian B. Oelgaard and Marie E. Rognes
+#
+# This file is part of FFC.
+#
+# FFC is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# FFC is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with FFC.  If not, see <http://www.gnu.org/licenses/>.
+#
+# First added:  2010-01-21
 # Last changed: 2010-05-12
 
 # FIXME: Need to add many more test cases. Quite a few DOLFIN
