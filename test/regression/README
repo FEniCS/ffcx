@@ -1,0 +1,8 @@
+# Last changed: 2011-05-05
+
+To update the references for the FFC regression tests, run the script
+update.sh from the ffc/test/regression/references folder:
+
+  cd references
+  ./update.sh
+
