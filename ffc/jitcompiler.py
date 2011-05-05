@@ -102,7 +102,7 @@ def jit_form(form, parameters=None, common_cell=None):
         log(INFO + 5, "Calling FFC just-in-time (JIT) compiler, this may take some time.")
 
         # Generate code
-        compile_form(preprocessed_form, prefix=jit_object.signature(), parameters=parameters)
+        compile_form(preprocessed_form, prefix=jit_object.signature(), parameters=parameters, common_cell=common_cell)
 
         # Build module using Instant (through UFC)
         debug("Creating Python extension (compiling and linking), this may take some time...")
