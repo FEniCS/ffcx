@@ -73,7 +73,7 @@ def jit_form(form, parameters=None, common_cell=None):
     set_prefix(parameters["log_prefix"])
 
     # Compute form metadata and extract preprocessed form
-    form_data = form.compute_form_data()
+    form_data = form.compute_form_data(common_cell=common_cell)
     preprocessed_form = form_data.preprocessed_form
 
     # Wrap input
