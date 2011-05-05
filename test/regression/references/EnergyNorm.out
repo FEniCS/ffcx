@@ -85,4 +85,4 @@ Testing dofmap
 
 Testing cell_integral
 ---------------------
-75_tabulate_tensor = 0.01390665589948798
+75_tabulate_tensor = 0.01390665593716449
