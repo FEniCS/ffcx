@@ -1,8 +1,10 @@
 # Last changed: 2011-05-05
 
-To update the references for the FFC regression tests, run the script
-update.sh from the ffc/test/regression/references folder:
+To update the references for the FFC regression tests, first run the
+regression test (to generate the new references) and then run the
+script update.sh from the ffc/test/regression/references folder:
 
+  python test.py
   cd references
   ./update.sh
 
