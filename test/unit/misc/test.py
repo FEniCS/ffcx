@@ -1,11 +1,27 @@
 "Unit tests for FFC"
 
-__author__ = "Anders Logg (logg@simula.no)"
-__date__ = "2007-02-06 -- 2011-05-05"
-__copyright__ = "Copyright (C) 2007-2009 Anders Logg"
-__license__  = "GNU GPL version 3 or any later version"
+# Copyright (C) 2007-2009 Anders Logg
+#
+# This file is part of FFC.
+#
+# FFC is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# FFC is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with FFC.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Modified by Marie E. Rognes, 2010
+#
+# First added:  2007-02-06
+# Last changed: 2009-02-24
 
-# Modified by Marie E. Rognes <meg@simula.no> 2010
 import unittest
 import sys
 import numpy
@@ -38,7 +54,7 @@ class SpaceDimensionTests(unittest.TestCase):
 
     def testContinuousLagrange(self):
         "Test space dimensions of continuous Lagrange elements."
-
+u
         P1 = create(FiniteElement("Lagrange", "triangle", 1))
         self.assertEqual(P1.space_dimension(), 3)
 
@@ -266,7 +282,7 @@ class JITTests(unittest.TestCase):
         #options = {"log_level": 5}
         options = {"log_level": WARNING}
 
-        # FIXME: A hack to get the unit test pass on Ubuntu 4.11, see above.
+        # FIXME: A hack to get the unit test pass on Ubuntu 11.04, see above.
         if use_swig2_binary:
             options["swig_binary"] = "swig2.0"
         
