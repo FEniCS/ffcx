@@ -39,6 +39,7 @@ from os import getcwd
 # UFL modules.
 from ufl.log import UFLException
 from ufl.algorithms import load_ufl_file
+import ufl
 
 # FFC modules.
 from ffc.log import info
@@ -139,6 +140,9 @@ def main(argv):
 
     # Set log_level again in case -d or -s was used on the command line
     set_level(parameters["log_level"])
+
+    # Set UFL precision
+    ufl.constantvalue.precision = int(parameters["precision"])
 
     # Print a nice message
     info_version()
