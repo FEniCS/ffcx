@@ -55,13 +55,16 @@ def analyze_forms(forms, object_names, parameters, common_cell=None):
 
        form_datas      - a tuple of form_data objects
        unique_elements - a tuple of unique elements across all forms
-       element_map     - a map from elements to unique element numbers
+       element_data    - a dictionary of auxiliary element data
     """
 
     begin("Compiler stage 1: Analyzing form(s)")
 
     # Analyze forms
-    form_datas = tuple(_analyze_form(form, object_names, parameters, common_cell) for form in forms)
+    form_datas = tuple(_analyze_form(form,
+                                     object_names,
+                                     parameters,
+                                     common_cell) for form in forms)
 
     # Extract unique elements
     unique_elements = []
@@ -73,12 +76,21 @@ def analyze_forms(forms, object_names, parameters, common_cell=None):
     # Sort elements
     unique_elements = sort_elements(unique_elements)
 
-    # Build element map
-    element_map = _build_element_map(unique_elements)
+    # Compute element numbers
+    element_numbers = _compute_element_numbers(unique_elements)
+
+    # Compute element cells and degrees (when cell or degree is undefined)
+    element_cells = _auto_select_cells(unique_elements)
+    element_degrees = _auto_select_degrees(unique_elements)
+
+    # Group auxiliary element data
+    element_data = {"numbers": element_numbers,
+                    "cells":   element_cells,
+                    "degrees": element_degrees}
 
     end()
 
-    return form_datas, unique_elements, element_map
+    return form_datas, unique_elements, element_data
 
 def analyze_elements(elements, parameters):
 
@@ -86,19 +98,19 @@ def analyze_elements(elements, parameters):
 
     # Extract unique elements
     unique_elements = []
-    element_map = {}
+    element_numbers = {}
     for element in elements:
         # Get all (unique) nested elements.
         for e in _get_nested_elements(element):
             # Check if element is present
-            if not e in element_map:
-                element_map[e] = len(unique_elements)
+            if not e in element_numbers:
+                element_numbers[e] = len(unique_elements)
                 unique_elements.append(e)
     # Sort elements
     unique_elements = sort_elements(unique_elements)
 
     # Build element map
-    element_map = _build_element_map(unique_elements)
+    element_numbers = _compute_element_numbers(unique_elements)
 
     # Update scheme for QuadratureElements
     scheme = parameters["quadrature_rule"]
@@ -109,14 +121,14 @@ def analyze_elements(elements, parameters):
             element._quad_scheme = scheme
     end()
 
-    return (), unique_elements, element_map
+    return (), unique_elements, element_numbers
 
-def _build_element_map(elements):
+def _compute_element_numbers(elements):
     "Build map from elements to element numbers."
-    element_map = {}
+    element_numbers = {}
     for (i, element) in enumerate(elements):
-        element_map[element] = i
-    return element_map
+        element_numbers[element] = i
+    return element_numbers
 
 def _get_nested_elements(element):
     "Get unique nested elements (including self)."
@@ -132,11 +144,9 @@ def _analyze_form(form, object_names, parameters, common_cell=None):
     ffc_assert(len(form.integrals()),
                "Form (%s) seems to be zero: cannot compile it." % str(form))
 
-    # Extract element mapping for elements that should be replaced
-    element_mapping, common_cell = _extract_element_mapping(form, common_cell)
-
     # Compute form metadata
-    form_data = form.compute_form_data(object_names, common_cell, element_mapping)
+    form_data = form.compute_form_data(object_names, common_cell)
+
     info("")
     info(str(form_data))
 
@@ -147,123 +157,22 @@ def _analyze_form(form, object_names, parameters, common_cell=None):
     ffc_assert(len(compute_form_arities(preprocessed_form)) == 1,
                "All terms in form must have same rank.")
 
-    # Adjust cell and degree for elements when unspecified
-    # FIXME: FiniteElementBase.set_foo() will not be supported from UFL 1.0.
-    _adjust_elements(form_data)
+    # Attach integral meta data
+    _attach_integral_metadata(form_data, common_cell, parameters)
 
-    # FIXME: Does this function also modify the form directly and should
-    # FIXME: should therefore be removed (like the UFL set_foo functions)
-    # Extract integral metadata
-    _extract_metadata(form_data, parameters)
+    # Attach cell data
+    _attach_cell_data(form_data, common_cell)
 
     return form_data
 
-def _extract_element_mapping(form, common_cell):
-    """Extract mapping for elements that should be replaced. This is
-    used to automatically set elements in cases where the element is
-    not completely specified, which is typically the case for DOLFIN
-    Expressions."""
-
-    print "Extracting element mapping"
-
-    # Extract all elements
-    elements = extract_elements(form)
-    elements = extract_sub_elements(elements)
-
-    # Store cell
-    if common_cell is None:
-        cells = [e.cell() for e in elements]
-        cells = [c for c in cells if c.domain() is not None]
-        if len(cells) == 0:
-            error("Unable to extract common element; missing cell definition in form.")
-        common_cell = cells[0]
-
-    # FIXME: Check if these are needed
-    #    elif form._integrals:
-    #        # Special case to allow functionals only depending on geometric variables, with no elements
-    #        form_data.cell = form._integrals[0].integrand().cell()
-    #    else:
-    #        # Special case to allow integral of constants to pass through without crashing
-    #        form_data.cell = None
-    #        warning("Form is empty, no elements or integrals, cell is undefined.")
-
-    # Extract common degree
-    common_degree = max([e.degree() for e in elements])
-    if common_degree is None:
-        common_degree = default_quadrature_degree
-
-    # Degree must be at least 1 (to work with Lagrange elements)
-    common_degree = max(1, common_degree)
-
-    # Reconstruct elements
-    element_mapping = {}
-    for element in elements:
-
-        # Adjust element family (currently unchanged)
-        family = element.family()
-
-        # Adjust cell
-        cell = element.cell()
-        if cell.domain() is None:
-            info("Adjusting element cell from %s to %s." % (istr(cell), str(common_cell)))
-            cell = common_cell
-
-        # Adjust degree
-        degree = element.degree()
-        if degree is None:
-            info("Adjusting element degree from %s to %d" % (istr(degree), common_degree))
-            degree = common_degree
-
-        # Reconstruct element and set mapping
-        #new_element = element.reconstruct(family=family, cell=cell, degree=degree)
-        #element_mapping[element] = new_element
-
-    return element_mapping, common_cell
-
-def _adjust_elements(form_data):
-    "Adjust cell and degree for elements when unspecified."
-
-    # Note the importance of consider form_data.sub_elements here
-    # instead of form_data.unique_sub_elements. This is because
-    # elements considered equal (same output from __repr__) will not
-    # be repeated in unique_sub_elements but all elements need to be
-    # adjusted.
-
-    # Extract common cell
-    common_cell = form_data.cell
-    if common_cell.domain() is None:
-        error("Missing cell definition in form.")
-
-    # Extract common degree
-    common_degree = max([element.degree() for element in form_data.sub_elements])
-    if common_degree is None:
-        common_degree = default_quadrature_degree
-
-    # Degree must be at least 1 (to work with Lagrange elements)
-    common_degree = max(1, common_degree)
-
-    # Set cell and degree if missing
-    # FIXME: FiniteElementBase.set_foo() will not be supported from UFL 1.0.
-    for element in form_data.sub_elements:
-
-        # Check if cell and degree need to be adjusted
-        cell = element.cell()
-        degree = element.degree()
-        if degree is None:
-            info("Adjusting element degree from %s to %d" % (istr(degree), common_degree))
-            element.set_degree(common_degree)
-        if cell.domain() is None:
-            info("Adjusting element cell from %s to %s." % (istr(cell), str(common_cell)))
-            element.set_cell(common_cell)
-
-def _extract_metadata(form_data, parameters):
-    "Attach and group meta data for each subdomain integral collection."
+def _attach_integral_metadata(form_data, common_cell, parameters):
+    "Attach integral metadata"
 
     # Recognized metadata keys
     metadata_keys = ("representation", "quadrature_degree", "quadrature_rule")
 
-    quad_schemes = []
     # Iterate over integral collections
+    quad_schemes = []
     for (domain_type, domain_id, integrals, metadata) in form_data.integral_data:
 
         # Iterate over integrals
@@ -294,7 +203,8 @@ def _extract_metadata(form_data, parameters):
 
             # Automatic selection of representation
             if r == "auto":
-                r = _auto_select_representation(integral, form_data.unique_sub_elements)
+                r = _auto_select_representation(integral,
+                                                form_data.unique_sub_elements)
                 info("representation:    auto --> %s" % r)
                 integral_metadata["representation"] = r
             else:
@@ -302,7 +212,9 @@ def _extract_metadata(form_data, parameters):
 
             # Automatic selection of quadrature degree
             if qd == "auto":
-                qd = _auto_select_quadrature_degree(integral, r, form_data.unique_sub_elements)
+                qd = _auto_select_quadrature_degree(integral,
+                                                    r,
+                                                    form_data.unique_sub_elements)
                 info("quadrature_degree: auto --> %d" % qd)
                 integral_metadata["quadrature_degree"] = qd
             else:
@@ -368,6 +280,15 @@ def _extract_metadata(form_data, parameters):
         if element.family() == "Quadrature":
             element._quad_scheme = scheme
 
+def _attach_cell_data(form_data, common_cell):
+    "Attach cell data"
+    common_cell = _extract_common_cell(form_data.unique_sub_elements, common_cell)
+    form_data.cell = common_cell
+    form_data.geometric_dimension = common_cell.geometric_dimension()
+    form_data.topological_dimension = common_cell.topological_dimension()
+    form_data.num_facets = common_cell.num_facets()
+    return form_data
+
 def _get_sub_elements(element):
     "Get sub elements."
     sub_elements = [element]
@@ -378,6 +299,72 @@ def _get_sub_elements(element):
         for e in element._elements:
             sub_elements += _get_sub_elements(e)
     return sub_elements
+
+def _extract_common_cell(elements, common_cell):
+    "Extract common cell for elements"
+    if common_cell is None:
+        cells = [e.cell() for e in elements]
+        cells = [c for c in cells if not c.is_undefined()]
+        if len(cells) == 0:
+            error("""\
+Unable to extract common element; missing cell definition in form.""")
+        common_cell = cells[0]
+    return common_cell
+
+def _extract_common_degree(elements):
+    "Extract common degree for all elements"
+    common_degree = max([e.degree() for e in elements])
+    if common_degree is None:
+        common_degree = default_quadrature_degree
+    return common_degree
+
+def _auto_select_cells(elements, common_cell=None):
+    """
+    Automatically select cell for all elements of the form in cases
+    where this has not been specified by the user. This feature is
+    used by DOLFIN to allow the specification of Expressions with
+    undefined cells.
+    """
+
+    # Extract common cell
+    common_cell = _extract_common_cell(elements, common_cell)
+
+    # Set missing cells
+    element_cells = {}
+    for element in elements:
+        cell = element.cell()
+        if cell.is_undefined():
+            info("Adjusting element cell from %s to %s." % \
+                     (istr(cell), str(common_cell)))
+            element_cells[element] = common_cell
+
+    return element_cells
+
+def _auto_select_degrees(elements):
+    """
+    Automatically select degree for all elements of the form in cases
+    where this has not been specified by the user. This feature is
+    used by DOLFIN to allow the specification of Expressions with
+    undefined degrees.
+    """
+
+    # Extract common degree
+    common_degree = _extract_common_degree(elements)
+
+    # Degree must be at least 1 (to work with Lagrange elements)
+    common_degree = max(1, common_degree)
+
+    # Set missing degrees
+    element_degrees = {}
+    for element in elements:
+        # Adjust degree
+        degree = element.degree()
+        if degree is None:
+            info("Adjusting element degree from %s to %d" % \
+                     (istr(degree), common_degree))
+            element_degrees[element] = common_degree
+
+    return element_degrees
 
 def _auto_select_representation(integral, elements):
     """

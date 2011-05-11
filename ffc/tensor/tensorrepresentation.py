@@ -44,7 +44,14 @@ from ffc.tensor.referencetensor import ReferenceTensor
 from ffc.tensor.geometrytensor import GeometryTensor
 from ffc.tensor.tensorreordering import reorder_entries
 
-def compute_integral_ir(domain_type, domain_id, integrals, metadata, form_data, form_id, parameters):
+def compute_integral_ir(domain_type,
+                        domain_id,
+                        integrals,
+                        metadata,
+                        form_data,
+                        form_id,
+                        element_data,
+                        parameters):
     "Compute intermediate represention of integral."
 
     info("Computing tensor representation")
