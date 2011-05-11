@@ -121,7 +121,10 @@ def analyze_elements(elements, parameters):
             element._quad_scheme = scheme
     end()
 
-    return (), unique_elements, element_numbers
+    # Group auxiliary element data
+    element_data = {"numbers": element_numbers}
+
+    return (), unique_elements, element_data
 
 def _compute_element_numbers(elements):
     "Build map from elements to element numbers."
