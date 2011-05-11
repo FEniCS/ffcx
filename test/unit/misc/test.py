@@ -54,7 +54,7 @@ class SpaceDimensionTests(unittest.TestCase):
 
     def testContinuousLagrange(self):
         "Test space dimensions of continuous Lagrange elements."
-u
+
         P1 = create(FiniteElement("Lagrange", "triangle", 1))
         self.assertEqual(P1.space_dimension(), 3)
 
@@ -285,7 +285,7 @@ class JITTests(unittest.TestCase):
         # FIXME: A hack to get the unit test pass on Ubuntu 11.04, see above.
         if use_swig2_binary:
             options["swig_binary"] = "swig2.0"
-        
+
         # Define two forms with the same signatures
         element = FiniteElement("Lagrange", "triangle", 1)
         v = TestFunction(element)
