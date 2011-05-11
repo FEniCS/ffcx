@@ -603,4 +603,3 @@ class QuadratureTransformer(QuadratureTransformerBase):
         used_psi_tables = set([v for k, v in self.psi_tables_map.items()])
 
         return (value, ops, [trans_set, used_points, used_psi_tables])
-

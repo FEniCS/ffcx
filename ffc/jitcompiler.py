@@ -102,8 +102,10 @@ def jit_form(form, parameters=None, common_cell=None):
         return (compiled_form, module, form_data)
 
     try:
+
         # Take lock to serialise code generation and compilation.
-        lock = instant.locking.get_lock(instant.get_default_cache_dir(), 'ffc_'+jit_object.signature())
+        lock = instant.locking.get_lock(instant.get_default_cache_dir(),
+                                        'ffc_'+jit_object.signature())
 
         # Retry Instant cache. The module may have been created while we waited
         # for the lock, even if it didn't exist before.
@@ -113,18 +115,21 @@ def jit_form(form, parameters=None, common_cell=None):
             return (compiled_form, module, form_data)
 
         # Write a message
-        log(INFO + 5, "Calling FFC just-in-time (JIT) compiler, this may take some time.")
+        log(INFO + 5,
+            "Calling FFC just-in-time (JIT) compiler, this may take some time.")
 
         # Generate code
-        compile_form(preprocessed_form, prefix=jit_object.signature(), parameters=parameters, common_cell=common_cell)
+        compile_form(preprocessed_form, prefix=jit_object.signature(),
+                     parameters=parameters, common_cell=common_cell)
 
         # Build module using Instant (through UFC)
-        debug("Creating Python extension (compiling and linking), this may take some time...")
+        debug("Compiling and linking Python extension module, this may take some time.")
         hfile = jit_object.signature() + ".h"
         cppfile = jit_object.signature() + ".cpp"
         module = ufc_utils.build_ufc_module(
             hfile,
-            swig_binary=parameters["swig_binary"], swig_path=parameters["swig_path"],
+            swig_binary=parameters["swig_binary"],
+            swig_path=parameters["swig_path"],
             source_directory = os.curdir,
             signature = jit_object.signature(),
             sources = [cppfile] if parameters["split"] else [],

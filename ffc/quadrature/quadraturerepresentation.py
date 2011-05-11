@@ -34,7 +34,14 @@ from ffc.quadrature.quadraturetransformer import QuadratureTransformer
 from ffc.quadrature.optimisedquadraturetransformer import QuadratureTransformerOpt
 from ffc.quadrature_schemes import create_quadrature
 
-def compute_integral_ir(domain_type, domain_id, integrals, metadata, form_data, form_id, parameters):
+def compute_integral_ir(domain_type,
+                        domain_id,
+                        integrals,
+                        metadata,
+                        form_data,
+                        form_id,
+                        element_data,
+                        parameters):
     "Compute intermediate represention of integral."
 
     info("Computing quadrature representation")
@@ -51,13 +58,17 @@ def compute_integral_ir(domain_type, domain_id, integrals, metadata, form_data, 
 
     # Sort integrals and tabulate basis.
     sorted_integrals = _sort_integrals(integrals, metadata, form_data)
-    integrals_dict, psi_tables, quad_weights = _tabulate_basis(sorted_integrals, domain_type, form_data.num_facets)
+    integrals_dict, psi_tables, quad_weights = \
+        _tabulate_basis(sorted_integrals,
+                        domain_type,
+                        form_data.num_facets,
+                        element_data)
 
     # Create dimensions of primary indices, needed to reset the argument 'A'
     # given to tabulate_tensor() by the assembler.
     prim_idims = []
     for argument in form_data.arguments:
-        element = create_element(argument.element())
+        element = create_element(argument.element(), element_data)
         prim_idims.append(element.space_dimension())
     ir["prim_idims"] = prim_idims
 
@@ -141,7 +152,7 @@ def compute_integral_ir(domain_type, domain_id, integrals, metadata, form_data, 
 
     return ir
 
-def _tabulate_basis(sorted_integrals, domain_type, num_facets):
+def _tabulate_basis(sorted_integrals, domain_type, num_facets, element_data):
     "Tabulate the basisfunctions and derivatives."
 
     # Initialise return values.
@@ -161,17 +172,11 @@ def _tabulate_basis(sorted_integrals, domain_type, num_facets):
         elements = extract_unique_elements(integral)
 
         # Create a list of equivalent FIAT elements (with same ordering of elements).
-        fiat_elements = [create_element(e) for e in elements]
+        fiat_elements = [create_element(e, element_data) for e in elements]
 
         # Get cell and facet domains.
         cell_domain = elements[0].cell().domain()
         facet_domain = elements[0].cell().facet_domain()
-
-        # TODO: These safety check could be removed for speed (I think?)
-        ffc_assert(all(cell_domain == e.cell().domain() for e in elements), \
-                    "The cell shape of all elements MUST be equal: " + repr(elements))
-        ffc_assert(all(facet_domain == e.cell().facet_domain() for e in elements), \
-                    "The facet shape of all elements MUST be equal: " + repr(elements))
 
         # Make quadrature rule and get points and weights.
         # FIXME: Make create_quadrature() take a rule argument.

@@ -53,7 +53,30 @@ def reference_cell(dim):
     else:
         return FIAT.ufc_simplex(domain2dim[dim])
 
-def create_element(ufl_element):
+def get_cell(ufl_element, element_data=None):
+    """Get cell from ufl_element or element data. This is used to get
+    the cell in cases where the cell is undefined."""
+    if ufl_element.cell().is_undefined():
+        if element_data is None or not ufl_element in element_data["cells"]:
+            raise RuntimeError, \
+        "Unable to access cell for element; cell has not been specified."
+        cell = element_data["cells"][ufl_element]
+    else:
+        cell = ufl_element.cell()
+    return cell
+
+def get_degree(ufl_element, element_data=None):
+    """Get degree from ufl_element or element data. This is used to get
+    the degree in cases where the degree is undefined."""
+    degree = ufl_element.degree()
+    if degree is None:
+        if element_data is None or not ufl_element in element_data["degrees"]:
+            raise RuntimeError, \
+        "Unable to access degree of element; degree has not been specified."
+        degree = element_data["degrees"][ufl_element]
+    return degree
+
+def create_element(ufl_element, element_data=None):
 
     # Check cache
     if ufl_element in _cache:
@@ -62,7 +85,7 @@ def create_element(ufl_element):
 
     # Create regular FIAT finite element
     if isinstance(ufl_element, ufl.FiniteElement):
-        element = _create_fiat_element(ufl_element)
+        element = _create_fiat_element(ufl_element, element_data)
 
     # Create mixed element (implemented by FFC)
     elif isinstance(ufl_element, ufl.MixedElement):
@@ -76,7 +99,7 @@ def create_element(ufl_element):
 
     # Create restricted element(implemented by FFC)
     elif isinstance(ufl_element, ufl.RestrictedElement):
-        element = _create_restricted_element(ufl_element)
+        element = _create_restricted_element(ufl_element, element_data)
 
     else:
         error("Cannot handle this element type: %s" % str(ufl_element))
@@ -86,15 +109,18 @@ def create_element(ufl_element):
 
     return element
 
-def _create_fiat_element(ufl_element):
+def _create_fiat_element(ufl_element, element_data=None):
     "Create FIAT element corresponding to given finite element."
 
+    # Get element data
     family = ufl_element.family()
-    degree = ufl_element.degree()
+    cell = get_cell(ufl_element, element_data)
+    degree = get_degree(ufl_element, element_data)
 
     # Handle the space of the constant
     if family == "Real":
-        constant = _create_fiat_element(ufl.FiniteElement("DG", ufl_element.cell(), 0))
+        dg0_element = ufl.FiniteElement("DG", cell, 0)
+        constant = _create_fiat_element(dg0_element, element_data)
         return SpaceOfReals(constant)
 
     # FIXME: AL: Should this really be here?
@@ -102,12 +128,13 @@ def _create_fiat_element(ufl_element):
     if family == "Quadrature":
         return FFCQuadratureElement(ufl_element)
 
-    cell = reference_cell(ufl_element.cell().domain())
+    # Create FIAT cell
+    fiat_cell = reference_cell(cell.domain())
 
     # Handle Bubble element as RestrictedElement of P_{k} to interior
     if family == "Bubble":
-        V = FIAT.supported_elements["Lagrange"](cell, degree)
-        dim = ufl_element.cell().geometric_dimension()
+        V = FIAT.supported_elements["Lagrange"](fiat_cell, degree)
+        dim = cell.geometric_dimension()
         return RestrictedElement(V, _indices(V, "interior", dim), None)
 
     # Check if finite element family is supported by FIAT
@@ -117,9 +144,9 @@ def _create_fiat_element(ufl_element):
     # Create FIAT finite element
     ElementClass = FIAT.supported_elements[family]
     if degree is None:
-        element = ElementClass(cell)
+        element = ElementClass(fiat_cell)
     else:
-        element = ElementClass(cell, degree)
+        element = ElementClass(fiat_cell, degree)
 
     return element
 
@@ -192,7 +219,7 @@ def _extract_elements(ufl_element, domain=None):
     elements += [create_element(ufl_element)]
     return elements
 
-def _create_restricted_element(ufl_element):
+def _create_restricted_element(ufl_element, element_data):
     "Create an FFC representation for an UFL RestrictedElement."
 
     if not isinstance(ufl_element, ufl.RestrictedElement):
@@ -203,7 +230,7 @@ def _create_restricted_element(ufl_element):
 
     # If simple element -> create RestrictedElement from fiat_element
     if isinstance(base_element, ufl.FiniteElement):
-        element = _create_fiat_element(base_element)
+        element = _create_fiat_element(base_element, element_data)
         return RestrictedElement(element, _indices(element, domain), domain)
 
     # If restricted mixed element -> convert to mixed restricted element
