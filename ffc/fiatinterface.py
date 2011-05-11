@@ -58,10 +58,8 @@ def get_cell(ufl_element, element_data=None):
     the cell in cases where the cell is undefined."""
     if ufl_element.cell().is_undefined():
         if element_data is None or not ufl_element in element_data["cells"]:
-            print "strange before"
-            raise RuntimeError, "Hmmm"
-            error("Unable to access cell for element; cell has not been specified.")
-            print "strange after"
+            raise RuntimeError, \
+        "Unable to access cell for element; cell has not been specified."
         cell = element_data["cells"][ufl_element]
     else:
         cell = ufl_element.cell()
@@ -73,7 +71,8 @@ def get_degree(ufl_element, element_data=None):
     degree = ufl_element.degree()
     if degree is None:
         if element_data is None or not ufl_element in element_data["degrees"]:
-            error("Unable to access degree of element; degree has not been specified.")
+            raise RuntimeError, \
+        "Unable to access degree of element; degree has not been specified."
         degree = element_data["degrees"][ufl_element]
     return degree
 
