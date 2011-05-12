@@ -77,7 +77,7 @@ def analyze_forms(forms, object_names, parameters, common_cell=None):
     element_numbers = _compute_element_numbers(unique_elements)
 
     # Get common cell
-    common_cell = form_data[0].cell
+    common_cell = form_datas[0].cell
 
     # Compute element cells and degrees (when cell or degree is undefined)
     element_cells = _auto_select_cells(unique_elements, common_cell)
