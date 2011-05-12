@@ -76,12 +76,18 @@ def get_degree(ufl_element, element_data=None):
         degree = element_data["degrees"][ufl_element]
     return degree
 
-def create_element(ufl_element, element_data=None):
+def create_element(ufl_element, element_data):
+
+    # Create element signature for caching
+    if element_data is None:
+        element_signature = ufl_element
+    else:
+        element_signature = (ufl_element, element_data["common_cell"])
 
     # Check cache
-    if ufl_element in _cache:
+    if element_signature in _cache:
         debug("Reusing element from cache")
-        return _cache[ufl_element]
+        return _cache[element_signature]
 
     # Create regular FIAT finite element
     if isinstance(ufl_element, ufl.FiniteElement):
@@ -105,7 +111,7 @@ def create_element(ufl_element, element_data=None):
         error("Cannot handle this element type: %s" % str(ufl_element))
 
     # Store in cache
-    _cache[ufl_element] = element
+    _cache[element_signature] = element
 
     return element
 

@@ -93,12 +93,17 @@ def jit_form(form, parameters=None, common_cell=None):
     # Wrap input
     jit_object = JITObject(form, preprocessed_form, parameters, common_cell)
 
+    # Set prefix for generated code
+    prefix = "ffc_form_" + jit_object.signature()
+
     # Use Instant cache if possible
     cache_dir = parameters["cache_dir"]
     if cache_dir == "": cache_dir = None
     module = instant.import_module(jit_object, cache_dir=cache_dir)
     if module:
-        compiled_form = getattr(module, module.__name__ + "_form_0")()
+
+        debug("Reusing form from cache.")
+        compiled_form = getattr(module, prefix + "_form_0")()
         return (compiled_form, module, form_data)
 
     try:
@@ -119,13 +124,15 @@ def jit_form(form, parameters=None, common_cell=None):
             "Calling FFC just-in-time (JIT) compiler, this may take some time.")
 
         # Generate code
-        compile_form(preprocessed_form, prefix=jit_object.signature(),
-                     parameters=parameters, common_cell=common_cell)
+        compile_form(preprocessed_form,
+                     prefix=prefix,
+                     parameters=parameters,
+                     common_cell=common_cell)
 
         # Build module using Instant (through UFC)
         debug("Compiling and linking Python extension module, this may take some time.")
-        hfile = jit_object.signature() + ".h"
-        cppfile = jit_object.signature() + ".cpp"
+        hfile = prefix + ".h"
+        cppfile = prefix + ".cpp"
         module = ufc_utils.build_ufc_module(
             hfile,
             swig_binary=parameters["swig_binary"],
@@ -143,7 +150,7 @@ def jit_form(form, parameters=None, common_cell=None):
             os.unlink(cppfile)
 
         # Extract compiled form
-        compiled_form = getattr(module, module.__name__ + "_form_0")()
+        compiled_form = getattr(module, prefix + "_form_0")()
 
         return compiled_form, module, form_data
 
