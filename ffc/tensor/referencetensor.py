@@ -35,11 +35,20 @@ class ReferenceTensor:
     a multilinear form.
     """
 
-    def __init__(self, monomial, domain_type, facet0, facet1, quadrature_order):
+    def __init__(self,
+                 monomial,
+                 domain_type,
+                 facet0, facet1,
+                 quadrature_order,
+                 element_data):
         "Create reference tensor for given monomial."
 
         # Compute reference tensor
-        self.A0 = integrate(monomial, domain_type, facet0, facet1, quadrature_order)
+        self.A0 = integrate(monomial,
+                            domain_type,
+                            facet0, facet1,
+                            quadrature_order,
+                            element_data)
 
         # Extract indices
         primary_indices   = monomial.extract_unique_indices(MonomialIndex.PRIMARY)

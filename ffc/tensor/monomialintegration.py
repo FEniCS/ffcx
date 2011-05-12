@@ -46,7 +46,11 @@ from multiindex import build_indices
 from monomialextraction import MonomialException
 from monomialtransformation import MonomialIndex
 
-def integrate(monomial, domain_type, facet0, facet1, quadrature_degree):
+def integrate(monomial,
+              domain_type,
+              facet0, facet1,
+              quadrature_degree,
+              element_data):
     """Compute the reference tensor for a given monomial term of a
     multilinear form"""
 
@@ -56,13 +60,21 @@ def integrate(monomial, domain_type, facet0, facet1, quadrature_degree):
     tic = time.time()
 
     # Initialize quadrature points and weights
-    (points, weights) = _init_quadrature(monomial.arguments, domain_type, quadrature_degree)
+    (points, weights) = _init_quadrature(monomial.arguments,
+                                         domain_type,
+                                         quadrature_degree,
+                                         element_data)
 
     # Initialize quadrature table for basis functions
-    table = _init_table(monomial.arguments, domain_type, points, facet0, facet1)
+    table = _init_table(monomial.arguments,
+                        domain_type,
+                        points,
+                        facet0, facet1,
+                        element_data)
 
     # Compute table Psi for each factor
-    psis = [_compute_psi(v, table, len(points), domain_type) for v in monomial.arguments]
+    psis = [_compute_psi(v, table, len(points), domain_type, element_data) \
+                for v in monomial.arguments]
 
     # Compute product of all Psis
     A0 = _compute_product(psis, monomial.float_value * weights)
@@ -75,12 +87,11 @@ def integrate(monomial, domain_type, facet0, facet1, quadrature_degree):
 
     return A0
 
-def _init_quadrature(arguments, domain_type, quadrature_degree):
+def _init_quadrature(arguments, domain_type, quadrature_degree, element_data):
     "Initialize quadrature for given monomial."
 
     # Get shapes (check first factor, should be the same for all)
-    ufl_element = arguments[0].element
-    cell_shape = ufl_element.cell().domain()
+    cell_shape = element_data["common_cell"].domain()
     facet_shape = domain2facet[cell_shape]
 
     # Create quadrature rule and get points and weights
@@ -91,7 +102,7 @@ def _init_quadrature(arguments, domain_type, quadrature_degree):
 
     return (points, weights)
 
-def _init_table(arguments, domain_type, points, facet0, facet1):
+def _init_table(arguments, domain_type, points, facet0, facet1, element_data):
     """Initialize table of basis functions and their derivatives at
     the given quadrature points for each element."""
 
@@ -108,7 +119,7 @@ def _init_table(arguments, domain_type, points, facet0, facet1):
     # Call FIAT to tabulate the basis functions for each element
     table = {}
     for (ufl_element, order) in num_derivatives.items():
-        fiat_element = create_element(ufl_element)
+        fiat_element = create_element(ufl_element, element_data)
         if domain_type == Measure.CELL:
             table[(ufl_element, None)] = fiat_element.tabulate(order, points)
         elif domain_type == Measure.EXTERIOR_FACET:
@@ -122,7 +133,7 @@ def _init_table(arguments, domain_type, points, facet0, facet1):
 
     return table
 
-def _compute_psi(v, table, num_points, domain_type):
+def _compute_psi(v, table, num_points, domain_type, element_data):
     "Compute the table Psi for the given basis function v."
 
     # We just need to pick the values for Psi from the table, which is
@@ -141,8 +152,7 @@ def _compute_psi(v, table, num_points, domain_type):
     # later when we sum over these dimensions.
 
     # Get cell dimension
-    ufl_element = v.element
-    cell_dimension = ufl_element.cell().geometric_dimension()
+    cell_dimension = element_data["common_cell"].geometric_dimension()
 
     # Get indices and shapes for components
     if len(v.components) ==  0:
@@ -178,7 +188,8 @@ def _compute_psi(v, table, num_points, domain_type):
                 # Translate derivative multiindex to lookup tuple
                 dtuple = _multiindex_to_tuple(dlist, cell_dimension)
                 # Get values from table
-                Psi[component][tuple(dlist)] = etable[dtuple][:, cindex[0].index_range[component], :]
+                Psi[component][tuple(dlist)] = \
+                    etable[dtuple][:, cindex[0].index_range[component], :]
     else:
         etable = table[(v.element, v.restriction)]
         for dlist in dlists:
@@ -195,7 +206,8 @@ def _compute_psi(v, table, num_points, domain_type):
     # Remove fixed indices
     for i in range(num_indices[0]):
         Psi = Psi[0, ...]
-    indices = [index for index in indices if not index.index_type == MonomialIndex.FIXED]
+    indices = [index for index in indices \
+                   if not index.index_type == MonomialIndex.FIXED]
 
     # Put quadrature points first
     rank = numpy.rank(Psi)

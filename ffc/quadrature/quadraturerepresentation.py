@@ -175,8 +175,8 @@ def _tabulate_basis(sorted_integrals, domain_type, num_facets, element_data):
         fiat_elements = [create_element(e, element_data) for e in elements]
 
         # Get cell and facet domains.
-        cell_domain = elements[0].cell().domain()
-        facet_domain = elements[0].cell().facet_domain()
+        cell_domain = element_data["common_cell"].domain()
+        facet_domain = element_data["common_cell"].facet_domain()
 
         # Make quadrature rule and get points and weights.
         # FIXME: Make create_quadrature() take a rule argument.

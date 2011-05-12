@@ -60,7 +60,7 @@ def compute_integral_ir(domain_type,
     monomial_form = extract_monomial_form(integrals)
 
     # Transform monomial form to reference element
-    transform_monomial_form(monomial_form)
+    transform_monomial_form(monomial_form, element_data)
 
     # Initialize representation
     ir = {"representation": "tensor",
@@ -71,20 +71,31 @@ def compute_integral_ir(domain_type,
           "num_facets": form_data.num_facets,
           "rank": form_data.rank}
 
+    # Extract common cell
+    common_cell = element_data["common_cell"]
+
     # Compute representation of cell tensor
     num_facets = form_data.num_facets
     quadrature_degree = metadata["quadrature_degree"]
     if domain_type == "cell":
 
         # Compute sum of tensor representations
-        ir["AK"] = _compute_terms(monomial_form, None, None, domain_type, quadrature_degree)
+        ir["AK"] = _compute_terms(monomial_form,
+                                  None, None,
+                                  domain_type,
+                                  quadrature_degree,
+                                  element_data)
 
     elif domain_type == "exterior_facet":
 
         # Compute sum of tensor representations for each facet
         terms = [None for i in range(num_facets)]
         for i in range(num_facets):
-            terms[i] = _compute_terms(monomial_form, i, None, domain_type, quadrature_degree)
+            terms[i] = _compute_terms(monomial_form,
+                                      i, None,
+                                      domain_type,
+                                      quadrature_degree,
+                                      element_data)
         ir["AK"] = terms
 
     elif domain_type == "interior_facet":
@@ -93,7 +104,11 @@ def compute_integral_ir(domain_type,
         terms = [[None for j in range(num_facets)] for i in range(num_facets)]
         for i in range(num_facets):
             for j in range(num_facets):
-                terms[i][j] = _compute_terms(monomial_form, i, j, domain_type, quadrature_degree)
+                terms[i][j] = _compute_terms(monomial_form,
+                                             i, j,
+                                             domain_type,
+                                             quadrature_degree,
+                                             element_data)
                 reorder_entries(terms[i][j])
         ir["AK"] = terms
 
@@ -102,7 +117,11 @@ def compute_integral_ir(domain_type,
 
     return ir
 
-def _compute_terms(monomial_form, facet0, facet1, domain_type, quadrature_degree):
+def _compute_terms(monomial_form,
+                   facet0, facet1,
+                   domain_type,
+                   quadrature_degree,
+                   element_data):
     "Compute list of tensor contraction terms for monomial form."
 
     # Compute terms
@@ -116,7 +135,8 @@ def _compute_terms(monomial_form, facet0, facet1, domain_type, quadrature_degree
             A0 = ReferenceTensor(monomial,
                                  domain_type,
                                  facet0, facet1,
-                                 quadrature_degree)
+                                 quadrature_degree,
+                                 element_data)
 
             # Compute geometry tensor
             GK = GeometryTensor(monomial)

@@ -77,16 +77,19 @@ def analyze_forms(forms, object_names, parameters, common_cell=None):
     element_numbers = _compute_element_numbers(unique_elements)
 
     # Get common cell
-    common_cell = form_datas[0].cell
+    cells = [form_data.cell for form_data in form_datas]
+    ffc_assert(all_equal(cells), "Forms have different cells.")
+    common_cell = cells[0]
 
     # Compute element cells and degrees (when cell or degree is undefined)
     element_cells = _auto_select_cells(unique_elements, common_cell)
     element_degrees = _auto_select_degrees(unique_elements)
 
     # Group auxiliary element data
-    element_data = {"numbers": element_numbers,
-                    "cells":   element_cells,
-                    "degrees": element_degrees}
+    element_data = {"numbers":     element_numbers,
+                    "cells":       element_cells,
+                    "degrees":     element_degrees,
+                    "common_cell": common_cell}
 
     end()
 
