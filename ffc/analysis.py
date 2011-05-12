@@ -37,10 +37,7 @@ from ufl.algorithms import estimate_max_polynomial_degree
 from ufl.algorithms import estimate_total_polynomial_degree
 from ufl.algorithms import sort_elements
 from ufl.algorithms import compute_form_arities
-
-# FIXME: Import error when trying to import extract_sub_elements
-# FIXME: from ufl.algorithmms.
-from ufl.algorithms.analysis import extract_elements, extract_sub_elements
+from ufl.algorithms import extract_elements, extract_sub_elements
 
 # FFC modules
 from ffc.log import log, info, begin, end, warning, debug, error, ffc_assert
@@ -79,8 +76,11 @@ def analyze_forms(forms, object_names, parameters, common_cell=None):
     # Compute element numbers
     element_numbers = _compute_element_numbers(unique_elements)
 
+    # Get common cell
+    common_cell = form_data[0].cell
+
     # Compute element cells and degrees (when cell or degree is undefined)
-    element_cells = _auto_select_cells(unique_elements)
+    element_cells = _auto_select_cells(unique_elements, common_cell)
     element_degrees = _auto_select_degrees(unique_elements)
 
     # Group auxiliary element data
@@ -106,6 +106,7 @@ def analyze_elements(elements, parameters):
             if not e in element_numbers:
                 element_numbers[e] = len(unique_elements)
                 unique_elements.append(e)
+
     # Sort elements
     unique_elements = sort_elements(unique_elements)
 
@@ -162,9 +163,6 @@ def _analyze_form(form, object_names, parameters, common_cell=None):
 
     # Attach integral meta data
     _attach_integral_metadata(form_data, common_cell, parameters)
-
-    # Attach cell data
-    _attach_cell_data(form_data, common_cell)
 
     return form_data
 
@@ -283,15 +281,6 @@ def _attach_integral_metadata(form_data, common_cell, parameters):
         if element.family() == "Quadrature":
             element._quad_scheme = scheme
 
-def _attach_cell_data(form_data, common_cell):
-    "Attach cell data"
-    common_cell = _extract_common_cell(form_data.unique_sub_elements, common_cell)
-    form_data.cell = common_cell
-    form_data.geometric_dimension = common_cell.geometric_dimension()
-    form_data.topological_dimension = common_cell.topological_dimension()
-    form_data.num_facets = common_cell.num_facets()
-    return form_data
-
 def _get_sub_elements(element):
     "Get sub elements."
     sub_elements = [element]
@@ -302,17 +291,6 @@ def _get_sub_elements(element):
         for e in element._elements:
             sub_elements += _get_sub_elements(e)
     return sub_elements
-
-def _extract_common_cell(elements, common_cell):
-    "Extract common cell for elements"
-    if common_cell is None:
-        cells = [e.cell() for e in elements]
-        cells = [c for c in cells if not c.is_undefined()]
-        if len(cells) == 0:
-            error("""\
-Unable to extract common element; missing cell definition in form.""")
-        common_cell = cells[0]
-    return common_cell
 
 def _extract_common_degree(elements):
     "Extract common degree for all elements"
@@ -328,9 +306,6 @@ def _auto_select_cells(elements, common_cell=None):
     used by DOLFIN to allow the specification of Expressions with
     undefined cells.
     """
-
-    # Extract common cell
-    common_cell = _extract_common_cell(elements, common_cell)
 
     # Set missing cells
     element_cells = {}
@@ -360,7 +335,6 @@ def _auto_select_degrees(elements):
     # Set missing degrees
     element_degrees = {}
     for element in elements:
-        # Adjust degree
         degree = element.degree()
         if degree is None:
             info("Adjusting element degree from %s to %d" % \
