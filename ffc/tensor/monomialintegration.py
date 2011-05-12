@@ -49,8 +49,7 @@ from monomialtransformation import MonomialIndex
 def integrate(monomial,
               domain_type,
               facet0, facet1,
-              quadrature_degree,
-              element_data):
+              quadrature_degree):
     """Compute the reference tensor for a given monomial term of a
     multilinear form"""
 
@@ -62,18 +61,16 @@ def integrate(monomial,
     # Initialize quadrature points and weights
     (points, weights) = _init_quadrature(monomial.arguments,
                                          domain_type,
-                                         quadrature_degree,
-                                         element_data)
+                                         quadrature_degree)
 
     # Initialize quadrature table for basis functions
     table = _init_table(monomial.arguments,
                         domain_type,
                         points,
-                        facet0, facet1,
-                        element_data)
+                        facet0, facet1)
 
     # Compute table Psi for each factor
-    psis = [_compute_psi(v, table, len(points), domain_type, element_data) \
+    psis = [_compute_psi(v, table, len(points), domain_type) \
                 for v in monomial.arguments]
 
     # Compute product of all Psis
@@ -87,11 +84,11 @@ def integrate(monomial,
 
     return A0
 
-def _init_quadrature(arguments, domain_type, quadrature_degree, element_data):
+def _init_quadrature(arguments, domain_type, quadrature_degree):
     "Initialize quadrature for given monomial."
 
     # Get shapes (check first factor, should be the same for all)
-    cell_shape = element_data["common_cell"].domain()
+    cell_shape = arguments[0].element.cell().domain()
     facet_shape = domain2facet[cell_shape]
 
     # Create quadrature rule and get points and weights
@@ -102,7 +99,7 @@ def _init_quadrature(arguments, domain_type, quadrature_degree, element_data):
 
     return (points, weights)
 
-def _init_table(arguments, domain_type, points, facet0, facet1, element_data):
+def _init_table(arguments, domain_type, points, facet0, facet1):
     """Initialize table of basis functions and their derivatives at
     the given quadrature points for each element."""
 
@@ -119,7 +116,7 @@ def _init_table(arguments, domain_type, points, facet0, facet1, element_data):
     # Call FIAT to tabulate the basis functions for each element
     table = {}
     for (ufl_element, order) in num_derivatives.items():
-        fiat_element = create_element(ufl_element, element_data)
+        fiat_element = create_element(ufl_element)
         if domain_type == Measure.CELL:
             table[(ufl_element, None)] = fiat_element.tabulate(order, points)
         elif domain_type == Measure.EXTERIOR_FACET:
@@ -133,7 +130,7 @@ def _init_table(arguments, domain_type, points, facet0, facet1, element_data):
 
     return table
 
-def _compute_psi(v, table, num_points, domain_type, element_data):
+def _compute_psi(v, table, num_points, domain_type):
     "Compute the table Psi for the given basis function v."
 
     # We just need to pick the values for Psi from the table, which is
@@ -152,7 +149,7 @@ def _compute_psi(v, table, num_points, domain_type, element_data):
     # later when we sum over these dimensions.
 
     # Get cell dimension
-    cell_dimension = element_data["common_cell"].geometric_dimension()
+    cell_dimension = v.element.cell().geometric_dimension()
 
     # Get indices and shapes for components
     if len(v.components) ==  0:

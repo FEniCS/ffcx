@@ -53,36 +53,10 @@ def reference_cell(dim):
     else:
         return FIAT.ufc_simplex(domain2dim[dim])
 
-def get_cell(ufl_element, element_data=None):
-    """Get cell from ufl_element or element data. This is used to get
-    the cell in cases where the cell is undefined."""
-    if ufl_element.cell().is_undefined():
-        if element_data is None or not ufl_element in element_data["cells"]:
-            raise RuntimeError, \
-        "Unable to access cell for element; cell has not been specified."
-        cell = element_data["cells"][ufl_element]
-    else:
-        cell = ufl_element.cell()
-    return cell
+def create_element(ufl_element):
 
-def get_degree(ufl_element, element_data=None):
-    """Get degree from ufl_element or element data. This is used to get
-    the degree in cases where the degree is undefined."""
-    degree = ufl_element.degree()
-    if degree is None:
-        if element_data is None or not ufl_element in element_data["degrees"]:
-            raise RuntimeError, \
-        "Unable to access degree of element; degree has not been specified."
-        degree = element_data["degrees"][ufl_element]
-    return degree
-
-def create_element(ufl_element, element_data):
-
-    # Create element signature for caching
-    if element_data is None:
-        element_signature = ufl_element
-    else:
-        element_signature = (ufl_element, element_data["common_cell"])
+    # Create element signature for caching (just use UFL element)
+    element_signature = ufl_element
 
     # Check cache
     if element_signature in _cache:
@@ -91,7 +65,7 @@ def create_element(ufl_element, element_data):
 
     # Create regular FIAT finite element
     if isinstance(ufl_element, ufl.FiniteElement):
-        element = _create_fiat_element(ufl_element, element_data)
+        element = _create_fiat_element(ufl_element)
 
     # Create mixed element (implemented by FFC)
     elif isinstance(ufl_element, ufl.MixedElement):
@@ -105,7 +79,7 @@ def create_element(ufl_element, element_data):
 
     # Create restricted element(implemented by FFC)
     elif isinstance(ufl_element, ufl.RestrictedElement):
-        element = _create_restricted_element(ufl_element, element_data)
+        element = _create_restricted_element(ufl_element)
 
     else:
         error("Cannot handle this element type: %s" % str(ufl_element))
@@ -115,18 +89,18 @@ def create_element(ufl_element, element_data):
 
     return element
 
-def _create_fiat_element(ufl_element, element_data=None):
+def _create_fiat_element(ufl_element):
     "Create FIAT element corresponding to given finite element."
 
     # Get element data
     family = ufl_element.family()
-    cell = get_cell(ufl_element, element_data)
-    degree = get_degree(ufl_element, element_data)
+    cell = ufl_element.cell()
+    degree = ufl_element.degree()
 
     # Handle the space of the constant
     if family == "Real":
         dg0_element = ufl.FiniteElement("DG", cell, 0)
-        constant = _create_fiat_element(dg0_element, element_data)
+        constant = _create_fiat_element(dg0_element)
         return SpaceOfReals(constant)
 
     # FIXME: AL: Should this really be here?
@@ -223,9 +197,10 @@ def _extract_elements(ufl_element, domain=None):
         ufl_element = ufl.RestrictedElement(ufl_element, domain)
 
     elements += [create_element(ufl_element)]
+
     return elements
 
-def _create_restricted_element(ufl_element, element_data):
+def _create_restricted_element(ufl_element):
     "Create an FFC representation for an UFL RestrictedElement."
 
     if not isinstance(ufl_element, ufl.RestrictedElement):
@@ -236,7 +211,7 @@ def _create_restricted_element(ufl_element, element_data):
 
     # If simple element -> create RestrictedElement from fiat_element
     if isinstance(base_element, ufl.FiniteElement):
-        element = _create_fiat_element(base_element, element_data)
+        element = _create_fiat_element(base_element)
         return RestrictedElement(element, _indices(element, domain), domain)
 
     # If restricted mixed element -> convert to mixed restricted element

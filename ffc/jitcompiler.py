@@ -103,8 +103,8 @@ def jit_form(form, parameters=None, common_cell=None):
     if module:
 
         debug("Reusing form from cache.")
-        compiled_form = getattr(module, prefix + "_form_0")()
-        return (compiled_form, module, form_data)
+        compiled_form = _extract_form(module, prefix)
+        return (compiled_form, module, form_data, prefix)
 
     try:
 
@@ -116,8 +116,8 @@ def jit_form(form, parameters=None, common_cell=None):
         # for the lock, even if it didn't exist before.
         module = instant.import_module(jit_object, cache_dir=cache_dir)
         if module:
-            compiled_form = getattr(module, module.__name__ + "_form_0")()
-            return (compiled_form, module, form_data)
+            compiled_form = _extract_form(module, prefix)
+            return (compiled_form, module, form_data, prefix)
 
         # Write a message
         log(INFO + 5,
@@ -150,9 +150,9 @@ def jit_form(form, parameters=None, common_cell=None):
             os.unlink(cppfile)
 
         # Extract compiled form
-        compiled_form = getattr(module, prefix + "_form_0")()
+        compiled_form = _extract_form(module, prefix)
 
-        return compiled_form, module, form_data
+        return compiled_form, module, form_data, prefix
 
     finally:
         instant.locking.release_lock(lock)
@@ -173,9 +173,9 @@ def jit_element(element, parameters=None):
     form = v*dx
 
     # Compile form
-    (compiled_form, module, form_data) = jit_form(form, parameters)
+    compiled_form, module, form_data, prefix = jit_form(form, parameters)
 
-    return _extract_element_and_dofmap(module, form_data)
+    return _extract_element_and_dofmap(module, prefix, form_data)
 
 def _check_parameters(form, parameters):
     "Check parameters and add any missing parameters"
@@ -200,12 +200,16 @@ def _check_parameters(form, parameters):
 
     return parameters
 
-def _extract_element_and_dofmap(module, form_data):
+def _extract_form(module, prefix):
+    "Extract form from module."
+    return getattr(module, prefix + "_form_0")()
+
+def _extract_element_and_dofmap(module, prefix, form_data):
     """
     Extract element and dofmap from module. Code will be generated for
     all unique elements (including sub elements) and to get the top
     level element we need to extract the last element.
     """
     i = len(form_data.unique_sub_elements) - 1
-    return (getattr(module, module.__name__ + ("_finite_element_%d" % i))(),
-            getattr(module, module.__name__ + ("_dofmap_%d" % i))())
+    return (getattr(module, prefix + ("_finite_element_%d" % i))(),
+            getattr(module, prefix + ("_dofmap_%d" % i))())

@@ -39,16 +39,14 @@ class ReferenceTensor:
                  monomial,
                  domain_type,
                  facet0, facet1,
-                 quadrature_order,
-                 element_data):
+                 quadrature_order):
         "Create reference tensor for given monomial."
 
         # Compute reference tensor
         self.A0 = integrate(monomial,
                             domain_type,
                             facet0, facet1,
-                            quadrature_order,
-                            element_data)
+                            quadrature_order)
 
         # Extract indices
         primary_indices   = monomial.extract_unique_indices(MonomialIndex.PRIMARY)

@@ -40,7 +40,6 @@ def compute_integral_ir(domain_type,
                         metadata,
                         form_data,
                         form_id,
-                        element_data,
                         parameters):
     "Compute intermediate represention of integral."
 
@@ -61,14 +60,13 @@ def compute_integral_ir(domain_type,
     integrals_dict, psi_tables, quad_weights = \
         _tabulate_basis(sorted_integrals,
                         domain_type,
-                        form_data.num_facets,
-                        element_data)
+                        form_data.num_facets)
 
     # Create dimensions of primary indices, needed to reset the argument 'A'
     # given to tabulate_tensor() by the assembler.
     prim_idims = []
     for argument in form_data.arguments:
-        element = create_element(argument.element(), element_data)
+        element = create_element(argument.element())
         prim_idims.append(element.space_dimension())
     ir["prim_idims"] = prim_idims
 
@@ -113,14 +111,12 @@ def compute_integral_ir(domain_type,
         transformer = QuadratureTransformerOpt(psi_tables,
                                                quad_weights,
                                                form_data.geometric_dimension,
-                                               optimise_parameters,
-                                               element_data)
+                                               optimise_parameters)
     else:
         transformer = QuadratureTransformer(psi_tables,
                                             quad_weights,
                                             form_data.geometric_dimension,
-                                            optimise_parameters,
-                                            element_data)
+                                            optimise_parameters)
 
     # Add tables for weights, name_map and basis values.
     ir["quadrature_weights"]  = quad_weights
@@ -158,7 +154,7 @@ def compute_integral_ir(domain_type,
 
     return ir
 
-def _tabulate_basis(sorted_integrals, domain_type, num_facets, element_data):
+def _tabulate_basis(sorted_integrals, domain_type, num_facets):
     "Tabulate the basisfunctions and derivatives."
 
     # Initialise return values.
@@ -178,11 +174,11 @@ def _tabulate_basis(sorted_integrals, domain_type, num_facets, element_data):
         elements = extract_unique_elements(integral)
 
         # Create a list of equivalent FIAT elements (with same ordering of elements).
-        fiat_elements = [create_element(e, element_data) for e in elements]
+        fiat_elements = [create_element(e) for e in elements]
 
         # Get cell and facet domains.
-        cell_domain = element_data["common_cell"].domain()
-        facet_domain = element_data["common_cell"].facet_domain()
+        cell_domain = elements[0].cell().domain()
+        facet_domain = elements[0].cell().facet_domain()
 
         # Make quadrature rule and get points and weights.
         # FIXME: Make create_quadrature() take a rule argument.
