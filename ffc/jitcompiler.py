@@ -105,7 +105,7 @@ def jit_form(form, parameters=None, common_cell=None):
 
         # Take lock to serialise code generation and compilation.
         lock = instant.locking.get_lock(instant.get_default_cache_dir(),
-                                        'ffc_'+jit_object.signature())
+                                        'ffc_' + jit_object.signature())
 
         # Retry Instant cache. The module may have been created while we waited
         # for the lock, even if it didn't exist before.
