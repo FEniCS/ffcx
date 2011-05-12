@@ -33,11 +33,11 @@ form representation type.
 from ufl.common import istr, tstr
 from ufl.integral import Measure
 from ufl.finiteelement import MixedElement, EnrichedElement
-from ufl.algorithms import estimate_max_polynomial_degree
 from ufl.algorithms import estimate_total_polynomial_degree
 from ufl.algorithms import sort_elements
 from ufl.algorithms import compute_form_arities
 from ufl.algorithms import extract_elements, extract_sub_elements
+from ufl.algorithms import extract_common_cell
 
 # FFC modules
 from ffc.log import log, info, begin, end, warning, debug, error, ffc_assert
@@ -63,7 +63,7 @@ def analyze_forms(forms, object_names, parameters, common_cell=None):
                                      parameters,
                                      common_cell) for form in forms)
 
-    # Extract unique elements
+    # Extract unique elements accross all forms
     unique_elements = []
     for form_data in form_datas:
         for element in form_data.unique_sub_elements:
@@ -76,24 +76,9 @@ def analyze_forms(forms, object_names, parameters, common_cell=None):
     # Compute element numbers
     element_numbers = _compute_element_numbers(unique_elements)
 
-    # Get common cell
-    cells = [form_data.cell for form_data in form_datas]
-    ffc_assert(all_equal(cells), "Forms have different cells.")
-    common_cell = cells[0]
-
-    # Compute element cells and degrees (when cell or degree is undefined)
-    element_cells = _auto_select_cells(unique_elements, common_cell)
-    element_degrees = _auto_select_degrees(unique_elements)
-
-    # Group auxiliary element data
-    element_data = {"numbers":     element_numbers,
-                    "cells":       element_cells,
-                    "degrees":     element_degrees,
-                    "common_cell": common_cell}
-
     end()
 
-    return form_datas, unique_elements, element_data
+    return form_datas, unique_elements, element_numbers
 
 def analyze_elements(elements, parameters):
 
@@ -151,8 +136,13 @@ def _analyze_form(form, object_names, parameters, common_cell=None):
     ffc_assert(len(form.integrals()),
                "Form (%s) seems to be zero: cannot compile it." % str(form))
 
+    # Compute element mapping for element replacement
+    element_mapping = _compute_element_mapping(form, common_cell)
+
     # Compute form metadata
-    form_data = form.compute_form_data(object_names, common_cell)
+    form_data = form.compute_form_data(object_names=object_names,
+                                       common_cell=common_cell,
+                                       element_mapping=element_mapping)
 
     info("")
     info(str(form_data))
@@ -295,33 +285,46 @@ def _get_sub_elements(element):
             sub_elements += _get_sub_elements(e)
     return sub_elements
 
-def _extract_common_degree(elements):
-    "Extract common degree for all elements"
-    common_degree = max([e.degree() for e in elements])
-    if common_degree is None:
-        common_degree = default_quadrature_degree
-    return common_degree
+def _compute_element_mapping(form, common_cell):
+    "Compute element mapping for element replacement"
 
-def _auto_select_cells(elements, common_cell=None):
-    """
-    Automatically select cell for all elements of the form in cases
-    where this has not been specified by the user. This feature is
-    used by DOLFIN to allow the specification of Expressions with
-    undefined cells.
-    """
+    # Extract all elements
+    elements = extract_elements(form)
+    elements = extract_sub_elements(elements)
 
-    # Set missing cells
-    element_cells = {}
+    # Get cell and degree
+    common_cell = extract_common_cell(form, common_cell)
+    common_degree = _auto_select_degree(elements)
+
+    # Compute element map
+    element_mapping = {}
     for element in elements:
+
+        # Flag for whether element needs to be reconstructed
+        reconstruct = False
+
+        # Set cell
         cell = element.cell()
         if cell.is_undefined():
             info("Adjusting element cell from %s to %s." % \
                      (istr(cell), str(common_cell)))
-            element_cells[element] = common_cell
+            cell = common_cell
+            reconstruct = True
 
-    return element_cells
+        # Set degree
+        degree = element.degree()
+        if degree is None:
+            info("Adjusting element degree from %s to %d" % \
+                     (istr(degree), common_degree))
+            degree = common_degree
+            reconstruct = True
 
-def _auto_select_degrees(elements):
+        # Reconstruct element and add to map
+        element_mapping[element] = element.reconstruct(cell=cell, degree=degree)
+
+    return element_mapping
+
+def _auto_select_degree(elements):
     """
     Automatically select degree for all elements of the form in cases
     where this has not been specified by the user. This feature is
@@ -330,21 +333,14 @@ def _auto_select_degrees(elements):
     """
 
     # Extract common degree
-    common_degree = _extract_common_degree(elements)
+    common_degree = max([e.degree() for e in elements])
+    if common_degree is None:
+        common_degree = default_quadrature_degree
 
     # Degree must be at least 1 (to work with Lagrange elements)
     common_degree = max(1, common_degree)
 
-    # Set missing degrees
-    element_degrees = {}
-    for element in elements:
-        degree = element.degree()
-        if degree is None:
-            info("Adjusting element degree from %s to %d" % \
-                     (istr(degree), common_degree))
-            element_degrees[element] = common_degree
-
-    return element_degrees
+    return common_degree
 
 def _auto_select_representation(integral, elements):
     """

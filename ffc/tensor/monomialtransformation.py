@@ -37,7 +37,7 @@ from ffc.fiatinterface import create_element
 from ffc.tensor.monomialextraction import MonomialForm
 from ffc.tensor.monomialextraction import MonomialException
 
-def transform_monomial_form(monomial_form, element_data):
+def transform_monomial_form(monomial_form):
     "Transform monomial form to reference element."
 
     info("Transforming monomial form to reference element")
@@ -56,8 +56,7 @@ def transform_monomial_form(monomial_form, element_data):
     for (integrand, measure) in monomial_form:
         for (i, monomial) in enumerate(integrand.monomials):
             if not isinstance(monomial, TransformedMonomial):
-                integrand.monomials[i] = TransformedMonomial(monomial,
-                                                             element_data)
+                integrand.monomials[i] = TransformedMonomial(monomial)
 
 class MonomialIndex:
     """
@@ -241,7 +240,7 @@ class TransformedMonomial:
     reference element.
     """
 
-    def __init__(self, monomial, element_data):
+    def __init__(self, monomial):
         "Create transformed monomial from given monomial."
 
         # Reset monomial data
@@ -264,7 +263,7 @@ class TransformedMonomial:
 
             # Create FIAT element
             ufl_element = f.element()
-            fiat_element = create_element(f.element(), element_data)
+            fiat_element = create_element(f.element())
 
             # Get number of components
             shape = ufl_element.value_shape()
@@ -275,7 +274,7 @@ class TransformedMonomial:
 
             # Extract dimensions
             sdim = fiat_element.space_dimension()
-            gdim = element_data["common_cell"].geometric_dimension()
+            gdim = ufl_element.cell().geometric_dimension()
 
             # Extract basis function index and coefficients
             if isinstance(f.function, Argument):
