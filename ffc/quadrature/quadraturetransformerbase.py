@@ -50,12 +50,20 @@ class QuadratureTransformerBase(Transformer):
 #class QuadratureTransformerBase(ReuseTransformer):
     "Transform UFL representation to quadrature code."
 
-    def __init__(self, psi_tables, quad_weights, geo_dim, optimise_parameters):
+    def __init__(self,
+                 psi_tables,
+                 quad_weights,
+                 geo_dim,
+                 optimise_parameters,
+                 element_data):
 
         Transformer.__init__(self)
 
         # Save optimise_parameters, weights and fiat_elements_map.
         self.optimise_parameters = optimise_parameters
+
+        # Save element data
+        self.element_data = element_data
 
         # Create containers and variables.
         self.used_psi_tables = set()
@@ -777,7 +785,10 @@ class QuadratureTransformerBase(Transformer):
     def _math_function(self, operands, format_function):
         error("This function should be implemented by the child class.")
 
-    def _get_auxiliary_variables(self, ufl_function, component, derivatives):
+    def _get_auxiliary_variables(self,
+                                 ufl_function,
+                                 component,
+                                 derivatives):
         "Helper function for both Coefficient and Argument."
 
         # Get local component (in case we have mixed elements).
@@ -789,10 +800,12 @@ class QuadratureTransformerBase(Transformer):
                    "Derivatives of Quadrature elements are not supported: " + repr(ufl_function))
 
         # Create FFC element.
-        ffc_element = create_element(ufl_function.element())
+        ffc_element = create_element(ufl_function.element(),
+                                     self.element_data)
 
         # Get relevant sub element and mapping.
-        sub_element = create_element(ufl_function.element().extract_component(tuple(component))[1])
+        sub_element = create_element(ufl_function.element().extract_component(tuple(component))[1],
+                                     self.element_data)
         # Assuming that mappings for all basisfunctions are equal (they should be).
         transformation = sub_element.mapping()[0]
 

@@ -59,8 +59,6 @@ class JITObject:
         # Compute hash based on signature
         self._hash = int(self.signature(), 16)
 
-        print "hash =", self._hash
-
         return self._hash
 
     def __eq__(self, other):

@@ -75,8 +75,6 @@ def jit(object, parameters=None, common_cell=None):
 def jit_form(form, parameters=None, common_cell=None):
     "Just-in-time compile the given form."
 
-    print
-
     # Check that we get a Form
     if not isinstance(form, Form):
         form = as_form(form)
@@ -104,7 +102,6 @@ def jit_form(form, parameters=None, common_cell=None):
     module = instant.import_module(jit_object, cache_dir=cache_dir)
     if module:
 
-        print "Reusing form from cache!"
         debug("Reusing form from cache.")
         compiled_form = getattr(module, prefix + "_form_0")()
         return (compiled_form, module, form_data)
