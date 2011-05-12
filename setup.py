@@ -5,7 +5,7 @@ from distutils.core import setup
 from os import chdir
 from os.path import join, split
 
-scripts = [join("scripts", "ffc"), join("scripts", "ffc-clean")]
+scripts = [join("scripts", "ffc")]
 
 if platform.system() == "Windows" or "bdist_wininst" in sys.argv:
     # In the Windows command prompt we can't execute Python scripts
@@ -32,5 +32,4 @@ setup(name = "FFC",
       package_dir={"ffc": "ffc"},
       scripts = scripts,
       data_files = [(join("share", "man", "man1"),
-                     [join("doc", "man", "man1", "ffc.1.gz"),
-                      join("doc", "man", "man1", "ffc-clean.1.gz")])])
+                     [join("doc", "man", "man1", "ffc.1.gz")])])
