@@ -52,7 +52,7 @@ def analyze_forms(forms, object_names, parameters, common_cell=None):
 
        form_datas      - a tuple of form_data objects
        unique_elements - a tuple of unique elements across all forms
-       element_data    - a dictionary of auxiliary element data
+       element_numbers - a mapping to unique numbers for all elements
     """
 
     begin("Compiler stage 1: Analyzing form(s)")
@@ -110,10 +110,7 @@ def analyze_elements(elements, parameters):
             element._quad_scheme = scheme
     end()
 
-    # Group auxiliary element data
-    element_data = {"numbers": element_numbers}
-
-    return (), unique_elements, element_data
+    return (), unique_elements, element_numbers
 
 def _compute_element_numbers(elements):
     "Build map from elements to element numbers."
