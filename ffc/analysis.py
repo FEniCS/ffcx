@@ -320,7 +320,9 @@ def _compute_element_mapping(form, common_cell):
             reconstruct = True
 
         # Reconstruct element and add to map
-        element_mapping[element] = element.reconstruct(cell=cell, degree=degree)
+        if reconstruct:
+            element_mapping[element] = element.reconstruct(cell=cell,
+                                                           degree=degree)
 
     return element_mapping
 
