@@ -1,3 +1,4 @@
+0.9.10 [2011-05-16]
  - Change license from GPL v3 or later to LGPL v3 or later
  - Add some schemes for low-order simplices
  - Request quadrature schemes by polynomial degree (not longer by number
