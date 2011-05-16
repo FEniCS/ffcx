@@ -1,3 +1,4 @@
+2.0.1 [2011-05-16]
  - Make SWIG version >= 2.0 a requirement
  - Add possibility to set swig binary and swig path
  - Add missing const for map_{from,to}_reference_cell

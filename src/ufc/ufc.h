@@ -12,7 +12,7 @@
 
 #include <stdexcept>
 
-const char UFC_VERSION[] = "2.0";
+const char UFC_VERSION[] = "2.0.1";
 
 namespace ufc
 {
