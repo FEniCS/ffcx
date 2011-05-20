@@ -1062,7 +1062,7 @@ class QuadratureTransformerBase(Transformer):
                 vals.append(affine_map[len(p)](p))
             self.unique_tables[name] = array(vals)
         if self.coordinate is None:
-            ip = 1
+            ip = 0
             r = None
             if num_ip > 1:
                 ip = f_ip
