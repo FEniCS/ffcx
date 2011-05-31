@@ -176,8 +176,6 @@ def _init_mesh(element):
     element = MixedElement(elements)
     return (_num_dofs_per_entity(element), num_reals)
 
-    # return _num_dofs_per_entity(element)
-
 def _compute_integral_ir(form_data, form_id, parameters):
     "Compute intermediate represention of form integrals."
 

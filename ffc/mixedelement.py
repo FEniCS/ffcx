@@ -116,6 +116,10 @@ def _combine_entity_dofs(elements):
     entity_dof containing the information for all the elements.
     """
 
+    # Return {} if no elements
+    if not elements:
+        return {}
+
     # Initialize entity_dofs dictionary
     entity_dofs = dict((key, {}) for key in elements[0].entity_dofs())
     for dim in elements[0].entity_dofs():
