@@ -28,9 +28,11 @@ from numpy import shape, array
 # UFL Classes.
 from ufl.classes import MultiIndex, FixedIndex, Index
 from ufl.common import StackDict, Stack
+from ufl.permutation import build_component_numbering
 
 # UFL Algorithms.
-from ufl.algorithms import propagate_restrictions, Transformer, tree_format, strip_variables
+from ufl.algorithms import propagate_restrictions, Transformer, tree_format
+from ufl.algorithms import strip_variables
 
 # FFC modules.
 from ffc.log import ffc_assert, error, info
@@ -795,8 +797,11 @@ class QuadratureTransformerBase(Transformer):
                                  derivatives):
         "Helper function for both Coefficient and Argument."
 
+        # Get UFL element.
+        ufl_element = ufl_function.element()
+
         # Get local component (in case we have mixed elements).
-        local_comp, local_elem = ufl_function.element().extract_component(component)
+        local_comp, local_elem = ufl_element.extract_component(component)
 
         # Check that we don't take derivatives of QuadratureElements.
         quad_element = local_elem.family() == "Quadrature"
@@ -804,10 +809,10 @@ class QuadratureTransformerBase(Transformer):
                    "Derivatives of Quadrature elements are not supported: " + repr(ufl_function))
 
         # Create FFC element.
-        ffc_element = create_element(ufl_function.element())
+        ffc_element = create_element(ufl_element)
 
         # Get relevant sub element and mapping.
-        sub_element = create_element(ufl_function.element().extract_component(tuple(component))[1])
+        sub_element = create_element(local_elem)
 
         # Assuming that mappings for all basisfunctions are equal (they should be).
         transformation = sub_element.mapping()[0]
@@ -820,12 +825,12 @@ class QuadratureTransformerBase(Transformer):
         else:
             local_comp = 0
 
-        # Map component using UFL map
-        # NOTE: We rely implicitly on a similar ordering of sub elements of mixed elements in UFL and FFC.
-        if len(component) > 1:
-            component = ufl_function.element()._sub_element_mapping[tuple(component)]
-        elif component:
-            component = component[0]
+        # Check that component != not () since the UFL component map will turn
+        # it into 0, and () does not mean zeroth component in this context.
+        if component != ():
+            # Map component using component map from UFL.
+            comp_map, comp_num = build_component_numbering(ufl_element.value_shape(), ufl_element.symmetry())
+            component = comp_map[component]
 
         # Compute the local offset (needed for non-affine mappings).
         local_offset = 0
