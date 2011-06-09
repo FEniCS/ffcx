@@ -24,7 +24,7 @@ from ffc.fiatinterface import create_element, reference_cell
 from ffc.mixedelement import MixedElement as FFCMixedElement
 from ffc.log import info, error, debug
 import numpy
-import sys, os, commands, numpy, shutil
+import sys, os, numpy, shutil
 from test_common import xcomb, compile_element, print_results, compile_gcc_code,\
                         run_code, get_element_name, verify_values
 import time

@@ -34,10 +34,11 @@ option -b.
 # FIXME: to check with different compiler options, representation
 # FIXME: and DOLFIN wrappers.
 
-import os, sys, shutil, commands, difflib
+import os, sys, shutil, difflib
 from numpy import array, shape, abs, max
 from ffc.log import begin, end, info, info_red, info_green, info_blue
 from ufctest import generate_test_code
+from instant.output import get_status_output
 
 # Parameters
 tolerance = 1e-9
@@ -50,7 +51,7 @@ logfile = None
 
 def run_command(command):
     "Run command and collect errors in log file."
-    (status, output) = commands.getstatusoutput(command)
+    (status, output) = get_status_output(command)
     if status == 0:
         return True
     global logfile
@@ -167,14 +168,17 @@ def build_programs(bench):
 
     begin("Building test programs (%d header files found)" % len(header_files))
 
+    # Get UFC flags
+    ufc_cflags = get_status_output("pkg-config --cflags ufc-1")[1].strip()
+
     # Set compiler options
     if bench > 0:
         info("Benchmarking activated")
         # Takes too long to build with -O2
-        #compiler_options = "`pkg-config --cflags ufc-1` -Wall -Werror -O2"
-        compiler_options = "`pkg-config --cflags ufc-1` -Wall -Werror"
+        #compiler_options = "%s -Wall -Werror -O2" % ufc_cflags
+        compiler_options = "%s -Wall -Werror" % ufc_cflags
     else:
-        compiler_options = "`pkg-config --cflags ufc-1` -Wall -Werror -g"
+        compiler_options = "%s -Wall -Werror -g" % ufc_cflags
     info("Compiler options: %s" % compiler_options)
 
     # Iterate over all files
@@ -210,7 +214,11 @@ def run_programs():
 
         # Compile test code
         prefix = f.split(".bin")[0]
-        ok = run_command("rm -f %s.out; ./%s.bin > %s.out" % (prefix, prefix, prefix))
+        try:
+            os.remove(prefix + ".out")
+        except:
+            pass
+        ok = run_command(".%s%s.bin > %s.out" % (os.path.sep, prefix, prefix))
 
         # Check status
         if ok:

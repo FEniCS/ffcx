@@ -20,8 +20,9 @@
 
 from cppcode import evaluate_basis_derivatives_code
 from ufl import FiniteElement, MixedElement
+from instant.output import get_status_output
 
-import sys, os, commands, pickle, numpy, shutil
+import sys, os, pickle, numpy, shutil
 
 # Elements, supported by FFC and FIAT, and their supported shape and orders
 # TODO: RT order 0 gives error from FIAT, but is allowed by UFL
@@ -131,7 +132,7 @@ def compile_element(ufl_element):
     if isinstance(ufl_element, (FiniteElement, MixedElement)):
         f.write("element = " + repr(ufl_element))
     f.close()
-    error, out = commands.getstatusoutput("ffc test.ufl")
+    error, out = get_status_output("ffc test.ufl")
     if error:
         ffc_failed.append(repr(ufl_element))
     return error
@@ -167,15 +168,18 @@ def compute_values(ufl_element, deriv_order):
     f.write(code)
     f.close()
 
+    # Get UFC flags
+    ufc_cflags = get_status_output("pkg-config --cflags ufc-1")[1].strip()
+
     # Compile g++ code
-    c = "g++ `pkg-config --cflags ufc-1` -Wall -Werror -o evaluate_basis_derivatives evaluate_basis_derivatives.cpp"
-    error, output = commands.getstatusoutput(c)
+    c = "g++ %s -Wall -Werror -o evaluate_basis_derivatives evaluate_basis_derivatives.cpp" % ufc_cflags
+    error, output = get_status_output(c)
     if error:
         gcc_failed.append(repr(ufl_element))
         return None
 
     # Run compiled code and get values
-    error, output = commands.getstatusoutput("./evaluate_basis_derivatives")
+    error, output = get_status_output(".%sevaluate_basis_derivatives" % os.path.sep)
     if error:
         run_failed.append(repr(ufl_element))
         return None

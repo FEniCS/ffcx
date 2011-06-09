@@ -19,7 +19,7 @@
 # Last changed: 2010-02-02
 
 from ffc.log import info, info_red, info_blue, info_green, debug
-import commands
+from instant.output import get_status_output
 import numpy
 import os
 
@@ -91,7 +91,7 @@ def compile_element(ufl_element, ffc_fail, log_file):
     f = open("test.ufl", "w")
     f.write("element = " + repr(ufl_element))
     f.close()
-    error, output = commands.getstatusoutput("ffc test.ufl")
+    error, output = get_status_output("ffc test.ufl")
     if error:
         info_red("FFC compilation failed.")
         log_error("element: %s,\n%s\n" % (str(ufl_element), output), log_file)
@@ -122,9 +122,12 @@ def compile_gcc_code(ufl_element, code, gcc_fail, log_file):
     f.write(code)
     f.close()
 
+    # Get UFC flags
+    ufc_cflags = get_status_output("pkg-config --cflags ufc-1")[1].strip()
+
     # Compile g++ code
-    c = "g++ `pkg-config --cflags ufc-1` -Wall -Werror -o evaluate_basis evaluate_basis.cpp"
-    error, output = commands.getstatusoutput(c)
+    c = "g++ %s -Wall -Werror -o evaluate_basis evaluate_basis.cpp" % ufc_cflags
+    error, output = get_status_output(c)
     if error:
         info_red("GCC compilation failed.")
         log_error("element: %s,\n%s\n" % (str(ufl_element), output), log_file)
@@ -135,13 +138,13 @@ def run_code(ufl_element, deriv_order, run_fail, log_file):
     "Compute values of basis functions for given element."
 
     # Run compiled code and get values
-    error, output = commands.getstatusoutput("./evaluate_basis %d" % deriv_order)
+    error, output = get_status_output(".%sevaluate_basis %d" % (os.path.sep, deriv_order))
     if error:
         info_red("Runtime error (segmentation fault?).")
         log_error("element: %s,\n%s\n" % (str(ufl_element), output), log_file)
         run_fail.append(str(ufl_element))
         return None
-    values = [[float(value) for value in line.split(" ") if value] for line in output.split("\n")]
+    values = [[float(value) for value in line.strip().split(" ") if value] for line in output.strip().split("\n")]
     return numpy.array(values)
 
 def verify_values(ufl_element, ref_values, ffc_values, dif_cri, dif_acc, correct, log_file):

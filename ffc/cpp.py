@@ -626,7 +626,7 @@ def set_float_formatting(precision):
 
     # Special float formatting on Windows (remove extra leading zero)
     def floating_point_windows(v):
-        return floating_point(v).replace("e-0", "e-").replace("e+0", "e+")
+        return floating_point_regular(v).replace("e-0", "e-").replace("e+0", "e+")
 
     # Set float formatting
     if platform.system() == "Windows":
