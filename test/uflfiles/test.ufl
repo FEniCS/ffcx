@@ -1,0 +1,11 @@
+cell = triangle
+V = FiniteElement("CG", cell, None)
+f = Coefficient(V)
+x, y = cell.x
+g = x*y
+L = f**2*g*dx
+
+elements = [V]
+coefficients = [f]
+forms = [L]
+expressions = [g]
