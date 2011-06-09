@@ -31,7 +31,7 @@ setup(name = "uflacs",
       description = "UFL Analyser and Compiler System",
       author = "Martin Sandve Alnes",
       author_email = "ufl@lists.launchpad.net",
-      url = "http://www.fenicsproject.org",
+      url = 'https://launchpad.net/uflacs',
       classifiers=[
           'Development Status :: 2 - Pre-Alpha',
           'Environment :: Console',

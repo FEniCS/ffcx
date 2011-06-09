@@ -1,5 +1,5 @@
 #!/usr/bin/env python
 if __name__ == '__main__':
     import sys
-    from uflac_module import cli_main, app_module
+    from uflacs import cli_main, app_module
     sys.exit(cli_main.main(sys.argv[1:], app_module))
