@@ -1,0 +1,41 @@
+
+# Class hierarchy:
+Expr:
+	Terminal:
+		ConstantValue:
+			Zero, Identity, PermutationSymbol
+			ScalarValue:
+				FloatValue, IntValue
+		GeometricQuantity:
+			SpatialCoordinate, FacetNormal, CellVolume, Circumradius
+		FormArgument:
+			Coefficient:
+				ConstantBase:
+					VectorConstant, TensorConstant, Constant
+			Argument
+		UtilityType:
+			Label
+			MultiIndex
+	Operator:
+		AlgebraOperator:
+			Sum, IndexSum, Product, Division, Power, Abs
+		MathFunction:
+			Sqrt, Exp, Ln, Cos, Sin, Tan, Acos, Asin, Atan
+		CompoundTensorOperator:
+			Transposed, Outer, Inner, Dot, Cross, Trace, Determinant
+			Cofactor, Inverse, Deviatoric, Skew, Sym
+		Derivative:
+			CoefficientDerivative, SpatialDerivative, VariableDerivative
+			CompoundDerivative:
+				Grad, Div, Curl
+		WrapperType:
+			Variable, Indexed, ListTensor, ComponentTensor, Tuple
+		Condition:
+			EQ, NE, LE, GE, LT, GT
+		Conditional
+		Restricted:
+		     PositiveRestricted, NegativeRestricted
+		LiftingResult:
+			LiftingOperatorResult, LiftingFunctionResult
+		TerminalOperator:
+			LiftingOperator, LiftingFunction
