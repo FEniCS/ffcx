@@ -342,3 +342,96 @@ class CppFormatterRules(MultiFunction,
 
     def argument(self, o, component=(), derivatives=()):
         return self.target_formatter.argument(o, component, derivatives)
+
+class CppDefaultFormatter(object):
+    """Example cpp formatter class, used for the test cases.
+    Override the same functions for your particular target."""
+    def __init__(self):
+        self.required = {}
+
+    def require(self, o, component, derivatives, code):
+        s = self.required.get(o) or {}
+
+        key = (tuple(component), tuple(derivatives))
+        oldcode = s.get(key)
+        uflacs_assert((not oldcode) or (oldcode == code),
+                      "Generated different code for same expression.")
+        s[key] = code
+
+        self.required[o] = s
+        return code
+
+    def spatial_coordinate(self, o, component=(), derivatives=()):
+        if len(derivatives) > 1:
+            return "0"
+
+        if component:
+            i, = component
+        else:
+            i = 0
+
+        if derivatives:
+            d, = derivatives
+            return "1" if i == d else "0"
+        else:
+            code = "x[%d]" % i
+            self.require(o, component, derivatives, code)
+            return code
+
+    def facet_normal(self, o, component=(), derivatives=()):
+        if derivatives:
+            return "0"
+
+        if component:
+            i, = component
+        else:
+            i = 0
+
+        code = "n[%d]" % i
+
+        self.require(o, component, derivatives, code)
+        return code
+
+    def cell_volume(self, o, component=(), derivatives=()):
+        uflacs_assert(not component, "Expecting no component for scalar value.")
+
+        if derivatives:
+            return "0"
+
+        code = "K_vol"
+
+        self.require(o, component, derivatives, code)
+        return code
+
+    def circumradius(self, o, component=(), derivatives=()):
+        uflacs_assert(not component, "Expecting no component for scalar value.")
+
+        if derivatives:
+            return "0"
+
+        code = "K_rad"
+
+        self.require(o, component, derivatives, code)
+        return code
+
+    def coefficient(self, o, component=(), derivatives=()):
+        uflacs_assert(o.count() >= 0, "Expecting positive count, have you preprocessed the expression?")
+        return self.form_argument(o, component, derivatives, 'w%d' % o.count())
+
+    def argument(self, o, component=(), derivatives=()):
+        uflacs_assert(o.count() >= 0, "Expecting positive count, have you preprocessed the expression?")
+        return self.form_argument(o, component, derivatives, 'v%d' % o.count())
+
+    def form_argument(self, o, component, derivatives, common_name):
+        if derivatives:
+            code = 'd%d_%s' % (len(derivatives), common_name)
+            code += "".join("[%d]" % d for d in derivatives)
+        else:
+            code = common_name
+
+        if component:
+            code += "".join("[%d]" % c for c in component) # TODO: Or should we use a flat array?
+
+        self.require(o, component, derivatives, code)
+        return code
+

@@ -6,105 +6,18 @@ import ufl
 from ufl.algorithms.transformations import MultiFunction, Transformer
 from ufl.algorithms import expand_derivatives, expand_indices
 
-# TODO: Rename to CppDefaultFormatter, can use for actual code
-# generation if just the variables x[], n[], etc. are generated
-# by target specific code.
-# TODO: Store which 
-class CppTestFormatter(object):
-    """Example cpp formatter class, used for the test cases.
-    Override the same functions for your particular target."""
-    def __init__(self):
-        self.required = {}
-
-    def require(self, o, component, derivatives, code):
-        s = self.required.get(o) or {}
-
-        key = (tuple(component), tuple(derivatives))
-        oldcode = s.get(key)
-        uflacs_assert((not oldcode) or (oldcode == code),
-                      "Generated different code for same expression.")
-        s[key] = code
-
-        self.required[o] = s
-        return code
-
-    def spatial_coordinate(self, o, component=(), derivatives=()):
-        if len(derivatives) > 1:
-            return "0"
-
-        if component:
-            i, = component
-        else:
-            i = 0
-
-        if derivatives:
-            d, = derivatives
-            return "1" if i == d else "0"
-        else:
-            code = "x[%d]" % i
-            self.require(o, component, derivatives, code)
-            return code
-
-    def facet_normal(self, o, component=(), derivatives=()):
-        if derivatives:
-            return "0"
-
-        if component:
-            i, = component
-        else:
-            i = 0
-
-        code = "n[%d]" % i
-
-        self.require(o, component, derivatives, code)
-        return code
-
-    def cell_volume(self, o, component=(), derivatives=()):
-        uflacs_assert(not component, "Expecting no component for scalar value.")
-
-        if derivatives:
-            return "0"
-
-        code = "K_vol"
-
-        self.require(o, component, derivatives, code)
-        return code
-
-    def circumradius(self, o, component=(), derivatives=()):
-        uflacs_assert(not component, "Expecting no component for scalar value.")
-
-        if derivatives:
-            return "0"
-
-        code = "K_rad"
-
-        self.require(o, component, derivatives, code)
-        return code
-
-    def coefficient(self, o, component=(), derivatives=()):
-        uflacs_assert(o.count() >= 0, "Expecting positive count, have you preprocessed the expression?")
-        return self.form_argument(o, component, derivatives, 'w%d' % o.count())
-
-    def argument(self, o, component=(), derivatives=()):
-        uflacs_assert(o.count() >= 0, "Expecting positive count, have you preprocessed the expression?")
-        return self.form_argument(o, component, derivatives, 'v%d' % o.count())
-
-    def form_argument(self, o, component, derivatives, common_name):
-        if derivatives:
-            code = 'd%d_%s' % (len(derivatives), common_name)
-            code += "".join("[%d]" % d for d in derivatives)
-        else:
-            code = common_name
-
-        if component:
-            code += "".join("[%d]" % c for c in component) # TODO: Or should we use a flat array?
-
-        self.require(o, component, derivatives, code)
-        return code
-
-def format_expression_as_cpp(expr, target_formatter=None, variables=None):
+def format_expression_as_test_cpp(expr, variables=None):
     "This is a test specific function for formatting ufl to C++."
-    from c_format import CppFormatterRules, CodeFormatter
+    from uflacs.codeutils.cpp_format import CppDefaultFormatter, CppFormatterRules, CodeFormatter
+
+    # Preprocessing expression before applying formatting.
+    # In a compiler, one should probably assume that these
+    # have been applied and use CodeFormatter directly.
+    expr = expand_indices(expand_derivatives(expr)) # TODO: Use preprocess_expression
+
+    # This formatter is a multifunction implementing target
+    # specific formatting rules, here using default formatting rules.
+    target_formatter = CppDefaultFormatter()
 
     # This formatter is a multifunction with single operator
     # formatting rules for generic C++ formatting
@@ -116,23 +29,6 @@ def format_expression_as_cpp(expr, target_formatter=None, variables=None):
     code = code_formatter.visit(expr)
     return code
 
-def format_expression_as_test_cpp(expr, variables=None):
-    "This is a test specific function for formatting ufl to C++."
-
-    # Preprocessing expression before applying formatting.
-    # In a compiler, one should probably assume that these
-    # have been applied and use CodeFormatter directly.
-    e = expr
-    e = expand_derivatives(e)
-    e = expand_indices(e)
-
-    # This formatter is a multifunction implementing target
-    # specific formatting rules, here mocked for testing.
-    test_formatter = CppTestFormatter()
-
-    # Call the generic function
-    return format_expression_as_cpp(e, test_formatter, variables)
-
 class TestStats:
     def __init__(self):
         self.fails = 0
@@ -141,7 +37,7 @@ class TestStats:
     def __str__(self):
         return "Fails: %d, Successes: %d." % (self.fails, self.successes)
 
-def test_code_formatting():
+def test_cpp_formatting():
     teststats = TestStats()
     def assertEqual(expr, code, variables=None):
         r = format_expression_as_test_cpp(expr, variables)
@@ -310,5 +206,5 @@ def test_code_formatting():
     # TODO: Test various compound operators
 
     # Report final test results
-    print teststats, 'asdfas'
+    print teststats
     return teststats.fails
