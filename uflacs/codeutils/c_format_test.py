@@ -1,61 +1,105 @@
 
-from log import info, warning, error
-from output import uflacs_assert
+from uflacs.utils.log import info, warning, error
+from uflacs.utils.assertions import uflacs_assert
 
 import ufl
 from ufl.algorithms.transformations import MultiFunction, Transformer
 from ufl.algorithms import expand_derivatives, expand_indices
 
+# TODO: Rename to CppDefaultFormatter, can use for actual code
+# generation if just the variables x[], n[], etc. are generated
+# by target specific code.
+# TODO: Store which 
 class CppTestFormatter(object):
     """Example cpp formatter class, used for the test cases.
     Override the same functions for your particular target."""
+    def __init__(self):
+        self.required = {}
+
+    def require(self, o, component, derivatives, code):
+        s = self.required.get(o) or {}
+
+        key = (tuple(component), tuple(derivatives))
+        oldcode = s.get(key)
+        uflacs_assert((not oldcode) or (oldcode == code),
+                      "Generated different code for same expression.")
+        s[key] = code
+
+        self.required[o] = s
+        return code
 
     def spatial_coordinate(self, o, component=(), derivatives=()):
         if len(derivatives) > 1:
             return "0"
-        i = component[0] if component else 0
+
+        if component:
+            i, = component
+        else:
+            i = 0
+
         if derivatives:
             d, = derivatives
             return "1" if i == d else "0"
         else:
-            return "x[%d]" % i
+            code = "x[%d]" % i
+            self.require(o, component, derivatives, code)
+            return code
 
     def facet_normal(self, o, component=(), derivatives=()):
         if derivatives:
             return "0"
-        i = component[0] if component else 0
-        return "n[%d]" % i
+
+        if component:
+            i, = component
+        else:
+            i = 0
+
+        code = "n[%d]" % i
+
+        self.require(o, component, derivatives, code)
+        return code
 
     def cell_volume(self, o, component=(), derivatives=()):
         uflacs_assert(not component, "Expecting no component for scalar value.")
+
         if derivatives:
             return "0"
-        return "K_vol"
+
+        code = "K_vol"
+
+        self.require(o, component, derivatives, code)
+        return code
 
     def circumradius(self, o, component=(), derivatives=()):
         uflacs_assert(not component, "Expecting no component for scalar value.")
+
         if derivatives:
             return "0"
-        return "K_rad"
 
-    def coefficient(self, o, component=(), derivatives=()):
-        basename = "dw" if derivatives else "w"
-        code = "%s[%d]" % (basename, o.count())
-        if component:
-            code += " " + "".join("[%d]" % c for c in component)
-        if derivatives:
-            uflacs_assert(len(derivatives) == 1, "Not implemented.")
-            code += " " + "".join("[%d]" % d for d in derivatives)
+        code = "K_rad"
+
+        self.require(o, component, derivatives, code)
         return code
 
+    def coefficient(self, o, component=(), derivatives=()):
+        uflacs_assert(o.count() >= 0, "Expecting positive count, have you preprocessed the expression?")
+        return self.form_argument(o, component, derivatives, 'w%d' % o.count())
+
     def argument(self, o, component=(), derivatives=()):
-        basename = "dv" if derivatives else "v"
-        code = "%s[%d]" % (basename, o.count())
-        if component:
-            code += " " + "".join("[%d]" % c for c in component)
+        uflacs_assert(o.count() >= 0, "Expecting positive count, have you preprocessed the expression?")
+        return self.form_argument(o, component, derivatives, 'v%d' % o.count())
+
+    def form_argument(self, o, component, derivatives, common_name):
         if derivatives:
-            uflacs_assert(len(derivatives) == 1, "Not implemented.")
-            code += " " + "".join("[%d]" % d for d in derivatives)
+            code = 'd%d_%s' % (len(derivatives), common_name)
+            code += "".join("[%d]" % d for d in derivatives)
+        else:
+            code = common_name
+
+        if component:
+            code += "".join("[%d]" % c for c in component) # TODO: Or should we use a flat array?
+
+        self.require(o, component, derivatives, code)
         return code
 
 def format_expression_as_cpp(expr, target_formatter=None, variables=None):
@@ -140,21 +184,21 @@ def test_code_formatting():
     # Test form arguments (faked for testing!)
     V = ufl.FiniteElement("CG", ufl.cell2D, 1)
     f = ufl.Coefficient(V).reconstruct(count=0)
-    assertEqual(f, "w[0]")
+    assertEqual(f, "w0")
     v = ufl.Argument(V).reconstruct(count=0)
-    assertEqual(v, "v[0]")
+    assertEqual(v, "v0")
 
     V = ufl.VectorElement("CG", ufl.cell2D, 1)
     f = ufl.Coefficient(V).reconstruct(count=1)
-    assertEqual(f[0], "w[1] [0]")
+    assertEqual(f[0], "w1[0]")
     v = ufl.Argument(V).reconstruct(count=3)
-    assertEqual(v[1], "v[3] [1]")
+    assertEqual(v[1], "v3[1]")
 
     V = ufl.TensorElement("CG", ufl.cell2D, 1)
     f = ufl.Coefficient(V).reconstruct(count=2)
-    assertEqual(f[1,0], "w[2] [1][0]")
+    assertEqual(f[1,0], "w2[1][0]")
     v = ufl.Argument(V).reconstruct(count=3)
-    assertEqual(v[0,1], "v[3] [0][1]")
+    assertEqual(v[0,1], "v3[0][1]")
 
     # TODO: Test mixed functions
     # TODO: Test tensor functions with symmetries
@@ -188,9 +232,9 @@ def test_code_formatting():
     # Test derivatives of target specific test fakes
     V = ufl.FiniteElement("CG", ufl.cell2D, 1)
     f = ufl.Coefficient(V).reconstruct(count=0)
-    assertEqual(f.dx(0), "dw[0] [0]")
-    v = ufl.Argument(V).reconstruct(count=0)
-    assertEqual(v.dx(0), "dv[0] [0]")
+    assertEqual(f.dx(0), "d1_w0[0]")
+    v = ufl.Argument(V).reconstruct(count=3)
+    assertEqual(v.dx(1), "d1_v3[1]")
     # TODO: Test more derivatives
     # TODO: Test variable derivatives using diff
 
@@ -257,7 +301,7 @@ def test_code_formatting():
     assertEqual(f, "f", variables={f: 'f'})
     assertEqual(f**3, "std::pow(f, 3)", variables={f: 'f'})
     # variables do not replace derivatives of variable expressions
-    assertEqual(f.dx(0), "dw[0] [0]", variables={f: 'f'})
+    assertEqual(f.dx(0), "d1_w0[0]", variables={f: 'f'})
     # variables do replace variable expressions that are themselves derivatives
     assertEqual(f.dx(0), "df", variables={f.dx(0): 'df'})
 
@@ -266,5 +310,5 @@ def test_code_formatting():
     # TODO: Test various compound operators
 
     # Report final test results
-    print teststats
+    print teststats, 'asdfas'
     return teststats.fails

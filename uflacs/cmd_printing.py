@@ -1,5 +1,5 @@
 
-from log import info
+from uflacs.utils.log import info
 
 def load_and_print_objects(filenames, tostr, skip_elements=False,
                            skip_coefficients=False, skip_expressions=False,

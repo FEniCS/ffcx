@@ -1,6 +1,6 @@
 
-from log import info, warning, error
-from output import uflacs_assert
+from uflacs.utils.log import info, warning, error
+from uflacs.utils.assertions import uflacs_assert
 
 import ufl
 from ufl.algorithms.transformations import MultiFunction, Transformer

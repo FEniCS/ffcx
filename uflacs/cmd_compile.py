@@ -1,6 +1,6 @@
 
-from log import info
-from utils import format_list, format_dict
+from uflacs.utils.log import info
+from uflacs.utils.str_utils import format_list, format_dict
 
 def add_compile_options(opts):
     "Args: list of .ufl file(s)."

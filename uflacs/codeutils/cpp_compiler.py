@@ -1,7 +1,7 @@
 
 from ufl.classes import Terminal
 from ufl.algorithms import Graph, expand_indices
-from c_format import CppFormatterRules, CodeFormatter
+from uflacs.codeutils.c_format import CppFormatterRules, CodeFormatter
 
 def test_cpp_compilation():
     from ufl import cell2D, FiniteElement, Coefficient, dx
@@ -13,7 +13,7 @@ def compile_form(form):
     ########################################
     # This formatter is a multifunction implementing target
     # specific formatting rules, here mocked for testing.
-    from c_format_test import CppTestFormatter
+    from uflacs.codeutils.c_format_test import CppTestFormatter
     target_formatter = CppTestFormatter()
     ########################################
 

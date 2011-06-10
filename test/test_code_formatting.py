@@ -9,11 +9,11 @@ from ufltestcase import UflTestCase, main
 class CodeFormattingTestCase(UflTestCase):
 
     def test_c_code_formatting(self):
-        from uflacs.c_format_test import test_code_formatting
+        from uflacs.codeutils.c_format_test import test_code_formatting
         test_code_formatting()
 
     def test_format_code(self):
-        from uflacs.format_code import test_format_code
+        from uflacs.codeutils.format_code import test_format_code
         test_format_code()
 
 

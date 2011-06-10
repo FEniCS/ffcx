@@ -1,8 +1,8 @@
 
-from log import info
-from utils import format_list, format_dict
+from uflacs.utils.log import info
+from uflacs.utils.str_utils import format_list, format_dict
 
-from format_code import format_code, Block, Indented, Namespace
+from uflacs.codeutils.format_code import format_code, Block, Indented, Namespace
 
 def add_compile_dolfin_options(opts):
     "Args: list of .ufl file(s)."
@@ -83,7 +83,7 @@ def preprocess_expression(expr):
 def compile_dolfin_expression_body(expr):
     from ufl.classes import Terminal, Indexed, SpatialDerivative
     from ufl.algorithms import Graph
-    from c_format import CppFormatterRules, CodeFormatter
+    from uflacs.codeutils.c_format import CppFormatterRules, CodeFormatter
 
     # Construct a specialized C++ expression formatter
     target_formatter = DolfinExpressionFormatter()
