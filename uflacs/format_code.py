@@ -1,3 +1,4 @@
+"Tools for stitching together code snippets."
 
 def indent(text, level, indentchar='    '):
     if level == 0:
@@ -5,42 +6,102 @@ def indent(text, level, indentchar='    '):
     ind = indentchar*level
     return '\n'.join(ind + line for line in text.split('\n'))
 
-class Indented:
+class Code:
+    pass
+
+class Indented(Code):
     def __init__(self, code):
         self.code = code
 
-class Block:
+    def format(self, level, indentchar, keywords):
+        return format_code(self.code, level+1, indentchar, keywords)
+
+class WithKeywords(Code):
+    def __init__(self, code, keywords):
+        self.code = code
+        self.keywords = keywords
+
+    def format(self, level, indentchar, keywords):
+        return format_code(self.code, level, indentchar, self.keywords)
+
+class Block(Code):
     def __init__(self, body, start='{', end='}'):
         self.start = start
         self.body = body
         self.end = end
 
-class Namespace:
+    def format(self, level, indentchar, keywords):
+        code = [self.start, Indented(self.body), self.end]
+        return format_code(code, level, indentchar, keywords)
+
+class Namespace(Code):
     def __init__(self, name, body):
         self.name = name
         self.body = body
 
-def format_code(code, level=0, indentchar='    '):
+    def format(self, level, indentchar, keywords):
+        code = ['namespace %s' % self.name, Block(self.body)]
+        return format_code(code, level, indentchar, keywords)
+
+class Class(Code):
+    def __init__(self, name, superclass=None, public_body=None, protected_body=None, private_body=None):
+        self.name = name
+        self.superclass = superclass
+        self.public_body = public_body
+        self.protected_body = protected_body
+        self.private_body = private_body
+
+    def format(self, level, indentchar, keywords):
+        if self.superclass:
+            code = ['class %s: public %s' % (self.name, self.superclass)]
+        else:
+            code = ['class %s' % self.name]
+        code += ['{']
+        if self.public_body:
+            code += ['public:', Indented(self.public_body)]
+        if self.protected_body:
+            code += ['protected:', Indented(self.protected_body)]
+        if self.private_body:
+            code += ['private:', Indented(self.private_body)]
+        code += ['};']
+        return format_code(code, level, indentchar, keywords)
+
+def format_code(code, level=0, indentchar='    ', keywords=None):
+    """Format code by stitching together snippets. The code can
+    be built recursively using the following types:
+
+    - str: Just a string, keywords can be provided to replace %%(name)s.
+
+    - tuple: Concatenate items in tuple with no chars in between.
+
+    - list: Concatenate items in tuple with newline in between.
+
+    - Indented: Indent the code within this object one level.
+
+    - WithKeywords: Assign keywords to code within this object.
+
+    - Block: Wrap code in {} and indent it.
+
+    - Namespace: Wrap code in a namespace.
+
+    - Class: Piece together a class.
+
+    See the respective classes for usage.
+    """
     if isinstance(code, str):
+        if keywords:
+            code = code % keywords
         return indent(code, level, indentchar)
 
     if isinstance(code, list):
-        return "\n".join(format_code(item, level, indentchar) for item in code)
+        return "\n".join(format_code(item, level, indentchar, keywords) for item in code)
 
     if isinstance(code, tuple):
         joined = "".join(format_code(item, 0, indentchar) for item in code)
-        return format_code(joined, level, indentchar)
+        return format_code(joined, level, indentchar, keywords)
 
-    if isinstance(code, Indented):
-        return format_code(code.code, level+1, indentchar)
-
-    if isinstance(code, Block):
-        return format_code([code.start, Indented(code.body), code.end],
-                      level, indentchar)
-
-    if isinstance(code, Namespace):
-        return format_code(['namespace %s' % code.name, Block(code.body)],
-                      level, indentchar)
+    if isinstance(code, Code):
+        return code.format(level, indentchar, keywords)
 
 passes = 0
 fails = 0
@@ -54,8 +115,15 @@ def assertEqual(a, b):
         print "Not equal:\n%s\n%s" % (a, b)
 
 def test_format_code():
-    # Basic strings with indentation
+    # Reproduce a string
     assertEqual(format_code("string"), "string")
+
+    # Insert keywords in string using <2.6 syntax
+    assertEqual(format_code("%(string)s %(other)s",
+                            keywords=dict(string='Hello', other='World')),
+                "Hello World")
+
+    # Basic strings with indentation
     assertEqual(format_code("string", 1), "    string")
     assertEqual(format_code("string", 2, indentchar='xy'), "xyxystring")
 
@@ -104,70 +172,28 @@ def test_format_code():
     # Making a do loop
     assertEqual(format_code(["iq = 0;", "do", (Block("foo(iq);"), " while (iq < nq);")]),
                 "iq = 0;\ndo\n{\n    foo(iq);\n} while (iq < nq);")
+    # Making a for loop with keywords
+    assertEqual(format_code(["for (%(i)s=0; %(i)s<n; ++%(i)s)", Block("foo(%(i)s);")], keywords={'i': 'k'}),
+                "for (k=0; k<n; ++k)\n{\n    foo(k);\n}")
+    assertEqual(format_code(WithKeywords(["for (%(i)s=0; %(i)s<n; ++%(i)s)", Block("foo(%(i)s);")],
+                                         keywords={'i': 'k'})),
+                "for (k=0; k<n; ++k)\n{\n    foo(k);\n}")
+
+    # Formatting the same code with different keywords using WithKeywords
+    tmp = ['%(a)s', '%(b)s']
+    assertEqual(format_code([WithKeywords(tmp, keywords={'a': 'a', 'b':'b'}),
+                             WithKeywords(tmp, keywords={'a': 'x', 'b':'y'})]),
+                "a\nb\nx\ny")
+
+    # Making a class declaration
+    assertEqual(format_code(Class('Car')), 'class Car\n{\n};')
+    assertEqual(format_code(Class('Car', superclass='Vehicle')),
+                'class Car: public Vehicle\n{\n};')
+    assertEqual(format_code(Class('Car', public_body='void eval()\n{\n}')),
+                'class Car\n{\npublic:\n    void eval()\n    {\n    }\n};')
+    assertEqual(format_code(Class('Car', protected_body='void eval()\n{\n}')),
+                'class Car\n{\nprotected:\n    void eval()\n    {\n    }\n};')
+    assertEqual(format_code(Class('Car', private_body='void eval()\n{\n}')),
+                'class Car\n{\nprivate:\n    void eval()\n    {\n    }\n};')
 
     print "%d passes, %d fails" % (passes, fails)
-
-def tabulate_tensor_prototype():
-
-    def build_body01():
-        body = []
-        body += ["decl"]
-        body += ["for ()"]
-        decl = ["decl01;"]
-        body += [Block(decl)]
-        return body
-
-    def build_loop():
-        preloop = ["preloop"]
-        postloop = ["postloop"]
-        loopheader = "for ()"
-        body = ["body;"]
-        return [preloop, loopheader, Block(body), postloop]
-
-    def build_body1():
-        body = []
-        body += ["decl"]
-        body += ["for (i1)"]
-        decl = ["decl1;"]
-        body += [Block(decl)]
-        return body
-
-    def build_body0():
-        body = []
-        body += ["decl"]
-        body += ["for (i1)"]
-        decl = [build_body1()]
-        body += [Block(decl)]
-        return body
-
-    def build_bodyx():
-        body = []
-        body += ["compute x from iq;"]
-        body += ["compute quantities depending on x"]
-        body += build_i0loop()
-        body += build_i1loop()
-        return body
-
-    def build_i0loop():
-        header = "for (int i0 = 0; i0 < n0; ++i0)"
-        decl = build_body0()
-        return [header, Block(decl)]
-
-    def build_i1loop():
-        header = "for (int i1 = 0; i1 < n1; ++i1)"
-        decl = build_body1()
-        return [header, Block(decl)]
-
-    def build_body():
-        body = []
-        body += ["compute quantities depending on cell and coeffs but not x;"]
-        body += ["for (int iq = 0; iq < nq; ++iq)"]
-        decl = build_bodyx()
-        body += [Block(decl)]
-        return body
-
-    print format_code(build_body())
-
-if __name__ == '__main__':
-    test_format_code()
-    tabulate_tensor_prototype()

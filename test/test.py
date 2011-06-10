@@ -35,9 +35,9 @@ def run_suite(tests):
     return runner.run(suite)
 
 def check_which_uflacs():
-    import uflacs as uflac
+    import uflacs as uflacs
     print "******"
-    print "* Testing uflacs version", uflac.__version__
+    print "* Testing uflacs version", uflacs.__version__
     print "* which is installed at:", uflacs.__file__
     print "******"
 
