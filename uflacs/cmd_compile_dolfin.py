@@ -63,23 +63,6 @@ class DolfinExpressionFormatter(object):
             code += " " + "".join("[%d]" % d for d in derivatives)
         return code
 
-def format_expression_as_cpp(expr, target_formatter=None, variables=None):
-    "This is a test specific function for formatting ufl to C++."
-
-    return code
-
-def format_expression_as_test_cpp(expr, variables=None):
-    "This is a test specific function for formatting ufl to C++."
-
-
-def preprocess_expression(expr):
-    "Preprocess expression. For forms, get preprocessed form from the form data instead."
-    from ufl.algorithms import expand_derivatives, expand_indices
-    e = expr
-    e = expand_derivatives(e)
-    e = expand_indices(e)
-    return e
-
 def compile_dolfin_expression_body(expr):
     from ufl.classes import Terminal, Indexed, SpatialDerivative
     from ufl.algorithms import Graph
@@ -92,7 +75,8 @@ def compile_dolfin_expression_body(expr):
     code_formatter = CodeFormatter(cpp_formatter, variables)
 
     # Preprocess expression and build computational graph
-    expr = preprocess_expression(expr)
+    expr_data = preprocess_expression(expr)
+    expr = expr_data.preprocessed_expr
     G = Graph(expr)
     V, E = G
 

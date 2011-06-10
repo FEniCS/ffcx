@@ -31,7 +31,7 @@ def compile_form(form):
             # Fetch the expression
             integrand = itg.integrand()
 
-            # Then we apply the additional expand_indices preprocessing
+            # Then we apply the additional expand_indices preprocessing that form preprocessing does not
             expr = expand_indices(integrand)
 
             # And build the computational graph of the expression

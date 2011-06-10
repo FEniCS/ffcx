@@ -4,7 +4,7 @@ from uflacs.utils.assertions import uflacs_assert
 
 import ufl
 from ufl.algorithms.transformations import MultiFunction, Transformer
-from ufl.algorithms import expand_derivatives, expand_indices
+from ufl.algorithms import preprocess_expression
 
 def format_expression_as_test_cpp(expr, variables=None):
     "This is a test specific function for formatting ufl to C++."
@@ -13,7 +13,7 @@ def format_expression_as_test_cpp(expr, variables=None):
     # Preprocessing expression before applying formatting.
     # In a compiler, one should probably assume that these
     # have been applied and use CodeFormatter directly.
-    expr = expand_indices(expand_derivatives(expr)) # TODO: Use preprocess_expression
+    expr_data = preprocess_expression(expr)
 
     # This formatter is a multifunction implementing target
     # specific formatting rules, here using default formatting rules.
@@ -26,7 +26,7 @@ def format_expression_as_test_cpp(expr, variables=None):
     # This final formatter implements a generic framework handling indices etc etc.
     variables = variables or {}
     code_formatter = CodeFormatter(cpp_formatter, variables)
-    code = code_formatter.visit(expr)
+    code = code_formatter.visit(expr_data.preprocessed_expr)
     return code
 
 class TestStats:

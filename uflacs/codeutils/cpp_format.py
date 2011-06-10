@@ -4,7 +4,6 @@ from uflacs.utils.assertions import uflacs_assert
 
 import ufl
 from ufl.algorithms.transformations import MultiFunction, Transformer
-from ufl.algorithms import expand_derivatives, expand_indices
 
 def build_precedence_list():
     "Builds a list of operator types by precedence order in the C language."
