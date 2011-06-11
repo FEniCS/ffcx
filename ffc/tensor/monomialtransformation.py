@@ -27,6 +27,7 @@
 from ufl.classes import Argument
 from ufl.classes import Coefficient
 from ufl.classes import FixedIndex
+from ufl.permutation import build_component_numbering
 
 # FFC modules
 from ffc.log import info, error, ffc_assert
@@ -398,8 +399,14 @@ class TransformedMonomial:
             if c in index_map:
                 index = index_map[c]
             elif isinstance(c, FixedIndex):
+                # Map component using component map from UFL.
+                # KBO: Is this the right place to add, and do we only have
+                # scalar components in the tensor representation at this stage
+                # in the representation?
+                comp_map, comp_num = build_component_numbering(f.function.element().value_shape(), f.function.element().symmetry())
+                comp = comp_map[(int(c),)]
                 index = MonomialIndex(index_type=MonomialIndex.FIXED,
-                                      index_range=[int(c)],
+                                      index_range=[comp],
                                       index_id=None)
             else:
                 index = MonomialIndex(index_range=range(vdim)) # meg: What kind of index should this be?
