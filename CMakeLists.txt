@@ -1,12 +1,16 @@
 # Top level CMakeLists.txt file for UFC
 
-#------------------------------------------------------------------------------
-
 # Require CMake 2.8
 cmake_minimum_required(VERSION 2.8)
 
 #------------------------------------------------------------------------------
+# Set project name and version number
+
 project(UFC)
+set(UFC_VERSION_MAJOR "2")
+set(UFC_VERSION_MINOR "0")
+set(UFC_VERSION_MICRO "1")
+set(UFC_VERSION_STRING "${UFC_VERSION_MAJOR}.${UFC_VERSION_MINOR}.${UFC_VERSION_MICRO}")
 
 # Set special link option, see `cmake --help-policy CMP0003`
 if(COMMAND cmake_policy)
@@ -19,14 +23,6 @@ endif()
 # Set location of our FindFoo.cmake modules
 set(UFC_CMAKE_DIR "${UFC_SOURCE_DIR}/cmake" CACHE INTERNAL "")
 set(CMAKE_MODULE_PATH "${UFC_CMAKE_DIR}/modules")
-
-#------------------------------------------------------------------------------
-# Set UFC version number
-
-set(UFC_VERSION_MAJOR "1")
-set(UFC_VERSION_MINOR "4")
-set(UFC_VERSION_MICRO "1")
-set(UFC_VERSION_STRING "${UFC_VERSION_MAJOR}.${UFC_VERSION_MINOR}.${UFC_VERSION_MICRO}")
 
 #------------------------------------------------------------------------------
 # Options
