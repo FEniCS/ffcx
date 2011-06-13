@@ -1,4 +1,5 @@
- - Fix bug when using geometric coordinates with one quadrature point
+- Fix bug with mixed element of symmetric tensor elements. Bug #745646.
+- Fix bug when using geometric coordinates with one quadrature point
 0.9.10 [2011-05-16]
  - Change license from GPL v3 or later to LGPL v3 or later
  - Add some schemes for low-order simplices
