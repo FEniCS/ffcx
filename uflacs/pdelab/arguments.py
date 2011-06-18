@@ -1,5 +1,8 @@
 class ArgumentNameFormatter(object):
 
+    def name(self,argname):
+        return argname
+
     def lfs_type(self,argname):
         return 'LFS' + argname.upper()
 
@@ -28,6 +31,7 @@ class ArgumentNameFormatter(object):
 class ArgumentData(object):
 
     _names = [
+        'name',
         'lfs_type',
         'lfs_name',
         'fe_switch_type',
@@ -40,11 +44,14 @@ class ArgumentData(object):
 
     def __init__(self,argument,name=None,count=None,name_formatter=ArgumentNameFormatter()):
         self.argument = argument
-        self.name = name or count or str(argument)
+        name = name or count or str(argument)
 
         # cache names of derived C++ types and objects
-        for n in self._names:
-            setattr(self,n,getattr(name_formatter,n)(self.name))
+        self.names = dict((n,getattr(name_formatter,n)(name)) for n in self._names)
+
+        # also save names as members for easy accessibility
+        for k, v in self.names.iteritems():
+            setattr(self,k,v)
 
         from uflacs.codeutils.format_code import TypeDef, Type
 
@@ -96,3 +103,27 @@ class ArgumentData(object):
             )
 
         self.preamble_code = code
+
+    def evaluate_basis(self, pos):     
+        code = '''
+std::vector<{range_type}> {name}_basis({size_name});
+{fe_switch_type}::basis({lfs_name}.finiteElement()).evaluateFunction({pos},{name}_basis);
+'''
+        names = self.names.copy()
+        names['pos'] = pos
+        return code.format(**names)
+                    
+
+    def evaluate_value(self, pos, iter_var='i'):
+        from uflacs.codeutils.format_code import Block
+        names = self.names.copy()
+        names['iter_var'] = iter_var
+        
+        code = [
+            '{range_type} {name}(0);'.format(**names),
+            'for (std::size_t {iter_var} = 0; {iter_var} < {size_name}; ++{iter_var})'.format(**names),
+            Block(
+                '{name}.axpy(x({lfs_name},{iter_var}),{name}_basis[{iter_var}]);'.format(**names)
+                )
+            ]
+        return code
