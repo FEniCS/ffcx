@@ -1,5 +1,8 @@
 class ArgumentNameFormatter(object):
 
+    def name(self,argname):
+        return argname
+
     def lfs_type(self,argname):
         return 'LFS' + argname.upper()
 
@@ -28,6 +31,7 @@ class ArgumentNameFormatter(object):
 class ArgumentData(object):
 
     _names = [
+        'name',
         'lfs_type',
         'lfs_name',
         'fe_switch_type',
@@ -40,11 +44,14 @@ class ArgumentData(object):
 
     def __init__(self,argument,name=None,count=None,name_formatter=ArgumentNameFormatter()):
         self.argument = argument
-        self.name = name or count or str(argument)
+        name = name or count or str(argument)
 
         # cache names of derived C++ types and objects
-        for n in self._names:
-            setattr(self,n,getattr(name_formatter,n)(self.name))
+        self.names = dict((n,getattr(name_formatter,n)(name)) for n in self._names)
+
+        # also save names as members for easy accessibility
+        for k, v in self.names.iteritems():
+            setattr(self,k,v)
 
         from uflacs.codeutils.format_code import TypeDef, Type
 
