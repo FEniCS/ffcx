@@ -15,6 +15,8 @@ from cmd_compile  import add_compile_options, run_compile
 
 from cmd_compile_dolfin  import add_compile_dolfin_options, run_compile_dolfin
 
+from cmd_compile_pdelab import add_compile_pdelab_options, run_compile_pdelab
+
 from cmd_test_code_formatting import \
     add_test_code_formatting_options, run_test_code_formatting
 
