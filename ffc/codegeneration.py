@@ -26,7 +26,7 @@ UFC function from an (optimized) intermediate representation (OIR).
 # Modified by Mehdi Nikbakht, 2010
 #
 # First added:  2009-12-16
-# Last changed: 2011-02-21
+# Last changed: 2011-06-20
 
 # FFC modules
 from ffc.log import info, begin, end, debug_code
@@ -329,7 +329,8 @@ def _tabulate_dofs(ir):
         # Handle fakes (Space of reals)
         if fakes[no] and num_dofs_per_element[no] == 1:
             code.append(assign(component(dofs_variable, i), offset_name))
-            code.append(iadd(offset_name, 1))
+            if offset_name != "0":
+                code.append(iadd(offset_name, 1))
             i += 1
             continue
 
