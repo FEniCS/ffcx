@@ -59,8 +59,14 @@ if (PYTHONINTERP_FOUND)
     )
 
   # Set Python installation path
-  set(UFC_INSTALL_PYTHON_MODULE_DIR ${PYTHON_INSTALL_PATH})
-  set(UFC_INSTALL_PYTHON_EXT_DIR ${PYTHON_INSTALL_PATH})
+  if (NOT DEFINED UFC_INSTALL_PYTHON_MODULE_DIR)
+    set(UFC_INSTALL_PYTHON_MODULE_DIR ${PYTHON_INSTALL_PATH}
+      CACHE PATH "Python module installation directory.")
+  endif()
+  if (NOT DEFINED UFC_INSTALL_PYTHON_EXT_DIR)
+    set(UFC_INSTALL_PYTHON_EXT_DIR ${PYTHON_INSTALL_PATH}
+      CACHE PATH "Python extension module installation directory.")
+  endif()
 endif (PYTHONINTERP_FOUND)
 
 #------------------------------------------------------------------------------
@@ -150,7 +156,7 @@ install(DIRECTORY
 
 configure_file(${UFC_CMAKE_DIR}/ufc-config.cmake.in ufc-config.cmake @ONLY)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ufc-config.cmake
-  DESTINATION ${CMAKE_INSTALL_PREFIX}/${UFC_CMAKE_CONFIG_DIR}
+  DESTINATION ${UFC_CMAKE_CONFIG_DIR}
   COMPONENT Development
   )
 
@@ -159,7 +165,7 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ufc-config.cmake
 
 configure_file(${UFC_CMAKE_DIR}/ufc-1.pc.in ufc-1.pc @ONLY)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ufc-1.pc
-  DESTINATION ${CMAKE_INSTALL_PREFIX}/${UFC_PKGCONFIG_DIR}
+  DESTINATION ${UFC_PKGCONFIG_DIR}
   COMPONENT Development
   )
 
