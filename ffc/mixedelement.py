@@ -71,8 +71,12 @@ class MixedElement:
         """
 
         # Special case: only one element
-        if len(self._elements) == 1:
-            return self._elements[0].tabulate(order, points)
+        # NOTE: KBO: Why do we need this special case? (FFC Bug #798578)
+        #       When calling tabulate() on a MixedElement one should be able to
+        #       rely on getting data back which is ordered like a mixed element
+        #       irrespective of the number of elements?
+#        if len(self._elements) == 1:
+#            return self._elements[0].tabulate(order, points)
 
         # Zeros for insertion into mixed table
         table_shape = (self.space_dimension(), self.num_components(), len(points))
