@@ -95,6 +95,18 @@ class CodeUtilsTest(UflTestCase):
         self.assertEqual(format_code(Class('Car', private_body='void eval()\n{\n}')),
                     'class Car\n{\nprivate:\n    void eval()\n    {\n    }\n};')
 
+    def test_format_code_templates(self):
+        def t(args, mlcode, slcode):
+            self.assertEqual(format_code(TemplateArgumentList(args, False), indentchar=' '), slcode)
+            self.assertEqual(format_code(TemplateArgumentList(args, True), indentchar=' '), mlcode)
+        t(('A',), '<\n A\n>', '<A>')
+        t(('A', 'B'), '<\n A,\n B\n>', '<A, B>')
+        
+        code = []
+        code.append(('template ', TemplateArgumentList(('typename T', 'typename R'), False)))
+        code.append(Class('MyClass', public_body='void hello(int world) {}'))
+        print format_code(code)
+
 
 if __name__ == "__main__":
     main()
