@@ -34,6 +34,45 @@ class Block(Code):
         code = [self.start, Indented(self.body), self.end]
         return format_code(code, level, indentchar, keywords)
 
+class TemplateArgumentList(Code):
+
+    singlelineseparators = ('<',',','>')
+    multilineseparators = ('<\n',',\n','\n>')
+    
+    def __init__(self, args, multiline=True):
+        self.args = args
+        self.multiline = multiline
+
+    def format(self, level, indentchar, keywords):
+        start, sep, end = self.multilineseparators if self.multiline else self.singlelineseparators
+        container = Indented if self.multiline else tuple
+        if not self.multiline and (isinstance(self.args[-1],TemplateArgumentList) or (isinstance(self.args[-1],Type) and self.args[-1].template_arguments)):
+            end = ' ' + end
+        code = (start,container((sep.join(format_code(arg,keywords=keywords) for arg in self.args),end)))
+        return format_code(code, level, indentchar, keywords)
+
+class Type(Code):
+
+    def __init__(self, name, template_arguments=None, ml=False):
+        self.name = name
+        self.template_arguments = template_arguments
+        self.ml = ml
+
+    def format(self, level, indentchar, keywords):
+        code = self.name
+        if self.template_arguments:
+            code = code, TemplateArgumentList(self.template_arguments, self.ml)
+        return format_code(code, level, indentchar, keywords)
+
+class TypeDef(Code):
+    def __init__(self, type_, typedef):
+        self.type = type_
+        self.typedef = typedef
+
+    def format(self, level, indentchar, keywords):
+        code = ('typedef ',self.type," %s;" % self.typedef)
+        return format_code(code, level, indentchar, keywords)
+
 class Namespace(Code):
     def __init__(self, name, body):
         self.name = name
