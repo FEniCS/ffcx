@@ -101,11 +101,12 @@ class CodeUtilsTest(UflTestCase):
             self.assertEqual(format_code(TemplateArgumentList(args, True), indentchar=' '), mlcode)
         t(('A',), '<\n A\n>', '<A>')
         t(('A', 'B'), '<\n A,\n B\n>', '<A, B>')
-        
+
+    def xtest_format_code_template_class(self):
         code = []
         code.append(('template ', TemplateArgumentList(('typename T', 'typename R'), False)))
         code.append(Class('MyClass', public_body='void hello(int world) {}'))
-        print format_code(code)
+        #print format_code(code)
 
 
 if __name__ == "__main__":
