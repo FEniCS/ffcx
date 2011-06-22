@@ -1,7 +1,8 @@
 
 from ufl.classes import Terminal
 from ufl.algorithms import Graph, expand_indices
-from uflacs.codeutils.cpp_format import CppFormatterRules, CodeFormatter, CppDefaultFormatter
+from uflacs.codeutils.cpp_format import CppFormatterRules, CppDefaultFormatter
+from uflacs.codeutils.code_formatter import CodeFormatter
 
 def test_cpp_compilation():
     from ufl import cell2D, FiniteElement, Coefficient, dx

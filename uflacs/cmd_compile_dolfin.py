@@ -66,7 +66,8 @@ class DolfinExpressionFormatter(object):
 def compile_dolfin_expression_body(expr):
     from ufl.classes import Terminal, Indexed, SpatialDerivative
     from ufl.algorithms import Graph, preprocess_expression
-    from uflacs.codeutils.cpp_format import CppFormatterRules, CodeFormatter
+    from uflacs.codeutils.cpp_format import CppFormatterRules
+    from uflacs.codeutils.code_formatter import CodeFormatter
 
     # Construct a specialized C++ expression formatter
     target_formatter = DolfinExpressionFormatter()

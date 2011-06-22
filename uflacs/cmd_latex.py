@@ -4,4 +4,5 @@ def add_latex_options(opts):
 
 def run_latex(options, args):
     print "Running latex"
-    return 0
+    from uflacs.codeutils.latex_format_test import test_latex_formatting
+    return test_latex_formatting()
