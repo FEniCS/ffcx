@@ -36,9 +36,9 @@ class Block(Code):
 
 class TemplateArgumentList(Code):
 
-    singlelineseparators = ('<',',','>')
+    singlelineseparators = ('<',', ','>')
     multilineseparators = ('<\n',',\n','\n>')
-    
+
     def __init__(self, args, multiline=True):
         self.args = args
         self.multiline = multiline
@@ -46,9 +46,12 @@ class TemplateArgumentList(Code):
     def format(self, level, indentchar, keywords):
         start, sep, end = self.multilineseparators if self.multiline else self.singlelineseparators
         container = Indented if self.multiline else tuple
-        if not self.multiline and (isinstance(self.args[-1],TemplateArgumentList) or (isinstance(self.args[-1],Type) and self.args[-1].template_arguments)):
-            end = ' ' + end
-        code = (start,container((sep.join(format_code(arg,keywords=keywords) for arg in self.args),end)))
+        if not self.multiline:
+            last = self.args[-1]
+            if isinstance(last, TemplateArgumentList) or (isinstance(last, Type) and last.template_arguments):
+                end = ' ' + end
+        code = [sep.join(format_code(arg, keywords=keywords) for arg in self.args)]
+        code = (start, container(code), end)
         return format_code(code, level, indentchar, keywords)
 
 class Type(Code):

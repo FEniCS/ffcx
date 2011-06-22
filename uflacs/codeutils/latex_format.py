@@ -5,6 +5,10 @@ from uflacs.utils.assertions import uflacs_assert
 import ufl
 from ufl.algorithms.transformations import MultiFunction
 
+# TODO: Assuming in this code that preprocessed expressions
+# are formatted, so no compounds etc. are included here.
+# Would be nice to format e.g. dot(u, v) -> u \cdot v.
+
 class LatexLiteralFormatter(object):
     "Formatting rules for literal constants."
 
@@ -20,6 +24,8 @@ class LatexLiteralFormatter(object):
 
     def zero(self, o):
         return "0" if not o.shape() else r"{\mathbf 0}"
+
+    # ... The compound literals below are removed during preprocessing
 
     def identity(self, o):
         return r"{\mathbf I}"
