@@ -5,6 +5,7 @@
 
 # These are thin wrappers on top of unittest.TestCase and unittest.main
 from ufltestcase import UflTestCase, main
+from uflacs.codeutils.format_code import *
 
 class CodeUtilsTest(UflTestCase):
 

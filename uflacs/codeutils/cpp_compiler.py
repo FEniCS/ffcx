@@ -4,11 +4,6 @@ from ufl.algorithms import Graph, expand_indices
 from uflacs.codeutils.cpp_format import CppFormatterRules, CppDefaultFormatter
 from uflacs.codeutils.code_formatter import CodeFormatter
 
-def test_cpp_compilation():
-    from ufl import cell2D, FiniteElement, Coefficient, dx
-    M = Coefficient(FiniteElement("CG", cell2D, 1))**2/2*dx
-    print compile_form(M)
-
 def compile_form(form):
 
     # This formatter is a multifunction implementing target
