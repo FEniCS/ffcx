@@ -332,7 +332,7 @@ def _auto_select_degree(elements):
     """
 
     # Extract common degree
-    common_degree = max([e.degree() for e in elements])
+    common_degree = max([e.degree() for e in elements] or [None])
     if common_degree is None:
         common_degree = default_quadrature_degree
 
