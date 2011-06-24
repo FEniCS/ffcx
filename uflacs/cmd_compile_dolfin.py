@@ -1,4 +1,5 @@
 
+import os
 from uflacs.utils.log import info
 from uflacs.utils.str_utils import format_list, format_dict
 
@@ -172,7 +173,9 @@ def run_compile_dolfin(options, args):
         info("Loading file '%s'..." % (fn,))
         data = load_ufl_file(fn)
         file_code = []
-        prefix = fn.replace('.ufl', '')
+        prefix, ext = os.path.splitext(os.path.basename(fn))
+        if ext != '.ufl':
+            print "Warning: expecting ufl file, got %s." % ext
 
         # Generate code for each expression in this file
         for k, expr in enumerate(data.expressions):
