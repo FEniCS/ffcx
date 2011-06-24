@@ -33,10 +33,13 @@ class CodeFormatter(Transformer):
         ops = []
         for op in o.operands():
             opc = self.visit(op)
-            po = self.precedence[o._uflclass]
-            pop = self.precedence[op._uflclass]
-            if po < self.max_precedence and pop <= po:
-                opc = '(' + opc + ')'
+            # Skip () around variables
+            if not op in self.variables:
+                po = self.precedence[o._uflclass]
+                pop = self.precedence[op._uflclass]
+                # Ignore left-right rule and just add slightly more () than strictly necessary
+                if po < self.max_precedence and pop <= po:
+                    opc = '(' + opc + ')'
             ops.append(opc)
 
         #ops = [self.visit(op) for op in o.operands()]

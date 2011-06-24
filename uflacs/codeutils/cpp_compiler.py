@@ -1,8 +1,9 @@
 
 from ufl.classes import Terminal
 from ufl.algorithms import Graph, expand_indices
-from uflacs.codeutils.cpp_format import CppFormatterRules, CppDefaultFormatter
+from uflacs.codeutils.format_code import format_code
 from uflacs.codeutils.code_formatter import CodeFormatter
+from uflacs.codeutils.cpp_format import CppFormatterRules, CppDefaultFormatter
 
 def compile_form(form):
 
@@ -61,4 +62,5 @@ def compile_form(form):
 
             # Join code to what we have
             code.append(integral_code)
-    return '\n'.join('\n'.join(c) for c in code)
+
+    return format_code(code)
