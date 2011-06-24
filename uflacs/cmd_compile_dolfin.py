@@ -45,13 +45,13 @@ class DolfinExpressionFormatter(object):
     # FIXME: Implement rules for coefficients
 
     def _coefficient(self, o, component=(), derivatives=()):
-        basename = "dw" if derivatives else "w"
+        basename = self.coefficient_names[o]
+        # FIXME: Generate code for computing coefficient in prelude
         code = "%s[%d]" % (basename, o.count())
         if component:
-            code += " " + "".join("[%d]" % c for c in component)
+            error("not implemented")
         if derivatives:
-            uflacs_assert(len(derivatives) == 1, "Not implemented.")
-            code += " " + "".join("[%d]" % d for d in derivatives)
+            error("not implemented")
         return code
 
     def _argument(self, o, component=(), derivatives=()):
@@ -119,7 +119,7 @@ def compile_dolfin_expression_body(expr):
 #    Expression(uint dim0, uint dim1);
 #    Expression(std::vector<uint> value_shape);
 
-def compile_dolfin_expression(expr, name):
+def compile_dolfin_expression(expr, name, object_names):
 
     assert expr.shape() == ()
 
@@ -129,9 +129,18 @@ def compile_dolfin_expression(expr, name):
 
     from ufl.algorithms import extract_coefficients
     coeffs = extract_coefficients(expr)
-    #print coeffs # FIXME Use these to get object names
 
-    coefficient_names = ['w%d' % k for k in range(len(coeffs))] # FIXME: get from object_names
+    coefficient_names1 = [object_names.get(id(coeff), 'w%d' % coeff.count())\
+                             for coeff in coeffs]
+    coefficient_names2 = ['w%d' % k for k in range(len(coeffs))] # FIXME: get from object_names
+    coefficient_names = coefficient_names1
+
+    print
+    print '\n'.join(map(str, zip(coefficient_names1, coeffs)))
+    print
+    print '\n'.join(map(str, zip(coefficient_names2, coeffs)))
+    print
+
     variables_code = ['boost::shared_ptr<dolfin::Function> %s;' % cname for cname in coefficient_names]
 
     class_body = [eval_sig, Block(eval_body)]
@@ -172,15 +181,16 @@ def run_compile_dolfin(options, args):
     for fn in filenames:
         info("Loading file '%s'..." % (fn,))
         data = load_ufl_file(fn)
-        file_code = []
+
         prefix, ext = os.path.splitext(os.path.basename(fn))
         if ext != '.ufl':
             print "Warning: expecting ufl file, got %s." % ext
 
         # Generate code for each expression in this file
+        file_code = []
         for k, expr in enumerate(data.expressions):
             name = data.object_names.get(id(expr), 'w%d' % k)
-            expr_code = compile_dolfin_expression(expr, name)
+            expr_code = compile_dolfin_expression(expr, name, data.object_names)
             file_code.append(expr_code)
         
         # Wrap code from each file in its own namespace
@@ -190,7 +200,7 @@ def run_compile_dolfin(options, args):
     code = Namespace(namespace, all_code)
     code = format_code(code)
 
-    # TODO: Write to file
+    # TODO: Write to user specified file, or filename taken from fn
     filecontents = '\n'.join((test_header, code, test_footer))
     print filecontents
     open('temp/main.cpp', 'w').write(filecontents)

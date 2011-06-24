@@ -1,15 +1,8 @@
 
-def add_latex_options(opts):
-    pass
-
-def run_latex(options, args):
-    print "Running latex"
-    return 0
-
 from uflacs.utils.log import info
 from uflacs.utils.str_utils import format_list, format_dict
 
-def add_compile_options(opts):
+def add_latex_options(opts):
     "Args: list of .ufl file(s)."
     pass
 

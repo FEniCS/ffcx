@@ -1,11 +1,16 @@
 cell = triangle
 V = FiniteElement("CG", cell, None)
+V2 = FiniteElement("CG", cell, 2)
+V3 = FiniteElement("CG", cell, 3)
 f = Coefficient(V)
+g = Coefficient(V2)
+h = Coefficient(V3)
 x, y = cell.x
-g = x*y
-L = f**2*g*dx
+e = x*y*g*h
+e2 = x*x
+L = f**2*e*dx
 
 elements = [V]
-coefficients = [f]
+coefficients = [f, g, h]
 forms = [L]
-expressions = [g]
+expressions = [e2]
