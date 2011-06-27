@@ -3,7 +3,7 @@ from uflacs.utils.log import info
 
 def add_latex_options(opts):
     "Args: list of .ufl file(s)."
-    pass
+    pass # TODO: Output filename argument
 
 def compile_element(element):
     return "TODO: format as LaTeX code: " + str(element)
@@ -11,26 +11,32 @@ def compile_element(element):
 def compile_expression(expr):
     return "TODO: format as LaTeX code: " + str(expr)
 
+def write_file(input_filename, output_filename, code):
+    if not output_filename:
+        output_filename = input_filename.replace('.ufl', '.tex')
+    f = open(fn, 'w')
+    f.write(code)
+    f.close()
+
 def run_latex(options, args):
     "Compile forms and expressions from .ufl file(s) into LaTeX expressions."
+    from ufl.algorithms import load_ufl_file
     from uflacs.codeutils.latex_compiler import compile_form
     from uflacs.codeutils.format_code import format_code
-    from ufl.algorithms import load_ufl_file
-    filenames = args
-    code = []
-    for fn in filenames:
-        info("Loading file '%s'..." % (fn,))
-        data = load_ufl_file(fn)
 
-        code.append([\
+    for filename in args:
+        info("Loading file '%s'..." % (filename,))
+        data = load_ufl_file(filename)
+
+        code = [\
             [r'\section{Elements}'],
             [compile_element(element) for element in data.elements],
             [r'\section{Expressions}'],
             [compile_expression(expr) for expr in data.expressions],
             [r'\section{Forms}'],
             [compile_form(form) for form in data.forms],
-            ])
-
-    print format_code(code)
+            ]
+        code = format_code(code)
+        write_file(filename, None, code)
 
     return 0
