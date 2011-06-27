@@ -1,5 +1,5 @@
 
-from uflacs.utils.log import info
+from uflacs.utils.log import info, warning
 
 def add_latex_options(opts):
     "Args: list of .ufl file(s)."
@@ -14,7 +14,7 @@ def compile_expression(expr):
 def write_file(input_filename, output_filename, code):
     if not output_filename:
         output_filename = input_filename.replace('.ufl', '.tex')
-    f = open(fn, 'w')
+    f = open(output_filename, 'w')
     f.write(code)
     f.close()
 
@@ -27,6 +27,10 @@ def run_latex(options, args):
     for filename in args:
         info("Loading file '%s'..." % (filename,))
         data = load_ufl_file(filename)
+
+        prefix, ext = os.path.splitext(os.path.basename(filename))
+        if ext != '.ufl':
+            warning("Warning: expecting ufl file, got %s." % ext)
 
         code = [\
             [r'\section{Elements}'],
