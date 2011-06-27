@@ -128,11 +128,10 @@ def compile_dolfin_expression_body(expr_data):
     vcode = expr_formatter.visit(expr)
     assignment = ['values[%d] = %s;' % (0, vcode)]
 
-    code = [\
-        '// Implementation of: %s' % str(expr),
-        prelude, listing, assignment,
-        ]
+    code = ['// Implementation of: %s' % str(expr),
+            prelude, listing, assignment]
     return code
+
 
 def compile_dolfin_expression(expr, name, object_names):
 
@@ -171,7 +170,6 @@ def compile_dolfin_expression(expr, name, object_names):
     return code, classname
 
 
-# TODO: Move this to dolfin compiler file
 def compile_dolfin_expressions_header(data, prefix):
     from uflacs.codeutils.dolfin_compiler import compile_dolfin_expression
 
