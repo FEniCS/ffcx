@@ -279,7 +279,19 @@ class QuadratureTransformer(QuadratureTransformerBase):
     # -------------------------------------------------------------------------
     # Condition, Conditional (conditional.py).
     # -------------------------------------------------------------------------
-    def condition(self, o, *operands):
+    def not_condition(self, o, *operands):
+        # FIXME: This is a Condition but not a BinaryCondition, and the operand will be another Condition
+        error("Not condition not implemented!")
+
+    def and_condition(self, o, *operands):
+        # FIXME: This is also a BinaryCondition, but the operands will be other Conditions
+        error("And condition not implemented!")
+
+    def or_condition(self, o, *operands):
+        # FIXME: This is also a BinaryCondition, but the operands will be other Conditions
+        error("Or condition not implemented!")
+
+    def binary_condition(self, o, *operands):
 
         # Get LHS and RHS expressions and do safety checks.
         # Might be a bit too strict?
