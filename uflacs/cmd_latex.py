@@ -1,6 +1,5 @@
 
 from uflacs.utils.log import info
-from uflacs.utils.str_utils import format_list, format_dict
 
 def add_latex_options(opts):
     "Args: list of .ufl file(s)."
@@ -12,10 +11,9 @@ def compile_element(element):
 def compile_expression(expr):
     return "TODO: format as LaTeX code: " + str(expr)
 
-from uflacs.codeutils.latex_compiler import compile_form
-
 def run_latex(options, args):
     "Compile forms and expressions from .ufl file(s) into LaTeX expressions."
+    from uflacs.codeutils.latex_compiler import compile_form
     from uflacs.codeutils.format_code import format_code
     from ufl.algorithms import load_ufl_file
     filenames = args
