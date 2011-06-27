@@ -175,7 +175,10 @@ def compile_dolfin_expression(expr, name, object_names):
 def compile_dolfin_expressions_header(data, prefix):
     from uflacs.codeutils.dolfin_compiler import compile_dolfin_expression
 
-    includes = ['#include <iostream>', '#include <cmath>', '#include <dolfin.h>']
+    includes = ['#include <iostream>',
+                '#include <cmath>',
+                '#include <boost/shared_ptr.h>',
+                '#include <dolfin.h>']
 
     # Generate code for each expression in this file
     file_code = []
