@@ -66,13 +66,13 @@ class DolfinExpressionFormatter(object):
 def compile_dolfin_expression_body(expr):
     from ufl.classes import Terminal, Indexed, SpatialDerivative
     from ufl.algorithms import Graph, preprocess_expression
-    from uflacs.codeutils.cpp_format import CppFormatterRules, CodeFormatter
+    from uflacs.codeutils.cpp_format import CppFormatterRules, ExprFormatter
 
     # Construct a specialized C++ expression formatter
     target_formatter = DolfinExpressionFormatter()
     cpp_formatter = CppFormatterRules(target_formatter)
     variables = {}
-    code_formatter = CodeFormatter(cpp_formatter, variables)
+    expr_formatter = ExprFormatter(cpp_formatter, variables)
 
     # Preprocess expression and build computational graph
     expr_data = preprocess_expression(expr)
@@ -87,7 +87,7 @@ def compile_dolfin_expression_body(expr):
         if not isinstance(v, (Terminal, Indexed, SpatialDerivative)):
             vname = 's[%d]' % k
             k += 1
-            vcode = code_formatter.visit(v)
+            vcode = expr_formatter.visit(v)
             listing.append('%s = %s; // %s' % (vname, vcode, str(v)))
             variables[v] = vname
 
@@ -97,7 +97,7 @@ def compile_dolfin_expression_body(expr):
     prelude = ['double s[%d];' % k]
 
     # Generate assignments to values[] FIXME: Support non-scalar expression
-    vcode = code_formatter.visit(expr)
+    vcode = expr_formatter.visit(expr)
     conclusion = ['values[%d] = %s;' % (0, vcode)]
 
     code = [\

@@ -12,12 +12,12 @@ import ufl
 def format_expression_as_test_cpp(expr, variables=None):
     "This is a test specific function for formatting ufl to C++."
     from ufl.algorithms import preprocess_expression
-    from uflacs.codeutils.code_formatter import CodeFormatter
+    from uflacs.codeutils.expr_formatter import ExprFormatter
     from uflacs.codeutils.cpp_format import CppFormatterRules, CppDefaultFormatter
 
     # Preprocessing expression before applying formatting.
     # In a compiler, one should probably assume that these
-    # have been applied and use CodeFormatter directly.
+    # have been applied and use ExprFormatter directly.
     expr_data = preprocess_expression(expr)
 
     # This formatter is a multifunction implementing target
@@ -30,8 +30,8 @@ def format_expression_as_test_cpp(expr, variables=None):
 
     # This final formatter implements a generic framework handling indices etc etc.
     variables = variables or {}
-    code_formatter = CodeFormatter(cpp_formatter, variables)
-    code = code_formatter.visit(expr_data.preprocessed_expr)
+    expr_formatter = ExprFormatter(cpp_formatter, variables)
+    code = expr_formatter.visit(expr_data.preprocessed_expr)
     return code
 
 class CppFormatterTest(UflTestCase):

@@ -2,7 +2,7 @@
 from ufl.classes import Terminal
 from ufl.algorithms import Graph, expand_indices
 from uflacs.codeutils.format_code import format_code
-from uflacs.codeutils.code_formatter import CodeFormatter
+from uflacs.codeutils.expr_formatter import ExprFormatter
 from uflacs.codeutils.cpp_format import CppFormatterRules, CppDefaultFormatter
 
 def compile_form(form):
@@ -40,7 +40,7 @@ def compile_form(form):
             variables = {}
 
             # This final formatter implements a generic framework handling indices etc etc.
-            code_formatter = CodeFormatter(cpp_formatter, variables)
+            expr_formatter = ExprFormatter(cpp_formatter, variables)
             integral_code = [] # TODO: Use code formatting utils
 
             nv = len(V)
@@ -56,9 +56,9 @@ def compile_form(form):
                     vname = None
                 # If so, generate code for it
                 if vname is not None:
-                    vcode = code_formatter.visit(v)
+                    vcode = expr_formatter.visit(v)
                     integral_code.append("%s = %s;" % (vname, vcode))
-                    code_formatter.variables[v] = vname
+                    expr_formatter.variables[v] = vname
 
             # Join code to what we have
             code.append(integral_code)

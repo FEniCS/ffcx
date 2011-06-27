@@ -15,12 +15,12 @@ from ufl.algorithms import preprocess_expression
 
 def format_expression_as_test_latex(expr, variables=None):
     "This is a test specific function for formatting ufl to LaTeX."
-    from uflacs.codeutils.code_formatter import CodeFormatter
+    from uflacs.codeutils.expr_formatter import ExprFormatter
     from uflacs.codeutils.latex_format import LatexFormatterRules
 
     # Preprocessing expression before applying formatting.
     # In a compiler, one should probably assume that these
-    # have been applied and use CodeFormatter directly.
+    # have been applied and use ExprFormatter directly.
     expr_data = preprocess_expression(expr)
 
     # This formatter is a multifunction with single operator
@@ -29,8 +29,8 @@ def format_expression_as_test_latex(expr, variables=None):
 
     # This final formatter implements a generic framework handling indices etc etc.
     variables = variables or {}
-    code_formatter = CodeFormatter(latex_formatter, variables)
-    code = code_formatter.visit(expr_data.preprocessed_expr)
+    expr_formatter = ExprFormatter(latex_formatter, variables)
+    code = expr_formatter.visit(expr_data.preprocessed_expr)
     return code
 
 class LatexFormatterTest(UflTestCase):
