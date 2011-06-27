@@ -57,6 +57,9 @@ if (PYTHONINTERP_FOUND)
     COMMAND ${PYTHON_EXECUTABLE} -c "import sys, distutils.sysconfig; sys.stdout.write(distutils.sysconfig.get_python_lib(plat_specific=True, prefix='${CMAKE_INSTALL_PREFIX}'))"
     OUTPUT_VARIABLE PYTHON_INSTALL_PATH
     )
+  # Strip off CMAKE_INSTALL_PREFIX (is added later by CMake)
+  string(REGEX REPLACE "${CMAKE_INSTALL_PREFIX}(/|\\\\)([^ ]*)" "\\2"
+    PYTHON_INSTALL_PATH "${PYTHON_INSTALL_PATH}")
 
   # Set Python installation path
   if (NOT DEFINED UFC_INSTALL_PYTHON_MODULE_DIR)
