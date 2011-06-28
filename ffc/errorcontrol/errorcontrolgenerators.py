@@ -37,7 +37,10 @@ class ErrorControlGenerator:
         # FIXME: MER: Error checking is not for whimps.
         if (isinstance(F, (tuple, list)) and len(F) == 2):
             self.lhs, self.rhs = F
-            self.goal = action(M, u)
+            try:
+                self.goal = action(M, u)
+            except:
+                self.goal = M
             self.weak_residual = self.rhs - action(self.lhs, u)
         else:
             self.lhs = self.module.derivative(F, u)
