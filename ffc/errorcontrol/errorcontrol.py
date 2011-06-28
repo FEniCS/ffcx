@@ -26,21 +26,21 @@ from ffc.compiler import compile_form
 def prepare_input_arguments(forms, object_names):
 
     # Extract unknown (of None if not defined)
-    unknown = object_names.get("unknown", None)
+    u = object_names.get("unknown", None)
 
     # Nonlinear case
     if len(forms) == 2:
         (F, M) = forms
 
         #Check that unknown is defined
-        assert (unknown), "Variable 'unknown' must be defined!"
+        assert (u), "Variable 'unknown' must be defined!"
         return (F, M, u)
 
     elif len(forms) == 3:
         # If unknown is undefined, define discrete solution as coefficient
         # on trial element
         (a, L, M) = forms
-        if unknown is None:
+        if u is None:
             V = extract_arguments(a)[1].element()
             u = Coefficient(V)
             object_names[id(u)] = "__discrete_primal_solution"
