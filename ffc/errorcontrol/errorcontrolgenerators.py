@@ -152,38 +152,43 @@ class UFLErrorControlGenerator(ErrorControlGenerator):
         # Primal trial element space
         self._V = self.u.element()
 
+        # Primal test space == Dual trial space
+        Vhat = extract_arguments(self.weak_residual)[0].element()
+
+        # Discontinuous version of primal trial element space
+        self._dV = tear(self._V)
+
         # Extract cell and geometric dimension
         cell = self._V.cell()
         g_dim = cell.geometric_dimension()
+
+        # Coefficient representing improved dual
+        E = increase_order(Vhat)
+        self._Ez_h = Coefficient(E)
+        self.ec_names[id(self._Ez_h)] = "__improved_dual"
 
         # Coefficient representing cell bubble function
         B = FiniteElement("B", cell, g_dim + 1)
         self._b_T = Coefficient(B)
         self.ec_names[id(self._b_T)] = "__cell_bubble"
 
+        # Coefficient representing strong cell residual
+        self._R_T = Coefficient(self._dV)
+        self.ec_names[id(self._R_T)] = "__cell_residual"
+
         # Coefficient representing cell cone function
         C = FiniteElement("DG", cell, g_dim)
         self._b_e = Coefficient(C)
         self.ec_names[id(self._b_e)] = "__cell_cone"
 
-        # Discontinuous version of primal trial element space
-        self._dV = tear(self._V)
-
-        # Coefficients representing strong cell residual and strong
-        # facet residual
-        self._R_T = Coefficient(self._dV)
-        self.ec_names[id(self._R_T)] = "__cell_residual"
+        # Coefficient representing strong facet residual
         self._R_dT = Coefficient(self._dV)
         self.ec_names[id(self._R_dT)] = "__facet_residual"
 
         # Define discrete dual on primal test space
-        Vhat = extract_arguments(self.weak_residual)[0].element()
         self._z_h = Coefficient(Vhat)
         self.ec_names[id(self._z_h)] = "__discrete_dual_solution"
 
-        E = increase_order(Vhat)
-        self._Ez_h = Coefficient(E)
-        self.ec_names[id(self._Ez_h)] = "__improved_dual"
 
         self._DG0 = FiniteElement("DG", cell, 0)
 
