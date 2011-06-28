@@ -1,6 +1,6 @@
 "QuadratureTransformer (optimised) for quadrature code generation to translate UFL expressions."
 
-# Copyright (C) 2009-2010 Kristian B. Oelgaard
+# Copyright (C) 2009-2011 Kristian B. Oelgaard
 #
 # This file is part of FFC.
 #
@@ -20,7 +20,7 @@
 # Modified by Anders Logg, 2009
 #
 # First added:  2009-03-18
-# Last changed: 2010-03-11
+# Last changed: 2011-06-28
 
 # Python modules.
 from numpy import shape
@@ -204,16 +204,14 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
     # Condition, Conditional (conditional.py).
     # -------------------------------------------------------------------------
     def not_condition(self, o, *operands):
-        # FIXME: This is a Condition but not a BinaryCondition, and the operand will be another Condition
-        error("Not condition not implemented!")
-
-    def and_condition(self, o, *operands):
-        # FIXME: This is also a BinaryCondition, but the operands will be other Conditions
-        error("And condition not implemented!")
-
-    def or_condition(self, o, *operands):
-        # FIXME: This is also a BinaryCondition, but the operands will be other Conditions
-        error("Or condition not implemented!")
+        # This is a Condition but not a BinaryCondition, and the operand will be another Condition
+        # Get condition expression and do safety checks.
+        # Might be a bit too strict?
+        c, = operands
+        ffc_assert(len(c) == 1 and c.keys()[0] == (),\
+            "Condition for NotCondition should only be one function: " + repr(c))
+        sym = create_symbol("", c[()].t, cond=(c[()], format["not"]))
+        return {(): sym}
 
     def binary_condition(self, o, *operands):
 
@@ -228,7 +226,8 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         # Map names from UFL to cpp.py.
         name_map = {"==":"is equal", "!=":"not equal",\
                     "<":"less than", ">":"greater than",\
-                    "<=":"less equal", ">=":"greater equal"}
+                    "<=":"less equal", ">=":"greater equal",\
+                    "&&": "and", "||": "or"}
 
         # Get the minimum type
         t = min(lhs[()].t, rhs[()].t)

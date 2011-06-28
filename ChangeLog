@@ -1,3 +1,4 @@
+- Fix bug for new conditions '&&', '||' and '!' in UFL. Bug #802560.
 - Fix bug involving VectorElement with dim=1. Bug #798578.
 - Fix bug with mixed element of symmetric tensor elements. Bug #745646.
 - Fix bug when using geometric coordinates with one quadrature point

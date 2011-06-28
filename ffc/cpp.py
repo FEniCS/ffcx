@@ -1,6 +1,6 @@
 "This module defines rules and algorithms for generating C++ code."
 
-# Copyright (C) 2009-2010 Anders Logg
+# Copyright (C) 2009-2011 Anders Logg
 #
 # This file is part of FFC.
 #
@@ -17,11 +17,11 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
-# Modified by Kristian B. Oelgaard 2010
+# Modified by Kristian B. Oelgaard 2011
 # Modified by Marie E. Rognes 2010
 #
 # First added:  2009-12-16
-# Last changed: 2011-02-21
+# Last changed: 2011-06-28
 
 # Python modules
 import re, numpy, platform
@@ -50,11 +50,14 @@ format.update({
     "loop":           lambda i, j, k: "for (unsigned int %s = %s; %s < %s; %s++)"% (i, j, i, k, i),
     "generate loop":  lambda v, w, _indent=0: _generate_loop(v, w, _indent),
     "is equal":       " == ",
-    "not equal":      " == ",
+    "not equal":      " != ",
     "less than":      " < ",
     "greater than":   " > ",
     "less equal":     " <= ",
     "greater equal":  " >= ",
+    "and":            " && ",
+    "or":             " || ",
+    "not":            lambda v: "!(%s)" % v,
     "do nothing":     "// Do nothing"
 })
 

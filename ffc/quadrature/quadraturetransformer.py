@@ -1,6 +1,6 @@
 "QuadratureTransformer for quadrature code generation to translate UFL expressions."
 
-# Copyright (C) 2009-2010 Kristian B. Oelgaard
+# Copyright (C) 2009-2011 Kristian B. Oelgaard
 #
 # This file is part of FFC.
 #
@@ -21,7 +21,7 @@
 # Modified by Anders Logg, 2009
 #
 # First added:  2009-02-09
-# Last changed: 2010-03-11
+# Last changed: 2011-06-28
 
 # Python modules.
 from numpy import shape
@@ -280,16 +280,13 @@ class QuadratureTransformer(QuadratureTransformerBase):
     # Condition, Conditional (conditional.py).
     # -------------------------------------------------------------------------
     def not_condition(self, o, *operands):
-        # FIXME: This is a Condition but not a BinaryCondition, and the operand will be another Condition
-        error("Not condition not implemented!")
-
-    def and_condition(self, o, *operands):
-        # FIXME: This is also a BinaryCondition, but the operands will be other Conditions
-        error("And condition not implemented!")
-
-    def or_condition(self, o, *operands):
-        # FIXME: This is also a BinaryCondition, but the operands will be other Conditions
-        error("Or condition not implemented!")
+        # This is a Condition but not a BinaryCondition, and the operand will be another Condition
+        # Get condition expression and do safety checks.
+        # Might be a bit too strict?
+        cond, = operands
+        ffc_assert(len(cond) == 1 and cond.keys()[0] == (),\
+            "Condition for NotCondition should only be one function: " + repr(cond))
+        return {(): format["not"](cond[()])}
 
     def binary_condition(self, o, *operands):
 
@@ -297,14 +294,15 @@ class QuadratureTransformer(QuadratureTransformerBase):
         # Might be a bit too strict?
         lhs, rhs = operands
         ffc_assert(len(lhs) == 1 and lhs.keys()[0] == (),\
-            "LHS of Condtion should only be one function: " + repr(lhs))
+            "LHS of Condition should only be one function: " + repr(lhs))
         ffc_assert(len(rhs) == 1 and rhs.keys()[0] == (),\
-            "RHS of Condtion should only be one function: " + repr(rhs))
+            "RHS of Condition should only be one function: " + repr(rhs))
 
         # Map names from UFL to cpp.py.
         name_map = {"==":"is equal", "!=":"not equal",\
                     "<":"less than", ">":"greater than",\
-                    "<=":"less equal", ">=":"greater equal"}
+                    "<=":"less equal", ">=":"greater equal",\
+                    "&&":"and", "||": "or"}
 
         # Get values and test for None
         l_val = lhs[()]

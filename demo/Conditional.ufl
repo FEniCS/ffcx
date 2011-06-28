@@ -1,4 +1,4 @@
-# Copyright (C) 2010 Kristian B. Oelgaard
+# Copyright (C) 2010-2011 Kristian B. Oelgaard
 #
 # This file is part of FFC.
 #
@@ -27,11 +27,10 @@ x = triangle.x
 c0 = conditional(le( (x[0]-0.33)**2 + (x[1]-0.67)**2,  0.015), -1.0, 5.0)
 c = conditional( le( (x[0]-0.33)**2 + (x[1]-0.67)**2,  0.025), c0, 0.0 )
 
-t0 = conditional(ge( x[0],  0.55), -1.0, 0.0)
-t1 = conditional(le( x[0],  0.95), t0, 0.0)
-t2 = conditional(ge( x[1],  0.05), t1, 0.0)
-t3 = conditional(le( x[1],  0.45), t2, 0.0)
-t = conditional(ge( x[1] - x[0] - 0.05 + 0.55,  0.0), t3, 0.0)
+t0 = And(ge( x[0],  0.55), le(x[0], 0.95))
+t1 = Or( lt( x[1],  0.05), gt(x[1], 0.45))
+t2 = And(t0, Not(t1))
+t = conditional(And(ge( x[1] - x[0] - 0.05 + 0.55,  0.0), t2), -1.0, 0.0)
 
 f = c + t
 

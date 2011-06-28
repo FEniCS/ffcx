@@ -1,6 +1,6 @@
 "QuadratureTransformerBase, a common class for quadrature transformers to translate UFL expressions."
 
-# Copyright (C) 2009-2010 Kristian B. Oelgaard
+# Copyright (C) 2009-2011 Kristian B. Oelgaard
 #
 # This file is part of FFC.
 #
@@ -18,7 +18,7 @@
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # First added:  2009-10-13
-# Last changed: 2010-03-11
+# Last changed: 2011-06-28
 
 # Python modules.
 from itertools import izip
@@ -205,13 +205,9 @@ class QuadratureTransformerBase(Transformer):
     # condition.py, constantvalue.py, function.py, geometry.py, lifting.py,
     # mathfunctions.py, restriction.py
     # -------------------------------------------------------------------------
-#    def condition(self, o):
-#        print "\n\nVisiting Condition:", repr(o)
-#        error("Condition is not supported (yet).")
-
-#    def conditional(self, o):
-#        print "\n\nVisiting Condition:", repr(o)
-#        error("Conditional is not supported (yet).")
+    def condition(self, o):
+        print "\n\nVisiting Condition:", repr(o)
+        error("This type of Condition is not supported (yet).")
 
     def constant_value(self, o):
         print "\n\nVisiting ConstantValue:", repr(o)

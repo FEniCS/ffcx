@@ -1,6 +1,6 @@
 "This file implements a class to represent a symbol."
 
-# Copyright (C) 2009-2010 Kristian B. Oelgaard
+# Copyright (C) 2009-2011 Kristian B. Oelgaard
 #
 # This file is part of FFC.
 #
@@ -18,7 +18,7 @@
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # First added:  2009-07-12
-# Last changed: 2010-03-11
+# Last changed: 2011-06-28
 
 # FFC modules.
 from ffc.log import error
@@ -85,6 +85,8 @@ class Symbol(Expr):
             if self.cond == ():
                 return self.v
             else:
+                if len(self.cond) == 2:
+                    return self.cond[1](str(self.cond[0]))
                 return "".join([str(c) for c in self.cond])
         elif self.exp is None:
             return self.v(str(self.base_expr))
@@ -225,6 +227,8 @@ class Symbol(Expr):
         if self.base_expr:
             return self.base_op + self.base_expr.ops()
         elif self.cond:
+            if len(self.cond) == 2:
+                return self.base_op + self.cond[0].ops() + 1
             return self.base_op + self.cond[0].ops() + self.cond[2].ops() + 1
         return self.base_op
 
