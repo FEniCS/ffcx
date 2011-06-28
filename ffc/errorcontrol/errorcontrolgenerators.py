@@ -71,7 +71,7 @@ class ErrorControlGenerator:
         eta_T = self.error_indicators()
 
         # Return all generated forms in sensible order
-        return (a_star, L_star, a_R_T, L_R_T, a_R_dT, L_R_dT, eta_h, eta_T)
+        return (a_star, L_star, eta_h, a_R_T, L_R_T, a_R_dT, L_R_dT, eta_T)
 
     def primal_forms(self):
         return self.lhs, self.rhs, self.goal
