@@ -132,7 +132,7 @@ class ErrorControlGenerator:
         eta_T = (v*inner(R_T, z - z_h)*dx
                  + avg(v)*(inner(R_dT('+'), (z - z_h)('+'))
                            + inner(R_dT('-'), (z - z_h)('-')))*dS
-                 + v*inner(R_dT, z_h - z_h)*ds)
+                 + v*inner(R_dT, z - z_h)*ds)
         return eta_T
 
 class UFLErrorControlGenerator(ErrorControlGenerator):
