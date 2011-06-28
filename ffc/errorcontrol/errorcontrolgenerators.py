@@ -35,7 +35,7 @@ class ErrorControlGenerator:
         # Extract the lhs (bilinear form), rhs (linear form), goal
         # (functional), weak residual (linear form)
         # FIXME: MER: Error checking is not for whimps.
-        if (len(F) == 2):
+        if (isinstance(F, (tuple, list)) and len(F) == 2):
             self.lhs, self.rhs = F
             self.goal = action(M, u)
             self.weak_residual = self.rhs - action(self.lhs, u)
