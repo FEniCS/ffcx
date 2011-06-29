@@ -167,7 +167,8 @@ def main(argv):
         # Do additional stuff if in error-control mode
         if parameters["error_control"]:
             return compile_with_error_control(ufd.forms, ufd.object_names,
-                                              prefix, parameters)
+                                              ufd.reserved_objects, prefix,
+                                              parameters)
 
         # Catch exceptions only when not in debug mode
         if parameters["log_level"] <= DEBUG:
