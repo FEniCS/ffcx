@@ -1,3 +1,10 @@
+"""
+This module provides an abstract ErrorControlGenerator class for
+generating forms required for goal-oriented error control and a
+realization of this: UFLErrorControlGenerator for handling pure UFL
+forms.
+"""
+
 # Copyright (C) 2010 Marie E. Rognes
 #
 # This file is part of FFC.
@@ -25,7 +32,22 @@ __all__ = ["ErrorControlGenerator", "UFLErrorControlGenerator"]
 class ErrorControlGenerator:
 
     def __init__(self, module, F, M, u):
+        """
+        *Arguments*
 
+            module (Python module)
+               The module to use for specific form manipulations
+               (typically ufl or dolfin)
+
+            F (tuple or Form)
+               tuple of (bilinear, linear) forms or linear form
+
+            M (Form)
+               functional or linear form
+
+            u (Coefficient)
+              The coefficient considered as the unknown.
+        """
         # Store module
         self.module = module
 
@@ -34,13 +56,10 @@ class ErrorControlGenerator:
 
         # Extract the lhs (bilinear form), rhs (linear form), goal
         # (functional), weak residual (linear form)
-        # FIXME: MER: Error checking is not for whimps.
-        if (isinstance(F, (tuple, list)) and len(F) == 2):
+        linear_case = (isinstance(F, (tuple, list)) and len(F) == 2)
+        if linear_case:
             self.lhs, self.rhs = F
-            try:
-                self.goal = action(M, u)
-            except:
-                self.goal = M
+            self.goal = action(M, u)
             self.weak_residual = self.rhs - action(self.lhs, u)
         else:
             self.lhs = self.module.derivative(F, u)
@@ -48,13 +67,30 @@ class ErrorControlGenerator:
             self.goal = M
             self.weak_residual = - F
 
+        # At least check that final forms have correct rank
+        assert(len(extract_arguments(self.lhs)) == 2)
+        assert(len(extract_arguments(self.rhs)) == 1)
+        assert(len(extract_arguments(self.goal)) == 0)
+        assert(len(extract_arguments(self.weak_residual)) == 1)
+
+        # Initialize other required data
+        self.initialize_data()
+
     def initialize_data(self):
-        # FIXME: Improve robustness here.
-        msg = "Please overload initialize_data and know what you are doing"
+        """
+        Initialize specific data
+        """
+        msg = """ErrorControlGenerator acts as an abstract
+        class. Subclasses must overload the initialize_data() method
+        and provide a certain set of variables. See
+        UFLErrorControlGenerator for an example."""
         raise NotImplementedError, msg
 
     def generate_all_error_control_forms(self):
-
+        """
+        Utility function for generating all (8) forms required for
+        error control in addition to the primal forms
+        """
         # Generate dual forms
         (a_star, L_star) = self.dual_forms()
 
@@ -75,15 +111,25 @@ class ErrorControlGenerator:
         return (a_star, L_star, eta_h, a_R_T, L_R_T, a_R_dT, L_R_dT, eta_T)
 
     def primal_forms(self):
+        """
+        Return primal forms in order (bilinear, linear, functional)
+        """
         return self.lhs, self.rhs, self.goal
 
     def dual_forms(self):
+        """
+        Generate and return (bilinear, linear) forms defining linear
+        dual variational problem
+        """
         a_star = adjoint(self.lhs)
         L_star = self.module.derivative(self.goal, self.u)
         return (a_star, L_star)
 
     def cell_residual(self):
-
+        """
+        Generate and return (bilinear, linear) forms defining linear
+        variational problem for the strong cell residual
+        """
         # Define trial and test functions for the cell residuals on
         # discontinuous version of primal trial space
         R_T = self.module.TrialFunction(self._dV)
@@ -101,7 +147,10 @@ class ErrorControlGenerator:
         return (a_R_T, L_R_T)
 
     def facet_residual(self):
-
+        """
+        Generate and return (bilinear, linear) forms defining linear
+        variational problem for the strong facet residual(s)
+        """
         # Define trial and test functions for the facet residuals on
         # discontinuous version of primal trial space
         R_e = self.module.TrialFunction(self._dV)
@@ -121,34 +170,67 @@ class ErrorControlGenerator:
         return (a_R_dT, L_R_dT)
 
     def error_estimate(self):
-        # eta_h = r(Ez_h)
-        return action(self.weak_residual, self._Ez_h)
+        """
+        Generate and return functional defining error estimate
+        """
+        # Error estimate defined as r(Ez_h):
+        eta_h = action(self.weak_residual, self._Ez_h)
+        return eta_h
 
     def error_indicators(self):
-
+        """
+        Generate and return linear form defining error indicators
+        """
         # Extract these to increase readability
         R_T = self._R_T
         R_dT = self._R_dT
         z = self._Ez_h
         z_h = self._z_h
 
+        # Define linear form for computing error indicators
         v = self.module.TestFunction(self._DG0)
         eta_T = (v*inner(R_T, z - z_h)*dx
                  + avg(v)*(inner(R_dT('+'), (z - z_h)('+'))
                            + inner(R_dT('-'), (z - z_h)('-')))*dS
                  + v*inner(R_dT, z - z_h)*ds)
+
         return eta_T
 
 class UFLErrorControlGenerator(ErrorControlGenerator):
+    """
+    This class provides a realization of ErrorControlGenerator for use
+    with pure UFL forms
+    """
+
     def __init__(self, F, M, u):
+        """
+        *Arguments*
+
+            F (tuple or Form)
+               tuple of (bilinear, linear) forms or linear form
+
+            M (Form)
+               functional or linear form
+
+            u (Coefficient)
+              The coefficient considered as the unknown.
+        """
+        # Store map of ids to names for generated Coefficients
+        self.ec_names = {}
 
         ErrorControlGenerator.__init__(self, __import__("ufl"), F, M, u)
-        self.ec_names = {}
-        self.initialize_data()
 
     def initialize_data(self):
-        # Extract and store objects that will be shared between forms,
-        # and in particular possibly be named
+        """
+        Extract required objects for defining error control
+        forms. This will be stored, reused and in particular named.
+        """
+        # Developer's note: The UFL-FFC-DOLFIN--PyDOLFIN toolchain for
+        # error control is quite fine-tuned. In particular, the order
+        # of coefficients in forms is (and almost must be) used for
+        # their assignment. This means that the order in which these
+        # coefficients are defined matters and should be considered
+        # fixed.
 
         from ufl import FiniteElement, Coefficient
         from ufl.algorithms.elementtransformations import tear, increase_order
@@ -195,4 +277,3 @@ class UFLErrorControlGenerator(ErrorControlGenerator):
 
         # Piecewise constants for assembling indicators
         self._DG0 = FiniteElement("DG", cell, 0)
-
