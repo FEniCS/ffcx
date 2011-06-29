@@ -59,7 +59,10 @@ class ErrorControlGenerator:
         linear_case = (isinstance(F, (tuple, list)) and len(F) == 2)
         if linear_case:
             self.lhs, self.rhs = F
-            self.goal = action(M, u)
+            try:
+                self.goal = action(M, u)
+            except:
+                self.goal = M    # Allow functionals as input as well
             self.weak_residual = self.rhs - action(self.lhs, u)
         else:
             self.lhs = self.module.derivative(F, u)
