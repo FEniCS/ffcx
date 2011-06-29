@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
-# Last changed: 2011-06-28
+# Last changed: 2011-06-29
 
 from ufl import inner, dx, ds, dS, avg, adjoint, replace, action
 from ufl.algorithms.analysis import extract_arguments
@@ -70,7 +70,8 @@ class ErrorControlGenerator:
         # Generate form for computing error indicators
         eta_T = self.error_indicators()
 
-        # Return all generated forms in sensible order
+        # Return all generated forms in CERTAIN order matching
+        # constructor of dolfin/adaptivity/ErrorControl.h
         return (a_star, L_star, eta_h, a_R_T, L_R_T, a_R_dT, L_R_dT, eta_T)
 
     def primal_forms(self):
@@ -192,6 +193,6 @@ class UFLErrorControlGenerator(ErrorControlGenerator):
         self._z_h = Coefficient(Vhat)
         self.ec_names[id(self._z_h)] = "__discrete_dual_solution"
 
-
+        # Piecewise constants for assembling indicators
         self._DG0 = FiniteElement("DG", cell, 0)
 
