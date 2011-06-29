@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
-# Last changed: 2011-06-28
+# Last changed: 2011-06-29
 
 from ufl import Coefficient
 from ufl.algorithms.analysis import extract_arguments
@@ -23,10 +23,12 @@ from ufl.algorithms.analysis import extract_arguments
 from ffc.log import info, error
 from ffc.compiler import compile_form
 
-def prepare_input_arguments(forms, object_names):
+def prepare_input_arguments(forms, object_names, reserved_objects):
 
+    print object_names
+    print reserved_objects
     # Extract unknown (of None if not defined)
-    u = object_names.get("unknown", None)
+    u = reserved_objects.get("unknown", None)
 
     # Nonlinear case
     if len(forms) == 2:
@@ -48,10 +50,11 @@ def prepare_input_arguments(forms, object_names):
     else:
         error("Foo")
 
-def compile_with_error_control(forms, object_names, prefix, parameters):
+def compile_with_error_control(forms, object_names, reserved_objects,
+                               prefix, parameters):
 
     # Check input arguments
-    F, M, u = prepare_input_arguments(forms, object_names)
+    F, M, u = prepare_input_arguments(forms, object_names, reserved_objects)
 
     # Generate forms to be used for the error control
     from ffc.errorcontrol.errorcontrolgenerators import UFLErrorControlGenerator
