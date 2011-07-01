@@ -100,7 +100,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
                         continue
                     duplications[val] = 1
 
-                # Add a product for eacht term that has duplicate code
+                # Add a product for each term that has duplicate code
                 expressions = []
                 for expr, num_occur in duplications.items():
                     if num_occur > 1:
@@ -116,9 +116,11 @@ class QuadratureTransformer(QuadratureTransformerBase):
                     continue
                 code[key] = expressions[0]
             else:
-                # Check for zero valued sum
+                # Check for zero valued sum and delete from code
+                # This might result in returning an empty dict, but that should
+                # be interpreted as zero by other handlers.
                 if not value:
-                    code[key] = None
+                    del code[key]
                     continue
                 code[key] = value[0]
 
@@ -134,16 +136,18 @@ class QuadratureTransformer(QuadratureTransformerBase):
 
         # Sort operands in objects that needs permutation and objects that does not.
         for op in operands:
+            # If we get an empty dict, something was zero and so is the product.
+            if not op:
+                return {}
             if len(op) > 1 or (op and op.keys()[0] != ()):
                 permute.append(op)
-            elif op:
+            elif op and op.keys()[0] == ():
                 not_permute.append(op[()])
 
         # Create permutations.
-        permutations = create_permutations(permute)
-
         #print("\npermute: " + repr(permute))
         #print("\nnot_permute: " + repr(not_permute))
+        permutations = create_permutations(permute)
         #print("\npermutations: " + repr(permutations))
 
         # Create code.
@@ -195,15 +199,15 @@ class QuadratureTransformer(QuadratureTransformerBase):
                     pass
                 else:
                     value.append(v)
-            if value == []:
-                value = ["1"]
-
-            code[()] = f_mult(value)
-
+            # We did have values, but they might have been all ones.
+            if value == [] and not_permute != []:
+                code[()] = f_mult(["1"])
+            else:
+                code[()] = f_mult(value)
         return code
 
     def division(self, o, *operands):
-        #print("\n\nVisiting Division: " + repr(o) + "with operands: " + "\n".join(map(repr,operands)))
+        #print("Visiting Division with operands: \n" + "\n".join(map(repr,operands)))
 
         # Prefetch formats to speed up code generation.
         f_div      = format["div"]

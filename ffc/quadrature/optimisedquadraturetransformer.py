@@ -86,6 +86,9 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
                 code[key] = val[0]
             else:
                 error("Where did the values go?")
+            # If value is zero just ignore it.
+            if abs(code[key].val) < format["epsilon"]:
+                del code[key]
 
         return code
 
@@ -97,18 +100,20 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
 
         # Sort operands in objects that needs permutation and objects that does not.
         for op in operands:
+            # If we get an empty dict, something was zero and so is the product.
+            if not op:
+                return {}
             if len(op) > 1 or (op and op.keys()[0] != ()):
                 permute.append(op)
-            elif op:
+            elif op and op.keys()[0] == ():
                 not_permute.append(op[()])
 
         # Create permutations.
         # TODO: After all indices have been expanded I don't think that we'll
         # ever get more than a list of entries and values.
-        permutations = create_permutations(permute)
-
         #print("\npermute: " + repr(permute))
         #print("\nnot_permute: " + repr(not_permute))
+        permutations = create_permutations(permute)
         #print("\npermutations: " + repr(permutations))
 
         # Create code.

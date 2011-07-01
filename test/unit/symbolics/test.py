@@ -79,7 +79,7 @@ Fraction(
     )
   ])
 )
-        print "RED: ", expr
+#        print "RED: ", expr
         red = expr.expand().reduce_vartype(IP)
         red = expr.reduce_vartype(IP)
 #        red = expr.reduce_vartype(IP)

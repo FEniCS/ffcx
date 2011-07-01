@@ -691,6 +691,8 @@ class QuadratureTransformerBase(Transformer):
     # -------------------------------------------------------------------------
     def generate_terms(self, integrand):
         "Generate terms for code generation."
+        #print integrand
+        #print tree_format(integrand, 0, False)
         # Get terms.
         terms = self.visit(integrand)
 
