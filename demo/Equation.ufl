@@ -45,7 +45,7 @@ u = TrialFunction(element)
 v = TestFunction(element)
 u0 = Coefficient(element)
 
-F = (u - u0)*v*dx + k*inner(grad(0.5*(u0 + u)), grad(v))*dx
+eq = (u - u0)*v*dx + k*inner(grad(0.5*(u0 + u)), grad(v))*dx
 
-a = lhs(F)
-L = rhs(F)
+a = lhs(eq)
+L = rhs(eq)

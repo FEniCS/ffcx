@@ -16,15 +16,14 @@
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # First added:  2010-06-07
-# Last changed: 2011-03-08
+# Last changed: 2011-07-01
 #
 
 element = FiniteElement("Discontinuous Lagrange", triangle, 1)
 
 v = TestFunction(element)
 w = Coefficient(element)
-F = inner(grad(w), grad(v))*dx - dot(avg(grad(w)), avg(grad(v)))*dS
+L = inner(grad(w), grad(v))*dx - dot(avg(grad(w)), avg(grad(v)))*dS
 
 u = TrialFunction(element)
-a = derivative(F, w, u)
-
+a = derivative(L, w, u)
