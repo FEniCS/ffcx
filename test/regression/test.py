@@ -85,9 +85,17 @@ def generate_test_cases(bench):
         form_directory = demo_directory
     form_files = [f for f in os.listdir(form_directory) if f.endswith(".ufl")]
     form_files.sort()
+
+    # FIXME: Testing strange bug
+    form_files = ["FacetRestrictionAD.ufl"]
+
     for f in form_files:
         shutil.copy("%s/%s" % (form_directory, f), ".")
     info_green("Found %d form files" % len(form_files))
+
+    # FIXME: Testing strange bug
+    end()
+    return
 
     # Generate form files for forms
     info("Generating form files for extra forms: Not implemented")
