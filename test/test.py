@@ -29,9 +29,6 @@ pwd = os.path.dirname(os.path.abspath(__file__))
 # Tests to run
 tests = ["unit", "regression"]
 
-# FIXME: Testing strange bug
-tests = ["regression"]
-
 failed = []
 
 # Run tests

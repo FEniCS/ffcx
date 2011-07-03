@@ -16,7 +16,7 @@
 // along with FFC. If not, see <http://www.gnu.org/licenses/>.
 //
 // First added:  2010-01-24
-// Last changed: 2011-07-03
+// Last changed: 2010-05-11
 //
 // Functions for calling generated UFC functions with "random" (but
 // fixed) data and print the output to screen. Useful for running
@@ -562,9 +562,6 @@ void test_interior_facet_integral(ufc::interior_facet_integral& integral,
       for(uint i = 0; i < macro_tensor_size; i++)
         A[i] = 0.0;
 
-      print_scalar("facet0", facet0);
-      print_scalar("facet1", facet1);
-
       integral.tabulate_tensor(A, w, c0, c1, facet0, facet1);
       print_array("tabulate_tensor", macro_tensor_size, A, facet0, facet1);
     }
@@ -658,7 +655,7 @@ void test_form(ufc::form& form, bool bench)
     delete element;
   }
 
-  // Create_dofmap
+  // create_dofmap
   for (uint i = 0; i < form.rank() + form.num_coefficients(); i++)
   {
     ufc::dofmap* dofmap = form.create_dofmap(i);
@@ -666,7 +663,7 @@ void test_form(ufc::form& form, bool bench)
     delete dofmap;
   }
 
-  // Create_cell_integral
+  // create_cell_integral
   for (uint i = 0; i < form.num_cell_domains(); i++)
   {
     ufc::cell_integral* integral = form.create_cell_integral(i);
@@ -675,7 +672,7 @@ void test_form(ufc::form& form, bool bench)
     delete integral;
   }
 
-  // Create_exterior_facet_integral
+  // create_exterior_facet_integral
   for (uint i = 0; i < form.num_exterior_facet_domains(); i++)
   {
     ufc::exterior_facet_integral* integral = form.create_exterior_facet_integral(i);
@@ -684,7 +681,7 @@ void test_form(ufc::form& form, bool bench)
     delete integral;
   }
 
-  // Create_interior_facet_integral
+  // create_interior_facet_integral
   for (uint i = 0; i < form.num_interior_facet_domains(); i++)
   {
     ufc::interior_facet_integral* integral = form.create_interior_facet_integral(i);

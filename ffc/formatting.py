@@ -82,18 +82,7 @@ def format_code(code, wrapper_code, prefix, parameters):
                 code_h += _format_h("exterior_facet_integral", code_integral, parameters)
                 code_c += _format_c("exterior_facet_integral", code_integral, parameters)
             elif "interior_facet_integral" in code_integral["classname"]:
-                # FIXME: Debugging strange error
-                #code_h += _format_h("interior_facet_integral", code_integral, parameters)
-                tmp = _format_h("interior_facet_integral", code_integral, parameters)
-                tmp = tmp.replace("// Compute element tensor",
-                                  """
-// Debugging strange error
-std::cout << "detJ0 =" << detJ0 << std::endl;
-std::cout << "detJ1 =" << detJ1 << std::endl;
-
-// Compute element tensor""")
-                code_h += tmp
-
+                code_h += _format_h("interior_facet_integral", code_integral, parameters)
                 code_c += _format_c("interior_facet_integral", code_integral, parameters)
 
     # Generate code for form
