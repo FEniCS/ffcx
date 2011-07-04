@@ -16,7 +16,7 @@
 // along with FFC. If not, see <http://www.gnu.org/licenses/>.
 //
 // First added:  2010-01-24
-// Last changed: 2010-05-11
+// Last changed: 2011-07-04
 //
 // Functions for calling generated UFC functions with "random" (but
 // fixed) data and print the output to screen. Useful for running
@@ -604,7 +604,7 @@ void test_form(ufc::form& form, bool bench)
   {
     ufc::finite_element* element = form.create_finite_element(i);
     tensor_size *= element->space_dimension();
-    macro_tensor_size *= 2*element->space_dimension();
+    macro_tensor_size *= 2*element->space_dimension(); // *2 for interior facet integrals
     delete element;
   }
 
@@ -616,8 +616,9 @@ void test_form(ufc::form& form, bool bench)
     for (uint i = 0; i < form.num_coefficients(); i++)
     {
       ufc::finite_element* element = form.create_finite_element(form.rank() + i);
-      w[i] = new double[element->space_dimension()];
-      for (uint j = 0; j < element->space_dimension(); j++)
+      const uint macro_dim = 2*element->space_dimension(); // *2 for interior facet integrals
+      w[i] = new double[macro_dim];
+      for (uint j = 0; j < macro_dim; j++)
         w[i][j] = 0.1*static_cast<double>((i + 1)*(j + 1));
       delete element;
     }
