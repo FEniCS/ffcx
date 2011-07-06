@@ -1,3 +1,4 @@
+- Improve formatting of floats with up to one non-zero decimal place.
 - Fix bug involving zeros in products and sums. Bug #804160.
 - Fix bug for new conditions '&&', '||' and '!' in UFL. Bug #802560.
 - Fix bug involving VectorElement with dim=1. Bug #798578.
