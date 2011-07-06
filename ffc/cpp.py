@@ -617,12 +617,19 @@ def set_float_formatting(precision):
     "Set floating point formatting based on precision."
 
     # Options for float formatting
-    f1 = "%%.%df" % precision
-    f2 = "%%.%de" % precision
+    #f1     = "%%.%df" % precision
+    #f2     = "%%.%de" % precision
+    f1     = "%%.%dg" % precision
+    f2     = "%%.%dg" % precision
+    f_int  = "%%.%df" % 1
+
+    eps = eval("1e-%s" % precision)
 
     # Regular float formatting
     def floating_point_regular(v):
-        if abs(v) < 100.0:
+        if abs(v - round(v, 1)) < eps:
+            return f_int % v
+        elif abs(v) < 100.0:
             return f1 % v
         else:
             return f2 % v
