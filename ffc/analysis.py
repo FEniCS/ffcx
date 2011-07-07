@@ -176,6 +176,10 @@ def _attach_integral_metadata(form_data, common_cell, parameters):
                 if not key in integral_metadata:
                     integral_metadata[key] = parameters[key]
 
+            # Special case: handling -1 as "auto" for quadrature_degree
+            if integral_metadata["quadrature_degree"] == -1:
+                integral_metadata["quadrature_degree"] = "auto"
+
             # Check metadata
             r  = integral_metadata["representation"]
             qd = integral_metadata["quadrature_degree"]
