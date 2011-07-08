@@ -320,7 +320,7 @@ def main(args):
     # run here
     test_cases = ["-r auto"]
     if (not bench and not fast):
-        test_cases = ["-r auto", "-r quadrature", "-r quadrature -O"]
+        test_cases = ["-r auto", "-r quadrature"]#, "-r quadrature -O"]
 
     for argument in test_cases:
 
