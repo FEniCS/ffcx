@@ -1,4 +1,4 @@
 #!/bin/sh
 
-cp ../output/*.h ../output/*.out .
-bzr add *.h *.out
+rsync -r --include='*/*.h' --include '*/*.out' --exclude='*/*' ../output/ .
+bzr add */*.h */*.out

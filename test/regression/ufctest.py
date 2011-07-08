@@ -16,10 +16,10 @@
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # First added:  2010-01-24
-# Last changed: 2010-05-11
+# Last changed: 2011-07-08
 
 _test_code = """\
-#include "../ufctest.h"
+#include "../../ufctest.h"
 #include "%s.h"
 
 int main()
