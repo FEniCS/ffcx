@@ -42,9 +42,8 @@ from instant.output import get_status_output
 
 # Parameters
 tolerance = 1e-9
-output_directory = "output"
-demo_directory = "../../../demo"
-bench_directory = "../../../bench"
+demo_directory = "../../../../demo"
+bench_directory = "../../../../bench"
 
 # Global log file
 logfile = None
@@ -56,18 +55,19 @@ def run_command(command):
         return True
     global logfile
     if logfile is None:
-        logfile = open("../error.log", "w")
+        logfile = open("../../error.log", "w")
     logfile.write(output + "\n")
+    print output
     return False
 
 def log_error(message):
     "Log error message."
     global logfile
     if logfile is None:
-        logfile = open("../error.log", "w")
+        logfile = open("../../error.log", "w")
     logfile.write(message + "\n")
 
-def clean_output():
+def clean_output(output_directory):
     "Clean out old output directory"
     if os.path.isdir(output_directory):
         shutil.rmtree(output_directory)
@@ -113,8 +113,11 @@ def generate_code(args):
     # Iterate over all files
     for f in form_files:
 
+        cmd = ("ffc %s -f precision=8 -fconvert_exceptions_to_warnings %s"
+               % (" ".join(args), f))
+
         # Generate code
-        ok = run_command("ffc %s -v -f precision=8 -fconvert_exceptions_to_warnings %s" % (" ".join(args), f))
+        ok = run_command(cmd)
 
         # Check status
         if ok:
@@ -124,7 +127,7 @@ def generate_code(args):
 
     end()
 
-def validate_code():
+def validate_code(reference_dir):
     "Validate generated code against references."
 
     # Get a list of all files
@@ -140,11 +143,11 @@ def validate_code():
         generated_code = open(f).read()
 
         # Get reference code
-        reference_file = "../references/%s" % f
+        reference_file = os.path.join(reference_dir, f)
         if os.path.isfile(reference_file):
             reference_code = open(reference_file).read()
         else:
-            info_blue("Missing reference for %s" % f)
+            info_blue("Missing reference for %s" % reference_file)
             continue
 
         # Compare with reference
@@ -153,7 +156,8 @@ def validate_code():
         else:
             info_red("%s differs" % f)
             diff = "\n".join([line for line in difflib.unified_diff(reference_code.split("\n"), generated_code.split("\n"))])
-            s = "Code differs for %s, diff follows" % f
+            s = ("Code differs for %s, diff follows"
+                 % os.path.join(*reference_file.split(os.path.sep)[-3:]))
             log_error("\n" + s + "\n" + len(s)*"-")
             log_error(diff)
 
@@ -228,7 +232,7 @@ def run_programs():
 
     end()
 
-def validate_programs():
+def validate_programs(reference_dir):
     "Validate generated programs against references."
 
     # Get a list of all files
@@ -244,18 +248,19 @@ def validate_programs():
         generated_output = open(f).read()
 
         # Get reference output
-        reference_file = "../references/%s" % f
+        reference_file = os.path.join(reference_dir, f)
         if os.path.isfile(reference_file):
             reference_output = open(reference_file).read()
         else:
-            info_blue("Missing reference for %s" % f)
+            info_blue("Missing reference for %s" % reference_file)
             continue
 
         # Compare with reference
         ok = True
         old = [line.split(" = ") for line in reference_output.split("\n") if " = " in line]
         new = dict([line.split(" = ") for line in generated_output.split("\n") if " = " in line])
-        header = "Output differs for %s, diff follows" % f
+        header = ("Output differs for %s, diff follows"
+                  % os.path.join(*reference_file.split(os.path.sep)[-3:]))
         for (key, value) in old:
 
             # Check if value is present
@@ -300,37 +305,58 @@ def validate_programs():
 def main(args):
     "Run all regression tests."
 
-    # Clean out old output directory
-    clean_output()
-
-    # Enter output directory
-    os.chdir(output_directory)
-
     # Check command-line arguments
     bench = "--bench" in args
     fast = "--fast" in args
+
     args = [arg for arg in args if not arg in ("--bench", "--fast")]
 
-    # Generate test cases
-    generate_test_cases(bench)
+    # Clean out old output directory
+    output_directory = "output"
+    clean_output(output_directory)
+    os.chdir(output_directory)
 
-    # Generate code
-    generate_code(args)
+    # Adjust which test cases (combinations of compile arguments) to
+    # run here
+    test_cases = ["-r auto"]
+    if (not bench and not fast):
+        test_cases = ["-r auto", "-r auto -O", "-r quadrature", "-r quadrature -O"]
 
-    # Validate code
-    if not bench:
-        validate_code()
+    for argument in test_cases:
 
-    # Build, run and validate programs
-    if fast:
-        info("Skipping program validation")
-    elif bench:
-        build_programs(bench)
-        run_programs()
-    else:
-        build_programs(bench)
-        run_programs()
-        validate_programs()
+        begin("Running regression tests with %s" % argument)
+
+        # Clear and enter output sub-directory
+        sub_directory = "_".join(argument.split(" ")).replace("-", "")
+        reference_directory = "../../references/%s" % sub_directory
+        clean_output(sub_directory)
+        os.chdir(sub_directory)
+
+        # Generate test cases
+        generate_test_cases(bench)
+
+        # Generate code
+        generate_code(args + [argument])
+
+        # Validate code
+        if not bench:
+            validate_code(reference_directory)
+
+        # Build, run and validate programs
+        if fast:
+            info("Skipping program validation")
+        elif bench:
+            build_programs(bench)
+            run_programs()
+        else:
+            build_programs(bench)
+            run_programs()
+            validate_programs(reference_directory)
+
+        # Go back up
+        os.chdir(os.path.pardir)
+
+        end()
 
     # Print results
     if logfile is None:
