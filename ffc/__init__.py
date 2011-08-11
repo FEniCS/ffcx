@@ -12,7 +12,7 @@ The interface consists of the following functions:
   default_parameters - Default parameter values for FFC
 """
 
-__version__ = "0.9.10"
+__version__ = "1.0-beta"
 
 # Import compiler functions
 from ffc.compiler import compile_form, compile_element
