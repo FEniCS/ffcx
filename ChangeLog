@@ -1,10 +1,10 @@
 1.0-beta [2011-08-11]
-- Improve formatting of floats with up to one non-zero decimal place.
-- Fix bug involving zeros in products and sums. Bug #804160.
-- Fix bug for new conditions '&&', '||' and '!' in UFL. Bug #802560.
-- Fix bug involving VectorElement with dim=1. Bug #798578.
-- Fix bug with mixed element of symmetric tensor elements. Bug #745646.
-- Fix bug when using geometric coordinates with one quadrature point
+ - Improve formatting of floats with up to one non-zero decimal place.
+ - Fix bug involving zeros in products and sums. Bug #804160.
+ - Fix bug for new conditions '&&', '||' and '!' in UFL. Bug #802560.
+ - Fix bug involving VectorElement with dim=1. Bug #798578.
+ - Fix bug with mixed element of symmetric tensor elements. Bug #745646.
+ - Fix bug when using geometric coordinates with one quadrature point
 0.9.10 [2011-05-16]
  - Change license from GPL v3 or later to LGPL v3 or later
  - Add some schemes for low-order simplices
