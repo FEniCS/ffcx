@@ -1,4 +1,4 @@
-# Copyright (C) 2005-2010 Anders Logg
+# Copyright (C) 2005-2011 Anders Logg
 #
 # This file is part of FFC.
 #
@@ -15,10 +15,10 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
-# Modified by Kristian B. Oelgaard, 2009
+# Modified by Kristian B. Oelgaard 2009
 #
 # First added:  2005-05-20
-# Last changed: 2011-02-23
+# Last changed: 2011-08-11
 
-FFC_VERSION = "0.9.10"
+FFC_VERSION = "1.0-beta"
 UFC_VERSION = "2.0.0"
