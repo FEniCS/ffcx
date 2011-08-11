@@ -1,4 +1,4 @@
-"""Code generation format strings for UFC (Unified Form-assembly Code) v. 2.0.1.
+"""Code generation format strings for UFC (Unified Form-assembly Code) v. 2.0.2.
 
 Three format strings are defined for each of the following UFC classes:
 
