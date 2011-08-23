@@ -24,7 +24,7 @@ forms.
 #
 # Last changed: 2011-06-29
 
-from ufl import inner, dx, ds, dS, avg, adjoint, replace, action
+from ufl import inner, dx, ds, dS, avg, replace, action
 from ufl.algorithms.analysis import extract_arguments
 
 __all__ = ["ErrorControlGenerator", "UFLErrorControlGenerator"]
@@ -124,7 +124,7 @@ class ErrorControlGenerator:
         Generate and return (bilinear, linear) forms defining linear
         dual variational problem
         """
-        a_star = adjoint(self.lhs)
+        a_star = self.module.adjoint(self.lhs)
         L_star = self.module.derivative(self.goal, self.u)
         return (a_star, L_star)
 
