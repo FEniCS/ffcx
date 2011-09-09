@@ -899,7 +899,7 @@ def _compute_basisvalues(data, dof_data):
                     if r == 0:
                         A = "(2 + 3*Y + Z)/2.0"
                     else:
-                        A = "((2 + 3*Y + Z)/2.0 + %d*(1.0 * Y))" % r
+                        A = "((2 + 3*Y + Z)/2.0 + %d*(1.0 + Y))" % r
                     assign_to = f_component(f_basisvalue, rr)
                     assign_from = "%s*%s" % (A, f_component(f_basisvalue, ss))
                     myline = f_assign(assign_to, assign_from)
@@ -981,7 +981,7 @@ def _compute_basisvalues(data, dof_data):
                         A = "%s*Z" % (2 + r + s)
                         B = "%s + %s" % (A, 1 + r + s)
                         assign_to = f_component(f_basisvalue, rr)
-                        assign_from = "%s*%s" % (B, f_component(f_basisvalue, ss))
+                        assign_from = "(%s)*%s" % (B, f_component(f_basisvalue, ss))
                         myline = f_assign(assign_to, assign_from)
                         code += [myline]
 
