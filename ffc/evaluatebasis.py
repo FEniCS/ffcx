@@ -463,6 +463,8 @@ def _jrc(a, b, n):
 def _compute_basisvalues(data, dof_data):
     """From FIAT_NEW.expansions."""
 
+    UNROLL = True
+
     # Prefetch formats to speed up code generation.
     f_comment     = format["comment"]
     f_add         = format["add"]
@@ -643,6 +645,15 @@ def _compute_basisvalues(data, dof_data):
         #    results[0,ii] = 1.0 + apts[ii,0]-apts[ii,0]+apts[ii,1]-apts[ii,1]
         code += [f_assign(f_component(f_basisvalue, 0), f_float(1.0))]
 
+        def my_idx2d(p, q):
+            return (p+q)*(p+q+1)/2 + q
+
+        def my_jrc(a, b, n):
+            an = float( ( 2*n+1+a+b)*(2*n+2+a+b))/ float( 2*(n+1)*(n+1+a+b))
+            bn = float( (a*a-b*b) * (2*n+1+a+b))/ float( 2*(n+1)*(2*n+a+b)*(n+1+a+b) )
+            cn = float( (n+a)*(n+b)*(2*n+2+a+b))/ float( (n+1)*(n+1+a+b)*(2*n+a+b) )
+            return an,bn,cn
+
         # Only continue if the embedded degree is larger than zero.
         if embedded_degree > 0:
 
@@ -661,36 +672,65 @@ def _compute_basisvalues(data, dof_data):
                 #    results[idx(p+1,0)] = a * f1 * results[idx(p,0),:] \
                 #        - p/(1.0+p) * f3 *results[idx(p-1,0),:]
                 # FIXME: KBO: Is there an error in FIAT? why is b not used?
-                lines = []
-                loop_vars = [(str(symbol_p), 1, embedded_degree)]
-                # Compute indices
-                lines.append(f_assign(idx0, _idx2D(f_group(f_add([str(symbol_p), int_1])), int_0)))
-                lines.append(f_assign(idx1, _idx2D(symbol_p, int_0)))
-                lines.append(f_assign(idx2, _idx2D(f_group(f_sub([str(symbol_p), int_1])), int_0)))
-                # Compute single helper variable an.
-                lines.append(f_assign(str(an), create_fraction(float_2*symbol_p + float_1, symbol_p + float_1)))
-                # Compute value.
-                fac0 = create_product([an, f1, basis_idx1])
-                fac1 = create_product([create_fraction(symbol_p, float_1 + symbol_p), f3, basis_idx2])
-                lines.append(f_assign(str(basis_idx0), fac0 - fac1))
-                # Create loop (block of lines).
-                code += f_loop(lines, loop_vars)
+
+                if UNROLL:
+                    for r in range(1, embedded_degree):
+                        rr = my_idx2d((r + 1), 0)
+                        ss = my_idx2d(r, 0)
+                        tt = my_idx2d((r - 1), 0)
+                        assign_to = f_component(f_basisvalue, rr)
+                        A = (2*r + 1.0)/(r + 1)
+                        B = r/(1.0 + r)
+                        assign_from = "%s*%s*%s - %s*%s*%s" % (f_component(f_basisvalue, ss), A, f1,
+                                                               f_component(f_basisvalue, tt), B, f3)
+                        myline = f_assign(assign_to, assign_from)
+                        code += [myline]
+
+                else:
+                    lines = []
+                    loop_vars = [(str(symbol_p), 1, embedded_degree)]
+                    # Compute indices
+                    lines.append(f_assign(idx0, _idx2D(f_group(f_add([str(symbol_p), int_1])), int_0)))
+                    lines.append(f_assign(idx1, _idx2D(symbol_p, int_0)))
+                    lines.append(f_assign(idx2, _idx2D(f_group(f_sub([str(symbol_p), int_1])), int_0)))
+                    # Compute single helper variable an.
+                    lines.append(f_assign(str(an), create_fraction(float_2*symbol_p + float_1, symbol_p + float_1)))
+                    # Compute value.
+                    fac0 = create_product([an, f1, basis_idx1])
+                    fac1 = create_product([create_fraction(symbol_p, float_1 + symbol_p), f3, basis_idx2])
+                    lines.append(f_assign(str(basis_idx0), fac0 - fac1))
+                    # Create loop (block of lines).
+                    code += f_loop(lines, loop_vars)
+
 
             # FIAT_NEW code (loop 2 in FIAT).
             # for p in range(n):
             #    results[idx(p,1),:] = 0.5 * (1+2.0*p+(3.0+2.0*p)*y) \
             #        * results[idx(p,0)]
-            lines = []
-            loop_vars = [(str(symbol_p), 0, embedded_degree)]
-            # Compute indices.
-            lines.append(f_assign(idx0, _idx2D(symbol_p, int_1)))
-            lines.append(f_assign(idx1, _idx2D(symbol_p, int_0)))
-            # Compute value.
-            fac0 = create_product([float_3 + float_2*symbol_p, symbol_y])
-            fac1 = create_product([float_0_5, float_1 + float_2*symbol_p + fac0, basis_idx1])
-            lines.append(f_assign(str(basis_idx0), fac1.expand().reduce_ops()))
-            # Create loop (block of lines).
-            code += f_loop(lines, loop_vars)
+
+            if UNROLL:
+                for r in range(0, embedded_degree):
+                    # (p+q)*(p+q+1)/2 + q
+                    rr = my_idx2d(r, 1)
+                    ss = my_idx2d(r, 0)
+                    A = 0.5*(1 + 2*r)
+                    B = 0.5*(3 + 2*r)
+                    C = "%s + %s*Y" % (A, B)
+                    assign_to = f_component(f_basisvalue, rr)
+                    assign_from = "%s*(%s)" % (f_component(f_basisvalue, ss), C)
+                    myline = f_assign(assign_to, assign_from)
+                    code += [myline]
+            else:
+                lines = []
+                loop_vars = [(str(symbol_p), 0, embedded_degree)]
+                # Compute indices.
+                lines.append(f_assign(idx0, _idx2D(symbol_p, int_1)))
+                lines.append(f_assign(idx1, _idx2D(symbol_p, int_0)))
+                # Compute value.
+                fac0 = create_product([float_3 + float_2*symbol_p, symbol_y])
+                fac1 = create_product([float_0_5, float_1 + float_2*symbol_p + fac0, basis_idx1])
+                lines.append(f_assign(str(basis_idx0), fac1.expand().reduce_ops()))
+                code += f_loop(lines, loop_vars)
 
             # Only active is embedded_degree > 1.
             if embedded_degree > 1:
@@ -701,40 +741,68 @@ def _compute_basisvalues(data, dof_data):
                 #        results[idx(p,q+1),:] \
                 #            = ( a1 * y + a2 ) * results[idx(p,q)] \
                 #            - a3 * results[idx(p,q-1)]
-                lines = []
-                loop_vars = [(str(symbol_p), 0, int_nm1),\
-                             (str(symbol_q), 1, f_sub([int_n, str(symbol_p)]))]
-                # Compute indices.
-                lines.append(f_assign(idx0, _idx2D(symbol_p, f_add([str(symbol_q), int_1]) )))
-                lines.append(f_assign(idx1, _idx2D(symbol_p, symbol_q)))
-                lines.append(f_assign(idx2, _idx2D(symbol_p, f_sub([str(symbol_q), int_1]))))
-                # Comute all helper variables.
-                jrc = _jrc(float_2*symbol_p + float_1, float_0, symbol_q)
-                lines.append(f_assign(str(an), jrc[0]))
-                lines.append(f_assign(str(bn), jrc[1]))
-                lines.append(f_assign(str(cn), jrc[2]))
-                # Compute value.
-                fac0 = create_product([an * symbol_y + bn, basis_idx1])
-                fac1 = cn * basis_idx2
-                lines.append(f_assign(str(basis_idx0), fac0 - fac1))
-                # Create loop (block of lines).
-                code += f_loop(lines, loop_vars)
+
+                if UNROLL:
+                    for r in range(0, embedded_degree - 1):
+                        for s in range(1, embedded_degree - r):
+                            rr = my_idx2d(r, (s + 1))
+                            ss = my_idx2d(r, s)
+                            tt = my_idx2d(r, s - 1)
+                            A, B, C = my_jrc(2*r + 1, 0, s)
+                            assign_to = f_component(f_basisvalue, rr)
+                            assign_from = "%s*(%s + Y*%s) - %s*%s" % (f_component(f_basisvalue, ss), f_float(B), f_float(A), f_component(f_basisvalue, tt), f_float(C))
+                            myline = f_assign(assign_to, assign_from)
+                            code += [myline]
+
+                else:
+                    lines = []
+                    loop_vars = [(str(symbol_p), 0, int_nm1),\
+                                     (str(symbol_q), 1, f_sub([int_n, str(symbol_p)]))]
+                    # Compute indices.
+                    lines.append(f_assign(idx0, _idx2D(symbol_p, f_add([str(symbol_q), int_1]) )))
+                    lines.append(f_assign(idx1, _idx2D(symbol_p, symbol_q)))
+                    lines.append(f_assign(idx2, _idx2D(symbol_p, f_sub([str(symbol_q), int_1]))))
+                    # Comute all helper variables.
+                    jrc = _jrc(float_2*symbol_p + float_1, float_0, symbol_q)
+                    lines.append(f_assign(str(an), jrc[0]))
+                    lines.append(f_assign(str(bn), jrc[1]))
+                    lines.append(f_assign(str(cn), jrc[2]))
+                    # Compute value.
+                    fac0 = create_product([an * symbol_y + bn, basis_idx1])
+                    fac1 = cn * basis_idx2
+                    lines.append(f_assign(str(basis_idx0), fac0 - fac1))
+                    # Create loop (block of lines).
+                    code += f_loop(lines, loop_vars)
 
             # FIAT_NEW code (loop 4 in FIAT).
             # for p in range(n+1):
             #    for q in range(n-p+1):
             #        results[idx(p,q),:] *= math.sqrt((p+0.5)*(p+q+1.0))
             lines = []
-            loop_vars = [(str(symbol_p), 0, int_n1), \
-                         (str(symbol_q), 0, f_sub([int_n1, str(symbol_p)]))]
-            # Compute indices.
-            lines.append(f_assign(idx0, _idx2D(symbol_p, symbol_q)))
-            # Compute value.
-            fac0 = create_product([symbol_p + float_0_5, symbol_p + symbol_q + float_1])
-            fac2 = create_symbol( f_sqrt(str(fac0)), CONST )
-            lines += [f_imul(str(basis_idx0), fac2)]
-            # Create loop (block of lines).
-            code += f_loop(lines, loop_vars)
+
+            # MARIE LOOP
+            if UNROLL:
+                n1 = embedded_degree + 1
+                for r in range(0, n1):
+                    for s in range(0, n1 - r):
+                        rr = my_idx2d(r, s)
+                        A = (r + 0.5)*(r + s + 1)
+                        assign_to = f_component(f_basisvalue, rr)
+                        assign_from = f_sqrt(A)
+                        myline = f_imul(assign_to, assign_from)
+                        code += [myline]
+
+            else:
+                loop_vars = [(str(symbol_p), 0, int_n1), \
+                                 (str(symbol_q), 0, f_sub([int_n1, str(symbol_p)]))]
+                # Compute indices.
+                lines.append(f_assign(idx0, _idx2D(symbol_p, symbol_q)))
+                # Compute value.
+                fac0 = create_product([symbol_p + float_0_5, symbol_p + symbol_q + float_1])
+                fac2 = create_symbol( f_sqrt(str(fac0)), CONST )
+                lines += [f_imul(str(basis_idx0), fac2)]
+                # Create loop (block of lines).
+                code += f_loop(lines, loop_vars)
 
     # 3D
     elif (element_cell_domain == "tetrahedron"):
