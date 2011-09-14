@@ -136,7 +136,7 @@ def _compute_dofmap_ir(ufl_element, element_id, element_numbers):
 
     # Compute data for each function
     ir["signature"] = "FFC dofmap for " + repr(ufl_element)
-    ir["needs_mesh_entities"] = [d > 0 for d in num_dofs_per_entity]
+    ir["needs_mesh_entities"] = _needs_mesh_entities(element)
     ir["init_mesh"] = _init_mesh(element)
     ir["init_cell"] = None
     ir["init_cell_finalize"] = None
@@ -175,6 +175,12 @@ def _init_mesh(element):
             num_reals += 1
     element = MixedElement(elements)
     return (_num_dofs_per_entity(element), num_reals)
+
+
+def _needs_mesh_entities(element):
+
+    num_dofs_per_entity = _num_dofs_per_entity(element)
+    return [d > 0 for d in num_dofs_per_entity]
 
 def _compute_integral_ir(form_data, form_id, parameters):
     "Compute intermediate represention of form integrals."
