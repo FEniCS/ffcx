@@ -179,8 +179,13 @@ def _init_mesh(element):
 
 def _needs_mesh_entities(element):
 
+    # Note: The dof map for Real elements does not depend on the mesh 
+
     num_dofs_per_entity = _num_dofs_per_entity(element)
-    return [d > 0 for d in num_dofs_per_entity]
+    if isinstance(element, SpaceOfReals):
+        return [False for d in num_dofs_per_entity]
+    else:
+        return [d > 0 for d in num_dofs_per_entity]
 
 def _compute_integral_ir(form_data, form_id, parameters):
     "Compute intermediate represention of form integrals."
