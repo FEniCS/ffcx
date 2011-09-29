@@ -155,10 +155,20 @@ install(DIRECTORY
   )
 
 #------------------------------------------------------------------------------
-# Generate ufc-config.cmake file
+# Generate UFCConfig.cmake file
 
-configure_file(${UFC_CMAKE_DIR}/ufc-config.cmake.in ufc-config.cmake @ONLY)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ufc-config.cmake
+configure_file(${UFC_CMAKE_DIR}/UFCConfig.cmake.in UFCConfig.cmake @ONLY)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/UFCConfig.cmake
+  DESTINATION ${UFC_CMAKE_CONFIG_DIR}
+  COMPONENT Development
+  )
+
+#------------------------------------------------------------------------------
+# Generate UFCConfigVersion.cmake file
+
+configure_file(${UFC_CMAKE_DIR}/UFCConfigVersion.cmake.in
+  UFCConfigVersion.cmake @ONLY)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/UFCConfigVersion.cmake
   DESTINATION ${UFC_CMAKE_CONFIG_DIR}
   COMPONENT Development
   )
