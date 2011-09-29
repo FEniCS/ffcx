@@ -668,7 +668,7 @@ types = [["double"],
          ["const", "unsigned", "int"]]
 
 # Special characters and delimiters
-special_characters = ["+", "-", "*", "/", "=", ".", " ", ";", "(", ")", "\\", "{", "}", "[","]"]
+special_characters = ["+", "-", "*", "/", "=", ".", " ", ";", "(", ")", "\\", "{", "}", "[","]", "!"]
 
 def remove_unused(code, used_set=set()):
     """
