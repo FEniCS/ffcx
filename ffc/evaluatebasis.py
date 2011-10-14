@@ -602,29 +602,19 @@ def _compute_basisvalues(data, dof_data):
                 #    a4 = a4 / a1
                 #    result[k,:] = ( a2 + a3 * xsnew ) * result[k-1,:] \
                 #        - a4 * result[k-2,:]
-                # Declare helper variables (Note the a2 is always zero and therefore left out).
-                code += [f_decl(f_double, str(f1), f_float(0))]
-                code += [f_decl(f_double, str(f2), f_float(0))]
-                code += [f_decl(f_double, str(f3), f_float(0))]
-                lines = []
-                loop_vars = [(str(symbol_p), 2, int_n1)]
-                # Create names.
-                basis_k   = create_symbol(f_component(f_basisvalue, str(symbol_p)), CONST)
-                basis_km1 = create_symbol(f_component(f_basisvalue, f_sub([str(symbol_p), int_1])), CONST)
-                basis_km2 = create_symbol(f_component(f_basisvalue, f_sub([str(symbol_p), int_2])), CONST)
-                # Compute helper variables.
-                a1 = create_product([float_2, symbol_p, symbol_p, float_2*symbol_p - float_2])
-                a3 = create_fraction(create_product([float_2*symbol_p,\
-                                                     float_2*symbol_p - float_2,
-                                                     float_2*symbol_p - float_1]), a1)
-                a4 = create_fraction(create_product([float_4*symbol_p, symbol_p - float_1, symbol_p - float_1]), a1)
-                lines.append(f_assign(str(f1), a1 ))
-                lines.append(f_assign(str(f2), a3 ))
-                lines.append(f_assign(str(f3), a4 ))
-                # Compute value.
-                lines.append(f_assign(str(basis_k), create_product([f2, symbol_x*basis_km1]) - f3*basis_km2))
-                # Create loop (block of lines).
-                code += f_loop(lines, loop_vars)
+
+                # The below implements the above (with a = b = apb = 0)
+                for r in range(2, embedded_degree+1):
+
+                    # Define helper variables
+                    a1 = 2.0*r*r*(2.0*r - 2.0)
+                    a3 = ((2.0*r - 2.0)*(2.0*r - 1.0 )*(2.0*r))/a1
+                    a4 = (2.0*(r - 1.0)*(r - 1.0)*(2.0*r))/a1
+
+                    assign_to = f_component(f_basisvalue, r)
+                    assign_from = f_sub([f_mul([f_x, f_component(f_basisvalue, r-1), f_float(a3)]),
+                                         f_mul([f_component(f_basisvalue, r-2), f_float(a4)])])
+                    code += [f_assign(assign_to, assign_from)]
 
         # Scale values.
         # FIAT_NEW.expansions.LineExpansionSet.
