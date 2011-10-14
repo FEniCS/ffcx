@@ -57,20 +57,20 @@ FFC_PARAMETERS_JIT["no-evaluate_basis_derivatives"] = True
 # Set debug level for Instant
 instant.set_logging_level("warning")
 
-def jit(object, parameters=None, common_cell=None):
+def jit(ufl_object, parameters=None, common_cell=None):
     """Just-in-time compile the given form or element
 
     Parameters:
 
-      object     : The object to be compiled
+      ufl_object : The UFL object to be compiled
       parameters : A set of parameters
     """
 
     # Check if we get an element or a form
-    if isinstance(object, FiniteElementBase):
-        return jit_element(object, parameters)
+    if isinstance(ufl_object, FiniteElementBase):
+        return jit_element(ufl_object, parameters)
     else:
-        return jit_form(object, parameters, common_cell)
+        return jit_form(ufl_object, parameters, common_cell)
 
 def jit_form(form, parameters=None, common_cell=None):
     "Just-in-time compile the given form."
