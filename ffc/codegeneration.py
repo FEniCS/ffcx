@@ -64,11 +64,11 @@ def generate_code(ir, prefix, parameters):
     ir_elements, ir_dofmaps, ir_integrals, ir_forms = ir
 
     # Generate code for elements
-    info("Generating code for %d elements" % len(ir_elements))
+    info("Generating code for %d element(s)" % len(ir_elements))
     code_elements = [_generate_element_code(ir, prefix, parameters) for ir in ir_elements]
 
     # Generate code for dofmaps
-    info("Generating code for %d dofmaps" % len(ir_dofmaps))
+    info("Generating code for %d dofmap(s)" % len(ir_dofmaps))
     code_dofmaps = [_generate_dofmap_code(ir, prefix, parameters) for ir in ir_dofmaps]
 
     # Generate code for integrals
