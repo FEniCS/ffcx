@@ -50,8 +50,11 @@ def compute_integral_ir(domain_type,
                         metadata,
                         form_data,
                         form_id,
-                        parameters):
+                        parameters,
+                        common_cell=None):
     "Compute intermediate represention of integral."
+
+    # FIXME: common_cell is not used below, should it? It is needed in the quadrature version.
 
     info("Computing tensor representation")
 
