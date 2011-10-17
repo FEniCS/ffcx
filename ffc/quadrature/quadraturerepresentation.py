@@ -40,7 +40,8 @@ def compute_integral_ir(domain_type,
                         metadata,
                         form_data,
                         form_id,
-                        parameters):
+                        parameters,
+                        common_cell=None):
     "Compute intermediate represention of integral."
 
     info("Computing quadrature representation")
@@ -60,7 +61,8 @@ def compute_integral_ir(domain_type,
     integrals_dict, psi_tables, quad_weights = \
         _tabulate_basis(sorted_integrals,
                         domain_type,
-                        form_data.num_facets)
+                        form_data.num_facets,
+                        common_cell)
 
     # Create dimensions of primary indices, needed to reset the argument 'A'
     # given to tabulate_tensor() by the assembler.
@@ -154,7 +156,7 @@ def compute_integral_ir(domain_type,
 
     return ir
 
-def _tabulate_basis(sorted_integrals, domain_type, num_facets):
+def _tabulate_basis(sorted_integrals, domain_type, num_facets, common_cell=None):
     "Tabulate the basisfunctions and derivatives."
 
     # Initialise return values.
@@ -177,7 +179,10 @@ def _tabulate_basis(sorted_integrals, domain_type, num_facets):
         fiat_elements = [create_element(e) for e in elements]
 
         # Get cell and facet domains.
-        cell = integral.integrand().cell()
+        if common_cell is None:
+            cell = integral.integrand().cell()
+        else:
+            cell = common_cell
         cell_domain = cell.domain()
         facet_domain = cell.facet_domain()
 
