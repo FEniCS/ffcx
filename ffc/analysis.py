@@ -192,6 +192,7 @@ def _attach_integral_metadata(form_data, common_cell, parameters):
                 if not qd >= 0:
                     info("Valid choices are nonnegative integers or 'auto'.")
                     error("Illegal quadrature degree for integral: " + str(qd))
+                integral_metadata["quadrature_degree"] = qd
             if not qr in ("default", "canonical", "auto"):
                 info("Valid choices are 'default', 'canonical' or 'auto'.")
                 error("Illegal choice of quadrature rule for integral: " + str(qr))
