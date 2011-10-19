@@ -20,8 +20,8 @@
 #
 # Compile this form with FFC: ffc Stokes.ufl
 
-vector = VectorElement("Lagrange", "triangle", 1)
-scalar = FiniteElement("Lagrange", "triangle", 1)
+vector = VectorElement("Lagrange", triangle, 1)
+scalar = FiniteElement("Lagrange", triangle, 1)
 system = vector * scalar
 
 (u, p) = TrialFunctions(system)

@@ -24,7 +24,7 @@
 # Compile this form with FFC: ffc HyperElasticity.ufl.
 
 # Coefficient spaces
-element = VectorElement("Lagrange", "tetrahedron", 1)
+element = VectorElement("Lagrange", tetrahedron, 1)
 
 # Coefficients
 v  = TestFunction(element)      # Test function
@@ -42,8 +42,8 @@ E = (C - I)/2                   # Euler-Lagrange strain tensor
 E = variable(E)
 
 # Material constants
-mu    = Constant("tetrahedron") # Lame's constants
-lmbda = Constant("tetrahedron")
+mu    = Constant(tetrahedron) # Lame's constants
+lmbda = Constant(tetrahedron)
 
 # Strain energy function (material model)
 psi = lmbda/2*(tr(E)**2) + mu*tr(E*E)
