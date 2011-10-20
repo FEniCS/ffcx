@@ -21,7 +21,7 @@
 # Modified by Marie E. Rognes 2010
 #
 # First added:  2009-12-16
-# Last changed: 2011-06-28
+# Last changed: 2011-10-20
 
 # Python modules
 import re, numpy, platform
@@ -95,6 +95,7 @@ format.update({
     "acos":           lambda v: "std::acos(%s)" % str(v),
     "asin":           lambda v: "std::asin(%s)" % str(v),
     "atan":           lambda v: "std::atan(%s)" % str(v),
+    "erf":           lambda v:  "erf(%s)" % str(v),
     "absolute value": lambda v: "std::abs(%s)" % str(v),
     "sqrt":           lambda v: "std::sqrt(%s)" % str(v),
     "addition":       lambda v: _add(v),

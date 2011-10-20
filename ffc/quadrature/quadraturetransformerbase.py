@@ -18,7 +18,7 @@
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # First added:  2009-10-13
-# Last changed: 2011-06-28
+# Last changed: 2011-10-20
 
 # Python modules.
 from itertools import izip
@@ -590,6 +590,10 @@ class QuadratureTransformerBase(Transformer):
     def atan(self, o, *operands):
         #print("\n\nVisiting Atan: " + repr(o) + "with operands: " + "\n".join(map(repr,operands)))
         return self._math_function(operands, format["atan"])
+
+    def erf(self, o, *operands):
+        #print("\n\nVisiting Erf: " + repr(o) + "with operands: " + "\n".join(map(repr,operands)))
+        return self._math_function(operands, format["erf"])
 
     # -------------------------------------------------------------------------
     # PositiveRestricted and NegativeRestricted (restriction.py).
