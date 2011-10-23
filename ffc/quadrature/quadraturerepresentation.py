@@ -153,6 +153,7 @@ def compute_integral_ir(domain_type,
 
     # Save tables map, to extract table names for optimisation option -O.
     ir["psi_tables_map"] = transformer.psi_tables_map
+    ir["additional_includes_set"] = transformer.additional_includes_set
 
     return ir
 

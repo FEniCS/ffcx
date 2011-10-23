@@ -52,6 +52,7 @@ def generate_integral_code(ir, prefix, parameters):
     code["destructor"] = format["do nothing"]
     code["tabulate_tensor"] = _tabulate_tensor(ir, parameters)
     code["tabulate_tensor_quadrature"] = format["exception"](tabulate_tensor_quadrature_error)
+    code["additional_includes_set"] = ir["additional_includes_set"]
 
     return code
 

@@ -80,6 +80,7 @@ class QuadratureTransformerBase(Transformer):
         self.restriction = None
         self.coordinate = None
         self.conditionals = {}
+        self.additional_includes_set = set()
 
         # Stacks.
         self._derivatives = []
@@ -236,6 +237,10 @@ class QuadratureTransformerBase(Transformer):
     def math_function(self, o):
         print "\n\nVisiting MathFunction:", repr(o)
         error("This MathFunction is not supported (yet).")
+
+    def bessel_function(self, o):
+        print "\n\nVisiting BesselFunction:", repr(o)
+        error("BesselFunction is not implemented (yet).")
 
     def restricted(self, o):
         print "\n\nVisiting Restricted:", repr(o)
@@ -594,6 +599,26 @@ class QuadratureTransformerBase(Transformer):
     def erf(self, o, *operands):
         #print("\n\nVisiting Erf: " + repr(o) + "with operands: " + "\n".join(map(repr,operands)))
         return self._math_function(operands, format["erf"])
+
+    def bessel_i(self, o, *operands):
+        #print("\n\nVisiting Bessel_I: " + repr(o) + "with operands: " + "\n".join(map(repr,operands)))
+        self.additional_includes_set.add("#include <tr1/cmath>")
+        return self._bessel_function(operands, format["bessel_i"])
+
+    def bessel_j(self, o, *operands):
+        #print("\n\nVisiting Bessel_J: " + repr(o) + "with operands: " + "\n".join(map(repr,operands)))
+        self.additional_includes_set.add("#include <tr1/cmath>")
+        return self._bessel_function(operands, format["bessel_j"])
+
+    def bessel_k(self, o, *operands):
+        #print("\n\nVisiting Bessel_K: " + repr(o) + "with operands: " + "\n".join(map(repr,operands)))
+        self.additional_includes_set.add("#include <tr1/cmath>")
+        return self._bessel_function(operands, format["bessel_k"])
+
+    def bessel_y(self, o, *operands):
+        #print("\n\nVisiting Bessel_Y: " + repr(o) + "with operands: " + "\n".join(map(repr,operands)))
+        self.additional_includes_set.add("#include <tr1/cmath>")
+        return self._bessel_function(operands, format["bessel_y"])
 
     # -------------------------------------------------------------------------
     # PositiveRestricted and NegativeRestricted (restriction.py).

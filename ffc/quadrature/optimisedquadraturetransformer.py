@@ -492,6 +492,27 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
             operand[key] = new_val
         return operand
 
+    def _bessel_function(self, operands, format_function):
+        # TODO: Are these safety checks needed?
+        # TODO: work on reference instead of copies? (like math_function)
+        ffc_assert(len(operands) == 2,\
+          "BesselFunctions expect two operands of function type: " + repr(operands))
+        nu, x = operands
+        ffc_assert(len(nu) == 1 and () in nu,\
+          "Expecting one operand of function type as first argument to BesselFunction : " + repr(nu))
+        ffc_assert(len(x) == 1 and () in x,\
+          "Expecting one operand of function type as second argument to BesselFunction : " + repr(x))
+        nu = nu[()]
+        x = x[()]
+        if nu is None:
+            nu = format["floating point"](0.0)
+        if x is None:
+            x = format["floating point"](0.0)
+
+        sym = create_symbol(format_function, x.t, x, 1)
+        sym.exp = nu
+        return {():sym}
+
     # -------------------------------------------------------------------------
     # Helper functions for code_generation()
     # -------------------------------------------------------------------------

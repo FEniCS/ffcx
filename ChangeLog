@@ -1,3 +1,4 @@
+ - Added support for bessel functions, bessel_* (I,J,K,Y), in UFL.
  - Added support for error function, erf(), new math function in UFL.
 1.0-beta [2011-08-11]
  - Improve formatting of floats with up to one non-zero decimal place.

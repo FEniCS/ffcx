@@ -57,7 +57,8 @@ def format_code(code, wrapper_code, prefix, parameters):
     code_c += _generate_comment(parameters) + "\n"
 
     # Generate code for header
-    code_h += format["header_h"] % {"prefix_upper": prefix.upper()} + "\n"
+    code_h += format["header_h"] % {"prefix_upper": prefix.upper()}
+    code_h += _generate_additional_includes(code_integrals)  + "\n"
     code_c += format["header_c"] % {"prefix": prefix}
 
     # Generate code for elements
@@ -151,3 +152,13 @@ def _generate_comment(parameters):
     comment += "\n"
 
     return comment
+
+def _generate_additional_includes(codes):
+    s = set()
+    for code in codes:
+        if code.has_key("additional_includes_set"):
+            s.update(code["additional_includes_set"])
+    if s:
+        return "\n".join(list(s)) + "\n"
+    return ""
+
