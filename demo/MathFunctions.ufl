@@ -24,7 +24,7 @@ element = FiniteElement("Lagrange", triangle, 1)
 c0 = Coefficient(element)
 c1 = Coefficient(element)
 
-s0 = c0 - c1
+s0 = 3*c0 - c1
 p0 = c0*c1
 f0 = c0/c1
 
@@ -36,7 +36,12 @@ integrand = sqrt(c0) + sqrt(s0) + sqrt(p0) + sqrt(f0)\
           + tan(c0) + tan(s0) + tan(p0) + tan(f0)\
           + acos(c0) + acos(s0) + acos(p0) + acos(f0)\
           + asin(c0) + asin(s0) + asin(p0) + asin(f0)\
-          + atan(c0) + atan(s0) + atan(p0) + atan(f0)
+          + atan(c0) + atan(s0) + atan(p0) + atan(f0)\
+          + erf(c0) + erf(s0) + erf(p0) + erf(f0)\
+          + bessel_I(1, c0) + bessel_I(1, s0) + bessel_I(0, p0) + bessel_I(0, f0)\
+          + bessel_J(1, c0) + bessel_J(1, s0) + bessel_J(0, p0) + bessel_J(0, f0)\
+          + bessel_K(1, c0) + bessel_K(1, s0) + bessel_K(0, p0) + bessel_K(0, f0)\
+          + bessel_Y(1, c0) + bessel_Y(1, s0) + bessel_Y(0, p0) + bessel_Y(0, f0)
 
 a = integrand*dx
 

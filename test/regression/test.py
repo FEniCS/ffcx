@@ -35,7 +35,7 @@ option -b.
 # FIXME: and DOLFIN wrappers.
 
 import os, sys, shutil, difflib
-from numpy import array, shape, abs, max
+from numpy import array, shape, abs, max, isnan
 from ffc.log import begin, end, info, info_red, info_green, info_blue
 from ufctest import generate_test_code
 from instant.output import get_status_output
@@ -283,7 +283,7 @@ def validate_programs(reference_dir):
 
             # Check that values match to within tolerance
             diff = max(abs(old_values - new_values))
-            if diff > tolerance:
+            if diff > tolerance or isnan(diff):
                 if ok: log_error("\n" + header + "\n" + len(header)*"-")
                 log_error("%s: values differ, error = %g (tolerance = %g)" % (key, diff, tolerance))
                 log_error("  old = " + " ".join("%.16g" % v for v in old_values))
