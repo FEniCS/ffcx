@@ -175,6 +175,38 @@ def build_programs(bench):
     # Get UFC flags
     ufc_cflags = get_status_output("pkg-config --cflags ufc-1")[1].strip()
 
+    # Get Boost dir (code copied from ufc/src/utils/python/ufc_utils/build.py)
+    # Set a default directory for the boost installation
+    if sys.platform == "darwin":
+        # Use MacPorts as default
+        default = os.path.join(os.path.sep, "opt", "local")
+    else:
+        default = os.path.join(os.path.sep, "usr")
+
+    # If BOOST_DIR is not set use default directory
+    boost_inc_dir = ""
+    boost_lib_dir = ""
+    boost_dir = os.getenv("BOOST_DIR", default)
+    boost_is_found = False
+    for inc_dir in ["", "include"]:
+        if os.path.isfile(os.path.join(boost_dir, inc_dir, "boost", "version.hpp")):
+            boost_inc_dir = os.path.join(boost_dir, inc_dir)
+            break
+    for lib_dir in ["", "lib"]:
+        if os.path.isfile(os.path.join(boost_dir, lib_dir, "libboost_math_tr1.so")):
+            boost_lib_dir = os.path.join(boost_dir, lib_dir)
+            break
+    if boost_inc_dir != "" and boost_lib_dir != "":
+        boost_is_found = True
+
+    if not boost_is_found:
+        raise OSError, """The Boost library was not found.
+If Boost is installed in a nonstandard location,
+set the environment variable BOOST_DIR.
+"""
+
+    ufc_cflags += " -I%s -L%s" % (boost_inc_dir, boost_lib_dir)
+
     # Set compiler options
     if bench > 0:
         info("Benchmarking activated")
