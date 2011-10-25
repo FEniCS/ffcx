@@ -602,22 +602,26 @@ class QuadratureTransformerBase(Transformer):
 
     def bessel_i(self, o, *operands):
         #print("\n\nVisiting Bessel_I: " + repr(o) + "with operands: " + "\n".join(map(repr,operands)))
-        self.additional_includes_set.add("#include <tr1/cmath>")
+#        self.additional_includes_set.add("#include <tr1/cmath>")
+        self.additional_includes_set.add("#include <boost/math/tr1.hpp>")
         return self._bessel_function(operands, format["bessel_i"])
 
     def bessel_j(self, o, *operands):
         #print("\n\nVisiting Bessel_J: " + repr(o) + "with operands: " + "\n".join(map(repr,operands)))
-        self.additional_includes_set.add("#include <tr1/cmath>")
+#        self.additional_includes_set.add("#include <tr1/cmath>")
+        self.additional_includes_set.add("#include <boost/math/tr1.hpp>")
         return self._bessel_function(operands, format["bessel_j"])
 
     def bessel_k(self, o, *operands):
         #print("\n\nVisiting Bessel_K: " + repr(o) + "with operands: " + "\n".join(map(repr,operands)))
-        self.additional_includes_set.add("#include <tr1/cmath>")
+#        self.additional_includes_set.add("#include <tr1/cmath>")
+        self.additional_includes_set.add("#include <boost/math/tr1.hpp>")
         return self._bessel_function(operands, format["bessel_k"])
 
     def bessel_y(self, o, *operands):
         #print("\n\nVisiting Bessel_Y: " + repr(o) + "with operands: " + "\n".join(map(repr,operands)))
-        self.additional_includes_set.add("#include <tr1/cmath>")
+#        self.additional_includes_set.add("#include <tr1/cmath>")
+        self.additional_includes_set.add("#include <boost/math/tr1.hpp>")
         return self._bessel_function(operands, format["bessel_y"])
 
     # -------------------------------------------------------------------------

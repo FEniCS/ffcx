@@ -193,7 +193,7 @@ def build_programs(bench):
 
         # Compile test code
         prefix = f.split(".h")[0]
-        command = "g++ %s -o %s.bin %s.cpp" % (compiler_options, prefix, prefix)
+        command = "g++ %s -o %s.bin %s.cpp -lboost_math_tr1" % (compiler_options, prefix, prefix)
         ok = run_command(command)
 
         # Check status
