@@ -193,7 +193,8 @@ def build_programs(bench):
             boost_inc_dir = os.path.join(boost_dir, inc_dir)
             break
     for lib_dir in ["", "lib"]:
-        if os.path.isfile(os.path.join(boost_dir, lib_dir, "libboost_math_tr1.so")):
+        if os.path.isfile(os.path.join(boost_dir, lib_dir, "libboost_math_tr1.so")) or\
+           os.path.isfile(os.path.join(boost_dir, lib_dir, "libboost_math_tr1.dylib")):
             boost_lib_dir = os.path.join(boost_dir, lib_dir)
             break
     if boost_inc_dir != "" and boost_lib_dir != "":
