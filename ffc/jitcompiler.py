@@ -145,9 +145,11 @@ def jit_form(form, parameters=None, common_cell=None):
             cache_dir = cache_dir)
 
         # Remove code
-        os.unlink(hfile)
+        if os.path.isfile(hfile):
+            os.unlink(hfile)
         if parameters["split"] :
-            os.unlink(cppfile)
+            if os.path.isfile(cppfile):
+                os.unlink(cppfile)
 
         # Extract compiled form
         compiled_form = _extract_form(module, prefix)
