@@ -8,7 +8,7 @@
 
 #define UFC_VERSION_MAJOR 2
 #define UFC_VERSION_MINOR 0
-#define UFC_VERSION_MAINTENANCE 2
+#define UFC_VERSION_MAINTENANCE 3
 
 #include <stdexcept>
 

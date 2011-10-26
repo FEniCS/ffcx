@@ -30,12 +30,12 @@ For more information about UFC and the FEniCS project, visit
 # -*- coding: utf-8 -*-
 __author__  = "Martin Sandve Alnaes, Anders Logg, Kent-Andre Mardal, Ola Skavhaug, and Hans Petter Langtangen"
 __date__    = "2011-02-21"
-__version__ = "2.0.1"
+__version__ = "2.0.3"
 __license__ = "This code is released into the public domain"
 
 UFC_VERSION_MAJOR = 2
 UFC_VERSION_MINOR = 0
-UFC_VERSION_MAINTENANCE = 1
+UFC_VERSION_MAINTENANCE = 3
 
 UFC_VERSION = __version__
 
