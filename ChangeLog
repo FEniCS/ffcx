@@ -1,5 +1,7 @@
  - Added support for bessel functions, bessel_* (I,J,K,Y), in UFL.
  - Added support for error function, erf(), new math function in UFL.
+ - Fix dof map 'need_entities' for Real spaces
+ - Improve performance for basis function computation
 1.0-beta [2011-08-11]
  - Improve formatting of floats with up to one non-zero decimal place.
  - Fix bug involving zeros in products and sums. Bug #804160.
