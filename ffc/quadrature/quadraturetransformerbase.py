@@ -745,7 +745,7 @@ class QuadratureTransformerBase(Transformer):
             sets.append(used_nzcs)
 
             # Create loop information and entry from key info and insert into dict.
-            loop, entry = self._create_loop_entry(key)
+            loop, entry = self._create_loop_entry(key, f_nzc)
             if not loop in new_terms:
                 sets.append({})
                 new_terms[loop] = [sets, [(entry, value, ops)]]
@@ -755,7 +755,7 @@ class QuadratureTransformerBase(Transformer):
                 new_terms[loop][1].append((entry, value, ops))
         return new_terms
 
-    def _create_loop_entry(self, key):
+    def _create_loop_entry(self, key, f_nzc):
 
         # TODO: Verify that test and trial functions will ALWAYS be rearranged to 0 and 1.
         indices = {-2: format["first free index"], -1: format["second free index"],
@@ -775,7 +775,7 @@ class QuadratureTransformerBase(Transformer):
                         "Linear forms must be defined using test functions only: " + repr(key))
             index_j, entry, range_j, space_dim_j = key
             loop = ((indices[index_j], 0, range_j),)
-            if range_j == 1 and self.optimise_parameters["ignore ones"]:
+            if range_j == 1 and self.optimise_parameters["ignore ones"] and not (f_nzc in entry):
                 loop = ()
         elif len(key) == 2:
             # Extract test and trial loops in correct order and check if for is legal.
@@ -791,9 +791,9 @@ class QuadratureTransformerBase(Transformer):
             index_k, entry_k, range_k, space_dim_k = key1
 
             loop = []
-            if not (range_j == 1 and self.optimise_parameters["ignore ones"]):
+            if not (range_j == 1 and self.optimise_parameters["ignore ones"]) or f_nzc in entry_j:
                 loop.append((indices[index_j], 0, range_j))
-            if not (range_k == 1 and self.optimise_parameters["ignore ones"]):
+            if not (range_k == 1 and self.optimise_parameters["ignore ones"]) or f_nzc in entry_k:
                 loop.append((indices[index_k], 0, range_k))
             entry = format["add"]([format["mul"]([entry_j, str(space_dim_k)]), entry_k])
             loop = tuple(loop)

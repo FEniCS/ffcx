@@ -384,7 +384,6 @@ def _generate_integral_code(points, terms, sets, optimise_parameters):
 
     # Loop terms and create code.
     for loop, (data, entry_vals) in terms.items():
-
         # If we don't have any entry values, there's no need to generate the
         # loop.
         if not entry_vals:
@@ -528,8 +527,12 @@ def _tabulate_psis(tables, used_psi_tables, inv_name_map, used_nzcs, optimise_pa
 
     # Get list of non zero columns, if we ignore ones, ignore columns with one component.
     if optimise_parameters["ignore ones"]:
-        nzcs = [val[1] for key, val in inv_name_map.items()\
-                                        if val[1] and len(val[1][1]) > 1]
+        nzcs = []
+        for key, val in inv_name_map.items():
+            # Check if we have a table of ones or if number of non-zero columns
+            # is larger than one.
+            if val[1] and len(val[1][1]) > 1 or not val[3]:
+                nzcs.append(val[1])
     else:
         nzcs = [val[1] for key, val in inv_name_map.items()\
                                         if val[1]]

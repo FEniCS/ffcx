@@ -1,3 +1,4 @@
+ - Fix bug with undeclared variables in optimised quadrature code. Bug #883202.
 1.0-beta2 [2011-10-11]
  - Added support for bessel functions, bessel_* (I,J,K,Y), in UFL.
  - Added support for error function, erf(), new math function in UFL.
