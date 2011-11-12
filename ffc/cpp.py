@@ -317,6 +317,10 @@ def _multiply(factors):
         if f == "0":
             return cpp_str(0)
 
+        # If f is 1, don't add it to list of factors
+        if f == "1":
+            continue
+
         # If sum-like, parentheseze factor
         if "+" in f or "-" in f:
             f = "(%s)" % f
