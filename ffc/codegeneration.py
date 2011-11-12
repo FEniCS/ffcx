@@ -271,8 +271,9 @@ def _init_mesh(ir):
     num_dofs = ir[0]
     component = format["component"]
     entities =  format["num entities"]
-    dimension = format["inner product"](num_dofs, [component(entities, d)
-                                                   for d in range(len(num_dofs))])
+    dimension = format["inner product"]([format["int"](d) for d in num_dofs],
+                                        [component(entities, d)
+                                         for d in range(len(num_dofs))])
     # Handle global "elements" if any
     if ir[1]:
         dimension = format["add"]([dimension, format["int"](ir[1])])
@@ -281,8 +282,9 @@ def _init_mesh(ir):
         except:
             pass
 
-    return "\n".join([format["assign"](format["member global dimension"], dimension),
+    code = "\n".join([format["assign"](format["member global dimension"], dimension),
                       format["return"](format["bool"](False))])
+    return code
 
 def _tabulate_facet_dofs(ir):
     "Generate code for tabulate_facet_dofs."
