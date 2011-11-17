@@ -1,5 +1,5 @@
 __author__ = "Johan Hake (hake@simula.no)"
-__date__ = "2009-03-06 -- 2011-03-05"
+__date__ = "2009-03-06 -- 2011-11-16"
 __copyright__ = "Copyright (C) 2009 Johan Hake"
 __license__  = "GNU LGPL Version 2.1"
 
@@ -8,7 +8,7 @@ __all__ = ['build_ufc_module']
 # Modified by Martin Alnes, 2009
 
 import instant
-import os, sys, re
+import os, sys, re, glob
 
 from distutils import sysconfig
 
@@ -57,14 +57,17 @@ def build_ufc_module(h_files, source_directory="", system_headers=None, \
     declarations = extract_declarations(h_files2)
 
     # Check system requirements
-    (cpp_path, swig_include_dirs) = configure_instant(swig_binary, swig_path)
-
+    (cpp_path, swig_include_dirs, library_dirs, libraries) = \
+               configure_instant(swig_binary, swig_path)
+    
     # Call instant and return module
     return instant.build_module(wrap_headers            = h_files,
                                 source_directory        = source_directory,
                                 additional_declarations = declarations,
                                 system_headers          = system_headers,
                                 include_dirs            = cpp_path,
+                                library_dirs            = library_dirs,
+                                libraries               = libraries,
                                 swigargs                = ['-c++', '-I.','-O'],
                                 swig_include_dirs       = swig_include_dirs,
                                 **kwargs)
@@ -125,15 +128,35 @@ Install swig version %s or recompiled UFC with present swig
             break
 
     if not boost_is_found:
-        raise OSError, """The Boost library was not found.
+        raise OSError, """The Boost headers was not found.
 If Boost is installed in a nonstandard location,
 set the environment variable BOOST_DIR.
 """
-
+    
     # Add the boost_include_dir
     cpp_path += boost_include_dir
-
-    return cpp_path, swig_include_dirs
+    
+    # Check for boost_math library
+    # FIXME: This is a hack and should be done properly, probably using
+    # FIXME: cmake --find-packages
+    # If BOOST_DIR is not set use default directory
+    boost_dir = os.getenv("BOOST_DIR", default)
+    boost_math_is_found = False
+    for lib_dir in ["", "lib"]:
+        for math_lib in ["-mt", ""]:
+            if glob.glob(os.path.join(boost_dir, lib_dir, \
+                                      "libboost_math_tr1%s*"%math_lib)):
+                boost_library_dir = [os.path.join(boost_dir, lib_dir)]
+                boost_math_is_found = True
+                boost_library = ["boost_math_tr1%s"%math_lib]
+                break
+    
+    if not boost_math_is_found:
+        raise OSError, """The Boost math library was not found.
+If Boost math library is installed in a nonstandard location,
+set the environment variable BOOST_DIR.
+"""
+    return cpp_path, swig_include_dirs, boost_library_dir, boost_library
 
 def extract_declarations(h_files):
     "Extract information for shared_ptr"
