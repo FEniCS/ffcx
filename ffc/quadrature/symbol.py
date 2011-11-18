@@ -33,7 +33,7 @@ from expr import Expr
 
 class Symbol(Expr):
     __slots__ = ("v", "base_expr", "base_op", "exp", "cond")
-    def __init__(self, variable, symbol_type, base_expr=None, base_op=0, cond=()):
+    def __init__(self, variable, symbol_type, base_expr=None, base_op=0, expo=None, cond=()):
         """Initialise a Symbols object, it derives from Expr and contains
         the additional variables:
 
@@ -56,7 +56,7 @@ class Symbol(Expr):
         # ops = base_expr.ops() + base_ops = 2 + 1 = 3
         self.base_expr = base_expr
         self.base_op = base_op
-        self.exp = None
+        self.exp = expo
         self.cond = cond
 
         # If type of the base_expr is lower than the given symbol_type change type.
@@ -68,10 +68,15 @@ class Symbol(Expr):
         # Compute the representation now, such that we can use it directly
         # in the __eq__ and __ne__ methods (improves performance a bit, but
         # only when objects are cached).
-        if self.base_expr:
-            self._repr = "Symbol('%s', %s, %s, %d)" % (self.v, type_to_string[self.t], self.base_expr._repr, self.base_op)
+        if self.base_expr and self.exp is None:
+            self._repr = "Symbol('%s', %s, %s, %d)" % (self.v, type_to_string[self.t],\
+                         self.base_expr._repr, self.base_op)
+        elif self.base_expr:
+            self._repr = "Symbol('%s', %s, %s, %d, %s)" % (self.v, type_to_string[self.t],\
+                         self.base_expr._repr, self.base_op, self.exp)
         elif self.cond:
-            self._repr = "Symbol('%s', %s, %s, %d, %s)" % (self.v, type_to_string[self.t], self.base_expr, self.base_op, self.cond)
+            self._repr = "Symbol('%s', %s, %s, %d, %s, %s)" % (self.v, type_to_string[self.t],\
+                          self.base_expr, self.base_op, self.exp, self.cond)
         else:
             self._repr = "Symbol('%s', %s)" % (self.v, type_to_string[self.t])
 

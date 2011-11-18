@@ -176,16 +176,14 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
 #            sym = create_symbol(format["std power"](str(val), exp), val.t)
 #            sym.base_expr = val
 #            sym.base_op = 1 # Add one operation for the pow() function.
-            sym = create_symbol(format["std power"], val.t, val, 1)
-            sym.exp = exp
+            sym = create_symbol(format["std power"], val.t, val, 1, exp)
             return {(): sym}
         elif isinstance(expo, (Coefficient, Operator)):
-            exp = self.visit(expo)
+            exp = self.visit(expo)[()]
 #            sym = create_symbol(format["std power"](str(val), exp[()]), val.t)
 #            sym.base_expr = val
 #            sym.base_op = 1 # Add one operation for the pow() function.
-            sym = create_symbol(format["std power"], val.t, val, 1)
-            sym.exp = exp[()]
+            sym = create_symbol(format["std power"], val.t, val, 1, exp)
             return {(): sym}
         else:
             error("power does not support this exponent: " + repr(expo))
@@ -509,8 +507,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         if x is None:
             x = format["floating point"](0.0)
 
-        sym = create_symbol(format_function, x.t, x, 1)
-        sym.exp = nu
+        sym = create_symbol(format_function, x.t, x, 1, nu)
         return {():sym}
 
     # -------------------------------------------------------------------------
