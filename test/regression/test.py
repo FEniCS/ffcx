@@ -6,7 +6,7 @@ with stored reference values.
 
 This script can also be used for benchmarking tabulate_tensor for all
 form files found in the 'bench' directory. To run benchmarks, use the
-option -b.
+option --bench.
 """
 
 # Copyright (C) 2010 Anders Logg, Kristian B. Oelgaard and Marie E. Rognes
@@ -29,10 +29,8 @@ option -b.
 # First added:  2010-01-21
 # Last changed: 2010-05-12
 
-# FIXME: Need to add many more test cases. Quite a few DOLFIN
-# FIXME: forms failed after the FFC tests passed. Also need to
-# FIXME: to check with different compiler options, representation
-# FIXME: and DOLFIN wrappers.
+# FIXME: Need to add many more test cases. Quite a few DOLFIN forms
+# failed after the FFC tests passed.
 
 import os, sys, shutil, difflib
 from numpy import array, shape, abs, max, isnan
@@ -41,7 +39,7 @@ from ufctest import generate_test_code
 from instant.output import get_status_output
 
 # Parameters
-tolerance = 1e-9
+output_tolerance = 1.e-6
 demo_directory = "../../../../demo"
 bench_directory = "../../../../bench"
 
@@ -314,11 +312,11 @@ def validate_programs(reference_dir):
                 ok = False
                 continue
 
-            # Check that values match to within tolerance
+            # Check that values match to within tolerance set by 'output_tolerance'
             diff = max(abs(old_values - new_values))
-            if diff > tolerance or isnan(diff):
+            if diff > output_tolerance or isnan(diff):
                 if ok: log_error("\n" + header + "\n" + len(header)*"-")
-                log_error("%s: values differ, error = %g (tolerance = %g)" % (key, diff, tolerance))
+                log_error("%s: values differ, error = %g (tolerance = %g)" % (key, diff, output_tolerance))
                 log_error("  old = " + " ".join("%.16g" % v for v in old_values))
                 log_error("  new = " + " ".join("%.16g" % v for v in new_values))
                 ok = False
@@ -353,7 +351,7 @@ def main(args):
     # run here
     test_cases = ["-r auto"]
     if (not bench and not fast):
-        test_cases = ["-r auto", "-r quadrature"]#, "-r quadrature -O"]
+        test_cases += ["-r quadrature", "-r quadrature -O"]
 
     for argument in test_cases:
 
@@ -361,7 +359,6 @@ def main(args):
 
         # Clear and enter output sub-directory
         sub_directory = "_".join(argument.split(" ")).replace("-", "")
-        reference_directory = "../../references/%s" % sub_directory
         clean_output(sub_directory)
         os.chdir(sub_directory)
 
@@ -371,11 +368,18 @@ def main(args):
         # Generate code
         generate_code(args + [argument])
 
-        # Validate code
-        if not bench:
-            validate_code(reference_directory)
+        # Location of reference directories
+        reference_directory =  os.path.abspath("../../references/")
+        code_reference_dir = os.path.join(reference_directory, sub_directory)
+        output_reference_dir = os.path.join(reference_directory, "output")
 
-        # Build, run and validate programs
+        # Validate code by comparing to code generated with this set
+        # of compiler parameters
+        if not bench:
+            validate_code(code_reference_dir)
+
+        # Build and run programs and validate output to common
+        # reference
         if fast:
             info("Skipping program validation")
         elif bench:
@@ -384,7 +388,7 @@ def main(args):
         else:
             build_programs(bench)
             run_programs()
-            validate_programs(reference_directory)
+            validate_programs(output_reference_dir)
 
         # Go back up
         os.chdir(os.path.pardir)

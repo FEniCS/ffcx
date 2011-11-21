@@ -1,4 +1,4 @@
-# Last changed: 2011-05-05
+# Last changed: 2011-11-15
 
 To update the references for the FFC regression tests, first run the
 regression test (to generate the new references) and then run the
@@ -8,3 +8,5 @@ script update.sh from the ffc/test/regression/references folder:
   cd references
   ./update.sh
 
+If more permutations of compiler options are added, please update
+'update.sh' accordingly.
