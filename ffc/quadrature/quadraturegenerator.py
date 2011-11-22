@@ -20,7 +20,7 @@
 # Modified by Mehdi Nikbakht, 2010
 #
 # First added:  2009-01-07
-# Last changed: 2011-02-21
+# Last changed: 2011-11-22
 
 # Python modules.
 import numpy
@@ -160,6 +160,7 @@ def _tabulate_tensor(ir, parameters):
     # Add common (for cell, exterior and interior) geo code.
     jacobi_code += "\n\n" + format["generate cell volume"](geo_dim, domain_type)
     jacobi_code += "\n\n" + format["generate circumradius"](geo_dim, domain_type)
+    jacobi_code += "\n\n" + format["generate facet area"](geo_dim)
 
     # After we have generated the element code for all facets we can remove
     # the unused transformations and tabulate the used psi tables and weights.

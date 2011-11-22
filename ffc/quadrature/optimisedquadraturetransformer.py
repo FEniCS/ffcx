@@ -20,7 +20,7 @@
 # Modified by Anders Logg, 2009
 #
 # First added:  2009-03-18
-# Last changed: 2011-06-28
+# Last changed: 2011-11-22
 
 # Python modules.
 from numpy import shape
@@ -270,7 +270,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         return {():name}
 
     # -------------------------------------------------------------------------
-    # FacetNormal, CellVolume (geometry.py).
+    # FacetNormal, CellVolume, Circumradius, FacetArea (geometry.py).
     # -------------------------------------------------------------------------
     def facet_normal(self, o,  *operands):
         #print("Visiting FacetNormal:")
@@ -322,6 +322,22 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         self.trans_set.add(circumradius)
 
         return {():create_symbol(circumradius, GEO)}
+
+    def facet_area(self, o,  *operands):
+        # Safety check.
+        ffc_assert(not operands, "Didn't expect any operands for FacetArea: " + repr(operands))
+
+        # FIXME: KBO: This has to change for higher order elements
+        # NOTE: Omitting restriction because the area of a facet is the same
+        # on both sides.
+        # FIXME: Since we use the scale factor, facet area has no meaning
+        # for cell integrals. (Need check in FFC or UFL).
+        area = format["facet area"]
+        self.trans_set.add(area)
+
+        return {():create_symbol(area, GEO)}
+
+    # -------------------------------------------------------------------------
 
     def create_argument(self, ufl_argument, derivatives, component, local_comp,
                   local_offset, ffc_element, transformation, multiindices):

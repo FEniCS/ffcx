@@ -21,7 +21,7 @@
 # Modified by Marie E. Rognes 2010
 #
 # First added:  2009-12-16
-# Last changed: 2011-10-20
+# Last changed: 2011-11-22
 
 # Python modules
 import re, numpy, platform
@@ -125,6 +125,7 @@ format.update({
     "det(J)":           lambda r=None: "detJ%s" % choose_map[r],
     "cell volume":      lambda r=None: "volume%s" % choose_map[r],
     "circumradius":     lambda r=None: "circumradius%s" % choose_map[r],
+    "facet area":       "facet_area",
     "scale factor":     "det",
     "transform":        lambda t, j, k, r: _transform(t, j, k, r),
     "normal component": lambda r, j: "n%s%s" % (choose_map[r], j),
@@ -238,6 +239,7 @@ format.update({
     "generate normal":      lambda d, i: _generate_normal(d, i),
     "generate cell volume": lambda d, i: _generate_cell_volume(d, i),
     "generate circumradius": lambda d, i: _generate_circumradius(d, i),
+    "generate facet area":  lambda d: facet_area[d],
     "generate ip coordinates":  lambda g, num_ip, name, ip, r=None: (ip_coordinates[g][0], ip_coordinates[g][1] % \
                                 {"restriction": choose_map[r], "ip": ip, "name": name, "num_ip": num_ip}),
     "scale factor snippet": scale_factor,

@@ -17,12 +17,12 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
-# Modified by Kristian B. Oelgaard 2010
+# Modified by Kristian B. Oelgaard 2010-2011
 # Modified by Marie Rognes 2007-2010
 # Modified by Peter Brune 2009
 #
 # First added:  2007-02-28
-# Last changed: 2011-02-21
+# Last changed: 2011-11-22
 
 # Code snippets
 
@@ -33,7 +33,8 @@ __all__ = ["comment_ufc", "comment_dolfin", "header_h", "header_c", "footer",
            "fiat_coordinate_map", "transform_snippet",
            "scale_factor", "combinations_snippet",
            "normal_direction",
-           "facet_normal", "ip_coordinates", "cell_volume", "circumradius"]
+           "facet_normal", "ip_coordinates", "cell_volume", "circumradius",
+           "facet_area"]
 
 comment_ufc = """\
 // This code conforms with the UFC specification version %(ufc_version)s
@@ -250,6 +251,18 @@ const  double s%(restriction)s    = 0.5*(la%(restriction)s+lb%(restriction)s+lc%
 const  double area%(restriction)s = std::sqrt(s%(restriction)s*(s%(restriction)s-la%(restriction)s)*(s%(restriction)s-lb%(restriction)s)*(s%(restriction)s-lc%(restriction)s));
 
 const double circumradius%(restriction)s = area%(restriction)s / ( 6.0*volume%(restriction)s );"""
+
+_facet_area_1D = """\
+// Facet Area (FIXME: Should this be 0.0?).
+const double facet_area = 1.0;"""
+
+_facet_area_2D = """\
+// Facet Area.
+const double facet_area = det;"""
+
+_facet_area_3D = """\
+// Facet Area (divide by two because 'det' is scaled by area of reference triangle).
+const double facet_area = det/2.0;"""
 
 evaluate_basis_dofmap = """\
 unsigned int element = 0;
@@ -499,4 +512,8 @@ cell_volume = {1: _cell_volume_1D,
 circumradius = {1: _circumradius_1D,
                 2: _circumradius_2D,
                 3: _circumradius_3D}
+
+facet_area = {1: _facet_area_1D,
+              2: _facet_area_2D,
+              3: _facet_area_3D}
 
