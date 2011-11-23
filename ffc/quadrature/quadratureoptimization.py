@@ -65,11 +65,19 @@ def optimize_integral_ir(ir, parameters):
 
 def _simplify_expression(integral, geo_consts, psi_tables_map):
     for points, terms, functions, ip_consts, coordinate, conditionals in integral:
-        for loop, (data, entry_vals) in terms.iteritems():
+        # NOTE: sorted is needed to pass the regression tests on the buildbots
+        # but it might be inefficient for speed.
+        # A solution could be to only compare the output of evaluating the
+        # integral, not the header files.
+        for loop, (data, entry_vals) in sorted(terms.iteritems()):
             t_set, u_weights, u_psi_tables, u_nzcs, basis_consts = data
             new_entry_vals = []
             psi_tables = set()
-            for entry, val, ops in entry_vals:
+            # NOTE: sorted is needed to pass the regression tests on the buildbots
+            # but it might be inefficient for speed.
+            # A solution could be to only compare the output of evaluating the
+            # integral, not the header files.
+            for entry, val, ops in sorted(entry_vals):
                 value = optimise_code(val, ip_consts, geo_consts, t_set)
                 # Check if value is zero
                 if value.val:
