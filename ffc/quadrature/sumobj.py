@@ -262,7 +262,7 @@ class Sum(Expr):
 
         if len(new_variables) > 1:
             # Return new sum (will remove multiple instances of floats during construction).
-            self._expanded = create_sum(new_variables)
+            self._expanded = create_sum(sorted(new_variables))
             return self._expanded
         elif new_variables:
             # If we just have one variable left, return it since it is already expanded.
@@ -347,7 +347,7 @@ class Sum(Expr):
         # Determine the maximum reduction for each variable
         # sorted as: {(x*x*y, x*y*z, 2*y):[2, [y]]}.
         terms_reductions = {}
-        for k, v in common_vars.iteritems():
+        for k, v in sorted(common_vars.iteritems()):
             # If the number of expressions that can be reduced is only one
             # there is nothing to be done.
             if len(v) > 1:
@@ -425,7 +425,7 @@ class Sum(Expr):
             # Reduce each set of terms with appropriate variables.
             all_reduced_terms = []
             reduced_expressions = []
-            for reduc_var, terms in reduction_vars.iteritems():
+            for reduc_var, terms in sorted(reduction_vars.iteritems()):
 
                 # Add current terms to list of all variables that have been reduced.
                 all_reduced_terms += list(terms)
@@ -555,7 +555,7 @@ def _group_fractions(expr):
         return expr
 
     # Loop all fractions and create new ones using an appropriate numerator.
-    for k, v in fracs.iteritems():
+    for k, v in sorted(fracs.iteritems()):
         if v[0] > 1:
             # TODO: Is it possible to avoid expanding the Sum?
             # I think we have to because x/a + 2*x/a -> 3*x/a.
