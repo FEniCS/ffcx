@@ -18,7 +18,7 @@
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # First added:  2009-07-12
-# Last changed: 2010-02-09
+# Last changed: 2011-11-25
 
 # FFC modules.
 from ffc.log import error
@@ -31,6 +31,8 @@ from symbolics import create_sum
 from symbolics import create_fraction
 from expr import Expr
 
+#global ind
+#ind = ""
 class Sum(Expr):
     __slots__ = ("vrs", "_expanded", "_reduced")
     def __init__(self, variables):
@@ -312,6 +314,9 @@ class Sum(Expr):
 
     def reduce_ops(self):
         "Reduce the number of operations needed to evaluate the sum."
+#        global ind
+#        ind += " "
+#        print "\n%sreduce_ops, start" % ind
 
         if self._reduced:
             return self._reduced
@@ -334,6 +339,10 @@ class Sum(Expr):
             # Get dictonary of occurrences and add the variable and the number
             # of occurrences to common dictionary.
             for k, v in var.get_var_occurrences().iteritems():
+#                print
+#                print ind + "var: ", var
+#                print ind + "k: ", k
+#                print ind + "v: ", v
                 if k in common_vars:
                     common_vars[k].append((v, var))
                 else:
@@ -348,6 +357,9 @@ class Sum(Expr):
         # sorted as: {(x*x*y, x*y*z, 2*y):[2, [y]]}.
         terms_reductions = {}
         for k, v in sorted(common_vars.iteritems()):
+#            print
+#            print ind + "k: ", k
+#            print ind + "v: ", v
             # If the number of expressions that can be reduced is only one
             # there is nothing to be done.
             if len(v) > 1:
@@ -376,7 +388,7 @@ class Sum(Expr):
 
                 # Extract the terms of v where the number of occurrences is
                 # equal to or higher than the most favorable number of occurrences.
-                terms = [t[1] for t in v if t[0] >= fav_occur]
+                terms = sorted([t[1] for t in v if t[0] >= fav_occur])
 
                 # We need to reduce the expression with the favorable number of
                 # occurrences of the current variable.
@@ -401,8 +413,16 @@ class Sum(Expr):
             # Create a sorted list of those variables that give the highest
             # reduction.
             sorted_reduc_var = [k for k, v in reductions_terms.iteritems()]
-            sorted_reduc_var.sort(lambda x, y: cmp(x[0], y[0]))
+#            print
+#            print ind + "raw"
+#            for k in sorted_reduc_var:
+#                print ind, k[0], k[1]
+            sorted_reduc_var.sort()
+#            sorted_reduc_var.sort(lambda x, y: cmp(x[0], y[0]))
             sorted_reduc_var.reverse()
+#            print ind + "sorted"
+#            for k in sorted_reduc_var:
+#                print ind, k[0], k[1]
 
             # Create a new dictionary of terms that should be reduced, if some
             # terms overlap, only pick the one which give the highest reduction to
