@@ -111,7 +111,7 @@ def generate_aux_constants(constant_decl, name, var_type, print_ops=False):
 #        print "expr orig: " + repr(expr)
 #        print "expr exp: " + str(expr.expand())
         # Expand and reduce expression (If we don't already get reduced expressions.)
-        expr = expr.expand().reduce_ops()
+#        expr = expr.expand().reduce_ops()
 #        debug("expr opt:  " + str(expr))
 #        print "expr opt:  " + str(expr)
         if print_ops:
