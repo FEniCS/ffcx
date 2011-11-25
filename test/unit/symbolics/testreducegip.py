@@ -206,11 +206,11 @@ class TestReduceGIP(unittest.TestCase):
                    ])
 
 #        print "\nReduceGIP"
-#        start = time.time()
+        start = time.time()
         expr_exp = expr.expand()
 #        print "ReduceGIP: time, expand()      ", time.time() - start
 
-#        start = time.time()
+        start = time.time()
         expr_red = expr_exp.reduce_ops()
 #        print "ReduceGIP: time, reduce_ops(): ", time.time() - start
 
@@ -230,7 +230,7 @@ class TestReduceGIP(unittest.TestCase):
         self.assertAlmostEqual(eval(str(expr)), eval(str(expr_red)))
         self.assertEqual(expr.ops(), 314)
         self.assertEqual(expr_exp.ops(), 314)
-        self.assertEqual(expr_red.ops(), 114)
+        self.assertEqual(expr_red.ops(), 120)
 
 if __name__ == "__main__":
 

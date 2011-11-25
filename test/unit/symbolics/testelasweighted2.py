@@ -90,7 +90,7 @@ class TestElasWeighted2(unittest.TestCase):
         expr_exp = expr.expand()
 #        print "ElasWeighted2: time, expand():     ", time.time() - start
 
-#        start = time.time()
+        start = time.time()
         expr_red = expr_exp.reduce_ops()
 #        print "ElasWeighted2: time, reduce_ops(): ", time.time() - start
 
@@ -107,7 +107,7 @@ class TestElasWeighted2(unittest.TestCase):
         self.assertAlmostEqual(eval(str(expr)), eval(str(expr_red)))
         self.assertEqual(expr.ops(), 21)
         self.assertEqual(expr_exp.ops(), 32)
-        self.assertEqual(expr_red.ops(), 13)
+        self.assertEqual(expr_red.ops(), 12)
 
         # Generate code
         ip_consts = {}
