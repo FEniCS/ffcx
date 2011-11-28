@@ -19,7 +19,7 @@
 # Modified by Kristian B. Oelgaard, 2009.
 #
 # First added:  2004-11-03
-# Last changed: 2010-01-14
+# Last changed: 2011-11-28
 
 # FFC modules.
 from ffc.log import debug
@@ -39,14 +39,16 @@ class ReferenceTensor:
                  monomial,
                  domain_type,
                  facet0, facet1,
-                 quadrature_order):
+                 quadrature_order,
+                 common_cell):
         "Create reference tensor for given monomial."
 
         # Compute reference tensor
         self.A0 = integrate(monomial,
                             domain_type,
                             facet0, facet1,
-                            quadrature_order)
+                            quadrature_order,
+                            common_cell)
 
         # Extract indices
         primary_indices   = monomial.extract_unique_indices(MonomialIndex.PRIMARY)

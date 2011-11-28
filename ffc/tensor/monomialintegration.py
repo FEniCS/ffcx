@@ -1,6 +1,6 @@
 "This module implements efficient integration of monomial forms."
 
-# Copyright (C) 2004-2009 Anders Logg
+# Copyright (C) 2004-2011 Anders Logg
 #
 # This file is part of FFC.
 #
@@ -25,7 +25,7 @@
 # Modified by Kristian B. Oelgaard, 2009
 #
 # First added:  2004-11-03
-# Last changed: 2010-02-02
+# Last changed: 2011-11-28
 
 # Python modules
 import numpy
@@ -49,7 +49,8 @@ from monomialtransformation import MonomialIndex
 def integrate(monomial,
               domain_type,
               facet0, facet1,
-              quadrature_degree):
+              quadrature_degree,
+              common_cell):
     """Compute the reference tensor for a given monomial term of a
     multilinear form"""
 
@@ -61,7 +62,8 @@ def integrate(monomial,
     # Initialize quadrature points and weights
     (points, weights) = _init_quadrature(monomial.arguments,
                                          domain_type,
-                                         quadrature_degree)
+                                         quadrature_degree,
+                                         common_cell)
 
     # Initialize quadrature table for basis functions
     table = _init_table(monomial.arguments,
@@ -84,11 +86,17 @@ def integrate(monomial,
 
     return A0
 
-def _init_quadrature(arguments, domain_type, quadrature_degree):
+def _init_quadrature(arguments, domain_type, quadrature_degree, common_cell):
     "Initialize quadrature for given monomial."
 
-    # Get shapes (check first factor, should be the same for all)
-    cell_shape = arguments[0].element.cell().domain()
+    # Get shape (check first factor, should be the same for all)
+    try:
+        if common_cell is None:
+            cell_shape = arguments[0].element.cell().domain()
+        else:
+            cell_shape = common_cell.domain()
+    except:
+        error("Missing cell definition in form.")
     facet_shape = domain2facet[cell_shape]
 
     # Create quadrature rule and get points and weights
