@@ -1,3 +1,4 @@
+2.0.4 [2011-11-28]
  - Add boost_math_tr1 to library flags when JIT compiling an extention module
 2.0.3 [2011-10-26]
  - CMake config improvements

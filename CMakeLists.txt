@@ -9,7 +9,7 @@ cmake_minimum_required(VERSION 2.8)
 project(UFC)
 set(UFC_VERSION_MAJOR "2")
 set(UFC_VERSION_MINOR "0")
-set(UFC_VERSION_MICRO "3")
+set(UFC_VERSION_MICRO "4")
 set(UFC_VERSION_STRING "${UFC_VERSION_MAJOR}.${UFC_VERSION_MINOR}.${UFC_VERSION_MICRO}")
 
 # Set special link option, see `cmake --help-policy CMP0003`
