@@ -27,7 +27,7 @@ option --bench.
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # First added:  2010-01-21
-# Last changed: 2010-05-12
+# Last changed: 2011-11-28
 
 # FIXME: Need to add many more test cases. Quite a few DOLFIN forms
 # failed after the FFC tests passed.
@@ -45,6 +45,16 @@ bench_directory = "../../../../bench"
 
 # Global log file
 logfile = None
+
+# Extended quadrature tests (optimisations)
+ext_quad = [\
+"-r quadrature -O -feliminate_zeros",
+"-r quadrature -O -fsimplify_expressions",
+"-r quadrature -O -fprecompute_ip_const",
+"-r quadrature -O -fprecompute_basis_const",
+"-r quadrature -O -fprecompute_ip_const -feliminate_zeros",
+"-r quadrature -O -fprecompute_basis_const -feliminate_zeros",
+]
 
 def run_command(command):
     "Run command and collect errors in log file."
@@ -339,8 +349,9 @@ def main(args):
     # Check command-line arguments
     bench = "--bench" in args
     fast = "--fast" in args
+    ext = "--ext_quad" in args
 
-    args = [arg for arg in args if not arg in ("--bench", "--fast")]
+    args = [arg for arg in args if not arg in ("--bench", "--fast", "--ext_quad")]
 
     # Clean out old output directory
     output_directory = "output"
@@ -352,6 +363,8 @@ def main(args):
     test_cases = ["-r auto"]
     if (not bench and not fast):
         test_cases += ["-r quadrature", "-r quadrature -O"]
+        if ext:
+            test_cases += ext_quad
 
     for argument in test_cases:
 
@@ -375,7 +388,7 @@ def main(args):
 
         # Validate code by comparing to code generated with this set
         # of compiler parameters
-        if not bench:
+        if not bench and argument not in ext_quad:
             validate_code(code_reference_dir)
 
         # Build and run programs and validate output to common
