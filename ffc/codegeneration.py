@@ -26,7 +26,7 @@ UFC function from an (optimized) intermediate representation (OIR).
 # Modified by Mehdi Nikbakht, 2010
 #
 # First added:  2009-12-16
-# Last changed: 2011-06-20
+# Last changed: 2011-11-28
 
 # FFC modules
 from ffc.log import info, begin, end, debug_code
@@ -389,7 +389,7 @@ def _tabulate_coordinates(ir):
         w = coefficients(coordinate)
         for j in range(cell_dim):
             # Compute physical coordinate
-            coords = [component(f_x, (k, j)) for k in range(cell_dim + 1)]
+            coords = [component(f_x(), (k, j)) for k in range(cell_dim + 1)]
             value = inner_product(w, coords)
 
             # Assign coordinate

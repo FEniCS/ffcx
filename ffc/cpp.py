@@ -21,7 +21,7 @@
 # Modified by Marie E. Rognes 2010
 #
 # First added:  2009-12-16
-# Last changed: 2011-11-22
+# Last changed: 2011-11-28
 
 # Python modules
 import re, numpy, platform
@@ -134,7 +134,7 @@ format.update({
     "z coordinate":     "Z",
     "ip coordinates":   lambda i, j: "X%d[%d]" % (i, j),
     "affine map table": lambda i, j: "FEA%d_f%d" % (i, j),
-    "coordinates":      "x"
+    "coordinates":      lambda r=None: "x%s" % choose_map[r]
 })
 
 # UFC function arguments and class members (names)

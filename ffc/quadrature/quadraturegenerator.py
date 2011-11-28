@@ -20,7 +20,7 @@
 # Modified by Mehdi Nikbakht, 2010
 #
 # First added:  2009-01-07
-# Last changed: 2011-11-22
+# Last changed: 2011-11-28
 
 # Python modules.
 import numpy
@@ -211,7 +211,8 @@ def _generate_element_tensor(integrals, sets, optimise_parameters):
     f_ip      = format["integration points"]
     f_I       = format["ip constant"]
     f_loop    = format["generate loop"]
-    f_coords  = format["generate ip coordinates"]
+    f_ip_coords  = format["generate ip coordinates"]
+    f_coords     =  format["coordinates"]
     f_double  = format["float declaration"]
     f_decl    = format["declaration"]
     f_X       = format["ip coordinates"]
@@ -242,12 +243,13 @@ def _generate_element_tensor(integrals, sets, optimise_parameters):
             name, geo_dim, ip, r = coordinate
             element_code += ["", f_comment("Declare array to hold physical coordinate of quadrature point.")]
             element_code += [f_decl(f_double, f_X(points, geo_dim))]
-            ops, coord_code = f_coords(geo_dim, points, name, ip, r)
+            ops, coord_code = f_ip_coords(geo_dim, points, name, ip, r)
             ip_code += ["", f_comment("Compute physical coordinate of quadrature point, operations: %d." % ops)]
             ip_code += [coord_code]
             num_ops += ops
-            # Update used psi tables.
+            # Update used psi tables and transformation set.
             sets[1].add(name)
+            sets[3].add(f_coords(r))
 
         # Generate code to compute function values.
         if functions:

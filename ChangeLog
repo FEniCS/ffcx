@@ -1,3 +1,4 @@
+ - Fix bug with coordinates on facet integrals (intervals). Bug #888682.
  - Add support for FacetArea, new geometric quantity in UFL.
  - Fix bug in optimised quadrature code, AlgebraOperators demo. Bug #890859.
  - Fix bug with undeclared variables in optimised quadrature code. Bug #883202.

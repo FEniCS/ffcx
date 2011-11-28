@@ -41,9 +41,9 @@ FIAT (functional.pt_dict) in the intermediate representation stage.
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
-# Modified by Kristian B. Oelgaard 2010
+# Modified by Kristian B. Oelgaard 2010-2011
 #
-# Last changed: 2010-02-09
+# Last changed: 2011-11-28
 
 from ffc.cpp import format, remove_unused
 from ffc.utils import pick_first
@@ -168,7 +168,7 @@ def _generate_body(i, dof, mapping, cell_dim, offset=0, result=f_result):
     # Map point onto physical element: y = F_K(x)
     code = []
     for j in range(cell_dim):
-        y = inner(w, [component(f_x, (k, j)) for k in range(cell_dim + 1)])
+        y = inner(w, [component(f_x(), (k, j)) for k in range(cell_dim + 1)])
         code.append(assign(component(f_y, j), y))
 
     # Evaluate function at physical point
