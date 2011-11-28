@@ -21,7 +21,7 @@ if platform.system() == "Windows" or "bdist_wininst" in sys.argv:
     scripts.extend(batch_files)
 
 setup(name = "FFC",
-      version = "1.0-rc1+",
+      version = "1.0-rc1",
       description = "The FEniCS Form Compiler",
       author = "Anders Logg, Kristian Oelgaard, Marie Rognes et al.",
       author_email = "ffc@lists.launchpad.net",
