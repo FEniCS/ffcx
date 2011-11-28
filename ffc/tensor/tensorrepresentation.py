@@ -8,7 +8,7 @@ might be (re-)implemented in a future version of FFC
   2. FErari optimizations
 """
 
-# Copyright (C) 2007-2010 Anders Logg
+# Copyright (C) 2007-2011 Anders Logg
 #
 # This file is part of FFC.
 #
@@ -28,7 +28,7 @@ might be (re-)implemented in a future version of FFC
 # Modified by Kristian B. Oelgaard, 2010.
 #
 # First added:  2007-02-05
-# Last changed: 2010-02-10
+# Last changed: 2011-11-28
 
 # UFL modules
 from ufl.classes import Form, Measure, Integral
@@ -53,8 +53,6 @@ def compute_integral_ir(domain_type,
                         parameters,
                         common_cell=None):
     "Compute intermediate represention of integral."
-
-    # FIXME: common_cell is not used below, should it? It is needed in the quadrature version.
 
     info("Computing tensor representation")
 
@@ -82,7 +80,8 @@ def compute_integral_ir(domain_type,
         ir["AK"] = _compute_terms(monomial_form,
                                   None, None,
                                   domain_type,
-                                  quadrature_degree)
+                                  quadrature_degree,
+                                  common_cell)
 
     elif domain_type == "exterior_facet":
 
@@ -92,7 +91,8 @@ def compute_integral_ir(domain_type,
             terms[i] = _compute_terms(monomial_form,
                                       i, None,
                                       domain_type,
-                                      quadrature_degree)
+                                      quadrature_degree,
+                                      common_cell)
         ir["AK"] = terms
 
     elif domain_type == "interior_facet":
@@ -104,7 +104,8 @@ def compute_integral_ir(domain_type,
                 terms[i][j] = _compute_terms(monomial_form,
                                              i, j,
                                              domain_type,
-                                             quadrature_degree)
+                                             quadrature_degree,
+                                             common_cell)
                 reorder_entries(terms[i][j])
         ir["AK"] = terms
 
@@ -116,7 +117,8 @@ def compute_integral_ir(domain_type,
 def _compute_terms(monomial_form,
                    facet0, facet1,
                    domain_type,
-                   quadrature_degree):
+                   quadrature_degree,
+                   common_cell):
     "Compute list of tensor contraction terms for monomial form."
 
     # Compute terms
@@ -130,7 +132,8 @@ def _compute_terms(monomial_form,
             A0 = ReferenceTensor(monomial,
                                  domain_type,
                                  facet0, facet1,
-                                 quadrature_degree)
+                                 quadrature_degree,
+                                 common_cell)
 
             # Compute geometry tensor
             GK = GeometryTensor(monomial)
