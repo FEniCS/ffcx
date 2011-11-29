@@ -350,8 +350,11 @@ def main(args):
     bench = "--bench" in args
     fast = "--fast" in args
     ext = "--ext_quad" in args
+    generate_only = "--generate-only" in args
 
-    args = [arg for arg in args if not arg in ("--bench", "--fast", "--ext_quad")]
+    args = [arg for arg in args
+            if not arg in ("--bench", "--fast", "--ext_quad",
+                           "--generate-only")]
 
     # Clean out old output directory
     output_directory = "output"
@@ -393,7 +396,7 @@ def main(args):
 
         # Build and run programs and validate output to common
         # reference
-        if fast:
+        if fast or generate_only:
             info("Skipping program validation")
         elif bench:
             build_programs(bench)
