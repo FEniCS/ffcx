@@ -40,7 +40,8 @@ from ufl.algorithms import extract_elements, extract_sub_elements
 from ufl.algorithms import extract_common_cell
 
 # FFC modules
-from ffc.log import log, info, begin, end, warning, debug, error, ffc_assert
+from ffc.log import log, info, begin, end, warning, debug, error, ffc_assert, warning_blue
+#from ufl.log import warning_blue
 from ffc.utils import all_equal
 from ffc.quadratureelement import default_quadrature_degree
 from ffc.utils import all_equal
@@ -213,8 +214,10 @@ def _attach_integral_metadata(form_data, common_cell, parameters):
                                                     form_data.unique_sub_elements)
                 info("quadrature_degree: auto --> %d" % qd)
                 integral_metadata["quadrature_degree"] = qd
+                _check_quadrature_degree(qd, form_data.topological_dimension)
             else:
                 info("quadrature_degree: %d" % qd)
+                _check_quadrature_degree(qd, form_data.topological_dimension)
 
             # Automatic selection of quadrature rule
             if qr == "auto":
@@ -402,3 +405,12 @@ def _auto_select_quadrature_degree(integral, representation, elements):
     debug("Selecting quadrature degree based on total polynomial degree of integrand: " + str(q))
 
     return q
+
+def _check_quadrature_degree(degree, top_dim):
+    """Check that quadrature degree does not result in a unreasonable high
+    number of integration points."""
+    num_points = ((degree + 1 + 1) / 2)**top_dim
+    if num_points >= 100:
+        warning_blue("WARNING: The number of integration points for each cell will be: %d" % num_points)
+        warning_blue("         Consider using the option 'quadrature_degree' to reduce the number of points")
+
