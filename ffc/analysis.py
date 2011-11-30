@@ -41,7 +41,6 @@ from ufl.algorithms import extract_common_cell
 
 # FFC modules
 from ffc.log import log, info, begin, end, warning, debug, error, ffc_assert, warning_blue
-#from ufl.log import warning_blue
 from ffc.utils import all_equal
 from ffc.quadratureelement import default_quadrature_degree
 from ffc.utils import all_equal
