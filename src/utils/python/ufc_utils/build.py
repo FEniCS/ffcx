@@ -1,5 +1,5 @@
 __author__ = "Johan Hake (hake@simula.no)"
-__date__ = "2009-03-06 -- 2011-11-16"
+__date__ = "2009-03-06 -- 2011-12-06"
 __copyright__ = "Copyright (C) 2009 Johan Hake"
 __license__  = "GNU LGPL Version 2.1"
 
@@ -142,7 +142,7 @@ set the environment variable BOOST_DIR.
     # If BOOST_DIR is not set use default directory
     boost_dir = os.getenv("BOOST_DIR", default)
     boost_math_is_found = False
-    for lib_dir in ["", "lib"]:
+    for lib_dir in ["", "lib64", "lib"]:
         for math_lib in ["-mt", ""]:
             if glob.glob(os.path.join(boost_dir, lib_dir, \
                                       "libboost_math_tr1%s*"%math_lib)):
