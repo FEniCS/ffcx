@@ -1,5 +1,8 @@
+2.0.5 [2011-12-07]
+ - Improve configuration of libboost-math
 2.0.4 [2011-11-28]
- - Add boost_math_tr1 to library flags when JIT compiling an extention module
+ - Add boost_math_tr1 to library flags when JIT compiling an
+   extension module
 2.0.3 [2011-10-26]
  - CMake config improvements
 2.0.2 [2011-08-11]
