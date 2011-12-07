@@ -1,3 +1,5 @@
+1.0.0 [2011-12-07]
+ - Issue warning when form integration requires more than 100 points
 1.0-rc1 [2011-11-28]
  - Fix bug with coordinates on facet integrals (intervals). Bug #888682.
  - Add support for FacetArea, new geometric quantity in UFL.
