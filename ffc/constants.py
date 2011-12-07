@@ -18,7 +18,7 @@
 # Modified by Kristian B. Oelgaard 2009
 #
 # First added:  2005-05-20
-# Last changed: 2011-11-28
+# Last changed: 2011-12-07
 
-FFC_VERSION = "1.0-rc1+"
-UFC_VERSION = "2.0.4"
+FFC_VERSION = "1.0.0"
+UFC_VERSION = "2.0.5"
