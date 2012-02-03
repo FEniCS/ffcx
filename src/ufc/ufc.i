@@ -17,8 +17,6 @@
 %ignore ufc::cell::entity_indices;
 %ignore ufc::cell::coordinates;
 
-%include "ufc.h"
-
 // Declare which classes should be stored using shared_ptr
 %shared_ptr(ufc::cell_integral)
 %shared_ptr(ufc::dofmap)
