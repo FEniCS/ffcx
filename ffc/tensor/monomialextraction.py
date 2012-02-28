@@ -292,6 +292,18 @@ class MonomialTransformer(ReuseTransformer):
 
     #--- Operator handles ---
 
+    def division(self, o):
+
+        # Handle division by scalars as multiplication by inverse
+        denominator = o.operands()[1]
+        if not isinstance(denominator, ScalarValue):
+            raise MonomialException, ("No handler defined for expression %s."
+                                      % o._uflclass.__name__)
+        inverse = self.scalar_value(ScalarValue(1.0/denominator.value()))
+        numerator = self.visit(o.operands()[0])
+
+        return self.product(o, inverse, numerator)
+
     def sum(self, o, s0, s1):
         s = s0 + s1
         return s
