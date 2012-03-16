@@ -23,6 +23,8 @@
 # FFC modules
 from ffc.log import error
 
+from collections import deque
+
 def split_expression(expression, format, operator, allow_split = False):
     """Split the expression at the given operator, return list.
     Do not split () or [] unless told to split (). This is to enable easy count
@@ -37,13 +39,13 @@ def split_expression(expression, format, operator, allow_split = False):
     rg = group[1]
 
     # Split with given operator
-    prods = expression.split(operator)
-    new_prods = [prods.pop(0)]
+    prods = deque(expression.split(operator))
+    new_prods = [prods.popleft()]
 
     while prods:
         # Continue while we still have list of potential products
         # p is the first string in the product
-        p = prods.pop(0)
+        p = prods.popleft()
         # If the number of "[" and "]" doesn't add up in the last entry of the
         # new_prods list, add p and see if it helps for next iteration
         if new_prods[-1].count(la) != new_prods[-1].count(ra):
@@ -342,6 +344,8 @@ def expand_operations(expression, format):
         prods = split_expression(a, format, mult)
         prods.sort()
         new_prods = []
+        
+        # FIXME: Should we use deque here?
         expanded = []
         for i, p in enumerate(prods):
             # If we have a group, expand inner expression
