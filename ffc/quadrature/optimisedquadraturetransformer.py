@@ -33,7 +33,7 @@ from ufl.classes import FixedIndex
 from ufl.classes import IntValue
 from ufl.classes import FloatValue
 from ufl.classes import Coefficient
-from ufl.expr import Operator
+from ufl.classes import Operator
 
 # UFL Algorithms.
 from ufl.algorithms.printing import tree_format
