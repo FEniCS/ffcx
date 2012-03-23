@@ -232,7 +232,7 @@ def _compute_form_ir(form_data, form_id, element_numbers):
     ir["members"] = not_implemented
     ir["constructor"] = not_implemented
     ir["destructor"] = not_implemented
-    ir["signature"] = repr(form_data.preprocessed_form)
+    ir["signature"] = form_data.preprocessed_form.signature()
     ir["rank"] = form_data.rank
     ir["num_coefficients"] = form_data.num_coefficients
     ir["num_cell_domains"] = form_data.num_cell_domains

@@ -73,7 +73,7 @@ class JITObject:
             return self._signature
 
         # Compute form signature based on form stored in formdata
-        form_signature = repr(self.preprocessed_form)
+        form_signature = self.preprocessed_form.signature()
 
         # Compute other relevant signatures
         parameters_signature = _parameters_signature(self.parameters)
