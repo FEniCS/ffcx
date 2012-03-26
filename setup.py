@@ -46,7 +46,7 @@ setup(name = "uflacs",
           ],
       scripts = scripts,
       packages = ["uflacs", "uflacs.utils", "uflacs.codeutils"],
-      package_dir = {"uflacs": "uflacs"},
+      package_dir = {"uflacs": "site-packages/uflacs"},
 #     data_files = [(pjoin("share", "man", "man1"),
 #                    [pjoin("doc", "man", "man1", "uflacs.1.gz")])]
     )
