@@ -49,13 +49,23 @@ TODO Compile forms into DUNE C++ code.
 Backlog
 =======
 
+Bugs
+----
+
+- Use current directory as output dir, not input file dir (at least compile_dolfin)
+
+- Latex compiler needs document template applied
+
+Features
+--------
+
 - Fetch code formatting utilities into repo
 
 - Fill in some tests in test framework
 
-- Make test framework to simplify generate-compile-build-run-test cycle
-
 - Generate dolfin Expressions
+
+- Make jit test framework to simplify generate-compile-build-run-test cycle
 
 - Start generating dune code
 
