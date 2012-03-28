@@ -1,0 +1,41 @@
+
+cell = tetrahedron
+
+d = cell.d
+I = Identity(d)
+
+V = VectorElement("CG", cell, 1)
+Q = FiniteElement("DG", cell, 0)
+
+U = Coefficient(V)
+
+v = TestFunction(V)
+u = TrialFunction(V)
+
+F = I + grad(U)
+C = F*F.T
+m = tr(C)/3
+CmI = C-m*I
+q = det(CmI)/2 
+
+p = inner(CmI, CmI.T)/6
+phi = atan(sqrt(p**3-q**2)/q)/3
+
+l1 = m + 2*sqrt(p)*cos(phi)
+l2 = m -   sqrt(p)*(cos(phi) + sqrt(3)*sin(phi))
+l3 = m -   sqrt(p)*(cos(phi) - sqrt(3)*sin(phi))
+
+alpha1 =  1.3; mu1 =  6.500e5
+alpha2 =  5.0; mu2 =  0.012e5
+alpha3 = -2.0; mu3 = -0.100e5
+
+psi = ((mu1/alpha1) * (l1**alpha1 + l2**alpha1 + l3**alpha1)
+     + (mu2/alpha2) * (l1**alpha2 + l2**alpha2 + l3**alpha2)
+     + (mu3/alpha3) * (l1**alpha3 + l2**alpha3 + l3**alpha3))   
+
+M = psi*dx
+F = derivative(M, U, v)
+J = derivative(F, U, u) 
+
+forms = [M, F, J]
+
