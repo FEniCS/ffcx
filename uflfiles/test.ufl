@@ -19,7 +19,7 @@ s = Coefficient(S)
 
 f = 2*u
 g = dot(v,v)
-h = dot(w, div(s))
+h = u*dot(v, dot(w, div(s)))
 
 a = f*dx
 b = g*dx
