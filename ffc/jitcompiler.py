@@ -170,9 +170,8 @@ def jit_element(element, parameters=None):
 
     # Create simplest possible dummy form
     v = TestFunction(element)
-    for i in range(len(element.value_shape())):
-        v = v[i]
-    form = v*dx
+    ii = (0,)*v.rank()
+    form = v[ii]*dx
 
     # Compile form
     compiled_form, module, form_data, prefix = jit_form(form, parameters)
