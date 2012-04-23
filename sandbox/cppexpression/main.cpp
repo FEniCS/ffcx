@@ -4,7 +4,7 @@
 
 namespace uflacs
 {
-    namespace test/uflfiles/test
+    namespace test_uflfiles_test
     {
         class Expression_g: public dolfin::Expression
         {
