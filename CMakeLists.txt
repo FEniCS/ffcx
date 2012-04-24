@@ -115,7 +115,21 @@ if (UFC_ENABLE_PYTHON AND SWIG_FOUND AND Boost_FOUND)
   set(SWIG_MODULE_NAME ufc)
 
   # SWIG flags
-  set(CMAKE_SWIG_FLAGS -module ${SWIG_MODULE_NAME})
+  set(CMAKE_SWIG_FLAGS
+    -module ${SWIG_MODULE_NAME}
+    -shadow
+    -modern
+    -modernargs
+    -fastdispatch
+    -fvirtual
+    -nosafecstrings
+    -noproxydel
+    -fastproxy
+    -fastinit
+    -fastunpack
+    -fastquery
+    -nobuildnone
+    )
 
   # SWIG sources
   set(SWIG_SOURCES src/ufc/ufc.i)
