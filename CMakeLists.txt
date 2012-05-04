@@ -1,7 +1,7 @@
 # Top level CMakeLists.txt file for UFC
 
-# Require CMake 2.8
-cmake_minimum_required(VERSION 2.8)
+# Require CMake 2.6
+cmake_minimum_required(VERSION 2.6)
 
 #------------------------------------------------------------------------------
 # Set project name and version number
@@ -116,6 +116,11 @@ if (UFC_ENABLE_PYTHON AND SWIG_FOUND AND Boost_FOUND)
 
   # Make build directory for SWIG-generated C++ file
   FILE(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/src/ufc")
+
+  # In CMake 2.6 PYTHON_INCLUDE_DIRS was named PYTHON_INCLUDE_PATH
+  if (NOT DEFINED PYTHON_INCLUDE_DIRS)
+    set(PYTHON_INCLUDE_DIRS ${PYTHON_INCLUDE_PATH})
+  endif()
 
   # Include directories
   include_directories(${UFC_SOURCE_DIR}/src/ufc ${Boost_INCLUDE_DIRS} ${PYTHON_INCLUDE_DIRS})
