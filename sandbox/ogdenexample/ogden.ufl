@@ -9,8 +9,10 @@ Q = FiniteElement("DG", cell, 0)
 
 U = Coefficient(V)
 
-v = TestFunction(V)
-u = TrialFunction(V)
+v = Argument(V)
+u = Argument(V)
+#v = TestFunction(V)
+#u = TrialFunction(V)
 
 F = I + grad(U)
 C = F*F.T
