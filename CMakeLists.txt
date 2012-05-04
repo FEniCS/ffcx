@@ -1,7 +1,7 @@
 # Top level CMakeLists.txt file for UFC
 
-# Require CMake 2.8
-cmake_minimum_required(VERSION 2.8)
+# Require CMake 2.6
+cmake_minimum_required(VERSION 2.6)
 
 #------------------------------------------------------------------------------
 # Set project name and version number
@@ -53,22 +53,31 @@ find_package(Boost 1.36 QUIET)
 
 # Get Python module path from distutils
 if (PYTHONINTERP_FOUND)
-  execute_process(
-    COMMAND ${PYTHON_EXECUTABLE} -c "import sys, distutils.sysconfig; sys.stdout.write(distutils.sysconfig.get_python_lib(plat_specific=True, prefix='${CMAKE_INSTALL_PREFIX}'))"
-    OUTPUT_VARIABLE PYTHON_INSTALL_PATH
-    )
-  # Strip off CMAKE_INSTALL_PREFIX (is added later by CMake)
-  string(REGEX REPLACE "${CMAKE_INSTALL_PREFIX}(/|\\\\)([^ ]*)" "\\2"
-    PYTHON_INSTALL_PATH "${PYTHON_INSTALL_PATH}")
 
-  # Set Python installation path
-  if (NOT DEFINED UFC_INSTALL_PYTHON_MODULE_DIR)
-    set(UFC_INSTALL_PYTHON_MODULE_DIR ${PYTHON_INSTALL_PATH}
-      CACHE PATH "Python module installation directory.")
-  endif()
   if (NOT DEFINED UFC_INSTALL_PYTHON_EXT_DIR)
-    set(UFC_INSTALL_PYTHON_EXT_DIR ${PYTHON_INSTALL_PATH}
+    # Get path for platform-dependent Python modules (since we install a binary libary)
+    execute_process(
+      COMMAND ${PYTHON_EXECUTABLE} -c "import sys, distutils.sysconfig; sys.stdout.write(distutils.sysconfig.get_python_lib(plat_specific=True, prefix='${CMAKE_INSTALL_PREFIX}'))"
+      OUTPUT_VARIABLE UFC_INSTALL_PYTHON_EXT_DIR
+      )
+    # Strip off CMAKE_INSTALL_PREFIX (is added later by CMake)
+    string(REGEX REPLACE "${CMAKE_INSTALL_PREFIX}(/|\\\\)([^ ]*)" "\\2"
+      UFC_INSTALL_PYTHON_EXT_DIR "${UFC_INSTALL_PYTHON_EXT_DIR}")
+    set(UFC_INSTALL_PYTHON_EXT_DIR ${UFC_INSTALL_PYTHON_EXT_DIR}
       CACHE PATH "Python extension module installation directory.")
+  endif()
+
+  if (NOT DEFINED UFC_INSTALL_PYTHON_MODULE_DIR)
+    # Get path for pure Python modules
+    execute_process(
+      COMMAND ${PYTHON_EXECUTABLE} -c "import sys, distutils.sysconfig; sys.stdout.write(distutils.sysconfig.get_python_lib(plat_specific=False, prefix='${CMAKE_INSTALL_PREFIX}'))"
+      OUTPUT_VARIABLE UFC_INSTALL_PYTHON_MODULE_DIR
+      )
+    # Strip off CMAKE_INSTALL_PREFIX (is added later by CMake)
+    string(REGEX REPLACE "${CMAKE_INSTALL_PREFIX}(/|\\\\)([^ ]*)" "\\2"
+      UFC_INSTALL_PYTHON_MODULE_DIR "${UFC_INSTALL_PYTHON_MODULE_DIR}")
+    set(UFC_INSTALL_PYTHON_MODULE_DIR ${UFC_INSTALL_PYTHON_MODULE_DIR}
+      CACHE PATH "Python module installation directory.")
   endif()
 endif (PYTHONINTERP_FOUND)
 
@@ -107,6 +116,11 @@ if (UFC_ENABLE_PYTHON AND SWIG_FOUND AND Boost_FOUND)
 
   # Make build directory for SWIG-generated C++ file
   FILE(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/src/ufc")
+
+  # In CMake 2.6 PYTHON_INCLUDE_DIRS was named PYTHON_INCLUDE_PATH
+  if (NOT DEFINED PYTHON_INCLUDE_DIRS)
+    set(PYTHON_INCLUDE_DIRS ${PYTHON_INCLUDE_PATH})
+  endif()
 
   # Include directories
   include_directories(${UFC_SOURCE_DIR}/src/ufc ${Boost_INCLUDE_DIRS} ${PYTHON_INCLUDE_DIRS})
