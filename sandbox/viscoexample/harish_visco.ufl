@@ -1,7 +1,6 @@
 # Copyright (C) 2012 Harish Narayanan
 
 # Library imports and settings
-from numpy import array, arange
 
 cell = tetrahedron
 
@@ -128,7 +127,8 @@ M = inner(S_n, S_n)*dx # Added for UFL debugging and profiling
 F = inner((I + grad(u))*S_n, grad(v))*dx
 J = derivative(F, u, du)
 
-forms = [M]
+forms = []
+forms += [M]
 forms += [F]
 forms += [J]
 
