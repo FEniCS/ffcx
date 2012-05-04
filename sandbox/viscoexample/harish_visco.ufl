@@ -107,8 +107,10 @@ vector = VectorElement("CG", cell, 1)
 tensor = TensorElement("CG", cell, 1)
 
 # Functions
-du = TrialFunction(vector)            # Incremental displacement
-v  = TestFunction(vector)             # Test function
+v  = Argument(vector)             # Test function
+du = Argument(vector)            # Incremental displacement
+#v  = TestFunction(vector)             # Test function
+#du = TrialFunction(vector)            # Incremental displacement
 u  = Coefficient(vector)              # Displacement from previous iteration
 S_iso_inf_p = Coefficient(tensor)
 S_vol_inf_p = Coefficient(tensor)
