@@ -136,8 +136,10 @@ def create_quadrature(shape, num_points):
     num_points points in each direction.
     """
 
-    # FIXME: KBO: Can this be handled more elegantly?
-    if isinstance(shape, int) and shape == 0 or domain2dim[shape] == 0:
+    if isinstance(shape, int) and shape == 0:
+        return ([()], array([1.0,]))
+
+    if shape in domain2dim and domain2dim[shape] == 0:
         return ([()], array([1.0,]))
 
     quad_rule = FIAT.make_quadrature(reference_cell(shape), num_points)
