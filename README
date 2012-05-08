@@ -5,8 +5,9 @@ Contents:
 
   1. Introduction
   2. Installation
-  3. License
-  4. Feedback
+  3. Authors
+  4. License
+  5. Feedback
 
 -------------------------------------------------------------------------------
 1. Introduction
@@ -67,15 +68,24 @@ installed) for an out-of-source build, simply type
     make install
 
 -------------------------------------------------------------------------------
-3. License
+3. AUTHORS
 
-The header file ufc.h and UFC Python utils are released into the public domain.
+A list of authors can be found in the file AUTHORS.
 
 -------------------------------------------------------------------------------
-4. Feedback
+4. License
+
+Details about the license can be found the file LICENSE.
+
+-------------------------------------------------------------------------------
+5. Feedback
 
 Feedback, comments and suggestions should be sent to
 
     fenics-ufc@lists.launchpad.net
+
+For questions and bug reports, visit the UFC Launchpad page:
+
+  http://www.launchpad.net/ufc
 
 -------------------------------------------------------------------------------
