@@ -1,7 +1,6 @@
 __author__ = "Johan Hake (hake@simula.no)"
 __date__ = "2009-03-06 -- 2012-02-02"
-__copyright__ = "Copyright (C) 2009 Johan Hake"
-__license__  = "GNU LGPL Version 2.1"
+__license__  = "This code is released into the public domain"
 
 __all__ = ['build_ufc_module']
 
@@ -59,7 +58,7 @@ def build_ufc_module(h_files, source_directory="", system_headers=None, \
     # Check system requirements
     (cpp_path, swig_include_dirs, library_dirs, libraries) = \
                configure_instant(swig_binary, swig_path)
-    
+
     # Call instant and return module
     return instant.build_module(wrap_headers            = h_files,
                                 source_directory        = source_directory,
@@ -132,10 +131,10 @@ Install swig version %s or recompiled UFC with present swig
 If Boost is installed in a nonstandard location,
 set the environment variable BOOST_DIR.
 """
-    
+
     # Add the boost_include_dir
     cpp_path += boost_include_dir
-    
+
     # Check for boost_math library
     # FIXME: This is a hack and should be done properly, probably using
     # FIXME: cmake --find-packages
@@ -150,7 +149,7 @@ set the environment variable BOOST_DIR.
                 boost_math_is_found = True
                 boost_library = ["boost_math_tr1%s"%math_lib]
                 break
-    
+
     if not boost_math_is_found:
         raise OSError, """The Boost math library was not found.
 If Boost math library is installed in a nonstandard location,
