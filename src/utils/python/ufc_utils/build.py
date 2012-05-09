@@ -1,5 +1,5 @@
 __author__ = "Johan Hake (hake@simula.no)"
-__date__ = "2009-03-06 -- 2012-02-02"
+__date__ = "2009-03-06 -- 2012-05-09"
 __license__  = "This code is released into the public domain"
 
 __all__ = ['build_ufc_module']
@@ -177,7 +177,7 @@ def extract_declarations(h_files):
 %shared_ptr(ufc::interior_facet_integral)
 
 // Import types from ufc
-%import "swig/ufc.i"
+%import(module="ufc") "ufc.h"
 
 // Swig shared_ptr macro declarations
 """
@@ -191,7 +191,6 @@ def extract_declarations(h_files):
         ufc_classes       = re.findall(r"public[ ]+(ufc::[\w]+).*", code)
         ufc_proxy_classes = [s.replace("ufc::", "") for s in ufc_classes]
 
-        shared_ptr_format = "SWIG_SHARED_PTR_DERIVED(%(der_class)s,%(ufc_class)s,%(der_class)s)"
         new_share_ptr_format = "%%shared_ptr(%s)"
 
         # Write shared_ptr code for swig 2.0.0 or higher
