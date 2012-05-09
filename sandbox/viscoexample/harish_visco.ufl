@@ -134,3 +134,8 @@ forms += [M]
 forms += [F]
 forms += [J]
 
+du2 = Coefficient(vector)
+dv2 = Coefficient(vector)
+Je = replace(J, {du:du2,v:dv2}).integrals()[0].integrand()
+
+expressions = [Je]
