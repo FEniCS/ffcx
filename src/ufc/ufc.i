@@ -17,8 +17,6 @@
 %ignore ufc::cell::entity_indices;
 %ignore ufc::cell::coordinates;
 
-%include "ufc.h"
-
 // Declare which classes should be stored using shared_ptr
 %shared_ptr(ufc::cell_integral)
 %shared_ptr(ufc::dofmap)
@@ -28,11 +26,54 @@
 %shared_ptr(ufc::exterior_facet_integral)
 %shared_ptr(ufc::interior_facet_integral)
 
+%include <exception.i>
+
+//-----------------------------------------------------------------------------
+// Home brewed versions of the SWIG provided SWIG_AsVal(Type). 
+//-----------------------------------------------------------------------------
+%fragment("Py_convert_uint", "header") {
+  // A check for int and converter to uint
+  SWIGINTERNINLINE bool Py_convert_uint(PyObject* in, unsigned int& value)
+  {
+    if (!(PyInt_Check(in) && PyInt_AS_LONG(in)>=0))
+      return false;
+    value = static_cast<unsigned int>(PyInt_AS_LONG(in));
+    return true;
+  }
+}
+
+//-----------------------------------------------------------------------------
+// Out typemap (unsigned int)
+//-----------------------------------------------------------------------------
+%typemap(out) unsigned int
+{
+  // Typemap unsigned int
+  $result = PyInt_FromLong(static_cast< long >($1));
+}
+
+//-----------------------------------------------------------------------------
+// Typecheck and in typemap (unsigned int)
+//-----------------------------------------------------------------------------
+%typecheck(SWIG_TYPECHECK_INTEGER) unsigned int
+{
+  $1 = PyInt_Check($input) ? 1 : 0;
+}
+
+%typemap(in, fragment="Py_convert_uint") unsigned int
+{
+  if (!Py_convert_uint($input, $1))
+    SWIG_exception(SWIG_TypeError, "expected positive 'int' for argument $argnum");
+}
+
+
+
+//-----------------------------------------------------------------------------
+// Include the main header file
+//-----------------------------------------------------------------------------
 %include "ufc.h"
 
 // Include code to generate a __swigversion__ attribute to the cpp module
 // Add prefix to avoid naming problems with other modules
-
 %inline %{
 int ufc_swigversion() { return SWIGVERSION; }
 %}

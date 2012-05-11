@@ -1,5 +1,5 @@
 __author__ = "Johan Hake (hake@simula.no)"
-__date__ = "2009-03-06 -- 2011-12-06"
+__date__ = "2009-03-06 -- 2012-05-09"
 __license__  = "This code is released into the public domain"
 
 __all__ = ['build_ufc_module']
@@ -162,21 +162,22 @@ def extract_declarations(h_files):
 
     # Swig declarations
     declarations =r"""
-%pythoncode %{
-import ufc
-'''
-A hack to get passed a bug in swig.
-This is fixed in swig version 1.3.37
-%}
-%import "swig/ufc.i"
-%pythoncode %{
-'''
-%}
-
 //Uncomment these to produce code for std::tr1::shared_ptr
 //#define SWIG_SHARED_PTR_NAMESPACE std
 //#define SWIG_SHARED_PTR_SUBNAMESPACE tr1
 %include <boost_shared_ptr.i>
+
+// Declare which classes should be stored using shared_ptr
+%shared_ptr(ufc::cell_integral)
+%shared_ptr(ufc::dofmap)
+%shared_ptr(ufc::finite_element)
+%shared_ptr(ufc::function)
+%shared_ptr(ufc::form)
+%shared_ptr(ufc::exterior_facet_integral)
+%shared_ptr(ufc::interior_facet_integral)
+
+// Import types from ufc
+%import(module="ufc") "ufc.h"
 
 // Swig shared_ptr macro declarations
 """
@@ -190,23 +191,9 @@ This is fixed in swig version 1.3.37
         ufc_classes       = re.findall(r"public[ ]+(ufc::[\w]+).*", code)
         ufc_proxy_classes = [s.replace("ufc::", "") for s in ufc_classes]
 
-        shared_ptr_format = "SWIG_SHARED_PTR_DERIVED(%(der_class)s,%(ufc_class)s,%(der_class)s)"
         new_share_ptr_format = "%%shared_ptr(%s)"
 
         # Write shared_ptr code for swig 2.0.0 or higher
-        declarations += "\n"
-        declarations += "#if SWIG_VERSION >= 0x020000\n"
         declarations += "\n".join(new_share_ptr_format%c for c in derived_classes)
-
-        declarations += "\n"
-        declarations += "#else\n"
-        declarations += "\n"
-        declarations += "\n".join(\
-            shared_ptr_format % { "ufc_proxy_class": c[0], "ufc_class": c[1], "der_class": c[2] }\
-            for c in zip(ufc_proxy_classes, ufc_classes, derived_classes)\
-            )
-        declarations += "\n"
-        declarations += "\n"
-        declarations += "#endif\n"
         declarations += "\n"
     return declarations

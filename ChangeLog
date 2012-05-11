@@ -1,3 +1,4 @@
+ - Fix bug introduced by SWIG 2.0.5, which treated uint as Python long
 2.0.5 [2011-12-07]
  - Improve configuration of libboost-math
 2.0.4 [2011-11-28]
