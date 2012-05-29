@@ -8,7 +8,7 @@ import platform
 
 # Version number
 major = 0
-minor = 1
+minor = 2
 maintenance = 0
 
 scripts = [pjoin("scripts", "uflacs")]
@@ -45,7 +45,18 @@ setup(name = "uflacs",
           'Topic :: Utilities',
           ],
       scripts = scripts,
-      packages = ["uflacs", "uflacs.utils", "uflacs.codeutils"],
+      packages = ["uflacs",
+                  "uflacs.utils",
+                  "uflacs.codeutils",
+                  "uflacs.algorithms",
+                  "uflacs.backends",
+                  "uflacs.backends.latex",
+                  "uflacs.backends.cpp1",
+                  "uflacs.backends.cpp2",
+                  "uflacs.backends.ffc",
+                  "uflacs.backends.dolfin",
+                  "uflacs.backends.pdelab",
+                  ],
       package_dir = {"uflacs": "site-packages/uflacs"},
 #     data_files = [(pjoin("share", "man", "man1"),
 #                    [pjoin("doc", "man", "man1", "uflacs.1.gz")])]
