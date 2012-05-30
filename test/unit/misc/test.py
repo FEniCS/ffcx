@@ -41,11 +41,6 @@ triangle = [(0, 0), (1, 0), (0, 1)]
 tetrahedron = [(0, 0, 0), (1, 0, 0), (0, 1, 0), (0, 0, 1)]
 num_points = 5
 
-# FIXME: A hack that will make the test run on Ubuntu 4.11, which ships two
-# FIXME: versions of SWIG. UFC automatically uses the swig2.0 binary, which
-# FIXME: FFC also need to use
-use_swig2_binary = instant.check_and_set_swig_binary("swig2.0")
-
 def random_point(shape):
     w = numpy.random.random(len(shape))
     return sum([numpy.array(shape[i])*w[i] for i in range(len(shape))]) / sum(w)
@@ -281,10 +276,6 @@ class JITTests(unittest.TestCase):
         #options = {"log_level": INFO + 5}
         #options = {"log_level": 5}
         options = {"log_level": WARNING}
-
-        # FIXME: A hack to get the unit test pass on Ubuntu 11.04, see above.
-        if use_swig2_binary:
-            options["swig_binary"] = "swig2.0"
 
         # Define two forms with the same signatures
         element = FiniteElement("Lagrange", "triangle", 1)
