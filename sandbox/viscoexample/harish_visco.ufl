@@ -130,12 +130,12 @@ F = inner((I + grad(u))*S_n, grad(v))*dx
 J = derivative(F, u, du)
 
 forms = []
-forms += [M]
-forms += [F]
+#forms += [M]
+#forms += [F]
 forms += [J]
 
-du2 = Coefficient(vector)
-dv2 = Coefficient(vector)
-Je = replace(J, {du:du2,v:dv2}).integrals()[0].integrand()
+#du2 = Coefficient(vector)
+#dv2 = Coefficient(vector)
+#Je = replace(J, {du:du2,v:dv2}).integrals()[0].integrand()
 
-expressions = [Je]
+#expressions = [Je]
