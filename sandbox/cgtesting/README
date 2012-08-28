@@ -1,0 +1,37 @@
+
+cgtester.py:
+
+class CGTester(unittest.TestCase):
+    def emit_test(self)
+
+test_foobar.py:
+
+class TestFooBar(CGTester):
+
+
+
+// Makefile:
+// Find test_*.cpp
+// Rule: run: <all run_test_%> (phony target)
+// Rule: generate: <all gc_%.h> (phony target)
+// Rule: run_%: test_% (run test_%)
+// Rule: test_%: test_%.cpp gc_%.h (run CXX)
+// No rule needed: test_%.cpp depends on gc_%.h
+// Rule: gc_%.h: test_%.py (run test_%.py)
+
+// Manually written:
+test_foo.cpp
+// Contains: gtest cases TEST (foo, test_case)
+// Includes generated/test_foo.h
+
+// Generated:
+generated/test_foo.h
+// Contains: arbitrary generated code
+// Includes whatever external dependencies it needs
+// (libraries are just added to build system)
+
+// Generator:
+test_foo.py
+// Contains: unittest/CGTester testcases
+// Each testcase can emit multiple snippets to generated/test_foo.h
+
