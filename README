@@ -1,9 +1,40 @@
 UFLACS - UFL Analyser and Compiler System
 =========================================
 
+Contact
+-------
+
+Launchpad site:
+  http://www.launchpad.net/uflacs/
+
 Authors:
   Martin Sandve Alnæs (martinal@simula.no)
   Steffen Müthing (steffen.muething@ipvs.uni-stuttgart.de)
 
+
+Licencing
+---------
+
 This project is released under the LGPL v3 licence.
+
+
+Testing
+-------
+
+To run unit tests, do
+  cd tests/
+  ./test.sh
+for output to screen, or
+  cd tests/
+  ./test.py
+for output to log files (for batch runs).
+
+
+Installing
+----------
+
+Install to default python location as root
+  sudo python setup.py install
+or install to your own python path directory
+  python setup.py install --prefix=/path/to/my/own/site-packages
 
