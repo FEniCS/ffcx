@@ -103,7 +103,7 @@ def _encapsule_form(prefix, form_data, i, element_map, superclassname=None):
         superclassname = "Form"
 
     from dolfin_utils.wrappers import UFCFormNames
-    form_names = UFCFormNames("%d" % i,
+    form_names = UFCFormNames(form_data.name or "%d" % i,
                               form_data.coefficient_names,
                               format["classname form"](prefix, i),
                               [format["classname finite_element"](prefix, j)
