@@ -34,14 +34,14 @@ class test_geometry_snippets(CodegenTestCase):
 
         PRE:
         double x[3] = { 0.0, 0.1, 0.2 };
-        double vertices[3][3] = { { 0.0, 0.0, 0.0 },
-                                  { 0.0, 0.0, 0.0 },
-                                  { 0.0, 0.0, 0.0 } };
+        double vertices[3][3] = { { 1.0, 2.0, 3.0 },
+                                  { 2.0, 2.0, 2.0 },
+                                  { 2.0, 2.0, 2.0 } };
 
         POST:
-        ASSERT_EQ(xi[0], 0.0);
-        ASSERT_EQ(xi[1], 0.1);
-        ASSERT_EQ(xi[2], 0.2);
+        ASSERT_EQ(xi[0], 1.0+0.0);
+        ASSERT_EQ(xi[1], 2.0+0.1);
+        ASSERT_EQ(xi[2], 3.0+0.2);
         """
 
         code = """
