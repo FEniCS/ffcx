@@ -34,7 +34,9 @@ class test_geometry_snippets(CodegenTestCase):
 
         PRE:
         double x[3] = { 0.0, 0.1, 0.2 };
-        double vertices[3][3];// = { ... };
+        double vertices[3][3] = { { 0.0, 0.0, 0.0 },
+                                  { 0.0, 0.0, 0.0 },
+                                  { 0.0, 0.0, 0.0 } };
 
         POST:
         ASSERT_EQ(xi[0], 0.0);
