@@ -194,6 +194,7 @@ def build_programs(bench):
     # If BOOST_DIR is not set use default directory
     boost_inc_dir = ""
     boost_lib_dir = ""
+    boost_math_tr1_lib = "boost_math_tr1"
     boost_dir = os.getenv("BOOST_DIR", default)
     boost_is_found = False
     for inc_dir in ["", "include"]:
@@ -201,10 +202,13 @@ def build_programs(bench):
             boost_inc_dir = os.path.join(boost_dir, inc_dir)
             break
     for lib_dir in ["", "lib"]:
-        if os.path.isfile(os.path.join(boost_dir, lib_dir, "libboost_math_tr1.so")) or\
-           os.path.isfile(os.path.join(boost_dir, lib_dir, "libboost_math_tr1.dylib")):
-            boost_lib_dir = os.path.join(boost_dir, lib_dir)
-            break
+        for ext in [".so", "-mt.so", ".dylib", "-mt.dylib"]:
+            _lib = os.path.join(boost_dir, lib_dir, "lib" + boost_math_tr1_lib + ext)
+            if os.path.isfile(_lib):
+                if "-mt" in _lib:
+                    boost_math_tr1_lib += "-mt"
+                boost_lib_dir = os.path.join(boost_dir, lib_dir)
+                break
     if boost_inc_dir != "" and boost_lib_dir != "":
         boost_is_found = True
 
@@ -234,7 +238,8 @@ set the environment variable BOOST_DIR.
 
         # Compile test code
         prefix = f.split(".h")[0]
-        command = "g++ %s -o %s.bin %s.cpp -lboost_math_tr1" % (compiler_options, prefix, prefix)
+        command = "g++ %s -o %s.bin %s.cpp -l%s" % \
+                  (compiler_options, prefix, prefix, boost_math_tr1_lib)
         ok = run_command(command)
 
         # Check status
