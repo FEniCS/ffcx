@@ -76,6 +76,7 @@ show:
 clean:
 	${RM} -f ${GENDIR}/*
 	${RM} -f `find -name \*.pyc`
+	${RM} -f *.log
 
 purge: clean
 	${RM} -f ${TEST_PROG} ${TESTAPP}
