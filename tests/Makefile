@@ -23,7 +23,7 @@ TEST_GC=$(addprefix ${GENDIR}/gc_,${TEST_SRC_BASE})
 TEST_MAINS=$(addsuffix .cpp, $(addprefix ${GENDIR}/main_,${TEST_PROG}))
 
 CXXFLAGS=-I${GTEST_DIR}/include -I${GENDIR} -I${CPPDIR}
-LIBDIRS=-L${GTEST_DIR}/mybuild
+LIBDIRS=-L${GTEST_DIR}/lib
 LIBS=-lgtest -lpthread
 
 .PHONY: show clean purge all run run_testall run_test_*
