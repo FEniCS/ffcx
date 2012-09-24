@@ -22,7 +22,8 @@ TEST_RUN=$(addprefix run_,${TEST_PROG})
 TEST_GC=$(addprefix ${GENDIR}/gc_,${TEST_SRC_BASE})
 TEST_MAINS=$(addsuffix .cpp, $(addprefix ${GENDIR}/main_,${TEST_PROG}))
 
-CXXFLAGS=-I${GTEST_DIR}/include -I${GENDIR} -I${CPPDIR} -I/home/martinal/opt/fenics/dorsal-unstable/include
+UFCINCDIR=`pkg-config ufc-1 --cflags`
+CXXFLAGS=-I${GTEST_DIR}/include -I${GENDIR} -I${CPPDIR} ${UFCINCDIR}
 LIBDIRS=-L${GTEST_DIR}/lib
 LIBS=-lgtest -lpthread
 
