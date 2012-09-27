@@ -1,0 +1,4 @@
+tests/generated/*.h
+tests/generated/*.cpp
+build
+tests/testall
