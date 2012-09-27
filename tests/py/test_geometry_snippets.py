@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 from codegentestcase import CodegenTestCase, unittest
 
-from uflacs.geometry.cellcodegen import (
+from uflacs.geometry import (
     IntervalGeometryCG,
     TriangleGeometryCG,
     TetrahedronGeometryCG,
@@ -27,7 +27,7 @@ class test_geometry_snippets(CodegenTestCase):
     using namespace uflacs;
     '''
 
-    def test_interval_computation_of_geometry_mapping(self):
+    def test_computation_of_geometry_mapping_on_interval(self):
         """
         PRE:
         mock_interval c;
@@ -35,67 +35,99 @@ class test_geometry_snippets(CodegenTestCase):
         c.coordinates[1][0] = 0.1;
 
         POST:
-        ASSERT_EQ(v0[0], 0.2);
-        ASSERT_EQ(G[0], -0.1);
-        ASSERT_EQ(detG, -0.1);
-        ASSERT_EQ(detGsign, -1.0);
-        ASSERT_EQ(absdetG, 0.1);
-        ASSERT_EQ(Ginv[0], -1.0/0.1);
+        ASSERT_EQ(0.2, v0[0]);
+        ASSERT_EQ(-0.1, J[0]);
+        ASSERT_EQ(-0.1, detJ);
+        ASSERT_EQ(-1.0, signdetJ);
+        ASSERT_EQ(0.1, absdetJ);
+        ASSERT_EQ(-1.0/0.1, Jinv[0]);
         """
         ccg = IntervalGeometryCG()
         snippets = []
-        snippets.append(ccg.gen_v0_code())
-        snippets.append(ccg.gen_G_code())
-        snippets.append(ccg.gen_detG_code())
-        snippets.append(ccg.gen_absdetG_code())
-        snippets.append(ccg.gen_Ginv_code())
+        snippets.append(ccg.v0_code())
+        snippets.append(ccg.J_code())
+        snippets.append(ccg.detJ_code())
+        snippets.append(ccg.signdetJ_code())
+        snippets.append(ccg.absdetJ_code())
+        snippets.append(ccg.Jinv_code())
         code = '\n'.join(snippets)
         self.emit_test(code)
 
-    def test_interval_mapping_between_x_and_xi(self):
-        pass
-
-    def test_interval_mapping_from_x_to_xi(self):
-        pass
-
-    def test_mapping_from_x_to_xi(self):
-        """Test that foobar.
-
+    def test_computation_of_geometry_mapping_on_restricted_interval(self):
+        """
         PRE:
-        double x[3] = { 0.0, 0.1, 0.2 };
-        double vertices[3][3] = { { 1.0, 2.0, 3.0 },
-                                  { 2.0, 2.0, 2.0 },
-                                  { 2.0, 2.0, 2.0 } };
+        mock_interval cr;
+        cr.coordinates[0][0] = 0.2;
+        cr.coordinates[1][0] = 0.1;
 
         POST:
-        ASSERT_EQ(xi[0], 1.0+0.0);
-        ASSERT_EQ(xi[1], 2.0+0.1);
-        ASSERT_EQ(xi[2], 3.0+0.2);
+        ASSERT_EQ(0.2, v0r[0]);
+        ASSERT_EQ(-0.1, Jr[0]);
+        ASSERT_EQ(-0.1, detJr);
+        ASSERT_EQ(-1.0, signdetJr);
+        ASSERT_EQ(0.1, absdetJr);
+        ASSERT_EQ(-1.0/0.1, Jinvr[0]);
         """
+        # Using a custom restriction name 'r' for the test, any string can be inserted instead
+        ccg = IntervalGeometryCG(restriction='r')
+        snippets = []
+        snippets.append(ccg.v0_code())
+        snippets.append(ccg.J_code())
+        snippets.append(ccg.detJ_code())
+        snippets.append(ccg.signdetJ_code())
+        snippets.append(ccg.absdetJ_code())
+        snippets.append(ccg.Jinv_code())
+        code = '\n'.join(snippets)
+        self.emit_test(code)
 
-        code = """
-        double *v0 = &vertices[0][0];
+    def test_mapping_from_xi_to_x_on_interval(self):
+        """
+        PRE:
+        mock_interval c;
+        c.coordinates[0][0] = 0.2;
+        c.coordinates[1][0] = 0.1;
+        double xi[1] = { 0.5 };
 
-        double G[9];
-        G[0] = 1.0;
-        G[1] = 0.0;
-        G[2] = 0.0;
-        G[3] = 0.0;
-        G[4] = 1.0;
-        G[5] = 0.0;
-        G[6] = 0.0;
-        G[7] = 0.0;
-        G[8] = 1.0;
+        POST:
+        ASSERT_DOUBLE_EQ(0.15, x[0]);
+        """
+        ccg = IntervalGeometryCG()
+        snippets = []
+        snippets.append(ccg.v0_code())
+        snippets.append(ccg.J_code())
+        snippets.append(ccg.x_from_xi_code())
+        code = '\n'.join(snippets)
+        self.emit_test(code)
 
+    def test_mapping_from_x_to_xi_on_interval(self):
+        """
+        PRE:
+        mock_interval c;
+        c.coordinates[0][0] = 0.2;
+        c.coordinates[1][0] = 0.1;
+        double x[1] = { 0.15 };
+
+        POST:
+        ASSERT_DOUBLE_EQ(0.5, xi[0]);
+        """
+        ccg = IntervalGeometryCG()
+        snippets = []
+        snippets.append(ccg.v0_code())
+        snippets.append(ccg.J_code())
+        snippets.append(ccg.Jinv_code())
+        snippets.append(ccg.xi_from_x_code())
+        code = '\n'.join(snippets)
+        self.emit_test(code)
+
+    def xtest_mapping_from_x_to_xi_on_tetrahedron(self):
+        """
         double xi[3];
         xi[0] = G[0]*x[0] + G[1]*x[1] + G[2]*x[2] + v0[0];
         xi[1] = G[3]*x[0] + G[4]*x[1] + G[5]*x[2] + v0[1];
         xi[2] = G[6]*x[0] + G[7]*x[1] + G[8]*x[2] + v0[2];
         """
 
-        self.emit_test(code)
-
-    def test_mapping_from_xi_to_x(self):
+    def xtest_computation_of_cell_volume(self):
         """
         PRE:
         POST:
@@ -103,7 +135,7 @@ class test_geometry_snippets(CodegenTestCase):
         code = ""
         self.emit_test(code)
 
-    def test_computation_of_cell_volume(self):
+    def xtest_computation_of_cell_surface_area(self):
         """
         PRE:
         POST:
@@ -111,7 +143,7 @@ class test_geometry_snippets(CodegenTestCase):
         code = ""
         self.emit_test(code)
 
-    def test_computation_of_cell_surface_area(self):
+    def xtest_computation_of_facet_area(self):
         """
         PRE:
         POST:
@@ -119,15 +151,7 @@ class test_geometry_snippets(CodegenTestCase):
         code = ""
         self.emit_test(code)
 
-    def test_computation_of_facet_area(self):
-        """
-        PRE:
-        POST:
-        """
-        code = ""
-        self.emit_test(code)
-
-    def test_computation_of_facet_normal(self):
+    def xtest_computation_of_facet_normal(self):
         """
         PRE:
         POST:
