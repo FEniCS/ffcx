@@ -2,7 +2,12 @@
 from codegentestcase import CodegenTestCase, unittest
 
 class test_mock_cells(CodegenTestCase):
-    '''Test mock implementations of ufc cell.
+    '''These tests check that the mock implementations
+    of ufc cells are properly constructed. The mock cells
+    are not actual subclasses of ufc::cell, instead using
+    sufficiently large fixed size arrays to avoid inconvenient
+    memory allocation code in the unit tests. The tests here
+    can be seen as a demonstration of how to use the mock cells.
 
     HEADER:
     /**
@@ -19,7 +24,7 @@ class test_mock_cells(CodegenTestCase):
     def test_mock_interval(self):
         """
         PRE:
-        mock_interval      s1;
+        mock_interval s1;
 
         POST:
         ASSERT_EQ(s1.coordinates[0][0], 0.0);
@@ -33,7 +38,7 @@ class test_mock_cells(CodegenTestCase):
     def test_mock_triangle(self):
         """
         PRE:
-        mock_triangle      s2;
+        mock_triangle s2;
 
         POST:
         ASSERT_EQ(s2.coordinates[0][0], 0.0);
@@ -52,7 +57,7 @@ class test_mock_cells(CodegenTestCase):
     def test_mock_tetrahedron(self):
         """
         PRE:
-        mock_tetrahedron   s3;
+        mock_tetrahedron s3;
 
         POST:
         ASSERT_EQ(s3.coordinates[0][0], 2.0);
@@ -100,7 +105,7 @@ class test_mock_cells(CodegenTestCase):
     def test_mock_hexahedron(self):
         """
         PRE:
-        mock_hexahedron    q3;
+        mock_hexahedron q3;
 
         POST:
         ASSERT_EQ(q3.coordinates[0][0], 5.0 * (0.0 + 2.0));

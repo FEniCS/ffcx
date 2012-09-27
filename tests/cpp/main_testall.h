@@ -1,3 +1,6 @@
-#include "test_codegen_testing_framework.h"
 #include "test_geometry_snippets.h"
 #include "test_ufl_expression_compilation.h"
+#include "test_tabulate_tensor_body.h"
+#include "test_codegen_testing_framework.h"
+#include "test_element_combinations.h"
+#include "test_mock_cells.h"

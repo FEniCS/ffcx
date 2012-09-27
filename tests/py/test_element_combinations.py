@@ -25,7 +25,7 @@ class test_element_combinations(CodegenTestCase):
         POST:
         ASSERT_EQ(xi[0], 0.0);
         ASSERT_EQ(xi[1], 0.1);
-        ASSERT_EQ(xi[2], 0.1);
+        ASSERT_EQ(xi[2], 0.2);
         """
 
         # FIXME: Define interface for mock element code generator using TDD

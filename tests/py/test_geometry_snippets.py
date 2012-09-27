@@ -119,6 +119,38 @@ class test_geometry_snippets(CodegenTestCase):
         code = '\n'.join(snippets)
         self.emit_test(code)
 
+    def xtest_computation_of_cell_volume_on_interval(self):
+        """
+        PRE:
+        POST:
+        """
+        code = ""
+        self.emit_test(code)
+
+    def xtest_computation_of_cell_surface_area_on_interval(self):
+        """
+        PRE:
+        POST:
+        """
+        code = ""
+        self.emit_test(code)
+
+    def xtest_computation_of_facet_area_on_interval(self):
+        """
+        PRE:
+        POST:
+        """
+        code = ""
+        self.emit_test(code)
+
+    def xtest_computation_of_facet_normal_on_interval(self):
+        """
+        PRE:
+        POST:
+        """
+        code = ""
+        self.emit_test(code)
+
     def xtest_mapping_from_x_to_xi_on_tetrahedron(self):
         """
         double xi[3];
@@ -126,38 +158,6 @@ class test_geometry_snippets(CodegenTestCase):
         xi[1] = G[3]*x[0] + G[4]*x[1] + G[5]*x[2] + v0[1];
         xi[2] = G[6]*x[0] + G[7]*x[1] + G[8]*x[2] + v0[2];
         """
-
-    def xtest_computation_of_cell_volume(self):
-        """
-        PRE:
-        POST:
-        """
-        code = ""
-        self.emit_test(code)
-
-    def xtest_computation_of_cell_surface_area(self):
-        """
-        PRE:
-        POST:
-        """
-        code = ""
-        self.emit_test(code)
-
-    def xtest_computation_of_facet_area(self):
-        """
-        PRE:
-        POST:
-        """
-        code = ""
-        self.emit_test(code)
-
-    def xtest_computation_of_facet_normal(self):
-        """
-        PRE:
-        POST:
-        """
-        code = ""
-        self.emit_test(code)
 
 if __name__ == "__main__":
     unittest.main()
