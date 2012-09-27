@@ -1,73 +1,13 @@
 #!/usr/bin/env python
 from codegentestcase import CodegenTestCase, unittest
 
-class CellGeometryCG(object):
-    """Code generation of cell related geometry snippets.
-
-    x[]: global coordinates
-    xi[]: local cell coordinates
-    J[i*d+j]: d xi[i] / d x[j]
-    x[i] = sum_j J[i*d+j]*xi[j] + v0[i]
-    xi[i] = sum_j Jinv[i*d+j]*(x[j] - v0[i])
-    """
-    def __init__(self, celltype, gdim, tdim):
-        self.celltype = celltype
-        self.gdim = gdim
-        self.tdim = tdim
-
-    def gen_v0_code(self):
-        code = "const double * v0 = c.coordinates[0];"
-        return code
-
-    def gen_G_code(self):
-        raise NotImplementedException
-
-    def gen_detG_code(self):
-        raise NotImplementedException
-
-    def gen_absdetG_code(self):
-        code = """
-        double detGsign = detG >= 0.0 ? +1.0: -1.0;
-        double absdetG = detG * detGsign;
-        """
-        return code
-
-    def gen_Ginv_code(self):
-        raise NotImplementedException
-
-    def gen_x_from_xi(self):
-        code = """
-        FIXME
-        """
-        return code
-
-    def gen_xi_from_x(self):
-        code = """
-        FIXME
-        """
-        return code
-
-class IntervalGeometryCG(object):
-    def __init__(self):
-        CellGeometryCG.__init__(self, 1, 1)
-
-    def gen_G_code(self):
-        code = """
-        double G[1] = { c.coordinates[1][0] - c.coordinates[0][0] };
-        """
-        return code
-
-    def gen_detG_code(self):
-        code = """
-        double detG = G[0];
-        """
-        return code
-
-    def gen_Ginv_code(self):
-        code = """
-        double Ginv[1] = { 1.0 / G[0] };
-        """
-        return code
+from uflacs.geometry.cellcodegen import (
+    IntervalGeometryCG,
+    TriangleGeometryCG,
+    TetrahedronGeometryCG,
+    QuadrilateralGeometryCG,
+    HexahedronGeometryCG,
+    )
 
 class test_geometry_snippets(CodegenTestCase):
     '''Geometry snippets based on ufc cell.
