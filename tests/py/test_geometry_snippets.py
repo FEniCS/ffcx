@@ -1,6 +1,74 @@
 #!/usr/bin/env python
 from codegentestcase import CodegenTestCase, unittest
 
+class CellGeometryCG(object):
+    """Code generation of cell related geometry snippets.
+
+    x[]: global coordinates
+    xi[]: local cell coordinates
+    J[i*d+j]: d xi[i] / d x[j]
+    x[i] = sum_j J[i*d+j]*xi[j] + v0[i]
+    xi[i] = sum_j Jinv[i*d+j]*(x[j] - v0[i])
+    """
+    def __init__(self, celltype, gdim, tdim):
+        self.celltype = celltype
+        self.gdim = gdim
+        self.tdim = tdim
+
+    def gen_v0_code(self):
+        code = "const double * v0 = c.coordinates[0];"
+        return code
+
+    def gen_G_code(self):
+        raise NotImplementedException
+
+    def gen_detG_code(self):
+        raise NotImplementedException
+
+    def gen_absdetG_code(self):
+        code = """
+        double detGsign = detG >= 0.0 ? +1.0: -1.0;
+        double absdetG = detG * detGsign;
+        """
+        return code
+
+    def gen_Ginv_code(self):
+        raise NotImplementedException
+
+    def gen_x_from_xi(self):
+        code = """
+        FIXME
+        """
+        return code
+
+    def gen_xi_from_x(self):
+        code = """
+        FIXME
+        """
+        return code
+
+class IntervalGeometryCG(object):
+    def __init__(self):
+        CellGeometryCG.__init__(self, 1, 1)
+
+    def gen_G_code(self):
+        code = """
+        double G[1] = { c.coordinates[1][0] - c.coordinates[0][0] };
+        """
+        return code
+
+    def gen_detG_code(self):
+        code = """
+        double detG = G[0];
+        """
+        return code
+
+    def gen_Ginv_code(self):
+        code = """
+        double Ginv[1] = { 1.0 / G[0] };
+        """
+        return code
+
 class test_geometry_snippets(CodegenTestCase):
     '''Geometry snippets based on ufc cell.
 
@@ -19,107 +87,36 @@ class test_geometry_snippets(CodegenTestCase):
     using namespace uflacs;
     '''
 
-    def test_mock_cells(self):
+    def test_interval_computation_of_geometry_mapping(self):
         """
         PRE:
-        mock_interval      s1;
-        mock_triangle      s2;
-        mock_tetrahedron   s3;
-        mock_quadrilateral q2;
-        mock_hexahedron    q3;
+        mock_interval c;
+        c.coordinates[0][0] = 0.2;
+        c.coordinates[1][0] = 0.1;
 
         POST:
-        ASSERT_EQ(s1.coordinates[0][0], 0.0);
-        ASSERT_EQ(s1.coordinates[1][0], 2.0);
-
-        ASSERT_EQ(s2.coordinates[0][0], 0.0);
-        ASSERT_EQ(s2.coordinates[0][1], 0.0);
-        ASSERT_EQ(s2.coordinates[1][0], 2.0);
-        ASSERT_EQ(s2.coordinates[1][1], 0.0);
-        ASSERT_EQ(s2.coordinates[2][0], 0.0);
-        ASSERT_EQ(s2.coordinates[2][1], 3.0);
-
-        ASSERT_EQ(s3.coordinates[0][0], 2.0);
-        ASSERT_EQ(s3.coordinates[0][1], 3.0);
-        ASSERT_EQ(s3.coordinates[0][2], 4.0);
-        ASSERT_EQ(s3.coordinates[1][0], 3.0);
-        ASSERT_EQ(s3.coordinates[1][1], 3.0);
-        ASSERT_EQ(s3.coordinates[1][2], 4.0);
-        ASSERT_EQ(s3.coordinates[2][0], 2.0);
-        ASSERT_EQ(s3.coordinates[2][1], 4.0);
-        ASSERT_EQ(s3.coordinates[2][2], 4.0);
-        ASSERT_EQ(s3.coordinates[3][0], 2.0);
-        ASSERT_EQ(s3.coordinates[3][1], 3.0);
-        ASSERT_EQ(s3.coordinates[3][2], 5.0);
-
-        ASSERT_EQ(q2.coordinates[0][0], 2.0 + 2.0*0.0 + 3.0*0.0);
-        ASSERT_EQ(q2.coordinates[0][1], 3.0 + 4.0*0.0 + 5.0*0.0);
-        ASSERT_EQ(q2.coordinates[1][0], 2.0 + 2.0*1.0 + 3.0*0.0);
-        ASSERT_EQ(q2.coordinates[1][1], 3.0 + 4.0*1.0 + 5.0*0.0);
-        ASSERT_EQ(q2.coordinates[2][0], 2.0 + 2.0*1.0 + 3.0*1.0);
-        ASSERT_EQ(q2.coordinates[2][1], 3.0 + 4.0*1.0 + 5.0*1.0);
-        ASSERT_EQ(q2.coordinates[3][0], 2.0 + 2.0*0.0 + 3.0*1.0);
-        ASSERT_EQ(q2.coordinates[3][1], 3.0 + 4.0*0.0 + 5.0*1.0);
-
-        ASSERT_EQ(q3.coordinates[0][0], 5.0 * (0.0 + 2.0));
-        ASSERT_EQ(q3.coordinates[0][1], 6.0 * (0.0 + 3.0));
-        ASSERT_EQ(q3.coordinates[0][2], 7.0 * (0.0 + 4.0));
-        ASSERT_EQ(q3.coordinates[1][0], 5.0 * (1.0 + 2.0));
-        ASSERT_EQ(q3.coordinates[1][1], 6.0 * (0.0 + 3.0));
-        ASSERT_EQ(q3.coordinates[1][2], 7.0 * (0.0 + 4.0));
-        ASSERT_EQ(q3.coordinates[2][0], 5.0 * (1.0 + 2.0));
-        ASSERT_EQ(q3.coordinates[2][1], 6.0 * (1.0 + 3.0));
-        ASSERT_EQ(q3.coordinates[2][2], 7.0 * (0.0 + 4.0));
-        // ...
-        ASSERT_EQ(q3.coordinates[7][0], 5.0 * (0.0 + 2.0));
-        ASSERT_EQ(q3.coordinates[7][1], 6.0 * (1.0 + 3.0));
-        ASSERT_EQ(q3.coordinates[7][2], 7.0 * (1.0 + 4.0));
+        ASSERT_EQ(v0[0], 0.2);
+        ASSERT_EQ(G[0], -0.1);
+        ASSERT_EQ(detG, -0.1);
+        ASSERT_EQ(detGsign, -1.0);
+        ASSERT_EQ(absdetG, 0.1);
+        ASSERT_EQ(Ginv[0], -1.0/0.1);
         """
-        code = """
-        scale_cell(s1, 2.0);
-
-        double factors2[2] = { 2.0, 3.0 };
-        scale_cell(s2, factors2);
-
-        double offset[3] = { 2.0, 3.0, 4.0 };
-        translate_cell(s3, offset);
-
-        double G2[4] = { 2.0, 3.0,
-                         4.0, 5.0 };
-        double x2[2] = { 2.0, 3.0 };
-        map_cell(q2, G2, x2);
-
-        double factors3[3] = { 5.0, 6.0, 7.0 };
-        translate_cell(q3, offset);
-        scale_cell(q3, factors3);
-        """
+        ccg = IntervalGeometryCG()
+        snippets = []
+        snippets.append(ccg.gen_v0_code())
+        snippets.append(ccg.gen_G_code())
+        snippets.append(ccg.gen_detG_code())
+        snippets.append(ccg.gen_absdetG_code())
+        snippets.append(ccg.gen_Ginv_code())
+        code = '\n'.join(snippets)
         self.emit_test(code)
 
-    def test_extraction_of_v0(self):
-        """
-        PRE:
-        mock_triangle c;
-        c.coordinates[0][0] = 0.1;
-        c.coordinates[0][1] = 0.2;
+    def test_interval_mapping_between_x_and_xi(self):
+        pass
 
-        POST:
-        ASSERT_EQ(v0[0], 0.1);
-        ASSERT_EQ(v0[1], 0.2);
-        """
-        code = """
-        double v0[2];
-        v0[0] = c.coordinates[0][0];
-        v0[1] = c.coordinates[0][1];
-        """
-        self.emit_test(code)
-
-    def test_computation_of_detG(self):
-        """
-        PRE:
-        POST:
-        """
-        code = ""
-        self.emit_test(code)
+    def test_interval_mapping_from_x_to_xi(self):
+        pass
 
     def test_mapping_from_x_to_xi(self):
         """Test that foobar.
