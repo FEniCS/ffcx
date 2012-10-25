@@ -24,109 +24,114 @@ class test_mock_cells(CodegenTestCase):
     def test_mock_interval(self):
         """
         PRE:
-        mock_interval s1;
+        mock_interval c;
 
         POST:
-        ASSERT_EQ(s1.coordinates[0][0], 0.0);
-        ASSERT_EQ(s1.coordinates[1][0], 2.0);
+        #define cc c.coordinates
+        ASSERT_EQ(cc[0][0], 0.0);
+        ASSERT_EQ(cc[1][0], 2.0);
         """
         code = """
-        scale_cell(s1, 2.0);
+        scale_cell(c, 2.0);
         """
         self.emit_test(code)
 
     def test_mock_triangle(self):
         """
         PRE:
-        mock_triangle s2;
+        mock_triangle c;
 
         POST:
-        ASSERT_EQ(s2.coordinates[0][0], 0.0);
-        ASSERT_EQ(s2.coordinates[0][1], 0.0);
-        ASSERT_EQ(s2.coordinates[1][0], 2.0);
-        ASSERT_EQ(s2.coordinates[1][1], 0.0);
-        ASSERT_EQ(s2.coordinates[2][0], 0.0);
-        ASSERT_EQ(s2.coordinates[2][1], 3.0);
+        #define cc c.coordinates
+        ASSERT_EQ(cc[0][0], 0.0);
+        ASSERT_EQ(cc[0][1], 0.0);
+        ASSERT_EQ(cc[1][0], 2.0);
+        ASSERT_EQ(cc[1][1], 0.0);
+        ASSERT_EQ(cc[2][0], 0.0);
+        ASSERT_EQ(cc[2][1], 3.0);
         """
         code = """
-        double factors2[2] = { 2.0, 3.0 };
-        scale_cell(s2, factors2);
+        double factors[2] = { 2.0, 3.0 };
+        scale_cell(c, factors);
         """
         self.emit_test(code)
 
     def test_mock_tetrahedron(self):
         """
         PRE:
-        mock_tetrahedron s3;
+        mock_tetrahedron c;
 
         POST:
-        ASSERT_EQ(s3.coordinates[0][0], 2.0);
-        ASSERT_EQ(s3.coordinates[0][1], 3.0);
-        ASSERT_EQ(s3.coordinates[0][2], 4.0);
-        ASSERT_EQ(s3.coordinates[1][0], 3.0);
-        ASSERT_EQ(s3.coordinates[1][1], 3.0);
-        ASSERT_EQ(s3.coordinates[1][2], 4.0);
-        ASSERT_EQ(s3.coordinates[2][0], 2.0);
-        ASSERT_EQ(s3.coordinates[2][1], 4.0);
-        ASSERT_EQ(s3.coordinates[2][2], 4.0);
-        ASSERT_EQ(s3.coordinates[3][0], 2.0);
-        ASSERT_EQ(s3.coordinates[3][1], 3.0);
-        ASSERT_EQ(s3.coordinates[3][2], 5.0);
+        #define cc c.coordinates
+        ASSERT_EQ(cc[0][0], 2.0);
+        ASSERT_EQ(cc[0][1], 3.0);
+        ASSERT_EQ(cc[0][2], 4.0);
+        ASSERT_EQ(cc[1][0], 3.0);
+        ASSERT_EQ(cc[1][1], 3.0);
+        ASSERT_EQ(cc[1][2], 4.0);
+        ASSERT_EQ(cc[2][0], 2.0);
+        ASSERT_EQ(cc[2][1], 4.0);
+        ASSERT_EQ(cc[2][2], 4.0);
+        ASSERT_EQ(cc[3][0], 2.0);
+        ASSERT_EQ(cc[3][1], 3.0);
+        ASSERT_EQ(cc[3][2], 5.0);
         """
         code = """
         double offset[3] = { 2.0, 3.0, 4.0 };
-        translate_cell(s3, offset);
+        translate_cell(c, offset);
         """
         self.emit_test(code)
 
     def test_mock_quadrilateral(self):
         """
         PRE:
-        mock_quadrilateral q2;
+        mock_quadrilateral c;
 
         POST:
-        ASSERT_EQ(q2.coordinates[0][0], 2.0 + 2.0*0.0 + 3.0*0.0);
-        ASSERT_EQ(q2.coordinates[0][1], 3.0 + 4.0*0.0 + 5.0*0.0);
-        ASSERT_EQ(q2.coordinates[1][0], 2.0 + 2.0*1.0 + 3.0*0.0);
-        ASSERT_EQ(q2.coordinates[1][1], 3.0 + 4.0*1.0 + 5.0*0.0);
-        ASSERT_EQ(q2.coordinates[2][0], 2.0 + 2.0*1.0 + 3.0*1.0);
-        ASSERT_EQ(q2.coordinates[2][1], 3.0 + 4.0*1.0 + 5.0*1.0);
-        ASSERT_EQ(q2.coordinates[3][0], 2.0 + 2.0*0.0 + 3.0*1.0);
-        ASSERT_EQ(q2.coordinates[3][1], 3.0 + 4.0*0.0 + 5.0*1.0);
+        #define cc c.coordinates
+        ASSERT_EQ(cc[0][0], 2.0 + 2.0*0.0 + 3.0*0.0);
+        ASSERT_EQ(cc[0][1], 3.0 + 4.0*0.0 + 5.0*0.0);
+        ASSERT_EQ(cc[1][0], 2.0 + 2.0*1.0 + 3.0*0.0);
+        ASSERT_EQ(cc[1][1], 3.0 + 4.0*1.0 + 5.0*0.0);
+        ASSERT_EQ(cc[2][0], 2.0 + 2.0*1.0 + 3.0*1.0);
+        ASSERT_EQ(cc[2][1], 3.0 + 4.0*1.0 + 5.0*1.0);
+        ASSERT_EQ(cc[3][0], 2.0 + 2.0*0.0 + 3.0*1.0);
+        ASSERT_EQ(cc[3][1], 3.0 + 4.0*0.0 + 5.0*1.0);
         """
         code = """
         double G[4] = { 2.0, 3.0,
                         4.0, 5.0 };
         double x[2] = { 2.0, 3.0 };
-        map_cell(q2, G, x);
+        map_cell(c, G, x);
         """
         self.emit_test(code)
 
     def test_mock_hexahedron(self):
         """
         PRE:
-        mock_hexahedron q3;
+        mock_hexahedron c;
 
         POST:
-        ASSERT_EQ(q3.coordinates[0][0], 5.0 * (0.0 + 2.0));
-        ASSERT_EQ(q3.coordinates[0][1], 6.0 * (0.0 + 3.0));
-        ASSERT_EQ(q3.coordinates[0][2], 7.0 * (0.0 + 4.0));
-        ASSERT_EQ(q3.coordinates[1][0], 5.0 * (1.0 + 2.0));
-        ASSERT_EQ(q3.coordinates[1][1], 6.0 * (0.0 + 3.0));
-        ASSERT_EQ(q3.coordinates[1][2], 7.0 * (0.0 + 4.0));
-        ASSERT_EQ(q3.coordinates[2][0], 5.0 * (1.0 + 2.0));
-        ASSERT_EQ(q3.coordinates[2][1], 6.0 * (1.0 + 3.0));
-        ASSERT_EQ(q3.coordinates[2][2], 7.0 * (0.0 + 4.0));
+        #define cc c.coordinates
+        ASSERT_EQ(cc[0][0], 5.0 * (0.0 + 2.0));
+        ASSERT_EQ(cc[0][1], 6.0 * (0.0 + 3.0));
+        ASSERT_EQ(cc[0][2], 7.0 * (0.0 + 4.0));
+        ASSERT_EQ(cc[1][0], 5.0 * (1.0 + 2.0));
+        ASSERT_EQ(cc[1][1], 6.0 * (0.0 + 3.0));
+        ASSERT_EQ(cc[1][2], 7.0 * (0.0 + 4.0));
+        ASSERT_EQ(cc[2][0], 5.0 * (1.0 + 2.0));
+        ASSERT_EQ(cc[2][1], 6.0 * (1.0 + 3.0));
+        ASSERT_EQ(cc[2][2], 7.0 * (0.0 + 4.0));
         // ...
-        ASSERT_EQ(q3.coordinates[7][0], 5.0 * (0.0 + 2.0));
-        ASSERT_EQ(q3.coordinates[7][1], 6.0 * (1.0 + 3.0));
-        ASSERT_EQ(q3.coordinates[7][2], 7.0 * (1.0 + 4.0));
+        ASSERT_EQ(cc[7][0], 5.0 * (0.0 + 2.0));
+        ASSERT_EQ(cc[7][1], 6.0 * (1.0 + 3.0));
+        ASSERT_EQ(cc[7][2], 7.0 * (1.0 + 4.0));
         """
         code = """
         double offset[3] = { 2.0, 3.0, 4.0 };
         double factors[3] = { 5.0, 6.0, 7.0 };
-        translate_cell(q3, offset);
-        scale_cell(q3, factors);
+        translate_cell(c, offset);
+        scale_cell(c, factors);
         """
         self.emit_test(code)
 
