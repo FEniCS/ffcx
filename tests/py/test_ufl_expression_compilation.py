@@ -46,5 +46,54 @@ class test_ufl_expression_compilation(CodegenTestCase):
         code = self.compile_expression(expr)
         self.emit_test(code)
 
+    def test_compilation_of_sums(self):
+        """Test that sums are compiled correctly.
+
+        PRE:
+        double x[3] = { 0.1, 0.2, 0.3 };
+        double A[1];
+
+        POST:
+        ASSERT_EQ(A[0], x[0] + x[1] + x[2]);
+        """
+        x = ufl.tetrahedron.x
+        expr = x[0] + x[1] + x[2]
+        code = self.compile_expression(expr)
+        print code
+        self.emit_test(code)
+
+    def test_compilation_of_products(self):
+        """Test that products are compiled correctly.
+
+        PRE:
+        double x[3] = { 0.1, 0.2, 0.3 };
+        double A[1];
+
+        POST:
+        ASSERT_EQ(A[0], x[0] * x[1] * x[2]);
+        """
+        x = ufl.tetrahedron.x
+        expr = x[0] * x[1] * x[2]
+        code = self.compile_expression(expr)
+        print code
+        self.emit_test(code)
+
+    def test_compilation_of_sums_and_products_with_precedence(self):
+        """Test that combinations of sums and products are
+        compiled correctly with precedence rules in mind.
+
+        PRE:
+        double x[3] = { 0.1, 0.2, 0.3 };
+        double A[1];
+
+        POST:
+        ASSERT_EQ(A[0], (x[0] + x[1]) * x[2] - (x[0] + (x[1] * x[2])));
+        """
+        x = ufl.tetrahedron.x
+        expr = (x[0] + x[1]) * x[2] - (x[0] + (x[1] * x[2]))
+        code = self.compile_expression(expr)
+        print code
+        self.emit_test(code)
+
 if __name__ == "__main__":
     unittest.main()
