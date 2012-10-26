@@ -1,0 +1,4 @@
+
+default:
+	cd .. && make -k
+

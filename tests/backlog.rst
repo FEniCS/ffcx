@@ -39,6 +39,8 @@ Plan for test driven development of form compiler
 
     + Secondary geometry computations
 
+        - Compute facet integration scaling factor
+
         - Compute n[]
 
         - Compute volume, etc.
