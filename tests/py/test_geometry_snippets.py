@@ -158,6 +158,22 @@ class test_geometry_snippets(CodegenTestCase):
         xi[1] = G[3]*x[0] + G[4]*x[1] + G[5]*x[2] + v0[1];
         xi[2] = G[6]*x[0] + G[7]*x[1] + G[8]*x[2] + v0[2];
         """
+        code = ""
+        self.emit_test(code)
+
+    def test_ffc_codesnippets(self):
+        """
+
+        PRE:
+
+        POST:
+
+        """
+        from ffc.codesnippets import facet_normal
+        keys = { 'restriction': '',
+                 'direction': '' }
+        code = facet_normal[3] % keys
+        self.emit_test(code)
 
 if __name__ == "__main__":
     unittest.main()
