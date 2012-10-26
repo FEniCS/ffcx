@@ -7,6 +7,10 @@ Plan for test driven development of form compiler
 
         - Compute expressions of x only, assuming x[] given
 
+    + Initial coefficients
+
+        - Handle piecewise constant coefficients (scalar and vector)
+
     + Initial geometry computations
 
         - Compute J[], detJ, Jinv[]
@@ -16,10 +20,6 @@ Plan for test driven development of form compiler
         - Compute xi[] from x[]
 
         - Compute integration scaling factor
-
-    + Initial coefficients
-
-        - Handle piecewise constant coefficients
 
     + Form structure
 
@@ -36,6 +36,8 @@ Plan for test driven development of form compiler
         - Handle non-constant coefficients
 
         - Handle coefficient gradients (with mapping applied)
+
+        - Handle piecewise constant coefficients (tensor with symmetries)
 
     + Secondary geometry computations
 

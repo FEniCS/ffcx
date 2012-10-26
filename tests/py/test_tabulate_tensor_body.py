@@ -28,7 +28,7 @@ class test_tabulate_tensor_body(CodegenTestCase):
         code = compile_expression(expr, "")
         return code
 
-    def compile_integral(self, integral):
+    def compile_tabulate_tensor_body(self, integral):
         # TODO: Handle measure type etc.
         if isinstance(integral, Form):
             integral, = integral.integrals()
@@ -36,24 +36,7 @@ class test_tabulate_tensor_body(CodegenTestCase):
         code = compile_expression(expr, "")
         return code
 
-    def test_evaluation_of_cell_volume_on_interval(self):
-        """Test that...
-
-        PRE:
-        mock_interval c;
-        double A[1] = { 0.0 };
-
-        POST:
-        ASSERT_EQ(A[0], 0.0);
-        """
-        cell = interval
-        x = cell.x
-        expr = x
-        integral = expr*dP
-        code = "" #self.compile_integral(integral)
-        self.emit_test(code)
-
-    def test_tabulate_tensor_interval_point(self):
+    def test_interval_tabten_x_given(self):
         """Test code generation of body of the ufc function:
 
         void tabulate_tensor(
@@ -63,10 +46,40 @@ class test_tabulate_tensor_body(CodegenTestCase):
             const double * x) const;
 
         PRE:
+        mock_interval c;
+        double A[1] = { 0.0 };
+        double x[1] = { 1.2 };
+
+        POST:
+        ASSERT_EQ(A[0], 1.2);
+        """
+        cell = interval
+
+        x = cell.x
+        expr = x
+
+        integral = expr*dP
+
+        code = self.compile_tabulate_tensor_body(integral)
+        self.emit_test(code)
+
+    def test_interval_tabten_dg0_given(self):
+        """Test code generation of body of the ufc function:
+
+        void tabulate_tensor(
+            double* A,
+            const double * const * w,
+            const cell& c,
+            const double * x) const;
+
+        with mock values for DG0/Real coefficients in w[][].
+
+        PRE:
         double A[1];
         memset(A, 0, sizeof(A));
 
-        double w[1][2] = { { 2.0, 3.0 } };
+        double w[2][2] = { { 1.2, 0.0 }, // second value here is unused
+                           { 2.0, 3.0 } };
 
         mock_interval c;
         c.coordinates[0][0] = 0.1;
@@ -75,12 +88,22 @@ class test_tabulate_tensor_body(CodegenTestCase):
         double x[1] = { 0.15 };
 
         POST:
-        // TODO
+        ASSERT_EQ(A[0], 0.15*1.2*(2.0+3.0));
         """
-        code = "// TODO"
+        cell = interval
+        x = cell.x
+
+        V = VectorElement("DG", cell, 0, dim=2)
+        w0 = Constant(cell, count=0)
+        w1 = Coefficient(V, count=1)
+
+        expr = x*w0*(w1[0] + w1[1])
+
+        integral = expr*dP
+        code = self.compile_tabulate_tensor_body(integral)
         self.emit_test(code)
 
-    def test_tabulate_tensor_interval_cell(self):
+    def xtest_interval_tabten_geometry_mappings(self):
         """Test code generation of body of the ufc function:
 
         void tabulate_tensor(
@@ -91,15 +114,32 @@ class test_tabulate_tensor_body(CodegenTestCase):
         PRE:
         double A[1];
         memset(A, 0, sizeof(A));
-        double w[1][2] = { { 2.0, 3.0 } };
+
         mock_interval c;
-        c.coordinates[0][0] = 0.1;
-        c.coordinates[1][0] = 0.2;
+        c.coordinates[0][0] = 0.2;
+        c.coordinates[1][0] = 0.1;
 
         POST:
-        // TODO
+        ASSERT_EQ(J[0], -0.1);
+        ASSERT_EQ(Jinv[0], -10.0);
+        ASSERT_EQ(detJ, -0.1);
+        ASSERT_EQ(volume, 0.1);
+        ASSERT_EQ(D, 0.1);
+
+        ASSERT_EQ(A[0], 0.03*2);
         """
-        code = "// TODO"
+        cell = interval
+        x = cell.x
+        J = cell.J
+        Jinv = cell.Jinv
+        detJ = cell.detJ
+        xi = cell.xi
+        T = cell.volume
+
+        expr = 3*T
+
+        integral = expr*dx
+        code = self.compile_tabulate_tensor_body(integral)
         self.emit_test(code)
 
     def test_tabulate_tensor_interval_facet(self):
