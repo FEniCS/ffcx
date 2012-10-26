@@ -161,7 +161,7 @@ class test_geometry_snippets(CodegenTestCase):
         code = ""
         self.emit_test(code)
 
-    def test_ffc_codesnippets(self):
+    def xtest_ffc_codesnippets(self):
         """
 
         PRE:
