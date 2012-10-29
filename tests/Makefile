@@ -1,11 +1,13 @@
 
 CXX=g++
 RM=rm
+CP=cp
 PYTHON=python
 
 TESTAPP=testall
 
 GENDIR=generated
+GENTMP=generatedtmp
 CPPDIR=cpp
 SCRIPTSDIR=scripts
 PYDIR=py
@@ -51,7 +53,9 @@ ${CPPDIR}/test_%.h:
 	${PYTHON} ${SCRIPTSDIR}/init_test_header.py $@
 
 ${GENDIR}/gc_test_%.h ${GENDIR}/main_test_%.cpp: ${PYDIR}/test_%.py ${PYDIR}/codegentestcase.py
-	${PYTHON} $<
+	${PYTHON} ${PYDIR}/test_$*.py
+	${CP} ${GENTMP}/gc_test_$*.h ${GENDIR}/gc_test_$*.h
+	${CP} ${GENTMP}/main_test_$*.cpp ${GENDIR}/main_test_$*.cpp
 
 show:
 	@echo
@@ -76,6 +80,7 @@ show:
 
 clean:
 	${RM} -f ${GENDIR}/*
+	${RM} -f ${GENTMP}/*
 	${RM} -f `find -name \*.pyc`
 	${RM} -f *.log
 

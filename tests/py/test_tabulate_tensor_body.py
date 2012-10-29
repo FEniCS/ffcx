@@ -57,7 +57,6 @@ class test_tabulate_tensor_body(CodegenTestCase):
 
         x = cell.x
         expr = x
-
         integral = expr*dP
 
         code = self.compile_tabulate_tensor_body(integral)

@@ -134,7 +134,7 @@ class CodegenTestCase(unittest.TestCase):
     visited = set()
 
     # NB! These paths should match the makefile in the tests directory
-    gendir = "generated"
+    gendir = "generatedtmp"
     cppdir = "cpp"
 
     def __init__(self, *args, **kwargs):
