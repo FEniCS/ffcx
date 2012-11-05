@@ -316,7 +316,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
         if r_val is None:
             r_val = format["float"](0.0)
 
-        return {(): l_val + format[name_map[o._name]] + r_val}
+        return {(): format["grouping"](l_val + format[name_map[o._name]] + r_val)}
 
     def conditional(self, o, *operands):
 

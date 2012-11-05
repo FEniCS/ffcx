@@ -22,6 +22,7 @@
 
 # FFC modules.
 from ffc.log import error
+from ffc.cpp import format
 
 # FFC quadrature modules.
 from symbolics import type_to_string
@@ -92,7 +93,7 @@ class Symbol(Expr):
             else:
                 if len(self.cond) == 2:
                     return self.cond[1](str(self.cond[0]))
-                return "".join([str(c) for c in self.cond])
+                return format["grouping"]("".join([str(c) for c in self.cond]))
         elif self.exp is None:
             return self.v(str(self.base_expr))
         return self.v(str(self.base_expr), self.exp)
