@@ -252,8 +252,11 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         t_val = true[()]
         f_val = false[()]
 
-        # Get the minimum type and number of operations.
-        t = min([cond[()].t, t_val.t, f_val.t])
+        # Get the minimum type and number of operations
+        # TODO: conditionals are currently always located inside the ip loop,
+        # therefore the type has to be at least IP (fix bug #1082048). This can
+        # be optimised.
+        t = min([cond[()].t, t_val.t, f_val.t, IP])
         ops = sum([cond[()].ops(), t_val.ops(), f_val.ops()])
 
         # Create expression for conditional
