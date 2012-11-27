@@ -156,8 +156,8 @@ def _compute_psi(v, table, num_points, domain_type):
     # corresponding to quadrature points and internal Indices are removed
     # later when we sum over these dimensions.
 
-    # Get cell dimension
-    cell_dimension = v.element.cell().geometric_dimension()
+    # Get topological dimension of cell
+    tdim = v.element.cell().topological_dimension()
 
     # Get indices and shapes for components
     if len(v.components) ==  0:
@@ -191,7 +191,7 @@ def _compute_psi(v, table, num_points, domain_type):
         for component in range(len(cindex[0].index_range)):
             for dlist in dlists:
                 # Translate derivative multiindex to lookup tuple
-                dtuple = _multiindex_to_tuple(dlist, cell_dimension)
+                dtuple = _multiindex_to_tuple(dlist, tdim)
                 # Get values from table
                 Psi[component][tuple(dlist)] = \
                     etable[dtuple][:, cindex[0].index_range[component], :]
@@ -199,7 +199,7 @@ def _compute_psi(v, table, num_points, domain_type):
         etable = table[(v.element, v.restriction)]
         for dlist in dlists:
             # Translate derivative multiindex to lookup tuple
-            dtuple = _multiindex_to_tuple(dlist, cell_dimension)
+            dtuple = _multiindex_to_tuple(dlist, tdim)
             # Get values from table
             Psi[tuple(dlist)] = etable[dtuple]
 
