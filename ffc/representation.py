@@ -179,7 +179,7 @@ def _init_mesh(element):
 
 def _needs_mesh_entities(element):
 
-    # Note: The dof map for Real elements does not depend on the mesh 
+    # Note: The dof map for Real elements does not depend on the mesh
 
     num_dofs_per_entity = _num_dofs_per_entity(element)
     if isinstance(element, SpaceOfReals):
@@ -408,7 +408,7 @@ def _tabulate_facet_dofs(element, cell):
     "Compute intermediate representation of tabulate_facet_dofs."
 
     # Compute incidences
-    incidence = __compute_incidence(cell.geometric_dimension())
+    incidence = __compute_incidence(cell.topological_dimension())
 
     # Get topological dimension
     D = max([pair[0][0] for pair in incidence])
