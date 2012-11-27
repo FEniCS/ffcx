@@ -105,10 +105,12 @@ def _generate_common_code(ir):
     # Extract variables
     mappings = ir["mappings"]
     offsets  = ir["offsets"]
-    cell_dim = ir["cell_dimension"]
+    cell_geometric_dim = ir["geometric_dimension"]
+    cell_topological_dim = ir["topological_dimension"]
 
     # Generate bodies for each degree of freedom
-    cases = [_generate_body(i, dof, mappings[i], cell_dim, offsets[i])
+    cases = [_generate_body(i, dof, mappings[i], cell_geometric_dim,
+                            cell_topological_dim, offsets[i])
              for (i, dof) in enumerate(ir["dofs"])]
 
     return (reqs, cases)
@@ -120,7 +122,7 @@ def _required_declarations(ir):
     code = []
 
     # Declare variable for storing the result and physical coordinates
-    cell_dim = ir["cell_dimension"]
+    cell_dim = ir["geometric_dimension"]
     code.append(comment("Declare variables for result of evaluation."))
     code.append(declare(f_double, component(f_vals, ir["value_size"])))
     code.append("")
@@ -149,7 +151,8 @@ def _required_declarations(ir):
     return "\n".join(code)
 
 
-def _generate_body(i, dof, mapping, cell_dim, offset=0, result=f_result):
+def _generate_body(i, dof, mapping, cell_geometric_dim, cell_topological_dim,
+                   offset=0, result=f_result):
     "Generate code for a single dof."
 
     points = dof.keys()
@@ -163,19 +166,19 @@ def _generate_body(i, dof, mapping, cell_dim, offset=0, result=f_result):
 
     # Get weights for mapping reference point to physical
     x = points[0]
-    w = affine_weights(cell_dim)(x)
+    w = affine_weights(cell_topological_dim)(x)
 
     # Map point onto physical element: y = F_K(x)
     code = []
-    for j in range(cell_dim):
-        y = inner(w, [component(f_x(), (k, j)) for k in range(cell_dim + 1)])
+    for j in range(cell_geometric_dim):
+        y = inner(w, [component(f_x(), (k, j)) for k in range(cell_topological_dim + 1)])
         code.append(assign(component(f_y, j), y))
 
     # Evaluate function at physical point
     code.append(format["evaluate function"])
 
     # Map function values to the reference element
-    F = _change_variables(mapping, cell_dim, offset)
+    F = _change_variables(mapping, cell_geometric_dim, cell_topological_dim, offset)
 
     # Simple affine functions deserve special case:
     if len(F) == 1:
@@ -256,7 +259,7 @@ def _generate_multiple_points_body(i, dof, mapping,
     return code
 
 
-def _change_variables(mapping, dim, offset):
+def _change_variables(mapping, tdim, gdim, offset):
     """Generate code for mapping function values according to
     'mapping' and offset.
 

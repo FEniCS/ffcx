@@ -283,7 +283,8 @@ def _evaluate_dof(element, cell):
 
     return {"mappings": element.mapping(),
             "value_size": _value_size(element),
-            "cell_dimension": cell.geometric_dimension(),
+            "geometric_dimension": cell.geometric_dimension(),
+            "topological_dimension": cell.topological_dimension(),
             "dofs": [L.pt_dict for L in element.dual_basis()],
             "offsets": _generate_offsets(element)}
 
