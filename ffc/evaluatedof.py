@@ -122,12 +122,13 @@ def _required_declarations(ir):
     code = []
 
     # Declare variable for storing the result and physical coordinates
-    cell_dim = ir["geometric_dimension"]
+    geometric_dimension = ir["geometric_dimension"]
+    topological_dimension = ir["topological_dimension"]
     code.append(comment("Declare variables for result of evaluation."))
     code.append(declare(f_double, component(f_vals, ir["value_size"])))
     code.append("")
     code.append(comment("Declare variable for physical coordinates."))
-    code.append(declare(f_double, component(f_y, cell_dim)))
+    code.append(declare(f_double, component(f_y, geometric_dimension)))
 
     # Check whether Jacobians are necessary.
     needs_inverse_jacobian = any(["contravariant piola" in m
@@ -144,9 +145,9 @@ def _required_declarations(ir):
 
     # Add sufficient Jacobian information
     if needs_inverse_jacobian:
-        code.append(format["jacobian and inverse"](cell_dim))
+        code.append(format["jacobian and inverse"](geometric_dimension, topological_dimension))
     else:
-        code.append(format["jacobian"](cell_dim))
+        code.append(format["jacobian"](geometric_dimension, topological_dimension))
 
     return "\n".join(code)
 
@@ -161,7 +162,8 @@ def _generate_body(i, dof, mapping, cell_geometric_dim, cell_topological_dim,
     # compile time blows up.)
     if len(points) > 1:
         code = _generate_multiple_points_body(i, dof, mapping,
-                                              cell_dim, offset, result)
+                                              cell_geometric_dim, cell_topological_dim,
+                                              offset, result)
         return (code, result)
 
     # Get weights for mapping reference point to physical
@@ -178,7 +180,8 @@ def _generate_body(i, dof, mapping, cell_geometric_dim, cell_topological_dim,
     code.append(format["evaluate function"])
 
     # Map function values to the reference element
-    F = _change_variables(mapping, cell_geometric_dim, cell_topological_dim, offset)
+    F = _change_variables(mapping, cell_geometric_dim, 
+                          cell_topological_dim, offset)
 
     # Simple affine functions deserve special case:
     if len(F) == 1:
@@ -193,7 +196,8 @@ def _generate_body(i, dof, mapping, cell_geometric_dim, cell_topological_dim,
 
 
 def _generate_multiple_points_body(i, dof, mapping,
-                                   cell_dim, offset=0, result=f_result):
+                                   cell_geometric_dim, cell_topological_dim, 
+                                   offset=0, result=f_result):
 
     "Generate c++ for-loop for multiple points (integral bodies)"
 
@@ -208,7 +212,8 @@ def _generate_multiple_points_body(i, dof, mapping,
 
     # Declare points
     points = format["list"]([format["list"](x) for x in points])
-    code += [declare(f_double, component(f_X(i), [n, cell_dim]), points)]
+    code += [declare(f_double, component(f_X(i), [n, cell_topological_dim]),
+                     points)]
 
     # Declare components
     components = [[c[0] for (w, c) in token] for token in tokens]
@@ -221,7 +226,7 @@ def _generate_multiple_points_body(i, dof, mapping,
     code += [declare(f_double, component(f_W(i), [n, len_tokens]), weights)]
 
     # Declare copy variable:
-    code += [declare(f_double, component(f_copy(i), cell_dim))]
+    code += [declare(f_double, component(f_copy(i), cell_topolgical_dim))]
 
     # Add loop over points
     code += [comment("Loop over points.")]
@@ -235,7 +240,8 @@ def _generate_multiple_points_body(i, dof, mapping,
 
     # Map function values to the reference element
     lines_r.append(comment("Map function to reference element."))
-    F = _change_variables(mapping, cell_dim, offset)
+    F = _change_variables(mapping, cell_geometric_dim, 
+                          cell_topological_dim, offset)
     lines_r += [assign(component(f_copy(i), k), F_k)
              for (k, F_k) in enumerate(F)]
 

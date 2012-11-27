@@ -230,12 +230,12 @@ format.update({
 from codesnippets import *
 format.update({
     "cell coordinates":     cell_coordinates,
-    "jacobian":             lambda n, r="": jacobian[n] % {"restriction": r},
-    "inverse jacobian":     lambda n, r="": inverse_jacobian[n] % {"restriction": r},
-    "jacobian and inverse": lambda n, r=None: format["jacobian"](n, choose_map[r]) +\
-                            "\n" + format["inverse jacobian"](n, choose_map[r]),
+    "jacobian":             lambda gdim, tdim, r="": jacobian[gdim][tdim] % {"restriction": r},
+    "inverse jacobian":     lambda gdim, tdim, r="": inverse_jacobian[gdim][tdim] % {"restriction": r},
+    "jacobian and inverse": lambda gdim, tdim, r=None: format["jacobian"](gdim, tdim, choose_map[r]) +\
+                            "\n" + format["inverse jacobian"](gdim, tdim, choose_map[r]),
     "facet determinant":    lambda n, r=None: facet_determinant[n] % {"restriction": choose_map[r]},
-    "fiat coordinate map":  lambda n: fiat_coordinate_map[n],
+    "fiat coordinate map":  lambda cell, gdim : fiat_coordinate_map[cell][gdim],
     "generate normal":      lambda d, i: _generate_normal(d, i),
     "generate cell volume": lambda d, i: _generate_cell_volume(d, i),
     "generate circumradius": lambda d, i: _generate_circumradius(d, i),
@@ -528,38 +528,6 @@ def _generate_psi_name(counter, facet, component, derivatives):
         name += "_D" + "".join([str(d) for d in derivatives])
 
     return name
-
-def _generate_jacobian(cell_dimension, integral_type):
-    "Generate code for computing jacobian"
-
-    # Choose space dimension
-    if cell_dimension == 1:
-        jacobian = jacobian_1D
-        facet_determinant = facet_determinant_1D
-    elif cell_dimension == 2:
-        jacobian = jacobian_2D
-        facet_determinant = facet_determinant_2D
-    else:
-        jacobian = jacobian_3D
-        facet_determinant = facet_determinant_3D
-
-    # Check if we need to compute more than one Jacobian
-    if integral_type == "cell":
-        code  = jacobian % {"restriction":  ""}
-        code += "\n\n"
-        code += scale_factor
-    elif integral_type == "exterior facet":
-        code  = jacobian % {"restriction":  ""}
-        code += "\n\n"
-        code += facet_determinant % {"restriction": "", "facet" : "facet"}
-    elif integral_type == "interior facet":
-        code  = jacobian % {"restriction": choose_map["+"]}
-        code += "\n\n"
-        code += jacobian % {"restriction": choose_map["-"]}
-        code += "\n\n"
-        code += facet_determinant % {"restriction": choose_map["+"], "facet": "facet0"}
-
-    return code
 
 def _generate_normal(geometric_dimension, domain_type, reference_normal=False):
     "Generate code for computing normal"

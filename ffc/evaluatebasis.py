@@ -142,12 +142,13 @@ def _evaluate_basis(data):
     # Get the element cell domain and geometric dimension.
     element_cell_domain = data["cell_domain"]
     geometric_dimension = data["geometric_dimension"]
+    topological_dimension = data["topological_dimension"]
 
     # Get code snippets for Jacobian, Inverse of Jacobian and mapping of
     # coordinates from physical element to the FIAT reference element.
     # FIXME: KBO: Change this when supporting R^2 in R^3 elements.
-    code += [format["jacobian and inverse"](geometric_dimension)]
-    code += ["", format["fiat coordinate map"](element_cell_domain)]
+    code += [format["jacobian and inverse"](geometric_dimension, topological_dimension)]
+    code += ["", format["fiat coordinate map"](element_cell_domain, topological_dimension)]
 
     # Get value shape and reset values. This should also work for TensorElement,
     # scalar are empty tuples, therefore (1,) in which case value_shape = 1.
@@ -181,8 +182,8 @@ def _evaluate_basis(data):
 #        code += _mixed_elements(data_list)
 
     # Remove unused variables (from transformations and mappings) in code.
-    code = remove_unused("\n".join(code))
-#    code = "\n".join(code)
+    #code = remove_unused("\n".join(code))
+    code = "\n".join(code)
     return code
 
 #def _map_dof(sum_space_dim):

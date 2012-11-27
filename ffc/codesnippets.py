@@ -87,6 +87,17 @@ const double J%(restriction)s_01 = x%(restriction)s[2][0] - x%(restriction)s[0][
 const double J%(restriction)s_10 = x%(restriction)s[1][1] - x%(restriction)s[0][1];
 const double J%(restriction)s_11 = x%(restriction)s[2][1] - x%(restriction)s[0][1];"""
 
+_jacobian_2D_1D = """\
+// Geometric dimension 2, topological dimension 1
+
+// Extract vertex coordinates
+const double * const * x%(restriction)s = c%(restriction)s.coordinates;
+
+// Compute Jacobian of affine map from reference cell
+const double J%(restriction)s_00 = x%(restriction)s[1][0] - x%(restriction)s[0][0];
+const double J%(restriction)s_10 = x%(restriction)s[1][1] - x%(restriction)s[0][1];
+"""
+
 _jacobian_3D = """\
 // Extract vertex coordinates
 const double * const * x%(restriction)s = c%(restriction)s.coordinates;
@@ -102,6 +113,30 @@ const double J%(restriction)s_20 = x%(restriction)s[1][2] - x%(restriction)s[0][
 const double J%(restriction)s_21 = x%(restriction)s[2][2] - x%(restriction)s[0][2];
 const double J%(restriction)s_22 = x%(restriction)s[3][2] - x%(restriction)s[0][2];"""
 
+_jacobian_3D_2D = """\
+// Geometric dimension 3, topological dimension 2
+
+// Extract vertex coordinates
+const double * const * x%(restriction)s = c%(restriction)s.coordinates;
+
+// Compute Jacobian of affine map from reference cell
+const double J%(restriction)s_00 = x%(restriction)s[1][0] - x%(restriction)s[0][0];
+const double J%(restriction)s_01 = x%(restriction)s[2][0] - x%(restriction)s[0][0];
+const double J%(restriction)s_10 = x%(restriction)s[1][1] - x%(restriction)s[0][1];
+const double J%(restriction)s_11 = x%(restriction)s[2][1] - x%(restriction)s[0][1];
+const double J%(restriction)s_20 = x%(restriction)s[1][2] - x%(restriction)s[0][2];
+const double J%(restriction)s_21 = x%(restriction)s[2][2] - x%(restriction)s[0][2];"""
+
+_jacobian_3D_1D = """\
+// Geometric dimension 3, topological dimension 1
+
+// Extract vertex coordinates
+const double * const * x%(restriction)s = c%(restriction)s.coordinates;
+
+// Compute Jacobian of affine map from reference cell
+const double J%(restriction)s_00 = x%(restriction)s[1][0] - x%(restriction)s[0][0];
+const double J%(restriction)s_10 = x%(restriction)s[1][1] - x%(restriction)s[0][1];
+const double J%(restriction)s_20 = x%(restriction)s[1][2] - x%(restriction)s[0][2];"""
 
 # Code snippets for computing the inverse Jacobian. Assumes that
 # Jacobian is already initialized
@@ -123,6 +158,15 @@ const double K%(restriction)s_00 =  J%(restriction)s_11 / detJ%(restriction)s;
 const double K%(restriction)s_01 = -J%(restriction)s_01 / detJ%(restriction)s;
 const double K%(restriction)s_10 = -J%(restriction)s_10 / detJ%(restriction)s;
 const double K%(restriction)s_11 =  J%(restriction)s_00 / detJ%(restriction)s;"""
+
+_inverse_jacobian_2D_1D = """\
+
+// Compute determinant of Jacobian
+double detJ%(restriction)s = std::sqrt(J%(restriction)s_00*J%(restriction)s_00 + J%(restriction)s_10*J%(restriction)s_10);
+
+// Compute inverse of Jacobian
+const double K%(restriction)s_00 =  J%(restriction)s_00 / std::pow(detJ%(restriction)s, 2);
+const double K%(restriction)s_01 =  J%(restriction)s_10 / std::pow(detJ%(restriction)s, 2);"""
 
 _inverse_jacobian_3D = """\
 
@@ -447,6 +491,11 @@ _map_coordinates_FIAT_interval = """\
 // Get coordinates and map to the reference (FIAT) element
 double X = (2.0*coordinates[0] - x[0][0] - x[1][0]) / J_00;"""
 
+_map_coordinates_FIAT_interval_in_2D = """\
+// Get coordinates and map to the reference (FIAT) element
+double X = 2*(std::sqrt(std::pow(coordinates[0]-x[0][0], 2) + \
+                        std::pow(coordinates[1]-x[0][1], 2))/ detJ) - 1.0;"""
+
 _map_coordinates_FIAT_triangle = """\
 // Compute constants
 const double C0 = x[1][0] + x[2][0];
@@ -471,11 +520,13 @@ double Z = (d_02*(2.0*coordinates[0] - C0) + d_12*(2.0*coordinates[1] - C1) + d_
 
 # Mappings to code snippets used by format
 
-jacobian = {1: _jacobian_1D, 2: _jacobian_2D, 3: _jacobian_3D}
+jacobian = {1: {1:_jacobian_1D}, 
+            2: {2:_jacobian_2D, 1:_jacobian_2D_1D},
+            3: {3:_jacobian_3D, 2:_jacobian_3D_2D, 1:_jacobian_3D_1D}}
 
-inverse_jacobian = {1: _inverse_jacobian_1D,
-                    2: _inverse_jacobian_2D,
-                    3: _inverse_jacobian_3D}
+inverse_jacobian = {1: {1:_inverse_jacobian_1D},
+                    2: {2:_inverse_jacobian_2D, 1:_inverse_jacobian_2D_1D},
+                    3: {3:_inverse_jacobian_3D}}
 
 facet_determinant = {1: _facet_determinant_1D,
                      2: _facet_determinant_2D,
@@ -485,9 +536,10 @@ map_onto_physical = {1: _map_onto_physical_1D,
                      2: _map_onto_physical_2D,
                      3: _map_onto_physical_3D}
 
-fiat_coordinate_map = {"interval": _map_coordinates_FIAT_interval,
-                       "triangle": _map_coordinates_FIAT_triangle,
-                       "tetrahedron": _map_coordinates_FIAT_tetrahedron}
+fiat_coordinate_map = {"interval": {1:_map_coordinates_FIAT_interval,
+                                    2:_map_coordinates_FIAT_interval_in_2D},
+                       "triangle": {2:_map_coordinates_FIAT_triangle},
+                       "tetrahedron": {3:_map_coordinates_FIAT_tetrahedron}}
 
 transform_snippet = {"interval": _transform_interval_snippet,
                      "triangle": _transform_triangle_snippet,
