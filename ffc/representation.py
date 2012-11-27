@@ -150,7 +150,7 @@ def _compute_dofmap_ir(ufl_element, element_id, element_numbers):
     ir["tabulate_dofs"] = _tabulate_dofs(element, cell)
     ir["tabulate_facet_dofs"] = facet_dofs
     ir["tabulate_entity_dofs"] = (element.entity_dofs(), num_dofs_per_entity)
-    ir["tabulate_coordinates"] = _tabulate_coordinates(element)
+    ir["tabulate_coordinates"] = _tabulate_coordinates(ufl_element, element)
     ir["num_sub_dofmaps"] = ufl_element.num_sub_elements()
     ir["create_sub_dofmap"] = _create_sub_foo(ufl_element, element_numbers)
 
@@ -365,11 +365,17 @@ def _evaluate_basis(element, cell):
 
     return data
 
-def _tabulate_coordinates(element):
+def _tabulate_coordinates(ufl_element, element):
     "Compute intermediate representation of tabulate_coordinates."
+
     if uses_integral_moments(element):
-        return None
-    return [L.pt_dict.keys()[0] for L in element.dual_basis()]
+        return {}
+
+    data = {}
+    data["tdim"] = ufl_element.cell().topological_dimension()
+    data["gdim"] = ufl_element.cell().geometric_dimension()
+    data["points"] = [L.pt_dict.keys()[0] for L in element.dual_basis()]
+    return data
 
 def _tabulate_dofs(element, cell):
     "Compute intermediate representation of tabulate_dofs."
