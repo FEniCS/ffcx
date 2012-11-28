@@ -493,7 +493,7 @@ double X = (2.0*coordinates[0] - x[0][0] - x[1][0]) / J_00;"""
 
 _map_coordinates_FIAT_interval_in_2D = """\
 // Get coordinates and map to the reference (FIAT) element
-double X = 2*(std::sqrt(std::pow(coordinates[0]-x[0][0], 2) + \
+double X = 2*(std::sqrt(std::pow(coordinates[0]-x[0][0], 2) + 
                         std::pow(coordinates[1]-x[0][1], 2))/ detJ) - 1.0;"""
 
 _map_coordinates_FIAT_triangle = """\
