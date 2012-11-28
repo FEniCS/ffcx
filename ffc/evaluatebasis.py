@@ -182,8 +182,8 @@ def _evaluate_basis(data):
 #        code += _mixed_elements(data_list)
 
     # Remove unused variables (from transformations and mappings) in code.
-    #code = remove_unused("\n".join(code))
-    code = "\n".join(code)
+    code = remove_unused("\n".join(code))
+    #code = "\n".join(code)
     return code
 
 #def _map_dof(sum_space_dim):

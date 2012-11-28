@@ -180,7 +180,7 @@ def _generate_body(i, dof, mapping, cell_geometric_dim, cell_topological_dim,
     code.append(format["evaluate function"])
 
     # Map function values to the reference element
-    F = _change_variables(mapping, cell_geometric_dim, 
+    F = _change_variables(mapping, cell_geometric_dim,
                           cell_topological_dim, offset)
 
     # Simple affine functions deserve special case:
@@ -196,7 +196,7 @@ def _generate_body(i, dof, mapping, cell_geometric_dim, cell_topological_dim,
 
 
 def _generate_multiple_points_body(i, dof, mapping,
-                                   cell_geometric_dim, cell_topological_dim, 
+                                   cell_geometric_dim, cell_topological_dim,
                                    offset=0, result=f_result):
 
     "Generate c++ for-loop for multiple points (integral bodies)"
@@ -226,13 +226,14 @@ def _generate_multiple_points_body(i, dof, mapping,
     code += [declare(f_double, component(f_W(i), [n, len_tokens]), weights)]
 
     # Declare copy variable:
-    code += [declare(f_double, component(f_copy(i), cell_topolgical_dim))]
+    code += [declare(f_double, component(f_copy(i), cell_topological_dim))]
 
     # Add loop over points
     code += [comment("Loop over points.")]
 
     # Map the points from the reference onto the physical element
-    lines_r = [map_onto_physical[cell_dim] % {"i": i, "j": f_r}]
+    # FIXME!!!!!!
+    lines_r = [map_onto_physical[cell_geometric_dim] % {"i": i, "j": f_r}]
 
     # Evaluate function at physical point
     lines_r.append(comment("Evaluate function at physical point."))
@@ -240,7 +241,7 @@ def _generate_multiple_points_body(i, dof, mapping,
 
     # Map function values to the reference element
     lines_r.append(comment("Map function to reference element."))
-    F = _change_variables(mapping, cell_geometric_dim, 
+    F = _change_variables(mapping, cell_geometric_dim,
                           cell_topological_dim, offset)
     lines_r += [assign(component(f_copy(i), k), F_k)
              for (k, F_k) in enumerate(F)]
@@ -307,9 +308,9 @@ def _change_variables(mapping, tdim, gdim, offset):
         # Map each component from physical to reference using inverse
         # contravariant piola
         values = []
-        for i in range(dim):
-            inv_jacobian_row = [Jinv(i, j) for j in range(dim)]
-            components = [component(f_vals, j + offset) for j in range(dim)]
+        for i in range(tdim):
+            inv_jacobian_row = [Jinv(i, j) for j in range(gdim)]
+            components = [component(f_vals, j + offset) for j in range(gdim)]
             values += [multiply([detJ, inner(inv_jacobian_row, components)])]
         return values
 
@@ -317,9 +318,9 @@ def _change_variables(mapping, tdim, gdim, offset):
         # Map each component from physical to reference using inverse
         # covariant piola
         values = []
-        for i in range(dim):
-            jacobian_column = [J(j, i) for j in range(dim)]
-            components = [component(f_vals, j + offset) for j in range(dim)]
+        for i in range(tdim):
+            jacobian_column = [J(j, i) for j in range(gdim)]
+            components = [component(f_vals, j + offset) for j in range(gdim)]
             values += [inner(jacobian_column, components)]
         return values
     else:
