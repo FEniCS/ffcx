@@ -148,7 +148,7 @@ def _evaluate_basis(data):
     # coordinates from physical element to the FIAT reference element.
     # FIXME: KBO: Change this when supporting R^2 in R^3 elements.
     code += [format["jacobian and inverse"](geometric_dimension, topological_dimension)]
-    code += ["", format["fiat coordinate map"](element_cell_domain, topological_dimension)]
+    code += ["", format["fiat coordinate map"](element_cell_domain, geometric_dimension)]
 
     # Get value shape and reset values. This should also work for TensorElement,
     # scalar are empty tuples, therefore (1,) in which case value_shape = 1.

@@ -135,7 +135,7 @@ def _evaluate_basis_derivatives(data):
     # coordinates from physical element to the FIAT reference element.
     # FIXME: KBO: Change this when supporting R^2 in R^3 elements.
     code += [format["jacobian and inverse"](geometric_dimension, topological_dimension)]
-    code += ["", format["fiat coordinate map"](element_cell_domain, topological_dimension)]
+    code += ["", format["fiat coordinate map"](element_cell_domain, geometric_dimension)]
 
     # Compute number of derivatives that has to be computed, and declare an array to hold
     # the values of the derivatives on the reference element.
