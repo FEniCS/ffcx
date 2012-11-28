@@ -71,7 +71,8 @@ def _tabulate_tensor(ir, parameters):
     # Extract data from intermediate representation
     AK = ir["AK"]
     domain_type = ir["domain_type"]
-    geometric_dimension = ir["geometric_dimension"]
+    gdim = ir["geometric_dimension"]
+    tdim = ir["topological_dimension"]
     num_facets = ir["num_facets"]
 
     # Check integral type and generate code
@@ -84,7 +85,7 @@ def _tabulate_tensor(ir, parameters):
         g_code = _generate_geometry_tensors(AK, j_set, g_set)
 
         # Generate code for Jacobian and its inverse
-        j_code = format["jacobian and inverse"](geometric_dimension)
+        j_code = format["jacobian and inverse"](gdim, tdim)
         j_code += "\n\n" + format["scale factor snippet"]
 
     elif domain_type == "exterior_facet":
@@ -99,8 +100,8 @@ def _tabulate_tensor(ir, parameters):
         g_code = _generate_geometry_tensors(AK[0], j_set, g_set)
 
         # Generate code for Jacobian
-        j_code = format["jacobian and inverse"](geometric_dimension)
-        j_code += "\n\n" + format["facet determinant"](geometric_dimension)
+        j_code = format["jacobian and inverse"](gdim, tdim)
+        j_code += "\n\n" + format["facet determinant"](gdim)
 
     elif domain_type == "interior_facet":
 
@@ -115,9 +116,9 @@ def _tabulate_tensor(ir, parameters):
         g_code = _generate_geometry_tensors(AK[0][0], j_set, g_set)
 
         # Generate code for Jacobian
-        j_code  = format["jacobian and inverse"](geometric_dimension, r="+")
-        j_code += format["jacobian and inverse"](geometric_dimension, r="-")
-        j_code += "\n\n" + format["facet determinant"](geometric_dimension, r="+")
+        j_code  = format["jacobian and inverse"](gdim, tdim, r="+")
+        j_code += format["jacobian and inverse"](gdim, tdim, r="-")
+        j_code += "\n\n" + format["facet determinant"](gdim, r="+")
 
     else:
         error("Unhandled integral type: " + str(domain_type))

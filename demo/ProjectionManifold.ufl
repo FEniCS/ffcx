@@ -26,9 +26,9 @@ domain = Cell("interval", Space(2))
 # Define element over this domain
 element = FiniteElement("CG", domain, 1)
 
-#u = TrialFunction(element)
-#v = TestFunction(element)
+u = TrialFunction(element)
+v = TestFunction(element)
 
-#a = u*v*dx
+a = u*v*dx
 
 
