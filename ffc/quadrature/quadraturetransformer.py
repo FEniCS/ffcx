@@ -431,7 +431,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
         if transformation == "affine":
             # Loop derivatives and get multi indices.
             for multi in multiindices:
-                deriv = [multi.count(i) for i in range(self.geo_dim)]
+                deriv = [multi.count(i) for i in range(self.top_dim)]
                 if not any(deriv):
                     deriv = []
                 # Call function to create mapping and basis name.
@@ -451,10 +451,10 @@ class QuadratureTransformer(QuadratureTransformerBase):
         else:
             # Loop derivatives and get multi indices.
             for multi in multiindices:
-                deriv = [multi.count(i) for i in range(self.geo_dim)]
+                deriv = [multi.count(i) for i in range(self.top_dim)]
                 if not any(deriv):
                     deriv = []
-                for c in range(self.geo_dim):
+                for c in range(self.top_dim):
                     # Call function to create mapping and basis name.
                     mapping, basis = self._create_mapping_basis(c + local_offset, deriv, ufl_argument, ffc_element)
                     if basis is None:
@@ -509,7 +509,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
         if transformation == "affine":
             # Loop derivatives and get multi indices.
             for multi in multiindices:
-                deriv = [multi.count(i) for i in range(self.geo_dim)]
+                deriv = [multi.count(i) for i in range(self.top_dim)]
                 if not any(deriv):
                     deriv = []
                 # Call other function to create function name.
@@ -524,10 +524,10 @@ class QuadratureTransformer(QuadratureTransformerBase):
         else:
             # Loop derivatives and get multi indices.
             for multi in multiindices:
-                deriv = [multi.count(i) for i in range(self.geo_dim)]
+                deriv = [multi.count(i) for i in range(self.top_dim)]
                 if not any(deriv):
                     deriv = []
-                for c in range(self.geo_dim):
+                for c in range(self.top_dim):
                     function_name = self._create_function_name(c + local_offset, deriv, quad_element, ufl_function, ffc_element)
                     if function_name is None:
                         continue

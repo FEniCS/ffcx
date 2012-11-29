@@ -1,4 +1,5 @@
-"QuadratureTransformerBase, a common class for quadrature transformers to translate UFL expressions."
+"""QuadratureTransformerBase, a common class for quadrature
+transformers to translate UFL expressions."""
 
 # Copyright (C) 2009-2011 Kristian B. Oelgaard
 #
@@ -56,6 +57,7 @@ class QuadratureTransformerBase(Transformer):
                  psi_tables,
                  quad_weights,
                  geo_dim,
+                 top_dim,
                  optimise_parameters):
 
         Transformer.__init__(self)
@@ -74,6 +76,7 @@ class QuadratureTransformerBase(Transformer):
         self.functions = {}
         self.function_count = 0
         self.geo_dim = geo_dim
+        self.top_dim = top_dim
         self.points = 0
         self.facet0 = None
         self.facet1 = None
@@ -869,7 +872,7 @@ class QuadratureTransformerBase(Transformer):
             local_offset = component - local_comp
 
         # Generate FFC multi index for derivatives.
-        multiindices = FFCMultiIndex([range(self.geo_dim)]*len(derivatives)).indices
+        multiindices = FFCMultiIndex([range(self.top_dim)]*len(derivatives)).indices
 
         return (component, local_comp, local_offset, ffc_element, quad_element, transformation, multiindices)
 

@@ -114,11 +114,13 @@ def compute_integral_ir(domain_type,
         transformer = QuadratureTransformerOpt(psi_tables,
                                                quad_weights,
                                                form_data.geometric_dimension,
+                                               form_data.topological_dimension,
                                                optimise_parameters)
     else:
         transformer = QuadratureTransformer(psi_tables,
                                             quad_weights,
                                             form_data.geometric_dimension,
+                                            form_data.topological_dimension,
                                             optimise_parameters)
 
     # Add tables for weights, name_map and basis values.
