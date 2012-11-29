@@ -28,7 +28,9 @@ element = FiniteElement("CG", domain, 1)
 
 u = TrialFunction(element)
 v = TestFunction(element)
+f = Coefficient(element)
 
 a = u*v*dx
+L = f*v*dx
 
 
