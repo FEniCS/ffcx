@@ -29,6 +29,6 @@ element = FiniteElement("CG", domain, 1)
 u = TrialFunction(element)
 v = TestFunction(element)
 
-a = u*v*dx
+a = inner(grad(u), grad(v))*dx
 
 
