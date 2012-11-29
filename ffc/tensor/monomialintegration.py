@@ -56,6 +56,8 @@ def integrate(monomial,
 
     info("Precomputing integrals on reference element")
 
+    print "monomial = ", monomial
+
     # Start timing
     tic = time.time()
 
@@ -169,13 +171,21 @@ def _compute_psi(v, table, num_points, domain_type):
     else:
         raise MonomialException, "Can only handle rank 0 or rank 1 tensors."
 
+    print "v = ", v.__class__
+
     # Get indices and shapes for derivatives
     dindex = [d for d in v.derivatives]
     dshape = [len(d.index_range) for d in v.derivatives]
 
+    print "dindex = ", dindex
+    print "dshape = ", dshape
+
     # Get indices and shapes for basis functions
     vindex = [v.index]
     vshape = [len(v.index.index_range)]
+
+    print "vindex = ", dindex
+    print "vshape = ", dshape
 
     # Create list of indices that label the dimensions of the tensor Psi
     indices = cindex + dindex + vindex
@@ -199,6 +209,8 @@ def _compute_psi(v, table, num_points, domain_type):
         etable = table[(v.element, v.restriction)]
         for dlist in dlists:
             # Translate derivative multiindex to lookup tuple
+            print
+            print "tdim = ", tdim
             dtuple = _multiindex_to_tuple(dlist, tdim)
             # Get values from table
             Psi[tuple(dlist)] = etable[dtuple]
@@ -316,6 +328,8 @@ def _multiindex_to_tuple(dindex, cell_dimension):
     the derivatives.
     """
     dtuple = [0 for i in range(cell_dimension)]
+    print "dtuple = ", dtuple
     for d in dindex:
+        print "d = ", d
         dtuple[d] += 1
     return tuple(dtuple)

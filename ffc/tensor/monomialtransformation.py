@@ -260,14 +260,15 @@ class TransformedMonomial:
         # Iterate over factors
         for f in monomial.factors:
 
-            # FIXME: Can't handle tensor-valued elements: vdim = shape[0]
-
             # Create FIAT element
             ufl_element = f.element()
             fiat_element = create_element(f.element())
 
             # Get number of components
+            # FIXME: Can't handle tensor-valued elements: vdim = shape[0]
             shape = ufl_element.value_shape()
+            assert(len(shape) <= 1), \
+                "MonomialTransformation does not handle tensor-valued elements"
             if len(shape) == 0:
                 vdim = 1
             else:
@@ -276,6 +277,7 @@ class TransformedMonomial:
             # Extract dimensions
             sdim = fiat_element.space_dimension()
             gdim = ufl_element.cell().geometric_dimension()
+            tdim = ufl_element.cell().topological_dimension()
 
             # Extract basis function index and coefficients
             if isinstance(f.function, Argument):
@@ -322,23 +324,25 @@ class TransformedMonomial:
                 if mapping == "contravariant piola":
                     # phi(x) = (det J)^{-1} J Phi(X)
                     index0 = component
-                    index1 = MonomialIndex(index_range=range(gdim)) + offset
-                    transform = MonomialTransform(index0, index1, MonomialTransform.J, f.restriction, offset)
+                    index1 = MonomialIndex(index_range=range(tdim)) + offset
+                    transform = MonomialTransform(index0, index1, MonomialTransform.J,
+                                                  f.restriction, offset)
                     self.transforms.append(transform)
                     self.determinant.power -= 1
                     components[0] = index1
                 elif mapping == "covariant piola":
                     # phi(x) = J^{-T} Phi(X)
-                    index0 = MonomialIndex(index_range=range(gdim)) + offset
+                    index0 = MonomialIndex(index_range=range(tdim)) + offset
                     index1 = component
-                    transform = MonomialTransform(index0, index1, MonomialTransform.JINV, f.restriction, offset)
+                    transform = MonomialTransform(index0, index1, MonomialTransform.JINV,
+                                                  f.restriction, offset)
                     self.transforms.append(transform)
                     components[0] = index0
 
             # Extract derivatives / transforms
             derivatives = []
             for d in f.derivatives:
-                index0 = MonomialIndex(index_range=range(gdim))
+                index0 = MonomialIndex(index_range=range(tdim))
                 if d in index_map:
                     index1 = index_map[d]
                 elif isinstance(d, FixedIndex):
@@ -349,6 +353,7 @@ class TransformedMonomial:
                     index1 = MonomialIndex(index_range=range(gdim))
                 index_map[d] = index1
                 transform = MonomialTransform(index0, index1, MonomialTransform.JINV, f.restriction, 0)
+
                 self.transforms.append(transform)
                 derivatives.append(index0)
 
