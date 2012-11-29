@@ -449,7 +449,8 @@ def _interpolate_vertex_values(element, cell):
             return "Function is not supported/implemented for QuadratureElement."
 
     ir = {}
-    ir["cell_dim"] = cell.geometric_dimension()
+    ir["geometric_dimension"] = cell.geometric_dimension()
+    ir["topological_dimension"] = cell.topological_dimension()
 
     # Check whether computing the Jacobian is necessary
     mappings = element.mapping()

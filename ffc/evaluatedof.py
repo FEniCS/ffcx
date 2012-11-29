@@ -233,6 +233,8 @@ def _generate_multiple_points_body(i, dof, mapping,
 
     # Map the points from the reference onto the physical element
     # FIXME!!!!!!
+    assert(cell_geometric_dim == cell_topological_dim), \
+        "Integral moments not supported for manifolds (yet). Please fix"
     lines_r = [map_onto_physical[cell_geometric_dim] % {"i": i, "j": f_r}]
 
     # Evaluate function at physical point
