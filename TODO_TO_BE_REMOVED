@@ -1,7 +1,8 @@
 Things todo
 -------------
 
-* Get basic 1D in 3D working: need testing
+* Get basic 1D in 2D working with optimized quadrature.
+(* Get basic 1D in 3D working: compiles, need testing)
 * Get basic 2D in 3D working: need jacobians and inverses
 * Get exterior_facet integrals running
 * Get geometric entities going (normals for 1D-in-3D might not be trivial)
