@@ -1,0 +1,12 @@
+Things todo
+-------------
+
+* Get basic 1D in 3D working: need testing
+* Get basic 2D in 3D working: need jacobians and inverses
+* Get exterior_facet integrals running
+* Get geometric entities going (normals for 1D-in-3D might not be trivial)
+* Get interior_facet integrals running
+* Get H(curl)/H(div) elements running
+* Get mixed elements running
+* Run all 2D/3D demos with tdim = gdim - 1
+
