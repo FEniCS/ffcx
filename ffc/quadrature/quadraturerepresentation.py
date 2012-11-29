@@ -53,6 +53,7 @@ def compute_integral_ir(domain_type,
           "domain_id":            domain_id,
           "form_id":              form_id,
           "geometric_dimension":  form_data.geometric_dimension,
+          "topological_dimension":form_data.topological_dimension,
           "num_facets":           num_facets,
           "geo_consts":           {}}
 
