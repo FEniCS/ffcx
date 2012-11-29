@@ -161,11 +161,11 @@ const double K%(restriction)s_11 =  J%(restriction)s_00 / detJ%(restriction)s;""
 
 _inverse_jacobian_2D_1D = """\
 
-// Compute determinant of Jacobian
+// Compute pseudodeterminant of Jacobian
 double detJ2%(restriction)s = J%(restriction)s_00*J%(restriction)s_00 + J%(restriction)s_10*J%(restriction)s_10;
 double detJ%(restriction)s = std::sqrt(detJ2%(restriction)s);
 
-// Compute inverse of Jacobian
+// Compute pseudoinverse of Jacobian
 const double K%(restriction)s_00 = J%(restriction)s_00 / detJ2%(restriction)s;
 const double K%(restriction)s_01 = J%(restriction)s_10 / detJ2%(restriction)s;"""
 
@@ -221,10 +221,11 @@ const double K%(restriction)s_12 = d%(restriction)s_21 / detJ%(restriction)s;"""
 
 _inverse_jacobian_3D_1D = """\
 
+// Compute pseudodeterminant of Jacobian
 double detJ2%(restriction)s = J%(restriction)s_00*J%(restriction)s_00 + J%(restriction)s_10*J%(restriction)s_10 + J%(restriction)s_20*J%(restriction)s_20;
 double detJ%(restriction)s = std::sqrt(detJ2%(restriction)s);
 
-// Compute inverse of Jacobian
+// Compute pseudoinverse of Jacobian
 const double K%(restriction)s_00 = J%(restriction)s_00 / detJ2%(restriction)s;
 const double K%(restriction)s_01 = J%(restriction)s_10 / detJ2%(restriction)s;
 const double K%(restriction)s_02 = J%(restriction)s_20 / detJ2%(restriction)s;"""
