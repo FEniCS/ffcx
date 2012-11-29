@@ -229,13 +229,10 @@ format.update({
 # Code snippets
 from codesnippets import *
 
-def fix(gdim, tdim=None):
-    return (tdim if tdim else gdim)
-
 format.update({
     "cell coordinates":     cell_coordinates,
-    "jacobian":             lambda gdim, tdim=None, r="": jacobian[gdim][fix(gdim, tdim)] % {"restriction": r},
-    "inverse jacobian":     lambda gdim, tdim=None, r="": inverse_jacobian[gdim][fix(gdim, tdim)] % {"restriction": r},
+    "jacobian":             lambda gdim, tdim, r="": jacobian[gdim][tdim] % {"restriction": r},
+    "inverse jacobian":     lambda gdim, tdim, r="": inverse_jacobian[gdim][tdim] % {"restriction": r},
     "jacobian and inverse": lambda gdim, tdim=None, r=None: format["jacobian"](gdim, tdim, choose_map[r]) +\
                             "\n" + format["inverse jacobian"](gdim, tdim, choose_map[r]),
     "facet determinant":    lambda n, r=None: facet_determinant[n] % {"restriction": choose_map[r]},

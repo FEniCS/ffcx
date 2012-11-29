@@ -143,7 +143,7 @@ const double J%(restriction)s_20 = x%(restriction)s[1][2] - x%(restriction)s[0][
 _inverse_jacobian_1D = """\
 
 // Compute determinant of Jacobian
-const double detJ%(restriction)s =  J%(restriction)s_00;
+const double detJ%(restriction)s = J%(restriction)s_00;
 
 // Compute inverse of Jacobian
 const double K%(restriction)s_00 =  1.0 / detJ%(restriction)s;"""
@@ -162,11 +162,12 @@ const double K%(restriction)s_11 =  J%(restriction)s_00 / detJ%(restriction)s;""
 _inverse_jacobian_2D_1D = """\
 
 // Compute determinant of Jacobian
-double detJ%(restriction)s = std::sqrt(J%(restriction)s_00*J%(restriction)s_00 + J%(restriction)s_10*J%(restriction)s_10);
+double detJ2%(restriction)s = J%(restriction)s_00*J%(restriction)s_00 + J%(restriction)s_10*J%(restriction)s_10;
+double detJ%(restriction)s = std::sqrt(detJ2%(restriction)s);
 
 // Compute inverse of Jacobian
-const double K%(restriction)s_00 =  J%(restriction)s_00 / std::pow(detJ%(restriction)s, 2);
-const double K%(restriction)s_01 =  J%(restriction)s_10 / std::pow(detJ%(restriction)s, 2);"""
+const double K%(restriction)s_00 = J%(restriction)s_00 / detJ2%(restriction)s;
+const double K%(restriction)s_01 = J%(restriction)s_10 / detJ2%(restriction)s;"""
 
 _inverse_jacobian_3D = """\
 
@@ -194,6 +195,39 @@ const double K%(restriction)s_12 = d%(restriction)s_21 / detJ%(restriction)s;
 const double K%(restriction)s_20 = d%(restriction)s_02 / detJ%(restriction)s;
 const double K%(restriction)s_21 = d%(restriction)s_12 / detJ%(restriction)s;
 const double K%(restriction)s_22 = d%(restriction)s_22 / detJ%(restriction)s;"""
+
+_inverse_jacobian_3D_2D = """\
+// Compute sub determinants
+const double d%(restriction)s_00 = J%(restriction)s_11*J%(restriction)s_22 - J%(restriction)s_12*J%(restriction)s_21;
+const double d%(restriction)s_01 = J%(restriction)s_12*J%(restriction)s_20 - J%(restriction)s_10*J%(restriction)s_22;
+const double d%(restriction)s_02 = J%(restriction)s_10*J%(restriction)s_21 - J%(restriction)s_11*J%(restriction)s_20;
+const double d%(restriction)s_10 = J%(restriction)s_02*J%(restriction)s_21 - J%(restriction)s_01*J%(restriction)s_22;
+const double d%(restriction)s_11 = J%(restriction)s_00*J%(restriction)s_22 - J%(restriction)s_02*J%(restriction)s_20;
+const double d%(restriction)s_12 = J%(restriction)s_01*J%(restriction)s_20 - J%(restriction)s_00*J%(restriction)s_21;
+const double d%(restriction)s_20 = J%(restriction)s_01*J%(restriction)s_12 - J%(restriction)s_02*J%(restriction)s_11;
+const double d%(restriction)s_21 = J%(restriction)s_02*J%(restriction)s_10 - J%(restriction)s_00*J%(restriction)s_12;
+const double d%(restriction)s_22 = J%(restriction)s_00*J%(restriction)s_11 - J%(restriction)s_01*J%(restriction)s_10;
+
+// Compute determinant of Jacobian
+double detJ%(restriction)s = J%(restriction)s_00*d%(restriction)s_00 + J%(restriction)s_10*d%(restriction)s_10 + J%(restriction)s_20*d%(restriction)s_20;
+
+// Compute inverse of Jacobian
+const double K%(restriction)s_00 = d%(restriction)s_00 / detJ%(restriction)s;
+const double K%(restriction)s_01 = d%(restriction)s_10 / detJ%(restriction)s;
+const double K%(restriction)s_02 = d%(restriction)s_20 / detJ%(restriction)s;
+const double K%(restriction)s_10 = d%(restriction)s_01 / detJ%(restriction)s;
+const double K%(restriction)s_11 = d%(restriction)s_11 / detJ%(restriction)s;
+const double K%(restriction)s_12 = d%(restriction)s_21 / detJ%(restriction)s;"""
+
+_inverse_jacobian_3D_1D = """\
+
+double detJ2%(restriction)s = J%(restriction)s_00*J%(restriction)s_00 + J%(restriction)s_10*J%(restriction)s_10 + J%(restriction)s_20*J%(restriction)s_20;
+double detJ%(restriction)s = std::sqrt(detJ2%(restriction)s);
+
+// Compute inverse of Jacobian
+const double K%(restriction)s_00 = J%(restriction)s_00 / detJ2%(restriction)s;
+const double K%(restriction)s_01 = J%(restriction)s_10 / detJ2%(restriction)s;
+const double K%(restriction)s_02 = J%(restriction)s_20 / detJ2%(restriction)s;"""
 
 evaluate_f = "f.evaluate(vals, y, c);"
 
@@ -493,8 +527,14 @@ double X = (2.0*coordinates[0] - x[0][0] - x[1][0]) / J_00;"""
 
 _map_coordinates_FIAT_interval_in_2D = """\
 // Get coordinates and map to the reference (FIAT) element
-double X = 2*(std::sqrt(std::pow(coordinates[0]-x[0][0], 2) + 
+double X = 2*(std::sqrt(std::pow(coordinates[0]-x[0][0], 2) +
                         std::pow(coordinates[1]-x[0][1], 2))/ detJ) - 1.0;"""
+
+_map_coordinates_FIAT_interval_in_3D = """\
+// Get coordinates and map to the reference (FIAT) element
+// FIXME
+double X = 0.0;
+"""
 
 _map_coordinates_FIAT_triangle = """\
 // Compute constants
@@ -504,6 +544,12 @@ const double C1 = x[1][1] + x[2][1];
 // Get coordinates and map to the reference (FIAT) element
 double X = (J_01*(C1 - 2.0*coordinates[1]) + J_11*(2.0*coordinates[0] - C0)) / detJ;
 double Y = (J_00*(2.0*coordinates[1] - C1) + J_10*(C0 - 2.0*coordinates[0])) / detJ;"""
+
+_map_coordinates_FIAT_triangle_in_3D = """\
+// FIXME
+double X = 0.0;
+double Y = 0.0;
+"""
 
 _map_coordinates_FIAT_tetrahedron = """\
 // Compute constants
@@ -520,13 +566,16 @@ double Z = (d_02*(2.0*coordinates[0] - C0) + d_12*(2.0*coordinates[1] - C1) + d_
 
 # Mappings to code snippets used by format
 
-jacobian = {1: {1:_jacobian_1D}, 
+# The 'jacobian' and 'inverse_jacobian' dictionaries accept as keys
+# first the geometric dimension, and then the topological dimension
+jacobian = {1: {1:_jacobian_1D},
             2: {2:_jacobian_2D, 1:_jacobian_2D_1D},
             3: {3:_jacobian_3D, 2:_jacobian_3D_2D, 1:_jacobian_3D_1D}}
 
 inverse_jacobian = {1: {1:_inverse_jacobian_1D},
                     2: {2:_inverse_jacobian_2D, 1:_inverse_jacobian_2D_1D},
-                    3: {3:_inverse_jacobian_3D}}
+                    3: {3:_inverse_jacobian_3D, 2:_inverse_jacobian_3D_2D,
+                        1:_inverse_jacobian_3D_1D}}
 
 facet_determinant = {1: _facet_determinant_1D,
                      2: _facet_determinant_2D,
@@ -537,8 +586,10 @@ map_onto_physical = {1: _map_onto_physical_1D,
                      3: _map_onto_physical_3D}
 
 fiat_coordinate_map = {"interval": {1:_map_coordinates_FIAT_interval,
-                                    2:_map_coordinates_FIAT_interval_in_2D},
-                       "triangle": {2:_map_coordinates_FIAT_triangle},
+                                    2:_map_coordinates_FIAT_interval_in_2D,
+                                    3:_map_coordinates_FIAT_interval_in_3D},
+                       "triangle": {2:_map_coordinates_FIAT_triangle,
+                                    3:_map_coordinates_FIAT_triangle_in_3D},
                        "tetrahedron": {3:_map_coordinates_FIAT_tetrahedron}}
 
 transform_snippet = {"interval": _transform_interval_snippet,
