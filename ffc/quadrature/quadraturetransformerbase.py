@@ -756,6 +756,7 @@ class QuadratureTransformerBase(Transformer):
                 for i, s in enumerate(sets):
                     new_terms[loop][0][i].update(s)
                 new_terms[loop][1].append((entry, value, ops))
+
         return new_terms
 
     def _create_loop_entry(self, key, f_nzc):
@@ -918,6 +919,9 @@ class QuadratureTransformerBase(Transformer):
 
         # Generate psi name and map to correct values.
         name = generate_psi_name(element_counter, facet, component, deriv)
+        print "name = ", name
+        print "self.name_map = ", self.name_map
+
         name, non_zeros, zeros, ones = self.name_map[name]
         loop_index_range = shape(self.unique_tables[name])[1]
 

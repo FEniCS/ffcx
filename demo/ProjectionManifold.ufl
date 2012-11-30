@@ -24,11 +24,15 @@
 domain = Cell("triangle", Space(3))
 
 # Define element over this domain
-element = FiniteElement("DG", domain, 1)
+V = FiniteElement("BDM", domain, 1)
+Q = FiniteElement("DG", domain, 0)
+element = V*Q
 
-u = TrialFunction(element)
-v = TestFunction(element)
-n = FacetNormal(domain)
+(u, p) = TrialFunctions(element)
+(v, q) = TestFunctions(element)
 
-a = dot(u('+'), v('-'))*dS
+#u = TrialFunction(V)
+#v = TestFunction(V)
 
+#a = (inner(u, v) + div(u)*q + div(v)*p)*dx
+a = div(u)*q*dx

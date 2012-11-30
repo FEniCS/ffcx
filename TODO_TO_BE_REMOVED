@@ -5,8 +5,8 @@ Things to get running
 [x] * Get exterior_facet integrals running
 [ ] * Get geometric entities going (normals for 1D-in-3D might not be trivial)
 [x] * Get interior_facet integrals running
-[ ] * Get H(curl)/H(div) elements running
-[ ] * Get mixed elements running
+[x] * Get H(curl)/H(div) elements running
+[x] * Get mixed elements running
 [ ] * Run all 2D/3D demos with tdim = gdim - 1
 
 Things to test
