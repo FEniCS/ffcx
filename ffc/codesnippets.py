@@ -208,8 +208,8 @@ const double detJ%(restriction)s = std::sqrt(detJ2%(restriction)s);
 // Compute some common factors for the pseudoinverse
 const double n%(restriction)s_1 = J%(restriction)s_00*J%(restriction)s_00 + J%(restriction)s_10*J%(restriction)s_10 + J%(restriction)s_20*J%(restriction)s_20;
 const double n%(restriction)s_2 = J%(restriction)s_01*J%(restriction)s_01 + J%(restriction)s_11*J%(restriction)s_11 + J%(restriction)s_21*J%(restriction)s_21;
-const double m%(restriction)s  = J%(restriction)s_00*J%(restriction)s_10 + J%(restriction)s_01*J%(restriction)s_11 + J%(restriction)s_20*J%(restriction)s_21;
-const double den%(restriction)s = n%(restriction)s_1*n%(restriction)s_2 - m%(restriction)s;
+const double m%(restriction)s  = J%(restriction)s_00*J%(restriction)s_01 + J%(restriction)s_10*J%(restriction)s_11 + J%(restriction)s_20*J%(restriction)s_21;
+const double den%(restriction)s = n%(restriction)s_1*n%(restriction)s_2 - m%(restriction)s*m%(restriction)s;
 
 // Comspute pseudoinverse of Jacobian
 const double K%(restriction)s_00 =  (J%(restriction)s_00*n%(restriction)s_2 - J%(restriction)s_01*m%(restriction)s)/den%(restriction)s;
