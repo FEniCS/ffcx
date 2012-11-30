@@ -21,7 +21,7 @@
 # Compile this form with FFC: ffc ProjectionManifold.ufl
 
 # Define interval embedded in 2D:
-domain = Cell("interval", Space(2))
+domain = Cell("triangle", Space(2))
 
 # Define element over this domain
 element = FiniteElement("CG", domain, 1)
@@ -29,6 +29,5 @@ element = FiniteElement("CG", domain, 1)
 u = TrialFunction(element)
 v = TestFunction(element)
 
-a = inner(grad(u), grad(v))*dx
-
+a = u*ds
 

@@ -235,7 +235,7 @@ format.update({
     "inverse jacobian":     lambda gdim, tdim, r="": inverse_jacobian[gdim][tdim] % {"restriction": r},
     "jacobian and inverse": lambda gdim, tdim=None, r=None: format["jacobian"](gdim, tdim, choose_map[r]) +\
                             "\n" + format["inverse jacobian"](gdim, tdim, choose_map[r]),
-    "facet determinant":    lambda gdim, tdim, r=None: facet_determinant[gdim, tdim] % {"restriction": choose_map[r]},
+    "facet determinant":    lambda gdim, tdim, r=None: facet_determinant[gdim][tdim] % {"restriction": choose_map[r]},
     "fiat coordinate map":  lambda cell, gdim: fiat_coordinate_map[cell][gdim],
     "generate normal":      lambda d, i: _generate_normal(d, i),
     "generate cell volume": lambda d, i: _generate_cell_volume(d, i),

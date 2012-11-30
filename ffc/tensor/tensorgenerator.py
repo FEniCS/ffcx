@@ -101,7 +101,7 @@ def _tabulate_tensor(ir, parameters):
 
         # Generate code for Jacobian
         j_code = format["jacobian and inverse"](gdim, tdim)
-        j_code += "\n\n" + format["facet determinant"](gdim)
+        j_code += "\n\n" + format["facet determinant"](gdim, tdim)
 
     elif domain_type == "interior_facet":
 
@@ -118,7 +118,7 @@ def _tabulate_tensor(ir, parameters):
         # Generate code for Jacobian
         j_code  = format["jacobian and inverse"](gdim, tdim, r="+")
         j_code += format["jacobian and inverse"](gdim, tdim, r="-")
-        j_code += "\n\n" + format["facet determinant"](gdim, r="+")
+        j_code += "\n\n" + format["facet determinant"](gdim, tdim, r="+")
 
     else:
         error("Unhandled integral type: " + str(domain_type))
