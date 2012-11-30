@@ -24,10 +24,11 @@
 domain = Cell("triangle", Space(3))
 
 # Define element over this domain
-element = FiniteElement("CG", domain, 1)
+element = FiniteElement("DG", domain, 1)
 
 u = TrialFunction(element)
 v = TestFunction(element)
+n = FacetNormal(domain)
 
-a = u*ds
+a = dot(u('+'), v('-'))*dS
 
