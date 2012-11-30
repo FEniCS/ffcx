@@ -123,8 +123,10 @@ def _tabulate_tensor(ir, parameters):
         # Get Jacobian snippet.
         jacobi_code = format["jacobian and inverse"](geo_dim, top_dim)
         jacobi_code += "\n\n" + format["facet determinant"](geo_dim, top_dim)
-        jacobi_code += "\n\n" + format["generate normal"](geo_dim, domain_type)
+        jacobi_code += "\n\n" + format["generate normal"](geo_dim, top_dim,
+                                                          domain_type)
 
+        print jacobi_code
     elif domain_type == "interior_facet":
         # Modify the dimensions of the primary indices because we have a macro element
         prim_idims = [d*2 for d in prim_idims]
@@ -151,7 +153,8 @@ def _tabulate_tensor(ir, parameters):
         jacobi_code += format["jacobian and inverse"](geo_dim, top_dim, r="-")
         jacobi_code += "\n\n"
         jacobi_code += format["facet determinant"](geo_dim, top_dim, r="+")
-        jacobi_code += "\n\n" + format["generate normal"](geo_dim, domain_type)
+        jacobi_code += "\n\n" + format["generate normal"](geo_dim, top_dim,
+                                                          domain_type)
     else:
         error("Unhandled integral type: " + str(integral_type))
 

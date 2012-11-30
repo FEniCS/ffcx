@@ -237,7 +237,7 @@ format.update({
                             "\n" + format["inverse jacobian"](gdim, tdim, choose_map[r]),
     "facet determinant":    lambda gdim, tdim, r=None: facet_determinant[gdim][tdim] % {"restriction": choose_map[r]},
     "fiat coordinate map":  lambda cell, gdim: fiat_coordinate_map[cell][gdim],
-    "generate normal":      lambda d, i: _generate_normal(d, i),
+    "generate normal":      lambda gdim, tdim, i: _generate_normal(gdim, tdim, i),
     "generate cell volume": lambda d, i: _generate_cell_volume(d, i),
     "generate circumradius": lambda d, i: _generate_circumradius(d, i),
     "generate facet area":  lambda d: facet_area[d],
@@ -530,12 +530,16 @@ def _generate_psi_name(counter, facet, component, derivatives):
 
     return name
 
-def _generate_normal(geometric_dimension, domain_type, reference_normal=False):
+def _generate_normal(geometric_dimension, topological_dimension, domain_type,
+                     reference_normal=False):
     "Generate code for computing normal"
 
     # Choose snippets
-    direction = normal_direction[geometric_dimension]
-    normal = facet_normal[geometric_dimension]
+    direction = normal_direction[geometric_dimension][topological_dimension]
+
+    assert (facet_normal[geometric_dimension].has_key(topological_dimension)),\
+        "Facet normal not yet implemented for this gdim/tdim combo"
+    normal = facet_normal[geometric_dimension][topological_dimension]
 
     # Choose restrictions
     if domain_type == "exterior_facet":

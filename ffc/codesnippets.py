@@ -295,17 +295,43 @@ const bool direction = facet%(restriction)s == 0 ? x%(restriction)s[0][0] > x%(r
 _normal_direction_2D = """\
 const bool direction = dx1*(x%(restriction)s[%(facet)s][0] - x%(restriction)s[v0][0]) - dx0*(x%(restriction)s[%(facet)s][1] - x%(restriction)s[v0][1]) < 0;"""
 
+_normal_direction_2D_1D = ""
+
 _normal_direction_3D = """\
 const bool direction = a0*(x%(restriction)s[%(facet)s][0] - x%(restriction)s[v0][0]) + a1*(x%(restriction)s[%(facet)s][1] - x%(restriction)s[v0][1])  + a2*(x%(restriction)s[%(facet)s][2] - x%(restriction)s[v0][2]) < 0;"""
+
+_normal_direction_3D_2D = ""
+
+_normal_direction_3D_1D = ""
 
 _facet_normal_1D = """
 // Facet normals are 1.0 or -1.0:   (-1.0) <-- X------X --> (1.0)
 const double n%(restriction)s = %(direction)sdirection ? 1.0 : -1.0;"""
 
+
 _facet_normal_2D = """\
 // Compute facet normals from the facet scale factor constants
 const double n%(restriction)s0 = %(direction)sdirection ? dx1 / det : -dx1 / det;
 const double n%(restriction)s1 = %(direction)sdirection ? -dx0 / det : dx0 / det;"""
+
+_facet_normal_2D_1D = """
+// Compute facet normal
+double n%(restriction)s0 = 0.0;
+double n%(restriction)s1 = 0.0;
+
+if (facet%(restriction)s == 0)
+{
+  n%(restriction)s0 = x[0][0] - x[1][0];
+  n%(restriction)s1 = x[0][1] - x[1][1];
+} else {
+  n%(restriction)s0 = x[1][0] - x[0][0];
+  n%(restriction)s1 = x[1][1] - x[0][1];
+}
+
+const double length = std::sqrt(n%(restriction)s0*n%(restriction)s0 + n%(restriction)s1*n%(restriction)s1)
+n%(restriction)s0 /= length;
+n%(restriction)s1 /= length;
+"""
 
 _facet_normal_3D = """\
 // Compute facet normals from the facet scale factor constants
@@ -620,13 +646,14 @@ transform_snippet = {"interval": _transform_interval_snippet,
                      "triangle": _transform_triangle_snippet,
                      "tetrahedron": _transform_tetrahedron_snippet}
 
-normal_direction = {1: _normal_direction_1D,
-                    2: _normal_direction_2D,
-                    3: _normal_direction_3D}
+normal_direction = {1: {1: _normal_direction_1D},
+                    2: {2: _normal_direction_2D, 1: _normal_direction_2D_1D},
+                    3: {3: _normal_direction_3D, 2: _normal_direction_3D_2D,
+                        1: _normal_direction_3D_1D}}
 
-facet_normal = {1: _facet_normal_1D,
-                2: _facet_normal_2D,
-                3: _facet_normal_3D}
+facet_normal = {1: {1: _facet_normal_1D},
+                2: {2: _facet_normal_2D, 1: _facet_normal_2D_1D},
+                3: {3: _facet_normal_3D}}
 
 ip_coordinates = {1: (3, _ip_coordinates_1D),
                   2: (10, _ip_coordinates_2D),
