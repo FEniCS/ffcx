@@ -2,7 +2,7 @@ Things to get running
 ---------------------
 
 [x] * Get basic 1D in 2D working with optimized quadrature.
-[ ] * Get exterior_facet integrals running
+[x] * Get exterior_facet integrals running
 [ ] * Get geometric entities going (normals for 1D-in-3D might not be trivial)
 [ ] * Get interior_facet integrals running
 [ ] * Get H(curl)/H(div) elements running
@@ -12,4 +12,4 @@ Things to get running
 Things to test
 ---------------
 
-[t] * Test Poisson 1D in 2D, 1D/2D in 3D, with tensor/quad/quad-opt
+[ ] * Test all the above
