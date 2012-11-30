@@ -252,6 +252,10 @@ const double dx0 = x%(restriction)s[v1][0] - x%(restriction)s[v0][0];
 const double dx1 = x%(restriction)s[v1][1] - x%(restriction)s[v0][1];
 const double det = std::sqrt(dx0*dx0 + dx1*dx1);"""
 
+_facet_determinant_2D_1D = """\
+// Facet determinant 1D in 2D (vertex)
+const double det = 1.0;"""
+
 _facet_determinant_3D = """\
 // Get vertices on face
 static unsigned int face_vertices[4][3] = {{1, 2, 3}, {0, 2, 3}, {0, 1, 3}, {0, 1, 2}};
@@ -267,6 +271,23 @@ const double a1 = (x%(restriction)s[v0][2]*x%(restriction)s[v1][0] + x%(restrict
 const double a2 = (x%(restriction)s[v0][0]*x%(restriction)s[v1][1] + x%(restriction)s[v0][1]*x%(restriction)s[v2][0] + x%(restriction)s[v1][0]*x%(restriction)s[v2][1]) - (x%(restriction)s[v2][0]*x%(restriction)s[v1][1] + x%(restriction)s[v2][1]*x%(restriction)s[v0][0] + x%(restriction)s[v1][0]*x%(restriction)s[v0][1]);
 
 const double det = std::sqrt(a0*a0 + a1*a1 + a2*a2);"""
+
+_facet_determinant_3D_2D = """\
+// Facet determinant 2D in 3D (edge)
+// Get vertices on edge
+static unsigned int edge_vertices[3][2] = {{1, 2}, {0, 2}, {0, 1}};
+const unsigned int v0 = edge_vertices[facet%(restriction)s][0];
+const unsigned int v1 = edge_vertices[facet%(restriction)s][1];
+
+// Compute scale factor (length of edge scaled by length of reference interval)
+const double dx0 = x%(restriction)s[v1][0] - x%(restriction)s[v0][0];
+const double dx1 = x%(restriction)s[v1][1] - x%(restriction)s[v0][1];
+const double dx2 = x%(restriction)s[v1][2] - x%(restriction)s[v0][2];
+const double det = std::sqrt(dx0*dx0 + dx1*dx1 + dx2*dx2);"""
+
+_facet_determinant_3D_1D = """\
+// Facet determinant 1D in 3D (vertex)
+const double det = 1.0;"""
 
 _normal_direction_1D = """\
 const bool direction = facet%(restriction)s == 0 ? x%(restriction)s[0][0] > x%(restriction)s[1][0] : x%(restriction)s[1][0] > x%(restriction)s[0][0];"""
@@ -565,11 +586,11 @@ double Y = (d_01*(2.0*coordinates[0] - C0) + d_11*(2.0*coordinates[1] - C1) + d_
 double Z = (d_02*(2.0*coordinates[0] - C0) + d_12*(2.0*coordinates[1] - C1) + d_22*(2.0*coordinates[2] - C2)) / detJ;
 """
 
-
 # Mappings to code snippets used by format
 
-# The 'jacobian' and 'inverse_jacobian' dictionaries accept as keys
-# first the geometric dimension, and then the topological dimension
+# The 'jacobian', 'inverse_jacobian', 'facet_determinant' dictionaries
+# accept as keys first the geometric dimension, and then the
+# topological dimension
 jacobian = {1: {1:_jacobian_1D},
             2: {2:_jacobian_2D, 1:_jacobian_2D_1D},
             3: {3:_jacobian_3D, 2:_jacobian_3D_2D, 1:_jacobian_3D_1D}}
@@ -579,9 +600,10 @@ inverse_jacobian = {1: {1:_inverse_jacobian_1D},
                     3: {3:_inverse_jacobian_3D, 2:_inverse_jacobian_3D_2D,
                         1:_inverse_jacobian_3D_1D}}
 
-facet_determinant = {1: _facet_determinant_1D,
-                     2: _facet_determinant_2D,
-                     3: _facet_determinant_3D}
+facet_determinant = {1: {1: _facet_determinant_1D},
+                     2: {2: _facet_determinant_2D, 1: _facet_determinant_2D_1D},
+                     3: {3: _facet_determinant_3D, 2: _facet_determinant_3D_2D,
+                         1: _facet_determinant_3D_1D}}
 
 map_onto_physical = {1: _map_onto_physical_1D,
                      2: _map_onto_physical_2D,
