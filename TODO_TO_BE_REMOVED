@@ -1,13 +1,15 @@
-Things todo
--------------
+Things to get running
+---------------------
 
-* Get basic 1D in 2D working with optimized quadrature.
-(* Get basic 1D in 3D working: compiles, need testing)
-* Get basic 2D in 3D working: need jacobians and inverses
-* Get exterior_facet integrals running
-* Get geometric entities going (normals for 1D-in-3D might not be trivial)
-* Get interior_facet integrals running
-* Get H(curl)/H(div) elements running
-* Get mixed elements running
-* Run all 2D/3D demos with tdim = gdim - 1
+[x] * Get basic 1D in 2D working with optimized quadrature.
+[ ] * Get exterior_facet integrals running
+[ ] * Get geometric entities going (normals for 1D-in-3D might not be trivial)
+[ ] * Get interior_facet integrals running
+[ ] * Get H(curl)/H(div) elements running
+[ ] * Get mixed elements running
+[ ] * Run all 2D/3D demos with tdim = gdim - 1
 
+Things to test
+---------------
+
+[t] * Test Poisson 1D in 2D, 1D/2D in 3D, with tensor/quad/quad-opt
