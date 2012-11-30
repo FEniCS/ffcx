@@ -26,7 +26,8 @@ class DirichletBoundary : public SubDomain
 int main()
 {
   // Create mesh and function space
-  UnitCircleMesh mesh(16);
+  Sphere sphere((0.0, 0.0, 0.0), 1.0);
+  Mesh mesh(sphere, 16);
   BoundaryMesh boundary(mesh);
 
   Poisson::FunctionSpace V(boundary);

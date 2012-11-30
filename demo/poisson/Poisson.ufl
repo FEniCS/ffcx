@@ -21,7 +21,7 @@
 # Compile this form with FFC: ffc Poisson.ufl
 
 # Define interval embedded in 2D:
-domain = Cell("interval", Space(2))
+domain = Cell("triangle", Space(3))
 
 # Define element over this domain
 element = FiniteElement("CG", domain, 1)

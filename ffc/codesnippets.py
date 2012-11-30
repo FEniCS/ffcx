@@ -197,6 +197,7 @@ const double K%(restriction)s_21 = d%(restriction)s_12 / detJ%(restriction)s;
 const double K%(restriction)s_22 = d%(restriction)s_22 / detJ%(restriction)s;"""
 
 _inverse_jacobian_3D_2D = """\
+
 // Compute pseudodeterminant of Jacobian
 const double d%(restriction)s_0 = J_10*J_21 - J_20*J_11;
 const double d%(restriction)s_1 = - (J_00*J_21 - J_20*J_01);
