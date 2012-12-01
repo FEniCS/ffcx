@@ -264,6 +264,11 @@ class TransformedMonomial:
             ufl_element = f.element()
             fiat_element = create_element(f.element())
 
+            # Note nifty aspect here: when gdim != tdim, it might be
+            # (in particular, is for H(div)/H(curl), that the value
+            # dimension is different for the physical and reference
+            # elements.
+
             # Get number of components
             # FIXME: Can't handle tensor-valued elements: vdim = shape[0]
             shape = ufl_element.value_shape()
@@ -292,6 +297,7 @@ class TransformedMonomial:
 
             # Extract components
             components = self._extract_components(f, index_map, vdim)
+
             if len(components) > 1:
                 raise MonomialException, "Can only handle rank 0 or rank 1 tensors."
 
@@ -311,7 +317,7 @@ class TransformedMonomial:
                     raise MonomialException, ("Mappings differ: " + str(mappings))
                 mapping = mappings[0]
 
-                # Get component index and sub element
+                # Get component index relative to its sub element and its sub element
                 (component_index, sub_element) = ufl_element.extract_component(component.index_range[0])
 
                 # Get offset
@@ -319,6 +325,13 @@ class TransformedMonomial:
                     offset = 0
                 else:
                     offset = component.index_range[0] - component_index[0]
+
+                # Need to handle mappings in special ways if gdim !=
+                # tdim and some Piolas are present
+                if (gdim != tdim):
+                    components, component, offset \
+                        = _shift_component_gdim_vs_tdim(components, component,
+                                                        offset, f, gdim, tdim)
 
                 # Add transforms where appropriate
                 if mapping == "contravariant piola":
@@ -414,7 +427,7 @@ class TransformedMonomial:
                                       index_range=[comp],
                                       index_id=None)
             else:
-                index = MonomialIndex(index_range=range(vdim)) # meg: What kind of index should this be?
+                index = MonomialIndex(index_range=range(vdim))
             index_map[c] = index
             components.append(index)
         return components
@@ -479,3 +492,74 @@ def _reset_indices():
     _current_secondary_index = 0
     _current_internal_index = 0
     _current_external_index = 0
+
+
+def _shift_component_gdim_vs_tdim(components, component, offset, f, gdim, tdim):
+    """
+    This function accounts for the fact that if the geometrical and
+    topological dimension does not match, then for native vector
+    elements, in particular the Piola-mapped ones, the physical value
+    dimensions and the reference value dimensions are not the
+    same. This has significant consequences, especially for mixed
+    elements.
+
+    This code is quite non-elegant, and this is probably not the right
+    place for it, but it does some job.
+    """
+
+    # Do nothing if we are not in a special case: The special cases
+    # occur if we have piola mapped elements (for which value_shape !=
+    # ()), and if gdim != tdim)
+    if gdim == tdim:
+        return components, component, offset
+    all_mappings =  create_element(f.element()).mapping()
+    special_case = (any(['piola' in m for m in all_mappings])
+                    and f.element().num_sub_elements() > 1)
+    if not special_case:
+        return components, component, offset
+
+    # Extract reference and physical value dimensions
+    assert (len(components) == 1), "Must fix in gdim/tdim shift code"
+    reference_value_dims = []
+    physical_value_dims = []
+    for sub_element in f.element().sub_elements():
+        assert (len(sub_element.value_shape()) < 2), \
+            "Vector-valued assumption failed"
+        if sub_element.value_shape() == ():
+            reference_value_dims += [1]
+            physical_value_dims += [1]
+        else:
+            reference_value_dims += [sub_element.value_shape()[0]
+                                     - (gdim - tdim)]
+            physical_value_dims += [sub_element.value_shape()[0]]
+
+    # Figure out which sub-element we are in:
+    shifted_components = []
+    for c in components:
+        assert (len(c.index_range) == 1), "Must fix here!"
+        c0 = c.index_range[0]
+        tot = physical_value_dims[0]
+        for (sub_element_number, i) in enumerate(physical_value_dims):
+            if c0 < tot:
+                break
+            else:
+                tot += i
+
+        # Compute the new reference offset:
+        new_offset = 0
+        old_offset = 0
+        for k in range(sub_element_number):
+            new_offset += reference_value_dims[k]
+            old_offset += physical_value_dims[k]
+        shift = old_offset - new_offset
+
+        component = c0 - shift
+        component_as_index = MonomialIndex(index_type=MonomialIndex.FIXED,
+                                             index_range=[component],
+                                             index_id=None)
+        shifted_components += [component_as_index]
+
+    return shifted_components, component_as_index, new_offset
+
+
+
