@@ -7,9 +7,10 @@ Things to get running
 [x] * Get interior_facet integrals running
 [x] * Get H(curl)/H(div) elements running
 [x] * Get mixed elements running
-[ ] * Run all 2D/3D demos with tdim = gdim - 1
+[ ] * Get mixed elements involving piolas running for quadrature rep
 
 Things to test
 ---------------
 
 [ ] * Test all the above
+[ ] * Run all 2D/3D demos with tdim = gdim - 1
