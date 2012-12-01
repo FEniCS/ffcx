@@ -212,13 +212,14 @@ const double n%(restriction)s_2 = J%(restriction)s_01*J%(restriction)s_01 + J%(r
 const double m%(restriction)s  = J%(restriction)s_00*J%(restriction)s_01 + J%(restriction)s_10*J%(restriction)s_11 + J%(restriction)s_20*J%(restriction)s_21;
 const double den%(restriction)s = n%(restriction)s_1*n%(restriction)s_2 - m%(restriction)s*m%(restriction)s;
 
-// Comspute pseudoinverse of Jacobian
+// Compute pseudoinverse of Jacobian
 const double K%(restriction)s_00 =  (J%(restriction)s_00*n%(restriction)s_2 - J%(restriction)s_01*m%(restriction)s)/den%(restriction)s;
 const double K%(restriction)s_01 =  (J%(restriction)s_10*n%(restriction)s_2 - J%(restriction)s_11*m%(restriction)s)/den%(restriction)s;
 const double K%(restriction)s_02 =  (J%(restriction)s_20*n%(restriction)s_2 - J%(restriction)s_21*m%(restriction)s)/den%(restriction)s;
 const double K%(restriction)s_10 = (-J%(restriction)s_00*m%(restriction)s - J%(restriction)s_01*n%(restriction)s_1)/den%(restriction)s;
 const double K%(restriction)s_11 = (-J%(restriction)s_10*m%(restriction)s - J%(restriction)s_11*n%(restriction)s_1)/den%(restriction)s;
-const double K%(restriction)s_12 = (-J%(restriction)s_20*m%(restriction)s - J%(restriction)s_21*n%(restriction)s_1)/den%(restriction)s;"""
+const double K%(restriction)s_12 = (-J%(restriction)s_20*m%(restriction)s - J%(restriction)s_21*n%(restriction)s_1)/den%(restriction)s;
+"""
 
 _inverse_jacobian_3D_1D = """\
 
