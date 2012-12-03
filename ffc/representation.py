@@ -262,25 +262,35 @@ def _value_size(element):
         return 1
     return product(shape)
 
-
-def _generate_offsets(element, offset=0):
-
-    "Generate offsets: i.e value offset for each basis function."
-
+def _generate_reference_offsets(element, offset=0):
+    """Generate offsets: i.e value offset for each basis function
+    relative to a reference element representation."""
     offsets = []
-
     if isinstance(element, MixedElement):
         for e in element.elements():
-            offsets += _generate_offsets(e, offset)
+            offsets += _generate_reference_offsets(e, offset)
             offset += _value_size(e)
-
     elif isinstance(element, EnrichedElement):
         for e in element.elements():
-            offsets += _generate_offsets(e, offset)
-
+            offsets += _generate_reference_offsets(e, offset)
     else:
         offsets = [offset]*element.space_dimension()
+    return offsets
 
+def _generate_physical_offsets(ufl_element, offset=0):
+    """Generate offsets: i.e value offset for each basis function
+    relative to a physical element representation."""
+    offsets = []
+    if isinstance(ufl_element, ufl.MixedElement):
+        for e in ufl_element.sub_elements():
+            offsets += _generate_physical_offsets(e, offset)
+            offset += _value_size(e)
+    elif isinstance(ufl_element, ufl.EnrichedElement):
+        for e in ufl_element._elements:
+            offsets += _generate_physical_offsets(e, offset)
+    else:
+        element = create_element(ufl_element)
+        offsets = [offset]*element.space_dimension()
     return offsets
 
 def _evaluate_dof(ufl_element, element, cell):
@@ -303,7 +313,7 @@ def _evaluate_dof(ufl_element, element, cell):
             "geometric_dimension": cell.geometric_dimension(),
             "topological_dimension": cell.topological_dimension(),
             "dofs": [L.pt_dict for L in element.dual_basis()],
-            "offsets": _generate_offsets(element)}
+            "physical_offsets": _generate_physical_offsets(ufl_element)}
 
 def _extract_elements(element):
 
@@ -331,7 +341,7 @@ def _evaluate_basis(element, cell):
 
     # Handle Mixed and EnrichedElements by extracting 'sub' elements.
     elements = _extract_elements(element)
-    offsets = _generate_offsets(element)
+    offsets = _generate_reference_offsets(element) # Must check?
     mappings = element.mapping()
 
     # This function is evidently not implemented for TensorElements
@@ -346,13 +356,12 @@ def _evaluate_basis(element, cell):
             return "Function not supported/implemented for QuadratureElement."
 
     # Initialise data with 'global' values.
-    data = {
-          "value_size" : _value_size(element),
-          "cell_domain" : cell.domain(),
-          "topological_dimension" : cell.topological_dimension(),
-          "geometric_dimension" : cell.geometric_dimension(),
-          "space_dimension" : element.space_dimension()
-          }
+    data = {"value_size" : _value_size(element),
+            "cell_domain" : cell.domain(),
+            "topological_dimension" : cell.topological_dimension(),
+            "geometric_dimension" : cell.geometric_dimension(),
+            "space_dimension" : element.space_dimension()
+            }
     # Loop element and space dimensions to generate dof data.
     dof = 0
     dof_data = []

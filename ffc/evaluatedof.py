@@ -104,7 +104,7 @@ def _generate_common_code(ir):
 
     # Extract variables
     mappings = ir["mappings"]
-    offsets  = ir["offsets"]
+    offsets  = ir["physical_offsets"]
     gdim = ir["geometric_dimension"]
     tdim = ir["topological_dimension"]
 
