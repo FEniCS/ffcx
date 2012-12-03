@@ -281,6 +281,14 @@ def _generate_physical_offsets(ufl_element, offset=0):
     """Generate offsets: i.e value offset for each basis function
     relative to a physical element representation."""
     offsets = []
+
+    # Refer to reference if gdim == tdim. This is a hack to support
+    # more stuff (in particular restricted elements)
+    gdim = ufl_element.cell().geometric_dimension()
+    tdim = ufl_element.cell().topological_dimension()
+    if (gdim == tdim):
+        return _generate_reference_offsets(create_element(ufl_element))
+
     if isinstance(ufl_element, ufl.MixedElement):
         for e in ufl_element.sub_elements():
             offsets += _generate_physical_offsets(e, offset)
@@ -288,9 +296,12 @@ def _generate_physical_offsets(ufl_element, offset=0):
     elif isinstance(ufl_element, ufl.EnrichedElement):
         for e in ufl_element._elements:
             offsets += _generate_physical_offsets(e, offset)
-    else:
+    elif isinstance(ufl_element, ufl.FiniteElement):
         element = create_element(ufl_element)
         offsets = [offset]*element.space_dimension()
+    else:
+        raise NotImplementedError, \
+            "This element combination is not implemented"
     return offsets
 
 def _evaluate_dof(ufl_element, element, cell):
