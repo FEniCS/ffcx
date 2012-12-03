@@ -891,7 +891,8 @@ class QuadratureTransformerBase(Transformer):
             _shift_component_gdim_vs_tdim([component_as_index,], component, 0,
                                           ufl_function, gdim, tdim)
         print "foo = ", foo
-        component = component.index_range[0]
+        if isinstance(component, MonomialIndex):
+            component = component.index_range[0]
         print "component = ", component
         print "bar = ", bar
 
