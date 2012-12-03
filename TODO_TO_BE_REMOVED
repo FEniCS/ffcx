@@ -8,7 +8,8 @@ Things to get running
 [x] * Get H(curl)/H(div) elements running
 [x] * Get mixed elements running
 [x] * Something is wrong with evaluatedof -- fix it. (Not obviously wrong now.)
-[ ] * Get mixed elements involving piolas running for quadrature rep
+[x] * Get mixed elements involving piolas running for quadrature rep
+[ ] * Fix ugly hacks for the map of physical/reference components.
 
 Things to test
 ---------------
