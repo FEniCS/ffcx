@@ -286,6 +286,17 @@ def _generate_offsets(element, offset=0):
 def _evaluate_dof(ufl_element, element, cell):
     "Compute intermediate representation of evaluate_dof."
 
+    # With regard to reference_value_size vs physical_value_size: Note
+    # that 'element' is the FFC/FIAT representation of the finite
+    # element, while 'ufl_element' is the UFL representation. In
+    # particular, UFL only knows about physical dimensions, so the
+    # value shape of the 'ufl_element' (which is used to compute the
+    # _value_size) will be correspond to the value size in physical
+    # space. FIAT however only knows about the reference element, and
+    # so the FIAT value shape of the 'element' will be the reference
+    # value size. This of course only matters for elements that have
+    # different physical and reference value shapes and sizes.
+
     return {"mappings": element.mapping(),
             "reference_value_size": _value_size(element),
             "physical_value_size": _value_size(ufl_element),
@@ -533,7 +544,8 @@ def __compute_incidence(D):
     return incidence
 
 def __compute_sub_simplices(D, d):
-    "Compute vertices for all sub simplices of dimension d (code taken from Exterior)"
+    """Compute vertices for all sub simplices of dimension d (code
+    taken from Exterior)."""
 
     # Number of vertices
     num_vertices = D + 1
@@ -561,6 +573,7 @@ def __compute_sub_simplices(D, d):
     return sub_simplices
 
 def uses_integral_moments(element):
+    "True if element uses integral moments for its degrees of freedom."
 
     integrals = set(["IntegralMoment", "FrobeniusIntegralMoment"])
     tags = set([L.get_type_tag() for L in element.dual_basis()])

@@ -107,7 +107,6 @@ def _generate_common_code(ir):
     offsets  = ir["offsets"]
     gdim = ir["geometric_dimension"]
     tdim = ir["topological_dimension"]
-    print "tdim = ", tdim
 
     # Generate bodies for each degree of freedom
     cases = [_generate_body(i, dof, mappings[i], gdim, tdim, offsets[i])
@@ -120,15 +119,12 @@ def _required_declarations(ir):
     information.
     """
     code = []
+    gdim = ir["geometric_dimension"]
+    tdim = ir["topological_dimension"]
 
     # Declare variable for storing the result and physical coordinates
-    gdim = ir["geometric_dimension"]
-    topological_dimension = ir["topological_dimension"]
     code.append(comment("Declare variables for result of evaluation."))
-
-    # FIXME:
-    code.append(declare(f_double, component(f_vals,
-                                            ir["physical_value_size"])))
+    code.append(declare(f_double, component(f_vals, ir["physical_value_size"])))
     code.append("")
     code.append(comment("Declare variable for physical coordinates."))
     code.append(declare(f_double, component(f_y, gdim)))
@@ -148,14 +144,11 @@ def _required_declarations(ir):
 
     # Add sufficient Jacobian information
     if needs_inverse_jacobian:
-        code.append(format["jacobian and inverse"](gdim,
-                                                   topological_dimension))
+        code.append(format["jacobian and inverse"](gdim, tdim))
     else:
-        code.append(format["jacobian"](gdim,
-                                       topological_dimension))
+        code.append(format["jacobian"](gdim, tdim))
 
     return "\n".join(code)
-
 
 def _generate_body(i, dof, mapping, gdim, tdim, offset=0, result=f_result):
     "Generate code for a single dof."
