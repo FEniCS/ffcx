@@ -436,7 +436,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
                     deriv = []
                 # Call function to create mapping and basis name.
 
-                print "component = ", component
+                #print "component = ", component
                 mapping, basis = self._create_mapping_basis(component, deriv, ufl_argument, ffc_element)
                 if basis is None:
                     if not mapping in code:

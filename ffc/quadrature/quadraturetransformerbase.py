@@ -43,6 +43,7 @@ from ffc.cpp import format
 
 # FFC tensor modules.
 from ffc.tensor.multiindex import MultiIndex as FFCMultiIndex
+from ffc.tensor.monomialtransformation import _shift_component_gdim_vs_tdim, MonomialIndex
 
 # Utility and optimisation functions for quadraturegenerator.
 from quadratureutils import create_psi_tables
@@ -306,6 +307,8 @@ class QuadratureTransformerBase(Transformer):
         components = self.component()
         derivatives = self.derivatives()
 
+        print "components = ", components
+
         # Check if basis is already in cache
         basis = self.argument_cache.get((o, components, derivatives, self.restriction), None)
         # FIXME: Why does using a code dict from cache make the expression manipulations blow (MemoryError) up later?
@@ -316,6 +319,9 @@ class QuadratureTransformerBase(Transformer):
         # Get auxiliary variables to generate basis
         component, local_comp, local_offset, ffc_element, quad_element, \
         transformation, multiindices = self._get_auxiliary_variables(o, components, derivatives)
+
+        print "o = ", o
+        print "component = ", component
 
         # Create mapping and code for basis function and add to dict.
         basis = self.create_argument(o, derivatives, component, local_comp,
@@ -510,12 +516,16 @@ class QuadratureTransformerBase(Transformer):
     def indexed(self, o):
         #print("\n\nVisiting Indexed:" + repr(o))
 
-        # Get indexed expression and index, map index to current value and update components
+        # Get indexed expression and index, map index to current value
+        # and update components
         indexed_expr, index = o.operands()
         self._components.push(self.visit(index))
 
         # Visit expression subtrees and generate code.
         code = self.visit(indexed_expr)
+
+        print "code = ", code
+        print
 
         # Remove component again
         self._components.pop()
@@ -849,7 +859,8 @@ class QuadratureTransformerBase(Transformer):
         # Get relevant sub element and mapping.
         sub_element = create_element(local_elem)
 
-        # Assuming that mappings for all basisfunctions are equal (they should be).
+        # Assuming that mappings for all basisfunctions are equal
+        # (they should be).
         transformation = sub_element.mapping()[0]
 
         # Handle tensor elements.
@@ -865,7 +876,24 @@ class QuadratureTransformerBase(Transformer):
         if component != ():
             # Map component using component map from UFL.
             comp_map, comp_num = build_component_numbering(ufl_element.value_shape(), ufl_element.symmetry())
+            print "comp_map = ", comp_map
+            print "comp_num = ", comp_num
             component = comp_map[component]
+            print "component = ", component
+
+        # Map physical components into reference components
+        gdim = ufl_element.cell().geometric_dimension()
+        tdim = ufl_element.cell().topological_dimension()
+        component_as_index = MonomialIndex(index_type=MonomialIndex.FIXED,
+                                             index_range=[component],
+                                             index_id=None)
+        foo, component, bar = \
+            _shift_component_gdim_vs_tdim([component_as_index,], component, 0,
+                                          ufl_function, gdim, tdim)
+        print "foo = ", foo
+        component = component.index_range[0]
+        print "component = ", component
+        print "bar = ", bar
 
         # Compute the local offset (needed for non-affine mappings).
         local_offset = 0
@@ -875,6 +903,8 @@ class QuadratureTransformerBase(Transformer):
         # Generate FFC multi index for derivatives.
         multiindices = FFCMultiIndex([range(self.top_dim)]*len(derivatives)).indices
 
+        #print "in create_auxiliary"
+        #print "component = ", component
         return (component, local_comp, local_offset, ffc_element, quad_element, transformation, multiindices)
 
     def _create_mapping_basis(self, component, deriv, ufl_argument, ffc_element):
@@ -917,11 +947,7 @@ class QuadratureTransformerBase(Transformer):
         if self.restriction == "+" or self.restriction == "-":
             space_dim *= 2
 
-        # Generate psi name and map to correct values.
         name = generate_psi_name(element_counter, facet, component, deriv)
-        print "name = ", name
-        print "self.name_map = ", self.name_map
-
         name, non_zeros, zeros, ones = self.name_map[name]
         loop_index_range = shape(self.unique_tables[name])[1]
 
