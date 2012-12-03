@@ -25,10 +25,4 @@ domain = Cell("triangle", Space(3))
 
 # Define element over this domain
 V = FiniteElement("RT", domain, 1)
-Q = FiniteElement("DG", domain, 0)
-element = V*Q
-
-(u, p) = TrialFunctions(element)
-(v, q) = TestFunctions(element)
-
-a = (inner(u, v) + div(u)*q + div(v)*p)*dx
+element = V

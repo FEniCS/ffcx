@@ -105,12 +105,12 @@ def _generate_common_code(ir):
     # Extract variables
     mappings = ir["mappings"]
     offsets  = ir["offsets"]
-    cell_geometric_dim = ir["geometric_dimension"]
-    cell_topological_dim = ir["topological_dimension"]
+    gdim = ir["geometric_dimension"]
+    tdim = ir["topological_dimension"]
+    print "tdim = ", tdim
 
     # Generate bodies for each degree of freedom
-    cases = [_generate_body(i, dof, mappings[i], cell_geometric_dim,
-                            cell_topological_dim, offsets[i])
+    cases = [_generate_body(i, dof, mappings[i], gdim, tdim, offsets[i])
              for (i, dof) in enumerate(ir["dofs"])]
 
     return (reqs, cases)
@@ -122,13 +122,16 @@ def _required_declarations(ir):
     code = []
 
     # Declare variable for storing the result and physical coordinates
-    geometric_dimension = ir["geometric_dimension"]
+    gdim = ir["geometric_dimension"]
     topological_dimension = ir["topological_dimension"]
     code.append(comment("Declare variables for result of evaluation."))
-    code.append(declare(f_double, component(f_vals, ir["value_size"])))
+
+    # FIXME:
+    code.append(declare(f_double, component(f_vals,
+                                            ir["physical_value_size"])))
     code.append("")
     code.append(comment("Declare variable for physical coordinates."))
-    code.append(declare(f_double, component(f_y, geometric_dimension)))
+    code.append(declare(f_double, component(f_y, gdim)))
 
     # Check whether Jacobians are necessary.
     needs_inverse_jacobian = any(["contravariant piola" in m
@@ -145,15 +148,16 @@ def _required_declarations(ir):
 
     # Add sufficient Jacobian information
     if needs_inverse_jacobian:
-        code.append(format["jacobian and inverse"](geometric_dimension, topological_dimension))
+        code.append(format["jacobian and inverse"](gdim,
+                                                   topological_dimension))
     else:
-        code.append(format["jacobian"](geometric_dimension, topological_dimension))
+        code.append(format["jacobian"](gdim,
+                                       topological_dimension))
 
     return "\n".join(code)
 
 
-def _generate_body(i, dof, mapping, cell_geometric_dim, cell_topological_dim,
-                   offset=0, result=f_result):
+def _generate_body(i, dof, mapping, gdim, tdim, offset=0, result=f_result):
     "Generate code for a single dof."
 
     points = dof.keys()
@@ -161,27 +165,25 @@ def _generate_body(i, dof, mapping, cell_geometric_dim, cell_topological_dim,
     # Generate different code if multiple points. (Otherwise ffc
     # compile time blows up.)
     if len(points) > 1:
-        code = _generate_multiple_points_body(i, dof, mapping,
-                                              cell_geometric_dim, cell_topological_dim,
+        code = _generate_multiple_points_body(i, dof, mapping, gdim, tdim,
                                               offset, result)
         return (code, result)
 
     # Get weights for mapping reference point to physical
     x = points[0]
-    w = affine_weights(cell_topological_dim)(x)
+    w = affine_weights(tdim)(x)
 
     # Map point onto physical element: y = F_K(x)
     code = []
-    for j in range(cell_geometric_dim):
-        y = inner(w, [component(f_x(), (k, j)) for k in range(cell_topological_dim + 1)])
+    for j in range(gdim):
+        y = inner(w, [component(f_x(), (k, j)) for k in range(tdim + 1)])
         code.append(assign(component(f_y, j), y))
 
     # Evaluate function at physical point
     code.append(format["evaluate function"])
 
     # Map function values to the reference element
-    F = _change_variables(mapping, cell_geometric_dim,
-                          cell_topological_dim, offset)
+    F = _change_variables(mapping, gdim, tdim, offset)
 
     # Simple affine functions deserve special case:
     if len(F) == 1:
@@ -195,8 +197,7 @@ def _generate_body(i, dof, mapping, cell_geometric_dim, cell_topological_dim,
     return ("\n".join(code), result)
 
 
-def _generate_multiple_points_body(i, dof, mapping,
-                                   cell_geometric_dim, cell_topological_dim,
+def _generate_multiple_points_body(i, dof, mapping, gdim, tdim,
                                    offset=0, result=f_result):
 
     "Generate c++ for-loop for multiple points (integral bodies)"
@@ -209,10 +210,9 @@ def _generate_multiple_points_body(i, dof, mapping,
     tokens = [dof[x] for x in points]
     len_tokens = pick_first([len(t) for t in tokens])
 
-
     # Declare points
     points = format["list"]([format["list"](x) for x in points])
-    code += [declare(f_double, component(f_X(i), [n, cell_topological_dim]),
+    code += [declare(f_double, component(f_X(i), [n, tdim]),
                      points)]
 
     # Declare components
@@ -226,16 +226,16 @@ def _generate_multiple_points_body(i, dof, mapping,
     code += [declare(f_double, component(f_W(i), [n, len_tokens]), weights)]
 
     # Declare copy variable:
-    code += [declare(f_double, component(f_copy(i), cell_topological_dim))]
+    code += [declare(f_double, component(f_copy(i), tdim))]
 
     # Add loop over points
     code += [comment("Loop over points.")]
 
     # Map the points from the reference onto the physical element
     # FIXME!!!!!!
-    assert(cell_geometric_dim == cell_topological_dim), \
+    assert(gdim == tdim), \
         "Integral moments not supported for manifolds (yet). Please fix"
-    lines_r = [map_onto_physical[cell_geometric_dim] % {"i": i, "j": f_r}]
+    lines_r = [map_onto_physical[gdim] % {"i": i, "j": f_r}]
 
     # Evaluate function at physical point
     lines_r.append(comment("Evaluate function at physical point."))
@@ -243,8 +243,7 @@ def _generate_multiple_points_body(i, dof, mapping,
 
     # Map function values to the reference element
     lines_r.append(comment("Map function to reference element."))
-    F = _change_variables(mapping, cell_geometric_dim,
-                          cell_topological_dim, offset)
+    F = _change_variables(mapping, gdim, tdim, offset)
     lines_r += [assign(component(f_copy(i), k), F_k)
              for (k, F_k) in enumerate(F)]
 
@@ -268,7 +267,7 @@ def _generate_multiple_points_body(i, dof, mapping,
     return code
 
 
-def _change_variables(mapping, tdim, gdim, offset):
+def _change_variables(mapping, gdim, tdim, offset):
     """Generate code for mapping function values according to
     'mapping' and offset.
 

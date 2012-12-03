@@ -111,7 +111,7 @@ def _compute_element_ir(ufl_element, element_id, element_numbers):
     ir["value_rank"] = len(ufl_element.value_shape())
     ir["value_dimension"] = ufl_element.value_shape()
     ir["evaluate_basis"] = _evaluate_basis(element, cell)
-    ir["evaluate_dof"] = _evaluate_dof(element, cell)
+    ir["evaluate_dof"] = _evaluate_dof(ufl_element, element, cell)
     ir["interpolate_vertex_values"] = _interpolate_vertex_values(element, cell)
     ir["num_sub_elements"] = ufl_element.num_sub_elements()
     ir["create_sub_element"] = _create_sub_foo(ufl_element, element_numbers)
@@ -250,13 +250,18 @@ def _compute_form_ir(form_data, form_id, element_numbers):
 
 # FIXME: Move to FiniteElement/MixedElement
 def _value_size(element):
-    "Compute value size of element."
+    """Compute value size of element, aka the number of components.
+
+    The value size of a scalar field is 1, the value size of a vector
+    field (is the number of components), the value size of a higher
+    dimensional tensor field is the product of the value_shape of the
+    field. Recall that all mixed elements are flattened.
+    """
     shape = element.value_shape()
     if shape == ():
         return 1
-    else:
-        # FIXME: KBO: Is this correct? Shouldn't it be sum() instead?
-        return product(shape)
+    return product(shape)
+
 
 def _generate_offsets(element, offset=0):
 
@@ -278,11 +283,12 @@ def _generate_offsets(element, offset=0):
 
     return offsets
 
-def _evaluate_dof(element, cell):
+def _evaluate_dof(ufl_element, element, cell):
     "Compute intermediate representation of evaluate_dof."
 
     return {"mappings": element.mapping(),
-            "value_size": _value_size(element),
+            "reference_value_size": _value_size(element),
+            "physical_value_size": _value_size(ufl_element),
             "geometric_dimension": cell.geometric_dimension(),
             "topological_dimension": cell.topological_dimension(),
             "dofs": [L.pt_dict for L in element.dual_basis()],
@@ -298,16 +304,16 @@ def _extract_elements(element):
         new_elements.append(element)
     return new_elements
 
-def _num_components(element):
-    """Compute the number of components of element, like _value_size, but
-    does not support tensor elements."""
-    shape = element.value_shape()
-    if shape == ():
-        return 1
-    elif len(shape) == 1:
-        return shape[0]
-    else:
-        error("Tensor valued elements are not supported yet: %d " % shape)
+# def _num_components(element):
+#     """Compute the number of components of element, like _value_size, but
+#     does not support tensor elements."""
+#     shape = element.value_shape()
+#     if shape == ():
+#         return 1
+#     elif len(shape) == 1:
+#         return shape[0]
+#     else:
+#         error("Tensor valued elements are not supported yet: %d " % shape)
 
 def _evaluate_basis(element, cell):
     "Compute intermediate representation for evaluate_basis."
@@ -317,6 +323,11 @@ def _evaluate_basis(element, cell):
     offsets = _generate_offsets(element)
     mappings = element.mapping()
 
+    # This function is evidently not implemented for TensorElements
+    for e in elements:
+        if len(e.value_shape()) > 1:
+            return "Function not supported/implemented for TensorElements."
+
     # Handle QuadratureElement, not supported because the basis is only defined
     # at the dof coordinates where the value is 1, so not very interesting.
     for e in elements:
@@ -325,7 +336,7 @@ def _evaluate_basis(element, cell):
 
     # Initialise data with 'global' values.
     data = {
-          "value_size" : sum(element.value_shape() or (1,)),
+          "value_size" : _value_size(element),
           "cell_domain" : cell.domain(),
           "topological_dimension" : cell.topological_dimension(),
           "geometric_dimension" : cell.geometric_dimension(),
@@ -336,7 +347,7 @@ def _evaluate_basis(element, cell):
     dof_data = []
     for e in elements:
         for i in range(e.space_dimension()):
-            num_components = _num_components(e)
+            num_components = _value_size(e)
             coefficients = []
             coeffs = e.get_coeffs()
 
