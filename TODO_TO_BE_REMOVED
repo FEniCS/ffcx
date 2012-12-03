@@ -7,7 +7,7 @@ Things to get running
 [x] * Get interior_facet integrals running
 [x] * Get H(curl)/H(div) elements running
 [x] * Get mixed elements running
-[ ] * Something is wrong with evaluatedof -- fix it.
+[x] * Something is wrong with evaluatedof -- fix it. (Not obviously wrong now.)
 [ ] * Get mixed elements involving piolas running for quadrature rep
 
 Things to test
