@@ -239,7 +239,7 @@ void test_finite_element(ufc::finite_element& element)
   std::cout << "----------------------" << std::endl;
 
   // Prepare arguments
-  test_cell c(element.cell_shape(), element.topological_dimension());
+  test_cell c(element.cell_shape(), element.geometric_dimension());
   uint value_size = 1;
   for (uint i = 0; i < element.value_rank(); i++)
     value_size *= element.value_dimension(i);
@@ -312,7 +312,7 @@ void test_finite_element(ufc::finite_element& element)
     uint num_derivatives = 1;
       for (uint j = 0; j < n; j++)
         num_derivatives *= c.geometric_dimension;
-    element.evaluate_basis_derivatives_all(n, values, coordinates, c);
+      element.evaluate_basis_derivatives_all(n, values, coordinates, c);
     print_array("evaluate_basis_derivatives_all", element.space_dimension()*value_size*num_derivatives, values, n);
   }
 

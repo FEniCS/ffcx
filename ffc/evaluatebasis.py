@@ -75,7 +75,7 @@ def _evaluate_basis_all(data):
     # all the code
 
     # Get total value shape and space dimension for entire element (possibly mixed).
-    value_size = data["value_size"]
+    physical_value_size = data["physical_value_size"]
     space_dimension = data["space_dimension"]
 
     # Special case where space dimension is one (constant elements).
@@ -86,10 +86,10 @@ def _evaluate_basis_all(data):
 
     # Declare helper value to hold single dof values.
     code += [f_comment("Helper variable to hold values of a single dof.")]
-    if value_size == 1:
+    if physical_value_size == 1:
         code += [f_decl(f_double, f_dof_vals, f_float(0.0))]
     else:
-        code += [f_decl(f_double, f_component(f_dof_vals, value_size), f_tensor([0.0]*value_size))]
+        code += [f_decl(f_double, f_component(f_dof_vals, physical_value_size), f_tensor([0.0]*physical_value_size))]
 
     # Create loop over dofs that calls evaluate_basis for a single dof and
     # inserts the values into the global array.
@@ -97,21 +97,21 @@ def _evaluate_basis_all(data):
     lines_r = []
     loop_vars_r = [(f_r, 0, space_dimension)]
 
-    if value_size == 1:
+    if physical_value_size == 1:
         lines_r += [f_basis(f_r, f_ref_var(f_dof_vals))]
     else:
         lines_r += [f_basis(f_r, f_dof_vals)]
 
-    if value_size ==  1:
+    if physical_value_size ==  1:
         lines_r += [f_assign(f_component(f_values, f_r), f_dof_vals)]
     else:
-        index = format["matrix index"](f_r, f_s, value_size)
+        index = format["matrix index"](f_r, f_s, physical_value_size)
         lines_s = [f_assign(f_component(f_values, index), f_component(f_dof_vals, f_s))]
-        lines_r += f_loop(lines_s, [(f_s, 0, value_size)])
+        lines_r += f_loop(lines_s, [(f_s, 0, physical_value_size)])
 
     code += f_loop(lines_r, loop_vars_r)
 
-    # Generate bode (no need to remove unused).
+    # Generate code (no need to remove unused).
     return "\n".join(code)
 
 
@@ -152,14 +152,14 @@ def _evaluate_basis(data):
 
     # Get value shape and reset values. This should also work for TensorElement,
     # scalar are empty tuples, therefore (1,) in which case value_shape = 1.
-    value_size = data["value_size"]
+    reference_value_size = data["reference_value_size"]
     code += ["", f_comment("Reset values.")]
-    if value_size == 1:
+    if reference_value_size == 1:
         # Reset values as a pointer.
         code += [f_assign(format["dereference pointer"](f_values), f_float(0.0))]
     else:
         # Reset all values.
-        code += [f_assign(f_component(f_values, i), f_float(0.0)) for i in range(value_size)]
+        code += [f_assign(f_component(f_values, i), f_float(0.0)) for i in range(reference_value_size)]
 
     # Create code for all basis values (dofs).
     dof_cases = []
@@ -347,7 +347,7 @@ def _compute_values(data, dof_data):
 #        error("Tensor valued elements are not supported yet: %d " % shape)
 
     lines = []
-    if data["value_size"] != 1:
+    if data["reference_value_size"] != 1:
         # Loop number of components.
         for i in range(num_components):
             # Generate name and value to create matrix vector multiply.
@@ -378,8 +378,9 @@ def _compute_values(data, dof_data):
                   for i in range(num_components)]
         # Create names for inner product.
         topological_dimension = data["topological_dimension"]
+        geometric_dimension = data["geometric_dimension"]
         basis_col = [f_tmp_ref(j) for j in range(topological_dimension)]
-        for i in range(num_components):
+        for i in range(geometric_dimension):
             # Create Jacobian.
             jacobian_row = [f_trans("J", i, j, None) for j in range(topological_dimension)]
 
@@ -395,8 +396,9 @@ def _compute_values(data, dof_data):
                   for i in range(num_components)]
         # Create names for inner product.
         topological_dimension = data["topological_dimension"]
+        geometric_dimension = data["geometric_dimension"]
         basis_col = [f_tmp_ref(j) for j in range(topological_dimension)]
-        for i in range(num_components):
+        for i in range(geometric_dimension):
             # Create inverse of Jacobian.
             inv_jacobian_column = [f_trans("JINV", j, i, None) for j in range(topological_dimension)]
 

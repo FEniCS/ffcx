@@ -427,7 +427,7 @@ for (unsigned int row = 1; row < %(num_derivatives)s; row++)
   {
     for (unsigned int col = %(n)s-1; col+1 > 0; col--)
     {
-      if (%(combinations)s[row][col] + 1 > %(topological_dimension-1)s)
+      if (%(combinations)s[row][col] + 1 > %(dimension-1)s)
         %(combinations)s[row][col] = 0;
       else
       {
@@ -438,85 +438,46 @@ for (unsigned int row = 1; row < %(num_derivatives)s; row++)
   }
 }"""
 
-_transform_interval_snippet = """\
-// Compute inverse of Jacobian
-const double %(K)s[1][1] =  {{K_00}};
+def _transform_snippet(tdim, gdim):
+    
+    if tdim == gdim:
+        _t = ""
+        _g = ""
+    else:
+        _t = "_t"
+        _g = "_g"
 
+    # Note, put this back in below to insert linebreaks in the Jacobian an a nice way.
+    # "\n                          "
+
+    return """\
+// Compute inverse of Jacobian
+const double %%(K)s[%d][%d] = {{"""% (tdim, gdim) \
+        + "}, {".join([", ".join(["K_%d%d"% (t, g) 
+                                                                 for g in range(gdim)]) 
+                                                      for t in range(tdim)]) \
+        + "}};\n\n" \
+        + """\
 // Declare transformation matrix
 // Declare pointer to two dimensional array and initialise
-double **%(transform)s = new double *[%(num_derivatives)s];
+double **%%(transform)s = new double *[%%(num_derivatives)s%(g)s];
 
-for (unsigned int j = 0; j < %(num_derivatives)s; j++)
+for (unsigned int j = 0; j < %%(num_derivatives)s%(g)s; j++)
 {
-  %(transform)s[j] = new double [%(num_derivatives)s];
-  for (unsigned int k = 0; k < %(num_derivatives)s; k++)
-    %(transform)s[j][k] = 1;
+  %%(transform)s[j] = new double [%%(num_derivatives)s%(t)s];
+  for (unsigned int k = 0; k < %%(num_derivatives)s%(t)s; k++)
+    %%(transform)s[j][k] = 1;
 }
 
 // Construct transformation matrix
-for (unsigned int row = 0; row < %(num_derivatives)s; row++)
+for (unsigned int row = 0; row < %%(num_derivatives)s%(g)s; row++)
 {
-  for (unsigned int col = 0; col < %(num_derivatives)s; col++)
+  for (unsigned int col = 0; col < %%(num_derivatives)s%(t)s; col++)
   {
-    for (unsigned int k = 0; k < %(n)s; k++)
-      %(transform)s[row][col] *= %(K)s[%(combinations)s[col][k]][%(combinations)s[row][k]];
+    for (unsigned int k = 0; k < %%(n)s; k++)
+      %%(transform)s[row][col] *= %%(K)s[%%(combinations)s%(t)s[col][k]][%%(combinations)s%(g)s[row][k]];
   }
-}"""
-
-_transform_triangle_snippet = """\
-// Compute inverse of Jacobian
-const double %(K)s[2][2] = \
-{{K_00, K_01},\
- {K_10, K_11}};
-
-// Declare transformation matrix
-// Declare pointer to two dimensional array and initialise
-double **%(transform)s = new double *[%(num_derivatives)s];
-
-for (unsigned int j = 0; j < %(num_derivatives)s; j++)
-{
-  %(transform)s[j] = new double [%(num_derivatives)s];
-  for (unsigned int k = 0; k < %(num_derivatives)s; k++)
-    %(transform)s[j][k] = 1;
-}
-
-// Construct transformation matrix
-for (unsigned int row = 0; row < %(num_derivatives)s; row++)
-{
-  for (unsigned int col = 0; col < %(num_derivatives)s; col++)
-  {
-    for (unsigned int k = 0; k < %(n)s; k++)
-      %(transform)s[row][col] *= %(K)s[%(combinations)s[col][k]][%(combinations)s[row][k]];
-  }
-}"""
-
-_transform_tetrahedron_snippet = """\
-// Compute inverse of Jacobian
-const double %(K)s[3][3] = \
-{{K_00, K_01, K_02},\
- {K_10, K_11, K_12},\
- {K_20, K_21, K_22}};
-
-// Declare transformation matrix
-// Declare pointer to two dimensional array and initialise
-double **%(transform)s = new double *[%(num_derivatives)s];
-
-for (unsigned int j = 0; j < %(num_derivatives)s; j++)
-{
-  %(transform)s[j] = new double [%(num_derivatives)s];
-  for (unsigned int k = 0; k < %(num_derivatives)s; k++)
-    %(transform)s[j][k] = 1;
-}
-
-// Construct transformation matrix
-for (unsigned int row = 0; row < %(num_derivatives)s; row++)
-{
-  for (unsigned int col = 0; col < %(num_derivatives)s; col++)
-  {
-    for (unsigned int k = 0; k < %(n)s; k++)
-      %(transform)s[row][col] *= %(K)s[%(combinations)s[col][k]][%(combinations)s[row][k]];
-  }
-}"""
+}"""%{"t":_t, "g":_g}
 
 # Codesnippets used in evaluate_dof
 _map_onto_physical_1D = """\
@@ -585,7 +546,6 @@ _map_coordinates_FIAT_interval_in_3D = """\
 // FIXME
 double X = 0.0;
 """
-
 _map_coordinates_FIAT_triangle = """\
 // Compute constants
 const double C0 = x[1][0] + x[2][0];
@@ -643,9 +603,12 @@ fiat_coordinate_map = {"interval": {1:_map_coordinates_FIAT_interval,
                                     3:_map_coordinates_FIAT_triangle_in_3D},
                        "tetrahedron": {3:_map_coordinates_FIAT_tetrahedron}}
 
-transform_snippet = {"interval": _transform_interval_snippet,
-                     "triangle": _transform_triangle_snippet,
-                     "tetrahedron": _transform_tetrahedron_snippet}
+transform_snippet = {"interval": {1: _transform_snippet(1, 1), 
+                                  2: _transform_snippet(1, 2), 
+                                  3: _transform_snippet(1, 3)}, 
+                     "triangle": {2: _transform_snippet(2, 2),
+                                  3: _transform_snippet(2, 3)}, 
+                     "tetrahedron": {3: _transform_snippet(3, 3)}}
 
 normal_direction = {1: {1: _normal_direction_1D},
                     2: {2: _normal_direction_2D, 1: _normal_direction_2D_1D},

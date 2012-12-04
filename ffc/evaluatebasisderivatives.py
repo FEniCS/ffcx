@@ -72,7 +72,7 @@ def _evaluate_basis_derivatives_all(data):
     # easily generate all the code.
 
     # Get total value shape and space dimension for entire element (possibly mixed).
-    value_size = data["value_size"]
+    physical_value_size = data["physical_value_size"]
     space_dimension = data["space_dimension"]
 
     # Special case where space dimension is one (constant elements).
@@ -82,14 +82,19 @@ def _evaluate_basis_derivatives_all(data):
         return "\n".join(code)
 
     # Compute number of derivatives.
-    code += _compute_num_derivatives(data["topological_dimension"])
+    if data["topological_dimension"]==data["geometric_dimension"]:
+        _g = ""
+    else:
+        _g = "_g"
+    
+    code += _compute_num_derivatives(data["geometric_dimension"], _g)
 
     # Declare helper value to hold single dof values and reset.
     code += ["", f_comment("Helper variable to hold values of a single dof.")]
-    if (value_size == 1):
-        num_vals = f_num_derivs
+    if (physical_value_size == 1):
+        num_vals = f_num_derivs(_g)
     else:
-        num_vals = f_mul([f_int(value_size), f_num_derivs])
+        num_vals = f_mul([f_int(physical_value_size), f_num_derivs(_g)])
     code += [f_array(f_double, f_dof_vals, num_vals)]
     line  = [f_assign(f_component(f_dof_vals, f_r), f_float(0.0))]
     code += f_loop(line, [(f_r, 0, num_vals)])
@@ -140,16 +145,29 @@ def _evaluate_basis_derivatives(data):
     # Compute number of derivatives that has to be computed, and declare an array to hold
     # the values of the derivatives on the reference element.
     code += [""]
-    code += _compute_num_derivatives(topological_dimension)
+    if topological_dimension == geometric_dimension:
+        _t = ""
+        _g = ""
+        code += _compute_num_derivatives(topological_dimension, "")
 
-    # Generate all possible combinations of derivatives.
-    code += _generate_combinations(topological_dimension)
+        # Generate all possible combinations of derivatives.
+        code += _generate_combinations(topological_dimension, "")
+    else:
+        _t = "_t"
+        _g = "_g"
+        code += _compute_num_derivatives(topological_dimension, _t)
+        code += [""]
+        code += _compute_num_derivatives(geometric_dimension, _g)
+
+        # Generate all possible combinations of derivatives.
+        code += _generate_combinations(topological_dimension, _t)
+        code += _generate_combinations(geometric_dimension, _g)
 
     # Generate the transformation matrix.
-    code += _generate_transform(element_cell_domain)
+    code += _generate_transform(element_cell_domain, geometric_dimension)
 
     # Reset all values.
-    code += _reset_values(data)
+    code += _reset_values(data, _g)
 
     # Create code for all basis values (dofs).
     dof_cases = []
@@ -157,53 +175,58 @@ def _evaluate_basis_derivatives(data):
         dof_cases.append(_generate_dof_code(data, dof))
     code += [format["switch"](format["argument basis num"], dof_cases)]
     code = remove_unused("\n".join(code))
-#    code = "\n".join(code)
+    #code = "\n".join(code)
     return code
 
-def _compute_num_derivatives(topological_dimension):
-    "Computes the number of derivatives of order 'n' as: element.topological_dimension()^n."
+def _compute_num_derivatives(dimension, suffix=""):
+    """Computes the number of derivatives of order 'n' as dimension()^n.
+    
+    Dimension will be the element topological dimension for the number
+    of derivatives in local coordinates, and the geometric dimension
+    for the number of derivatives in phyisical coordinates.
+    """
     # Prefetch formats.
     f_int         = format["int"]
-    f_num_derivs  = format["num derivatives"]
+    f_num_derivs  = format["num derivatives"](suffix)
 
     # Use loop to compute power since using std::pow() result in an ambiguous call.
     code = [format["comment"]("Compute number of derivatives.")]
     code.append(format["declaration"](format["uint declaration"], f_num_derivs, f_int(1)))
     loop_vars = [(format["free indices"][0], 0, format["argument derivative order"])]
-    lines = [format["imul"](f_num_derivs, f_int(topological_dimension))]
+    lines = [format["imul"](f_num_derivs, f_int(dimension))]
     code += format["generate loop"](lines, loop_vars)
 
     return code
 
-def _generate_combinations(topological_dimension):
+def _generate_combinations(dimension, suffix):
     "Generate all possible combinations of derivatives of order 'n'."
 
     # Use code from format.
     code = ["", format["combinations"]\
-            % {"combinations": format["derivative combinations"],\
-               "topological_dimension-1": topological_dimension-1,\
-               "num_derivatives" : format["num derivatives"],\
+            % {"combinations": format["derivative combinations"](suffix),\
+               "dimension-1": dimension-1,\
+               "num_derivatives" : format["num derivatives"](suffix),\
                "n": format["argument derivative order"]}]
     return code
 
-def _generate_transform(element_cell_domain):
-    """Generate the transformation matrix, whic is used to transform derivatives from reference
+def _generate_transform(element_cell_domain, geometric_dimension):
+    """Generate the transformation matrix, which is used to transform derivatives from reference
     element back to the physical element."""
 
     # Generate code to construct the inverse of the Jacobian
     if (element_cell_domain in ["interval", "triangle", "tetrahedron"]):
-        code = ["", format["transform snippet"][element_cell_domain]\
+        code = ["", format["transform snippet"][element_cell_domain][geometric_dimension]\
         % {"transform": format["transform matrix"],\
-           "num_derivatives" : format["num derivatives"],\
+           "num_derivatives" : format["num derivatives"](""),\
            "n": format["argument derivative order"],\
-           "combinations": format["derivative combinations"],\
+           "combinations": format["derivative combinations"](""),\
            "K":format["transform Jinv"]}]
     else:
         error("Cannot generate transform for shape: %s" % element_cell_domain)
 
     return code
 
-def _reset_values(data):
+def _reset_values(data, suffix):
     "Reset all components of the 'values' array as it is a pointer to an array."
 
     # Prefetch formats.
@@ -214,13 +237,13 @@ def _reset_values(data):
 
     # Get value shape and reset values. This should also work for TensorElement,
     # scalar are empty tuples, therefore (1,) in which case value_shape = 1.
-    value_size = data["value_size"]
+    physical_value_size = data["physical_value_size"]
 
     # Only multiply by value shape if different from 1.
-    if value_size == 1:
-        num_vals = format["num derivatives"]
+    if physical_value_size == 1:
+        num_vals = format["num derivatives"](suffix)
     else:
-        num_vals = format["mul"]([format["int"](value_size), format["num derivatives"]])
+        num_vals = format["mul"]([format["int"](physical_value_size), format["num derivatives"](suffix)])
     name = format["component"](format["argument values"], f_r)
     loop_vars = [(f_r, 0, num_vals)]
     lines = [f_assign(name, format["floating point"](0))]
@@ -250,7 +273,7 @@ def _generate_dof_code(data, dof_data):
     code += _transform_derivatives(data, dof_data)
 
     # Delete pointers.
-    code += _delete_pointers()
+    code += _delete_pointers(data, dof_data)
 
     code = remove_unused("\n".join(code))
 #    code = "\n".join(code)
@@ -358,7 +381,7 @@ def _update_dmats(shape_dmats, indices):
     code += format["generate loop"](lines, loop_vars)
     return code
 
-def _compute_dmats(num_dmats, shape_dmats, available_indices, deriv_index):
+def _compute_dmats(num_dmats, shape_dmats, available_indices, deriv_index, _t):
     "Compute values of dmats as a matrix product."
     f_comment = format["comment"]
     s, t, u = available_indices
@@ -371,8 +394,9 @@ def _compute_dmats(num_dmats, shape_dmats, available_indices, deriv_index):
     lines = _update_dmats(shape_dmats, [t, u])
 
     lines += ["", f_comment("Update dmats using an inner product.")]
+
     # Create dmats matrix by multiplication
-    comb = format["component"](format["derivative combinations"], [deriv_index, s])
+    comb = format["component"](format["derivative combinations"](_t), [deriv_index, s])
     for i in range(num_dmats):
         lines += _dmats_product(shape_dmats, comb, i, [t, u])
 
@@ -396,7 +420,6 @@ def _dmats_product(shape_dmats, index, i, indices):
     loop_vars = [(t, 0, shape_dmats[0]), (u, 0, shape_dmats[1])]
     code = [format["if"](index + format["is equal"] + str(i),\
             "\n".join(f_loop(lines, loop_vars)))]
-
     return code
 
 def _compute_reference_derivatives(data, dof_data):
@@ -436,6 +459,16 @@ def _compute_reference_derivatives(data, dof_data):
 
     f_r, f_s, f_t, f_u = format["free indices"]
 
+    topological_dimension = data["topological_dimension"]
+    geometric_dimension = data["geometric_dimension"]
+    
+    if topological_dimension==geometric_dimension:
+        _t = ""
+        _g = ""
+    else:
+        _t = "_t"
+        _g = "_g"
+
     # Get number of components.
     num_components = dof_data["num_components"]
 
@@ -452,15 +485,34 @@ def _compute_reference_derivatives(data, dof_data):
     # The size of the array of reference derivatives is equal to the number of derivatives
     # times the number of components of the basis element
     if (num_components == 1):
-        num_vals = f_num_derivs
+        num_vals = f_num_derivs(_t)
     else:
-        num_vals = f_mul([f_int(num_components), f_num_derivs])
+        num_vals = f_mul([f_int(num_components), f_num_derivs(_t)])
     code += [f_array(f_double, f_derivatives, num_vals)]
     # Reset values of reference derivatives.
     name = f_component(f_derivatives, f_r)
     lines = [f_assign(name, f_float(0))]
     code += f_loop(lines, [(f_r, 0, num_vals)])
     code += [""]
+
+    mapping = dof_data["mapping"]
+    if "piola" in mapping:
+        # In either of the Piola cases, the value space of the derivatives is the geometric dimension rather than the topological dimension.
+        code += [f_comment("Declare pointer to array of reference derivatives on physical element.")]
+        
+        _p = "_p"
+        num_components_p = geometric_dimension
+
+        num_vals_physical = f_mul([f_int(geometric_dimension), f_num_derivs(_t)])
+        code += [f_array(f_double, f_derivatives+_p, num_vals_physical)]
+        # Reset values of reference derivatives.
+        name = f_component(f_derivatives+_p, f_r)
+        lines = [f_assign(name, f_float(0))]
+        code += f_loop(lines, [(f_r, 0, num_vals_physical)])
+        code += [""]
+    else:
+        _p = ""
+        num_components_p = num_components
 
     # Declare matrix of dmats (which will hold the matrix product of all combinations)
     # and dmats_old which is needed in order to perform the matrix product.
@@ -473,12 +525,12 @@ def _compute_reference_derivatives(data, dof_data):
     code += [f_decl(f_double, name, f_new_line + value), ""]
 
     # Compute dmats as a recursive matrix product
-    lines = _compute_dmats(len(dof_data["dmats"]), shape_dmats, [f_s, f_t, f_u], f_r)
+    lines = _compute_dmats(len(dof_data["dmats"]), shape_dmats, [f_s, f_t, f_u], f_r, _t)
 
     # Compute derivatives for all components
     lines_c = []
     for i in range(num_components):
-        name = f_component(f_derivatives, f_matrix_index(i, f_r, f_num_derivs))
+        name = f_component(f_derivatives, f_matrix_index(i, f_r, f_num_derivs(_t)))
         coeffs = f_component(f_coefficients(i), f_s)
         dmats = f_component(f_dmats(""), [f_s, f_t])
         basis = f_component(f_basisvalues, f_t)
@@ -487,7 +539,6 @@ def _compute_reference_derivatives(data, dof_data):
     lines += f_loop(lines_c, loop_vars_c)
 
     # Apply transformation if applicable.
-    mapping = dof_data["mapping"]
     if mapping == "affine":
         pass
     elif mapping == "contravariant piola":
@@ -495,38 +546,36 @@ def _compute_reference_derivatives(data, dof_data):
                 ("Using contravariant Piola transform to map values back to the physical element.")]
         # Get temporary values before mapping.
         lines += [f_const_double(f_tmp(i),\
-                  f_component(f_derivatives, f_matrix_index(i, f_r, f_num_derivs))) for i in range(num_components)]
+                  f_component(f_derivatives, f_matrix_index(i, f_r, f_num_derivs(_t)))) for i in range(num_components)]
 
         # Create names for inner product.
-        topological_dimension = data["topological_dimension"]
         basis_col = [f_tmp(j) for j in range(topological_dimension)]
-        for i in range(num_components):
+        for i in range(num_components_p):
             # Create Jacobian.
-            jacobian_row = [f_transform("J", i, j, None) for j in range(topological_dimension)]
+            jacobian_row = [f_transform("J", i, j, None) for j in range(geometric_dimension)]
 
             # Create inner product and multiply by inverse of Jacobian.
             inner = [f_mul([jacobian_row[j], basis_col[j]]) for j in range(topological_dimension)]
             sum_ = f_group(f_add(inner))
             value = f_mul([f_inv(f_detJ(None)), sum_])
-            name = f_component(f_derivatives, f_matrix_index(i, f_r, f_num_derivs))
+            name = f_component(f_derivatives+_p, f_matrix_index(i, f_r, f_num_derivs(_t)))
             lines += [f_assign(name, value)]
     elif mapping == "covariant piola":
         lines += ["", f_comment\
                 ("Using covariant Piola transform to map values back to the physical element")]
         # Get temporary values before mapping.
         lines += [f_const_double(f_tmp(i),\
-                  f_component(f_derivatives, f_matrix_index(i, f_r, f_num_derivs))) for i in range(num_components)]
+                  f_component(f_derivatives, f_matrix_index(i, f_r, f_num_derivs(_t)))) for i in range(num_components)]
         # Create names for inner product.
-        topological_dimension = data["topological_dimension"]
         basis_col = [f_tmp(j) for j in range(topological_dimension)]
-        for i in range(num_components):
+        for i in range(num_components_p):
             # Create inverse of Jacobian.
-            inv_jacobian_column = [f_transform("JINV", j, i, None) for j in range(topological_dimension)]
+            inv_jacobian_column = [f_transform("JINV", j, i, None) for j in range(geometric_dimension)]
 
             # Create inner product of basis values and inverse of Jacobian.
             inner = [f_mul([inv_jacobian_column[j], basis_col[j]]) for j in range(topological_dimension)]
             value = f_group(f_add(inner))
-            name = f_component(f_derivatives, f_matrix_index(i, f_r, f_num_derivs))
+            name = f_component(f_derivatives+_p, f_matrix_index(i, f_r, f_num_derivs(_t)))
             lines += [f_assign(name, value)]
     else:
         error("Unknown mapping: %s" % mapping)
@@ -535,11 +584,11 @@ def _compute_reference_derivatives(data, dof_data):
     # Loop all derivatives and compute value of the derivative as:
     # deriv_on_ref[r] = coeff[dof][s]*dmat[s][t]*basis[t]
     code += [f_comment("Loop possible derivatives.")]
-    loop_vars = [(f_r, 0, f_num_derivs)]
+    loop_vars = [(f_r, 0, f_num_derivs(_t))]
     code += f_loop(lines, loop_vars)
 
     return code + [""]
-
+    
 def _transform_derivatives(data, dof_data):
     """Transform derivatives back to the physical element by applying the
     transformation matrix."""
@@ -556,36 +605,65 @@ def _transform_derivatives(data, dof_data):
     f_r, f_s      = format["free indices"][:2]
     f_index       = format["matrix index"]
 
+    if data["topological_dimension"]==data["geometric_dimension"]:
+        _t = ""
+        _g = ""
+    else:
+        _t = "_t"
+        _g = "_g"
+
     # Get number of components and offset.
     num_components = dof_data["num_components"]
     offset = dof_data["offset"]
 
+    mapping = dof_data["mapping"]
+    if "piola" in mapping:
+        # In either of the Piola cases, the value space of the derivatives is the geometric dimension rather than the topological dimension.
+        _p = "_p"
+        num_components_p = data["geometric_dimension"]
+    else:
+        _p = ""
+        num_components_p = num_components
+
     code = [format["comment"]("Transform derivatives back to physical element")]
 
     lines = []
-    for i in range(num_components):
-        access_name = f_index(offset + i, f_r, f_num_derivs)
+    for i in range(num_components_p):
+        access_name = f_index(offset + i, f_r, f_num_derivs(_g))
         name = f_component(f_values, access_name)
-        access_val = f_index(i, f_s, f_num_derivs)
-        value = f_mul([f_component(f_transform, [f_r, f_s]), f_component(f_derivatives, access_val)])
+        access_val = f_index(i, f_s, f_num_derivs(_t))
+        value = f_mul([f_component(f_transform, [f_r, f_s]), f_component(f_derivatives+_p, access_val)])
         lines += [f_iadd(name, value)]
 
-    loop_vars = [(f_r, 0, f_num_derivs), (f_s, 0, f_num_derivs)]
+    loop_vars = [(f_r, 0, f_num_derivs(_g)), (f_s, 0, f_num_derivs(_t))]
     code += f_loop(lines, loop_vars)
     return code
 
-def _delete_pointers():
+def _delete_pointers(data, dof_data):
     "Delete the pointers to arrays."
+
+    if data["topological_dimension"]==data["geometric_dimension"]:
+        _t = ""
+        _g = ""
+    else:
+        _t = "_t"
+        _g = "_g"
 
     f_del_array = format["delete dynamic array"]
     code = []
 
     code += ["", format["comment"]("Delete pointer to array of derivatives on FIAT element")]
-    code += [f_del_array(format["reference derivatives"]), ""]
-
+    code += [f_del_array(format["reference derivatives"]), ""]    
+    if "piola" in dof_data["mapping"]:
+        code += [format["comment"]("Delete pointer to array of reference derivatives on physical element.")]        
+        code += [f_del_array(format["reference derivatives"]+"_p"), ""]
+        
     code += [format["comment"]("Delete pointer to array of combinations of derivatives and transform")]
-    code += [f_del_array(format["derivative combinations"], format["num derivatives"])]
-    code += [f_del_array(format["transform matrix"], format["num derivatives"])]
+    code += [f_del_array(format["derivative combinations"](_t), format["num derivatives"](_t))]
+    if _t != _g:
+        code += [f_del_array(format["derivative combinations"](_g), format["num derivatives"](_g))]
+        
+    code += [f_del_array(format["transform matrix"], format["num derivatives"](_g))]
 
     return code
 
