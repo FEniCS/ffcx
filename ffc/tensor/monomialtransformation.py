@@ -31,8 +31,9 @@ from ufl.permutation import build_component_numbering
 
 # FFC modules
 from ffc.log import info, error, ffc_assert
-from ffc.utils import all_equal
 from ffc.fiatinterface import create_element
+from ffc.utils import all_equal
+from ffc.representationutils import transform_component
 
 # FFC tensor representation modules
 from ffc.tensor.monomialextraction import MonomialForm
@@ -326,12 +327,18 @@ class TransformedMonomial:
                 else:
                     offset = component.index_range[0] - component_index[0]
 
-                # Need to handle mappings in special ways if gdim !=
-                # tdim and some Piolas are present
+                # MER: Need to handle mappings in special ways if gdim
+                # != tdim and some Piolas are present. This could
+                # probably be merged with the offset code above, but I
+                # was not able to wrap my head around the offsets
+                # always referring to component.index_range[0].
                 if (gdim != tdim):
-                    components, component, offset \
-                        = _shift_component_gdim_vs_tdim(components, component,
-                                                        offset, f, gdim, tdim)
+                    assert len(component.index_range) == 1, \
+                        "Component transform not implemented for this case. Please request this feature."
+                    component, offset = transform_component(component.index_range[0], offset, f.element())
+                    component = MonomialIndex(index_type=MonomialIndex.FIXED,
+                                              index_range=[component], index_id=None)
+                    components = [component, ]
 
                 # Add transforms where appropriate
                 if mapping == "contravariant piola":
@@ -492,74 +499,5 @@ def _reset_indices():
     _current_secondary_index = 0
     _current_internal_index = 0
     _current_external_index = 0
-
-
-def _shift_component_gdim_vs_tdim(components, component, offset, f, gdim, tdim):
-    """
-    This function accounts for the fact that if the geometrical and
-    topological dimension does not match, then for native vector
-    elements, in particular the Piola-mapped ones, the physical value
-    dimensions and the reference value dimensions are not the
-    same. This has significant consequences, especially for mixed
-    elements.
-
-    This code is quite non-elegant, and this is probably not the right
-    place for it, but it does some job.
-    """
-
-    # Do nothing if we are not in a special case: The special cases
-    # occur if we have piola mapped elements (for which value_shape !=
-    # ()), and if gdim != tdim)
-    if gdim == tdim:
-        return components, component, offset
-    all_mappings =  create_element(f.element()).mapping()
-    special_case = (any(['piola' in m for m in all_mappings])
-                    and f.element().num_sub_elements() > 1)
-    if not special_case:
-        return components, component, offset
-
-    # Extract reference and physical value dimensions
-    assert (len(components) == 1), "Must fix in gdim/tdim shift code"
-    reference_value_dims = []
-    physical_value_dims = []
-    for sub_element in f.element().sub_elements():
-        assert (len(sub_element.value_shape()) < 2), \
-            "Vector-valued assumption failed"
-        if sub_element.value_shape() == ():
-            reference_value_dims += [1]
-            physical_value_dims += [1]
-        else:
-            reference_value_dims += [sub_element.value_shape()[0]
-                                     - (gdim - tdim)]
-            physical_value_dims += [sub_element.value_shape()[0]]
-
-    # Figure out which sub-element we are in:
-    shifted_components = []
-    for c in components:
-        assert (len(c.index_range) == 1), "Must fix here!"
-        c0 = c.index_range[0]
-        tot = physical_value_dims[0]
-        for (sub_element_number, i) in enumerate(physical_value_dims):
-            if c0 < tot:
-                break
-            else:
-                tot += i
-
-        # Compute the new reference offset:
-        new_offset = 0
-        old_offset = 0
-        for k in range(sub_element_number):
-            new_offset += reference_value_dims[k]
-            old_offset += physical_value_dims[k]
-        shift = old_offset - new_offset
-
-        component = c0 - shift
-        component_as_index = MonomialIndex(index_type=MonomialIndex.FIXED,
-                                             index_range=[component],
-                                             index_id=None)
-        shifted_components += [component_as_index]
-
-    return shifted_components, component_as_index, new_offset
-
 
 

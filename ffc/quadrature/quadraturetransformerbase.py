@@ -43,7 +43,7 @@ from ffc.cpp import format
 
 # FFC tensor modules.
 from ffc.tensor.multiindex import MultiIndex as FFCMultiIndex
-from ffc.tensor.monomialtransformation import _shift_component_gdim_vs_tdim, MonomialIndex
+from ffc.representationutils import transform_component
 
 # Utility and optimisation functions for quadraturegenerator.
 from quadratureutils import create_psi_tables
@@ -307,8 +307,6 @@ class QuadratureTransformerBase(Transformer):
         components = self.component()
         derivatives = self.derivatives()
 
-        print "components = ", components
-
         # Check if basis is already in cache
         basis = self.argument_cache.get((o, components, derivatives, self.restriction), None)
         # FIXME: Why does using a code dict from cache make the expression manipulations blow (MemoryError) up later?
@@ -319,9 +317,6 @@ class QuadratureTransformerBase(Transformer):
         # Get auxiliary variables to generate basis
         component, local_comp, local_offset, ffc_element, quad_element, \
         transformation, multiindices = self._get_auxiliary_variables(o, components, derivatives)
-
-        print "o = ", o
-        print "component = ", component
 
         # Create mapping and code for basis function and add to dict.
         basis = self.create_argument(o, derivatives, component, local_comp,
@@ -523,9 +518,6 @@ class QuadratureTransformerBase(Transformer):
 
         # Visit expression subtrees and generate code.
         code = self.visit(indexed_expr)
-
-        print "code = ", code
-        print
 
         # Remove component again
         self._components.pop()
@@ -876,25 +868,10 @@ class QuadratureTransformerBase(Transformer):
         if component != ():
             # Map component using component map from UFL.
             comp_map, comp_num = build_component_numbering(ufl_element.value_shape(), ufl_element.symmetry())
-            print "comp_map = ", comp_map
-            print "comp_num = ", comp_num
             component = comp_map[component]
-            print "component = ", component
 
         # Map physical components into reference components
-        gdim = ufl_element.cell().geometric_dimension()
-        tdim = ufl_element.cell().topological_dimension()
-        component_as_index = MonomialIndex(index_type=MonomialIndex.FIXED,
-                                             index_range=[component],
-                                             index_id=None)
-        foo, component, bar = \
-            _shift_component_gdim_vs_tdim([component_as_index,], component, 0,
-                                          ufl_function, gdim, tdim)
-        print "foo = ", foo
-        if isinstance(component, MonomialIndex):
-            component = component.index_range[0]
-        print "component = ", component
-        print "bar = ", bar
+        component, dummy = transform_component(component, 0, ufl_element)
 
         # Compute the local offset (needed for non-affine mappings).
         local_offset = 0
