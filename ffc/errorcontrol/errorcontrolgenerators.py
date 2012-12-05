@@ -76,6 +76,15 @@ class ErrorControlGenerator:
         assert(len(extract_arguments(self.goal)) == 0)
         assert(len(extract_arguments(self.weak_residual)) == 1)
 
+        # Store map from identifiers to names for forms and generated
+        # coefficients
+        self.ec_names = {}
+
+        # Use predefined names for the forms in the primal problem
+        self.ec_names[id(self.lhs)] = "lhs"
+        self.ec_names[id(self.rhs)] = "rhs"
+        self.ec_names[id(self.goal)] = "goal"
+
         # Initialize other required data
         self.initialize_data()
 
@@ -218,8 +227,6 @@ class UFLErrorControlGenerator(ErrorControlGenerator):
             u (Coefficient)
               The coefficient considered as the unknown.
         """
-        # Store map of ids to names for generated Coefficients
-        self.ec_names = {}
 
         ErrorControlGenerator.__init__(self, __import__("ufl"), F, M, u)
 
