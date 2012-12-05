@@ -1,0 +1,103 @@
+
+Testing finite_element
+----------------------
+0_cell_shape = 0
+1_space_dimension = 2
+2_value_rank = 0
+3_evaluate_basis:_0 = -0.7108047717184003
+4_evaluate_basis:_1 = 1.710804770040369
+5_evaluate_basis_all = -0.7108047717184003 1.710804770040369
+6_evaluate_basis_derivatives_0_0 = -0.7108047717184003
+7_evaluate_basis_derivatives_0_1 = 1.145958980421212 -1.427422589647475
+8_evaluate_basis_derivatives_0_2 = 0 0 0 0
+9_evaluate_basis_derivatives_1_0 = 1.710804770040369
+10_evaluate_basis_derivatives_1_1 = -1.145958980421212 1.427422589647475
+11_evaluate_basis_derivatives_1_2 = 0 0 0 0
+12_evaluate_basis_derivatives_all_0 = -0.7108047717184003 1.710804770040369
+13_evaluate_basis_derivatives_all_1 = 1.145958980421212 -1.427422589647475 -1.145958980421212 1.427422589647475
+14_evaluate_basis_derivatives_all_2 = 0 0 0 0 0 0 0 0
+15_evaluate_dof_0 = 0.3079230000000001
+16_evaluate_dof_1 = 0.430287
+17_evaluate_dofs = 0.3079230000000001 0.430287
+18_interpolate_vertex_values = 0.3079230000000001 0.430287
+19_num_sub_elements = 0
+
+Testing finite_element
+----------------------
+20_cell_shape = 0
+21_space_dimension = 4
+22_value_rank = 1
+23_value_dimension_0 = 2
+24_evaluate_basis:_0 = -0.7108047717184003 0
+25_evaluate_basis:_1 = 1.710804770040369 0
+26_evaluate_basis:_2 = 0 -0.7108047717184003
+27_evaluate_basis:_3 = 0 1.710804770040369
+28_evaluate_basis_all = -0.7108047717184003 0 1.710804770040369 0 0 -0.7108047717184003 0 1.710804770040369
+29_evaluate_basis_derivatives_0_0 = -0.7108047717184003 0
+30_evaluate_basis_derivatives_0_1 = 1.145958980421212 -1.427422589647475 0 0
+31_evaluate_basis_derivatives_0_2 = 0 0 0 0 0 0 0 0
+32_evaluate_basis_derivatives_1_0 = 1.710804770040369 0
+33_evaluate_basis_derivatives_1_1 = -1.145958980421212 1.427422589647475 0 0
+34_evaluate_basis_derivatives_1_2 = 0 0 0 0 0 0 0 0
+35_evaluate_basis_derivatives_2_0 = 0 -0.7108047717184003
+36_evaluate_basis_derivatives_2_1 = 0 0 1.145958980421212 -1.427422589647475
+37_evaluate_basis_derivatives_2_2 = 0 0 0 0 0 0 0 0
+38_evaluate_basis_derivatives_3_0 = 0 1.710804770040369
+39_evaluate_basis_derivatives_3_1 = 0 0 -1.145958980421212 1.427422589647475
+40_evaluate_basis_derivatives_3_2 = 0 0 0 0 0 0 0 0
+41_evaluate_basis_derivatives_all_0 = -0.7108047717184003 0 1.710804770040369 0 0 -0.7108047717184003 0 1.710804770040369
+42_evaluate_basis_derivatives_all_1 = 1.145958980421212 -1.427422589647475 0 0 -1.145958980421212 1.427422589647475 0 0 0 0 1.145958980421212 -1.427422589647475 0 0 -1.145958980421212 1.427422589647475
+43_evaluate_basis_derivatives_all_2 = 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+44_evaluate_dof_0 = 0.3079230000000001
+45_evaluate_dof_1 = 0.430287
+46_evaluate_dof_2 = 1.231692
+47_evaluate_dof_3 = 1.721148
+48_evaluate_dofs = 0.3079230000000001 0.430287 1.231692 1.721148
+49_interpolate_vertex_values = 0.3079230000000001 1.231692 0.430287 1.721148
+50_num_sub_elements = 2
+
+Testing finite_element
+----------------------
+51_cell_shape = 0
+52_space_dimension = 2
+53_value_rank = 0
+54_evaluate_basis:_0 = -0.7108047717184003
+55_evaluate_basis:_1 = 1.710804770040369
+56_evaluate_basis_all = -0.7108047717184003 1.710804770040369
+57_evaluate_basis_derivatives_0_0 = -0.7108047717184003
+58_evaluate_basis_derivatives_0_1 = 1.145958980421212 -1.427422589647475
+59_evaluate_basis_derivatives_0_2 = 0 0 0 0
+60_evaluate_basis_derivatives_1_0 = 1.710804770040369
+61_evaluate_basis_derivatives_1_1 = -1.145958980421212 1.427422589647475
+62_evaluate_basis_derivatives_1_2 = 0 0 0 0
+63_evaluate_basis_derivatives_all_0 = -0.7108047717184003 1.710804770040369
+64_evaluate_basis_derivatives_all_1 = 1.145958980421212 -1.427422589647475 -1.145958980421212 1.427422589647475
+65_evaluate_basis_derivatives_all_2 = 0 0 0 0 0 0 0 0
+66_evaluate_dof_0 = 0.3079230000000001
+67_evaluate_dof_1 = 0.430287
+68_evaluate_dofs = 0.3079230000000001 0.430287
+69_interpolate_vertex_values = 0.3079230000000001 0.430287
+70_num_sub_elements = 0
+
+Testing finite_element
+----------------------
+71_cell_shape = 0
+72_space_dimension = 2
+73_value_rank = 0
+74_evaluate_basis:_0 = -0.7108047717184003
+75_evaluate_basis:_1 = 1.710804770040369
+76_evaluate_basis_all = -0.7108047717184003 1.710804770040369
+77_evaluate_basis_derivatives_0_0 = -0.7108047717184003
+78_evaluate_basis_derivatives_0_1 = 1.145958980421212 -1.427422589647475
+79_evaluate_basis_derivatives_0_2 = 0 0 0 0
+80_evaluate_basis_derivatives_1_0 = 1.710804770040369
+81_evaluate_basis_derivatives_1_1 = -1.145958980421212 1.427422589647475
+82_evaluate_basis_derivatives_1_2 = 0 0 0 0
+83_evaluate_basis_derivatives_all_0 = -0.7108047717184003 1.710804770040369
+84_evaluate_basis_derivatives_all_1 = 1.145958980421212 -1.427422589647475 -1.145958980421212 1.427422589647475
+85_evaluate_basis_derivatives_all_2 = 0 0 0 0 0 0 0 0
+86_evaluate_dof_0 = 0.3079230000000001
+87_evaluate_dof_1 = 0.430287
+88_evaluate_dofs = 0.3079230000000001 0.430287
+89_interpolate_vertex_values = 0.3079230000000001 0.430287
+90_num_sub_elements = 0

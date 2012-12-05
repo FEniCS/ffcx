@@ -16,7 +16,7 @@
 // along with FFC. If not, see <http://www.gnu.org/licenses/>.
 //
 // First added:  2010-01-24
-// Last changed: 2012-11-28
+// Last changed: 2012-12-05
 //
 // Functions for calling generated UFC functions with "random" (but
 // fixed) data and print the output to screen. Useful for running
@@ -358,7 +358,7 @@ void test_dofmap(ufc::dofmap& dofmap, ufc::shape cell_shape)
 
   // Prepare arguments
   test_mesh m(cell_shape);
-  test_cell c(cell_shape, dofmap.topological_dimension());
+  test_cell c(cell_shape, dofmap.geometric_dimension());
   uint n = dofmap.max_local_dimension();
   uint* dofs = new uint[n];
   for (uint i = 0; i < n; i++)
