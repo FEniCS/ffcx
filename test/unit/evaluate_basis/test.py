@@ -28,8 +28,8 @@ from ffc.log import CRITICAL, INFO
 
 class EvaluateBasisTests(unittest.TestCase):
 
-    def testAgainsFiat(self):
-        "Test evaluate basis agains FIAT.FiniteElement.tabulate()."
+    def testAgainstFiat(self):
+        "Test evaluate basis against FIAT.FiniteElement.tabulate()."
 
         error = fiat_main(INFO)
         self.assertEqual(error, 0, "Errors while testing evaluate_basis against FIAT, see fiat_errors.log for details")
