@@ -146,7 +146,6 @@ def _evaluate_basis(data):
 
     # Get code snippets for Jacobian, Inverse of Jacobian and mapping of
     # coordinates from physical element to the FIAT reference element.
-    # FIXME: KBO: Change this when supporting R^2 in R^3 elements.
     code += [format["jacobian and inverse"](geometric_dimension, topological_dimension)]
     code += ["", format["fiat coordinate map"](element_cell_domain, geometric_dimension)]
 
@@ -558,7 +557,6 @@ def _compute_basisvalues(data, dof_data):
     code += [f_decl(f_double, str(cn), f_float(0))]
 
     # Get the element cell domain.
-    # FIXME: KBO: Change this when supporting R^2 in R^3 elements.
     element_cell_domain = data["cell_domain"]
 
     def _jrc(a, b, n):

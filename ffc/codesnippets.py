@@ -439,7 +439,7 @@ for (unsigned int row = 1; row < %(num_derivatives)s; row++)
 }"""
 
 def _transform_snippet(tdim, gdim):
-    
+
     if tdim == gdim:
         _t = ""
         _g = ""
@@ -447,18 +447,15 @@ def _transform_snippet(tdim, gdim):
         _t = "_t"
         _g = "_g"
 
-    # Note, put this back in below to insert linebreaks in the Jacobian an a nice way.
-    # "\n                          "
-
-    return """\
+    # Matricize K_ij -> {K_ij}
+    matrix = "{{" + "}, {".join([", ".join(["K_%d%d"% (t, g)
+                                            for g in range(gdim)])
+                                 for t in range(tdim)]) + "}};\n\n"
+    snippet = """\
 // Compute inverse of Jacobian
-const double %%(K)s[%d][%d] = {{"""% (tdim, gdim) \
-        + "}, {".join([", ".join(["K_%d%d"% (t, g) 
-                                                                 for g in range(gdim)]) 
-                                                      for t in range(tdim)]) \
-        + "}};\n\n" \
-        + """\
-// Declare transformation matrix
+const double %%(K)s[%d][%d] = %s""" % (tdim, gdim, matrix)
+
+    snippet +="""// Declare transformation matrix
 // Declare pointer to two dimensional array and initialise
 double **%%(transform)s = new double *[%%(num_derivatives)s%(g)s];
 
@@ -477,7 +474,9 @@ for (unsigned int row = 0; row < %%(num_derivatives)s%(g)s; row++)
     for (unsigned int k = 0; k < %%(n)s; k++)
       %%(transform)s[row][col] *= %%(K)s[%%(combinations)s%(t)s[col][k]][%%(combinations)s%(g)s[row][k]];
   }
-}"""%{"t":_t, "g":_g}
+}""" % {"t":_t, "g":_g}
+
+    return snippet
 
 # Codesnippets used in evaluate_dof
 _map_onto_physical_1D = """\
@@ -538,14 +537,12 @@ double X = (2.0*coordinates[0] - x[0][0] - x[1][0]) / J_00;"""
 
 _map_coordinates_FIAT_interval_in_2D = """\
 // Get coordinates and map to the reference (FIAT) element
-double X = 2*(std::sqrt(std::pow(coordinates[0]-x[0][0], 2) +
-                        std::pow(coordinates[1]-x[0][1], 2))/ detJ) - 1.0;"""
+double X = 2*(std::sqrt(std::pow(coordinates[0]-x[0][0], 2) + std::pow(coordinates[1]-x[0][1], 2))/ detJ) - 1.0;"""
 
 _map_coordinates_FIAT_interval_in_3D = """\
 // Get coordinates and map to the reference (FIAT) element
-// FIXME
-double X = 0.0;
-"""
+double X = 2*(std::sqrt(std::pow(coordinates[0]-x[0][0], 2) + std::pow(coordinates[1]-x[0][1], 2) + std::pow(coordinates[2]-x[0][2], 2))/ detJ) - 1.0;"""
+
 _map_coordinates_FIAT_triangle = """\
 // Compute constants
 const double C0 = x[1][0] + x[2][0];
@@ -556,9 +553,10 @@ double X = (J_01*(C1 - 2.0*coordinates[1]) + J_11*(2.0*coordinates[0] - C0)) / d
 double Y = (J_00*(2.0*coordinates[1] - C1) + J_10*(C0 - 2.0*coordinates[0])) / detJ;"""
 
 _map_coordinates_FIAT_triangle_in_3D = """\
-// FIXME
 double X = 0.0;
 double Y = 0.0;
+
+throw std::runtime_error("Coordinate map not implemented for triangles in 3D. Please report feature request.");
 """
 
 _map_coordinates_FIAT_tetrahedron = """\
@@ -596,18 +594,19 @@ map_onto_physical = {1: _map_onto_physical_1D,
                      2: _map_onto_physical_2D,
                      3: _map_onto_physical_3D}
 
+# FIXME: Must add more here
 fiat_coordinate_map = {"interval": {1:_map_coordinates_FIAT_interval,
                                     2:_map_coordinates_FIAT_interval_in_2D,
                                     3:_map_coordinates_FIAT_interval_in_3D},
                        "triangle": {2:_map_coordinates_FIAT_triangle,
-                                    3:_map_coordinates_FIAT_triangle_in_3D},
+                                    3: _map_coordinates_FIAT_triangle_in_3D},
                        "tetrahedron": {3:_map_coordinates_FIAT_tetrahedron}}
 
-transform_snippet = {"interval": {1: _transform_snippet(1, 1), 
-                                  2: _transform_snippet(1, 2), 
-                                  3: _transform_snippet(1, 3)}, 
+transform_snippet = {"interval": {1: _transform_snippet(1, 1),
+                                  2: _transform_snippet(1, 2),
+                                  3: _transform_snippet(1, 3)},
                      "triangle": {2: _transform_snippet(2, 2),
-                                  3: _transform_snippet(2, 3)}, 
+                                  3: _transform_snippet(2, 3)},
                      "tetrahedron": {3: _transform_snippet(3, 3)}}
 
 normal_direction = {1: {1: _normal_direction_1D},
