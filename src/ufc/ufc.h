@@ -79,6 +79,9 @@ namespace ufc
     /// Local facet index
     int local_facet;
 
+    /// Cell orientation (2 = up, 1 = down, 0 = undefined)
+    int orientation;
+
     /// Unique mesh identifier
     int mesh_identifier;
 
