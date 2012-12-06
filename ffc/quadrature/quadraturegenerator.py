@@ -126,7 +126,6 @@ def _tabulate_tensor(ir, parameters):
         jacobi_code += "\n\n" + format["generate normal"](geo_dim, top_dim,
                                                           domain_type)
 
-        print jacobi_code
     elif domain_type == "interior_facet":
         # Modify the dimensions of the primary indices because we have a macro element
         prim_idims = [d*2 for d in prim_idims]
