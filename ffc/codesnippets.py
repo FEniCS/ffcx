@@ -204,7 +204,15 @@ const double d%(restriction)s_1 = - (J_00*J_21 - J_20*J_01);
 const double d%(restriction)s_2 = J_00*J_11 - J_10*J_01;
 
 const double detJ2%(restriction)s = d%(restriction)s_0*d%(restriction)s_0 + d%(restriction)s_1*d%(restriction)s_1 + d%(restriction)s_2*d%(restriction)s_2;
-const double detJ%(restriction)s = std::sqrt(detJ2%(restriction)s);
+double detJ%(restriction)s = std::sqrt(detJ2%(restriction)s);
+
+// Extract orientation
+// (If orientation_marker == 1 = down, multiply detJ by -1)
+const int orientation_marker = c.orientation;
+//if (orientation_marker == 0)
+//  throw std::runtime_error("c.orientation must be defined (not 0)");
+if (orientation_marker == 1)
+  detJ%(restriction)s *= -1;
 
 // Compute some common factors for the pseudoinverse
 const double n%(restriction)s_1 = J%(restriction)s_00*J%(restriction)s_00 + J%(restriction)s_10*J%(restriction)s_10 + J%(restriction)s_20*J%(restriction)s_20;
