@@ -49,7 +49,8 @@ def interpolate_vertex_values(ir):
     gdim = ir["geometric_dimension"]
     tdim = ir["topological_dimension"]
     if ir["needs_jacobian"]:
-        code.append(format["jacobian and inverse"](gdim, tdim))
+        code.append(format["jacobian and inverse"](gdim, tdim,
+                                                   oriented=ir["needs_oriented"]))
 
     # Compute total value dimension for (mixed) element
     total_dim = sum(data["value_size"] for data in ir["element_data"])

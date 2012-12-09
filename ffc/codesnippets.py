@@ -34,7 +34,8 @@ __all__ = ["comment_ufc", "comment_dolfin", "header_h", "header_c", "footer",
            "scale_factor", "combinations_snippet",
            "normal_direction",
            "facet_normal", "ip_coordinates", "cell_volume", "circumradius",
-           "facet_area"]
+           "facet_area",
+           "orientation_snippet"]
 
 comment_ufc = """\
 // This code conforms with the UFC specification version %(ufc_version)s
@@ -206,14 +207,6 @@ const double d%(restriction)s_2 = J_00*J_11 - J_10*J_01;
 const double detJ2%(restriction)s = d%(restriction)s_0*d%(restriction)s_0 + d%(restriction)s_1*d%(restriction)s_1 + d%(restriction)s_2*d%(restriction)s_2;
 double detJ%(restriction)s = std::sqrt(detJ2%(restriction)s);
 
-// Extract orientation
-// (If orientation_marker == 1 = down, multiply detJ by -1)
-const int orientation_marker = c.orientation;
-//if (orientation_marker == 0)
-//  throw std::runtime_error("c.orientation must be defined (not 0)");
-if (orientation_marker == 1)
-  detJ%(restriction)s *= -1;
-
 // Compute some common factors for the pseudoinverse
 const double n%(restriction)s_1 = J%(restriction)s_00*J%(restriction)s_00 + J%(restriction)s_10*J%(restriction)s_10 + J%(restriction)s_20*J%(restriction)s_20;
 const double n%(restriction)s_2 = J%(restriction)s_01*J%(restriction)s_01 + J%(restriction)s_11*J%(restriction)s_11 + J%(restriction)s_21*J%(restriction)s_21;
@@ -227,6 +220,16 @@ const double K%(restriction)s_02 =  (J%(restriction)s_20*n%(restriction)s_2 - J%
 const double K%(restriction)s_10 = (-J%(restriction)s_00*m%(restriction)s + J%(restriction)s_01*n%(restriction)s_1)/den%(restriction)s;
 const double K%(restriction)s_11 = (-J%(restriction)s_10*m%(restriction)s + J%(restriction)s_11*n%(restriction)s_1)/den%(restriction)s;
 const double K%(restriction)s_12 = (-J%(restriction)s_20*m%(restriction)s + J%(restriction)s_21*n%(restriction)s_1)/den%(restriction)s;
+"""
+
+orientation_snippet = """
+// Extract orientation
+const int orientation_marker = c.orientation;
+if (orientation_marker == 0)
+  throw std::runtime_error("cell orientation must be defined (not 0)");
+// (If orientation_marker == 1 = down, multiply detJ by -1)
+else if (orientation_marker == 1)
+  detJ%(restriction)s *= -1;
 """
 
 _inverse_jacobian_3D_1D = """\

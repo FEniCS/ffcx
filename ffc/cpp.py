@@ -232,9 +232,10 @@ from codesnippets import *
 format.update({
     "cell coordinates":     cell_coordinates,
     "jacobian":             lambda gdim, tdim, r="": jacobian[gdim][tdim] % {"restriction": r},
-    "inverse jacobian":     lambda gdim, tdim, r="": inverse_jacobian[gdim][tdim] % {"restriction": r},
-    "jacobian and inverse": lambda gdim, tdim=None, r=None: format["jacobian"](gdim, tdim, choose_map[r]) +\
-                            "\n" + format["inverse jacobian"](gdim, tdim, choose_map[r]),
+    "inverse jacobian":     lambda gdim, tdim, r="", oriented=False: inverse_jacobian[gdim][tdim] % {"restriction": r}  + format["orientation"](oriented, gdim, tdim, r),
+    "jacobian and inverse": lambda gdim, tdim=None, r=None, oriented=False: (format["jacobian"](gdim, tdim, choose_map[r]) + \
+                                                                                 "\n" + format["inverse jacobian"](gdim, tdim, choose_map[r], oriented)),
+    "orientation":          lambda oriented, gdim, tdim, r="": orientation_snippet % {"restriction": r} if (oriented and gdim != tdim) else "",
     "facet determinant":    lambda gdim, tdim, r=None: facet_determinant[gdim][tdim] % {"restriction": choose_map[r]},
     "fiat coordinate map":  lambda cell, gdim: fiat_coordinate_map[cell][gdim],
     "generate normal":      lambda gdim, tdim, i: _generate_normal(gdim, tdim, i),

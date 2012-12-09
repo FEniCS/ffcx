@@ -80,6 +80,7 @@ def _tabulate_tensor(ir, parameters):
     prim_idims  = ir["prim_idims"]
     integrals   = ir["trans_integrals"]
     geo_consts  = ir["geo_consts"]
+    oriented    = ir["needs_oriented"]
 
     # Create sets of used variables.
     used_weights    = set()
@@ -102,7 +103,7 @@ def _tabulate_tensor(ir, parameters):
         operations.append([num_ops])
 
         # Get Jacobian snippet.
-        jacobi_code = format["jacobian and inverse"](geo_dim, top_dim)
+        jacobi_code = format["jacobian and inverse"](geo_dim, top_dim, oriented=oriented)
         jacobi_code += "\n\n" + format["scale factor snippet"]
 
     elif domain_type == "exterior_facet":
@@ -121,7 +122,7 @@ def _tabulate_tensor(ir, parameters):
         tensor_code = f_switch(f_facet(None), cases)
 
         # Get Jacobian snippet.
-        jacobi_code = format["jacobian and inverse"](geo_dim, top_dim)
+        jacobi_code = format["jacobian and inverse"](geo_dim, top_dim, oriented=oriented)
         jacobi_code += "\n\n" + format["facet determinant"](geo_dim, top_dim)
         jacobi_code += "\n\n" + format["generate normal"](geo_dim, top_dim,
                                                           domain_type)
@@ -147,9 +148,9 @@ def _tabulate_tensor(ir, parameters):
         tensor_code = f_switch(f_facet("+"), [f_switch(f_facet("-"), cases[i]) for i in range(len(cases))])
 
         # Get Jacobian snippet.
-        jacobi_code  = format["jacobian and inverse"](geo_dim, top_dim, r="+")
+        jacobi_code  = format["jacobian and inverse"](geo_dim, top_dim, r="+", oriented=oriented)
         jacobi_code += "\n\n"
-        jacobi_code += format["jacobian and inverse"](geo_dim, top_dim, r="-")
+        jacobi_code += format["jacobian and inverse"](geo_dim, top_dim, r="-", oriented=oriented)
         jacobi_code += "\n\n"
         jacobi_code += format["facet determinant"](geo_dim, top_dim, r="+")
         jacobi_code += "\n\n" + format["generate normal"](geo_dim, top_dim,

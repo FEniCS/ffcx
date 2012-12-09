@@ -372,8 +372,11 @@ def _evaluate_basis(ufl_element, element, cell):
             "cell_domain" : cell.domain(),
             "topological_dimension" : cell.topological_dimension(),
             "geometric_dimension" : cell.geometric_dimension(),
-            "space_dimension" : element.space_dimension()
+            "space_dimension" : element.space_dimension(),
+            "needs_oriented": needs_oriented_jacobian(element)
             }
+
+
     # Loop element and space dimensions to generate dof data.
     dof = 0
     dof_data = []
@@ -498,6 +501,7 @@ def _interpolate_vertex_values(element, cell):
     # Check whether computing the Jacobian is necessary
     mappings = element.mapping()
     ir["needs_jacobian"] = any("piola" in m for m in mappings)
+    ir["needs_oriented"] = needs_oriented_jacobian(element)
 
     # Get vertices of reference cell
     cell = reference_cell(cell.domain())
@@ -599,3 +603,8 @@ def uses_integral_moments(element):
     integrals = set(["IntegralMoment", "FrobeniusIntegralMoment"])
     tags = set([L.get_type_tag() for L in element.dual_basis()])
     return len(integrals & tags) > 0
+
+def needs_oriented_jacobian(element):
+    # Check whether this element needs an oriented jacobian (only
+    # contravariant piolas seem to need it)
+    return ("contravariant piola" in element.mapping())

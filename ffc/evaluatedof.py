@@ -142,9 +142,10 @@ def _required_declarations(ir):
     # Otherwise declare intermediate result variable
     code.append(declare(f_double, f_result))
 
-    # Add sufficient Jacobian information
+    # Add sufficient Jacobian information. Note: same criterion for
+    # needing inverse Jacobian as for needing oriented Jacobian
     if needs_inverse_jacobian:
-        code.append(format["jacobian and inverse"](gdim, tdim))
+        code.append(format["jacobian and inverse"](gdim, tdim, oriented=True))
     else:
         code.append(format["jacobian"](gdim, tdim))
 

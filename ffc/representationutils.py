@@ -1,4 +1,5 @@
-"""This module contains utility functions for some code shared between quadrature and tensor representation."""
+"""This module contains utility functions for some code shared between
+quadrature and tensor representation."""
 
 from ffc.fiatinterface import create_element
 
@@ -8,8 +9,8 @@ def transform_component(component, offset, ufl_element):
     topological dimension does not match, then for native vector
     elements, in particular the Piola-mapped ones, the physical value
     dimensions and the reference value dimensions are not the
-    same. This has significant consequences, especially for mixed
-    elements.
+    same. This has certain consequences for mixed elements, aka 'fun
+    with offsets'.
     """
     # This code is used for tensor/monomialtransformation.py and
     # quadrature/quadraturetransformerbase.py.
@@ -60,5 +61,11 @@ def transform_component(component, offset, ufl_element):
 
     return reference_component, reference_offset
 
-
-
+def needs_oriented_jacobian(form_data):
+    # Check whether this form needs an oriented jacobian (only forms
+    # involgin contravariant piola mappings seem to need it)
+    for ufl_element in form_data.unique_elements:
+        element = create_element(ufl_element)
+        if "contravariant piola" in element.mapping():
+            return True
+    return False
