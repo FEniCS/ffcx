@@ -18,7 +18,7 @@
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # Modified by Kristian B. Oelgaard 2010-2011
-# Modified by Marie Rognes 2007-2010
+# Modified by Marie Rognes 2007-2012
 # Modified by Peter Brune 2009
 #
 # First added:  2007-02-28
@@ -307,14 +307,18 @@ const bool direction = facet%(restriction)s == 0 ? x%(restriction)s[0][0] > x%(r
 _normal_direction_2D = """\
 const bool direction = dx1*(x%(restriction)s[%(facet)s][0] - x%(restriction)s[v0][0]) - dx0*(x%(restriction)s[%(facet)s][1] - x%(restriction)s[v0][1]) < 0;"""
 
-_normal_direction_2D_1D = ""
+_normal_direction_2D_1D = """
+throw std::runtime_error("normal direction 2D in 1D not implemented);
+"""
 
 _normal_direction_3D = """\
 const bool direction = a0*(x%(restriction)s[%(facet)s][0] - x%(restriction)s[v0][0]) + a1*(x%(restriction)s[%(facet)s][1] - x%(restriction)s[v0][1])  + a2*(x%(restriction)s[%(facet)s][2] - x%(restriction)s[v0][2]) < 0;"""
 
-_normal_direction_3D_2D = ""
+_normal_direction_3D_2D = """
+throw std::runtime_error("normal direction 3D in 2D not implemented);"""
 
-_normal_direction_3D_1D = ""
+_normal_direction_3D_1D = """
+throw std::runtime_error("normal direction 3D in 1D not implemented);"""
 
 _facet_normal_1D = """
 // Facet normals are 1.0 or -1.0:   (-1.0) <-- X------X --> (1.0)
@@ -564,10 +568,13 @@ double X = (J_01*(C1 - 2.0*coordinates[1]) + J_11*(2.0*coordinates[0] - C0)) / d
 double Y = (J_00*(2.0*coordinates[1] - C1) + J_10*(C0 - 2.0*coordinates[0])) / detJ;"""
 
 _map_coordinates_FIAT_triangle_in_3D = """\
-double X = 0.0;
-double Y = 0.0;
+const double b0 = x[0][0];
+const double b1 = x[0][1];
+const double b2 = x[0][2];
 
-throw std::runtime_error("Coordinate map not implemented for triangles in 3D. Please report feature request.");
+// P_FFC = J^dag (p - b), P_FIAT = 2*P_FFC - (1, 1)
+double X = 2*(K_00*(coordinates[0] - b0) + K_01*(coordinates[1] - b1) + K_02*(coordinates[2] - b2)) - 1.0;
+double Y = 2*(K_10*(coordinates[0] - b0) + K_11*(coordinates[1] - b1) + K_12*(coordinates[2] - b2)) - 1.0;
 """
 
 _map_coordinates_FIAT_tetrahedron = """\
