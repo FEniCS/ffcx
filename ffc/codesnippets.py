@@ -369,6 +369,10 @@ const double n%(restriction)s_length = std::sqrt(n%(restriction)s0*n%(restrictio
 n%(restriction)s0 /= n%(restriction)s_length;
 n%(restriction)s1 /= n%(restriction)s_length;
 n%(restriction)s2 /= n%(restriction)s_length;
+
+throw std::runtime_error("Edge normals in 3D not trivial. Might need global orientation again. Please don't use yet.");
+
+//std::cout << "n" << %(restriction)s << " = (" << n%(restriction)s0 << ", " << n%(restriction)s1 << ", " << n%(restriction)s2 << ")" << std::endl;
 """
 
 _facet_normal_3D_1D = """
