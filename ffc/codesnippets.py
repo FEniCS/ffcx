@@ -386,10 +386,10 @@ if (facet%(restriction)s == 0)
   n%(restriction)s1 = x%(restriction)s[1][1] - x%(restriction)s[0][1];
   n%(restriction)s1 = x%(restriction)s[1][2] - x%(restriction)s[0][2];
 }
-const double length = std::sqrt(n%(restriction)s0*n%(restriction)s0 + n%(restriction)s1*n%(restriction)s1 + n%(restriction)s2*n%(restriction)s2);
-n%(restriction)s0 /= length;
-n%(restriction)s1 /= length;
-n%(restriction)s2 /= length;
+const double n%(restriction)s_length = std::sqrt(n%(restriction)s0*n%(restriction)s0 + n%(restriction)s1*n%(restriction)s1 + n%(restriction)s2*n%(restriction)s2);
+n%(restriction)s0 /= n%(restriction)s_length;
+n%(restriction)s1 /= n%(restriction)s_length;
+n%(restriction)s2 /= n%(restriction)s_length;
 """
 
 _cell_volume_1D = """\
