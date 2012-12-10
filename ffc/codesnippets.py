@@ -331,15 +331,15 @@ double n%(restriction)s0 = 0.0;
 double n%(restriction)s1 = 0.0;
 if (facet%(restriction)s == 0)
 {
-  n%(restriction)s0 = x[0][0] - x[1][0];
-  n%(restriction)s1 = x[0][1] - x[1][1];
+  n%(restriction)s0 = x%(restriction)s[0][0] - x%(restriction)s[1][0];
+  n%(restriction)s1 = x%(restriction)s[0][1] - x%(restriction)s[1][1];
 } else {
-  n%(restriction)s0 = x[1][0] - x[0][0];
-  n%(restriction)s1 = x[1][1] - x[0][1];
+  n%(restriction)s0 = x%(restriction)s[1][0] - x%(restriction)s[0][0];
+  n%(restriction)s1 = x%(restriction)s[1][1] - x%(restriction)s[0][1];
 }
-const double length = std::sqrt(n%(restriction)s0*n%(restriction)s0 + n%(restriction)s1*n%(restriction)s1);
-n%(restriction)s0 /= length;
-n%(restriction)s1 /= length;
+const double n%(restriction)s_length = std::sqrt(n%(restriction)s0*n%(restriction)s0 + n%(restriction)s1*n%(restriction)s1);
+n%(restriction)s0 /= n%(restriction)s_length;
+n%(restriction)s1 /= n%(restriction)s_length;
 """
 
 _facet_normal_3D = """
@@ -378,13 +378,13 @@ double n%(restriction)s1 = 0.0;
 double n%(restriction)s2 = 0.0;
 if (facet%(restriction)s == 0)
 {
-  n%(restriction)s0 = x[0][0] - x[1][0];
-  n%(restriction)s1 = x[0][1] - x[1][1];
-  n%(restriction)s1 = x[0][2] - x[1][2];
+  n%(restriction)s0 = x%(restriction)s[0][0] - x%(restriction)s[1][0];
+  n%(restriction)s1 = x%(restriction)s[0][1] - x%(restriction)s[1][1];
+  n%(restriction)s1 = x%(restriction)s[0][2] - x%(restriction)s[1][2];
 } else {
-  n%(restriction)s0 = x[1][0] - x[0][0];
-  n%(restriction)s1 = x[1][1] - x[0][1];
-  n%(restriction)s1 = x[1][2] - x[0][2];
+  n%(restriction)s0 = x%(restriction)s[1][0] - x%(restriction)s[0][0];
+  n%(restriction)s1 = x%(restriction)s[1][1] - x%(restriction)s[0][1];
+  n%(restriction)s1 = x%(restriction)s[1][2] - x%(restriction)s[0][2];
 }
 const double length = std::sqrt(n%(restriction)s0*n%(restriction)s0 + n%(restriction)s1*n%(restriction)s1 + n%(restriction)s2*n%(restriction)s2);
 n%(restriction)s0 /= length;
