@@ -310,6 +310,8 @@ const bool direction = dx1*(x%(restriction)s[%(facet)s][0] - x%(restriction)s[v0
 _normal_direction_3D = """\
 const bool direction = a0*(x%(restriction)s[%(facet)s][0] - x%(restriction)s[v0][0]) + a1*(x%(restriction)s[%(facet)s][1] - x%(restriction)s[v0][1])  + a2*(x%(restriction)s[%(facet)s][2] - x%(restriction)s[v0][2]) < 0;"""
 
+# MER: Coding all up in _facet_normal_ND_M_D for now; these are
+# therefore empty.
 _normal_direction_2D_1D = ""
 _normal_direction_3D_2D = ""
 _normal_direction_3D_1D = ""
@@ -345,6 +347,47 @@ _facet_normal_3D = """\
 const double n%(restriction)s0 = %(direction)sdirection ? a0 / det : -a0 / det;
 const double n%(restriction)s1 = %(direction)sdirection ? a1 / det : -a1 / det;
 const double n%(restriction)s2 = %(direction)sdirection ? a2 / det : -a2 / det;"""
+
+_facet_normal_3D_2D = """
+// Compute facet normal n via Rodrigues' rotation formula:
+//   n = k x e  + k (k . e)
+// where e is the vector to be rotated (given by dx0, dx1, dx2) and k
+// is the surface normal of the cell
+double _k%(restriction)s0 = (x%(restriction)s[1][1] - x%(restriction)s[0][1])*(x%(restriction)s[2][2] - x%(restriction)s[0][2]) - (x%(restriction)s[1][2] - x%(restriction)s[0][2])*(x%(restriction)s[2][1] - x%(restriction)s[0][1]);
+double _k%(restriction)s1 = - ((x%(restriction)s[1][0] - x%(restriction)s[0][0])*(x%(restriction)s[2][2] - x%(restriction)s[0][2]) - (x%(restriction)s[1][2] - x%(restriction)s[0][2])*(x%(restriction)s[2][0] - x%(restriction)s[0][0]));
+double _k%(restriction)s2 = (x%(restriction)s[1][0] - x%(restriction)s[0][0])*(x%(restriction)s[2][1] - x%(restriction)s[0][1]) - (x%(restriction)s[1][1] - x%(restriction)s[0][1])*(x%(restriction)s[2][0] - x%(restriction)s[0][0]);
+const double _k%(restriction)s_length = std:sqrt(_k%(restriction)s0*_k%(restriction)s0 + _k%(restriction)s1*_k%(restriction)s1 + _k%(restriction)s2*_k%(restriction)s2);
+_k%(restriction)s0 /= _k%(restriction)s_length;
+_k%(restriction)s1 /= _k%(restriction)s_length;
+_k%(restriction)s2 /= _k%(restriction)s_length;
+const double k%(restriction)sdote = k%(restriction)s0*dx0 + k%(restriction)s1*dx1 + k%(restriction)s2*dx2;
+
+double n%(restriction)s0 = (k%(restriction)s1*dx2 - k%(restriction)s2*dx1) + k%(restriction)s0*k%(restriction)sdote;
+double n%(restriction)s1 = -(k%(restriction)s0*dx2 - k%(restriction)s2*dx0) + k%(restriction)s1*k%(restriction)sdote;
+double n%(restriction)s2 = (k%(restriction)s0*dx1 - k%(restriction)s1*dx0) + k%(restriction)s2*k%(restriction)sdote;
+
+"""
+
+_facet_normal_3D_1D = """
+// Compute facet normal
+double n%(restriction)s0 = 0.0;
+double n%(restriction)s1 = 0.0;
+double n%(restriction)s2 = 0.0;
+if (facet%(restriction)s == 0)
+{
+  n%(restriction)s0 = x[0][0] - x[1][0];
+  n%(restriction)s1 = x[0][1] - x[1][1];
+  n%(restriction)s1 = x[0][2] - x[1][2];
+} else {
+  n%(restriction)s0 = x[1][0] - x[0][0];
+  n%(restriction)s1 = x[1][1] - x[0][1];
+  n%(restriction)s1 = x[1][2] - x[0][2];
+}
+const double length = std::sqrt(n%(restriction)s0*n%(restriction)s0 + n%(restriction)s1*n%(restriction)s1 + n%(restriction)s2*n%(restriction)s2);
+n%(restriction)s0 /= length;
+n%(restriction)s1 /= length;
+n%(restriction)s2 /= length;
+"""
 
 _cell_volume_1D = """\
 // Cell Volume.
@@ -625,7 +668,7 @@ normal_direction = {1: {1: _normal_direction_1D},
 
 facet_normal = {1: {1: _facet_normal_1D},
                 2: {2: _facet_normal_2D, 1: _facet_normal_2D_1D},
-                3: {3: _facet_normal_3D}}
+                3: {3: _facet_normal_3D, 2: _facet_normal_3D_2D, 1: _facet_normal_3D_1D}}
 
 ip_coordinates = {1: (3, _ip_coordinates_1D),
                   2: (10, _ip_coordinates_2D),
