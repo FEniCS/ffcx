@@ -342,7 +342,7 @@ n%(restriction)s0 /= length;
 n%(restriction)s1 /= length;
 """
 
-_facet_normal_3D = """\
+_facet_normal_3D = """
 // Compute facet normals from the facet scale factor constants
 const double n%(restriction)s0 = %(direction)sdirection ? a0 / det : -a0 / det;
 const double n%(restriction)s1 = %(direction)sdirection ? a1 / det : -a1 / det;
@@ -353,19 +353,18 @@ _facet_normal_3D_2D = """
 //   n = k x e  + k (k . e)
 // where e is the vector to be rotated (given by dx0, dx1, dx2) and k
 // is the surface normal of the cell
-double _k%(restriction)s0 = (x%(restriction)s[1][1] - x%(restriction)s[0][1])*(x%(restriction)s[2][2] - x%(restriction)s[0][2]) - (x%(restriction)s[1][2] - x%(restriction)s[0][2])*(x%(restriction)s[2][1] - x%(restriction)s[0][1]);
-double _k%(restriction)s1 = - ((x%(restriction)s[1][0] - x%(restriction)s[0][0])*(x%(restriction)s[2][2] - x%(restriction)s[0][2]) - (x%(restriction)s[1][2] - x%(restriction)s[0][2])*(x%(restriction)s[2][0] - x%(restriction)s[0][0]));
-double _k%(restriction)s2 = (x%(restriction)s[1][0] - x%(restriction)s[0][0])*(x%(restriction)s[2][1] - x%(restriction)s[0][1]) - (x%(restriction)s[1][1] - x%(restriction)s[0][1])*(x%(restriction)s[2][0] - x%(restriction)s[0][0]);
-const double _k%(restriction)s_length = std:sqrt(_k%(restriction)s0*_k%(restriction)s0 + _k%(restriction)s1*_k%(restriction)s1 + _k%(restriction)s2*_k%(restriction)s2);
-_k%(restriction)s0 /= _k%(restriction)s_length;
-_k%(restriction)s1 /= _k%(restriction)s_length;
-_k%(restriction)s2 /= _k%(restriction)s_length;
+double k%(restriction)s0 = (x%(restriction)s[1][1] - x%(restriction)s[0][1])*(x%(restriction)s[2][2] - x%(restriction)s[0][2]) - (x%(restriction)s[1][2] - x%(restriction)s[0][2])*(x%(restriction)s[2][1] - x%(restriction)s[0][1]);
+double k%(restriction)s1 = - ((x%(restriction)s[1][0] - x%(restriction)s[0][0])*(x%(restriction)s[2][2] - x%(restriction)s[0][2]) - (x%(restriction)s[1][2] - x%(restriction)s[0][2])*(x%(restriction)s[2][0] - x%(restriction)s[0][0]));
+double k%(restriction)s2 = (x%(restriction)s[1][0] - x%(restriction)s[0][0])*(x%(restriction)s[2][1] - x%(restriction)s[0][1]) - (x%(restriction)s[1][1] - x%(restriction)s[0][1])*(x%(restriction)s[2][0] - x%(restriction)s[0][0]);
+const double k%(restriction)s_length = std::sqrt(k%(restriction)s0*k%(restriction)s0 + k%(restriction)s1*k%(restriction)s1 + k%(restriction)s2*k%(restriction)s2);
+k%(restriction)s0 /= k%(restriction)s_length;
+k%(restriction)s1 /= k%(restriction)s_length;
+k%(restriction)s2 /= k%(restriction)s_length;
 const double k%(restriction)sdote = k%(restriction)s0*dx0 + k%(restriction)s1*dx1 + k%(restriction)s2*dx2;
 
 double n%(restriction)s0 = (k%(restriction)s1*dx2 - k%(restriction)s2*dx1) + k%(restriction)s0*k%(restriction)sdote;
 double n%(restriction)s1 = -(k%(restriction)s0*dx2 - k%(restriction)s2*dx0) + k%(restriction)s1*k%(restriction)sdote;
 double n%(restriction)s2 = (k%(restriction)s0*dx1 - k%(restriction)s1*dx0) + k%(restriction)s2*k%(restriction)sdote;
-
 """
 
 _facet_normal_3D_1D = """
