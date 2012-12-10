@@ -122,7 +122,8 @@ def _tabulate_tensor(ir, parameters):
         tensor_code = f_switch(f_facet(None), cases)
 
         # Get Jacobian snippet.
-        jacobi_code = format["jacobian and inverse"](geo_dim, top_dim, oriented=oriented)
+        jacobi_code = format["jacobian and inverse"](geo_dim, top_dim,
+                                                     oriented=oriented)
         jacobi_code += "\n\n" + format["facet determinant"](geo_dim, top_dim)
         jacobi_code += "\n\n" + format["generate normal"](geo_dim, top_dim,
                                                           domain_type)

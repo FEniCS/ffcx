@@ -307,23 +307,16 @@ const bool direction = facet%(restriction)s == 0 ? x%(restriction)s[0][0] > x%(r
 _normal_direction_2D = """\
 const bool direction = dx1*(x%(restriction)s[%(facet)s][0] - x%(restriction)s[v0][0]) - dx0*(x%(restriction)s[%(facet)s][1] - x%(restriction)s[v0][1]) < 0;"""
 
-_normal_direction_2D_1D = """
-throw std::runtime_error("normal direction 2D in 1D not implemented);
-"""
-
 _normal_direction_3D = """\
 const bool direction = a0*(x%(restriction)s[%(facet)s][0] - x%(restriction)s[v0][0]) + a1*(x%(restriction)s[%(facet)s][1] - x%(restriction)s[v0][1])  + a2*(x%(restriction)s[%(facet)s][2] - x%(restriction)s[v0][2]) < 0;"""
 
-_normal_direction_3D_2D = """
-throw std::runtime_error("normal direction 3D in 2D not implemented);"""
-
-_normal_direction_3D_1D = """
-throw std::runtime_error("normal direction 3D in 1D not implemented);"""
+_normal_direction_2D_1D = ""
+_normal_direction_3D_2D = ""
+_normal_direction_3D_1D = ""
 
 _facet_normal_1D = """
 // Facet normals are 1.0 or -1.0:   (-1.0) <-- X------X --> (1.0)
 const double n%(restriction)s = %(direction)sdirection ? 1.0 : -1.0;"""
-
 
 _facet_normal_2D = """\
 // Compute facet normals from the facet scale factor constants
@@ -334,7 +327,6 @@ _facet_normal_2D_1D = """
 // Compute facet normal
 double n%(restriction)s0 = 0.0;
 double n%(restriction)s1 = 0.0;
-
 if (facet%(restriction)s == 0)
 {
   n%(restriction)s0 = x[0][0] - x[1][0];
@@ -343,8 +335,7 @@ if (facet%(restriction)s == 0)
   n%(restriction)s0 = x[1][0] - x[0][0];
   n%(restriction)s1 = x[1][1] - x[0][1];
 }
-
-const double length = std::sqrt(n%(restriction)s0*n%(restriction)s0 + n%(restriction)s1*n%(restriction)s1)
+const double length = std::sqrt(n%(restriction)s0*n%(restriction)s0 + n%(restriction)s1*n%(restriction)s1);
 n%(restriction)s0 /= length;
 n%(restriction)s1 /= length;
 """
