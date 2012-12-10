@@ -343,7 +343,6 @@ n%(restriction)s1 /= length;
 """
 
 _facet_normal_3D = """
-// Compute facet normals from the facet scale factor constants
 const double n%(restriction)s0 = %(direction)sdirection ? a0 / det : -a0 / det;
 const double n%(restriction)s1 = %(direction)sdirection ? a1 / det : -a1 / det;
 const double n%(restriction)s2 = %(direction)sdirection ? a2 / det : -a2 / det;"""
@@ -365,6 +364,11 @@ const double k%(restriction)sdote = k%(restriction)s0*dx0 + k%(restriction)s1*dx
 double n%(restriction)s0 = (k%(restriction)s1*dx2 - k%(restriction)s2*dx1) + k%(restriction)s0*k%(restriction)sdote;
 double n%(restriction)s1 = -(k%(restriction)s0*dx2 - k%(restriction)s2*dx0) + k%(restriction)s1*k%(restriction)sdote;
 double n%(restriction)s2 = (k%(restriction)s0*dx1 - k%(restriction)s1*dx0) + k%(restriction)s2*k%(restriction)sdote;
+const double n%(restriction)s_length = std::sqrt(n%(restriction)s0*n%(restriction)s0 + n%(restriction)s1*n%(restriction)s1 + n%(restriction)s2*n%(restriction)s2);
+
+n%(restriction)s0 /= n%(restriction)s_length;
+n%(restriction)s1 /= n%(restriction)s_length;
+n%(restriction)s2 /= n%(restriction)s_length;
 """
 
 _facet_normal_3D_1D = """
