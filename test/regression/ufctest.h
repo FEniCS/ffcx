@@ -16,7 +16,7 @@
 // along with FFC. If not, see <http://www.gnu.org/licenses/>.
 //
 // First added:  2010-01-24
-// Last changed: 2012-12-05
+// Last changed: 2012-12-10
 //
 // Functions for calling generated UFC functions with "random" (but
 // fixed) data and print the output to screen. Useful for running
@@ -174,6 +174,9 @@ public:
     default:
       throw std::runtime_error("Unhandled cell shape.");
     }
+
+    // Set orientation (random, but must be set)
+    this->orientation = 1;
 
     // Generate some "random" entity indices
     entity_indices = new uint * [4];
