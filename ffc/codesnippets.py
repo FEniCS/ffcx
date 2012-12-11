@@ -88,9 +88,8 @@ const double J%(restriction)s_01 = x%(restriction)s[2][0] - x%(restriction)s[0][
 const double J%(restriction)s_10 = x%(restriction)s[1][1] - x%(restriction)s[0][1];
 const double J%(restriction)s_11 = x%(restriction)s[2][1] - x%(restriction)s[0][1];"""
 
+# Geometric dimension 2, topological dimension 1
 _jacobian_2D_1D = """\
-// Geometric dimension 2, topological dimension 1
-
 // Extract vertex coordinates
 const double * const * x%(restriction)s = c%(restriction)s.coordinates;
 
@@ -114,9 +113,8 @@ const double J%(restriction)s_20 = x%(restriction)s[1][2] - x%(restriction)s[0][
 const double J%(restriction)s_21 = x%(restriction)s[2][2] - x%(restriction)s[0][2];
 const double J%(restriction)s_22 = x%(restriction)s[3][2] - x%(restriction)s[0][2];"""
 
+# Geometric dimension 3, topological dimension 2
 _jacobian_3D_2D = """\
-// Geometric dimension 3, topological dimension 2
-
 // Extract vertex coordinates
 const double * const * x%(restriction)s = c%(restriction)s.coordinates;
 
@@ -128,9 +126,8 @@ const double J%(restriction)s_11 = x%(restriction)s[2][1] - x%(restriction)s[0][
 const double J%(restriction)s_20 = x%(restriction)s[1][2] - x%(restriction)s[0][2];
 const double J%(restriction)s_21 = x%(restriction)s[2][2] - x%(restriction)s[0][2];"""
 
+# Geometric dimension 3, topological dimension 1
 _jacobian_3D_1D = """\
-// Geometric dimension 3, topological dimension 1
-
 // Extract vertex coordinates
 const double * const * x%(restriction)s = c%(restriction)s.coordinates;
 
@@ -139,8 +136,8 @@ const double J%(restriction)s_00 = x%(restriction)s[1][0] - x%(restriction)s[0][
 const double J%(restriction)s_10 = x%(restriction)s[1][1] - x%(restriction)s[0][1];
 const double J%(restriction)s_20 = x%(restriction)s[1][2] - x%(restriction)s[0][2];"""
 
-# Code snippets for computing the inverse Jacobian. Assumes that
-# Jacobian is already initialized
+# Code snippets for computing the inverse Jacobian. These assume that
+# the Jacobian is initialized already
 _inverse_jacobian_1D = """\
 
 // Compute determinant of Jacobian
@@ -397,41 +394,40 @@ n%(restriction)s2 /= n%(restriction)s_length;
 """
 
 _cell_volume_1D = """\
-// Cell Volume.
+// Cell volume.
 const double volume%(restriction)s = std::abs(detJ%(restriction)s);"""
 
 _cell_volume_2D = """\
-// Cell Volume.
+// Cell volume.
 const double volume%(restriction)s = std::abs(detJ%(restriction)s)/2.0;"""
 
 _cell_volume_2D_1D = """\
-// Cell Volume of interval in 2D
+// Cell volume of interval in 2D
 const double volume%(restriction)s = std::abs(detJ%(restriction)s);"""
 
 _cell_volume_3D = """\
-// Cell Volume.
+// Cell volume.
 const double volume%(restriction)s = std::abs(detJ%(restriction)s)/6.0;"""
 
 _cell_volume_3D_1D = """\
-// Cell Volume of interval in 3D
+// Cell volume of interval in 3D
 const double volume%(restriction)s = std::abs(detJ%(restriction)s);"""
 
 _cell_volume_3D_2D = """\
-// Cell Volume of triangle in 3D
+// Cell volume of triangle in 3D
 const double volume%(restriction)s = std::abs(detJ%(restriction)s)/2.0;"""
 
 _circumradius_1D = """\
-// Compute circumradius, in 1D it is equal to the cell volume.
+// Compute circumradius; in 1D it is equal to the cell volume.
 const double circumradius%(restriction)s = std::abs(detJ%(restriction)s);"""
 
 _circumradius_2D = """\
-// Compute circumradius, assuming triangle is embedded in 2D.
+// Compute circumradius of triangle in 2D.
 const double v1v2%(restriction)s  = std::sqrt( (x%(restriction)s[2][0] - x%(restriction)s[1][0])*(x%(restriction)s[2][0] - x%(restriction)s[1][0]) + (x%(restriction)s[2][1] - x%(restriction)s[1][1])*(x%(restriction)s[2][1] - x%(restriction)s[1][1]) );
 const double v0v2%(restriction)s  = std::sqrt( J%(restriction)s_11*J%(restriction)s_11 + J%(restriction)s_01*J%(restriction)s_01 );
 const double v0v1%(restriction)s  = std::sqrt( J%(restriction)s_00*J%(restriction)s_00 + J%(restriction)s_10*J%(restriction)s_10 );
 
 const double circumradius%(restriction)s = 0.25*(v1v2%(restriction)s*v0v2%(restriction)s*v0v1%(restriction)s)/(volume%(restriction)s);"""
-
 
 _circumradius_2D_1D = """\
 // Compute circumradius of interval in 3D (same as volume)
