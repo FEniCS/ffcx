@@ -241,7 +241,7 @@ format.update({
     "generate normal":      lambda gdim, tdim, i: _generate_normal(gdim, tdim, i),
     "generate cell volume": lambda gdim, tdim, i: _generate_cell_volume(gdim, tdim, i),
     "generate circumradius": lambda gdim, tdim, i: _generate_circumradius(gdim, tdim, i),
-    "generate facet area":  lambda gdim, tdim: facet_area[gdim],
+    "generate facet area":  lambda gdim, tdim: facet_area[gdim][tdim],
     "generate ip coordinates":  lambda g, num_ip, name, ip, r=None: (ip_coordinates[g][0], ip_coordinates[g][1] % \
                                 {"restriction": choose_map[r], "ip": ip, "name": name, "num_ip": num_ip}),
     "scale factor snippet": scale_factor,

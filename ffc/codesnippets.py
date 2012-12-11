@@ -473,9 +473,21 @@ _facet_area_2D = """\
 // Facet Area.
 const double facet_area = det;"""
 
+_facet_area_2D_1D = """\
+// Facet Area.
+const double facet_area = 1.0;"""
+
 _facet_area_3D = """\
 // Facet Area (divide by two because 'det' is scaled by area of reference triangle).
 const double facet_area = det/2.0;"""
+
+_facet_area_3D_1D = """\
+// Facet Area.
+const double facet_area = 1.0;"""
+
+_facet_area_3D_2D = """\
+// Facet Area.
+const double facet_area = det;"""
 
 evaluate_basis_dofmap = """\
 unsigned int element = 0;
@@ -690,11 +702,9 @@ double Y = (d_01*(2.0*coordinates[0] - C0) + d_11*(2.0*coordinates[1] - C1) + d_
 double Z = (d_02*(2.0*coordinates[0] - C0) + d_12*(2.0*coordinates[1] - C1) + d_22*(2.0*coordinates[2] - C2)) / detJ;
 """
 
-# Mappings to code snippets used by format
-
-# The 'jacobian', 'inverse_jacobian', 'facet_determinant' dictionaries
-# accept as keys first the geometric dimension, and then the
-# topological dimension
+# Mappings to code snippets used by format These dictionaries accept
+# as keys: first the geometric dimension, and second the topological
+# dimension
 jacobian = {1: {1:_jacobian_1D},
             2: {2:_jacobian_2D, 1:_jacobian_2D_1D},
             3: {3:_jacobian_3D, 2:_jacobian_3D_2D, 1:_jacobian_3D_1D}}
@@ -709,11 +719,12 @@ facet_determinant = {1: {1: _facet_determinant_1D},
                      3: {3: _facet_determinant_3D, 2: _facet_determinant_3D_2D,
                          1: _facet_determinant_3D_1D}}
 
+# Geometry related snippets
 map_onto_physical = {1: {1: _map_onto_physical_1D},
                      2: {2: _map_onto_physical_2D, 1: _map_onto_physical_2D_1D},
-                     3: {3: _map_onto_physical_3D, 2: _map_onto_physical_3D_2D, 1: _map_onto_physical_3D_1D}}
+                     3: {3: _map_onto_physical_3D, 2: _map_onto_physical_3D_2D,
+                         1: _map_onto_physical_3D_1D}}
 
-# FIXME: Must add more here
 fiat_coordinate_map = {"interval": {1:_map_coordinates_FIAT_interval,
                                     2:_map_coordinates_FIAT_interval_in_2D,
                                     3:_map_coordinates_FIAT_interval_in_3D},
@@ -728,6 +739,10 @@ transform_snippet = {"interval": {1: _transform_snippet(1, 1),
                                   3: _transform_snippet(2, 3)},
                      "tetrahedron": {3: _transform_snippet(3, 3)}}
 
+ip_coordinates = {1: (3, _ip_coordinates_1D),
+                  2: (10, _ip_coordinates_2D),
+                  3: (21, _ip_coordinates_3D)}
+
 normal_direction = {1: {1: _normal_direction_1D},
                     2: {2: _normal_direction_2D, 1: _normal_direction_2D_1D},
                     3: {3: _normal_direction_3D, 2: _normal_direction_3D_2D,
@@ -735,22 +750,21 @@ normal_direction = {1: {1: _normal_direction_1D},
 
 facet_normal = {1: {1: _facet_normal_1D},
                 2: {2: _facet_normal_2D, 1: _facet_normal_2D_1D},
-                3: {3: _facet_normal_3D, 2: _facet_normal_3D_2D, 1: _facet_normal_3D_1D}}
-
-ip_coordinates = {1: (3, _ip_coordinates_1D),
-                  2: (10, _ip_coordinates_2D),
-                  3: (21, _ip_coordinates_3D)}
+                3: {3: _facet_normal_3D, 2: _facet_normal_3D_2D,
+                    1: _facet_normal_3D_1D}}
 
 cell_volume = {1: {1: _cell_volume_1D},
                2: {2: _cell_volume_2D, 1: _cell_volume_2D_1D},
-               3: {3: _cell_volume_3D, 2: _cell_volume_3D_2D, 1: _cell_volume_3D_1D}}
-
+               3: {3: _cell_volume_3D, 2: _cell_volume_3D_2D,
+                   1: _cell_volume_3D_1D}}
 
 circumradius = {1: {1: _circumradius_1D},
                 2: {2: _circumradius_2D, 1: _circumradius_2D_1D},
-                3: {3: _circumradius_3D, 2: _circumradius_3D_2D, 1: _circumradius_3D_1D}}
+                3: {3: _circumradius_3D, 2: _circumradius_3D_2D,
+                    1: _circumradius_3D_1D}}
 
-facet_area = {1: _facet_area_1D,
-              2: _facet_area_2D,
-              3: _facet_area_3D}
+facet_area = {1: {1: _facet_area_1D},
+              2: {2: _facet_area_2D, 1: _facet_area_2D_1D},
+              3: {3: _facet_area_3D, 2: _facet_area_3D_ 2D,
+                  1: _facet_area_3D_1D}}
 
