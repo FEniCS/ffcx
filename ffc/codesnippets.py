@@ -765,6 +765,6 @@ circumradius = {1: {1: _circumradius_1D},
 
 facet_area = {1: {1: _facet_area_1D},
               2: {2: _facet_area_2D, 1: _facet_area_2D_1D},
-              3: {3: _facet_area_3D, 2: _facet_area_3D_ 2D,
+              3: {3: _facet_area_3D, 2: _facet_area_3D_2D,
                   1: _facet_area_3D_1D}}
 
