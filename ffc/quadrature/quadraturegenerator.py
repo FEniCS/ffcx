@@ -160,9 +160,9 @@ def _tabulate_tensor(ir, parameters):
         error("Unhandled integral type: " + str(integral_type))
 
     # Add common (for cell, exterior and interior) geo code.
-    jacobi_code += "\n\n" + format["generate cell volume"](geo_dim, domain_type)
-    jacobi_code += "\n\n" + format["generate circumradius"](geo_dim, domain_type)
-    jacobi_code += "\n\n" + format["generate facet area"](geo_dim)
+    jacobi_code += "\n\n" + format["generate cell volume"](geo_dim, top_dim, domain_type)
+    jacobi_code += "\n\n" + format["generate circumradius"](geo_dim, top_dim, domain_type)
+    jacobi_code += "\n\n" + format["generate facet area"](geo_dim, top_dim)
 
     # After we have generated the element code for all facets we can remove
     # the unused transformations and tabulate the used psi tables and weights.

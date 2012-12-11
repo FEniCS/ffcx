@@ -404,9 +404,21 @@ _cell_volume_2D = """\
 // Cell Volume.
 const double volume%(restriction)s = std::abs(detJ%(restriction)s)/2.0;"""
 
+_cell_volume_2D_1D = """\
+// Cell Volume of interval in 2D
+const double volume%(restriction)s = std::abs(detJ%(restriction)s);"""
+
 _cell_volume_3D = """\
 // Cell Volume.
 const double volume%(restriction)s = std::abs(detJ%(restriction)s)/6.0;"""
+
+_cell_volume_3D_1D = """\
+// Cell Volume of interval in 3D
+const double volume%(restriction)s = std::abs(detJ%(restriction)s);"""
+
+_cell_volume_3D_2D = """\
+// Cell Volume of triangle in 3D
+const double volume%(restriction)s = std::abs(detJ%(restriction)s)/2.0;"""
 
 _circumradius_1D = """\
 // Compute circumradius, in 1D it is equal to the cell volume.
@@ -681,9 +693,9 @@ ip_coordinates = {1: (3, _ip_coordinates_1D),
                   2: (10, _ip_coordinates_2D),
                   3: (21, _ip_coordinates_3D)}
 
-cell_volume = {1: _cell_volume_1D,
-               2: _cell_volume_2D,
-               3: _cell_volume_3D}
+cell_volume = {1: {1: _cell_volume_1D},
+               2: {2: _cell_volume_2D, 1: _cell_volume_2D_1D},
+               3: {3: _cell_volume_3D, 2: _cell_volume_3D_2D, 1: _cell_volume_3D_1D}}
 
 circumradius = {1: _circumradius_1D,
                 2: _circumradius_2D,

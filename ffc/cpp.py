@@ -239,9 +239,9 @@ format.update({
     "facet determinant":    lambda gdim, tdim, r=None: facet_determinant[gdim][tdim] % {"restriction": choose_map[r]},
     "fiat coordinate map":  lambda cell, gdim: fiat_coordinate_map[cell][gdim],
     "generate normal":      lambda gdim, tdim, i: _generate_normal(gdim, tdim, i),
-    "generate cell volume": lambda d, i: _generate_cell_volume(d, i),
-    "generate circumradius": lambda d, i: _generate_circumradius(d, i),
-    "generate facet area":  lambda d: facet_area[d],
+    "generate cell volume": lambda gdim, tdim, i: _generate_cell_volume(gdim, tdim, i),
+    "generate circumradius": lambda gdim, tdim, i: _generate_circumradius(gdim, i),
+    "generate facet area":  lambda gdim, tdim: facet_area[gdim],
     "generate ip coordinates":  lambda g, num_ip, name, ip, r=None: (ip_coordinates[g][0], ip_coordinates[g][1] % \
                                 {"restriction": choose_map[r], "ip": ip, "name": name, "num_ip": num_ip}),
     "scale factor snippet": scale_factor,
@@ -554,11 +554,11 @@ def _generate_normal(geometric_dimension, topological_dimension, domain_type,
         error("Unsupported domain_type: %s" % str(domain_type))
     return code
 
-def _generate_cell_volume(geometric_dimension, domain_type):
+def _generate_cell_volume(gdim, tdim, domain_type):
     "Generate code for computing cell volume."
 
     # Choose snippets
-    volume = cell_volume[geometric_dimension]
+    volume = cell_volume[gdim][tdim]
 
     # Choose restrictions
     if domain_type in ("cell", "exterior_facet"):
