@@ -226,10 +226,9 @@ def _generate_multiple_points_body(i, dof, mapping, gdim, tdim,
     code += [comment("Loop over points.")]
 
     # Map the points from the reference onto the physical element
-    # FIXME!!!!!!
-    assert(gdim == tdim), \
-        "Integral moments not supported for manifolds (yet). Please fix"
-    lines_r = [map_onto_physical[gdim] % {"i": i, "j": f_r}]
+    #assert(gdim == tdim), \
+    #    "Integral moments not supported for manifolds (yet). Please fix"
+    lines_r = [map_onto_physical[gdim][tdim] % {"i": i, "j": f_r}]
 
     # Evaluate function at physical point
     lines_r.append(comment("Evaluate function at physical point."))
@@ -239,7 +238,7 @@ def _generate_multiple_points_body(i, dof, mapping, gdim, tdim,
     lines_r.append(comment("Map function to reference element."))
     F = _change_variables(mapping, gdim, tdim, offset)
     lines_r += [assign(component(f_copy(i), k), F_k)
-             for (k, F_k) in enumerate(F)]
+                for (k, F_k) in enumerate(F)]
 
     # Add loop over directional components
     lines_r.append(comment("Loop over directions."))

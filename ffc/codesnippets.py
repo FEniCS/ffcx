@@ -582,6 +582,15 @@ const double w2 = X_%(i)d[%(j)s][1];
 y[0] = w0*x[0][0] + w1*x[1][0] + w2*x[2][0];
 y[1] = w0*x[0][1] + w1*x[1][1] + w2*x[2][1];"""
 
+_map_onto_physical_2D_1D = """\
+// Evaluate basis functions for affine mapping
+const double w0 = 1.0 - X_%(i)d[%(j)s][0];
+const double w1 = X_%(i)d[%(j)s][0];
+
+// Compute affine mapping y = F(X)
+y[0] = w0*x[0][0] + w1*x[1][0];
+y[1] = w0*x[0][1] + w1*x[1][1];"""
+
 _map_onto_physical_3D = """\
 // Evaluate basis functions for affine mapping
 const double w0 = 1.0 - X_%(i)d[%(j)s][0] - X_%(i)d[%(j)s][1] - X_%(i)d[%(j)s][2];
@@ -593,6 +602,28 @@ const double w3 = X_%(i)d[%(j)s][2];
 y[0] = w0*x[0][0] + w1*x[1][0] + w2*x[2][0] + w3*x[3][0];
 y[1] = w0*x[0][1] + w1*x[1][1] + w2*x[2][1] + w3*x[3][1];
 y[2] = w0*x[0][2] + w1*x[1][2] + w2*x[2][2] + w3*x[3][2];"""
+
+_map_onto_physical_3D_1D = """\
+// Evaluate basis functions for affine mapping
+const double w0 = 1.0 - X_%(i)d[%(j)s][0];
+const double w1 = X_%(i)d[%(j)s][0];
+
+// Compute affine mapping y = F(X)
+y[0] = w0*x[0][0] + w1*x[1][0];
+y[1] = w0*x[0][1] + w1*x[1][1];
+y[2] = w0*x[0][2] + w1*x[1][2];"""
+
+_map_onto_physical_3D_2D = """\
+// Evaluate basis functions for affine mapping
+const double w0 = 1.0 - X_%(i)d[%(j)s][0] - X_%(i)d[%(j)s][1];
+const double w1 = X_%(i)d[%(j)s][0];
+const double w2 = X_%(i)d[%(j)s][1];
+
+// Compute affine mapping y = F(X)
+y[0] = w0*x[0][0] + w1*x[1][0] + w2*x[2][0];
+y[1] = w0*x[0][1] + w1*x[1][1] + w2*x[2][1];
+y[2] = w0*x[0][2] + w1*x[1][2] + w2*x[2][2];
+"""
 
 _ip_coordinates_1D = """\
 X%(num_ip)d[0] = %(name)s[%(ip)s][0]*x%(restriction)s[0][0] + \
@@ -678,9 +709,9 @@ facet_determinant = {1: {1: _facet_determinant_1D},
                      3: {3: _facet_determinant_3D, 2: _facet_determinant_3D_2D,
                          1: _facet_determinant_3D_1D}}
 
-map_onto_physical = {1: _map_onto_physical_1D,
-                     2: _map_onto_physical_2D,
-                     3: _map_onto_physical_3D}
+map_onto_physical = {1: {1: _map_onto_physical_1D},
+                     2: {2: _map_onto_physical_2D, 1: _map_onto_physical_2D_1D},
+                     3: {3: _map_onto_physical_3D, 2: _map_onto_physical_3D_2D, 1: _map_onto_physical_3D_1D}}
 
 # FIXME: Must add more here
 fiat_coordinate_map = {"interval": {1:_map_coordinates_FIAT_interval,
