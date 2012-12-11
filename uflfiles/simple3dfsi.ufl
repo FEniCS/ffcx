@@ -1,0 +1,146 @@
+"""
+Simple 3D FSI problem
+""" 
+
+cell = tetrahedron
+
+#Constants
+kn = Constant(cell)
+rho_F = Constant(cell)
+mu_F = Constant(cell)
+rho_S = Constant(cell)
+mu_S = Constant(cell)
+lmbda_S = Constant(cell)
+mu_FD = Constant(cell)
+lmbda_FD = Constant(cell)
+
+N_F = cell.n
+N_S = cell.n
+
+#Create measures
+dx_F = dx(0)
+dx_S = dx(1)
+dFSI = dS(0)
+
+#Fluid velocity
+V_F = VectorElement("CG",cell,2)
+#Fluid pressure
+Q_F = FiniteElement("CG",cell,1)
+#Structure Displacement
+C_S = VectorElement("CG",cell,1)
+#Structure velocity
+V_S = VectorElement("CG",cell,1)
+#Fluid Domain Displacement
+C_F = C_S = VectorElement("CG",cell,1)
+#Velocity and Displacement Lagrange Multipliers
+M_D = VectorElement("DG", cell, 0)
+M_U = VectorElement("DG", cell, 0)
+
+#Create Global Functions Space
+M = MixedElement(V_F,Q_F,M_U,C_S,V_S,C_F,M_D)
+
+#Helper Operators
+I = Identity(3)
+
+# Deformation gradient
+def F(u):
+    return I + grad(u)
+
+# Determinant of the deformation gradient
+def J(u):
+    return det(F(u))
+
+#Identity Matrix
+I = Identity(3)
+
+def _Sigma_F(mu_F,U_F,P_F,D_F):
+    iFDF = inv(F(D_F))
+    return  J(D_F)*(mu_F*(grad(U_F)*inv(F(D_F)) + iFDF.T*grad(D_F).T) - P_F*I)*iFDF.T
+
+#Functions for various parts of the total residual
+def fluid_residual(U_Fdot,U_F,P_F,v_F,q_F,mu,rho,D_F,N_F,D_Fdot,dx_F):
+    """Piola Mapped Navier Stokes equation"""
+     
+    Dt_U = rho*J(D_F)*(U_Fdot + dot(grad(U_F),dot(inv(F(D_F)), U_F - D_Fdot)))
+    Sigma_F = _Sigma_F(mu_F,U_F,P_F,D_F)
+
+    #DT
+    R_F  = inner(v_F, Dt_U)*dx_F                                                                      
+
+    #Div Sigma F
+    R_F += inner(grad(v_F), Sigma_F)*dx_F
+
+    #Incompressibility
+    R_F += inner(q_F, div(J(D_F)*dot(inv(F(D_F)), U_F)))*dx_F
+    return  R_F
+
+def struc_residual(Ddot_S,Udot_S,D_S, U_S,c_S,v_S,mu_S,lmbda_S,rho_S,dx_S):                  
+    """St. Venant Hyperleasticity"""
+    F = grad(D_S) + I
+    E = 0.5*(F.T*F - I) 
+    
+    Sigma_S = dot(F, 2*mu_S*E + lmbda_S*tr(E)*I)
+
+    #Hyperelasticity equations St. Venant Kirchoff
+    R_S = inner(c_S, rho_S*Udot_S)*dx_S + inner(grad(c_S), Sigma_S)*dx_S + inner(v_S, Ddot_S -U_S)*dx_S
+    
+    return R_S
+
+def fluid_domain_residual(Ddot_F,D_F,c_F,mu_FD,lmbda_FD,dx_Flist):
+    """Fluid Domain Equation"""
+    #Fluid Domain (Mesh) stress tensor
+    I = Identity(3)
+    Sigma_FD = 2*mu_FD*sym(grad(D_F)) + lmbda_FD*tr(grad(D_F))*I
+ 
+    #Fluid Domain equation
+    R_FD = inner(c_F, Ddot_F)*dx_F + inner(sym(grad(c_F)), Sigma_FD)*dx_F
+    return R_FD
+
+def interface_residual(U_F,U_Fmid,P_Fmid,D_S,U_S,D_F,D_Fmid,L_U,L_D,v_F,c_S,
+                       c_F,m_D,m_U,mu_F,N_F,dFSI):
+    """Residual for interface conditions on the FSI interface"""
+
+    #Displacement Lagrange Multiplier
+    R_FSI =  inner(m_D, D_F - D_S)('+')*dFSI
+    R_FSI += inner(c_F, L_D)('+')*dFSI
+
+    #Velocity Lagrange Multiplier
+    R_FSI += inner(m_U,U_F - U_S)('+')*dFSI
+    R_FSI += inner(v_F,L_U)('+')*dFSI
+
+    #Stress Continuity
+    Sigma_F = _Sigma_F(mu_F,U_Fmid,P_Fmid,D_Fmid)
+    R_FSI += -(inner(dot(Sigma_F('+'), N_F('-')), c_S('-')))*dFSI
+    return R_FSI
+
+#Create Functions
+(U0, U1) = (Coefficient(M), Coefficient(M))
+(U0list, U1list) = (split(U0), split(U1))
+Umidlist = tuple((x+y)*0.5 for x,y in zip(U1list, U0list))
+Udotlist = tuple((x-y)*(1/kn) for x,y in zip(U1list, U0list)) 
+V = TestFunctions(M)
+
+#Constants to access the lists
+U_F, P_F, L_U, D_S, U_S, D_F, L_D = tuple(range(7))
+
+#Build the residual
+R_F = fluid_residual(Udotlist[U_F],Umidlist[U_F],U1list[P_F],
+                     V[U_F],V[P_F],mu_F,rho_F,U1list[D_F],N_F,
+                     Udotlist[D_F],dx_F)
+ 
+R_S = struc_residual(Udotlist[D_S],Udotlist[U_S],Umidlist[D_S], Umidlist[U_S],
+                     V[D_S],V[U_S],mu_S,lmbda_S,rho_S,dx_S)
+
+R_FD = fluid_domain_residual(Udotlist[D_F],Umidlist[D_F],V[D_F],mu_FD,lmbda_FD,dx_F)
+
+R_FSI = interface_residual(U1list[U_F], Umidlist[U_F], Umidlist[P_F], U1list[D_S],
+                           U1list[U_S], U1list[D_F], Umidlist[D_F], U1list[L_U],
+                           U1list[L_D], V[U_F], V[D_S], V[D_F], V[L_D],V[L_U],
+                           mu_F,N_F,dFSI)
+
+R = R_F + R_S + R_FD + R_FSI
+
+J = derivative(R,U1)
+
+forms = [R, J]
+
