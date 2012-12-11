@@ -240,7 +240,7 @@ format.update({
     "fiat coordinate map":  lambda cell, gdim: fiat_coordinate_map[cell][gdim],
     "generate normal":      lambda gdim, tdim, i: _generate_normal(gdim, tdim, i),
     "generate cell volume": lambda gdim, tdim, i: _generate_cell_volume(gdim, tdim, i),
-    "generate circumradius": lambda gdim, tdim, i: _generate_circumradius(gdim, i),
+    "generate circumradius": lambda gdim, tdim, i: _generate_circumradius(gdim, tdim, i),
     "generate facet area":  lambda gdim, tdim: facet_area[gdim],
     "generate ip coordinates":  lambda g, num_ip, name, ip, r=None: (ip_coordinates[g][0], ip_coordinates[g][1] % \
                                 {"restriction": choose_map[r], "ip": ip, "name": name, "num_ip": num_ip}),
@@ -570,11 +570,11 @@ def _generate_cell_volume(gdim, tdim, domain_type):
         error("Unsupported domain_type: %s" % str(domain_type))
     return code
 
-def _generate_circumradius(geometric_dimension, domain_type):
+def _generate_circumradius(gdim, tdim, domain_type):
     "Generate code for computing a cell's circumradius."
 
     # Choose snippets
-    radius = circumradius[geometric_dimension]
+    radius = circumradius[gdim][tdim]
 
     # Choose restrictions
     if domain_type in ("cell", "exterior_facet"):

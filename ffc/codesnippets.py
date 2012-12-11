@@ -432,6 +432,11 @@ const double v0v1%(restriction)s  = std::sqrt( J%(restriction)s_00*J%(restrictio
 
 const double circumradius%(restriction)s = 0.25*(v1v2%(restriction)s*v0v2%(restriction)s*v0v1%(restriction)s)/(volume%(restriction)s);"""
 
+
+_circumradius_2D_1D = """\
+// Compute circumradius of interval in 3D (same as volume)
+const double circumradius%(restriction)s = std::abs(detJ%(restriction)s);"""
+
 _circumradius_3D = """\
 // Compute circumradius.
 const double v1v2%(restriction)s  = std::sqrt( (x%(restriction)s[2][0] - x%(restriction)s[1][0])*(x%(restriction)s[2][0] - x%(restriction)s[1][0]) + (x%(restriction)s[2][1] - x%(restriction)s[1][1])*(x%(restriction)s[2][1] - x%(restriction)s[1][1]) + (x%(restriction)s[2][2] - x%(restriction)s[1][2])*(x%(restriction)s[2][2] - x%(restriction)s[1][2]) );
@@ -447,6 +452,18 @@ const  double s%(restriction)s    = 0.5*(la%(restriction)s+lb%(restriction)s+lc%
 const  double area%(restriction)s = std::sqrt(s%(restriction)s*(s%(restriction)s-la%(restriction)s)*(s%(restriction)s-lb%(restriction)s)*(s%(restriction)s-lc%(restriction)s));
 
 const double circumradius%(restriction)s = area%(restriction)s / ( 6.0*volume%(restriction)s );"""
+
+_circumradius_3D_1D = """\
+// Compute circumradius of interval in 3D (same as volume)
+const double circumradius%(restriction)s = std::abs(detJ%(restriction)s);"""
+
+_circumradius_3D_2D = """\
+// Compute circumradius of triangle in 3D
+const double v1v2%(restriction)s  = std::sqrt( (x%(restriction)s[2][0] - x%(restriction)s[1][0])*(x%(restriction)s[2][0] - x%(restriction)s[1][0]) + (x%(restriction)s[2][1] - x%(restriction)s[1][1])*(x%(restriction)s[2][1] - x%(restriction)s[1][1]) + (x%(restriction)s[2][2] - x%(restriction)s[1][2])*(x%(restriction)s[2][2] - x%(restriction)s[1][2]));
+const double v0v2%(restriction)s  = std::sqrt( J%(restriction)s_11*J%(restriction)s_11 + J%(restriction)s_01*J%(restriction)s_01 + J%(restriction)s_21*J%(restriction)s_21);
+const double v0v1%(restriction)s  = std::sqrt( J%(restriction)s_00*J%(restriction)s_00 + J%(restriction)s_10*J%(restriction)s_10 + J%(restriction)s_20*J%(restriction)s_20);
+
+const double circumradius%(restriction)s = 0.25*(v1v2%(restriction)s*v0v2%(restriction)s*v0v1%(restriction)s)/(volume%(restriction)s);"""
 
 _facet_area_1D = """\
 // Facet Area (FIXME: Should this be 0.0?).
@@ -697,9 +714,10 @@ cell_volume = {1: {1: _cell_volume_1D},
                2: {2: _cell_volume_2D, 1: _cell_volume_2D_1D},
                3: {3: _cell_volume_3D, 2: _cell_volume_3D_2D, 1: _cell_volume_3D_1D}}
 
-circumradius = {1: _circumradius_1D,
-                2: _circumradius_2D,
-                3: _circumradius_3D}
+
+circumradius = {1: {1: _circumradius_1D},
+                2: {2: _circumradius_2D, 1: _circumradius_2D_1D},
+                3: {3: _circumradius_3D, 2: _circumradius_3D_2D, 1: _circumradius_3D_1D}}
 
 facet_area = {1: _facet_area_1D,
               2: _facet_area_2D,
