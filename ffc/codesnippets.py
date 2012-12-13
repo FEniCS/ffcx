@@ -345,31 +345,38 @@ const double n%(restriction)s1 = %(direction)sdirection ? a1 / det : -a1 / det;
 const double n%(restriction)s2 = %(direction)sdirection ? a2 / det : -a2 / det;"""
 
 _facet_normal_3D_2D = """
-// Compute facet normal n via Rodrigues' rotation formula:
-//   n = k x e  + k (k . e)
-// where e is the vector to be rotated (given by dx0, dx1, dx2) and k
-// is the surface normal of the cell
-double k%(restriction)s0 = (x%(restriction)s[1][1] - x%(restriction)s[0][1])*(x%(restriction)s[2][2] - x%(restriction)s[0][2]) - (x%(restriction)s[1][2] - x%(restriction)s[0][2])*(x%(restriction)s[2][1] - x%(restriction)s[0][1]);
-double k%(restriction)s1 = - ((x%(restriction)s[1][0] - x%(restriction)s[0][0])*(x%(restriction)s[2][2] - x%(restriction)s[0][2]) - (x%(restriction)s[1][2] - x%(restriction)s[0][2])*(x%(restriction)s[2][0] - x%(restriction)s[0][0]));
-double k%(restriction)s2 = (x%(restriction)s[1][0] - x%(restriction)s[0][0])*(x%(restriction)s[2][1] - x%(restriction)s[0][1]) - (x%(restriction)s[1][1] - x%(restriction)s[0][1])*(x%(restriction)s[2][0] - x%(restriction)s[0][0]);
-const double k%(restriction)s_length = std::sqrt(k%(restriction)s0*k%(restriction)s0 + k%(restriction)s1*k%(restriction)s1 + k%(restriction)s2*k%(restriction)s2);
-k%(restriction)s0 /= k%(restriction)s_length;
-k%(restriction)s1 /= k%(restriction)s_length;
-k%(restriction)s2 /= k%(restriction)s_length;
-const double k%(restriction)sdote = k%(restriction)s0*dx0 + k%(restriction)s1*dx1 + k%(restriction)s2*dx2;
+const unsigned int v0 = facet%(restriction)s;
 
-double n%(restriction)s0 = (k%(restriction)s1*dx2 - k%(restriction)s2*dx1) + k%(restriction)s0*k%(restriction)sdote;
-double n%(restriction)s1 = -(k%(restriction)s0*dx2 - k%(restriction)s2*dx0) + k%(restriction)s1*k%(restriction)sdote;
-double n%(restriction)s2 = (k%(restriction)s0*dx1 - k%(restriction)s1*dx0) + k%(restriction)s2*k%(restriction)sdote;
-const double n%(restriction)s_length = std::sqrt(n%(restriction)s0*n%(restriction)s0 + n%(restriction)s1*n%(restriction)s1 + n%(restriction)s2*n%(restriction)s2);
+// Get coordinates corresponding the vertex opposite this
+static unsigned int edge_vertices[3][2] = {{1, 2}, {0, 2}, {0, 1}};
+const unsigned int v1 = edge_vertices[facet%(restriction)s][0];
+const unsigned int v2 = edge_vertices[facet%(restriction)s][1];
 
+// Define vectors n = (p2 - p0) and t = normalized (p2 - p1)
+const unsigned int n%(restriction)s0 = x%(restriction)s[v2][0] - x%(restriction)s[v0][0];
+const unsigned int n%(restriction)s1 = x%(restriction)s[v2][1] - x%(restriction)s[v0][1];
+const unsigned int n%(restriction)s2 = x%(restriction)s[v2][2] - x%(restriction)s[v0][2];
+
+unsigned int t%(restriction)s0 = x%(restriction)s[v2][0] - x%(restriction)s[v1][0];
+unsigned int t%(restriction)s1 = x%(restriction)s[v2][1] - x%(restriction)s[v1][1];
+unsigned int t%(restriction)s2 = x%(restriction)s[v2][2] - x%(restriction)s[v1][2];
+const unsigned int t%(restriction)s_length = std::sqrt(t%(restriction)s0*t%(restriction)s0 + t%(restriction)s1*t%(restriction)s1 + t%(restriction)s2*t%(restriction)s2);
+t%(restriction)s0 /= t%(restriction)s_length;
+t%(restriction)s1 /= t%(restriction)s_length;
+t%(restriction)s2 /= t%(restriction)s_length;
+
+// Subtract, the projection of (p2  - p0) onto (p2 - p1), from (p2 - p0)
+const unsigned int ndott%(restriction)s = t%(restriction)s0*n%(restriction)s0 + t%(restriction)s1*n%(restriction)s1 + t%(restriction)s2*n%(restriction)s2;
+
+n%(restriction)s0 -= ndott%(restriction)s*t%(restriction)s0;
+n%(restriction)s1 -= ndott%(restriction)s*t%(restriction)s2;
+n%(restriction)s2 -= ndott%(restriction)s*t%(restriction)s2;
+const unsigned int n%(restriction)s_length = std::sqrt(n%(restriction)s0*n%(restriction)s0 + n%(restriction)s1*n%(restriction)s1 + n%(restriction)s2*n%(restriction)s2);
+
+// Normalize
 n%(restriction)s0 /= n%(restriction)s_length;
 n%(restriction)s1 /= n%(restriction)s_length;
 n%(restriction)s2 /= n%(restriction)s_length;
-
-throw std::runtime_error("Edge normals in 3D not trivial. Might need global orientation again. Please don't use yet.");
-
-//std::cout << "n" << %(restriction)s << " = (" << n%(restriction)s0 << ", " << n%(restriction)s1 << ", " << n%(restriction)s2 << ")" << std::endl;
 """
 
 _facet_normal_3D_1D = """
