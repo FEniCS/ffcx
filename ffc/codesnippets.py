@@ -222,8 +222,8 @@ const double K%(restriction)s_12 = (-J%(restriction)s_20*m%(restriction)s + J%(r
 orientation_snippet = """
 // Extract orientation
 const int orientation_marker = c.orientation;
-if (orientation_marker == 0)
-  throw std::runtime_error("cell orientation must be defined (not 0)");
+if (orientation_marker == -1)
+  throw std::runtime_error("cell orientation must be defined (not -1)");
 // (If orientation_marker == 1 = down, multiply detJ by -1)
 else if (orientation_marker == 1)
   detJ%(restriction)s *= -1;
