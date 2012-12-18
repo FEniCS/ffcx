@@ -345,33 +345,33 @@ const double n%(restriction)s1 = %(direction)sdirection ? a1 / det : -a1 / det;
 const double n%(restriction)s2 = %(direction)sdirection ? a2 / det : -a2 / det;"""
 
 _facet_normal_3D_2D = """
-const unsigned int v0 = facet%(restriction)s;
+// Compute facet normal for triangles in 3D
+const unsigned int vertex%(restriction)s0 = facet%(restriction)s;
 
 // Get coordinates corresponding the vertex opposite this
-static unsigned int edge_vertices[3][2] = {{1, 2}, {0, 2}, {0, 1}};
-const unsigned int v1 = edge_vertices[facet%(restriction)s][0];
-const unsigned int v2 = edge_vertices[facet%(restriction)s][1];
+// static unsigned int edge_vertices[3][2] = {{1, 2}, {0, 2}, {0, 1}};
+const unsigned int vertex%(restriction)s1 = edge_vertices[facet%(restriction)s][0];
+const unsigned int vertex%(restriction)s2 = edge_vertices[facet%(restriction)s][1];
 
 // Define vectors n = (p2 - p0) and t = normalized (p2 - p1)
-const unsigned int n%(restriction)s0 = x%(restriction)s[v2][0] - x%(restriction)s[v0][0];
-const unsigned int n%(restriction)s1 = x%(restriction)s[v2][1] - x%(restriction)s[v0][1];
-const unsigned int n%(restriction)s2 = x%(restriction)s[v2][2] - x%(restriction)s[v0][2];
+double n%(restriction)s0 = x%(restriction)s[vertex%(restriction)s2][0] - x%(restriction)s[vertex%(restriction)s0][0];
+double n%(restriction)s1 = x%(restriction)s[vertex%(restriction)s2][1] - x%(restriction)s[vertex%(restriction)s0][1];
+double n%(restriction)s2 = x%(restriction)s[vertex%(restriction)s2][2] - x%(restriction)s[vertex%(restriction)s0][2];
 
-unsigned int t%(restriction)s0 = x%(restriction)s[v2][0] - x%(restriction)s[v1][0];
-unsigned int t%(restriction)s1 = x%(restriction)s[v2][1] - x%(restriction)s[v1][1];
-unsigned int t%(restriction)s2 = x%(restriction)s[v2][2] - x%(restriction)s[v1][2];
-const unsigned int t%(restriction)s_length = std::sqrt(t%(restriction)s0*t%(restriction)s0 + t%(restriction)s1*t%(restriction)s1 + t%(restriction)s2*t%(restriction)s2);
+double t%(restriction)s0 = x%(restriction)s[vertex%(restriction)s2][0] - x%(restriction)s[vertex%(restriction)s1][0];
+double t%(restriction)s1 = x%(restriction)s[vertex%(restriction)s2][1] - x%(restriction)s[vertex%(restriction)s1][1];
+double t%(restriction)s2 = x%(restriction)s[vertex%(restriction)s2][2] - x%(restriction)s[vertex%(restriction)s1][2];
+const double t%(restriction)s_length = std::sqrt(t%(restriction)s0*t%(restriction)s0 + t%(restriction)s1*t%(restriction)s1 + t%(restriction)s2*t%(restriction)s2);
 t%(restriction)s0 /= t%(restriction)s_length;
 t%(restriction)s1 /= t%(restriction)s_length;
 t%(restriction)s2 /= t%(restriction)s_length;
 
 // Subtract, the projection of (p2  - p0) onto (p2 - p1), from (p2 - p0)
-const unsigned int ndott%(restriction)s = t%(restriction)s0*n%(restriction)s0 + t%(restriction)s1*n%(restriction)s1 + t%(restriction)s2*n%(restriction)s2;
-
+const double ndott%(restriction)s = t%(restriction)s0*n%(restriction)s0 + t%(restriction)s1*n%(restriction)s1 + t%(restriction)s2*n%(restriction)s2;
 n%(restriction)s0 -= ndott%(restriction)s*t%(restriction)s0;
-n%(restriction)s1 -= ndott%(restriction)s*t%(restriction)s2;
+n%(restriction)s1 -= ndott%(restriction)s*t%(restriction)s1;
 n%(restriction)s2 -= ndott%(restriction)s*t%(restriction)s2;
-const unsigned int n%(restriction)s_length = std::sqrt(n%(restriction)s0*n%(restriction)s0 + n%(restriction)s1*n%(restriction)s1 + n%(restriction)s2*n%(restriction)s2);
+const double n%(restriction)s_length = std::sqrt(n%(restriction)s0*n%(restriction)s0 + n%(restriction)s1*n%(restriction)s1 + n%(restriction)s2*n%(restriction)s2);
 
 // Normalize
 n%(restriction)s0 /= n%(restriction)s_length;
