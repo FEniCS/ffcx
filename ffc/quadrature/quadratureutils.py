@@ -63,7 +63,7 @@ def flatten_psi_tables(tables):
         elem_dict = tables[point]
         element_map[point] = {}
         # Loop all elements and get all their tables.
-        for elem in sorted(elem_dict.keys(), lambda x, y: cmp(str(x), str(y))):
+        for elem in sorted(elem_dict.keys(), key=lambda x: str(x)):
             facet_tables = elem_dict[elem]
             element_map[point][elem] = counter
             for facet in sorted(facet_tables.keys()):
