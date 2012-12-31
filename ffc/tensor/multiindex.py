@@ -23,6 +23,7 @@
 # Last changed: 2009-12-21
 
 # Python modules.
+import functools
 import numpy
 
 # FFC modules.
