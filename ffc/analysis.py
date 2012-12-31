@@ -408,7 +408,7 @@ def _auto_select_quadrature_degree(integral, representation, elements):
 def _check_quadrature_degree(degree, top_dim):
     """Check that quadrature degree does not result in a unreasonable high
     number of integration points."""
-    num_points = ((degree + 1 + 1) / 2)**top_dim
+    num_points = ((degree + 1 + 1) // 2)**top_dim
     if num_points >= 100:
         warning_blue("WARNING: The number of integration points for each cell will be: %d" % num_points)
         warning_blue("         Consider using the option 'quadrature_degree' to reduce the number of points")

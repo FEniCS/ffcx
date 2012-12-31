@@ -22,6 +22,7 @@
 
 # Python modules.
 import operator
+import functools
 
 # FFC modules.
 from log import error
@@ -29,7 +30,7 @@ from log import error
 def product(sequence):
     "Return the product of all elements in a sequence."
     # Copied from UFL
-    return reduce(operator.__mul__, sequence, 1)
+    return functools.reduce(operator.__mul__, sequence, 1)
 
 def all_equal(sequence):
     "Check that all items in list are equal."
