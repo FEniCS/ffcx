@@ -33,7 +33,7 @@ def build_indices(dims):
     "Create a list of all index combinations."
     if not dims: return [[]]
     ranges = listcopy(dims)
-    return reduce(outer_join, ranges, [[]])
+    return functools.reduce(outer_join, ranges, [[]])
 
 def outer_join(a, b):
     """Let a be a list of lists and b a list. We append each element
