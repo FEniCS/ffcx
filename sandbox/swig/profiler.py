@@ -16,7 +16,7 @@ from ffc.common.constants import FFC_OPTIONS, FFC_VERSION
 
 def error(msg):
     "Print error message (cannot use log system at top level)."
-    print "\n".join(["*** FFC: " + line for line in msg.split("\n")])
+    print("\n".join(["*** FFC: " + line for line in msg.split("\n")]))
 
 def info_version():
     "Print version number."
@@ -115,11 +115,11 @@ def main():
 
         # Catch exceptions only when not in debug mode
         if options["log_level"] <= DEBUG:
-            execfile(script, {})
+            exec(compile(open(script).read(), script, 'exec'), {})
         else:
             try:
-                execfile(script, {})
-            except UFLException, exception:
+                exec(compile(open(script).read(), script, 'exec'), {})
+            except UFLException as exception:
                 info("")
                 error(str(exception))
                 error("To get more information about this error, rerun FFC with --debug.")

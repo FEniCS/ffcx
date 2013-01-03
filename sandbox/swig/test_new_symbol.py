@@ -1067,7 +1067,7 @@ class Tests(unittest.TestCase):
 
     def testReduceOperations(self):
 
-        print "\nTesting ReduceOperations"
+        print("\nTesting ReduceOperations")
 
         # Aux. variables
         f2 = FloatValue(2)
@@ -1477,18 +1477,18 @@ class Tests(unittest.TestCase):
                                 )
                       ])
 
-        print
+        print()
         start = time.time()
         expr_exp = expr.expand()
-        print "DGElastoDyn: time, expand():     ", time.time() - start
+        print("DGElastoDyn: time, expand():     ", time.time() - start)
 
         start = time.time()
         expr_red = expr_exp.reduce_ops()
-        print "DGElastoDyn: time, reduce_ops(): ", time.time() - start
+        print("DGElastoDyn: time, reduce_ops(): ", time.time() - start)
 
-        print "expr.ops():     ", expr.ops()
-        print "expr_exp.ops(): ", expr_exp.ops()
-        print "expr_red.ops(): ", expr_red.ops()
+        print("expr.ops():     ", expr.ops())
+        print("expr_exp.ops(): ", expr_exp.ops())
+        print("expr_red.ops(): ", expr_red.ops())
 
 #        print "expr:\n", expr
 #        print "exp:\n", expr_exp
@@ -1671,18 +1671,18 @@ class Tests(unittest.TestCase):
                             ])
                    ])
 
-        print
+        print()
         start = time.time()
         expr_exp = expr.expand()
-        print "ReduceGIP: time, expand()      ", time.time() - start
+        print("ReduceGIP: time, expand()      ", time.time() - start)
 
         start = time.time()
         expr_red = expr_exp.reduce_ops()
-        print "ReduceGIP: time, reduce_ops(): ", time.time() - start
+        print("ReduceGIP: time, reduce_ops(): ", time.time() - start)
 
-        print "expr.ops():     ", expr.ops()
-        print "expr_exp.ops(): ", expr_exp.ops()
-        print "expr_red.ops(): ", expr_red.ops()
+        print("expr.ops():     ", expr.ops())
+        print("expr_exp.ops(): ", expr_exp.ops())
+        print("expr_red.ops(): ", expr_red.ops())
 
 #        print "expr: ", expr
 #        print "exp:  ", expr_exp
@@ -1735,31 +1735,31 @@ class Tests(unittest.TestCase):
                      Symbol("det", GEO)
                     ])
 
-        print
+        print()
         start = time.time()
         expr_exp = expr.expand()
-        print "Poisson: time, expand():     ", time.time() - start
+        print("Poisson: time, expand():     ", time.time() - start)
 
         start = time.time()
         poisson_exp = expand_operations(poisson, get_format())
-        print "Poisson: time, old expand(): ", time.time() - start
+        print("Poisson: time, old expand(): ", time.time() - start)
 
         start = time.time()
         expr_red = expr_exp.reduce_ops()
-        print "Poisson: time, reduce_ops(): ", time.time() - start
+        print("Poisson: time, reduce_ops(): ", time.time() - start)
 
         start = time.time()
         poisson_red = reduce_operations(poisson, get_format())
-        print "Poisson: time, old reduce(): ", time.time() - start
+        print("Poisson: time, old reduce(): ", time.time() - start)
 
         ops = operation_count(poisson_exp, get_format())
-        print "expr.ops():           ", expr.ops()
-        print "Poisson old exp: ops: ", ops
-        print "expr_exp.ops():       ", expr_exp.ops()
+        print("expr.ops():           ", expr.ops())
+        print("Poisson old exp: ops: ", ops)
+        print("expr_exp.ops():       ", expr_exp.ops())
 
         ops = operation_count(poisson_red, get_format())
-        print "Poisson old red: ops: ", ops
-        print "expr_red.ops():       ", expr_red.ops()
+        print("Poisson old red: ops: ", ops)
+        print("expr_red.ops():       ", expr_red.ops())
 
 #        print "expr: ", expr
 #        print "exp:  ", expr_exp
@@ -1887,31 +1887,31 @@ class Tests(unittest.TestCase):
                      Symbol("det", GEO)
                      ])
 
-        print
+        print()
         start = time.time()
         expr_exp = expr.expand()
-        print "Elasticity2D: time, expand():     ", time.time() - start
+        print("Elasticity2D: time, expand():     ", time.time() - start)
 
         start = time.time()
         elasticity_exp = expand_operations(elasticity, get_format())
-        print "Elasticity2D: time, old expand(): ", time.time() - start
+        print("Elasticity2D: time, old expand(): ", time.time() - start)
 
         start = time.time()
         expr_red = expr_exp.reduce_ops()
-        print "Elasticity2D: time, reduce_ops(): ", time.time() - start
+        print("Elasticity2D: time, reduce_ops(): ", time.time() - start)
 
         start = time.time()
         elasticity_red = reduce_operations(elasticity, get_format())
-        print "Elasticity2D: time, old reduce(): ", time.time() - start
+        print("Elasticity2D: time, old reduce(): ", time.time() - start)
 
         ops = operation_count(elasticity_exp, get_format())
-        print "expr.ops():                ", expr.ops()
-        print "Elasticity2D old exp: ops: ", ops
-        print "expr_exp.ops():            ", expr_exp.ops()
+        print("expr.ops():                ", expr.ops())
+        print("Elasticity2D old exp: ops: ", ops)
+        print("expr_exp.ops():            ", expr_exp.ops())
 
         ops = operation_count(elasticity_red, get_format())
-        print "Elasticity2D old red: ops: ", ops
-        print "expr_red.ops():            ", expr_red.ops()
+        print("Elasticity2D old red: ops: ", ops)
+        print("expr_red.ops():            ", expr_red.ops())
 
 #        print "expr:\n", expr
 #        print "exp:\n", expr_exp
@@ -1942,18 +1942,18 @@ class Tests(unittest.TestCase):
                              ])
                       ])
 
-        print
+        print()
         start = time.time()
         expr_exp = expr.expand()
-        print "ElasticityTerm: time, expand():     ", time.time() - start
+        print("ElasticityTerm: time, expand():     ", time.time() - start)
 
         start = time.time()
         expr_red = expr_exp.reduce_ops()
-        print "ElasticityTerm: time, reduce_ops(): ", time.time() - start
+        print("ElasticityTerm: time, reduce_ops(): ", time.time() - start)
 
-        print "expr.ops():     ", expr.ops()
-        print "expr_exp.ops(): ", expr_exp.ops()
-        print "expr_red.ops(): ", expr_red.ops()
+        print("expr.ops():     ", expr.ops())
+        print("expr_exp.ops(): ", expr_exp.ops())
+        print("expr_red.ops(): ", expr_red.ops())
 
 #        print "expr:\n", expr
 #        print "exp:\n", expr_exp
@@ -1966,10 +1966,10 @@ class Tests(unittest.TestCase):
 
         start = time.time()
         opt_code = optimise_code(expr, ip_consts, geo_consts, trans_set)
-        print "ElasticityTerm, optimise_code(): ", time.time() - start
+        print("ElasticityTerm, optimise_code(): ", time.time() - start)
 
         det, W1, Jinv_00, Jinv_21, FE0_C2_D001_0_j, FE0_C2_D001_0_k = [0.123 + i for i in range(6)]
-        G0 = eval(str(geo_consts.items()[0][0]))
+        G0 = eval(str(list(geo_consts.items())[0][0]))
         self.assertAlmostEqual(eval(str(expr)), eval(str(expr_exp)))
         self.assertAlmostEqual(eval(str(expr)), eval(str(expr_red)))
         self.assertAlmostEqual(eval(str(expr)), eval(str(opt_code)))
@@ -2016,18 +2016,18 @@ class Tests(unittest.TestCase):
                               ])
                           ])
                                                        
-        print
+        print()
         start = time.time()
         expr_exp = expr.expand()
-        print "ElasWeighted: time, expand():     ", time.time() - start
+        print("ElasWeighted: time, expand():     ", time.time() - start)
 
         start = time.time()
         expr_red = expr_exp.reduce_ops()
-        print "ElasWeighted: time, reduce_ops(): ", time.time() - start
+        print("ElasWeighted: time, reduce_ops(): ", time.time() - start)
 
-        print "expr.ops():     ", expr.ops()
-        print "expr_exp.ops(): ", expr_exp.ops()
-        print "expr_red.ops(): ", expr_red.ops()
+        print("expr.ops():     ", expr.ops())
+        print("expr_exp.ops(): ", expr_exp.ops())
+        print("expr_red.ops(): ", expr_red.ops())
 
 #        print "expr:\n", expr
 #        print "exp:\n", expr_exp
@@ -2040,11 +2040,11 @@ class Tests(unittest.TestCase):
 
         start = time.time()
         opt_code = optimise_code(expr, ip_consts, geo_consts, trans_set)
-        print "ElasWeighted, optimise_code(): ", time.time() - start
+        print("ElasWeighted, optimise_code(): ", time.time() - start)
 
         det, W4, w0, w1, w2, Jinv_00, Jinv_01, Jinv_11, Jinv_10, FE0_C1_D01_ip_j, FE0_C1_D01_ip_k = [0.123 + i for i in range(11)]
-        G0 = eval(str(geo_consts.items()[0][0]))
-        Gip0 = eval(str(ip_consts.items()[0][0]))
+        G0 = eval(str(list(geo_consts.items())[0][0]))
+        Gip0 = eval(str(list(ip_consts.items())[0][0]))
         self.assertAlmostEqual(eval(str(expr)), eval(str(expr_exp)))
         self.assertAlmostEqual(eval(str(expr)), eval(str(expr_red)))
         self.assertAlmostEqual(eval(str(expr)), eval(str(opt_code)))
@@ -2112,18 +2112,18 @@ class Tests(unittest.TestCase):
                               ])
                         ])
 
-        print
+        print()
         start = time.time()
         expr_exp = expr.expand()
-        print "ElasWeighted2: time, expand():     ", time.time() - start
+        print("ElasWeighted2: time, expand():     ", time.time() - start)
 
         start = time.time()
         expr_red = expr_exp.reduce_ops()
-        print "ElasWeighted2: time, reduce_ops(): ", time.time() - start
+        print("ElasWeighted2: time, reduce_ops(): ", time.time() - start)
 
-        print "expr.ops():     ", expr.ops()
-        print "expr_exp.ops(): ", expr_exp.ops()
-        print "expr_red.ops(): ", expr_red.ops()
+        print("expr.ops():     ", expr.ops())
+        print("expr_exp.ops(): ", expr_exp.ops())
+        print("expr_red.ops(): ", expr_red.ops())
 
 #        print "expr:\n", expr
 #        print "exp:\n", expr_exp
@@ -2136,11 +2136,11 @@ class Tests(unittest.TestCase):
 
         start = time.time()
         opt_code = optimise_code(expr, ip_consts, geo_consts, trans_set)
-        print "ElasWeighted2, optimise_code(): ", time.time() - start
+        print("ElasWeighted2, optimise_code(): ", time.time() - start)
 
         det, W4, w0, w1, w2, Jinv_00, Jinv_01, Jinv_11, Jinv_10, FE0_C1_D01_ip_j, FE0_C1_D01_ip_k = [0.123 + i for i in range(11)]
-        G0 = eval(str(geo_consts.items()[0][0]))
-        Gip0 = eval(str(ip_consts.items()[0][0]))
+        G0 = eval(str(list(geo_consts.items())[0][0]))
+        Gip0 = eval(str(list(ip_consts.items())[0][0]))
         self.assertAlmostEqual(eval(str(expr)), eval(str(expr_exp)))
         self.assertAlmostEqual(eval(str(expr)), eval(str(expr_red)))
         self.assertAlmostEqual(eval(str(expr)), eval(str(opt_code)))

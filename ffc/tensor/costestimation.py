@@ -36,7 +36,7 @@ def estimate_cost(integral):
     try:
         monomial_form = extract_monomial_form([integral])
         transform_monomial_form(monomial_form)
-    except Exception, exception:
+    except Exception as exception:
         debug("Monomial extraction failed: " + str(exception))
         return -1
 

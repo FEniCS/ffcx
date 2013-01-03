@@ -33,12 +33,12 @@ failed = []
 
 # Run tests
 for test in tests:
-    print "Running tests: %s" % test
-    print "----------------------------------------------------------------------"
+    print("Running tests: %s" % test)
+    print("----------------------------------------------------------------------")
     os.chdir(os.path.join(pwd, test))
     failure = os.system("python test.py")
     if failure:
         failed.append(test)
-    print ""
+    print("")
 
 sys.exit(len(failed))

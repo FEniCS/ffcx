@@ -25,12 +25,12 @@ from ffc.log import error
 from ffc.cpp import format
 
 # FFC quadrature modules.
-from symbolics import type_to_string
-from symbolics import create_float
-from symbolics import create_product
-from symbolics import create_sum
-from symbolics import create_fraction
-from expr import Expr
+from .symbolics import type_to_string
+from .symbolics import create_float
+from .symbolics import create_product
+from .symbolics import create_sum
+from .symbolics import create_fraction
+from .expr import Expr
 
 class Symbol(Expr):
     __slots__ = ("v", "base_expr", "base_op", "exp", "cond")
@@ -238,8 +238,8 @@ class Symbol(Expr):
             return self.base_op + self.cond[0].ops() + self.cond[2].ops() + 1
         return self.base_op
 
-from floatvalue import FloatValue
-from product    import Product
-from sumobj    import Sum
-from fraction   import Fraction
+from .floatvalue import FloatValue
+from .product    import Product
+from .sumobj    import Sum
+from .fraction   import Fraction
 

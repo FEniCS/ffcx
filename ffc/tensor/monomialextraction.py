@@ -104,7 +104,7 @@ class MonomialFactor:
             self.derivatives = []
             self.restriction = None
         else:
-            raise MonomialException, ("Unable to create monomial from expression: " + str(arg))
+            raise MonomialException("Unable to create monomial from expression: " + str(arg))
 
     def element(self):
         return self.function.element()
@@ -163,16 +163,16 @@ class Monomial:
             self.factors = []
             self.index_slots = None
         else:
-            raise MonomialException, ("Unable to create monomial from expression: " + str(arg))
+            raise MonomialException("Unable to create monomial from expression: " + str(arg))
 
     def apply_derivative(self, indices):
         if not len(self.factors) == 1:
-            raise MonomialException, "Expecting a single factor."
+            raise MonomialException("Expecting a single factor.")
         self.factors[0].apply_derivative(indices)
 
     def apply_tensor(self, indices):
         if not self.index_slots is None:
-            raise MonomialException, "Expecting scalar-valued expression."
+            raise MonomialException("Expecting scalar-valued expression.")
         self.index_slots = indices
 
     def apply_indices(self, indices):
@@ -282,10 +282,10 @@ class MonomialTransformer(ReuseTransformer):
         ReuseTransformer.__init__(self)
 
     def expr(self, o, *ops):
-        raise MonomialException, ("No handler defined for expression %s." % o._uflclass.__name__)
+        raise MonomialException("No handler defined for expression %s." % o._uflclass.__name__)
 
     def terminal(self, o):
-        raise MonomialException, ("No handler defined for terminal %s." % o._uflclass.__name__)
+        raise MonomialException("No handler defined for terminal %s." % o._uflclass.__name__)
 
     def variable(self, o):
         return self.visit(o.expression())
@@ -297,7 +297,7 @@ class MonomialTransformer(ReuseTransformer):
         # Handle division by scalars as multiplication by inverse
         denominator = o.operands()[1]
         if not isinstance(denominator, ScalarValue):
-            raise MonomialException, ("No handler defined for expression %s."
+            raise MonomialException("No handler defined for expression %s."
                                       % o._uflclass.__name__)
         inverse = self.scalar_value(ScalarValue(1.0/denominator.value()))
         numerator = self.visit(o.operands()[0])
@@ -341,7 +341,7 @@ class MonomialTransformer(ReuseTransformer):
     def power(self, o, s, ignored_exponent_expressed_as_sum):
         (expr, exponent) = o.operands()
         if not isinstance(exponent, IntValue):
-            raise MonomialException, "Cannot handle non-integer exponents."
+            raise MonomialException("Cannot handle non-integer exponents.")
         p = MonomialSum(Monomial())
         for i in range(int(exponent)):
             p = p * s
@@ -354,7 +354,7 @@ class MonomialTransformer(ReuseTransformer):
         return indices
 
     def index(self, o):
-        raise MonomialException, "Not expecting to see an Index terminal."
+        raise MonomialException("Not expecting to see an Index terminal.")
 
     def argument(self, v):
         s = MonomialSum(v)
@@ -373,7 +373,7 @@ def _replace_indices(indices, old_indices, new_indices):
 
     # Old and new indices must match
     if not len(old_indices) == len(new_indices):
-        raise MonomialException, "Unable to replace indices, mismatching index dimensions."
+        raise MonomialException("Unable to replace indices, mismatching index dimensions.")
 
     # Build index map
     index_map = {}

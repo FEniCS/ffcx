@@ -85,18 +85,18 @@ def check_results(values, reference):
     missing_refs = []
     diffs = []
     num_ok = 0
-    print ""
-    for element, vals in values.items():
-        print "\nResults for %s:" % element
+    print("")
+    for element, vals in list(values.items()):
+        print("\nResults for %s:" % element)
 
         if vals is None:
-            print "Error"
+            print("Error")
             continue
 
         # Get reference values
         if not element in reference:
             missing_refs.append(element)
-            print "Missing reference"
+            print("Missing reference")
             continue
         refs = reference[element]
         tol = 1e-12
@@ -104,24 +104,24 @@ def check_results(values, reference):
         e = max(abs(vals - refs))
         if e < tol:
             num_ok += 1
-            print "OK: (diff = %g)" % e
+            print("OK: (diff = %g)" % e)
         else:
-            print "*** (diff = %g)" % e
+            print("*** (diff = %g)" % e)
             diffs.append(element)
 
     if ffc_failed == gcc_failed == run_failed == missing_refs == diffs:
-        print "\nAll %d elements verified OK" % len(reference)
+        print("\nAll %d elements verified OK" % len(reference))
         return 0
     if len(ffc_failed) > 0:
-        print "\n*** FFC compilation failed for the following elements:\n" + "\n".join(ffc_failed)
+        print("\n*** FFC compilation failed for the following elements:\n" + "\n".join(ffc_failed))
     if len(gcc_failed) > 0:
-        print "\n*** g++ compilation failed for the following elements:\n" + "\n".join(gcc_failed)
+        print("\n*** g++ compilation failed for the following elements:\n" + "\n".join(gcc_failed))
     if len(run_failed) > 0:
-        print "\n*** Evaluation failed (seg. fault?) for the following elements:\n" + "\n".join(run_failed)
+        print("\n*** Evaluation failed (seg. fault?) for the following elements:\n" + "\n".join(run_failed))
     if len(missing_refs) > 0:
-        print "\n*** No reference values were found for the following elements:\n" + "\n".join(missing_refs)
+        print("\n*** No reference values were found for the following elements:\n" + "\n".join(missing_refs))
     if len(diffs) > 0:
-        print "\n*** Difference in values were found for the following elements:\n" + "\n".join(diffs)
+        print("\n*** Difference in values were found for the following elements:\n" + "\n".join(diffs))
     return 1
 
 def compile_element(ufl_element):
@@ -186,10 +186,10 @@ def compute_values(ufl_element):
 def print_refs():
     if os.path.isfile("reference.pickle"):
         reference = pickle.load(open("reference.pickle", "r"))
-        for elem, vals in reference.items():
-            print
-            print elem
-            print vals
+        for elem, vals in list(reference.items()):
+            print()
+            print(elem)
+            print(vals)
     else:
         raise RuntimeError("No references to print")
 
@@ -207,26 +207,26 @@ def main(args):
 
     values = {}
     # Evaluate basis for single elements
-    print "\nComputing evaluate_basis for single elements"
+    print("\nComputing evaluate_basis for single elements")
     for element in single_elements:
         for shape in element["shapes"]:
             for order in element["orders"]:
                 ufl_element = FiniteElement(element["family"], shape, order)
-                print "Compiling element: ", str(ufl_element)
+                print("Compiling element: ", str(ufl_element))
                 error = compile_element(ufl_element)
                 if error:
                     continue
-                print "Computing values"
+                print("Computing values")
                 values[repr(ufl_element)] = compute_values(ufl_element)
 
     # Evaluate basis for mixed elements
-    print "\nComputing evaluate_basis for mixed elements"
+    print("\nComputing evaluate_basis for mixed elements")
     for ufl_element in mixed_elements:
-        print "Compiling element: ", str(ufl_element)
+        print("Compiling element: ", str(ufl_element))
         error = compile_element(ufl_element)
         if error:
             continue
-        print "Computing values"
+        print("Computing values")
         values[repr(ufl_element)] = compute_values(ufl_element)
 
     # Load or update reference values
@@ -234,7 +234,7 @@ def main(args):
     if os.path.isfile("reference.pickle"):
         reference = pickle.load(open("reference.pickle", "r"))
     else:
-        print "Unable to find reference values, storing current values."
+        print("Unable to find reference values, storing current values.")
         pickle.dump(values, open("reference.pickle", "w"))
         return 0
 

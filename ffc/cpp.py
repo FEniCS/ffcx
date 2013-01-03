@@ -227,7 +227,7 @@ format.update({
 })
 
 # Code snippets
-from codesnippets import *
+from .codesnippets import *
 format.update({
     "cell coordinates":     cell_coordinates,
     "jacobian":             lambda n, r="": jacobian[n] % {"restriction": r},
@@ -413,7 +413,7 @@ def _generate_switch(variable, cases, default=None, numbers=None):
 
     # Create numbers for switch
     if numbers is None:
-        numbers = range(len(cases))
+        numbers = list(range(len(cases)))
 
     # Create switch
     code = "switch (%s)\n{\n" % variable

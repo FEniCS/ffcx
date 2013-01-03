@@ -365,7 +365,7 @@ def _tabulate_coordinates(element):
     "Compute intermediate representation of tabulate_coordinates."
     if uses_integral_moments(element):
         return None
-    return [L.pt_dict.keys()[0] for L in element.dual_basis()]
+    return [list(L.pt_dict.keys())[0] for L in element.dual_basis()]
 
 def _tabulate_dofs(element, cell):
     "Compute intermediate representation of tabulate_dofs."
@@ -450,7 +450,7 @@ def _interpolate_vertex_values(element, cell):
     vertices = cell.get_vertices()
 
     # Compute data for each constituent element
-    extract = lambda values: values[values.keys()[0]].transpose()
+    extract = lambda values: values[list(values.keys())[0]].transpose()
     ir["element_data"] = [{"value_size": _value_size(e),
                            "basis_values": extract(e.tabulate(0, vertices)),
                            "mapping": e.mapping()[0],
@@ -486,7 +486,7 @@ def _num_dofs_per_entity(element):
     Example: Lagrange of degree 3 on triangle: [1, 2, 1]
     """
     entity_dofs = element.entity_dofs()
-    return [len(entity_dofs[e][0]) for e in range(len(entity_dofs.keys()))]
+    return [len(entity_dofs[e][0]) for e in range(len(list(entity_dofs.keys())))]
 
 # These two are copied from old ffc
 def __compute_incidence(D):
@@ -520,7 +520,7 @@ def __compute_sub_simplices(D, d):
     if d == 0:
         return [[i] for i in range(num_vertices)]
     elif d == D:
-        return [range(num_vertices)]
+        return [list(range(num_vertices))]
 
     # Compute all permutations of num_vertices - (d + 1)
     permutations = compute_permutations(num_vertices - d - 1, num_vertices)

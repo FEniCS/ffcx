@@ -30,7 +30,7 @@ def xcomb(items, n):
     "Create n-tuples with combinations of items."
     if n==0: yield []
     else:
-        for i in xrange(len(items)):
+        for i in range(len(items)):
             for cc in xcomb(items[:i]+items[i+1:],n-1):
                 yield [items[i]]+cc
 

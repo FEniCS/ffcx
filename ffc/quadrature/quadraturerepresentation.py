@@ -166,7 +166,7 @@ def _tabulate_basis(sorted_integrals, domain_type, num_facets, common_cell=None)
     integrals = {}
 
     # Loop the quadrature points and tabulate the basis values.
-    for pr, integral in sorted_integrals.iteritems():
+    for pr, integral in sorted_integrals.items():
 
         # Extract number of points and the rule.
         # TODO: The rule is currently unused because the fiatinterface does not
@@ -286,7 +286,7 @@ def _sort_integrals(integrals, metadata, form_data):
         else:
             sorted_integrals[(degree, rule)] += form
     # Extract integrals form forms.
-    for key, val in sorted_integrals.items():
+    for key, val in list(sorted_integrals.items()):
         if len(val.integrals()) != 1:
             error("Only expected one integral over one subdomain: %s" % repr(val))
         sorted_integrals[key] = val.integrals()[0]
@@ -296,7 +296,7 @@ def _sort_integrals(integrals, metadata, form_data):
 def _transform_integrals(transformer, integrals, domain_type):
     "Transform integrals from UFL expression to quadrature representation."
     transformed_integrals = []
-    for point, integral in integrals.items():
+    for point, integral in list(integrals.items()):
         transformer.update_points(point)
         integrand = integral.integrand()
         if domain_type == "interior_facet":

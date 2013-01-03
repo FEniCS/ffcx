@@ -118,7 +118,7 @@ def generate_aux_constants(constant_decl, name, var_type, print_ops=False):
     code = []
     append = code.append
     ops = 0
-    for s in sorted([(v, k) for k, v in constant_decl.iteritems()]):
+    for s in sorted([(v, k) for k, v in constant_decl.items()]):
         c = s[1]
 #        debug("c orig: " + str(c))
 #        prit "c orig: " + str(c)
@@ -215,7 +215,7 @@ def optimise_code(expr, ip_consts, geo_consts, trans_set):
 #            print "\ngeo: " + str(geo)
             # Update transformation set with those values that might be embedded in IP terms.
             if ip_dec:
-                trans_set_update(map(lambda x: str(x), ip_dec.get_unique_vars(GEO)))
+                trans_set_update([str(x) for x in ip_dec.get_unique_vars(GEO)])
 
             # Append and continue if we did not have any geo values.
             if not geo:
@@ -223,14 +223,14 @@ def optimise_code(expr, ip_consts, geo_consts, trans_set):
                 continue
 
             # Update the transformation set with the variables in the geo term.
-            trans_set_update(map(lambda x: str(x), geo.get_unique_vars(GEO)))
+            trans_set_update([str(x) for x in geo.get_unique_vars(GEO)])
 
             # Only declare auxiliary geo terms if we can save operations.
             if geo.ops() > 0:
 #                debug("geo: " + str(geo))
 #                print "geo: " + str(geo)
                 # If the geo term is not in the dictionary append it.
-                if not geo_consts.has_key(geo):
+                if geo not in geo_consts:
                     geo_consts[geo] = len(geo_consts)
 
                 # Substitute geometry expression.

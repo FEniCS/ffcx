@@ -25,8 +25,8 @@
 from ffc.log import debug
 
 # FFC tensor representation modules.
-from monomialtransformation import MonomialIndex
-from multiindex import create_multiindex
+from .monomialtransformation import MonomialIndex
+from .multiindex import create_multiindex
 
 class GeometryTensor:
     """

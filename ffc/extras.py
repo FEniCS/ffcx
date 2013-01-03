@@ -83,7 +83,7 @@ def compute_tensor_representation(form):
             t = [A0.A0 for j in i["AK"] for k in j for (A0, GK, dummy) in k]
             if len(t) == 1: t = t[0]
         else:
-            raise RuntimeError, "Unhandled domain type: %s" % str(i["domain_type"])
+            raise RuntimeError("Unhandled domain type: %s" % str(i["domain_type"]))
         reference_tensors.append(t)
 
     # Extract code

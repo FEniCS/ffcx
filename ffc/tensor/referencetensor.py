@@ -25,9 +25,9 @@
 from ffc.log import debug
 
 # FFC tensor representation modules.
-from monomialintegration import integrate
-from monomialtransformation import MonomialIndex
-from multiindex import create_multiindex
+from .monomialintegration import integrate
+from .monomialtransformation import MonomialIndex
+from .multiindex import create_multiindex
 
 class ReferenceTensor:
     """

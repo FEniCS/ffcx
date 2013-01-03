@@ -18,14 +18,14 @@
 # First added:  2010-01-29
 # Last changed: 2010-04-12
 
-from cppcode import evaluate_basis_code_fiat
+from .cppcode import evaluate_basis_code_fiat
 from ufl import FiniteElement, MixedElement
 from ffc.fiatinterface import create_element, reference_cell
 from ffc.mixedelement import MixedElement as FFCMixedElement
 from ffc.log import info, error, debug
 import numpy
 import sys, os, numpy, shutil
-from test_common import xcomb, compile_element, print_results, compile_gcc_code,\
+from .test_common import xcomb, compile_element, print_results, compile_gcc_code,\
                         run_code, get_element_name, verify_values
 import time
 from ffc.log import push_level, pop_level, CRITICAL, INFO
@@ -119,7 +119,7 @@ def get_data(ufl_element):
     ref_coords = reference_cell(ufl_element.cell().domain()).get_vertices()
 
     # Get the locations of the fiat element dofs.
-    elem_points =  [L.pt_dict.keys()[0] for L in element.dual_basis()]
+    elem_points =  [list(L.pt_dict.keys())[0] for L in element.dual_basis()]
 
     # Add some random points.
     geo_dim = ufl_element.cell().geometric_dimension()
@@ -201,7 +201,7 @@ def get_fiat_values(ufl_element):
                             deriv_vals = values[deriv]
                             row[i].append(deriv_vals[i][c][p])
                 else:
-                    print values
+                    print(values)
                     error("Did not expect tensor elements")
             new_row = []
             for r in row:
