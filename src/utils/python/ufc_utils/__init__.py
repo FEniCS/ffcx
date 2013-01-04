@@ -39,12 +39,12 @@ UFC_VERSION_MAINTENANCE = 5
 
 UFC_VERSION = __version__
 
-from function import *
-from finite_element import *
-from dofmap import *
-from integrals import *
-from form import *
-from build import build_ufc_module
+from .function import *
+from .finite_element import *
+from .dofmap import *
+from .integrals import *
+from .form import *
+from .build import build_ufc_module
 
 # Check if we should import development/experimental version
 #import os

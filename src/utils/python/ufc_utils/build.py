@@ -42,7 +42,7 @@ def build_ufc_module(h_files, source_directory="", system_headers=None, \
     h_files2 = [os.path.join(source_directory, fn) for fn in h_files]
     for f in h_files2:
         if not os.path.isfile(f):
-            raise IOError, "The file '%s' does not exist." % f
+            raise IOError("The file '%s' does not exist." % f)
 
     # Check system_headers argument
     system_headers = system_headers or []
@@ -84,27 +84,27 @@ def configure_instant(swig_binary="swig", swig_path=""):
 
     # Check for swig installation
     if not instant.check_and_set_swig_binary(swig_binary, swig_path):
-        raise OSError, "Could not find swig installation. Pass an existing "\
-              "swig binary or install SWIG version 1.3.35 or higher.\n"
+        raise OSError("Could not find swig installation. Pass an existing "\
+              "swig binary or install SWIG version 1.3.35 or higher.\n")
 
     # Check swig version for shared_ptr
     if not instant.check_swig_version("1.3.35"):
-        raise OSError, "Your current swig version is %s, it needs to be "\
-              "1.3.35 or higher.\n" % instant.get_swig_version()
+        raise OSError("Your current swig version is %s, it needs to be "\
+              "1.3.35 or higher.\n" % instant.get_swig_version())
 
     # Check if UFC is importable and what version of swig was used to
     # create the UFC extension module
     try:
         import ufc
     except:
-        raise OSError, "Please install the python extenstion module of UFC on your system.\n"
+        raise OSError("Please install the python extenstion module of UFC on your system.\n")
 
     # Check that the form compiler will use the same swig version
     # that UFC was compiled with
     if not instant.check_swig_version(ufc.__swigversion__, same=True):
-        raise OSError, """The python extension module of UFC was not compiled with the present version of swig.
+        raise OSError("""The python extension module of UFC was not compiled with the present version of swig.
 Install swig version %s or recompiled UFC with present swig
-""" % ufc.__swigversion__
+""" % ufc.__swigversion__)
 
     # Set a default swig command and boost include directory
     boost_include_dir = []
@@ -127,10 +127,10 @@ Install swig version %s or recompiled UFC with present swig
             break
 
     if not boost_is_found:
-        raise OSError, """The Boost headers was not found.
+        raise OSError("""The Boost headers was not found.
 If Boost is installed in a nonstandard location,
 set the environment variable BOOST_DIR.
-"""
+""")
 
     # Add the boost_include_dir
     cpp_path += boost_include_dir
@@ -151,10 +151,10 @@ set the environment variable BOOST_DIR.
                 break
 
     if not boost_math_is_found:
-        raise OSError, """The Boost math library was not found.
+        raise OSError("""The Boost math library was not found.
 If Boost math library is installed in a nonstandard location,
 set the environment variable BOOST_DIR.
-"""
+""")
     return cpp_path, swig_include_dirs, boost_library_dir, boost_library
 
 def extract_declarations(h_files):
